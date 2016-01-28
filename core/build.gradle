@@ -1,0 +1,17 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
+    }
+}
+
+apply plugin: 'kotlin'
+
+dependencies {
+    compile "nl.komponents.kovenant:kovenant-core:$versions.kovenant"
+    compile "nl.komponents.kovenant:kovenant-functional:$versions.kovenant"
+    compile "org.whispersystems:axolotl-java:$versions.axolotl"
+}

@@ -2,5 +2,6 @@ rootProject.name = 'keytap'
 
 include 'desktop'
 include 'android'
-include 'core-services'
+include 'ui-services'
+include 'core'
 

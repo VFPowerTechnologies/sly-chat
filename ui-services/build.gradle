@@ -1,0 +1,34 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
+    }
+}
+
+apply plugin: 'kotlin'
+
+kapt {
+    generateStubs = true
+
+    arguments {
+        arg('jsOutputDir', "$rootProject.projectDir/ui/ui/js/jvm-service")
+        arg('jsCallbackPackage', 'com.vfpowertech.keytap.core.services.jscallback')
+        arg('jsAddModuleExports', 'false')
+    }
+}
+
+dependencies {
+    project(':core')
+
+    kapt "com.vfpowertech:jsbridge-processor:$versions.jsbridge"
+
+    compile "com.vfpowertech:jsbridge-core:$versions.jsbridge"
+    compile "com.vfpowertech:jsbridge-processor-annotations:$versions.jsbridge"
+    compile "nl.komponents.kovenant:kovenant-core:$versions.kovenant"
+    compile "nl.komponents.kovenant:kovenant-functional:$versions.kovenant"
+    compile "org.slf4j:slf4j-api:$versions.slf4j"
+    compile "com.fasterxml.jackson.core:jackson-databind:$versions.jackson"
+}

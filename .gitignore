@@ -4,3 +4,5 @@ build/
 robovm-build/
 *.iml
 local.properties
+ui/ui/js/jvm-service
+ui/ui/js/dispatcher.js

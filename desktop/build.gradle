@@ -16,6 +16,9 @@ mainClassName = 'com.vfpowertech.keytap.desktop.App'
 sourceSets.main.resources.srcDirs += "$rootProject.projectDir/ui"
 
 dependencies {
+    compile project(':ui-services')
+
     compile "com.vfpowertech:jsbridge-desktop-webengine:$versions.jsbridge"
+
     runtime "ch.qos.logback:logback-classic:$versions.logbackClassic"
 }

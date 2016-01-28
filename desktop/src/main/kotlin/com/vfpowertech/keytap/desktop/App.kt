@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import com.vfpowertech.keytap.desktop.jfx.jsconsole.ConsoleMessageAdded
+import com.vfpowertech.keytap.ui.services.RegistrationService
+import com.vfpowertech.keytap.ui.services.impl.RegistrationServiceImpl
+import com.vfpowertech.keytap.ui.services.jstojava.RegistrationServiceToJavaProxy
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.scene.web.WebEngine
@@ -51,6 +54,9 @@ class App : Application() {
 
         val engineInterface = JFXWebEngineInterface(engine)
         val dispatcher = Dispatcher(engineInterface)
+
+        val registrationService = RegistrationServiceImpl()
+        dispatcher.registerService("RegistrationService", RegistrationServiceToJavaProxy(registrationService,  dispatcher))
 
         engine.load(javaClass.getResource("/ui/index.html").toExternalForm())
 
