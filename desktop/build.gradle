@@ -1,0 +1,21 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
+    }
+}
+
+apply plugin: 'kotlin'
+apply plugin: 'application'
+
+mainClassName = 'com.vfpowertech.keytap.desktop.App'
+
+sourceSets.main.resources.srcDirs += "$rootProject.projectDir/ui"
+
+dependencies {
+    compile "com.vfpowertech:jsbridge-desktop-webengine:$versions.jsbridge"
+    runtime "ch.qos.logback:logback-classic:$versions.logbackClassic"
+}

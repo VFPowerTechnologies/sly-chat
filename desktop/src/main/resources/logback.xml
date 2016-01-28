@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <property name="MSG_PATTERN" value="[%.-1level] [%d{ISO8601}] [%logger{0}] %msg%n" />
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${MSG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+    <root level="trace">
+        <appender-ref ref="stdout" />
+    </root>
+</configuration>

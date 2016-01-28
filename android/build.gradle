@@ -1,0 +1,42 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:$versions.androidGradle"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
+    }
+}
+
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+android {
+    compileSdkVersion versions.androidCompileSdk
+    buildToolsVersion versions.androidBuildTools
+
+    defaultConfig {
+        applicationId 'com.vfpowertech.keytap'
+        minSdkVersion 19
+        targetSdkVersion 23
+        versionCode 1
+        versionName rootProject.version
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+        main.assets.srcDirs += "$rootProject.projectDir/ui"
+    }
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+    }
+}
+
+dependencies {
+    compile "org.slf4j:slf4j-android:$versions.slf4j"
+    compile "com.vfpowertech:jsbridge-android-webengine:$versions.jsbridge"
+}
