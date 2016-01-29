@@ -5,16 +5,31 @@ import com.vfpowertech.keytap.ui.services.RegistrationService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.async
 import nl.komponents.kovenant.functional.map
+import java.util.*
 
 class RegistrationServiceImpl() : RegistrationService {
-    override fun doRegistration(info: RegistrationInfo, progressListener: (String) -> Unit): Promise<Unit, Exception> {
+    private val listeners = ArrayList<(String) -> Unit>()
+
+    override fun addListener(listener: (String) -> Unit) {
+        synchronized(this) {
+            listeners.add(listener)
+        }
+    }
+
+    private fun updateProgress(status: String) {
+        synchronized(this) {
+            for (listener in listeners)
+                listener(status)
+        }
+    }
+
+    override fun doRegistration(info: RegistrationInfo): Promise<Unit, Exception> {
         return async() {
-            //generateKeys
-            progressListener("Generating keys")
-            ""
+            updateProgress("Generating keys")
         } map { keys ->
-            //send data to server
-            progressListener("Sending registration request to server")
+            updateProgress("Sending registration request to server")
+        } map {
+            updateProgress("Updating prekeys")
         }
     }
 }

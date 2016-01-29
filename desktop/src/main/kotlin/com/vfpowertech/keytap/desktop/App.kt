@@ -4,9 +4,16 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import com.vfpowertech.keytap.desktop.jfx.jsconsole.ConsoleMessageAdded
+import com.vfpowertech.keytap.desktop.services.DesktopPlatformInfoService
+import com.vfpowertech.keytap.ui.services.LoginService
 import com.vfpowertech.keytap.ui.services.RegistrationService
+import com.vfpowertech.keytap.ui.services.impl.LoginServiceImpl
+import com.vfpowertech.keytap.ui.services.impl.MessengerServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.RegistrationServiceImpl
 import com.vfpowertech.keytap.ui.services.jstojava.RegistrationServiceToJavaProxy
+import com.vfpowertech.keytap.ui.services.jstojava.PlatformInfoServiceToJavaProxy
+import com.vfpowertech.keytap.ui.services.jstojava.MessengerServiceToJavaProxy
+import com.vfpowertech.keytap.ui.services.jstojava.LoginServiceToJavaProxy
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.scene.web.WebEngine
@@ -57,6 +64,15 @@ class App : Application() {
 
         val registrationService = RegistrationServiceImpl()
         dispatcher.registerService("RegistrationService", RegistrationServiceToJavaProxy(registrationService,  dispatcher))
+
+        val platformInfoService = DesktopPlatformInfoService()
+        dispatcher.registerService("PlatformInfoService", PlatformInfoServiceToJavaProxy(platformInfoService, dispatcher))
+
+        val messengerService = MessengerServiceImpl()
+        dispatcher.registerService("MessengerService", MessengerServiceToJavaProxy(messengerService, dispatcher))
+
+        val loginService = LoginServiceImpl()
+        dispatcher.registerService("LoginService", LoginServiceToJavaProxy(loginService, dispatcher))
 
         engine.load(javaClass.getResource("/ui/index.html").toExternalForm())
 

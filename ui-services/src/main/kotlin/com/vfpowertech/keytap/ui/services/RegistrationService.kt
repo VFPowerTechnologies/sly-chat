@@ -9,5 +9,7 @@ import nl.komponents.kovenant.Promise
 @JSToJavaGenerate
 interface RegistrationService {
     /** Register a new account with the given info */
-    fun doRegistration(info: RegistrationInfo, progressListener: (String) -> Unit): Promise<Unit, Exception>
+    fun doRegistration(info: RegistrationInfo): Promise<Unit, Exception>
+
+    fun addListener(listener: (String) -> Unit)
 }
