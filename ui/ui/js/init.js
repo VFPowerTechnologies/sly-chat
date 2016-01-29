@@ -2,6 +2,7 @@ window.registrationService = new RegistrationService();
 window.platformInfoService = new PlatformInfoService();
 window.messengerService = new MessengerService();
 window.loginService = new LoginService();
+window.contactService = new ContactsService();
 
 function updateProgress(status) {
     document.getElementById('progress-info').textContent = status;
@@ -53,6 +54,23 @@ loginService.login('emailOrPhoneNumber', 'password').then(function () {
     console.error('Login failed');
 });
 
+contactService.getContacts().then(function (contacts) {
+    console.log('contacts: ' + contacts);
+}).catch(function (e) {
+    console.error('Unable to fetch contacts: ' + e);
+});
+
+contactService.addNewContact({
+    name: 'name',
+    email: 'email',
+    phoneNumber: '000-000-0000'
+}).then(function () {
+    console.log('Contact added');
+}).catch(function (e) {
+    console.error('Unable to add contact: ' + e);
+});
+
+//js-provided service
 window.navigationService = {
     goBack: function () {
         console.log('Back button pressed');
