@@ -39,7 +39,7 @@ class App : Application() {
                     val message = objectMapper.convertValue(root.get("params"), ConsoleMessageAdded::class.java).message
                     val level = message.level
                     val text = "[{}:{}] {}"
-                    val args = arrayOf(message.url, message.line, message.text)
+                    val args = arrayOf(message.url ?: "unknown", message.line, message.text)
                     if (level == "log")
                         jsLog.info(text, *args)
                     else if (level == "error")

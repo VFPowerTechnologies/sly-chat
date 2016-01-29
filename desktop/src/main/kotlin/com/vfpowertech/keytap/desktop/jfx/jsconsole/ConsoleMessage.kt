@@ -12,7 +12,7 @@ data class ConsoleMessage(
     @JsonProperty("type") val type: String,
     @JsonProperty("line") val line: Int,
     @JsonProperty("column") val column: Int,
-    @JsonProperty("url") val url: URL,
+    @JsonProperty("url") val url: URL?,
     @JsonProperty("repeatCount") val repeatCount: Int,
     //not given for errors
     @JsonProperty("parameters") val parameters: Array<ConsoleParameter>?,
