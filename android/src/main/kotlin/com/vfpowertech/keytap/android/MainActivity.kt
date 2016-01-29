@@ -2,15 +2,19 @@ package com.vfpowertech.keytap.android
 
 import android.app.Activity
 import android.os.Bundle
+import android.view.KeyEvent
 import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.keytap.android.services.AndroidPlatformInfoService
 import com.vfpowertech.keytap.ui.services.impl.LoginServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.MessengerServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.RegistrationServiceImpl
+import com.vfpowertech.keytap.ui.services.js.NavigationService
+import com.vfpowertech.keytap.ui.services.js.javatojs.NavigationServiceToJSProxy
 import com.vfpowertech.keytap.ui.services.jstojava.RegistrationServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.PlatformInfoServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.MessengerServiceToJavaProxy
@@ -18,6 +22,8 @@ import com.vfpowertech.keytap.ui.services.jstojava.LoginServiceToJavaProxy
 import org.slf4j.LoggerFactory
 
 class MainActivity : Activity() {
+    private var navigationService: NavigationService? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -42,7 +48,24 @@ class MainActivity : Activity() {
         val loginService = LoginServiceImpl()
         dispatcher.registerService("LoginService", LoginServiceToJavaProxy(loginService, dispatcher))
 
+        //TODO should init this only once the webview has loaded the page
+        webView.setWebViewClient(object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                navigationService = NavigationServiceToJSProxy(dispatcher)
+            }
+        })
+
         webView.loadUrl("file:///android_asset/ui/index.html")
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (navigationService != null) {
+                navigationService!!.goBack()
+                return true
+            }
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
     /** Capture console.log output into android's log */

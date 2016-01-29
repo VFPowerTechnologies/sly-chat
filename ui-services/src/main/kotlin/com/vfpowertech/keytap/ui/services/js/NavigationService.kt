@@ -9,5 +9,5 @@ import nl.komponents.kovenant.Promise
 @JSServiceName("navigationService")
 interface NavigationService {
     /** Perform a back action in the UI */
-    fun doBack(): Promise<Unit, Exception>
+    fun goBack(): Promise<Unit, Exception>
 }

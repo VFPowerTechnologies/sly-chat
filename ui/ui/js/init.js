@@ -52,3 +52,9 @@ loginService.login('emailOrPhoneNumber', 'password').then(function () {
 }).catch(function (e) {
     console.error('Login failed');
 });
+
+window.navigationService = {
+    goBack: function () {
+        console.log('Back button pressed');
+    }
+};
