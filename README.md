@@ -14,3 +14,5 @@ JVM service files end up under ui/ui/js/jvm-service/
 The project uses the [git flow](https://github.com/nvie/gitflow) development model. The `master` branch should always be the current stable version. Keep development in the `develop` and feature branches.
 
 The current development version always end in -SNAPSHOT.
+
+When naming feature branches, prefix the name with ui- if it pertains to the UI, core- otherwise (e.g. ui-registration and core-registration).
