@@ -20,6 +20,13 @@ interface MessengerService {
     fun addConversationStatusUpdateListener(listener: (UIConversation) -> Unit)
 
     /**
+     * Listener for when another user wants to add you as a contact, and the privacy settings require user confirmation.
+     *
+     * It's the responsibility of the UI to present the information to the user and then add the contact afterwards if the user wishes it.
+     */
+    fun addNewContactRequestListener(listener: (UIContactDetails) -> Unit)
+
+    /**
      * Retrieve the last n messages for the given contact starting backwards at the given index.
      *
      * Examples:

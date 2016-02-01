@@ -17,6 +17,7 @@ class MessengerServiceImpl(private val contactsService: ContactsService) : Messe
     private val newMessageListeners = ArrayList<(UIMessageInfo) -> Unit>()
     private val messageStatusUpdateListeners = ArrayList<(UIMessageInfo) -> Unit>()
     private val conversationInfoUpdateListeners = ArrayList<(UIConversation) -> Unit>()
+    private val contactRequestListeners = ArrayList<(UIContactDetails) -> Unit>()
 
     private val conversations = HashMap<UIContactDetails, UIConversationStatus>()
     private val messages = HashMap<UIContactDetails, MutableList<UIMessage>>()
@@ -76,6 +77,12 @@ class MessengerServiceImpl(private val contactsService: ContactsService) : Messe
         synchronized(this) {
             for (listener in messageStatusUpdateListeners)
                 listener(UIMessageInfo(contact, message))
+        }
+    }
+
+    override fun addNewContactRequestListener(listener: (UIContactDetails) -> Unit) {
+        synchronized(this) {
+            contactRequestListeners.add(listener)
         }
     }
 
