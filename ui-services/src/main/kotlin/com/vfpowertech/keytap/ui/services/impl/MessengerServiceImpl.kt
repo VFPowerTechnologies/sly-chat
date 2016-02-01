@@ -2,9 +2,9 @@ package com.vfpowertech.keytap.ui.services.impl
 
 import com.vfpowertech.keytap.ui.services.ContactsService
 import com.vfpowertech.keytap.ui.services.MessengerService
-import com.vfpowertech.keytap.ui.services.UIContactInfo
+import com.vfpowertech.keytap.ui.services.UIContactDetails
 import com.vfpowertech.keytap.ui.services.UIConversation
-import com.vfpowertech.keytap.ui.services.UIConversationInfo
+import com.vfpowertech.keytap.ui.services.UIConversationStatus
 import com.vfpowertech.keytap.ui.services.UIMessage
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
@@ -16,20 +16,21 @@ class MessengerServiceImpl(private val contactsService: ContactsService) : Messe
     private val timer = Timer(true)
     private val newMessageListeners = ArrayList<(UIMessageInfo) -> Unit>()
     private val messageStatusUpdateListeners = ArrayList<(UIMessageInfo) -> Unit>()
+    private val conversationInfoUpdateListeners = ArrayList<(UIConversation) -> Unit>()
 
-    private val conversations = HashMap<UIContactInfo, UIConversationInfo>()
-    private val messages = HashMap<UIContactInfo, MutableList<UIMessage>>()
+    private val conversations = HashMap<UIContactDetails, UIConversationStatus>()
+    private val messages = HashMap<UIContactDetails, MutableList<UIMessage>>()
 
-    private fun getConversationFor(contact: UIContactInfo): UIConversationInfo = synchronized(this) {
+    private fun getConversationFor(contact: UIContactDetails): UIConversationStatus = synchronized(this) {
         val maybeConvo = conversations[contact]
         if (maybeConvo != null)
             return maybeConvo
-        val convo = UIConversationInfo(0, null)
+        val convo = UIConversationStatus(false, 0, null)
         conversations[contact] = convo
         return convo
     }
 
-    private fun getMessagesFor(contact: UIContactInfo): MutableList<UIMessage> = synchronized(this) {
+    private fun getMessagesFor(contact: UIContactDetails): MutableList<UIMessage> = synchronized(this) {
         val maybeMessages = messages[contact]
         if (maybeMessages != null)
             return maybeMessages
@@ -44,11 +45,18 @@ class MessengerServiceImpl(private val contactsService: ContactsService) : Messe
         return list
     }
 
-    override fun sendMessageTo(contact: UIContactInfo, message: String): Promise<UIMessage, Exception> = synchronized(this) {
+    override fun addConversationStatusUpdateListener(listener: (UIConversation) -> Unit) {
+        synchronized(this) {
+           conversationInfoUpdateListeners.add(listener)
+        }
+    }
+
+    override fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception> = synchronized(this) {
         val messages = getMessagesFor(contact)
         val id = messages.size
         val newMessage = UIMessage(id, true, null, message)
-        messages.add(newMessage)
+        messages.add(0, newMessage)
+        println(messages)
         //simulate send delay
         timer.schedule(timerTask {
             val now = Date()
@@ -64,15 +72,21 @@ class MessengerServiceImpl(private val contactsService: ContactsService) : Messe
         }
     }
 
-    private fun notifyMessageStatusUpdateListeners(contact: UIContactInfo, message: UIMessage) {
+    private fun notifyMessageStatusUpdateListeners(contact: UIContactDetails, message: UIMessage) {
         synchronized(this) {
-            println("here")
             for (listener in messageStatusUpdateListeners)
                 listener(UIMessageInfo(contact, message))
         }
     }
 
-    override fun getLastMessagesFor(contact: UIContactInfo, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> = synchronized(this) {
+    private fun notifyConversationStatusUpdateListeners(conversation: UIConversation) {
+        synchronized(this) {
+            for (listener in conversationInfoUpdateListeners)
+                listener(conversation)
+        }
+    }
+
+    override fun getLastMessagesFor(contact: UIContactDetails, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> = synchronized(this) {
         //TODO startingAt/count
         val messages = getMessagesFor(contact)
         Promise.ofSuccess(messages)

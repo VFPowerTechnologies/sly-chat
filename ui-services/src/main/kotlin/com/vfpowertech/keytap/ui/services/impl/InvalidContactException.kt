@@ -1,6 +1,6 @@
 package com.vfpowertech.keytap.ui.services.impl
 
-import com.vfpowertech.keytap.ui.services.UIContactInfo
+import com.vfpowertech.keytap.ui.services.UIContactDetails
 
 /** The given contact info didn't correspond to any existing contacts. */
-class InvalidContactException(contact: UIContactInfo) : RuntimeException("No such contact: ${contact.name} (id=${contact.id})")
+class InvalidContactException(contact: UIContactDetails) : RuntimeException("No such contact: ${contact.name} (id=${contact.id})")

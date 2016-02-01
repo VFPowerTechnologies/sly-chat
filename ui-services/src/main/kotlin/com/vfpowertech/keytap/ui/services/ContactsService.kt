@@ -7,14 +7,14 @@ import nl.komponents.kovenant.Promise
 @JSToJavaGenerate
 interface ContactsService {
     /** Retrieve list of contacts. UIContact.id will not be null. */
-    fun getContacts(): Promise<List<UIContactInfo>, Exception>
+    fun getContacts(): Promise<List<UIContactDetails>, Exception>
 
     /**
      * Add a new contact with the given info. UIContact.id must be null.
      *
      * @throws IllegalArgumentException newContactInfo.id wasn't null.
      */
-    fun addNewContact(contactInfo: UIContactInfo): Promise<UIContactInfo, Exception>
+    fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception>
 
     /**
      * Updates the given contact with the given info. newContactInfo.id must not be null.
@@ -22,5 +22,5 @@ interface ContactsService {
      * @throws InvalidContactException Given Contact doesn't exist.
      * @throws IllegalArgumentException newContactInfo.id was null.
      */
-    fun updateContact(newContactInfo: UIContactInfo)
+    fun updateContact(newContactDetails: UIContactDetails)
 }

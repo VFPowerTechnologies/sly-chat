@@ -41,15 +41,15 @@ loginService.login('emailOrPhoneNumber', 'password').then(function () {
     console.error('Login failed');
 });
 
-function fetchMessagesForContact(contactInfo) {
-    return messengerService.getLastMessagesFor(contactInfo, 0, 100).then(function (messages) {
+function fetchMessagesForContact(contactDetails) {
+    return messengerService.getLastMessagesFor(contactDetails, 0, 100).then(function (messages) {
         console.log("Got messages");
         var messagesNode = document.getElementById('messages');
         for (var i=0; i < messages.length; ++i) {
             var msg = messages[i];
             var div = document.createElement('div');
             if (!msg.isSent)
-                div.textContent = msg.timestamp + ' [' + contactInfo.name + '] ' + msg.message;
+                div.textContent = msg.timestamp + ' [' + contactDetails.name + '] ' + msg.message;
             else
                 div.textContent = '> ' + msg.message;
             messagesNode.appendChild(div);
@@ -59,22 +59,22 @@ function fetchMessagesForContact(contactInfo) {
 
 messengerService.addMessageStatusUpdateListener(function (messageInfo) {
     var message = messageInfo.message;
-    var contactInfo = messageInfo.contact;
-    console.log('Message id=' + message.id + ' to ' + contactInfo.name + ' updated; timestamp=' + message.timestamp);
+    var contactDetails = messageInfo.contact;
+    console.log('Message id=' + message.id + ' to ' + contactDetails.name + ' updated; timestamp=' + message.timestamp);
 });
 
 contactService.getContacts().then(function (contacts) {
     console.log('contacts: ' + contacts);
 
-    contacts.forEach(function (contactInfo) {
-        fetchMessagesForContact(contactInfo).catch(function (e) {
-            console.error("Unable to fetch messages: " + e);
+    contacts.forEach(function (contactDetails) {
+        messengerService.sendMessageTo(contactDetails, "Hello").then(function (m) {
+            console.log('Sending message id=' + m.id + ' to ' + contactDetails.name);
         });
     });
 
-    contacts.forEach(function (contactInfo) {
-        messengerService.sendMessageTo(contactInfo, "Hello").then(function (m) {
-            console.log('Sending message id=' + m.id + ' to ' + contactInfo.name);
+    contacts.forEach(function (contactDetails) {
+        fetchMessagesForContact(contactDetails).catch(function (e) {
+            console.error("Unable to fetch messages: " + e);
         });
     });
 }).catch(function (e) {

@@ -8,13 +8,16 @@ import nl.komponents.kovenant.Promise
 @JSToJavaGenerate
 interface MessengerService {
     /** Attempt to send a message to a contact. */
-    fun sendMessageTo(contact: UIContactInfo, message: String): Promise<UIMessage, Exception>
+    fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception>
 
     /** Listener for new incoming messages. */
     fun addNewMessageListener(listener: (UIMessageInfo) -> Unit)
 
     /** Listener for sent message status updates. */
     fun addMessageStatusUpdateListener(listener: (UIMessageInfo) -> Unit)
+
+    /** Listener for conversation status updates. */
+    fun addConversationStatusUpdateListener(listener: (UIConversation) -> Unit)
 
     /**
      * Retrieve the last n messages for the given contact starting backwards at the given index.
@@ -30,7 +33,7 @@ interface MessengerService {
      *
      * @return Up to count messages
      */
-    fun getLastMessagesFor(contact: UIContactInfo, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception>
+    fun getLastMessagesFor(contact: UIContactDetails, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception>
 
     /**
      * @return Pairs of UIContact -> UIConversation for every available contact.
