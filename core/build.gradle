@@ -12,6 +12,10 @@ apply plugin: 'kotlin'
 
 sourceCompatibility = JavaVersion.VERSION_1_7
 
+test {
+    systemProperties['keytap.tests.doOnline'] = System.getProperty('keytap.tests.doOnline')
+}
+
 dependencies {
     compile "nl.komponents.kovenant:kovenant-core:$versions.kovenant"
     compile "nl.komponents.kovenant:kovenant-functional:$versions.kovenant"

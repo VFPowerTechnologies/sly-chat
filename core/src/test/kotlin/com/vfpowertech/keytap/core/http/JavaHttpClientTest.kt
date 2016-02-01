@@ -19,7 +19,7 @@ data class Post(
 
 class JavaHttpClientTest {
     private lateinit var client: HttpClient
-    private var doOnlineTests = true
+    private var doOnlineTests = System.getProperty("keytap.tests.doOnline", "false").toBoolean()
 
     @Before
     fun before() {
