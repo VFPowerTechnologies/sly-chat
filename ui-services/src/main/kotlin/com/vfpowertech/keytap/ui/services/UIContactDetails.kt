@@ -2,7 +2,10 @@ package com.vfpowertech.keytap.ui.services
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class UIContactInfo(
+/**
+ * Contact book details.
+ */
+data class UIContactDetails(
     @JsonProperty("id") val id: Int?,
     @JsonProperty("name") val name: String,
     @JsonProperty("phoneNumber") val phoneNumber: String?,

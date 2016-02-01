@@ -46,14 +46,14 @@ class MainActivity : Activity() {
         val platformInfoService = AndroidPlatformInfoService()
         dispatcher.registerService("PlatformInfoService", PlatformInfoServiceToJavaProxy(platformInfoService, dispatcher))
 
-        val messengerService = MessengerServiceImpl()
-        dispatcher.registerService("MessengerService", MessengerServiceToJavaProxy(messengerService, dispatcher))
-
         val loginService = LoginServiceImpl()
         dispatcher.registerService("LoginService", LoginServiceToJavaProxy(loginService, dispatcher))
 
         val contactsService = ContactsServiceImpl()
         dispatcher.registerService("ContactsService", ContactsServiceToJavaProxy(contactsService, dispatcher))
+
+        val messengerService = MessengerServiceImpl(contactsService)
+        dispatcher.registerService("MessengerService", MessengerServiceToJavaProxy(messengerService, dispatcher))
 
         val historyService = HistoryServiceImpl()
         dispatcher.registerService("HistoryService", HistoryServiceToJavaProxy(historyService, dispatcher))
