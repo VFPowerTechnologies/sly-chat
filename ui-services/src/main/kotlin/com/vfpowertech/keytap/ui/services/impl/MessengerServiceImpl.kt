@@ -86,6 +86,14 @@ class MessengerServiceImpl(private val contactsService: ContactsService) : Messe
         }
     }
 
+    override fun markConversationAsRead(contact: UIContactDetails): Promise<Unit, Exception> {
+        synchronized(this) {
+            val convo = getConversationFor(contact)
+            conversations[contact] = convo.copy(unreadMessageCount = 0)
+        }
+        return Promise.ofSuccess(Unit)
+    }
+
     override fun getLastMessagesFor(contact: UIContactDetails, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> = synchronized(this) {
         //TODO startingAt/count
         val messages = getMessagesFor(contact)

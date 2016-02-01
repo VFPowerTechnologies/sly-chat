@@ -39,5 +39,8 @@ interface MessengerService {
      * @return Pairs of UIContact -> UIConversation for every available contact.
      */
     fun getConversations(): Promise<List<UIConversation>, Exception>
+
+    /** Resets unread message count for the given contact's conversation. */
+    fun markConversationAsRead(contact: UIContactDetails): Promise<Unit, Exception>
 }
 
