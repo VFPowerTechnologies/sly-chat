@@ -35,29 +35,58 @@ platformInfoService.getInfo().then(function (platformInfo) {
     console.log('Running under os: ' + platformInfo.os)
 });
 
-messengerService.getLastMessagesFor("a", 0, 100).then(function (messages) {
-    console.log("Got messages");
-    var messagesNode = document.getElementById('messages');
-    for (var i=0; i < messages.length; ++i) {
-        var msg = messages[i];
-        var div = document.createElement('div');
-        div.textContent = msg.timestamp + ' [' + msg.contactName + '] ' + msg.message;
-        messagesNode.appendChild(div);
-    }
-}).catch(function (e) {
-    console.error("Unable to fetch messages: " + e);
-});
-
 loginService.login('emailOrPhoneNumber', 'password').then(function () {
     console.log('Login successful');
 }).catch(function (e) {
     console.error('Login failed');
 });
 
+function fetchMessagesForContact(contactInfo) {
+    return messengerService.getLastMessagesFor(contactInfo, 0, 100).then(function (messages) {
+        console.log("Got messages");
+        var messagesNode = document.getElementById('messages');
+        for (var i=0; i < messages.length; ++i) {
+            var msg = messages[i];
+            var div = document.createElement('div');
+            if (!msg.isSent)
+                div.textContent = msg.timestamp + ' [' + contactInfo.name + '] ' + msg.message;
+            else
+                div.textContent = '> ' + msg.message;
+            messagesNode.appendChild(div);
+        }
+    });
+}
+
+messengerService.addMessageStatusUpdateListener(function (messageInfo) {
+    var message = messageInfo.message;
+    var contactInfo = messageInfo.contact;
+    console.log('Message id=' + message.id + ' to ' + contactInfo.name + ' updated; timestamp=' + message.timestamp);
+});
+
 contactService.getContacts().then(function (contacts) {
     console.log('contacts: ' + contacts);
+
+    contacts.forEach(function (contactInfo) {
+        fetchMessagesForContact(contactInfo).catch(function (e) {
+            console.error("Unable to fetch messages: " + e);
+        });
+    });
+
+    contacts.forEach(function (contactInfo) {
+        messengerService.sendMessageTo(contactInfo, "Hello").then(function (m) {
+            console.log('Sending message id=' + m.id + ' to ' + contactInfo.name);
+        });
+    });
 }).catch(function (e) {
     console.error('Unable to fetch contacts: ' + e);
+});
+
+messengerService.getConversations().then(function (conversations) {
+    conversations.forEach(function (convo) {
+        console.log('Unread from ' + convo.contact.name + ': ' + convo.info.unreadMessageCount);
+    });
+}).catch(function (e) {
+    console.error('Unable to fetch conversations: ' + conversations);
 });
 
 contactService.addNewContact({
