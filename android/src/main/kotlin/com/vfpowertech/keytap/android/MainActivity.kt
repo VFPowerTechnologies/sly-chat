@@ -34,6 +34,7 @@ class MainActivity : Activity() {
 
         val webView = findViewById(R.id.webView) as WebView
         webView.settings.javaScriptEnabled = true
+        webView.settings.allowFileAccessFromFileURLs = true
 
         initJSLogging(webView)
 
