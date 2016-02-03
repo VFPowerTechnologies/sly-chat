@@ -11,6 +11,7 @@ import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.keytap.android.services.AndroidPlatformInfoService
 import com.vfpowertech.keytap.ui.services.impl.ContactsServiceImpl
+import com.vfpowertech.keytap.ui.services.impl.DevelServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.HistoryServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.LoginServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.MessengerServiceImpl
@@ -23,6 +24,7 @@ import com.vfpowertech.keytap.ui.services.jstojava.MessengerServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.LoginServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.ContactsServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.HistoryServiceToJavaProxy
+import com.vfpowertech.keytap.ui.services.jstojava.DevelServiceToJavaProxy
 import org.slf4j.LoggerFactory
 
 class MainActivity : Activity() {
@@ -58,6 +60,9 @@ class MainActivity : Activity() {
 
         val historyService = HistoryServiceImpl()
         dispatcher.registerService("HistoryService", HistoryServiceToJavaProxy(historyService, dispatcher))
+
+        val develService = DevelServiceImpl(messengerService)
+        dispatcher.registerService("DevelService", DevelServiceToJavaProxy(develService, dispatcher))
 
         //TODO should init this only once the webview has loaded the page
         webView.setWebViewClient(object : WebViewClient() {

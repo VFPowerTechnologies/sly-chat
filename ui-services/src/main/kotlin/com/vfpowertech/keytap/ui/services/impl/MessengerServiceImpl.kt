@@ -12,6 +12,11 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.concurrent.timerTask
 
+private fun nowTimestamp(): String {
+    val now = Date()
+    return SimpleDateFormat("yyyy-mm-dd HH:mm:ss").format(now)
+}
+
 class MessengerServiceImpl(private val contactsService: ContactsService) : MessengerService {
     private val timer = Timer(true)
     private val newMessageListeners = ArrayList<(UIMessageInfo) -> Unit>()
@@ -57,11 +62,9 @@ class MessengerServiceImpl(private val contactsService: ContactsService) : Messe
         val id = messages.size
         val newMessage = UIMessage(id, true, null, message)
         messages.add(0, newMessage)
-        println(messages)
         //simulate send delay
         timer.schedule(timerTask {
-            val now = Date()
-            val timestamp = SimpleDateFormat("yyyy-mm-dd HH:mm:ss").format(now)
+            val timestamp = nowTimestamp()
             notifyMessageStatusUpdateListeners(contact, newMessage.copy(timestamp = timestamp))
         }, 1000)
         return Promise.ofSuccess(newMessage)
@@ -71,6 +74,20 @@ class MessengerServiceImpl(private val contactsService: ContactsService) : Messe
         synchronized(this) {
             newMessageListeners.add(listener)
         }
+    }
+
+    fun receiveNewMessage(contact: UIContactDetails, messageText: String) {
+        val messages = getMessagesFor(contact)
+        val id = messages.size
+        val message = UIMessage(id, false, null, messageText)
+        val messageInfo = UIMessageInfo(contact, message)
+        messages.add(0, message)
+        notifyNewMessageListeners(messageInfo)
+    }
+
+    private fun notifyNewMessageListeners(messageInfo: UIMessageInfo) {
+        for (listener in newMessageListeners)
+            listener(messageInfo)
     }
 
     private fun notifyMessageStatusUpdateListeners(contact: UIContactDetails, message: UIMessage) {

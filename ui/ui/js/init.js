@@ -3,6 +3,7 @@ window.platformInfoService = new PlatformInfoService();
 window.messengerService = new MessengerService();
 window.loginService = new LoginService();
 window.contactService = new ContactsService();
+window.develService = new DevelService();
 
 function updateProgress(status) {
     document.getElementById('progress-info').textContent = status;
@@ -41,6 +42,12 @@ loginService.login('emailOrPhoneNumber', 'password').then(function () {
     console.error('Login failed');
 });
 
+messengerService.addNewMessageListener(function (messageInfo) {
+    var contact = messageInfo.contact;
+    var message = messageInfo.message;
+    console.log('New message from ' + contact.name + ': ' + message.message)
+});
+
 function fetchMessagesForContact(contactDetails) {
     return messengerService.getLastMessagesFor(contactDetails, 0, 100).then(function (messages) {
         console.log("Got messages");
@@ -69,6 +76,10 @@ contactService.getContacts().then(function (contacts) {
     contacts.forEach(function (contactDetails) {
         messengerService.sendMessageTo(contactDetails, "Hello").then(function (m) {
             console.log('Sending message id=' + m.id + ' to ' + contactDetails.name);
+        });
+
+        develService.receiveFakeMessage(contactDetails, "Fake").catch(function (e) {
+            console.log('receiveFakeMessage failed: ' + e);
         });
     });
 

@@ -8,6 +8,7 @@ import com.vfpowertech.keytap.desktop.services.DesktopPlatformInfoService
 import com.vfpowertech.keytap.ui.services.LoginService
 import com.vfpowertech.keytap.ui.services.RegistrationService
 import com.vfpowertech.keytap.ui.services.impl.ContactsServiceImpl
+import com.vfpowertech.keytap.ui.services.impl.DevelServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.HistoryServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.LoginServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.MessengerServiceImpl
@@ -18,6 +19,7 @@ import com.vfpowertech.keytap.ui.services.jstojava.MessengerServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.LoginServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.ContactsServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.HistoryServiceToJavaProxy
+import com.vfpowertech.keytap.ui.services.jstojava.DevelServiceToJavaProxy
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.scene.web.WebEngine
@@ -83,6 +85,9 @@ class App : Application() {
 
         val historyService = HistoryServiceImpl()
         dispatcher.registerService("HistoryService", HistoryServiceToJavaProxy(historyService, dispatcher))
+
+        val develService = DevelServiceImpl(messengerService)
+        dispatcher.registerService("DevelService", DevelServiceToJavaProxy(develService, dispatcher))
 
         engine.load(javaClass.getResource("/ui/index.html").toExternalForm())
 
