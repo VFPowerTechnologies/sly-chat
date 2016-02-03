@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <title>
+        Keytapp - Login
+    </title>
+    <meta content="IE=edge" http-equiv="x-ua-compatible">
+    <meta content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" name="viewport">
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <meta content="yes" name="apple-touch-fullscreen">
+    <link href='https://fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css'>
+    <link href="css/bootstrap.css" media="all" rel="stylesheet" type="text/css">
+    <link href="css/materialdesignicons.min.css" media="all" rel="stylesheet" type="text/css">
+    <link href="css/keyframes.css" rel="stylesheet" type="text/css">
+    <link href="css/materialize.min.css" rel="stylesheet" type="text/css">
+    <link href="css/style.css" rel="stylesheet" type="text/css">
+    <link href="css/internStyle.css" rel="stylesheet" type="text/css">
+    <script src="js/dispatcher.js"></script>
+    <script src="js/jvm-service/registration-service.js"></script>
+    <script src="js/jvm-service/platform-info-service.js"></script>
+    <script src="js/jvm-service/messenger-service.js"></script>
+    <script src="js/jvm-service/login-service.js"></script>
+    <script src="js/jvm-service/contacts-service.js"></script>
+    <script src="js/jvm-service/history-service.js"></script>
+    <script src="js/external-lib/jquery-2.2.0.min.js"></script>
+    <script src="js/external-lib/materialize.min.js"></script>
+    <script src="js/external-lib/jquery.smoothState.js"></script>
+    <script src="js/external-lib/initial.js"></script>
+    <script src="js/external-lib/parsley.min.js"></script>
+    <script src="js/internal/functions.js"></script>
+</head>
+<body>
+<div class="m-scene toolbar-inside main-content" id="main"> <!-- Page Container -->
+
+    <div class="navbar-fixed-top ">
+        <div class="navbar header-bar">
+            <span class="title">Login</span>
+        </div>
+    </div>
+
+    <!-- Page Content -->
+    <div class="snap-content main-content-body" id="content">
+
+        <!-- Main Content -->
+        <div class="scene_element signup scene_element--fadeinright row valign-wrapper">
+            <div class="valign col s12">
+                <div class="container">
+                    <div class="container white z-depth-2">
+                        <form id="registerForm" action="post">
+                            <div class="input-field col s12">
+                                <i class="mdi mdi-account-circle prefix"></i>
+                                <input class="validate" id="name" type="text" data-parsley-minlength="[4]" required>
+                                <label for="name">Name</label>
+                            </div>
+
+                            <div class="input-field col s12">
+                                <i class="mdi mdi-email prefix"></i>
+                                <input class="validate" id="email" type="email" required>
+                                <label for="email">Email</label>
+                            </div>
+
+                            <div class="input-field col s12">
+                                <i class="mdi mdi-phone prefix"></i>
+                                <input class="validate" id="phone" type="tel" required>
+                                <label for="phone">Phone Number</label>
+                            </div>
+
+                            <div class="input-field col s12">
+                                <i class="mdi mdi-lock prefix"></i>
+                                <input class="validate" id="password" type="password" data-parsley-minlength="[6]" required>
+                                <label for="password">Password</label>
+                            </div>
+                            <button id="registerBtn" type="submit" class="waves-effect waves-light btn-large primary-color fullwidth">Create Account</button>
+                            <span>Already have an account? <a class="primary-color-text nav-link" href="#" onclick="loadPage('index.html');">Sign In</a></span>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- End of Main Contents -->
+        <div id="blockui"></div>
+    </div> <!-- End of Page Content -->
+
+    <!-- Specific page javascript -->
+    <script src="js/internal/register.js"></script>
+
+</div> <!-- End of Page Container -->
+
+</body>
+</html>

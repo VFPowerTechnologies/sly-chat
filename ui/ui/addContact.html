@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <title>
+        Keytapp - Login
+    </title>
+    <meta content="IE=edge" http-equiv="x-ua-compatible">
+    <meta content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" name="viewport">
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <meta content="yes" name="apple-touch-fullscreen">
+    <link href='https://fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css'>
+    <link href="css/bootstrap.css" media="all" rel="stylesheet" type="text/css">
+    <link href="css/materialdesignicons.min.css" media="all" rel="stylesheet" type="text/css">
+    <link href="css/keyframes.css" rel="stylesheet" type="text/css">
+    <link href="css/materialize.min.css" rel="stylesheet" type="text/css">
+    <link href="css/style.css" rel="stylesheet" type="text/css">
+    <link href="css/internStyle.css" rel="stylesheet" type="text/css">
+    <script src="js/dispatcher.js"></script>
+    <script src="js/jvm-service/registration-service.js"></script>
+    <script src="js/jvm-service/platform-info-service.js"></script>
+    <script src="js/jvm-service/messenger-service.js"></script>
+    <script src="js/jvm-service/login-service.js"></script>
+    <script src="js/jvm-service/contacts-service.js"></script>
+    <script src="js/jvm-service/history-service.js"></script>
+    <script src="js/external-lib/jquery-2.2.0.min.js"></script>
+    <script src="js/external-lib/materialize.min.js"></script>
+    <script src="js/external-lib/jquery.smoothState.js"></script>
+    <script src="js/external-lib/initial.js"></script>
+    <script src="js/external-lib/parsley.min.js"></script>
+    <script src="js/internal/functions.js"></script>
+</head>
+<body>
+<div class="m-scene main-content" id="main"> <!-- Page Container -->
+
+    <div class="navbar-fixed-top container">
+        <div class="navbar header-bar">
+            <div class="open-left">
+                <a href="#" onclick="goBack();"><i class="mdi mdi-arrow-left"></i></a>
+            </div>
+            <span class="title">Add Contact</span>
+        </div>
+    </div>
+    <!-- Page Content -->
+    <div class="snap-content main-content-body" id="content">
+
+        <!-- Main Content -->
+        <div class="scene_element signup scene_element--fadeinright valign-wrapper row">
+            <div class="valign col s12">
+                <div class="container">
+                    <div class="container white z-depth-2">
+                        <form id="addContactForm" action="post">
+                            <div class="input-field col s12">
+                                <i class="mdi mdi-account-circle prefix"></i>
+                                <input class="validate" id="name" type="text" required data-parsley-minlength="[4]">
+                                <label for="name">Name</label>
+                            </div>
+                            <div class="input-field col s12">
+                                <i class="mdi mdi-account-circle prefix"></i>
+                                <input class="validate" id="phone" type="tel" required>
+                                <label for="phone">Phone number</label>
+                            </div>
+                            <div class="input-field col s12">
+                                <i class="mdi mdi-account-circle prefix"></i>
+                                <input class="validate" id="email" type="email" required>
+                                <label for="email">Email</label>
+                            </div>
+
+                            <button id="newContactBtn" type="submit" class="waves-effect waves-light btn-large primary-color fullwidth">Add Contact</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- End of Main Contents -->
+    <div id="blockui"></div>
+
+    <!-- Specific page javascript -->
+    <script src="js/internal/addContact.js"></script>
+
+</div> <!-- End of Page Content -->
+
+</body>
+</html>
