@@ -65,7 +65,10 @@ class MessengerServiceImpl(private val contactsService: ContactsService) : Messe
         //simulate send delay
         timer.schedule(timerTask {
             val timestamp = nowTimestamp()
-            notifyMessageStatusUpdateListeners(contact, newMessage.copy(timestamp = timestamp))
+            val withTimestamp = newMessage.copy(timestamp = timestamp)
+            val idx = messages.indexOf(newMessage)
+            messages[idx] = withTimestamp
+            notifyMessageStatusUpdateListeners(contact, withTimestamp)
         }, 1000)
         return Promise.ofSuccess(newMessage)
     }
@@ -77,17 +80,21 @@ class MessengerServiceImpl(private val contactsService: ContactsService) : Messe
     }
 
     fun receiveNewMessage(contact: UIContactDetails, messageText: String) {
-        val messages = getMessagesFor(contact)
-        val id = messages.size
-        val message = UIMessage(id, false, null, messageText)
-        val messageInfo = UIMessageInfo(contact, message)
-        messages.add(0, message)
-        notifyNewMessageListeners(messageInfo)
+        synchronized(this) {
+            val messages = getMessagesFor(contact)
+            val id = messages.size
+            val message = UIMessage(id, false, null, messageText)
+            val messageInfo = UIMessageInfo(contact, message)
+            messages.add(0, message)
+            notifyNewMessageListeners(messageInfo)
+        }
     }
 
     private fun notifyNewMessageListeners(messageInfo: UIMessageInfo) {
-        for (listener in newMessageListeners)
-            listener(messageInfo)
+        synchronized(this) {
+            for (listener in newMessageListeners)
+                listener(messageInfo)
+        }
     }
 
     private fun notifyMessageStatusUpdateListeners(contact: UIContactDetails, message: UIMessage) {
