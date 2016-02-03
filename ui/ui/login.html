@@ -32,11 +32,45 @@
 <body>
 <div class="m-scene toolbar-inside main-content" id="main"> <!-- Page Container -->
 
-  <!--Content goes here-->
-  <!--<h4>Loading content...</h4>-->
+  <div class="navbar-fixed-top">
+    <div class="navbar header-bar">
+        <span class="title">Login</span>
+    </div>
+  </div>
+
+  <!-- Page Content -->
+  <div class="snap-content main-content-body" id="content">
+
+    <!-- Main Content -->
+    <div class="scene_element signup scene_element--fadeinright valign-wrapper row">
+      <div class="valign col s12">
+        <div class="container">
+          <div class="container white z-depth-2">
+            <form id="loginForm" action="post">
+              <div class="input-field col s12">
+                <i class="mdi mdi-account-circle prefix"></i>
+                <input class="validate" id="login" type="text" required>
+                <label for="login">Phone number or Email</label>
+              </div>
+
+              <div class="input-field col s12" style="margin-bottom:20px;">
+                <i class="mdi mdi-lock prefix"></i>
+                <input class="validate" id="login-psw" type="password" required>
+                <label for="login-psw">Password</label>
+              </div>
+
+              <button id="loginBtn" type="submit" class="waves-effect waves-light btn-large primary-color fullwidth">Login</button>
+              <span>Don't have an account? <a class="primary-color-text" href="#" onclick="loadPage('register.html');">Sign Up</a></span>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div> <!-- End of Main Contents -->
+    <div id="blockui"></div>
+  </div> <!-- End of Page Content -->
 
   <!-- Specific page javascript -->
-  <script src="js/internal/index.js"></script>
+  <script src="js/internal/login.js"></script>
 
 </div> <!-- End of Page Container -->
 

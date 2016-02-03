@@ -30,15 +30,58 @@
   <script src="js/internal/functions.js"></script>
 </head>
 <body>
-<div class="m-scene toolbar-inside main-content" id="main"> <!-- Page Container -->
+<div class="m-scene main-content" id="main"> <!-- Page Container -->
+  <div class="navbar-fixed-top container">
+    <div class="navbar header-bar">
+      <div class="open-left">
+        <a href="#" onclick="goBack();"><i class="mdi mdi-arrow-left"></i></a>
+      </div>
+      <span id="contactNameTitle" class="title"></span>
+    </div>
+  </div>
 
-  <!--Content goes here-->
-  <!--<h4>Loading content...</h4>-->
+  <div class="navbar-fixed-bottom container">
+    <div class="navbar">
+      <div style="background: #fff; bottom: 0; left: 0; position: fixed; height: 80px; width: 100%;">
+        <form id="newMessageForm" action="post">
+          <div class="row" style="margin-left: 2px; margin-right: 2px;">
+            <div class="input-field col s9 l11" style="text-align: center;">
+              <input type="text" id="newMessageInput" name="newMessageInput">
+            </div>
+            <div class="input-field col s3 l1" style="line-height: 80px; text-align: center;">
+              <button id="submitNewMessage" class="btn btn-xs"><i class="mdi mdi-send"></i></button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page Content -->
+  <div class="snap-content main-content-body" id="content" style="padding-bottom: 40px;">
+
+    <!-- Main Content -->
+    <div class="scene_element scene_element--fadeinup">
+
+      <div class="container">
+        <div class="row">
+          <div class="col s12">
+            <div class="chat">
+              <ul id="messages">
+
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- End of Main Contents -->
+    <div id="blockui"></div>
+  </div> <!-- End of Page Content -->
 
   <!-- Specific page javascript -->
-  <script src="js/internal/index.js"></script>
+  <script src="js/internal/chat.js"></script>
 
 </div> <!-- End of Page Container -->
-
 </body>
 </html>
