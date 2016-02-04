@@ -46,6 +46,8 @@ class App : Application() {
                     val args = arrayOf(message.url ?: "unknown", message.line, message.text)
                     if (level == "log")
                         jsLog.info(text, *args)
+                    else if (level == "warning")
+                        jsLog.warn(text, *args)
                     else if (level == "error")
                         jsLog.error(text, *args)
                     else
