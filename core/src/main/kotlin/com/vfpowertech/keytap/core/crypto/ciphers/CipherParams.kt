@@ -1,4 +1,4 @@
-package com.vfpowertech.keytap.core.crypto
+package com.vfpowertech.keytap.core.crypto.ciphers
 
 /** Represents params for a cipher. */
 interface CipherParams {

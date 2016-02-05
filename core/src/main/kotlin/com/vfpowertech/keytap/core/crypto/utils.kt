@@ -1,8 +1,15 @@
 package com.vfpowertech.keytap.core.crypto
 
+import com.vfpowertech.keytap.core.crypto.axolotl.GeneratedPreKeys
+import com.vfpowertech.keytap.core.crypto.ciphers.AESGCMParams
+import com.vfpowertech.keytap.core.crypto.ciphers.CipherParams
+import com.vfpowertech.keytap.core.crypto.hashes.BCryptParams
+import com.vfpowertech.keytap.core.crypto.hashes.HashParams
+import com.vfpowertech.keytap.core.crypto.hashes.SHA256Params
 import com.vfpowertech.keytap.core.require
 import org.mindrot.jbcrypt.BCrypt
 import org.whispersystems.libaxolotl.IdentityKeyPair
+import org.whispersystems.libaxolotl.state.AxolotlStore
 import org.whispersystems.libaxolotl.util.KeyHelper
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -32,7 +39,9 @@ data class PasswordHash(val hash: ByteArray, val params: HashParams)
 
 /** Generates a hash for using the password as a symmetric encryption key. */
 fun hashPasswordForLocal(password: String): PasswordHash {
-    //we don't need to bother with a salt, as this wouldn't help local password cracking anyways
+    //use a proper hash since we need to do actually need to upload this remotely you idiot
+    //bcrypt with a diff salt works, since scrypt and pbkdf2 utilitize sha256 which is still easy to implement using a gpu
+    //although reusing the same algo for two diff
     val kdf = MessageDigest.getInstance("SHA256")
     kdf.update(password.toByteArray("utf8"))
     val hash = kdf.digest()
@@ -63,11 +72,7 @@ fun hashPasswordWithParams(password: String, params: HashParams): ByteArray = wh
 data class EncryptedData(val data: ByteArray, val params: CipherParams)
 
 /** Given a private key, uses a KDF to return a symmetric key of the given size */
-fun privateKeyToSymKey(privateKeyBytes: ByteArray, keySize: Int, params: CipherParams): ByteArray {
-    require(keySize > 0, "keySize must be > 0")
-    //TODO loosen restriction later based on CryptoParams.blockSize or something
-    require(keySize == 256, "keySize must be 256")
-
+fun privateKeyToSymKey(privateKeyBytes: ByteArray, params: HashParams): ByteArray {
     val kdf = MessageDigest.getInstance("SHA256")
     kdf.update(privateKeyBytes)
     return kdf.digest()
@@ -111,4 +116,22 @@ fun decryptData(key: SecretKey, ciphertext: ByteArray, params: CipherParams): By
         cipher.doFinal(ciphertext)
     }
     else -> throw IllegalArgumentException("Unknown cipher: ${params.algorithmName}")
+}
+
+/** Generate a new batch of prekeys */
+fun generatePrekeys(identityKeyPair: IdentityKeyPair, nextSignedPreKeyId: Int, nextPreKeyId: Int, count: Int): GeneratedPreKeys {
+    val signedPrekey = KeyHelper.generateSignedPreKey(identityKeyPair, nextSignedPreKeyId)
+    val oneTimePreKeys = KeyHelper.generatePreKeys(nextPreKeyId, count)
+    val lastResortPreKey = KeyHelper.generateLastResortPreKey()
+
+    return GeneratedPreKeys(signedPrekey, oneTimePreKeys, lastResortPreKey)
+}
+
+/** Add the prekeys into the given store */
+fun addPreKeysToStore(axolotlStore: AxolotlStore, generatedPreKeys: GeneratedPreKeys) {
+    axolotlStore.storeSignedPreKey(generatedPreKeys.signedPreKey.id, generatedPreKeys.signedPreKey)
+
+    for (k in generatedPreKeys.oneTimePreKeys)
+        axolotlStore.storePreKey(k.id, k)
+    axolotlStore.storePreKey(generatedPreKeys.lastResortPreKey.id, generatedPreKeys.lastResortPreKey)
 }

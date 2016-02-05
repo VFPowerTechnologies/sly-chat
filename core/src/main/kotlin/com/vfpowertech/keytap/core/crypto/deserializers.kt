@@ -1,5 +1,9 @@
 package com.vfpowertech.keytap.core.crypto
 
+import com.vfpowertech.keytap.core.crypto.ciphers.AESGCMParams
+import com.vfpowertech.keytap.core.crypto.ciphers.CipherParams
+import com.vfpowertech.keytap.core.crypto.hashes.BCryptParams
+import com.vfpowertech.keytap.core.crypto.hashes.HashParams
 import java.util.*
 
 abstract class Deserializers<T> {
@@ -13,12 +17,13 @@ abstract class Deserializers<T> {
         deserializers[algorithmName] = deserializer
     }
 
-    fun fromMap(algorithmName: String, params: Map<String, String>): T {
+    fun deserialize(serializedParams: SerializedCryptoParams): T {
+        val algorithmName = serializedParams.algorithmName
         val deserializer = deserializers[algorithmName]
         if (deserializer == null)
             throw IllegalArgumentException("Unsupported algorithm: $algorithmName")
 
-        return deserializer(params)
+        return deserializer(serializedParams.params)
     }
 
     abstract fun initSerializers()

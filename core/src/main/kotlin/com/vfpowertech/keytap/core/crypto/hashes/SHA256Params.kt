@@ -1,4 +1,7 @@
-package com.vfpowertech.keytap.core.crypto
+package com.vfpowertech.keytap.core.crypto.hashes
+
+import com.vfpowertech.keytap.core.crypto.hexify
+import com.vfpowertech.keytap.core.crypto.unhexify
 
 data class SHA256Params(
     val salt: ByteArray

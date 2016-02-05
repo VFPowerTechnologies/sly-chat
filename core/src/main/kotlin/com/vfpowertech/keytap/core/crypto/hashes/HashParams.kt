@@ -1,4 +1,4 @@
-package com.vfpowertech.keytap.core.crypto
+package com.vfpowertech.keytap.core.crypto.hashes
 
 /** Represents params for a hash function. */
 interface HashParams {
