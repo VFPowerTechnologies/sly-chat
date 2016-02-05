@@ -8,7 +8,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStreamReader
 
-/**Implementation of a KeyVaultStorage that stores its data in a json file on disk. */
+/** Implementation of a KeyVaultStorage that stores its data in a json file on disk. */
 class JsonFileKeyVaultStorage(val path: File) : KeyVaultStorage {
     private val objectMapper = ObjectMapper()
 
