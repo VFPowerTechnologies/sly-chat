@@ -3,6 +3,8 @@ document.getElementById("registerBtn").addEventListener("click", function(e){
     register();
 });
 
+document.getElementById("page-title").textContent = "Register";
+
 function register(){
     var validation = $("#registerForm").parsley({
         errorClass: "invalid",

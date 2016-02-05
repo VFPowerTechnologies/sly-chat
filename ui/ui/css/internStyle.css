@@ -19,7 +19,7 @@
     color: #fff;
 }
 
-.header-bar .title {
+#page-title {
     font-size: 22px;
     color: #fff;
     line-height: 56px;

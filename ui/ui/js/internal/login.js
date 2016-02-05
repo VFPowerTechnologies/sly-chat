@@ -3,6 +3,8 @@ document.getElementById('loginBtn').addEventListener("click", function(e){
     login();
 });
 
+document.getElementById("page-title").textContent = "Login";
+
 function login(){
     var validation = $("#loginForm").parsley({
         errorClass: "invalid",
@@ -17,6 +19,7 @@ function login(){
         var password = document.getElementById("login-psw").value;
 
         loginService.login(login, password).then(function () {
+            $(".menu-hidden").show();
             loadPage('contacts.html');
         }).catch(function (e) {
             console.log(e);

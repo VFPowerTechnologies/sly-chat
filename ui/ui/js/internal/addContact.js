@@ -1,6 +1,12 @@
-window.contactService = new ContactsService();
+$(function(){
+    $("#nav-menu-back").show();
+    $("#nav-menu-logout").hide();
+});
+
 
 var newContactBtn = document.getElementById("newContactBtn");
+
+document.getElementById("page-title").textContent = "Add Contact";
 
 newContactBtn.addEventListener("click", function(e){
     e.preventDefault();
@@ -26,7 +32,8 @@ function addContact(){
             email: email,
             phoneNumber: phone
         }).then(function () {
-            loadPage("contacts.html?flash-message=contactAdded");
+            KEYTAP.contacts.setContacts([]);
+            loadPage("contacts.html");
         }).catch(function (e) {
             console.error('Unable to add contact: ' + e);
         });
