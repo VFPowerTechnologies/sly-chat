@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.crypto.ciphers
 
+import com.vfpowertech.keytap.core.crypto.SerializedCryptoParams
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.unhexify
 import com.vfpowertech.keytap.core.require
@@ -15,11 +16,13 @@ data class AESGCMParams(
 
     override val algorithmName: String = "aes-gcm"
 
-    override fun serialize(): Map<String, String> {
-        return mapOf(
+    override val keyType: String = "AES"
+
+    override fun serialize(): SerializedCryptoParams {
+        return SerializedCryptoParams(algorithmName, mapOf(
             "iv" to iv.hexify(),
             "authTagLength" to authTagLength.toString()
-        )
+        ))
     }
 
     companion object {
