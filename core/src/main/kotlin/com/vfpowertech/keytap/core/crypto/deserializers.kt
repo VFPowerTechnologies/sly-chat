@@ -4,6 +4,7 @@ import com.vfpowertech.keytap.core.crypto.ciphers.AESGCMParams
 import com.vfpowertech.keytap.core.crypto.ciphers.CipherParams
 import com.vfpowertech.keytap.core.crypto.hashes.BCryptParams
 import com.vfpowertech.keytap.core.crypto.hashes.HashParams
+import com.vfpowertech.keytap.core.crypto.hashes.SHA256Params
 import java.util.*
 
 abstract class Deserializers<T> {
@@ -32,6 +33,7 @@ abstract class Deserializers<T> {
 object HashDeserializers : Deserializers<HashParams>() {
     override fun initSerializers() {
         registerDeserializer("bcrypt", { BCryptParams.deserialize(it) })
+        registerDeserializer("sha-256", { SHA256Params.deserialize(it) })
     }
 }
 
