@@ -25,7 +25,7 @@ fun String.unhexify(): ByteArray {
 
     val bytes = ByteArray(length / 2)
 
-    for (i in 0..length-1) {
+    for (i in 0..bytes.size-1) {
         val v = this.subSequence(i*2, (i*2)+2).toString()
         bytes[i] = Integer.parseInt(v, 16).toByte()
     }
@@ -33,30 +33,41 @@ fun String.unhexify(): ByteArray {
     return bytes
 }
 
+/** Default parameters for local data encryption. */
+fun defaultDataEncryptionParams(): CipherParams =
+    AESGCMParams(getIV(256), 128)
+
+//use a proper hash since we actually do need to upload this remotely you idiot
+//bcrypt with a diff salt works, since scrypt and pbkdf2 utilitize sha256 which is still easy to implement using a gpu
+//although reusing the same algo for two diff things leads to higher chance of a salt+password clash
+/** Default parameters for hashing a password into a key for decrypting the encrypted key pair. */
+fun defaultKeyPasswordHashParams(): HashParams {
+    val salt = ByteArray(256/8)
+    SecureRandom().nextBytes(salt)
+    return SHA256Params(salt)
+}
+
+fun defaultRemotePasswordHashParams(): HashParams {
+    //TODO calc this; 15 is too slow, 12 seems like a decent number time-wise
+    val cost = 12
+    val salt = BCrypt.gensalt(cost)
+    return BCryptParams(salt, cost)
+}
+
 fun generateKeyPair(): IdentityKeyPair = KeyHelper.generateIdentityKeyPair()
 
-data class PasswordHash(val hash: ByteArray, val params: HashParams)
+data class HashData(val hash: ByteArray, val params: HashParams)
 
 /** Generates a hash for using the password as a symmetric encryption key. */
-fun hashPasswordForLocal(password: String): PasswordHash {
-    //use a proper hash since we need to do actually need to upload this remotely you idiot
-    //bcrypt with a diff salt works, since scrypt and pbkdf2 utilitize sha256 which is still easy to implement using a gpu
-    //although reusing the same algo for two diff
-    val kdf = MessageDigest.getInstance("SHA256")
-    kdf.update(password.toByteArray("utf8"))
-    val hash = kdf.digest()
-    return PasswordHash(hash, SHA256Params(ByteArray(0)))
+fun hashPasswordForLocalWithDefaults(password: String): HashData {
+    val params = defaultKeyPasswordHashParams()
+    return HashData(hashDataWithParams(password.toByteArray("UTF-8"), params), params)
 }
 
 /** Used to generate a password hash for a new password during registration. Uses the current default algorithm. */
-fun hashPasswordForRemote(password: String): PasswordHash {
-    //TODO calc this
-    val cost = 20
-    val salt = BCrypt.gensalt(cost)
-    val params = BCryptParams(salt.toByteArray("ascii"), cost)
-    val hash = BCrypt.hashpw(password, salt)
-
-    return PasswordHash(hash.toByteArray("ascii"), params)
+fun hashPasswordForRemoteWithDefaults(password: String): HashData {
+    val params = defaultRemotePasswordHashParams()
+    return HashData(hashPasswordWithParams(password, params), params)
 }
 
 /**
@@ -65,18 +76,37 @@ fun hashPasswordForRemote(password: String): PasswordHash {
  * @throws IllegalArgumentException If the type of CryptoParams is unknown
  */
 fun hashPasswordWithParams(password: String, params: HashParams): ByteArray = when (params) {
-    is BCryptParams -> BCrypt.hashpw(password, params.salt.toString()).toByteArray("ascii")
-    else -> throw IllegalArgumentException("Unknown hash algorithm: ${params.algorithmName}")
+    is BCryptParams -> BCrypt.hashpw(password, params.salt).toByteArray("ascii")
+    else -> hashDataWithParams(password.toByteArray("UTF-8"), params)
+}
+
+/** Converts a private key for use as a symmetric key. Currently returns a 256bit key. */
+fun privateKeyToSymmetricKey(privateKeyBytes: ByteArray): HashData {
+    val params = SHA256Params(ByteArray(0))
+    return HashData(hashDataWithParams(privateKeyBytes, params), params)
+}
+
+fun hashDataWithParams(data: ByteArray, params: HashParams): ByteArray = when (params) {
+    is SHA256Params -> {
+        val kdf = MessageDigest.getInstance("SHA-256")
+        val salt = params.salt
+        val toHash = if (salt.size > 0) {
+            val buffer = ByteArray(data.size+salt.size)
+            System.arraycopy(data, 0, buffer, 0, data.size)
+            System.arraycopy(salt, 0, buffer, data.size, salt.size)
+            buffer
+        }
+        else
+            data
+
+        kdf.update(toHash)
+        kdf.digest()
+    }
+
+    else -> throw IllegalArgumentException("Unknown data hash algorithm: ${params.algorithmName}")
 }
 
 data class EncryptedData(val data: ByteArray, val params: CipherParams)
-
-/** Given a private key, uses a KDF to return a symmetric key of the given size */
-fun privateKeyToSymKey(privateKeyBytes: ByteArray, params: HashParams): ByteArray {
-    val kdf = MessageDigest.getInstance("SHA256")
-    kdf.update(privateKeyBytes)
-    return kdf.digest()
-}
 
 /** Return an IV of the given bit size. */
 fun getIV(bits: Int): ByteArray {
@@ -90,8 +120,7 @@ fun getIV(bits: Int): ByteArray {
 
 /** Encrypts data using the default settings. */
 fun encryptData(key: SecretKey, plaintext: ByteArray): EncryptedData {
-    val iv = getIV(256)
-    val params = AESGCMParams(iv, 128)
+    val params = defaultDataEncryptionParams()
     return encryptDataWithParams(key, plaintext, params)
 }
 
@@ -133,5 +162,30 @@ fun addPreKeysToStore(axolotlStore: AxolotlStore, generatedPreKeys: GeneratedPre
 
     for (k in generatedPreKeys.oneTimePreKeys)
         axolotlStore.storePreKey(k.id, k)
+
     axolotlStore.storePreKey(generatedPreKeys.lastResortPreKey.id, generatedPreKeys.lastResortPreKey)
+}
+
+/** Generates a new key vault for a new user. For use during registration. */
+fun generateNewKeyVault(password: String): KeyVault {
+    val identityKeyPair = generateKeyPair()
+    val keyPasswordHashInfo = hashPasswordForLocalWithDefaults(password)
+    //on signup, the client can choose the algo
+    //this can be updated later
+    val remotePasswordHashInfo = hashPasswordForRemoteWithDefaults(password)
+
+    val localEncryptionKeyInfo = privateKeyToSymmetricKey(identityKeyPair.privateKey.serialize())
+
+
+    return KeyVault(
+        identityKeyPair,
+        remotePasswordHashInfo.hash,
+        remotePasswordHashInfo.params,
+        keyPasswordHashInfo.hash,
+        keyPasswordHashInfo.params,
+        defaultDataEncryptionParams(),
+        localEncryptionKeyInfo.params,
+        localEncryptionKeyInfo.hash,
+        defaultDataEncryptionParams()
+    )
 }
