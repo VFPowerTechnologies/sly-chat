@@ -18,7 +18,6 @@ class RegistrationClient(private val serverBaseUrl: String, private val httpClie
         val jsonRequest = objectMapper.writeValueAsBytes(request)
 
         val resp = httpClient.postJSON(url, jsonRequest)
-        println("${resp.data}")
         return when (resp.responseCode) {
             200, 400 -> try {
                 objectMapper.readValue(resp.data, RegisterResponse::class.java)
