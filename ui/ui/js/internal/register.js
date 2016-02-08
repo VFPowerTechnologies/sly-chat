@@ -5,6 +5,8 @@ document.getElementById("registerBtn").addEventListener("click", function(e){
 
 document.getElementById("page-title").textContent = "Register";
 
+document.getElementById("name").focus();
+
 function register(){
     var validation = $("#registerForm").parsley({
         errorClass: "invalid",
@@ -34,6 +36,11 @@ function register(){
             var msg = 'Registration error: ' + e;
             console.error(msg);
             updateProgress(msg);
+        });
+
+        registrationPromise.catch(function(e) {
+            document.getElementById("register-error").innerHTML = "<li>Email is taken.</li>";
+            console.log("registration failed: " + e);
         });
     }
 }

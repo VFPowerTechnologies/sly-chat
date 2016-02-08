@@ -5,6 +5,8 @@ document.getElementById('loginBtn').addEventListener("click", function(e){
 
 document.getElementById("page-title").textContent = "Login";
 
+document.getElementById("login").focus();
+
 function login(){
     var validation = $("#loginForm").parsley({
         errorClass: "invalid",
@@ -22,8 +24,7 @@ function login(){
             $(".menu-hidden").show();
             loadPage('contacts.html');
         }).catch(function (e) {
-            console.log(e);
-            console.error('Login failed');
+            document.getElementById("login-error").innerHTML = "<li>Wrong email or password</li>";
         });
     }
 }
