@@ -3,7 +3,7 @@ package com.vfpowertech.keytap.core.crypto
 import com.vfpowertech.keytap.core.crypto.ciphers.CipherParams
 import com.vfpowertech.keytap.core.crypto.hashes.HashParams
 import org.whispersystems.libaxolotl.IdentityKeyPair
-import java.io.File
+import org.whispersystems.libaxolotl.ecc.DjbECPublicKey
 import javax.crypto.spec.SecretKeySpec
 
 /**
@@ -34,12 +34,23 @@ class KeyVault(
     val localDataEncryptionKey: ByteArray,
     val localDataEncryptionParams: CipherParams
 ) {
-    fun serialize(): SerializedKeyVault {
+    fun getEncryptedPrivateKey(): ByteArray {
         val key = SecretKeySpec(keyPasswordHash, keyPairCipherParams.keyType)
-        val encryptedKeyPair = encryptDataWithParams(key, identityKeyPair.serialize(), keyPairCipherParams)
+        return encryptDataWithParams(key, identityKeyPair.serialize(), keyPairCipherParams).data
+    }
+
+    /** Returns the public key encoded as a hex string. */
+    val fingerprint: String
+        get() {
+            val djePubKey = identityKeyPair.publicKey.publicKey as DjbECPublicKey
+            return djePubKey.publicKey.hexify()
+        }
+
+    fun serialize(): SerializedKeyVault {
+        val encryptedKeyPair = getEncryptedPrivateKey()
 
         return SerializedKeyVault(
-            encryptedKeyPair.data.hexify(),
+            encryptedKeyPair.hexify(),
             keyPasswordHashParams.serialize(),
             keyPairCipherParams.serialize(),
             privateKeyHashParams.serialize(),
