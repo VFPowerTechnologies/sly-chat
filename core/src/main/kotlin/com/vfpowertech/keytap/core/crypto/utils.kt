@@ -61,7 +61,7 @@ data class HashData(val hash: ByteArray, val params: HashParams)
 /** Generates a hash for using the password as a symmetric encryption key. */
 fun hashPasswordForLocalWithDefaults(password: String): HashData {
     val params = defaultKeyPasswordHashParams()
-    return HashData(hashDataWithParams(password.toByteArray("UTF-8"), params), params)
+    return HashData(hashDataWithParams(password.toByteArray(Charsets.UTF_8), params), params)
 }
 
 /** Used to generate a password hash for a new password during registration. Uses the current default algorithm. */
@@ -76,8 +76,8 @@ fun hashPasswordForRemoteWithDefaults(password: String): HashData {
  * @throws IllegalArgumentException If the type of CryptoParams is unknown
  */
 fun hashPasswordWithParams(password: String, params: HashParams): ByteArray = when (params) {
-    is BCryptParams -> BCrypt.hashpw(password, params.salt).toByteArray("ascii")
-    else -> hashDataWithParams(password.toByteArray("UTF-8"), params)
+    is BCryptParams -> BCrypt.hashpw(password, params.salt).toByteArray(Charsets.US_ASCII)
+    else -> hashDataWithParams(password.toByteArray(Charsets.UTF_8), params)
 }
 
 /** Converts a private key for use as a symmetric key. Currently returns a 256bit key. */
