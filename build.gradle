@@ -47,6 +47,7 @@ subprojects {
     project.afterEvaluate { p ->
         p.dependencies {
             compile "org.jetbrains.kotlin:kotlin-stdlib:$versions.kotlin"
+            testCompile "org.jetbrains.kotlin:kotlin-test:$versions.kotlin"
             testCompile "junit:junit:$versions.junit"
             testCompile "org.mockito:mockito-core:$versions.mockito"
         }
