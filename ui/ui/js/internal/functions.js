@@ -45,8 +45,7 @@ messengerService.addMessageStatusUpdateListener(function (messageInfo) {
     messageDiv = document.getElementById("message_" + messageInfo.message.id);
 
     if(messageDiv != null && messageInfo.message.sent == true){
-//        messageDiv.getElementsByClassName("timespan")[0].innerHTML = messageInfo.message.timestamp;// + '<i class="mdi mdi-checkbox-marked-circle pull-right"></i>';
-        messageDiv.getElementsByClassName("timespan")[0].innerHTML = timeSince(convertToDate(messageInfo.message.timestamp)) + " ago";// + '<i class="mdi mdi-checkbox-marked-circle pull-right"></i>';
+        messageDiv.getElementsByClassName("timespan")[0].innerHTML = messageInfo.message.timestamp;// + '<i class="mdi mdi-checkbox-marked-circle pull-right"></i>';
     }
 });
 
@@ -57,12 +56,7 @@ messengerService.addNewMessageListener(function (messageInfo) {
                 var newMessageNode = createMessageNode(messageInfo.message, messageInfo.contact.name);
                 messagesDiv.innerHTML += newMessageNode;
                 window.scrollTo(0,document.body.scrollHeight);
-            }else{
-                newMessageNotification(messageInfo);
             }
-        }
-        else{
-            newMessageNotification(messageInfo);
         }
 });
 
@@ -76,6 +70,7 @@ function goBack(){
 
 function pushHistory(){
     historyService.push(window.location.href).then(function(){
+
     }).catch(function(e){
         console.log(e);
     });
@@ -86,13 +81,13 @@ function loadPage(url){
     smoothState.load(url);
 }
 
-function createContactBlock(contact){
+function createContactBlock(contact, lastMessage){
     var contactBlock = "<a href='#' class='contact-link' id='contact_" + contact.id + "'><div class='contact'>";
     contactBlock += createAvatar(contact.name);
     contactBlock += "<span class='dot green'></span>";
     contactBlock += "<p>" + contact.name + "</p>";
-    contactBlock += "<span class='last_message'>last message...</span>";
-    contactBlock += "<span class='time'>1 min ago</span>";
+    contactBlock += "<span class='last_message'>" + lastMessage.message.substring(0, 40) + "...</span>";
+    contactBlock += "<span class='time'>" + lastMessage.timestamp + "</span>";
     contactBlock += "</div></a>";
 
     return contactBlock;
@@ -125,53 +120,6 @@ function submitNewMessage(){
             console.log(e);
         });
     }
-}
-
-function convertToDate(timeStamp){
-    var bits = timeStamp.split(/\D/);
-    return new Date(bits[0], --bits[1], bits[2], bits[3], bits[4], bits[5]);
-}
-
-function timeSince(date) {
-
-    var seconds = Math.floor((new Date() - date) / 1000);
-
-    var interval = Math.floor(seconds / 31536000);
-
-    if (interval > 1) {
-        return interval + " years";
-    }
-    interval = Math.floor(seconds / 2592000);
-    if (interval > 1) {
-        return interval + " months";
-    }
-    interval = Math.floor(seconds / 86400);
-    if (interval > 1) {
-        return interval + " days";
-    }
-    interval = Math.floor(seconds / 3600);
-    if (interval > 1) {
-        return interval + " hours";
-    }
-    interval = Math.floor(seconds / 60);
-    if (interval > 1) {
-        return interval + " minutes";
-    }
-    return Math.floor(seconds) + " seconds";
-}
-
-function newMessageNotification(messageInfo){
-    notif = document.createElement("li");
-    notif.innerHTML = "<a href='#'>New message received from " + messageInfo.contact.name + "</a>";
-    var container = document.getElementById("notificationContainer");
-    container.appendChild(notif);
-
-    notif.onclick = function(e){
-         e.preventDefault();
-         KEYTAP.contacts.setChatContact(messageInfo.contact.id);
-         console.log(KEYTAP.contacts.getChatContact.name);
-         smoothState.load("chat.html");
-    }.bind(messageInfo);
 }
 
 //Send a fake message to test receive message listener.

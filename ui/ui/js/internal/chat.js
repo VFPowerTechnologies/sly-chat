@@ -45,7 +45,7 @@ function createMessageNode(message, contactName){
     var timeSpan = document.createElement('span');
 
     if(message.timestamp != null){
-        timeSpan.textContent = timeSince(convertToDate(message.timestamp)) + " ago";
+        timeSpan.textContent = message.timestamp;
     }else{
         timeSpan.textContent = message.timestamp;
     }
