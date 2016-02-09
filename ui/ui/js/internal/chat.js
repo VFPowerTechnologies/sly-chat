@@ -3,13 +3,16 @@ $(function(){
     $("#nav-menu-logout").hide();
 });
 
+// Replace the title of the page
 document.getElementById("page-title").textContent = KEYTAP.contacts.getChatContact().name;
 
+// New messsage button listener
 document.getElementById("submitNewMessage").addEventListener("click", function(e){
     e.preventDefault();
     submitNewMessage();
 });
 
+// Retrieve the 100 last message for current contact
 messengerService.getLastMessagesFor(KEYTAP.contacts.getChatContact(), 0, 100).then(function (messages) {
     var messagesNode = document.getElementById('messages');
     var messagesHtml = "";
@@ -24,10 +27,9 @@ messengerService.getLastMessagesFor(KEYTAP.contacts.getChatContact(), 0, 100).th
     console.error("Unable to fetch messages: " + e);
 });
 
-
-
+// UI function to create message block
 function createMessageNode(message, contactName){
-    if(contactName == "me"){
+    if(message.sent == true){
         fromClass = "message-left";
     }
     else{
@@ -56,4 +58,21 @@ function createMessageNode(message, contactName){
     node += msgDiv.outerHTML + "</li>";
 
     return node;
+}
+
+// New message function
+function submitNewMessage(){
+    if(document.getElementById('newMessageInput').value != ""){
+        var messageInput = document.getElementById('newMessageInput');
+        var message = messageInput.value;
+
+        var messagesNode = document.getElementById('messages');
+        messengerService.sendMessageTo(KEYTAP.contacts.getChatContact(), message).then(function (messageDetails) {
+            messageInput.value = "";
+            messagesNode.innerHTML += createMessageNode(messageDetails, "me");
+            window.scrollTo(0,document.body.scrollHeight);
+        }).catch(function (e) {
+            console.log(e);
+        });
+    }
 }

@@ -1,46 +1,34 @@
 function Contacts() {
-    this.contacts = [];
-    this.lastMessage = [];
-};
-Contacts.prototype.setContacts = function(contacts){
-    this.contacts = contacts;
+    this.conversations = [];
     this.chatContact = null;
-}
-Contacts.prototype.getContacts = function(){
-    return this.contacts;
-}
-Contacts.prototype.getContact = function(id){
-    return this.contacts[id];
-}
-Contacts.prototype.fetchContact = function(){
-    var contactsPromise = contactService.getContacts();
-    contactsPromise.then(function(contacts){
-        contacts.forEach(function(contact){
-            this.contacts[contact.id] = contact;
-            this.fetchLastMessage(contact);
-        }.bind(this));
-    }.bind(this));
-}
+};
 
-Contacts.prototype.fetchLastMessage = function(contact){
-    messengerService.getLastMessagesFor(contact, 0, 1).then(function (messages) {
-        this.lastMessage[contact.id] = messages[0];
+Contacts.prototype.getContact = function(id){
+    return this.conversations[id].contact;
+};
+
+Contacts.prototype.fetchConverstations = function(){
+    var messengerPromise = messengerService.getConversations();
+    messengerPromise.then(function(conversations){
+        conversations.forEach(function(conversation){
+            this.conversations[conversation.contact.id] = conversation;
+        }.bind(this));
         this.showContacts();
-    }.bind(this)).catch(function (e) {
-        console.error("Unable to fetch last message: " + e);
+    }.bind(this)).catch(function(e){
+        console.log("Unable to fetch conversations: " + e);
     });
 }
 
 Contacts.prototype.displayContacts = function(){
-    if(this.contacts.length <= 0){
-        this.fetchContact();
+    if(this.conversations.length <= 0){
+        this.fetchConverstations();
     }
     else{
         this.showContacts();
     }
 }
 Contacts.prototype.setChatContact = function(id){
-    this.chatContact = this.contacts[id];
+    this.chatContact = this.conversations[id].contact;
 }
 Contacts.prototype.getChatContact = function(){
     return this.chatContact;
@@ -48,9 +36,10 @@ Contacts.prototype.getChatContact = function(){
 Contacts.prototype.showContacts = function(){
     contactList = document.getElementById("contactList");
     contactList.innerHTML = "";
-    this.contacts.forEach(function (contactDetails) {
-        contactList.innerHTML += createContactBlock(contactDetails, this.lastMessage[contactDetails.id]);
-    }.bind(this));
+
+    for(var i = 0; i < this.conversations.length; i++){
+        contactList.innerHTML += createContactBlock(this.conversations[i].contact, this.conversations[i].status);
+    }
 
     var links = document.getElementsByClassName("contact-link");
     for(var i = 0; i < links.length; i++){

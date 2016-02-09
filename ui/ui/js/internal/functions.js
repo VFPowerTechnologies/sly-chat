@@ -9,10 +9,11 @@ window.develService = new DevelService();
 
 KEYTAP.contacts = new Contacts();
 
-    $(function(){
-        'use strict';
-        var duration_CONSTANT = 250;
-        var options = {
+// SmoothState, makes only the main div reload on page load.
+$(function(){
+    'use strict';
+    var duration_CONSTANT = 250;
+    var options = {
         prefetch: true,
         cacheLength: 20,
         onStart: {
@@ -35,12 +36,7 @@ KEYTAP.contacts = new Contacts();
     window.smoothState = $('#main').smoothState(options).data('smoothState');
 });
 
-navigationService = {
-    goBack: function () {
-        goBack();
-    }
-};
-
+// Message update listener
 messengerService.addMessageStatusUpdateListener(function (messageInfo) {
     messageDiv = document.getElementById("message_" + messageInfo.message.id);
 
@@ -49,6 +45,7 @@ messengerService.addMessageStatusUpdateListener(function (messageInfo) {
     }
 });
 
+// New message listener
 messengerService.addNewMessageListener(function (messageInfo) {
         if(document.getElementById("page-title") != null && document.getElementById("page-title").textContent == messageInfo.contact.name){
             var messagesDiv = document.getElementById("messages");
@@ -60,6 +57,14 @@ messengerService.addNewMessageListener(function (messageInfo) {
         }
 });
 
+// Back button listener
+navigationService = {
+    goBack: function () {
+        goBack();
+    }
+};
+
+// Go back function
 function goBack(){
     historyService.pop().then(function(url){
         smoothState.load(url);
@@ -68,6 +73,7 @@ function goBack(){
     })
 }
 
+// Push the current location to the java side
 function pushHistory(){
     historyService.push(window.location.href).then(function(){
 
@@ -76,23 +82,53 @@ function pushHistory(){
     });
 }
 
+// Loads a page using smoothState and push the current url to history
 function loadPage(url){
     pushHistory();
     smoothState.load(url);
 }
 
-function createContactBlock(contact, lastMessage){
-    var contactBlock = "<a href='#' class='contact-link' id='contact_" + contact.id + "'><div class='contact'>";
+// UI function, creates contact
+function createContactBlock(contact, status){
+    if(status.lastMessage == null){
+        lastMessage = "";
+        timestamp = ""
+    }
+    else if(lastMessage.message.length > 40){
+        lastMessage = status.lastmessage.message.substring(0, 40) + "...";
+        timestamp = status.lastMessage.timestamp;
+    }
+    else{
+        lastMessage = status.lastMessage.message;
+        timestamp = status.lastMessage.timestamp;
+    }
+
+    if(status.online == true){
+        availableClass = "dot green";
+    }
+    else{
+        availableClass = "dot red";
+    }
+
+    if(status.unreadMessageCount < 1){
+        newMessageClass = "new-messages";
+    }
+    else{
+        newMessageClass = "";
+    }
+
+    var contactBlock = "<div class='contact-link " + newMessageClass + "' id='contact_" + contact.id + "'><div class='contact'>";
     contactBlock += createAvatar(contact.name);
-    contactBlock += "<span class='dot green'></span>";
+    contactBlock += "<span class='" + availableClass + "'></span>";
     contactBlock += "<p>" + contact.name + "</p>";
-    contactBlock += "<span class='last_message'>" + lastMessage.message.substring(0, 40) + "...</span>";
-    contactBlock += "<span class='time'>" + lastMessage.timestamp + "</span>";
-    contactBlock += "</div></a>";
+    contactBlock += "<span class='last_message'>" + lastMessage + "</span>";
+    contactBlock += "<span class='time'>" + timestamp + "</span>";
+    contactBlock += "</div></div>";
 
     return contactBlock;
 }
 
+// Create user avatar from first letter of name
 function createAvatar(name){
     var img = new Image();
     img.setAttribute('data-name', name);
@@ -104,22 +140,6 @@ function createAvatar(name){
     });
 
     return img.outerHTML;
-}
-
-function submitNewMessage(){
-    if(document.getElementById('newMessageInput').value != ""){
-        var messageInput = document.getElementById('newMessageInput');
-        var message = messageInput.value;
-
-        var messagesNode = document.getElementById('messages');
-        messengerService.sendMessageTo(KEYTAP.contacts.getChatContact(), message).then(function (messageDetails) {
-            messageInput.value = "";
-            messagesNode.innerHTML += createMessageNode(messageDetails, "me");
-            window.scrollTo(0,document.body.scrollHeight);
-        }).catch(function (e) {
-            console.log(e);
-        });
-    }
 }
 
 //Send a fake message to test receive message listener.

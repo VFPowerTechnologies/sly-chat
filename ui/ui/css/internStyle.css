@@ -29,3 +29,24 @@
 .main-content-body {
     top: 0;
 }
+
+.contact-link {
+    min-height: 73px;
+    border-radius: 5px;
+    padding-left: 5px;
+    padding-right: 5px;
+    cursor: pointer;
+    margin-bottom: 2px;
+}
+
+.new-messages {
+    background: #b1b1b1;
+}
+
+.new-messages p {
+    color: black;
+}
+
+.new-messages span {
+    color: #272727;
+}
