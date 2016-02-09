@@ -44,7 +44,6 @@ class PreKeyStorageClientTest {
     @Test
     fun `store should throw UnauthorizedException when receiving a 401 response`() {
         val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, keyVault, generatedPreKeys)
-        val response = PreKeyStoreResponse(true, null)
         val httpResponse = HttpResponse(401, HashMap(), "")
         val httpClient = mock<HttpClient>()
 
