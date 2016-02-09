@@ -3,6 +3,7 @@ $(function(){
     $("#nav-menu-logout").hide();
 });
 
+document.getElementById("name").focus();
 
 var newContactBtn = document.getElementById("newContactBtn");
 
