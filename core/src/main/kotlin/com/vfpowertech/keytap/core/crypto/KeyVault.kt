@@ -73,7 +73,6 @@ class KeyVault(
                 serialized.keyPasswordHashParams)
 
             val keyPasswordHash = hashPasswordWithParams(password, keyPasswordHashParams)
-            System.out.flush()
             val key = SecretKeySpec(keyPasswordHash, keyPairCipherParams.keyType)
 
             val decryptedKeyData = decryptData(key, encryptedKeyPairData.unhexify(), keyPairCipherParams)
