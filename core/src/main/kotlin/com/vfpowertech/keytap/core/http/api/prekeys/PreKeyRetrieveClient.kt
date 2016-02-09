@@ -23,9 +23,9 @@ class PreKeyRetrieveClient(private val serverBaseUrl: String, private val httpCl
 
         val resp = httpClient.get(url, params)
 
-        return when (resp.responseCode) {
+        return when (resp.code) {
             200, 400 -> try {
-                objectMapper.readValue<ApiResult<PreKeyRetrieveResponse>>(resp.data, typeRef<ApiResult<PreKeyRetrieveResponse>>())
+                objectMapper.readValue<ApiResult<PreKeyRetrieveResponse>>(resp.body, typeRef<ApiResult<PreKeyRetrieveResponse>>())
             }
             catch (e: JsonProcessingException) {
                 throw InvalidResponseBodyException(resp, e)

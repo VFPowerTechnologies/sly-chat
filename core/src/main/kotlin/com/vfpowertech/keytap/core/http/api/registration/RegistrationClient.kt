@@ -20,9 +20,9 @@ class RegistrationClient(private val serverBaseUrl: String, private val httpClie
         val jsonRequest = objectMapper.writeValueAsBytes(request)
 
         val resp = httpClient.postJSON(url, jsonRequest)
-        return when (resp.responseCode) {
+        return when (resp.code) {
             200, 400 -> try {
-                objectMapper.readValue<ApiResult<RegisterResponse>>(resp.data, typeRef<ApiResult<RegisterResponse>>())
+                objectMapper.readValue<ApiResult<RegisterResponse>>(resp.body, typeRef<ApiResult<RegisterResponse>>())
             }
             catch (e: JsonProcessingException) {
                 throw InvalidResponseBodyException(resp, e)

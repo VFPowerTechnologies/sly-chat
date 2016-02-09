@@ -19,9 +19,9 @@ class PreKeyStorageClient(private val serverBaseUrl: String, private val httpCli
 
         val resp = httpClient.postJSON(url, jsonRequest)
 
-        return when (resp.responseCode) {
+        return when (resp.code) {
             200, 400 -> try {
-                objectMapper.readValue<ApiResult<PreKeyStoreResponse>>(resp.data, typeRef<ApiResult<PreKeyStoreResponse>>())
+                objectMapper.readValue<ApiResult<PreKeyStoreResponse>>(resp.body, typeRef<ApiResult<PreKeyStoreResponse>>())
             }
             catch (e: JsonProcessingException) {
                 throw InvalidResponseBodyException(resp, e)
