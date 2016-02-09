@@ -11,7 +11,6 @@ import com.vfpowertech.keytap.core.http.api.UnexpectedResponseException
 class PreKeyRetrieveClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     fun retrieve(request: PreKeyRetrieveRequest): PreKeyRetrieveResponse {
         val objectMapper = ObjectMapper()
-        val jsonRequest = objectMapper.writeValueAsBytes(request)
 
         val params = listOf(
             "auth-token" to request.authToken,
