@@ -149,6 +149,10 @@ fun decryptData(key: SecretKey, ciphertext: ByteArray, params: CipherParams): By
 
 /** Generate a new batch of prekeys */
 fun generatePrekeys(identityKeyPair: IdentityKeyPair, nextSignedPreKeyId: Int, nextPreKeyId: Int, count: Int): GeneratedPreKeys {
+    require(nextSignedPreKeyId > 0, "nextSignedPreKeyId must be > 0")
+    require(nextPreKeyId > 0, "nextPreKeyId must be > 0")
+    require(count > 0, "count must be > 0")
+
     val signedPrekey = KeyHelper.generateSignedPreKey(identityKeyPair, nextSignedPreKeyId)
     val oneTimePreKeys = KeyHelper.generatePreKeys(nextPreKeyId, count)
     val lastResortPreKey = KeyHelper.generateLastResortPreKey()
