@@ -24,7 +24,10 @@ fun slurpInputStreamReader(reader: Reader, suggestedBufferSize: Int = 0): String
 
 fun lowercaseHeaders(headers: Map<String, List<String>>): Map<String, List<String>> =
     //headers actually have a null key containing the http response line
-    headers.mapKeys { e -> e.key?.toLowerCase() }
+    headers.mapKeys { e ->
+        @Suppress("UNNECESSARY_SAFE_CALL")
+        e.key?.toLowerCase()
+    }
 
 fun slurpStreamAndClose(inputStream: InputStream, suggestedBufferSize: Int): String =
     inputStream.use {
