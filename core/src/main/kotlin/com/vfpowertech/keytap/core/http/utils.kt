@@ -4,6 +4,9 @@ package com.vfpowertech.keytap.core.http
 import java.net.URLEncoder
 
 fun toQueryString(params: List<Pair<String, String>>): String {
+    if (params.isEmpty())
+        return ""
+
     val builder = StringBuilder()
 
     for ((k, v) in params) {
