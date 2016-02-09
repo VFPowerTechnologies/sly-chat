@@ -3,7 +3,6 @@ package com.vfpowertech.keytap.core.crypto
 import com.vfpowertech.keytap.core.crypto.ciphers.CipherParams
 import com.vfpowertech.keytap.core.crypto.hashes.HashParams
 import org.whispersystems.libaxolotl.IdentityKeyPair
-import org.whispersystems.libaxolotl.ecc.DjbECPublicKey
 import javax.crypto.spec.SecretKeySpec
 
 /**
@@ -42,8 +41,8 @@ class KeyVault(
     /** Returns the public key encoded as a hex string. */
     val fingerprint: String
         get() {
-            val djePubKey = identityKeyPair.publicKey.publicKey as DjbECPublicKey
-            return djePubKey.publicKey.hexify()
+            //this includes the prepended type byte
+            return identityKeyPair.publicKey.fingerprint.filterNot { it == ' ' }
         }
 
     fun serialize(): SerializedKeyVault {

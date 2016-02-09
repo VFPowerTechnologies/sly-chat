@@ -34,8 +34,7 @@ class PreKeyUtilsTest {
         val oneTimePreKey = preKeyBundle.oneTimePreKeys.first()
         val response = PreKeyRetrieveResponse(
             username,
-            //FIXME
-            "05" + keyVault.fingerprint,
+            keyVault.fingerprint,
             preKeyBundle.signedPreKey.serialize().hexify(),
             preKeyBundle.oneTimePreKeys.first().serialize().hexify()
         )
