@@ -1,8 +1,14 @@
+@file:JvmName("PreKeyUtils")
 package com.vfpowertech.keytap.core.http.api.prekeys
 
 import com.vfpowertech.keytap.core.crypto.KeyVault
 import com.vfpowertech.keytap.core.crypto.axolotl.GeneratedPreKeys
+import com.vfpowertech.keytap.core.crypto.axolotl.UserPreKeySet
 import com.vfpowertech.keytap.core.crypto.hexify
+import com.vfpowertech.keytap.core.crypto.unhexify
+import org.whispersystems.libaxolotl.IdentityKey
+import org.whispersystems.libaxolotl.state.PreKeyRecord
+import org.whispersystems.libaxolotl.state.SignedPreKeyRecord
 
 fun preKeyStorageRequestFromGeneratedPreKeys(
     authToken: String,
@@ -17,3 +23,10 @@ fun preKeyStorageRequestFromGeneratedPreKeys(
 
     return PreKeyStoreRequest(authToken, identityKey, signedPreKey, oneTimePreKeys, lastResortPreKey)
 }
+
+fun userPreKeySetFromRetrieveResponse(response: PreKeyRetrieveResponse): UserPreKeySet =
+    UserPreKeySet(
+        IdentityKey(response.identityKey.unhexify(), 0),
+        SignedPreKeyRecord(response.signedPreKey.unhexify()),
+        PreKeyRecord(response.preKey.unhexify())
+    )
