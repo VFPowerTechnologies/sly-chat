@@ -29,12 +29,13 @@ import org.slf4j.LoggerFactory
 
 class MainActivity : Activity() {
     private var navigationService: NavigationService? = null
+    private lateinit var webView: WebView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val webView = findViewById(R.id.webView) as WebView
+        webView = findViewById(R.id.webView) as WebView
         webView.settings.javaScriptEnabled = true
         webView.settings.allowFileAccessFromFileURLs = true
 
@@ -71,7 +72,18 @@ class MainActivity : Activity() {
             }
         })
 
-        webView.loadUrl("file:///android_asset/ui/index.html")
+        if (savedInstanceState == null)
+            webView.loadUrl("file:///android_asset/ui/index.html")
+    }
+
+    override fun onSaveInstanceState(outState: Bundle?) {
+        super.onSaveInstanceState(outState)
+        webView.saveState(outState)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
+        super.onRestoreInstanceState(savedInstanceState)
+        webView.restoreState(savedInstanceState)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
