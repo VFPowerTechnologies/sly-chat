@@ -31,8 +31,8 @@ class JavaHttpClientTest {
         Assume.assumeTrue(doOnlineTests)
 
         val response = client.get("http://www.google.com/")
-        assertEquals(200, response.responseCode)
-        assertTrue(response.data.length > 0)
+        assertEquals(200, response.code)
+        assertTrue(response.body.length > 0)
     }
 
     @Test
@@ -40,8 +40,8 @@ class JavaHttpClientTest {
         Assume.assumeTrue(doOnlineTests)
 
         val response = client.get("http://www.google.com/dfafadfa")
-        assertEquals(404, response.responseCode)
-        assertTrue(response.data.length > 0)
+        assertEquals(404, response.code)
+        assertTrue(response.body.length > 0)
     }
 
     @Test
@@ -53,9 +53,9 @@ class JavaHttpClientTest {
         val body = objectMapper.writeValueAsBytes(post)
 
         val response = client.postJSON("http://jsonplaceholder.typicode.com/posts", body)
-        assertEquals(201, response.responseCode)
+        assertEquals(201, response.code)
 
-        val returnedPost = objectMapper.readValue(response.data, Post::class.java)
+        val returnedPost = objectMapper.readValue(response.body, Post::class.java)
         assertEquals(post.copy(id = 101), returnedPost)
     }
 }

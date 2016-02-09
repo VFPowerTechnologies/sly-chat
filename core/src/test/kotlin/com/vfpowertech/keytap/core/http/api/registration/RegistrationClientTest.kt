@@ -7,6 +7,7 @@ import com.nhaarman.mockito_kotlin.whenever
 import com.vfpowertech.keytap.core.crypto.generateNewKeyVault
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
+import com.vfpowertech.keytap.core.http.api.ApiResult
 import com.vfpowertech.keytap.core.http.api.InvalidResponseBodyException
 import com.vfpowertech.keytap.core.http.api.ServerErrorException
 import com.vfpowertech.keytap.core.http.api.UnexpectedResponseException
@@ -25,7 +26,7 @@ class RegistrationClientTest {
     @Test
     fun `register should return a successful RegisterResponse when receiving a 200 response`() {
         val httpClient = mock<HttpClient>()
-        val registerResponse = RegisterResponse(true, null)
+        val registerResponse = ApiResult(null, RegisterResponse(true, null, null))
         val httpResponse = HttpResponse(200, mapOf(), objectMapper.writeValueAsString(registerResponse))
 
         whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)
@@ -40,7 +41,7 @@ class RegistrationClientTest {
     @Test
     fun `register should return a failed RegisterResponse when receiving a 400 response`() {
         val httpClient = mock<HttpClient>()
-        val registerResponse = RegisterResponse(false, null)
+        val registerResponse = ApiResult(null, RegisterResponse(false, null, null))
         val httpResponse = HttpResponse(400, mapOf(), objectMapper.writeValueAsString(registerResponse))
 
         whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)

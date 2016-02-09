@@ -8,6 +8,7 @@ import com.vfpowertech.keytap.core.crypto.generateNewKeyVault
 import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
+import com.vfpowertech.keytap.core.http.api.ApiResult
 import com.vfpowertech.keytap.core.http.api.UnauthorizedException
 import org.junit.Ignore
 import org.junit.Test
@@ -25,7 +26,7 @@ class PreKeyStorageClientTest {
     @Test
     fun `store should return a successful PreKeyStorageResponse when receiving a 200 response`() {
         val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, keyVault, generatedPreKeys)
-        val response = PreKeyStoreResponse(true, null)
+        val response = ApiResult(null, PreKeyStoreResponse(true, null))
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(response))
         val httpClient = mock<HttpClient>()
 
