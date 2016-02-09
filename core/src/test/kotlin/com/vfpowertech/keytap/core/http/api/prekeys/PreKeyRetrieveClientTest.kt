@@ -6,6 +6,7 @@ import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
+import com.vfpowertech.keytap.core.http.api.ApiResult
 import com.vfpowertech.keytap.core.http.api.UnauthorizedException
 import org.junit.Test
 import java.util.*
@@ -24,7 +25,7 @@ class PreKeyRetrieveClientTest {
         val signedPreKey = "cccc"
 
         val request = PreKeyRetrieveRequest(authToken, username)
-        val response = PreKeyRetrieveResponse(username, identityKey, signedPreKey, preKey)
+        val response = ApiResult(null, PreKeyRetrieveResponse(true, null, username, SerializedPreKeySet(identityKey, signedPreKey, preKey)))
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(response))
 
         val httpClient = mock<HttpClient>()

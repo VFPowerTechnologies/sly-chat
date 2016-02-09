@@ -24,9 +24,12 @@ fun preKeyStorageRequestFromGeneratedPreKeys(
     return PreKeyStoreRequest(authToken, identityKey, signedPreKey, oneTimePreKeys, lastResortPreKey)
 }
 
-fun userPreKeySetFromRetrieveResponse(response: PreKeyRetrieveResponse): UserPreKeySet =
-    UserPreKeySet(
-        IdentityKey(response.identityKey.unhexify(), 0),
-        SignedPreKeyRecord(response.signedPreKey.unhexify()),
-        PreKeyRecord(response.preKey.unhexify())
+fun userPreKeySetFromRetrieveResponse(response: PreKeyRetrieveResponse): UserPreKeySet? {
+    val keyData = response.keyData ?: return null
+
+    return UserPreKeySet(
+        IdentityKey(keyData.identityKey.unhexify(), 0),
+        SignedPreKeyRecord(keyData.signedPreKey.unhexify()),
+        PreKeyRecord(keyData.preKey.unhexify())
     )
+}

@@ -7,6 +7,7 @@ import com.vfpowertech.keytap.core.crypto.hexify
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class PreKeyUtilsTest {
@@ -33,15 +34,20 @@ class PreKeyUtilsTest {
         val signedPreKey = preKeyBundle.signedPreKey
         val oneTimePreKey = preKeyBundle.oneTimePreKeys.first()
         val response = PreKeyRetrieveResponse(
+            true,
+            null,
             username,
-            keyVault.fingerprint,
-            preKeyBundle.signedPreKey.serialize().hexify(),
-            preKeyBundle.oneTimePreKeys.first().serialize().hexify()
+            SerializedPreKeySet(
+                keyVault.fingerprint,
+                preKeyBundle.signedPreKey.serialize().hexify(),
+                preKeyBundle.oneTimePreKeys.first().serialize().hexify()
+            )
         )
 
         val expected = UserPreKeySet(keyVault.identityKeyPair.publicKey, signedPreKey, oneTimePreKey)
 
         val got = userPreKeySetFromRetrieveResponse(response)
-        assertKeySetEquals(expected, got)
+        assertNotNull(got)
+        assertKeySetEquals(expected, got!!)
     }
 }
