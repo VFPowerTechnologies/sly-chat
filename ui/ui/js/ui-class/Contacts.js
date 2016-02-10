@@ -7,6 +7,10 @@ Contacts.prototype.getContact = function(id){
     return this.conversations[id].contact;
 };
 
+Contacts.prototype.setContacts = function(contacts){
+    this.conversations = [];
+};
+
 Contacts.prototype.fetchConverstations = function(){
     var messengerPromise = messengerService.getConversations();
     messengerPromise.then(function(conversations){
