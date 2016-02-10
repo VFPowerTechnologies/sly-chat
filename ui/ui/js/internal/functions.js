@@ -110,7 +110,7 @@ function createContactBlock(contact, status){
         availableClass = "dot red";
     }
 
-    if(status.unreadMessageCount < 1){
+    if(status.unreadMessageCount > 0){
         newMessageClass = "new-messages";
     }
     else{
