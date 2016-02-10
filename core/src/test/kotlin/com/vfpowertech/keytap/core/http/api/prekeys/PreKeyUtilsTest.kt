@@ -34,7 +34,6 @@ class PreKeyUtilsTest {
         val signedPreKey = preKeyBundle.signedPreKey
         val oneTimePreKey = preKeyBundle.oneTimePreKeys.first()
         val response = PreKeyRetrieveResponse(
-            true,
             null,
             username,
             SerializedPreKeySet(

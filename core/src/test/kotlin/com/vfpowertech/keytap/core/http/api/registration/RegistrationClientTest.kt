@@ -26,7 +26,7 @@ class RegistrationClientTest {
     @Test
     fun `register should return a successful RegisterResponse when receiving a 200 response`() {
         val httpClient = mock<HttpClient>()
-        val registerResponse = ApiResult(null, RegisterResponse(true, null, null))
+        val registerResponse = ApiResult(null, RegisterResponse(null, null))
         val httpResponse = HttpResponse(200, mapOf(), objectMapper.writeValueAsString(registerResponse))
 
         whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)
@@ -41,7 +41,7 @@ class RegistrationClientTest {
     @Test
     fun `register should return a failed RegisterResponse when receiving a 400 response`() {
         val httpClient = mock<HttpClient>()
-        val registerResponse = ApiResult(null, RegisterResponse(false, null, null))
+        val registerResponse = ApiResult(null, RegisterResponse(null, null))
         val httpResponse = HttpResponse(400, mapOf(), objectMapper.writeValueAsString(registerResponse))
 
         whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)

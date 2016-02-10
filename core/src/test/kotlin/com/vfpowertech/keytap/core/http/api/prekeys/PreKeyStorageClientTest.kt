@@ -26,7 +26,7 @@ class PreKeyStorageClientTest {
     @Test
     fun `store should return a successful PreKeyStorageResponse when receiving a 200 response`() {
         val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, keyVault, generatedPreKeys)
-        val response = ApiResult(null, PreKeyStoreResponse(true, null))
+        val response = ApiResult(null, PreKeyStoreResponse(null))
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(response))
         val httpClient = mock<HttpClient>()
 

@@ -1,13 +1,10 @@
 package com.vfpowertech.keytap.core.http.api.prekeys
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 
 /** Lack of keyData indicates a non-registered user. */
 data class PreKeyRetrieveResponse(
-    @param:JsonProperty("successful")
-    @get:JsonProperty("successful")
-    val successful: Boolean,
-
     @param:JsonProperty("error-message")
     @get:JsonProperty("error-message")
     val errorMessage: String?,
@@ -19,4 +16,7 @@ data class PreKeyRetrieveResponse(
     @param:JsonProperty("key-data")
     @get:JsonProperty("key-data")
     val keyData: SerializedPreKeySet?
-)
+) {
+    @get:JsonIgnore
+    val isSuccess: Boolean = errorMessage == null
+}

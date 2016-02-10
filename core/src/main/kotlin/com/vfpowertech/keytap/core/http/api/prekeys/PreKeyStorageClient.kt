@@ -10,7 +10,7 @@ import com.vfpowertech.keytap.core.typeRef
 
 class PreKeyStorageClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     fun store(request: PreKeyStoreRequest): ApiResult<PreKeyStoreResponse> {
-        val url = "$serverBaseUrl/store"
+        val url = "$serverBaseUrl/v1/store"
 
         val objectMapper = ObjectMapper()
         val jsonRequest = objectMapper.writeValueAsBytes(request)

@@ -9,7 +9,7 @@ import com.vfpowertech.keytap.core.http.api.throwApiException
 import com.vfpowertech.keytap.core.typeRef
 
 class AuthenticationClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
-    private val url = "$serverBaseUrl/login"
+    private val url = "$serverBaseUrl/v1/login"
     private val objectMapper = ObjectMapper()
 
     fun getParams(username: String): ApiResult<AuthenticationParamsResponse> {
