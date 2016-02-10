@@ -13,7 +13,7 @@ import com.vfpowertech.keytap.core.typeRef
  */
 class RegistrationClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     fun register(request: RegisterRequest): ApiResult<RegisterResponse> {
-        val url = "$serverBaseUrl/register"
+        val url = "$serverBaseUrl/v1/register"
 
         val objectMapper = ObjectMapper()
         val jsonRequest = objectMapper.writeValueAsBytes(request)

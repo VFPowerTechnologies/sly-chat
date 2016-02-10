@@ -17,7 +17,7 @@ class PreKeyRetrieveClient(private val serverBaseUrl: String, private val httpCl
             "username" to request.username
         )
 
-        val url = "$serverBaseUrl/retrieve"
+        val url = "$serverBaseUrl/v1/retrieve"
 
         val resp = httpClient.get(url, params)
 
