@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.http.api.authentication
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.vfpowertech.keytap.core.crypto.SerializedCryptoParams
 
@@ -14,10 +15,6 @@ data class AuthenticationParams(
 )
 
 data class AuthenticationParamsResponse(
-    @param:JsonProperty("successful")
-    @get:JsonProperty("successful")
-    val successful: Boolean,
-
     @param:JsonProperty("error-message")
     @get:JsonProperty("error-message")
     val errorMessage: String?,
@@ -25,4 +22,7 @@ data class AuthenticationParamsResponse(
     @param:JsonProperty("params")
     @get:JsonProperty("params")
     val params: AuthenticationParams?
-)
+) {
+    @get:JsonIgnore
+    val isSuccess: Boolean = errorMessage == null
+}
