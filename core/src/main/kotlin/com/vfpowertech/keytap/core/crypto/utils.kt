@@ -76,7 +76,12 @@ fun hashPasswordForRemoteWithDefaults(password: String): HashData {
  * @throws IllegalArgumentException If the type of CryptoParams is unknown
  */
 fun hashPasswordWithParams(password: String, params: HashParams): ByteArray = when (params) {
-    is BCryptParams -> BCrypt.hashpw(password, params.salt).toByteArray(Charsets.US_ASCII)
+    is BCryptParams -> {
+        //just grab the hash, even if it's base64
+        val s = BCrypt.hashpw(password, params.salt)
+        val hash = s.substring(s.length-31, s.length)
+        hash.toByteArray(Charsets.US_ASCII)
+    }
     else -> hashDataWithParams(password.toByteArray(Charsets.UTF_8), params)
 }
 
