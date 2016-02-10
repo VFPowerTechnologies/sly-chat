@@ -5,9 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.api.ApiResult
 import com.vfpowertech.keytap.core.http.api.InvalidResponseBodyException
-import com.vfpowertech.keytap.core.http.api.ServerErrorException
-import com.vfpowertech.keytap.core.http.api.UnauthorizedException
-import com.vfpowertech.keytap.core.http.api.UnexpectedResponseException
+import com.vfpowertech.keytap.core.http.api.throwApiException
 import com.vfpowertech.keytap.core.typeRef
 
 class PreKeyStorageClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
@@ -26,9 +24,7 @@ class PreKeyStorageClient(private val serverBaseUrl: String, private val httpCli
             catch (e: JsonProcessingException) {
                 throw InvalidResponseBodyException(resp, e)
             }
-            401 -> throw UnauthorizedException(resp)
-            in 500..599 -> throw ServerErrorException(resp)
-            else -> throw UnexpectedResponseException(resp)
+            else -> throwApiException(resp)
         }
     }
 }

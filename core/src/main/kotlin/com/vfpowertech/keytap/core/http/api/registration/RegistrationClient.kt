@@ -5,8 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.api.ApiResult
 import com.vfpowertech.keytap.core.http.api.InvalidResponseBodyException
-import com.vfpowertech.keytap.core.http.api.ServerErrorException
-import com.vfpowertech.keytap.core.http.api.UnexpectedResponseException
+import com.vfpowertech.keytap.core.http.api.throwApiException
 import com.vfpowertech.keytap.core.typeRef
 
 /**
@@ -27,8 +26,7 @@ class RegistrationClient(private val serverBaseUrl: String, private val httpClie
             catch (e: JsonProcessingException) {
                 throw InvalidResponseBodyException(resp, e)
             }
-            in 500..599 -> throw ServerErrorException(resp)
-            else -> throw UnexpectedResponseException(resp)
+            else -> throwApiException(resp)
         }
     }
 }
