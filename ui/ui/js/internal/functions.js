@@ -1,4 +1,3 @@
-var KEYTAP = KEYTAP || {};
 window.registrationService = new RegistrationService();
 window.platformInfoService = new PlatformInfoService();
 window.messengerService = new MessengerService();
@@ -7,7 +6,16 @@ window.contactService = new ContactsService();
 window.historyService = new HistoryService();
 window.develService = new DevelService();
 
-KEYTAP.contacts = new Contacts();
+// Create application namespace.
+var KEYTAP = KEYTAP || {};
+
+KEYTAP.contactModel = new ContactModel();
+KEYTAP.contactController = new ContactController(KEYTAP.contactModel);
+
+KEYTAP.chatModel = new ChatModel();
+KEYTAP.chatController = new ChatController(KEYTAP.chatModel, KEYTAP.contactController);
+KEYTAP.chatController.addMessageUpdateListener();
+KEYTAP.chatController.addNewMessageListener();
 
 // SmoothState, makes only the main div reload on page load.
 $(function(){
@@ -34,37 +42,6 @@ $(function(){
     };
 
     window.smoothState = $('#main').smoothState(options).data('smoothState');
-});
-
-// Message update listener
-messengerService.addMessageStatusUpdateListener(function (messageInfo) {
-    messageDiv = document.getElementById("message_" + messageInfo.message.id);
-
-    if(messageDiv != null && messageInfo.message.sent == true){
-        messageDiv.getElementsByClassName("timespan")[0].innerHTML = messageInfo.message.timestamp;// + '<i class="mdi mdi-checkbox-marked-circle pull-right"></i>';
-    }
-});
-
-// New message listener
-messengerService.addNewMessageListener(function (messageInfo) {
-    if(document.getElementById("page-title") != null && document.getElementById("page-title").textContent == messageInfo.contact.name){
-        var messagesDiv = document.getElementById("messages");
-        if(messagesDiv != null){
-            var newMessageNode = createMessageNode(messageInfo.message, messageInfo.contact.name);
-            messagesDiv.innerHTML += newMessageNode;
-            window.scrollTo(0,document.body.scrollHeight);
-        }
-    }
-    else if(document.getElementById("contact_" + messageInfo.contact.id) != null){
-        var contactBlock = document.getElementById("contact_" + messageInfo.contact.id);
-        contactBlock.className = contactBlock.className.replace("new-messages", "");
-        contactBlock.className += " new-messages";
-
-        var newBadge = "<span class='pull-right label label-warning'>" + "new" + "</span>";
-        if(contactBlock.innerHTML.indexOf(newBadge) <= -1){
-            contactBlock.innerHTML += newBadge;
-        }
-    }
 });
 
 // Back button listener
@@ -98,68 +75,11 @@ function loadPage(url){
     smoothState.load(url);
 }
 
-// UI function, creates contact
-function createContactBlock(contact, status){
-    var lastMessage, timestamp, availableClass, newMessageClass, newBadge;
-    if(status.lastMessage == null){
-        lastMessage = "";
-        timestamp = ""
-    }
-    else if(lastMessage.message.length > 40){
-        lastMessage = status.lastmessage.message.substring(0, 40) + "...";
-        timestamp = status.lastMessage.timestamp;
-    }
-    else{
-        lastMessage = status.lastMessage.message;
-        timestamp = status.lastMessage.timestamp;
-    }
-
-    if(status.online == true){
-        availableClass = "dot green";
-    }
-    else{
-        availableClass = "dot red";
-    }
-
-    if(status.unreadMessageCount > 0){
-        newMessageClass = "new-messages";
-        newBadge = "<span class='pull-right label label-warning'>" + "new" + "</span>";
-    }
-    else{
-        newMessageClass = "";
-        newBadge = "";
-    }
-
-    var contactBlock = "<div class='contact-link " + newMessageClass + "' id='contact_" + contact.id + "'><div class='contact'>";
-    contactBlock += createAvatar(contact.name);
-    contactBlock += "<span class='" + availableClass + "'></span>";
-    contactBlock += "<p>" + contact.name + "</p>";
-    contactBlock += "<span class='last_message'>" + lastMessage + "</span>";
-    contactBlock += "<span class='time'>" + timestamp + "</span>";
-    contactBlock += "</div>" + newBadge + "</div>";
-
-    return contactBlock;
-}
-
-// Create user avatar from first letter of name
-function createAvatar(name){
-    var img = new Image();
-    img.setAttribute('data-name', name);
-    img.setAttribute('class', 'avatarCircle');
-
-    $(img).initial({
-        textColor: '#000000',
-        seed: 0
-    });
-
-    return img.outerHTML;
-}
-
 //Send a fake message to test receive message listener.
 $(document).on("click", '#sendFakeMessage', function(e){
     e.preventDefault();
 
-    develService.receiveFakeMessage(KEYTAP.contacts.getContact(0), "Fake").catch(function (e) {
+    develService.receiveFakeMessage(KEYTAP.contactController.getContact(0), "Fake").catch(function (e) {
         console.log('receiveFakeMessage failed: ' + e);
     });
 });
