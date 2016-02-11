@@ -1,10 +1,11 @@
 package com.vfpowertech.keytap.ui.services.impl
 
 import com.vfpowertech.keytap.ui.services.RegistrationInfo
+import com.vfpowertech.keytap.ui.services.RegistrationResult
 import com.vfpowertech.keytap.ui.services.RegistrationService
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.async
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.task
 import java.util.*
 
 class RegistrationServiceImpl() : RegistrationService {
@@ -23,13 +24,14 @@ class RegistrationServiceImpl() : RegistrationService {
         }
     }
 
-    override fun doRegistration(info: RegistrationInfo): Promise<Unit, Exception> {
-        return async() {
+    override fun doRegistration(info: RegistrationInfo): Promise<RegistrationResult, Exception> {
+        return task {
             updateProgress("Generating keys")
         } map { keys ->
             updateProgress("Sending registration request to server")
         } map {
             updateProgress("Updating prekeys")
+            RegistrationResult(true, null, null)
         }
     }
 }
