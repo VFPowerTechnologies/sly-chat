@@ -16,7 +16,7 @@ document.getElementById("submitNewMessage").addEventListener("click", function(e
 messengerService.getLastMessagesFor(KEYTAP.contacts.getChatContact(), 0, 100).then(function (messages) {
     var messagesNode = document.getElementById('messages');
     var messagesHtml = "";
-    for (var i=0; i < messages.length; ++i) {
+    for (var i = messages.length - 1; i >= 0; --i) {
         messagesHtml += createMessageNode(messages[i], KEYTAP.contacts.getChatContact().name);
     }
     if(messagesHtml != ""){
