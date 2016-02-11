@@ -1,7 +1,7 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.vfpowertech.keytap.core.crypto.axolotl.GeneratedPreKeys
-import com.vfpowertech.keytap.core.persistence.KeyPersistenceManager
+import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
 import com.vfpowertech.keytap.core.persistence.PreKeyIds
 import nl.komponents.kovenant.Promise
 import org.whispersystems.libaxolotl.state.PreKeyRecord
@@ -11,7 +11,7 @@ import org.whispersystems.libaxolotl.state.SignedPreKeyRecord
 //for the db, we also can't control cipher params anyways
 //for storing files, the iv would be per-block (no chaining blocks else we can't provide seek; is this an issue?)
 
-class SQLiteKeyPersistenceManager(private val sqlitePersistenceManager: SQLitePersistenceManager) : KeyPersistenceManager {
+class SQLitePreKeyPersistenceManager(private val sqlitePersistenceManager: SQLitePersistenceManager) : PreKeyPersistenceManager {
     private inline fun <T> getPreKey(tableName: String, id: Int, crossinline constructor: (ByteArray) -> T): Promise<T?, Exception> =
         sqlitePersistenceManager.runQuery { connection ->
             connection.prepare("SELECT serialized FROM $tableName WHERE id=?").use { stmt ->

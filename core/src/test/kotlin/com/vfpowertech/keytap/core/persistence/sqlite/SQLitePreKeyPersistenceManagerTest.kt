@@ -13,12 +13,12 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class SQLiteKeyPersistenceManagerTest {
+class SQLitePreKeyPersistenceManagerTest {
     companion object {
         @JvmStatic
         @BeforeClass
         fun loadLibrary() {
-            SQLiteKeyPersistenceManager::class.java.loadSharedLibFromResource("sqlite4java-linux-amd64-1.0.392")
+            SQLitePreKeyPersistenceManager::class.java.loadSharedLibFromResource("sqlite4java-linux-amd64-1.0.392")
             SQLite.loadLibrary()
         }
     }
@@ -26,13 +26,13 @@ class SQLiteKeyPersistenceManagerTest {
 
     val keyVault = generateNewKeyVault("test")
     lateinit var persistenceManager: SQLitePersistenceManager
-    lateinit var keyPersistenceManager: SQLiteKeyPersistenceManager
+    lateinit var keyPersistenceManager: SQLitePreKeyPersistenceManager
 
     @Before
     fun before() {
         persistenceManager = SQLitePersistenceManager(null, ByteArray(0), null)
         persistenceManager.init()
-        keyPersistenceManager = SQLiteKeyPersistenceManager(persistenceManager)
+        keyPersistenceManager = SQLitePreKeyPersistenceManager(persistenceManager)
     }
 
     @After
