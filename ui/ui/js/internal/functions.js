@@ -47,14 +47,24 @@ messengerService.addMessageStatusUpdateListener(function (messageInfo) {
 
 // New message listener
 messengerService.addNewMessageListener(function (messageInfo) {
-        if(document.getElementById("page-title") != null && document.getElementById("page-title").textContent == messageInfo.contact.name){
-            var messagesDiv = document.getElementById("messages");
-            if(messagesDiv != null){
-                var newMessageNode = createMessageNode(messageInfo.message, messageInfo.contact.name);
-                messagesDiv.innerHTML += newMessageNode;
-                window.scrollTo(0,document.body.scrollHeight);
-            }
+    if(document.getElementById("page-title") != null && document.getElementById("page-title").textContent == messageInfo.contact.name){
+        var messagesDiv = document.getElementById("messages");
+        if(messagesDiv != null){
+            var newMessageNode = createMessageNode(messageInfo.message, messageInfo.contact.name);
+            messagesDiv.innerHTML += newMessageNode;
+            window.scrollTo(0,document.body.scrollHeight);
         }
+    }
+    else if(document.getElementById("contact_" + messageInfo.contact.id) != null){
+        var contactBlock = document.getElementById("contact_" + messageInfo.contact.id);
+        contactBlock.className = contactBlock.className.replace("new-messages", "");
+        contactBlock.className += " new-messages";
+
+        var newBadge = "<span class='pull-right label label-warning'>" + "new" + "</span>";
+        if(contactBlock.innerHTML.indexOf(newBadge) <= -1){
+            contactBlock.innerHTML += newBadge;
+        }
+    }
 });
 
 // Back button listener
@@ -90,6 +100,7 @@ function loadPage(url){
 
 // UI function, creates contact
 function createContactBlock(contact, status){
+    var lastMessage, timestamp, availableClass, newMessageClass, newBadge;
     if(status.lastMessage == null){
         lastMessage = "";
         timestamp = ""
@@ -112,9 +123,11 @@ function createContactBlock(contact, status){
 
     if(status.unreadMessageCount > 0){
         newMessageClass = "new-messages";
+        newBadge = "<span class='pull-right label label-warning'>" + "new" + "</span>";
     }
     else{
         newMessageClass = "";
+        newBadge = "";
     }
 
     var contactBlock = "<div class='contact-link " + newMessageClass + "' id='contact_" + contact.id + "'><div class='contact'>";
@@ -123,7 +136,7 @@ function createContactBlock(contact, status){
     contactBlock += "<p>" + contact.name + "</p>";
     contactBlock += "<span class='last_message'>" + lastMessage + "</span>";
     contactBlock += "<span class='time'>" + timestamp + "</span>";
-    contactBlock += "</div></div>";
+    contactBlock += "</div>" + newBadge + "</div>";
 
     return contactBlock;
 }
