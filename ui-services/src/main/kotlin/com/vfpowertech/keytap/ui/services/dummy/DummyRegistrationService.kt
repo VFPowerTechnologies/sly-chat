@@ -8,7 +8,7 @@ import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.task
 import java.util.*
 
-class RegistrationServiceImpl() : RegistrationService {
+class DummyRegistrationService() : RegistrationService {
     private val listeners = ArrayList<(String) -> Unit>()
 
     override fun addListener(listener: (String) -> Unit) {

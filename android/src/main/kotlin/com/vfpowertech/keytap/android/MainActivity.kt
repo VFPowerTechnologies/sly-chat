@@ -10,12 +10,12 @@ import android.webkit.WebViewClient
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.keytap.android.services.AndroidPlatformInfoService
-import com.vfpowertech.keytap.ui.services.dummy.ContactsServiceImpl
+import com.vfpowertech.keytap.ui.services.dummy.DummyContactsService
 import com.vfpowertech.keytap.ui.services.dummy.DevelServiceImpl
-import com.vfpowertech.keytap.ui.services.dummy.HistoryServiceImpl
-import com.vfpowertech.keytap.ui.services.dummy.LoginServiceImpl
+import com.vfpowertech.keytap.ui.services.dummy.DummyHistoryService
+import com.vfpowertech.keytap.ui.services.dummy.DummyLoginService
 import com.vfpowertech.keytap.ui.services.dummy.MessengerServiceImpl
-import com.vfpowertech.keytap.ui.services.dummy.RegistrationServiceImpl
+import com.vfpowertech.keytap.ui.services.dummy.DummyRegistrationService
 import com.vfpowertech.keytap.ui.services.js.NavigationService
 import com.vfpowertech.keytap.ui.services.js.javatojs.NavigationServiceToJSProxy
 import com.vfpowertech.keytap.ui.services.jstojava.RegistrationServiceToJavaProxy
@@ -44,22 +44,22 @@ class MainActivity : Activity() {
         val engineInterface = AndroidWebEngineInterface(webView)
         val dispatcher = Dispatcher(engineInterface)
 
-        val registrationService = RegistrationServiceImpl()
+        val registrationService = DummyRegistrationService()
         dispatcher.registerService("RegistrationService", RegistrationServiceToJavaProxy(registrationService,  dispatcher))
 
         val platformInfoService = AndroidPlatformInfoService()
         dispatcher.registerService("PlatformInfoService", PlatformInfoServiceToJavaProxy(platformInfoService, dispatcher))
 
-        val loginService = LoginServiceImpl()
+        val loginService = DummyLoginService()
         dispatcher.registerService("LoginService", LoginServiceToJavaProxy(loginService, dispatcher))
 
-        val contactsService = ContactsServiceImpl()
+        val contactsService = DummyContactsService()
         dispatcher.registerService("ContactsService", ContactsServiceToJavaProxy(contactsService, dispatcher))
 
         val messengerService = MessengerServiceImpl(contactsService)
         dispatcher.registerService("MessengerService", MessengerServiceToJavaProxy(messengerService, dispatcher))
 
-        val historyService = HistoryServiceImpl()
+        val historyService = DummyHistoryService()
         dispatcher.registerService("HistoryService", HistoryServiceToJavaProxy(historyService, dispatcher))
 
         val develService = DevelServiceImpl(messengerService)
