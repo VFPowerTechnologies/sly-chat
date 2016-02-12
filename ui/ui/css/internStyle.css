@@ -51,3 +51,12 @@
 .new-messages span {
     color: #272727;
 }
+
+.modalHeader {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.modalContent {
+    text-align: center;
+}

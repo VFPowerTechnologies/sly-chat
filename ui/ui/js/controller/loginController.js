@@ -31,6 +31,12 @@ LoginController.prototype = {
 //            document.getElementById("login-error").innerHTML = "<li>Wrong email or password</li>";
         });
     },
+    setInfo : function(login, password) {
+        this.model.setItems({
+            "login" : login,
+            "password" : password
+        })
+    },
     logout : function () {
         KEYTAP.navigationController.clearHistory();
         $(".menu-hidden").hide();
