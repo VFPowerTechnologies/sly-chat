@@ -2,7 +2,7 @@
 <html lang="en-US">
 <head>
   <title>
-    Keytapp
+    Keytapp - Chat
   </title>
   <meta content="IE=edge" http-equiv="x-ua-compatible">
   <meta content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" name="viewport">
@@ -22,7 +22,18 @@
   <script src="js/jvm-service/login-service.js"></script>
   <script src="js/jvm-service/contacts-service.js"></script>
   <script src="js/jvm-service/history-service.js"></script>
+  <script src="js/jvm-service/devel-service.js"></script>
   <script src="js/external-lib/jquery-2.2.0.min.js"></script>
+  <script src="js/models/loginModel.js"></script>
+  <script src="js/models/registrationModel.js"></script>
+  <script src="js/models/contactModel.js"></script>
+  <script src="js/models/chatModel.js"></script>
+  <script src="js/controller/loginController.js"></script>
+  <script src="js/controller/registrationController.js"></script>
+  <script src="js/controller/contactController.js"></script>
+  <script src="js/controller/chatController.js"></script>
+  <script src="js/controller/navigationController.js"></script>
+  <script src="js/controller/menuController.js"></script>
   <script src="js/external-lib/bootstrap.min.js"></script>
   <script src="js/external-lib/materialize.min.js"></script>
   <script src="js/external-lib/jquery.smoothState.js"></script>
@@ -32,12 +43,12 @@
 </head>
 <body>
 <div class="navbar-fixed-top">
-  <div class="navbar header-bar menu-hidden">
-    <div class="open-left" id="nav-menu-logout" style="display: none">
+  <div class="navbar header-bar">
+    <div class="open-left nav-btn" id="nav-menu-logout" style="display: none">
       <a id="logoutBtn" href="#"><i class="mdi mdi-logout"></i></a>
     </div>
-    <div class="open-left" id="nav-menu-back" style="display: none">
-      <a href="#" onclick="goBack();"><i class="mdi mdi-arrow-left"></i></a>
+    <div class="open-left nav-btn" id="nav-menu-back" style="display: none">
+      <a href="#" id="backBtn"><i class="mdi mdi-arrow-left"></i></a>
     </div>
     <span id="page-title"></span>
     <div class="open-right dropdown menu-hidden" style="display: none">
@@ -46,21 +57,21 @@
           <i class="mdi mdi-menu"></i>
         </a>
         <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu">
-          <li><a id="addContactBtn" href="#" onclick="loadPage('addContact.html');"><i class="mdi mdi-account-plus" style="color: black; font-size: 14px; line-height: 0;"></i> Add Contact</a></li>
+          <li><a id="addContactBtn" href="#"><i class="mdi mdi-account-plus" style="color: black; font-size: 14px; line-height: 0;"></i> Add Contact</a></li>
           <li><a id="sendFakeMessage" href="#" ><i class="mdi mdi-account-plus" style="color: black; font-size: 14px; line-height: 0;"></i>Fake Message</a></li>
         </ul>
       </div>
     </div>
-    <div class="open-right menu-hidden" style="display: none">
-      <div class="dropdown">
-        <a class="dropdown-toggle" id="notifications" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" href="#">
-          <i class="mdi mdi-bell"></i>
-        </a>
-        <ul id="notificationContainer" class="dropdown-menu dropdown-menu-right" aria-labelledby="notifications">
-          <!--<li><a href="#" onclick="loadPage('chat.html?contactId=0');">New message from Guillaume Reeves</a></li>-->
-        </ul>
-      </div>
-    </div>
+    <!--<div class="open-right menu-hidden" style="display: none">-->
+    <!--<div class="dropdown">-->
+    <!--<a class="dropdown-toggle" id="notifications" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" href="#">-->
+    <!--<i id="notificationIcon" class="mdi mdi-bell"></i>-->
+    <!--</a>-->
+    <!--<ul id="notificationContainer" class="dropdown-menu dropdown-menu-right" aria-labelledby="notifications" style="width: 320px;">-->
+    <!--&lt;!&ndash;<li><a href="#" onclick="loadPage('chat.html?contactId=0');">New message from Guillaume Reeves</a></li>&ndash;&gt;-->
+    <!--</ul>-->
+    <!--</div>-->
+    <!--</div>-->
   </div>
 </div>
 <div class="m-scene main-content" id="main"> <!-- Page Container -->
