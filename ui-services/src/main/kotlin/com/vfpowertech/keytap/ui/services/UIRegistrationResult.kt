@@ -5,7 +5,7 @@ package com.vfpowertech.keytap.ui.services
  * @property errorMessage Only set when successful is false.
  * @property validationErrors May be null even if successful is false, Map of field name to list of validation error messages.
  */
-data class RegistrationResult(
+data class UIRegistrationResult(
     val successful: Boolean,
     val errorMessage: String?,
     val validationErrors: Map<String, List<String>>?
