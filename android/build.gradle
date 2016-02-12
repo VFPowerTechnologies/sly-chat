@@ -39,6 +39,8 @@ android {
 }
 
 dependencies {
+    //pure-java curve25519 is broken: https://github.com/WhisperSystems/curve25519-java/pull/4
+    compile "org.whispersystems:axolotl-android:$versions.axolotl"
     compile project(':ui-services')
     compile "org.slf4j:slf4j-android:$versions.slf4j"
     compile "com.vfpowertech:jsbridge-android-webengine:$versions.jsbridge"
