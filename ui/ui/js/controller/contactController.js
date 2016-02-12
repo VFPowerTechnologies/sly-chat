@@ -84,7 +84,7 @@ ContactController.prototype = {
                 return function(e) {
                     e.preventDefault();
                     self.model.setCurrentContact(id);
-                    loadPage("chat.html");
+                    KEYTAP.navigationController.loadPage("chat.html");
                 };
             })(this, links[i].id.split("_")[1], links[i]));
         }
@@ -107,7 +107,7 @@ ContactController.prototype = {
                 phoneNumber: phone
             }).then(function () {
                 this.model.resetContacts();
-                loadPage("contacts.html");
+                KEYTAP.navigationController.loadPage("contacts.html");
             }.bind(this)).catch(function (e) {
                 console.error('Unable to add contact: ' + e);
             });

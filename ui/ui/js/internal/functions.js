@@ -9,13 +9,20 @@ window.develService = new DevelService();
 // Create application namespace.
 var KEYTAP = KEYTAP || {};
 
-KEYTAP.contactModel = new ContactModel();
-KEYTAP.contactController = new ContactController(KEYTAP.contactModel);
+KEYTAP.loginController = new LoginController(new LoginModel);
+KEYTAP.registrationController = new RegistrationController(new RegistrationModel());
 
-KEYTAP.chatModel = new ChatModel();
-KEYTAP.chatController = new ChatController(KEYTAP.chatModel, KEYTAP.contactController);
+KEYTAP.contactController = new ContactController(new ContactModel());
+
+KEYTAP.chatController = new ChatController(new ChatModel(), KEYTAP.contactController);
 KEYTAP.chatController.addMessageUpdateListener();
 KEYTAP.chatController.addNewMessageListener();
+
+KEYTAP.navigationController = new NavigationController();
+KEYTAP.navigationController.init();
+
+KEYTAP.menuController = new MenuController();
+KEYTAP.menuController.init();
 
 // SmoothState, makes only the main div reload on page load.
 $(function(){
@@ -42,44 +49,4 @@ $(function(){
     };
 
     window.smoothState = $('#main').smoothState(options).data('smoothState');
-});
-
-// Back button listener
-navigationService = {
-    goBack: function () {
-        goBack();
-    }
-};
-
-// Go back function
-function goBack(){
-    historyService.pop().then(function(url){
-        smoothState.load(url);
-    }).catch(function (e){
-        console.log(e);
-    })
-}
-
-// Push the current location to the java side
-function pushHistory(){
-    historyService.push(window.location.href).then(function(){
-
-    }).catch(function(e){
-        console.log(e);
-    });
-}
-
-// Loads a page using smoothState and push the current url to history
-function loadPage(url){
-    pushHistory();
-    smoothState.load(url);
-}
-
-//Send a fake message to test receive message listener.
-$(document).on("click", '#sendFakeMessage', function(e){
-    e.preventDefault();
-
-    develService.receiveFakeMessage(KEYTAP.contactController.getContact(0), "Fake").catch(function (e) {
-        console.log('receiveFakeMessage failed: ' + e);
-    });
 });

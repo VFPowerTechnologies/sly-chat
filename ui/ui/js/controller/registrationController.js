@@ -17,6 +17,11 @@ RegistrationController.prototype = {
                 this.register();
             }
         }.bind(this));
+
+        $("#signInBtn").click(function (e) {
+            e.preventDefault();
+            KEYTAP.navigationController.loadPage("login.html");
+        });
     },
     register : function () {
         registrationService.addListener(function (registrationStatus) {
@@ -25,7 +30,7 @@ RegistrationController.prototype = {
         registrationService.doRegistration(this.model.getItems()).then(function (result) {
             if(result.successful == true) {
                 $(".menu-hidden").show();
-                loadPage("contacts.html");
+                KEYTAP.navigationController.loadPage("contacts.html");
             }
             else{
                 this.displayRegistrationError(result);

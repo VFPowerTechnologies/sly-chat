@@ -37,7 +37,7 @@
       <a id="logoutBtn" href="#"><i class="mdi mdi-logout"></i></a>
     </div>
     <div class="open-left" id="nav-menu-back" style="display: none">
-      <a href="#" onclick="goBack();"><i class="mdi mdi-arrow-left"></i></a>
+      <a href="#"><i class="mdi mdi-arrow-left"></i></a>
     </div>
     <span id="page-title"></span>
     <div class="open-right dropdown menu-hidden" style="display: none">
@@ -46,7 +46,7 @@
           <i class="mdi mdi-menu"></i>
         </a>
         <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu">
-          <li><a id="addContactBtn" href="#" onclick="loadPage('addContact.html');"><i class="mdi mdi-account-plus" style="color: black; font-size: 14px; line-height: 0;"></i> Add Contact</a></li>
+          <li><a id="addContactBtn" href="#"><i class="mdi mdi-account-plus" style="color: black; font-size: 14px; line-height: 0;"></i> Add Contact</a></li>
           <li><a id="sendFakeMessage" href="#" ><i class="mdi mdi-account-plus" style="color: black; font-size: 14px; line-height: 0;"></i>Fake Message</a></li>
         </ul>
       </div>
@@ -90,7 +90,7 @@
               </div>
 
               <button id="loginBtn" type="submit" class="waves-effect waves-light btn-large primary-color fullwidth">Login</button>
-              <span>Don't have an account? <a class="primary-color-text" href="#" onclick="loadPage('register.html');">Sign Up</a></span>
+              <span>Don't have an account? <a id="registrationBtn" class="primary-color-text" href="#">Sign Up</a></span>
             </form>
           </div>
         </div>

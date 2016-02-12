@@ -1,8 +1,8 @@
 $(document).ready(function(){
     var loggedIn = false;
     if(loggedIn){
-        loadPage("contacts.html");
+        KEYTAP.navigationController.loadPage("contacts.html");
     }else{
-        loadPage("login.html");
+        KEYTAP.navigationController.loadPage("login.html");
     }
 });

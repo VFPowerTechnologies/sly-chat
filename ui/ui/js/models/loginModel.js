@@ -29,13 +29,5 @@ LoginModel.prototype = {
         else{
             return false;
         }
-    },
-    login : function() {
-        loginService.login(login, password).then(function () {
-            $(".menu-hidden").show();
-            loadPage('contacts.html');
-        }).catch(function (e) {
-            document.getElementById("login-error").innerHTML = "<li>Wrong email or password</li>";
-        });
     }
 }
