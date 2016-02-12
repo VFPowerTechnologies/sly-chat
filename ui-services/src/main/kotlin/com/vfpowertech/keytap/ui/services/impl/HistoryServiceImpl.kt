@@ -15,4 +15,8 @@ class HistoryServiceImpl : HistoryService {
 
     override fun peek(): String =
         stack.peek()
+
+    override fun clear(): Unit {
+        stack.clear()
+    }
 }

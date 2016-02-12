@@ -13,4 +13,6 @@ interface HistoryService {
     fun pop(): String
     /** Retrieve the first value off the stack without removing it. */
     fun peek(): String
+    /** Clears the stack. */
+    fun clear(): Unit
 }
