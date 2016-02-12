@@ -23,7 +23,7 @@ kapt {
 }
 
 dependencies {
-    project(':core')
+    compile project(':core')
 
     kapt "com.vfpowertech:jsbridge-processor:$versions.jsbridge"
 
