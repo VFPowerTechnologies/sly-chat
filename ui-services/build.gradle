@@ -31,6 +31,7 @@ dependencies {
     compile "com.vfpowertech:jsbridge-processor-annotations:$versions.jsbridge"
     compile "nl.komponents.kovenant:kovenant-core:$versions.kovenant"
     compile "nl.komponents.kovenant:kovenant-functional:$versions.kovenant"
+    compile "nl.komponents.kovenant:kovenant-ui:$versions.kovenant"
     compile "org.slf4j:slf4j-api:$versions.slf4j"
     compile "com.fasterxml.jackson.core:jackson-databind:$versions.jackson"
 }

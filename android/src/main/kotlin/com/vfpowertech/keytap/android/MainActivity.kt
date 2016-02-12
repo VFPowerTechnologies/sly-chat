@@ -25,6 +25,8 @@ import com.vfpowertech.keytap.ui.services.jstojava.LoginServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.ContactsServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.HistoryServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.DevelServiceToJavaProxy
+import nl.komponents.kovenant.android.androidUiDispatcher
+import nl.komponents.kovenant.ui.KovenantUi
 import org.slf4j.LoggerFactory
 
 class MainActivity : Activity() {
@@ -33,6 +35,12 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        //TODO create an Application class for this
+        KovenantUi.uiContext {
+            dispatcher = androidUiDispatcher()
+        }
+
         setContentView(R.layout.activity_main)
 
         webView = findViewById(R.id.webView) as WebView

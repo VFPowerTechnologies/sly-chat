@@ -61,6 +61,10 @@ class App : Application() {
     }
 
     override fun start(primaryStage: Stage) {
+        KovenantUi.uiContext {
+            dispatcher = JFXDispatcher.instance
+        }
+
         val webView = WebView()
 
         val engine = webView.engine

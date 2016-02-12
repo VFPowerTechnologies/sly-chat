@@ -40,4 +40,5 @@ dependencies {
     compile project(':ui-services')
     compile "org.slf4j:slf4j-android:$versions.slf4j"
     compile "com.vfpowertech:jsbridge-android-webengine:$versions.jsbridge"
+    compile "nl.komponents.kovenant:kovenant-android:$versions.kovenant"
 }
