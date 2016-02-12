@@ -85,7 +85,7 @@ ChatController.prototype = {
             if(document.getElementById("page-title") != null && document.getElementById("page-title").textContent == messageInfo.contact.name){
                 var messagesDiv = document.getElementById("messages");
                 if(messagesDiv != null){
-                    var newMessageNode = createMessageNode(messageInfo.message, messageInfo.contact.name);
+                    var newMessageNode = this.createMessageNode(messageInfo.message, messageInfo.contact.name);
                     messagesDiv.innerHTML += newMessageNode;
                     window.scrollTo(0,document.body.scrollHeight);
                 }
@@ -100,6 +100,6 @@ ChatController.prototype = {
                     contactBlock.innerHTML += newBadge;
                 }
             }
-        });
+        }.bind(this));
     }
 }
