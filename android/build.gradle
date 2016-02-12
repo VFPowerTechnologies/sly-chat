@@ -33,6 +33,8 @@ android {
         exclude 'META-INF/LICENSE.txt'
         exclude 'META-INF/NOTICE'
         exclude 'META-INF/NOTICE.txt'
+        //no support for wildcards; so just ignore this one since it clashes
+        exclude 'META-INF/core-compileKotlin.kotlin_module'
     }
 }
 
