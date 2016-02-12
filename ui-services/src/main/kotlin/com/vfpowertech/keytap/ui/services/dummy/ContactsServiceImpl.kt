@@ -1,4 +1,4 @@
-package com.vfpowertech.keytap.ui.services.impl
+package com.vfpowertech.keytap.ui.services.dummy
 
 import com.vfpowertech.keytap.ui.services.ContactsService
 import com.vfpowertech.keytap.ui.services.UIContactDetails
