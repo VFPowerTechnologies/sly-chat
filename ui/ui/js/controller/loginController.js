@@ -6,6 +6,7 @@ LoginController.prototype = {
     init : function() {
         $("#loginBtn").click(function(e){
             e.preventDefault();
+            $("#loginBtn").prop("disabled", true);
             this.model.setItems({
                 "login" : $("#login").val(),
                 "password" : $("#login-psw").val()
@@ -13,6 +14,9 @@ LoginController.prototype = {
 
             if(this.model.validate() == true){
                 this.login();
+            }
+            else{
+                $("#loginBtn").prop("disabled", false);
             }
         }.bind(this));
 
@@ -28,6 +32,7 @@ LoginController.prototype = {
             KEYTAP.navigationController.clearHistory();
         }.bind(this)).catch(function (e) {
             document.getElementById("login-error").innerHTML = "<li>An error occurred</li>";
+            $("#loginBtn").prop("disabled", false);
 //            document.getElementById("login-error").innerHTML = "<li>Wrong email or password</li>";
         });
     },

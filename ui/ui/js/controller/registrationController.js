@@ -50,9 +50,11 @@ RegistrationController.prototype = {
             }
             else{
                 this.displayRegistrationError(result);
+                $("#registerBtn").prop("disabled", false);
             }
         }.bind(this)).catch(function(e) {
             document.getElementById("register-error").innerHTML = "<li>Registration failed</li>";
+            $("#registerBtn").prop("disabled", false);
         });
     },
     displayRegistrationError : function (result) {
