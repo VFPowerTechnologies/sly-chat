@@ -13,6 +13,8 @@ import com.vfpowertech.keytap.ui.services.dummy.DummyHistoryService
 import com.vfpowertech.keytap.ui.services.dummy.DummyLoginService
 import com.vfpowertech.keytap.ui.services.dummy.MessengerServiceImpl
 import com.vfpowertech.keytap.ui.services.dummy.DummyRegistrationService
+import com.vfpowertech.keytap.ui.services.impl.LoginServiceImpl
+import com.vfpowertech.keytap.ui.services.impl.RegistrationServiceImpl
 import com.vfpowertech.keytap.ui.services.jstojava.RegistrationServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.PlatformInfoServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.MessengerServiceToJavaProxy
@@ -25,6 +27,8 @@ import javafx.scene.Scene
 import javafx.scene.web.WebEngine
 import javafx.scene.web.WebView
 import javafx.stage.Stage
+import nl.komponents.kovenant.jfx.JFXDispatcher
+import nl.komponents.kovenant.ui.KovenantUi
 import org.slf4j.LoggerFactory
 
 class App : Application() {
@@ -74,13 +78,15 @@ class App : Application() {
         val engineInterface = JFXWebEngineInterface(engine)
         val dispatcher = Dispatcher(engineInterface)
 
-        val registrationService = DummyRegistrationService()
+        //val registrationService = DummyRegistrationService()
+        val registrationService = RegistrationServiceImpl()
         dispatcher.registerService("RegistrationService", RegistrationServiceToJavaProxy(registrationService,  dispatcher))
 
         val platformInfoService = DesktopPlatformInfoService()
         dispatcher.registerService("PlatformInfoService", PlatformInfoServiceToJavaProxy(platformInfoService, dispatcher))
 
-        val loginService = DummyLoginService()
+        //val loginService = DummyLoginService()
+        val loginService = LoginServiceImpl()
         dispatcher.registerService("LoginService", LoginServiceToJavaProxy(loginService, dispatcher))
 
         val contactsService = DummyContactsService()

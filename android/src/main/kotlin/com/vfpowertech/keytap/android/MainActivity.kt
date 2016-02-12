@@ -16,6 +16,7 @@ import com.vfpowertech.keytap.ui.services.dummy.DummyHistoryService
 import com.vfpowertech.keytap.ui.services.dummy.DummyLoginService
 import com.vfpowertech.keytap.ui.services.dummy.MessengerServiceImpl
 import com.vfpowertech.keytap.ui.services.dummy.DummyRegistrationService
+import com.vfpowertech.keytap.ui.services.impl.LoginServiceImpl
 import com.vfpowertech.keytap.ui.services.js.NavigationService
 import com.vfpowertech.keytap.ui.services.js.javatojs.NavigationServiceToJSProxy
 import com.vfpowertech.keytap.ui.services.jstojava.RegistrationServiceToJavaProxy
@@ -35,6 +36,8 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        LoggerFactory.getLogger(javaClass).info("----------------------------------------------------------------------")
 
         //TODO create an Application class for this
         KovenantUi.uiContext {
@@ -58,7 +61,8 @@ class MainActivity : Activity() {
         val platformInfoService = AndroidPlatformInfoService()
         dispatcher.registerService("PlatformInfoService", PlatformInfoServiceToJavaProxy(platformInfoService, dispatcher))
 
-        val loginService = DummyLoginService()
+        //val loginService = DummyLoginService()
+        val loginService = LoginServiceImpl()
         dispatcher.registerService("LoginService", LoginServiceToJavaProxy(loginService, dispatcher))
 
         val contactsService = DummyContactsService()

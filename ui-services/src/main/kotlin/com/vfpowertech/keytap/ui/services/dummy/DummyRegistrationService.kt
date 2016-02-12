@@ -1,7 +1,7 @@
 package com.vfpowertech.keytap.ui.services.dummy
 
-import com.vfpowertech.keytap.ui.services.RegistrationInfo
-import com.vfpowertech.keytap.ui.services.RegistrationResult
+import com.vfpowertech.keytap.ui.services.UIRegistrationInfo
+import com.vfpowertech.keytap.ui.services.UIRegistrationResult
 import com.vfpowertech.keytap.ui.services.RegistrationService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
@@ -24,14 +24,14 @@ class DummyRegistrationService() : RegistrationService {
         }
     }
 
-    override fun doRegistration(info: RegistrationInfo): Promise<RegistrationResult, Exception> {
+    override fun doRegistration(info: UIRegistrationInfo): Promise<UIRegistrationResult, Exception> {
         return task {
             updateProgress("Generating keys")
         } map { keys ->
             updateProgress("Sending registration request to server")
         } map {
             updateProgress("Updating prekeys")
-            RegistrationResult(true, null, null)
+            UIRegistrationResult(true, null, null)
         }
     }
 }
