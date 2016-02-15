@@ -8,6 +8,8 @@ import com.vfpowertech.keytap.core.crypto.hashes.HashParams
 import com.vfpowertech.keytap.core.crypto.hashes.SHA256Params
 import com.vfpowertech.keytap.core.require
 import org.mindrot.jbcrypt.BCrypt
+import org.spongycastle.crypto.Digest
+import org.spongycastle.crypto.digests.SHA256Digest
 import org.spongycastle.crypto.engines.AESFastEngine
 import org.spongycastle.crypto.modes.AEADBlockCipher
 import org.spongycastle.crypto.modes.GCMBlockCipher
@@ -17,7 +19,6 @@ import org.whispersystems.libaxolotl.IdentityKeyPair
 import org.whispersystems.libaxolotl.state.AxolotlStore
 import org.whispersystems.libaxolotl.util.KeyHelper
 import org.whispersystems.libaxolotl.util.Medium
-import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.SecretKey
 
@@ -117,7 +118,7 @@ fun privateKeyToSymmetricKey(privateKeyBytes: ByteArray): HashData {
 
 fun hashDataWithParams(data: ByteArray, params: HashParams): ByteArray = when (params) {
     is SHA256Params -> {
-        val kdf = MessageDigest.getInstance("SHA-256")
+        val digester = SHA256Digest()
         val salt = params.salt
         val toHash = if (salt.size > 0) {
             val buffer = ByteArray(data.size+salt.size)
@@ -128,8 +129,7 @@ fun hashDataWithParams(data: ByteArray, params: HashParams): ByteArray = when (p
         else
             data
 
-        kdf.update(toHash)
-        kdf.digest()
+        digester.processInput(toHash)
     }
 
     else -> throw IllegalArgumentException("Unknown data hash algorithm: ${params.algorithmName}")
@@ -169,6 +169,13 @@ private fun AEADBlockCipher.processInput(input: ByteArray): ByteArray {
     val output = getOutputArrayForCipher(this, input)
     val outputLength = processBytes(input, 0, input.size, output, 0)
     doFinal(output, outputLength)
+    return output
+}
+
+private fun Digest.processInput(input: ByteArray): ByteArray {
+    val output = ByteArray(digestSize)
+    val outputLength = update(input, 0, input.size)
+    doFinal(output, 0)
     return output
 }
 
