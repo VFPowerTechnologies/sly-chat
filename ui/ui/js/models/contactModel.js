@@ -11,6 +11,7 @@ ContactModel.prototype = {
             }.bind(this));
             this.controller.displayContacts(this.conversations);
         }.bind(this)).catch(function(e){
+            KEYTAP.exceptionController.displayDebugMessage(e);
             console.log("Unable to fetch conversations: " + e);
         });
     },

@@ -109,6 +109,7 @@ ContactController.prototype = {
                 this.model.resetContacts();
                 KEYTAP.navigationController.loadPage("contacts.html");
             }.bind(this)).catch(function (e) {
+                KEYTAP.exceptionController.displayDebugMessage(e);
                 console.error('Unable to add contact: ' + e);
             });
         }

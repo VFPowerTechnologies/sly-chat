@@ -19,6 +19,7 @@ MenuController.prototype = {
             e.preventDefault();
 
             develService.receiveFakeMessage(KEYTAP.contactController.getContact(0), "Fake").catch(function (e) {
+                KEYTAP.exceptionController.displayDebugMessage(e);
                 console.log('receiveFakeMessage failed: ' + e);
             });
         });

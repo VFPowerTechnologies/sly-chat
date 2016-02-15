@@ -53,6 +53,7 @@ RegistrationController.prototype = {
                 $("#registerBtn").prop("disabled", false);
             }
         }.bind(this)).catch(function(e) {
+            KEYTAP.exceptionController.displayDebugMessage(e);
             document.getElementById("register-error").innerHTML = "<li>Registration failed</li>";
             $("#registerBtn").prop("disabled", false);
         });

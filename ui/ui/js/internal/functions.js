@@ -9,6 +9,8 @@ window.develService = new DevelService();
 // Create application namespace.
 var KEYTAP = KEYTAP || {};
 
+KEYTAP.exceptionController = new ExceptionController();
+
 KEYTAP.loginController = new LoginController(new LoginModel);
 KEYTAP.registrationController = new RegistrationController(new RegistrationModel());
 

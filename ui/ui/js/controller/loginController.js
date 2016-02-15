@@ -37,6 +37,7 @@ LoginController.prototype = {
                 $("#loginBtn").prop("disabled", false);
             }
         }.bind(this)).catch(function (e) {
+            KEYTAP.exceptionController.displayDebugMessage(e);
             document.getElementById("login-error").innerHTML = "<li>An unexpected error occurred</li>";
             $("#loginBtn").prop("disabled", false);
 //            document.getElementById("login-error").innerHTML = "<li>Wrong email or password</li>";

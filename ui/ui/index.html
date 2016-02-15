@@ -35,6 +35,7 @@
     <script src="js/controller/chatController.js"></script>
     <script src="js/controller/navigationController.js"></script>
     <script src="js/controller/menuController.js"></script>
+    <script src="js/controller/exceptionController.js"></script>
     <script src="js/external-lib/bootstrap.min.js"></script>
     <script src="js/external-lib/materialize.min.js"></script>
     <script src="js/external-lib/jquery.smoothState.js"></script>
@@ -73,6 +74,23 @@
                 <!--</ul>-->
             <!--</div>-->
         <!--</div>-->
+    </div>
+</div>
+<div id="exceptionModal" class="modal">
+    <div style="border-bottom: 2px solid black;">
+        <h6>An Exception occurred</h6>
+    </div>
+    <div class="modalContent row" style="margin-top: 10px;">
+        <div style="float: left; margin-left: 5%;">
+            <p id="exceptionName" style="margin-bottom: 10px;"></p>
+            <span style="float: left;">stacktrace:</span>
+        </div>
+        <div style="text-align: center;">
+            <textarea rows="13" id="debugStacktrace" style="resize: none; width: 90%; height: 100%; line-height: 1; font-size: 12px;" readonly></textarea>
+        </div>
+    </div>
+    <div style="float: right; margin-right: 5%;">
+        <button id="exceptionModalClose" class="btn btn-info">OK</button>
     </div>
 </div>
 <div class="m-scene toolbar-inside main-content" id="main"> <!-- Page Container -->

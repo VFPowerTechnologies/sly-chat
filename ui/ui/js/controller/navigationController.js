@@ -14,6 +14,7 @@ NavigationController.prototype = {
         historyService.pop().then(function(url){
             smoothState.load(url);
         }).catch(function (e){
+            KEYTAP.exceptionController.displayDebugMessage(e);
             console.log(e);
         })
     },
@@ -21,6 +22,7 @@ NavigationController.prototype = {
         historyService.push(window.location.href).then(function(){
 
         }).catch(function(e){
+            KEYTAP.exceptionController.displayDebugMessage(e);
             console.log(e);
         });
     },
@@ -31,6 +33,7 @@ NavigationController.prototype = {
     clearHistory : function () {
         historyService.clear().then(function() {
         }).catch(function (e){
+            KEYTAP.exceptionController.displayDebugMessage(e);
             console.log("Could not clear history : " + e);
         });
     }

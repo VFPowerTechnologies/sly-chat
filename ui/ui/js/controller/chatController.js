@@ -67,6 +67,7 @@ ChatController.prototype = {
                 messagesNode.innerHTML += this.createMessageNode(messageDetails, "me");
                 window.scrollTo(0,document.body.scrollHeight);
             }.bind(this)).catch(function (e) {
+                KEYTAP.exceptionController.displayDebugMessage(e);
                 console.log(e);
             });
         }
