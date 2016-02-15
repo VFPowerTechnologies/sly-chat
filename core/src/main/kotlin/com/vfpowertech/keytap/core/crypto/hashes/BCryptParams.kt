@@ -1,6 +1,8 @@
 package com.vfpowertech.keytap.core.crypto.hashes
 
 import com.vfpowertech.keytap.core.crypto.SerializedCryptoParams
+import com.vfpowertech.keytap.core.crypto.hexify
+import com.vfpowertech.keytap.core.crypto.unhexify
 import com.vfpowertech.keytap.core.require
 
 /**
@@ -15,7 +17,7 @@ import com.vfpowertech.keytap.core.require
  * @constructor
  */
 data class BCryptParams(
-    val salt: String,
+    val salt: ByteArray,
     val cost: Int
 ) : HashParams {
     init {
@@ -27,7 +29,7 @@ data class BCryptParams(
 
     override fun serialize(): SerializedCryptoParams {
         return SerializedCryptoParams(algorithmName, mapOf(
-            "salt" to salt,
+            "salt" to salt.hexify(),
             "cost" to cost.toString()
         ))
     }
@@ -35,7 +37,7 @@ data class BCryptParams(
     companion object {
         fun deserialize(params: Map<String, String>): HashParams {
             return BCryptParams(
-                params["salt"]!!,
+                params["salt"]!!.unhexify(),
                 Integer.parseInt(params["cost"]!!)
             )
         }

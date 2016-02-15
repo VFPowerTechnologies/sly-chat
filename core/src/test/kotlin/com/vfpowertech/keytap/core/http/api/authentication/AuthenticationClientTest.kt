@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
+import com.vfpowertech.keytap.core.crypto.getRandomBits
 import com.vfpowertech.keytap.core.crypto.hashes.BCryptParams
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
@@ -20,7 +21,7 @@ class AuthenticationClientTest {
     @Test
     fun `getParams should return a successful AuthenticationParamsResponse when receiving a 200 response`() {
         val httpClient = mock<HttpClient>()
-        val hashParams = BCryptParams("salt", 12).serialize()
+        val hashParams = BCryptParams(getRandomBits(128), 12).serialize()
         val response = ApiResult(null, AuthenticationParamsResponse(null, AuthenticationParams(csrfToken, hashParams)))
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(response))
 
