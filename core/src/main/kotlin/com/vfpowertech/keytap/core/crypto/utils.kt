@@ -8,15 +8,18 @@ import com.vfpowertech.keytap.core.crypto.hashes.HashParams
 import com.vfpowertech.keytap.core.crypto.hashes.SHA256Params
 import com.vfpowertech.keytap.core.require
 import org.mindrot.jbcrypt.BCrypt
+import org.spongycastle.crypto.engines.AESFastEngine
+import org.spongycastle.crypto.modes.AEADBlockCipher
+import org.spongycastle.crypto.modes.GCMBlockCipher
+import org.spongycastle.crypto.params.AEADParameters
+import org.spongycastle.crypto.params.KeyParameter
 import org.whispersystems.libaxolotl.IdentityKeyPair
 import org.whispersystems.libaxolotl.state.AxolotlStore
 import org.whispersystems.libaxolotl.util.KeyHelper
 import org.whispersystems.libaxolotl.util.Medium
 import java.security.MessageDigest
 import java.security.SecureRandom
-import javax.crypto.Cipher
 import javax.crypto.SecretKey
-import javax.crypto.spec.GCMParameterSpec
 
 //KeyHelper caps keys at Medium.VALUE-1 (unsigned 24bit)
 //the last resort prekey always has id=Medium.VALUE
@@ -150,13 +153,36 @@ fun encryptData(key: SecretKey, plaintext: ByteArray): EncryptedData {
     return encryptDataWithParams(key, plaintext, params)
 }
 
+private fun newGCMCipher(forEncryption: Boolean, params: AESGCMParams, key: SecretKey): AEADBlockCipher {
+    val cipher = GCMBlockCipher(AESFastEngine())
+    val aeadParams = params.toAEADParameters(key)
+    cipher.init(forEncryption, aeadParams)
+    return cipher
+}
+
+private fun getOutputArrayForCipher(cipher: AEADBlockCipher, input: ByteArray): ByteArray {
+    val outputLength = cipher.getOutputSize(input.size)
+    return ByteArray(outputLength)
+}
+
+private fun AEADBlockCipher.processInput(input: ByteArray): ByteArray {
+    val output = getOutputArrayForCipher(this, input)
+    val outputLength = processBytes(input, 0, input.size, output, 0)
+    doFinal(output, outputLength)
+    return output
+}
+
+private fun AESGCMParams.toAEADParameters(key: SecretKey): AEADParameters {
+    val keyParam = KeyParameter(key.encoded)
+    return AEADParameters(keyParam, authTagLength, iv)
+}
+
 /** Encrypt data with the given parameters. */
 fun encryptDataWithParams(key: SecretKey, plaintext: ByteArray, params: CipherParams): EncryptedData = when (params) {
     is AESGCMParams -> {
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        val spec = GCMParameterSpec(params.authTagLength, params.iv)
-        cipher.init(Cipher.ENCRYPT_MODE, key, spec)
-        val ciphertext = cipher.doFinal(plaintext)
+        val cipher = newGCMCipher(true, params, key)
+        val ciphertext = cipher.processInput(plaintext)
+
         EncryptedData(ciphertext, params)
     }
     else -> throw IllegalArgumentException("Unknown cipher: ${params.algorithmName}")
@@ -165,10 +191,8 @@ fun encryptDataWithParams(key: SecretKey, plaintext: ByteArray, params: CipherPa
 /** Decrypt data with the given parameters. */
 fun decryptData(key: SecretKey, ciphertext: ByteArray, params: CipherParams): ByteArray = when (params) {
     is AESGCMParams -> {
-        val spec = GCMParameterSpec(params.authTagLength, params.iv)
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, key, spec)
-        cipher.doFinal(ciphertext)
+        val cipher = newGCMCipher(false, params, key)
+        cipher.processInput(ciphertext)
     }
     else -> throw IllegalArgumentException("Unknown cipher: ${params.algorithmName}")
 }
