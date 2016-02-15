@@ -78,15 +78,15 @@ class App : Application() {
         val engineInterface = JFXWebEngineInterface(engine)
         val dispatcher = Dispatcher(engineInterface)
 
-        //val registrationService = DummyRegistrationService()
-        val registrationService = RegistrationServiceImpl()
+        val registrationService = DummyRegistrationService()
+        //val registrationService = RegistrationServiceImpl()
         dispatcher.registerService("RegistrationService", RegistrationServiceToJavaProxy(registrationService,  dispatcher))
 
         val platformInfoService = DesktopPlatformInfoService()
         dispatcher.registerService("PlatformInfoService", PlatformInfoServiceToJavaProxy(platformInfoService, dispatcher))
 
-        //val loginService = DummyLoginService()
-        val loginService = LoginServiceImpl()
+        val loginService = DummyLoginService()
+        //val loginService = LoginServiceImpl()
         dispatcher.registerService("LoginService", LoginServiceToJavaProxy(loginService, dispatcher))
 
         val contactsService = DummyContactsService()
