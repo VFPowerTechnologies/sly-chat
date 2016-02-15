@@ -23,7 +23,6 @@ dependencies {
     compile "joda-time:joda-time:$versions.jodaTime"
     compile "com.fasterxml.jackson.core:jackson-annotations:$versions.jackson"
     compile "com.fasterxml.jackson.core:jackson-databind:$versions.jackson"
-    compile "org.mindrot:jbcrypt:$versions.jbcrypt"
     compile "com.madgag.spongycastle:core:$versions.spongycastle"
     compile "org.slf4j:slf4j-api:$versions.slf4j"
     compile "com.almworks.sqlite4java:sqlite4java:$versions.sqlite4java"
