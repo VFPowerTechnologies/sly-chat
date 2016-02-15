@@ -56,3 +56,26 @@ subprojects {
         }
     }
 }
+
+task generateBuildInfo(type: GenBuildConfig) {
+}
+
+task clean << {
+    delete generateBuildInfo.generateRoot
+}
+
+project(':core') {
+    apply plugin: 'idea'
+
+    idea {
+        module {
+            sourceDirs += generateBuildInfo.outputDirectory
+            generatedSourceDirs += generateBuildInfo.outputDirectory
+        }
+    }
+
+    afterEvaluate { p ->
+        p.sourceSets.main.java.srcDirs += generateBuildInfo.outputDirectory
+        p.compileJava.dependsOn generateBuildInfo
+    }
+}

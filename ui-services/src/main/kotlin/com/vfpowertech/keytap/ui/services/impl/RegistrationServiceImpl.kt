@@ -3,7 +3,6 @@ package com.vfpowertech.keytap.ui.services.impl
 import com.vfpowertech.keytap.core.crypto.JsonFileKeyVaultStorage
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
-import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.JsonAccountInfoPersistenceManager
 import com.vfpowertech.keytap.ui.services.RegistrationService
 import com.vfpowertech.keytap.ui.services.UIRegistrationInfo
@@ -15,12 +14,12 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.*
 
-class RegistrationServiceImpl : RegistrationService {
+class RegistrationServiceImpl(serverUrl: String) : RegistrationService {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val listeners = ArrayList<(String) -> Unit>()
+    private val registrationClient = RegistrationClientWrapper(serverUrl)
 
     override fun doRegistration(info: UIRegistrationInfo): Promise<UIRegistrationResult, Exception> {
-        val registrationClient = RegistrationClientWrapper()
 
         //TODO storage needs to be moved somewhere else; need platform-specific version
         //TODO persistence should be handled by some other service so we don't need to access it manually
@@ -35,8 +34,7 @@ class RegistrationServiceImpl : RegistrationService {
         updateProgress("Generating key vault")
         return asyncGenerateNewKeyVault(password) bind { keyVault ->
             updateProgress("Writing key vault to disk")
-            keyVault.toStorage(keyVaultStorage)
-            Thread.sleep(2000)
+            //keyVault.toStorage(keyVaultStorage)
             updateProgress("Connecting to server...")
             val registrationInfo = RegistrationInfo(username, info.name, info.phoneNumber)
             val request = registrationRequestFromKeyVault(registrationInfo, keyVault)
@@ -46,7 +44,7 @@ class RegistrationServiceImpl : RegistrationService {
             if (uiResult.successful) {
                 updateProgress("Registration complete, writing info to disk...")
                 //TODO
-                accountInfoPersistenceManager.store(AccountInfo(info.name, info.email, info.phoneNumber)).get()
+                //accountInfoPersistenceManager.store(AccountInfo(info.name, info.email, info.phoneNumber)).get()
             }
             else
                 updateProgress("An error occured during registration")

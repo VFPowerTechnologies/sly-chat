@@ -13,9 +13,9 @@ import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
-class LoginServiceImpl : LoginService {
+class LoginServiceImpl(serverUrl: String) : LoginService {
     private val logger = LoggerFactory.getLogger(javaClass)
-    private val loginClient = AuthenticationClientWrapper()
+    private val loginClient = AuthenticationClientWrapper(serverUrl)
 
     private fun continueLogin(emailOrPhoneNumber: String, password: String, response: AuthenticationParamsResponse): Promise<UILoginResult, Exception> {
         if (response.errorMessage != null)

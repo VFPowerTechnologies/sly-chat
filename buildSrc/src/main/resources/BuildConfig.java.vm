@@ -1,0 +1,26 @@
+package com.vfpowertech.keytap.core;
+
+public class BuildConfig {
+    public static class ServerUrls {
+        public final String API_SERVER;
+
+        public ServerUrls(final String apiServer) {
+            this.API_SERVER = apiServer;
+        }
+    }
+
+    public enum UIServiceType {
+        DUMMY,
+        REAL
+    }
+
+    private BuildConfig() {}
+
+    public static final boolean DEBUG = $debug;
+    public static final String VERSION = "$version";
+
+    public static final UIServiceType UI_SERVICE_TYPE = UIServiceType.$uiServiceType;
+
+    public static final ServerUrls DESKTOP_SERVER_URLS = new ServerUrls("$desktopHttpApiServer");
+    public static final ServerUrls ANDROID_SERVER_URLS = new ServerUrls("$androidHttpApiServer");
+}

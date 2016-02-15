@@ -1,0 +1,13 @@
+buildscript {
+    ext.versions = [
+            velocity: '1.7',
+    ]
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile "org.apache.velocity:velocity:$versions.velocity"
+}

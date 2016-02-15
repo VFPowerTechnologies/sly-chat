@@ -7,6 +7,7 @@ import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.keytap.android.services.AndroidPlatformInfoService
@@ -54,15 +55,17 @@ class MainActivity : Activity() {
         val engineInterface = AndroidWebEngineInterface(webView)
         val dispatcher = Dispatcher(engineInterface)
 
-        val registrationService = DummyRegistrationService()
-        //val registrationService = RegistrationServiceImpl()
+        val serverUrls = BuildConfig.ANDROID_SERVER_URLS
+
+        //val registrationService = DummyRegistrationService()
+        val registrationService = RegistrationServiceImpl(serverUrls.API_SERVER)
         dispatcher.registerService("RegistrationService", RegistrationServiceToJavaProxy(registrationService,  dispatcher))
 
         val platformInfoService = AndroidPlatformInfoService()
         dispatcher.registerService("PlatformInfoService", PlatformInfoServiceToJavaProxy(platformInfoService, dispatcher))
 
-        val loginService = DummyLoginService()
-        //val loginService = LoginServiceImpl()
+        //val loginService = DummyLoginService()
+        val loginService = LoginServiceImpl(serverUrls.API_SERVER)
         dispatcher.registerService("LoginService", LoginServiceToJavaProxy(loginService, dispatcher))
 
         val contactsService = DummyContactsService()

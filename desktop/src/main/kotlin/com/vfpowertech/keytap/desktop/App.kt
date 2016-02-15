@@ -3,6 +3,7 @@ package com.vfpowertech.keytap.desktop
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
+import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.desktop.jfx.jsconsole.ConsoleMessageAdded
 import com.vfpowertech.keytap.desktop.services.DesktopPlatformInfoService
 import com.vfpowertech.keytap.ui.services.LoginService
@@ -78,15 +79,17 @@ class App : Application() {
         val engineInterface = JFXWebEngineInterface(engine)
         val dispatcher = Dispatcher(engineInterface)
 
-        val registrationService = DummyRegistrationService()
-        //val registrationService = RegistrationServiceImpl()
+        val serverUrls = BuildConfig.DESKTOP_SERVER_URLS
+
+        //val registrationService = DummyRegistrationService()
+        val registrationService = RegistrationServiceImpl(serverUrls.API_SERVER)
         dispatcher.registerService("RegistrationService", RegistrationServiceToJavaProxy(registrationService,  dispatcher))
 
         val platformInfoService = DesktopPlatformInfoService()
         dispatcher.registerService("PlatformInfoService", PlatformInfoServiceToJavaProxy(platformInfoService, dispatcher))
 
-        val loginService = DummyLoginService()
-        //val loginService = LoginServiceImpl()
+        //val loginService = DummyLoginService()
+        val loginService = LoginServiceImpl(serverUrls.API_SERVER)
         dispatcher.registerService("LoginService", LoginServiceToJavaProxy(loginService, dispatcher))
 
         val contactsService = DummyContactsService()
