@@ -60,15 +60,15 @@ fun String.unhexify(): ByteArray {
 
 /** Default parameters for local data encryption. */
 fun defaultDataEncryptionParams(): CipherParams =
-    AESGCMParams(getRandomBits(256), 128)
+    //12b is the default IV size
+    AESGCMParams(getRandomBits(96), 128)
 
 //use a proper hash since we actually do need to upload this remotely you idiot
 //bcrypt with a diff salt works, since scrypt and pbkdf2 utilitize sha256 which is still easy to implement using a gpu
 //although reusing the same algo for two diff things leads to higher chance of a salt+password clash
 /** Default parameters for hashing a password into a key for decrypting the encrypted key pair. */
 fun defaultKeyPasswordHashParams(): HashParams {
-    val salt = ByteArray(256/8)
-    SecureRandom().nextBytes(salt)
+    val salt = getRandomBits(256)
     return SHA256Params(salt)
 }
 
