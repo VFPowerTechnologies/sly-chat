@@ -24,9 +24,9 @@ class LoginServiceImpl : LoginService {
             loginClient.auth(request) successUi { response ->
                 CredentialsManager.authToken = response.authToken!!
             } map { result ->
-                if (result.keyRegen != null) {
+                if (result.keyRegenCount > 0) {
                     //TODO schedule prekey upload in bg
-                    logger.info("Requested to generate {} new prekeys", result.keyRegen)
+                    logger.info("Requested to generate {} new prekeys", result.keyRegenCount)
                 }
                 Unit
             }

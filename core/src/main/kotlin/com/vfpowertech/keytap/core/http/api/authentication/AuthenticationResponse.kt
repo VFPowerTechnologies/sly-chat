@@ -18,7 +18,7 @@ data class AuthenticationResponse(
 
     @param:JsonProperty("key-regen")
     @get:JsonProperty("key-regen")
-    val keyRegen: Int?
+    val keyRegenCount: Int
 ) {
     @get:JsonIgnore
     val isSuccess: Boolean = errorMessage == null
