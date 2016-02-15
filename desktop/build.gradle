@@ -19,6 +19,7 @@ dependencies {
     compile project(':ui-services')
 
     compile "com.vfpowertech:jsbridge-desktop-webengine:$versions.jsbridge"
+    compile "nl.komponents.kovenant:kovenant-jfx:$versions.kovenant"
 
     runtime "ch.qos.logback:logback-classic:$versions.logbackClassic"
 }

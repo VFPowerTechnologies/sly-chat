@@ -26,12 +26,18 @@ LoginController.prototype = {
         });
     },
     login : function() {
-        loginService.login(this.model.getLogin(), this.model.getPassword()).then(function () {
-            $(".menu-hidden").show();
-            KEYTAP.navigationController.loadPage('contacts.html');
-            KEYTAP.navigationController.clearHistory();
+        loginService.login(this.model.getLogin(), this.model.getPassword()).then(function (result) {
+            if (result.successful) {
+                $(".menu-hidden").show();
+                KEYTAP.navigationController.loadPage('contacts.html');
+                KEYTAP.navigationController.clearHistory();
+            }
+            else {
+                document.getElementById("login-error").innerHTML = "<li>An error occurred: " + result.errorMessage + "</li>";
+                $("#loginBtn").prop("disabled", false);
+            }
         }.bind(this)).catch(function (e) {
-            document.getElementById("login-error").innerHTML = "<li>An error occurred</li>";
+            document.getElementById("login-error").innerHTML = "<li>An unexpected error occurred</li>";
             $("#loginBtn").prop("disabled", false);
 //            document.getElementById("login-error").innerHTML = "<li>Wrong email or password</li>";
         });

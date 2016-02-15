@@ -10,11 +10,13 @@ import android.webkit.WebViewClient
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.keytap.android.services.AndroidPlatformInfoService
-import com.vfpowertech.keytap.ui.services.impl.ContactsServiceImpl
-import com.vfpowertech.keytap.ui.services.impl.DevelServiceImpl
-import com.vfpowertech.keytap.ui.services.impl.HistoryServiceImpl
+import com.vfpowertech.keytap.ui.services.dummy.DummyContactsService
+import com.vfpowertech.keytap.ui.services.dummy.DevelServiceImpl
+import com.vfpowertech.keytap.ui.services.dummy.DummyHistoryService
+import com.vfpowertech.keytap.ui.services.dummy.DummyLoginService
+import com.vfpowertech.keytap.ui.services.dummy.MessengerServiceImpl
+import com.vfpowertech.keytap.ui.services.dummy.DummyRegistrationService
 import com.vfpowertech.keytap.ui.services.impl.LoginServiceImpl
-import com.vfpowertech.keytap.ui.services.impl.MessengerServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.RegistrationServiceImpl
 import com.vfpowertech.keytap.ui.services.js.NavigationService
 import com.vfpowertech.keytap.ui.services.js.javatojs.NavigationServiceToJSProxy
@@ -25,6 +27,8 @@ import com.vfpowertech.keytap.ui.services.jstojava.LoginServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.ContactsServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.HistoryServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.DevelServiceToJavaProxy
+import nl.komponents.kovenant.android.androidUiDispatcher
+import nl.komponents.kovenant.ui.KovenantUi
 import org.slf4j.LoggerFactory
 
 class MainActivity : Activity() {
@@ -33,6 +37,12 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        //TODO create an Application class for this
+        KovenantUi.uiContext {
+            dispatcher = androidUiDispatcher()
+        }
+
         setContentView(R.layout.activity_main)
 
         webView = findViewById(R.id.webView) as WebView
@@ -44,22 +54,24 @@ class MainActivity : Activity() {
         val engineInterface = AndroidWebEngineInterface(webView)
         val dispatcher = Dispatcher(engineInterface)
 
-        val registrationService = RegistrationServiceImpl()
+        val registrationService = DummyRegistrationService()
+        //val registrationService = RegistrationServiceImpl()
         dispatcher.registerService("RegistrationService", RegistrationServiceToJavaProxy(registrationService,  dispatcher))
 
         val platformInfoService = AndroidPlatformInfoService()
         dispatcher.registerService("PlatformInfoService", PlatformInfoServiceToJavaProxy(platformInfoService, dispatcher))
 
-        val loginService = LoginServiceImpl()
+        val loginService = DummyLoginService()
+        //val loginService = LoginServiceImpl()
         dispatcher.registerService("LoginService", LoginServiceToJavaProxy(loginService, dispatcher))
 
-        val contactsService = ContactsServiceImpl()
+        val contactsService = DummyContactsService()
         dispatcher.registerService("ContactsService", ContactsServiceToJavaProxy(contactsService, dispatcher))
 
         val messengerService = MessengerServiceImpl(contactsService)
         dispatcher.registerService("MessengerService", MessengerServiceToJavaProxy(messengerService, dispatcher))
 
-        val historyService = HistoryServiceImpl()
+        val historyService = DummyHistoryService()
         dispatcher.registerService("HistoryService", HistoryServiceToJavaProxy(historyService, dispatcher))
 
         val develService = DevelServiceImpl(messengerService)

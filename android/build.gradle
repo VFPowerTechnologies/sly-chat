@@ -33,11 +33,16 @@ android {
         exclude 'META-INF/LICENSE.txt'
         exclude 'META-INF/NOTICE'
         exclude 'META-INF/NOTICE.txt'
+        //no support for wildcards; so just ignore this one since it clashes
+        exclude 'META-INF/core-compileKotlin.kotlin_module'
     }
 }
 
 dependencies {
+    //pure-java curve25519 is broken: https://github.com/WhisperSystems/curve25519-java/pull/4
+    compile "org.whispersystems:axolotl-android:$versions.axolotl"
     compile project(':ui-services')
     compile "org.slf4j:slf4j-android:$versions.slf4j"
     compile "com.vfpowertech:jsbridge-android-webengine:$versions.jsbridge"
+    compile "nl.komponents.kovenant:kovenant-android:$versions.kovenant"
 }

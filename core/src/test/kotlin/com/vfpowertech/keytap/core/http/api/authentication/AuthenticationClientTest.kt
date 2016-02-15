@@ -35,7 +35,7 @@ class AuthenticationClientTest {
     @Test
     fun `auth should return a successful AuthenticationResponse when receiving a 200 response`() {
         val httpClient = mock<HttpClient>()
-        val response = ApiResult(null, AuthenticationResponse(null, "auth", null, null))
+        val response = ApiResult(null, AuthenticationResponse(null, "auth", null, 0))
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(response))
 
         whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)

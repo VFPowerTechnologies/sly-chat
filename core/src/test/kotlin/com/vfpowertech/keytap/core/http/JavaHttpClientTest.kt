@@ -58,4 +58,15 @@ class JavaHttpClientTest {
         val returnedPost = objectMapper.readValue(response.body, Post::class.java)
         assertEquals(post.copy(id = 101), returnedPost)
     }
+
+    //TODO check for debug mode
+    @Test
+    fun `get should ignore bad SSL certs when in debug mode`() {
+        Assume.assumeTrue(doOnlineTests)
+
+        val url = "https://wrong.host.badssl.com/"
+
+        val client = JavaHttpClient()
+        client.get(url)
+    }
 }

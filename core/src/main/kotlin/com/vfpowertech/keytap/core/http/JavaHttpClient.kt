@@ -6,6 +6,12 @@ import java.io.InputStreamReader
 import java.io.Reader
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLContext
+import javax.net.ssl.X509TrustManager
 
 fun slurpInputStreamReader(reader: Reader, suggestedBufferSize: Int = 0): String {
     val bufferSize = if (suggestedBufferSize > 0) suggestedBufferSize else 1024
@@ -51,10 +57,35 @@ fun readStreamResponse(connection: HttpURLConnection, headers: Map<String, List<
     return data
 }
 
+//TODO only trust given cert pulled from resource (unless debug is on)
+private class TrustAllTrustManager : X509TrustManager {
+    override fun checkClientTrusted(chain: Array<out X509Certificate>, p1: String) {
+        throw UnsupportedOperationException()
+    }
+
+    override fun checkServerTrusted(chain: Array<out X509Certificate>, p1: String) {
+    }
+
+    override fun getAcceptedIssuers(): Array<out X509Certificate> = emptyArray()
+}
+
+private fun getHttpConnection(url: String): HttpURLConnection = getHttpConnection(URL(url))
+
+private fun getHttpConnection(url: URL): HttpURLConnection {
+    val connection = url.openConnection() as HttpURLConnection
+    if (connection is HttpsURLConnection) {
+        val sslContext = SSLContext.getInstance("TLSv1.2")
+        sslContext.init(null, arrayOf(TrustAllTrustManager()), SecureRandom())
+        connection.sslSocketFactory = sslContext.socketFactory
+        connection.hostnameVerifier = HostnameVerifier { p0, p1 -> true }
+    }
+    return connection
+}
+
+
 class JavaHttpClient : HttpClient {
     override fun get(url: String): HttpResponse {
-        val u = URL(url)
-        val connection = u.openConnection() as HttpURLConnection
+        val connection = getHttpConnection(url)
         connection.doInput = true
         connection.requestMethod = "GET"
         connection.useCaches = false
@@ -68,8 +99,7 @@ class JavaHttpClient : HttpClient {
     }
 
     override fun postJSON(url: String, body: ByteArray): HttpResponse {
-        val u = URL(url)
-        val connection = u.openConnection() as HttpURLConnection
+        val connection = getHttpConnection(url)
         connection.doInput = true
         connection.doOutput = true
 
