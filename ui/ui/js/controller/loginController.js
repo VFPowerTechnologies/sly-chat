@@ -14,6 +14,9 @@ LoginController.prototype = {
 
             if(this.model.validate() == true){
                 this.login();
+                $("#statusModal").openModal({
+                    dismissible: false
+                });
             }
             else{
                 $("#loginBtn").prop("disabled", false);
@@ -31,16 +34,18 @@ LoginController.prototype = {
                 $(".menu-hidden").show();
                 KEYTAP.navigationController.loadPage('contacts.html');
                 KEYTAP.navigationController.clearHistory();
+                $("#statusModal").closeModal();
             }
             else {
                 document.getElementById("login-error").innerHTML = "<li>An error occurred: " + result.errorMessage + "</li>";
                 $("#loginBtn").prop("disabled", false);
+                $("#statusModal").closeModal();
             }
         }.bind(this)).catch(function (e) {
+            $("#statusModal").closeModal();
             KEYTAP.exceptionController.displayDebugMessage(e);
             document.getElementById("login-error").innerHTML = "<li>An unexpected error occurred</li>";
             $("#loginBtn").prop("disabled", false);
-//            document.getElementById("login-error").innerHTML = "<li>Wrong email or password</li>";
         });
     },
     setInfo : function(login, password) {
