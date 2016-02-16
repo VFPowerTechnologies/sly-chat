@@ -23,7 +23,6 @@ class SQLitePreKeyPersistenceManagerTest {
         }
     }
 
-
     val keyVault = generateNewKeyVault("test")
     lateinit var persistenceManager: SQLitePersistenceManager
     lateinit var keyPersistenceManager: SQLitePreKeyPersistenceManager
