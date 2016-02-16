@@ -171,7 +171,7 @@ private fun AEADBlockCipher.processInput(input: ByteArray): ByteArray {
 
 private fun Digest.processInput(input: ByteArray): ByteArray {
     val output = ByteArray(digestSize)
-    val outputLength = update(input, 0, input.size)
+    update(input, 0, input.size)
     doFinal(output, 0)
     return output
 }
