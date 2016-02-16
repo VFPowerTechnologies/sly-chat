@@ -7,3 +7,4 @@ local.properties
 build/docs/
 ui/ui/js/jvm-service
 ui/ui/js/dispatcher.js
+generated/

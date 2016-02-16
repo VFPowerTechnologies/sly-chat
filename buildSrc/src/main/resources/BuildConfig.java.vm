@@ -1,0 +1,51 @@
+package com.vfpowertech.keytap.core;
+
+import org.jetbrains.annotations.NotNull;
+
+public class BuildConfig {
+    public static class ServerUrls {
+        public final String API_SERVER;
+
+        public ServerUrls(final String apiServer) {
+            this.API_SERVER = apiServer;
+        }
+    }
+
+    public enum UIServiceType {
+        DUMMY,
+        REAL
+    }
+
+    public enum UIServiceComponent {
+       #foreach($type in $componentEnumTypes)
+       $type#if($foreach.hasNext),#end
+       #end
+    }
+
+    public static class UIServiceMap {
+        private UIServiceMap() {}
+
+        public @NotNull UIServiceType get(@NotNull UIServiceComponent uiServiceComponent) {
+            switch (uiServiceComponent) {
+                #foreach($entry in $componentTypes)
+                case $entry.key:
+                    return UIServiceType.$entry.value;
+                #end
+                default:
+                    throw new IllegalStateException("Invalid UIServiceComponent");
+            }
+        }
+    }
+
+    private BuildConfig() {}
+
+    public static final boolean DEBUG = $debug;
+    public static final String VERSION = "$version";
+
+    public static final UIServiceType UI_SERVICE_TYPE = UIServiceType.$uiServiceType;
+
+    public static final ServerUrls DESKTOP_SERVER_URLS = new ServerUrls("$desktopHttpApiServer");
+    public static final ServerUrls ANDROID_SERVER_URLS = new ServerUrls("$androidHttpApiServer");
+
+    public static final UIServiceMap UI_SERVICE_MAP = new UIServiceMap();
+}
