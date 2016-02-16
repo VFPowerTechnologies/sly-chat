@@ -15,7 +15,7 @@ import com.vfpowertech.keytap.ui.services.dummy.DummyContactsService
 import com.vfpowertech.keytap.ui.services.dummy.DevelServiceImpl
 import com.vfpowertech.keytap.ui.services.dummy.DummyHistoryService
 import com.vfpowertech.keytap.ui.services.dummy.DummyLoginService
-import com.vfpowertech.keytap.ui.services.dummy.MessengerServiceImpl
+import com.vfpowertech.keytap.ui.services.dummy.DummyMessengerService
 import com.vfpowertech.keytap.ui.services.dummy.DummyRegistrationService
 import com.vfpowertech.keytap.ui.services.impl.LoginServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.RegistrationServiceImpl
@@ -71,7 +71,7 @@ class MainActivity : Activity() {
         val contactsService = DummyContactsService()
         dispatcher.registerService("ContactsService", ContactsServiceToJavaProxy(contactsService, dispatcher))
 
-        val messengerService = MessengerServiceImpl(contactsService)
+        val messengerService = DummyMessengerService(contactsService)
         dispatcher.registerService("MessengerService", MessengerServiceToJavaProxy(messengerService, dispatcher))
 
         val historyService = DummyHistoryService()
