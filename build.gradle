@@ -58,11 +58,12 @@ subprojects {
     }
 }
 
-task generateBuildInfo(type: GenBuildConfig) {
+task generateBuildConfig(type: GenBuildConfig) {
 }
 
 task clean << {
-    delete generateBuildInfo.generateRoot
+    delete generateBuildConfig.generateRoot
+    delete generateBuildConfig.jsOutputFile
 }
 
 project(':core') {
@@ -70,13 +71,13 @@ project(':core') {
 
     idea {
         module {
-            sourceDirs += generateBuildInfo.srcRoot
-            generatedSourceDirs += generateBuildInfo.srcRoot
+            sourceDirs += generateBuildConfig.srcRoot
+            generatedSourceDirs += generateBuildConfig.srcRoot
         }
     }
 
     afterEvaluate { p ->
-        p.sourceSets.main.java.srcDirs += generateBuildInfo.srcRoot
-        p.compileJava.dependsOn generateBuildInfo
+        p.sourceSets.main.java.srcDirs += generateBuildConfig.srcRoot
+        p.compileJava.dependsOn generateBuildConfig
     }
 }
