@@ -26,6 +26,7 @@ dependencies {
     compile project(':core')
 
     kapt "com.vfpowertech:jsbridge-processor:$versions.jsbridge"
+    kapt "com.google.dagger:dagger-compiler:$versions.dagger"
 
     compile "com.vfpowertech:jsbridge-core:$versions.jsbridge"
     compile "com.vfpowertech:jsbridge-processor-annotations:$versions.jsbridge"
@@ -34,4 +35,5 @@ dependencies {
     compile "nl.komponents.kovenant:kovenant-ui:$versions.kovenant"
     compile "org.slf4j:slf4j-api:$versions.slf4j"
     compile "com.fasterxml.jackson.core:jackson-databind:$versions.jackson"
+    compile "com.google.dagger:dagger:$versions.dagger"
 }

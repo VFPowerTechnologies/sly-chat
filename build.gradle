@@ -14,6 +14,7 @@ buildscript {
             jodaTime: '2.9.2',
             sqlite4java: '1.0.392',
             spongycastle: '1.54.0.0',
+            dagger: '2.0.2',
             dokka: '0.9.6',
             junit: '4.11',
             mockito: '1.10.19',
