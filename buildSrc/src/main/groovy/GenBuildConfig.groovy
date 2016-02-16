@@ -9,6 +9,21 @@ import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
 class GenBuildConfig extends DefaultTask {
+    private static def componentTypes = [
+        'registration',
+        'platformInfo',
+        'login',
+        'contacts',
+        'messenger',
+        'history'
+    ]
+
+    private static def componentEnumTypes = componentTypes.collect { camelCaseToStaticConvention(it) }
+
+    static String camelCaseToStaticConvention(String s) {
+        s.replaceAll(~/(?<!^)([A-Z])/) { all, g1 -> "_$g1" }.toUpperCase()
+    }
+
     //String.toBoolean returns false for anything that isn't 'true', which is stupid since it won't throw on typos
     private static boolean stringToBoolean(String s) {
         def l = s.toLowerCase()
@@ -20,7 +35,7 @@ class GenBuildConfig extends DefaultTask {
             throw new IllegalArgumentException("Expected boolean value, got $s")
     }
 
-    private static String getEnumValue(Properties settings, boolean debug, String setting, List<String> validValues) {
+    static String getEnumValue(Properties settings, boolean debug, String setting, List<String> validValues, String defaultValue) {
         List<String> keys = []
         if (debug)
             keys.add("debug.$setting")
@@ -34,8 +49,11 @@ class GenBuildConfig extends DefaultTask {
                 break
         }
 
-        if (value == null)
-            throw new InvalidUserDataException("No $setting setting found in properties file")
+        if (value == null) {
+            if (defaultValue == null)
+                throw new InvalidUserDataException("No $setting setting found in properties file")
+            return defaultValue
+        }
 
         if (!validValues.contains(value))
             throw new InvalidUserDataException("Invalid value for $setting: $value")
@@ -53,7 +71,10 @@ class GenBuildConfig extends DefaultTask {
 
     File generateRoot = new File(projectRoot, 'generated')
 
-    File outputDirectory = new File(generateRoot, 'src/main/java')
+    File srcRoot = new File(generateRoot, 'src/main/java')
+    //kotlinc seems to really freak out if this isn't in the proper dir
+    //`java.lang.IllegalStateException: Requested BuildConfig, got com.vfpowertech.keytap.core.BuildConfig`
+    File outputDirectory = new File(srcRoot, 'com/vfpowertech/keytap/core')
 
     @OutputFile
     File outputFile = new File(outputDirectory, 'BuildConfig.java')
@@ -65,6 +86,20 @@ class GenBuildConfig extends DefaultTask {
         localPropertiesPath.newReader().withReader { props.load(it) }
 
         return props
+    }
+
+    private static String findValueForKeys(Properties settings, String settingName, List<String> keys) {
+        def v
+        for (key in keys) {
+            v = settings.getProperty(key)
+            if (v != null)
+                break
+        }
+
+        if (v == null)
+            throw new InvalidUserDataException("Missing setting $settingName in properties file")
+
+        return v
     }
 
     @TaskAction
@@ -88,7 +123,7 @@ class GenBuildConfig extends DefaultTask {
         def debug = stringToBoolean(settings.getProperty('debug'))
         vc.put('debug', debug)
 
-        vc.put('uiServiceType', getEnumValue(settings, debug, 'uiServiceType', ['DUMMY', 'REAL']))
+        vc.put('uiServiceType', getEnumValue(settings, debug, 'uiServiceType', ['DUMMY', 'REAL'], null))
 
         //adds <platform><SettingName> to context
         for (setting in ['httpApiServer']) {
@@ -110,11 +145,25 @@ class GenBuildConfig extends DefaultTask {
                 }
 
                 if (url == null)
-                    throw new IllegalArgumentException("Missing setting $setting in properties file")
+                    throw new InvalidUserDataException("Missing setting $setting in properties file")
 
                 vc.put("${platform}${setting.capitalize()}", url)
             }
         }
+
+        List<String> keys = []
+        if (debug)
+            keys.add('debug.uiServiceType')
+        keys.add('uiServiceType')
+        String componentTypeDefault = findValueForKeys(settings, 'uiServiceType', keys).toUpperCase()
+
+        def componentTypes = componentTypes.collectEntries { component ->
+            def value = getEnumValue(settings, debug, "uiServiceType.$component", ['DUMMY', 'REAL'], componentTypeDefault)
+            def key = camelCaseToStaticConvention(component)
+            [(key): value.toUpperCase()]
+        }
+        vc.put('componentEnumTypes', componentEnumTypes)
+        vc.put('componentTypes', componentTypes.entrySet())
 
         def vt = ve.getTemplate('/BuildConfig.java.vm')
 

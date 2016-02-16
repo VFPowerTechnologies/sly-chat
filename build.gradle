@@ -69,13 +69,13 @@ project(':core') {
 
     idea {
         module {
-            sourceDirs += generateBuildInfo.outputDirectory
-            generatedSourceDirs += generateBuildInfo.outputDirectory
+            sourceDirs += generateBuildInfo.srcRoot
+            generatedSourceDirs += generateBuildInfo.srcRoot
         }
     }
 
     afterEvaluate { p ->
-        p.sourceSets.main.java.srcDirs += generateBuildInfo.outputDirectory
+        p.sourceSets.main.java.srcDirs += generateBuildInfo.srcRoot
         p.compileJava.dependsOn generateBuildInfo
     }
 }
