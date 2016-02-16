@@ -48,3 +48,9 @@ fun <T> SQLiteConnection.batchInsert(sql: String, items: Iterable<T>, binder: (S
 
 fun <T> SQLiteConnection.batchInsertWithinTransaction(sql: String, items: Iterable<T>, binder: (SQLiteStatement, T) -> Unit) =
     withTransaction { batchInsert(sql, items, binder) }
+
+/** Escapes the given string for use with the LIKE operator. */
+fun escapeLikeString(s: String, escape: Char): String =
+    Regex("[%_$escape]").replace(s) { m ->
+        "$escape${m.groups[0]!!.value}"
+    }
