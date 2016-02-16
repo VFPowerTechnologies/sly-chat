@@ -79,6 +79,9 @@ class GenBuildConfig extends DefaultTask {
     @OutputFile
     File outputFile = new File(outputDirectory, 'BuildConfig.java')
 
+    @OutputFile
+    File jsOutputFile = new File(projectRoot, 'ui/ui/js/build-config.js')
+
     private Properties getSettingProperties() {
         def props = new Properties()
         defaultPropertiesPath.newReader().withReader { props.load(it) }
@@ -165,9 +168,15 @@ class GenBuildConfig extends DefaultTask {
         vc.put('componentEnumTypes', componentEnumTypes)
         vc.put('componentTypes', componentTypes.entrySet())
 
-        def vt = ve.getTemplate('/BuildConfig.java.vm')
-
         outputFile.withWriter {
+            def vt = ve.getTemplate('/BuildConfig.java.vm')
+
+            vt.merge(vc, it)
+        }
+
+        jsOutputFile.withWriter {
+            def vt = ve.getTemplate('/build-config.js.vm')
+
             vt.merge(vc, it)
         }
     }
