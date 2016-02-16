@@ -20,7 +20,8 @@ private val LATEST_DATABASE_VERSION = 0
 private val TABLE_NAMES = arrayListOf(
     "prekey_ids",
     "signed_prekeys",
-    "unsigned_prekeys"
+    "unsigned_prekeys",
+    "contacts"
 )
 
 /**
@@ -124,7 +125,7 @@ class SQLitePersistenceManager(
     }
 
     /** Wrapper around running an SQLiteJob, passing the result or failure into a Promise. */
-    fun <R> runQuery(body: (SQLiteConnection) -> R): Promise<R, Exception> {
+    fun <R> runQuery(body: (connection: SQLiteConnection) -> R): Promise<R, Exception> {
         val deferred = deferred<R, Exception>()
         sqliteQueue.execute(object : SQLiteJob<Unit>() {
             override fun job(connection: SQLiteConnection): Unit {
