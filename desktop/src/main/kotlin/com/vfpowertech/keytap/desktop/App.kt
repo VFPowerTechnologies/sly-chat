@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import com.vfpowertech.keytap.core.BuildConfig
+import com.vfpowertech.keytap.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import com.vfpowertech.keytap.desktop.jfx.jsconsole.ConsoleMessageAdded
 import com.vfpowertech.keytap.desktop.services.DesktopPlatformInfoService
 import com.vfpowertech.keytap.ui.services.di.PlatformModule
@@ -56,6 +57,7 @@ class App : Application() {
         KovenantUi.uiContext {
             dispatcher = JFXDispatcher.instance
         }
+        javaClass.loadSQLiteLibraryFromResources()
 
         val webView = WebView()
 

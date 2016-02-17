@@ -1,8 +1,11 @@
 @file:JvmName("SQLiteUtils")
 package com.vfpowertech.keytap.core.persistence.sqlite
 
+import com.almworks.sqlite4java.SQLite
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteStatement
+import com.vfpowertech.keytap.core.loadSharedLibFromResource
+import org.slf4j.LoggerFactory
 
 inline fun <R> SQLiteConnection.use(body: (SQLiteConnection) -> R): R =
     try {
@@ -54,3 +57,45 @@ fun escapeLikeString(s: String, escape: Char): String =
     Regex("[%_$escape]").replace(s) { m ->
         "$escape${m.groups[0]!!.value}"
     }
+
+//not exposed; taken from Internal.getArch, getOS so we can unpack + load the shared lib from resources for the proper OS
+private fun getArch(os: String): String {
+    val arch = System.getProperty("os.arch").toLowerCase()
+    return if (os == "win32" && arch == "amd64")
+        "x64"
+    else
+        arch
+}
+
+private fun getOS(): String {
+    val os = System.getProperty("os.name").toLowerCase()
+    return when {
+        os.startsWith("mac") || os.startsWith("darwin") || os.startsWith("os x") -> "osx"
+        os.startsWith("windows") -> "win32"
+        else -> {
+            val runtimeName = System.getProperty("java.runtime.name")?.toLowerCase()
+            if (runtimeName?.contains("android") == true)
+                "android"
+            else
+                "linux"
+        }
+    }
+}
+
+fun sqlite4JavaGetLibraryName(): String {
+    val os = getOS()
+    val arch = getArch(os)
+
+    //this doesn't include the 1.0 part, for some reason
+    val version = SQLite.getLibraryVersion()
+
+    return "sqlite4java-$os-$arch-1.0.$version"
+}
+
+/** Loads the proper SQLite native library from the resource root. In core so it can be used by tests. */
+fun Class<*>.loadSQLiteLibraryFromResources() {
+    val base = sqlite4JavaGetLibraryName()
+    LoggerFactory.getLogger(javaClass).info("Attempting to load SQLite native library: {}", base)
+    loadSharedLibFromResource(base)
+    SQLite.loadLibrary()
+}

@@ -7,11 +7,14 @@ import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.almworks.sqlite4java.SQLite
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.keytap.android.services.AndroidPlatformInfoService
 import com.vfpowertech.keytap.core.persistence.AccountInfo
+import com.vfpowertech.keytap.core.persistence.sqlite.loadSQLiteLibraryFromResources
+import com.vfpowertech.keytap.core.persistence.sqlite.sqlite4JavaGetLibraryName
 import com.vfpowertech.keytap.ui.services.createAppDirectories
 import com.vfpowertech.keytap.ui.services.di.PlatformModule
 import com.vfpowertech.keytap.ui.services.di.DaggerUIServicesComponent
@@ -30,6 +33,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         //TODO create an Application class for this
+        SQLite.loadLibrary()
         KovenantUi.uiContext {
             dispatcher = androidUiDispatcher()
         }
