@@ -4,6 +4,8 @@ import com.vfpowertech.keytap.core.PlatformInfo
 import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.JsonAccountInfoPersistenceManager
+import com.vfpowertech.keytap.core.persistence.JsonKeyVaultPersistenceManager
+import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLiteContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
@@ -29,6 +31,13 @@ class PersistenceModule {
     @Provides
     fun providesContactsPersistenceManager(sqlitePersistenceManager: SQLitePersistenceManager): ContactsPersistenceManager =
         SQLiteContactsPersistenceManager(sqlitePersistenceManager)
+
+    @Singleton
+    @Provides
+    fun providesKeyVaultPersistenceManager(platformInfo: PlatformInfo): KeyVaultPersistenceManager {
+        val path = File(platformInfo.dataFileStorageDirectory, "keyvault.json")
+        return JsonKeyVaultPersistenceManager(path)
+    }
 
     //TODO I'm an idiot, need to scope this
     @Singleton

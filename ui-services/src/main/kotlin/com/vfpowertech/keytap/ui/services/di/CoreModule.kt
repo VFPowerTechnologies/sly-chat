@@ -4,6 +4,7 @@ import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceComponent
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceType
 import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
+import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
 import com.vfpowertech.keytap.ui.services.ContactsService
 import com.vfpowertech.keytap.ui.services.DevelService
 import com.vfpowertech.keytap.ui.services.HistoryService
@@ -34,11 +35,12 @@ class CoreModule {
     @Provides
     fun provideRegistrationService(
         serverUrls: BuildConfig.ServerUrls,
-        accountInfoPersistenceManager: AccountInfoPersistenceManager
+        accountInfoPersistenceManager: AccountInfoPersistenceManager,
+        keyVaultPersistenceManager: KeyVaultPersistenceManager
     ): RegistrationService = getImplementation(
         UIServiceComponent.REGISTRATION,
         { DummyRegistrationService() },
-        { RegistrationServiceImpl(serverUrls.API_SERVER, accountInfoPersistenceManager) }
+        { RegistrationServiceImpl(serverUrls.API_SERVER, accountInfoPersistenceManager, keyVaultPersistenceManager) }
     )
 
     @Singleton
