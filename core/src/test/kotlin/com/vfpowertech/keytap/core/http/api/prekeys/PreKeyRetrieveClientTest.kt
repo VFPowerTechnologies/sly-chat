@@ -30,7 +30,7 @@ class PreKeyRetrieveClientTest {
 
         val httpClient = mock<HttpClient>()
 
-        whenever(httpClient.get(any(), any())).thenReturn(httpResponse)
+        whenever(httpClient.get(any())).thenReturn(httpResponse)
 
         val client = PreKeyRetrieveClient("localhost", httpClient)
 
@@ -45,7 +45,7 @@ class PreKeyRetrieveClientTest {
         val httpResponse = HttpResponse(401, HashMap(), "")
         val httpClient = mock<HttpClient>()
 
-        whenever(httpClient.get(any(), any())).thenReturn(httpResponse)
+        whenever(httpClient.get(any())).thenReturn(httpResponse)
 
         val client = PreKeyRetrieveClient("localhost", httpClient)
 
