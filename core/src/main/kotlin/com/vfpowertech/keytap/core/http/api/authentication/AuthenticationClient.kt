@@ -6,6 +6,7 @@ import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.api.ApiResult
 import com.vfpowertech.keytap.core.http.api.InvalidResponseBodyException
 import com.vfpowertech.keytap.core.http.api.throwApiException
+import com.vfpowertech.keytap.core.http.get
 import com.vfpowertech.keytap.core.typeRef
 
 class AuthenticationClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {

@@ -25,7 +25,7 @@ class AuthenticationClientTest {
         val response = ApiResult(null, AuthenticationParamsResponse(null, AuthenticationParams(csrfToken, hashParams)))
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(response))
 
-        whenever(httpClient.get(any(), any())).thenReturn(httpResponse)
+        whenever(httpClient.get(any())).thenReturn(httpResponse)
 
         val client = AuthenticationClient("localhost", httpClient)
         val got = client.getParams(username)
