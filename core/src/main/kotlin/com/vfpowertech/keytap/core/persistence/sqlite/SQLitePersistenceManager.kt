@@ -126,7 +126,10 @@ class SQLitePersistenceManager(
     }
 
     override fun shutdown() {
-        sqliteQueue.stop(true).join()
+        if (initialized) {
+            sqliteQueue.stop(true).join()
+            initialized = false
+        }
     }
 
     private fun <R> realRunQuery(body: (connection: SQLiteConnection) -> R): Promise<R, Exception> {

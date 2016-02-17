@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import com.vfpowertech.keytap.core.BuildConfig
+import com.vfpowertech.keytap.core.persistence.sqlite.SQLiteContactsPersistenceManager
+import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import com.vfpowertech.keytap.desktop.jfx.jsconsole.ConsoleMessageAdded
 import com.vfpowertech.keytap.desktop.services.DesktopPlatformInfoService
@@ -21,6 +23,8 @@ import nl.komponents.kovenant.ui.KovenantUi
 import org.slf4j.LoggerFactory
 
 class App : Application() {
+    private var sqlitePersistenceManager: SQLitePersistenceManager? = null
+
     /** Enable the (hidden) debugger WebEngine feature */
     private fun enableDebugger(engine: WebEngine) {
         val objectMapper = ObjectMapper()
@@ -81,12 +85,20 @@ class App : Application() {
             .platformModule(platformModule)
             .build()
 
+        sqlitePersistenceManager = uiServicesComponent.sqlitePersistenceManager
+
         registerServicesOnDispatcher(dispatcher, uiServicesComponent)
 
         engine.load(javaClass.getResource("/ui/index.html").toExternalForm())
 
         primaryStage.scene = Scene(webView,  852.0, 480.0)
         primaryStage.show()
+    }
+
+    override fun stop() {
+        super.stop()
+        
+        sqlitePersistenceManager?.shutdown()
     }
 
     companion object {

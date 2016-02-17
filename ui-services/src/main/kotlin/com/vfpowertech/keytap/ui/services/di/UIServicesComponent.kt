@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.ui.services.di
 
+import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
 import com.vfpowertech.keytap.ui.services.ContactsService
 import com.vfpowertech.keytap.ui.services.DevelService
 import com.vfpowertech.keytap.ui.services.HistoryService
@@ -26,4 +27,6 @@ interface UIServicesComponent {
     val historyService: HistoryService
 
     val develService: DevelService
+
+    val sqlitePersistenceManager: SQLitePersistenceManager
 }
