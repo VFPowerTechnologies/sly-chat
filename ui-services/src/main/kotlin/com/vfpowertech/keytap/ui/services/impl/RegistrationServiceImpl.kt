@@ -3,7 +3,8 @@ package com.vfpowertech.keytap.ui.services.impl
 import com.vfpowertech.keytap.core.crypto.JsonFileKeyVaultStorage
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
-import com.vfpowertech.keytap.core.persistence.JsonAccountInfoPersistenceManager
+import com.vfpowertech.keytap.core.persistence.AccountInfo
+import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
 import com.vfpowertech.keytap.ui.services.RegistrationService
 import com.vfpowertech.keytap.ui.services.UIRegistrationInfo
 import com.vfpowertech.keytap.ui.services.UIRegistrationResult
@@ -14,7 +15,10 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.*
 
-class RegistrationServiceImpl(serverUrl: String) : RegistrationService {
+class RegistrationServiceImpl(
+    serverUrl: String,
+    private val accountInfoPersistenceManager: AccountInfoPersistenceManager
+) : RegistrationService {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val listeners = ArrayList<(String) -> Unit>()
     private val registrationClient = RegistrationClientWrapper(serverUrl)
@@ -24,7 +28,6 @@ class RegistrationServiceImpl(serverUrl: String) : RegistrationService {
         //TODO storage needs to be moved somewhere else; need platform-specific version
         //TODO persistence should be handled by some other service so we don't need to access it manually
         val keyVaultStorage = JsonFileKeyVaultStorage(File("/tmp/keyvault.json"))
-        val accountInfoPersistenceManager = JsonAccountInfoPersistenceManager(File("/tmp/accountinfo.json"))
 
         val username = info.email
         val password = info.password
@@ -39,17 +42,16 @@ class RegistrationServiceImpl(serverUrl: String) : RegistrationService {
             val registrationInfo = RegistrationInfo(username, info.name, info.phoneNumber)
             val request = registrationRequestFromKeyVault(registrationInfo, keyVault)
             registrationClient.register(request)
-        } map { result ->
+        } bind { result ->
             val uiResult = UIRegistrationResult(result.isSuccess, result.errorMessage, result.validationErrors)
             if (uiResult.successful) {
                 updateProgress("Registration complete, writing info to disk...")
-                //TODO
-                //accountInfoPersistenceManager.store(AccountInfo(info.name, info.email, info.phoneNumber)).get()
+                accountInfoPersistenceManager.store(AccountInfo(info.name, info.email, info.phoneNumber)) map { uiResult }
             }
-            else
+            else {
                 updateProgress("An error occured during registration")
-
-            uiResult
+                Promise.ofSuccess(uiResult)
+            }
         }
     }
 

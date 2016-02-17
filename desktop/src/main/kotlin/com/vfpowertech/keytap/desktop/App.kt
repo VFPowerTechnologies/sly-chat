@@ -9,6 +9,7 @@ import com.vfpowertech.keytap.desktop.services.DesktopPlatformInfoService
 import com.vfpowertech.keytap.ui.services.di.PlatformModule
 import com.vfpowertech.keytap.ui.services.registerServicesOnDispatcher
 import com.vfpowertech.keytap.ui.services.di.DaggerUIServicesComponent
+import com.vfpowertech.keytap.ui.services.createAppDirectories
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.scene.web.WebEngine
@@ -65,7 +66,15 @@ class App : Application() {
         val engineInterface = JFXWebEngineInterface(engine)
         val dispatcher = Dispatcher(engineInterface)
 
-        val platformModule = PlatformModule(DesktopPlatformInfoService(), BuildConfig.DESKTOP_SERVER_URLS)
+        val platformInfo = DesktopPlatformInfo()
+        createAppDirectories(platformInfo)
+
+        val platformModule = PlatformModule(
+            DesktopPlatformInfoService(),
+            BuildConfig.DESKTOP_SERVER_URLS,
+            platformInfo
+        )
+
         val uiServicesComponent = DaggerUIServicesComponent.builder()
             .platformModule(platformModule)
             .build()
