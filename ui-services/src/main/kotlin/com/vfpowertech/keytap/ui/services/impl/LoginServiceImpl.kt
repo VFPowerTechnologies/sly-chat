@@ -1,10 +1,12 @@
 package com.vfpowertech.keytap.ui.services.impl
 
 import com.vfpowertech.keytap.core.crypto.HashDeserializers
+import com.vfpowertech.keytap.core.crypto.KeyVault
 import com.vfpowertech.keytap.core.crypto.hashPasswordWithParams
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationParamsResponse
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
+import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
 import com.vfpowertech.keytap.ui.services.LoginService
 import com.vfpowertech.keytap.ui.services.UILoginResult
 import nl.komponents.kovenant.Promise
@@ -13,7 +15,10 @@ import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
-class LoginServiceImpl(serverUrl: String) : LoginService {
+class LoginServiceImpl(
+    serverUrl: String,
+    private val keyVaultPersistenceManager: KeyVaultPersistenceManager
+) : LoginService {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val loginClient = AuthenticationClientWrapper(serverUrl)
 
@@ -27,14 +32,24 @@ class LoginServiceImpl(serverUrl: String) : LoginService {
         val hash = hashPasswordWithParams(password, hashParams)
 
         val request = AuthenticationRequest(emailOrPhoneNumber, hash.hexify(), authParams.csrfToken)
-        return loginClient.auth(request) successUi { response ->
-            if (response.isSuccess) {
+        return loginClient.auth(request) bind { response ->
+            val data = response.data
+            if (data != null) {
+                val serializedKeyVault = data.keyVault
+                val keyVault = KeyVault.deserialize(serializedKeyVault, password)
+                keyVaultPersistenceManager.store(keyVault) map { response }
+            }
+            else
+                Promise.ofSuccess(response)
+        } successUi { response ->
+            val data = response.data
+            if (data != null) {
                 //TODO
-                CredentialsManager.authToken = response.authToken
+                CredentialsManager.authToken = data.authToken
 
-                if (response.keyRegenCount > 0) {
+                if (data.keyRegenCount > 0) {
                     //TODO schedule prekey upload in bg
-                    logger.info("Requested to generate {} new prekeys", response.keyRegenCount)
+                    logger.info("Requested to generate {} new prekeys", data.keyRegenCount)
                 }
             }
         } map { response ->

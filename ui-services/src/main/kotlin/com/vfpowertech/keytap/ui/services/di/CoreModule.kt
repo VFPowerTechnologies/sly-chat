@@ -37,20 +37,22 @@ class CoreModule {
     @Provides
     fun provideRegistrationService(
         serverUrls: BuildConfig.ServerUrls,
-        accountInfoPersistenceManager: AccountInfoPersistenceManager,
-        keyVaultPersistenceManager: KeyVaultPersistenceManager
+        accountInfoPersistenceManager: AccountInfoPersistenceManager
     ): RegistrationService = getImplementation(
         UIServiceComponent.REGISTRATION,
         { DummyRegistrationService() },
-        { RegistrationServiceImpl(serverUrls.API_SERVER, accountInfoPersistenceManager, keyVaultPersistenceManager) }
+        { RegistrationServiceImpl(serverUrls.API_SERVER, accountInfoPersistenceManager) }
     )
 
     @Singleton
     @Provides
-    fun provideLoginService(serverUrls: BuildConfig.ServerUrls): LoginService = getImplementation(
+    fun provideLoginService(
+        serverUrls: BuildConfig.ServerUrls,
+        keyVaultPersistenceManager: KeyVaultPersistenceManager
+    ): LoginService = getImplementation(
         UIServiceComponent.LOGIN,
         { DummyLoginService() },
-        { LoginServiceImpl(serverUrls.API_SERVER) }
+        { LoginServiceImpl(serverUrls.API_SERVER, keyVaultPersistenceManager) }
     )
 
     @Singleton

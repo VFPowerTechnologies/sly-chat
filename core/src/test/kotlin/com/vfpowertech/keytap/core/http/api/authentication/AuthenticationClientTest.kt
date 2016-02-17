@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
+import com.vfpowertech.keytap.core.crypto.generateNewKeyVault
 import com.vfpowertech.keytap.core.crypto.getRandomBits
 import com.vfpowertech.keytap.core.crypto.hashes.BCryptParams
 import com.vfpowertech.keytap.core.http.HttpClient
@@ -35,8 +36,11 @@ class AuthenticationClientTest {
 
     @Test
     fun `auth should return a successful AuthenticationResponse when receiving a 200 response`() {
+        val password = "test"
+        val serializedKeyVault = generateNewKeyVault(password).serialize()
+
         val httpClient = mock<HttpClient>()
-        val response = ApiResult(null, AuthenticationResponse(null, "auth", null, 0))
+        val response = ApiResult(null, AuthenticationResponse(null, AuthenticationData("auth", serializedKeyVault, null, 0)))
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(response))
 
         whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)

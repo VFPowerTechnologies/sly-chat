@@ -61,9 +61,10 @@ class KeyVault(
     }
 
     companion object {
-        fun fromStorage(keyVaultStorage: KeyVaultStorage, password: String): KeyVault {
-            val serialized = keyVaultStorage.read()
+        fun fromStorage(keyVaultStorage: KeyVaultStorage, password: String): KeyVault =
+            deserialize(keyVaultStorage.read(), password)
 
+        fun deserialize(serialized: SerializedKeyVault, password: String): KeyVault {
             val encryptedKeyPairData = serialized.encryptedKeyPair
 
             val keyPairCipherParams = CipherDeserializers.deserialize(

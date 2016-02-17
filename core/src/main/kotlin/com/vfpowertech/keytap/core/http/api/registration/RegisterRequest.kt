@@ -20,15 +20,7 @@ data class RegisterRequest(
     @get:JsonProperty("pubkey")
     val publicKey: String,
 
-    @param:JsonProperty("prikey-enc")
-    @get:JsonProperty("prikey-enc")
-    val encryptedPrivateKey: String,
-
-    @param:JsonProperty("key-hash-params")
-    @get:JsonProperty("key-hash-params")
-    val keyHashParams: String,
-
-    @param:JsonProperty("key-enc-params")
-    @get:JsonProperty("key-enc-params")
-    val keyEncryptionParams: String
+    @param:JsonProperty("key-vault")
+    @get:JsonProperty("key-vault")
+    val serializedKeyVault: String
 )
