@@ -29,12 +29,6 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        //TODO create an Application class for this
-        SQLite.loadLibrary()
-        KovenantUi.uiContext {
-            dispatcher = androidUiDispatcher()
-        }
-
         setContentView(R.layout.activity_main)
 
         webView = findViewById(R.id.webView) as WebView
