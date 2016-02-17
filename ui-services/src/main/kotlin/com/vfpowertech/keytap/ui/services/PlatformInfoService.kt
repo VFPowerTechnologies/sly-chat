@@ -4,5 +4,5 @@ import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 
 @JSToJavaGenerate
 interface PlatformInfoService {
-    fun getInfo(): PlatformInfo
+    fun getInfo(): UIPlatformInfo
 }

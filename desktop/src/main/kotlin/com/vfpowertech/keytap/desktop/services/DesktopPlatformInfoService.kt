@@ -1,17 +1,17 @@
 package com.vfpowertech.keytap.desktop.services
 
-import com.vfpowertech.keytap.ui.services.PlatformInfo
 import com.vfpowertech.keytap.ui.services.PlatformInfoService
+import com.vfpowertech.keytap.ui.services.UIPlatformInfo
 
 class DesktopPlatformInfoService : PlatformInfoService {
-    override fun getInfo(): PlatformInfo {
+    override fun getInfo(): UIPlatformInfo {
         val osName = System.getProperty("os.name")
         val os = when {
-            osName == "Linux" -> PlatformInfo.OS_LINUX
-            osName.startsWith("Windows") -> PlatformInfo.OS_WINDOWS
-            else -> PlatformInfo.OS_UNKNOWN
+            osName == "Linux" -> UIPlatformInfo.OS_LINUX
+            osName.startsWith("Windows") -> UIPlatformInfo.OS_WINDOWS
+            else -> UIPlatformInfo.OS_UNKNOWN
         }
 
-        return PlatformInfo(PlatformInfo.PLATFORM_DESKTOP, os)
+        return UIPlatformInfo(UIPlatformInfo.PLATFORM_DESKTOP, os)
     }
 }
