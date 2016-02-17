@@ -9,6 +9,7 @@ import com.vfpowertech.keytap.core.persistence.PersistenceManager
 import com.vfpowertech.keytap.core.readResourceFileText
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
+import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.task
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -25,6 +26,8 @@ private val TABLE_NAMES = arrayListOf(
 )
 
 /**
+ * Lazily initialized at time of first query.
+ *
  * @param path Pass in null for an in-memory database.
  */
 class SQLitePersistenceManager(
@@ -114,6 +117,8 @@ class SQLitePersistenceManager(
                 return Unit
             }
         }).get()
+
+        initialized = true
     }
 
     override fun initAsync(): Promise<Unit, Exception> = task {
@@ -124,8 +129,7 @@ class SQLitePersistenceManager(
         sqliteQueue.stop(true).join()
     }
 
-    /** Wrapper around running an SQLiteJob, passing the result or failure into a Promise. */
-    fun <R> runQuery(body: (connection: SQLiteConnection) -> R): Promise<R, Exception> {
+    private fun <R> realRunQuery(body: (connection: SQLiteConnection) -> R): Promise<R, Exception> {
         val deferred = deferred<R, Exception>()
         sqliteQueue.execute(object : SQLiteJob<Unit>() {
             override fun job(connection: SQLiteConnection): Unit {
@@ -142,4 +146,11 @@ class SQLitePersistenceManager(
 
         return deferred.promise
     }
+
+    /** Wrapper around running an SQLiteJob, passing the result or failure into a Promise. */
+    fun <R> runQuery(body: (connection: SQLiteConnection) -> R): Promise<R, Exception> =
+        if (!initialized)
+            initAsync() bind { realRunQuery(body) }
+        else
+            realRunQuery(body)
 }

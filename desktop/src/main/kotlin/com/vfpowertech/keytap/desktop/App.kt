@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import com.vfpowertech.keytap.core.BuildConfig
+import com.vfpowertech.keytap.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import com.vfpowertech.keytap.desktop.jfx.jsconsole.ConsoleMessageAdded
 import com.vfpowertech.keytap.desktop.services.DesktopPlatformInfoService
 import com.vfpowertech.keytap.ui.services.di.PlatformModule
 import com.vfpowertech.keytap.ui.services.registerServicesOnDispatcher
 import com.vfpowertech.keytap.ui.services.di.DaggerUIServicesComponent
+import com.vfpowertech.keytap.ui.services.createAppDirectories
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.scene.web.WebEngine
@@ -55,6 +57,7 @@ class App : Application() {
         KovenantUi.uiContext {
             dispatcher = JFXDispatcher.instance
         }
+        javaClass.loadSQLiteLibraryFromResources()
 
         val webView = WebView()
 
@@ -65,7 +68,15 @@ class App : Application() {
         val engineInterface = JFXWebEngineInterface(engine)
         val dispatcher = Dispatcher(engineInterface)
 
-        val platformModule = PlatformModule(DesktopPlatformInfoService(), BuildConfig.DESKTOP_SERVER_URLS)
+        val platformInfo = DesktopPlatformInfo()
+        createAppDirectories(platformInfo)
+
+        val platformModule = PlatformModule(
+            DesktopPlatformInfoService(),
+            BuildConfig.DESKTOP_SERVER_URLS,
+            platformInfo
+        )
+
         val uiServicesComponent = DaggerUIServicesComponent.builder()
             .platformModule(platformModule)
             .build()

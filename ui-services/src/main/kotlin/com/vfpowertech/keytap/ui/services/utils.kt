@@ -2,6 +2,7 @@
 package com.vfpowertech.keytap.ui.services
 
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
+import com.vfpowertech.keytap.core.PlatformInfo
 import com.vfpowertech.keytap.ui.services.di.UIServicesComponent
 import com.vfpowertech.keytap.ui.services.jstojava.RegistrationServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.PlatformInfoServiceToJavaProxy
@@ -10,6 +11,12 @@ import com.vfpowertech.keytap.ui.services.jstojava.LoginServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.ContactsServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.HistoryServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.DevelServiceToJavaProxy
+
+/** Create required directory structure. */
+fun createAppDirectories(platformInfo: PlatformInfo) {
+    platformInfo.appFileStorageDirectory.mkdirs()
+    platformInfo.dataFileStorageDirectory.mkdirs()
+}
 
 /** Registers all available UI services to the given Dispatcher. */
 fun registerServicesOnDispatcher(dispatcher: Dispatcher, uiServicesComponent: UIServicesComponent) {
@@ -33,5 +40,4 @@ fun registerServicesOnDispatcher(dispatcher: Dispatcher, uiServicesComponent: UI
 
     val develService = uiServicesComponent.develService
     dispatcher.registerService("DevelService", DevelServiceToJavaProxy(develService, dispatcher))
-
 }

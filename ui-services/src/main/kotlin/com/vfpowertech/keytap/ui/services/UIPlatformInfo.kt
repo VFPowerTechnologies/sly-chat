@@ -7,7 +7,7 @@ package com.vfpowertech.keytap.ui.services
  * @property os Name of OS. One of the OS_ values.
  * @constructor
  */
-data class PlatformInfo(val name: String, val os: String) {
+data class UIPlatformInfo(val name: String, val os: String) {
     companion object {
         val PLATFORM_ANDROID = "android"
         val PLATFORM_DESKTOP = "desktop"

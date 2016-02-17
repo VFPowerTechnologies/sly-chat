@@ -7,10 +7,12 @@ import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.almworks.sqlite4java.SQLite
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.keytap.android.services.AndroidPlatformInfoService
+import com.vfpowertech.keytap.ui.services.createAppDirectories
 import com.vfpowertech.keytap.ui.services.di.PlatformModule
 import com.vfpowertech.keytap.ui.services.di.DaggerUIServicesComponent
 import com.vfpowertech.keytap.ui.services.js.NavigationService
@@ -27,11 +29,6 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        //TODO create an Application class for this
-        KovenantUi.uiContext {
-            dispatcher = androidUiDispatcher()
-        }
-
         setContentView(R.layout.activity_main)
 
         webView = findViewById(R.id.webView) as WebView
@@ -43,7 +40,15 @@ class MainActivity : Activity() {
         val engineInterface = AndroidWebEngineInterface(webView)
         val dispatcher = Dispatcher(engineInterface)
 
-        val platformModule = PlatformModule(AndroidPlatformInfoService(), BuildConfig.ANDROID_SERVER_URLS)
+        val platformInfo = AndroidPlatformInfo(this)
+        createAppDirectories(platformInfo)
+
+        val platformModule = PlatformModule(
+            AndroidPlatformInfoService(),
+            BuildConfig.ANDROID_SERVER_URLS,
+            platformInfo
+        )
+
         val uiServicesComponent = DaggerUIServicesComponent.builder()
             .platformModule(platformModule)
             .build()

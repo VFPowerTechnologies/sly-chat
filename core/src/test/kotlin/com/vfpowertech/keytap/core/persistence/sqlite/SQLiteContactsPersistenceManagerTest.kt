@@ -1,7 +1,5 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
-import com.almworks.sqlite4java.SQLite
-import com.vfpowertech.keytap.core.loadSharedLibFromResource
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.DuplicateContactException
 import org.junit.After
@@ -17,8 +15,7 @@ class SQLiteContactsPersistenceManagerTest {
         @JvmStatic
         @BeforeClass
         fun loadLibrary() {
-            SQLitePreKeyPersistenceManager::class.java.loadSharedLibFromResource("sqlite4java-linux-amd64-1.0.392")
-            SQLite.loadLibrary()
+            SQLitePreKeyPersistenceManager::class.java.loadSQLiteLibraryFromResources()
         }
     }
 

@@ -11,7 +11,7 @@ import dagger.Component
 import javax.inject.Singleton
 
 @Singleton
-@Component(modules = arrayOf(CoreModule::class, PlatformModule::class))
+@Component(modules = arrayOf(CoreModule::class, PlatformModule::class, PersistenceModule::class))
 interface UIServicesComponent {
     val platformInfoService: PlatformInfoService
 
