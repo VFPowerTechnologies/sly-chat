@@ -56,7 +56,7 @@ class RegistrationClientTest {
     @Test
     fun `register should throw ServerError when receiving a 500 response`() {
         val httpClient = mock<HttpClient>()
-        val httpResponse = HttpResponse(500, HashMap(), "")
+        val httpResponse = HttpResponse(500, HashMap(), """{"error": {"message": "error message"}}""")
 
         whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)
 
