@@ -32,7 +32,15 @@ task integrationTest(type: Test) {
     testClassesDir = sourceSets.integrationTest.output.classesDir
     classpath = sourceSets.integrationTest.runtimeClasspath
     outputs.upToDateWhen { false }
+    group = 'verification'
 }
+
+integrationTest {
+    testLogging {
+        showStandardStreams = true
+    }
+}
+
 
 integrationTest.mustRunAfter test
 
