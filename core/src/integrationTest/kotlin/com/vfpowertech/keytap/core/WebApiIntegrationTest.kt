@@ -100,7 +100,9 @@ class WebApiIntegrationTest {
         @JvmStatic
         fun beforeClass() {
             try {
-                JavaHttpClient().get(serverBaseUrl)
+                val response = JavaHttpClient().get("$serverBaseUrl/dev")
+                if (response.code == 404)
+                    throw ServerDevModeDisabledException()
             }
             catch (e: java.net.ConnectException) {
                 Assume.assumeTrue(false)
