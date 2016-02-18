@@ -10,6 +10,15 @@ import org.whispersystems.libaxolotl.IdentityKey
 import org.whispersystems.libaxolotl.state.PreKeyRecord
 import org.whispersystems.libaxolotl.state.SignedPreKeyRecord
 
+fun serializePreKey(preKeyRecord: PreKeyRecord): String =
+    preKeyRecord.serialize().hexify()
+
+fun serializeOneTimePreKeys(oneTimePreKeys: List<PreKeyRecord>): List<String> =
+    oneTimePreKeys.map { serializePreKey(it) }
+
+fun serializeSignedPreKey(signedPreKeyRecord: SignedPreKeyRecord): String =
+    signedPreKeyRecord.serialize().hexify()
+
 fun preKeyStorageRequestFromGeneratedPreKeys(
     authToken: String,
     keyVault: KeyVault,
@@ -17,9 +26,9 @@ fun preKeyStorageRequestFromGeneratedPreKeys(
 ): PreKeyStoreRequest {
     val identityKey = keyVault.identityKeyPair.publicKey.serialize().hexify()
 
-    val signedPreKey = generatedPreKeys.signedPreKey.serialize().hexify()
-    val oneTimePreKeys = generatedPreKeys.oneTimePreKeys.map { it.serialize().hexify() }
-    val lastResortPreKey = generatedPreKeys.lastResortPreKey.serialize().hexify()
+    val signedPreKey = serializeSignedPreKey(generatedPreKeys.signedPreKey)
+    val oneTimePreKeys = serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys)
+    val lastResortPreKey = serializePreKey(generatedPreKeys.lastResortPreKey)
 
     return PreKeyStoreRequest(authToken, identityKey, signedPreKey, oneTimePreKeys, lastResortPreKey)
 }

@@ -1,8 +1,6 @@
 package com.vfpowertech.keytap.core
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
-
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 
@@ -45,6 +43,37 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         throwOnFailure(response)
 
         return objectMapper.readValue(response.body, SiteAuthTokenData::class.java).authToken
+    }
 
+    fun getPreKeys(username: String): SitePreKeyData {
+        val response = httpClient.get("$serverBaseUrl/dev/prekeys/one-time/$username")
+        throwOnFailure(response)
+
+        return objectMapper.readValue(response.body, SitePreKeyData::class.java)
+    }
+
+    fun addOneTimePreKeys(username: String, preKeys: List<String>) {
+        val request = mapOf(
+            "oneTimePreKeys" to preKeys
+        )
+        val body = objectMapper.writeValueAsBytes(request)
+        val response = httpClient.postJSON("$serverBaseUrl/dev/prekeys/one-time/$username", body)
+        throwOnFailure(response)
+    }
+
+    fun getSignedPreKey(username: String): String? {
+        val response = httpClient.get("$serverBaseUrl/dev/prekeys/signed/$username")
+        throwOnFailure(response)
+
+        return objectMapper.readValue(response.body, SiteSignedPreKeyData::class.java).signedPreKey
+    }
+
+    fun setSignedPreKey(username: String, signedPreKey: String) {
+        val request = mapOf(
+            "signedPreKey" to signedPreKey
+        )
+        val body = objectMapper.writeValueAsBytes(request)
+        val response = httpClient.postJSON("$serverBaseUrl/dev/prekeys/signed/$username", body)
+        throwOnFailure(response)
     }
 }

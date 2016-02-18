@@ -2,34 +2,51 @@ package com.vfpowertech.keytap.core
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.crypto.HashDeserializers
+import com.vfpowertech.keytap.core.crypto.KeyVault
+import com.vfpowertech.keytap.core.crypto.axolotl.GeneratedPreKeys
 import com.vfpowertech.keytap.core.crypto.generateNewKeyVault
+import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.crypto.hashPasswordWithParams
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.http.JavaHttpClient
+import com.vfpowertech.keytap.core.http.api.UnauthorizedException
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationClient
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
+import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrieveClient
+import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrieveRequest
+import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyStorageClient
+import com.vfpowertech.keytap.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
+import com.vfpowertech.keytap.core.http.api.prekeys.serializeOneTimePreKeys
+import com.vfpowertech.keytap.core.http.api.prekeys.serializeSignedPreKey
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
 import org.junit.Assume
 import org.junit.Before
 import org.junit.BeforeClass
+import org.junit.Ignore
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+data class GeneratedSiteUser(
+    val user: SiteUser,
+    val keyVault: KeyVault
+)
+
 class WebApiIntegrationTest {
     companion object {
         val serverBaseUrl = "http://localhost:8000"
 
-        fun newSiteUser(registrationInfo: RegistrationInfo, password: String): SiteUser {
+        fun newSiteUser(registrationInfo: RegistrationInfo, password: String): GeneratedSiteUser {
             val keyVault = generateNewKeyVault(password)
             val serializedKeyVault = keyVault.serialize()
 
-            return SiteUser(
+            val user = SiteUser(
                 registrationInfo.email,
                 keyVault.remotePasswordHash!!.hexify(),
                 keyVault.remotePasswordHashParams!!.serialize(),
@@ -37,15 +54,18 @@ class WebApiIntegrationTest {
                 mapOf(),
                 serializedKeyVault
             )
+
+            return GeneratedSiteUser(user, keyVault)
         }
 
         /** Short test for server dev functionality sanity. */
         private fun checkDevServerSanity() {
             val devClient = DevClient(serverBaseUrl, JavaHttpClient())
             val password = "test"
+            val username = "a@a.com"
 
             devClient.clear()
-            val siteUser = newSiteUser(RegistrationInfo("a@a.com", "a", "0"), password)
+            val siteUser = newSiteUser(RegistrationInfo(username, "a", "0"), password).user
 
             devClient.addUser(siteUser)
 
@@ -54,12 +74,25 @@ class WebApiIntegrationTest {
             if (users != listOf(siteUser))
                 throw DevServerInsaneException("Register functionality failed")
 
-            val authToken = devClient.createAuthToken(siteUser.username)
+            val authToken = devClient.createAuthToken(username)
 
-            val gotToken = devClient.getAuthToken(siteUser.username)
+            val gotToken = devClient.getAuthToken(username)
 
             if (gotToken != authToken)
                 throw DevServerInsaneException("Auth token functionality failed")
+
+            val oneTimePreKeys = listOf("a", "b").sorted()
+            devClient.addOneTimePreKeys(username, oneTimePreKeys)
+
+            val gotPreKeys = devClient.getPreKeys(username).oneTimePreKeys.sorted()
+            if (gotPreKeys != oneTimePreKeys)
+                throw DevServerInsaneException("One-time prekey functionality failed")
+
+            val signedPreKey = "s"
+            devClient.setSignedPreKey(username, signedPreKey)
+
+            if (devClient.getSignedPreKey(username) != signedPreKey)
+                throw DevServerInsaneException("Signed prekey functionality failed")
         }
 
         //only run if server is up
@@ -73,12 +106,7 @@ class WebApiIntegrationTest {
                 Assume.assumeTrue(false)
             }
 
-            try {
-                checkDevServerSanity()
-            }
-            catch (e: RuntimeException) {
-                throw DevServerInsaneException("Unknown error", e)
-            }
+            checkDevServerSanity()
         }
     }
 
@@ -88,10 +116,10 @@ class WebApiIntegrationTest {
     val devClient = DevClient(serverBaseUrl, JavaHttpClient())
     val objectMapper = ObjectMapper()
 
-    fun injectNewSiteUser(): SiteUser {
+    fun injectNewSiteUser(): GeneratedSiteUser {
         val siteUser = newSiteUser(dummyRegistrationInfo, password)
 
-        devClient.addUser(siteUser)
+        devClient.addUser(siteUser.user)
 
         return siteUser
     }
@@ -126,11 +154,11 @@ class WebApiIntegrationTest {
 
     @Test
     fun `register request should fail when a duplicate username is used`() {
-        val siteUser = injectNewSiteUser()
+        val siteUser = injectNewSiteUser().user
         val registrationInfo = RegistrationInfo(siteUser.username, "name", "0")
 
         val keyVault = generateNewKeyVault(password)
-        val request = registrationRequestFromKeyVault(dummyRegistrationInfo, keyVault)
+        val request = registrationRequestFromKeyVault(registrationInfo, keyVault)
 
         val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
         val result = client.register(request)
@@ -144,7 +172,7 @@ class WebApiIntegrationTest {
 
     @Test
     fun `authentication request should success when given a valid username and password hash`() {
-        val siteUser = injectNewSiteUser()
+        val siteUser = injectNewSiteUser().user
         val username = siteUser.username
 
         val client = AuthenticationClient(serverBaseUrl, JavaHttpClient())
@@ -172,5 +200,99 @@ class WebApiIntegrationTest {
         val receivedSerializedKeyVault = authApiResult.value.data!!.keyVault
 
         assertEquals(siteUser.keyVault, receivedSerializedKeyVault)
+    }
+
+    @Test
+    fun `prekey storage request should fail when an invalid auth token is used`() {
+        val keyVault = generateNewKeyVault(password)
+        val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 1)
+
+        val request = preKeyStorageRequestFromGeneratedPreKeys("a", keyVault, generatedPreKeys)
+
+        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+
+        assertFailsWith(UnauthorizedException::class) {
+            client.store(request)
+        }
+    }
+
+    fun injectPreKeys(username: String, keyVault: KeyVault): GeneratedPreKeys {
+        val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 1)
+        devClient.addOneTimePreKeys(username, serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys))
+        return generatedPreKeys
+    }
+
+    @Test
+    fun `prekey storage request should store keys on the server when a valid auth token is used`() {
+        val siteUser = injectNewSiteUser()
+        val keyVault = siteUser.keyVault
+        val username = siteUser.user.username
+
+        val authToken = devClient.createAuthToken(username)
+        val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 1)
+
+        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, keyVault, generatedPreKeys)
+
+        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+
+        val apiResponse = client.store(request)
+        assertFalse(apiResponse.isError)
+        assertTrue(apiResponse.value!!.isSuccess)
+
+        val preKeys = devClient.getPreKeys(username)
+
+        val expectedOneTimePreKeys = serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys)
+        val expectedSignedPreKey = serializeSignedPreKey(generatedPreKeys.signedPreKey)
+
+        assertEquals(expectedOneTimePreKeys, preKeys.oneTimePreKeys, "One-time prekeys don't match")
+        assertEquals(expectedSignedPreKey, preKeys.signedPreKey, "Signed prekey doesn't match")
+    }
+
+    @Test
+    fun `prekey retrieval should fail when an invalid auth token is used`() {
+        val siteUser = injectNewSiteUser()
+
+        val client = PreKeyRetrieveClient(serverBaseUrl, JavaHttpClient())
+        assertFailsWith(UnauthorizedException::class) {
+            client.retrieve(PreKeyRetrieveRequest("a", siteUser.user.username))
+        }
+    }
+
+    //TODO more elaborate tests
+
+    //TODO deal with identity key stuff
+    @Ignore
+    @Test
+    fun `prekey retrieval should return the next available prekey when a valid auth token is used`() {
+        val siteUser = injectNewSiteUser()
+        val username = siteUser.user.username
+        val generatedPreKeys = injectPreKeys(username, siteUser.keyVault)
+
+        val authToken = devClient.createAuthToken(username)
+
+        val client = PreKeyRetrieveClient(serverBaseUrl, JavaHttpClient())
+
+
+        val apiResponse = client.retrieve(PreKeyRetrieveRequest(authToken, username))
+
+        assertFalse(apiResponse.isError)
+        assertTrue(apiResponse.value!!.isSuccess)
+
+        assertNotNull(apiResponse.value.keyData, "No prekeys found")
+        val preKeyData = apiResponse.value.keyData!!
+
+        val serializedOneTimePreKeys = serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys)
+        val expectedSignedPreKey = serializeSignedPreKey(generatedPreKeys.signedPreKey)
+
+        assertEquals(expectedSignedPreKey, preKeyData.signedPreKey, "Signed prekey doesn't match")
+
+        assertTrue(serializedOneTimePreKeys.contains(preKeyData.preKey), "No matching one-time prekey found")
+    }
+
+    //TODO after I fix last resort key stuff
+    @Ignore
+    @Test
+    fun `prekey retrieval should return the last resort key once no other keys are available`() {
+
     }
 }
