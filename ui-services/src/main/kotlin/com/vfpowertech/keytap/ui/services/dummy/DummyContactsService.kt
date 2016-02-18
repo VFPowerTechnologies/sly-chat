@@ -6,8 +6,8 @@ import nl.komponents.kovenant.Promise
 
 class DummyContactsService : ContactsService {
     private val contacts = hashMapOf(
-        0 to UIContactDetails(0, "Contact A", "000-000-0000", "a@a.com"),
-        1 to UIContactDetails(1, "Contact B", "111-111-1111", "b@b.com")
+        0 to UIContactDetails(0, "Contact A", "000-000-0000", "a@a.com", "dummyPublicKey"),
+        1 to UIContactDetails(1, "Contact B", "111-111-1111", "b@b.com", "dummyPublicKey")
     )
 
     override fun updateContact(newContactDetails: UIContactDetails) {
