@@ -1,9 +1,13 @@
 package com.vfpowertech.keytap.core
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.vfpowertech.keytap.core.crypto.HashDeserializers
 import com.vfpowertech.keytap.core.crypto.generateNewKeyVault
+import com.vfpowertech.keytap.core.crypto.hashPasswordWithParams
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.http.JavaHttpClient
+import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationClient
+import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
@@ -13,7 +17,9 @@ import org.junit.BeforeClass
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class WebApiIntegrationTest {
     companion object {
@@ -66,6 +72,9 @@ class WebApiIntegrationTest {
         }
     }
 
+    val dummyRegistrationInfo = RegistrationInfo("c@a.com", "name", "000-000-0000")
+    val password = "test"
+
     val devClient = DevClient(serverBaseUrl, JavaHttpClient())
     val objectMapper = ObjectMapper()
 
@@ -76,18 +85,16 @@ class WebApiIntegrationTest {
 
     @Test
     fun `register request should succeed when given a unique username`() {
-        val keyVaultPassword = "test"
-        val keyVault = generateNewKeyVault(keyVaultPassword)
-        val registrationInfo = RegistrationInfo("c@a.com", "name", "000-000-0000")
-        val request = registrationRequestFromKeyVault(registrationInfo, keyVault)
+        val keyVault = generateNewKeyVault(password)
+        val request = registrationRequestFromKeyVault(dummyRegistrationInfo, keyVault)
 
         val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
         val result = client.register(request)
-        assertFalse(result.isError)
+        assertFalse(result.isError, "Api level error")
         assertNull(result.value!!.errorMessage)
 
         val expected = SiteUser(
-            registrationInfo.email,
+            dummyRegistrationInfo.email,
             keyVault.remotePasswordHash!!.hexify(),
             keyVault.remotePasswordHashParams!!.serialize(),
             keyVault.fingerprint,
@@ -97,5 +104,39 @@ class WebApiIntegrationTest {
         )
 
         assertEquals(listOf(expected), devClient.getUsers())
+    }
+
+    @Test
+    fun `authentication request should success when given a valid username and password hash`() {
+        val username = dummyRegistrationInfo.email
+        val siteUser = newSiteUser(dummyRegistrationInfo, password)
+
+        devClient.addUser(siteUser)
+
+        val client = AuthenticationClient(serverBaseUrl, JavaHttpClient())
+
+        val paramsApiResult = client.getParams(username)
+
+        assertFalse(paramsApiResult.isError, "getParams: Api level error")
+        assertNotNull(paramsApiResult.value, "getParams: value is null")
+        assertNotNull(paramsApiResult.value!!.params, "getParams: params is null")
+
+        val params = paramsApiResult.value.params!!
+
+        val csrfToken = params.csrfToken
+        val hashParams = HashDeserializers.deserialize(params.hashParams)
+
+        val hash = hashPasswordWithParams(password, hashParams).hexify()
+
+        val authRequest = AuthenticationRequest(username, hash, csrfToken)
+
+        val authApiResult = client.auth(authRequest)
+        assertFalse(authApiResult.isError, "auth: Api level error")
+        assertNotNull(authApiResult.value, "auth: value is null")
+        assertTrue(authApiResult.value!!.isSuccess, "auth: unsuccessful")
+
+        val receivedSerializedKeyVault = authApiResult.value.data!!.keyVault
+
+        assertEquals(siteUser.keyVault, receivedSerializedKeyVault)
     }
 }
