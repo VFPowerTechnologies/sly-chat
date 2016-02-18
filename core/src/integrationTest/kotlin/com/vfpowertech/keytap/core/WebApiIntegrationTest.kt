@@ -67,8 +67,13 @@ class WebApiIntegrationTest {
                 Assume.assumeTrue(false)
             }
 
-            if (!isDevServerSane())
-                throw RuntimeException("Dev server behavior check failed")
+            try {
+                if (!isDevServerSane())
+                    throw DevServerInsaneException()
+            }
+            catch (e: RuntimeException) {
+                throw DevServerInsaneException(e)
+            }
         }
     }
 
