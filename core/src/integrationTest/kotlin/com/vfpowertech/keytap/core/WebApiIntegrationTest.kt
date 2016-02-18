@@ -83,6 +83,14 @@ class WebApiIntegrationTest {
     val devClient = DevClient(serverBaseUrl, JavaHttpClient())
     val objectMapper = ObjectMapper()
 
+    fun injectNewSiteUser(): SiteUser {
+        val siteUser = newSiteUser(dummyRegistrationInfo, password)
+
+        devClient.addUser(siteUser)
+
+        return siteUser
+    }
+
     @Before
     fun before() {
         devClient.clear()
@@ -112,11 +120,27 @@ class WebApiIntegrationTest {
     }
 
     @Test
-    fun `authentication request should success when given a valid username and password hash`() {
-        val username = dummyRegistrationInfo.email
-        val siteUser = newSiteUser(dummyRegistrationInfo, password)
+    fun `register request should fail when a duplicate username is used`() {
+        val siteUser = injectNewSiteUser()
+        val registrationInfo = RegistrationInfo(siteUser.username, "name", "0")
 
-        devClient.addUser(siteUser)
+        val keyVault = generateNewKeyVault(password)
+        val request = registrationRequestFromKeyVault(dummyRegistrationInfo, keyVault)
+
+        val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
+        val result = client.register(request)
+
+        assertFalse(result.isError, "Api level error")
+        assertNotNull(result.value, "Null value")
+        assertNotNull(result.value!!.errorMessage, "Null error message")
+        val errorMessage = result.value.errorMessage!!
+        assertTrue(errorMessage.contains("taken"), "Invalid error message: $errorMessage}")
+    }
+
+    @Test
+    fun `authentication request should success when given a valid username and password hash`() {
+        val siteUser = injectNewSiteUser()
+        val username = siteUser.username
 
         val client = AuthenticationClient(serverBaseUrl, JavaHttpClient())
 
