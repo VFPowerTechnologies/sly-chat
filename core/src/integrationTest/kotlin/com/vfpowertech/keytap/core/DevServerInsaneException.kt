@@ -1,3 +1,5 @@
 package com.vfpowertech.keytap.core
 
-class DevServerInsaneException(cause: Throwable? = null) : RuntimeException("Dev server sanity check failed", cause)
+class DevServerInsaneException(
+    reason: String,
+    cause: Throwable? = null) : RuntimeException("Dev server sanity check failed: $reason", cause)

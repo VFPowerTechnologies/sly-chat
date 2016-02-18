@@ -40,7 +40,7 @@ class WebApiIntegrationTest {
         }
 
         /** Short test for server dev functionality sanity. */
-        private fun isDevServerSane(): Boolean {
+        private fun checkDevServerSanity() {
             val devClient = DevClient(serverBaseUrl, JavaHttpClient())
             val password = "test"
 
@@ -51,9 +51,15 @@ class WebApiIntegrationTest {
 
             val users = devClient.getUsers()
 
-            devClient.clear()
+            if (users != listOf(siteUser))
+                throw DevServerInsaneException("Register functionality failed")
 
-            return users == listOf(siteUser)
+            val authToken = devClient.createAuthToken(siteUser.username)
+
+            val gotToken = devClient.getAuthToken(siteUser.username)
+
+            if (gotToken != authToken)
+                throw DevServerInsaneException("Auth token functionality failed")
         }
 
         //only run if server is up
@@ -68,11 +74,10 @@ class WebApiIntegrationTest {
             }
 
             try {
-                if (!isDevServerSane())
-                    throw DevServerInsaneException()
+                checkDevServerSanity()
             }
             catch (e: RuntimeException) {
-                throw DevServerInsaneException(e)
+                throw DevServerInsaneException("Unknown error", e)
             }
         }
     }
