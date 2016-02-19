@@ -7,6 +7,7 @@ interface ContactsPersistenceManager {
     fun getAll(): Promise<List<ContactInfo>, Exception>
     fun add(contactInfo: ContactInfo): Promise<Unit, Exception>
     fun update(contactInfo: ContactInfo): Promise<Unit, Exception>
+    fun remove(contactInfo: ContactInfo): Promise<Unit, Exception>
 
     fun searchByPhoneNumber(phoneNumber: String): Promise<List<ContactInfo>, Exception>
     fun searchByName(name: String): Promise<List<ContactInfo>, Exception>
