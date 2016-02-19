@@ -84,3 +84,25 @@ project(':core') {
         p.compileJava.dependsOn generateBuildConfig
     }
 }
+
+project(':ui-services') {
+    apply plugin: 'idea'
+
+    //hack to give IDE access to generated files
+    if (!System.getProperty('os.name').toLowerCase().startsWith('windows')) {
+        //should prob create a generated dir with symlinks to each source set subdir (main/test/etc)
+        File linkLocation = new File("$projectDir/generated")
+        if (!linkLocation.exists()) {
+            java.nio.file.Files.createSymbolicLink(
+                linkLocation.toPath(),
+                new File("$buildDir/generated/source/kapt/main").toPath())
+        }
+
+        idea {
+            module {
+                sourceDirs += file('generated')
+                generatedSourceDirs += file('generated')
+            }
+        }
+    }
+}
