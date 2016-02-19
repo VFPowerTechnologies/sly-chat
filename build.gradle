@@ -85,17 +85,17 @@ project(':core') {
     }
 }
 
+import java.nio.file.*
+
 project(':ui-services') {
     apply plugin: 'idea'
 
     //hack to give IDE access to generated files
     if (!System.getProperty('os.name').toLowerCase().startsWith('windows')) {
-        //should prob create a generated dir with symlinks to each source set subdir (main/test/etc)
-        File linkLocation = new File("$projectDir/generated")
-        if (!linkLocation.exists()) {
-            java.nio.file.Files.createSymbolicLink(
-                linkLocation.toPath(),
-                new File("$buildDir/generated/source/kapt/main").toPath())
+        Path linkLocation = new File("$projectDir/generated").toPath()
+        Path linkTarget = new File("$buildDir/generated/source/kapt/main").toPath()
+        if (!Files.exists(linkLocation, LinkOption.NOFOLLOW_LINKS)) {
+            Files.createSymbolicLink(linkLocation, linkTarget)
         }
 
         idea {
