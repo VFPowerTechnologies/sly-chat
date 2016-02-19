@@ -37,5 +37,11 @@ class DummyContactsService : ContactsService {
             return Promise.ofSuccess(withId)
         }
     }
+
+    override fun removeContact(contactDetails: UIContactDetails): Promise<Unit, Exception> {
+        synchronized(this) {
+            return Promise.ofSuccess(Unit)
+        }
+    }
 }
 
