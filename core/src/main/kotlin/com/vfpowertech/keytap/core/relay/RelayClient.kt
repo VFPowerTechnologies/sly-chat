@@ -13,14 +13,17 @@ import com.vfpowertech.keytap.core.relay.RelayClientState.CONNECTING
 import com.vfpowertech.keytap.core.relay.RelayClientState.DISCONNECTED
 import com.vfpowertech.keytap.core.relay.RelayClientState.DISCONNECTING
 import org.slf4j.LoggerFactory
+import rx.Observable
 import rx.Observer
 import rx.Scheduler
+import rx.subjects.PublishSubject
 import java.net.InetSocketAddress
 
 /**
  * Higher-level abstraction over a relay server connection.
  *
- * Must only be used on the main app thread. Once disconnected, cannot be reused.
+ * Must only be used on the main app thread.
+ * Once disconnected, cannot be reused, as the events observable will be closed.
  *
  * Will disconnect on failed authentication.
  *
@@ -37,8 +40,10 @@ class RelayClient(
     private var relayConnection: RelayConnection? = null
     private var state = DISCONNECTED
     private var wasDisconnectRequested = false
+    private val publishSubject = PublishSubject.create<RelayClientEvent>()
 
-    //TODO expose observable
+    /** Client event stream. */
+    val events: Observable<RelayClientEvent> = publishSubject
 
     private fun onNext(event: RelayConnectionEvent) {
         when (event) {
@@ -77,56 +82,85 @@ class RelayClient(
         state = AUTHENTICATING
     }
 
+    private fun emitEvent(ev: RelayClientEvent) {
+        publishSubject.onNext(ev)
+    }
+
     /** Handles all incoming relay messages, updating internal state as necessary. */
     private fun handleRelayMessage(message: RelayMessage) {
         when (message.header.commandCode) {
             SERVER_REGISTER_SUCCESSFUL -> {
                 log.info("Registration successful")
                 state = AUTHENTICATED
+
+                emitEvent(AuthenticationSuccessful())
             }
 
             SERVER_REGISTER_REQUEST -> {
                 if (state == AUTHENTICATING) {
                     log.info("Authentication failed, disconnecting")
-                    //TODO send error
+                    emitEvent(AuthenticationFailure())
                     disconnect()
                 }
                 else {
-                    log.info("Authentication expired, renewing")
                     //TODO still need to disconnect since the web api handles auth
+                    log.info("Authentication expired")
+                    emitEvent(AuthenticationExpired())
+                    disconnect()
                 }
             }
 
             SERVER_MESSAGE_SENT -> {
+                val to = message.header.toUserEmail
+                val messageId = message.header.messageId
                 log.info(
                     "Message <{}> to <<{}>> has been successfully sent",
-                    message.header.messageId,
-                    message.header.toUserEmail
+                    messageId,
+                    to
                 )
+
+                //user was online and message was sent
+                //not sure we should bother with this event; client might not view it immediately/etc anyways
+                emitEvent(MessageSentToUser(to, messageId))
             }
 
             SERVER_MESSAGE_RECEIVED -> {
+                val to = message.header.toUserEmail
+                val messageId = message.header.messageId
                 log.info(
                     "Server has received message <{}> to <<{}>>",
-                    message.header.messageId,
-                    message.header.toUserEmail
+                    to,
+                    messageId
                 )
+
+                emitEvent(ServerReceivedMessage(to, messageId))
             }
 
+            //when receiving a message of this type, it indicates a new message from someone
             CLIENT_SEND_MESSAGE -> {
+                //not a typo
+                val from = message.header.toUserEmail
+                val messageId = message.header.messageId
                 log.info(
                     "Received message <{}> from <<{}>>",
-                    message.header.messageId,
-                    message.header.toUserEmail
+                    from,
+                    messageId
                 )
+
+                emitEvent(ReceivedMessage(from, "", messageId))
             }
 
             SERVER_USER_OFFLINE -> {
+                val to = message.header.toUserEmail
+                val messageId = message.header.messageId
+
                 log.info(
                     "User {} is offline, unable to send message <{}>",
-                    message.header.toUserEmail,
-                    message.header.messageId
+                    to,
+                    messageId
                 )
+
+                emitEvent(UserOffline(to, messageId))
             }
 
             else -> {
@@ -138,11 +172,15 @@ class RelayClient(
     private fun onCompleted() {
         log.info("Connection closed")
         state = DISCONNECTED
+
+        emitEvent(ConnectionLost(wasDisconnectRequested))
+        publishSubject.onCompleted()
     }
 
     private fun onError(e: Throwable) {
         log.error("Relay error", e)
         state = DISCONNECTED
+        publishSubject.onError(e)
     }
 
     fun connect() {
