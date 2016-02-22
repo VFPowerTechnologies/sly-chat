@@ -1,4 +1,4 @@
-package com.vfpowertech.keytap.core.relay
+package com.vfpowertech.keytap.core.relay.base
 
 import rx.Observable
 import java.net.InetSocketAddress

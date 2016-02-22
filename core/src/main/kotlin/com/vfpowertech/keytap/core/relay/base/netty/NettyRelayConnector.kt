@@ -1,8 +1,8 @@
-package com.vfpowertech.keytap.core.relay.netty
+package com.vfpowertech.keytap.core.relay.base.netty
 
-import com.vfpowertech.keytap.core.relay.RelayConnectionEstablished
-import com.vfpowertech.keytap.core.relay.RelayConnector
-import com.vfpowertech.keytap.core.relay.RelayConnectionEvent
+import com.vfpowertech.keytap.core.relay.base.RelayConnectionEstablished
+import com.vfpowertech.keytap.core.relay.base.RelayConnector
+import com.vfpowertech.keytap.core.relay.base.RelayConnectionEvent
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelOption

@@ -1,4 +1,4 @@
-package com.vfpowertech.keytap.core.relay
+package com.vfpowertech.keytap.core.relay.base
 
 /** Low-level RelayConnection event. */
 interface RelayConnectionEvent

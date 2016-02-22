@@ -1,11 +1,13 @@
-package com.vfpowertech.keytap.core.relay.netty
+package com.vfpowertech.keytap.core.relay.base.netty
 
-import com.vfpowertech.keytap.core.relay.HEADER_SIZE
-import com.vfpowertech.keytap.core.relay.Header
-import com.vfpowertech.keytap.core.relay.RelayConnectionLost
-import com.vfpowertech.keytap.core.relay.RelayMessage
-import com.vfpowertech.keytap.core.relay.RelayConnectionEvent
-import com.vfpowertech.keytap.core.relay.headerFromBytes
+import com.vfpowertech.keytap.core.relay.base.HEADER_SIZE
+import com.vfpowertech.keytap.core.relay.base.HEADER_SIZE
+import com.vfpowertech.keytap.core.relay.base.Header
+import com.vfpowertech.keytap.core.relay.base.RelayConnectionLost
+import com.vfpowertech.keytap.core.relay.base.RelayMessage
+import com.vfpowertech.keytap.core.relay.base.RelayConnectionEvent
+import com.vfpowertech.keytap.core.relay.base.headerFromBytes
+import com.vfpowertech.keytap.core.relay.base.headerFromBytes
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.ByteToMessageDecoder

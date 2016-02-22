@@ -1,7 +1,7 @@
-package com.vfpowertech.keytap.core.relay.netty
+package com.vfpowertech.keytap.core.relay.base.netty
 
-import com.vfpowertech.keytap.core.relay.RelayMessage
-import com.vfpowertech.keytap.core.relay.RelayConnection
+import com.vfpowertech.keytap.core.relay.base.RelayMessage
+import com.vfpowertech.keytap.core.relay.base.RelayConnection
 import io.netty.channel.Channel
 
 /** Wrapper around the underlying netty Channel. */

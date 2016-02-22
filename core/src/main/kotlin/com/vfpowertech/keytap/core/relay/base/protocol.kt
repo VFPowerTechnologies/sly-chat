@@ -1,8 +1,11 @@
 /** Low-level relay protocol. */
 @file:JvmName("RelayProtocol")
-package com.vfpowertech.keytap.core.relay
+package com.vfpowertech.keytap.core.relay.base
 
 import com.vfpowertech.keytap.core.crypto.hexify
+import com.vfpowertech.keytap.core.relay.UserCredentials
+import com.vfpowertech.keytap.core.relay.base.CommandCode.CLIENT_REGISTER_REQUEST
+import com.vfpowertech.keytap.core.relay.base.CommandCode.CLIENT_SEND_MESSAGE
 import java.util.*
 
 val HEADER_SIZE = 589
@@ -195,7 +198,7 @@ fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
         "",
         0,
         1,
-        CommandCode.CLIENT_REGISTER_REQUEST
+        CLIENT_REGISTER_REQUEST
     )
 
     return RelayMessage(header, ByteArray(0))
@@ -212,7 +215,7 @@ fun createSendMessageMessage(userCredentials: UserCredentials, to: String, messa
         messageId,
         0,
         1,
-        CommandCode.CLIENT_SEND_MESSAGE
+        CLIENT_SEND_MESSAGE
     )
 
     //TODO content
