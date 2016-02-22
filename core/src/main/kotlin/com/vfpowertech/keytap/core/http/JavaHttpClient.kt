@@ -58,7 +58,7 @@ fun readStreamResponse(connection: HttpURLConnection, headers: Map<String, List<
 }
 
 //TODO only trust given cert pulled from resource (unless debug is on)
-private class TrustAllTrustManager : X509TrustManager {
+class TrustAllTrustManager : X509TrustManager {
     override fun checkClientTrusted(chain: Array<out X509Certificate>, p1: String) {
         throw UnsupportedOperationException()
     }
