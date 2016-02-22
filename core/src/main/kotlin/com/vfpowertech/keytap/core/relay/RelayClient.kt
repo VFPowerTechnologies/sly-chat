@@ -40,10 +40,10 @@ class RelayClient(
 
     //TODO expose observable
 
-    private fun onNext(message: ServerMessage) {
-        when (message) {
+    private fun onNext(event: RelayConnectionEvent) {
+        when (event) {
             is RelayConnectionEstablished -> {
-                relayConnection = message.connection
+                relayConnection = event.connection
                 state = CONNECTED
                 log.info("Relay connection established")
                 authenticate()
@@ -53,7 +53,7 @@ class RelayClient(
                 log.info("Relay connection lost")
             }
 
-            is RelayMessage -> handleRelayMessage(message)
+            is RelayMessage -> handleRelayMessage(event)
         }
     }
 
@@ -148,13 +148,13 @@ class RelayClient(
     fun connect() {
         connector.connect(serverAddress)
             .observeOn(scheduler)
-            .subscribe(object : Observer<ServerMessage> {
+            .subscribe(object : Observer<RelayConnectionEvent> {
                 override fun onCompleted() {
                     this@RelayClient.onCompleted()
                 }
 
-                override fun onNext(message: ServerMessage) {
-                    this@RelayClient.onNext(message)
+                override fun onNext(event: RelayConnectionEvent) {
+                    this@RelayClient.onNext(event)
                 }
 
                 override fun onError(e: Throwable) {

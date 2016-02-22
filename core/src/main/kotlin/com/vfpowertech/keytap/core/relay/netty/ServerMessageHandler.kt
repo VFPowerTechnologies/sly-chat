@@ -4,7 +4,7 @@ import com.vfpowertech.keytap.core.relay.HEADER_SIZE
 import com.vfpowertech.keytap.core.relay.Header
 import com.vfpowertech.keytap.core.relay.RelayConnectionLost
 import com.vfpowertech.keytap.core.relay.RelayMessage
-import com.vfpowertech.keytap.core.relay.ServerMessage
+import com.vfpowertech.keytap.core.relay.RelayConnectionEvent
 import com.vfpowertech.keytap.core.relay.headerFromBytes
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
@@ -12,7 +12,7 @@ import io.netty.handler.codec.ByteToMessageDecoder
 import rx.Observer
 
 /** Handles converting received server messages into message instances. */
-class ServerMessageHandler(private val observer: Observer<in ServerMessage>) : ByteToMessageDecoder() {
+class ServerMessageHandler(private val observer: Observer<in RelayConnectionEvent>) : ByteToMessageDecoder() {
     private var lastHeader: Header? = null
 
     override fun decode(ctx: ChannelHandlerContext, `in`: ByteBuf, out: MutableList<Any>) {

@@ -1,7 +1,7 @@
 package com.vfpowertech.keytap.core.relay.netty
 
 import com.vfpowertech.keytap.core.http.TrustAllTrustManager
-import com.vfpowertech.keytap.core.relay.ServerMessage
+import com.vfpowertech.keytap.core.relay.RelayConnectionEvent
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
 import io.netty.handler.ssl.SslHandler
@@ -17,7 +17,7 @@ import javax.net.ssl.SSLEngine
  * server <-> SslHandler -> ServerMessageHandler
  *                       <- ClientMessageHandler <- client
  */
-class RelayConnectionInitializer(private val observer: Observer<in ServerMessage>) : ChannelInitializer<SocketChannel>() {
+class RelayConnectionInitializer(private val observer: Observer<in RelayConnectionEvent>) : ChannelInitializer<SocketChannel>() {
     private fun getSSLEngine(): SSLEngine {
         //FIXME
         val sslContext = SSLContext.getInstance("TLSv1.2")

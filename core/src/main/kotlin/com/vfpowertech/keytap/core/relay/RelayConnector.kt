@@ -15,5 +15,5 @@ interface RelayConnector {
      * When either the server is disconnected, or ServerConnection.disconnect is called, onNext will receive
      * a RelayConnectionLost message, followed by onComplete.
      */
-    fun connect(address: InetSocketAddress): Observable<ServerMessage>
+    fun connect(address: InetSocketAddress): Observable<RelayConnectionEvent>
 }

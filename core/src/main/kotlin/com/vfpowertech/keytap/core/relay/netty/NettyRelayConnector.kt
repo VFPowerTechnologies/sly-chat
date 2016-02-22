@@ -2,7 +2,7 @@ package com.vfpowertech.keytap.core.relay.netty
 
 import com.vfpowertech.keytap.core.relay.RelayConnectionEstablished
 import com.vfpowertech.keytap.core.relay.RelayConnector
-import com.vfpowertech.keytap.core.relay.ServerMessage
+import com.vfpowertech.keytap.core.relay.RelayConnectionEvent
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelOption
@@ -12,7 +12,7 @@ import rx.Observable
 import java.net.InetSocketAddress
 
 class NettyRelayConnector : RelayConnector {
-    override fun connect(address: InetSocketAddress): Observable<ServerMessage> =
+    override fun connect(address: InetSocketAddress): Observable<RelayConnectionEvent> =
         Observable.create({ subscriber ->
             val bootstrap = Bootstrap()
                 .group(NioEventLoopGroup())
