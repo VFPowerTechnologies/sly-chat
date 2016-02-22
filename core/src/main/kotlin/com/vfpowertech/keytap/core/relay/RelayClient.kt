@@ -63,6 +63,7 @@ class RelayClient(
                 state = CONNECTED
                 log.info("Relay connection established")
                 authenticate()
+                emitEvent(ConnectionEstablished())
             }
 
             is RelayConnectionLost -> {
