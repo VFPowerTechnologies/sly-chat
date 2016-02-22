@@ -6,17 +6,13 @@ import nl.komponents.kovenant.Promise
 
 class DummyContactsService : ContactsService {
     private val contacts = hashMapOf(
-        0 to UIContactDetails(0, "Contact A", "000-000-0000", "a@a.com", "dummyPublicKey"),
-        1 to UIContactDetails(1, "Contact B", "111-111-1111", "b@b.com", "dummyPublicKey")
+        "Contact A" to UIContactDetails("Contact A", "000-000-0000", "a@a.com", "dummyPublicKey"),
+        "Contact B" to UIContactDetails("Contact B", "111-111-1111", "b@b.com", "dummyPublicKedy")
     )
 
     override fun updateContact(newContactDetails: UIContactDetails) {
-        if (newContactDetails.id == null)
-            throw IllegalArgumentException("Contact id was null")
-
         synchronized(this) {
-            val contact = contacts[newContactDetails.id] ?: throw InvalidContactException(newContactDetails)
-            contacts[newContactDetails.id] = newContactDetails
+            newContactDetails
         }
     }
 
@@ -27,21 +23,13 @@ class DummyContactsService : ContactsService {
     }
 
     override fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
-        if (contactDetails.id != null)
-            throw IllegalArgumentException("Contact id was not null")
-
         synchronized(this) {
-            val id = contacts.size
-            val withId = contactDetails.copy(id = id)
-            contacts[id] = withId
-            return Promise.ofSuccess(withId)
+            return Promise.ofSuccess(contactDetails)
         }
     }
 
     override fun removeContact(contactDetails: UIContactDetails): Promise<Unit, Exception> {
-        synchronized(this) {
-            return Promise.ofSuccess(Unit)
-        }
+        return Promise.ofSuccess(Unit)
     }
 }
 
