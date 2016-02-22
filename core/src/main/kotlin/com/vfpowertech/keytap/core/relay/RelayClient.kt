@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.relay
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.relay.RelayClientState.AUTHENTICATED
 import com.vfpowertech.keytap.core.relay.RelayClientState.AUTHENTICATING
 import com.vfpowertech.keytap.core.relay.RelayClientState.CONNECTED
@@ -12,6 +13,7 @@ import com.vfpowertech.keytap.core.relay.base.CommandCode.SERVER_MESSAGE_SENT
 import com.vfpowertech.keytap.core.relay.base.CommandCode.SERVER_REGISTER_REQUEST
 import com.vfpowertech.keytap.core.relay.base.CommandCode.SERVER_REGISTER_SUCCESSFUL
 import com.vfpowertech.keytap.core.relay.base.CommandCode.SERVER_USER_OFFLINE
+import com.vfpowertech.keytap.core.relay.base.MessageContent
 import com.vfpowertech.keytap.core.relay.base.RelayConnection
 import com.vfpowertech.keytap.core.relay.base.RelayConnectionEstablished
 import com.vfpowertech.keytap.core.relay.base.RelayConnectionEvent
@@ -49,6 +51,7 @@ class RelayClient(
     private var state = DISCONNECTED
     private var wasDisconnectRequested = false
     private val publishSubject = PublishSubject.create<RelayClientEvent>()
+    private val objectMapper = ObjectMapper()
 
     /** Client event stream. */
     val events: Observable<RelayClientEvent> = publishSubject
@@ -155,7 +158,9 @@ class RelayClient(
                     messageId
                 )
 
-                emitEvent(ReceivedMessage(from, "", messageId))
+                val messageContent = objectMapper.readValue(message.content, MessageContent::class.java)
+
+                emitEvent(ReceivedMessage(from, messageContent.message, messageId))
             }
 
             SERVER_USER_OFFLINE -> {
