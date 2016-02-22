@@ -1,12 +1,10 @@
 package com.vfpowertech.keytap.core.relay.base.netty
 
 import com.vfpowertech.keytap.core.relay.base.HEADER_SIZE
-import com.vfpowertech.keytap.core.relay.base.HEADER_SIZE
 import com.vfpowertech.keytap.core.relay.base.Header
+import com.vfpowertech.keytap.core.relay.base.RelayConnectionEvent
 import com.vfpowertech.keytap.core.relay.base.RelayConnectionLost
 import com.vfpowertech.keytap.core.relay.base.RelayMessage
-import com.vfpowertech.keytap.core.relay.base.RelayConnectionEvent
-import com.vfpowertech.keytap.core.relay.base.headerFromBytes
 import com.vfpowertech.keytap.core.relay.base.headerFromBytes
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
@@ -56,8 +54,6 @@ class ServerMessageHandler(private val observer: Observer<in RelayConnectionEven
     }
 
     override fun channelInactive(ctx: ChannelHandlerContext) {
-        //TODO should detect disconnection (so we know whether or not to reconnect)
-        //if the server disconnected (wasn't requested), use onError
         observer.onNext(RelayConnectionLost())
         observer.onCompleted()
     }
