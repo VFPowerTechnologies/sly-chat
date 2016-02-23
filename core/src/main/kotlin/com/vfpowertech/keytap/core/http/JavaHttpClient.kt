@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.http
 
+import com.vfpowertech.keytap.core.tls.TrustAllTrustManager
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -55,18 +56,6 @@ fun readStreamResponse(connection: HttpURLConnection, headers: Map<String, List<
     }
 
     return data
-}
-
-//TODO only trust given cert pulled from resource (unless debug is on)
-private class TrustAllTrustManager : X509TrustManager {
-    override fun checkClientTrusted(chain: Array<out X509Certificate>, p1: String) {
-        throw UnsupportedOperationException()
-    }
-
-    override fun checkServerTrusted(chain: Array<out X509Certificate>, p1: String) {
-    }
-
-    override fun getAcceptedIssuers(): Array<out X509Certificate> = emptyArray()
 }
 
 private fun getHttpConnection(url: String): HttpURLConnection = getHttpConnection(URL(url))

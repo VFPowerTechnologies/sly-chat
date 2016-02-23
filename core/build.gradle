@@ -58,4 +58,7 @@ dependencies {
     compile "com.madgag.spongycastle:core:$versions.spongycastle"
     compile "org.slf4j:slf4j-api:$versions.slf4j"
     compile "com.almworks.sqlite4java:sqlite4java:$versions.sqlite4java"
+    compile "io.netty:netty-handler:$versions.netty"
+    compile "io.reactivex:rxjava:$versions.rxjava"
+    compile "io.reactivex:rxjavafx:$versions.rxjavafx"
 }
