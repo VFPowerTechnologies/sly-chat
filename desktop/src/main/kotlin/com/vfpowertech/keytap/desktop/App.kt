@@ -4,15 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import com.vfpowertech.keytap.core.BuildConfig
-import com.vfpowertech.keytap.core.persistence.sqlite.SQLiteContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import com.vfpowertech.keytap.desktop.jfx.jsconsole.ConsoleMessageAdded
 import com.vfpowertech.keytap.desktop.services.DesktopPlatformInfoService
-import com.vfpowertech.keytap.ui.services.di.PlatformModule
-import com.vfpowertech.keytap.ui.services.registerServicesOnDispatcher
-import com.vfpowertech.keytap.ui.services.di.DaggerUIServicesComponent
 import com.vfpowertech.keytap.ui.services.createAppDirectories
+import com.vfpowertech.keytap.ui.services.di.DaggerUIServicesComponent
+import com.vfpowertech.keytap.ui.services.di.PlatformModule
+import com.vfpowertech.keytap.ui.services.registerCoreServicesOnDispatcher
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.scene.web.WebEngine
@@ -87,7 +86,7 @@ class App : Application() {
 
         sqlitePersistenceManager = uiServicesComponent.sqlitePersistenceManager
 
-        registerServicesOnDispatcher(dispatcher, uiServicesComponent)
+        registerCoreServicesOnDispatcher(dispatcher, uiServicesComponent)
 
         engine.load(javaClass.getResource("/ui/index.html").toExternalForm())
 

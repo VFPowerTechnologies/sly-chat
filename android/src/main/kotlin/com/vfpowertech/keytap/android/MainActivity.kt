@@ -18,7 +18,7 @@ import com.vfpowertech.keytap.ui.services.di.PlatformModule
 import com.vfpowertech.keytap.ui.services.di.DaggerUIServicesComponent
 import com.vfpowertech.keytap.ui.services.js.NavigationService
 import com.vfpowertech.keytap.ui.services.js.javatojs.NavigationServiceToJSProxy
-import com.vfpowertech.keytap.ui.services.registerServicesOnDispatcher
+import com.vfpowertech.keytap.ui.services.registerCoreServicesOnDispatcher
 import nl.komponents.kovenant.android.androidUiDispatcher
 import nl.komponents.kovenant.ui.KovenantUi
 import org.slf4j.LoggerFactory
@@ -56,7 +56,7 @@ class MainActivity : Activity() {
             .platformModule(platformModule)
             .build()
 
-        registerServicesOnDispatcher(dispatcher, uiServicesComponent)
+        registerCoreServicesOnDispatcher(dispatcher, uiServicesComponent)
 
         //TODO should init this only once the webview has loaded the page
         webView.setWebViewClient(object : WebViewClient() {
