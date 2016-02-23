@@ -60,5 +60,4 @@ dependencies {
     compile "com.almworks.sqlite4java:sqlite4java:$versions.sqlite4java"
     compile "io.netty:netty-handler:$versions.netty"
     compile "io.reactivex:rxjava:$versions.rxjava"
-    compile "io.reactivex:rxjavafx:$versions.rxjavafx"
 }
