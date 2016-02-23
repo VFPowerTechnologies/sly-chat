@@ -1,7 +1,6 @@
 package com.vfpowertech.keytap.desktop
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
@@ -69,7 +68,6 @@ class App : Application() {
         enableDebugger(engine)
 
         val engineInterface = JFXWebEngineInterface(engine)
-        val dispatcher = Dispatcher(engineInterface)
 
         val platformInfo = DesktopPlatformInfo()
         createAppDirectories(platformInfo)
@@ -77,12 +75,15 @@ class App : Application() {
         val platformModule = PlatformModule(
             DesktopPlatformInfoService(),
             BuildConfig.DESKTOP_SERVER_URLS,
-            platformInfo
+            platformInfo,
+            engineInterface
         )
 
         val uiServicesComponent = DaggerUIServicesComponent.builder()
             .platformModule(platformModule)
             .build()
+
+        val dispatcher = uiServicesComponent.dispatcher
 
         sqlitePersistenceManager = uiServicesComponent.sqlitePersistenceManager
 

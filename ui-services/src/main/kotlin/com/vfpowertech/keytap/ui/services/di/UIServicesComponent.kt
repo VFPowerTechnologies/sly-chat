@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.ui.services.di
 
+import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
 import com.vfpowertech.keytap.ui.services.ContactsService
 import com.vfpowertech.keytap.ui.services.DevelService
@@ -29,4 +30,6 @@ interface UIServicesComponent {
     val develService: DevelService
 
     val sqlitePersistenceManager: SQLitePersistenceManager
+
+    val dispatcher: Dispatcher
 }

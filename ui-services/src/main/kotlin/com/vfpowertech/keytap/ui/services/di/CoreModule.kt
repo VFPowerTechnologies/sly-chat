@@ -1,5 +1,7 @@
 package com.vfpowertech.keytap.ui.services.di
 
+import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
+import com.vfpowertech.jsbridge.core.dispatcher.WebEngineInterface
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceComponent
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceType
@@ -83,4 +85,8 @@ class CoreModule {
         DevelServiceImpl(
             messengerService as? DummyMessengerService
         )
+
+    @Singleton
+    @Provides
+    fun provideDispatcher(webEngineInterface: WebEngineInterface): Dispatcher = Dispatcher(webEngineInterface)
 }
