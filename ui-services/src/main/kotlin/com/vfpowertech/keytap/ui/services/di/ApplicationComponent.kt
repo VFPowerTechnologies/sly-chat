@@ -12,9 +12,10 @@ import com.vfpowertech.keytap.ui.services.RegistrationService
 import dagger.Component
 import javax.inject.Singleton
 
+/** Composed of objects which must live for the lifetime of the application. */
 @Singleton
-@Component(modules = arrayOf(CoreModule::class, PlatformModule::class, PersistenceModule::class))
-interface UIServicesComponent {
+@Component(modules = arrayOf(UIServicesCoreModule::class, PlatformModule::class, PersistenceModule::class))
+interface ApplicationComponent {
     val platformInfoService: PlatformInfoService
 
     val registrationService: RegistrationService

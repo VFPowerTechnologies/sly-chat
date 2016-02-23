@@ -12,7 +12,7 @@ import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.keytap.android.services.AndroidPlatformInfoService
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.ui.services.createAppDirectories
-import com.vfpowertech.keytap.ui.services.di.DaggerUIServicesComponent
+import com.vfpowertech.keytap.ui.services.di.DaggerApplicationComponent
 import com.vfpowertech.keytap.ui.services.di.PlatformModule
 import com.vfpowertech.keytap.ui.services.js.NavigationService
 import com.vfpowertech.keytap.ui.services.js.javatojs.NavigationServiceToJSProxy
@@ -48,7 +48,7 @@ class MainActivity : Activity() {
             engineInterface
         )
 
-        val uiServicesComponent = DaggerUIServicesComponent.builder()
+        val uiServicesComponent = DaggerApplicationComponent.builder()
             .platformModule(platformModule)
             .build()
 

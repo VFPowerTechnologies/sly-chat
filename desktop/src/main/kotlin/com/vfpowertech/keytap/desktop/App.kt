@@ -8,7 +8,7 @@ import com.vfpowertech.keytap.core.persistence.sqlite.loadSQLiteLibraryFromResou
 import com.vfpowertech.keytap.desktop.jfx.jsconsole.ConsoleMessageAdded
 import com.vfpowertech.keytap.desktop.services.DesktopPlatformInfoService
 import com.vfpowertech.keytap.ui.services.createAppDirectories
-import com.vfpowertech.keytap.ui.services.di.DaggerUIServicesComponent
+import com.vfpowertech.keytap.ui.services.di.DaggerApplicationComponent
 import com.vfpowertech.keytap.ui.services.di.PlatformModule
 import com.vfpowertech.keytap.ui.services.registerCoreServicesOnDispatcher
 import javafx.application.Application
@@ -79,7 +79,7 @@ class App : Application() {
             engineInterface
         )
 
-        val uiServicesComponent = DaggerUIServicesComponent.builder()
+        val uiServicesComponent = DaggerApplicationComponent.builder()
             .platformModule(platformModule)
             .build()
 

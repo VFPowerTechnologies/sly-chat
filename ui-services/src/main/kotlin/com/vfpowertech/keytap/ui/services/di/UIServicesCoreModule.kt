@@ -28,7 +28,7 @@ import dagger.Provides
 import javax.inject.Singleton
 
 @Module
-class CoreModule {
+class UIServicesCoreModule {
     private inline fun <R> getImplementation(component: BuildConfig.UIServiceComponent, dummy: () -> R, real: () -> R) =
         when (BuildConfig.UI_SERVICE_MAP[component]) {
             UIServiceType.DUMMY -> dummy()

@@ -3,7 +3,7 @@ package com.vfpowertech.keytap.ui.services
 
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.keytap.core.PlatformInfo
-import com.vfpowertech.keytap.ui.services.di.UIServicesComponent
+import com.vfpowertech.keytap.ui.services.di.ApplicationComponent
 import com.vfpowertech.keytap.ui.services.jstojava.ContactsServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.DevelServiceToJavaProxy
 import com.vfpowertech.keytap.ui.services.jstojava.HistoryServiceToJavaProxy
@@ -19,25 +19,25 @@ fun createAppDirectories(platformInfo: PlatformInfo) {
 }
 
 /** Registers all available UI services to the given Dispatcher. */
-fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, uiServicesComponent: UIServicesComponent) {
-    val registrationService = uiServicesComponent.registrationService
+fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponent: ApplicationComponent) {
+    val registrationService = applicationComponent.registrationService
     dispatcher.registerService("RegistrationService", RegistrationServiceToJavaProxy(registrationService,  dispatcher))
 
-    val platformInfoService = uiServicesComponent.platformInfoService
+    val platformInfoService = applicationComponent.platformInfoService
     dispatcher.registerService("PlatformInfoService", PlatformInfoServiceToJavaProxy(platformInfoService, dispatcher))
 
-    val loginService = uiServicesComponent.loginService
+    val loginService = applicationComponent.loginService
     dispatcher.registerService("LoginService", LoginServiceToJavaProxy(loginService, dispatcher))
 
-    val contactsService = uiServicesComponent.contactsService
+    val contactsService = applicationComponent.contactsService
     dispatcher.registerService("ContactsService", ContactsServiceToJavaProxy(contactsService, dispatcher))
 
-    val messengerService = uiServicesComponent.messengerService
+    val messengerService = applicationComponent.messengerService
     dispatcher.registerService("MessengerService", MessengerServiceToJavaProxy(messengerService, dispatcher))
 
-    val historyService = uiServicesComponent.historyService
+    val historyService = applicationComponent.historyService
     dispatcher.registerService("HistoryService", HistoryServiceToJavaProxy(historyService, dispatcher))
 
-    val develService = uiServicesComponent.develService
+    val develService = applicationComponent.develService
     dispatcher.registerService("DevelService", DevelServiceToJavaProxy(develService, dispatcher))
 }
