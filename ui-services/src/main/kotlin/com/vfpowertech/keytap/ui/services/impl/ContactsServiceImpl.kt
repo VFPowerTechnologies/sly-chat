@@ -21,7 +21,7 @@ class ContactsServiceImpl(
         }
     }
 
-    override fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception>{
+    override fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
         return contactsPersistenceManager.add(ContactInfo(contactDetails.email, contactDetails.name, contactDetails.phoneNumber, contactDetails.publicKey)) map {
             contactDetails
         }
