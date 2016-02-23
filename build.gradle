@@ -67,9 +67,13 @@ subprojects {
 task generateBuildConfig(type: GenBuildConfig) {
 }
 
-task clean << {
-    delete generateBuildConfig.generateRoot
-    delete generateBuildConfig.jsOutputFile
+task clean {
+    doFirst {
+        delete generateBuildConfig.generateRoot
+        delete generateBuildConfig.jsOutputFile
+    }
+
+    group = 'build'
 }
 
 project(':core') {
