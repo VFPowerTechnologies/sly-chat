@@ -7,7 +7,7 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 
@@ -161,8 +161,8 @@ class SQLiteContactsPersistenceManagerTest {
         for (contact in contacts)
             contactsPersistenceManager.remove(contact)
 
-        val got = contactsPersistenceManager.searchByEmail("a@a.com").get()
+        val got = contactsPersistenceManager.get("a@a.com").get()
 
-        assertNotEquals(contacts, got)
+        assertNull(got)
     }
 }
