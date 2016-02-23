@@ -1,6 +1,6 @@
 package com.vfpowertech.keytap.core.relay.base.netty
 
-import com.vfpowertech.keytap.core.http.TrustAllTrustManager
+import com.vfpowertech.keytap.core.tls.TrustAllTrustManager
 import com.vfpowertech.keytap.core.relay.base.RelayConnectionEvent
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
