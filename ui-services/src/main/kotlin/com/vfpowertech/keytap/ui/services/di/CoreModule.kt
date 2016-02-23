@@ -4,6 +4,7 @@ import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceComponent
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceType
 import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
+import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
 import com.vfpowertech.keytap.ui.services.ContactsService
 import com.vfpowertech.keytap.ui.services.DevelService
@@ -17,6 +18,7 @@ import com.vfpowertech.keytap.ui.services.dummy.DummyHistoryService
 import com.vfpowertech.keytap.ui.services.dummy.DummyLoginService
 import com.vfpowertech.keytap.ui.services.dummy.DummyMessengerService
 import com.vfpowertech.keytap.ui.services.dummy.DummyRegistrationService
+import com.vfpowertech.keytap.ui.services.impl.ContactsServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.LoginServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.RegistrationServiceImpl
 import dagger.Module
@@ -55,10 +57,12 @@ class CoreModule {
 
     @Singleton
     @Provides
-    fun provideContactsService(): ContactsService = getImplementation(
+    fun provideContactsService(
+        contactsPersistenceManager: ContactsPersistenceManager
+    ): ContactsService = getImplementation(
         UIServiceComponent.CONTACTS,
         { DummyContactsService() },
-        { DummyContactsService() }
+        { ContactsServiceImpl(contactsPersistenceManager) }
     )
 
     @Singleton

@@ -98,4 +98,14 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
                 throw InvalidContactException(contactInfo.email)
         }
     }
+
+    override fun remove(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.prepare("DELETE FROM contacts WHERE email=?").use { stmt ->
+            stmt.bind(1, contactInfo.email)
+
+            stmt.step()
+            if (connection.changes <= 0)
+                throw InvalidContactException(contactInfo.email)
+        }
+    }
 }
