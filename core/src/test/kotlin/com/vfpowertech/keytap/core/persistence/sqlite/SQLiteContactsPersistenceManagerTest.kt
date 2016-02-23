@@ -7,6 +7,7 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 
@@ -145,5 +146,23 @@ class SQLiteContactsPersistenceManagerTest {
         val got = contactsPersistenceManager.searchByPhoneNumber("0000").get()
 
         assertEquals(expected, got)
+    }
+
+    @Test
+    fun `remove should delete the contact`() {
+        val contacts = arrayListOf(
+            ContactInfo("a@a.com", "a", "000-0000", "pubkey")
+        )
+
+        for (contact in contacts)
+            contactsPersistenceManager.add(contact)
+
+
+        for (contact in contacts)
+            contactsPersistenceManager.remove(contact)
+
+        val got = contactsPersistenceManager.get("a@a.com").get()
+
+        assertNull(got)
     }
 }
