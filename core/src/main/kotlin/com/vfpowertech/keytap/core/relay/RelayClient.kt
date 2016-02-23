@@ -150,8 +150,7 @@ class RelayClient(
 
             //when receiving a message of this type, it indicates a new message from someone
             CLIENT_SEND_MESSAGE -> {
-                //not a typo
-                val from = message.header.toUserEmail
+                val from = message.header.fromUserEmail
                 val messageId = message.header.messageId
                 log.info(
                     "Received message <{}> from <<{}>>",
