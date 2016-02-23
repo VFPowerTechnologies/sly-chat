@@ -1,10 +1,8 @@
-var ExceptionController = function () {
-    this.activeDebug = true;
-}
+var ExceptionController = function () {};
 
 ExceptionController.prototype = {
     displayDebugMessage : function (exception) {
-        if(this.activeDebug == true) {
+        if(window.buildConfig.DEBUG == true) {
             var modal = $("#exceptionModal");
             $("#exceptionName").text(exception.message);
             $("#debugStacktrace").text(exception.stacktrace);

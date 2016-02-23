@@ -1,4 +1,4 @@
-var RegistrationModel = function () {}
+var RegistrationModel = function () {};
 
 RegistrationModel.prototype = {
     setItems : function (items) {
@@ -24,4 +24,4 @@ RegistrationModel.prototype = {
     getItems : function () {
         return this.items;
     }
-}
+};

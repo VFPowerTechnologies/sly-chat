@@ -1,4 +1,4 @@
-var ChatModel = function () {}
+var ChatModel = function () {};
 
 ChatModel.prototype = {
     setController : function (controller) {
@@ -12,4 +12,4 @@ ChatModel.prototype = {
             console.error("Unable to fetch messages: " + e);
         });
     }
-}
+};

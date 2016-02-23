@@ -3,7 +3,7 @@ var ChatController = function (model, contactController) {
     this.contactController = contactController;
     this.currentMessagePosition = 0;
     this.fetchingNumber = 100;
-}
+};
 
 ChatController.prototype = {
     init : function () {
@@ -11,9 +11,9 @@ ChatController.prototype = {
         this.model.fetchMessage(this.currentMessagePosition, this.fetchingNumber, this.contactController.getCurrentContact());
         this.newMessageInput = document.getElementById('newMessageInput');
         var self = this;
-        $("#submitNewMessage").click(function (e) {
-            e.preventDefault();
+        $("#newMessageForm").submit(function () {
             self.submitNewMessage();
+            return false;
         });
     },
     displayMessage : function (messages, contact) {
@@ -66,6 +66,7 @@ ChatController.prototype = {
                 this.newMessageInput.value = "";
                 messagesNode.innerHTML += this.createMessageNode(messageDetails, "me");
                 window.scrollTo(0,document.body.scrollHeight);
+                $("#newMessageInput").click();
             }.bind(this)).catch(function (e) {
                 KEYTAP.exceptionController.displayDebugMessage(e);
                 console.log(e);
@@ -86,13 +87,12 @@ ChatController.prototype = {
             if(document.getElementById("page-title") != null && document.getElementById("page-title").textContent == messageInfo.contact.name){
                 var messagesDiv = document.getElementById("messages");
                 if(messagesDiv != null){
-                    var newMessageNode = this.createMessageNode(messageInfo.message, messageInfo.contact.name);
-                    messagesDiv.innerHTML += newMessageNode;
+                    messagesDiv.innerHTML += this.createMessageNode(messageInfo.message, messageInfo.contact.name);
                     window.scrollTo(0,document.body.scrollHeight);
                 }
             }
-            else if(document.getElementById("contact_" + messageInfo.contact.id) != null){
-                var contactBlock = document.getElementById("contact_" + messageInfo.contact.id);
+            else if(document.getElementById("contact" + messageInfo.contact.email) != null){
+                var contactBlock = document.getElementById("contact" + messageInfo.contact.email);
                 contactBlock.className = contactBlock.className.replace("new-messages", "");
                 contactBlock.className += " new-messages";
 
@@ -103,4 +103,4 @@ ChatController.prototype = {
             }
         }.bind(this));
     }
-}
+};

@@ -1,6 +1,6 @@
 var LoginController = function(model){
     this.model = model;
-}
+};
 
 LoginController.prototype = {
     init : function() {

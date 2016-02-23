@@ -1,13 +1,13 @@
 var ContactModel = function () {
     this.conversations = [];
     this.currentContact = null;
-}
+};
 
 ContactModel.prototype = {
     fetchConversation : function () {
         messengerService.getConversations().then(function(conversations){
             conversations.forEach(function(conversation){
-                this.conversations[conversation.contact.id] = conversation;
+                this.conversations[conversation.contact.email] = conversation;
             }.bind(this));
             this.controller.displayContacts(this.conversations);
         }.bind(this)).catch(function(e){
@@ -24,17 +24,17 @@ ContactModel.prototype = {
     setController : function (controller) {
         this.controller = controller;
     },
-    setCurrentContact : function (id) {
-        this.currentContact = this.conversations[id].contact;
+    setCurrentContact : function (email) {
+        this.currentContact = this.conversations[email].contact;
     },
     getCurrentContact : function () {
         return this.currentContact;
     },
-    getContact : function (id) {
-        return this.conversations[id].contact;
+    getContact : function (email) {
+        return this.conversations[email].contact;
     },
-    validateNewContact : function () {
-        var validation = $("#addContactForm").parsley({
+    validateContact : function (formId) {
+        var validation = $(formId).parsley({
             errorClass: "invalid",
             focus: 'none',
             errorsWrapper: '<div class="pull-right parsley-errors-list" style="color: red;"></div>',
@@ -49,4 +49,4 @@ ContactModel.prototype = {
             return false;
         }
     }
-}
+};

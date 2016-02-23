@@ -1,6 +1,4 @@
-var MenuController = function () {
-
-}
+var MenuController = function () {};
 
 MenuController.prototype = {
     init : function () {
@@ -18,10 +16,15 @@ MenuController.prototype = {
         $(document).on("click", '#sendFakeMessage', function(e){
             e.preventDefault();
 
-            develService.receiveFakeMessage(KEYTAP.contactController.getContact(0), "Fake").catch(function (e) {
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                console.log('receiveFakeMessage failed: ' + e);
-            });
+            var conversations = KEYTAP.contactController.getConversations();
+            for(email in conversations) {
+                if(conversations.hasOwnProperty(email)) {
+                    develService.receiveFakeMessage(conversations[email].contact, "Fake").catch(function (e) {
+                        KEYTAP.exceptionController.displayDebugMessage(e);
+                        console.log('receiveFakeMessage failed: ' + e);
+                    });
+                }
+            }
         });
 
         $(document).on("click", "#addContactBtn", function (e) {

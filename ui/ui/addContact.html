@@ -84,10 +84,13 @@
             <div class="valign col s12">
                 <div class="container">
                     <div class="container white z-depth-2">
+                        <ul id="error" style="color: red">
+
+                        </ul>
                         <form id="addContactForm" action="post">
                             <div class="input-field col s12">
                                 <i class="mdi mdi-account-circle prefix"></i>
-                                <input class="validate" id="name" type="text" required data-parsley-minlength="[4]">
+                                <input class="validate" id="name" type="text" required data-parsley-minlength="[4]" data-parsley-pattern="^[a-zA-Z\s]+$">
                                 <label for="name">Name</label>
                             </div>
                             <div class="input-field col s12">
@@ -99,6 +102,11 @@
                                 <i class="mdi mdi-account-circle prefix"></i>
                                 <input class="validate" id="email" type="email" required autocapitalize="off">
                                 <label for="email">Email</label>
+                            </div>
+                            <div class="input-field col s12">
+                                <i class="mdi mdi-account-circle prefix"></i>
+                                <input class="validate" id="publicKey" type="text" required autocapitalize="off">
+                                <label for="publicKey">Public Key</label>
                             </div>
 
                             <button id="newContactBtn" type="submit" class="waves-effect waves-light btn-large primary-color fullwidth">Add Contact</button>

@@ -1,6 +1,4 @@
-var NavigationController = function () {
-
-}
+var NavigationController = function () {};
 
 NavigationController.prototype = {
     init : function () {
@@ -37,4 +35,4 @@ NavigationController.prototype = {
             console.log("Could not clear history : " + e);
         });
     }
-}
+};
