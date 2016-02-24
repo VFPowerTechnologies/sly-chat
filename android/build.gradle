@@ -15,6 +15,13 @@ android {
     compileSdkVersion versions.androidCompileSdk
     buildToolsVersion versions.androidBuildTools
 
+    buildTypes {
+        debug {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
     defaultConfig {
         applicationId 'com.vfpowertech.keytap'
         minSdkVersion 19
