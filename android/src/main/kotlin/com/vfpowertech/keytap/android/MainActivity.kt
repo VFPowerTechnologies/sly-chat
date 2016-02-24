@@ -3,6 +3,7 @@ package com.vfpowertech.keytap.android
 import android.app.Activity
 import android.os.Bundle
 import android.view.KeyEvent
+import android.view.Window
 import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -28,6 +29,8 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         setContentView(R.layout.activity_main)
 
