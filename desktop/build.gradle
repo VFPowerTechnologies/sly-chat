@@ -20,6 +20,7 @@ dependencies {
 
     compile "com.vfpowertech:jsbridge-desktop-webengine:$versions.jsbridge"
     compile "nl.komponents.kovenant:kovenant-jfx:$versions.kovenant"
+    compile "io.reactivex:rxjavafx:$versions.rxjavafx"
 
     runtime "ch.qos.logback:logback-classic:$versions.logbackClassic"
 }
