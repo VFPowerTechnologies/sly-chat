@@ -3,12 +3,11 @@ package com.vfpowertech.keytap.desktop
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import com.vfpowertech.keytap.core.BuildConfig
-import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import com.vfpowertech.keytap.desktop.jfx.jsconsole.ConsoleMessageAdded
 import com.vfpowertech.keytap.desktop.services.DesktopPlatformInfoService
+import com.vfpowertech.keytap.ui.services.KeyTapApplication
 import com.vfpowertech.keytap.ui.services.createAppDirectories
-import com.vfpowertech.keytap.ui.services.di.DaggerApplicationComponent
 import com.vfpowertech.keytap.ui.services.di.PlatformModule
 import com.vfpowertech.keytap.ui.services.registerCoreServicesOnDispatcher
 import javafx.application.Application
@@ -19,9 +18,10 @@ import javafx.stage.Stage
 import nl.komponents.kovenant.jfx.JFXDispatcher
 import nl.komponents.kovenant.ui.KovenantUi
 import org.slf4j.LoggerFactory
+import rx.schedulers.JavaFxScheduler
 
 class App : Application() {
-    private var sqlitePersistenceManager: SQLitePersistenceManager? = null
+    private val app: KeyTapApplication = KeyTapApplication()
 
     /** Enable the (hidden) debugger WebEngine feature */
     private fun enableDebugger(engine: WebEngine) {
@@ -76,18 +76,17 @@ class App : Application() {
             DesktopPlatformInfoService(),
             BuildConfig.DESKTOP_SERVER_URLS,
             platformInfo,
-            engineInterface
+            engineInterface,
+            JavaFxScheduler.getInstance()
         )
 
-        val uiServicesComponent = DaggerApplicationComponent.builder()
-            .platformModule(platformModule)
-            .build()
+        app.init(platformModule)
 
-        val dispatcher = uiServicesComponent.dispatcher
+        val appComponent = app.appComponent
 
-        sqlitePersistenceManager = uiServicesComponent.sqlitePersistenceManager
+        val dispatcher = appComponent.dispatcher
 
-        registerCoreServicesOnDispatcher(dispatcher, uiServicesComponent)
+        registerCoreServicesOnDispatcher(dispatcher, appComponent)
 
         engine.load(javaClass.getResource("/ui/index.html").toExternalForm())
 
@@ -97,8 +96,8 @@ class App : Application() {
 
     override fun stop() {
         super.stop()
-        
-        sqlitePersistenceManager?.shutdown()
+
+        app.shutdown()
     }
 
     companion object {

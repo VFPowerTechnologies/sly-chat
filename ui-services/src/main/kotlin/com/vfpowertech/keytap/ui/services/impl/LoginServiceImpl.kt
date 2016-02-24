@@ -7,8 +7,10 @@ import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationParamsResponse
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
 import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
+import com.vfpowertech.keytap.ui.services.KeyTapApplication
 import com.vfpowertech.keytap.ui.services.LoginService
 import com.vfpowertech.keytap.ui.services.UILoginResult
+import com.vfpowertech.keytap.ui.services.UserLoginData
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
@@ -16,6 +18,7 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
 class LoginServiceImpl(
+    private val app: KeyTapApplication,
     serverUrl: String,
     private val keyVaultPersistenceManager: KeyVaultPersistenceManager
 ) : LoginService {
@@ -44,8 +47,10 @@ class LoginServiceImpl(
         } successUi { response ->
             val data = response.data
             if (data != null) {
-                //TODO
-                CredentialsManager.authToken = data.authToken
+                //TODO need to put the username in the login response if the user used their phone number
+                //TODO remove keyvault deserialization dup; successUi doesn't let us return any promises to chain though
+                val keyVault = KeyVault.deserialize(data.keyVault, password)
+                app.createUserSession(UserLoginData(emailOrPhoneNumber, keyVault, data.authToken))
 
                 if (data.keyRegenCount > 0) {
                     //TODO schedule prekey upload in bg

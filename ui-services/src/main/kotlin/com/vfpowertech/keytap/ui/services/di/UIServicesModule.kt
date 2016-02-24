@@ -6,11 +6,11 @@ import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceComponent
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceType
 import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
-import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
 import com.vfpowertech.keytap.ui.services.ContactsService
 import com.vfpowertech.keytap.ui.services.DevelService
 import com.vfpowertech.keytap.ui.services.HistoryService
+import com.vfpowertech.keytap.ui.services.KeyTapApplication
 import com.vfpowertech.keytap.ui.services.LoginService
 import com.vfpowertech.keytap.ui.services.MessengerService
 import com.vfpowertech.keytap.ui.services.RegistrationService
@@ -22,13 +22,14 @@ import com.vfpowertech.keytap.ui.services.dummy.DummyMessengerService
 import com.vfpowertech.keytap.ui.services.dummy.DummyRegistrationService
 import com.vfpowertech.keytap.ui.services.impl.ContactsServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.LoginServiceImpl
+import com.vfpowertech.keytap.ui.services.impl.MessengerServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.RegistrationServiceImpl
 import dagger.Module
 import dagger.Provides
 import javax.inject.Singleton
 
 @Module
-class UIServicesCoreModule {
+class UIServicesModule {
     private inline fun <R> getImplementation(component: BuildConfig.UIServiceComponent, dummy: () -> R, real: () -> R) =
         when (BuildConfig.UI_SERVICE_MAP[component]) {
             UIServiceType.DUMMY -> dummy()
@@ -49,30 +50,34 @@ class UIServicesCoreModule {
     @Singleton
     @Provides
     fun provideLoginService(
+        app: KeyTapApplication,
         serverUrls: BuildConfig.ServerUrls,
         keyVaultPersistenceManager: KeyVaultPersistenceManager
     ): LoginService = getImplementation(
         UIServiceComponent.LOGIN,
         { DummyLoginService() },
-        { LoginServiceImpl(serverUrls.API_SERVER, keyVaultPersistenceManager) }
+        { LoginServiceImpl(app, serverUrls.API_SERVER, keyVaultPersistenceManager) }
     )
 
     @Singleton
     @Provides
     fun provideContactsService(
-        contactsPersistenceManager: ContactsPersistenceManager
+        app: KeyTapApplication
     ): ContactsService = getImplementation(
         UIServiceComponent.CONTACTS,
         { DummyContactsService() },
-        { ContactsServiceImpl(contactsPersistenceManager) }
+        { ContactsServiceImpl(app) }
     )
 
     @Singleton
     @Provides
-    fun provideMessengerService(contactsService: ContactsService): MessengerService = getImplementation(
+    fun provideMessengerService(
+        app: KeyTapApplication,
+        contactsService: ContactsService
+    ): MessengerService = getImplementation(
         UIServiceComponent.MESSENGER,
         { DummyMessengerService(contactsService) },
-        { DummyMessengerService(contactsService) }
+        { MessengerServiceImpl(app) }
     )
 
     @Singleton

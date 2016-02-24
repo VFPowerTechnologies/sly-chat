@@ -11,15 +11,18 @@ import android.webkit.WebViewClient
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.keytap.android.services.AndroidPlatformInfoService
 import com.vfpowertech.keytap.core.BuildConfig
+import com.vfpowertech.keytap.ui.services.KeyTapApplication
 import com.vfpowertech.keytap.ui.services.createAppDirectories
-import com.vfpowertech.keytap.ui.services.di.DaggerApplicationComponent
 import com.vfpowertech.keytap.ui.services.di.PlatformModule
 import com.vfpowertech.keytap.ui.services.js.NavigationService
 import com.vfpowertech.keytap.ui.services.js.javatojs.NavigationServiceToJSProxy
 import com.vfpowertech.keytap.ui.services.registerCoreServicesOnDispatcher
 import org.slf4j.LoggerFactory
+import rx.android.schedulers.AndroidSchedulers
 
 class MainActivity : Activity() {
+    private val app: KeyTapApplication = KeyTapApplication()
+
     private var navigationService: NavigationService? = null
     private lateinit var webView: WebView
 
@@ -45,15 +48,16 @@ class MainActivity : Activity() {
             AndroidPlatformInfoService(),
             BuildConfig.ANDROID_SERVER_URLS,
             platformInfo,
-            engineInterface
+            engineInterface,
+            AndroidSchedulers.mainThread()
         )
 
-        val uiServicesComponent = DaggerApplicationComponent.builder()
-            .platformModule(platformModule)
-            .build()
+        app.init(platformModule)
 
-        val dispatcher = uiServicesComponent.dispatcher
-        registerCoreServicesOnDispatcher(dispatcher, uiServicesComponent)
+        val appComponent = app.appComponent
+
+        val dispatcher = appComponent.dispatcher
+        registerCoreServicesOnDispatcher(dispatcher, appComponent)
 
         //TODO should init this only once the webview has loaded the page
         webView.setWebViewClient(object : WebViewClient() {
