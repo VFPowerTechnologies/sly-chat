@@ -84,7 +84,7 @@ ChatController.prototype = {
     },
     addNewMessageListener : function () {
         messengerService.addNewMessageListener(function (messageInfo) {
-            if(document.getElementById("page-title") != null && document.getElementById("page-title").textContent == messageInfo.contact.name){
+            if(document.getElementById("currentPageChatEmail") != null && document.getElementById("currentPageChatEmail").innerHTML == messageInfo.contact.email){
                 var messagesDiv = document.getElementById("messages");
                 if(messagesDiv != null){
                     messagesDiv.innerHTML += this.createMessageNode(messageInfo.message, messageInfo.contact.name);
@@ -92,13 +92,11 @@ ChatController.prototype = {
                 }
             }
             else if(document.getElementById("contact" + messageInfo.contact.email) != null){
-                var contactBlock = document.getElementById("contact" + messageInfo.contact.email);
-                contactBlock.className = contactBlock.className.replace("new-messages", "");
-                contactBlock.className += " new-messages";
+                var contactBlock = $("div[id='contact" + messageInfo.contact.email + "']");
 
-                var newBadge = "<span class='pull-right label label-warning'>" + "new" + "</span>";
-                if(contactBlock.innerHTML.indexOf(newBadge) <= -1){
-                    contactBlock.innerHTML += newBadge;
+                if(!contactBlock.hasClass("new-messages")){
+                    contactBlock.addClass("new-messages");
+                    contactBlock.html(contactBlock.html() + "<span class='pull-right label label-warning'>" + "new" + "</span>");
                 }
             }
         }.bind(this));

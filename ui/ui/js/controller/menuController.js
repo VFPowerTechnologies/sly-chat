@@ -19,7 +19,7 @@ MenuController.prototype = {
             var conversations = KEYTAP.contactController.getConversations();
             for(email in conversations) {
                 if(conversations.hasOwnProperty(email)) {
-                    develService.receiveFakeMessage(conversations[email].contact, "Fake").catch(function (e) {
+                    develService.receiveFakeMessage(conversations[email].contact, "fake message to: " + conversations[email].contact.name).catch(function (e) {
                         KEYTAP.exceptionController.displayDebugMessage(e);
                         console.log('receiveFakeMessage failed: ' + e);
                     });
@@ -32,4 +32,4 @@ MenuController.prototype = {
             KEYTAP.navigationController.loadPage("addContact.html");
         });
     }
-}
+};
