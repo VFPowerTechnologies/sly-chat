@@ -45,8 +45,6 @@ public class BuildConfig {
     public static final boolean DEBUG = $debug;
     public static final String VERSION = "$version";
 
-    public static final UIServiceType UI_SERVICE_TYPE = UIServiceType.$uiServiceType;
-
     public static final ServerUrls DESKTOP_SERVER_URLS = new ServerUrls("$desktopHttpApiServer", $desktopRelayServer);
     public static final ServerUrls ANDROID_SERVER_URLS = new ServerUrls("$androidHttpApiServer", $androidRelayServer);
 
