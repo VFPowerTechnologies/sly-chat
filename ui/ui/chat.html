@@ -78,23 +78,17 @@
 
   <div class="navbar-fixed-bottom container">
     <div class="navbar">
-      <div style="background: #fff; bottom: 0; left: 0; position: fixed; height: 80px; width: 100%;">
-        <form id="newMessageForm" action="post">
-          <div class="row" style="margin-left: 2px; margin-right: 2px;">
-            <div class="input-field col s9 l11" style="text-align: center;">
-              <input type="text" id="newMessageInput" name="newMessageInput">
-            </div>
-            <div class="input-field col s3 l1" style="line-height: 80px; text-align: center;">
-              <button id="submitNewMessage" class="btn btn-xs"><i class="mdi mdi-send"></i></button>
-            </div>
-          </div>
+      <div id="newMessageInputContainer" style="background: #fff; bottom: 0; left: 0; position: fixed; min-height: 45px; width: 100%;">
+        <form id="newMessageForm" method="post">
+            <textarea placeholder="Type your message" id="newMessageInput" name="newMessageInput" style="resize: none; height: 45px;"></textarea>
+            <button id="newMessageSubmitBtn"><i class="mdi mdi-send mdi-2x"></i></button>
         </form>
       </div>
     </div>
   </div>
 
   <!-- Page Content -->
-  <div class="snap-content main-content-body" id="content" style="padding-bottom: 40px;">
+  <div class="snap-content main-content-body" id="content" style="padding-bottom: 45px;">
 
     <!-- Main Content -->
     <div class="scene_element scene_element--fadeinup">
@@ -103,7 +97,7 @@
         <div class="row">
           <div class="col s12">
             <div class="chat">
-              <ul id="messages">
+              <ul id="messages" style="margin-bottom: 0;">
 
               </ul>
             </div>

@@ -25,7 +25,7 @@ ChatController.prototype = {
         if(messagesHtml != ""){
             messagesNode.innerHTML = messagesHtml;
         }
-        window.scrollTo(0,document.body.scrollHeight);
+        $("html,body").animate({scrollTop: $("ul#messages li:last").offset().top});
     },
     createMessageNode : function (message, contactName) {
         if(message.sent == true){
@@ -91,12 +91,13 @@ ChatController.prototype = {
                     window.scrollTo(0,document.body.scrollHeight);
                 }
             }
-            else if(document.getElementById("contact" + messageInfo.contact.email) != null){
-                var contactBlock = $("div[id='contact" + messageInfo.contact.email + "']");
+            else if(document.getElementById("contact%" + messageInfo.contact.email) != null){
+                var contactBlock = $("div[id='contact%" + messageInfo.contact.email + "']");
 
                 if(!contactBlock.hasClass("new-messages")){
+                    var contact = contactBlock.find(".contact");
                     contactBlock.addClass("new-messages");
-                    contactBlock.html(contactBlock.html() + "<span class='pull-right label label-warning'>" + "new" + "</span>");
+                    contact.append("<span class='pull-right label label-warning' style='bottom: 5px;'>" + "new" + "</span>");
                 }
             }
         }.bind(this));

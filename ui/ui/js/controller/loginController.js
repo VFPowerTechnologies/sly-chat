@@ -45,6 +45,7 @@ LoginController.prototype = {
             $("#statusModal").closeModal();
             KEYTAP.exceptionController.displayDebugMessage(e);
             document.getElementById("login-error").innerHTML = "<li>An unexpected error occurred</li>";
+            console.log("An unexpected error occured: " + e);
             $("#loginBtn").prop("disabled", false);
         });
     },

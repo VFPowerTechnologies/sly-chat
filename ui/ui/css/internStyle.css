@@ -1,9 +1,10 @@
 .main-content {
-    margin-top: 56px;
+    margin-top: 52px;
 }
 
 .header-bar {
     height: 56px;
+    min-height: 56px;
     margin-bottom: 0;
     background: #212121;
     top: 0;
@@ -31,25 +32,18 @@
 }
 
 .contact-link {
-    min-height: 73px;
-    border-radius: 5px;
+    height: 70px;
+    line-height: 35px;
     padding-left: 5px;
     padding-right: 5px;
     cursor: pointer;
     margin-bottom: 2px;
-    background: #e7e7e7;
+    border-bottom: 1px solid gray;
 }
 
-.new-messages {
-    background: #b1b1b1;
-}
-
-.new-messages p {
-    color: black;
-}
-
-.new-messages span {
-    color: #272727;
+.contact-link p {
+    font-size: 15px;
+    font-family: 'Montserrat', sans-serif;
 }
 
 .modalHeader {
@@ -59,4 +53,37 @@
 
 .modalContent {
     text-align: center;
+}
+
+#newMessageInputContainer {
+    position: relative;
+    min-height: 100px;
+    margin-top: 0;
+}
+
+#newMessageInput {
+    position: absolute;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    bottom: 0;
+    left: 0;
+    padding-right: 50px;
+}
+
+#newMessageSubmitBtn {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    color: white;
+    background: black;
+}
+
+.first-contact {
+    border-top: 1px solid gray;
+}
+
+.contact span {
+    font-size: 10px;
+    margin-right: -5px;
 }

@@ -3,4 +3,7 @@ $(function(){
     document.getElementById("name").focus();
 
     KEYTAP.registrationController.init();
+
+    var height = window.innerHeight - 52;
+    $("#content").css("min-height", height + "px");
 });

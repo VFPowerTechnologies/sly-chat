@@ -17,33 +17,20 @@ ContactController.prototype = {
         contactList = document.getElementById("contactList");
         contactList.innerHTML = "";
 
+        var i = 0;
         for (var email in conversations) {
             if(conversations.hasOwnProperty(email)) {
-                contactList.innerHTML += this.createContactBlock(conversations[email].contact, conversations[email].status);
+                contactList.innerHTML += this.createContactBlock(conversations[email].contact, conversations[email].status, i);
             }
+            i++;
         }
 
         this.addEventListener();
     },
-    createContactBlock : function (contact, status) {
-        var lastMessage;
-        var timestamp;
+    createContactBlock : function (contact, status, index) {
         var availableClass;
-        var newMessageClass;
-        var newBadge;
-
-        if(status.lastMessage == null){
-            lastMessage = "";
-            timestamp = ""
-        }
-        else if(status.lastMessage.message.length > 40){
-            lastMessage = status.lastmessage.message.substring(0, 40) + "...";
-            timestamp = status.lastMessage.timestamp;
-        }
-        else{
-            lastMessage = status.lastMessage.message;
-            timestamp = status.lastMessage.timestamp;
-        }
+        var contactLinkClass = "contact-link ";
+        var newBadge = "";
 
         if(status.online == true){
             availableClass = "dot green";
@@ -53,20 +40,17 @@ ContactController.prototype = {
         }
 
         if(status.unreadMessageCount > 0){
-            newMessageClass = "new-messages";
+            contactLinkClass += "new-messages";
             newBadge = "<span class='pull-right label label-warning'>" + "new" + "</span>";
         }
-        else{
-            newMessageClass = "";
-            newBadge = "";
-        }
 
-        var contactBlock = "<div class='contact-link " + newMessageClass + "' id='contact" + contact.email + "'><div class='contact'>";
+        if(index == 0)
+            contactLinkClass += " first-contact";
+
+        var contactBlock = "<div class='" + contactLinkClass + "' id='contact%" + contact.email + "'><div class='contact'>";
         contactBlock += this.createAvatar(contact.name);
         contactBlock += "<span class='" + availableClass + "'></span>";
         contactBlock += "<p>" + contact.name + "</p>";
-        contactBlock += "<span class='last_message'>" + lastMessage + "</span>";
-        contactBlock += "<span class='time'>" + timestamp + "</span>";
         contactBlock += "</div>" + newBadge + "</div>";
 
         return contactBlock;
@@ -92,7 +76,7 @@ ContactController.prototype = {
                     self.model.setCurrentContact(email);
                     KEYTAP.navigationController.loadPage("chat.html");
                 };
-            })(this, links[i].id.split("contact")[1], links[i]));
+            })(this, links[i].id.split("contact%")[1], links[i]));
         }
     },
     getCurrentContact : function () {
