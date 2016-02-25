@@ -2,6 +2,7 @@ package com.vfpowertech.keytap.ui.services.impl
 
 import com.vfpowertech.keytap.core.relay.ReceivedMessage
 import com.vfpowertech.keytap.core.relay.RelayClientEvent
+import com.vfpowertech.keytap.core.relay.ServerReceivedMessage
 import com.vfpowertech.keytap.ui.services.*
 import com.vfpowertech.keytap.ui.services.dummy.UIMessageInfo
 import nl.komponents.kovenant.Promise
@@ -42,6 +43,11 @@ class MessengerServiceImpl(
             is ReceivedMessage -> {
                 val message = UIMessage(0, false, "time", event.message)
                 notifyNewMessageListeners(UIMessageInfo(event.from, message))
+            }
+
+            is ServerReceivedMessage -> {
+                //TODO
+                //notifyMessageStatusUpdateListeners(event.to, UIMessage(0, false, null, ""))
             }
 
             else -> {
