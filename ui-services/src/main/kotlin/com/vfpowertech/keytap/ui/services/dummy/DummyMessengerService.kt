@@ -1,11 +1,6 @@
 package com.vfpowertech.keytap.ui.services.dummy
 
-import com.vfpowertech.keytap.ui.services.ContactsService
-import com.vfpowertech.keytap.ui.services.MessengerService
-import com.vfpowertech.keytap.ui.services.UIContactDetails
-import com.vfpowertech.keytap.ui.services.UIConversation
-import com.vfpowertech.keytap.ui.services.UIConversationStatus
-import com.vfpowertech.keytap.ui.services.UIMessage
+import com.vfpowertech.keytap.ui.services.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import java.text.SimpleDateFormat
@@ -25,7 +20,7 @@ class DummyMessengerService(private val contactsService: ContactsService) : Mess
     private val contactRequestListeners = ArrayList<(UIContactDetails) -> Unit>()
 
     private val conversations = HashMap<UIContactDetails, UIConversationStatus>()
-    private val messages = HashMap<UIContactDetails, MutableList<UIMessage>>()
+    private val messages = HashMap<String, MutableList<UIMessage>>()
 
     private fun getConversationFor(contact: UIContactDetails): UIConversationStatus = synchronized(this) {
         val maybeConvo = conversations[contact]
@@ -36,12 +31,12 @@ class DummyMessengerService(private val contactsService: ContactsService) : Mess
         return convo
     }
 
-    private fun getMessagesFor(contact: UIContactDetails): MutableList<UIMessage> = synchronized(this) {
-        val maybeMessages = messages[contact]
+    private fun getMessagesFor(contactEmail: String): MutableList<UIMessage> = synchronized(this) {
+        val maybeMessages = messages[contactEmail]
         if (maybeMessages != null)
             return maybeMessages
         val list = ArrayList<UIMessage>()
-        messages[contact] = list
+        messages[contactEmail] = list
         //fill with dummy received messages
         val count = 19
         for (i in 0..count) {
@@ -58,7 +53,7 @@ class DummyMessengerService(private val contactsService: ContactsService) : Mess
     }
 
     override fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception> = synchronized(this) {
-        val messages = getMessagesFor(contact)
+        val messages = getMessagesFor(contact.email)
         val id = messages.size
         val newMessage = UIMessage(id, true, null, message)
         messages.add(0, newMessage)
@@ -68,7 +63,7 @@ class DummyMessengerService(private val contactsService: ContactsService) : Mess
             val withTimestamp = newMessage.copy(timestamp = timestamp)
             val idx = messages.indexOf(newMessage)
             messages[idx] = withTimestamp
-            notifyMessageStatusUpdateListeners(contact, withTimestamp)
+            notifyMessageStatusUpdateListeners(contact.email, withTimestamp)
         }, 1000)
         return Promise.ofSuccess(newMessage)
     }
@@ -79,12 +74,12 @@ class DummyMessengerService(private val contactsService: ContactsService) : Mess
         }
     }
 
-    fun receiveNewMessage(contact: UIContactDetails, messageText: String) {
+    fun receiveNewMessage(contactEmail: String, messageText: String) {
         synchronized(this) {
-            val messages = getMessagesFor(contact)
+            val messages = getMessagesFor(contactEmail)
             val id = messages.size
             val message = UIMessage(id, false, null, messageText)
-            val messageInfo = UIMessageInfo(contact, message)
+            val messageInfo = UIMessageInfo(contactEmail, message)
             messages.add(0, message)
             notifyNewMessageListeners(messageInfo)
         }
@@ -97,10 +92,10 @@ class DummyMessengerService(private val contactsService: ContactsService) : Mess
         }
     }
 
-    private fun notifyMessageStatusUpdateListeners(contact: UIContactDetails, message: UIMessage) {
+    private fun notifyMessageStatusUpdateListeners(contactEmail: String, message: UIMessage) {
         synchronized(this) {
             for (listener in messageStatusUpdateListeners)
-                listener(UIMessageInfo(contact, message))
+                listener(UIMessageInfo(contactEmail, message))
         }
     }
 
@@ -127,7 +122,7 @@ class DummyMessengerService(private val contactsService: ContactsService) : Mess
 
     override fun getLastMessagesFor(contact: UIContactDetails, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> = synchronized(this) {
         //TODO startingAt/count
-        val messages = getMessagesFor(contact)
+        val messages = getMessagesFor(contact.email)
         Promise.ofSuccess(messages)
     }
 
