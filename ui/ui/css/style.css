@@ -292,7 +292,7 @@ img {
   border-radius: 10px;
 }
 .chat ul li.message-left {
-  margin-bottom: 36px;
+  margin-bottom: 16px;
 }
 .chat ul li.message-right > img {
   float: right;
