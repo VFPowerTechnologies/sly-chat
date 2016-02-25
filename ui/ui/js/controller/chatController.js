@@ -84,10 +84,11 @@ ChatController.prototype = {
     },
     addNewMessageListener : function () {
         messengerService.addNewMessageListener(function (messageInfo) {
-            if(document.getElementById("currentPageChatEmail") != null && document.getElementById("currentPageChatEmail").innerHTML == messageInfo.contact.email){
+            if(document.getElementById("currentPageChatEmail") != null && document.getElementById("currentPageChatEmail").innerHTML == messageInfo.contact){
                 var messagesDiv = document.getElementById("messages");
                 if(messagesDiv != null){
-                    messagesDiv.innerHTML += this.createMessageNode(messageInfo.message, messageInfo.contact.name);
+                    var contactName = this.contactController.getContact(messageInfo.contact).name;
+                    messagesDiv.innerHTML += this.createMessageNode(messageInfo.message, contactName);
                     window.scrollTo(0,document.body.scrollHeight);
                 }
             }
