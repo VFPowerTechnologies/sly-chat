@@ -2,21 +2,13 @@ package com.vfpowertech.keytap.ui.services.impl
 
 import com.vfpowertech.keytap.core.relay.ReceivedMessage
 import com.vfpowertech.keytap.core.relay.RelayClientEvent
-import com.vfpowertech.keytap.ui.services.KeyTapApplication
-import com.vfpowertech.keytap.ui.services.MessengerService
-import com.vfpowertech.keytap.ui.services.RelayClientManager
-import com.vfpowertech.keytap.ui.services.UIContactDetails
-import com.vfpowertech.keytap.ui.services.UIConversation
-import com.vfpowertech.keytap.ui.services.UIConversationStatus
-import com.vfpowertech.keytap.ui.services.UIMessage
+import com.vfpowertech.keytap.ui.services.*
 import com.vfpowertech.keytap.ui.services.dummy.UIMessageInfo
 import nl.komponents.kovenant.Promise
 import org.slf4j.LoggerFactory
 import rx.Subscription
 import java.util.*
 
-//TODO need to pull up contactspersistencemanager to fetch details for uicontactdetails
-//might be better to just change the api to pass a string for new messages?
 class MessengerServiceImpl(
     private val app: KeyTapApplication
 ) : MessengerService {
@@ -48,11 +40,8 @@ class MessengerServiceImpl(
     private fun onNext(event: RelayClientEvent) {
         when (event) {
             is ReceivedMessage -> {
-                //TODO
-                //name needs to match for ui to display it (TODO fix this; names aren't guaranteed to be unique)
-                val contact = UIContactDetails("A", "", event.from, "pubKey")
                 val message = UIMessage(0, false, "time", event.message)
-                notifyNewMessageListeners(UIMessageInfo(contact, message))
+                notifyNewMessageListeners(UIMessageInfo(event.from, message))
             }
 
             else -> {
@@ -109,8 +98,8 @@ class MessengerServiceImpl(
             listener(messageInfo)
     }
 
-    private fun notifyMessageStatusUpdateListeners(contact: UIContactDetails, message: UIMessage) {
+    private fun notifyMessageStatusUpdateListeners(contactEmail: String, message: UIMessage) {
         for (listener in messageStatusUpdateListeners)
-            listener(UIMessageInfo(contact, message))
+            listener(UIMessageInfo(contactEmail, message))
     }
 }
