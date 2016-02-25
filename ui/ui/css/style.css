@@ -304,7 +304,7 @@ img {
   margin-right: 55px;
   margin-left: 0;
   margin-bottom: 5px;
-  background-color: #f1f1f1 !important;
+  background-color: #f0f8ff !important;
 }
 .chat ul li.message-left > img {
   margin-right: 0;
@@ -313,7 +313,7 @@ img {
   border-radius: 50%;
 }
 .chat ul li.message-left .message {
-  background-color: #f0f8ff;
+  background-color: #f1f1f1;
   margin-bottom: 5px;
 }
 .message-right > span,.message-left > span {

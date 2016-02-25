@@ -47,7 +47,7 @@
                 'height': settings.height
             }).css({
                 //'background-color': colors[colorIndex],
-                'background-color' : 'black',
+                'background-color' : '#212121',
                 'width': settings.width+'px',
                 'height': settings.height+'px',
                 'border-radius': settings.radius+'px',

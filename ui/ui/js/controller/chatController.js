@@ -29,10 +29,10 @@ ChatController.prototype = {
     },
     createMessageNode : function (message, contactName) {
         if(message.sent == true){
-            fromClass = "message-left";
+            fromClass = "message-right";
         }
         else{
-            fromClass = "message-right";
+            fromClass = "message-left";
         }
         var node = "<li id='message_" + message.id + "' class='" + fromClass + "'>";
         node += this.contactController.createAvatar(contactName);
@@ -92,8 +92,8 @@ ChatController.prototype = {
                     window.scrollTo(0,document.body.scrollHeight);
                 }
             }
-            else if(document.getElementById("contact%" + messageInfo.contact.email) != null){
-                var contactBlock = $("div[id='contact%" + messageInfo.contact.email + "']");
+            else if(document.getElementById("contact%" + messageInfo.contact) != null){
+                var contactBlock = $("div[id='contact%" + messageInfo.contact + "']");
 
                 if(!contactBlock.hasClass("new-messages")){
                     var contact = contactBlock.find(".contact");
