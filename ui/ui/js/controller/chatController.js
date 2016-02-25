@@ -21,6 +21,14 @@ ChatController.prototype = {
             self.submitNewMessage();
             return false;
         });
+
+        this.newMessageInput.onkeyup = function(e){
+            e = e || event;
+            if (e.keyCode === 13) {
+                $("#newMessageForm").submit();
+            }
+            return true;
+        }
     },
     displayMessage : function (messages, contact) {
         var messagesNode = document.getElementById('messages');
