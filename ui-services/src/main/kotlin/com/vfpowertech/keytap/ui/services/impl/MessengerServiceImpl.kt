@@ -84,11 +84,11 @@ class MessengerServiceImpl(
     }
 
     override fun addConversationStatusUpdateListener(listener: (UIConversation) -> Unit) {
-        throw UnsupportedOperationException()
+        log.debug("addConversationStatusUpdateListener: TODO")
     }
 
     override fun addNewContactRequestListener(listener: (UIContactDetails) -> Unit) {
-        throw UnsupportedOperationException()
+        log.debug("addNewContactRequestListener: TODO")
     }
 
     override fun getLastMessagesFor(contact: UIContactDetails, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
@@ -107,7 +107,8 @@ class MessengerServiceImpl(
     }
 
     override fun markConversationAsRead(contact: UIContactDetails): Promise<Unit, Exception> {
-        throw UnsupportedOperationException()
+        log.debug("markConversationAsRead: TODO")
+        return Promise.ofSuccess(Unit)
     }
 
     private fun notifyNewMessageListeners(messageInfo: UIMessageInfo) {
