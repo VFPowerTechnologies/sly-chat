@@ -11,7 +11,13 @@ ChatController.prototype = {
         this.model.fetchMessage(this.currentMessagePosition, this.fetchingNumber, this.contactController.getCurrentContact());
         this.newMessageInput = document.getElementById('newMessageInput');
         var self = this;
+
+        $("#newMessageSubmitBtn").click(function (){
+            $("#newMessageInput").focus();
+        });
+
         $("#newMessageForm").submit(function () {
+            $("#newMessageInput").trigger("click");
             self.submitNewMessage();
             return false;
         });
