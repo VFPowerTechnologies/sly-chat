@@ -28,16 +28,8 @@ ContactController.prototype = {
         this.addEventListener();
     },
     createContactBlock : function (contact, status, index) {
-        var availableClass;
         var contactLinkClass = "contact-link ";
         var newBadge = "";
-
-        if(status.online == true){
-            availableClass = "dot green";
-        }
-        else{
-            availableClass = "dot red";
-        }
 
         if(status.unreadMessageCount > 0){
             contactLinkClass += "new-messages";
@@ -49,7 +41,6 @@ ContactController.prototype = {
 
         var contactBlock = "<div class='" + contactLinkClass + "' id='contact%" + contact.email + "'><div class='contact'>";
         contactBlock += this.createAvatar(contact.name);
-        contactBlock += "<span class='" + availableClass + "'></span>";
         contactBlock += "<p>" + contact.name + "</p>";
         contactBlock += "</div>" + newBadge + "</div>";
 
