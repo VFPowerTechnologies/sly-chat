@@ -9,20 +9,13 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
-import com.vfpowertech.keytap.android.services.AndroidPlatformInfoService
-import com.vfpowertech.keytap.core.BuildConfig
-import com.vfpowertech.keytap.ui.services.KeyTapApplication
-import com.vfpowertech.keytap.ui.services.createAppDirectories
-import com.vfpowertech.keytap.ui.services.di.PlatformModule
+import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.keytap.ui.services.js.NavigationService
 import com.vfpowertech.keytap.ui.services.js.javatojs.NavigationServiceToJSProxy
 import com.vfpowertech.keytap.ui.services.registerCoreServicesOnDispatcher
 import org.slf4j.LoggerFactory
-import rx.android.schedulers.AndroidSchedulers
 
 class MainActivity : Activity() {
-    private val app: KeyTapApplication = KeyTapApplication()
-
     private var navigationService: NavigationService? = null
     private lateinit var webView: WebView
 
@@ -39,25 +32,11 @@ class MainActivity : Activity() {
 
         initJSLogging(webView)
 
-        val engineInterface = AndroidWebEngineInterface(webView)
+        val webEngineInterface = AndroidWebEngineInterface(webView)
 
-        val platformInfo = AndroidPlatformInfo(this)
-        createAppDirectories(platformInfo)
+        val dispatcher = Dispatcher(webEngineInterface)
 
-        val platformModule = PlatformModule(
-            AndroidPlatformInfoService(),
-            BuildConfig.ANDROID_SERVER_URLS,
-            platformInfo,
-            engineInterface,
-            AndroidSchedulers.mainThread()
-        )
-
-        app.init(platformModule)
-
-        val appComponent = app.appComponent
-
-        val dispatcher = appComponent.dispatcher
-        registerCoreServicesOnDispatcher(dispatcher, appComponent)
+        registerCoreServicesOnDispatcher(dispatcher, App.get(this).appComponent)
 
         //TODO should init this only once the webview has loaded the page
         webView.setWebViewClient(object : WebViewClient() {

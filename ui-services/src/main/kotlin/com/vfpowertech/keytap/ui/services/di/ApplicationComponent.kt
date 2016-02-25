@@ -32,7 +32,5 @@ interface ApplicationComponent {
 
     val develService: DevelService
 
-    val dispatcher: Dispatcher
-
     fun plus(userModule: UserModule): UserComponent
 }

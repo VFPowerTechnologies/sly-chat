@@ -1,25 +1,12 @@
 package com.vfpowertech.keytap.ui.services.di
 
-import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
-import com.vfpowertech.jsbridge.core.dispatcher.WebEngineInterface
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceComponent
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceType
 import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
 import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
-import com.vfpowertech.keytap.ui.services.ContactsService
-import com.vfpowertech.keytap.ui.services.DevelService
-import com.vfpowertech.keytap.ui.services.HistoryService
-import com.vfpowertech.keytap.ui.services.KeyTapApplication
-import com.vfpowertech.keytap.ui.services.LoginService
-import com.vfpowertech.keytap.ui.services.MessengerService
-import com.vfpowertech.keytap.ui.services.RegistrationService
-import com.vfpowertech.keytap.ui.services.dummy.DevelServiceImpl
-import com.vfpowertech.keytap.ui.services.dummy.DummyContactsService
-import com.vfpowertech.keytap.ui.services.dummy.DummyHistoryService
-import com.vfpowertech.keytap.ui.services.dummy.DummyLoginService
-import com.vfpowertech.keytap.ui.services.dummy.DummyMessengerService
-import com.vfpowertech.keytap.ui.services.dummy.DummyRegistrationService
+import com.vfpowertech.keytap.ui.services.*
+import com.vfpowertech.keytap.ui.services.dummy.*
 import com.vfpowertech.keytap.ui.services.impl.ContactsServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.LoginServiceImpl
 import com.vfpowertech.keytap.ui.services.impl.MessengerServiceImpl
@@ -90,8 +77,4 @@ class UIServicesModule {
         DevelServiceImpl(
             messengerService as? DummyMessengerService
         )
-
-    @Singleton
-    @Provides
-    fun provideDispatcher(webEngineInterface: WebEngineInterface): Dispatcher = Dispatcher(webEngineInterface)
 }

@@ -1,6 +1,5 @@
 package com.vfpowertech.keytap.ui.services.di
 
-import com.vfpowertech.jsbridge.core.dispatcher.WebEngineInterface
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.PlatformInfo
 import com.vfpowertech.keytap.ui.services.PlatformInfoService
@@ -21,10 +20,6 @@ class PlatformModule(
     @get:Singleton
     @get:Provides
     val providesPlatformInfo: PlatformInfo,
-
-    @get:Singleton
-    @get:Provides
-    val providesWebEngineInterface: WebEngineInterface,
 
     @get:Singleton
     @get:Provides

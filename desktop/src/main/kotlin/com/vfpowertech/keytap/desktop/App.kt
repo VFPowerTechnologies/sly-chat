@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.desktop
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.persistence.sqlite.loadSQLiteLibraryFromResources
@@ -67,7 +68,7 @@ class App : Application() {
 
         enableDebugger(engine)
 
-        val engineInterface = JFXWebEngineInterface(engine)
+        val webEngineInterface = JFXWebEngineInterface(engine)
 
         val platformInfo = DesktopPlatformInfo()
         createAppDirectories(platformInfo)
@@ -76,7 +77,6 @@ class App : Application() {
             DesktopPlatformInfoService(),
             BuildConfig.DESKTOP_SERVER_URLS,
             platformInfo,
-            engineInterface,
             JavaFxScheduler.getInstance()
         )
 
@@ -84,7 +84,7 @@ class App : Application() {
 
         val appComponent = app.appComponent
 
-        val dispatcher = appComponent.dispatcher
+        val dispatcher = Dispatcher(webEngineInterface)
 
         registerCoreServicesOnDispatcher(dispatcher, appComponent)
 
