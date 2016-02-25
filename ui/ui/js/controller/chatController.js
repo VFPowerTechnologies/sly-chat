@@ -31,7 +31,10 @@ ChatController.prototype = {
         if(messagesHtml != ""){
             messagesNode.innerHTML = messagesHtml;
         }
-        $("html,body").animate({scrollTop: $("ul#messages li:last").offset().top});
+
+        if(typeof $("ul#messages li:last").offset() !== "undefined") {
+            $("html,body").animate({scrollTop: $("ul#messages li:last").offset().top});
+        }
     },
     createMessageNode : function (message, contactName) {
         if(message.sent == true){
