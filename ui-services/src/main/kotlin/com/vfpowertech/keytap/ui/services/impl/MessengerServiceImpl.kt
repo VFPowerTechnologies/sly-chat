@@ -1,15 +1,18 @@
 package com.vfpowertech.keytap.ui.services.impl
 
+import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.relay.ReceivedMessage
 import com.vfpowertech.keytap.core.relay.RelayClientEvent
 import com.vfpowertech.keytap.core.relay.ServerReceivedMessage
 import com.vfpowertech.keytap.ui.services.*
 import com.vfpowertech.keytap.ui.services.dummy.UIMessageInfo
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import rx.Subscription
 import java.util.*
 
+//TODO maybe wrap the contacts persistence manager in something so it can be shared between this and the ContactService?
 class MessengerServiceImpl(
     private val app: KeyTapApplication
 ) : MessengerService {
@@ -32,6 +35,10 @@ class MessengerServiceImpl(
             eventSub?.unsubscribe()
             eventSub = null
         }
+    }
+
+    private fun getContactsPersistenceManagerOrThrow(): ContactsPersistenceManager {
+        return app.userComponent?.contactsPersistenceManager ?: error("No user session has been established")
     }
 
     private fun getRelayClientManagerOrThrow(): RelayClientManager {
@@ -89,10 +96,14 @@ class MessengerServiceImpl(
     }
 
     override fun getConversations(): Promise<List<UIConversation>, Exception> {
-        val conversations = ArrayList<UIConversation>()
-        val conversation = UIConversation(UIContactDetails("A", "", "a@a.com", "pubKey"), UIConversationStatus(true, 0, null))
-        conversations.add(conversation)
-        return Promise.ofSuccess(conversations)
+        //TODO
+        val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
+        return contactsPersistenceManager.getAll() map { contacts ->
+            contacts.map { contact ->
+                val details = UIContactDetails(contact.name, contact.phoneNumber, contact.email, contact.publicKey)
+                UIConversation(details, UIConversationStatus(true, 0, null))
+            }
+        }
     }
 
     override fun markConversationAsRead(contact: UIContactDetails): Promise<Unit, Exception> {
