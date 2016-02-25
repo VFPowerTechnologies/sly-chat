@@ -61,7 +61,7 @@ ContactController.prototype = {
         img.setAttribute('class', 'avatarCircle');
 
         $(img).initial({
-            textColor: '#000000',
+            textColor: '#fff',
             seed: 0
         });
 
