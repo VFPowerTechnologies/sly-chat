@@ -24,8 +24,9 @@ ChatController.prototype = {
 
         this.newMessageInput.onkeyup = function(e){
             e = e || event;
-            if (e.keyCode === 13) {
+            if (e.keyCode === 13 && !e.ctrlKey) {
                 $("#newMessageForm").submit();
+                return false;
             }
             return true;
         }
