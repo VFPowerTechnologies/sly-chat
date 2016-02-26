@@ -72,7 +72,7 @@ class MessengerServiceImpl(
     override fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception> {
         getRelayClientManagerOrThrow().sendMessage(contact.email, message)
 
-        return Promise.ofSuccess(UIMessage(0, false, "", message))
+        return Promise.ofSuccess(UIMessage(0, true, "", message))
     }
 
     override fun addNewMessageListener(listener: (UIMessageInfo) -> Unit) {
