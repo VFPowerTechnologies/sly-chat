@@ -1,13 +1,16 @@
 package com.vfpowertech.keytap.core;
 
+import java.net.InetSocketAddress;
 import org.jetbrains.annotations.NotNull;
 
 public class BuildConfig {
     public static class ServerUrls {
         public final String API_SERVER;
+        public final InetSocketAddress RELAY_SERVER;
 
-        public ServerUrls(final String apiServer) {
+        public ServerUrls(final String apiServer, final InetSocketAddress relayServer) {
             this.API_SERVER = apiServer;
+            this.RELAY_SERVER = relayServer;
         }
     }
 
@@ -42,10 +45,8 @@ public class BuildConfig {
     public static final boolean DEBUG = $debug;
     public static final String VERSION = "$version";
 
-    public static final UIServiceType UI_SERVICE_TYPE = UIServiceType.$uiServiceType;
-
-    public static final ServerUrls DESKTOP_SERVER_URLS = new ServerUrls("$desktopHttpApiServer");
-    public static final ServerUrls ANDROID_SERVER_URLS = new ServerUrls("$androidHttpApiServer");
+    public static final ServerUrls DESKTOP_SERVER_URLS = new ServerUrls("$desktopHttpApiServer", $desktopRelayServer);
+    public static final ServerUrls ANDROID_SERVER_URLS = new ServerUrls("$androidHttpApiServer", $androidRelayServer);
 
     public static final UIServiceMap UI_SERVICE_MAP = new UIServiceMap();
 }

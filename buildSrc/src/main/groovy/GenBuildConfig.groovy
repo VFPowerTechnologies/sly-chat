@@ -105,6 +105,11 @@ class GenBuildConfig extends DefaultTask {
         return v
     }
 
+    static String stringToInetSocketAddress(String s) {
+        def (host, port) = s.split(':', 2)
+        "new InetSocketAddress(\"$host\", $port)"
+    }
+
     @TaskAction
     void run() {
         def rootProject = project.rootProject
@@ -129,7 +134,14 @@ class GenBuildConfig extends DefaultTask {
         vc.put('uiServiceType', getEnumValue(settings, debug, 'uiServiceType', ['DUMMY', 'REAL'], null))
 
         //adds <platform><SettingName> to context
-        for (setting in ['httpApiServer']) {
+        def urlSettings = [
+            ['httpApiServer', { it }],
+            ['relayServer', { stringToInetSocketAddress(it) } ]
+        ]
+
+        for (entry in urlSettings) {
+            def (setting, transform) = entry
+
             for (platform in ['desktop', 'android']) {
                 List<String> keys = []
 
@@ -138,7 +150,7 @@ class GenBuildConfig extends DefaultTask {
                     keys.add("debug.$setting")
                 }
                 keys.add("${platform}.$setting")
-                keys.add("httpApiServer")
+                keys.add(setting)
 
                 String url;
                 for (key in keys) {
@@ -150,7 +162,7 @@ class GenBuildConfig extends DefaultTask {
                 if (url == null)
                     throw new InvalidUserDataException("Missing setting $setting in properties file")
 
-                vc.put("${platform}${setting.capitalize()}", url)
+                vc.put("${platform}${setting.capitalize()}", transform(url))
             }
         }
 

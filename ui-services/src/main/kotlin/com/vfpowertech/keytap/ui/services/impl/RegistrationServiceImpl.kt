@@ -26,7 +26,7 @@ class RegistrationServiceImpl(
         val password = info.password
 
         //we don't need to write the key vault to disk here, as we receive it during login
-        //on failure we just discard the it
+        //on failure we just discard it
         updateProgress("Generating key vault")
         return asyncGenerateNewKeyVault(password) bind { keyVault ->
             updateProgress("Connecting to server...")

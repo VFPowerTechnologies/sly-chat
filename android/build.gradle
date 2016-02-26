@@ -15,6 +15,13 @@ android {
     compileSdkVersion versions.androidCompileSdk
     buildToolsVersion versions.androidBuildTools
 
+    buildTypes {
+        debug {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
     defaultConfig {
         applicationId 'com.vfpowertech.keytap'
         minSdkVersion 19
@@ -47,4 +54,5 @@ dependencies {
     compile "org.slf4j:slf4j-android:$versions.slf4j"
     compile "com.vfpowertech:jsbridge-android-webengine:$versions.jsbridge"
     compile "nl.komponents.kovenant:kovenant-android:$versions.kovenant"
+    compile "io.reactivex:rxandroid:$versions.rxandroid"
 }

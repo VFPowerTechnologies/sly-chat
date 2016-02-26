@@ -8,19 +8,11 @@ import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import com.almworks.sqlite4java.SQLite
-import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
-import com.vfpowertech.keytap.android.services.AndroidPlatformInfoService
-import com.vfpowertech.keytap.ui.services.createAppDirectories
-import com.vfpowertech.keytap.ui.services.di.PlatformModule
-import com.vfpowertech.keytap.ui.services.di.DaggerUIServicesComponent
 import com.vfpowertech.keytap.ui.services.js.NavigationService
 import com.vfpowertech.keytap.ui.services.js.javatojs.NavigationServiceToJSProxy
-import com.vfpowertech.keytap.ui.services.registerServicesOnDispatcher
-import nl.komponents.kovenant.android.androidUiDispatcher
-import nl.komponents.kovenant.ui.KovenantUi
+import com.vfpowertech.keytap.ui.services.registerCoreServicesOnDispatcher
 import org.slf4j.LoggerFactory
 
 class MainActivity : Activity() {
@@ -40,23 +32,11 @@ class MainActivity : Activity() {
 
         initJSLogging(webView)
 
-        val engineInterface = AndroidWebEngineInterface(webView)
-        val dispatcher = Dispatcher(engineInterface)
+        val webEngineInterface = AndroidWebEngineInterface(webView)
 
-        val platformInfo = AndroidPlatformInfo(this)
-        createAppDirectories(platformInfo)
+        val dispatcher = Dispatcher(webEngineInterface)
 
-        val platformModule = PlatformModule(
-            AndroidPlatformInfoService(),
-            BuildConfig.ANDROID_SERVER_URLS,
-            platformInfo
-        )
-
-        val uiServicesComponent = DaggerUIServicesComponent.builder()
-            .platformModule(platformModule)
-            .build()
-
-        registerServicesOnDispatcher(dispatcher, uiServicesComponent)
+        registerCoreServicesOnDispatcher(dispatcher, App.get(this).appComponent)
 
         //TODO should init this only once the webview has loaded the page
         webView.setWebViewClient(object : WebViewClient() {

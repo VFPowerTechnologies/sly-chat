@@ -5,6 +5,7 @@ import com.vfpowertech.keytap.core.PlatformInfo
 import com.vfpowertech.keytap.ui.services.PlatformInfoService
 import dagger.Module
 import dagger.Provides
+import rx.Scheduler
 import javax.inject.Singleton
 
 @Module
@@ -18,5 +19,10 @@ class PlatformModule(
 
     @get:Singleton
     @get:Provides
-    val providesPlatformInfo: PlatformInfo
+    val providesPlatformInfo: PlatformInfo,
+
+    @get:Singleton
+    @get:Provides
+    val providesScheduler: Scheduler
 )
+
