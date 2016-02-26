@@ -4,6 +4,7 @@ package com.vfpowertech.keytap.core.persistence.sqlite
 import com.almworks.sqlite4java.*
 import com.vfpowertech.keytap.core.loadSharedLibFromResource
 import org.slf4j.LoggerFactory
+import java.util.*
 
 inline fun <R> SQLiteConnection.use(body: (SQLiteConnection) -> R): R =
     try {
@@ -62,6 +63,16 @@ fun isInvalidTableException(e: SQLiteException): Boolean {
         false
     else
         e.baseErrorCode == SQLiteConstants.SQLITE_ERROR && "no such table:" in message
+}
+
+/** Calls the given function on all available query results. */
+inline fun <T> SQLiteStatement.map(body: (SQLiteStatement) -> T): List<T> {
+    val results = ArrayList<T>()
+
+    while (step())
+        results.add(body(this))
+
+    return results
 }
 
 //not exposed; taken from Internal.getArch, getOS so we can unpack + load the shared lib from resources for the proper OS
