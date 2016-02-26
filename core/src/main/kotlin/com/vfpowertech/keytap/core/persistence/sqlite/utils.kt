@@ -1,11 +1,10 @@
 @file:JvmName("SQLiteUtils")
 package com.vfpowertech.keytap.core.persistence.sqlite
 
-import com.almworks.sqlite4java.SQLite
-import com.almworks.sqlite4java.SQLiteConnection
-import com.almworks.sqlite4java.SQLiteStatement
+import com.almworks.sqlite4java.*
 import com.vfpowertech.keytap.core.loadSharedLibFromResource
 import org.slf4j.LoggerFactory
+import java.util.*
 
 inline fun <R> SQLiteConnection.use(body: (SQLiteConnection) -> R): R =
     try {
@@ -57,6 +56,24 @@ fun escapeLikeString(s: String, escape: Char): String =
     Regex("[%_$escape]").replace(s) { m ->
         "$escape${m.groups[0]!!.value}"
     }
+
+fun isInvalidTableException(e: SQLiteException): Boolean {
+    val message = e.message
+    return if (message == null)
+        false
+    else
+        e.baseErrorCode == SQLiteConstants.SQLITE_ERROR && "no such table:" in message
+}
+
+/** Calls the given function on all available query results. */
+inline fun <T> SQLiteStatement.map(body: (SQLiteStatement) -> T): List<T> {
+    val results = ArrayList<T>()
+
+    while (step())
+        results.add(body(this))
+
+    return results
+}
 
 //not exposed; taken from Internal.getArch, getOS so we can unpack + load the shared lib from resources for the proper OS
 private fun getArch(os: String): String {

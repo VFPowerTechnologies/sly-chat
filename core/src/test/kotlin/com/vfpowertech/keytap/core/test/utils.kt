@@ -1,6 +1,7 @@
 @file:JvmName("TestUtils")
 package com.vfpowertech.keytap.core.test
 
+import org.joda.time.DateTimeUtils
 import java.io.File
 
 fun createTempFile(suffix: String = ""): File =
@@ -16,4 +17,13 @@ fun createTempFileWithAutoDelete(suffix: String = ""): File {
 inline fun <R> withTempFile(suffix: String = "", body: (File) -> R): R {
     val f = File.createTempFile("keytap-test", suffix)
     return body(f)
+}
+
+fun <R> withTimeAs(millis: Long, body: () -> R): R {
+    DateTimeUtils.setCurrentMillisFixed(millis)
+    return try {
+        body()
+    } finally {
+        DateTimeUtils.setCurrentMillisSystem()
+    }
 }
