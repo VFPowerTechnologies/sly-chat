@@ -108,6 +108,7 @@ class SQLitePersistenceManager(
                         //if number isn't update to date, apply migrations for each missing version in turn
                         //run each migration within a transaction, ending with updating the user_version (within the transaction)
                         //use savepoints so if the upgrade fails we can rollback completely? seems pointless though
+                        //make sure to upgrade all conv_* tables as well
                         throw UnsupportedOperationException()
                     }
                 }
