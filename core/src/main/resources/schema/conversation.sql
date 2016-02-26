@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS `conv_%name%` (
     timestamp INTEGER NOT NULL,
     -- used when timestamp is equal to guarantee order
     n INTEGER NOT NULL,
+    -- for messages that expire, this should be set to a unix time (in ms) in the future; otherwise 0
+    ttl INTEGER NOT NULL,
     -- if is_sent = true and this is 1, then the message was received by the relay server
     -- if is_sent is false this value should be set to 1
     is_delivered INTEGER NOT NULL,

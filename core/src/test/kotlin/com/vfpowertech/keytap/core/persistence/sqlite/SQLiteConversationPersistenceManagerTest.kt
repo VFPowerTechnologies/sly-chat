@@ -68,7 +68,7 @@ class SQLiteConversationPersistenceManagerTest {
         return contacts
     }
 
-    fun addMessage(contact: String, isSent: Boolean, message: String, ttl: Int): MessageInfo =
+    fun addMessage(contact: String, isSent: Boolean, message: String, ttl: Long): MessageInfo =
         conversationPersistenceManager.addMessage(contact, isSent, message, ttl).get()
 
     @Test
@@ -95,16 +95,14 @@ class SQLiteConversationPersistenceManagerTest {
         assertTableNotExists("conv_$contact.com")
     }
 
-    //TODO NoSuchConversationException tests for each method
-
-    //TODO check get convo info on empty convo
-
     @Test
     fun `addMessage should add a valid sent message`() {
         createConvosFor(contact)
+        val ttl = 5L
 
-        val messageInfo = addMessage(contact, true, testMessage, 0)
+        val messageInfo = addMessage(contact, true, testMessage, ttl)
         assertEquals(testMessage, messageInfo.message)
+        assertEquals(ttl, messageInfo.ttl)
         assertTrue(messageInfo.isSent)
         assertFalse(messageInfo.isDelivered)
     }

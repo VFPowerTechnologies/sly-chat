@@ -13,7 +13,8 @@ data class MessageInfo(
     val timestamp: Long,
     val isSent: Boolean,
     val isDelivered: Boolean,
-    val isRead: Boolean
+    val isRead: Boolean,
+    val ttl: Long
 ) {
     init {
         if (!isSent) require(isDelivered) { "isDelivered must be true when isSent is false" }

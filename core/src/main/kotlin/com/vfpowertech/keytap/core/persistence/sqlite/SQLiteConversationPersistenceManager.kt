@@ -61,15 +61,15 @@ class SQLiteConversationPersistenceManager(
     }
 
     //TODO retry if id taken
-    override fun addMessage(contact: String, isSent: Boolean, message: String, ttl: Int): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun addMessage(contact: String, isSent: Boolean, message: String, ttl: Long): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val table = getTablenameForContact(contact)
         val sql = """
 INSERT INTO $table
-    (id, is_sent, timestamp, is_delivered, is_read, message, n)
+    (id, is_sent, timestamp, ttl, is_delivered, is_read, message, n)
 VALUES
-    (?, ?, ?, ?, ?, ?, (SELECT count(n)
-                        FROM   $table
-                        WHERE  timestamp = ?))
+    (?, ?, ?, ?, ?, ?, ?, (SELECT count(n)
+                           FROM   $table
+                           WHERE  timestamp = ?))
 """
 
         val id = getMessageId()
@@ -77,11 +77,11 @@ VALUES
         val isDelivered = !isSent
         val isRead = isSent
 
-        val messageInfo = MessageInfo(id, message, timestamp, isSent, isDelivered, isRead)
+        val messageInfo = MessageInfo(id, message, timestamp, isSent, isDelivered, isRead, ttl)
 
         connection.prepare(sql).use { stmt ->
             messageInfoToRow(messageInfo, stmt)
-            stmt.bind(7, timestamp)
+            stmt.bind(8, timestamp)
             stmt.step()
         }
 
@@ -97,7 +97,7 @@ VALUES
             stmt.step()
         }
 
-        connection.prepare("SELECT id, is_sent, timestamp, is_delivered, is_read, message FROM $table WHERE id=?").use { stmt ->
+        connection.prepare("SELECT id, is_sent, timestamp, ttl, is_delivered, is_read, message FROM $table WHERE id=?").use { stmt ->
             stmt.bind(1, messageId)
             stmt.step()
             rowToMessageInfo(stmt)
@@ -156,7 +156,7 @@ VALUES
     }
 
     private fun queryLastMessages(connection: SQLiteConnection, contact: String, startingAt: Int, count: Int): List<MessageInfo> {
-        val sql = "SELECT id, is_sent, timestamp, is_delivered, is_read, message FROM ${getTablenameForContact(contact)} ORDER BY timestamp DESC LIMIT $count OFFSET $startingAt"
+        val sql = "SELECT id, is_sent, timestamp, ttl, is_delivered, is_read, message FROM ${getTablenameForContact(contact)} ORDER BY timestamp DESC LIMIT $count OFFSET $startingAt"
         return connection.prepare(sql).use { stmt ->
             stmt.map { rowToMessageInfo(it) }
         }
@@ -169,7 +169,7 @@ VALUES
     override fun getUndeliveredMessages(contact: String): Promise<List<MessageInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val table = getTablenameForContact(contact)
 
-        connection.prepare("SELECT id, is_sent, timestamp, is_delivered, is_read, message FROM $table WHERE is_delivered=0").use { stmt ->
+        connection.prepare("SELECT id, is_sent, timestamp, ttl, is_delivered, is_read, message FROM $table WHERE is_delivered=0").use { stmt ->
             stmt.map { rowToMessageInfo(it) }
         }
     }
@@ -178,19 +178,21 @@ VALUES
         stmt.bind(1, messageInfo.id)
         stmt.bind(2, messageInfo.isSent.toInt())
         stmt.bind(3, messageInfo.timestamp)
-        stmt.bind(4, messageInfo.isDelivered.toInt())
-        stmt.bind(5, messageInfo.isRead.toInt())
-        stmt.bind(6, messageInfo.message)
+        stmt.bind(4, messageInfo.ttl)
+        stmt.bind(5, messageInfo.isDelivered.toInt())
+        stmt.bind(6, messageInfo.isRead.toInt())
+        stmt.bind(7, messageInfo.message)
     }
 
     private fun rowToMessageInfo(stmt: SQLiteStatement): MessageInfo {
         val id = stmt.columnString(0)
         val isSent = stmt.columnInt(1) != 0
         val timestamp = stmt.columnLong(2)
-        val isDelivered = stmt.columnInt(3) != 0
-        val isRead = stmt.columnInt(4) != 0
-        val message = stmt.columnString(5)
+        val ttl = stmt.columnLong(3)
+        val isDelivered = stmt.columnInt(4) != 0
+        val isRead = stmt.columnInt(5) != 0
+        val message = stmt.columnString(6)
 
-        return MessageInfo(id, message, timestamp, isSent, isDelivered, isRead)
+        return MessageInfo(id, message, timestamp, isSent, isDelivered, isRead, ttl)
     }
 }

@@ -19,7 +19,7 @@ interface ConversationPersistenceManager {
      * @param message The message content itself.
      * @param ttl Unix time in seconds until when the message should be kept. If 0, is kept indefinitely, if < 0 is to be purged on startup.
      */
-    fun addMessage(contact: String, isSent: Boolean, message: String, ttl: Int): Promise<MessageInfo, Exception>
+    fun addMessage(contact: String, isSent: Boolean, message: String, ttl: Long): Promise<MessageInfo, Exception>
 
     /** Marks a sent message as being received and updates its timestamp to the current time. */
     fun markMessageAsDelivered(contact: String, messageId: String): Promise<MessageInfo, Exception>
