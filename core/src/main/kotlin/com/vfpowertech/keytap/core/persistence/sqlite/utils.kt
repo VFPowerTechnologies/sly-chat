@@ -1,9 +1,7 @@
 @file:JvmName("SQLiteUtils")
 package com.vfpowertech.keytap.core.persistence.sqlite
 
-import com.almworks.sqlite4java.SQLite
-import com.almworks.sqlite4java.SQLiteConnection
-import com.almworks.sqlite4java.SQLiteStatement
+import com.almworks.sqlite4java.*
 import com.vfpowertech.keytap.core.loadSharedLibFromResource
 import org.slf4j.LoggerFactory
 
@@ -57,6 +55,14 @@ fun escapeLikeString(s: String, escape: Char): String =
     Regex("[%_$escape]").replace(s) { m ->
         "$escape${m.groups[0]!!.value}"
     }
+
+fun isInvalidTableException(e: SQLiteException): Boolean {
+    val message = e.message
+    return if (message == null)
+        false
+    else
+        e.baseErrorCode == SQLiteConstants.SQLITE_ERROR && "no such table:" in message
+}
 
 //not exposed; taken from Internal.getArch, getOS so we can unpack + load the shared lib from resources for the proper OS
 private fun getArch(os: String): String {
