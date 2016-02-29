@@ -80,25 +80,25 @@ ON
     }
 
 
-    override fun getConversationInfo(contact: String): Promise<ConversationInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun getConversationInfo(email: String): Promise<ConversationInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
         try {
-            queryConversationInfo(connection, contact)
+            queryConversationInfo(connection, email)
         }
         catch (e: SQLiteException) {
             if (isInvalidTableException(e))
-                throw InvalidConversationException(contact)
+                throw InvalidConversationException(email)
             else
                 throw e
         }
     }
 
-    override fun markConversationAsRead(contact: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun markConversationAsRead(email: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.prepare("UPDATE conversation_info SET unread_count=0 WHERE contact_email=?").use { stmt ->
-            stmt.bind(1, contact)
+            stmt.bind(1, email)
             stmt.step()
         }
         if (connection.changes <= 0)
-            throw InvalidConversationException(contact)
+            throw InvalidConversationException(email)
 
         Unit
     }

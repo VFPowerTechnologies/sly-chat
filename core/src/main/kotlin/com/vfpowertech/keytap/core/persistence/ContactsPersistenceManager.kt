@@ -10,10 +10,10 @@ interface ContactsPersistenceManager {
     fun getAllConversations(): Promise<List<Conversation>, Exception>
 
     /** Returns a ConversationInfo for the given user. */
-    fun getConversationInfo(contact: String): Promise<ConversationInfo, Exception>
+    fun getConversationInfo(email: String): Promise<ConversationInfo, Exception>
 
     /** Resets unread message count for the given contact's conversation. */
-    fun markConversationAsRead(contact: String): Promise<Unit, Exception>
+    fun markConversationAsRead(email: String): Promise<Unit, Exception>
 
     /** Adds a new contact and conversation for a contact. */
     fun add(contactInfo: ContactInfo): Promise<Unit, Exception>
