@@ -2,18 +2,24 @@ package com.vfpowertech.keytap.ui.services.impl
 
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.ConversationPersistenceManager
+import com.vfpowertech.keytap.core.persistence.MessageInfo
 import com.vfpowertech.keytap.core.relay.ReceivedMessage
 import com.vfpowertech.keytap.core.relay.RelayClientEvent
 import com.vfpowertech.keytap.core.relay.ServerReceivedMessage
 import com.vfpowertech.keytap.ui.services.*
-import com.vfpowertech.keytap.ui.services.dummy.UIMessageInfo
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.joda.time.format.DateTimeFormat
+import org.joda.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import rx.Subscription
 import java.util.*
+
+fun MessageInfo.toUI(formatter: DateTimeFormatter): UIMessage {
+    val timestamp = if (!isDelivered) null else formatter.print(timestamp)
+    return UIMessage(id, isSent, timestamp, message)
+}
 
 //TODO maybe wrap the contacts persistence manager in something so it can be shared between this and the ContactService?
 /** This exists for the lifetime of the application. It wraps RelayClientManager, which exists for the lifetime of the user session. */
@@ -54,15 +60,20 @@ class MessengerServiceImpl(
     }
 
     //TODO locale formatting/etc
-    private fun formatTimestamp(timestamp: Long): String {
-        return DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss").print(timestamp)
-    }
+    private fun getTimestampFormatter(): DateTimeFormatter =
+        DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss")
 
     /** First we add to the log, then we display it to the user. */
     private fun handleReceivedMessage(event: ReceivedMessage) {
         getConversationPersistenceManagerOrThrow().addMessage(event.from, false, event.message, 0) successUi { messageInfo ->
-            val message = UIMessage(messageInfo.id, false, formatTimestamp(messageInfo.timestamp), messageInfo.message)
+            val message = messageInfo.toUI(getTimestampFormatter())
             notifyNewMessageListeners(UIMessageInfo(event.from, message))
+        }
+    }
+
+    private fun handleServerRecievedMessage(event: ServerReceivedMessage) {
+        getConversationPersistenceManagerOrThrow().markMessageAsDelivered(event.to, event.messageId) successUi { messageInfo ->
+            notifyMessageStatusUpdateListeners(event.to, messageInfo.toUI(getTimestampFormatter()))
         }
     }
 
@@ -71,10 +82,7 @@ class MessengerServiceImpl(
             is ReceivedMessage ->
                 handleReceivedMessage(event)
 
-            is ServerReceivedMessage -> {
-                //TODO
-                //notifyMessageStatusUpdateListeners(event.to, UIMessage(0, false, null, ""))
-            }
+            is ServerReceivedMessage -> handleServerRecievedMessage(event)
 
             else -> {
                 log.warn("Unhandled RelayClientEvent: {}", event)
@@ -92,7 +100,7 @@ class MessengerServiceImpl(
         val relayClient = getRelayClientManagerOrThrow()
 
         return getConversationPersistenceManagerOrThrow().addMessage(contact.email, true, message, 0) map { messageInfo ->
-            relayClient.sendMessage(contact.email, messageInfo.message)
+            relayClient.sendMessage(contact.email, messageInfo.message, messageInfo.id)
             UIMessage(messageInfo.id, true, null, message)
         }
     }
@@ -116,10 +124,8 @@ class MessengerServiceImpl(
     override fun getLastMessagesFor(contact: UIContactDetails, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
         val conversationPersistenceManager = getConversationPersistenceManagerOrThrow()
         return conversationPersistenceManager.getLastMessages(contact.email, startingAt, count) map { messages ->
-            messages.map { m ->
-                val timestamp = if (!m.isDelivered) null else formatTimestamp(m.timestamp)
-                UIMessage(m.id, m.isSent, timestamp, m.message)
-            }
+            val formatter = getTimestampFormatter()
+            messages.map { it.toUI(formatter) }
         }
     }
 
@@ -137,8 +143,7 @@ class MessengerServiceImpl(
     }
 
     override fun markConversationAsRead(contact: UIContactDetails): Promise<Unit, Exception> {
-        log.debug("markConversationAsRead: TODO")
-        return Promise.ofSuccess(Unit)
+        return getConversationPersistenceManagerOrThrow().markConversationAsRead(contact.email)
     }
 
     private fun notifyNewMessageListeners(messageInfo: UIMessageInfo) {
