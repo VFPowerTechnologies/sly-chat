@@ -107,6 +107,7 @@ ChatController.prototype = {
                     var contactName = this.contactController.getContact(messageInfo.contact).name;
                     messageDiv.append(this.createMessageNode(messageInfo.message, contactName));
                     document.getElementById("chatContent").contentWindow.scrollTo(0, 9999999);
+                    this.model.markConversationAsRead(this.contactController.getCurrentContact());
                 }
             }
             else if($("#contactContent").length){
