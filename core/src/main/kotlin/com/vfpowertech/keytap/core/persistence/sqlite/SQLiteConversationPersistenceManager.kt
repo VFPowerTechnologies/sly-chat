@@ -70,9 +70,13 @@ VALUES
             stmt.step()
         }
 
+        if (connection.totalChanges <= 0)
+            throw InvalidMessageException(contact, messageId)
+
         connection.prepare("SELECT id, is_sent, timestamp, ttl, is_delivered, is_read, message FROM $table WHERE id=?").use { stmt ->
             stmt.bind(1, messageId)
-            stmt.step()
+            if (!stmt.step())
+                throw InvalidMessageException(contact, messageId)
             rowToMessageInfo(stmt)
         }
     }
