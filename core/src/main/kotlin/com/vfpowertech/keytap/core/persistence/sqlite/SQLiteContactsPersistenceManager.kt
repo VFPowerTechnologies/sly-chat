@@ -46,7 +46,25 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     }
 
     override fun getAllConversations(): Promise<List<Conversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        throw RuntimeException("")
+        val sql = """
+SELECT
+    email, name, phone_number, public_key,
+    unread_count, last_message
+FROM
+    contacts
+JOIN
+    conversation_info
+ON
+    contacts.email=conversation_info.contact_email
+        """
+
+        connection.prepare(sql).use { stmt ->
+            stmt.map { stmt ->
+                val contact = contactInfoFromRow(stmt)
+                val info = ConversationInfo(contact.email, stmt.columnInt(4), stmt.columnString(5))
+                Conversation(contact, info)
+            }
+        }
     }
 
     private fun queryConversationInfo(connection: SQLiteConnection, contact: String): ConversationInfo {
@@ -75,18 +93,12 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     }
 
     override fun markConversationAsRead(contact: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        try {
-            connection.prepare("UPDATE conversation_info SET unread_count=0 WHERE contact_email=?").use { stmt ->
-                stmt.bind(1, contact)
-                stmt.step()
-            }
+        connection.prepare("UPDATE conversation_info SET unread_count=0 WHERE contact_email=?").use { stmt ->
+            stmt.bind(1, contact)
+            stmt.step()
         }
-        catch (e: SQLiteException) {
-            if (isInvalidTableException(e))
-                throw InvalidConversationException(contact)
-            else
-                throw e
-        }
+        if (connection.changes <= 0)
+            throw InvalidConversationException(contact)
 
         Unit
     }

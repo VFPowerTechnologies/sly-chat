@@ -196,10 +196,13 @@ class SQLiteContactsPersistenceManagerTest {
 
         setConversationInfo(contactEmail, 2, testMessage)
 
-        val got = contactsPersistenceManager.getAllConversations().get().sortedBy { it.contact.email }
+        val convos = contactsPersistenceManager.getAllConversations().get()
 
-        assertEquals(testMessage, got[0].info.lastMessage)
-        assertNull(got[1].info.lastMessage)
+        val a = convos.find { it.contact.email == contactEmail }!!
+        val a2 = convos.find { it.contact == contactA2 }!!
+
+        assertEquals(testMessage, a.info.lastMessage)
+        assertNull(a2.info.lastMessage)
     }
 
     @Test

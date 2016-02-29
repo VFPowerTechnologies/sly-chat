@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.ui.services.impl
 
+import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.ConversationPersistenceManager
 import com.vfpowertech.keytap.core.persistence.MessageInfo
@@ -20,6 +21,9 @@ fun MessageInfo.toUI(formatter: DateTimeFormatter): UIMessage {
     val timestamp = if (!isDelivered) null else formatter.print(timestamp)
     return UIMessage(id, isSent, timestamp, message)
 }
+
+fun ContactInfo.toUI(): UIContactDetails =
+    UIContactDetails(name, phoneNumber, email, publicKey)
 
 //TODO maybe wrap the contacts persistence manager in something so it can be shared between this and the ContactService?
 /** This exists for the lifetime of the application. It wraps RelayClientManager, which exists for the lifetime of the user session. */
@@ -130,20 +134,18 @@ class MessengerServiceImpl(
     }
 
     override fun getConversations(): Promise<List<UIConversation>, Exception> {
-        val conversationPersistenceManager = getConversationPersistenceManagerOrThrow()
         val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
-        return contactsPersistenceManager.getAll() map { contacts ->
-            contacts.map { contact ->
-                val details = UIContactDetails(contact.name, contact.phoneNumber, contact.email, contact.publicKey)
-                //TODO fix this shit
-                val convo = conversationPersistenceManager.getConversationInfo(contact.email).get()
-                UIConversation(details, UIConversationStatus(true, convo.unreadMessageCount, convo.lastMessage))
+        return contactsPersistenceManager.getAllConversations() map { convos ->
+            convos.map {
+                val contact = it.contact
+                val info = it.info
+                UIConversation(contact.toUI(), UIConversationStatus(true, info.unreadMessageCount, info.lastMessage))
             }
         }
     }
 
     override fun markConversationAsRead(contact: UIContactDetails): Promise<Unit, Exception> {
-        return getConversationPersistenceManagerOrThrow().markConversationAsRead(contact.email)
+        return getContactsPersistenceManagerOrThrow().markConversationAsRead(contact.email)
     }
 
     private fun notifyNewMessageListeners(messageInfo: UIMessageInfo) {

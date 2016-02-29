@@ -63,7 +63,7 @@ VALUES
             stmt.step()
         }
 
-        if (connection.totalChanges <= 0)
+        if (connection.changes <= 0)
             throw InvalidMessageException(contact, messageId)
 
         connection.prepare("SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM $table WHERE id=?").use { stmt ->
