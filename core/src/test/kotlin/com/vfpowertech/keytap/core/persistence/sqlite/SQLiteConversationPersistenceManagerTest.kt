@@ -114,7 +114,6 @@ class SQLiteConversationPersistenceManagerTest {
         val messageInfo = addMessage(contact, false, testMessage, 0)
         assertEquals(testMessage, messageInfo.message)
         assertFalse(messageInfo.isSent)
-        assertFalse(messageInfo.isRead)
     }
 
     @Test

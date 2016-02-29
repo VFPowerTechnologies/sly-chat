@@ -13,7 +13,6 @@ data class MessageInfo(
     val timestamp: Long,
     val isSent: Boolean,
     val isDelivered: Boolean,
-    val isRead: Boolean,
     val ttl: Long
 ) {
     init {

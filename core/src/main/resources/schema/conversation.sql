@@ -16,9 +16,7 @@ CREATE TABLE IF NOT EXISTS `conv_%name%` (
     -- if is_sent = true and this is 1, then the message was received by the relay server
     -- if is_sent is false this value should be set to 1
     is_delivered INTEGER NOT NULL,
-    is_read INTEGER NOT NULL,
     message TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS `unique_conv_%name%_timestamp_n` ON `conv_%name%` (timestamp, n);
-CREATE INDEX IF NOT EXISTS `idx_conv_%name%_is_read` ON `conv_%name%` (is_read);
