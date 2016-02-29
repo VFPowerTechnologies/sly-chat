@@ -4,10 +4,7 @@ import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteConstants
 import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
-import com.vfpowertech.keytap.core.persistence.ContactInfo
-import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
-import com.vfpowertech.keytap.core.persistence.Conversation
-import com.vfpowertech.keytap.core.persistence.DuplicateContactException
+import com.vfpowertech.keytap.core.persistence.*
 import nl.komponents.kovenant.Promise
 import java.util.*
 
@@ -51,6 +48,49 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     override fun getAllConversations(): Promise<List<Conversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         throw RuntimeException("")
     }
+
+    private fun queryConversationInfo(connection: SQLiteConnection, contact: String): ConversationInfo {
+        return connection.prepare("SELECT unread_count, last_message FROM conversation_info WHERE contact_email=?").use { stmt ->
+            stmt.bind(1, contact)
+            if (!stmt.step())
+                throw InvalidConversationException(contact)
+
+            val unreadCount = stmt.columnInt(0)
+            val lastMessage = stmt.columnString(1)
+            ConversationInfo(contact, unreadCount, lastMessage)
+        }
+    }
+
+
+    override fun getConversationInfo(contact: String): Promise<ConversationInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        try {
+            queryConversationInfo(connection, contact)
+        }
+        catch (e: SQLiteException) {
+            if (isInvalidTableException(e))
+                throw InvalidConversationException(contact)
+            else
+                throw e
+        }
+    }
+
+    override fun markConversationAsRead(contact: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        try {
+            connection.prepare("UPDATE conversation_info SET unread_count=0 WHERE contact_email=?").use { stmt ->
+                stmt.bind(1, contact)
+                stmt.step()
+            }
+        }
+        catch (e: SQLiteException) {
+            if (isInvalidTableException(e))
+                throw InvalidConversationException(contact)
+            else
+                throw e
+        }
+
+        Unit
+    }
+
 
     private fun searchByLikeField(connection: SQLiteConnection, fieldName: String, searchValue: String): List<ContactInfo> =
         connection.prepare("SELECT email, name, phone_number, public_key FROM contacts WHERE $fieldName LIKE ? ESCAPE '!'").use { stmt ->

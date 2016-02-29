@@ -1,7 +1,6 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteException
-import com.vfpowertech.keytap.core.persistence.InvalidConversationException
 import com.vfpowertech.keytap.core.persistence.MessageInfo
 import com.vfpowertech.keytap.core.test.withTimeAs
 import org.junit.After
@@ -9,7 +8,9 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import java.util.*
-import kotlin.test.*
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class SQLiteConversationPersistenceManagerTest {
     companion object {
@@ -24,12 +25,14 @@ class SQLiteConversationPersistenceManagerTest {
     val testMessage = "test message"
 
     lateinit var persistenceManager: SQLitePersistenceManager
+    lateinit var contactsPersistenceManager: SQLiteContactsPersistenceManager
     lateinit var conversationPersistenceManager: SQLiteConversationPersistenceManager
 
     @Before
     fun before() {
         persistenceManager = SQLitePersistenceManager(null, ByteArray(0), null)
         persistenceManager.init()
+        contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)
         conversationPersistenceManager = SQLiteConversationPersistenceManager(persistenceManager)
     }
 
@@ -59,12 +62,8 @@ class SQLiteConversationPersistenceManagerTest {
         assert(doesTableExist(tableName))
     }
 
-    fun assertTableNotExists(tableName: String) {
-        assert(!doesTableExist(tableName))
-    }
-
     fun createConvosFor(vararg contacts: String): Array<out String> {
-        contacts.forEach { conversationPersistenceManager.createNewConversation(it).get() }
+        contacts.forEach { contact -> persistenceManager.runQuery { ConversationTable.create(it, contact) } }
         return contacts
     }
 
@@ -81,18 +80,6 @@ class SQLiteConversationPersistenceManagerTest {
     fun `createConversation should not error if a conversation table already exists`() {
         createConvosFor(contact)
         createConvosFor(contact)
-    }
-
-    @Test
-    fun `createConversation should not fail when a username contains a backtick`() {
-        conversationPersistenceManager.createNewConversation("`a").get()
-    }
-
-    @Test
-    fun `deleteConversation should delete the user table`() {
-        createConvosFor(contact)
-        conversationPersistenceManager.deleteConversation(contact).get()
-        assertTableNotExists("conv_$contact.com")
     }
 
     @Test
@@ -130,80 +117,6 @@ class SQLiteConversationPersistenceManagerTest {
 
         assertEquals(expectedTimestamp, updatedMessageInfo.timestamp)
         assertTrue(updatedMessageInfo.isDelivered)
-    }
-
-    @Test
-    fun `getAllConversations should return an empty list if no conversations are available`() {
-        assertTrue(conversationPersistenceManager.getAllConversations().get().isEmpty())
-    }
-
-    @Test
-    fun `getAllConversations should return all available conversations`() {
-        createConvosFor("a", "b")
-
-        val got = conversationPersistenceManager.getAllConversations().get()
-
-        assertEquals(2, got.size)
-    }
-
-    @Test
-    fun `getAllConversations should return a last message field if messages are available`() {
-        createConvosFor("a", "b")
-
-        addMessage("a", false, "ignored", 0)
-        addMessage("a", false, testMessage, 0)
-
-        val got = conversationPersistenceManager.getAllConversations().get().sortedBy { it.contact }
-
-        assertEquals(testMessage, got[0].lastMessage)
-        assertNull(got[1].lastMessage)
-    }
-
-    @Test
-    fun `getConversation should return a conversation if it exists`() {
-        createConvosFor(contact)
-
-        conversationPersistenceManager.getConversationInfo(contact).get()
-    }
-
-    @Test
-    fun `getConversation should include unread message counts in a conversation`() {
-        createConvosFor(contact)
-
-        val before = conversationPersistenceManager.getConversationInfo(contact).get()
-        assertEquals(0, before.unreadMessageCount)
-
-        addMessage(contact, false, testMessage, 0)
-
-        val after = conversationPersistenceManager.getConversationInfo(contact).get()
-        assertEquals(1, after.unreadMessageCount)
-    }
-
-    @Test
-    fun `getConversation should throw InvalidConversationException if the given conversation doesn't exist`() {
-        assertFailsWith(InvalidConversationException::class) {
-            conversationPersistenceManager.getConversationInfo(contact).get()
-        }
-    }
-
-    @Test
-    fun `markConversationAsRead should mark all unread messages as read`() {
-        createConvosFor(contact)
-
-        for (i in 0..2)
-            addMessage(contact, false, testMessage, 0)
-
-        conversationPersistenceManager.markConversationAsRead(contact).get()
-        
-        val got = conversationPersistenceManager.getConversationInfo(contact).get()
-        assertEquals(0, got.unreadMessageCount)
-    }
-
-    @Test
-    fun `markConversationAsRead should throw InvalidConversationException if the given conversation doesn't exist`() {
-        assertFailsWith(InvalidConversationException::class) {
-            conversationPersistenceManager.markConversationAsRead(contact).get()
-        }
     }
 
     @Test

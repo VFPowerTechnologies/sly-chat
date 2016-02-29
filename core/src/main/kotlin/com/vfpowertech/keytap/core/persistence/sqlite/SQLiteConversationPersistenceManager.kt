@@ -1,17 +1,16 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
-import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
-import com.vfpowertech.keytap.core.persistence.ConversationInfo
 import com.vfpowertech.keytap.core.persistence.ConversationPersistenceManager
-import com.vfpowertech.keytap.core.persistence.InvalidConversationException
 import com.vfpowertech.keytap.core.persistence.MessageInfo
 import nl.komponents.kovenant.Promise
 import org.joda.time.DateTime
 import java.util.*
 
 inline fun Boolean.toInt(): Int = if (this) 1 else 0
+
+//TODO update conversation_info when adding new message
 
 /** Depends on SQLiteContactsPersistenceManager for creating and deleting conversation tables. */
 class SQLiteConversationPersistenceManager(
@@ -24,14 +23,6 @@ class SQLiteConversationPersistenceManager(
         UUID.randomUUID().toString().replace("-", "")
 
     private fun getCurrentTimestamp(): Long = DateTime().millis
-
-    override fun createNewConversation(contact: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        ConversationTable.create(connection, contact)
-    }
-
-    override fun deleteConversation(contact: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        ConversationTable.delete(connection, contact)
-    }
 
     //TODO retry if id taken
     override fun addMessage(contact: String, isSent: Boolean, message: String, ttl: Long): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -81,57 +72,6 @@ VALUES
                 throw InvalidMessageException(contact, messageId)
             rowToMessageInfo(stmt)
         }
-    }
-
-    private fun queryConversationInfo(connection: SQLiteConnection, contact: String): ConversationInfo {
-        val table = getTablenameForContact(contact)
-
-        val unreadCount = connection.prepare("SELECT count(is_read) FROM $table WHERE is_read=0").use { stmt ->
-            stmt.step()
-            stmt.columnInt(0)
-        }
-
-        val messages = queryLastMessages(connection, contact, 0, 1)
-        val lastMessage = if (messages.isEmpty())
-            null
-        else
-            messages[0].message
-
-        return ConversationInfo(contact, unreadCount, lastMessage)
-    }
-
-    override fun getConversationInfo(contact: String): Promise<ConversationInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        try {
-            queryConversationInfo(connection, contact)
-        }
-        catch (e: SQLiteException) {
-            if (isInvalidTableException(e))
-                throw InvalidConversationException(contact)
-            else
-                throw e
-        }
-    }
-
-    override fun getAllConversations(): Promise<List<ConversationInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val convos = connection.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'conv_%'").use { stmt ->
-            stmt.map { it.columnString(0).substring(5) }
-        }
-
-        convos.map { queryConversationInfo(connection, it) }
-    }
-
-    override fun markConversationAsRead(contact: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        try {
-            connection.exec("UPDATE ${getTablenameForContact(contact)} SET is_read=1 WHERE is_read=0")
-        }
-        catch (e: SQLiteException) {
-            if (isInvalidTableException(e))
-                throw InvalidConversationException(contact)
-            else
-                throw e
-        }
-
-        Unit
     }
 
     private fun queryLastMessages(connection: SQLiteConnection, contact: String, startingAt: Int, count: Int): List<MessageInfo> {

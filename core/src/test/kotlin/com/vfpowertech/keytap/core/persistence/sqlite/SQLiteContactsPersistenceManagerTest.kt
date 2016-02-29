@@ -2,6 +2,7 @@ package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.DuplicateContactException
+import com.vfpowertech.keytap.core.persistence.InvalidConversationException
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
@@ -17,7 +18,10 @@ class SQLiteContactsPersistenceManagerTest {
         }
     }
 
-    val contactA = ContactInfo("a@a.com", "a", "000-0000", "pubkey")
+    val contactEmail = "a@a.com"
+    val testMessage = "test message"
+
+    val contactA = ContactInfo(contactEmail, "a", "000-0000", "pubkey")
     val contactA2 = ContactInfo("a2@a.com", "a2", "001-0000", "pubkey")
     val contactC = ContactInfo("c@c.com", "c", "222-2222", "pubkey")
     val contactList = arrayListOf(
@@ -32,6 +36,17 @@ class SQLiteContactsPersistenceManagerTest {
     fun loadContactList() {
         for (contact in contactList)
             contactsPersistenceManager.add(contact).get()
+    }
+
+    fun setConversationInfo(contact: String, unreadCount: Int, lastMessage: String?) {
+        persistenceManager.runQuery { connection ->
+            connection.prepare("UPDATE conversation_info SET unread_count=?, last_message=? WHERE contact_email=?").use { stmt ->
+                stmt.bind(1, unreadCount)
+                stmt.bind(2, lastMessage)
+                stmt.bind(3, contact)
+                stmt.step()
+            }
+        }
     }
 
     @Before
@@ -160,4 +175,77 @@ class SQLiteContactsPersistenceManagerTest {
         assertNull(got)
         assertFalse(doesConvTableExist(contactA.email))
     }
+
+    @Test
+    fun `getAllConversations should return an empty list if no conversations are available`() {
+        assertTrue(contactsPersistenceManager.getAllConversations().get().isEmpty())
+    }
+
+    @Test
+    fun `getAllConversations should return all available conversations`() {
+        loadContactList()
+
+        val got = contactsPersistenceManager.getAllConversations().get()
+
+        assertEquals(3, got.size)
+    }
+
+    @Test
+    fun `getAllConversations should return a last message field if messages are available`() {
+        loadContactList()
+
+        setConversationInfo(contactEmail, 2, testMessage)
+
+        val got = contactsPersistenceManager.getAllConversations().get().sortedBy { it.contact.email }
+
+        assertEquals(testMessage, got[0].info.lastMessage)
+        assertNull(got[1].info.lastMessage)
+    }
+
+    @Test
+    fun `getConversation should return a conversation if it exists`() {
+        loadContactList()
+
+        contactsPersistenceManager.getConversationInfo(contactEmail).get()
+    }
+
+    @Test
+    fun `getConversation should include unread message counts in a conversation`() {
+        loadContactList()
+
+        val before = contactsPersistenceManager.getConversationInfo(contactEmail).get()
+        assertEquals(0, before.unreadMessageCount)
+
+        setConversationInfo(contactEmail, 1, testMessage)
+
+        val after = contactsPersistenceManager.getConversationInfo(contactEmail).get()
+        assertEquals(1, after.unreadMessageCount)
+    }
+
+    @Test
+    fun `getConversation should throw InvalidConversationException if the given conversation doesn't exist`() {
+        assertFailsWith(InvalidConversationException::class) {
+            contactsPersistenceManager.getConversationInfo(contactEmail).get()
+        }
+    }
+
+    @Test
+    fun `markConversationAsRead should mark all unread messages as read`() {
+        loadContactList()
+
+        setConversationInfo(contactEmail, 2, testMessage)
+
+        contactsPersistenceManager.markConversationAsRead(contactEmail).get()
+
+        val got = contactsPersistenceManager.getConversationInfo(contactEmail).get()
+        assertEquals(0, got.unreadMessageCount)
+    }
+
+    @Test
+    fun `markConversationAsRead should throw InvalidConversationException if the given conversation doesn't exist`() {
+        assertFailsWith(InvalidConversationException::class) {
+            contactsPersistenceManager.markConversationAsRead(contactEmail).get()
+        }
+    }
+
 }
