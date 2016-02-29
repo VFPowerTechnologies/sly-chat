@@ -6,6 +6,7 @@ import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
+import com.vfpowertech.keytap.core.persistence.Conversation
 import com.vfpowertech.keytap.core.persistence.DuplicateContactException
 import nl.komponents.kovenant.Promise
 import java.util.*
@@ -47,6 +48,10 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         }
     }
 
+    override fun getAllConversations(): Promise<List<Conversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        throw RuntimeException("")
+    }
+
     private fun searchByLikeField(connection: SQLiteConnection, fieldName: String, searchValue: String): List<ContactInfo> =
         connection.prepare("SELECT email, name, phone_number, public_key FROM contacts WHERE $fieldName LIKE ? ESCAPE '!'").use { stmt ->
             val escaped = escapeLikeString(searchValue, '!')
@@ -79,6 +84,11 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
                     stmt.step()
                 }
 
+                connection.prepare("INSERT INTO conversation_info (contact_email, unread_count, last_message) VALUES (?, 0, NULL)").use { stmt ->
+                    stmt.bind(1, contactInfo.email)
+                    stmt.step()
+                }
+
                 ConversationTable.create(connection, contactInfo.email)
             }
         }
@@ -105,15 +115,20 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
     override fun remove(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
+            connection.prepare("DELETE FROM conversation_info WHERE contact_email=?").use { stmt ->
+                stmt.bind(1, contactInfo.email)
+                stmt.step()
+            }
+
             connection.prepare("DELETE FROM contacts WHERE email=?").use { stmt ->
                 stmt.bind(1, contactInfo.email)
 
                 stmt.step()
                 if (connection.changes <= 0)
                     throw InvalidContactException(contactInfo.email)
-
-                ConversationTable.delete(connection, contactInfo.email)
             }
+
+            ConversationTable.delete(connection, contactInfo.email)
         }
     }
 }

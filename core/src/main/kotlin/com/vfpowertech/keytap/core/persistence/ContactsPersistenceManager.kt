@@ -6,6 +6,8 @@ import nl.komponents.kovenant.Promise
 interface ContactsPersistenceManager {
     fun get(email: String): Promise<ContactInfo?, Exception>
     fun getAll(): Promise<List<ContactInfo>, Exception>
+    fun getAllConversations(): Promise<List<Conversation>, Exception>
+
     /** Adds a new contact and conversation for a contact. */
     fun add(contactInfo: ContactInfo): Promise<Unit, Exception>
     /** Updates the given contact's info. */
