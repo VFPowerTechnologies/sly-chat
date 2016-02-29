@@ -22,7 +22,7 @@ interface ContactsService {
      * @throws InvalidContactException Given Contact doesn't exist.
      * @throws IllegalArgumentException newContactInfo.id was null.
      */
-    fun updateContact(newContactDetails: UIContactDetails)
+    fun updateContact(newContactDetails: UIContactDetails): Promise<UIContactDetails, Exception>
 
     /**
      * Remove the given contact with the given info. contactDetails.id must not be null.
