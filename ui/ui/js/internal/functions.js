@@ -26,6 +26,10 @@ KEYTAP.navigationController.init();
 KEYTAP.menuController = new MenuController();
 KEYTAP.menuController.init();
 
+$(window.location).on("chatExited", function () {
+    KEYTAP.chatController.model.markConversationAsRead(KEYTAP.contactController.getCurrentContact());
+});
+
 // SmoothState, makes only the main div reload on page load.
 $(function(){
     'use strict';
@@ -36,6 +40,9 @@ $(function(){
         onStart: {
             duration: duration_CONSTANT,
             render: function ($container) {
+                if(window.location.href.indexOf("chat.html") > -1) {
+                    $(window.location).trigger("chatExited", {});
+                }
                 $container.addClass('is-exiting');
                 smoothState.restartCSSAnimations();
             }

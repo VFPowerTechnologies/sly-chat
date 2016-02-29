@@ -11,5 +11,10 @@ ChatModel.prototype = {
             KEYTAP.exceptionController.displayDebugMessage(e);
             console.error("Unable to fetch messages: " + e);
         });
+    },
+    markConversationAsRead : function (contact) {
+        messengerService.markConversationAsRead(contact).catch(function (e) {
+            console.log(e);
+        })
     }
 };

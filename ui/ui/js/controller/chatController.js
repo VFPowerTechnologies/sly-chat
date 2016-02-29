@@ -9,6 +9,7 @@ ChatController.prototype = {
     init : function () {
         this.model.setController(this);
         this.model.fetchMessage(this.currentMessagePosition, this.fetchingNumber, this.contactController.getCurrentContact());
+        this.model.markConversationAsRead(this.contactController.getCurrentContact());
         this.newMessageInput = document.getElementById('newMessageInput');
         var self = this;
 
