@@ -32,17 +32,16 @@ ChatController.prototype = {
         }
     },
     displayMessage : function (messages, contact) {
-        var messagesNode = document.getElementById('messages');
+        var iframe = $("#chatContent");
+        var messageNode = iframe.contents().find("#messages");
+
         var messagesHtml = "";
         for (var i = messages.length - 1; i >= 0; --i) {
             messagesHtml += this.createMessageNode(messages[i], contact.name);
         }
         if(messagesHtml != ""){
-            messagesNode.innerHTML = messagesHtml;
-        }
-
-        if(typeof $("ul#messages li:last").offset() !== "undefined") {
-            $("html,body").animate({scrollTop: $("ul#messages li:last").offset().top});
+            messageNode.html(messagesHtml);
+            document.getElementById("chatContent").contentWindow.scrollTo(0, 9999999);
         }
     },
     createMessageNode : function (message, contactName) {
@@ -79,11 +78,12 @@ ChatController.prototype = {
     submitNewMessage : function () {
         var message = this.newMessageInput.value;
         if(message != ""){
-            var messagesNode = document.getElementById('messages');
+            var messageNode = $("#chatContent").contents().find("#messages");
+
             messengerService.sendMessageTo(this.contactController.getCurrentContact(), message).then(function (messageDetails) {
                 this.newMessageInput.value = "";
-                messagesNode.innerHTML += this.createMessageNode(messageDetails, "me");
-                window.scrollTo(0,document.body.scrollHeight);
+                messageNode.append(this.createMessageNode(messageDetails, "me"));
+                document.getElementById("chatContent").contentWindow.scrollTo(0, 9999999);
                 $("#newMessageInput").click();
             }.bind(this)).catch(function (e) {
                 KEYTAP.exceptionController.displayDebugMessage(e);
@@ -93,30 +93,31 @@ ChatController.prototype = {
     },
     addMessageUpdateListener : function () {
         messengerService.addMessageStatusUpdateListener(function (messageInfo) {
-            messageDiv = document.getElementById("message_" + messageInfo.message.id);
+            var messageDiv = $("#chatContent").contents().find("#message_" + messageInfo.message.id);
 
-            if(messageDiv != null && messageInfo.message.sent == true){
-                messageDiv.getElementsByClassName("timespan")[0].innerHTML = messageInfo.message.timestamp;// + '<i class="mdi mdi-checkbox-marked-circle pull-right"></i>';
+            if(messageDiv.length && messageInfo.message.sent == true){
+                messageDiv.find(".timespan").html(messageInfo.message.timestamp);// + '<i class="mdi mdi-checkbox-marked-circle pull-right"></i>';
             }
         });
     },
     addNewMessageListener : function () {
         messengerService.addNewMessageListener(function (messageInfo) {
             if(document.getElementById("currentPageChatEmail") != null && document.getElementById("currentPageChatEmail").innerHTML == messageInfo.contact){
-                var messagesDiv = document.getElementById("messages");
-                if(messagesDiv != null){
+                var messageDiv = $("#chatContent").contents().find("#messages");
+                if(messageDiv.length){
                     var contactName = this.contactController.getContact(messageInfo.contact).name;
-                    messagesDiv.innerHTML += this.createMessageNode(messageInfo.message, contactName);
-                    window.scrollTo(0,document.body.scrollHeight);
+                    messageDiv.append(this.createMessageNode(messageInfo.message, contactName));
+                    document.getElementById("chatContent").contentWindow.scrollTo(0, 9999999);
                 }
             }
-            else if(document.getElementById("contact%" + messageInfo.contact) != null){
-                var contactBlock = $("div[id='contact%" + messageInfo.contact + "']");
-
-                if(!contactBlock.hasClass("new-messages")){
-                    var contact = contactBlock.find(".contact");
-                    contactBlock.addClass("new-messages");
-                    contact.append("<span class='pull-right label label-warning' style='bottom: 5px;'>" + "new" + "</span>");
+            else if($("#contactContent").length){
+                var contactBlock = $("#contactContent").contents().find("[id='contact%" + messageInfo.contact + "']");
+                if(contactBlock.length) {
+                    if (!contactBlock.hasClass("new-messages")) {
+                        var contact = contactBlock.find(".contact");
+                        contactBlock.addClass("new-messages");
+                        contact.append("<span class='pull-right label label-warning' style='bottom: 5px;'>" + "new" + "</span>");
+                    }
                 }
             }
         }.bind(this));

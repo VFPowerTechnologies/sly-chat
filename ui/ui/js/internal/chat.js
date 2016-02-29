@@ -6,7 +6,5 @@ $(function(){
 
     $("#page-title").html(currentContact.name);
 
-    $("#content").append("<div id='currentPageChatEmail' class='hidden'>" + currentContact.email + "</div>");
-
-    KEYTAP.chatController.init();
+    $("#chatContent").after("<div id='currentPageChatEmail' class='hidden'>" + currentContact.email + "</div>");
 });

@@ -14,13 +14,13 @@ ContactController.prototype = {
         }
     },
     displayContacts : function (conversations) {
-        contactList = document.getElementById("contactList");
-        contactList.innerHTML = "";
+        var contactList = $("#contactContent").contents().find("#contactList");
+        contactList.html("");
 
         var i = 0;
         for (var email in conversations) {
             if(conversations.hasOwnProperty(email)) {
-                contactList.innerHTML += this.createContactBlock(conversations[email].contact, conversations[email].status, i);
+                contactList.append(this.createContactBlock(conversations[email].contact, conversations[email].status, i));
             }
             i++;
         }
@@ -59,16 +59,15 @@ ContactController.prototype = {
         return img.outerHTML;
     },
     addEventListener : function () {
-        var links = document.getElementsByClassName("contact-link");
-        for(var i = 0; i < links.length; i++){
-            links[i].addEventListener("click", (function(self, email, link){
-                return function(e) {
-                    e.preventDefault();
-                    self.model.setCurrentContact(email);
-                    KEYTAP.navigationController.loadPage("chat.html");
-                };
-            })(this, links[i].id.split("contact%")[1], links[i]));
-        }
+        var iframe = $("#contactContent");
+
+        var links = iframe.contents().find(".contact-link");
+        links.bind("click", function (e) {
+            e.preventDefault();
+            var email = $(this).attr("id").split("contact%")[1];
+            KEYTAP.contactController.model.setCurrentContact(email);
+            KEYTAP.navigationController.loadPage("chat.html");
+        });
     },
     getCurrentContact : function () {
         return this.model.getCurrentContact();

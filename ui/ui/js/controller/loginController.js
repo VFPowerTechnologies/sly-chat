@@ -61,4 +61,4 @@ LoginController.prototype = {
         $(".nav-btn").hide();
         KEYTAP.navigationController.loadPage("index.html");
     }
-}
+};
