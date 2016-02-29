@@ -25,6 +25,10 @@ private val TABLE_NAMES = arrayListOf(
     "contacts"
 )
 
+//localDataEncryptionParams don't work too well... they contain an IV, which wouldn't be reused
+//for the db, we also can't control cipher params anyways
+//for storing files, the iv would be per-block (no chaining blocks else we can't provide seek; is this an issue?)
+
 /**
  * Lazily initialized at time of first query.
  *
