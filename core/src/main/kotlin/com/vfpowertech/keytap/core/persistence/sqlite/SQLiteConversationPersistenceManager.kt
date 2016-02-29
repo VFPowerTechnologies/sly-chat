@@ -10,8 +10,6 @@ import java.util.*
 
 inline fun Boolean.toInt(): Int = if (this) 1 else 0
 
-//TODO update conversation_info when adding new message
-
 /** Depends on SQLiteContactsPersistenceManager for creating and deleting conversation tables. */
 class SQLiteConversationPersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
@@ -48,8 +46,13 @@ VALUES
             stmt.step()
         }
 
-        //TODO update conversation_info
-        if (!isSent) {}
+        val unreadCountFragment = if (!isSent) "unread_count=unread_count+1," else ""
+
+        connection.prepare("UPDATE conversation_info SET $unreadCountFragment last_message=? WHERE contact_email=?").use { stmt ->
+            stmt.bind(1, message)
+            stmt.bind(2, contact)
+            stmt.step()
+        }
 
         messageInfo
     }
