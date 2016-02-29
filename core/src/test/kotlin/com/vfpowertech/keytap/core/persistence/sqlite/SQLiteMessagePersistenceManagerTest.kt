@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class SQLiteConversationPersistenceManagerTest {
+class SQLiteMessagePersistenceManagerTest {
     companion object {
         @JvmStatic
         @BeforeClass
@@ -26,14 +26,14 @@ class SQLiteConversationPersistenceManagerTest {
 
     lateinit var persistenceManager: SQLitePersistenceManager
     lateinit var contactsPersistenceManager: SQLiteContactsPersistenceManager
-    lateinit var conversationPersistenceManager: SQLiteConversationPersistenceManager
+    lateinit var messagePersistenceManager: SQLiteMessagePersistenceManager
 
     @Before
     fun before() {
         persistenceManager = SQLitePersistenceManager(null, ByteArray(0), null)
         persistenceManager.init()
         contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)
-        conversationPersistenceManager = SQLiteConversationPersistenceManager(persistenceManager)
+        messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
     }
 
     @After
@@ -68,7 +68,7 @@ class SQLiteConversationPersistenceManagerTest {
     }
 
     fun addMessage(contact: String, isSent: Boolean, message: String, ttl: Long): MessageInfo =
-        conversationPersistenceManager.addMessage(contact, isSent, message, ttl).get()
+        messagePersistenceManager.addMessage(contact, isSent, message, ttl).get()
 
     @Test
     fun `createConversation should create a conversation table for the given user`() {
@@ -112,7 +112,7 @@ class SQLiteConversationPersistenceManagerTest {
         val expectedTimestamp = sentMessageInfo.timestamp+10
 
         val updatedMessageInfo = withTimeAs(expectedTimestamp) {
-            conversationPersistenceManager.markMessageAsDelivered(contact, sentMessageInfo.id).get()
+            messagePersistenceManager.markMessageAsDelivered(contact, sentMessageInfo.id).get()
         }
 
         assertEquals(expectedTimestamp, updatedMessageInfo.timestamp)
@@ -131,7 +131,7 @@ class SQLiteConversationPersistenceManagerTest {
         val count = 4
         val expected = messages.reversed().subList(start, start+count)
 
-        val got = conversationPersistenceManager.getLastMessages(contact, start, count).get()
+        val got = messagePersistenceManager.getLastMessages(contact, start, count).get()
 
         assertEquals(count, got.size)
         assertEquals(expected, got)
@@ -149,7 +149,7 @@ class SQLiteConversationPersistenceManagerTest {
         for (i in 0..count-1)
             messages.add(addMessage(contact, true, testMessage, 0))
 
-        val undelivered = conversationPersistenceManager.getUndeliveredMessages(contact).get()
+        val undelivered = messagePersistenceManager.getUndeliveredMessages(contact).get()
         assertEquals(count, undelivered.size)
 
         undelivered.forEach { assertFalse(it.isDelivered) }

@@ -2,7 +2,7 @@ package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteStatement
-import com.vfpowertech.keytap.core.persistence.ConversationPersistenceManager
+import com.vfpowertech.keytap.core.persistence.MessagePersistenceManager
 import com.vfpowertech.keytap.core.persistence.MessageInfo
 import nl.komponents.kovenant.Promise
 import org.joda.time.DateTime
@@ -11,9 +11,9 @@ import java.util.*
 inline fun Boolean.toInt(): Int = if (this) 1 else 0
 
 /** Depends on SQLiteContactsPersistenceManager for creating and deleting conversation tables. */
-class SQLiteConversationPersistenceManager(
+class SQLiteMessagePersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
-) : ConversationPersistenceManager {
+) : MessagePersistenceManager {
     private fun getTablenameForContact(contact: String) =
         "`conv_${escapeBackticks(contact)}`"
 

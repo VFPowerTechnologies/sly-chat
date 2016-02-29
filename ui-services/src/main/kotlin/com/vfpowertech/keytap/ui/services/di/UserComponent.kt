@@ -1,7 +1,7 @@
 package com.vfpowertech.keytap.ui.services.di
 
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
-import com.vfpowertech.keytap.core.persistence.ConversationPersistenceManager
+import com.vfpowertech.keytap.core.persistence.MessagePersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
 import com.vfpowertech.keytap.core.relay.RelayClient
 import com.vfpowertech.keytap.ui.services.RelayClientManager
@@ -16,7 +16,7 @@ interface UserComponent {
 
     val contactsPersistenceManager: ContactsPersistenceManager
 
-    val conversationPersistenceManager: ConversationPersistenceManager
+    val messagePersistenceManager: MessagePersistenceManager
 
     val userLoginData: UserLoginData
 

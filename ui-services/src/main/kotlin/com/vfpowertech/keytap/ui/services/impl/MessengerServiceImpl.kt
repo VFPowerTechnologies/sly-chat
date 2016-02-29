@@ -2,7 +2,7 @@ package com.vfpowertech.keytap.ui.services.impl
 
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
-import com.vfpowertech.keytap.core.persistence.ConversationPersistenceManager
+import com.vfpowertech.keytap.core.persistence.MessagePersistenceManager
 import com.vfpowertech.keytap.core.persistence.MessageInfo
 import com.vfpowertech.keytap.core.relay.ReceivedMessage
 import com.vfpowertech.keytap.core.relay.RelayClientEvent
@@ -51,8 +51,8 @@ class MessengerServiceImpl(
         }
     }
 
-    private fun getConversationPersistenceManagerOrThrow(): ConversationPersistenceManager {
-        return app.userComponent?.conversationPersistenceManager ?: error("No user session has been established")
+    private fun getConversationPersistenceManagerOrThrow(): MessagePersistenceManager {
+        return app.userComponent?.messagePersistenceManager ?: error("No user session has been established")
     }
 
     private fun getContactsPersistenceManagerOrThrow(): ContactsPersistenceManager {

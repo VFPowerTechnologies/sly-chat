@@ -2,7 +2,7 @@ package com.vfpowertech.keytap.core.persistence
 
 import nl.komponents.kovenant.Promise
 
-interface ConversationPersistenceManager {
+interface MessagePersistenceManager {
     /**
      * Appends a new message for the given user. Auto-generates a unique message id, along with a timestamp.
      *
