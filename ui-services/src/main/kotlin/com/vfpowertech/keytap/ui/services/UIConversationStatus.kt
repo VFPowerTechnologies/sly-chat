@@ -12,5 +12,5 @@ import com.fasterxml.jackson.annotation.JsonProperty
 data class UIConversationStatus(
     @JsonProperty("isOnline") val isOnline: Boolean,
     @JsonProperty("unreadMessageCount") val unreadMessageCount: Int,
-    @JsonProperty("lastMessage") val lastMessage: UIMessage?
+    @JsonProperty("lastMessage") val lastMessage: String?
 )
