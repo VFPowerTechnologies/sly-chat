@@ -15,6 +15,7 @@ ChatModel.prototype = {
     markConversationAsRead : function (contact) {
         messengerService.markConversationAsRead(contact).catch(function (e) {
             console.log(e);
+            KEYTAP.exceptionController.displayDebugMessage(e);
         })
     }
 };
