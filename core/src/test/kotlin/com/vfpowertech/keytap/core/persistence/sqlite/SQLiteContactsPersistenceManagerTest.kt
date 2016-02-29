@@ -6,10 +6,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
+import kotlin.test.*
 
 class SQLiteContactsPersistenceManagerTest {
     companion object {
@@ -49,14 +46,18 @@ class SQLiteContactsPersistenceManagerTest {
         persistenceManager.shutdown()
     }
 
+    fun doesConvTableExist(email: String): Boolean =
+        persistenceManager.runQuery { ConversationTable.exists(it, email) }.get()
+
     @Test
-    fun `add should successfully store a contact`() {
+    fun `add should successfully add a contact and create a conversation table`() {
         val contact = contactA
         contactsPersistenceManager.add(contact).get()
         val got = contactsPersistenceManager.get(contact.email).get()
 
         assertNotNull(got)
         assertEquals(contact, got)
+        assertTrue(doesConvTableExist(contact.email))
     }
 
     @Test
@@ -149,20 +150,14 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `remove should delete the contact`() {
-        val contacts = arrayListOf(
-            ContactInfo("a@a.com", "a", "000-0000", "pubkey")
-        )
+    fun `remove should delete the contact and its conversation table`() {
+        contactsPersistenceManager.add(contactA)
 
-        for (contact in contacts)
-            contactsPersistenceManager.add(contact)
-
-
-        for (contact in contacts)
-            contactsPersistenceManager.remove(contact)
+        contactsPersistenceManager.remove(contactA)
 
         val got = contactsPersistenceManager.get("a@a.com").get()
 
         assertNull(got)
+        assertFalse(doesConvTableExist(contactA.email))
     }
 }

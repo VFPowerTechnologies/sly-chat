@@ -22,4 +22,11 @@ object ConversationTable {
     fun delete(connection: SQLiteConnection, contact: String) {
         connection.exec("DROP TABLE IF EXISTS `conv_${escapeBackticks(contact)}`")
     }
+
+    fun exists(connection: SQLiteConnection, contact: String): Boolean {
+        connection.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").use { stmt ->
+            stmt.bind(1, "conv_$contact")
+            return stmt.step()
+        }
+    }
 }

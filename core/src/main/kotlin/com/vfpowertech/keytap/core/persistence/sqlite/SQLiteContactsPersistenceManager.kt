@@ -10,6 +10,7 @@ import com.vfpowertech.keytap.core.persistence.DuplicateContactException
 import nl.komponents.kovenant.Promise
 import java.util.*
 
+/** A contact is made up of an entry in the contacts table and an associated conv_ table containing their message log. */
 class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQLitePersistenceManager) : ContactsPersistenceManager {
     private fun contactInfoFromRow(stmt: SQLiteStatement) =
         ContactInfo(
@@ -72,10 +73,13 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
     override fun add(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         try {
-            connection.prepare("INSERT INTO contacts (email, name, phone_number, public_key) VALUES (?, ?, ?, ?)").use { stmt ->
-                contactInfoToRow(contactInfo, stmt)
-                stmt.step()
-                Unit
+            connection.withTransaction {
+                connection.prepare("INSERT INTO contacts (email, name, phone_number, public_key) VALUES (?, ?, ?, ?)").use { stmt ->
+                    contactInfoToRow(contactInfo, stmt)
+                    stmt.step()
+                }
+
+                ConversationTable.create(connection, contactInfo.email)
             }
         }
         catch (e: SQLiteException) {
@@ -100,12 +104,16 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     }
 
     override fun remove(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("DELETE FROM contacts WHERE email=?").use { stmt ->
-            stmt.bind(1, contactInfo.email)
+        connection.withTransaction {
+            connection.prepare("DELETE FROM contacts WHERE email=?").use { stmt ->
+                stmt.bind(1, contactInfo.email)
 
-            stmt.step()
-            if (connection.changes <= 0)
-                throw InvalidContactException(contactInfo.email)
+                stmt.step()
+                if (connection.changes <= 0)
+                    throw InvalidContactException(contactInfo.email)
+
+                ConversationTable.delete(connection, contactInfo.email)
+            }
         }
     }
 }
