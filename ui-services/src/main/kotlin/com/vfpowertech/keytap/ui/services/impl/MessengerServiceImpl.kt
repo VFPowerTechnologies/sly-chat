@@ -61,7 +61,7 @@ class MessengerServiceImpl(
     /** First we add to the log, then we display it to the user. */
     private fun handleReceivedMessage(event: ReceivedMessage) {
         getConversationPersistenceManagerOrThrow().addMessage(event.from, false, event.message, 0) successUi { messageInfo ->
-            val message = UIMessage(0, false, formatTimestamp(messageInfo.timestamp), messageInfo.message)
+            val message = UIMessage(messageInfo.id, false, formatTimestamp(messageInfo.timestamp), messageInfo.message)
             notifyNewMessageListeners(UIMessageInfo(event.from, message))
         }
     }
@@ -93,7 +93,7 @@ class MessengerServiceImpl(
 
         return getConversationPersistenceManagerOrThrow().addMessage(contact.email, true, message, 0) map { messageInfo ->
             relayClient.sendMessage(contact.email, messageInfo.message)
-            UIMessage(0, true, null, message)
+            UIMessage(messageInfo.id, true, null, message)
         }
     }
 
@@ -118,7 +118,7 @@ class MessengerServiceImpl(
         return conversationPersistenceManager.getLastMessages(contact.email, startingAt, count) map { messages ->
             messages.map { m ->
                 val timestamp = if (!m.isDelivered) null else formatTimestamp(m.timestamp)
-                UIMessage(0, m.isSent, timestamp, m.message)
+                UIMessage(m.id, m.isSent, timestamp, m.message)
             }
         }
     }
