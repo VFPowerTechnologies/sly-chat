@@ -1,27 +1,9 @@
 package com.vfpowertech.keytap.core.relay
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.vfpowertech.keytap.core.relay.RelayClientState.AUTHENTICATED
-import com.vfpowertech.keytap.core.relay.RelayClientState.AUTHENTICATING
-import com.vfpowertech.keytap.core.relay.RelayClientState.CONNECTED
-import com.vfpowertech.keytap.core.relay.RelayClientState.CONNECTING
-import com.vfpowertech.keytap.core.relay.RelayClientState.DISCONNECTED
-import com.vfpowertech.keytap.core.relay.RelayClientState.DISCONNECTING
-import com.vfpowertech.keytap.core.relay.base.CommandCode.CLIENT_SEND_MESSAGE
-import com.vfpowertech.keytap.core.relay.base.CommandCode.SERVER_MESSAGE_RECEIVED
-import com.vfpowertech.keytap.core.relay.base.CommandCode.SERVER_MESSAGE_SENT
-import com.vfpowertech.keytap.core.relay.base.CommandCode.SERVER_REGISTER_REQUEST
-import com.vfpowertech.keytap.core.relay.base.CommandCode.SERVER_REGISTER_SUCCESSFUL
-import com.vfpowertech.keytap.core.relay.base.CommandCode.SERVER_USER_OFFLINE
-import com.vfpowertech.keytap.core.relay.base.MessageContent
-import com.vfpowertech.keytap.core.relay.base.RelayConnection
-import com.vfpowertech.keytap.core.relay.base.RelayConnectionEstablished
-import com.vfpowertech.keytap.core.relay.base.RelayConnectionEvent
-import com.vfpowertech.keytap.core.relay.base.RelayConnectionLost
-import com.vfpowertech.keytap.core.relay.base.RelayConnector
-import com.vfpowertech.keytap.core.relay.base.RelayMessage
-import com.vfpowertech.keytap.core.relay.base.createAuthRequest
-import com.vfpowertech.keytap.core.relay.base.createSendMessageMessage
+import com.vfpowertech.keytap.core.relay.RelayClientState.*
+import com.vfpowertech.keytap.core.relay.base.*
+import com.vfpowertech.keytap.core.relay.base.CommandCode.*
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Observer
@@ -141,8 +123,8 @@ class RelayClient(
                 val messageId = message.header.messageId
                 log.info(
                     "Server has received message <{}> to <<{}>>",
-                    to,
-                    messageId
+                    messageId,
+                    to
                 )
 
                 emitEvent(ServerReceivedMessage(to, messageId))
@@ -223,10 +205,9 @@ class RelayClient(
         wasDisconnectRequested = true
     }
 
-    fun sendMessage(to: String, message: String) {
+    fun sendMessage(to: String, message: String, messageId: String) {
         log.info("Sending message <<{}>> to <<{}>>", message, to)
         val connection = getAuthConnectionOrThrow()
-        val messageId = "5248a1d7dc7e300ef2e18e30a6731455"
         connection.sendMessage(createSendMessageMessage(credentials, to, message, messageId))
     }
 }
