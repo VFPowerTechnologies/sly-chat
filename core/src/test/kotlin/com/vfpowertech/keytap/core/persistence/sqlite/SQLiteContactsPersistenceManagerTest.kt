@@ -2,6 +2,7 @@ package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.DuplicateContactException
+import com.vfpowertech.keytap.core.persistence.InvalidContactException
 import com.vfpowertech.keytap.core.persistence.InvalidConversationException
 import org.junit.After
 import org.junit.Before

@@ -2,6 +2,7 @@ package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteStatement
+import com.vfpowertech.keytap.core.persistence.InvalidMessageException
 import com.vfpowertech.keytap.core.persistence.MessagePersistenceManager
 import com.vfpowertech.keytap.core.persistence.MessageInfo
 import nl.komponents.kovenant.Promise
