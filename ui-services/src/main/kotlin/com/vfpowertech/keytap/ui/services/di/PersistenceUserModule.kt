@@ -2,8 +2,10 @@ package com.vfpowertech.keytap.ui.services.di
 
 import com.vfpowertech.keytap.core.PlatformInfo
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
+import com.vfpowertech.keytap.core.persistence.ConversationPersistenceManager
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLiteContactsPersistenceManager
+import com.vfpowertech.keytap.core.persistence.sqlite.SQLiteConversationPersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePreKeyPersistenceManager
 import com.vfpowertech.keytap.ui.services.UserLoginData
@@ -13,6 +15,11 @@ import java.io.File
 
 @Module
 class PersistenceUserModule {
+    @UserScope
+    @Provides
+    fun providesConversationPersistenceManager(sqlitePersistenceManager: SQLitePersistenceManager): ConversationPersistenceManager =
+        SQLiteConversationPersistenceManager(sqlitePersistenceManager)
+
     @UserScope
     @Provides
     fun providesPreKeyPersistenceManager(sqlitePersistenceManager: SQLitePersistenceManager): PreKeyPersistenceManager =
