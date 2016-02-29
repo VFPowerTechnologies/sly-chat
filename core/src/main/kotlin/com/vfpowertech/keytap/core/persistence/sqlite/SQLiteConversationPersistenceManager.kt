@@ -7,57 +7,30 @@ import com.vfpowertech.keytap.core.persistence.ConversationInfo
 import com.vfpowertech.keytap.core.persistence.ConversationPersistenceManager
 import com.vfpowertech.keytap.core.persistence.InvalidConversationException
 import com.vfpowertech.keytap.core.persistence.MessageInfo
-import com.vfpowertech.keytap.core.readResourceFileText
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.functional.bind
-import nl.komponents.kovenant.task
 import org.joda.time.DateTime
 import java.util.*
 
 inline fun Boolean.toInt(): Int = if (this) 1 else 0
 
+/** Depends on SQLiteContactsPersistenceManager for creating and deleting conversation tables. */
 class SQLiteConversationPersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
 ) : ConversationPersistenceManager {
-    //cached table template
-    //sync access via this
-    private var tableTemplate: String? = null
-
-    private fun getTableTemplate(): Promise<String, Exception> {
-        val template = synchronized(this) { tableTemplate }
-        if (template != null)
-            return Promise.ofSuccess(template)
-
-        return task {
-            val sql = javaClass.readResourceFileText("/schema/conversation.sql")
-            synchronized(this) {
-                tableTemplate = sql
-            }
-            sql
-        }
-    }
-
     private fun getTablenameForContact(contact: String) =
-        "`conv_${escapeUsername(contact)}`"
-
-    private fun escapeUsername(user: String) = user.replace("`", "``")
+        "`conv_${escapeBackticks(contact)}`"
 
     private fun getMessageId(): String =
         UUID.randomUUID().toString().replace("-", "")
 
     private fun getCurrentTimestamp(): Long = DateTime().millis
 
-    override fun createNewConversation(contact: String): Promise<Unit, Exception> = getTableTemplate() bind { tableTemplate ->
-        sqlitePersistenceManager.runQuery { connection ->
-            val sql = tableTemplate.replace("%name%", escapeUsername(contact))
-            connection.exec(sql)
-            Unit
-        }
+    override fun createNewConversation(contact: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        ConversationTable.create(connection, contact)
     }
 
     override fun deleteConversation(contact: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.exec("DROP TABLE IF EXISTS `conv_${escapeUsername(contact)}`")
-        Unit
+        ConversationTable.delete(connection, contact)
     }
 
     //TODO retry if id taken
