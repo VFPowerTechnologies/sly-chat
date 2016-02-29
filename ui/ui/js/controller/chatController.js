@@ -22,14 +22,12 @@ ChatController.prototype = {
             return false;
         });
 
-        this.newMessageInput.onkeyup = function(e){
-            e = e || event;
-            if (e.keyCode === 13 && !e.ctrlKey) {
+        $("#newMessageInput").on("keypress", function(e) {
+            if  (e.keyCode === 13 && !e.ctrlKey) {
+                e.preventDefault();
                 $("#newMessageForm").submit();
-                return false;
             }
-            return true;
-        }
+        });
     },
     displayMessage : function (messages, contact) {
         var iframe = $("#chatContent");
