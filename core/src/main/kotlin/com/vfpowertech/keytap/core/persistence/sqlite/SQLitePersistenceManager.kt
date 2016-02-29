@@ -22,7 +22,8 @@ private val TABLE_NAMES = arrayListOf(
     "prekey_ids",
     "signed_prekeys",
     "unsigned_prekeys",
-    "contacts"
+    "contacts",
+    "conversation_info"
 )
 
 //localDataEncryptionParams don't work too well... they contain an IV, which wouldn't be reused
