@@ -57,3 +57,10 @@ fun Class<*>.loadSharedLibFromResource(base: String) {
 
     System.load(path.toString())
 }
+
+/** Simple path builder helper. */
+operator fun File.div(child: String): File =
+    File(this, child)
+
+operator fun String.div(child: String): File =
+    File(this, child)
