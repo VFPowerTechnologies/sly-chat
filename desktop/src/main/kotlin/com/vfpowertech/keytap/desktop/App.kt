@@ -7,10 +7,10 @@ import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import com.vfpowertech.keytap.desktop.jfx.jsconsole.ConsoleMessageAdded
 import com.vfpowertech.keytap.desktop.services.DesktopPlatformInfoService
-import com.vfpowertech.keytap.ui.services.KeyTapApplication
-import com.vfpowertech.keytap.ui.services.createAppDirectories
-import com.vfpowertech.keytap.ui.services.di.PlatformModule
-import com.vfpowertech.keytap.ui.services.registerCoreServicesOnDispatcher
+import com.vfpowertech.keytap.services.KeyTapApplication
+import com.vfpowertech.keytap.services.di.PlatformModule
+import com.vfpowertech.keytap.services.ui.createAppDirectories
+import com.vfpowertech.keytap.services.ui.registerCoreServicesOnDispatcher
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.scene.web.WebEngine

@@ -10,9 +10,10 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
-import com.vfpowertech.keytap.ui.services.js.NavigationService
+import com.vfpowertech.keytap.services.ui.js.NavigationService
+import com.vfpowertech.keytap.services.ui.js.javatojs.NavigationServiceToJSProxy
 import com.vfpowertech.keytap.ui.services.js.javatojs.NavigationServiceToJSProxy
-import com.vfpowertech.keytap.ui.services.registerCoreServicesOnDispatcher
+import com.vfpowertech.keytap.services.ui.registerCoreServicesOnDispatcher
 import org.slf4j.LoggerFactory
 
 class MainActivity : Activity() {

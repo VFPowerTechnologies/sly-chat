@@ -1,7 +1,7 @@
 package com.vfpowertech.keytap.desktop.services
 
-import com.vfpowertech.keytap.ui.services.PlatformInfoService
-import com.vfpowertech.keytap.ui.services.UIPlatformInfo
+import com.vfpowertech.keytap.services.ui.PlatformInfoService
+import com.vfpowertech.keytap.services.ui.UIPlatformInfo
 
 class DesktopPlatformInfoService : PlatformInfoService {
     override fun getInfo(): UIPlatformInfo {
