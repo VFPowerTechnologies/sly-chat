@@ -4,12 +4,11 @@ import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteConstants
 import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
-import com.vfpowertech.keytap.core.persistence.ContactInfo
-import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
-import com.vfpowertech.keytap.core.persistence.DuplicateContactException
+import com.vfpowertech.keytap.core.persistence.*
 import nl.komponents.kovenant.Promise
 import java.util.*
 
+/** A contact is made up of an entry in the contacts table and an associated conv_ table containing their message log. */
 class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQLitePersistenceManager) : ContactsPersistenceManager {
     private fun contactInfoFromRow(stmt: SQLiteStatement) =
         ContactInfo(
@@ -46,6 +45,65 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         }
     }
 
+    override fun getAllConversations(): Promise<List<Conversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val sql = """
+SELECT
+    email, name, phone_number, public_key,
+    unread_count, last_message
+FROM
+    contacts
+JOIN
+    conversation_info
+ON
+    contacts.email=conversation_info.contact_email
+        """
+
+        connection.prepare(sql).use { stmt ->
+            stmt.map { stmt ->
+                val contact = contactInfoFromRow(stmt)
+                val info = ConversationInfo(contact.email, stmt.columnInt(4), stmt.columnString(5))
+                Conversation(contact, info)
+            }
+        }
+    }
+
+    private fun queryConversationInfo(connection: SQLiteConnection, contact: String): ConversationInfo {
+        return connection.prepare("SELECT unread_count, last_message FROM conversation_info WHERE contact_email=?").use { stmt ->
+            stmt.bind(1, contact)
+            if (!stmt.step())
+                throw InvalidConversationException(contact)
+
+            val unreadCount = stmt.columnInt(0)
+            val lastMessage = stmt.columnString(1)
+            ConversationInfo(contact, unreadCount, lastMessage)
+        }
+    }
+
+
+    override fun getConversationInfo(email: String): Promise<ConversationInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        try {
+            queryConversationInfo(connection, email)
+        }
+        catch (e: SQLiteException) {
+            if (isInvalidTableException(e))
+                throw InvalidConversationException(email)
+            else
+                throw e
+        }
+    }
+
+    override fun markConversationAsRead(email: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.prepare("UPDATE conversation_info SET unread_count=0 WHERE contact_email=?").use { stmt ->
+            stmt.bind(1, email)
+            stmt.step()
+        }
+        if (connection.changes <= 0)
+            throw InvalidConversationException(email)
+
+        Unit
+    }
+
+
     private fun searchByLikeField(connection: SQLiteConnection, fieldName: String, searchValue: String): List<ContactInfo> =
         connection.prepare("SELECT email, name, phone_number, public_key FROM contacts WHERE $fieldName LIKE ? ESCAPE '!'").use { stmt ->
             val escaped = escapeLikeString(searchValue, '!')
@@ -72,10 +130,18 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
     override fun add(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         try {
-            connection.prepare("INSERT INTO contacts (email, name, phone_number, public_key) VALUES (?, ?, ?, ?)").use { stmt ->
-                contactInfoToRow(contactInfo, stmt)
-                stmt.step()
-                Unit
+            connection.withTransaction {
+                connection.prepare("INSERT INTO contacts (email, name, phone_number, public_key) VALUES (?, ?, ?, ?)").use { stmt ->
+                    contactInfoToRow(contactInfo, stmt)
+                    stmt.step()
+                }
+
+                connection.prepare("INSERT INTO conversation_info (contact_email, unread_count, last_message) VALUES (?, 0, NULL)").use { stmt ->
+                    stmt.bind(1, contactInfo.email)
+                    stmt.step()
+                }
+
+                ConversationTable.create(connection, contactInfo.email)
             }
         }
         catch (e: SQLiteException) {
@@ -100,12 +166,21 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     }
 
     override fun remove(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("DELETE FROM contacts WHERE email=?").use { stmt ->
-            stmt.bind(1, contactInfo.email)
+        connection.withTransaction {
+            connection.prepare("DELETE FROM conversation_info WHERE contact_email=?").use { stmt ->
+                stmt.bind(1, contactInfo.email)
+                stmt.step()
+            }
 
-            stmt.step()
-            if (connection.changes <= 0)
-                throw InvalidContactException(contactInfo.email)
+            connection.prepare("DELETE FROM contacts WHERE email=?").use { stmt ->
+                stmt.bind(1, contactInfo.email)
+
+                stmt.step()
+                if (connection.changes <= 0)
+                    throw InvalidContactException(contactInfo.email)
+            }
+
+            ConversationTable.delete(connection, contactInfo.email)
         }
     }
 }

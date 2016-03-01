@@ -57,6 +57,7 @@ LoginController.prototype = {
     },
     logout : function () {
         KEYTAP.navigationController.clearHistory();
+        loginService.logout();
         $(".menu-hidden").hide();
         $(".nav-btn").hide();
         KEYTAP.navigationController.loadPage("index.html");

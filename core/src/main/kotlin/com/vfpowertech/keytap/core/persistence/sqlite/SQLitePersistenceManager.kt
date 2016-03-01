@@ -10,7 +10,6 @@ import com.vfpowertech.keytap.core.readResourceFileText
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.functional.bind
-import nl.komponents.kovenant.task
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -22,8 +21,13 @@ private val TABLE_NAMES = arrayListOf(
     "prekey_ids",
     "signed_prekeys",
     "unsigned_prekeys",
-    "contacts"
+    "contacts",
+    "conversation_info"
 )
+
+//localDataEncryptionParams don't work too well... they contain an IV, which wouldn't be reused
+//for the db, we also can't control cipher params anyways
+//for storing files, the iv would be per-block (no chaining blocks else we can't provide seek; is this an issue?)
 
 /**
  * Lazily initialized at time of first query.
@@ -79,6 +83,48 @@ class SQLitePersistenceManager(
     }
 
     /**
+     * Initialize the worker queue.
+     *
+     * @return False if already initialized, true otherwise.
+     */
+    private fun initQueue(): Boolean {
+        if (initialized)
+            return false
+
+        sqliteQueue = SQLiteQueue(path)
+        sqliteQueue.start()
+
+        initialized = true
+        return true
+    }
+
+    /** Initialize new database or migrate existing database. Should be run off the main thread. */
+    private fun initContents(): Promise<Unit, Exception> {
+        val create = !(path?.exists() ?: false)
+
+        return realRunQuery { connection ->
+            if (!create) {
+                val version = getCurrentDatabaseVersion(connection)
+                if (version == LATEST_DATABASE_VERSION) {
+                    logger.debug("Database is up to date")
+                }
+                else {
+                    logger.info("Performing migration from version {} to {}", version, LATEST_DATABASE_VERSION)
+                    //TODO
+                    //if number isn't update to date, apply migrations for each missing version in turn
+                    //run each migration within a transaction, ending with updating the user_version (within the transaction)
+                    //use savepoints so if the upgrade fails we can rollback completely? seems pointless though
+                    //make sure to upgrade all conv_* tables as well
+                    throw UnsupportedOperationException()
+                }
+            }
+            else {
+                initializeDatabase(connection)
+            }
+        }
+    }
+
+    /**
      * Open the connection to the database.
      *
      * If the database doesn't exist, it's created and then initialized to the latest version.
@@ -86,44 +132,15 @@ class SQLitePersistenceManager(
      * Otherwise initialization finishes.
      */
     override fun init() {
-        if (initialized)
+        if (!initQueue())
             return
-
-        sqliteQueue = SQLiteQueue(path)
-        sqliteQueue.start()
-
-        val create = !(path?.exists() ?: false)
-
-        sqliteQueue.execute(object : SQLiteJob<Unit>() {
-            override fun job(connection: SQLiteConnection): Unit {
-                if (!create) {
-                    val version = getCurrentDatabaseVersion(connection)
-                    if (version == LATEST_DATABASE_VERSION) {
-                        logger.debug("Database is up to date")
-                        return
-                    }
-                    else {
-                        logger.info("Performing migration from version {} to {}", version, LATEST_DATABASE_VERSION)
-                        //TODO
-                        //if number isn't update to date, apply migrations for each missing version in turn
-                        //run each migration within a transaction, ending with updating the user_version (within the transaction)
-                        //use savepoints so if the upgrade fails we can rollback completely? seems pointless though
-                        //make sure to upgrade all conv_* tables as well
-                        throw UnsupportedOperationException()
-                    }
-                }
-                else {
-                    initializeDatabase(connection)
-                }
-                return Unit
-            }
-        }).get()
-
-        initialized = true
+        initContents().get()
     }
 
-    override fun initAsync(): Promise<Unit, Exception> = task {
-        init()
+    override fun initAsync(): Promise<Unit, Exception> {
+        initQueue()
+
+        return initContents()
     }
 
     override fun shutdown() {
