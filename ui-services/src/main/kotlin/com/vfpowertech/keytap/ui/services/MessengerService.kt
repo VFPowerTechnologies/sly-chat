@@ -1,7 +1,6 @@
 package com.vfpowertech.keytap.ui.services
 
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
-import com.vfpowertech.keytap.ui.services.dummy.UIMessageInfo
 import nl.komponents.kovenant.Promise
 
 /** Responsible for all message-related functionality between contacts. */

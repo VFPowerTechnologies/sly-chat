@@ -1,15 +1,11 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.vfpowertech.keytap.core.crypto.axolotl.GeneratedPreKeys
-import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
 import com.vfpowertech.keytap.core.persistence.PreKeyIds
+import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
 import nl.komponents.kovenant.Promise
 import org.whispersystems.libaxolotl.state.PreKeyRecord
 import org.whispersystems.libaxolotl.state.SignedPreKeyRecord
-
-//localDataEncryptionParams don't work too well... they contain an IV, which wouldn't be reused
-//for the db, we also can't control cipher params anyways
-//for storing files, the iv would be per-block (no chaining blocks else we can't provide seek; is this an issue?)
 
 class SQLitePreKeyPersistenceManager(private val sqlitePersistenceManager: SQLitePersistenceManager) : PreKeyPersistenceManager {
     private inline fun <T> getPreKey(tableName: String, id: Int, crossinline constructor: (ByteArray) -> T): Promise<T?, Exception> =

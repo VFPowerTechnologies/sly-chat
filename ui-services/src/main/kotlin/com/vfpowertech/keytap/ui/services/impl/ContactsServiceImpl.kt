@@ -15,9 +15,9 @@ class ContactsServiceImpl(
     private fun getContactsPersistenceManagerOrThrow(): ContactsPersistenceManager =
         app.userComponent?.contactsPersistenceManager ?: error("No UserComponent available")
 
-    override fun updateContact(newContactDetails: UIContactDetails) {
+    override fun updateContact(newContactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
         val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
-        contactsPersistenceManager.update(ContactInfo(newContactDetails.email, newContactDetails.name, newContactDetails.phoneNumber, newContactDetails.publicKey))
+        return contactsPersistenceManager.update(ContactInfo(newContactDetails.email, newContactDetails.name, newContactDetails.phoneNumber, newContactDetails.publicKey)) map { newContactDetails }
     }
 
     override fun getContacts(): Promise<List<UIContactDetails>, Exception> {

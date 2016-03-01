@@ -1,14 +1,6 @@
 package com.vfpowertech.keytap.testclients
 
-import com.vfpowertech.keytap.core.relay.AuthenticationExpired
-import com.vfpowertech.keytap.core.relay.AuthenticationFailure
-import com.vfpowertech.keytap.core.relay.AuthenticationSuccessful
-import com.vfpowertech.keytap.core.relay.ConnectionEstablished
-import com.vfpowertech.keytap.core.relay.ReceivedMessage
-import com.vfpowertech.keytap.core.relay.RelayClient
-import com.vfpowertech.keytap.core.relay.RelayClientEvent
-import com.vfpowertech.keytap.core.relay.UserCredentials
-import com.vfpowertech.keytap.core.relay.UserOffline
+import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.core.relay.base.netty.NettyRelayConnector
 import javafx.application.Application
 import javafx.scene.Scene
@@ -192,7 +184,8 @@ class App : Application() {
             if (!t.isEmpty()) {
                 chatInput.text = ""
                 mainWindow.chatMessages.appendText("me> $t\n")
-                relayClient!!.sendMessage(mainWindow.sendToUsername.text, t)
+                val messageId = "5248a1d7dc7e300ef2e18e30a6731455"
+                relayClient!!.sendMessage(mainWindow.sendToUsername.text, t, messageId)
             }
         }
 

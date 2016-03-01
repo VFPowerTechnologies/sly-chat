@@ -1,6 +1,4 @@
-package com.vfpowertech.keytap.ui.services.dummy
-
-import com.vfpowertech.keytap.ui.services.UIMessage
+package com.vfpowertech.keytap.ui.services
 
 /**
  * A message and its associated contact.

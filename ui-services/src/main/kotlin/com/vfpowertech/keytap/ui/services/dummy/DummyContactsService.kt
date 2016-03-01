@@ -10,22 +10,16 @@ class DummyContactsService : ContactsService {
         "Contact B" to UIContactDetails("Contact B", "111-111-1111", "b@b.com", "dummyPublicKedy")
     )
 
-    override fun updateContact(newContactDetails: UIContactDetails) {
-        synchronized(this) {
-            newContactDetails
-        }
+    override fun updateContact(newContactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
+        return Promise.ofSuccess<UIContactDetails, Exception>(newContactDetails)
     }
 
     override fun getContacts(): Promise<List<UIContactDetails>, Exception> {
-        synchronized(this) {
-            return Promise.ofSuccess(contacts.values.toList())
-        }
+        return Promise.ofSuccess(contacts.values.toList())
     }
 
     override fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
-        synchronized(this) {
-            return Promise.ofSuccess(contactDetails)
-        }
+        return Promise.ofSuccess(contactDetails)
     }
 
     override fun removeContact(contactDetails: UIContactDetails): Promise<Unit, Exception> {

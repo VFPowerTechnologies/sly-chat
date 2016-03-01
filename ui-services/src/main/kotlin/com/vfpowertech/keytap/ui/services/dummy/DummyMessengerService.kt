@@ -41,7 +41,7 @@ class DummyMessengerService(private val contactsService: ContactsService) : Mess
         val count = 19
         for (i in 0..count) {
             val n = count - i
-            list.add(UIMessage(n, false, "YYYY-MM-DD HH:MM:SS", "Message $n"))
+            list.add(UIMessage(n.toString(), false, "YYYY-MM-DD HH:MM:SS", "Message $n"))
         }
         return list
     }
@@ -54,7 +54,7 @@ class DummyMessengerService(private val contactsService: ContactsService) : Mess
 
     override fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception> = synchronized(this) {
         val messages = getMessagesFor(contact.email)
-        val id = messages.size
+        val id = messages.size.toString()
         val newMessage = UIMessage(id, true, null, message)
         messages.add(0, newMessage)
         //simulate send delay
@@ -77,7 +77,7 @@ class DummyMessengerService(private val contactsService: ContactsService) : Mess
     fun receiveNewMessage(contactEmail: String, messageText: String) {
         synchronized(this) {
             val messages = getMessagesFor(contactEmail)
-            val id = messages.size
+            val id = messages.size.toString()
             val message = UIMessage(id, false, null, messageText)
             val messageInfo = UIMessageInfo(contactEmail, message)
             messages.add(0, message)

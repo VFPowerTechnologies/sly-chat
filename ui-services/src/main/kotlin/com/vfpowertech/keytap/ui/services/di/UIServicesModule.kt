@@ -56,7 +56,6 @@ class UIServicesModule {
         { ContactsServiceImpl(app) }
     )
 
-    //FIXME
     @Singleton
     @Provides
     fun provideMessengerService(

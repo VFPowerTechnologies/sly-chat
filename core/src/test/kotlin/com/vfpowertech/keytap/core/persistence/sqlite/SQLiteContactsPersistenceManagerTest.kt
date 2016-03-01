@@ -2,14 +2,13 @@ package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.DuplicateContactException
+import com.vfpowertech.keytap.core.persistence.InvalidContactException
+import com.vfpowertech.keytap.core.persistence.InvalidConversationException
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
+import kotlin.test.*
 
 class SQLiteContactsPersistenceManagerTest {
     companion object {
@@ -20,7 +19,10 @@ class SQLiteContactsPersistenceManagerTest {
         }
     }
 
-    val contactA = ContactInfo("a@a.com", "a", "000-0000", "pubkey")
+    val contactEmail = "a@a.com"
+    val testMessage = "test message"
+
+    val contactA = ContactInfo(contactEmail, "a", "000-0000", "pubkey")
     val contactA2 = ContactInfo("a2@a.com", "a2", "001-0000", "pubkey")
     val contactC = ContactInfo("c@c.com", "c", "222-2222", "pubkey")
     val contactList = arrayListOf(
@@ -37,6 +39,17 @@ class SQLiteContactsPersistenceManagerTest {
             contactsPersistenceManager.add(contact).get()
     }
 
+    fun setConversationInfo(contact: String, unreadCount: Int, lastMessage: String?) {
+        persistenceManager.runQuery { connection ->
+            connection.prepare("UPDATE conversation_info SET unread_count=?, last_message=? WHERE contact_email=?").use { stmt ->
+                stmt.bind(1, unreadCount)
+                stmt.bind(2, lastMessage)
+                stmt.bind(3, contact)
+                stmt.step()
+            }
+        }
+    }
+
     @Before
     fun before() {
         persistenceManager = SQLitePersistenceManager(null, ByteArray(0), null)
@@ -49,14 +62,18 @@ class SQLiteContactsPersistenceManagerTest {
         persistenceManager.shutdown()
     }
 
+    fun doesConvTableExist(email: String): Boolean =
+        persistenceManager.runQuery { ConversationTable.exists(it, email) }.get()
+
     @Test
-    fun `add should successfully store a contact`() {
+    fun `add should successfully add a contact and create a conversation table`() {
         val contact = contactA
         contactsPersistenceManager.add(contact).get()
         val got = contactsPersistenceManager.get(contact.email).get()
 
         assertNotNull(got)
         assertEquals(contact, got)
+        assertTrue(doesConvTableExist(contact.email))
     }
 
     @Test
@@ -149,20 +166,90 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `remove should delete the contact`() {
-        val contacts = arrayListOf(
-            ContactInfo("a@a.com", "a", "000-0000", "pubkey")
-        )
+    fun `remove should delete the contact and its conversation table`() {
+        contactsPersistenceManager.add(contactA)
 
-        for (contact in contacts)
-            contactsPersistenceManager.add(contact)
-
-
-        for (contact in contacts)
-            contactsPersistenceManager.remove(contact)
+        contactsPersistenceManager.remove(contactA)
 
         val got = contactsPersistenceManager.get("a@a.com").get()
 
         assertNull(got)
+        assertFalse(doesConvTableExist(contactA.email))
     }
+
+    @Test
+    fun `getAllConversations should return an empty list if no conversations are available`() {
+        assertTrue(contactsPersistenceManager.getAllConversations().get().isEmpty())
+    }
+
+    @Test
+    fun `getAllConversations should return all available conversations`() {
+        loadContactList()
+
+        val got = contactsPersistenceManager.getAllConversations().get()
+
+        assertEquals(3, got.size)
+    }
+
+    @Test
+    fun `getAllConversations should return a last message field if messages are available`() {
+        loadContactList()
+
+        setConversationInfo(contactEmail, 2, testMessage)
+
+        val convos = contactsPersistenceManager.getAllConversations().get()
+
+        val a = convos.find { it.contact.email == contactEmail }!!
+        val a2 = convos.find { it.contact == contactA2 }!!
+
+        assertEquals(testMessage, a.info.lastMessage)
+        assertNull(a2.info.lastMessage)
+    }
+
+    @Test
+    fun `getConversation should return a conversation if it exists`() {
+        loadContactList()
+
+        contactsPersistenceManager.getConversationInfo(contactEmail).get()
+    }
+
+    @Test
+    fun `getConversation should include unread message counts in a conversation`() {
+        loadContactList()
+
+        val before = contactsPersistenceManager.getConversationInfo(contactEmail).get()
+        assertEquals(0, before.unreadMessageCount)
+
+        setConversationInfo(contactEmail, 1, testMessage)
+
+        val after = contactsPersistenceManager.getConversationInfo(contactEmail).get()
+        assertEquals(1, after.unreadMessageCount)
+    }
+
+    @Test
+    fun `getConversation should throw InvalidConversationException if the given conversation doesn't exist`() {
+        assertFailsWith(InvalidConversationException::class) {
+            contactsPersistenceManager.getConversationInfo(contactEmail).get()
+        }
+    }
+
+    @Test
+    fun `markConversationAsRead should mark all unread messages as read`() {
+        loadContactList()
+
+        setConversationInfo(contactEmail, 2, testMessage)
+
+        contactsPersistenceManager.markConversationAsRead(contactEmail).get()
+
+        val got = contactsPersistenceManager.getConversationInfo(contactEmail).get()
+        assertEquals(0, got.unreadMessageCount)
+    }
+
+    @Test
+    fun `markConversationAsRead should throw InvalidConversationException if the given conversation doesn't exist`() {
+        assertFailsWith(InvalidConversationException::class) {
+            contactsPersistenceManager.markConversationAsRead(contactEmail).get()
+        }
+    }
+
 }
