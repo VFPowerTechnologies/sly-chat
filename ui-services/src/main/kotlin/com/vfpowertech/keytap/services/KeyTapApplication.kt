@@ -1,6 +1,8 @@
 package com.vfpowertech.keytap.services
 
+import com.vfpowertech.keytap.core.crypto.KeyVault
 import com.vfpowertech.keytap.services.di.*
+import nl.komponents.kovenant.Promise
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.BehaviorSubject
@@ -142,5 +144,13 @@ class KeyTapApplication {
 
     fun shutdown() {
         destroyUserSession()
+    }
+
+    fun storeAccountData(keyVault: KeyVault): Promise<Unit, Exception> {
+        val userComponent = this.userComponent ?: error("No user session")
+
+        return userComponent.keyVaultPersistenceManager.store(keyVault) fail { e ->
+            log.error("Unable to store account data: {}", e.message, e)
+        }
     }
 }

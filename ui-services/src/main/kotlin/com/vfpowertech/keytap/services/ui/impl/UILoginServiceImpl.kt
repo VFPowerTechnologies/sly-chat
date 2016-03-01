@@ -6,21 +6,22 @@ import com.vfpowertech.keytap.core.crypto.hashPasswordWithParams
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationParamsResponse
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
-import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.UserLoginData
-import com.vfpowertech.keytap.services.ui.UILoginService
 import com.vfpowertech.keytap.services.ui.UILoginResult
+import com.vfpowertech.keytap.services.ui.UILoginService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.ui.KovenantUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
+/** Map a promise with the body running on the main ui thread. */
+
 class UILoginServiceImpl(
     private val app: KeyTapApplication,
-    serverUrl: String,
-    private val keyVaultPersistenceManager: KeyVaultPersistenceManager
+    serverUrl: String
 ) : UILoginService {
 
     override fun logout() {
@@ -39,23 +40,17 @@ class UILoginServiceImpl(
         val hashParams = HashDeserializers.deserialize(authParams.hashParams)
         val hash = hashPasswordWithParams(password, hashParams)
 
+        KovenantUi.uiContext
+
         val request = AuthenticationRequest(emailOrPhoneNumber, hash.hexify(), authParams.csrfToken)
-        return loginClient.auth(request) bind { response ->
-            val data = response.data
-            if (data != null) {
-                val serializedKeyVault = data.keyVault
-                val keyVault = KeyVault.deserialize(serializedKeyVault, password)
-                keyVaultPersistenceManager.store(keyVault) map { response }
-            }
-            else
-                Promise.ofSuccess(response)
-        } successUi { response ->
+        return loginClient.auth(request) successUi { response ->
             val data = response.data
             if (data != null) {
                 //TODO need to put the username in the login response if the user used their phone number
-                //TODO remove keyvault deserialization dup; successUi doesn't let us return any promises to chain though
                 val keyVault = KeyVault.deserialize(data.keyVault, password)
                 app.createUserSession(UserLoginData(emailOrPhoneNumber, keyVault, data.authToken))
+
+                app.storeAccountData(keyVault)
 
                 if (data.keyRegenCount > 0) {
                     //TODO schedule prekey upload in bg
