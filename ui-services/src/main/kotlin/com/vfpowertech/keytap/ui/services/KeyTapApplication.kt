@@ -1,12 +1,7 @@
 package com.vfpowertech.keytap.ui.services
 
 import com.vfpowertech.keytap.core.crypto.KeyVault
-import com.vfpowertech.keytap.ui.services.di.ApplicationComponent
-import com.vfpowertech.keytap.ui.services.di.ApplicationModule
-import com.vfpowertech.keytap.ui.services.di.DaggerApplicationComponent
-import com.vfpowertech.keytap.ui.services.di.PlatformModule
-import com.vfpowertech.keytap.ui.services.di.UserComponent
-import com.vfpowertech.keytap.ui.services.di.UserModule
+import com.vfpowertech.keytap.ui.services.di.*
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.BehaviorSubject
@@ -122,6 +117,7 @@ class KeyTapApplication {
 
     private fun deinitializeUserSession(userComponent: UserComponent) {
         userComponent.sqlitePersistenceManager.shutdown()
+        userComponent.relayClientManager.disconnect()
     }
 
     fun destroyUserSession() {
@@ -134,6 +130,7 @@ class KeyTapApplication {
 
         //TODO shutdown stuff; probably should return a promise
         deinitializeUserSession(userComponent)
+
         this.userComponent = null
     }
 
