@@ -4,7 +4,7 @@ import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 import nl.komponents.kovenant.Promise
 
 /** Responsible for all message-related functionality between contacts. */
-@JSToJavaGenerate
+@JSToJavaGenerate("MessengerService")
 interface UIMessengerService {
     /** Attempt to send a message to a contact. */
     fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception>

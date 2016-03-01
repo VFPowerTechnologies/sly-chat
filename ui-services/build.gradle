@@ -12,14 +12,20 @@ apply plugin: 'kotlin'
 
 sourceCompatibility = JavaVersion.VERSION_1_7
 
+def jsOutputDir = "$rootProject.projectDir/ui/ui/js/jvm-service"
+
 kapt {
     generateStubs = true
 
     arguments {
-        arg('jsOutputDir', "$rootProject.projectDir/ui/ui/js/jvm-service")
+        arg('jsOutputDir', jsOutputDir)
         arg('jsCallbackPackage', 'com.vfpowertech.keytap.core.services.jscallback')
         arg('jsAddModuleExports', 'false')
     }
+}
+
+clean.doFirst {
+    delete jsOutputDir
 }
 
 dependencies {
