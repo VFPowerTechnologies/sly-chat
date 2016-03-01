@@ -6,8 +6,12 @@ data class RegisterRequest(
     @JsonProperty("username")
     val username: String,
 
-    @JsonProperty("metadata")
-    val metadata: Map<String, String>,
+    @JsonProperty("name")
+    val name: String,
+
+    @param:JsonProperty("phone-number")
+    @get:JsonProperty("phone-number")
+    val phoneNumber: String,
 
     @JsonProperty("hash")
     val hash: String,

@@ -11,11 +11,10 @@ fun registrationRequestFromKeyVault(registrationInfo: RegistrationInfo, keyVault
 
     val objectMapper = ObjectMapper()
 
-    val metaData = hashMapOf("name" to registrationInfo.name, "phone-number" to registrationInfo.phoneNumber)
     val hash = keyVault.remotePasswordHash!!.hexify()
     val hashParams = objectMapper.writeValueAsString(keyVault.remotePasswordHashParams!!.serialize())
     val publicKey = keyVault.fingerprint
     val serializedKeyVault = objectMapper.writeValueAsString(keyVault.serialize())
 
-    return RegisterRequest(registrationInfo.email, metaData, hash, hashParams, publicKey, serializedKeyVault)
+    return RegisterRequest(registrationInfo.email, registrationInfo.name, registrationInfo.phoneNumber, hash, hashParams, publicKey, serializedKeyVault)
 }
