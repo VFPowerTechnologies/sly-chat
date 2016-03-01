@@ -16,8 +16,15 @@ class KeyTapApplication {
     var userComponent: UserComponent? = null
         private set
 
+    //the following observables never complete or error and are valid for the lifetime of the application
+    //only changes in value are emitted from these
+    private val networkAvailableSubject = BehaviorSubject.create(false)
+    val networkAvailable: Observable<Boolean> = networkAvailableSubject
+
+    private val relayAvailableSubject = BehaviorSubject.create(false)
+    val relayAvailable: Observable<Boolean> = relayAvailableSubject
+
     private val userSessionAvailableSubject = BehaviorSubject.create(false)
-    /** Never completes. */
     val userSessionAvailable: Observable<Boolean> = userSessionAvailableSubject
 
     fun init(platformModule: PlatformModule) {
@@ -38,6 +45,8 @@ class KeyTapApplication {
     private fun updateNetworkStatus(isAvailable: Boolean) {
         isNetworkAvailable = isAvailable
         log.info("Network is available: {}", isAvailable)
+
+        networkAvailableSubject.onNext(isAvailable)
 
         //do nothing if we're not logged in
         val userComponent = this.userComponent ?: return
@@ -63,7 +72,8 @@ class KeyTapApplication {
 
     private fun initializeUserSession(userComponent: UserComponent) {
         userComponent.relayClientManager.onlineStatus.subscribe {
-            //TODO
+            relayAvailableSubject.onNext(it)
+            //TODO reconnect
         }
 
         if (!isNetworkAvailable) {
