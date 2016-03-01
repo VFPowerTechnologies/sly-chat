@@ -7,4 +7,5 @@ import nl.komponents.kovenant.Promise
 @JSToJavaGenerate
 interface LoginService {
     fun login(emailOrPhoneNumber: String, password: String): Promise<UILoginResult, Exception>
+    fun logout()
 }

@@ -22,6 +22,11 @@ class LoginServiceImpl(
     serverUrl: String,
     private val keyVaultPersistenceManager: KeyVaultPersistenceManager
 ) : LoginService {
+
+    override fun logout() {
+        app.destroyUserSession()
+    }
+
     private val logger = LoggerFactory.getLogger(javaClass)
     private val loginClient = AuthenticationClientWrapper(serverUrl)
 

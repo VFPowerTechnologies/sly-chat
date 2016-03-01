@@ -8,4 +8,7 @@ class DummyLoginService : LoginService {
     override fun login(emailOrPhoneNumber: String, password: String): Promise<UILoginResult, Exception> {
         return Promise.ofSuccess(UILoginResult(true, null))
     }
+
+    override fun logout() {
+    }
 }
