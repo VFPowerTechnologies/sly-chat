@@ -25,5 +25,7 @@ interface ApplicationComponent {
 
     val develService: UIDevelService
 
+    val uiNetworkStatusService: UINetworkStatusService
+
     fun plus(userModule: UserModule): UserComponent
 }
