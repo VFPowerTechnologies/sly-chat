@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.services.NetworkStatusService
+import com.vfpowertech.keytap.services.UserPathsGenerator
 import com.vfpowertech.keytap.services.ui.*
 import dagger.Component
 import javax.inject.Singleton
@@ -26,6 +27,8 @@ interface ApplicationComponent {
     val develService: UIDevelService
 
     val uiNetworkStatusService: UINetworkStatusService
+
+    val userPathsGenerator: UserPathsGenerator
 
     fun plus(userModule: UserModule): UserComponent
 }

@@ -4,8 +4,9 @@ import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.MessagePersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
 import com.vfpowertech.keytap.core.relay.RelayClient
-import com.vfpowertech.keytap.services.UserLoginData
 import com.vfpowertech.keytap.services.RelayClientManager
+import com.vfpowertech.keytap.services.UserLoginData
+import com.vfpowertech.keytap.services.UserPaths
 import dagger.Subcomponent
 
 /** Scoped to a user's login session. */
@@ -19,6 +20,8 @@ interface UserComponent {
     val messagePersistenceManager: MessagePersistenceManager
 
     val userLoginData: UserLoginData
+
+    val userPaths: UserPaths
 
     fun createRelayClient(): RelayClient
 

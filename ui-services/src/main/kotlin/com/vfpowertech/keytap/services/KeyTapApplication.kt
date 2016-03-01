@@ -63,11 +63,18 @@ class KeyTapApplication {
         val userComponent = appComponent.plus(UserModule(userLoginData))
         this.userComponent = userComponent
 
+        //doing disk io here is bad, but...
+        createUserPaths(userComponent.userPaths)
+
         initializeUserSession(userComponent)
 
         userSessionAvailableSubject.onNext(true)
 
         return userComponent
+    }
+
+    private fun createUserPaths(userPaths: UserPaths) {
+        userPaths.accountDir.mkdirs()
     }
 
     private fun initializeUserSession(userComponent: UserComponent) {
