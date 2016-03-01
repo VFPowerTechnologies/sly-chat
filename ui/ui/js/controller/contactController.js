@@ -59,9 +59,8 @@ ContactController.prototype = {
         return img.outerHTML;
     },
     addEventListener : function () {
-        var iframe = $("#contactContent");
+        var links = $("#contactContent").contents().find(".contact-link");
 
-        var links = iframe.contents().find(".contact-link");
         links.bind("click", function (e) {
             e.preventDefault();
             var email = $(this).attr("id").split("contact%")[1];
