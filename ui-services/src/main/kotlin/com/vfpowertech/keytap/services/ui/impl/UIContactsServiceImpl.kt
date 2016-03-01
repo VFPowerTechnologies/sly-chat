@@ -3,14 +3,14 @@ package com.vfpowertech.keytap.services.ui.impl
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.services.KeyTapApplication
-import com.vfpowertech.keytap.services.ui.ContactsService
+import com.vfpowertech.keytap.services.ui.UIContactsService
 import com.vfpowertech.keytap.services.ui.UIContactDetails
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 
-class ContactsServiceImpl(
+class UIContactsServiceImpl(
     private val app: KeyTapApplication
-) : ContactsService {
+) : UIContactsService {
 
     private fun getContactsPersistenceManagerOrThrow(): ContactsPersistenceManager =
         app.userComponent?.contactsPersistenceManager ?: error("No UserComponent available")

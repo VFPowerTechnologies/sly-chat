@@ -2,7 +2,7 @@ package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.PlatformInfo
-import com.vfpowertech.keytap.services.ui.PlatformInfoService
+import com.vfpowertech.keytap.services.ui.UIPlatformInfoService
 import dagger.Module
 import dagger.Provides
 import rx.Scheduler
@@ -12,7 +12,7 @@ import javax.inject.Singleton
 class PlatformModule(
     @get:Singleton
     @get:Provides
-    val providesPlatformInfoService: PlatformInfoService,
+    val providesPlatformInfoService: UIPlatformInfoService,
 
     @get:Provides
     val providesServerUrls: BuildConfig.ServerUrls,

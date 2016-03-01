@@ -1,9 +1,9 @@
 package com.vfpowertech.keytap.desktop.services
 
-import com.vfpowertech.keytap.services.ui.PlatformInfoService
+import com.vfpowertech.keytap.services.ui.UIPlatformInfoService
 import com.vfpowertech.keytap.services.ui.UIPlatformInfo
 
-class DesktopPlatformInfoService : PlatformInfoService {
+class DesktopUIPlatformInfoService : UIPlatformInfoService {
     override fun getInfo(): UIPlatformInfo {
         val osName = System.getProperty("os.name")
         val os = when {

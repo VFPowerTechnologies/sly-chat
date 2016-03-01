@@ -11,19 +11,19 @@ import javax.inject.Singleton
 interface ApplicationComponent {
     val networkStatusService: NetworkStatusService
 
-    val platformInfoService: PlatformInfoService
+    val platformInfoService: UIPlatformInfoService
 
-    val registrationService: RegistrationService
+    val registrationService: UIRegistrationService
 
-    val loginService: LoginService
+    val loginService: UILoginService
 
-    val contactsService: ContactsService
+    val contactsService: UIContactsService
 
-    val messengerService: MessengerService
+    val messengerService: UIMessengerService
 
-    val historyService: HistoryService
+    val historyService: UIHistoryService
 
-    val develService: DevelService
+    val develService: UIDevelService
 
     fun plus(userModule: UserModule): UserComponent
 }

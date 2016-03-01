@@ -5,7 +5,7 @@ import nl.komponents.kovenant.Promise
 
 /** Responsible for authentication */
 @JSToJavaGenerate
-interface LoginService {
+interface UILoginService {
     fun login(emailOrPhoneNumber: String, password: String): Promise<UILoginResult, Exception>
     fun logout()
 }

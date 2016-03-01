@@ -4,7 +4,7 @@ import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
 import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
-import com.vfpowertech.keytap.services.ui.RegistrationService
+import com.vfpowertech.keytap.services.ui.UIRegistrationService
 import com.vfpowertech.keytap.services.ui.UIRegistrationInfo
 import com.vfpowertech.keytap.services.ui.UIRegistrationResult
 import nl.komponents.kovenant.Promise
@@ -13,10 +13,10 @@ import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import java.util.*
 
-class RegistrationServiceImpl(
+class UIRegistrationServiceImpl(
     serverUrl: String,
     private val accountInfoPersistenceManager: AccountInfoPersistenceManager
-) : RegistrationService {
+) : UIRegistrationService {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val listeners = ArrayList<(String) -> Unit>()
     private val registrationClient = RegistrationClientWrapper(serverUrl)

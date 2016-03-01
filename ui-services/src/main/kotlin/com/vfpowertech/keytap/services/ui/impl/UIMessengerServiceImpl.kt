@@ -29,9 +29,9 @@ fun ContactInfo.toUI(): UIContactDetails =
 
 //TODO maybe wrap the contacts persistence manager in something so it can be shared between this and the ContactService?
 /** This exists for the lifetime of the application. It wraps RelayClientManager, which exists for the lifetime of the user session. */
-class MessengerServiceImpl(
+class UIMessengerServiceImpl(
     private val app: KeyTapApplication
-) : MessengerService {
+) : UIMessengerService {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val newMessageListeners = ArrayList<(UIMessageInfo) -> Unit>()

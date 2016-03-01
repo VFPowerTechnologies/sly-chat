@@ -9,7 +9,7 @@ import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
 import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.UserLoginData
-import com.vfpowertech.keytap.services.ui.LoginService
+import com.vfpowertech.keytap.services.ui.UILoginService
 import com.vfpowertech.keytap.services.ui.UILoginResult
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -17,11 +17,11 @@ import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
-class LoginServiceImpl(
+class UILoginServiceImpl(
     private val app: KeyTapApplication,
     serverUrl: String,
     private val keyVaultPersistenceManager: KeyVaultPersistenceManager
-) : LoginService {
+) : UILoginService {
 
     override fun logout() {
         app.destroyUserSession()

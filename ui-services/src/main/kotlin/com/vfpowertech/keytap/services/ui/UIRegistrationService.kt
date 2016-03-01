@@ -7,7 +7,7 @@ import nl.komponents.kovenant.Promise
  * Responsible for new account registration
  */
 @JSToJavaGenerate
-interface RegistrationService {
+interface UIRegistrationService {
     /** Register a new account with the given info */
     fun doRegistration(info: UIRegistrationInfo): Promise<UIRegistrationResult, Exception>
 

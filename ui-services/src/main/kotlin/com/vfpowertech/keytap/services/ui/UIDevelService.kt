@@ -6,7 +6,7 @@ import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
  * Various utilities for development use.
  */
 @JSToJavaGenerate
-interface DevelService {
+interface UIDevelService {
     /**
      * Mimics receiving a message from a contact.
      */

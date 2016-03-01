@@ -6,7 +6,7 @@ import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import com.vfpowertech.keytap.desktop.jfx.jsconsole.ConsoleMessageAdded
-import com.vfpowertech.keytap.desktop.services.DesktopPlatformInfoService
+import com.vfpowertech.keytap.desktop.services.DesktopUIPlatformInfoService
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.di.PlatformModule
 import com.vfpowertech.keytap.services.ui.createAppDirectories
@@ -74,7 +74,7 @@ class App : Application() {
         createAppDirectories(platformInfo)
 
         val platformModule = PlatformModule(
-            DesktopPlatformInfoService(),
+            DesktopUIPlatformInfoService(),
             BuildConfig.DESKTOP_SERVER_URLS,
             platformInfo,
             JavaFxScheduler.getInstance()

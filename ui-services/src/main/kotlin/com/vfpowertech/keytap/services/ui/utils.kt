@@ -15,23 +15,23 @@ fun createAppDirectories(platformInfo: PlatformInfo) {
 /** Registers all available UI services to the given Dispatcher. */
 fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponent: ApplicationComponent) {
     val registrationService = applicationComponent.registrationService
-    dispatcher.registerService("RegistrationService", RegistrationServiceToJavaProxy(registrationService, dispatcher))
+    dispatcher.registerService("RegistrationService", UIRegistrationServiceToJavaProxy(registrationService, dispatcher))
 
     val platformInfoService = applicationComponent.platformInfoService
-    dispatcher.registerService("PlatformInfoService", PlatformInfoServiceToJavaProxy(platformInfoService, dispatcher))
+    dispatcher.registerService("PlatformInfoService", UIPlatformInfoServiceToJavaProxy(platformInfoService, dispatcher))
 
     val loginService = applicationComponent.loginService
-    dispatcher.registerService("LoginService", LoginServiceToJavaProxy(loginService, dispatcher))
+    dispatcher.registerService("LoginService", UILoginServiceToJavaProxy(loginService, dispatcher))
 
     val contactsService = applicationComponent.contactsService
-    dispatcher.registerService("ContactsService", ContactsServiceToJavaProxy(contactsService, dispatcher))
+    dispatcher.registerService("ContactsService", UIContactsServiceToJavaProxy(contactsService, dispatcher))
 
     val messengerService = applicationComponent.messengerService
-    dispatcher.registerService("MessengerService", MessengerServiceToJavaProxy(messengerService, dispatcher))
+    dispatcher.registerService("MessengerService", UIMessengerServiceToJavaProxy(messengerService, dispatcher))
 
     val historyService = applicationComponent.historyService
-    dispatcher.registerService("HistoryService", HistoryServiceToJavaProxy(historyService, dispatcher))
+    dispatcher.registerService("HistoryService", UIHistoryServiceToJavaProxy(historyService, dispatcher))
 
     val develService = applicationComponent.develService
-    dispatcher.registerService("DevelService", DevelServiceToJavaProxy(develService, dispatcher))
+    dispatcher.registerService("DevelService", UIDevelServiceToJavaProxy(develService, dispatcher))
 }

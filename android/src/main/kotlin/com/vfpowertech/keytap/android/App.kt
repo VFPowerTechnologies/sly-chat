@@ -3,10 +3,9 @@ package com.vfpowertech.keytap.android
 import android.app.Application
 import android.content.Context
 import com.almworks.sqlite4java.SQLite
-import com.vfpowertech.keytap.android.services.AndroidPlatformInfoService
+import com.vfpowertech.keytap.android.services.AndroidUIPlatformInfoService
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.services.KeyTapApplication
-import com.vfpowertech.keytap.ui.services.KeyTapApplication
 import com.vfpowertech.keytap.services.ui.createAppDirectories
 import com.vfpowertech.keytap.services.di.ApplicationComponent
 import com.vfpowertech.keytap.services.di.PlatformModule
@@ -31,7 +30,7 @@ class App : Application() {
         createAppDirectories(platformInfo)
 
         val platformModule = PlatformModule(
-            AndroidPlatformInfoService(),
+            AndroidUIPlatformInfoService(),
             BuildConfig.ANDROID_SERVER_URLS,
             platformInfo,
             AndroidSchedulers.mainThread()

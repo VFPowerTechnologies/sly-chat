@@ -8,10 +8,10 @@ import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.ui.*
 import com.vfpowertech.keytap.services.ui.dummy.*
-import com.vfpowertech.keytap.services.ui.impl.ContactsServiceImpl
-import com.vfpowertech.keytap.services.ui.impl.LoginServiceImpl
-import com.vfpowertech.keytap.services.ui.impl.MessengerServiceImpl
-import com.vfpowertech.keytap.services.ui.impl.RegistrationServiceImpl
+import com.vfpowertech.keytap.services.ui.impl.UIContactsServiceImpl
+import com.vfpowertech.keytap.services.ui.impl.UILoginServiceImpl
+import com.vfpowertech.keytap.services.ui.impl.UIMessengerServiceImpl
+import com.vfpowertech.keytap.services.ui.impl.UIRegistrationServiceImpl
 import dagger.Module
 import dagger.Provides
 import javax.inject.Singleton
@@ -29,10 +29,10 @@ class UIServicesModule {
     fun provideRegistrationService(
         serverUrls: BuildConfig.ServerUrls,
         accountInfoPersistenceManager: AccountInfoPersistenceManager
-    ): RegistrationService = getImplementation(
+    ): UIRegistrationService = getImplementation(
         UIServiceComponent.REGISTRATION,
-        { DummyRegistrationService() },
-        { RegistrationServiceImpl(serverUrls.API_SERVER, accountInfoPersistenceManager) }
+        { DummyUIRegistrationService() },
+        { UIRegistrationServiceImpl(serverUrls.API_SERVER, accountInfoPersistenceManager) }
     )
 
     @Singleton
@@ -41,41 +41,41 @@ class UIServicesModule {
         app: KeyTapApplication,
         serverUrls: BuildConfig.ServerUrls,
         keyVaultPersistenceManager: KeyVaultPersistenceManager
-    ): LoginService = getImplementation(
+    ): UILoginService = getImplementation(
         UIServiceComponent.LOGIN,
-        { DummyLoginService() },
-        { LoginServiceImpl(app, serverUrls.API_SERVER, keyVaultPersistenceManager) }
+        { DummyUILoginService() },
+        { UILoginServiceImpl(app, serverUrls.API_SERVER, keyVaultPersistenceManager) }
     )
 
     @Singleton
     @Provides
     fun provideContactsService(
         app: KeyTapApplication
-    ): ContactsService = getImplementation(
+    ): UIContactsService = getImplementation(
         UIServiceComponent.CONTACTS,
-        { DummyContactsService() },
-        { ContactsServiceImpl(app) }
+        { DummyUIContactsService() },
+        { UIContactsServiceImpl(app) }
     )
 
     @Singleton
     @Provides
     fun provideMessengerService(
         app: KeyTapApplication,
-        contactsService: ContactsService
-    ): MessengerService = getImplementation(
+        contactsService: UIContactsService
+    ): UIMessengerService = getImplementation(
         UIServiceComponent.MESSENGER,
-        { DummyMessengerService(contactsService) },
-        { MessengerServiceImpl(app) }
+        { DummyUIMessengerService(contactsService) },
+        { UIMessengerServiceImpl(app) }
     )
 
     @Singleton
     @Provides
-    fun provideHistoryService(): HistoryService = DummyHistoryService()
+    fun provideHistoryService(): UIHistoryService = DummyUIHistoryService()
 
     @Singleton
     @Provides
-    fun provideDevelService(messengerService: MessengerService): DevelService =
-        DevelServiceImpl(
-            messengerService as? DummyMessengerService
+    fun provideDevelService(messengerService: UIMessengerService): UIDevelService =
+        UIDevelServiceImpl(
+            messengerService as? DummyUIMessengerService
         )
 }

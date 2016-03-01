@@ -5,7 +5,7 @@ import nl.komponents.kovenant.Promise
 
 /** Responsible for all message-related functionality between contacts. */
 @JSToJavaGenerate
-interface MessengerService {
+interface UIMessengerService {
     /** Attempt to send a message to a contact. */
     fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception>
 

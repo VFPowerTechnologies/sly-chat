@@ -12,7 +12,7 @@ private fun nowTimestamp(): String {
     return SimpleDateFormat("yyyy-mm-dd HH:mm:ss").format(now)
 }
 
-class DummyMessengerService(private val contactsService: ContactsService) : MessengerService {
+class DummyUIMessengerService(private val contactsService: UIContactsService) : UIMessengerService {
     private val timer = Timer(true)
     private val newMessageListeners = ArrayList<(UIMessageInfo) -> Unit>()
     private val messageStatusUpdateListeners = ArrayList<(UIMessageInfo) -> Unit>()

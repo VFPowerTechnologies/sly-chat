@@ -1,9 +1,9 @@
 package com.vfpowertech.keytap.services.ui.dummy
 
-import com.vfpowertech.keytap.services.ui.HistoryService
+import com.vfpowertech.keytap.services.ui.UIHistoryService
 import java.util.*
 
-class DummyHistoryService : HistoryService {
+class DummyUIHistoryService : UIHistoryService {
     private val stack = Stack<String>()
 
     override fun push(url: String) {
