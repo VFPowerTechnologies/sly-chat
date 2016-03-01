@@ -4,7 +4,7 @@ import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 import nl.komponents.kovenant.Promise
 
 /** Contact management. */
-@JSToJavaGenerate
+@JSToJavaGenerate("ContactsService")
 interface UIContactsService {
     /** Retrieve list of contacts. UIContact.id will not be null. */
     fun getContacts(): Promise<List<UIContactDetails>, Exception>

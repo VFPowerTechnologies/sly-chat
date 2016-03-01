@@ -5,7 +5,7 @@ import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 /**
  * Exposes a stack for keeping track of navigation history.
  */
-@JSToJavaGenerate
+@JSToJavaGenerate("HistoryService")
 interface UIHistoryService {
     /** Push a new value onto the stack. */
     fun push(url: String): Unit
