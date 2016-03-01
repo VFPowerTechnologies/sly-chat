@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services
 
+import com.vfpowertech.keytap.core.relay.ConnectionEstablished
 import com.vfpowertech.keytap.core.relay.RelayClient
 import com.vfpowertech.keytap.core.relay.RelayClientEvent
 import com.vfpowertech.keytap.services.di.UserComponent
@@ -75,6 +76,9 @@ class RelayClientManager(
                 }
 
                 override fun onNext(event: RelayClientEvent) {
+                    if (event is ConnectionEstablished)
+                        setOnlineStatus(true)
+
                     this@RelayClientManager.eventsSubject.onNext(event)
                 }
 

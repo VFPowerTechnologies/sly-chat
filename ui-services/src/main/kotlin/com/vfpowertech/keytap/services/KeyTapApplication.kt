@@ -46,6 +46,8 @@ class KeyTapApplication {
         isNetworkAvailable = isAvailable
         log.info("Network is available: {}", isAvailable)
 
+        networkAvailableSubject.onNext(isAvailable)
+
         //do nothing if we're not logged in
         val userComponent = this.userComponent ?: return
 
@@ -70,7 +72,8 @@ class KeyTapApplication {
 
     private fun initializeUserSession(userComponent: UserComponent) {
         userComponent.relayClientManager.onlineStatus.subscribe {
-            //TODO
+            relayAvailableSubject.onNext(it)
+            //TODO reconnect
         }
 
         if (!isNetworkAvailable) {
