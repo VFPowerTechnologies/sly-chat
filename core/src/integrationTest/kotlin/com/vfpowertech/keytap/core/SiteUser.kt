@@ -20,7 +20,7 @@ data class SiteUser(
     @JsonProperty("name")
     val name: String,
 
-    @param:JsonProperty("phoneNumber")
+    @JsonProperty("phoneNumber")
     val phoneNumber: String,
 
     @JsonProperty("keyVault")
