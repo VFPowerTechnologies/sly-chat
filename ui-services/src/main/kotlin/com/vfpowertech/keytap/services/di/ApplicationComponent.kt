@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services.di
 
+import com.vfpowertech.keytap.services.AuthenticationService
 import com.vfpowertech.keytap.services.NetworkStatusService
 import com.vfpowertech.keytap.services.UserPathsGenerator
 import com.vfpowertech.keytap.services.ui.*
@@ -32,6 +33,8 @@ interface ApplicationComponent {
     val userPathsGenerator: UserPathsGenerator
 
     val rxScheduler: Scheduler
+
+    val authenticationService: AuthenticationService
 
     fun plus(userModule: UserModule): UserComponent
 }

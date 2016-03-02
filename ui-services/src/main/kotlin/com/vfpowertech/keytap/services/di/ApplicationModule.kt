@@ -1,10 +1,8 @@
 package com.vfpowertech.keytap.services.di
 
+import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.PlatformInfo
-import com.vfpowertech.keytap.services.AlwaysOnNetworkStatusService
-import com.vfpowertech.keytap.services.KeyTapApplication
-import com.vfpowertech.keytap.services.NetworkStatusService
-import com.vfpowertech.keytap.services.UserPathsGenerator
+import com.vfpowertech.keytap.services.*
 import dagger.Module
 import dagger.Provides
 import javax.inject.Singleton
@@ -19,6 +17,11 @@ class ApplicationModule(
     @Singleton
     @Provides
     fun providesNetworkStatusService(): NetworkStatusService = AlwaysOnNetworkStatusService()
+
+    @Singleton
+    @Provides
+    fun providesAuthenticationService(serverUrls: BuildConfig.ServerUrls): AuthenticationService =
+        AuthenticationService(serverUrls.API_SERVER)
 
     //this is here we can check for the existence of cached data on startup without establishing a user session
     @Singleton

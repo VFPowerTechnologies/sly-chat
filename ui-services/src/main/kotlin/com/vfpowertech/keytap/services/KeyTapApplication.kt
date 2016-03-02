@@ -1,18 +1,13 @@
 package com.vfpowertech.keytap.services
 
 import com.vfpowertech.keytap.core.crypto.KeyVault
-import com.vfpowertech.keytap.core.relay.ConnectionEstablished
-import com.vfpowertech.keytap.core.relay.ConnectionFailure
-import com.vfpowertech.keytap.core.relay.ConnectionLost
-import com.vfpowertech.keytap.core.relay.RelayClientEvent
+import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.services.di.*
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
-import rx.Scheduler
 import rx.subjects.BehaviorSubject
-import java.util.concurrent.ThreadLocalRandom
-import java.util.concurrent.TimeUnit
 
 class KeyTapApplication {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -113,6 +108,39 @@ class KeyTapApplication {
                 log.warn("Connection to relay failed: {}", event.error.message)
                 reconnectToRelay()
             }
+
+            is AuthenticationSuccessful -> {
+
+            }
+
+            is AuthenticationExpired -> {
+                log.info("Auth token expired, refreshing")
+                refreshAuthToken()
+            }
+
+            is AuthenticationFailure -> {
+                //first we try and refresh; if that fails we need to prompt the user for a password
+                refreshAuthToken()
+
+                //TODO prompt user for password; this can occur if a user changes his password
+                //on a diff device while they're online on another device
+            }
+        }
+    }
+
+    private fun refreshAuthToken() {
+        val userComponent = userComponent ?: error("No user session")
+        val data = userComponent.userLoginData
+        data.authToken = null
+        val remotePasswordHash = data.keyVault.remotePasswordHash ?: error("remotePasswordHash is null")
+
+        appComponent.authenticationService.refreshAuthToken(data.username, remotePasswordHash) successUi { response ->
+            log.info("Got new auth token")
+            data.authToken = response.authToken
+            //TODO key regen
+            reconnectToRelay()
+        } fail { e ->
+            log.error("Unable to refresh auth token", e)
         }
     }
 
@@ -154,7 +182,7 @@ class KeyTapApplication {
     private fun doRelayLogin(authToken: String?) {
         val userComponent = this.userComponent
         if (userComponent == null) {
-            println("User session has already been terminated")
+            log.warn("User session has already been terminated")
             return
         }
 
