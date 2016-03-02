@@ -4,6 +4,8 @@ package com.vfpowertech.keytap.core.relay
 interface RelayClientEvent
 
 class ConnectionEstablished() : RelayClientEvent
+/** Emitted if connection failed. */
+data class ConnectionFailure(val error: Throwable) : RelayClientEvent
 /**
  * @property wasRequested Indicates whether or not the client requested the disconnection.
  */

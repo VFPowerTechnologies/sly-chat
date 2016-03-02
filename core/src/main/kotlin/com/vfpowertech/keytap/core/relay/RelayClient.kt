@@ -173,9 +173,15 @@ class RelayClient(
     }
 
     private fun onError(e: Throwable) {
-        log.error("Relay error", e)
         state = DISCONNECTED
-        publishSubject.onError(e)
+
+        //if the error occured during connection
+        if (relayConnection == null)
+            publishSubject.onNext(ConnectionFailure(e))
+        else {
+            log.error("Relay error", e)
+            publishSubject.onError(e)
+        }
     }
 
     fun connect() {
