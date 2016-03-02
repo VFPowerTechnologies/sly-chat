@@ -17,8 +17,11 @@ data class SiteUser(
     @JsonProperty("publicKey")
     val publicKey: String,
 
-    @JsonProperty("metadata")
-    val metadata: Map<String, String>,
+    @JsonProperty("name")
+    val name: String,
+
+    @JsonProperty("phoneNumber")
+    val phoneNumber: String,
 
     @JsonProperty("keyVault")
     val keyVault: SerializedKeyVault

@@ -51,7 +51,8 @@ class WebApiIntegrationTest {
                 keyVault.remotePasswordHash!!.hexify(),
                 keyVault.remotePasswordHashParams!!.serialize(),
                 keyVault.fingerprint,
-                mapOf(),
+                registrationInfo.name,
+                registrationInfo.phoneNumber,
                 serializedKeyVault
             )
 
@@ -65,7 +66,7 @@ class WebApiIntegrationTest {
             val username = "a@a.com"
 
             devClient.clear()
-            val siteUser = newSiteUser(RegistrationInfo(username, "a", "0"), password).user
+            val siteUser = newSiteUser(RegistrationInfo(username, "a", "000-000-0000"), password).user
 
             devClient.addUser(siteUser)
 
@@ -146,8 +147,8 @@ class WebApiIntegrationTest {
             keyVault.remotePasswordHash!!.hexify(),
             keyVault.remotePasswordHashParams!!.serialize(),
             keyVault.fingerprint,
-            //FIXME whenever we fix metadata stuff
-            mapOf(),
+            dummyRegistrationInfo.name,
+            dummyRegistrationInfo.phoneNumber,
             keyVault.serialize()
         )
 
