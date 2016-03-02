@@ -1,8 +1,6 @@
 package com.vfpowertech.keytap.services
 
-import com.vfpowertech.keytap.core.relay.ConnectionEstablished
-import com.vfpowertech.keytap.core.relay.RelayClient
-import com.vfpowertech.keytap.core.relay.RelayClientEvent
+import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.services.di.UserComponent
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -40,19 +38,20 @@ class RelayClientManager(
 
     private fun onClientCompleted() {
         log.debug("Relay event observable completed")
-        relayClient = null
         setOnlineStatus(false)
     }
 
     private fun setOnlineStatus(isOnline: Boolean) {
         log.info("Relay is online: {}", isOnline)
         this.isOnline = isOnline
+        if (!isOnline)
+            relayClient = null
+
         onlineStatusSubject.onNext(isOnline)
     }
 
     private fun onClientError(e: Throwable) {
         log.error("Relay observable error", e)
-        relayClient = null
         setOnlineStatus(false)
     }
 
@@ -76,8 +75,11 @@ class RelayClientManager(
                 }
 
                 override fun onNext(event: RelayClientEvent) {
-                    if (event is ConnectionEstablished)
-                        setOnlineStatus(true)
+                    when (event) {
+                        is ConnectionEstablished -> setOnlineStatus(true)
+                        is ConnectionLost -> setOnlineStatus(false)
+                        is ConnectionFailure -> relayClient = null
+                    }
 
                     this@RelayClientManager.eventsSubject.onNext(event)
                 }
