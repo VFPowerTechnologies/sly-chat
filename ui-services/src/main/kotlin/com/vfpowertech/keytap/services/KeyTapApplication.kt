@@ -1,16 +1,25 @@
 package com.vfpowertech.keytap.services
 
 import com.vfpowertech.keytap.core.crypto.KeyVault
+import com.vfpowertech.keytap.core.relay.ConnectionEstablished
+import com.vfpowertech.keytap.core.relay.ConnectionFailure
+import com.vfpowertech.keytap.core.relay.ConnectionLost
+import com.vfpowertech.keytap.core.relay.RelayClientEvent
 import com.vfpowertech.keytap.services.di.*
 import nl.komponents.kovenant.Promise
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.Scheduler
 import rx.subjects.BehaviorSubject
+import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.TimeUnit
 
 class KeyTapApplication {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private var isNetworkAvailable = false
+
+    private lateinit var reconnectionTimer: ExponentialBackoffTimer
 
     lateinit var appComponent: ApplicationComponent
         private set
@@ -39,6 +48,8 @@ class KeyTapApplication {
     }
 
     private fun initializeApplicationServices() {
+        reconnectionTimer = ExponentialBackoffTimer(appComponent.rxScheduler)
+
         appComponent.networkStatusService.updates.subscribe {
             updateNetworkStatus(it)
         }
@@ -81,9 +92,10 @@ class KeyTapApplication {
 
     private fun initializeUserSession(userComponent: UserComponent) {
         userComponent.relayClientManager.onlineStatus.subscribe {
-            relayAvailableSubject.onNext(it)
-            //TODO reconnect
+            onRelayStatusChange(it)
         }
+
+        userComponent.relayClientManager.events.subscribe { handleRelayClientEvent(it) }
 
         if (!isNetworkAvailable) {
             log.info("Network unavailable, not connecting to relay")
@@ -91,6 +103,35 @@ class KeyTapApplication {
         }
 
         connectToRelay(userComponent)
+    }
+
+    private fun handleRelayClientEvent(event: RelayClientEvent) {
+        when (event) {
+            is ConnectionEstablished -> reconnectionTimer.reset()
+            is ConnectionLost -> if (!event.wasRequested) reconnectToRelay()
+            is ConnectionFailure -> {
+                log.warn("Connection to relay failed: {}", event.error.message)
+                reconnectToRelay()
+            }
+        }
+    }
+
+    private fun reconnectToRelay() {
+        log.info("Attempting to reconnect to relay")
+        reconnectionTimer.next().subscribe {
+            val userComponent = this.userComponent
+            if (userComponent != null) {
+                connectToRelay(userComponent)
+            }
+            else
+                log.warn("No longer logged in, aborting reconnect")
+        }
+
+        log.info("Reconnecting in {}s", reconnectionTimer.waitTimeSeconds)
+    }
+
+    private fun onRelayStatusChange(newStatus: Boolean) {
+        relayAvailableSubject.onNext(newStatus)
     }
 
     /** Fetches auth token if none is given, then connects to the relay. */
