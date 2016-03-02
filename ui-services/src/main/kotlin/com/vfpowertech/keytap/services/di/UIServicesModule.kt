@@ -8,10 +8,7 @@ import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.ui.*
 import com.vfpowertech.keytap.services.ui.dummy.*
-import com.vfpowertech.keytap.services.ui.impl.UIContactsServiceImpl
-import com.vfpowertech.keytap.services.ui.impl.UILoginServiceImpl
-import com.vfpowertech.keytap.services.ui.impl.UIMessengerServiceImpl
-import com.vfpowertech.keytap.services.ui.impl.UIRegistrationServiceImpl
+import com.vfpowertech.keytap.services.ui.impl.*
 import dagger.Module
 import dagger.Provides
 import javax.inject.Singleton
@@ -78,4 +75,12 @@ class UIServicesModule {
         UIDevelServiceImpl(
             messengerService as? DummyUIMessengerService
         )
+
+    @Singleton
+    @Provides
+    fun provideNetworkStatusService(app: KeyTapApplication): UINetworkStatusService = getImplementation(
+        UIServiceComponent.NETWORK_STATUS,
+        { DummyUINetworkStatusService() },
+        { UINetworkStatusServiceImpl(app) }
+    )
 }

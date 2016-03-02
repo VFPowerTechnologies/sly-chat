@@ -34,4 +34,7 @@ fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponen
 
     val develService = applicationComponent.develService
     dispatcher.registerService("DevelService", UIDevelServiceToJavaProxy(develService, dispatcher))
+
+    val networkStatusService = applicationComponent.uiNetworkStatusService
+    dispatcher.registerService("NetworkStatusService", UINetworkStatusServiceToJavaProxy(networkStatusService, dispatcher))
 }

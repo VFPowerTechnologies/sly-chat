@@ -15,7 +15,8 @@ class GenBuildConfig extends DefaultTask {
         'login',
         'contacts',
         'messenger',
-        'history'
+        'history',
+        'networkStatus'
     ]
 
     private static def componentEnumTypes = componentTypes.collect { camelCaseToStaticConvention(it) }
