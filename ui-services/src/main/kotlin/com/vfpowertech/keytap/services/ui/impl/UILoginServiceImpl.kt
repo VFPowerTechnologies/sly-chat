@@ -17,8 +17,6 @@ import nl.komponents.kovenant.ui.KovenantUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
-/** Map a promise with the body running on the main ui thread. */
-
 class UILoginServiceImpl(
     private val app: KeyTapApplication,
     serverUrl: String
