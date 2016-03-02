@@ -205,7 +205,11 @@ class RelayClient(
     }
 
     fun disconnect() {
-        val connection = getConnectionOrThrow()
+        val connection = relayConnection
+        if (connection == null) {
+            log.warn("Disconnect requested but not connected, ignoring")
+            return
+        }
         connection.disconnect()
         state = DISCONNECTING
         wasDisconnectRequested = true
