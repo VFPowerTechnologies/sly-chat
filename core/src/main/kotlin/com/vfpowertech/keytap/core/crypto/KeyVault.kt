@@ -2,6 +2,7 @@ package com.vfpowertech.keytap.core.crypto
 
 import com.vfpowertech.keytap.core.crypto.ciphers.CipherParams
 import com.vfpowertech.keytap.core.crypto.hashes.HashParams
+import org.spongycastle.crypto.InvalidCipherTextException
 import org.whispersystems.libaxolotl.IdentityKeyPair
 import javax.crypto.spec.SecretKeySpec
 
@@ -76,7 +77,13 @@ class KeyVault(
             val keyPasswordHash = hashPasswordWithParams(password, keyPasswordHashParams)
             val key = SecretKeySpec(keyPasswordHash, keyPairCipherParams.keyType)
 
-            val decryptedKeyData = decryptData(key, encryptedKeyPairData.unhexify(), keyPairCipherParams)
+            val decryptedKeyData = try {
+                 decryptData(key, encryptedKeyPairData.unhexify(), keyPairCipherParams)
+            }
+            catch (e: InvalidCipherTextException) {
+                throw KeyVaultDecryptionFailedException()
+            }
+
             val identityKeyPair = IdentityKeyPair(decryptedKeyData)
 
             val keyHashParams = HashDeserializers.deserialize(
