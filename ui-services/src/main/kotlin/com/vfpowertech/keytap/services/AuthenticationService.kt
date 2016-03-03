@@ -50,6 +50,7 @@ class AuthenticationService(serverUrl: String) {
                 val data = response.data!!
                 val keyVault = KeyVault.deserialize(data.keyVault, password)
                 keyVault.remotePasswordHash = hash
+                keyVault.remotePasswordHashParams = hashParams
                 AuthResult(data.authToken, data.keyRegenCount, keyVault)
             }
         }
