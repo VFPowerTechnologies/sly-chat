@@ -48,8 +48,8 @@ class WebApiIntegrationTest {
 
             val user = SiteUser(
                 registrationInfo.email,
-                keyVault.remotePasswordHash!!.hexify(),
-                keyVault.remotePasswordHashParams!!.serialize(),
+                keyVault.remotePasswordHash.hexify(),
+                keyVault.remotePasswordHashParams.serialize(),
                 keyVault.fingerprint,
                 registrationInfo.name,
                 registrationInfo.phoneNumber,
@@ -144,8 +144,8 @@ class WebApiIntegrationTest {
 
         val expected = SiteUser(
             dummyRegistrationInfo.email,
-            keyVault.remotePasswordHash!!.hexify(),
-            keyVault.remotePasswordHashParams!!.serialize(),
+            keyVault.remotePasswordHash.hexify(),
+            keyVault.remotePasswordHashParams.serialize(),
             keyVault.fingerprint,
             dummyRegistrationInfo.name,
             dummyRegistrationInfo.phoneNumber,
