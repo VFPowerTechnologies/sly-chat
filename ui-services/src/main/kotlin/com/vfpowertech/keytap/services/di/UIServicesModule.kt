@@ -3,6 +3,8 @@ package com.vfpowertech.keytap.services.di
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceComponent
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceType
+import com.vfpowertech.keytap.core.PlatformInfo
+import com.vfpowertech.keytap.core.div
 import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
 import com.vfpowertech.keytap.services.AuthenticationService
 import com.vfpowertech.keytap.services.KeyTapApplication
@@ -82,4 +84,11 @@ class UIServicesModule {
         { DummyUINetworkStatusService() },
         { UINetworkStatusServiceImpl(app) }
     )
+
+    @Singleton
+    @Provides
+    fun providerConfigService(platformInfo: PlatformInfo): UIConfigService {
+        val path = platformInfo.appFileStorageDirectory / "startup-info.json"
+        return UIConfigServiceImpl(path)
+    }
 }

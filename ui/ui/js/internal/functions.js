@@ -6,6 +6,7 @@ window.contactService = new ContactsService();
 window.historyService = new HistoryService();
 window.develService = new DevelService();
 window.networkStatusService = new NetworkStatusService();
+window.configService = new ConfigService();
 
 // Create application namespace.
 var KEYTAP = KEYTAP || {};
