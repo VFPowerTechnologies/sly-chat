@@ -2,7 +2,7 @@ package com.vfpowertech.keytap.services
 
 import rx.Observable
 import rx.Scheduler
-import java.util.concurrent.ThreadLocalRandom
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -23,7 +23,8 @@ class ExponentialBackoffTimer(private val scheduler: Scheduler, private val maxN
             n += 1
 
         val exp = Math.pow(2.0, n.toDouble())
-        waitTimeSeconds = ThreadLocalRandom.current().nextInt(0, exp.toInt())
+        //can't use ThreadLocalRandom since it's only available in API level 21
+        waitTimeSeconds = Random().nextInt(exp.toInt() + 1)
 
         return Observable.timer(waitTimeSeconds.toLong(), TimeUnit.SECONDS).observeOn(scheduler)
     }
