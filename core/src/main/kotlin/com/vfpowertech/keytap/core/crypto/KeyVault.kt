@@ -34,9 +34,22 @@ class KeyVault(
     val localDataEncryptionKey: ByteArray,
     val localDataEncryptionParams: CipherParams
 ) {
-    fun getEncryptedPrivateKey(): ByteArray {
-        val key = SecretKeySpec(keyPasswordHash, keyPairCipherParams.keyType)
+    /** For encrypting/decrypting the identity key pair. */
+    fun getKeyEncryptionKey() = SecretKeySpec(keyPasswordHash, keyPairCipherParams.keyType)
+
+    /** For local encryption purposes. */
+    fun getLocalDataEncryptionKey(): SecretKeySpec = SecretKeySpec(localDataEncryptionKey, localDataEncryptionParams.keyType)
+
+    private fun getEncryptedPrivateKey(): ByteArray {
+        val key = getKeyEncryptionKey()
         return encryptDataWithParams(key, identityKeyPair.serialize(), keyPairCipherParams).data
+    }
+
+    private fun getEncryptedRemotePasswordHash(): ByteArray? {
+        val hash = remotePasswordHash ?: return null
+
+        val key = getLocalDataEncryptionKey()
+        return encryptDataWithParams(key, hash, localDataEncryptionParams).data
     }
 
     /** Returns the public key encoded as a hex string. */
@@ -54,7 +67,9 @@ class KeyVault(
             keyPasswordHashParams.serialize(),
             keyPairCipherParams.serialize(),
             privateKeyHashParams.serialize(),
-            localDataEncryptionParams.serialize())
+            localDataEncryptionParams.serialize(),
+            getEncryptedRemotePasswordHash()?.hexify(),
+            remotePasswordHashParams?.serialize())
     }
 
     fun toStorage(keyVaultStorage: KeyVaultStorage) {
@@ -75,10 +90,10 @@ class KeyVault(
                 serialized.keyPasswordHashParams)
 
             val keyPasswordHash = hashPasswordWithParams(password, keyPasswordHashParams)
-            val key = SecretKeySpec(keyPasswordHash, keyPairCipherParams.keyType)
+            val keyKey = SecretKeySpec(keyPasswordHash, keyPairCipherParams.keyType)
 
             val decryptedKeyData = try {
-                 decryptData(key, encryptedKeyPairData.unhexify(), keyPairCipherParams)
+                 decryptData(keyKey, encryptedKeyPairData.unhexify(), keyPairCipherParams)
             }
             catch (e: InvalidCipherTextException) {
                 throw KeyVaultDecryptionFailedException()
@@ -94,11 +109,23 @@ class KeyVault(
             val localDataEncryptionParams = CipherDeserializers.deserialize(
                 serialized.localDataEncryptionParams)
 
+            val dataKey = SecretKeySpec(localEncryptionKey, localDataEncryptionParams.keyType)
+            
+            val remotePasswordHash = if (serialized.encryptedRemotePasswordHash != null)
+                decryptData(dataKey, serialized.encryptedRemotePasswordHash.unhexify(), localDataEncryptionParams)
+            else
+                null
+
+            val remotePasswordHashParams = if (serialized.remotePasswordHashParams != null)
+                HashDeserializers.deserialize(serialized.remotePasswordHashParams)
+            else
+                null
+
             return KeyVault(
                 identityKeyPair,
 
-                null,
-                null,
+                remotePasswordHash,
+                remotePasswordHashParams,
                 keyPasswordHash,
 
                 keyPasswordHashParams,
