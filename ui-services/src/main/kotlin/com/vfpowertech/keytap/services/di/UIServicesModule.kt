@@ -48,11 +48,12 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun provideContactsService(
+        serverUrls: BuildConfig.ServerUrls,
         app: KeyTapApplication
     ): UIContactsService = getImplementation(
         UIServiceComponent.CONTACTS,
         { DummyUIContactsService() },
-        { UIContactsServiceImpl(app) }
+        { UIContactsServiceImpl(app, serverUrls.API_SERVER) }
     )
 
     @Singleton

@@ -10,25 +10,22 @@ interface UIContactsService {
     fun getContacts(): Promise<List<UIContactDetails>, Exception>
 
     /**
-     * Add a new contact with the given info. UIContact.id must be null.
-     *
-     * @throws IllegalArgumentException newContactInfo.id wasn't null.
+     * Add a new contact with the given info. Contact details should be cached.
      */
-    fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception>
+    fun addNewContact(publicKey: String): Promise<UIContactDetails, Exception>
 
     /**
      * Updates the given contact with the given info. newContactInfo.id must not be null.
-     *
-     * @throws InvalidContactException Given Contact doesn't exist.
-     * @throws IllegalArgumentException newContactInfo.id was null.
      */
     fun updateContact(newContactDetails: UIContactDetails): Promise<UIContactDetails, Exception>
 
     /**
-     * Remove the given contact with the given info. contactDetails.id must not be null.
-     *
-     * @throws InvalidContactException Given Contact doesn't exist.
-     * @throws IllegalArgumentException contactDetails.id was null.
+     * Remove the given contact with the given info.
      */
     fun removeContact(contactDetails: UIContactDetails): Promise<Unit, Exception>
+
+    /**
+     * Fetch the contact details if contact exist. Email or phoneNumber must not be null.
+     */
+    fun fetchNewContactInfo(email: String?, phoneNumber: String?): Promise<UINewContactResult, Exception>
 }
