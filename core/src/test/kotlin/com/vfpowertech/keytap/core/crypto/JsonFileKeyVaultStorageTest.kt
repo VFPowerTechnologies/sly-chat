@@ -26,18 +26,7 @@ class JsonFileKeyVaultStorageTest {
     }
 
     @Test
-    fun `should write and then read back a KeyVault with null fields`() {
-        keyVault.remotePasswordHash = null
-        keyVault.remotePasswordHashParams = null
-        keyVault.toStorage(keyVaultStorage)
-
-        val reloadedVault = KeyVault.fromStorage(keyVaultStorage, password)
-
-        assertTrue(Arrays.equals(reloadedVault.identityKeyPair.serialize(), keyVault.identityKeyPair.serialize()))
-    }
-
-    @Test
-    fun `should write and then read back a KeyVault with non-null fields`() {
+    fun `should write and then read back a KeyVault`() {
         keyVault.toStorage(keyVaultStorage)
 
         val reloadedVault = KeyVault.fromStorage(keyVaultStorage, password)

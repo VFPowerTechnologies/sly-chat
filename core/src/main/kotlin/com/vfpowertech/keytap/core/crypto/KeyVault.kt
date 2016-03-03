@@ -23,8 +23,8 @@ import javax.crypto.spec.SecretKeySpec
 class KeyVault(
     val identityKeyPair: IdentityKeyPair,
 
-    var remotePasswordHash: ByteArray?,
-    var remotePasswordHashParams: HashParams?,
+    var remotePasswordHash: ByteArray,
+    var remotePasswordHashParams: HashParams,
     val keyPasswordHash: ByteArray,
 
     val keyPasswordHashParams: HashParams,
@@ -45,11 +45,9 @@ class KeyVault(
         return encryptDataWithParams(key, identityKeyPair.serialize(), keyPairCipherParams).data
     }
 
-    private fun getEncryptedRemotePasswordHash(): ByteArray? {
-        val hash = remotePasswordHash ?: return null
-
+    private fun getEncryptedRemotePasswordHash(): ByteArray {
         val key = getLocalDataEncryptionKey()
-        return encryptDataWithParams(key, hash, localDataEncryptionParams).data
+        return encryptDataWithParams(key, remotePasswordHash, localDataEncryptionParams).data
     }
 
     /** Returns the public key encoded as a hex string. */
@@ -68,8 +66,8 @@ class KeyVault(
             keyPairCipherParams.serialize(),
             privateKeyHashParams.serialize(),
             localDataEncryptionParams.serialize(),
-            getEncryptedRemotePasswordHash()?.hexify(),
-            remotePasswordHashParams?.serialize())
+            getEncryptedRemotePasswordHash().hexify(),
+            remotePasswordHashParams.serialize())
     }
 
     fun toStorage(keyVaultStorage: KeyVaultStorage) {
@@ -110,16 +108,10 @@ class KeyVault(
                 serialized.localDataEncryptionParams)
 
             val dataKey = SecretKeySpec(localEncryptionKey, localDataEncryptionParams.keyType)
-            
-            val remotePasswordHash = if (serialized.encryptedRemotePasswordHash != null)
-                decryptData(dataKey, serialized.encryptedRemotePasswordHash.unhexify(), localDataEncryptionParams)
-            else
-                null
 
-            val remotePasswordHashParams = if (serialized.remotePasswordHashParams != null)
-                HashDeserializers.deserialize(serialized.remotePasswordHashParams)
-            else
-                null
+            val remotePasswordHash = decryptData(dataKey, serialized.encryptedRemotePasswordHash.unhexify(), localDataEncryptionParams)
+
+            val remotePasswordHashParams = HashDeserializers.deserialize(serialized.remotePasswordHashParams)
 
             return KeyVault(
                 identityKeyPair,
