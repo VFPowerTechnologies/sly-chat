@@ -11,6 +11,7 @@ class UserPathsGenerator(private val platformInfo: PlatformInfo) {
             accountsDir,
             accountsDir / "keyvault.json",
             accountsDir / "account-info.json",
+            accountsDir / "session-data.json",
             accountsDir / "db.sqlite3"
         )
     }

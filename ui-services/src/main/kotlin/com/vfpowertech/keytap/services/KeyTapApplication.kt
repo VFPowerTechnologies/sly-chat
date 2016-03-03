@@ -1,9 +1,12 @@
 package com.vfpowertech.keytap.services
 
 import com.vfpowertech.keytap.core.crypto.KeyVault
+import com.vfpowertech.keytap.core.persistence.SessionData
 import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.services.di.*
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.bind
+import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -132,11 +135,16 @@ class KeyTapApplication {
         val userComponent = userComponent ?: error("No user session")
         val data = userComponent.userLoginData
         data.authToken = null
-        val remotePasswordHash = data.keyVault.remotePasswordHash ?: error("remotePasswordHash is null")
+        val remotePasswordHash = data.keyVault.remotePasswordHash
 
-        appComponent.authenticationService.refreshAuthToken(data.username, remotePasswordHash) successUi { response ->
+        val sessionDataPersistenceManager = userComponent.sessionDataPersistenceManager
+
+        appComponent.authenticationService.refreshAuthToken(data.username, remotePasswordHash) bind { response ->
             log.info("Got new auth token")
+            sessionDataPersistenceManager.store(SessionData(response.authToken)) map { response }
+        } successUi { response ->
             data.authToken = response.authToken
+
             //TODO key regen
             reconnectToRelay()
         } fail { e ->
@@ -167,8 +175,7 @@ class KeyTapApplication {
         val userLoginData = userComponent.userLoginData
         if (userLoginData.authToken == null) {
             log.info("No auth token, fetching new")
-            //TODO have loginserviceimpl use something under it so we don't have to use ui-facing services directly
-            error("Not implemented")
+            refreshAuthToken()
         }
         else
             doRelayLogin(null)

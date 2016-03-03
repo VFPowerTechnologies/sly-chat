@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services.di
 
+import com.vfpowertech.keytap.core.SessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
 import com.vfpowertech.keytap.core.persistence.MessagePersistenceManager
@@ -21,6 +22,8 @@ interface UserComponent {
     val contactsPersistenceManager: ContactsPersistenceManager
 
     val messagePersistenceManager: MessagePersistenceManager
+
+    val sessionDataPersistenceManager : SessionDataPersistenceManager
 
     val userLoginData: UserLoginData
 

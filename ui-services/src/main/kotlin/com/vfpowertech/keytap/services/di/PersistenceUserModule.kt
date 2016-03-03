@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services.di
 
+import com.vfpowertech.keytap.core.SessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.*
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLiteContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLiteMessagePersistenceManager
@@ -38,5 +39,12 @@ class PersistenceUserModule {
     @Provides
     fun providesKeyVaultPersistenceManager(userPaths: UserPaths): KeyVaultPersistenceManager {
         return JsonKeyVaultPersistenceManager(userPaths.keyVaultPath)
+    }
+
+    @UserScope
+    @Provides
+    fun providesSessionDataPersistenceManager(userPaths: UserPaths, userLoginData: UserLoginData): SessionDataPersistenceManager {
+        val keyvault = userLoginData.keyVault
+        return JsonSessionDataPersistenceManager(userPaths.sessionDataPath, keyvault.localDataEncryptionKey, keyvault.localDataEncryptionParams)
     }
 }
