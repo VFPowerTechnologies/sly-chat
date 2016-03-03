@@ -1,76 +1,93 @@
 package com.vfpowertech.keytap.services.ui.impl
 
-import com.vfpowertech.keytap.core.crypto.HashDeserializers
-import com.vfpowertech.keytap.core.crypto.KeyVault
-import com.vfpowertech.keytap.core.crypto.hashPasswordWithParams
-import com.vfpowertech.keytap.core.crypto.hexify
-import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationParamsResponse
-import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
-import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
-import com.vfpowertech.keytap.services.KeyTapApplication
-import com.vfpowertech.keytap.services.UserLoginData
-import com.vfpowertech.keytap.services.ui.UILoginService
+import com.vfpowertech.keytap.core.kovenant.fallbackTo
+import com.vfpowertech.keytap.core.kovenant.recoverFor
+import com.vfpowertech.keytap.core.persistence.JsonKeyVaultPersistenceManager
+import com.vfpowertech.keytap.core.persistence.JsonSessionDataPersistenceManager
+import com.vfpowertech.keytap.core.persistence.SessionData
+import com.vfpowertech.keytap.services.*
 import com.vfpowertech.keytap.services.ui.UILoginResult
+import com.vfpowertech.keytap.services.ui.UILoginService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.task
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
+import java.io.File
+import java.io.FileNotFoundException
+
+/** Rejects the promise with java.io.FileNotFoundException if path doesn't exist. Otherwise resolves with the given path. */
+fun asyncCheckPath(path: File): Promise<File, Exception> = task {
+    if (!path.exists())
+        throw FileNotFoundException()
+    else
+        path
+}
 
 class UILoginServiceImpl(
     private val app: KeyTapApplication,
-    serverUrl: String,
-    private val keyVaultPersistenceManager: KeyVaultPersistenceManager
+    private val AuthenticationService: AuthenticationService
 ) : UILoginService {
+    private val log = LoggerFactory.getLogger(javaClass)
 
     override fun logout() {
         app.destroyUserSession()
     }
 
-    private val logger = LoggerFactory.getLogger(javaClass)
-    private val loginClient = AuthenticationClientWrapper(serverUrl)
+    private fun localAuth(emailOrPhoneNumber: String, password: String): Promise<AuthResult, Exception> {
+        val paths = app.appComponent.userPathsGenerator.getPaths(emailOrPhoneNumber)
 
-    private fun continueLogin(emailOrPhoneNumber: String, password: String, response: AuthenticationParamsResponse): Promise<UILoginResult, Exception> {
-        if (response.errorMessage != null)
-            return Promise.ofSuccess(UILoginResult(false, response.errorMessage))
+        //XXX I need to figure out a better way to do this stuff
+        return asyncCheckPath(paths.keyVaultPath) bind {
+            val keyVaultPersistenceManager = JsonKeyVaultPersistenceManager(paths.keyVaultPath)
 
-        val authParams = response.params!!
-
-        val hashParams = HashDeserializers.deserialize(authParams.hashParams)
-        val hash = hashPasswordWithParams(password, hashParams)
-
-        val request = AuthenticationRequest(emailOrPhoneNumber, hash.hexify(), authParams.csrfToken)
-        return loginClient.auth(request) bind { response ->
-            val data = response.data
-            if (data != null) {
-                val serializedKeyVault = data.keyVault
-                val keyVault = KeyVault.deserialize(serializedKeyVault, password)
-                keyVaultPersistenceManager.store(keyVault) map { response }
-            }
-            else
-                Promise.ofSuccess(response)
-        } successUi { response ->
-            val data = response.data
-            if (data != null) {
-                //TODO need to put the username in the login response if the user used their phone number
-                //TODO remove keyvault deserialization dup; successUi doesn't let us return any promises to chain though
-                val keyVault = KeyVault.deserialize(data.keyVault, password)
-                app.createUserSession(UserLoginData(emailOrPhoneNumber, keyVault, data.authToken))
-
-                if (data.keyRegenCount > 0) {
-                    //TODO schedule prekey upload in bg
-                    logger.info("Requested to generate {} new prekeys", data.keyRegenCount)
+            keyVaultPersistenceManager.retrieve(password) bind { keyVault ->
+                asyncCheckPath(paths.sessionDataPath) bind {
+                    JsonSessionDataPersistenceManager(it, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).retrieve()
+                } map { sessionData ->
+                    log.debug("Local authentication successful")
+                    AuthResult(sessionData.authToken, 0, keyVault)
                 }
             }
-        } map { response ->
-            if (response.isSuccess)
-                UILoginResult(true, null)
-            else
-                UILoginResult(false, response.errorMessage)
         }
     }
 
+    private fun remoteAuth(emailOrPhoneNumber: String, password: String): Promise<AuthResult, Exception> {
+        //XXX technically we don't need to re-write the value on every login
+        return AuthenticationService.auth(emailOrPhoneNumber, password)
+    }
+
+    //this should use the keyvault is available, falling back to remote auth to retrieve it
     override fun login(emailOrPhoneNumber: String, password: String): Promise<UILoginResult, Exception> {
-        return loginClient.getParams(emailOrPhoneNumber) bind { continueLogin(emailOrPhoneNumber, password, it) }
+        //TODO this only works if an email is given; we need to somehow keep a list of phone numbers -> emails somewhere
+        //maybe just search every account dir available and find a number that way? kinda rough but works
+
+        //if the unlock fails, we try remotely; this can occur if the password was changed remotely from another device
+        return localAuth(emailOrPhoneNumber, password) fallbackTo { remoteAuth(emailOrPhoneNumber, password) } successUi { response ->
+            val keyVault = response.keyVault
+            //TODO need to put the username in the login response if the user used their phone number
+            app.createUserSession(UserLoginData(emailOrPhoneNumber, keyVault, response.authToken))
+
+            app.storeAccountData(keyVault)
+
+            val paths = app.appComponent.userPathsGenerator.getPaths(emailOrPhoneNumber)
+            val authToken = response.authToken
+            if (authToken != null) {
+                val cachedData = SessionData(authToken)
+                JsonSessionDataPersistenceManager(paths.sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).store(cachedData) fail { e ->
+                    log.error("Unable to save session data to disk: {}", e.message, e)
+                }
+            }
+
+            if (response.keyRegenCount > 0) {
+                //TODO schedule prekey upload in bg
+                log.info("Requested to generate {} new prekeys", response.keyRegenCount)
+            }
+        } map { response ->
+            UILoginResult(true, null)
+        } recoverFor { e: AuthApiResponseException ->
+            UILoginResult(false, e.errorMessage)
+        }
     }
 }

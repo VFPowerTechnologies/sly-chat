@@ -1,8 +1,11 @@
 package com.vfpowertech.keytap.services.di
 
+import com.vfpowertech.keytap.services.AuthenticationService
 import com.vfpowertech.keytap.services.NetworkStatusService
+import com.vfpowertech.keytap.services.UserPathsGenerator
 import com.vfpowertech.keytap.services.ui.*
 import dagger.Component
+import rx.Scheduler
 import javax.inject.Singleton
 
 /** Composed of objects which must live for the lifetime of the application. */
@@ -26,6 +29,12 @@ interface ApplicationComponent {
     val develService: UIDevelService
 
     val uiNetworkStatusService: UINetworkStatusService
+
+    val userPathsGenerator: UserPathsGenerator
+
+    val rxScheduler: Scheduler
+
+    val authenticationService: AuthenticationService
 
     fun plus(userModule: UserModule): UserComponent
 }

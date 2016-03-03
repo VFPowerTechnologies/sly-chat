@@ -1,10 +1,11 @@
-package com.vfpowertech.keytap.services.ui.impl
+package com.vfpowertech.keytap.services
 
 import com.vfpowertech.keytap.core.http.JavaHttpClient
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationClient
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationParamsResponse
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationResponse
+import com.vfpowertech.keytap.services.ui.impl.getOrThrow
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 

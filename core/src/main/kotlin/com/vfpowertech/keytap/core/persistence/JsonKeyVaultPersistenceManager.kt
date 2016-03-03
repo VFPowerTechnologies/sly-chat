@@ -10,7 +10,7 @@ import java.io.File
 class JsonKeyVaultPersistenceManager(private val path: File) : KeyVaultPersistenceManager {
     private val keyVaultStorage = JsonFileKeyVaultStorage(path)
 
-    override fun retrieve(password: String): Promise<KeyVault?, Exception> = task {
+    override fun retrieve(password: String): Promise<KeyVault, Exception> = task {
         KeyVault.fromStorage(keyVaultStorage, password)
     }
 

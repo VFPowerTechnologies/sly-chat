@@ -173,9 +173,15 @@ class RelayClient(
     }
 
     private fun onError(e: Throwable) {
-        log.error("Relay error", e)
         state = DISCONNECTED
-        publishSubject.onError(e)
+
+        //if the error occured during connection
+        if (relayConnection == null)
+            publishSubject.onNext(ConnectionFailure(e))
+        else {
+            log.error("Relay error", e)
+            publishSubject.onError(e)
+        }
     }
 
     fun connect() {
@@ -199,7 +205,11 @@ class RelayClient(
     }
 
     fun disconnect() {
-        val connection = getConnectionOrThrow()
+        val connection = relayConnection
+        if (connection == null) {
+            log.warn("Disconnect requested but not connected, ignoring")
+            return
+        }
         connection.disconnect()
         state = DISCONNECTING
         wasDisconnectRequested = true

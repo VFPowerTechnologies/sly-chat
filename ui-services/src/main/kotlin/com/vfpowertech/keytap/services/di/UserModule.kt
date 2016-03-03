@@ -4,8 +4,10 @@ import com.vfpowertech.keytap.core.BuildConfig.ServerUrls
 import com.vfpowertech.keytap.core.relay.RelayClient
 import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.RelayConnector
-import com.vfpowertech.keytap.services.UserLoginData
 import com.vfpowertech.keytap.services.RelayClientManager
+import com.vfpowertech.keytap.services.UserLoginData
+import com.vfpowertech.keytap.services.UserPaths
+import com.vfpowertech.keytap.services.UserPathsGenerator
 import dagger.Module
 import dagger.Provides
 import rx.Scheduler
@@ -34,4 +36,12 @@ class UserModule(
         userComponent: UserComponent
     ): RelayClientManager =
         RelayClientManager(scheduler, userComponent)
+
+    @UserScope
+    @Provides
+    fun providersUserPaths(
+        userLoginData: UserLoginData,
+        userPathsGenerator: UserPathsGenerator
+    ): UserPaths =
+        userPathsGenerator.getPaths(userLoginData.username)
 }
