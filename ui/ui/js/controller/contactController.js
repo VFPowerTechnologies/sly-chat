@@ -44,7 +44,6 @@ ContactController.prototype = {
         contactBlock += "<p>" + contact.name + "</p>";
         contactBlock += "</div>" + newBadge + "</div>";
 
-        console.log(contactBlock);
         return contactBlock;
     },
     createAvatar : function (name) {
@@ -94,7 +93,7 @@ ContactController.prototype = {
                     $("#newContactBtn").prop("disabled", false);
                 }
                 else{
-                    this.createConfirmContactForm(response.contactDetails.name, response.contactDetails.publicKey);
+                    this.createConfirmContactForm(response.contactDetails);
                 }
             }.bind(this)).catch(function (e) {
                 KEYTAP.exceptionController.displayDebugMessage(e);
@@ -153,7 +152,7 @@ ContactController.prototype = {
     getConversations : function () {
         return this.model.getConversations();
     },
-    createConfirmContactForm : function (name, publicKey) {
+    createConfirmContactForm : function (contactDetails) {
         var form = document.createElement("form");
         form.id = "addContactForm";
         form.method = "post";
@@ -165,7 +164,7 @@ ContactController.prototype = {
         var nameInput = document.createElement("INPUT");
         nameInput.id = "name";
         nameInput.type = "text";
-        nameInput.value = name;
+        nameInput.value = contactDetails.name;
         nameInput.className = "center-align";
         nameInput.readOnly = true;
 
@@ -176,9 +175,19 @@ ContactController.prototype = {
         var publicKeyInput = document.createElement("INPUT");
         publicKeyInput.id = "publicKey";
         publicKeyInput.type = "text";
-        publicKeyInput.value = publicKey;
+        publicKeyInput.value = contactDetails.publicKey;
         publicKeyInput.className = "center-align";
         publicKeyInput.readOnly = true;
+
+        var phoneInput = document.createElement("INPUT");
+        phoneInput.id = "phoneNumber";
+        phoneInput.type = "hidden";
+        phoneInput.value = contactDetails.phoneNumber;
+
+        var emailInput = document.createElement("INPUT");
+        emailInput.id = "email";
+        emailInput.type = "hidden";
+        emailInput.value = contactDetails.email
 
         var navbar = document.createElement("div");
         navbar.className = "navbar-btn center-align";
@@ -199,6 +208,8 @@ ContactController.prototype = {
         form.appendChild(nameInput);
         form.appendChild(publicKeyLabel);
         form.appendChild(publicKeyInput);
+        form.appendChild(emailInput);
+        form.appendChild(phoneInput);
 
         navbar.appendChild(cancelBtn);
         navbar.appendChild(confirmBtn);
@@ -210,7 +221,13 @@ ContactController.prototype = {
 
         $("#confirmBtn").on("click", function (e) {
             e.preventDefault();
-            contactService.addNewContact($("#publicKey").val()).then(function () {
+            contactService.addNewContact({
+                "name" : $("#name").val(),
+                "phoneNumber" : $("#phoneNumber").val(),
+                "email" : $("#email").val(),
+                "publicKey" : $("#publicKey").val()
+
+            }).then(function () {
                 this.model.resetContacts();
                 KEYTAP.navigationController.loadPage("contacts.html");
             }.bind(this)).catch(function (e) {
