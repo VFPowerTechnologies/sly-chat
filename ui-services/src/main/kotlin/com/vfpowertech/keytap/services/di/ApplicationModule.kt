@@ -2,7 +2,9 @@ package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.PlatformInfo
-import com.vfpowertech.keytap.services.*
+import com.vfpowertech.keytap.services.AuthenticationService
+import com.vfpowertech.keytap.services.KeyTapApplication
+import com.vfpowertech.keytap.services.UserPathsGenerator
 import dagger.Module
 import dagger.Provides
 import javax.inject.Singleton
@@ -13,11 +15,6 @@ class ApplicationModule(
     @get:Provides
     val providesApplication: KeyTapApplication
 ) {
-    //TODO here for simplicity for the moment
-    @Singleton
-    @Provides
-    fun providesNetworkStatusService(): NetworkStatusService = AlwaysOnNetworkStatusService()
-
     @Singleton
     @Provides
     fun providesAuthenticationService(serverUrls: BuildConfig.ServerUrls): AuthenticationService =

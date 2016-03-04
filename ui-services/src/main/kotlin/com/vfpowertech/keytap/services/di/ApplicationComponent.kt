@@ -1,7 +1,6 @@
 package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.services.AuthenticationService
-import com.vfpowertech.keytap.services.NetworkStatusService
 import com.vfpowertech.keytap.services.UserPathsGenerator
 import com.vfpowertech.keytap.services.ui.*
 import dagger.Component
@@ -12,8 +11,6 @@ import javax.inject.Singleton
 @Singleton
 @Component(modules = arrayOf(ApplicationModule::class, RelayModule::class, UIServicesModule::class, PlatformModule::class, PersistenceCoreModule::class))
 interface ApplicationComponent {
-    val networkStatusService: NetworkStatusService
-
     val platformInfoService: UIPlatformInfoService
 
     val registrationService: UIRegistrationService
