@@ -19,7 +19,7 @@ class DummyUIContactsService : UIContactsService {
         return Promise.ofSuccess(contacts.values.toList())
     }
 
-    override fun addNewContact(publicKey: String): Promise<UIContactDetails, Exception> {
+    override fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
         return Promise.ofSuccess(UIContactDetails("", "", "", ""))
     }
 

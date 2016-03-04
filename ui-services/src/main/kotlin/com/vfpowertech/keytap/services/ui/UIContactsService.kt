@@ -12,7 +12,7 @@ interface UIContactsService {
     /**
      * Add a new contact with the given info. Contact details should be cached.
      */
-    fun addNewContact(publicKey: String): Promise<UIContactDetails, Exception>
+    fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception>
 
     /**
      * Updates the given contact with the given info. newContactInfo.id must not be null.
