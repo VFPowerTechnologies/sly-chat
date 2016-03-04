@@ -11,8 +11,6 @@ class ContactClientWrapper(serverUrl: String) {
     private val contactClient = ContactClient(serverUrl, JavaHttpClient())
 
     fun fetchNewContactInfo(request: NewContactRequest): Promise<FetchContactResponse, Exception> = task {
-        val apiResponse = contactClient.fetchContactInfo(request)
-
-        apiResponse.getOrThrow { it }
+         contactClient.fetchContactInfo(request)
     }
 }
