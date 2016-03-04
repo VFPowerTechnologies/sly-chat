@@ -10,7 +10,7 @@ interface UIContactsService {
     fun getContacts(): Promise<List<UIContactDetails>, Exception>
 
     /**
-     * Add a new contact with the given info. Contact details should be cached.
+     * Add a new contact with the given info.
      */
     fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception>
 
