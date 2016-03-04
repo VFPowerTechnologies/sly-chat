@@ -1,16 +1,23 @@
 package com.vfpowertech.keytap.services.ui.impl
 
+import com.vfpowertech.keytap.core.http.api.contacts.FetchContactResponse
+import com.vfpowertech.keytap.core.http.api.contacts.NewContactRequest
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.services.KeyTapApplication
+import com.vfpowertech.keytap.services.ui.UINewContactResult
 import com.vfpowertech.keytap.services.ui.UIContactsService
 import com.vfpowertech.keytap.services.ui.UIContactDetails
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.ui.successUi
 
 class UIContactsServiceImpl(
-    private val app: KeyTapApplication
+    private val app: KeyTapApplication,
+    serverUrl: String
 ) : UIContactsService {
+    private val contactClient = ContactClientWrapper(serverUrl)
 
     private fun getContactsPersistenceManagerOrThrow(): ContactsPersistenceManager =
         app.userComponent?.contactsPersistenceManager ?: error("No UserComponent available")
@@ -37,5 +44,26 @@ class UIContactsServiceImpl(
     override fun removeContact(contactDetails: UIContactDetails): Promise<Unit, Exception> {
         val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
         return contactsPersistenceManager.remove(ContactInfo(contactDetails.email, contactDetails.name, contactDetails.phoneNumber, contactDetails.publicKey))
+    }
+
+    override fun fetchNewContactInfo(email: String?, phoneNumber: String?): Promise<UINewContactResult, Exception> {
+        if (email == null && phoneNumber == null) {
+            return Promise.ofSuccess(UINewContactResult(false, "Username or phone number must be provided", null))
+        }
+
+        val authToken = app.userComponent?.userLoginData?.authToken!!
+        val newContactRequest: Promise<FetchContactResponse, Exception>
+
+        newContactRequest = contactClient.fetchNewContactInfo(NewContactRequest(authToken, email, phoneNumber))
+
+        return newContactRequest map  { response ->
+            if (response.errorMessage != null) {
+                UINewContactResult(false, response.errorMessage, null)
+            }
+            else {
+                val contactInfo = response.contactInfo!!
+                UINewContactResult(true, null, UIContactDetails(contactInfo.name, contactInfo.phoneNumber, contactInfo.username, contactInfo.publicKey))
+            }
+        }
     }
 }

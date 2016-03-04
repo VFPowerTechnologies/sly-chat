@@ -12,6 +12,9 @@ import com.vfpowertech.keytap.core.http.JavaHttpClient
 import com.vfpowertech.keytap.core.http.api.UnauthorizedException
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationClient
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
+import com.vfpowertech.keytap.core.http.api.contacts.ContactClient
+import com.vfpowertech.keytap.core.http.api.contacts.ContactInfo
+import com.vfpowertech.keytap.core.http.api.contacts.NewContactRequest
 import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrieveClient
 import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrieveRequest
 import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyStorageClient
@@ -297,5 +300,39 @@ class WebApiIntegrationTest {
     @Test
     fun `prekey retrieval should return the last resort key once no other keys are available`() {
 
+    }
+
+    @Test
+    fun `new contact fetch from email should return the contact information`() {
+        val siteUser = injectNewSiteUser()
+        val authToken = devClient.createAuthToken(siteUser.user.username)
+
+        val contactDetails = ContactInfo(siteUser.user.username, siteUser.user.name, siteUser.user.phoneNumber, siteUser.user.publicKey)
+
+        val client = ContactClient(serverBaseUrl, JavaHttpClient())
+
+        val contactResponseEmail = client.fetchContactInfo(NewContactRequest(authToken, siteUser.user.username, null))
+
+        val receivedEmailContactInfo = contactResponseEmail.value?.contactInfo!!
+
+        assertFalse(contactResponseEmail.isError)
+        assertEquals(contactDetails, receivedEmailContactInfo)
+    }
+
+    @Test
+    fun `new contact fetch from phone should return the contact information`() {
+        val siteUser = injectNewSiteUser()
+        val authToken = devClient.createAuthToken(siteUser.user.username)
+
+        val contactDetails = ContactInfo(siteUser.user.username, siteUser.user.name, siteUser.user.phoneNumber, siteUser.user.publicKey)
+
+        val client = ContactClient(serverBaseUrl, JavaHttpClient())
+
+        val contactResponse = client.fetchContactInfo(NewContactRequest(authToken, null, siteUser.user.phoneNumber))
+
+        val receivedContactInfo = contactResponse.value?.contactInfo!!
+
+        assertFalse(contactResponse.isError)
+        assertEquals(contactDetails, receivedContactInfo)
     }
 }

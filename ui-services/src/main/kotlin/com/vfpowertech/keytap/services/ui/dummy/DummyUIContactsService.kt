@@ -2,6 +2,7 @@ package com.vfpowertech.keytap.services.ui.dummy
 
 import com.vfpowertech.keytap.services.ui.UIContactsService
 import com.vfpowertech.keytap.services.ui.UIContactDetails
+import com.vfpowertech.keytap.services.ui.UINewContactResult
 import nl.komponents.kovenant.Promise
 
 class DummyUIContactsService : UIContactsService {
@@ -19,7 +20,11 @@ class DummyUIContactsService : UIContactsService {
     }
 
     override fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
-        return Promise.ofSuccess(contactDetails)
+        return Promise.ofSuccess(UIContactDetails("", "", "", ""))
+    }
+
+    override fun fetchNewContactInfo(email: String?, phoneNumber: String?): Promise<UINewContactResult, Exception>{
+        return Promise.ofSuccess(UINewContactResult(true, null, null))
     }
 
     override fun removeContact(contactDetails: UIContactDetails): Promise<Unit, Exception> {
