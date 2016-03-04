@@ -23,8 +23,9 @@ class AuthenticationClientTest {
     fun `getParams should return a successful AuthenticationParamsResponse when receiving a 200 response`() {
         val httpClient = mock<HttpClient>()
         val hashParams = BCryptParams(getRandomBits(128), 12).serialize()
-        val response = ApiResult(null, AuthenticationParamsResponse(null, AuthenticationParams(csrfToken, hashParams)))
-        val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(response))
+        val response = AuthenticationParamsResponse(null, AuthenticationParams(csrfToken, hashParams))
+        val apiResult = ApiResult(null, response)
+        val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))
 
         whenever(httpClient.get(any())).thenReturn(httpResponse)
 
@@ -40,8 +41,9 @@ class AuthenticationClientTest {
         val serializedKeyVault = generateNewKeyVault(password).serialize()
 
         val httpClient = mock<HttpClient>()
-        val response = ApiResult(null, AuthenticationResponse(null, AuthenticationData("auth", serializedKeyVault, null, 0)))
-        val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(response))
+        val response = AuthenticationResponse(null, AuthenticationData("auth", serializedKeyVault, null, 0))
+        val apiResult = ApiResult(null, response)
+        val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))
 
         whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)
 
