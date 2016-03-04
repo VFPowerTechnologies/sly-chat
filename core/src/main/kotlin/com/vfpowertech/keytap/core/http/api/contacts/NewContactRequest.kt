@@ -11,7 +11,7 @@ data class NewContactRequest(
     @get:JsonProperty("contact-username")
     val username: String?,
 
-    @param:JsonProperty("contact-phoneNumber")
-    @get:JsonProperty("contact-phoneNumber")
+    @param:JsonProperty("contact-phone-number")
+    @get:JsonProperty("contact-phone-number")
     val phoneNumber: String?
 )
