@@ -317,8 +317,6 @@ class WebApiIntegrationTest {
 
         assertFalse(contactResponseEmail.isError)
         assertEquals(contactDetails, receivedEmailContactInfo)
-
-        devClient.clear()
     }
 
     @Test
@@ -336,7 +334,5 @@ class WebApiIntegrationTest {
 
         assertFalse(contactResponse.isError)
         assertEquals(contactDetails, receivedContactInfo)
-
-        devClient.clear()
     }
 }
