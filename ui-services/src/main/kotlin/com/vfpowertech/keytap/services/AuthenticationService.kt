@@ -4,6 +4,7 @@ import com.vfpowertech.keytap.core.crypto.HashDeserializers
 import com.vfpowertech.keytap.core.crypto.KeyVault
 import com.vfpowertech.keytap.core.crypto.hashPasswordWithParams
 import com.vfpowertech.keytap.core.crypto.hexify
+import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationAsyncClient
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -11,7 +12,7 @@ import nl.komponents.kovenant.functional.map
 
 /** API for various remote authentication functionality. */
 class AuthenticationService(serverUrl: String) {
-    private val loginClient = AuthenticationClientWrapper(serverUrl)
+    private val loginClient = AuthenticationAsyncClient(serverUrl)
 
     fun refreshAuthToken(username: String, remotePasswordHash: ByteArray): Promise<AuthTokenRefreshResult, Exception> {
         return loginClient.getParams(username) map { resp ->

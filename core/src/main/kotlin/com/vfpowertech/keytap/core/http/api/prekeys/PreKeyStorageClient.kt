@@ -1,15 +1,13 @@
 package com.vfpowertech.keytap.core.http.api.prekeys
 
-import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.api.ApiResult
-import com.vfpowertech.keytap.core.http.api.InvalidResponseBodyException
-import com.vfpowertech.keytap.core.http.api.throwApiException
+import com.vfpowertech.keytap.core.http.api.valueFromApi
 import com.vfpowertech.keytap.core.typeRef
 
 class PreKeyStorageClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
-    fun store(request: PreKeyStoreRequest): ApiResult<PreKeyStoreResponse> {
+    fun store(request: PreKeyStoreRequest): PreKeyStoreResponse {
         val url = "$serverBaseUrl/v1/store"
 
         val objectMapper = ObjectMapper()
@@ -17,14 +15,6 @@ class PreKeyStorageClient(private val serverBaseUrl: String, private val httpCli
 
         val resp = httpClient.postJSON(url, jsonRequest)
 
-        return when (resp.code) {
-            200, 400 -> try {
-                objectMapper.readValue<ApiResult<PreKeyStoreResponse>>(resp.body, typeRef<ApiResult<PreKeyStoreResponse>>())
-            }
-            catch (e: JsonProcessingException) {
-                throw InvalidResponseBodyException(resp, e)
-            }
-            else -> throwApiException(resp)
-        }
+        return valueFromApi(resp, setOf(200, 400), typeRef<ApiResult<PreKeyStoreResponse>>())
     }
 }

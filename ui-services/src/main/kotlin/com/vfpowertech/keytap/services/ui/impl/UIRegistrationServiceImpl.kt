@@ -1,12 +1,13 @@
 package com.vfpowertech.keytap.services.ui.impl
 
+import com.vfpowertech.keytap.core.http.api.registration.RegistrationAsyncClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
 import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
-import com.vfpowertech.keytap.services.ui.UIRegistrationService
 import com.vfpowertech.keytap.services.ui.UIRegistrationInfo
 import com.vfpowertech.keytap.services.ui.UIRegistrationResult
+import com.vfpowertech.keytap.services.ui.UIRegistrationService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
@@ -19,7 +20,7 @@ class UIRegistrationServiceImpl(
 ) : UIRegistrationService {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val listeners = ArrayList<(String) -> Unit>()
-    private val registrationClient = RegistrationClientWrapper(serverUrl)
+    private val registrationClient = RegistrationAsyncClient(serverUrl)
 
     override fun doRegistration(info: UIRegistrationInfo): Promise<UIRegistrationResult, Exception> {
         val username = info.email

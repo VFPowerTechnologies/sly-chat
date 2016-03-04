@@ -1,13 +1,7 @@
 package com.vfpowertech.keytap.core
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.vfpowertech.keytap.core.crypto.HashDeserializers
-import com.vfpowertech.keytap.core.crypto.KeyVault
+import com.vfpowertech.keytap.core.crypto.*
 import com.vfpowertech.keytap.core.crypto.axolotl.GeneratedPreKeys
-import com.vfpowertech.keytap.core.crypto.generateNewKeyVault
-import com.vfpowertech.keytap.core.crypto.generatePrekeys
-import com.vfpowertech.keytap.core.crypto.hashPasswordWithParams
-import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.http.JavaHttpClient
 import com.vfpowertech.keytap.core.http.api.UnauthorizedException
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationClient
@@ -15,26 +9,12 @@ import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
 import com.vfpowertech.keytap.core.http.api.contacts.ContactClient
 import com.vfpowertech.keytap.core.http.api.contacts.ContactInfo
 import com.vfpowertech.keytap.core.http.api.contacts.NewContactRequest
-import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrieveClient
-import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrieveRequest
-import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyStorageClient
-import com.vfpowertech.keytap.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
-import com.vfpowertech.keytap.core.http.api.prekeys.serializeOneTimePreKeys
-import com.vfpowertech.keytap.core.http.api.prekeys.serializeSignedPreKey
+import com.vfpowertech.keytap.core.http.api.prekeys.*
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
-import org.junit.Assume
-import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.Ignore
-import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import org.junit.*
+import kotlin.test.*
 
 data class GeneratedSiteUser(
     val user: SiteUser,
@@ -120,7 +100,6 @@ class WebApiIntegrationTest {
     val password = "test"
 
     val devClient = DevClient(serverBaseUrl, JavaHttpClient())
-    val objectMapper = ObjectMapper()
 
     fun injectNewSiteUser(): GeneratedSiteUser {
         val siteUser = newSiteUser(dummyRegistrationInfo, password)
@@ -142,8 +121,8 @@ class WebApiIntegrationTest {
 
         val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
         val result = client.register(request)
-        assertFalse(result.isError, "Api level error")
-        assertNull(result.value!!.errorMessage)
+        assertNull(result.errorMessage)
+        assertNull(result.validationErrors)
 
         val expected = SiteUser(
             dummyRegistrationInfo.email,
@@ -169,10 +148,8 @@ class WebApiIntegrationTest {
         val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
         val result = client.register(request)
 
-        assertFalse(result.isError, "Api level error")
-        assertNotNull(result.value, "Null value")
-        assertNotNull(result.value!!.errorMessage, "Null error message")
-        val errorMessage = result.value.errorMessage!!
+        assertNotNull(result.errorMessage, "Null error message")
+        val errorMessage = result.errorMessage!!
         assertTrue(errorMessage.contains("taken"), "Invalid error message: $errorMessage}")
     }
 
@@ -185,11 +162,9 @@ class WebApiIntegrationTest {
 
         val paramsApiResult = client.getParams(username)
 
-        assertFalse(paramsApiResult.isError, "getParams: Api level error")
-        assertNotNull(paramsApiResult.value, "getParams: value is null")
-        assertNotNull(paramsApiResult.value!!.params, "getParams: params is null")
+        assertNotNull(paramsApiResult.params, "getParams: params is null")
 
-        val params = paramsApiResult.value.params!!
+        val params = paramsApiResult.params!!
 
         val csrfToken = params.csrfToken
         val hashParams = HashDeserializers.deserialize(params.hashParams)
@@ -199,11 +174,9 @@ class WebApiIntegrationTest {
         val authRequest = AuthenticationRequest(username, hash, csrfToken)
 
         val authApiResult = client.auth(authRequest)
-        assertFalse(authApiResult.isError, "auth: Api level error")
-        assertNotNull(authApiResult.value, "auth: value is null")
-        assertTrue(authApiResult.value!!.isSuccess, "auth: unsuccessful")
+        assertTrue(authApiResult.isSuccess, "auth: unsuccessful")
 
-        val receivedSerializedKeyVault = authApiResult.value.data!!.keyVault
+        val receivedSerializedKeyVault = authApiResult.data!!.keyVault
 
         assertEquals(siteUser.keyVault, receivedSerializedKeyVault)
     }
@@ -241,9 +214,8 @@ class WebApiIntegrationTest {
 
         val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
 
-        val apiResponse = client.store(request)
-        assertFalse(apiResponse.isError)
-        assertTrue(apiResponse.value!!.isSuccess)
+        val response = client.store(request)
+        assertTrue(response.isSuccess)
 
         val preKeys = devClient.getPreKeys(username)
 
@@ -258,9 +230,9 @@ class WebApiIntegrationTest {
     fun `prekey retrieval should fail when an invalid auth token is used`() {
         val siteUser = injectNewSiteUser()
 
-        val client = PreKeyRetrieveClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
         assertFailsWith(UnauthorizedException::class) {
-            client.retrieve(PreKeyRetrieveRequest("a", siteUser.user.username))
+            client.retrieve(PreKeyRetrievalRequest("a", siteUser.user.username))
         }
     }
 
@@ -276,16 +248,15 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(username)
 
-        val client = PreKeyRetrieveClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
 
 
-        val apiResponse = client.retrieve(PreKeyRetrieveRequest(authToken, username))
+        val response = client.retrieve(PreKeyRetrievalRequest(authToken, username))
 
-        assertFalse(apiResponse.isError)
-        assertTrue(apiResponse.value!!.isSuccess)
+        assertTrue(response.isSuccess)
 
-        assertNotNull(apiResponse.value.keyData, "No prekeys found")
-        val preKeyData = apiResponse.value.keyData!!
+        assertNotNull(response.keyData, "No prekeys found")
+        val preKeyData = response.keyData!!
 
         val serializedOneTimePreKeys = serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys)
         val expectedSignedPreKey = serializeSignedPreKey(generatedPreKeys.signedPreKey)
@@ -312,10 +283,10 @@ class WebApiIntegrationTest {
         val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
         val contactResponseEmail = client.fetchContactInfo(NewContactRequest(authToken, siteUser.user.username, null))
+        assertTrue(contactResponseEmail.isSuccess)
 
-        val receivedEmailContactInfo = contactResponseEmail.value?.contactInfo!!
+        val receivedEmailContactInfo = contactResponseEmail.contactInfo!!
 
-        assertFalse(contactResponseEmail.isError)
         assertEquals(contactDetails, receivedEmailContactInfo)
     }
 
@@ -329,10 +300,10 @@ class WebApiIntegrationTest {
         val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
         val contactResponse = client.fetchContactInfo(NewContactRequest(authToken, null, siteUser.user.phoneNumber))
+        assertTrue(contactResponse.isSuccess)
 
-        val receivedContactInfo = contactResponse.value?.contactInfo!!
+        val receivedContactInfo = contactResponse.contactInfo!!
 
-        assertFalse(contactResponse.isError)
         assertEquals(contactDetails, receivedContactInfo)
     }
 }

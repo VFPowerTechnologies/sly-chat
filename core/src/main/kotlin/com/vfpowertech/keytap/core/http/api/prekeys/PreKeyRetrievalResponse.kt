@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 
 /** Lack of keyData indicates a non-registered user. */
-data class PreKeyRetrieveResponse(
+data class PreKeyRetrievalResponse(
     @param:JsonProperty("error-message")
     @get:JsonProperty("error-message")
     val errorMessage: String?,

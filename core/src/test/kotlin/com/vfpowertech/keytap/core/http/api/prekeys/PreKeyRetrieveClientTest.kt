@@ -24,15 +24,16 @@ class PreKeyRetrieveClientTest {
         val preKey = "bbbb"
         val signedPreKey = "cccc"
 
-        val request = PreKeyRetrieveRequest(authToken, username)
-        val response = ApiResult(null, PreKeyRetrieveResponse(null, username, SerializedPreKeySet(identityKey, signedPreKey, preKey)))
-        val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(response))
+        val request = PreKeyRetrievalRequest(authToken, username)
+        val response = PreKeyRetrievalResponse(null, username, SerializedPreKeySet(identityKey, signedPreKey, preKey))
+        val apiResult = ApiResult(null, response)
+        val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))
 
         val httpClient = mock<HttpClient>()
 
         whenever(httpClient.get(any())).thenReturn(httpResponse)
 
-        val client = PreKeyRetrieveClient("localhost", httpClient)
+        val client = PreKeyRetrievalClient("localhost", httpClient)
 
         val got = client.retrieve(request)
 
@@ -41,13 +42,13 @@ class PreKeyRetrieveClientTest {
 
     @Test
     fun `store should throw UnauthorizedException when receiving a 401 response`() {
-        val request = PreKeyRetrieveRequest(authToken, username)
+        val request = PreKeyRetrievalRequest(authToken, username)
         val httpResponse = HttpResponse(401, HashMap(), "")
         val httpClient = mock<HttpClient>()
 
         whenever(httpClient.get(any())).thenReturn(httpResponse)
 
-        val client = PreKeyRetrieveClient("localhost", httpClient)
+        val client = PreKeyRetrievalClient("localhost", httpClient)
 
         assertFailsWith(UnauthorizedException::class) { client.retrieve(request) }
     }
