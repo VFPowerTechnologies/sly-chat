@@ -92,6 +92,9 @@ class App : Application() {
 
         primaryStage.scene = Scene(webView,  852.0, 480.0)
         primaryStage.show()
+
+        //temp
+        app.updateNetworkStatus(true)
     }
 
     override fun stop() {
