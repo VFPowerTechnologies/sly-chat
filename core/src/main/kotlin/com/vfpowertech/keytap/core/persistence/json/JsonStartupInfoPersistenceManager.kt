@@ -1,6 +1,8 @@
-package com.vfpowertech.keytap.core.persistence
+package com.vfpowertech.keytap.core.persistence.json
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.vfpowertech.keytap.core.persistence.StartupInfo
+import com.vfpowertech.keytap.core.persistence.StartupInfoPersistenceManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 import java.io.File

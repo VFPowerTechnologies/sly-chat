@@ -2,7 +2,7 @@ package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.core.PlatformInfo
 import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
-import com.vfpowertech.keytap.core.persistence.JsonAccountInfoPersistenceManager
+import com.vfpowertech.keytap.core.persistence.json.JsonAccountInfoPersistenceManager
 import dagger.Module
 import dagger.Provides
 import java.io.File
