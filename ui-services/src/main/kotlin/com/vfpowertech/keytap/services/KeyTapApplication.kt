@@ -62,7 +62,7 @@ class KeyTapApplication {
         //do nothing if we're not logged in
         val userComponent = this.userComponent ?: return
 
-        //TODO trigger remote relay login if we're online now
+        connectToRelay(userComponent)
     }
 
     fun createUserSession(userLoginData: UserLoginData): UserComponent {
@@ -153,7 +153,9 @@ class KeyTapApplication {
     }
 
     private fun reconnectToRelay() {
-        log.info("Attempting to reconnect to relay")
+        if (!isNetworkAvailable)
+            return
+
         reconnectionTimer.next().subscribe {
             val userComponent = this.userComponent
             if (userComponent != null) {
@@ -163,7 +165,7 @@ class KeyTapApplication {
                 log.warn("No longer logged in, aborting reconnect")
         }
 
-        log.info("Reconnecting in {}s", reconnectionTimer.waitTimeSeconds)
+        log.info("Attempting to reconnect to relay in {}s", reconnectionTimer.waitTimeSeconds)
     }
 
     private fun onRelayStatusChange(newStatus: Boolean) {
@@ -172,6 +174,9 @@ class KeyTapApplication {
 
     /** Fetches auth token if none is given, then connects to the relay. */
     private fun connectToRelay(userComponent: UserComponent) {
+        if (!isNetworkAvailable)
+            return
+
         val userLoginData = userComponent.userLoginData
         if (userLoginData.authToken == null) {
             log.info("No auth token, fetching new")
