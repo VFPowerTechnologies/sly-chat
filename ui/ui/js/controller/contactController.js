@@ -44,6 +44,7 @@ ContactController.prototype = {
         contactBlock += "<p>" + contact.name + "</p>";
         contactBlock += "</div>" + newBadge + "</div>";
 
+        console.log(contactBlock);
         return contactBlock;
     },
     createAvatar : function (name) {
@@ -75,23 +76,30 @@ ContactController.prototype = {
         return this.model.getContact(email);
     },
     addNewContact : function () {
+        $("#newContactBtn").prop("disabled", true);
         if(this.model.validateContact("#addContactForm") == true){
-            var name = document.getElementById("name").value;
-            var phone = document.getElementById("phone").value;
-            var email = document.getElementById("email").value;
-            var publicKey = document.getElementById("publicKey").value;
+            var input = document.getElementById("username").value;
+            var phone = null;
+            var username = null;
+            if (validateEmail(input)){
+                username = input;
+            }
+            else{
+                phone = input;
+            }
 
-            contactService.addNewContact({
-                name: name,
-                email: email,
-                phoneNumber: phone,
-                publicKey: publicKey
-            }).then(function () {
-                this.model.resetContacts();
-                KEYTAP.navigationController.loadPage("contacts.html");
+            contactService.fetchNewContactInfo(username, phone).then(function (response) {
+                if(response.successful == false){
+                    $("#error").append("<li>" + response.errorMessage + "</li>");
+                    $("#newContactBtn").prop("disabled", false);
+                }
+                else{
+                    this.createConfirmContactForm(response.contactDetails.name, response.contactDetails.publicKey);
+                }
             }.bind(this)).catch(function (e) {
                 KEYTAP.exceptionController.displayDebugMessage(e);
                 console.error('Unable to add contact: ' + e.message);
+                $("#newContactBtn").prop("disabled", false);
                 $("#error").append("<li>" + e.message + "</li>");
             });
         }
@@ -124,6 +132,7 @@ ContactController.prototype = {
     newContactEvent : function() {
         $("#newContactBtn").click(function (e) {
             e.preventDefault();
+            $("#error").html("");
             this.addNewContact();
         }.bind(this));
     },
@@ -143,5 +152,78 @@ ContactController.prototype = {
     },
     getConversations : function () {
         return this.model.getConversations();
+    },
+    createConfirmContactForm : function (name, publicKey) {
+        var form = document.createElement("form");
+        form.id = "addContactForm";
+        form.method = "post";
+
+        var nameLabel = document.createElement("label");
+        nameLabel.for = "name";
+        nameLabel.innerHTML = "Name";
+
+        var nameInput = document.createElement("INPUT");
+        nameInput.id = "name";
+        nameInput.type = "text";
+        nameInput.value = name;
+        nameInput.className = "center-align";
+        nameInput.readOnly = true;
+
+        var publicKeyLabel = document.createElement("label");
+        publicKeyLabel.for = "publicKey";
+        publicKeyLabel.innerHTML = "Public Key";
+
+        var publicKeyInput = document.createElement("INPUT");
+        publicKeyInput.id = "publicKey";
+        publicKeyInput.type = "text";
+        publicKeyInput.value = publicKey;
+        publicKeyInput.className = "center-align";
+        publicKeyInput.readOnly = true;
+
+        var navbar = document.createElement("div");
+        navbar.className = "navbar-btn center-align";
+
+        var cancelBtn = document.createElement("button");
+        cancelBtn.className = "btn red";
+        cancelBtn.id = "cancelBtn";
+        cancelBtn.type = "submit";
+        cancelBtn.innerHTML = "Cancel";
+
+        var confirmBtn = document.createElement("button");
+        confirmBtn.className = "btn primary-color";
+        confirmBtn.id = "confirmBtn";
+        confirmBtn.type = "submit";
+        confirmBtn.innerHTML = "Confirm";
+
+        form.appendChild(nameLabel);
+        form.appendChild(nameInput);
+        form.appendChild(publicKeyLabel);
+        form.appendChild(publicKeyInput);
+
+        navbar.appendChild(cancelBtn);
+        navbar.appendChild(confirmBtn);
+
+        form.appendChild(navbar);
+
+        $("#addContactForm").remove();
+        document.getElementById("contactFormContainer").appendChild(form);
+
+        $("#confirmBtn").on("click", function (e) {
+            e.preventDefault();
+            contactService.addNewContact($("#publicKey").val()).then(function () {
+                this.model.resetContacts();
+                KEYTAP.navigationController.loadPage("contacts.html");
+            }.bind(this)).catch(function (e) {
+                $("#newContactBtn").prop("disabled", false);
+                KEYTAP.exceptionController.displayDebugMessage(e);
+                console.error('Unable to add contact: ' + e.message);
+                $("#error").append("<li>" + e.message + "</li>");
+            });
+        }.bind(this));
+
+        $("#cancelBtn").on("click", function (e) {
+            e.preventDefault();
+            KEYTAP.navigationController.loadPage("addContact.html");
+        });
     }
 };
