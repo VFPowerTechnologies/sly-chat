@@ -4,9 +4,9 @@ import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
 import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
-import com.vfpowertech.keytap.services.ui.UIRegistrationService
 import com.vfpowertech.keytap.services.ui.UIRegistrationInfo
 import com.vfpowertech.keytap.services.ui.UIRegistrationResult
+import com.vfpowertech.keytap.services.ui.UIRegistrationService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map

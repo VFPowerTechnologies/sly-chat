@@ -11,8 +11,6 @@ class RegistrationClientWrapper(serverUrl: String) {
     private val registrationClient = RegistrationClient(serverUrl, JavaHttpClient())
 
     fun register(request: RegisterRequest): Promise<RegisterResponse, Exception> = task {
-        val apiResponse = registrationClient.register(request)
-
-        apiResponse.getOrThrow { it }
+        registrationClient.register(request)
     }
 }
