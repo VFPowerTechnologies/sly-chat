@@ -1,13 +1,10 @@
-package com.vfpowertech.keytap.services.ui.impl
+package com.vfpowertech.keytap.core.http.api.contacts
 
 import com.vfpowertech.keytap.core.http.JavaHttpClient
-import com.vfpowertech.keytap.core.http.api.contacts.ContactClient
-import com.vfpowertech.keytap.core.http.api.contacts.FetchContactResponse
-import com.vfpowertech.keytap.core.http.api.contacts.NewContactRequest
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
-class ContactClientWrapper(serverUrl: String) {
+class ContactAsyncClient(serverUrl: String) {
     private val contactClient = ContactClient(serverUrl, JavaHttpClient())
 
     fun fetchNewContactInfo(request: NewContactRequest): Promise<FetchContactResponse, Exception> = task {

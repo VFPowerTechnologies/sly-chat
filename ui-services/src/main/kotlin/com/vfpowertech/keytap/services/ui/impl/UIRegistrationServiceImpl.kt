@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services.ui.impl
 
+import com.vfpowertech.keytap.core.http.api.registration.RegistrationAsyncClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
 import com.vfpowertech.keytap.core.persistence.AccountInfo
@@ -19,7 +20,7 @@ class UIRegistrationServiceImpl(
 ) : UIRegistrationService {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val listeners = ArrayList<(String) -> Unit>()
-    private val registrationClient = RegistrationClientWrapper(serverUrl)
+    private val registrationClient = RegistrationAsyncClient(serverUrl)
 
     override fun doRegistration(info: UIRegistrationInfo): Promise<UIRegistrationResult, Exception> {
         val username = info.email
