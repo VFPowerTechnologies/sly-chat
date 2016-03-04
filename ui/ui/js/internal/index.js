@@ -1,16 +1,25 @@
 $(document).ready(function(){
     var height = window.innerHeight - 56;
     $("#main").css("height", height + "px");
-    var loggedIn = false;
-    if(loggedIn){
-        KEYTAP.navigationController.loadPage("contacts.html");
-    }else{
+
+    window.configService.getStartupInfo().then(function (startupInfo) {
         KEYTAP.navigationController.loadPage("login.html");
-    }
+        if(startupInfo != null && startupInfo.lastLoggedInAccount !== null && startupInfo.savedAccountPassword !== null) {
+            KEYTAP.loginController.model.setItems({
+                "login": startupInfo.lastLoggedInAccount,
+                "password": startupInfo.savedAccountPassword
+            });
+            KEYTAP.loginController.login();
+        }
+    }).catch(function (e) {
+        KEYTAP.exceptionController.displayDebugMessage(e);
+        console.log(e);
+    });
 
     $(window).resize(function () {
         resizeWindow();
     });
+
 });
 
 function resizeWindow() {

@@ -4,9 +4,9 @@ var LoginController = function(model){
 
 LoginController.prototype = {
     init : function() {
-        $("#loginBtn").click(function(e){
+        $(document).on("click", "#submitLoginBtn", function(e){
             e.preventDefault();
-            $("#loginBtn").prop("disabled", true);
+            $("#submitLoginBtn").prop("disabled", true);
             this.model.setItems({
                 "login" : $("#login").val(),
                 "password" : $("#login-psw").val()
@@ -19,11 +19,11 @@ LoginController.prototype = {
                 });
             }
             else{
-                $("#loginBtn").prop("disabled", false);
+                $("#submitLoginBtn").prop("disabled", false);
             }
         }.bind(this));
 
-        $("#registrationBtn").click(function (e) {
+        $(document).on("click", "#registrationGoBtn", function (e) {
             e.preventDefault();
             KEYTAP.navigationController.loadPage("register.html");
         });
@@ -31,6 +31,14 @@ LoginController.prototype = {
     login : function() {
         loginService.login(this.model.getLogin(), this.model.getPassword()).then(function (result) {
             if (result.successful) {
+                if($("#rememberMe").is(':checked')) {
+                    window.configService.setStartupInfo({lastLoggedInAccount: this.model.getLogin(), savedAccountPassword: this.model.getPassword()}).then(function () {
+                        console.log('Wrote startup info');
+                    }).catch(function (e) {
+                        KEYTAP.exceptionController.displayDebugMessage(e);
+                        console.log(e);
+                    });
+                }
                 $(".menu-hidden").show();
                 KEYTAP.navigationController.loadPage('contacts.html');
                 KEYTAP.navigationController.clearHistory();
@@ -38,7 +46,7 @@ LoginController.prototype = {
             }
             else {
                 document.getElementById("login-error").innerHTML = "<li>An error occurred: " + result.errorMessage + "</li>";
-                $("#loginBtn").prop("disabled", false);
+                $("#submitLoginBtn").prop("disabled", false);
                 $("#statusModal").closeModal();
             }
         }.bind(this)).catch(function (e) {
@@ -46,7 +54,7 @@ LoginController.prototype = {
             KEYTAP.exceptionController.displayDebugMessage(e);
             document.getElementById("login-error").innerHTML = "<li>An unexpected error occurred</li>";
             console.log("An unexpected error occured: " + e);
-            $("#loginBtn").prop("disabled", false);
+            $("#submitLoginBtn").prop("disabled", false);
         });
     },
     setInfo : function(login, password) {
@@ -56,10 +64,16 @@ LoginController.prototype = {
         })
     },
     logout : function () {
-        KEYTAP.navigationController.clearHistory();
+        window.configService.setStartupInfo({lastLoggedInAccount: "", savedAccountPassword: null}).then(function () {
+            console.log('Cleared saved info on logout');
+        }).catch(function (e) {
+            KEYTAP.exceptionController.displayDebugMessage(e);
+            console.log(e);
+        });
         loginService.logout();
         $(".menu-hidden").hide();
         $(".nav-btn").hide();
-        KEYTAP.navigationController.loadPage("index.html");
+        KEYTAP.navigationController.loadPage("login.html");
+        KEYTAP.navigationController.clearHistory();
     }
 };

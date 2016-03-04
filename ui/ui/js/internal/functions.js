@@ -14,7 +14,13 @@ var KEYTAP = KEYTAP || {};
 KEYTAP.exceptionController = new ExceptionController();
 
 KEYTAP.loginController = new LoginController(new LoginModel);
+KEYTAP.loginController.init();
+
 KEYTAP.registrationController = new RegistrationController(new RegistrationModel());
+KEYTAP.registrationController.init();
+registrationService.addListener(function (registrationStatus) {
+    $("#registrationStatusUpdate").html(registrationStatus + "...");
+});
 
 KEYTAP.contactController = new ContactController(new ContactModel());
 

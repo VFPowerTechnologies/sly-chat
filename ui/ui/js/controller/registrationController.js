@@ -1,13 +1,13 @@
 var RegistrationController = function (model) {
     this.model = model;
-}
+};
 
 RegistrationController.prototype = {
     init : function () {
-        $("#registerBtn").click(function(e){
+        $(document).on("click", "#submitRegisterBtn", function(e){
             e.preventDefault();
 
-            $("#registerBtn").prop("disabled", true);
+            $("#submitRegisterBtn").prop("disabled", true);
 
             this.model.setItems({
                 "name" : $("#name").val(),
@@ -23,11 +23,11 @@ RegistrationController.prototype = {
                 });
             }
             else {
-                $("#registerBtn").prop("disabled", false);
+                $("#submitRegisterBtn").prop("disabled", false);
             }
         }.bind(this));
 
-        $("#signInBtn").click(function (e) {
+        $(document).on("click", "#signInGoBtn", function (e) {
             e.preventDefault();
             KEYTAP.navigationController.loadPage("login.html");
         });
@@ -41,9 +41,6 @@ RegistrationController.prototype = {
         }.bind(this));
     },
     register : function () {
-        registrationService.addListener(function (registrationStatus) {
-            $("#registrationStatusUpdate").html(registrationStatus + "...");
-        });
         registrationService.doRegistration(this.model.getItems()).then(function (result) {
             if(result.successful == true) {
                 $("#statusModal").html(this.createRegistrationSuccessContent());
@@ -51,13 +48,13 @@ RegistrationController.prototype = {
             else{
                 $("#statusModal").closeModal();
                 this.displayRegistrationError(result);
-                $("#registerBtn").prop("disabled", false);
+                $("#submitRegisterBtn").prop("disabled", false);
             }
         }.bind(this)).catch(function(e) {
             $("#statusModal").closeModal();
             KEYTAP.exceptionController.displayDebugMessage(e);
             document.getElementById("register-error").innerHTML = "<li>Registration failed</li>";
-            $("#registerBtn").prop("disabled", false);
+            $("#submitRegisterBtn").prop("disabled", false);
         });
     },
     displayRegistrationError : function (result) {
