@@ -2,9 +2,9 @@ package com.vfpowertech.keytap.services.ui.impl
 
 import com.vfpowertech.keytap.core.kovenant.fallbackTo
 import com.vfpowertech.keytap.core.kovenant.recoverFor
+import com.vfpowertech.keytap.core.persistence.SessionData
 import com.vfpowertech.keytap.core.persistence.json.JsonKeyVaultPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
-import com.vfpowertech.keytap.core.persistence.SessionData
 import com.vfpowertech.keytap.services.*
 import com.vfpowertech.keytap.services.ui.UILoginResult
 import com.vfpowertech.keytap.services.ui.UILoginService
@@ -27,7 +27,7 @@ fun asyncCheckPath(path: File): Promise<File, Exception> = task {
 
 class UILoginServiceImpl(
     private val app: KeyTapApplication,
-    private val AuthenticationService: AuthenticationService
+    private val authenticationService: AuthenticationService
 ) : UILoginService {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -55,7 +55,7 @@ class UILoginServiceImpl(
 
     private fun remoteAuth(emailOrPhoneNumber: String, password: String): Promise<AuthResult, Exception> {
         //XXX technically we don't need to re-write the value on every login
-        return AuthenticationService.auth(emailOrPhoneNumber, password)
+        return authenticationService.auth(emailOrPhoneNumber, password)
     }
 
     //this should use the keyvault is available, falling back to remote auth to retrieve it
