@@ -1,6 +1,6 @@
 package com.vfpowertech.keytap.services.ui.impl
 
-import com.vfpowertech.keytap.core.persistence.JsonStartupInfoPersistenceManager
+import com.vfpowertech.keytap.core.persistence.json.JsonStartupInfoPersistenceManager
 import com.vfpowertech.keytap.core.persistence.StartupInfo
 import com.vfpowertech.keytap.services.ui.UIConfigService
 import nl.komponents.kovenant.Promise

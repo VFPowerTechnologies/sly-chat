@@ -2,8 +2,8 @@ package com.vfpowertech.keytap.services.ui.impl
 
 import com.vfpowertech.keytap.core.kovenant.fallbackTo
 import com.vfpowertech.keytap.core.kovenant.recoverFor
-import com.vfpowertech.keytap.core.persistence.JsonKeyVaultPersistenceManager
-import com.vfpowertech.keytap.core.persistence.JsonSessionDataPersistenceManager
+import com.vfpowertech.keytap.core.persistence.json.JsonKeyVaultPersistenceManager
+import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.SessionData
 import com.vfpowertech.keytap.services.*
 import com.vfpowertech.keytap.services.ui.UILoginResult

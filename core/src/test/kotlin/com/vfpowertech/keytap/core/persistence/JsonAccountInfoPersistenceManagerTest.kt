@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.persistence
 
+import com.vfpowertech.keytap.core.persistence.json.JsonAccountInfoPersistenceManager
 import org.junit.After
 import org.junit.Before
 import org.junit.Test

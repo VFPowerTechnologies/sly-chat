@@ -2,6 +2,8 @@ package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.core.SessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.*
+import com.vfpowertech.keytap.core.persistence.json.JsonKeyVaultPersistenceManager
+import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLiteContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLiteMessagePersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager

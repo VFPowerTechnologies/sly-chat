@@ -1,7 +1,8 @@
-package com.vfpowertech.keytap.core.persistence
+package com.vfpowertech.keytap.core.persistence.json
 
 import com.vfpowertech.keytap.core.crypto.JsonFileKeyVaultStorage
 import com.vfpowertech.keytap.core.crypto.KeyVault
+import com.vfpowertech.keytap.core.persistence.KeyVaultPersistenceManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 import java.io.File
