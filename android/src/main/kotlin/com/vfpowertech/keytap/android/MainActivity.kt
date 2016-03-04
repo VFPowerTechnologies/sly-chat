@@ -10,6 +10,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
+import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.services.ui.js.NavigationService
 import com.vfpowertech.keytap.services.ui.js.javatojs.NavigationServiceToJSProxy
 import com.vfpowertech.keytap.services.ui.registerCoreServicesOnDispatcher
@@ -25,6 +26,9 @@ class MainActivity : Activity() {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         setContentView(R.layout.activity_main)
+
+        if (BuildConfig.DEBUG)
+            WebView.setWebContentsDebuggingEnabled(true)
 
         webView = findViewById(R.id.webView) as WebView
         webView.settings.javaScriptEnabled = true
