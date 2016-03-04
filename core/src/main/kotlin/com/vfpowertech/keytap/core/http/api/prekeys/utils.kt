@@ -33,7 +33,7 @@ fun preKeyStorageRequestFromGeneratedPreKeys(
     return PreKeyStoreRequest(authToken, identityKey, signedPreKey, oneTimePreKeys, lastResortPreKey)
 }
 
-fun userPreKeySetFromRetrieveResponse(response: PreKeyRetrieveResponse): UserPreKeySet? {
+fun userPreKeySetFromRetrieveResponse(response: PreKeyRetrievalResponse): UserPreKeySet? {
     val keyData = response.keyData ?: return null
 
     return UserPreKeySet(

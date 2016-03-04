@@ -6,8 +6,8 @@ import com.vfpowertech.keytap.core.http.api.valueFromApi
 import com.vfpowertech.keytap.core.http.get
 import com.vfpowertech.keytap.core.typeRef
 
-class PreKeyRetrieveClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
-    fun retrieve(request: PreKeyRetrieveRequest): PreKeyRetrieveResponse {
+class PreKeyRetrievalClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
+    fun retrieve(request: PreKeyRetrievalRequest): PreKeyRetrievalResponse {
         val params = listOf(
             "auth-token" to request.authToken,
             "username" to request.username
@@ -16,6 +16,6 @@ class PreKeyRetrieveClient(private val serverBaseUrl: String, private val httpCl
         val url = "$serverBaseUrl/v1/retrieve"
 
         val resp = httpClient.get(url, params)
-        return valueFromApi(resp, setOf(200, 400), typeRef<ApiResult<PreKeyRetrieveResponse>>())
+        return valueFromApi(resp, setOf(200, 400), typeRef<ApiResult<PreKeyRetrievalResponse>>())
     }
 }

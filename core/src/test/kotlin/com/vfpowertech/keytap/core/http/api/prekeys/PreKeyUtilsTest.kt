@@ -33,7 +33,7 @@ class PreKeyUtilsTest {
         val preKeyBundle = generatePrekeys(keyVault.identityKeyPair, 1, 1, 1)
         val signedPreKey = preKeyBundle.signedPreKey
         val oneTimePreKey = preKeyBundle.oneTimePreKeys.first()
-        val response = PreKeyRetrieveResponse(
+        val response = PreKeyRetrievalResponse(
             null,
             username,
             SerializedPreKeySet(

@@ -230,9 +230,9 @@ class WebApiIntegrationTest {
     fun `prekey retrieval should fail when an invalid auth token is used`() {
         val siteUser = injectNewSiteUser()
 
-        val client = PreKeyRetrieveClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
         assertFailsWith(UnauthorizedException::class) {
-            client.retrieve(PreKeyRetrieveRequest("a", siteUser.user.username))
+            client.retrieve(PreKeyRetrievalRequest("a", siteUser.user.username))
         }
     }
 
@@ -248,10 +248,10 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(username)
 
-        val client = PreKeyRetrieveClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
 
 
-        val response = client.retrieve(PreKeyRetrieveRequest(authToken, username))
+        val response = client.retrieve(PreKeyRetrievalRequest(authToken, username))
 
         assertTrue(response.isSuccess)
 
