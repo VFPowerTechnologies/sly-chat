@@ -47,13 +47,13 @@ class KeyTapApplication {
 
     private fun initializeApplicationServices() {
         reconnectionTimer = ExponentialBackoffTimer(appComponent.rxScheduler)
-
-        appComponent.networkStatusService.updates.subscribe {
-            updateNetworkStatus(it)
-        }
     }
 
-    private fun updateNetworkStatus(isAvailable: Boolean) {
+    fun updateNetworkStatus(isAvailable: Boolean) {
+        //ignore dup updates
+        if (isAvailable == isNetworkAvailable)
+            return
+
         isNetworkAvailable = isAvailable
         log.info("Network is available: {}", isAvailable)
 
