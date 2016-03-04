@@ -25,8 +25,9 @@ class PreKeyRetrieveClientTest {
         val signedPreKey = "cccc"
 
         val request = PreKeyRetrieveRequest(authToken, username)
-        val response = ApiResult(null, PreKeyRetrieveResponse(null, username, SerializedPreKeySet(identityKey, signedPreKey, preKey)))
-        val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(response))
+        val response = PreKeyRetrieveResponse(null, username, SerializedPreKeySet(identityKey, signedPreKey, preKey))
+        val apiResult = ApiResult(null, response)
+        val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))
 
         val httpClient = mock<HttpClient>()
 
