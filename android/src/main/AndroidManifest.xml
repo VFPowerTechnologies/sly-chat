@@ -8,6 +8,7 @@
     <android:uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <android:uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <android:uses-permission android:name="android.permission.INTERNET" />
+    <android:uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".App"
@@ -23,6 +24,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <receiver
+                android:name=".NetworkStatusReceiver"
+                android:label="Network Status Receiver"
+                android:enabled="false"
+                android:exported="false" >
+        </receiver>
     </application>
 
 </manifest>
