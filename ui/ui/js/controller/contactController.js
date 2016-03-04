@@ -193,16 +193,19 @@ ContactController.prototype = {
         navbar.className = "navbar-btn center-align";
 
         var cancelBtn = document.createElement("button");
-        cancelBtn.className = "btn red";
+        cancelBtn.className = "btn-small red";
         cancelBtn.id = "cancelBtn";
         cancelBtn.type = "submit";
         cancelBtn.innerHTML = "Cancel";
+        cancelBtn.style.border = "none";
+        cancelBtn.style.marginRight = "5px";
 
         var confirmBtn = document.createElement("button");
-        confirmBtn.className = "btn primary-color";
+        confirmBtn.className = "btn-small primary-color";
         confirmBtn.id = "confirmBtn";
         confirmBtn.type = "submit";
         confirmBtn.innerHTML = "Confirm";
+        confirmBtn.style.border = "none";
 
         form.appendChild(nameLabel);
         form.appendChild(nameInput);
