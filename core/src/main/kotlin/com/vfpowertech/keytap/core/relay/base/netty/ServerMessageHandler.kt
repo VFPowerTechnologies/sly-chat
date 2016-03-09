@@ -1,11 +1,6 @@
 package com.vfpowertech.keytap.core.relay.base.netty
 
-import com.vfpowertech.keytap.core.relay.base.HEADER_SIZE
-import com.vfpowertech.keytap.core.relay.base.Header
-import com.vfpowertech.keytap.core.relay.base.RelayConnectionEvent
-import com.vfpowertech.keytap.core.relay.base.RelayConnectionLost
-import com.vfpowertech.keytap.core.relay.base.RelayMessage
-import com.vfpowertech.keytap.core.relay.base.headerFromBytes
+import com.vfpowertech.keytap.core.relay.base.*
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.ByteToMessageDecoder
@@ -14,6 +9,7 @@ import rx.Observer
 /** Handles converting received server messages into message instances. */
 class ServerMessageHandler(private val observer: Observer<in RelayConnectionEvent>) : ByteToMessageDecoder() {
     private var lastHeader: Header? = null
+    private var observerableComplete = false
 
     override fun decode(ctx: ChannelHandlerContext, `in`: ByteBuf, out: MutableList<Any>) {
         while (`in`.isReadable) {
@@ -49,12 +45,16 @@ class ServerMessageHandler(private val observer: Observer<in RelayConnectionEven
     }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
+        observer.onNext(RelayConnectionLost())
         observer.onError(cause)
         ctx.close()
+        observerableComplete = true
     }
 
     override fun channelInactive(ctx: ChannelHandlerContext) {
-        observer.onNext(RelayConnectionLost())
-        observer.onCompleted()
+        if (!observerableComplete) {
+            observer.onNext(RelayConnectionLost())
+            observer.onCompleted()
+        }
     }
 }
