@@ -48,5 +48,17 @@ ContactModel.prototype = {
         else{
             return false;
         }
+    },
+    fetchConversationForChat : function (email) {
+        messengerService.getConversations().then(function(conversations){
+            conversations.forEach(function(conversation){
+                KEYTAP.contactController.model.conversations[conversation.contact.email] = conversation;
+            });
+            KEYTAP.contactController.model.setCurrentContact(email);
+            KEYTAP.navigationController.smoothStateLoad("chat.html");
+        }.bind(email)).catch(function(e){
+            KEYTAP.exceptionController.displayDebugMessage(e);
+            console.log("Unable to fetch conversations: " + e);
+        });
     }
 };

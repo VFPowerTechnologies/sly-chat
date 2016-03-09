@@ -71,6 +71,9 @@ ContactController.prototype = {
     getCurrentContact : function () {
         return this.model.getCurrentContact();
     },
+    setCurrentContact : function (email) {
+        this.model.setCurrentContact(email);
+    },
     getContact : function (email) {
         return this.model.getContact(email);
     },

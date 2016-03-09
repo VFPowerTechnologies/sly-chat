@@ -10,8 +10,8 @@ NavigationController.prototype = {
     },
     goBack : function () {
         historyService.pop().then(function(url){
-            smoothState.load(url);
-        }).catch(function (e){
+            this.smoothStateLoad(url);
+        }.bind(this)).catch(function (e){
             KEYTAP.exceptionController.displayDebugMessage(e);
             console.log(e);
         })
@@ -26,7 +26,7 @@ NavigationController.prototype = {
     },
     loadPage : function (url) {
         this.pushHistory();
-        smoothState.load(url);
+        this.smoothStateLoad(url);
     },
     clearHistory : function () {
         historyService.clear().then(function() {
@@ -34,5 +34,16 @@ NavigationController.prototype = {
             KEYTAP.exceptionController.displayDebugMessage(e);
             console.log("Could not clear history : " + e);
         });
+    },
+    smoothStateLoad : function (url) {
+        var currentState = {
+            "currentPage" : url,
+            "currentContact" : KEYTAP.contactController.getCurrentContact()
+        };
+        stateService.setState(currentState).catch(function (e) {
+            KEYTAP.exceptionController.displayDebugMessage(e);
+            console.log(e);
+        });
+        smoothState.load(url);
     }
 };
