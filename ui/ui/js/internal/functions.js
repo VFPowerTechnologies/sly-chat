@@ -11,6 +11,26 @@ window.configService = new ConfigService();
 // Create application namespace.
 var KEYTAP = KEYTAP || {};
 
+networkStatusService.addRelayStatusChangeListener(function (status) {
+    var networkStatus = $("#networkStatus");
+    if(status.online == false){
+        networkStatus.removeClass("hidden");
+        networkStatus.find("span").html("Disconnected");
+    }else{
+        networkStatus.addClass("hidden");
+    }
+});
+
+networkStatusService.addNetworkStatusChangeListener(function (status) {
+    var networkStatus = $("#networkStatus");
+    if(status.online == false){
+        networkStatus.removeClass("hidden");
+        networkStatus.find("span").html("No connection Available");
+    }else{
+        networkStatus.addClass("hidden");
+    }
+});
+
 KEYTAP.exceptionController = new ExceptionController();
 
 KEYTAP.loginController = new LoginController(new LoginModel);
