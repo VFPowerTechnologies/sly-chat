@@ -40,4 +40,7 @@ fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponen
 
     val configService = applicationComponent.uiConfigService
     dispatcher.registerService("ConfigService", UIConfigServiceToJavaProxy(configService, dispatcher))
+
+    val stateService = applicationComponent.stateService
+    dispatcher.registerService("StateService", UIStateServiceToJavaProxy(stateService, dispatcher))
 }

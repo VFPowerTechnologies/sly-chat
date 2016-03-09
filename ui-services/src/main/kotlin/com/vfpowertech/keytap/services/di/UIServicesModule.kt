@@ -92,4 +92,8 @@ class UIServicesModule {
         val path = platformInfo.appFileStorageDirectory / "startup-info.json"
         return UIConfigServiceImpl(path)
     }
+
+    @Singleton
+    @Provides
+    fun providesStateService(): UIStateService = UIStateService()
 }
