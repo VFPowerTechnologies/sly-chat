@@ -29,6 +29,8 @@ interface ApplicationComponent {
 
     val uiConfigService: UIConfigService
 
+    val stateService: UIStateService
+
     val userPathsGenerator: UserPathsGenerator
 
     val rxScheduler: Scheduler

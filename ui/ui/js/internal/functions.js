@@ -7,6 +7,7 @@ window.historyService = new HistoryService();
 window.develService = new DevelService();
 window.networkStatusService = new NetworkStatusService();
 window.configService = new ConfigService();
+window.stateService = new StateService();
 
 // Create application namespace.
 var KEYTAP = KEYTAP || {};
