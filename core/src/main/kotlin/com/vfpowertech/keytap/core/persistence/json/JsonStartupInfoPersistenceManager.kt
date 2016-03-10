@@ -18,8 +18,12 @@ class JsonStartupInfoPersistenceManager(val path: File) : StartupInfoPersistence
     override fun retrieve(): Promise<StartupInfo?, Exception> = task {
         try {
             val bytes = path.readBytes()
-            val objectMapper = ObjectMapper()
-            objectMapper.readValue(bytes, StartupInfo::class.java)
+            if (bytes.isEmpty())
+                null
+            else {
+                val objectMapper = ObjectMapper()
+                objectMapper.readValue(bytes, StartupInfo::class.java)
+            }
         }
         catch (e: FileNotFoundException) {
             null
