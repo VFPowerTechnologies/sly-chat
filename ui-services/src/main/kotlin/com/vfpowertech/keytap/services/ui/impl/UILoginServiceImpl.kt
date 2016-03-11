@@ -3,6 +3,7 @@ package com.vfpowertech.keytap.services.ui.impl
 import com.vfpowertech.keytap.core.kovenant.fallbackTo
 import com.vfpowertech.keytap.core.kovenant.recoverFor
 import com.vfpowertech.keytap.core.persistence.SessionData
+import com.vfpowertech.keytap.core.persistence.json.JsonAccountInfoPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonKeyVaultPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
 import com.vfpowertech.keytap.services.*
@@ -45,9 +46,14 @@ class UILoginServiceImpl(
             keyVaultPersistenceManager.retrieve(password) bind { keyVault ->
                 asyncCheckPath(paths.sessionDataPath) bind {
                     JsonSessionDataPersistenceManager(it, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).retrieve()
-                } map { sessionData ->
-                    log.debug("Local authentication successful")
-                    AuthResult(sessionData.authToken, 0, keyVault)
+                } bind { sessionData ->
+                    JsonAccountInfoPersistenceManager(paths.accountInfoPath).retrieve() map { accountInfo ->
+                        if (accountInfo == null)
+                            throw RuntimeException("No account-info.json available")
+
+                        log.debug("Local authentication successful")
+                        AuthResult(sessionData.authToken, 0, keyVault, accountInfo)
+                    }
                 }
             }
         }
@@ -67,9 +73,9 @@ class UILoginServiceImpl(
         return localAuth(emailOrPhoneNumber, password) fallbackTo { remoteAuth(emailOrPhoneNumber, password) } successUi { response ->
             val keyVault = response.keyVault
             //TODO need to put the username in the login response if the user used their phone number
-            app.createUserSession(UserLoginData(emailOrPhoneNumber, keyVault, response.authToken))
+            app.createUserSession(UserLoginData(emailOrPhoneNumber, keyVault, response.authToken), response.accountInfo)
 
-            app.storeAccountData(keyVault)
+            app.storeAccountData(keyVault, response.accountInfo)
 
             val paths = app.appComponent.userPathsGenerator.getPaths(emailOrPhoneNumber)
             val authToken = response.authToken

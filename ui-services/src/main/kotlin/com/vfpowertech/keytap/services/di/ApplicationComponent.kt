@@ -9,7 +9,7 @@ import javax.inject.Singleton
 
 /** Composed of objects which must live for the lifetime of the application. */
 @Singleton
-@Component(modules = arrayOf(ApplicationModule::class, RelayModule::class, UIServicesModule::class, PlatformModule::class, PersistenceCoreModule::class))
+@Component(modules = arrayOf(ApplicationModule::class, RelayModule::class, UIServicesModule::class, PlatformModule::class))
 interface ApplicationComponent {
     val platformInfoService: UIPlatformInfoService
 
