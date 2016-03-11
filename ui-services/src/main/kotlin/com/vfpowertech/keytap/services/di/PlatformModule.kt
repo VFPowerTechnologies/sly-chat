@@ -2,6 +2,7 @@ package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.PlatformInfo
+import com.vfpowertech.keytap.services.ui.PlatformTelephonyService
 import com.vfpowertech.keytap.services.ui.UIPlatformInfoService
 import dagger.Module
 import dagger.Provides
@@ -20,6 +21,10 @@ class PlatformModule(
     @get:Singleton
     @get:Provides
     val providesPlatformInfo: PlatformInfo,
+
+    @get:Singleton
+    @get:Provides
+    val providesPlatformTelephonyService: PlatformTelephonyService,
 
     @get:Singleton
     @get:Provides

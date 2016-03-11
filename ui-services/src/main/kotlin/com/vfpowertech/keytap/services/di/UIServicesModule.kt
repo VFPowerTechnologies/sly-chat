@@ -96,4 +96,9 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun providesStateService(): UIStateService = UIStateService()
+
+    @Singleton
+    @Provides
+    fun providesTelephonyService(platformTelephonyService: PlatformTelephonyService): UITelephonyService =
+        UITelephonyServiceImpl(platformTelephonyService)
 }

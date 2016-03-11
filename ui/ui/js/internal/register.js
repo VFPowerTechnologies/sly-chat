@@ -6,4 +6,11 @@ $(function(){
     $("#content").css("min-height", height + "px");
 
     $("#networkStatus").addClass("hidden");
+
+    window.telephonyService.getDevicePhoneNumber().then(function (maybePhoneNumber) {
+        if (maybePhoneNumber !== null) {
+            $('label[for="phone"]').addClass("active");
+            $("#phone").val(maybePhoneNumber);
+        }
+    });
 });

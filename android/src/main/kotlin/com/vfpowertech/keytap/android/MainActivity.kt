@@ -1,9 +1,10 @@
 package com.vfpowertech.keytap.android
 
-import android.app.Activity
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.support.v4.app.ActivityCompat
+import android.support.v7.app.AppCompatActivity
 import android.view.KeyEvent
-import android.view.Window
 import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -14,16 +15,26 @@ import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.services.ui.js.NavigationService
 import com.vfpowertech.keytap.services.ui.js.javatojs.NavigationServiceToJSProxy
 import com.vfpowertech.keytap.services.ui.registerCoreServicesOnDispatcher
+import nl.komponents.kovenant.Deferred
+import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.deferred
 import org.slf4j.LoggerFactory
+import java.util.*
 
-class MainActivity : Activity() {
+class MainActivity : AppCompatActivity() {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private var navigationService: NavigationService? = null
     private lateinit var webView: WebView
+
+    private var nextPermRequestCode = 0
+    private val permRequestCodeToDeferred = HashMap<Int, Deferred<Boolean, Exception>>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        //hide titlebar
+        supportActionBar?.hide()
 
         setContentView(R.layout.activity_main)
 
@@ -40,7 +51,7 @@ class MainActivity : Activity() {
 
         val dispatcher = Dispatcher(webEngineInterface)
 
-        registerCoreServicesOnDispatcher(dispatcher, App.get(this).appComponent)
+        registerCoreServicesOnDispatcher(dispatcher, AndroidApp.get(this).appComponent)
 
         //TODO should init this only once the webview has loaded the page
         webView.setWebViewClient(object : WebViewClient() {
@@ -51,6 +62,8 @@ class MainActivity : Activity() {
 
         if (savedInstanceState == null)
             webView.loadUrl("file:///android_asset/ui/index.html")
+
+        setAppActivity()
     }
 
     override fun onSaveInstanceState(outState: Bundle?) {
@@ -63,6 +76,29 @@ class MainActivity : Activity() {
         webView.restoreState(savedInstanceState)
     }
 
+    private fun setAppActivity() {
+        AndroidApp.get(this).currentActivity = this
+    }
+
+    private fun clearAppActivity() {
+        AndroidApp.get(this).currentActivity = null
+    }
+
+    override fun onPause() {
+        clearAppActivity()
+        super.onPause()
+    }
+
+    override fun onDestroy() {
+        clearAppActivity()
+        super.onDestroy()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        setAppActivity()
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             if (navigationService != null) {
@@ -71,6 +107,33 @@ class MainActivity : Activity() {
             }
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    fun requestPermission(permission: String): Promise<Boolean, Exception> {
+        val requestCode = nextPermRequestCode
+        nextPermRequestCode += 1
+
+        val deferred = deferred<Boolean, Exception>()
+        permRequestCodeToDeferred[requestCode] = deferred
+
+        ActivityCompat.requestPermissions(this, arrayOf(permission), requestCode)
+
+        return deferred.promise
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        val deferred = permRequestCodeToDeferred[requestCode]
+
+        if (deferred == null) {
+            log.error("Got response for unknown request code ({}); permissions={}", requestCode, Arrays.toString(permissions))
+            return
+        }
+
+        permRequestCodeToDeferred.remove(requestCode)
+
+        val granted = grantResults[0] == PackageManager.PERMISSION_GRANTED
+
+        deferred.resolve(granted)
     }
 
     /** Capture console.log output into android's log */

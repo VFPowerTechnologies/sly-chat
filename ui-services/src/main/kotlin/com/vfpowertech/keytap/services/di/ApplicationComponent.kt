@@ -37,5 +37,7 @@ interface ApplicationComponent {
 
     val authenticationService: AuthenticationService
 
+    val telephonyService: UITelephonyService
+
     fun plus(userModule: UserModule): UserComponent
 }

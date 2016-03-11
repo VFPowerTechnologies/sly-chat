@@ -11,12 +11,16 @@ import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.di.ApplicationComponent
 import com.vfpowertech.keytap.services.di.PlatformModule
 import com.vfpowertech.keytap.services.ui.createAppDirectories
+import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.android.androidUiDispatcher
 import nl.komponents.kovenant.ui.KovenantUi
 import rx.android.schedulers.AndroidSchedulers
 
-class App : Application() {
+class AndroidApp : Application() {
     val app: KeyTapApplication = KeyTapApplication()
+
+    /** Points to the current activity, if one is set. Used to request permissions from various services. */
+    var currentActivity: MainActivity? = null
 
     lateinit var appComponent: ApplicationComponent
         private set
@@ -36,6 +40,7 @@ class App : Application() {
             AndroidUIPlatformInfoService(),
             BuildConfig.ANDROID_SERVER_URLS,
             platformInfo,
+            AndroidTelephonyService(this),
             AndroidSchedulers.mainThread()
         )
 
@@ -51,8 +56,15 @@ class App : Application() {
         app.updateNetworkStatus(isConnected)
     }
 
+    /** Use to request a runtime permission. If no activity is available, succeeds with false. */
+    fun requestPermission(permission: String): Promise<Boolean, Exception> {
+        val activity = currentActivity ?: return Promise.ofSuccess(false)
+
+        return activity.requestPermission(permission)
+    }
+
     companion object {
-        fun get(context: Context): App =
-            context.applicationContext as App
+        fun get(context: Context): AndroidApp =
+            context.applicationContext as AndroidApp
     }
 }
