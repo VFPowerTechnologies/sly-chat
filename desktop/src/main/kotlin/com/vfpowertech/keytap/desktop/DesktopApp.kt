@@ -21,7 +21,7 @@ import nl.komponents.kovenant.ui.KovenantUi
 import org.slf4j.LoggerFactory
 import rx.schedulers.JavaFxScheduler
 
-class App : Application() {
+class DesktopApp : Application() {
     private val app: KeyTapApplication = KeyTapApplication()
 
     /** Enable the (hidden) debugger WebEngine feature */
@@ -106,7 +106,7 @@ class App : Application() {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
-            launch(App::class.java, *args)
+            launch(DesktopApp::class.java, *args)
         }
     }
 }
