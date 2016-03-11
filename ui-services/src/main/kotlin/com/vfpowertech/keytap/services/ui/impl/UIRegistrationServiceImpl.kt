@@ -3,8 +3,6 @@ package com.vfpowertech.keytap.services.ui.impl
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationAsyncClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
-import com.vfpowertech.keytap.core.persistence.AccountInfo
-import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
 import com.vfpowertech.keytap.services.ui.UIRegistrationInfo
 import com.vfpowertech.keytap.services.ui.UIRegistrationResult
 import com.vfpowertech.keytap.services.ui.UIRegistrationService
@@ -15,8 +13,7 @@ import org.slf4j.LoggerFactory
 import java.util.*
 
 class UIRegistrationServiceImpl(
-    serverUrl: String,
-    private val accountInfoPersistenceManager: AccountInfoPersistenceManager
+    serverUrl: String
 ) : UIRegistrationService {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val listeners = ArrayList<(String) -> Unit>()
@@ -34,16 +31,15 @@ class UIRegistrationServiceImpl(
             val registrationInfo = RegistrationInfo(username, info.name, info.phoneNumber)
             val request = registrationRequestFromKeyVault(registrationInfo, keyVault)
             registrationClient.register(request)
-        } bind { result ->
+        } map { result ->
             val uiResult = UIRegistrationResult(result.isSuccess, result.errorMessage, result.validationErrors)
             if (uiResult.successful) {
-                updateProgress("Registration complete, writing account info to disk...")
-                accountInfoPersistenceManager.store(AccountInfo(info.name, info.email, info.phoneNumber)) map { uiResult }
+                updateProgress("Registration complete")
             }
             else {
                 updateProgress("An error occured during registration")
-                Promise.ofSuccess(uiResult)
             }
+            uiResult
         }
     }
 
