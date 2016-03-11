@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.services
 
 import com.vfpowertech.keytap.core.crypto.KeyVault
+import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.SessionData
 import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.services.di.*
@@ -227,11 +228,15 @@ class KeyTapApplication {
         destroyUserSession()
     }
 
-    fun storeAccountData(keyVault: KeyVault): Promise<Unit, Exception> {
+    fun storeAccountData(keyVault: KeyVault, accountInfo: AccountInfo): Promise<Unit, Exception> {
         val userComponent = this.userComponent ?: error("No user session")
 
+        userComponent.accountInfoPersistenceManager.store(accountInfo) fail { e ->
+            log.error("Unable to store account info: {}", e.message, e)
+        }
+
         return userComponent.keyVaultPersistenceManager.store(keyVault) fail { e ->
-            log.error("Unable to store account data: {}", e.message, e)
+            log.error("Unable to store keyvault: {}", e.message, e)
         }
     }
 }
