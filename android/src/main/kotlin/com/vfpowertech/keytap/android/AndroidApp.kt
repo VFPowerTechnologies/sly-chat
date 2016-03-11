@@ -40,6 +40,7 @@ class AndroidApp : Application() {
             AndroidUIPlatformInfoService(),
             BuildConfig.ANDROID_SERVER_URLS,
             platformInfo,
+            AndroidTelephonyService(this),
             AndroidSchedulers.mainThread()
         )
 

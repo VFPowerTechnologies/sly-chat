@@ -12,6 +12,7 @@ if (typeof KEYTAP == "undefined") {
     window.networkStatusService = new NetworkStatusService();
     window.configService = new ConfigService();
     window.stateService = new StateService();
+    window.telephonyService = new TelephonyService();
 
     networkStatusService.addRelayStatusChangeListener(function (status) {
         var networkStatus = $("#networkStatus");

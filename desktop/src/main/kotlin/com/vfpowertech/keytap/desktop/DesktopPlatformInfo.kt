@@ -17,7 +17,7 @@ fun getUserConfigDir(appName: String): File {
         os.startsWith("Windows") ->
             File(System.getenv("LOCALAPPDATA"), appName)
 
-    //TODO OSX, *BSD?
+        //TODO OSX, *BSD?
 
         else ->
             throw RuntimeException("Unsupported OS: $os")

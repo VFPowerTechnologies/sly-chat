@@ -77,6 +77,7 @@ class DesktopApp : Application() {
             DesktopUIPlatformInfoService(),
             BuildConfig.DESKTOP_SERVER_URLS,
             platformInfo,
+            DesktopTelephonyService(),
             JavaFxScheduler.getInstance()
         )
 
