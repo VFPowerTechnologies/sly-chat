@@ -1,7 +1,7 @@
 package com.vfpowertech.keytap.android
 
-import android.app.Activity
 import android.os.Bundle
+import android.support.v7.app.AppCompatActivity
 import android.view.KeyEvent
 import android.view.Window
 import android.webkit.ConsoleMessage
@@ -16,7 +16,7 @@ import com.vfpowertech.keytap.services.ui.js.javatojs.NavigationServiceToJSProxy
 import com.vfpowertech.keytap.services.ui.registerCoreServicesOnDispatcher
 import org.slf4j.LoggerFactory
 
-class MainActivity : Activity() {
+class MainActivity : AppCompatActivity() {
     private var navigationService: NavigationService? = null
     private lateinit var webView: WebView
 

@@ -48,6 +48,7 @@ android {
 }
 
 dependencies {
+    compile "com.android.support:appcompat-v7:$versions.appcompatv7"
     //pure-java curve25519 is broken: https://github.com/WhisperSystems/curve25519-java/pull/4
     compile "org.whispersystems:axolotl-android:$versions.axolotl"
     compile project(':ui-services')
