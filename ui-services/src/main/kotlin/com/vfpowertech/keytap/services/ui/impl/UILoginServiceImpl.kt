@@ -73,7 +73,7 @@ class UILoginServiceImpl(
         return localAuth(emailOrPhoneNumber, password) fallbackTo { remoteAuth(emailOrPhoneNumber, password) } successUi { response ->
             val keyVault = response.keyVault
             //TODO need to put the username in the login response if the user used their phone number
-            app.createUserSession(UserLoginData(emailOrPhoneNumber, keyVault, response.authToken))
+            app.createUserSession(UserLoginData(emailOrPhoneNumber, keyVault, response.authToken), response.accountInfo)
 
             app.storeAccountData(keyVault, response.accountInfo)
 

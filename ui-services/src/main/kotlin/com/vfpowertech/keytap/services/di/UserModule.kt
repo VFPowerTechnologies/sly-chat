@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.core.BuildConfig.ServerUrls
+import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.relay.RelayClient
 import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.RelayConnector
@@ -16,7 +17,10 @@ import rx.Scheduler
 class UserModule(
     @get:UserScope
     @get:Provides
-    val providesUserLoginData: UserLoginData
+    val providesUserLoginData: UserLoginData,
+    @get:UserScope
+    @get:Provides
+    val providersAccountInfo: AccountInfo
 ) {
     @Provides
     fun provideRelayClient(

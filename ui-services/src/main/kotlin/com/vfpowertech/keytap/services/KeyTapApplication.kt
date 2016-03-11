@@ -66,13 +66,13 @@ class KeyTapApplication {
         connectToRelay(userComponent)
     }
 
-    fun createUserSession(userLoginData: UserLoginData): UserComponent {
+    fun createUserSession(userLoginData: UserLoginData, accountInfo: AccountInfo): UserComponent {
         if (userComponent != null)
             error("UserComponent already loaded")
 
         log.info("Creating user session")
 
-        val userComponent = appComponent.plus(UserModule(userLoginData))
+        val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo))
         this.userComponent = userComponent
 
         //doing disk io here is bad, but...
