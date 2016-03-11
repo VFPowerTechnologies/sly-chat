@@ -20,7 +20,7 @@ buildscript {
             rxjavafx: '0.0.3',
             rxandroid: '1.1.0',
             appcompatv7: '23.1.1',
-            libphonenumber: '7.2.6',
+            libphonenumber: '7.1.1',
             dokka: '0.9.7',
             junit: '4.11',
             mockito: '1.10.19',
