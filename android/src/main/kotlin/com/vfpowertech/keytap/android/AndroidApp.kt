@@ -15,7 +15,7 @@ import nl.komponents.kovenant.android.androidUiDispatcher
 import nl.komponents.kovenant.ui.KovenantUi
 import rx.android.schedulers.AndroidSchedulers
 
-class App : Application() {
+class AndroidApp : Application() {
     val app: KeyTapApplication = KeyTapApplication()
 
     lateinit var appComponent: ApplicationComponent
@@ -52,7 +52,7 @@ class App : Application() {
     }
 
     companion object {
-        fun get(context: Context): App =
-            context.applicationContext as App
+        fun get(context: Context): AndroidApp =
+            context.applicationContext as AndroidApp
     }
 }

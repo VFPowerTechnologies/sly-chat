@@ -40,7 +40,7 @@ class MainActivity : Activity() {
 
         val dispatcher = Dispatcher(webEngineInterface)
 
-        registerCoreServicesOnDispatcher(dispatcher, App.get(this).appComponent)
+        registerCoreServicesOnDispatcher(dispatcher, AndroidApp.get(this).appComponent)
 
         //TODO should init this only once the webview has loaded the page
         webView.setWebViewClient(object : WebViewClient() {

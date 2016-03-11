@@ -13,7 +13,7 @@ class NetworkStatusReceiver : BroadcastReceiver() {
         val networkInfo = connectivityManager.activeNetworkInfo
         val isConnected = networkInfo != null && networkInfo.isConnected
 
-        val app = App.get(context)
+        val app = AndroidApp.get(context)
 
         Handler(context.mainLooper).post {
             app.updateNetworkStatus(isConnected)
