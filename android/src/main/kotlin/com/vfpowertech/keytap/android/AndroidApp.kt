@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.IntentFilter
 import android.net.ConnectivityManager
 import com.almworks.sqlite4java.SQLite
+import com.vfpowertech.keytap.android.services.AndroidPlatformContacts
 import com.vfpowertech.keytap.android.services.AndroidUIPlatformInfoService
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.services.KeyTapApplication
@@ -42,6 +43,7 @@ class AndroidApp : Application() {
             platformInfo,
             AndroidTelephonyService(this),
             AndroidWindowService(this),
+            AndroidPlatformContacts(this),
             AndroidSchedulers.mainThread()
         )
 

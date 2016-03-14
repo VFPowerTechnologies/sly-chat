@@ -79,6 +79,7 @@ class DesktopApp : Application() {
             platformInfo,
             DesktopTelephonyService(),
             DesktopWindowService(primaryStage),
+            DesktopPlatformContacts(),
             JavaFxScheduler.getInstance()
         )
 

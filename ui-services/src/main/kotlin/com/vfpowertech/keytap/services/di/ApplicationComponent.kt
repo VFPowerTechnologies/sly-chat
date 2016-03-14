@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.services.AuthenticationService
+import com.vfpowertech.keytap.services.PlatformContacts
 import com.vfpowertech.keytap.services.UserPathsGenerator
 import com.vfpowertech.keytap.services.ui.*
 import dagger.Component
@@ -40,6 +41,8 @@ interface ApplicationComponent {
     val telephonyService: UITelephonyService
 
     val windowService: UIWindowService
+
+    val platformContacts: PlatformContacts
 
     fun plus(userModule: UserModule): UserComponent
 }
