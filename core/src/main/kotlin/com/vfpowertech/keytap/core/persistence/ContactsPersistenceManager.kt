@@ -18,6 +18,7 @@ interface ContactsPersistenceManager {
 
     /** Adds a new contact and conversation for a contact. */
     fun add(contactInfo: ContactInfo): Promise<Unit, Exception>
+    fun addAll(contacts: List<ContactInfo>): Promise<Unit, Exception>
     /** Updates the given contact's info. */
     fun update(contactInfo: ContactInfo): Promise<Unit, Exception>
     /** Removes a contact and their associated conversation. */

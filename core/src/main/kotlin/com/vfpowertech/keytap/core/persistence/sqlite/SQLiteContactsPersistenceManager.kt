@@ -129,7 +129,7 @@ ON
         searchByLikeField(it, "name", name)
     }
 
-    override fun add(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    private fun addContact(connection: SQLiteConnection, contactInfo: ContactInfo) {
         try {
             connection.withTransaction {
                 connection.prepare("INSERT INTO contacts (email, name, phone_number, public_key) VALUES (?, ?, ?, ?)").use { stmt ->
@@ -151,6 +151,14 @@ ON
 
             throw e
         }
+    }
+
+    override fun add(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        addContact(connection, contactInfo)
+    }
+
+    override fun addAll(contacts: List<ContactInfo>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        contacts.forEach { addContact(connection, it) }
     }
 
     override fun update(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
