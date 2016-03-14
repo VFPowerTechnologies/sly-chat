@@ -9,6 +9,7 @@
     <android:uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <android:uses-permission android:name="android.permission.INTERNET" />
     <android:uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <android:uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <application
         android:name=".AndroidApp"
