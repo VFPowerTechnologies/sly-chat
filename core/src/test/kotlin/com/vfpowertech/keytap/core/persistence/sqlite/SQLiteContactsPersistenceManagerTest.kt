@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
+import com.vfpowertech.keytap.core.PlatformContact
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.DuplicateContactException
 import com.vfpowertech.keytap.core.persistence.InvalidContactException
@@ -252,4 +253,52 @@ class SQLiteContactsPersistenceManagerTest {
         }
     }
 
+    @Test
+    fun `findMissing should ignore contacts with found emails`() {
+        loadContactList()
+
+        val pcontactA = PlatformContact(contactA.name, listOf(contactA.email), listOf())
+        val pcontactD = PlatformContact("D", listOf("d@a.com"), listOf())
+
+        val contacts = arrayListOf(pcontactA, pcontactD)
+        val got = contactsPersistenceManager.findMissing(contacts).get()
+        assertEquals(listOf(pcontactD), got)
+    }
+
+    @Test
+    fun `findMissing should ignore contacts with found phone numbers`() {
+        loadContactList()
+
+        val pcontactA = PlatformContact(contactA.name, listOf(), listOf(contactA.phoneNumber!!))
+        val pcontactD = PlatformContact("D", listOf("d@a.com"), listOf())
+
+        val contacts = arrayListOf(pcontactA, pcontactD)
+        val got = contactsPersistenceManager.findMissing(contacts).get()
+        assertEquals(listOf(pcontactD), got)
+    }
+
+    @Test
+    fun `findMissing should ignore contacts with found emails or phone numbers`() {
+        loadContactList()
+
+        val pcontactA = PlatformContact(contactA.name, listOf(contactA.email), listOf(contactA.phoneNumber!!))
+        val pcontactD = PlatformContact("D", listOf("d@a.com"), listOf())
+
+        val contacts = arrayListOf(pcontactA, pcontactD)
+        val got = contactsPersistenceManager.findMissing(contacts).get()
+        assertEquals(listOf(pcontactD), got)
+
+    }
+
+    @Test
+    fun `findMissing should ignore contacts with no email or phone number`() {
+        loadContactList()
+
+        val pcontactA = PlatformContact(contactA.name, listOf(), listOf())
+        val pcontactD = PlatformContact("D", listOf("d@a.com"), listOf())
+
+        val contacts = arrayListOf(pcontactA, pcontactD)
+        val got = contactsPersistenceManager.findMissing(contacts).get()
+        assertEquals(listOf(pcontactD), got)
+    }
 }

@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.persistence
 
+import com.vfpowertech.keytap.core.PlatformContact
 import nl.komponents.kovenant.Promise
 
 /** Manages contacts. */
@@ -25,4 +26,7 @@ interface ContactsPersistenceManager {
     fun searchByPhoneNumber(phoneNumber: String): Promise<List<ContactInfo>, Exception>
     fun searchByName(name: String): Promise<List<ContactInfo>, Exception>
     fun searchByEmail(email: String): Promise<List<ContactInfo>, Exception>
+
+    /** Find which platform contacts aren't currently in the contacts list. */
+    fun findMissing(platformContacts: List<PlatformContact>): Promise<List<PlatformContact>, Exception>
 }

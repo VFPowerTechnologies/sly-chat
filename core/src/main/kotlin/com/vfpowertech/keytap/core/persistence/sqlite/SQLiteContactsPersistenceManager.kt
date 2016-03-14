@@ -4,6 +4,7 @@ import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteConstants
 import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
+import com.vfpowertech.keytap.core.PlatformContact
 import com.vfpowertech.keytap.core.persistence.*
 import nl.komponents.kovenant.Promise
 import java.util.*
@@ -183,4 +184,46 @@ ON
             ConversationTable.delete(connection, contactInfo.email)
         }
     }
+
+    override fun findMissing(platformContacts: List<PlatformContact>): Promise<List<PlatformContact>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val missing = ArrayList<PlatformContact>()
+
+        for (contact in platformContacts) {
+            val emails = contact.emails
+            val phoneNumbers = contact.phoneNumbers
+
+            val selection = ArrayList<String>()
+
+            if (emails.isNotEmpty())
+                selection.add("email IN (${getPlaceholders(emails.size)})")
+
+            if (phoneNumbers.isNotEmpty())
+                selection.add("phone_number IN (${getPlaceholders(phoneNumbers.size)})")
+
+            if (selection.isEmpty())
+                continue
+
+            val sql = "SELECT 1 FROM contacts WHERE " + selection.joinToString(" OR ") + " LIMIT 1"
+
+            connection.prepare(sql).use { stmt ->
+                var i = 1
+
+                for (email in emails) {
+                    stmt.bind(i, email)
+                    i += 1
+                }
+
+                for (phoneNumber in phoneNumbers) {
+                    stmt.bind(i, phoneNumber)
+                    i += 1
+                }
+
+                if (!stmt.step())
+                    missing.add(contact)
+            }
+        }
+
+        missing
+    }
+
 }
