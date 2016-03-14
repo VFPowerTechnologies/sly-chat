@@ -5,8 +5,8 @@ import android.content.Context
 import android.database.Cursor
 import android.provider.ContactsContract.CommonDataKinds
 import android.provider.ContactsContract.Data
-import com.vfpowertech.keytap.services.PlatformContact
-import com.vfpowertech.keytap.services.PlatformContactBuilder
+import com.vfpowertech.keytap.core.PlatformContact
+import com.vfpowertech.keytap.core.PlatformContactBuilder
 import com.vfpowertech.keytap.services.PlatformContacts
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred

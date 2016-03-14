@@ -1,4 +1,4 @@
-package com.vfpowertech.keytap.services
+package com.vfpowertech.keytap.core
 
 import java.util.*
 

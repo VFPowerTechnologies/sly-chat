@@ -1,6 +1,6 @@
 package com.vfpowertech.keytap.desktop
 
-import com.vfpowertech.keytap.services.PlatformContact
+import com.vfpowertech.keytap.core.PlatformContact
 import com.vfpowertech.keytap.services.PlatformContacts
 import nl.komponents.kovenant.Promise
 import java.util.*
