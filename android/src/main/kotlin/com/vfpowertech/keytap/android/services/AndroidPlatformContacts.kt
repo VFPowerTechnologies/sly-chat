@@ -6,7 +6,7 @@ import android.database.Cursor
 import android.provider.ContactsContract.CommonDataKinds
 import android.provider.ContactsContract.Data
 import com.vfpowertech.keytap.services.PlatformContact
-import com.vfpowertech.keytap.services.ContactBuilder
+import com.vfpowertech.keytap.services.PlatformContactBuilder
 import com.vfpowertech.keytap.services.PlatformContacts
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
@@ -32,7 +32,7 @@ class AndroidPlatformContacts(private val context: Context) : PlatformContacts {
             }
 
             private fun realOnQueryComplete(cursor: Cursor): List<PlatformContact> {
-                val builders = HashMap<Int, ContactBuilder>()
+                val builders = HashMap<Int, PlatformContactBuilder>()
 
                 while (cursor.moveToNext()) {
                     val email = cursor.getString(0)
@@ -43,7 +43,7 @@ class AndroidPlatformContacts(private val context: Context) : PlatformContacts {
 
                     var builder = builders[id]
                     if (builder == null) {
-                        builder = ContactBuilder()
+                        builder = PlatformContactBuilder()
                         builders[id] = builder
                     }
 
