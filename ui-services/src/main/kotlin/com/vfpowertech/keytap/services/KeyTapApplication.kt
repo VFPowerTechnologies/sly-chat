@@ -1,7 +1,12 @@
 package com.vfpowertech.keytap.services
 
+import com.google.i18n.phonenumbers.PhoneNumberUtil
+import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat
 import com.vfpowertech.keytap.core.crypto.KeyVault
+import com.vfpowertech.keytap.core.http.api.contacts.ContactAsyncClient
+import com.vfpowertech.keytap.core.http.api.contacts.FindLocalContactsRequest
 import com.vfpowertech.keytap.core.persistence.AccountInfo
+import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.SessionData
 import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.services.di.*
@@ -82,7 +87,42 @@ class KeyTapApplication {
 
         userSessionAvailableSubject.onNext(true)
 
+        syncLocalContacts(userComponent)
+
         return userComponent
+    }
+
+    /** Attempts to find any registered users matching the user's local contacts. */
+    private fun syncLocalContacts(userComponent: UserComponent) {
+        val authToken = userComponent.userLoginData.authToken
+        if (authToken == null) {
+            log.debug("authToken is null, aborting local contacts sync")
+            return
+        }
+
+        val phoneNumberUtil = PhoneNumberUtil.getInstance()
+        val phoneNumber = phoneNumberUtil.parse("+${userComponent.accountInfo.phoneNumber}", null)
+        val defaultRegion = phoneNumberUtil.getRegionCodeForCountryCode(phoneNumber.countryCode)
+
+        appComponent.platformContacts.fetchContacts() map { contacts ->
+            val phoneNumberUtil = PhoneNumberUtil.getInstance()
+
+            contacts.map { contact ->
+                val phoneNumbers = contact.phoneNumbers.map { parsePhoneNumber(it, defaultRegion) }.filter { it != null }.map { phoneNumberUtil.format(it, PhoneNumberFormat.E164) }
+                contact.copy(phoneNumbers = phoneNumbers)
+            }
+        } bind { contacts ->
+            userComponent.contactsPersistenceManager.findMissing(contacts)
+        } bind { missingContacts ->
+            log.debug("Missing local contacts:", missingContacts)
+            val client = ContactAsyncClient(appComponent.serverUrls.API_SERVER)
+            client.findLocalContacts(FindLocalContactsRequest(authToken, missingContacts))
+        } bind { foundContacts ->
+            log.debug("Found local contacts: {}", foundContacts)
+            userComponent.contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.username, it.name, it.phoneNumber, it.publicKey) })
+        } fail { e ->
+            log.error("Local contacts sync failed: {}", e.message, e)
+        }
     }
 
     private fun createUserPaths(userPaths: UserPaths) {
