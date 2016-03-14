@@ -10,6 +10,7 @@ import com.vfpowertech.keytap.core.crypto.hashes.BCryptParams
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.http.api.ApiResult
+import com.vfpowertech.keytap.core.persistence.AccountInfo
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
@@ -18,6 +19,7 @@ class AuthenticationClientTest {
     val objectMapper = ObjectMapper()
     val username = "test-user"
     val csrfToken = "csrf"
+    val accountInfo = AccountInfo("name", username, "0")
 
     @Test
     fun `getParams should return a successful AuthenticationParamsResponse when receiving a 200 response`() {
@@ -41,7 +43,7 @@ class AuthenticationClientTest {
         val serializedKeyVault = generateNewKeyVault(password).serialize()
 
         val httpClient = mock<HttpClient>()
-        val response = AuthenticationResponse(null, AuthenticationData("auth", serializedKeyVault, null, 0))
+        val response = AuthenticationResponse(null, AuthenticationData("auth", serializedKeyVault, accountInfo, null, 0))
         val apiResult = ApiResult(null, response)
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))
 
