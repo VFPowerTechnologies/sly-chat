@@ -10,4 +10,8 @@ class ContactAsyncClient(serverUrl: String) {
     fun fetchNewContactInfo(request: NewContactRequest): Promise<FetchContactResponse, Exception> = task {
          contactClient.fetchContactInfo(request)
     }
+
+    fun findLocalContacts(request: FindLocalContactsRequest): Promise<FindLocalContactsResponse, Exception> = task {
+        contactClient.findLocalContacts(request)
+    }
 }

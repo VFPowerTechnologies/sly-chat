@@ -16,4 +16,14 @@ class ContactClient(private val serverBaseUrl: String, private val httpClient: H
         val resp = httpClient.postJSON(url, jsonRequest)
         return valueFromApi(resp, setOf(200, 400), typeRef<ApiResult<FetchContactResponse>>())
     }
+
+    fun findLocalContacts(request: FindLocalContactsRequest): FindLocalContactsResponse {
+        val url = "$serverBaseUrl/v1/contact/find-local"
+
+        val objectMapper = ObjectMapper()
+        val jsonRequest = objectMapper.writeValueAsBytes(request)
+
+        val resp = httpClient.postJSON(url, jsonRequest)
+        return valueFromApi(resp, setOf(200, 400), typeRef<ApiResult<FindLocalContactsResponse>>())
+    }
 }
