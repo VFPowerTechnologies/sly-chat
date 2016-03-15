@@ -122,7 +122,6 @@ ON
 
     override fun searchByPhoneNumber(phoneNumber: String): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery {
         searchByLikeField(it, "phone_number", phoneNumber)
-
     }
 
     override fun searchByName(name: String): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery {
