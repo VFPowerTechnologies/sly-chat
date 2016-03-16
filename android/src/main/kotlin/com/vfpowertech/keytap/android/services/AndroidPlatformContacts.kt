@@ -3,11 +3,13 @@ package com.vfpowertech.keytap.android.services
 import android.content.AsyncQueryHandler
 import android.content.Context
 import android.database.Cursor
+import android.os.Handler
 import android.provider.ContactsContract.CommonDataKinds
 import android.provider.ContactsContract.Data
 import com.vfpowertech.keytap.core.PlatformContact
 import com.vfpowertech.keytap.core.PlatformContactBuilder
 import com.vfpowertech.keytap.services.PlatformContacts
+import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import java.util.*
@@ -16,6 +18,15 @@ class AndroidPlatformContacts(private val context: Context) : PlatformContacts {
     override fun fetchContacts(): Promise<List<PlatformContact>, Exception> {
         val deferred = deferred<List<PlatformContact>, Exception>()
 
+        //AsyncQueryHandlers must be created on threads which have called Looper.prepare
+        //so can't just create it on an arbitrary thread
+        val handler = Handler(context.mainLooper)
+        handler.post { createAsyncQueryHandler(deferred) }
+
+        return deferred.promise
+    }
+
+    private fun createAsyncQueryHandler(deferred: Deferred<List<PlatformContact>, Exception>) {
         val asyncHandler = object : AsyncQueryHandler(context.contentResolver) {
             override fun onQueryComplete(token: Int, cookie: Any?, cursor: Cursor?) {
                 if (cursor == null) {
@@ -71,7 +82,5 @@ class AndroidPlatformContacts(private val context: Context) : PlatformContacts {
             null,
             null
         )
-
-        return deferred.promise
     }
 }
