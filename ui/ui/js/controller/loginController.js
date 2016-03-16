@@ -75,5 +75,6 @@ LoginController.prototype = {
         $(".nav-btn").hide();
         KEYTAP.navigationController.loadPage("login.html");
         KEYTAP.navigationController.clearHistory();
+        KEYTAP.contactController.model.resetContacts();
     }
 };
