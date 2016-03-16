@@ -13,7 +13,6 @@ class ContactListAsyncClient(serverUrl: String) {
 
     fun removeContacts(request: RemoveContactsRequest): Promise<Unit, Exception> = task {
         contactListClient.removeContacts(request)
-
     }
 
     fun getContacts(request: GetContactsRequest): Promise<GetContactsResponse, Exception> = task {
