@@ -67,11 +67,7 @@ class UIServicesModule {
 
     @Singleton
     @Provides
-    fun provideHistoryService(): UIHistoryService = getImplementation(
-        UIServiceComponent.HISTORY,
-        { DummyUIHistoryService() },
-        { UIHistoryServiceImpl() }
-    )
+    fun provideHistoryService(): UIHistoryService = UIHistoryServiceImpl()
 
     @Singleton
     @Provides
