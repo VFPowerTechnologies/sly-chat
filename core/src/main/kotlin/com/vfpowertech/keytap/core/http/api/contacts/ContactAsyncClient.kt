@@ -14,4 +14,8 @@ class ContactAsyncClient(serverUrl: String) {
     fun findLocalContacts(request: FindLocalContactsRequest): Promise<FindLocalContactsResponse, Exception> = task {
         contactClient.findLocalContacts(request)
     }
+
+    fun fetchContactInfoByEmail(request: FetchContactInfoByEmailRequest): Promise<FetchContactInfoByEmailResponse, Exception> = task {
+        contactClient.fetchContactInfoByEmail(request)
+    }
 }

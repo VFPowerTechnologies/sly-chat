@@ -33,4 +33,6 @@ interface ContactsPersistenceManager {
 
     /** Diff the current contact list with the given remote one. */
     fun getDiff(emails: List<String>): Promise<ContactListDiff, Exception>
+
+    fun applyDiff(newContacts: List<ContactInfo>, removedContacts: List<String>): Promise<Unit, Exception>
 }

@@ -128,21 +128,39 @@ ON
         searchByLikeField(it, "name", name)
     }
 
-    private fun addContact(connection: SQLiteConnection, contactInfo: ContactInfo) {
+    //never call when not inside a transition
+    private fun removeContactNoTransaction(connection: SQLiteConnection, email: String) {
+        connection.prepare("DELETE FROM conversation_info WHERE contact_email=?").use { stmt ->
+            stmt.bind(1, email)
+            stmt.step()
+        }
+
+        connection.prepare("DELETE FROM contacts WHERE email=?").use { stmt ->
+            stmt.bind(1, email)
+
+            stmt.step()
+            if (connection.changes <= 0)
+                throw InvalidContactException(email)
+        }
+
+        ConversationTable.delete(connection, email)
+    }
+
+    //never call when not inside a transition
+    //is here for bulk addition within a single transaction when syncing up the contacts list
+    private fun addContactNoTransaction(connection: SQLiteConnection, contactInfo: ContactInfo) {
         try {
-            connection.withTransaction {
-                connection.prepare("INSERT INTO contacts (email, name, phone_number, public_key) VALUES (?, ?, ?, ?)").use { stmt ->
-                    contactInfoToRow(contactInfo, stmt)
-                    stmt.step()
-                }
-
-                connection.prepare("INSERT INTO conversation_info (contact_email, unread_count, last_message) VALUES (?, 0, NULL)").use { stmt ->
-                    stmt.bind(1, contactInfo.email)
-                    stmt.step()
-                }
-
-                ConversationTable.create(connection, contactInfo.email)
+            connection.prepare("INSERT INTO contacts (email, name, phone_number, public_key) VALUES (?, ?, ?, ?)").use { stmt ->
+                contactInfoToRow(contactInfo, stmt)
+                stmt.step()
             }
+
+            connection.prepare("INSERT INTO conversation_info (contact_email, unread_count, last_message) VALUES (?, 0, NULL)").use { stmt ->
+                stmt.bind(1, contactInfo.email)
+                stmt.step()
+            }
+
+            ConversationTable.create(connection, contactInfo.email)
         }
         catch (e: SQLiteException) {
             if (e.baseErrorCode == SQLiteConstants.SQLITE_CONSTRAINT)
@@ -150,6 +168,10 @@ ON
 
             throw e
         }
+    }
+
+    private fun addContact(connection: SQLiteConnection, contactInfo: ContactInfo) {
+        connection.withTransaction { addContactNoTransaction(connection, contactInfo) }
     }
 
     override fun add(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -174,22 +196,7 @@ ON
     }
 
     override fun remove(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withTransaction {
-            connection.prepare("DELETE FROM conversation_info WHERE contact_email=?").use { stmt ->
-                stmt.bind(1, contactInfo.email)
-                stmt.step()
-            }
-
-            connection.prepare("DELETE FROM contacts WHERE email=?").use { stmt ->
-                stmt.bind(1, contactInfo.email)
-
-                stmt.step()
-                if (connection.changes <= 0)
-                    throw InvalidContactException(contactInfo.email)
-            }
-
-            ConversationTable.delete(connection, contactInfo.email)
-        }
+        connection.withTransaction { removeContactNoTransaction(connection, contactInfo.email) }
     }
 
     override fun getDiff(emails: List<String>): Promise<ContactListDiff, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -210,6 +217,13 @@ ON
         addedEmails.removeAll(localEmails)
 
         ContactListDiff(addedEmails, removedEmails)
+    }
+
+    override fun applyDiff(newContacts: List<ContactInfo>, removedContacts: List<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            newContacts.forEach { addContactNoTransaction(connection, it) }
+            removedContacts.forEach { removeContactNoTransaction(connection, it) }
+        }
     }
 
     override fun findMissing(platformContacts: List<PlatformContact>): Promise<List<PlatformContact>, Exception> = sqlitePersistenceManager.runQuery { connection ->

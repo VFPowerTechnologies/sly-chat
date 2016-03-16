@@ -3,8 +3,7 @@ package com.vfpowertech.keytap.services
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat
 import com.vfpowertech.keytap.core.crypto.KeyVault
-import com.vfpowertech.keytap.core.http.api.contacts.ContactAsyncClient
-import com.vfpowertech.keytap.core.http.api.contacts.FindLocalContactsRequest
+import com.vfpowertech.keytap.core.http.api.contacts.*
 import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.SessionData
@@ -87,24 +86,58 @@ class KeyTapApplication {
 
         userSessionAvailableSubject.onNext(true)
 
-        syncLocalContacts(userComponent)
+        syncRemoteContactsList(userComponent) bind {
+            syncLocalContacts(userComponent)
+        }
 
         return userComponent
     }
 
+    /** Syncs the local contact list with the remote contact list. */
+    private fun syncRemoteContactsList(userComponent: UserComponent): Promise<Unit, Exception> {
+        log.debug("Beginning remote contact list sync")
+
+        val client = ContactListAsyncClient(appComponent.serverUrls.API_SERVER)
+
+        val keyVault = userComponent.userLoginData.keyVault
+        val authToken = userComponent.userLoginData.authToken
+        if (authToken == null) {
+            log.debug("authToken is null, aborting remote contacts sync")
+            return Promise.ofFail(RuntimeException("Null authToken"))
+        }
+
+        val contactsPersistenceManager = userComponent.contactsPersistenceManager
+
+        return client.getContacts(GetContactsRequest(authToken)) bind { response ->
+            val emails = decryptRemoteContactEntries(keyVault, response.contacts)
+            contactsPersistenceManager.getDiff(emails) bind { diff ->
+                log.debug("New contacts: {}", diff.newContacts)
+                log.debug("Removed contacts: {}", diff.removedContacts)
+
+                val contactsClient = ContactAsyncClient(appComponent.serverUrls.API_SERVER)
+                val request = FetchContactInfoByEmailRequest(authToken, diff.newContacts.toList())
+                contactsClient.fetchContactInfoByEmail(request) bind { response ->
+                    contactsPersistenceManager.applyDiff(response.contacts, diff.removedContacts.toList())
+                }
+            }
+        } fail { e ->
+            log.error("Remote contact list sync failed: {}", e.message, e)
+        }
+    }
+
     /** Attempts to find any registered users matching the user's local contacts. */
-    private fun syncLocalContacts(userComponent: UserComponent) {
+    private fun syncLocalContacts(userComponent: UserComponent): Promise<Unit, Exception> {
         val authToken = userComponent.userLoginData.authToken
         if (authToken == null) {
             log.debug("authToken is null, aborting local contacts sync")
-            return
+            return Promise.ofFail(RuntimeException("Null authToken"))
         }
 
         val phoneNumberUtil = PhoneNumberUtil.getInstance()
         val phoneNumber = phoneNumberUtil.parse("+${userComponent.accountInfo.phoneNumber}", null)
         val defaultRegion = phoneNumberUtil.getRegionCodeForCountryCode(phoneNumber.countryCode)
 
-        appComponent.platformContacts.fetchContacts() map { contacts ->
+        return appComponent.platformContacts.fetchContacts() map { contacts ->
             val phoneNumberUtil = PhoneNumberUtil.getInstance()
 
             contacts.map { contact ->
@@ -119,6 +152,7 @@ class KeyTapApplication {
             client.findLocalContacts(FindLocalContactsRequest(authToken, missingContacts))
         } bind { foundContacts ->
             log.debug("Found local contacts: {}", foundContacts)
+            //TODO add remotely
             userComponent.contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.email, it.name, it.phoneNumber, it.publicKey) })
         } fail { e ->
             log.error("Local contacts sync failed: {}", e.message, e)

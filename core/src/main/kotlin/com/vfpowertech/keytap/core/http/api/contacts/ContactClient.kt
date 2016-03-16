@@ -17,6 +17,16 @@ class ContactClient(private val serverBaseUrl: String, private val httpClient: H
         return valueFromApi(resp, setOf(200, 400), typeRef<ApiResult<FetchContactResponse>>())
     }
 
+    fun fetchContactInfoByEmail(request: FetchContactInfoByEmailRequest): FetchContactInfoByEmailResponse {
+        val url = "$serverBaseUrl/v1/contact/find"
+
+        val objectMapper = ObjectMapper()
+        val jsonRequest = objectMapper.writeValueAsBytes(request)
+
+        val resp = httpClient.postJSON(url, jsonRequest)
+        return valueFromApi(resp, setOf(200, 400), typeRef<ApiResult<FetchContactInfoByEmailResponse>>())
+    }
+
     fun findLocalContacts(request: FindLocalContactsRequest): FindLocalContactsResponse {
         val url = "$serverBaseUrl/v1/contact/find-local"
 
@@ -27,3 +37,4 @@ class ContactClient(private val serverBaseUrl: String, private val httpClient: H
         return valueFromApi(resp, setOf(200, 400), typeRef<ApiResult<FindLocalContactsResponse>>())
     }
 }
+
