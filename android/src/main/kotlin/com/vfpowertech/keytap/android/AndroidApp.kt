@@ -41,6 +41,7 @@ class AndroidApp : Application() {
             BuildConfig.ANDROID_SERVER_URLS,
             platformInfo,
             AndroidTelephonyService(this),
+            AndroidWindowService(this),
             AndroidSchedulers.mainThread()
         )
 
