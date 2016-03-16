@@ -6,9 +6,7 @@ import com.vfpowertech.keytap.core.http.JavaHttpClient
 import com.vfpowertech.keytap.core.http.api.UnauthorizedException
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationClient
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
-import com.vfpowertech.keytap.core.http.api.contacts.ContactClient
-import com.vfpowertech.keytap.core.http.api.contacts.ContactInfo
-import com.vfpowertech.keytap.core.http.api.contacts.NewContactRequest
+import com.vfpowertech.keytap.core.http.api.contacts.*
 import com.vfpowertech.keytap.core.http.api.prekeys.*
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
@@ -49,7 +47,8 @@ class WebApiIntegrationTest {
             val username = "a@a.com"
 
             devClient.clear()
-            val siteUser = newSiteUser(RegistrationInfo(username, "a", "000-000-0000"), password).user
+            val userA = newSiteUser(RegistrationInfo(username, "a", "000-000-0000"), password)
+            val siteUser = userA.user
 
             devClient.addUser(siteUser)
 
@@ -77,6 +76,15 @@ class WebApiIntegrationTest {
 
             if (devClient.getSignedPreKey(username) != signedPreKey)
                 throw DevServerInsaneException("Signed prekey functionality failed")
+
+            val userB = newSiteUser(RegistrationInfo("b@a.com", "B", "000-000-0000"), password)
+
+            val contactsA = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.username))
+            devClient.addContacts(username, contactsA)
+
+            val contacts = devClient.getContactList(username)
+
+            assertEquals(contactsA, contacts)
         }
 
         //only run if server is up
@@ -101,12 +109,21 @@ class WebApiIntegrationTest {
 
     val devClient = DevClient(serverBaseUrl, JavaHttpClient())
 
-    fun injectNewSiteUser(): GeneratedSiteUser {
-        val siteUser = newSiteUser(dummyRegistrationInfo, password)
+    fun injectSiteUser(registrationInfo: RegistrationInfo): GeneratedSiteUser {
+        val siteUser = newSiteUser(registrationInfo, password)
 
         devClient.addUser(siteUser.user)
 
         return siteUser
+    }
+
+    fun injectNamedSiteUser(username: String): GeneratedSiteUser {
+        val registrationInfo = RegistrationInfo(username, "name", "000-000-0000")
+        return injectSiteUser(registrationInfo)
+    }
+
+    fun injectNewSiteUser(): GeneratedSiteUser {
+        return injectSiteUser(dummyRegistrationInfo)
     }
 
     @Before
@@ -305,5 +322,91 @@ class WebApiIntegrationTest {
         val receivedContactInfo = contactResponse.contactInfo!!
 
         assertEquals(contactDetails, receivedContactInfo)
+    }
+
+    fun assertContactListEquals(expected: List<RemoteContactEntry>, actual: List<RemoteContactEntry>) {
+        val sortedLocalContacts = expected.sortedBy { it.hash }
+        val sortedRemoteContacts = actual.sortedBy { it.hash }
+
+        assertEquals(sortedLocalContacts, sortedRemoteContacts)
+    }
+
+    @Test
+    fun `Adding contacts to the user's contact list should register the contacts remotely`() {
+        val siteUser = injectNewSiteUser()
+        val contactUser = injectNamedSiteUser("a@a.com")
+
+        val username = siteUser.user.username
+        val authToken = devClient.createAuthToken(username)
+
+        val encryptedContacts = encryptRemoteContactEntries(siteUser.keyVault, listOf(contactUser.user.username))
+        val request = AddContactsRequest(authToken, encryptedContacts)
+
+        val client = ContactListClient(serverBaseUrl, JavaHttpClient())
+        client.addContacts(request)
+
+        val contacts = devClient.getContactList(username)
+
+        assertContactListEquals(encryptedContacts, contacts)
+    }
+
+    @Test
+    fun `Adding a duplicate contact should cause no errors`() {
+        val userA = injectNamedSiteUser("a@a.com")
+        val userB = injectNamedSiteUser("b@a.com")
+
+        val authToken = devClient.createAuthToken(userA.user.username)
+        val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.username))
+        val request = AddContactsRequest(authToken, aContacts)
+
+        val client = ContactListClient(serverBaseUrl, JavaHttpClient())
+        client.addContacts(request)
+        client.addContacts(request)
+
+        val contacts = devClient.getContactList(userA.user.username)
+
+        assertContactListEquals(aContacts, contacts)
+    }
+
+    @Test
+    fun `Fetching a contact list should fetch only contacts for that user`() {
+        val userA = injectNamedSiteUser("a@a.com")
+        val userB = injectNamedSiteUser("b@a.com")
+        val userC = injectNamedSiteUser("c@a.com")
+
+        val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.username))
+        val bContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userC.user.username))
+
+        devClient.addContacts(userA.user.username, aContacts)
+        devClient.addContacts(userB.user.username, bContacts)
+
+        val client = ContactListClient(serverBaseUrl, JavaHttpClient())
+
+        val authToken = devClient.createAuthToken(userA.user.username)
+        val response = client.getContacts(GetContactsRequest(authToken))
+
+        assertContactListEquals(aContacts, response.contacts)
+    }
+
+    @Test
+    fun `Removing a contact should remove only that contact`() {
+        val userA = injectNamedSiteUser("a@a.com")
+        val userB = injectNamedSiteUser("b@a.com")
+        val userC = injectNamedSiteUser("c@a.com")
+
+        val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userC.user.username, userB.user.username))
+
+        devClient.addContacts(userA.user.username, aContacts)
+
+        val client = ContactListClient(serverBaseUrl, JavaHttpClient())
+
+        val authToken = devClient.createAuthToken(userA.user.username)
+
+        val request = RemoveContactsRequest(authToken, listOf(aContacts[0].hash))
+        client.removeContacts(request)
+
+        val contacts = devClient.getContactList(userA.user.username)
+
+        assertContactListEquals(listOf(aContacts[1]), contacts)
     }
 }
