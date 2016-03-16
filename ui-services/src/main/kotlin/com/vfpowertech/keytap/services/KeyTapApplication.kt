@@ -119,7 +119,7 @@ class KeyTapApplication {
             client.findLocalContacts(FindLocalContactsRequest(authToken, missingContacts))
         } bind { foundContacts ->
             log.debug("Found local contacts: {}", foundContacts)
-            userComponent.contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.username, it.name, it.phoneNumber, it.publicKey) })
+            userComponent.contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.email, it.name, it.phoneNumber, it.publicKey) })
         } fail { e ->
             log.error("Local contacts sync failed: {}", e.message, e)
         }

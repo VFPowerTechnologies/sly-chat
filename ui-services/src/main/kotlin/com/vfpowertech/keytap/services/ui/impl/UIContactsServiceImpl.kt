@@ -61,7 +61,7 @@ class UIContactsServiceImpl(
             }
             else {
                 val contactInfo = response.contactInfo!!
-                UINewContactResult(true, null, UIContactDetails(contactInfo.name, contactInfo.phoneNumber, contactInfo.username, contactInfo.publicKey))
+                UINewContactResult(true, null, UIContactDetails(contactInfo.name, contactInfo.phoneNumber, contactInfo.email, contactInfo.publicKey))
             }
         }
     }

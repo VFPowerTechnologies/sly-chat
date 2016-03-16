@@ -11,6 +11,7 @@ import com.vfpowertech.keytap.core.http.api.prekeys.*
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
+import com.vfpowertech.keytap.core.persistence.ContactInfo
 import org.junit.*
 import kotlin.test.*
 
