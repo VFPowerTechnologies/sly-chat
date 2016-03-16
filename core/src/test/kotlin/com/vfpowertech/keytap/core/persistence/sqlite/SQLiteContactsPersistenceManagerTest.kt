@@ -1,10 +1,7 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.vfpowertech.keytap.core.PlatformContact
-import com.vfpowertech.keytap.core.persistence.ContactInfo
-import com.vfpowertech.keytap.core.persistence.DuplicateContactException
-import com.vfpowertech.keytap.core.persistence.InvalidContactException
-import com.vfpowertech.keytap.core.persistence.InvalidConversationException
+import com.vfpowertech.keytap.core.persistence.*
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
@@ -300,5 +297,23 @@ class SQLiteContactsPersistenceManagerTest {
         val contacts = arrayListOf(pcontactA, pcontactD)
         val got = contactsPersistenceManager.findMissing(contacts).get()
         assertEquals(listOf(pcontactD), got)
+    }
+
+    @Test
+    fun `getDiff should return a proper diff`() {
+        val userA = ContactInfo("a@a.com", "a", "0", "pk")
+        val userB = ContactInfo("b@a.com", "a", "0", "pk")
+        val userC = ContactInfo("c@a.com", "a", "0", "pk")
+
+        for (user in listOf(userA, userB))
+            contactsPersistenceManager.add(user).get()
+
+        val remoteContacts = listOf(userA.email, userC.email)
+
+        val diff = contactsPersistenceManager.getDiff(remoteContacts).get()
+
+        val expected = ContactListDiff(setOf(userC.email), setOf(userB.email))
+
+        assertEquals(expected, diff)
     }
 }

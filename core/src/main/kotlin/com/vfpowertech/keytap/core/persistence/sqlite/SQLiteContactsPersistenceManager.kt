@@ -192,6 +192,26 @@ ON
         }
     }
 
+    override fun getDiff(emails: List<String>): Promise<ContactListDiff, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val remoteEmails = emails.toSet()
+
+        val localEmails = connection.prepare("SELECT email FROM contacts").use { stmt ->
+            val r = HashSet<String>()
+            while (stmt.step()) {
+                r.add(stmt.columnString(0))
+            }
+            r
+        }
+
+        val removedEmails = HashSet(localEmails)
+        removedEmails.removeAll(remoteEmails)
+
+        val addedEmails = HashSet(remoteEmails)
+        addedEmails.removeAll(localEmails)
+
+        ContactListDiff(addedEmails, removedEmails)
+    }
+
     override fun findMissing(platformContacts: List<PlatformContact>): Promise<List<PlatformContact>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val missing = ArrayList<PlatformContact>()
 
@@ -232,5 +252,4 @@ ON
 
         missing
     }
-
 }
