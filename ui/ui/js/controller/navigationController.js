@@ -10,7 +10,12 @@ NavigationController.prototype = {
     },
     goBack : function () {
         historyService.pop().then(function(url){
-            this.smoothStateLoad(url);
+            if(url == "") {
+                windowService.minimize();
+            }
+            else {
+                this.smoothStateLoad(url);
+            }
         }.bind(this)).catch(function (e){
             KEYTAP.exceptionController.displayDebugMessage(e);
             console.log(e);

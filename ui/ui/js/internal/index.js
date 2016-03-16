@@ -21,6 +21,7 @@ $(document).ready(function(){
         }else {
             window.configService.getStartupInfo().then(function (startupInfo) {
                 KEYTAP.navigationController.loadPage("login.html");
+                KEYTAP.navigationController.clearHistory();
                 if(startupInfo != null && startupInfo.lastLoggedInAccount !== null && startupInfo.savedAccountPassword !== null) {
                     KEYTAP.loginController.model.setItems({
                         "login": startupInfo.lastLoggedInAccount,
