@@ -88,6 +88,8 @@ class KeyTapApplication {
 
         syncRemoteContactsList(userComponent) bind {
             syncLocalContacts(userComponent)
+        } fail { e ->
+            log.error("Contacts syncing failed: {}", e.message, e)
         }
 
         return userComponent
@@ -120,8 +122,6 @@ class KeyTapApplication {
                     contactsPersistenceManager.applyDiff(response.contacts, diff.removedContacts.toList())
                 }
             }
-        } fail { e ->
-            log.error("Remote contact list sync failed: {}", e.message, e)
         }
     }
 
