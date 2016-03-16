@@ -46,4 +46,7 @@ fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponen
 
     val telephonyService = applicationComponent.telephonyService
     dispatcher.registerService("TelephonyService", UITelephonyServiceToJavaProxy(telephonyService, dispatcher))
+
+    val windowService = applicationComponent.windowService
+    dispatcher.registerService("WindowService", UIWindowServiceToJavaProxy(windowService, dispatcher))
 }

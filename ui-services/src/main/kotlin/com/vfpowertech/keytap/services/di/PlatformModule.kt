@@ -4,6 +4,7 @@ import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.PlatformInfo
 import com.vfpowertech.keytap.services.ui.PlatformTelephonyService
 import com.vfpowertech.keytap.services.ui.UIPlatformInfoService
+import com.vfpowertech.keytap.services.ui.UIWindowService
 import dagger.Module
 import dagger.Provides
 import rx.Scheduler
@@ -25,6 +26,10 @@ class PlatformModule(
     @get:Singleton
     @get:Provides
     val providesPlatformTelephonyService: PlatformTelephonyService,
+
+    @get:Singleton
+    @get:Provides
+    val providesWindowService: UIWindowService,
 
     @get:Singleton
     @get:Provides

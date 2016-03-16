@@ -78,6 +78,7 @@ class DesktopApp : Application() {
             BuildConfig.DESKTOP_SERVER_URLS,
             platformInfo,
             DesktopTelephonyService(),
+            DesktopWindowService(primaryStage),
             JavaFxScheduler.getInstance()
         )
 
