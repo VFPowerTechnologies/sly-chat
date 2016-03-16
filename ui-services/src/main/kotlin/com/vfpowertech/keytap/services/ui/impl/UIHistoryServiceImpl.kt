@@ -1,17 +1,21 @@
-package com.vfpowertech.keytap.services.ui.dummy
+package com.vfpowertech.keytap.services.ui.impl
 
 import com.vfpowertech.keytap.services.ui.UIHistoryService
-import java.util.*
+import java.util.Stack
 
-class DummyUIHistoryService : UIHistoryService {
+class UIHistoryServiceImpl: UIHistoryService {
     private val stack = Stack<String>()
 
     override fun push(url: String) {
         stack.push(url)
     }
 
-    override fun pop(): String =
-        stack.pop()
+    override fun pop(): String {
+        if(stack.empty())
+            return ""
+        else
+            return stack.pop()
+    }
 
     override fun peek(): String =
         stack.peek()
