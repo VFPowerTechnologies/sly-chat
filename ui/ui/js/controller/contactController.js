@@ -41,7 +41,8 @@ ContactController.prototype = {
 
         var contactBlock = "<div class='" + contactLinkClass + "' id='contact%" + contact.email + "'><div class='contact'>";
         contactBlock += this.createAvatar(contact.name);
-        contactBlock += "<p>" + contact.name + "</p>";
+        contactBlock += "<p style='display: inline-block;'>" + contact.name + "</p>";
+        contactBlock += this.createContactDropDown(contact.email);
         contactBlock += "</div>" + newBadge + "</div>";
 
         return contactBlock;
@@ -58,8 +59,19 @@ ContactController.prototype = {
 
         return img.outerHTML;
     },
+    createContactDropDown: function (email) {
+        var dropDown = '<div class="dropdown pull-right">';
+        dropDown += '<a class="dropdown-toggle contact-dropDown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" href="#" style="text-decoration: none;">';
+        dropDown += '&nbsp;<i class="fa fa-ellipsis-v"></i>&nbsp;</a>';
+        dropDown += '<ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu">';
+        dropDown += '<li><a href="#" id="deleteContact_' + email + '">Delete Contact</a></li>';
+        dropDown += '</ul></div>';
+
+        return dropDown;
+    },
     addEventListener : function () {
-        var links = $("#contactContent").contents().find(".contact-link");
+        var iframe = $("#contactContent");
+        var links = iframe.contents().find(".contact-link");
 
         links.bind("click", function (e) {
             e.preventDefault();
@@ -67,6 +79,23 @@ ContactController.prototype = {
             KEYTAP.contactController.model.setCurrentContact(email);
             KEYTAP.navigationController.loadPage("chat.html");
         });
+
+        iframe.contents().find(".contact-dropDown").bind("click", function(e) {
+            $(this).next(".dropdown-menu").toggle();
+            e.stopPropagation();
+        });
+
+        iframe.contents().find("html").click(function(){
+            $("#contactContent").contents().find(".dropdown-menu").hide();
+        });
+
+        iframe.contents().find("[id^='deleteContact_']").bind("click", function(e){
+            e.stopPropagation();
+            e.preventDefault();
+            $("#contactContent").contents().find(".dropdown-menu").hide();
+            var email = e.currentTarget.id.split("_")[1];
+            this.displayDeleteContactModal(email);
+        }.bind(this));
     },
     getCurrentContact : function () {
         return this.model.getCurrentContact();
@@ -144,8 +173,8 @@ ContactController.prototype = {
             this.updateContact();
         }.bind(this));
     },
-    deleteContact : function () {
-        contactService.removeContact(this.model.getCurrentContact()).then(function () {
+    deleteContact : function (email) {
+        contactService.removeContact(this.model.getContact(email)).then(function () {
             this.model.resetContacts();
             KEYTAP.navigationController.loadPage("contacts.html");
         }.bind(this)).catch(function (e) {
@@ -250,5 +279,42 @@ ContactController.prototype = {
             e.preventDefault();
             KEYTAP.navigationController.loadPage("addContact.html");
         });
+    },
+    displayDeleteContactModal: function(email) {
+        var modalHtml = '<div id="deleteContactModal" class="modal">';
+        modalHtml += '<div style="border-bottom: 1px solid black;"><h6 style="margin-left: 5px;">Please confirm</h6></div>';
+        modalHtml += '<div class="modalContent row" style="margin-top: 10px; height: 60%;">';
+        modalHtml += '<div style="text-align: center;">';
+        modalHtml += '<h6>Are you sure You want to delete this contact?</h6><br>';
+        modalHtml += '<h6>' + email + '</h6>';
+        modalHtml += '</div>';
+        modalHtml += '</div>';
+        modalHtml += '<div style="bottom: 0; text-align: center;">';
+        modalHtml += '<button id="deleteContactModalClose" class="btn btn-info">Cancel</button>';
+        modalHtml += '<button id="deleteConfirm_' + email + '" class="btn red" style="margin-left: 5px;">Delete</button>';
+        modalHtml += '</div>';
+        modalHtml += '</div>';
+
+        $("html body").append(modalHtml);
+
+        var modal = $("#deleteContactModal");
+        modal.openModal({
+            dismissible: false
+        });
+
+        $("#deleteContactModalClose").click(function(e) {
+            e.preventDefault();
+            modal.closeModal();
+            modal.remove();
+        });
+
+        $("[id^='deleteConfirm_']").click(function(e){
+            var buttonId = e.currentTarget.id;
+            var contactEmail = buttonId.split("_")[1];
+            this.deleteContact(contactEmail);
+            modal.closeModal();
+            modal.remove();
+        }.bind(this));
+
     }
 };
