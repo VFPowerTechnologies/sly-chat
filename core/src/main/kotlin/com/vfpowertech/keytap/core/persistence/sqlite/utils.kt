@@ -77,6 +77,9 @@ inline fun <T> SQLiteStatement.map(body: (SQLiteStatement) -> T): List<T> {
 
 fun escapeBackticks(s: String) = s.replace("`", "``")
 
+fun getPlaceholders(n: Int): String =
+    "?".repeat(n).toList().joinToString(", ")
+
 //not exposed; taken from Internal.getArch, getOS so we can unpack + load the shared lib from resources for the proper OS
 private fun getArch(os: String): String {
     val arch = System.getProperty("os.arch").toLowerCase()

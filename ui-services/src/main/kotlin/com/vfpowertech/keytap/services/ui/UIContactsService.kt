@@ -6,6 +6,9 @@ import nl.komponents.kovenant.Promise
 /** Contact management. */
 @JSToJavaGenerate("ContactsService")
 interface UIContactsService {
+    /** Adds a listener to be notified on contact sync start/stop. Listener will be called after registration with current value. */
+    fun addContactListSyncListener(listener: (Boolean) -> Unit)
+
     /** Retrieve list of contacts. UIContact.id will not be null. */
     fun getContacts(): Promise<List<UIContactDetails>, Exception>
 

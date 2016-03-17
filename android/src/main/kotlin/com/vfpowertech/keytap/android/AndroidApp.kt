@@ -3,8 +3,11 @@ package com.vfpowertech.keytap.android
 import android.app.Application
 import android.content.Context
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
+import android.support.v4.content.ContextCompat
 import com.almworks.sqlite4java.SQLite
+import com.vfpowertech.keytap.android.services.AndroidPlatformContacts
 import com.vfpowertech.keytap.android.services.AndroidUIPlatformInfoService
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.services.KeyTapApplication
@@ -42,6 +45,7 @@ class AndroidApp : Application() {
             platformInfo,
             AndroidTelephonyService(this),
             AndroidWindowService(this),
+            AndroidPlatformContacts(this),
             AndroidSchedulers.mainThread()
         )
 
@@ -59,6 +63,9 @@ class AndroidApp : Application() {
 
     /** Use to request a runtime permission. If no activity is available, succeeds with false. */
     fun requestPermission(permission: String): Promise<Boolean, Exception> {
+        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED)
+            return Promise.ofSuccess(true)
+
         val activity = currentActivity ?: return Promise.ofSuccess(false)
 
         return activity.requestPermission(permission)
