@@ -1,17 +1,20 @@
 package com.vfpowertech.keytap.android.services
 
+import android.Manifest
 import android.content.AsyncQueryHandler
 import android.content.Context
 import android.database.Cursor
 import android.os.Handler
 import android.provider.ContactsContract.CommonDataKinds
 import android.provider.ContactsContract.Data
+import com.vfpowertech.keytap.android.AndroidApp
 import com.vfpowertech.keytap.core.PlatformContact
 import com.vfpowertech.keytap.core.PlatformContactBuilder
 import com.vfpowertech.keytap.services.PlatformContacts
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
+import nl.komponents.kovenant.ui.successUi
 import java.util.*
 
 class AndroidPlatformContacts(private val context: Context) : PlatformContacts {
@@ -21,7 +24,15 @@ class AndroidPlatformContacts(private val context: Context) : PlatformContacts {
         //AsyncQueryHandlers must be created on threads which have called Looper.prepare
         //so can't just create it on an arbitrary thread
         val handler = Handler(context.mainLooper)
-        handler.post { createAsyncQueryHandler(deferred) }
+        handler.post {
+            val androidApp = AndroidApp.get(context)
+            androidApp.requestPermission(Manifest.permission.READ_CONTACTS) successUi { granted ->
+                if (granted)
+                    createAsyncQueryHandler(deferred)
+                else
+                    deferred.resolve(ArrayList())
+            }
+        }
 
         return deferred.promise
     }
