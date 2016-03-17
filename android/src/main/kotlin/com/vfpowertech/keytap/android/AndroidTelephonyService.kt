@@ -14,7 +14,10 @@ class AndroidTelephonyService(private val context: Context) : PlatformTelephonyS
         val phoneNumber = telephonyManager.line1Number
         if (phoneNumber == null || phoneNumber.isEmpty())
             return null
-        return phoneNumber
+        return if (phoneNumber.startsWith("+"))
+            phoneNumber.substring(1)
+        else
+            phoneNumber
     }
 
     override fun getDevicePhoneNumber(): Promise<String?, Exception> {
