@@ -15,26 +15,6 @@ if (typeof KEYTAP == "undefined") {
     window.telephonyService = new TelephonyService();
     window.windowService = new WindowService();
 
-    networkStatusService.addRelayStatusChangeListener(function (status) {
-        var networkStatus = $("#networkStatus");
-        if(status.online == false){
-            networkStatus.removeClass("hidden");
-            networkStatus.find("span").html("Disconnected");
-        }else{
-            networkStatus.addClass("hidden");
-        }
-    });
-
-    networkStatusService.addNetworkStatusChangeListener(function (status) {
-        var networkStatus = $("#networkStatus");
-        if(status.online == false){
-            networkStatus.removeClass("hidden");
-            networkStatus.find("span").html("No connection Available");
-        }else{
-            networkStatus.addClass("hidden");
-        }
-    });
-
     KEYTAP.exceptionController = new ExceptionController();
 
     KEYTAP.loginController = new LoginController(new LoginModel);
@@ -61,6 +41,9 @@ if (typeof KEYTAP == "undefined") {
     $(window.location).on("chatExited", function () {
         KEYTAP.chatController.model.markConversationAsRead(KEYTAP.contactController.getCurrentContact());
     });
+
+    KEYTAP.connectionController = new ConnectionController();
+    KEYTAP.connectionController.init();
 
 // SmoothState, makes only the main div reload on page load.
     $(function(){
