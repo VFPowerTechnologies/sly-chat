@@ -133,6 +133,8 @@ class KeyTapApplication {
             return Promise.ofFail(RuntimeException("Null authToken"))
         }
 
+        val keyVault = userComponent.userLoginData.keyVault
+
         val phoneNumberUtil = PhoneNumberUtil.getInstance()
         val phoneNumber = phoneNumberUtil.parse("+${userComponent.accountInfo.phoneNumber}", null)
         val defaultRegion = phoneNumberUtil.getRegionCodeForCountryCode(phoneNumber.countryCode)
@@ -152,8 +154,14 @@ class KeyTapApplication {
             client.findLocalContacts(FindLocalContactsRequest(authToken, missingContacts))
         } bind { foundContacts ->
             log.debug("Found local contacts: {}", foundContacts)
-            //TODO add remotely
-            userComponent.contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.email, it.name, it.phoneNumber, it.publicKey) })
+
+            val client = ContactListAsyncClient(appComponent.serverUrls.API_SERVER)
+            val remoteContactEntries = encryptRemoteContactEntries(keyVault, foundContacts.contacts.map { it.email })
+            val request = AddContactsRequest(authToken, remoteContactEntries)
+
+            client.addContacts(request) bind {
+                userComponent.contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.email, it.name, it.phoneNumber, it.publicKey) })
+            }
         } fail { e ->
             log.error("Local contacts sync failed: {}", e.message, e)
         }
