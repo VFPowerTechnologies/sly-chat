@@ -4,6 +4,7 @@ import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteConstants
 import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
+import com.vfpowertech.keytap.core.PlatformContact
 import com.vfpowertech.keytap.core.persistence.*
 import nl.komponents.kovenant.Promise
 import java.util.*
@@ -121,28 +122,45 @@ ON
 
     override fun searchByPhoneNumber(phoneNumber: String): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery {
         searchByLikeField(it, "phone_number", phoneNumber)
-
     }
 
     override fun searchByName(name: String): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery {
         searchByLikeField(it, "name", name)
     }
 
-    override fun add(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    //never call when not inside a transition
+    private fun removeContactNoTransaction(connection: SQLiteConnection, email: String) {
+        connection.prepare("DELETE FROM conversation_info WHERE contact_email=?").use { stmt ->
+            stmt.bind(1, email)
+            stmt.step()
+        }
+
+        connection.prepare("DELETE FROM contacts WHERE email=?").use { stmt ->
+            stmt.bind(1, email)
+
+            stmt.step()
+            if (connection.changes <= 0)
+                throw InvalidContactException(email)
+        }
+
+        ConversationTable.delete(connection, email)
+    }
+
+    //never call when not inside a transition
+    //is here for bulk addition within a single transaction when syncing up the contacts list
+    private fun addContactNoTransaction(connection: SQLiteConnection, contactInfo: ContactInfo) {
         try {
-            connection.withTransaction {
-                connection.prepare("INSERT INTO contacts (email, name, phone_number, public_key) VALUES (?, ?, ?, ?)").use { stmt ->
-                    contactInfoToRow(contactInfo, stmt)
-                    stmt.step()
-                }
-
-                connection.prepare("INSERT INTO conversation_info (contact_email, unread_count, last_message) VALUES (?, 0, NULL)").use { stmt ->
-                    stmt.bind(1, contactInfo.email)
-                    stmt.step()
-                }
-
-                ConversationTable.create(connection, contactInfo.email)
+            connection.prepare("INSERT INTO contacts (email, name, phone_number, public_key) VALUES (?, ?, ?, ?)").use { stmt ->
+                contactInfoToRow(contactInfo, stmt)
+                stmt.step()
             }
+
+            connection.prepare("INSERT INTO conversation_info (contact_email, unread_count, last_message) VALUES (?, 0, NULL)").use { stmt ->
+                stmt.bind(1, contactInfo.email)
+                stmt.step()
+            }
+
+            ConversationTable.create(connection, contactInfo.email)
         }
         catch (e: SQLiteException) {
             if (e.baseErrorCode == SQLiteConstants.SQLITE_CONSTRAINT)
@@ -150,6 +168,18 @@ ON
 
             throw e
         }
+    }
+
+    private fun addContact(connection: SQLiteConnection, contactInfo: ContactInfo) {
+        connection.withTransaction { addContactNoTransaction(connection, contactInfo) }
+    }
+
+    override fun add(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        addContact(connection, contactInfo)
+    }
+
+    override fun addAll(contacts: List<ContactInfo>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        contacts.forEach { addContact(connection, it) }
     }
 
     override fun update(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -166,21 +196,74 @@ ON
     }
 
     override fun remove(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withTransaction {
-            connection.prepare("DELETE FROM conversation_info WHERE contact_email=?").use { stmt ->
-                stmt.bind(1, contactInfo.email)
-                stmt.step()
+        connection.withTransaction { removeContactNoTransaction(connection, contactInfo.email) }
+    }
+
+    override fun getDiff(emails: List<String>): Promise<ContactListDiff, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val remoteEmails = emails.toSet()
+
+        val localEmails = connection.prepare("SELECT email FROM contacts").use { stmt ->
+            val r = HashSet<String>()
+            while (stmt.step()) {
+                r.add(stmt.columnString(0))
             }
-
-            connection.prepare("DELETE FROM contacts WHERE email=?").use { stmt ->
-                stmt.bind(1, contactInfo.email)
-
-                stmt.step()
-                if (connection.changes <= 0)
-                    throw InvalidContactException(contactInfo.email)
-            }
-
-            ConversationTable.delete(connection, contactInfo.email)
+            r
         }
+
+        val removedEmails = HashSet(localEmails)
+        removedEmails.removeAll(remoteEmails)
+
+        val addedEmails = HashSet(remoteEmails)
+        addedEmails.removeAll(localEmails)
+
+        ContactListDiff(addedEmails, removedEmails)
+    }
+
+    override fun applyDiff(newContacts: List<ContactInfo>, removedContacts: List<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            newContacts.forEach { addContactNoTransaction(connection, it) }
+            removedContacts.forEach { removeContactNoTransaction(connection, it) }
+        }
+    }
+
+    override fun findMissing(platformContacts: List<PlatformContact>): Promise<List<PlatformContact>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val missing = ArrayList<PlatformContact>()
+
+        for (contact in platformContacts) {
+            val emails = contact.emails
+            val phoneNumbers = contact.phoneNumbers
+
+            val selection = ArrayList<String>()
+
+            if (emails.isNotEmpty())
+                selection.add("email IN (${getPlaceholders(emails.size)})")
+
+            if (phoneNumbers.isNotEmpty())
+                selection.add("phone_number IN (${getPlaceholders(phoneNumbers.size)})")
+
+            if (selection.isEmpty())
+                continue
+
+            val sql = "SELECT 1 FROM contacts WHERE " + selection.joinToString(" OR ") + " LIMIT 1"
+
+            connection.prepare(sql).use { stmt ->
+                var i = 1
+
+                for (email in emails) {
+                    stmt.bind(i, email)
+                    i += 1
+                }
+
+                for (phoneNumber in phoneNumbers) {
+                    stmt.bind(i, phoneNumber)
+                    i += 1
+                }
+
+                if (!stmt.step())
+                    missing.add(contact)
+            }
+        }
+
+        missing
     }
 }

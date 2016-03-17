@@ -1,8 +1,15 @@
 package com.vfpowertech.keytap.core
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
+import com.vfpowertech.keytap.core.http.api.contacts.RemoteContactEntry
+
+data class SiteContactList(
+    @JsonProperty("contacts")
+    val contacts: List<RemoteContactEntry>
+)
 
 /** Client for web api server dev functionality. */
 class DevClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
@@ -74,6 +81,25 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         )
         val body = objectMapper.writeValueAsBytes(request)
         val response = httpClient.postJSON("$serverBaseUrl/dev/prekeys/signed/$username", body)
+        throwOnFailure(response)
+    }
+
+    fun getContactList(username: String): List<RemoteContactEntry> {
+        val response = httpClient.get("$serverBaseUrl/dev/contact-list/$username")
+        throwOnFailure(response)
+
+        return objectMapper.readValue(response.body, SiteContactList::class.java).contacts
+    }
+
+    fun addContacts(username: String, contacts: List<RemoteContactEntry>) {
+        val request = mapOf(
+            "contacts" to contacts
+        )
+
+        val body = objectMapper.writeValueAsBytes(request)
+
+        val response = httpClient.postJSON("$serverBaseUrl/dev/contact-list/$username", body)
+
         throwOnFailure(response)
     }
 }

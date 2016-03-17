@@ -1,13 +1,18 @@
 package com.vfpowertech.keytap.services
 
+import com.google.i18n.phonenumbers.PhoneNumberUtil
+import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat
 import com.vfpowertech.keytap.core.crypto.KeyVault
+import com.vfpowertech.keytap.core.http.api.contacts.*
 import com.vfpowertech.keytap.core.persistence.AccountInfo
+import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.SessionData
 import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.services.di.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -36,6 +41,9 @@ class KeyTapApplication {
 
     private val userSessionAvailableSubject = BehaviorSubject.create(false)
     val userSessionAvailable: Observable<Boolean> = userSessionAvailableSubject
+
+    private val contactListSyncingSubject = BehaviorSubject.create(false)
+    val contactListSyncing: Observable<Boolean> = contactListSyncingSubject
 
     fun init(platformModule: PlatformModule) {
         appComponent = DaggerApplicationComponent.builder()
@@ -82,7 +90,94 @@ class KeyTapApplication {
 
         userSessionAvailableSubject.onNext(true)
 
+        //TODO reschedule this if it's not?
+        if (isNetworkAvailable) {
+            //TODO maybe just have this update before doing the actual updates?
+            //the issue with the syncing is that removing contacts will remove the convos, so we can't have the user access
+            //a convo that'll be removed during sync
+            contactListSyncingSubject.onNext(true)
+            syncRemoteContactsList(userComponent) bind {
+                syncLocalContacts(userComponent)
+            } fail { e ->
+                log.error("Contacts syncing failed: {}", e.message, e)
+            } alwaysUi {
+                contactListSyncingSubject.onNext(false)
+            }
+        }
+
         return userComponent
+    }
+
+    /** Syncs the local contact list with the remote contact list. */
+    private fun syncRemoteContactsList(userComponent: UserComponent): Promise<Unit, Exception> {
+        log.debug("Beginning remote contact list sync")
+
+        val client = ContactListAsyncClient(appComponent.serverUrls.API_SERVER)
+
+        val keyVault = userComponent.userLoginData.keyVault
+        val authToken = userComponent.userLoginData.authToken
+        if (authToken == null) {
+            log.debug("authToken is null, aborting remote contacts sync")
+            return Promise.ofFail(RuntimeException("Null authToken"))
+        }
+
+        val contactsPersistenceManager = userComponent.contactsPersistenceManager
+
+        return client.getContacts(GetContactsRequest(authToken)) bind { response ->
+            val emails = decryptRemoteContactEntries(keyVault, response.contacts)
+            contactsPersistenceManager.getDiff(emails) bind { diff ->
+                log.debug("New contacts: {}", diff.newContacts)
+                log.debug("Removed contacts: {}", diff.removedContacts)
+
+                val contactsClient = ContactAsyncClient(appComponent.serverUrls.API_SERVER)
+                val request = FetchContactInfoByEmailRequest(authToken, diff.newContacts.toList())
+                contactsClient.fetchContactInfoByEmail(request) bind { response ->
+                    contactsPersistenceManager.applyDiff(response.contacts, diff.removedContacts.toList())
+                }
+            }
+        }
+    }
+
+    /** Attempts to find any registered users matching the user's local contacts. */
+    private fun syncLocalContacts(userComponent: UserComponent): Promise<Unit, Exception> {
+        val authToken = userComponent.userLoginData.authToken
+        if (authToken == null) {
+            log.debug("authToken is null, aborting local contacts sync")
+            return Promise.ofFail(RuntimeException("Null authToken"))
+        }
+
+        val keyVault = userComponent.userLoginData.keyVault
+
+        val phoneNumberUtil = PhoneNumberUtil.getInstance()
+        val phoneNumber = phoneNumberUtil.parse("+${userComponent.accountInfo.phoneNumber}", null)
+        val defaultRegion = phoneNumberUtil.getRegionCodeForCountryCode(phoneNumber.countryCode)
+
+        return appComponent.platformContacts.fetchContacts() map { contacts ->
+            val phoneNumberUtil = PhoneNumberUtil.getInstance()
+
+            contacts.map { contact ->
+                val phoneNumbers = contact.phoneNumbers.map { parsePhoneNumber(it, defaultRegion) }.filter { it != null }.map { phoneNumberUtil.format(it, PhoneNumberFormat.E164) }
+                contact.copy(phoneNumbers = phoneNumbers)
+            }
+        } bind { contacts ->
+            userComponent.contactsPersistenceManager.findMissing(contacts)
+        } bind { missingContacts ->
+            log.debug("Missing local contacts:", missingContacts)
+            val client = ContactAsyncClient(appComponent.serverUrls.API_SERVER)
+            client.findLocalContacts(FindLocalContactsRequest(authToken, missingContacts))
+        } bind { foundContacts ->
+            log.debug("Found local contacts: {}", foundContacts)
+
+            val client = ContactListAsyncClient(appComponent.serverUrls.API_SERVER)
+            val remoteContactEntries = encryptRemoteContactEntries(keyVault, foundContacts.contacts.map { it.email })
+            val request = AddContactsRequest(authToken, remoteContactEntries)
+
+            client.addContacts(request) bind {
+                userComponent.contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.email, it.name, it.phoneNumber, it.publicKey) })
+            }
+        } fail { e ->
+            log.error("Local contacts sync failed: {}", e.message, e)
+        }
     }
 
     private fun createUserPaths(userPaths: UserPaths) {

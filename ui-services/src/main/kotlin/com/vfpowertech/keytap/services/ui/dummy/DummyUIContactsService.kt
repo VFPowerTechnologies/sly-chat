@@ -1,11 +1,14 @@
 package com.vfpowertech.keytap.services.ui.dummy
 
-import com.vfpowertech.keytap.services.ui.UIContactsService
 import com.vfpowertech.keytap.services.ui.UIContactDetails
+import com.vfpowertech.keytap.services.ui.UIContactsService
 import com.vfpowertech.keytap.services.ui.UINewContactResult
 import nl.komponents.kovenant.Promise
 
 class DummyUIContactsService : UIContactsService {
+    override fun addContactListSyncListener(listener: (Boolean) -> Unit) {
+    }
+
     private val contacts = hashMapOf(
         "Contact A" to UIContactDetails("Contact A", "000-000-0000", "a@a.com", "dummyPublicKey"),
         "Contact B" to UIContactDetails("Contact B", "111-111-1111", "b@b.com", "dummyPublicKedy")

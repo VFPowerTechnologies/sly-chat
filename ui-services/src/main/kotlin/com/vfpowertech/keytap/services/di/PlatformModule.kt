@@ -2,6 +2,7 @@ package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.PlatformInfo
+import com.vfpowertech.keytap.services.PlatformContacts
 import com.vfpowertech.keytap.services.ui.PlatformTelephonyService
 import com.vfpowertech.keytap.services.ui.UIPlatformInfoService
 import com.vfpowertech.keytap.services.ui.UIWindowService
@@ -30,6 +31,10 @@ class PlatformModule(
     @get:Singleton
     @get:Provides
     val providesWindowService: UIWindowService,
+
+    @get:Singleton
+    @get:Provides
+    val providesPlatformContacts: PlatformContacts,
 
     @get:Singleton
     @get:Provides
