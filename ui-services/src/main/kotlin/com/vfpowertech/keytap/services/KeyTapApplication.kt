@@ -12,6 +12,7 @@ import com.vfpowertech.keytap.services.di.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -40,6 +41,9 @@ class KeyTapApplication {
 
     private val userSessionAvailableSubject = BehaviorSubject.create(false)
     val userSessionAvailable: Observable<Boolean> = userSessionAvailableSubject
+
+    private val contactListSyncingSubject = BehaviorSubject.create(false)
+    val contactListSyncing: Observable<Boolean> = contactListSyncingSubject
 
     fun init(platformModule: PlatformModule) {
         appComponent = DaggerApplicationComponent.builder()
@@ -86,10 +90,16 @@ class KeyTapApplication {
 
         userSessionAvailableSubject.onNext(true)
 
+        //TODO maybe just have this update before doing the actual updates?
+        //the issue with the syncing is that removing contacts will remove the convos, so we can't have the user access
+        //a convo that'll be removed during sync
+        contactListSyncingSubject.onNext(true)
         syncRemoteContactsList(userComponent) bind {
             syncLocalContacts(userComponent)
         } fail { e ->
             log.error("Contacts syncing failed: {}", e.message, e)
+        } alwaysUi {
+            contactListSyncingSubject.onNext(false)
         }
 
         return userComponent

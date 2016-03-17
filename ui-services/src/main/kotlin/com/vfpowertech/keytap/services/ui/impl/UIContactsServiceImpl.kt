@@ -10,6 +10,7 @@ import com.vfpowertech.keytap.services.ui.UINewContactResult
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
+import java.util.*
 
 class UIContactsServiceImpl(
     private val app: KeyTapApplication,
@@ -17,6 +18,24 @@ class UIContactsServiceImpl(
 ) : UIContactsService {
     private val contactClient = ContactAsyncClient(serverUrl)
     private val contactListClient = ContactListAsyncClient(serverUrl)
+
+    private val contactListSyncListeners = ArrayList<(Boolean) -> Unit>()
+    private var isContactListSyncing = false
+
+    init {
+        app.contactListSyncing.subscribe { updateContactListSyncing(it) }
+    }
+
+    private fun updateContactListSyncing(value: Boolean) {
+        isContactListSyncing = value
+        for (listener in contactListSyncListeners)
+            listener(value)
+    }
+
+    override fun addContactListSyncListener(listener: (Boolean) -> Unit) {
+        contactListSyncListeners.add(listener)
+        listener(isContactListSyncing)
+    }
 
     private fun getContactsPersistenceManagerOrThrow(): ContactsPersistenceManager =
         app.userComponent?.contactsPersistenceManager ?: error("No UserComponent available")
