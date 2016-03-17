@@ -90,16 +90,19 @@ class KeyTapApplication {
 
         userSessionAvailableSubject.onNext(true)
 
-        //TODO maybe just have this update before doing the actual updates?
-        //the issue with the syncing is that removing contacts will remove the convos, so we can't have the user access
-        //a convo that'll be removed during sync
-        contactListSyncingSubject.onNext(true)
-        syncRemoteContactsList(userComponent) bind {
-            syncLocalContacts(userComponent)
-        } fail { e ->
-            log.error("Contacts syncing failed: {}", e.message, e)
-        } alwaysUi {
-            contactListSyncingSubject.onNext(false)
+        //TODO reschedule this if it's not?
+        if (isNetworkAvailable) {
+            //TODO maybe just have this update before doing the actual updates?
+            //the issue with the syncing is that removing contacts will remove the convos, so we can't have the user access
+            //a convo that'll be removed during sync
+            contactListSyncingSubject.onNext(true)
+            syncRemoteContactsList(userComponent) bind {
+                syncLocalContacts(userComponent)
+            } fail { e ->
+                log.error("Contacts syncing failed: {}", e.message, e)
+            } alwaysUi {
+                contactListSyncingSubject.onNext(false)
+            }
         }
 
         return userComponent
