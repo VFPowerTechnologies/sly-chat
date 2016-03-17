@@ -1,6 +1,7 @@
 var ContactController = function (model) {
     this.model = model;
     this.model.setController(this);
+    this.syncing = false;
 };
 
 ContactController.prototype = {
@@ -12,6 +13,14 @@ ContactController.prototype = {
         else{
             this.displayContacts(conversations);
         }
+
+        contactService.addContactListSyncListener(function (sync) {
+            this.syncing = sync;
+            if(sync == false && window.location.href.indexOf("contacts.html") > -1){
+                this.model.resetContacts();
+                this.model.fetchConversation();
+            }
+        }.bind(this));
     },
     displayContacts : function (conversations) {
         var contactList = $("#contactContent").contents().find("#contactList");
@@ -93,8 +102,10 @@ ContactController.prototype = {
             e.stopPropagation();
             e.preventDefault();
             $("#contactContent").contents().find(".dropdown-menu").hide();
-            var email = e.currentTarget.id.split("_")[1];
-            this.displayDeleteContactModal(email);
+            if(KEYTAP.connectionController.networkAvailable == true && this.syncing == false) {
+                var email = e.currentTarget.id.split("_")[1];
+                this.displayDeleteContactModal(email);
+            }
         }.bind(this));
     },
     getCurrentContact : function () {
@@ -108,7 +119,7 @@ ContactController.prototype = {
     },
     addNewContact : function () {
         $("#newContactBtn").prop("disabled", true);
-        if(this.model.validateContact("#addContactForm") == true){
+        if(this.model.validateContact("#addContactForm") == true && this.syncing == false){
             var input = document.getElementById("username").value;
             var phone = null;
             var username = null;
@@ -133,6 +144,9 @@ ContactController.prototype = {
                 $("#newContactBtn").prop("disabled", false);
                 $("#error").append("<li>" + e.message + "</li>");
             });
+        }
+        else{
+            $("#newContactBtn").prop("disabled", false);
         }
     },
     fillContactInfo : function () {

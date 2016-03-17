@@ -22,14 +22,17 @@ ConnectionController.prototype = {
         if(this.networkAvailable == false) {
             networkStatus.removeClass("hidden");
             networkStatus.find("span").html("No connection available");
+            $("#addContactBtn").prop("disabled", true);
         }
         else if(this.relayConnected == false) {
             networkStatus.removeClass("hidden");
             networkStatus.find("span").html("Disconnected");
+            $("#addContactBtn").prop("disabled", false);
         }
         else {
             networkStatus.addClass("hidden");
             networkStatus.find("span").html("");
+            $("#addContactBtn").prop("disabled", false);
         }
     }
 };
