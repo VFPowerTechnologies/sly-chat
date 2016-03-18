@@ -1,12 +1,13 @@
 package com.vfpowertech.keytap.services.ui.dummy
 
 import com.vfpowertech.keytap.services.ui.UIRegistrationInfo
-import com.vfpowertech.keytap.services.ui.UIRegistrationResult
 import com.vfpowertech.keytap.services.ui.UIRegistrationService
+import com.vfpowertech.keytap.services.ui.UIRegistrationResult
+import com.vfpowertech.keytap.services.ui.UISmsVerificationStatus
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.task
-import java.util.*
+import java.util.ArrayList
 
 class DummyUIRegistrationService() : UIRegistrationService {
     private val listeners = ArrayList<(String) -> Unit>()
@@ -33,5 +34,13 @@ class DummyUIRegistrationService() : UIRegistrationService {
             updateProgress("Updating prekeys")
             UIRegistrationResult(true, null, null)
         }
+    }
+
+    override fun submitVerificationCode(info: UIRegistrationInfo, code: String): Promise<UISmsVerificationStatus, Exception> {
+        return Promise.ofSuccess(UISmsVerificationStatus(true, null));
+    }
+
+    override fun resendVerificationCode(info: UIRegistrationInfo): Promise<UISmsVerificationStatus, Exception> {
+        return Promise.ofSuccess(UISmsVerificationStatus(true, null));
     }
 }

@@ -12,4 +12,8 @@ interface UIRegistrationService {
     fun doRegistration(info: UIRegistrationInfo): Promise<UIRegistrationResult, Exception>
 
     fun addListener(listener: (String) -> Unit)
+
+    fun submitVerificationCode(info: UIRegistrationInfo, code: String): Promise<UISmsVerificationStatus, Exception>
+
+    fun resendVerificationCode(info: UIRegistrationInfo): Promise<UISmsVerificationStatus, Exception>
 }
