@@ -3,14 +3,17 @@ package com.vfpowertech.keytap.services.ui.impl
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationAsyncClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
+import com.vfpowertech.keytap.core.http.api.registration.SmsResendRequest
+import com.vfpowertech.keytap.core.http.api.registration.SmsVerificationRequest
+import com.vfpowertech.keytap.services.ui.UIRegistrationService
 import com.vfpowertech.keytap.services.ui.UIRegistrationInfo
 import com.vfpowertech.keytap.services.ui.UIRegistrationResult
-import com.vfpowertech.keytap.services.ui.UIRegistrationService
+import com.vfpowertech.keytap.services.ui.UISmsVerificationStatus
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.ArrayList
 
 class UIRegistrationServiceImpl(
     serverUrl: String
@@ -54,6 +57,18 @@ class UIRegistrationServiceImpl(
     override fun addListener(listener: (String) -> Unit) {
         synchronized(this) {
             listeners.add(listener)
+        }
+    }
+
+    override fun submitVerificationCode(info: UIRegistrationInfo, code: String): Promise<UISmsVerificationStatus, Exception> {
+        return registrationClient.verifySmsCode(SmsVerificationRequest(info.email, code)) map { response ->
+            UISmsVerificationStatus(response.isSuccess, response.errorMessage)
+        }
+    }
+
+    override fun resendVerificationCode(info: UIRegistrationInfo): Promise<UISmsVerificationStatus, Exception> {
+        return registrationClient.resendSmsCode(SmsResendRequest(info.email, info.phoneNumber)) map { response ->
+            UISmsVerificationStatus(response.isSuccess, response.errorMessage)
         }
     }
 }

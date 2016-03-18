@@ -10,4 +10,13 @@ class RegistrationAsyncClient(serverUrl: String) {
     fun register(request: RegisterRequest): Promise<RegisterResponse, Exception> = task {
         registrationClient.register(request)
     }
+
+    fun verifySmsCode(request: SmsVerificationRequest): Promise<SmsVerificationResponse, Exception> = task {
+        registrationClient.verifySmsCode(request)
+    }
+
+    fun resendSmsCode(request: SmsResendRequest): Promise<SmsVerificationResponse, Exception> = task {
+        registrationClient.resendSmsCode(request)
+    }
+
 }

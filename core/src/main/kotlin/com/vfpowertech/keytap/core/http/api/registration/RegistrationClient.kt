@@ -19,4 +19,24 @@ class RegistrationClient(private val serverBaseUrl: String, private val httpClie
         val resp = httpClient.postJSON(url, jsonRequest)
         return valueFromApi(resp, setOf(200, 400), typeRef<ApiResult<RegisterResponse>>())
     }
+
+    fun verifySmsCode(request: SmsVerificationRequest): SmsVerificationResponse {
+        val url = "$serverBaseUrl/v1/sms/verification"
+
+        val objectMapper = ObjectMapper()
+        val jsonRequest = objectMapper.writeValueAsBytes(request)
+
+        val resp = httpClient.postJSON(url, jsonRequest)
+        return valueFromApi(resp, setOf(200, 400), typeRef<ApiResult<SmsVerificationResponse>>())
+    }
+
+    fun resendSmsCode(request: SmsResendRequest): SmsVerificationResponse {
+        val url = "$serverBaseUrl/v1/sms/resend"
+
+        val objectMapper = ObjectMapper()
+        val jsonRequest = objectMapper.writeValueAsBytes(request)
+
+        val resp = httpClient.postJSON(url, jsonRequest)
+        return valueFromApi(resp, setOf(200, 400), typeRef<ApiResult<SmsVerificationResponse>>())
+    }
 }
