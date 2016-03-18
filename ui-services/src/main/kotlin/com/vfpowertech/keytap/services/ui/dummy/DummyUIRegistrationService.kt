@@ -36,11 +36,11 @@ class DummyUIRegistrationService() : UIRegistrationService {
         }
     }
 
-    override fun submitVerificationCode(info: UIRegistrationInfo, code: String): Promise<UISmsVerificationStatus, Exception> {
+    override fun submitVerificationCode(username: String, code: String): Promise<UISmsVerificationStatus, Exception> {
         return Promise.ofSuccess(UISmsVerificationStatus(true, null));
     }
 
-    override fun resendVerificationCode(info: UIRegistrationInfo): Promise<UISmsVerificationStatus, Exception> {
+    override fun resendVerificationCode(username: String): Promise<UISmsVerificationStatus, Exception> {
         return Promise.ofSuccess(UISmsVerificationStatus(true, null));
     }
 }

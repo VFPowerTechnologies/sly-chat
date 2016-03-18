@@ -4,8 +4,5 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 data class SmsResendRequest(
     @JsonProperty("username")
-    val username: String,
-
-    @JsonProperty("phone-number")
-    val phoneNumber: String
+    val username: String
 )

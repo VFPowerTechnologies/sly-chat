@@ -60,14 +60,14 @@ class UIRegistrationServiceImpl(
         }
     }
 
-    override fun submitVerificationCode(info: UIRegistrationInfo, code: String): Promise<UISmsVerificationStatus, Exception> {
-        return registrationClient.verifySmsCode(SmsVerificationRequest(info.email, code)) map { response ->
+    override fun submitVerificationCode(username: String, code: String): Promise<UISmsVerificationStatus, Exception> {
+        return registrationClient.verifySmsCode(SmsVerificationRequest(username, code)) map { response ->
             UISmsVerificationStatus(response.isSuccess, response.errorMessage)
         }
     }
 
-    override fun resendVerificationCode(info: UIRegistrationInfo): Promise<UISmsVerificationStatus, Exception> {
-        return registrationClient.resendSmsCode(SmsResendRequest(info.email, info.phoneNumber)) map { response ->
+    override fun resendVerificationCode(username: String): Promise<UISmsVerificationStatus, Exception> {
+        return registrationClient.resendSmsCode(SmsResendRequest(username)) map { response ->
             UISmsVerificationStatus(response.isSuccess, response.errorMessage)
         }
     }
