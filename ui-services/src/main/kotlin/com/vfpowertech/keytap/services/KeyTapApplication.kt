@@ -155,10 +155,14 @@ class KeyTapApplication {
         return appComponent.platformContacts.fetchContacts() map { contacts ->
             val phoneNumberUtil = PhoneNumberUtil.getInstance()
 
-            contacts.map { contact ->
-                val phoneNumbers = contact.phoneNumbers.map { parsePhoneNumber(it, defaultRegion) }.filter { it != null }.map { phoneNumberUtil.format(it, PhoneNumberFormat.E164) }
+            val updated = contacts.map { contact ->
+                val phoneNumbers = contact.phoneNumbers.map { parsePhoneNumber(it, defaultRegion) }.filter { it != null }.map { phoneNumberUtil.format(it, PhoneNumberFormat.E164).substring(1) }
                 contact.copy(phoneNumbers = phoneNumbers)
             }
+
+            log.debug("Platform contacts: {}", updated)
+
+            updated
         } bind { contacts ->
             userComponent.contactsPersistenceManager.findMissing(contacts)
         } bind { missingContacts ->
