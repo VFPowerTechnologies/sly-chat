@@ -39,11 +39,52 @@ RegistrationController.prototype = {
             KEYTAP.loginController.setInfo(info.email, info.password);
             KEYTAP.loginController.login();
         }.bind(this));
+
+        $(document).on("click", "#submitVerificationCode", function (e) {
+            e.preventDefault();
+
+            var code = $("#smsCode").val();
+            registrationService.submitVerificationCode(this.model.getItems().email, code).then(function (result) {
+                if(result.successful == true) {
+                    var modal = $("#statusModal");
+                    modal.html(this.createRegistrationSuccessContent());
+                    modal.openModal({
+                        dismissible: false
+                    });
+                }
+                else {
+                    document.getElementById("verification-error").innerHTML = "<li>" + result.errorMessage + "</li>";
+                }
+            }.bind(this)).catch(function (e) {
+                KEYTAP.exceptionController.displayDebugMessage(e);
+                document.getElementById("verification-error").innerHTML = "<li>Verification failed</li>";
+            });
+        }.bind(this));
+
+        $(document).on("click", "#resendVerificationCode", function (e) {
+            e.preventDefault();
+            $("#resendVerificationCode").prop("disabled", true);
+            registrationService.resendVerificationCode(this.model.getItems().email).then(function (result) {
+                if(result.successful == true) {
+                    setTimeout(function(){
+                        $("#resendVerificationCode").prop("disabled", false);
+                    }, 20000);
+                }
+                else {
+                    document.getElementById("verification-error").innerHTML = "<li>" + result.errorMessage + "</li>";
+                    $("#resendVerificationCode").prop("disabled", false);
+                }
+            }).catch(function (e) {
+                document.getElementById("verification-error").innerHTML = "<li>An error occurred</li>";
+                KEYTAP.exceptionController.displayDebugMessage(e);
+            });
+        }.bind(this));
     },
     register : function () {
         registrationService.doRegistration(this.model.getItems()).then(function (result) {
             if(result.successful == true) {
-                $("#statusModal").html(this.createRegistrationSuccessContent());
+                $("#statusModal").closeModal();
+                KEYTAP.navigationController.loadPage("smsVerification.html");
             }
             else{
                 $("#statusModal").closeModal();
@@ -71,4 +112,4 @@ RegistrationController.prototype = {
         var content = "<div class='modalHeader'><h5>Thank you</h5></div><div class='modalContent'><i class='fa fa-spinner fa-3x fa-spin'></i><p>We are logging you in</p></div>";
         return content;
     }
-}
+};

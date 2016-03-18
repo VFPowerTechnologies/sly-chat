@@ -44,6 +44,11 @@ LoginController.prototype = {
                 KEYTAP.navigationController.clearHistory();
                 $("#statusModal").closeModal();
             }
+            else if(result.errorMessage == "Phone confirmation needed") {
+                $("#statusModal").closeModal();
+                KEYTAP.registrationController.model.setItems({"email" : this.model.getLogin(), "password" : this.model.getPassword()});
+                KEYTAP.navigationController.loadPage("smsVerification.html");
+            }
             else {
                 document.getElementById("login-error").innerHTML = "<li>An error occurred: " + result.errorMessage + "</li>";
                 $("#submitLoginBtn").prop("disabled", false);
