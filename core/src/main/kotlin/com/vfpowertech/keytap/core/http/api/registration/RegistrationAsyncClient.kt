@@ -1,8 +1,6 @@
 package com.vfpowertech.keytap.core.http.api.registration
 
 import com.vfpowertech.keytap.core.http.JavaHttpClient
-import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationAsyncClient
-import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationClient
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
