@@ -6,7 +6,7 @@ import nl.komponents.kovenant.Promise
 
 class DummyUILoginService : UILoginService {
     override fun login(emailOrPhoneNumber: String, password: String): Promise<UILoginResult, Exception> {
-        return Promise.ofSuccess(UILoginResult(true, null))
+        return Promise.ofSuccess(UILoginResult(true, null, null))
     }
 
     override fun logout() {

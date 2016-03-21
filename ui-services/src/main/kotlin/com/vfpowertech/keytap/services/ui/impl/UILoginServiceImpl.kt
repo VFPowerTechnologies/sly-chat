@@ -91,9 +91,9 @@ class UILoginServiceImpl(
                 log.info("Requested to generate {} new prekeys", response.keyRegenCount)
             }
         } map { response ->
-            UILoginResult(true, null)
+            UILoginResult(true, response.accountInfo, null)
         } recoverFor { e: AuthApiResponseException ->
-            UILoginResult(false, e.errorMessage)
+            UILoginResult(false, null, e.errorMessage)
         }
     }
 }
