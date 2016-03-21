@@ -16,6 +16,7 @@ import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.Subscription
 import rx.subjects.BehaviorSubject
 
 class KeyTapApplication {
@@ -23,6 +24,7 @@ class KeyTapApplication {
 
     private var isNetworkAvailable = false
 
+    private var reconnectionTimerSubscription: Subscription? = null
     private lateinit var reconnectionTimer: ExponentialBackoffTimer
 
     lateinit var appComponent: ApplicationComponent
@@ -256,10 +258,26 @@ class KeyTapApplication {
         if (!isNetworkAvailable)
             return
 
-        reconnectionTimer.next().subscribe {
-            val userComponent = this.userComponent
-            if (userComponent != null) {
-                connectToRelay(userComponent)
+        if (reconnectionTimerSubscription != null) {
+            log.warn("Relay reconnection already queued, ignoring reconnect request")
+            return
+        }
+
+        val userComponent = this.userComponent
+        if (userComponent == null) {
+            log.error("Attempt to queue reconnect when not logged in")
+            return
+        }
+
+        reconnectionTimerSubscription = reconnectionTimer.next().subscribe {
+            reconnectionTimerSubscription = null
+
+            val currentUserComponent = this.userComponent
+            if (currentUserComponent != null) {
+                if (userComponent.accountInfo == currentUserComponent.accountInfo)
+                    connectToRelay(currentUserComponent)
+                else
+                    log.warn("Ignoring reconnect from previously logged in account")
             }
             else
                 log.warn("No longer logged in, aborting reconnect")
@@ -313,6 +331,13 @@ class KeyTapApplication {
         val userComponent = this.userComponent ?: return
 
         log.info("Destroying user session")
+
+        val sub = reconnectionTimerSubscription
+        if (sub != null) {
+            log.debug("Cancelling relay reconnection timer")
+            sub.unsubscribe()
+            reconnectionTimerSubscription = null
+        }
 
         //notify listeners before tearing down session
         userSessionAvailableSubject.onNext(false)
