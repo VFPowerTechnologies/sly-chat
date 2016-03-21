@@ -6,6 +6,17 @@ var ContactModel = function () {
 ContactModel.prototype = {
     fetchConversation : function () {
         messengerService.getConversations().then(function(conversations){
+            conversations.sort(function(a, b) {
+                var emailA = a.contact.email.toLowerCase();
+                var emailB = b.contact.email.toLowerCase();
+
+                if(emailA < emailB)
+                    return -1;
+                if(emailA > emailB)
+                    return 1;
+
+                return 0;
+            });
             conversations.forEach(function(conversation){
                 this.conversations[conversation.contact.email] = conversation;
             }.bind(this));
