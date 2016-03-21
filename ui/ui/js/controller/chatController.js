@@ -118,7 +118,7 @@ ChatController.prototype = {
                     if (!contactBlock.hasClass("new-messages")) {
                         var contact = contactBlock.find(".contact");
                         contactBlock.addClass("new-messages");
-                        contact.append("<span class='pull-right label label-warning' style='bottom: 5px;'>" + "new" + "</span>");
+                        contact.after("<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>");
                     }
                 }
             }

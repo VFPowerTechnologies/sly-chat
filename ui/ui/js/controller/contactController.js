@@ -42,7 +42,7 @@ ContactController.prototype = {
 
         if(status.unreadMessageCount > 0){
             contactLinkClass += "new-messages";
-            newBadge = "<span class='pull-right label label-warning'>" + "new" + "</span>";
+            newBadge = "<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>";
         }
 
         if(index == 0)
