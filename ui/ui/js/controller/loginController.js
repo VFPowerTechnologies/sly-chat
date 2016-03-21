@@ -31,6 +31,9 @@ LoginController.prototype = {
     login : function() {
         loginService.login(this.model.getLogin(), this.model.getPassword()).then(function (result) {
             if (result.successful) {
+                if(typeof result.accountInfo != "undefined" && result.accountInfo != null){
+                    KEYTAP.userInfoController.setUserInfo(result.accountInfo);
+                }
                 if($("#rememberMe").is(':checked')) {
                     window.configService.setStartupInfo({lastLoggedInAccount: this.model.getLogin(), savedAccountPassword: this.model.getPassword()}).then(function () {
                         console.log('Wrote startup info');
@@ -81,5 +84,10 @@ LoginController.prototype = {
         KEYTAP.navigationController.loadPage("login.html");
         KEYTAP.navigationController.clearHistory();
         KEYTAP.contactController.model.resetContacts();
+        KEYTAP.userInfoController.setUserInfo({
+            "name" : "",
+            "phone-number" : "",
+            "email" : ""
+        });
     }
 };

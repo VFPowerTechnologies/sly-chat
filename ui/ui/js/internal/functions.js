@@ -45,6 +45,8 @@ if (typeof KEYTAP == "undefined") {
     KEYTAP.connectionController = new ConnectionController();
     KEYTAP.connectionController.init();
 
+    KEYTAP.userInfoController = new UserInfoController(new UserInfoModel());
+
 // SmoothState, makes only the main div reload on page load.
     $(function(){
         'use strict';

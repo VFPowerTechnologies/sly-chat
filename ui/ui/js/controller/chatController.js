@@ -63,6 +63,8 @@ ChatController.prototype = {
 
         if(message.timestamp != null){
             timeSpan.textContent = message.timestamp;
+        }else if(message.timestamp == null && message.sent == true){
+            timeSpan.textContent = "Delivering...";
         }else{
             timeSpan.textContent = message.timestamp;
         }
@@ -81,7 +83,7 @@ ChatController.prototype = {
 
             messengerService.sendMessageTo(this.contactController.getCurrentContact(), message).then(function (messageDetails) {
                 this.newMessageInput.value = "";
-                messageNode.append(this.createMessageNode(messageDetails, "me"));
+                messageNode.append(this.createMessageNode(messageDetails, KEYTAP.userInfoController.getUserInfo().name));
                 document.getElementById("chatContent").contentWindow.scrollTo(0, 9999999);
                 $("#newMessageInput").click();
             }.bind(this)).catch(function (e) {
