@@ -16,9 +16,13 @@ import com.almworks.sqlite4java.SQLite
 import com.vfpowertech.keytap.android.services.AndroidPlatformContacts
 import com.vfpowertech.keytap.android.services.AndroidUIPlatformInfoService
 import com.vfpowertech.keytap.core.BuildConfig
+import com.vfpowertech.keytap.core.http.api.gcm.GcmAsyncClient
+import com.vfpowertech.keytap.core.http.api.gcm.RegisterRequest
+import com.vfpowertech.keytap.core.http.api.gcm.RegisterResponse
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.di.ApplicationComponent
 import com.vfpowertech.keytap.services.di.PlatformModule
+import com.vfpowertech.keytap.services.di.UserComponent
 import com.vfpowertech.keytap.services.ui.createAppDirectories
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.android.androidUiDispatcher
@@ -92,6 +96,13 @@ class AndroidApp : Application() {
         gcmFetchToken(this, userComponent.userLoginData.username).successUi { onGCMTokenRefresh(it.username, it.token) }
     }
 
+    private fun pushGcmTokenToServer(authToken: String, token: String): Promise<RegisterResponse, Exception> {
+        val serverUrl = app.appComponent.serverUrls.API_SERVER
+        //TODO installationId
+        val request = RegisterRequest(authToken, token, "0")
+        return GcmAsyncClient(serverUrl).register(request)
+    }
+
     fun onGCMTokenRefresh(username: String, token: String) {
         val userComponent = app.userComponent ?: return
 
@@ -101,20 +112,34 @@ class AndroidApp : Application() {
 
         log.debug("Received GCM token for {}: {}", username, token)
 
-        //TODO ship to server, then update settings
+        val authToken = userComponent.userLoginData.authToken
+        if (authToken == null) {
+            log.warn("Unable to push GCM token to server, no auth token available")
+            return
+        }
 
-        val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
-        val usernames = HashSet(sharedPrefs.getStringSet(AndroidPreferences.tokenUserList, HashSet()))
-        val editor = sharedPrefs.edit()
-        editor.putBoolean(AndroidPreferences.getTokenSentToServer(username), true)
-        usernames.add(username)
-        editor.putStringSet(AndroidPreferences.tokenUserList, usernames)
-        editor.apply()
+        pushGcmTokenToServer(authToken, token) successUi { response ->
+            if (response.isSuccess) {
+                log.info("GCM token successfully registered with server")
+
+                val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
+                val usernames = HashSet(sharedPrefs.getStringSet(AndroidPreferences.tokenUserList, HashSet()))
+                val editor = sharedPrefs.edit()
+                editor.putBoolean(AndroidPreferences.getTokenSentToServer(username), true)
+                usernames.add(username)
+                editor.putStringSet(AndroidPreferences.tokenUserList, usernames)
+                editor.apply()
+            }
+            //TODO
+            else {
+                log.error("Error registering token: {}", response.errorMessage)
+            }
+        } fail { e ->
+            log.error("Error registering token: {}", e.message, e)
+        }
     }
 
     fun onGCMMessage(account: String, offlineMessageInfoList: Array<OfflineMessageInfo>) {
-        println(Arrays.toString(offlineMessageInfoList))
-
         //TODO if the app is closed then the user isn't logged in, since right now the ui handles the auto-login
         //showing multiple account notifications is annoying since we have to give them different ids
         //so right now we just show a notification anyways
@@ -171,7 +196,6 @@ class AndroidApp : Application() {
         val userComponent = app.userComponent!!
         val username = userComponent.userLoginData.username
 
-        //TODO move this to per-user settings
         val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
         val tokenSent = sharedPrefs.getBoolean(AndroidPreferences.getTokenSentToServer(username), false)
         if (!tokenSent)
