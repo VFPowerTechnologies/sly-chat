@@ -4,6 +4,7 @@ package com.vfpowertech.keytap.core.http.api
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.typeRef
 
@@ -58,4 +59,13 @@ fun <T> valueFromApi(response: HttpResponse, validResponseCodes: Set<Int>, typeR
     }
 
     return getValueFromApiResult(apiResult, response)
+}
+
+/** Posts the given request to the given url as JSON, then passes the response to valueFromApi. */
+fun <R, T> postRequest(httpClient: HttpClient, url: String, request: R, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+    val objectMapper = ObjectMapper()
+    val jsonRequest = objectMapper.writeValueAsBytes(request)
+
+    val resp = httpClient.postJSON(url, jsonRequest)
+    return valueFromApi(resp, validResponseCodes, typeReference)
 }
