@@ -8,7 +8,7 @@ LoginController.prototype = {
             e.preventDefault();
             $("#submitLoginBtn").prop("disabled", true);
             this.model.setItems({
-                "login" : $("#login").val(),
+                "login" : $("#login").val().replace(/\s+/g, ''),
                 "password" : $("#login-psw").val()
             });
 
