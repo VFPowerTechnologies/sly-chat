@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.core.BuildConfig
+import com.vfpowertech.keytap.core.PlatformInfo
 import com.vfpowertech.keytap.services.AuthenticationService
 import com.vfpowertech.keytap.services.PlatformContacts
 import com.vfpowertech.keytap.services.UserPathsGenerator
@@ -13,6 +14,8 @@ import javax.inject.Singleton
 @Singleton
 @Component(modules = arrayOf(ApplicationModule::class, RelayModule::class, UIServicesModule::class, PlatformModule::class))
 interface ApplicationComponent {
+    val platformInfo: PlatformInfo
+
     val platformInfoService: UIPlatformInfoService
 
     val registrationService: UIRegistrationService

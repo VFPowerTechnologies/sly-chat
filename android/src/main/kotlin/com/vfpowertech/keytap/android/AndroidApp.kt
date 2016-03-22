@@ -98,8 +98,7 @@ class AndroidApp : Application() {
 
     private fun pushGcmTokenToServer(authToken: String, token: String): Promise<RegisterResponse, Exception> {
         val serverUrl = app.appComponent.serverUrls.API_SERVER
-        //TODO installationId
-        val request = RegisterRequest(authToken, token, "0")
+        val request = RegisterRequest(authToken, token, app.installationData.installationId)
         return GcmAsyncClient(serverUrl).register(request)
     }
 
