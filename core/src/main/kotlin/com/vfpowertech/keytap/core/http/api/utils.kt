@@ -62,7 +62,7 @@ fun <T> valueFromApi(response: HttpResponse, validResponseCodes: Set<Int>, typeR
 }
 
 /** Posts the given request to the given url as JSON, then passes the response to valueFromApi. */
-fun <R, T> postRequest(httpClient: HttpClient, url: String, request: R, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+fun <R, T> apiPostRequest(httpClient: HttpClient, url: String, request: R, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
     val objectMapper = ObjectMapper()
     val jsonRequest = objectMapper.writeValueAsBytes(request)
 
