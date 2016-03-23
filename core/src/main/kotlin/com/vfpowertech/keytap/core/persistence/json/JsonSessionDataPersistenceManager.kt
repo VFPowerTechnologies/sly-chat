@@ -1,7 +1,7 @@
 package com.vfpowertech.keytap.core.persistence.json
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.vfpowertech.keytap.core.SessionDataPersistenceManager
+import com.vfpowertech.keytap.core.persistence.SessionDataPersistenceManager
 import com.vfpowertech.keytap.core.crypto.ciphers.CipherParams
 import com.vfpowertech.keytap.core.persistence.SerializedSessionData
 import com.vfpowertech.keytap.core.persistence.SessionData

@@ -1,6 +1,6 @@
 package com.vfpowertech.keytap.services.di
 
-import com.vfpowertech.keytap.core.SessionDataPersistenceManager
+import com.vfpowertech.keytap.core.persistence.SessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.*
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
 import com.vfpowertech.keytap.core.relay.RelayClient
