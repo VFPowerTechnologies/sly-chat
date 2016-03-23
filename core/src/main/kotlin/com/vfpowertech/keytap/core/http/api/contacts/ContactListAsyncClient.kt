@@ -4,18 +4,18 @@ import com.vfpowertech.keytap.core.http.JavaHttpClient
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
-class ContactListAsyncClient(serverUrl: String) {
-    private val contactListClient = ContactListClient(serverUrl, JavaHttpClient())
+class ContactListAsyncClient(private val serverUrl: String) {
+    private fun newClient() = ContactListClient(serverUrl, JavaHttpClient())
 
     fun addContacts(request: AddContactsRequest): Promise<Unit, Exception> = task {
-        contactListClient.addContacts(request)
+        newClient().addContacts(request)
     }
 
     fun removeContacts(request: RemoveContactsRequest): Promise<Unit, Exception> = task {
-        contactListClient.removeContacts(request)
+        newClient().removeContacts(request)
     }
 
     fun getContacts(request: GetContactsRequest): Promise<GetContactsResponse, Exception> = task {
-        contactListClient.getContacts(request)
+        newClient().getContacts(request)
     }
 }
