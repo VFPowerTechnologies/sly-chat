@@ -11,9 +11,34 @@ data class SiteContactList(
     val contacts: List<RemoteContactEntry>
 )
 
+data class UserGcmTokenInfo(
+    @JsonProperty("installationId")
+    val installationId: String,
+    @JsonProperty("token")
+    val token: String
+)
+
+data class UserGcmTokenList(
+    @JsonProperty("tokens")
+    val tokens: List<UserGcmTokenInfo>
+)
+
 /** Client for web api server dev functionality. */
 class DevClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     private val objectMapper = ObjectMapper()
+
+    private fun postRequestNoResponse(request: Any, url: String) {
+        val body = objectMapper.writeValueAsBytes(request)
+
+        throwOnFailure(httpClient.postJSON("$serverBaseUrl$url", body))
+   }
+
+    private fun <T> getRequest(url: String, clazz: Class<T>): T {
+        val response = httpClient.get("$serverBaseUrl$url")
+        throwOnFailure(response)
+
+        return objectMapper.readValue(response.body, clazz)
+    }
 
     private fun throwOnFailure(response: HttpResponse) {
         if (!response.isSuccess)
@@ -46,49 +71,35 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
     }
 
     fun getAuthToken(username: String): String {
-        val response = httpClient.get("$serverBaseUrl/dev/auth/$username")
-        throwOnFailure(response)
-
-        return objectMapper.readValue(response.body, SiteAuthTokenData::class.java).authToken
+        return getRequest("/dev/auth/$username", SiteAuthTokenData::class.java).authToken
     }
 
     fun getPreKeys(username: String): SitePreKeyData {
-        val response = httpClient.get("$serverBaseUrl/dev/prekeys/one-time/$username")
-        throwOnFailure(response)
-
-        return objectMapper.readValue(response.body, SitePreKeyData::class.java)
+        return getRequest("/dev/prekeys/one-time/$username", SitePreKeyData::class.java)
     }
 
     fun addOneTimePreKeys(username: String, preKeys: List<String>) {
         val request = mapOf(
             "oneTimePreKeys" to preKeys
         )
-        val body = objectMapper.writeValueAsBytes(request)
-        val response = httpClient.postJSON("$serverBaseUrl/dev/prekeys/one-time/$username", body)
-        throwOnFailure(response)
+
+        postRequestNoResponse(request, "/dev/prekeys/one-time/$username")
     }
 
     fun getSignedPreKey(username: String): String? {
-        val response = httpClient.get("$serverBaseUrl/dev/prekeys/signed/$username")
-        throwOnFailure(response)
-
-        return objectMapper.readValue(response.body, SiteSignedPreKeyData::class.java).signedPreKey
+        return getRequest("/dev/prekeys/signed/$username", SiteSignedPreKeyData::class.java).signedPreKey
     }
 
     fun setSignedPreKey(username: String, signedPreKey: String) {
         val request = mapOf(
             "signedPreKey" to signedPreKey
         )
-        val body = objectMapper.writeValueAsBytes(request)
-        val response = httpClient.postJSON("$serverBaseUrl/dev/prekeys/signed/$username", body)
-        throwOnFailure(response)
+
+        postRequestNoResponse(request, "/dev/prekeys/signed/$username")
     }
 
     fun getContactList(username: String): List<RemoteContactEntry> {
-        val response = httpClient.get("$serverBaseUrl/dev/contact-list/$username")
-        throwOnFailure(response)
-
-        return objectMapper.readValue(response.body, SiteContactList::class.java).contacts
+        return getRequest("/dev/contact-list/$username", SiteContactList::class.java).contacts
     }
 
     fun addContacts(username: String, contacts: List<RemoteContactEntry>) {
@@ -96,10 +107,27 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
             "contacts" to contacts
         )
 
-        val body = objectMapper.writeValueAsBytes(request)
+        postRequestNoResponse(request, "/dev/contact-list/$username")
+    }
 
-        val response = httpClient.postJSON("$serverBaseUrl/dev/contact-list/$username", body)
+    fun registerGcmToken(username: String, installationId: String, token: String) {
+        val request = mapOf(
+            "installationId" to installationId,
+            "token" to token
+        )
 
-        throwOnFailure(response)
+        postRequestNoResponse(request, "/dev/gcm/register/$username")
+    }
+
+    fun unregisterGcmToken(username: String, installationId: String) {
+        val request = mapOf(
+            "installationId" to installationId
+        )
+
+        postRequestNoResponse(request, "/dev/gcm/unregister/$username")
+    }
+
+    fun getGcmTokens(username: String): List<UserGcmTokenInfo> {
+        return getRequest("/dev/gcm/$username", UserGcmTokenList::class.java).tokens
     }
 }

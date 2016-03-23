@@ -17,9 +17,8 @@ class JsonSessionDataPersistenceManager(
     val objectMapper = ObjectMapper()
 
     override fun store(sessionData: SessionData): Promise<Unit, Exception> = task {
-        path.outputStream().use {
-            it.write(objectMapper.writeValueAsBytes(sessionData.serialize(localDataEncryptionKey, localDataEncryptionParams)))
-        }
+        val serialized = sessionData.serialize(localDataEncryptionKey, localDataEncryptionParams)
+        writeObjectToJsonFile(path, serialized)
     }
 
     override fun retrieve(): Promise<SessionData, Exception> = task {

@@ -48,6 +48,8 @@ class WebApiIntegrationTest {
             val username = "a@a.com"
 
             devClient.clear()
+
+            //users
             val userA = newSiteUser(RegistrationInfo(username, "a", "000-000-0000"), password)
             val siteUser = userA.user
 
@@ -58,6 +60,7 @@ class WebApiIntegrationTest {
             if (users != listOf(siteUser))
                 throw DevServerInsaneException("Register functionality failed")
 
+            //auth token
             val authToken = devClient.createAuthToken(username)
 
             val gotToken = devClient.getAuthToken(username)
@@ -65,6 +68,7 @@ class WebApiIntegrationTest {
             if (gotToken != authToken)
                 throw DevServerInsaneException("Auth token functionality failed")
 
+            //prekeys
             val oneTimePreKeys = listOf("a", "b").sorted()
             devClient.addOneTimePreKeys(username, oneTimePreKeys)
 
@@ -78,6 +82,7 @@ class WebApiIntegrationTest {
             if (devClient.getSignedPreKey(username) != signedPreKey)
                 throw DevServerInsaneException("Signed prekey functionality failed")
 
+            //contacts list
             val userB = newSiteUser(RegistrationInfo("b@a.com", "B", "000-000-0000"), password)
 
             val contactsA = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.username))
@@ -86,6 +91,19 @@ class WebApiIntegrationTest {
             val contacts = devClient.getContactList(username)
 
             assertEquals(contactsA, contacts)
+
+            //GCM
+            val installationId = randomUUID()
+            val gcmToken = randomUUID()
+            devClient.registerGcmToken(username, installationId, gcmToken)
+
+            val gcmTokens = devClient.getGcmTokens(username)
+
+            assertEquals(listOf(UserGcmTokenInfo(installationId, gcmToken)), gcmTokens)
+
+            devClient.unregisterGcmToken(username, installationId)
+
+            assertEquals(0, devClient.getGcmTokens(username).size)
         }
 
         //only run if server is up

@@ -4,6 +4,7 @@ package com.vfpowertech.keytap.core
 import com.fasterxml.jackson.core.type.TypeReference
 import java.io.File
 import java.io.FileOutputStream
+import java.util.*
 
 /**
  * Throw an IllegalArgumentException with the given message if the predicate is false.
@@ -64,3 +65,7 @@ operator fun File.div(child: String): File =
 
 operator fun String.div(child: String): File =
     File(this, child)
+
+/** Returns a random UUID as a string, without dashes. */
+fun randomUUID(): String =
+    UUID.randomUUID().toString().replace("-", "")

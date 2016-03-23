@@ -1,12 +1,16 @@
 package com.vfpowertech.keytap.services
 
+import com.fasterxml.jackson.core.JsonParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat
 import com.vfpowertech.keytap.core.crypto.KeyVault
+import com.vfpowertech.keytap.core.div
 import com.vfpowertech.keytap.core.http.api.contacts.*
 import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.ContactInfo
+import com.vfpowertech.keytap.core.persistence.InstallationData
 import com.vfpowertech.keytap.core.persistence.SessionData
+import com.vfpowertech.keytap.core.persistence.json.JsonInstallationDataPersistenceManager
 import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.services.di.*
 import nl.komponents.kovenant.Promise
@@ -22,7 +26,8 @@ import rx.subjects.BehaviorSubject
 class KeyTapApplication {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private var isNetworkAvailable = false
+    var isNetworkAvailable = false
+        private set
 
     private var reconnectionTimerSubscription: Subscription? = null
     private lateinit var reconnectionTimer: ExponentialBackoffTimer
@@ -47,6 +52,8 @@ class KeyTapApplication {
     private val contactListSyncingSubject = BehaviorSubject.create(false)
     val contactListSyncing: Observable<Boolean> = contactListSyncingSubject
 
+    lateinit var installationData: InstallationData
+
     fun init(platformModule: PlatformModule) {
         appComponent = DaggerApplicationComponent.builder()
             .platformModule(platformModule)
@@ -54,6 +61,34 @@ class KeyTapApplication {
             .build()
 
         initializeApplicationServices()
+
+        initInstallationData()
+    }
+
+    //XXX this is kinda bad since we block on the main thread, but it's only done once during init anyways
+    fun initInstallationData() {
+        val path = appComponent.platformInfo.appFileStorageDirectory / "installation-data.json"
+
+        val persistenceManager = JsonInstallationDataPersistenceManager(path)
+
+        val maybeInstallationData = try {
+            persistenceManager.retrieve().get()
+        }
+        catch (e: JsonParseException) {
+            log.error("Installation data is corrupted: {}", e.message, e)
+            null
+        }
+
+        installationData = if (maybeInstallationData != null) {
+            maybeInstallationData
+        }
+        else {
+            val generated = InstallationData.generate()
+            persistenceManager.store(generated).get()
+            generated
+        }
+
+        log.info("Installation ID: {}", installationData.installationId)
     }
 
     private fun initializeApplicationServices() {

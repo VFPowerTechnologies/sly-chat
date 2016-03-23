@@ -5,10 +5,12 @@ buildscript {
     dependencies {
         classpath "com.android.tools.build:gradle:$versions.androidGradle"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
+        classpath "com.google.gms:google-services:$versions.androidGradle"
     }
 }
 
 apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'
 apply plugin: 'kotlin-android'
 
 android {
