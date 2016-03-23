@@ -64,6 +64,8 @@ class DesktopApp : Application() {
 
         val webView = WebView()
 
+        webView.isContextMenuEnabled = false
+
         val engine = webView.engine
 
         enableDebugger(engine)
