@@ -13,16 +13,17 @@ import android.net.ConnectivityManager
 import android.preference.PreferenceManager
 import android.support.v4.content.ContextCompat
 import com.almworks.sqlite4java.SQLite
+import com.google.android.gms.iid.InstanceID
 import com.vfpowertech.keytap.android.services.AndroidPlatformContacts
 import com.vfpowertech.keytap.android.services.AndroidUIPlatformInfoService
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.http.api.gcm.GcmAsyncClient
 import com.vfpowertech.keytap.core.http.api.gcm.RegisterRequest
 import com.vfpowertech.keytap.core.http.api.gcm.RegisterResponse
+import com.vfpowertech.keytap.core.http.api.gcm.UnregisterRequest
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.di.ApplicationComponent
 import com.vfpowertech.keytap.services.di.PlatformModule
-import com.vfpowertech.keytap.services.di.UserComponent
 import com.vfpowertech.keytap.services.ui.createAppDirectories
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.android.androidUiDispatcher
@@ -71,13 +72,19 @@ class AndroidApp : Application() {
         val networkReceiver = NetworkStatusReceiver()
         registerReceiver(networkReceiver, filter)
 
-        app.userSessionAvailable.subscribe { if (it == true) onUserSessionCreation() }
+        app.userSessionAvailable.subscribe {
+            if (it == true)
+                onUserSessionCreated()
+            else
+                onUserSessionDestroyed()
+        }
     }
 
     fun isFocusedActivity(): Boolean = currentActivity != null
 
-    fun onGCMTokenRefreshRequired() {
-        //we need to make sure every user attached to this install gets their token refreshed on next login
+    //this serves to also handle any issues where somehow the settings get out of sync and multiple users
+    //have tokenSent=true
+    private fun resetTokenSentForUsers() {
         val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
 
         val usernames = sharedPrefs.getStringSet(AndroidPreferences.tokenUserList, setOf())
@@ -87,12 +94,18 @@ class AndroidApp : Application() {
             editor.putBoolean(AndroidPreferences.getTokenSentToServer(username), false)
         }
         editor.apply()
+    }
 
+    fun onGCMTokenRefreshRequired() {
         refreshGCMToken()
     }
 
     private fun refreshGCMToken() {
         val userComponent = app.userComponent ?: return
+
+        //make sure only the current user has token sent set to true
+        resetTokenSentForUsers()
+
         gcmFetchToken(this, userComponent.userLoginData.username).successUi { onGCMTokenRefresh(it.username, it.token) }
     }
 
@@ -185,13 +198,12 @@ class AndroidApp : Application() {
         notificationManager.notify(NOTIFICATION_ID_NEW_MESSAGES, notification)
     }
 
-    //TODO only if logged in
     fun cancelPendingNotifications() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(AndroidApp.NOTIFICATION_ID_NEW_MESSAGES)
     }
 
-    private fun onUserSessionCreation() {
+    private fun onUserSessionCreated() {
         val userComponent = app.userComponent!!
         val username = userComponent.userLoginData.username
 
@@ -199,6 +211,36 @@ class AndroidApp : Application() {
         val tokenSent = sharedPrefs.getBoolean(AndroidPreferences.getTokenSentToServer(username), false)
         if (!tokenSent)
             refreshGCMToken()
+    }
+
+    private fun onUserSessionDestroyed() {
+        //occurs on startup when we first register for events
+        val userComponent = app.userComponent ?: return
+
+        val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
+        sharedPrefs.edit().putBoolean(AndroidPreferences.getTokenSentToServer(userComponent.userLoginData.username), false).apply()
+
+        //this is a best effort attempt at unregistering
+        //even if this fails, the token'll be invalidated on the next login that registers one
+        if (app.isNetworkAvailable) {
+            gcmDeleteToken(this) fail { e ->
+                if (e.message == InstanceID.ERROR_SERVICE_NOT_AVAILABLE || e.message == InstanceID.ERROR_TIMEOUT)
+                    log.error("InstanceID service unavailable: {}", e.message)
+                else
+                    log.error("Unable to delete instance id due to instance error: {}", e.message, e)
+            }
+
+            val authToken = userComponent.userLoginData.authToken
+            if (authToken != null) {
+                val serverUrl = app.appComponent.serverUrls.API_SERVER
+                val request = UnregisterRequest(authToken, app.installationData.installationId)
+                GcmAsyncClient(serverUrl).unregister(request) fail { e ->
+                    log.error("Unable to unregister GCM token with server: {}", e.message, e)
+                }
+            }
+            else
+                log.warn("Not auth token available, unable to unregister remove token")
+        }
     }
 
     fun updateNetworkStatus(isConnected: Boolean) {
