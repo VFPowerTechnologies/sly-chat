@@ -8,11 +8,9 @@ import java.io.Reader
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.SecureRandom
-import java.security.cert.X509Certificate
 import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
-import javax.net.ssl.X509TrustManager
 
 fun slurpInputStreamReader(reader: Reader, suggestedBufferSize: Int = 0): String {
     val bufferSize = if (suggestedBufferSize > 0) suggestedBufferSize else 1024
@@ -81,7 +79,7 @@ class JavaHttpClient : HttpClient {
 
         connection.connect()
 
-        val headers = lowercaseHeaders(connection.headerFields)
+        val headers = lowercaseHeaders(connection.headerFields ?: mapOf())
         val data = readStreamResponse(connection, headers)
 
         return HttpResponse(connection.responseCode, headers, data)
@@ -99,7 +97,7 @@ class JavaHttpClient : HttpClient {
 
         connection.outputStream.use { it.write(body) }
 
-        val headers = lowercaseHeaders(connection.headerFields)
+        val headers = lowercaseHeaders(connection.headerFields ?: mapOf())
         val data = readStreamResponse(connection, headers)
 
         return HttpResponse(connection.responseCode, headers, data)
