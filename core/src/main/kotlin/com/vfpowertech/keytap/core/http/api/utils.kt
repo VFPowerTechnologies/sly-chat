@@ -6,24 +6,7 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
-import com.vfpowertech.keytap.core.typeRef
-
-/**
- * Throws an exception when presented with an unexpected response code from an API call.
- *
- * @throws ApiException
- */
-fun throwApiException(response: HttpResponse): Nothing = when (response.code) {
-    401 -> throw UnauthorizedException(response)
-    in 500..599 -> try {
-        val apiValue = ObjectMapper().readValue<ApiResult<Unit>>(response.body, typeRef<ApiResult<Unit>>())
-        throw ServerErrorException(response, apiValue.error)
-    }
-    catch (e: JsonProcessingException) {
-        throw InvalidResponseBodyException(response, e)
-    }
-    else -> throw UnexpectedResponseException(response)
-}
+import com.vfpowertech.keytap.core.http.get
 
 fun <T> getValueFromApiResult(apiResult: ApiResult<T>, response: HttpResponse): T {
     //should never happen as ApiResult has checks in its constructor for this stuff
@@ -67,5 +50,10 @@ fun <R, T> apiPostRequest(httpClient: HttpClient, url: String, request: R, valid
     val jsonRequest = objectMapper.writeValueAsBytes(request)
 
     val resp = httpClient.postJSON(url, jsonRequest)
+    return valueFromApi(resp, validResponseCodes, typeReference)
+}
+
+fun <T> apiGetRequest(httpClient: HttpClient, url: String, params: List<Pair<String, String>>, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+    val resp = httpClient.get(url, params)
     return valueFromApi(resp, validResponseCodes, typeReference)
 }

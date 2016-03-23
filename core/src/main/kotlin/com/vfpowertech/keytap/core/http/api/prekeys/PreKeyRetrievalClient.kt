@@ -1,9 +1,7 @@
 package com.vfpowertech.keytap.core.http.api.prekeys
 
 import com.vfpowertech.keytap.core.http.HttpClient
-import com.vfpowertech.keytap.core.http.api.ApiResult
-import com.vfpowertech.keytap.core.http.api.valueFromApi
-import com.vfpowertech.keytap.core.http.get
+import com.vfpowertech.keytap.core.http.api.apiGetRequest
 import com.vfpowertech.keytap.core.typeRef
 
 class PreKeyRetrievalClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
@@ -15,7 +13,6 @@ class PreKeyRetrievalClient(private val serverBaseUrl: String, private val httpC
 
         val url = "$serverBaseUrl/v1/retrieve"
 
-        val resp = httpClient.get(url, params)
-        return valueFromApi(resp, setOf(200, 400), typeRef<ApiResult<PreKeyRetrievalResponse>>())
+        return apiGetRequest(httpClient, url, params, setOf(200, 400), typeRef())
     }
 }
