@@ -26,7 +26,8 @@ import rx.subjects.BehaviorSubject
 class KeyTapApplication {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private var isNetworkAvailable = false
+    var isNetworkAvailable = false
+        private set
 
     private var reconnectionTimerSubscription: Subscription? = null
     private lateinit var reconnectionTimer: ExponentialBackoffTimer
