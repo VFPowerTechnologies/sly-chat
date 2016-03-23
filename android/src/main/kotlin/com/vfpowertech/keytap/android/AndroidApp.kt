@@ -106,7 +106,9 @@ class AndroidApp : Application() {
         //make sure only the current user has token sent set to true
         resetTokenSentForUsers()
 
-        gcmFetchToken(this, userComponent.userLoginData.username).successUi { onGCMTokenRefresh(it.username, it.token) }
+        //TODO queue if network isn't active
+        if (app.isNetworkAvailable)
+            gcmFetchToken(this, userComponent.userLoginData.username).successUi { onGCMTokenRefresh(it.username, it.token) }
     }
 
     private fun pushGcmTokenToServer(authToken: String, token: String): Promise<RegisterResponse, Exception> {

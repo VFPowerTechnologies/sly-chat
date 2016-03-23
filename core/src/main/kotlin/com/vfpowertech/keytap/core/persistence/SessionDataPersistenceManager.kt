@@ -1,6 +1,5 @@
-package com.vfpowertech.keytap.core
+package com.vfpowertech.keytap.core.persistence
 
-import com.vfpowertech.keytap.core.persistence.SessionData
 import nl.komponents.kovenant.Promise
 
 interface SessionDataPersistenceManager {
