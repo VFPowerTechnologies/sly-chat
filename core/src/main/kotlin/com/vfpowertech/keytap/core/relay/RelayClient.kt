@@ -136,8 +136,8 @@ class RelayClient(
                 val messageId = message.header.messageId
                 log.info(
                     "Received message <{}> from <<{}>>",
-                    from,
-                    messageId
+                    messageId,
+                    from
                 )
 
                 val messageContent = objectMapper.readValue(message.content, MessageContent::class.java)
