@@ -9,7 +9,7 @@ interface UIMessengerService {
     /** Attempt to send a message to a contact. */
     fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception>
 
-    /** Listener for new incoming messages. */
+    /** Listener for new incoming messages. Each list will contain messages only from a single contact. */
     fun addNewMessageListener(listener: (UIMessageInfo) -> Unit)
 
     /** Listener for sent message status updates. */

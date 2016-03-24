@@ -73,7 +73,7 @@ class UIMessengerServiceImpl(
     private fun handleReceivedMessage(event: ReceivedMessage) {
         getConversationPersistenceManagerOrThrow().addMessage(event.from, false, event.message, 0) successUi { messageInfo ->
             val message = messageInfo.toUI(getTimestampFormatter())
-            notifyNewMessageListeners(UIMessageInfo(event.from, message))
+            notifyNewMessageListeners(UIMessageInfo(event.from, listOf(message)))
         }
     }
 
@@ -157,6 +157,6 @@ class UIMessengerServiceImpl(
 
     private fun notifyMessageStatusUpdateListeners(contactEmail: String, message: UIMessage) {
         for (listener in messageStatusUpdateListeners)
-            listener(UIMessageInfo(contactEmail, message))
+            listener(UIMessageInfo(contactEmail, listOf(message)))
     }
 }

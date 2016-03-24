@@ -79,7 +79,7 @@ class DummyUIMessengerService(private val contactsService: UIContactsService) : 
             val messages = getMessagesFor(contactEmail)
             val id = messages.size.toString()
             val message = UIMessage(id, false, null, messageText)
-            val messageInfo = UIMessageInfo(contactEmail, message)
+            val messageInfo = UIMessageInfo(contactEmail, listOf(message))
             messages.add(0, message)
             notifyNewMessageListeners(messageInfo)
         }
@@ -95,7 +95,7 @@ class DummyUIMessengerService(private val contactsService: UIContactsService) : 
     private fun notifyMessageStatusUpdateListeners(contactEmail: String, message: UIMessage) {
         synchronized(this) {
             for (listener in messageStatusUpdateListeners)
-                listener(UIMessageInfo(contactEmail, message))
+                listener(UIMessageInfo(contactEmail, listOf(message)))
         }
     }
 

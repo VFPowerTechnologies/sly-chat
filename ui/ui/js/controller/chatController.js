@@ -94,20 +94,40 @@ ChatController.prototype = {
     },
     addMessageUpdateListener : function () {
         messengerService.addMessageStatusUpdateListener(function (messageInfo) {
-            var messageDiv = $("#chatContent").contents().find("#message_" + messageInfo.message.id);
+            messageInfo.messages.forEach(function (message) {
+                var messageDiv = $("#chatContent").contents().find("#message_" + message.id);
 
-            if(messageDiv.length && messageInfo.message.sent == true){
-                messageDiv.find(".timespan").html(messageInfo.message.timestamp);// + '<i class="mdi mdi-checkbox-marked-circle pull-right"></i>';
-            }
+                if(messageDiv.length && message.sent == true){
+                    messageDiv.find(".timespan").html(message.timestamp);// + '<i class="mdi mdi-checkbox-marked-circle pull-right"></i>';
+                }
+            });
         });
     },
     addNewMessageListener : function () {
         messengerService.addNewMessageListener(function (messageInfo) {
-            if(document.getElementById("currentPageChatEmail") != null && document.getElementById("currentPageChatEmail").innerHTML == messageInfo.contact){
+            if(messageInfo.messages.length <= 0)
+                return;
+
+            var messages = messageInfo.messages;
+            var contact = messageInfo.contact;
+            var contactName = this.contactController.getContact(contact).name;
+
+            if(document.getElementById("currentPageChatEmail") != null && document.getElementById("currentPageChatEmail").innerHTML == contact){
                 var messageDiv = $("#chatContent").contents().find("#messages");
                 if(messageDiv.length){
-                    var contactName = this.contactController.getContact(messageInfo.contact).name;
-                    messageDiv.append(this.createMessageNode(messageInfo.message, contactName));
+                    //for the common case
+                    if(messages.length == 1) {
+                        var message = messages[0];
+                        messageDiv.append(this.createMessageNode(message, contactName));
+                    }
+                    else {
+                        //for some reason, append() won't work unless we wrap the fragment before appending to it
+                        var fragment = $(document.createDocumentFragment());
+                        messages.forEach(function (message) {
+                            fragment.append(this.createMessageNode(message, contactName));
+                        }, this);
+                        messageDiv.append(fragment);
+                    }
                     document.getElementById("chatContent").contentWindow.scrollTo(0, 9999999);
                     this.model.markConversationAsRead(this.contactController.getCurrentContact());
                 }
