@@ -21,6 +21,8 @@ ContactController.prototype = {
                 this.model.fetchConversation();
             }
         }.bind(this));
+
+        notificationService.clearAllMessageNotifications();
     },
     displayContacts : function (conversations) {
         var contactList = $("#contactContent").contents().find("#contactList");

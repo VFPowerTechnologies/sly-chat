@@ -99,4 +99,10 @@ class UIServicesModule {
     @Provides
     fun providesTelephonyService(platformTelephonyService: PlatformTelephonyService): UITelephonyService =
         UITelephonyServiceImpl(platformTelephonyService)
+
+    @Singleton
+    @Provides
+    fun providesNotificationService(platformNotificationService: PlatformNotificationService): UINotificationService =
+        UINotificationServiceImpl(platformNotificationService)
+
 }

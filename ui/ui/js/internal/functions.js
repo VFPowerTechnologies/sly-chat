@@ -14,6 +14,7 @@ if (typeof KEYTAP == "undefined") {
     window.stateService = new StateService();
     window.telephonyService = new TelephonyService();
     window.windowService = new WindowService();
+    window.notificationService = new NotificationService();
 
     KEYTAP.exceptionController = new ExceptionController();
 

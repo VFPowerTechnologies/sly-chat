@@ -8,7 +8,8 @@ var ChatController = function (model, contactController) {
 ChatController.prototype = {
     init : function () {
         this.model.setController(this);
-        this.model.fetchMessage(this.currentMessagePosition, this.fetchingNumber, this.contactController.getCurrentContact());
+        var contact = this.contactController.getCurrentContact();
+        this.model.fetchMessage(this.currentMessagePosition, this.fetchingNumber, contact);
         this.model.markConversationAsRead(this.contactController.getCurrentContact());
         this.newMessageInput = document.getElementById('newMessageInput');
         var self = this;
@@ -29,6 +30,8 @@ ChatController.prototype = {
                 $("#newMessageForm").submit();
             }
         });
+
+        notificationService.clearMessageNotificationsForUser(contact.email);
     },
     displayMessage : function (messages, contact) {
         var iframe = $("#chatContent");
@@ -141,6 +144,10 @@ ChatController.prototype = {
                         contact.after("<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>");
                     }
                 }
+            }
+            else {
+                //TODO handle count
+                notificationService.createNewMessageNotification(contact, 1);
             }
         }.bind(this));
     }

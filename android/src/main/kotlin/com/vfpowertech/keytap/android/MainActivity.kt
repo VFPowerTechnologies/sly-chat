@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.android
 
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
@@ -22,6 +23,16 @@ import org.slf4j.LoggerFactory
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
+    companion object {
+        val ACTION_VIEW_MESSAGES = "com.vfpowertech.keytap.android.action.VIEW_MESSAGES"
+
+        val EXTRA_PENDING_MESSAGES_TYPE = "pendingMessagesType"
+        val EXTRA_PENDING_MESSAGES_TYPE_SINGLE = "single"
+        val EXTRA_PENDING_MESSAGES_TYPE_MULTI = "multi"
+
+        val EXTRA_USERNAME = "username"
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     private var navigationService: NavigationService? = null
@@ -30,8 +41,38 @@ class MainActivity : AppCompatActivity() {
     private var nextPermRequestCode = 0
     private val permRequestCodeToDeferred = HashMap<Int, Deferred<Boolean, Exception>>()
 
+    //TODO
+    /** Returns the initial page to launch after login, if any. Used when invoked via a notification intent. */
+    private fun getInitialPage(intent: Intent): String? {
+        if (intent.action != ACTION_VIEW_MESSAGES)
+            return null
+
+        val messagesType = intent.getStringExtra(EXTRA_PENDING_MESSAGES_TYPE)
+        val page = when (messagesType) {
+            null -> return null
+            EXTRA_PENDING_MESSAGES_TYPE_SINGLE -> {
+                val username = intent.getStringExtra(EXTRA_USERNAME) ?: throw RuntimeException("Missing EXTRA_USERNAME")
+                "user/$username"
+            }
+            EXTRA_PENDING_MESSAGES_TYPE_MULTI -> "contacts"
+            else -> throw RuntimeException("Unexpected value for EXTRA_PENDING_MESSAGES_TYPE: $messagesType")
+        }
+
+        return page
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+
+        //TODO
+        getInitialPage(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        //TODO
+        getInitialPage(intent)
 
         //hide titlebar
         supportActionBar?.hide()

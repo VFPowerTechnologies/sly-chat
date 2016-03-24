@@ -1,14 +1,9 @@
 package com.vfpowertech.keytap.android
 
 import android.app.Application
-import android.app.Notification
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.media.RingtoneManager
 import android.net.ConnectivityManager
 import android.preference.PreferenceManager
 import android.support.v4.content.ContextCompat
@@ -38,6 +33,8 @@ class AndroidApp : Application() {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
+    lateinit var notificationService: AndroidNotificationService
+
     /** Points to the current activity, if one is set. Used to request permissions from various services. */
     var currentActivity: MainActivity? = null
 
@@ -55,6 +52,8 @@ class AndroidApp : Application() {
         val platformInfo = AndroidPlatformInfo(this)
         createAppDirectories(platformInfo)
 
+        notificationService = AndroidNotificationService(this)
+
         val platformModule = PlatformModule(
             AndroidUIPlatformInfoService(),
             BuildConfig.ANDROID_SERVER_URLS,
@@ -62,6 +61,7 @@ class AndroidApp : Application() {
             AndroidTelephonyService(this),
             AndroidWindowService(this),
             AndroidPlatformContacts(this),
+            notificationService,
             AndroidSchedulers.mainThread()
         )
 
@@ -167,42 +167,7 @@ class AndroidApp : Application() {
             return
         }
 
-        //TODO should handle users not being in contacts list, etc
-        val contentText = if (offlineMessageInfoList.size == 1) {
-            val info = offlineMessageInfoList[0]
-            val count = info.pendingCount
-            //TODO fix this when we add i18n
-            val plural = if (count > 1) "s" else ""
-            "You have $count new message$plural from ${info.name}"
-        }
-        else {
-            val totalMessageCount = offlineMessageInfoList.fold(0) { acc, info -> acc + info.pendingCount }
-            "You have $totalMessageCount new messages"
-        }
-
-        val intent = Intent(this, MainActivity::class.java)
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT)
-
-        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-
-        val notification = Notification.Builder(this)
-            .setContentTitle("New message available")
-            .setContentText(contentText)
-            .setSmallIcon(R.drawable.ic_mms_black_24dp)
-            .setSound(soundUri)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-            .build()
-
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(NOTIFICATION_ID_NEW_MESSAGES, notification)
-    }
-
-    fun cancelPendingNotifications() {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.cancel(AndroidApp.NOTIFICATION_ID_NEW_MESSAGES)
+        notificationService.addOfflineMessageData(offlineMessageInfoList.toList())
     }
 
     private fun onUserSessionCreated() {
@@ -260,8 +225,6 @@ class AndroidApp : Application() {
     }
 
     companion object {
-        val NOTIFICATION_ID_NEW_MESSAGES: Int = 0
-
         fun get(context: Context): AndroidApp =
             context.applicationContext as AndroidApp
     }
