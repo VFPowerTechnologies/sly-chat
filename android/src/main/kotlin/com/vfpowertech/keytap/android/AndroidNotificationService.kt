@@ -21,11 +21,19 @@ class NewMessagesNotification {
         contents.clear()
     }
 
-    fun addUser(username: String, newMessageData: NewMessageData) {
-        contents[username] = newMessageData
+    /** Increases the unread count by the amount given in newMessageData. */
+    fun updateUser(username: String, newMessageData: NewMessageData) {
+        val current = contents[username]
+        val newValue = if (current != null) {
+            NewMessageData(current.name, current.unreadCount + newMessageData.unreadCount)
+        }
+        else
+            newMessageData
+
+        contents[username] = newValue
     }
 
-    fun removeUser(username: String) {
+    fun clearUser(username: String) {
         contents.remove(username)
     }
 }
@@ -41,7 +49,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
     /* PlatformNotificationService methods */
     override fun clearMessageNotificationsForUser(contactEmail: String) {
-        newMessagesNotification.removeUser(contactEmail)
+        newMessagesNotification.clearUser(contactEmail)
         updateNewMessagesNotification()
     }
 
@@ -50,9 +58,9 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         updateNewMessagesNotification()
     }
 
-    override fun createNewMessageNotification(contactEmail: String, unreadCount: Int) {
+    override fun addNewMessageNotification(contactEmail: String) {
         //TODO name
-        newMessagesNotification.addUser(contactEmail, NewMessageData(contactEmail, unreadCount))
+        newMessagesNotification.updateUser(contactEmail, NewMessageData(contactEmail, 1))
         updateNewMessagesNotification()
     }
 
@@ -60,7 +68,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
     fun addOfflineMessageData(list: List<OfflineMessageInfo>) {
         list.forEach { info ->
-            newMessagesNotification.addUser(info.username, NewMessageData(info.name, info.pendingCount))
+            newMessagesNotification.updateUser(info.username, NewMessageData(info.name, info.pendingCount))
         }
         updateNewMessagesNotification()
     }

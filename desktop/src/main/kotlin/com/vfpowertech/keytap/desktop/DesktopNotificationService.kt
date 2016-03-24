@@ -10,6 +10,6 @@ class DesktopNotificationService : PlatformNotificationService {
     override fun clearAllMessageNotifications() {
     }
 
-    override fun createNewMessageNotification(contactEmail: String, unreadCount: Int) {
+    override fun addNewMessageNotification(contactEmail: String) {
     }
 }

@@ -162,6 +162,9 @@ class AndroidApp : Application() {
         //TODO fetch offline messages if logged in
 
         //if we have offline messages, fetching them'll show the notifications if required
+        //if no ui is available, we need to update the notifications ourselves
+        //XXX we need to know if the ui is actually still alive; even if it's not focused it can still be working
+        //so we should only update the ui if the app was destroyed or something
         if (isFocusedActivity()) {
             println("Focused, not sending notification")
             return

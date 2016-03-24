@@ -6,6 +6,6 @@ import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 interface UINotificationService {
     fun clearMessageNotificationsForUser(contactEmail: String)
     fun clearAllMessageNotifications()
-    //XXX maybe fetch the unread count from the db instead?
-    fun createNewMessageNotification(contactEmail: String, unreadCount: Int)
+    /** Adds a new notification for a user or increases the current unread count by 1. */
+    fun addNewMessageNotification(contactEmail: String)
 }

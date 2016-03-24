@@ -146,8 +146,7 @@ ChatController.prototype = {
                 }
             }
             else {
-                //TODO handle count
-                notificationService.createNewMessageNotification(contact, 1);
+                notificationService.addNewMessageNotification(contact);
             }
         }.bind(this));
     }
