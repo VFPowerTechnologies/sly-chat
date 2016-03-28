@@ -37,6 +37,12 @@ class AndroidApp : Application() {
 
     /** Points to the current activity, if one is set. Used to request permissions from various services. */
     var currentActivity: MainActivity? = null
+        set(value) {
+            field = value
+            val notifierService = app.userComponent?.notifierService
+            if (notifierService != null)
+                notifierService.isUiVisible = value != null
+        }
 
     lateinit var appComponent: ApplicationComponent
         private set
@@ -176,6 +182,8 @@ class AndroidApp : Application() {
     private fun onUserSessionCreated() {
         val userComponent = app.userComponent!!
         val username = userComponent.userLoginData.username
+
+        userComponent.notifierService.isUiVisible = currentActivity != null
 
         val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
         val tokenSent = sharedPrefs.getBoolean(AndroidPreferences.getTokenSentToServer(username), false)

@@ -102,7 +102,7 @@ class UIServicesModule {
 
     @Singleton
     @Provides
-    fun providesNotificationService(platformNotificationService: PlatformNotificationService): UINotificationService =
-        UINotificationServiceImpl(platformNotificationService)
+    fun providesUIEventService(): UIEventService =
+        UIEventServiceImpl()
 
 }

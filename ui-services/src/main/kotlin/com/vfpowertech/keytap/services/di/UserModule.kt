@@ -8,6 +8,8 @@ import com.vfpowertech.keytap.core.relay.RelayClient
 import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.RelayConnector
 import com.vfpowertech.keytap.services.*
+import com.vfpowertech.keytap.services.ui.PlatformNotificationService
+import com.vfpowertech.keytap.services.ui.UIEventService
 import dagger.Module
 import dagger.Provides
 import rx.Scheduler
@@ -56,4 +58,13 @@ class UserModule(
         userPathsGenerator: UserPathsGenerator
     ): UserPaths =
         userPathsGenerator.getPaths(userLoginData.username)
+
+    @UserScope
+    @Provides
+    fun providesNotifierService(
+        messengerService: MessengerService,
+        uiEventService: UIEventService,
+        platformNotificationService: PlatformNotificationService
+    ): NotifierService =
+        NotifierService(messengerService, uiEventService, platformNotificationService)
 }

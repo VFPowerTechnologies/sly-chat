@@ -30,8 +30,6 @@ ChatController.prototype = {
                 $("#newMessageForm").submit();
             }
         });
-
-        notificationService.clearMessageNotificationsForUser(contact.email);
     },
     displayMessage : function (messages, contact) {
         var iframe = $("#chatContent");
@@ -144,9 +142,6 @@ ChatController.prototype = {
                         contact.after("<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>");
                     }
                 }
-            }
-            else {
-                notificationService.addNewMessageNotification(contact);
             }
         }.bind(this));
     }
