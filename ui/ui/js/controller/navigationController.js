@@ -5,6 +5,22 @@ NavigationController.prototype = {
         navigationService = {
             goBack: function () {
                 this.goBack();
+            }.bind(this),
+
+            goTo: function(url) {
+                if(url == "contacts") {
+                    historyService.clear().then(function () {
+                        KEYTAP.navigationController.loadPage("contacts.html", false);
+                    });
+                }
+                else if(url.startsWith("user/")) {
+                    var email = url.split("/", 2)[1];
+
+                    //so we clear the history and set it to contacts > chat
+                    historyService.replace(["contacts.html"]).then(function () {
+                        KEYTAP.contactController.loadContactPage(email, false);
+                    });
+                }
             }.bind(this)
         };
     },
@@ -29,8 +45,12 @@ NavigationController.prototype = {
             console.log(e);
         });
     },
-    loadPage : function (url) {
-        this.pushHistory();
+    loadPage : function (url, pushCurrentPage) {
+        if (pushCurrentPage === undefined)
+            pushCurrentPage = true;
+
+        if (pushCurrentPage === true)
+            this.pushHistory();
         this.smoothStateLoad(url);
     },
     clearHistory : function () {

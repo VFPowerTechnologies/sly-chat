@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private var navigationService: NavigationService? = null
+    var navigationService: NavigationService? = null
     private lateinit var webView: WebView
 
     private var nextPermRequestCode = 0
@@ -64,14 +64,20 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
 
-        //TODO
-        getInitialPage(intent)
+        val page = getInitialPage(intent) ?: return
+
+        val navigationService = navigationService ?: return
+
+        navigationService.goTo(page) fail { e ->
+            log.error("navigationService.goTo failed: {}", e.message, e)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         //TODO
+        //probably need to set some special postLogin value for the ui to access after it's logged in
         getInitialPage(intent)
 
         //hide titlebar

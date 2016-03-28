@@ -80,6 +80,10 @@ ContactController.prototype = {
 
         return dropDown;
     },
+    loadContactPage : function (email, pushCurrentPage) {
+        KEYTAP.contactController.model.setCurrentContact(email);
+        KEYTAP.navigationController.loadPage("chat.html", pushCurrentPage);
+    },
     addEventListener : function () {
         var iframe = $("#contactContent");
         var links = iframe.contents().find(".contact-link");
@@ -87,8 +91,7 @@ ContactController.prototype = {
         links.bind("click", function (e) {
             e.preventDefault();
             var email = $(this).attr("id").split("contact%")[1];
-            KEYTAP.contactController.model.setCurrentContact(email);
-            KEYTAP.navigationController.loadPage("chat.html");
+            KEYTAP.contactController.loadContactPage(email);
         });
 
         iframe.contents().find(".contact-dropDown").bind("click", function(e) {
