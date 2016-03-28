@@ -58,7 +58,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         updateNewMessagesNotification()
     }
 
-    override fun addNewMessageNotification(contactEmail: String) {
+    override fun addNewMessageNotification(contactEmail: String, messageCount: Int) {
         //TODO name
         newMessagesNotification.updateUser(contactEmail, NewMessageData(contactEmail, 1))
         updateNewMessagesNotification()

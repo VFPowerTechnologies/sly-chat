@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.services
 
-import com.vfpowertech.keytap.services.ui.*
+import com.vfpowertech.keytap.services.ui.PlatformNotificationService
+import com.vfpowertech.keytap.services.ui.UIEventService
 
 //user-scoped
 class NotifierService(
@@ -29,8 +30,7 @@ class NotifierService(
                 return
         }
 
-        //TODO add message count
-        platformNotificationService.addNewMessageNotification(messageBundle.contactEmail)
+        platformNotificationService.addNewMessageNotification(messageBundle.contactEmail, messageBundle.messages.size)
     }
 
     private fun onUiEvent(event: UIEvent) {
