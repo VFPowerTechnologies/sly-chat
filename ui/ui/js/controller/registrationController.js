@@ -7,23 +7,36 @@ RegistrationController.prototype = {
         $(document).on("click", "#submitRegisterBtn", function(e){
             e.preventDefault();
 
-            $("#submitRegisterBtn").prop("disabled", true);
+            var hiddenPhoneInput = $("#hiddenPhoneInput");
+
+            var countryData = hiddenPhoneInput.intlTelInput("getSelectedCountryData");
+            var phoneValue = $("#phone").val();
+
+            hiddenPhoneInput.intlTelInput("setNumber", phoneValue);
+
+            var phone = phoneValue.indexOf(countryData.dialCode) == 0 ?
+                countryData.dialCode + phoneValue.substring(countryData.dialCode.length) :
+                    countryData.dialCode + phoneValue;
+
+            var submitRegisterBtn = $("#submitRegisterBtn");
+
+            submitRegisterBtn.prop("disabled", true);
 
             this.model.setItems({
                 "name" : $("#name").val(),
                 "email" : $("#email").val(),
-                "phoneNumber" : $("#phone").val(),
+                "phoneNumber" : phone,
                 "password" : $("#password").val()
             });
 
-            if(this.model.validate() == true){
+            if(this.model.validate() == true && hiddenPhoneInput.intlTelInput("isValidNumber") == true){
                 this.register();
                 $("#statusModal").openModal({
                     dismissible: false
                 });
             }
             else {
-                $("#submitRegisterBtn").prop("disabled", false);
+                submitRegisterBtn.prop("disabled", false);
             }
         }.bind(this));
 
@@ -79,6 +92,25 @@ RegistrationController.prototype = {
                 KEYTAP.exceptionController.displayDebugMessage(e);
             });
         }.bind(this));
+
+        $(document).on("change", "#countrySelect", function(e) {
+            $("#hiddenPhoneInput").intlTelInput("setCountry", $(this).val());
+        });
+
+        $(document).on("change keyup", "#phone", function (e) {
+            var phone = $("#phone");
+            var hiddenPhoneInput = $("#hiddenPhoneInput");
+            hiddenPhoneInput.intlTelInput("setNumber", phone.val());
+
+            var invalidDiv = $(".invalidPhone");
+
+            if(hiddenPhoneInput.intlTelInput("isValidNumber")) {
+                invalidDiv.remove();
+                phone.removeClass("invalid");
+            }
+            else if(phone.val() == "")
+                invalidDiv.remove();
+        });
     },
     register : function () {
         registrationService.doRegistration(this.model.getItems()).then(function (result) {
@@ -104,12 +136,9 @@ RegistrationController.prototype = {
     },
     createRegistrationSuccessContent : function () {
         var username = this.model.getItems().name;
-        var content = "<div class='modalHeader'><h5>Registration Successful</h5></div><div class='modalContent'><p>Thank you <strong>" + username + "</p><p style='margin-bottom: 10px;'>Login to access your new account</p><button id='successLoginBtn' class='btn btn-success'>Login</button></div>";
-        return content;
+        return "<div class='modalHeader'><h5>Registration Successful</h5></div><div class='modalContent'><p>Thank you <strong>" + username + "</p><p style='margin-bottom: 10px;'>Login to access your new account</p><button id='successLoginBtn' class='btn btn-success'>Login</button></div>";
     },
     createLoginModalContent : function () {
-        var username = this.model.getItems().name;
-        var content = "<div class='modalHeader'><h5>Thank you</h5></div><div class='modalContent'><i class='fa fa-spinner fa-3x fa-spin'></i><p>We are logging you in</p></div>";
-        return content;
+        return "<div class='modalHeader'><h5>Thank you</h5></div><div class='modalContent'><i class='fa fa-spinner fa-3x fa-spin'></i><p>We are logging you in</p></div>";
     }
 };

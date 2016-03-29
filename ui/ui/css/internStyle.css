@@ -92,3 +92,7 @@
     font-size: 10px;
     margin-right: -5px;
 }
+
+.intl-tel-input {
+    display: none;
+}

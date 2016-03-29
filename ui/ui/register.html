@@ -34,9 +34,16 @@
 
                             <div class="input-field col s12">
                                 <i class="mdi mdi-phone prefix"></i>
-                                <input class="validate" id="phone" type="tel" required>
                                 <label for="phone">Phone Number</label>
+                                <input type="tel" required class="form-control" id="phone">
                             </div>
+
+                            <div class="input-field col s12">
+                                <select class="form-control" id="countrySelect">
+                                </select>
+                            </div>
+
+                            <input type="tel" id="hiddenPhoneInput" style="display: none">
 
                             <div class="input-field col s12">
                                 <i class="mdi mdi-lock prefix"></i>
