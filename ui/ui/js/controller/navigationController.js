@@ -9,17 +9,22 @@ NavigationController.prototype = {
         };
     },
     goBack : function () {
-        historyService.pop().then(function(url){
-            if(url == "") {
-                windowService.minimize();
-            }
-            else {
-                this.smoothStateLoad(url);
-            }
-        }.bind(this)).catch(function (e){
-            KEYTAP.exceptionController.displayDebugMessage(e);
-            console.log(e);
-        })
+        if($(".modal").is(":visible")){
+            $(".modal").modal("hide");
+        }
+        else{
+            historyService.pop().then(function(url){
+                if(url == "") {
+                    windowService.minimize();
+                }
+                else {
+                    this.smoothStateLoad(url);
+                }
+            }.bind(this)).catch(function (e){
+                KEYTAP.exceptionController.displayDebugMessage(e);
+                console.log(e);
+            })
+        }
     },
     pushHistory : function () {
         historyService.push(window.location.href).then(function(){
