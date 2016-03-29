@@ -119,6 +119,8 @@ class KeyTapApplication {
 
         val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo))
         this.userComponent = userComponent
+        //dagger lazily initializes all components, so we need to force creation
+        userComponent.notifierService.init()
 
         //doing disk io here is bad, but...
         createUserPaths(userComponent.userPaths)

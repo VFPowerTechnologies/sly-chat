@@ -82,12 +82,17 @@ class DesktopApp : Application() {
             DesktopTelephonyService(),
             DesktopWindowService(primaryStage),
             DesktopPlatformContacts(),
+            DesktopNotificationService(),
             JavaFxScheduler.getInstance()
         )
 
         app.init(platformModule)
 
         val appComponent = app.appComponent
+        app.userSessionAvailable.subscribe {
+            if (it == true)
+                onUserSessionCreated()
+        }
 
         val dispatcher = Dispatcher(webEngineInterface)
 
@@ -100,6 +105,10 @@ class DesktopApp : Application() {
 
         //temp
         app.updateNetworkStatus(true)
+    }
+
+    private fun onUserSessionCreated() {
+        app.userComponent!!.notifierService.init()
     }
 
     override fun stop() {

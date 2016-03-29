@@ -7,5 +7,5 @@ package com.vfpowertech.keytap.services.ui
  */
 data class UIMessageInfo(
     val contact: String,
-    val message: UIMessage
+    val messages: List<UIMessage>
 )

@@ -1,7 +1,7 @@
 package com.vfpowertech.keytap.services.ui.impl
 
 import com.vfpowertech.keytap.services.ui.UIHistoryService
-import java.util.Stack
+import java.util.*
 
 class UIHistoryServiceImpl: UIHistoryService {
     private val stack = Stack<String>()
@@ -11,10 +11,16 @@ class UIHistoryServiceImpl: UIHistoryService {
     }
 
     override fun pop(): String {
-        if(stack.empty())
+        if (stack.empty())
             return ""
-        else
+        else {
             return stack.pop()
+        }
+    }
+
+    override fun replace(history: List<String>) {
+        stack.clear()
+        stack.addAll(history)
     }
 
     override fun peek(): String =

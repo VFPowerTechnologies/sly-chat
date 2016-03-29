@@ -68,6 +68,8 @@
         </service>
         <!-- end GCM section -->
 
+        <service android:name=".NotificationDeletionService" android:exported="false" />
+
     </application>
 
 </manifest>

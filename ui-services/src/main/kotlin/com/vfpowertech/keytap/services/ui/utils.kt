@@ -49,4 +49,7 @@ fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponen
 
     val windowService = applicationComponent.windowService
     dispatcher.registerService("WindowService", UIWindowServiceToJavaProxy(windowService, dispatcher))
+
+    val eventService = applicationComponent.eventService
+    dispatcher.registerService("EventService", UIEventServiceToJavaProxy(eventService, dispatcher))
 }

@@ -2,13 +2,14 @@ package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.core.BuildConfig.ServerUrls
 import com.vfpowertech.keytap.core.persistence.AccountInfo
+import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
+import com.vfpowertech.keytap.core.persistence.MessagePersistenceManager
 import com.vfpowertech.keytap.core.relay.RelayClient
 import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.RelayConnector
-import com.vfpowertech.keytap.services.RelayClientManager
-import com.vfpowertech.keytap.services.UserLoginData
-import com.vfpowertech.keytap.services.UserPaths
-import com.vfpowertech.keytap.services.UserPathsGenerator
+import com.vfpowertech.keytap.services.*
+import com.vfpowertech.keytap.services.ui.PlatformNotificationService
+import com.vfpowertech.keytap.services.ui.UIEventService
 import dagger.Module
 import dagger.Provides
 import rx.Scheduler
@@ -43,9 +44,27 @@ class UserModule(
 
     @UserScope
     @Provides
+    fun providesMessengerService(
+    messagePersistenceManager: MessagePersistenceManager,
+    contactsPersistenceManager: ContactsPersistenceManager,
+    relayClientManager: RelayClientManager
+    ): MessengerService =
+        MessengerService(messagePersistenceManager, contactsPersistenceManager, relayClientManager)
+
+    @UserScope
+    @Provides
     fun providersUserPaths(
         userLoginData: UserLoginData,
         userPathsGenerator: UserPathsGenerator
     ): UserPaths =
         userPathsGenerator.getPaths(userLoginData.username)
+
+    @UserScope
+    @Provides
+    fun providesNotifierService(
+        messengerService: MessengerService,
+        uiEventService: UIEventService,
+        platformNotificationService: PlatformNotificationService
+    ): NotifierService =
+        NotifierService(messengerService, uiEventService, platformNotificationService)
 }
