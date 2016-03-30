@@ -42,7 +42,11 @@ ContactModel.prototype = {
         return this.currentContact;
     },
     getContact : function (email) {
-        return this.conversations[email].contact;
+        var conversation = this.conversations[email];
+        if (!conversation)
+            return null;
+        else
+            return conversation.contact;
     },
     validateContact : function (formId) {
         var validation = $(formId).parsley({
