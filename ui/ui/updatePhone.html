@@ -14,17 +14,23 @@
                         <form id="updatePhoneForm" method="post">
                             <div class="input-field col s12">
                                 <i class="mdi mdi-account-circle prefix"></i>
-                                <input id="phoneNumberUpdate" type="tel" required>
-                                <label for="phoneNumberUpdate">Phone Number</label>
+                                <input id="phone" type="tel" required>
+                                <label for="phone">Phone Number</label>
                             </div>
 
                             <div class="input-field col s12">
                                 <i class="mdi mdi-account-circle prefix"></i>
-                                <input id="phoneUpdatePassword" type="password" required>
+                                <input id="phoneUpdatePassword" class="validate" type="password" data-parsley-minlength="[6]" required>
                                 <label for="phoneUpdatePassword">Password</label>
                             </div>
 
-                            <input type="hidden" id="email">
+                            <div class="input-field col s12">
+                                <select class="form-control" id="countrySelect">
+                                </select>
+                            </div>
+
+                            <input type="tel" id="hiddenPhoneInput" style="display: none">
+
                             <button id="updatePhoneSubmitBtn" type="submit" class="waves-effect waves-light btn-large primary-color fullwidth">Submit</button>
                             <div style="text-align: center">
                                 <span>

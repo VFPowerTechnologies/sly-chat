@@ -7,16 +7,7 @@ RegistrationController.prototype = {
         $(document).on("click", "#submitRegisterBtn", function(e){
             e.preventDefault();
 
-            var hiddenPhoneInput = $("#hiddenPhoneInput");
-
-            var countryData = hiddenPhoneInput.intlTelInput("getSelectedCountryData");
-            var phoneValue = $("#phone").val();
-
-            hiddenPhoneInput.intlTelInput("setNumber", phoneValue);
-
-            var phone = phoneValue.indexOf(countryData.dialCode) == 0 ?
-                countryData.dialCode + phoneValue.substring(countryData.dialCode.length) :
-                    countryData.dialCode + phoneValue;
+            var phone = this.getFormattedPhoneNumber();
 
             var submitRegisterBtn = $("#submitRegisterBtn");
 
@@ -104,22 +95,36 @@ RegistrationController.prototype = {
         $(document).on("click", "#updatePhoneSubmitBtn", function (e) {
             e.preventDefault();
 
-            accountModifictationService.updatePhone({
-                "email" : KEYTAP.loginController.model.getLogin(),
-                "password" : $("#phoneUpdatePassword").val(),
-                "phoneNumber" : $("#phoneNumberUpdate").val()
-            }).then(function (result) {
-                if(result.successful == true) {
-                    KEYTAP.navigationController.loadPage("smsVerification.html");
-                }
-                else {
-                    document.getElementById("verification-error").innerHTML = "<li>" + result.errorMessage + "</li>";
-                }
-            }.bind(this)).catch(function (e) {
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                document.getElementById("verification-error").innerHTML = "<li>An error occured</li>";
+            var validation = $("#updatePhoneForm").parsley({
+                errorClass: "invalid",
+                focus: 'none',
+                errorsWrapper: '<div class="pull-right parsley-errors-list" style="color: red;"></div>',
+                errorTemplate: '<p></p>'
             });
-        });
+
+            var isValid = validation.validate();
+            var phoneValid = this.validatePhone();
+
+            if (isValid && phoneValid) {
+                var phone = this.getFormattedPhoneNumber();
+
+                accountModifictationService.updatePhone({
+                    "email": KEYTAP.loginController.model.getLogin(),
+                    "password": $("#phoneUpdatePassword").val(),
+                    "phoneNumber": phone
+                }).then(function (result) {
+                    if (result.successful == true) {
+                        KEYTAP.navigationController.loadPage("smsVerification.html");
+                    }
+                    else {
+                        document.getElementById("verification-error").innerHTML = "<li>" + result.errorMessage + "</li>";
+                    }
+                }.bind(this)).catch(function (e) {
+                    KEYTAP.exceptionController.displayDebugMessage(e);
+                    document.getElementById("verification-error").innerHTML = "<li>An error occured</li>";
+                });
+            }
+        }.bind(this));
 
         $(document).on("change", "#countrySelect", function(e) {
             $("#hiddenPhoneInput").intlTelInput("setCountry", $("#countrySelect").val());
@@ -187,5 +192,18 @@ RegistrationController.prototype = {
         }
 
         return valid;
+    },
+    getFormattedPhoneNumber : function () {
+        var hiddenPhoneInput = $("#hiddenPhoneInput");
+
+        var countryData = hiddenPhoneInput.intlTelInput("getSelectedCountryData");
+        var phoneValue = $("#phone").val();
+
+        hiddenPhoneInput.intlTelInput("setNumber", phoneValue);
+
+        return phoneValue.indexOf(countryData.dialCode) == 0 ?
+            countryData.dialCode + phoneValue.substring(countryData.dialCode.length) :
+                countryData.dialCode + phoneValue;
+
     }
 };
