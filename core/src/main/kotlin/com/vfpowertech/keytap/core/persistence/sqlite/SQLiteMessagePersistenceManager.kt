@@ -40,7 +40,7 @@ INSERT INTO $table
 VALUES
     (?, ?, ?, ?, ?, ?, (SELECT count(n)
                         FROM   $table
-                        WHERE  timestamp = ?))
+                        WHERE  timestamp = ?)+1)
 """
 
         val timestamp = getCurrentTimestamp()
