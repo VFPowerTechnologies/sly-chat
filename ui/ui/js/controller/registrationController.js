@@ -29,7 +29,10 @@ RegistrationController.prototype = {
                 "password" : $("#password").val()
             });
 
-            if(this.model.validate() == true && hiddenPhoneInput.intlTelInput("isValidNumber") == true){
+            var formValid = this.model.validate();
+            var phoneValid = this.validatePhone();
+
+            if(formValid == true && phoneValid == true){
                 this.register();
                 $("#statusModal").openModal({
                     dismissible: false
@@ -93,24 +96,37 @@ RegistrationController.prototype = {
             });
         }.bind(this));
 
-        $(document).on("change", "#countrySelect", function(e) {
-            $("#hiddenPhoneInput").intlTelInput("setCountry", $(this).val());
+        $(document).on("click", "#updatePhoneNumberLink", function (e) {
+            e.preventDefault();
+            KEYTAP.navigationController.loadPage("updatePhone.html");
         });
+
+        $(document).on("click", "#updatePhoneSubmitBtn", function (e) {
+            e.preventDefault();
+
+            accountModifictationService.updatePhone({
+                "email" : KEYTAP.loginController.model.getLogin(),
+                "password" : $("#phoneUpdatePassword").val(),
+                "phoneNumber" : $("#phoneNumberUpdate").val()
+            }).then(function (result) {
+                if(result.successful == true) {
+                    KEYTAP.loginController.login();
+                }
+            }.bind(this)).catch(function (e) {
+                KEYTAP.exceptionController.displayDebugMessage(e);
+            });
+        });
+
+        $(document).on("change", "#countrySelect", function(e) {
+            $("#hiddenPhoneInput").intlTelInput("setCountry", $("#countrySelect").val());
+            this.validatePhone();
+        }.bind(this));
 
         $(document).on("change keyup", "#phone", function (e) {
-            var phone = $("#phone");
-            var hiddenPhoneInput = $("#hiddenPhoneInput");
-            hiddenPhoneInput.intlTelInput("setNumber", phone.val());
-
-            var invalidDiv = $(".invalidPhone");
-
-            if(hiddenPhoneInput.intlTelInput("isValidNumber")) {
-                invalidDiv.remove();
-                phone.removeClass("invalid");
-            }
-            else if(phone.val() == "")
-                invalidDiv.remove();
-        });
+            $("#hiddenPhoneInput").intlTelInput("setNumber", $("#phone").val());
+            if($(".invalidPhone").length)
+                this.validatePhone();
+        }.bind(this));
     },
     register : function () {
         registrationService.doRegistration(this.model.getItems()).then(function (result) {
@@ -140,5 +156,30 @@ RegistrationController.prototype = {
     },
     createLoginModalContent : function () {
         return "<div class='modalHeader'><h5>Thank you</h5></div><div class='modalContent'><i class='fa fa-spinner fa-3x fa-spin'></i><p>We are logging you in</p></div>";
+    },
+    validatePhone : function () {
+        var phoneInput = $("#phone");
+        var hiddenPhoneInput = $("#hiddenPhoneInput");
+        var phoneValue = phoneInput.val();
+        var valid = hiddenPhoneInput.intlTelInput("isValidNumber");
+        var invalidDiv = $(".invalidPhone");
+
+        if(phoneValue == "")
+            invalidDiv.remove();
+
+        if(!valid) {
+            if(phoneValue != "") {
+                phoneInput.addClass("invalid");
+                if (!invalidDiv.length) {
+                    phoneInput.after("<div class='pull-right invalidPhone filled' style='color: red;'><p>Phone Number seems invalid.</p></div>");
+                }
+            }
+        }
+        else {
+            phoneInput.removeClass("invalid");
+            invalidDiv.remove();
+        }
+
+        return valid;
     }
 };

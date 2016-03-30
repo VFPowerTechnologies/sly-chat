@@ -12,20 +12,6 @@ RegistrationModel.prototype = {
             errorTemplate: '<p></p>'
         });
 
-        var hiddenPhoneInput = $("#hiddenPhoneInput");
-        var phone = $("#phone");
-
-        var phoneValue = phone.val();
-
-        if(phoneValue != "" && hiddenPhoneInput.intlTelInput("isValidNumber") == false) {
-            phone.addClass("invalid");
-            var errorDiv = phone.next("div");
-            if(!errorDiv.hasClass("invalidPhone"))
-                phone.after("<div class='pull-right invalidPhone filled' style='color: red;'><p>Phone Number seems invalid.</p></div>");
-        }else if(phoneValue == "") {
-            $(".invalidPhone").remove();
-        }
-
         var isValid = validation.validate();
 
         if(isValid == true){
