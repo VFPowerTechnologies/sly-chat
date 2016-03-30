@@ -1,17 +1,22 @@
 package com.vfpowertech.keytap.services
 
 import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat
 import com.vfpowertech.keytap.core.crypto.KeyVault
 import com.vfpowertech.keytap.core.div
 import com.vfpowertech.keytap.core.http.api.contacts.*
+import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesAsyncClient
+import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesClearRequest
+import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesGetRequest
 import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.InstallationData
 import com.vfpowertech.keytap.core.persistence.SessionData
 import com.vfpowertech.keytap.core.persistence.json.JsonInstallationDataPersistenceManager
 import com.vfpowertech.keytap.core.relay.*
+import com.vfpowertech.keytap.core.relay.base.MessageContent
 import com.vfpowertech.keytap.services.di.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -109,6 +114,8 @@ class KeyTapApplication {
         val userComponent = this.userComponent ?: return
 
         connectToRelay(userComponent)
+
+        fetchOfflineMessages()
     }
 
     fun createUserSession(userLoginData: UserLoginData, accountInfo: AccountInfo): UserComponent {
@@ -142,6 +149,9 @@ class KeyTapApplication {
             } alwaysUi {
                 contactListSyncingSubject.onNext(false)
             }
+
+            //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
+            fetchOfflineMessages()
         }
 
         return userComponent
@@ -220,6 +230,29 @@ class KeyTapApplication {
             }
         } fail { e ->
             log.error("Local contacts sync failed: {}", e.message, e)
+        }
+    }
+
+    //TODO queue if offline/etc
+    fun fetchOfflineMessages() {
+        val authToken = userComponent?.userLoginData?.authToken ?: return
+
+        val offlineMessagesClient = OfflineMessagesAsyncClient(appComponent.serverUrls.API_SERVER)
+        offlineMessagesClient.get(OfflineMessagesGetRequest(authToken)) bind { response ->
+            val messengerService = userComponent?.messengerService ?: throw RuntimeException("No longer logged in")
+
+            //TODO move this elsewhere?
+            val objectMapper = ObjectMapper()
+            val offlineMessages = response.messages.map { m ->
+                val message = objectMapper.readValue(m.serializedMessage, MessageContent::class.java)
+                OfflineMessage(m.from, m.timestamp, message.message)
+            }
+
+            messengerService.addOfflineMessages(offlineMessages)
+        } bind {
+            offlineMessagesClient.clear(OfflineMessagesClearRequest(authToken))
+        } fail { e ->
+            log.error("Unable to fetch offline messages: {}", e, e)
         }
     }
 

@@ -12,6 +12,9 @@ interface MessagePersistenceManager {
      */
     fun addMessage(contact: String, isSent: Boolean, message: String, ttl: Long): Promise<MessageInfo, Exception>
 
+    /** Stores the given list of received messages in the given order. There must not be any empty message lists. */
+    fun addReceivedMessages(messages: Map<String, List<String>>): Promise<Map<String, List<MessageInfo>>, Exception>
+
     /** Marks a sent message as being received and updates its timestamp to the current time. */
     fun markMessageAsDelivered(contact: String, messageId: String): Promise<MessageInfo, Exception>
 

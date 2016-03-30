@@ -4,6 +4,9 @@ package com.vfpowertech.keytap.services
 import com.google.i18n.phonenumbers.NumberParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.Phonenumber
+import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.deferred
+import nl.komponents.kovenant.ui.successUi
 
 fun parsePhoneNumber(s: String, defaultRegion: String): Phonenumber.PhoneNumber? {
     val phoneNumberUtil = PhoneNumberUtil.getInstance()
@@ -24,4 +27,19 @@ fun parsePhoneNumber(s: String, defaultRegion: String): Phonenumber.PhoneNumber?
     catch (e: NumberParseException) {
         return null
     }
+}
+
+infix fun <V, E, V2> Promise<V, E>.mapUi(body: (V) -> V2): Promise<V2, Exception> {
+    val deferred = deferred<V2, Exception>()
+
+    this successUi {
+        try {
+            deferred.resolve(body(it))
+        }
+        catch (e: Exception) {
+            deferred.reject(e)
+        }
+    }
+
+    return deferred.promise
 }
