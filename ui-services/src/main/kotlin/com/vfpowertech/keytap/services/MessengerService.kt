@@ -93,7 +93,7 @@ class MessengerService(
         return messagePersistenceManager.addReceivedMessages(groupedMessages) mapUi { groupedMessageInfo ->
             val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
             bundles.forEach {
-                messageUpdatesSubject.onNext(it.value)
+                newMessagesSubject.onNext(it.value)
             }
         }
     }
