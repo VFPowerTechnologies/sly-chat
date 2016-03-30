@@ -52,4 +52,7 @@ fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponen
 
     val eventService = applicationComponent.eventService
     dispatcher.registerService("EventService", UIEventServiceToJavaProxy(eventService, dispatcher))
+
+    val accountModificationService = applicationComponent.accountModificationService
+    dispatcher.registerService("AccountModificationService", UIAccountModificationServiceToJavaProxy(accountModificationService, dispatcher))
 }

@@ -48,6 +48,8 @@ interface ApplicationComponent {
 
     val windowService: UIWindowService
 
+    var accountModificationService: UIAccountModificationService
+
     val platformContacts: PlatformContacts
 
     val serverUrls: BuildConfig.ServerUrls
