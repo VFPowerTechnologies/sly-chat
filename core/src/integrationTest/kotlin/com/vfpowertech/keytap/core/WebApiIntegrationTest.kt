@@ -212,7 +212,7 @@ class WebApiIntegrationTest {
         val authRequest = AuthenticationRequest(username, hash, csrfToken)
 
         val authApiResult = client.auth(authRequest)
-        assertTrue(authApiResult.isSuccess, "auth: unsuccessful")
+        assertTrue(authApiResult.isSuccess, "auth failed: ${authApiResult.errorMessage}")
 
         val receivedSerializedKeyVault = authApiResult.data!!.keyVault
 

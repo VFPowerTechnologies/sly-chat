@@ -111,7 +111,10 @@ ChatController.prototype = {
 
             var messages = messageInfo.messages;
             var contact = messageInfo.contact;
-            var contactName = this.contactController.getContact(contact).name;
+            var contact = this.contactController.getContact(contact);
+            if(!contact)
+                return;
+            var contactName = contact.name;
 
             if(document.getElementById("currentPageChatEmail") != null && document.getElementById("currentPageChatEmail").innerHTML == contact){
                 var messageDiv = $("#chatContent").contents().find("#messages");

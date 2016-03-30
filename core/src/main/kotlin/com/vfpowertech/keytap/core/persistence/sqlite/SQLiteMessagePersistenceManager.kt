@@ -3,8 +3,8 @@ package com.vfpowertech.keytap.core.persistence.sqlite
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteStatement
 import com.vfpowertech.keytap.core.persistence.InvalidMessageException
-import com.vfpowertech.keytap.core.persistence.MessagePersistenceManager
 import com.vfpowertech.keytap.core.persistence.MessageInfo
+import com.vfpowertech.keytap.core.persistence.MessagePersistenceManager
 import nl.komponents.kovenant.Promise
 import org.joda.time.DateTime
 import java.util.*
@@ -23,8 +23,16 @@ class SQLiteMessagePersistenceManager(
 
     private fun getCurrentTimestamp(): Long = DateTime().millis
 
-    //TODO retry if id taken
-    override fun addMessage(contact: String, isSent: Boolean, message: String, ttl: Long): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    //only for received messages
+    private fun addMessagesNoTransaction(connection: SQLiteConnection, contact: String, messages: List<String>): List<MessageInfo> {
+        return messages.map { message ->
+            val messageInfo = newMessageInfo(false, message, 0)
+            insertMessage(connection, contact, messageInfo)
+            messageInfo
+        }
+    }
+
+    private fun insertMessage(connection: SQLiteConnection, contact: String, messageInfo: MessageInfo) {
         val table = getTablenameForContact(contact)
         val sql = """
 INSERT INTO $table
@@ -32,30 +40,57 @@ INSERT INTO $table
 VALUES
     (?, ?, ?, ?, ?, ?, (SELECT count(n)
                         FROM   $table
-                        WHERE  timestamp = ?))
+                        WHERE  timestamp = ?)+1)
 """
 
-        val id = getMessageId()
         val timestamp = getCurrentTimestamp()
-        val isDelivered = !isSent
-
-        val messageInfo = MessageInfo(id, message, timestamp, isSent, isDelivered, ttl)
 
         connection.prepare(sql).use { stmt ->
             messageInfoToRow(messageInfo, stmt)
             stmt.bind(7, timestamp)
             stmt.step()
         }
+    }
 
-        val unreadCountFragment = if (!isSent) "unread_count=unread_count+1," else ""
+    private fun newMessageInfo(isSent: Boolean, message: String, ttl: Long): MessageInfo {
+        val id = getMessageId()
+        val timestamp = getCurrentTimestamp()
+        val isDelivered = !isSent
+
+        return MessageInfo(id, message, timestamp, isSent, isDelivered, ttl)
+    }
+
+    private fun updateConversationInfo(connection: SQLiteConnection, contact: String, isSent: Boolean, lastMessage: String, unreadIncrement: Int) {
+        val unreadCountFragment = if (!isSent) "unread_count=unread_count+$unreadIncrement," else ""
 
         connection.prepare("UPDATE conversation_info SET $unreadCountFragment last_message=? WHERE contact_email=?").use { stmt ->
-            stmt.bind(1, message)
+            stmt.bind(1, lastMessage)
             stmt.bind(2, contact)
             stmt.step()
         }
+    }
+
+    //TODO retry if id taken
+    override fun addMessage(contact: String, isSent: Boolean, message: String, ttl: Long): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val messageInfo = newMessageInfo(isSent, message, ttl)
+        connection.withTransaction {
+            insertMessage(connection, contact, messageInfo)
+            updateConversationInfo(connection, contact, isSent, message, 1)
+        }
 
         messageInfo
+    }
+
+    //TODO optimize this
+    override fun addReceivedMessages(messages: Map<String, List<String>>): Promise<Map<String, List<MessageInfo>>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            messages.mapValues { e ->
+                val contact = e.key
+                val messages = e.value
+                updateConversationInfo(connection, contact, false, messages.last(), messages.size)
+                addMessagesNoTransaction(connection, contact, messages)
+            }
+        }
     }
 
     override fun markMessageAsDelivered(contact: String, messageId: String): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->

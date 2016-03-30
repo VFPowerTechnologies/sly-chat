@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
 
+data class OfflineMessage(val from: String, val timestamp: Int, val message: String)
 data class MessageBundle(val contactEmail: String, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
 
@@ -84,9 +85,16 @@ class MessengerService(
 
     /* Other */
 
-    fun fetchOfflineMessages(): Promise<Unit, Exception> {
-        //TODO
-        //fetch remote messages, then add them to the logs and then call onNext
-        throw NotImplementedError("fetchOfflineMessages")
+    fun addOfflineMessages(offlineMessages: List<OfflineMessage>): Promise<Unit, Exception> {
+        val grouped = offlineMessages.groupBy { it.from }
+        val sortedByTimestamp = grouped.mapValues { it.value.sortedBy { it.timestamp } }
+        val groupedMessages = sortedByTimestamp.mapValues { it.value.map { it.message } }
+
+        return messagePersistenceManager.addReceivedMessages(groupedMessages) mapUi { groupedMessageInfo ->
+            val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
+            bundles.forEach {
+                newMessagesSubject.onNext(it.value)
+            }
+        }
     }
 }
