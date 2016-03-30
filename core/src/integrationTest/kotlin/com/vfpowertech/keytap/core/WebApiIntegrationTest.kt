@@ -4,6 +4,8 @@ import com.vfpowertech.keytap.core.crypto.*
 import com.vfpowertech.keytap.core.crypto.axolotl.GeneratedPreKeys
 import com.vfpowertech.keytap.core.http.JavaHttpClient
 import com.vfpowertech.keytap.core.http.api.UnauthorizedException
+import com.vfpowertech.keytap.core.http.api.accountUpdate.AccountUpdateClient
+import com.vfpowertech.keytap.core.http.api.accountUpdate.UpdatePhoneRequest
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationClient
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
 import com.vfpowertech.keytap.core.http.api.contacts.*
@@ -427,5 +429,57 @@ class WebApiIntegrationTest {
         val contacts = devClient.getContactList(userA.user.username)
 
         assertContactListEquals(listOf(aContacts[1]), contacts)
+    }
+
+    @Test
+    fun `Update Phone should succeed when right password is provided`() {
+        val user = newSiteUser(RegistrationInfo("a@a.com", "a", "000-000-0000"), password)
+
+        devClient.addUser(user.user)
+
+        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+
+        val request = UpdatePhoneRequest(user.user.username, user.user.passwordHash, "111-111-1111")
+        val response = client.updatePhone(request)
+
+        assertTrue(response.isSuccess)
+
+        val expected = SiteUser(
+                user.user.username,
+                user.keyVault.remotePasswordHash.hexify(),
+                user.keyVault.remotePasswordHashParams.serialize(),
+                user.keyVault.fingerprint,
+                user.user.name,
+                "111-111-1111",
+                user.keyVault.serialize()
+        )
+
+        assertEquals(listOf(expected), devClient.getUsers());
+    }
+
+    @Test
+    fun `Update Phone should fail when wrong password is provided`() {
+        val user = newSiteUser(RegistrationInfo("a@a.com", "a", "000-000-0000"), password)
+
+        devClient.addUser(user.user)
+
+        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+
+        val request = UpdatePhoneRequest(user.user.username, "wrongPassword", "111-111-1111")
+        val response = client.updatePhone(request)
+
+        assertFalse(response.isSuccess)
+
+        val expected = SiteUser(
+                user.user.username,
+                user.keyVault.remotePasswordHash.hexify(),
+                user.keyVault.remotePasswordHashParams.serialize(),
+                user.keyVault.fingerprint,
+                user.user.name,
+                user.user.phoneNumber,
+                user.keyVault.serialize()
+        )
+
+        assertEquals(listOf(expected), devClient.getUsers());
     }
 }
