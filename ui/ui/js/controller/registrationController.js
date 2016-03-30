@@ -110,10 +110,14 @@ RegistrationController.prototype = {
                 "phoneNumber" : $("#phoneNumberUpdate").val()
             }).then(function (result) {
                 if(result.successful == true) {
-                    KEYTAP.loginController.login();
+                    KEYTAP.navigationController.loadPage("smsVerification.html");
+                }
+                else {
+                    document.getElementById("verification-error").innerHTML = "<li>" + result.errorMessage + "</li>";
                 }
             }.bind(this)).catch(function (e) {
                 KEYTAP.exceptionController.displayDebugMessage(e);
+                document.getElementById("verification-error").innerHTML = "<li>An error occured</li>";
             });
         });
 
@@ -152,6 +156,8 @@ RegistrationController.prototype = {
     },
     createRegistrationSuccessContent : function () {
         var username = this.model.getItems().name;
+        if(username == undefined)
+            username = "";
         return "<div class='modalHeader'><h5>Registration Successful</h5></div><div class='modalContent'><p>Thank you <strong>" + username + "</p><p style='margin-bottom: 10px;'>Login to access your new account</p><button id='successLoginBtn' class='btn btn-success'>Login</button></div>";
     },
     createLoginModalContent : function () {
