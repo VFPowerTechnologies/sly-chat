@@ -29,7 +29,7 @@ fun parsePhoneNumber(s: String, defaultRegion: String): Phonenumber.PhoneNumber?
     }
 }
 
-infix fun <V, E, V2> Promise<V, E>.mapUi(body: (V) -> V2): Promise<V2, Exception> {
+infix fun <V, V2> Promise<V, Exception>.mapUi(body: (V) -> V2): Promise<V2, Exception> {
     val deferred = deferred<V2, Exception>()
 
     this successUi {
@@ -39,6 +39,10 @@ infix fun <V, E, V2> Promise<V, E>.mapUi(body: (V) -> V2): Promise<V2, Exception
         catch (e: Exception) {
             deferred.reject(e)
         }
+    }
+
+    this fail { e ->
+        deferred.reject(e)
     }
 
     return deferred.promise
