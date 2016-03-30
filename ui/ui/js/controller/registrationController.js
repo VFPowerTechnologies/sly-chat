@@ -94,6 +94,10 @@ RegistrationController.prototype = {
 
         $(document).on("click", "#updatePhoneSubmitBtn", function (e) {
             e.preventDefault();
+            var updateBtn = $("#updatePhoneSubmitBtn");
+
+            updateBtn.prop("disabled", true);
+            updateBtn.html("<i class='fa fa-spinner fa-spin'></i>");
 
             var validation = $("#updatePhoneForm").parsley({
                 errorClass: "invalid",
@@ -102,12 +106,12 @@ RegistrationController.prototype = {
                 errorTemplate: '<p></p>'
             });
 
+            var phone = this.getFormattedPhoneNumber();
+
             var isValid = validation.validate();
             var phoneValid = this.validatePhone();
 
             if (isValid && phoneValid) {
-                var phone = this.getFormattedPhoneNumber();
-
                 accountModifictationService.updatePhone({
                     "email": KEYTAP.loginController.model.getLogin(),
                     "password": $("#phoneUpdatePassword").val(),
@@ -117,12 +121,20 @@ RegistrationController.prototype = {
                         KEYTAP.navigationController.loadPage("smsVerification.html");
                     }
                     else {
+                        updateBtn.prop("disabled", false);
+                        updateBtn.html("Submit");
                         document.getElementById("verification-error").innerHTML = "<li>" + result.errorMessage + "</li>";
                     }
                 }.bind(this)).catch(function (e) {
+                    updateBtn.prop("disabled", false);
+                    updateBtn.html("Submit");
                     KEYTAP.exceptionController.displayDebugMessage(e);
                     document.getElementById("verification-error").innerHTML = "<li>An error occured</li>";
                 });
+            }
+            else {
+                updateBtn.prop("disabled", false);
+                updateBtn.html("Submit");
             }
         }.bind(this));
 
