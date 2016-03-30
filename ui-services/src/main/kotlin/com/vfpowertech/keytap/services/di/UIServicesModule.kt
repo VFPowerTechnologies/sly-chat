@@ -105,4 +105,9 @@ class UIServicesModule {
     fun providesUIEventService(): UIEventService =
         UIEventServiceImpl()
 
+    @Singleton
+    @Provides
+    fun provideAccountModificationService(
+        serverUrls: BuildConfig.ServerUrls
+    ): UIAccountModificationService = UIAccountModificationServiceImpl(serverUrls.API_SERVER)
 }
