@@ -110,6 +110,13 @@ class KeyTapApplication {
 
         networkAvailableSubject.onNext(isAvailable)
 
+        if (!isAvailable) {
+            //airplane mode tells us the network is unavailable but doesn't actually disconnect us; we still receive
+            //data but can't send it (at least on the emu)
+            userComponent?.relayClientManager?.disconnect()
+            return
+        }
+
         //do nothing if we're not logged in
         val userComponent = this.userComponent ?: return
 
@@ -236,6 +243,8 @@ class KeyTapApplication {
     //TODO queue if offline/etc
     fun fetchOfflineMessages() {
         val authToken = userComponent?.userLoginData?.authToken ?: return
+
+        log.info("Fetching offline messages")
 
         val offlineMessagesClient = OfflineMessagesAsyncClient(appComponent.serverUrls.API_SERVER)
         offlineMessagesClient.get(OfflineMessagesGetRequest(authToken)) bind { response ->
