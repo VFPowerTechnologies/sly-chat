@@ -4,14 +4,14 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 data class UpdatePhoneRequest(
     @param:JsonProperty("username")
-    @get:com.fasterxml.jackson.annotation.JsonProperty("username")
+    @get:JsonProperty("username")
     val username: String,
 
     @param:JsonProperty("hash")
-    @get:com.fasterxml.jackson.annotation.JsonProperty("hash")
+    @get:JsonProperty("hash")
     val hash: String,
 
     @param:JsonProperty("phone-number")
-    @get:com.fasterxml.jackson.annotation.JsonProperty("phone-number")
+    @get:JsonProperty("phone-number")
     val phoneNumber: String
 )
