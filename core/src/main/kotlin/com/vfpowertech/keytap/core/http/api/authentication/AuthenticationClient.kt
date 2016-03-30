@@ -17,6 +17,6 @@ class AuthenticationClient(private val serverBaseUrl: String, private val httpCl
     fun auth(request: AuthenticationRequest): AuthenticationResponse {
         //auth failure -should- be using 401, but java's http client is retarded and refuses to return body content
         //when a 401 error is given
-        return apiPostRequest(httpClient, url, request, setOf(200), typeRef())
+        return apiPostRequest(httpClient, url, request, setOf(200, 400), typeRef())
     }
 }
