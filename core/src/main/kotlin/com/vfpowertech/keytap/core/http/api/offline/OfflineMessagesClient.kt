@@ -16,7 +16,6 @@ class OfflineMessagesClient(private val serverBaseUrl: String, private val httpC
 
     fun clear(request: OfflineMessagesClearRequest) {
         val url = "$serverBaseUrl/v1/messages/clear"
-        val params = mapOf("auth-token" to request.authToken)
-        apiPostRequest(httpClient, url, params, setOf(200), typeRef<ApiResult<EmptyResponse>>())
+        apiPostRequest(httpClient, url, request, setOf(200, 400), typeRef<ApiResult<EmptyResponse>>())
     }
 }

@@ -257,9 +257,9 @@ class KeyTapApplication {
                 OfflineMessage(m.from, m.timestamp, message.message)
             }
 
-            messengerService.addOfflineMessages(offlineMessages)
-        } bind {
-            offlineMessagesClient.clear(OfflineMessagesClearRequest(authToken))
+            messengerService.addOfflineMessages(offlineMessages) bind {
+                offlineMessagesClient.clear(OfflineMessagesClearRequest(authToken, response.range))
+            }
         } fail { e ->
             log.error("Unable to fetch offline messages: {}", e, e)
         }
