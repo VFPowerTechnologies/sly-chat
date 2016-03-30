@@ -9,5 +9,5 @@ import nl.komponents.kovenant.Promise
 @JSToJavaGenerate("AccountModificationService")
 interface UIAccountModificationService {
     /** Update phone with the given info */
-    fun updatePhone(info: UiUpdatePhoneInfo): Promise<UIUpdatePhoneResult, Exception>
+    fun updatePhone(info: UIUpdatePhoneInfo): Promise<UIUpdatePhoneResult, Exception>
 }
