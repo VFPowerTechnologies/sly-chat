@@ -22,7 +22,7 @@ RecentChatController.prototype = {
             var i = 0;
             for (var email in recentChat) {
                 if (recentChat.hasOwnProperty(email)) {
-                    content += this.createRecentChat(recentChat[email], i, maxWidth);
+                    content += this.createRecentChat(recentChat[email], i);
                 }
                 i++;
             }
