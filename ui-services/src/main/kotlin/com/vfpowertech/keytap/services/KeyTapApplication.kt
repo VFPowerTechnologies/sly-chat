@@ -64,9 +64,13 @@ class KeyTapApplication {
     private val loginEventsSubject = BehaviorSubject.create<LoginEvent>()
     val loginEvents: Observable<LoginEvent> = loginEventsSubject
 
-    private var loginState: LoginState = LoginState.LOGGED_OUT
+    var loginState: LoginState = LoginState.LOGGED_OUT
+        private set
 
     lateinit var installationData: InstallationData
+
+    val isAuthenticated: Boolean
+        get() = userComponent != null
 
     fun init(platformModule: PlatformModule) {
         appComponent = DaggerApplicationComponent.builder()
