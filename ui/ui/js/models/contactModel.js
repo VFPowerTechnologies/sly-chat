@@ -6,20 +6,12 @@ var ContactModel = function () {
 ContactModel.prototype = {
     fetchConversation : function () {
         messengerService.getConversations().then(function(conversations){
-            conversations.sort(function(a, b) {
-                var emailA = a.contact.email.toLowerCase();
-                var emailB = b.contact.email.toLowerCase();
+            var forContact = this.orderByName(conversations);
 
-                if(emailA < emailB)
-                    return -1;
-                if(emailA > emailB)
-                    return 1;
-
-                return 0;
-            });
-            conversations.forEach(function(conversation){
+            forContact.forEach(function(conversation){
                 this.conversations[conversation.contact.email] = conversation;
             }.bind(this));
+
             this.controller.displayContacts(this.conversations);
         }.bind(this)).catch(function(e){
             KEYTAP.exceptionController.displayDebugMessage(e);
@@ -75,5 +67,20 @@ ContactModel.prototype = {
             KEYTAP.exceptionController.displayDebugMessage(e);
             console.log("Unable to fetch conversations: " + e);
         });
+    },
+    orderByName : function (conversations) {
+        conversations.sort(function(a, b) {
+            var emailA = a.contact.email.toLowerCase();
+            var emailB = b.contact.email.toLowerCase();
+
+            if(emailA < emailB)
+                return -1;
+            if(emailA > emailB)
+                return 1;
+
+            return 0;
+        });
+
+        return conversations;
     }
 };

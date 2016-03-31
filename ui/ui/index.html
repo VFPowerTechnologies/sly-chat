@@ -40,6 +40,7 @@
     <script src="js/models/contactModel.js"></script>
     <script src="js/models/chatModel.js"></script>
     <script src="js/models/userInfoModel.js"></script>
+    <script src="js/models/recentChatModel.js"></script>
     <script src="js/controller/loginController.js"></script>
     <script src="js/controller/registrationController.js"></script>
     <script src="js/controller/contactController.js"></script>
@@ -49,6 +50,7 @@
     <script src="js/controller/exceptionController.js"></script>
     <script src="js/controller/connectionController.js"></script>
     <script src="js/controller/userInfoController.js"></script>
+    <script src="js/controller/recentChatController.js"></script>
     <script src="js/external-lib/bootstrap.min.js"></script>
     <script src="js/external-lib/materialize.min.js"></script>
     <script src="js/external-lib/jquery.smoothState.js"></script>
@@ -67,10 +69,21 @@
         <div class="open-left nav-btn" id="nav-menu-back" style="display: none">
             <a href="#" id="backBtn"><i class="mdi mdi-arrow-left"></i></a>
         </div>
-        <span id="page-title"></span>
-        <div class="open-right menu-hidden" style="display: none">
+        <div id="addContactMenu" class="open-right menu-hidden" style="display: none">
             <a id="addContactBtn" href="#"><i class="mdi mdi-account-plus"></i></a>
         </div>
+        <div id="contactTabs" class="nav-btn" style="padding-left: 56px; padding-right: 56px; height: 56px; display: none;">
+            <ul class="tabs" style="background: transparent;">
+                <li class="tab col s6" style="height: 56px; line-height: 56px;">
+                    <a href="#recentChatContent" class="" style="color: #fff;">Recent chat</a>
+                </li>
+                <li class="tab col s6" style="height: 56px; line-height: 56px;">
+                    <a href="#contactContent" style="color: #fff;">Contacts</a>
+                </li>
+                <div class="indicator"></div>
+            </ul>
+        </div>
+        <span id="page-title"></span>
         <div id="networkStatus" class="center-align hidden">
             <span style="width: auto; height: 20px; background: whitesmoke; padding-left: 10px; padding-right: 10px;">Disconnected</span>
         </div>

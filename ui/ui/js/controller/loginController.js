@@ -79,8 +79,7 @@ LoginController.prototype = {
             console.log(e);
         });
         loginService.logout();
-        $(".menu-hidden").hide();
-        $(".nav-btn").hide();
+
         KEYTAP.navigationController.loadPage("login.html");
         KEYTAP.navigationController.clearHistory();
         KEYTAP.contactController.model.resetContacts();

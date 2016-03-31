@@ -38,6 +38,8 @@ $(document).ready(function(){
         KEYTAP.exceptionController.displayDebugMessage(e);
         console.log(e);
     });
+
+    KEYTAP.menuController.setMenuItems();
 });
 
 function resizeWindow() {
