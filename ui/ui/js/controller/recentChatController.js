@@ -17,13 +17,17 @@ RecentChatController.prototype = {
         else {
             recentChatContent.html("");
 
+            var content = "";
+
             var i = 0;
             for (var email in recentChat) {
                 if (recentChat.hasOwnProperty(email)) {
-                    recentChatContent.append(this.createRecentChat(recentChat[email], i));
+                    content += this.createRecentChat(recentChat[email], i, maxWidth);
                 }
                 i++;
             }
+
+            recentChatContent.append(content);
 
             this.addRecentChatEventListener();
         }
@@ -40,9 +44,21 @@ RecentChatController.prototype = {
         if(index == 0)
             contactLinkClass += " first-contact";
 
-        var contactBlock = "<div class='" + contactLinkClass + "' id='contact%" + recentChat.contact.email + "'><div class='contact'>";
+        var lastMessage;
+
+        if (recentChat.status.lastMessage.length > 40)
+            lastMessage = recentChat.status.lastMessage.substring(0, 40) + "...";
+        else
+            lastMessage = recentChat.status.lastMessage;
+
+        var date = parseFormatedTimeString(recentChat.status.lastTimestamp);
+        var contactBlock = "";
+
+        contactBlock += "<div class='" + contactLinkClass + "' id='contact%" + recentChat.contact.email + "'><div class='contact'>";
         contactBlock += createAvatar(recentChat.contact.name);
         contactBlock += "<p style='display: inline-block;'>" + recentChat.contact.name + "</p>";
+        contactBlock += "<p style='display: inline-block; float: right; font-size: 10px'>" + $.timeago(date) + "</p><br>";
+        contactBlock += "<p style='display: inline-block; float: left; font-size: 10px; line-height: 0;'>" + lastMessage + "</p>";
         contactBlock += "</div>" + newBadge + "</div>";
 
         return contactBlock;
