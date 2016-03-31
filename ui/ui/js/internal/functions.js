@@ -29,6 +29,9 @@ if (typeof KEYTAP == "undefined") {
     });
 
     KEYTAP.contactController = new ContactController(new ContactModel());
+    KEYTAP.contactController.addContactListSyncListener();
+
+    KEYTAP.recentChatController = new RecentChatController(new RecentChatModel());
 
     KEYTAP.chatController = new ChatController(new ChatModel(), KEYTAP.contactController);
     KEYTAP.chatController.addMessageUpdateListener();
@@ -73,6 +76,10 @@ if (typeof KEYTAP == "undefined") {
                     $container.removeClass('is-exiting');
                     $container.html($newContent);
                 }
+            },
+
+            onAfter: function() {
+                KEYTAP.menuController.handleMenuDisplay();
             }
         };
 
@@ -112,5 +119,25 @@ if (typeof KEYTAP == "undefined") {
     function validateEmail(email) {
         var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
         return re.test(email);
+    }
+
+    function parseFormatedTimeString (timestamp) {
+        var arr = timestamp.split(/-|\s|:/);
+        var date = new Date(arr[0], arr[1] -1, arr[2], arr[3], arr[4], arr[5]);
+
+        return date;
+    }
+
+    function createAvatar (name) {
+        var img = new Image();
+        img.setAttribute('data-name', name);
+        img.setAttribute('class', 'avatarCircle');
+
+        $(img).initial({
+            textColor: '#fff',
+            seed: 0
+        });
+
+        return img.outerHTML;
     }
 }

@@ -1,6 +1,4 @@
 $(document).ready(function () {
-    document.getElementById("page-title").textContent = "Phone Update";
-
     var height = window.innerHeight - 52;
     $("#content").css("min-height", height + "px");
 

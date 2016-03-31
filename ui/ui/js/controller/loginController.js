@@ -121,7 +121,5 @@ LoginController.prototype = {
             console.log(e);
         });
         loginService.logout();
-        $(".menu-hidden").hide();
-        $(".nav-btn").hide();
     }
 };
