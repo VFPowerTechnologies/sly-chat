@@ -8,21 +8,27 @@ NavigationController.prototype = {
             }.bind(this),
 
             goTo: function(url) {
-                if(url == "contacts") {
-                    historyService.clear().then(function () {
-                        KEYTAP.navigationController.loadPage("contacts.html", false);
-                    });
-                }
-                else if(url.startsWith("user/")) {
-                    var email = url.split("/", 2)[1];
-
-                    //so we clear the history and set it to contacts > chat
-                    historyService.replace(["contacts.html"]).then(function () {
-                        KEYTAP.contactController.loadContactPage(email, false);
-                    });
-                }
+                this.goTo(url);
             }.bind(this)
         };
+    },
+    goTo : function (page) {
+        if(page == "contacts") {
+            historyService.clear().then(function () {
+                KEYTAP.navigationController.loadPage("contacts.html", false);
+            });
+        }
+        else if(page.startsWith("user/")) {
+            var email = page.split("/", 2)[1];
+
+            //so we clear the history and set it to contacts > chat
+            historyService.replace(["contacts.html"]).then(function () {
+                KEYTAP.contactController.loadContactPage(email, false);
+            });
+        }
+        else {
+            console.error("Unknown page: " + page);
+        }
     },
     goBack : function () {
         if($(".modal").is(":visible")){

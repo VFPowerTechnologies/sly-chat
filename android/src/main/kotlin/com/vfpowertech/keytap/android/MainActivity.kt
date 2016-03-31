@@ -76,9 +76,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        //TODO
-        //probably need to set some special postLogin value for the ui to access after it's logged in
-        getInitialPage(intent)
+        val app = AndroidApp.get(this)
+
+        app.appComponent.stateService.initialPage = getInitialPage(intent)
 
         //hide titlebar
         supportActionBar?.hide()
