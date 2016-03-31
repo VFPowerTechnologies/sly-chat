@@ -13,14 +13,6 @@ ContactController.prototype = {
         else{
             this.displayContacts(conversations);
         }
-
-        contactService.addContactListSyncListener(function (sync) {
-            this.syncing = sync;
-            if(sync == false && window.location.href.indexOf("contacts.html") > -1){
-                this.model.resetContacts();
-                this.model.fetchConversation();
-            }
-        }.bind(this));
     },
     displayContacts : function (conversations) {
         var contactList = $("#contactContent").contents().find("#contactList");
@@ -35,6 +27,15 @@ ContactController.prototype = {
         }
 
         this.addEventListener();
+    },
+    addContactListSyncListener : function () {
+        contactService.addContactListSyncListener(function (sync) {
+            this.syncing = sync;
+            if(sync == false && window.location.href.indexOf("contacts.html") > -1){
+                this.model.resetContacts();
+                this.model.fetchConversation();
+            }
+        }.bind(this));
     },
     createContactBlock : function (contact, status, index) {
         var contactLinkClass = "contact-link ";

@@ -29,6 +29,7 @@ if (typeof KEYTAP == "undefined") {
     });
 
     KEYTAP.contactController = new ContactController(new ContactModel());
+    KEYTAP.contactController.addContactListSyncListener();
 
     KEYTAP.chatController = new ChatController(new ChatModel(), KEYTAP.contactController);
     KEYTAP.chatController.addMessageUpdateListener();
