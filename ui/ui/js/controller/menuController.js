@@ -29,9 +29,6 @@ MenuController.prototype = {
         var currentUrl = window.location.href;
         var page = currentUrl.substring(currentUrl.lastIndexOf("/") + 1);
 
-        console.log(page);
-        console.log(this.title.html());
-
         switch (page) {
             case "login.html":
                 this.title.html("Login");
