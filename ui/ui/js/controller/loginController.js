@@ -52,19 +52,25 @@ LoginController.prototype = {
     onLoginSuccessful : function(ev) {
         var accountInfo = ev.accountInfo;
 
-        KEYTAP.userInfoController.setUserInfo(accountInfo);
-        if($("#rememberMe").is(':checked')) {
-            window.configService.setStartupInfo({lastLoggedInAccount: this.model.getLogin(), savedAccountPassword: this.model.getPassword()}).then(function () {
-                console.log('Wrote startup info');
-            }).catch(function (e) {
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                console.log(e);
-            });
-        }
-        $(".menu-hidden").show();
-        KEYTAP.navigationController.loadPage('contacts.html');
-        KEYTAP.navigationController.clearHistory();
-        $("#statusModal").closeModal();
+        stateService.getInitialPage().then(function (initialPage) {
+            KEYTAP.userInfoController.setUserInfo(accountInfo);
+            if($("#rememberMe").is(':checked')) {
+                window.configService.setStartupInfo({lastLoggedInAccount: this.model.getLogin(), savedAccountPassword: this.model.getPassword()}).then(function () {
+                    console.log('Wrote startup info');
+                }).catch(function (e) {
+                    KEYTAP.exceptionController.displayDebugMessage(e);
+                    console.log(e);
+                });
+            }
+            $(".menu-hidden").show();
+            KEYTAP.navigationController.clearHistory();
+            $("#statusModal").closeModal();
+
+            //if(initialPage === null)
+            KEYTAP.navigationController.loadPage('contacts.html');
+            //else
+            //    KEYTAP.navigationController.goTo(initialPage);
+        }.bind(this));
     },
     onLoginFailure : function(ev) {
         var errorMessage = ev.errorMessage;
