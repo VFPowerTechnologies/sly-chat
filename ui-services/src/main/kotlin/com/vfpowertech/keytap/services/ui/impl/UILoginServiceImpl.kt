@@ -17,6 +17,7 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileNotFoundException
+import java.util.*
 
 /** Rejects the promise with java.io.FileNotFoundException if path doesn't exist. Otherwise resolves with the given path. */
 fun asyncCheckPath(path: File): Promise<File, Exception> = task {
@@ -31,6 +32,23 @@ class UILoginServiceImpl(
     private val authenticationService: AuthenticationService
 ) : UILoginService {
     private val log = LoggerFactory.getLogger(javaClass)
+    private val listeners = ArrayList<(LoginEvent) -> Unit>()
+    //cached value
+    private var lastLoginEvent: LoginEvent = LoggedOut()
+
+    init {
+        app.loginEvents.subscribe { updateLoginEvent(it) }
+    }
+
+    private fun updateLoginEvent(event: LoginEvent) {
+        lastLoginEvent = event
+        listeners.map { it(lastLoginEvent) }
+    }
+
+    override fun addLoginEventListener(listener: (LoginEvent) -> Unit) {
+        listeners.add(listener)
+        listener(lastLoginEvent)
+    }
 
     override fun logout() {
         app.destroyUserSession()

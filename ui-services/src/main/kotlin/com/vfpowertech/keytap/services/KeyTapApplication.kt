@@ -57,6 +57,9 @@ class KeyTapApplication {
     private val contactListSyncingSubject = BehaviorSubject.create(false)
     val contactListSyncing: Observable<Boolean> = contactListSyncingSubject
 
+    private val loginEventsSubject: BehaviorSubject<LoginEvent> = BehaviorSubject.create(LoggedOut())
+    val loginEvents: Observable<LoginEvent> = loginEventsSubject
+
     lateinit var installationData: InstallationData
 
     fun init(platformModule: PlatformModule) {
