@@ -248,18 +248,22 @@ class KeyTapApplication {
 
         val offlineMessagesClient = OfflineMessagesAsyncClient(appComponent.serverUrls.API_SERVER)
         offlineMessagesClient.get(OfflineMessagesGetRequest(authToken)) bind { response ->
-            val messengerService = userComponent?.messengerService ?: throw RuntimeException("No longer logged in")
+            if (response.messages.isNotEmpty()) {
+                val messengerService = userComponent?.messengerService ?: throw RuntimeException("No longer logged in")
 
-            //TODO move this elsewhere?
-            val objectMapper = ObjectMapper()
-            val offlineMessages = response.messages.map { m ->
-                val message = objectMapper.readValue(m.serializedMessage, MessageContent::class.java)
-                OfflineMessage(m.from, m.timestamp, message.message)
-            }
+                //TODO move this elsewhere?
+                val objectMapper = ObjectMapper()
+                val offlineMessages = response.messages.map { m ->
+                    val message = objectMapper.readValue(m.serializedMessage, MessageContent::class.java)
+                    OfflineMessage(m.from, m.timestamp, message.message)
+                }
 
-            messengerService.addOfflineMessages(offlineMessages) bind {
-                offlineMessagesClient.clear(OfflineMessagesClearRequest(authToken, response.range))
+                messengerService.addOfflineMessages(offlineMessages) bind {
+                    offlineMessagesClient.clear(OfflineMessagesClearRequest(authToken, response.range))
+                }
             }
+            else
+                Promise.ofSuccess(Unit)
         } fail { e ->
             log.error("Unable to fetch offline messages: {}", e, e)
         }
