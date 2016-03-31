@@ -10,11 +10,13 @@ import com.vfpowertech.keytap.core.http.api.contacts.*
 import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesAsyncClient
 import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesClearRequest
 import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesGetRequest
+import com.vfpowertech.keytap.core.kovenant.recoverFor
 import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.InstallationData
 import com.vfpowertech.keytap.core.persistence.SessionData
 import com.vfpowertech.keytap.core.persistence.json.JsonInstallationDataPersistenceManager
+import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonStartupInfoPersistenceManager
 import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.core.relay.base.MessageContent
@@ -108,7 +110,13 @@ class KeyTapApplication {
     }
 
     private fun emitLoginEvent(event: LoginEvent) {
-        loginState = event.state
+        //we don't wanna stay in a failed state; it's either this or have the ui work around the
+        //logout event being sent after which is hackier
+        if (event.state == LoginState.LOGIN_FAILED)
+            loginState = LoginState.LOGGED_OUT
+        else
+            loginState = event.state
+
         loginEventsSubject.onNext(event)
     }
 
@@ -149,7 +157,40 @@ class KeyTapApplication {
 
         emitLoginEvent(LoggingIn())
 
-        //TODO
+        //TODO this only works if an email is given; we need to somehow keep a list of phone numbers -> emails somewhere
+        //maybe just search every account dir available and find a number that way? kinda rough but works
+
+        //if the unlock fails, we try remotely; this can occur if the password was changed remotely from another device
+        appComponent.authenticationService.auth(username, password) successUi { response ->
+            val keyVault = response.keyVault
+            //TODO need to put the username in the login response if the user used their phone number
+            createUserSession(UserLoginData(username, keyVault, response.authToken), response.accountInfo)
+
+            storeAccountData(keyVault, response.accountInfo)
+
+            val paths = appComponent.userPathsGenerator.getPaths(username)
+            val authToken = response.authToken
+            if (authToken != null) {
+                val cachedData = SessionData(authToken)
+                JsonSessionDataPersistenceManager(paths.sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).store(cachedData) fail { e ->
+                    log.error("Unable to save session data to disk: {}", e.message, e)
+                }
+            }
+
+            if (response.keyRegenCount > 0) {
+                //TODO schedule prekey upload in bg
+                log.info("Requested to generate {} new prekeys", response.keyRegenCount)
+            }
+        } failUi { e ->
+            val ev = when (e) {
+                is AuthApiResponseException ->
+                    LoginFailed(e.errorMessage, null)
+                else ->
+                    LoginFailed(null, e)
+            }
+
+            emitLoginEvent(ev)
+        }
     }
 
     /**
@@ -158,7 +199,7 @@ class KeyTapApplication {
      * Emits LoggedOut.
      */
     fun logout() {
-        //TODO
+        destroyUserSession()
     }
 
     fun updateNetworkStatus(isAvailable: Boolean) {
@@ -474,7 +515,12 @@ class KeyTapApplication {
     }
 
     fun destroyUserSession() {
-        val userComponent = this.userComponent ?: return
+        val userComponent = this.userComponent
+        if (userComponent == null) {
+            log.warn("destroyUserSession called but no session exists")
+            emitLoginEvent(LoggedOut())
+            return
+        }
 
         log.info("Destroying user session")
 
@@ -492,6 +538,8 @@ class KeyTapApplication {
         deinitializeUserSession(userComponent)
 
         this.userComponent = null
+
+        emitLoginEvent(LoggedOut())
     }
 
     fun shutdown() {

@@ -29,6 +29,11 @@ class LoggedIn(val accountInfo: AccountInfo) : LoginEvent {
 }
 
 class LoginFailed(val errorMessage: String?, val exception: Exception?) : LoginEvent {
+    init {
+        require(errorMessage != null || exception != null) { "Must specify one of errorMessage or exception" }
+        require(errorMessage == null || exception == null) { "Cannot specify both an error message and an exception" }
+    }
+
     override val state: LoginState
         get() = LoginState.LOGIN_FAILED
 }
