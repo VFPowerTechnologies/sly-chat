@@ -8,7 +8,8 @@ package com.vfpowertech.keytap.core.persistence
 data class ConversationInfo(
     val contact: String,
     val unreadMessageCount: Int,
-    val lastMessage: String?
+    val lastMessage: String?,
+    val lastTimestamp: Long?
 ) {
     init {
         require(unreadMessageCount >= 0) { "unreadMessageCount must be >= 0" }

@@ -50,7 +50,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         val sql = """
 SELECT
     email, name, phone_number, public_key,
-    unread_count, last_message
+    unread_count, last_message, last_timestamp
 FROM
     contacts
 JOIN
@@ -62,21 +62,23 @@ ON
         connection.prepare(sql).use { stmt ->
             stmt.map { stmt ->
                 val contact = contactInfoFromRow(stmt)
-                val info = ConversationInfo(contact.email, stmt.columnInt(4), stmt.columnString(5))
+                val lastTimestamp = if (!stmt.columnNull(6)) stmt.columnLong(6) else null
+                val info = ConversationInfo(contact.email, stmt.columnInt(4), stmt.columnString(5), lastTimestamp)
                 Conversation(contact, info)
             }
         }
     }
 
     private fun queryConversationInfo(connection: SQLiteConnection, contact: String): ConversationInfo {
-        return connection.prepare("SELECT unread_count, last_message FROM conversation_info WHERE contact_email=?").use { stmt ->
+        return connection.prepare("SELECT unread_count, last_message, last_timestamp FROM conversation_info WHERE contact_email=?").use { stmt ->
             stmt.bind(1, contact)
             if (!stmt.step())
                 throw InvalidConversationException(contact)
 
             val unreadCount = stmt.columnInt(0)
             val lastMessage = stmt.columnString(1)
-            ConversationInfo(contact, unreadCount, lastMessage)
+            val lastTimestamp = if (!stmt.columnNull(2)) stmt.columnLong(2) else null
+            ConversationInfo(contact, unreadCount, lastMessage, lastTimestamp)
         }
     }
 

@@ -60,12 +60,13 @@ VALUES
         return MessageInfo(id, message, timestamp, isSent, isDelivered, ttl)
     }
 
-    private fun updateConversationInfo(connection: SQLiteConnection, contact: String, isSent: Boolean, lastMessage: String, unreadIncrement: Int) {
+    private fun updateConversationInfo(connection: SQLiteConnection, contact: String, isSent: Boolean, lastMessage: String, lastTimestamp: Long, unreadIncrement: Int) {
         val unreadCountFragment = if (!isSent) "unread_count=unread_count+$unreadIncrement," else ""
 
-        connection.prepare("UPDATE conversation_info SET $unreadCountFragment last_message=? WHERE contact_email=?").use { stmt ->
+        connection.prepare("UPDATE conversation_info SET $unreadCountFragment last_message=?, last_timestamp=? WHERE contact_email=?").use { stmt ->
             stmt.bind(1, lastMessage)
-            stmt.bind(2, contact)
+            stmt.bind(2, lastTimestamp)
+            stmt.bind(3, contact)
             stmt.step()
         }
     }
@@ -75,7 +76,7 @@ VALUES
         val messageInfo = newMessageInfo(isSent, message, ttl)
         connection.withTransaction {
             insertMessage(connection, contact, messageInfo)
-            updateConversationInfo(connection, contact, isSent, message, 1)
+            updateConversationInfo(connection, contact, isSent, message, messageInfo.timestamp, 1)
         }
 
         messageInfo
@@ -87,8 +88,9 @@ VALUES
             messages.mapValues { e ->
                 val contact = e.key
                 val messages = e.value
-                updateConversationInfo(connection, contact, false, messages.last(), messages.size)
-                addMessagesNoTransaction(connection, contact, messages)
+                val info = addMessagesNoTransaction(connection, contact, messages)
+                updateConversationInfo(connection, contact, false, messages.last(), info.last().timestamp, messages.size)
+                info
             }
         }
     }

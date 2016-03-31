@@ -26,7 +26,7 @@ class DummyUIMessengerService(private val contactsService: UIContactsService) : 
         val maybeConvo = conversations[contact]
         if (maybeConvo != null)
             return maybeConvo
-        val convo = UIConversationStatus(false, 0, null)
+        val convo = UIConversationStatus(false, 0, null, null)
         conversations[contact] = convo
         return convo
     }
