@@ -46,6 +46,8 @@ class DesktopApp : Application() {
                         jsLog.warn(text, *args)
                     else if (level == "error")
                         jsLog.error(text, *args)
+                    else if (level == "debug")
+                        jsLog.debug(text, *args)
                     else
                         println("Unknown level: $level")
 
