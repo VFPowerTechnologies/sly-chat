@@ -17,8 +17,8 @@ class ApplicationModule(
 ) {
     @Singleton
     @Provides
-    fun providesAuthenticationService(serverUrls: BuildConfig.ServerUrls): AuthenticationService =
-        AuthenticationService(serverUrls.API_SERVER)
+    fun providesAuthenticationService(serverUrls: BuildConfig.ServerUrls, userPathsGenerator: UserPathsGenerator): AuthenticationService =
+        AuthenticationService(serverUrls.API_SERVER, userPathsGenerator)
 
     //this is here we can check for the existence of cached data on startup without establishing a user session
     @Singleton

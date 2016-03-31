@@ -107,6 +107,8 @@ class DesktopApp : Application() {
 
         //temp
         app.updateNetworkStatus(true)
+
+        app.autoLogin()
     }
 
     private fun onUserSessionCreated() {

@@ -10,11 +10,14 @@ import com.vfpowertech.keytap.core.http.api.contacts.*
 import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesAsyncClient
 import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesClearRequest
 import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesGetRequest
+import com.vfpowertech.keytap.core.kovenant.recoverFor
 import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.InstallationData
 import com.vfpowertech.keytap.core.persistence.SessionData
 import com.vfpowertech.keytap.core.persistence.json.JsonInstallationDataPersistenceManager
+import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
+import com.vfpowertech.keytap.core.persistence.json.JsonStartupInfoPersistenceManager
 import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.core.relay.base.MessageContent
 import com.vfpowertech.keytap.services.di.*
@@ -22,6 +25,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.alwaysUi
+import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -57,7 +61,16 @@ class KeyTapApplication {
     private val contactListSyncingSubject = BehaviorSubject.create(false)
     val contactListSyncing: Observable<Boolean> = contactListSyncingSubject
 
+    private val loginEventsSubject = BehaviorSubject.create<LoginEvent>()
+    val loginEvents: Observable<LoginEvent> = loginEventsSubject
+
+    var loginState: LoginState = LoginState.LOGGED_OUT
+        private set
+
     lateinit var installationData: InstallationData
+
+    val isAuthenticated: Boolean
+        get() = userComponent != null
 
     fun init(platformModule: PlatformModule) {
         appComponent = DaggerApplicationComponent.builder()
@@ -98,6 +111,99 @@ class KeyTapApplication {
 
     private fun initializeApplicationServices() {
         reconnectionTimer = ExponentialBackoffTimer(appComponent.rxScheduler)
+    }
+
+    private fun emitLoginEvent(event: LoginEvent) {
+        //we don't wanna stay in a failed state; it's either this or have the ui work around the
+        //logout event being sent after which is hackier
+        if (event.state == LoginState.LOGIN_FAILED)
+            loginState = LoginState.LOGGED_OUT
+        else
+            loginState = event.state
+
+        loginEventsSubject.onNext(event)
+    }
+
+    /**
+     * Attempts to auto-login, if saved account data exists.
+     *
+     * Must be called to initialize loginEvents, and thus the UI.
+    */
+    fun autoLogin() {
+        if (loginState != LoginState.LOGGED_OUT) {
+            log.warn("Attempt to call autoLogin() while state was {}", loginState)
+            return
+        }
+
+        val path = appComponent.platformInfo.appFileStorageDirectory / "startup-info.json"
+        val startupInfoPersistenceManager = JsonStartupInfoPersistenceManager(path)
+        startupInfoPersistenceManager.retrieve() successUi { startupInfo ->
+            if (startupInfo != null && startupInfo.savedAccountPassword != null)
+                login(startupInfo.lastLoggedInAccount, startupInfo.savedAccountPassword)
+            else
+                emitLoginEvent(LoggedOut())
+        } failUi { e ->
+            log.error("Unable to read startup info: {}", e.message, e)
+            emitLoginEvent(LoggedOut())
+        }
+    }
+
+    /**
+     * Attempts to login (either locally or remotely) using the given username and password.
+     *
+     * Emits LoggedIn or LoginFailed.
+     */
+    fun login(username: String, password: String) {
+        if (loginState != LoginState.LOGGED_OUT) {
+            log.warn("Attempt to call login() while state was {}", loginState)
+            return
+        }
+
+        emitLoginEvent(LoggingIn())
+
+        //TODO this only works if an email is given; we need to somehow keep a list of phone numbers -> emails somewhere
+        //maybe just search every account dir available and find a number that way? kinda rough but works
+
+        //if the unlock fails, we try remotely; this can occur if the password was changed remotely from another device
+        appComponent.authenticationService.auth(username, password) successUi { response ->
+            val keyVault = response.keyVault
+            //TODO need to put the username in the login response if the user used their phone number
+            createUserSession(UserLoginData(username, keyVault, response.authToken), response.accountInfo)
+
+            storeAccountData(keyVault, response.accountInfo)
+
+            val paths = appComponent.userPathsGenerator.getPaths(username)
+            val authToken = response.authToken
+            if (authToken != null) {
+                val cachedData = SessionData(authToken)
+                JsonSessionDataPersistenceManager(paths.sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).store(cachedData) fail { e ->
+                    log.error("Unable to save session data to disk: {}", e.message, e)
+                }
+            }
+
+            if (response.keyRegenCount > 0) {
+                //TODO schedule prekey upload in bg
+                log.info("Requested to generate {} new prekeys", response.keyRegenCount)
+            }
+        } failUi { e ->
+            val ev = when (e) {
+                is AuthApiResponseException ->
+                    LoginFailed(e.errorMessage, null)
+                else ->
+                    LoginFailed(null, e)
+            }
+
+            emitLoginEvent(ev)
+        }
+    }
+
+    /**
+     * Log out of the current session.
+     *
+     * Emits LoggedOut.
+     */
+    fun logout() {
+        destroyUserSession()
     }
 
     fun updateNetworkStatus(isAvailable: Boolean) {
@@ -160,6 +266,8 @@ class KeyTapApplication {
             //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
             fetchOfflineMessages()
         }
+
+        emitLoginEvent(LoggedIn(accountInfo))
 
         return userComponent
     }
@@ -411,7 +519,12 @@ class KeyTapApplication {
     }
 
     fun destroyUserSession() {
-        val userComponent = this.userComponent ?: return
+        val userComponent = this.userComponent
+        if (userComponent == null) {
+            log.warn("destroyUserSession called but no session exists")
+            emitLoginEvent(LoggedOut())
+            return
+        }
 
         log.info("Destroying user session")
 
@@ -429,6 +542,8 @@ class KeyTapApplication {
         deinitializeUserSession(userComponent)
 
         this.userComponent = null
+
+        emitLoginEvent(LoggedOut())
     }
 
     fun shutdown() {

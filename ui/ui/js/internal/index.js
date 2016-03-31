@@ -7,6 +7,8 @@ $(document).ready(function(){
     });
 
     stateService.getState().then(function (state) {
+        KEYTAP.loginController.registerForLoginEvents();
+
         if(state != null && typeof state.currentPage != "undefined" && state.currentPage != null) {
             if(state.currentPage.indexOf("login.html") <= -1 && state.currentPage.indexOf("register.html") <= -1) {
                 $(".menu-hidden").show();
@@ -18,21 +20,6 @@ $(document).ready(function(){
             }else {
                 KEYTAP.navigationController.smoothStateLoad(state.currentPage);
             }
-        }else {
-            window.configService.getStartupInfo().then(function (startupInfo) {
-                KEYTAP.navigationController.loadPage("login.html");
-                KEYTAP.navigationController.clearHistory();
-                if(startupInfo != null && startupInfo.lastLoggedInAccount !== null && startupInfo.savedAccountPassword !== null) {
-                    KEYTAP.loginController.model.setItems({
-                        "login": startupInfo.lastLoggedInAccount,
-                        "password": startupInfo.savedAccountPassword
-                    });
-                    KEYTAP.loginController.login();
-                }
-            }).catch(function (e) {
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                console.log(e);
-            });
         }
     }).catch(function (e) {
         KEYTAP.exceptionController.displayDebugMessage(e);

@@ -17,6 +17,7 @@ import com.vfpowertech.keytap.core.http.api.gcm.RegisterRequest
 import com.vfpowertech.keytap.core.http.api.gcm.RegisterResponse
 import com.vfpowertech.keytap.core.http.api.gcm.UnregisterRequest
 import com.vfpowertech.keytap.services.KeyTapApplication
+import com.vfpowertech.keytap.services.LoginState
 import com.vfpowertech.keytap.services.di.ApplicationComponent
 import com.vfpowertech.keytap.services.di.PlatformModule
 import com.vfpowertech.keytap.services.ui.createAppDirectories
@@ -84,6 +85,8 @@ class AndroidApp : Application() {
             else
                 onUserSessionDestroyed()
         }
+
+        app.autoLogin()
     }
 
     fun isFocusedActivity(): Boolean = currentActivity != null
@@ -160,23 +163,17 @@ class AndroidApp : Application() {
     }
 
     fun onGCMMessage(account: String, offlineMessageInfoList: Array<OfflineMessageInfo>) {
-        //TODO if the app is closed then the user isn't logged in, since right now the ui handles the auto-login
-        //showing multiple account notifications is annoying since we have to give them different ids
-        //so right now we just show a notification anyways
-        //val userComponent = app.userComponent ?: return
-
-        //TODO fetch offline messages if logged in
-
-        //if we have offline messages, fetching them'll show the notifications if required
-        //if no ui is available, we need to update the notifications ourselves
-        //XXX we need to know if the ui is actually still alive; even if it's not focused it can still be working
-        //so we should only update the ui if the app was destroyed or something
-        if (isFocusedActivity()) {
-            println("Focused, not sending notification")
+        //the app might not be finished logging in yet
+        //if we have auto-login, this will at least be LOGGING_IN (since autoLogin is run before we get here)
+        if (app.loginState == LoginState.LOGGED_OUT) {
+            log.warn("Got a GCM message but no longer logged in; invalidating token")
+            deleteGCMToken()
             return
         }
 
-        notificationService.addOfflineMessageData(offlineMessageInfoList.toList())
+        //just logging in will fetch offline messages, so we don't need to do anything here
+        //it's possible we might receive a message targetting a diff account that was previously logged in
+        //however, since every new login invalidates the old token, we can just ignore these when they occur
     }
 
     private fun onUserSessionCreated() {
@@ -191,6 +188,15 @@ class AndroidApp : Application() {
             refreshGCMToken()
     }
 
+    private fun deleteGCMToken() {
+        gcmDeleteToken(this) fail { e ->
+            if (e.message == InstanceID.ERROR_SERVICE_NOT_AVAILABLE || e.message == InstanceID.ERROR_TIMEOUT)
+                log.error("InstanceID service unavailable: {}", e.message)
+            else
+                log.error("Unable to delete instance id due to instance error: {}", e.message, e)
+        }
+    }
+
     private fun onUserSessionDestroyed() {
         //occurs on startup when we first register for events
         val userComponent = app.userComponent ?: return
@@ -201,12 +207,7 @@ class AndroidApp : Application() {
         //this is a best effort attempt at unregistering
         //even if this fails, the token'll be invalidated on the next login that registers one
         if (app.isNetworkAvailable) {
-            gcmDeleteToken(this) fail { e ->
-                if (e.message == InstanceID.ERROR_SERVICE_NOT_AVAILABLE || e.message == InstanceID.ERROR_TIMEOUT)
-                    log.error("InstanceID service unavailable: {}", e.message)
-                else
-                    log.error("Unable to delete instance id due to instance error: {}", e.message, e)
-            }
+            deleteGCMToken()
 
             val authToken = userComponent.userLoginData.authToken
             if (authToken != null) {
