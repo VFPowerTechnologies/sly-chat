@@ -84,6 +84,8 @@ class AndroidApp : Application() {
             else
                 onUserSessionDestroyed()
         }
+
+        app.autoLogin()
     }
 
     fun isFocusedActivity(): Boolean = currentActivity != null
