@@ -1,16 +1,12 @@
 package com.vfpowertech.keytap.services.ui.impl
 
-import com.vfpowertech.keytap.core.kovenant.fallbackTo
 import com.vfpowertech.keytap.core.kovenant.recoverFor
 import com.vfpowertech.keytap.core.persistence.SessionData
-import com.vfpowertech.keytap.core.persistence.json.JsonAccountInfoPersistenceManager
-import com.vfpowertech.keytap.core.persistence.json.JsonKeyVaultPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
 import com.vfpowertech.keytap.services.*
 import com.vfpowertech.keytap.services.ui.UILoginResult
 import com.vfpowertech.keytap.services.ui.UILoginService
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.task
 import nl.komponents.kovenant.ui.successUi
@@ -63,31 +59,12 @@ class UILoginServiceImpl(
     }
 
     private fun localAuth(emailOrPhoneNumber: String, password: String): Promise<AuthResult, Exception> {
-        val paths = app.appComponent.userPathsGenerator.getPaths(emailOrPhoneNumber)
-
-        //XXX I need to figure out a better way to do this stuff
-        return asyncCheckPath(paths.keyVaultPath) bind {
-            val keyVaultPersistenceManager = JsonKeyVaultPersistenceManager(paths.keyVaultPath)
-
-            keyVaultPersistenceManager.retrieve(password) bind { keyVault ->
-                asyncCheckPath(paths.sessionDataPath) bind {
-                    JsonSessionDataPersistenceManager(it, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).retrieve()
-                } bind { sessionData ->
-                    JsonAccountInfoPersistenceManager(paths.accountInfoPath).retrieve() map { accountInfo ->
-                        if (accountInfo == null)
-                            throw RuntimeException("No account-info.json available")
-
-                        log.debug("Local authentication successful")
-                        AuthResult(sessionData.authToken, 0, keyVault, accountInfo)
-                    }
-                }
-            }
-        }
+        return authenticationService.localAuth(emailOrPhoneNumber, password)
     }
 
     private fun remoteAuth(emailOrPhoneNumber: String, password: String): Promise<AuthResult, Exception> {
         //XXX technically we don't need to re-write the value on every login
-        return authenticationService.auth(emailOrPhoneNumber, password)
+        return authenticationService.remoteAuth(emailOrPhoneNumber, password)
     }
 
     //this should use the keyvault is available, falling back to remote auth to retrieve it
@@ -96,7 +73,7 @@ class UILoginServiceImpl(
         //maybe just search every account dir available and find a number that way? kinda rough but works
 
         //if the unlock fails, we try remotely; this can occur if the password was changed remotely from another device
-        return localAuth(emailOrPhoneNumber, password) fallbackTo { remoteAuth(emailOrPhoneNumber, password) } successUi { response ->
+        return authenticationService.auth(emailOrPhoneNumber, password) successUi { response ->
             val keyVault = response.keyVault
             //TODO need to put the username in the login response if the user used their phone number
             app.createUserSession(UserLoginData(emailOrPhoneNumber, keyVault, response.authToken), response.accountInfo)

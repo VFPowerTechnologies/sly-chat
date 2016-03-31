@@ -15,6 +15,7 @@ import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.InstallationData
 import com.vfpowertech.keytap.core.persistence.SessionData
 import com.vfpowertech.keytap.core.persistence.json.JsonInstallationDataPersistenceManager
+import com.vfpowertech.keytap.core.persistence.json.JsonStartupInfoPersistenceManager
 import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.core.relay.base.MessageContent
 import com.vfpowertech.keytap.services.di.*
@@ -22,6 +23,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.alwaysUi
+import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -57,8 +59,10 @@ class KeyTapApplication {
     private val contactListSyncingSubject = BehaviorSubject.create(false)
     val contactListSyncing: Observable<Boolean> = contactListSyncingSubject
 
-    private val loginEventsSubject: BehaviorSubject<LoginEvent> = BehaviorSubject.create(LoggedOut())
+    private val loginEventsSubject = BehaviorSubject.create<LoginEvent>()
     val loginEvents: Observable<LoginEvent> = loginEventsSubject
+
+    private var loginState: LoginState = LoginState.LOGGED_OUT
 
     lateinit var installationData: InstallationData
 
@@ -101,6 +105,60 @@ class KeyTapApplication {
 
     private fun initializeApplicationServices() {
         reconnectionTimer = ExponentialBackoffTimer(appComponent.rxScheduler)
+    }
+
+    private fun emitLoginEvent(event: LoginEvent) {
+        loginState = event.state
+        loginEventsSubject.onNext(event)
+    }
+
+    /**
+     * Attempts to auto-login, if saved account data exists.
+     *
+     * Must be called to initialize loginEvents, and thus the UI.
+    */
+    fun autoLogin() {
+        if (loginState != LoginState.LOGGED_OUT) {
+            log.warn("Attempt to call autoLogin() while state was {}", loginState)
+            return
+        }
+
+        val path = appComponent.platformInfo.appFileStorageDirectory / "startup-info.json"
+        val startupInfoPersistenceManager = JsonStartupInfoPersistenceManager(path)
+        startupInfoPersistenceManager.retrieve() successUi { startupInfo ->
+            if (startupInfo != null && startupInfo.savedAccountPassword != null)
+                login(startupInfo.lastLoggedInAccount, startupInfo.savedAccountPassword)
+            else
+                emitLoginEvent(LoggedOut())
+        } failUi { e ->
+            log.error("Unable to read startup info: {}", e.message, e)
+            emitLoginEvent(LoggedOut())
+        }
+    }
+
+    /**
+     * Attempts to login (either locally or remotely) using the given username and password.
+     *
+     * Emits LoggedIn or LoginFailed.
+     */
+    fun login(username: String, password: String) {
+        if (loginState != LoginState.LOGGED_OUT) {
+            log.warn("Attempt to call login() while state was {}", loginState)
+            return
+        }
+
+        emitLoginEvent(LoggingIn())
+
+        //TODO
+    }
+
+    /**
+     * Log out of the current session.
+     *
+     * Emits LoggedOut.
+     */
+    fun logout() {
+        //TODO
     }
 
     fun updateNetworkStatus(isAvailable: Boolean) {
@@ -163,6 +221,8 @@ class KeyTapApplication {
             //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
             fetchOfflineMessages()
         }
+
+        emitLoginEvent(LoggedIn(accountInfo))
 
         return userComponent
     }
