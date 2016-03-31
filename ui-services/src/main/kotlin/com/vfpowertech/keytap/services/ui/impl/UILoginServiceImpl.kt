@@ -33,21 +33,29 @@ class UILoginServiceImpl(
 ) : UILoginService {
     private val log = LoggerFactory.getLogger(javaClass)
     private val listeners = ArrayList<(LoginEvent) -> Unit>()
-    //cached value
-    private var lastLoginEvent: LoginEvent = LoggedOut()
+    //cached value; is null until initialized
+    private var lastLoginEvent: LoginEvent? = null
 
     init {
         app.loginEvents.subscribe { updateLoginEvent(it) }
     }
 
+    private fun notifyLoginEventListeners() {
+        val ev = lastLoginEvent
+        if (ev != null)
+            listeners.map { it(ev) }
+    }
+
     private fun updateLoginEvent(event: LoginEvent) {
         lastLoginEvent = event
-        listeners.map { it(lastLoginEvent) }
+        notifyLoginEventListeners()
     }
 
     override fun addLoginEventListener(listener: (LoginEvent) -> Unit) {
         listeners.add(listener)
-        listener(lastLoginEvent)
+        val ev = lastLoginEvent
+        if (ev != null)
+            listener(ev)
     }
 
     override fun logout() {
