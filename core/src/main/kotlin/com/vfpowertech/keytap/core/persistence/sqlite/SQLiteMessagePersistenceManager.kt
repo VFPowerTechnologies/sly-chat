@@ -43,11 +43,9 @@ VALUES
                         WHERE  timestamp = ?)+1)
 """
 
-        val timestamp = getCurrentTimestamp()
-
         connection.prepare(sql).use { stmt ->
             messageInfoToRow(messageInfo, stmt)
-            stmt.bind(7, timestamp)
+            stmt.bind(7, messageInfo.timestamp)
             stmt.step()
         }
     }
