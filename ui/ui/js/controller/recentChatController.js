@@ -20,19 +20,18 @@ RecentChatController.prototype = {
             $('ul.tabs').tabs('select_tab', 'recentChatContent');
             $("#contactContent").hide();
 
-            recentChatContent.html("");
-            var content = "";
+
+            var fragment = $(document.createDocumentFragment());
 
             var i = 0;
             for (var email in recentChat) {
                 if (recentChat.hasOwnProperty(email)) {
-                    content += this.createRecentChat(recentChat[email], i);
+                    fragment.append(this.createRecentChat(recentChat[email], i));
                 }
                 i++;
             }
 
-            recentChatContent.append(content);
-
+            recentChatContent.html(fragment);
             this.addRecentChatEventListener();
         }
     },

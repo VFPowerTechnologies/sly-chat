@@ -35,24 +35,25 @@ ChatController.prototype = {
         var iframe = $("#chatContent");
         var messageNode = iframe.contents().find("#messages");
 
-        var messagesHtml = "";
+        var fragment = $(document.createDocumentFragment());
         for (var i = messages.length - 1; i >= 0; --i) {
-            messagesHtml += this.createMessageNode(messages[i], contact.name);
+            fragment.append(this.createMessageNode(messages[i], contact.name));
         }
-        if(messagesHtml != ""){
-            messageNode.html(messagesHtml);
-            document.getElementById("chatContent").contentWindow.scrollTo(0, 9999999);
-        }
+        messageNode.html(fragment);
+        document.getElementById("chatContent").contentWindow.scrollTo(0, 9999999);
     },
     createMessageNode : function (message, contactName) {
+        var fromClass = "";
+
         if(message.sent == true){
             fromClass = "message-right";
         }
         else{
             fromClass = "message-left";
         }
+
         var node = "<li id='message_" + message.id + "' class='" + fromClass + "'>";
-        node += this.contactController.createAvatar(contactName);
+        node += createAvatar(contactName);
 
         var msgDiv = document.createElement('div');
         msgDiv.setAttribute('class', 'message');

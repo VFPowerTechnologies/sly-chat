@@ -16,15 +16,17 @@ ContactController.prototype = {
     },
     displayContacts : function (conversations) {
         var contactList = $("#contactContent").contents().find("#contactList");
-        contactList.html("");
+        var fragment = $(document.createDocumentFragment());
 
         var i = 0;
         for (var email in conversations) {
             if(conversations.hasOwnProperty(email)) {
-                contactList.append(this.createContactBlock(conversations[email].contact, conversations[email].status, i));
+                fragment.append(this.createContactBlock(conversations[email].contact, conversations[email].status, i));
             }
             i++;
         }
+
+        contactList.html(fragment);
 
         this.addEventListener();
     },
@@ -50,24 +52,12 @@ ContactController.prototype = {
             contactLinkClass += " first-contact";
 
         var contactBlock = "<div class='" + contactLinkClass + "' id='contact%" + contact.email + "'><div class='contact'>";
-        contactBlock += this.createAvatar(contact.name);
+        contactBlock += createAvatar(contact.name);
         contactBlock += "<p style='display: inline-block;'>" + contact.name + "</p>";
         contactBlock += this.createContactDropDown(contact.email);
         contactBlock += "</div>" + newBadge + "</div>";
 
         return contactBlock;
-    },
-    createAvatar : function (name) {
-        var img = new Image();
-        img.setAttribute('data-name', name);
-        img.setAttribute('class', 'avatarCircle');
-
-        $(img).initial({
-            textColor: '#fff',
-            seed: 0
-        });
-
-        return img.outerHTML;
     },
     createContactDropDown: function (email) {
         var dropDown = '<div class="dropdown pull-right">';
@@ -122,7 +112,8 @@ ContactController.prototype = {
         return this.model.getContact(email);
     },
     addNewContact : function () {
-        $("#newContactBtn").prop("disabled", true);
+        var newContactBtn = $("#newContactBtn");
+        newContactBtn.prop("disabled", true);
         if(this.model.validateContact("#addContactForm") == true && this.syncing == false){
             var input = document.getElementById("username").value;
             var phone = null;
@@ -150,15 +141,8 @@ ContactController.prototype = {
             });
         }
         else{
-            $("#newContactBtn").prop("disabled", false);
+            newContactBtn.prop("disabled", false);
         }
-    },
-    fillContactInfo : function () {
-        var contact = this.model.getCurrentContact();
-        $("#name").val(contact.name);
-        $("#phone").val(contact.phoneNumber);
-        $("#email").val(contact.email);
-        $("#publicKey").val(contact.publicKey);
     },
     updateContact : function () {
         if(this.model.validateContact("#updateContactForm") == true){
@@ -183,12 +167,6 @@ ContactController.prototype = {
             e.preventDefault();
             $("#error").html("");
             this.addNewContact();
-        }.bind(this));
-    },
-    updateContactEvent : function () {
-        $("#updateContactBtn").click(function (e) {
-            e.preventDefault();
-            this.updateContact();
         }.bind(this));
     },
     deleteContact : function (email) {
