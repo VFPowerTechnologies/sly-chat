@@ -12,11 +12,15 @@ RecentChatController.prototype = {
 
         if ($.isEmptyObject(recentChat)) {
             $('ul.tabs').tabs('select_tab', 'contactContent');
+            $("#recentChatContent").hide();
+
             recentChatContent.html("<div style='text-align: center'>No recent conversation</div>");
         }
         else {
-            recentChatContent.html("");
+            $('ul.tabs').tabs('select_tab', 'recentChatContent');
+            $("#contactContent").hide();
 
+            recentChatContent.html("");
             var content = "";
 
             var i = 0;
