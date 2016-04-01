@@ -163,12 +163,13 @@ class AndroidApp : Application() {
     }
 
     fun onGCMMessage(account: String, offlineMessageInfoList: Array<OfflineMessageInfo>) {
-        //the app might not be finished logging in yet
-        //if we have auto-login, this will at least be LOGGING_IN (since autoLogin is run before we get here)
-        if (app.loginState == LoginState.LOGGED_OUT) {
-            log.warn("Got a GCM message but no longer logged in; invalidating token")
-            deleteGCMToken()
-            return
+        app.addOnInitListener { app ->
+            //the app might not be finished logging in yet
+            //if we have auto-login, this will at least be LOGGING_IN (since login is called before we get here)
+            if (app.loginState == LoginState.LOGGED_OUT) {
+                log.warn("Got a GCM message but no longer logged in; invalidating token")
+                deleteGCMToken()
+            }
         }
 
         //just logging in will fetch offline messages, so we don't need to do anything here

@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Subscription
 import rx.subjects.BehaviorSubject
+import java.util.*
 
 class KeyTapApplication {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -46,6 +47,9 @@ class KeyTapApplication {
 
     var userComponent: UserComponent? = null
         private set
+
+    private var isInitialized = false
+    private val onInitListeners = ArrayList<(KeyTapApplication) -> Unit>()
 
     //the following observables never complete or error and are valid for the lifetime of the application
     //only changes in value are emitted from these
@@ -142,9 +146,11 @@ class KeyTapApplication {
                 login(startupInfo.lastLoggedInAccount, startupInfo.savedAccountPassword)
             else
                 emitLoginEvent(LoggedOut())
+            initializationComplete()
         } failUi { e ->
             log.error("Unable to read startup info: {}", e.message, e)
             emitLoginEvent(LoggedOut())
+            initializationComplete()
         }
     }
 
@@ -560,5 +566,19 @@ class KeyTapApplication {
         return userComponent.keyVaultPersistenceManager.store(keyVault) fail { e ->
             log.error("Unable to store keyvault: {}", e.message, e)
         }
+    }
+
+    private fun initializationComplete() {
+        isInitialized = true
+        onInitListeners.forEach { it(this) }
+        onInitListeners.clear()
+    }
+
+    /** Adds a function to be called once the app has finished initializing. */
+    fun addOnInitListener(body: (KeyTapApplication) -> Unit) {
+        if (isInitialized)
+            body(this)
+        else
+            onInitListeners.add(body)
     }
 }
