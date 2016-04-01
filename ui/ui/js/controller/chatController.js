@@ -111,10 +111,10 @@ ChatController.prototype = {
 
             var messages = messageInfo.messages;
             var contact = messageInfo.contact;
-            var contact = this.contactController.getContact(contact);
-            if(!contact)
+            var cachedContact = this.contactController.getContact(contact);
+            if(!cachedContact)
                 return;
-            var contactName = contact.name;
+            var contactName = cachedContact.name;
 
             if(document.getElementById("currentPageChatEmail") != null && document.getElementById("currentPageChatEmail").innerHTML == contact){
                 var messageDiv = $("#chatContent").contents().find("#messages");
@@ -140,9 +140,9 @@ ChatController.prototype = {
                 var contactBlock = $("#contactContent").contents().find("[id='contact%" + messageInfo.contact + "']");
                 if(contactBlock.length) {
                     if (!contactBlock.hasClass("new-messages")) {
-                        var contact = contactBlock.find(".contact");
+                        var contactDiv = contactBlock.find(".contact");
                         contactBlock.addClass("new-messages");
-                        contact.after("<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>");
+                        contactDiv.after("<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>");
                     }
                 }
             }
