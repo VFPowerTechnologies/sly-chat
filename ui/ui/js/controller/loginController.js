@@ -66,10 +66,10 @@ LoginController.prototype = {
             KEYTAP.navigationController.clearHistory();
             $("#statusModal").closeModal();
 
-            //if(initialPage === null)
-            KEYTAP.navigationController.loadPage('contacts.html');
-            //else
-            //    KEYTAP.navigationController.goTo(initialPage);
+            if(initialPage === null)
+                KEYTAP.navigationController.loadPage('contacts.html');
+            else
+                KEYTAP.navigationController.goTo(initialPage);
         }.bind(this));
     },
     onLoginFailure : function(ev) {

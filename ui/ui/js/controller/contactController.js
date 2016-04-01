@@ -70,8 +70,7 @@ ContactController.prototype = {
         return dropDown;
     },
     loadContactPage : function (email, pushCurrentPage) {
-        KEYTAP.contactController.model.setCurrentContact(email);
-        KEYTAP.navigationController.loadPage("chat.html", pushCurrentPage);
+        this.model.fetchConversationForChat(email, pushCurrentPage);
     },
     addEventListener : function () {
         var iframe = $("#contactContent");
