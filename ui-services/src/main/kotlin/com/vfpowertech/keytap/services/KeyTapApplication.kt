@@ -73,6 +73,8 @@ class KeyTapApplication {
 
     lateinit var installationData: InstallationData
 
+    private var fetchingOfflineMessages = false
+
     val isAuthenticated: Boolean
         get() = userComponent != null
 
@@ -356,6 +358,11 @@ class KeyTapApplication {
 
     //TODO queue if offline/etc
     fun fetchOfflineMessages() {
+        if (fetchingOfflineMessages)
+            return
+
+        fetchingOfflineMessages = true
+
         val authToken = userComponent?.userLoginData?.authToken ?: return
 
         log.info("Fetching offline messages")
@@ -380,6 +387,8 @@ class KeyTapApplication {
                 Promise.ofSuccess(Unit)
         } fail { e ->
             log.error("Unable to fetch offline messages: {}", e, e)
+        } alwaysUi {
+            fetchingOfflineMessages = false
         }
     }
 
