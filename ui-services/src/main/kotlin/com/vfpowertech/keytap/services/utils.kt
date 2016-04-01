@@ -47,3 +47,26 @@ infix fun <V, V2> Promise<V, Exception>.mapUi(body: (V) -> V2): Promise<V2, Exce
 
     return deferred.promise
 }
+
+infix fun <V, V2> Promise<V, Exception>.bindUi(body: (V) -> Promise<V2, Exception>): Promise<V2, Exception> {
+    val deferred = deferred<V2, Exception>()
+
+    this successUi {
+        try {
+            body(it) success {
+                deferred.resolve(it)
+            } fail {
+                deferred.reject(it)
+            }
+        }
+        catch (e: Exception) {
+            deferred.reject(e)
+        }
+    }
+
+    this fail { e ->
+        deferred.reject(e)
+    }
+
+    return deferred.promise
+}
