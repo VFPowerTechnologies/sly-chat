@@ -361,7 +361,7 @@ class KeyTapApplication {
         log.info("Fetching offline messages")
 
         val offlineMessagesClient = OfflineMessagesAsyncClient(appComponent.serverUrls.API_SERVER)
-        offlineMessagesClient.get(OfflineMessagesGetRequest(authToken)) bind { response ->
+        offlineMessagesClient.get(OfflineMessagesGetRequest(authToken)) bindUi { response ->
             if (response.messages.isNotEmpty()) {
                 val messengerService = userComponent?.messengerService ?: throw RuntimeException("No longer logged in")
 
