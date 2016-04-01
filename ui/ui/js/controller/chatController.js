@@ -64,11 +64,12 @@ ChatController.prototype = {
         var timeSpan = document.createElement('span');
 
         if(message.timestamp != null){
-            timeSpan.textContent = message.timestamp;
-        }else if(message.timestamp == null && message.sent == true){
-            timeSpan.textContent = "Delivering...";
-        }else{
-            timeSpan.textContent = message.timestamp;
+            timeSpan.textContent = $.timeago(parseFormatedTimeString(message.timestamp).toISOString());
+        }else if(message.timestamp == null){
+            if(message.sent == true)
+                timeSpan.textContent = "Delivering...";
+            else
+                timeSpan.textContent = message.timestamp;
         }
         timeSpan.className = "timespan";
 
@@ -100,7 +101,7 @@ ChatController.prototype = {
                 var messageDiv = $("#chatContent").contents().find("#message_" + message.id);
 
                 if(messageDiv.length && message.sent == true){
-                    messageDiv.find(".timespan").html(message.timestamp);// + '<i class="mdi mdi-checkbox-marked-circle pull-right"></i>';
+                    messageDiv.find(".timespan").html($.timeago(parseFormatedTimeString(message.timestamp).toISOString()));// + '<i class="mdi mdi-checkbox-marked-circle pull-right"></i>';
                 }
             });
         });
