@@ -9,7 +9,7 @@ data class ConnectionFailure(val error: Throwable) : RelayClientEvent
 /**
  * @property wasRequested Indicates whether or not the client requested the disconnection.
  */
-data class ConnectionLost(val wasRequested: Boolean) : RelayClientEvent
+data class ConnectionLost(val wasRequested: Boolean, val error: Throwable? = null) : RelayClientEvent
 class AuthenticationSuccessful() : RelayClientEvent
 class AuthenticationFailure() : RelayClientEvent
 class AuthenticationExpired() : RelayClientEvent

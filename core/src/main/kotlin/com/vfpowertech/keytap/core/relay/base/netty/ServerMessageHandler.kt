@@ -45,7 +45,8 @@ class ServerMessageHandler(private val observer: Observer<in RelayConnectionEven
     }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
-        observer.onNext(RelayConnectionLost())
+        //we don't use onNext here, as due to using observeOn, calling onNext followed by onError will ignore the
+        //onNext value; see https://github.com/ReactiveX/RxJava/issues/2887
         observer.onError(cause)
         ctx.close()
         observerableComplete = true

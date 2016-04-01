@@ -51,7 +51,6 @@ class RelayClientManager(
     }
 
     private fun onClientError(e: Throwable) {
-        log.error("Relay observable error", e)
         setOnlineStatus(false)
     }
 

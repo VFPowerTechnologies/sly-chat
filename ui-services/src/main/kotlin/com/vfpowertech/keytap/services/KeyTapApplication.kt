@@ -10,7 +10,6 @@ import com.vfpowertech.keytap.core.http.api.contacts.*
 import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesAsyncClient
 import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesClearRequest
 import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesGetRequest
-import com.vfpowertech.keytap.core.kovenant.recoverFor
 import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.InstallationData
