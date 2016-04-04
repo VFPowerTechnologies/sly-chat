@@ -223,8 +223,9 @@ class WebApiIntegrationTest {
     fun `prekey storage request should fail when an invalid auth token is used`() {
         val keyVault = generateNewKeyVault(password)
         val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 1)
+        val lastResortPreKey = generateLastResortPreKey()
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys("a", keyVault, generatedPreKeys)
+        val request = preKeyStorageRequestFromGeneratedPreKeys("a", keyVault, generatedPreKeys, lastResortPreKey)
 
         val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
 
@@ -236,6 +237,7 @@ class WebApiIntegrationTest {
     fun injectPreKeys(username: String, keyVault: KeyVault): GeneratedPreKeys {
         val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 1)
         devClient.addOneTimePreKeys(username, serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys))
+        devClient.setSignedPreKey(username, serializeSignedPreKey(generatedPreKeys.signedPreKey))
         return generatedPreKeys
     }
 
@@ -247,8 +249,9 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(username)
         val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 1)
+        val lastResortPreKey = generateLastResortPreKey()
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, keyVault, generatedPreKeys)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, keyVault, generatedPreKeys, lastResortPreKey)
 
         val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
 
@@ -259,9 +262,11 @@ class WebApiIntegrationTest {
 
         val expectedOneTimePreKeys = serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys)
         val expectedSignedPreKey = serializeSignedPreKey(generatedPreKeys.signedPreKey)
+        val expectedLastResortPreKey = serializePreKey(lastResortPreKey)
 
         assertEquals(expectedOneTimePreKeys, preKeys.oneTimePreKeys, "One-time prekeys don't match")
         assertEquals(expectedSignedPreKey, preKeys.signedPreKey, "Signed prekey doesn't match")
+        assertEquals(expectedLastResortPreKey, preKeys.lastResortPreKey, "Last resort prekey doesn't match")
     }
 
     @Test
@@ -276,8 +281,6 @@ class WebApiIntegrationTest {
 
     //TODO more elaborate tests
 
-    //TODO deal with identity key stuff
-    @Ignore
     @Test
     fun `prekey retrieval should return the next available prekey when a valid auth token is used`() {
         val siteUser = injectNewSiteUser()
@@ -287,7 +290,6 @@ class WebApiIntegrationTest {
         val authToken = devClient.createAuthToken(username)
 
         val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
-
 
         val response = client.retrieve(PreKeyRetrievalRequest(authToken, username))
 
