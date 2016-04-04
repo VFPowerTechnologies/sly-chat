@@ -2,13 +2,13 @@
 package com.vfpowertech.keytap.core.http.api.prekeys
 
 import com.vfpowertech.keytap.core.crypto.KeyVault
-import com.vfpowertech.keytap.core.crypto.axolotl.GeneratedPreKeys
-import com.vfpowertech.keytap.core.crypto.axolotl.UserPreKeySet
 import com.vfpowertech.keytap.core.crypto.hexify
+import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
+import com.vfpowertech.keytap.core.crypto.signal.UserPreKeySet
 import com.vfpowertech.keytap.core.crypto.unhexify
-import org.whispersystems.libaxolotl.IdentityKey
-import org.whispersystems.libaxolotl.state.PreKeyRecord
-import org.whispersystems.libaxolotl.state.SignedPreKeyRecord
+import org.whispersystems.libsignal.IdentityKey
+import org.whispersystems.libsignal.state.PreKeyRecord
+import org.whispersystems.libsignal.state.SignedPreKeyRecord
 
 fun serializePreKey(preKeyRecord: PreKeyRecord): String =
     preKeyRecord.serialize().hexify()
@@ -22,15 +22,16 @@ fun serializeSignedPreKey(signedPreKeyRecord: SignedPreKeyRecord): String =
 fun preKeyStorageRequestFromGeneratedPreKeys(
     authToken: String,
     keyVault: KeyVault,
-    generatedPreKeys: GeneratedPreKeys
+    generatedPreKeys: GeneratedPreKeys,
+    lastResortPreKey: PreKeyRecord
 ): PreKeyStoreRequest {
     val identityKey = keyVault.identityKeyPair.publicKey.serialize().hexify()
 
     val signedPreKey = serializeSignedPreKey(generatedPreKeys.signedPreKey)
     val oneTimePreKeys = serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys)
-    val lastResortPreKey = serializePreKey(generatedPreKeys.lastResortPreKey)
+    val serializedLastResortKey = serializePreKey(lastResortPreKey)
 
-    return PreKeyStoreRequest(authToken, identityKey, signedPreKey, oneTimePreKeys, lastResortPreKey)
+    return PreKeyStoreRequest(authToken, identityKey, signedPreKey, oneTimePreKeys, serializedLastResortKey)
 }
 
 fun userPreKeySetFromRetrieveResponse(response: PreKeyRetrievalResponse): UserPreKeySet? {

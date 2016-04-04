@@ -1,9 +1,9 @@
 package com.vfpowertech.keytap.core.persistence
 
-import com.vfpowertech.keytap.core.crypto.axolotl.GeneratedPreKeys
+import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import nl.komponents.kovenant.Promise
-import org.whispersystems.libaxolotl.state.PreKeyRecord
-import org.whispersystems.libaxolotl.state.SignedPreKeyRecord
+import org.whispersystems.libsignal.state.PreKeyRecord
+import org.whispersystems.libsignal.state.SignedPreKeyRecord
 
 /** Responsible for persisting PreKeys and associated data. */
 interface PreKeyPersistenceManager {
