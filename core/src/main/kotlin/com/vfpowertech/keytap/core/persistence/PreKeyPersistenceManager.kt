@@ -9,6 +9,7 @@ import org.whispersystems.libsignal.state.SignedPreKeyRecord
 interface PreKeyPersistenceManager {
     /** Stores the given prekeys, as well as updates the next available IDs. */
     fun putGeneratedPreKeys(generatedPreKeys: GeneratedPreKeys): Promise<Unit, Exception>
+    fun putLastResortPreKey(lastResortPreKey: PreKeyRecord): Promise<Unit, Exception>
     fun getSignedPreKey(id: Int): Promise<SignedPreKeyRecord?, Exception>
     fun getUnsignedPreKey(id: Int): Promise<PreKeyRecord?, Exception>
     fun getNextPreKeyIds(): Promise<PreKeyIds, Exception>

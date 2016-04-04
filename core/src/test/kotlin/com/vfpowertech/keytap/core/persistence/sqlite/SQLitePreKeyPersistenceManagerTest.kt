@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
+import com.vfpowertech.keytap.core.crypto.generateLastResortPreKey
 import com.vfpowertech.keytap.core.crypto.generateNewKeyVault
 import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import org.junit.After
@@ -73,5 +74,15 @@ class SQLitePreKeyPersistenceManagerTest {
             assertNotNull(got, "Key $id not found")
             assertTrue(Arrays.equals(got!!.serialize(), unsignedPreKey.serialize()), "Key $id was not serialized properly")
         }
+    }
+
+    @Test
+    fun `putLastResortPreKey should store an unsigned prekey`() {
+        val lastResortPreKey = generateLastResortPreKey()
+
+        keyPersistenceManager.putLastResortPreKey(lastResortPreKey).get()
+        val got = keyPersistenceManager.getUnsignedPreKey(lastResortPreKey.id).get()
+        assertNotNull(got)
+        assertTrue(Arrays.equals(got!!.serialize(), lastResortPreKey.serialize()), "Key was not serialized properly")
     }
 }
