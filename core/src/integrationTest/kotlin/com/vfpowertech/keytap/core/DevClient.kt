@@ -98,6 +98,18 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         postRequestNoResponse(request, "/dev/prekeys/signed/$username")
     }
 
+    fun getLastResortPreKey(username: String): String? {
+        return getRequest("/dev/prekeys/last-resort/$username", SiteLastResortPreKeyData::class.java).lastResortPreKey
+    }
+
+    fun setLastResortPreKey(username: String, lastResortPreKey: String) {
+        val request = mapOf(
+            "lastResortPreKey" to lastResortPreKey
+        )
+
+        postRequestNoResponse(request, "/dev/prekeys/last-resort/$username")
+    }
+
     fun getContactList(username: String): List<RemoteContactEntry> {
         return getRequest("/dev/contact-list/$username", SiteContactList::class.java).contacts
     }

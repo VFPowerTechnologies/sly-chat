@@ -6,3 +6,4 @@ data class SiteSignedPreKeyData(
     @JsonProperty("signedPreKey")
     val signedPreKey: String?
 )
+
