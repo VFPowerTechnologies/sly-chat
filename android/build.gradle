@@ -54,7 +54,7 @@ dependencies {
     //pure-java curve25519 is broken: https://github.com/WhisperSystems/curve25519-java/pull/4
     compile "org.whispersystems:axolotl-android:$versions.axolotl"
     compile project(':ui-services')
-    compile "org.slf4j:slf4j-android:$versions.slf4j"
+    compile "com.noveogroup.android:android-logger:$versions.androidLogger"
     compile "com.vfpowertech:jsbridge-android-webengine:$versions.jsbridge"
     compile "nl.komponents.kovenant:kovenant-android:$versions.kovenant"
     compile "io.reactivex:rxandroid:$versions.rxandroid"

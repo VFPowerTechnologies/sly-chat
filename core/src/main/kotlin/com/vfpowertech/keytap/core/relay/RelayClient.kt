@@ -35,7 +35,7 @@ class RelayClient(
     private val publishSubject = PublishSubject.create<RelayClientEvent>()
     private val objectMapper = ObjectMapper()
 
-    /** Client event stream. */
+    /** Client event stream. Will never call onError; check ConnectionLost.error instead. */
     val events: Observable<RelayClientEvent> = publishSubject
 
     private fun onNext(event: RelayConnectionEvent) {
@@ -180,8 +180,10 @@ class RelayClient(
             publishSubject.onNext(ConnectionFailure(e))
         else {
             log.error("Relay error", e)
-            publishSubject.onError(e)
+            emitEvent(ConnectionLost(wasDisconnectRequested, e))
         }
+
+        publishSubject.onCompleted()
     }
 
     fun connect() {
