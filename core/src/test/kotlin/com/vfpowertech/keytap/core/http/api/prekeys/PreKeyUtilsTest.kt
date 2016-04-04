@@ -1,9 +1,9 @@
 package com.vfpowertech.keytap.core.http.api.prekeys
 
-import com.vfpowertech.keytap.core.crypto.axolotl.UserPreKeySet
 import com.vfpowertech.keytap.core.crypto.generateNewKeyVault
 import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.crypto.hexify
+import com.vfpowertech.keytap.core.crypto.signal.UserPreKeySet
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
@@ -26,7 +26,6 @@ class PreKeyUtilsTest {
         assertEquals(expected.oneTimePreKey.id, expected.oneTimePreKey.id, "One-time PreKey IDs differ")
         assertTrue(Arrays.equals(expected.oneTimePreKey.serialize(), expected.oneTimePreKey.serialize()), "Signed PreKeys differ")
     }
-
 
     @Test
     fun `userPreKeySetFromRetrievalResponse should properly deserialize keys from a response`() {

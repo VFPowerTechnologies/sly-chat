@@ -1,7 +1,7 @@
 package com.vfpowertech.keytap.core
 
 import com.vfpowertech.keytap.core.crypto.*
-import com.vfpowertech.keytap.core.crypto.axolotl.GeneratedPreKeys
+import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import com.vfpowertech.keytap.core.http.JavaHttpClient
 import com.vfpowertech.keytap.core.http.api.UnauthorizedException
 import com.vfpowertech.keytap.core.http.api.accountUpdate.AccountUpdateClient

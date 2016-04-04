@@ -3,8 +3,7 @@ package com.vfpowertech.keytap.core.crypto
 import com.vfpowertech.keytap.core.crypto.ciphers.CipherParams
 import com.vfpowertech.keytap.core.crypto.hashes.HashParams
 import org.spongycastle.crypto.InvalidCipherTextException
-import org.whispersystems.libaxolotl.IdentityKeyPair
-import javax.crypto.spec.SecretKeySpec
+import org.whispersystems.libsignal.IdentityKeyPair
 
 /**
  * Interface for accessing a user's identity keypair and hashes.
@@ -48,7 +47,7 @@ class KeyVault(
     val fingerprint: String
         get() {
             //this includes the prepended type byte
-            return identityKeyPair.publicKey.fingerprint.filterNot { it == ' ' }
+            return identityKeyPair.publicKey.serialize().hexify()
         }
 
     fun serialize(): SerializedKeyVault {

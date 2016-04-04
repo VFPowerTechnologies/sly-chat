@@ -1,11 +1,11 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
-import com.vfpowertech.keytap.core.crypto.axolotl.GeneratedPreKeys
+import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import com.vfpowertech.keytap.core.persistence.PreKeyIds
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
 import nl.komponents.kovenant.Promise
-import org.whispersystems.libaxolotl.state.PreKeyRecord
-import org.whispersystems.libaxolotl.state.SignedPreKeyRecord
+import org.whispersystems.libsignal.state.PreKeyRecord
+import org.whispersystems.libsignal.state.SignedPreKeyRecord
 
 class SQLitePreKeyPersistenceManager(private val sqlitePersistenceManager: SQLitePersistenceManager) : PreKeyPersistenceManager {
     private inline fun <T> getPreKey(tableName: String, id: Int, crossinline constructor: (ByteArray) -> T): Promise<T?, Exception> =

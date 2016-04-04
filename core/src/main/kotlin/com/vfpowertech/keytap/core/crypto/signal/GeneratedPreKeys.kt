@@ -1,8 +1,8 @@
-package com.vfpowertech.keytap.core.crypto.axolotl
+package com.vfpowertech.keytap.core.crypto.signal
 
 import com.vfpowertech.keytap.core.crypto.nextPreKeyId
-import org.whispersystems.libaxolotl.state.PreKeyRecord
-import org.whispersystems.libaxolotl.state.SignedPreKeyRecord
+import org.whispersystems.libsignal.state.PreKeyRecord
+import org.whispersystems.libsignal.state.SignedPreKeyRecord
 
 /** A batch of generated prekeys */
 data class GeneratedPreKeys(
