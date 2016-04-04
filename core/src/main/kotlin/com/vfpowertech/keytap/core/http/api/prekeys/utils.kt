@@ -6,7 +6,6 @@ import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import com.vfpowertech.keytap.core.crypto.signal.UserPreKeySet
 import com.vfpowertech.keytap.core.crypto.unhexify
-import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
 
@@ -38,7 +37,6 @@ fun userPreKeySetFromRetrieveResponse(response: PreKeyRetrievalResponse): UserPr
     val keyData = response.keyData ?: return null
 
     return UserPreKeySet(
-        IdentityKey(keyData.identityKey.unhexify(), 0),
         SignedPreKeyRecord(keyData.signedPreKey.unhexify()),
         PreKeyRecord(keyData.preKey.unhexify())
     )
