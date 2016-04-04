@@ -140,4 +140,30 @@ if (typeof KEYTAP == "undefined") {
 
         return img.outerHTML;
     }
+
+    function createStatusModal(htmlContent) {
+        var content = $(document.createElement("div"));
+        content.addClass("container");
+
+        var modalContent = $(document.createElement("div"));
+        modalContent.addClass("valign-wrapper");
+        modalContent.addClass("row");
+
+        var container = $(document.createElement("div"));
+        container.addClass("valign");
+        container.html(htmlContent);
+
+        content.append(container);
+
+        modalContent.append(content);
+
+        var html = $("<div>").append(modalContent).html();
+
+        var bd = new BootstrapDialog();
+        bd.setCssClass("statusModal");
+        bd.setClosable(false);
+        bd.setMessage(html);
+
+        return bd;
+    }
 }

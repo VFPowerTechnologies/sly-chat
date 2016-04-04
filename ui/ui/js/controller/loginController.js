@@ -1,12 +1,17 @@
 var LoginController = function(model){
     this.model = model;
+    this.modal = this.createLoginModal();
 };
 
 LoginController.prototype = {
     init : function() {
         $(document).on("click", "#submitLoginBtn", function(e){
             e.preventDefault();
-            $("#submitLoginBtn").prop("disabled", true);
+
+            var loginBtn = $("#submitLoginBtn");
+
+            loginBtn.prop("disabled", true);
+
             this.model.setItems({
                 "login" : $("#login").val().replace(/\s+/g, ''),
                 "password" : $("#login-psw").val()
@@ -14,12 +19,11 @@ LoginController.prototype = {
 
             if(this.model.validate() == true){
                 this.login();
-                $("#statusModal").openModal({
-                    dismissible: false
-                });
+
+                this.modal.open();
             }
             else{
-                $("#submitLoginBtn").prop("disabled", false);
+                loginBtn.prop("disabled", false);
             }
         }.bind(this));
 
@@ -63,31 +67,37 @@ LoginController.prototype = {
                 });
             }
             $(".menu-hidden").show();
-            KEYTAP.navigationController.clearHistory();
-            $("#statusModal").closeModal();
+            this.modal.close();
 
-            if(initialPage === null)
+            console.log(initialPage);
+
+            if(initialPage === null) {
                 KEYTAP.navigationController.loadPage('contacts.html');
+                KEYTAP.navigationController.clearHistory();
+            }
             else
+            {
                 KEYTAP.navigationController.goTo(initialPage);
+                KEYTAP.navigationController.clearHistory();
+            }
         }.bind(this));
     },
     onLoginFailure : function(ev) {
         var errorMessage = ev.errorMessage;
         if(errorMessage !== null) {
             if(errorMessage == "Phone confirmation needed") {
-                $("#statusModal").closeModal();
+                this.modal.close();
                 KEYTAP.registrationController.model.setItems({"email" : this.model.getLogin(), "password" : this.model.getPassword()});
                 KEYTAP.navigationController.loadPage("smsVerification.html");
             }
             else {
                 document.getElementById("login-error").innerHTML = "<li>An error occurred: " + errorMessage + "</li>";
                 $("#submitLoginBtn").prop("disabled", false);
-                $("#statusModal").closeModal();
+                this.modal.close();
             }
         }
         else {
-            $("#statusModal").closeModal();
+            this.modal.close();
             KEYTAP.exceptionController.displayDebugMessage(e);
             document.getElementById("login-error").innerHTML = "<li>An unexpected error occurred</li>";
             console.log("An unexpected error occured: " + e);
@@ -121,5 +131,9 @@ LoginController.prototype = {
             console.log(e);
         });
         loginService.logout();
+    },
+    createLoginModal: function () {
+        var html = "<div style='text-align: center;'> <h6 style='margin-bottom: 15px; color: whitesmoke;'>We are logging you in</h6> <i class='fa fa-spinner fa-3x fa-spin'></i> </div>";
+        return createStatusModal(html);
     }
 };

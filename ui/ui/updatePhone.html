@@ -7,39 +7,41 @@
         <div class="scene_element signup scene_element--fadeinright valign-wrapper row" style="margin-bottom: 0">
             <div class="valign col s12">
                 <div class="container">
-                    <div class="container white z-depth-2">
-                        <ul id="verification-error" style="color: red;">
+                    <ul id="verification-error" style="color: red;">
 
-                        </ul>
-                        <form id="updatePhoneForm" method="post">
-                            <div class="input-field col s12">
-                                <i class="mdi mdi-account-circle prefix"></i>
-                                <input id="phone" type="tel" required>
-                                <label for="phone">Phone Number</label>
-                            </div>
+                    </ul>
+                    <form id="updatePhoneForm" method="post">
+                        <div class="group-form col s12">
+                            <i class="mdi mdi-lock"></i>
+                            <input id="phoneUpdatePassword" class="validate" type="password" placeholder="Password" data-parsley-minlength="[6]" required>
+                        </div>
 
-                            <div class="input-field col s12">
-                                <i class="mdi mdi-account-circle prefix"></i>
-                                <input id="phoneUpdatePassword" class="validate" type="password" data-parsley-minlength="[6]" required>
-                                <label for="phoneUpdatePassword">Password</label>
-                            </div>
+                        <div class="col s12 group-form">
+                            <h6 style="color: #9e9e9e;">Mobile Number</h6>
+                        </div>
 
-                            <div class="input-field col s12">
-                                <select class="form-control" id="countrySelect">
-                                </select>
-                            </div>
+                        <div class="group-form col s12">
+                            <i class="mdi mdi-map-marker"></i>
+                            <select id="countrySelect">
+                                <option selected disabled>Country</option>
+                            </select>
+                        </div>
 
-                            <input type="tel" id="hiddenPhoneInput" style="display: none">
+                        <input type="tel" id="hiddenPhoneInput" style="display: none">
 
-                            <button id="updatePhoneSubmitBtn" type="submit" class="waves-effect waves-light btn-large primary-color fullwidth">Submit</button>
-                            <div style="text-align: center">
-                                <span>
-                                    Received your code? <br>
-                                    <a id="backToSmsVerification" class="primary-color-text" href="#">Go Back</a>
-                                </span>
-                            </div>
-                        </form>
-                    </div>
+                        <div class="group-form col s12">
+                            <span id="phoneIntlExt"></span><i id="phoneInputIcon" class="mdi mdi-phone"></i>
+                            <input id="phone" type="tel" placeholder="Phone Number" required>
+                        </div>
+
+                        <button id="updatePhoneSubmitBtn" type="submit" class="waves-effect waves-light btn-large secondary-color fullwidth">Submit</button>
+                        <div style="text-align: center">
+                        <span>
+                            Received your code? <br>
+                            <a id="backToSmsVerification" class="secondary-color-text" href="#">Go Back</a>
+                        </span>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div> <!-- End of Main Contents -->

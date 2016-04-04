@@ -1,5 +1,6 @@
 var RegistrationController = function (model) {
     this.model = model;
+    this.modal = this.createRegisterModal();
 };
 
 RegistrationController.prototype = {
@@ -25,9 +26,7 @@ RegistrationController.prototype = {
 
             if(formValid == true && phoneValid == true){
                 this.register();
-                $("#statusModal").openModal({
-                    dismissible: false
-                });
+                this.modal.open();
             }
             else {
                 submitRegisterBtn.prop("disabled", false);
@@ -41,7 +40,8 @@ RegistrationController.prototype = {
 
         $(document).on("click", "#successLoginBtn", function (e) {
             e.preventDefault();
-            $("#statusModal").html(this.createLoginModalContent());
+            this.modal.close();
+            KEYTAP.loginController.modal.open();
             var info = this.model.getItems();
             KEYTAP.loginController.setInfo(info.email, info.password);
             KEYTAP.loginController.login();
@@ -53,11 +53,8 @@ RegistrationController.prototype = {
             var code = $("#smsCode").val();
             registrationService.submitVerificationCode(this.model.getItems().email, code).then(function (result) {
                 if(result.successful == true) {
-                    var modal = $("#statusModal");
-                    modal.html(this.createRegistrationSuccessContent());
-                    modal.openModal({
-                        dismissible: false
-                    });
+                    this.modal = createStatusModal(this.createRegistrationSuccessContent());
+                    this.modal.open();
                 }
                 else {
                     document.getElementById("verification-error").innerHTML = "<li>" + result.errorMessage + "</li>";
@@ -139,7 +136,14 @@ RegistrationController.prototype = {
         }.bind(this));
 
         $(document).on("change", "#countrySelect", function(e) {
-            $("#hiddenPhoneInput").intlTelInput("setCountry", $("#countrySelect").val());
+            var hiddenPhoneInput = $("#hiddenPhoneInput");
+            hiddenPhoneInput.intlTelInput("setCountry", $("#countrySelect").val());
+            hiddenPhoneInput.intlTelInput("setNumber", $("#phone").val());
+
+            var ext = $("#countrySelect :selected").text().split("+")[1];
+
+            this.setPhoneExt(ext);
+
             this.validatePhone();
         }.bind(this));
 
@@ -152,20 +156,20 @@ RegistrationController.prototype = {
     register : function () {
         registrationService.doRegistration(this.model.getItems()).then(function (result) {
             if(result.successful == true) {
-                $("#statusModal").closeModal();
+                this.modal.close();
                 KEYTAP.navigationController.loadPage("smsVerification.html");
             }
             else{
-                $("#statusModal").closeModal();
+                this.modal.close();
                 this.displayRegistrationError(result);
                 $("#submitRegisterBtn").prop("disabled", false);
             }
         }.bind(this)).catch(function(e) {
-            $("#statusModal").closeModal();
+            this.modal.close();
             KEYTAP.exceptionController.displayDebugMessage(e);
             document.getElementById("register-error").innerHTML = "<li>Registration failed</li>";
             $("#submitRegisterBtn").prop("disabled", false);
-        });
+        }.bind(this));
     },
     displayRegistrationError : function (result) {
         document.getElementById("register-error").innerHTML = "<li>" + result.errorMessage + "</li>";
@@ -175,10 +179,7 @@ RegistrationController.prototype = {
         var username = this.model.getItems().name;
         if(username == undefined)
             username = "";
-        return "<div class='modalHeader'><h5>Registration Successful</h5></div><div class='modalContent'><p>Thank you <strong>" + username + "</p><p style='margin-bottom: 10px;'>Login to access your new account</p><button id='successLoginBtn' class='btn btn-success'>Login</button></div>";
-    },
-    createLoginModalContent : function () {
-        return "<div class='modalHeader'><h5>Thank you</h5></div><div class='modalContent'><i class='fa fa-spinner fa-3x fa-spin'></i><p>We are logging you in</p></div>";
+        return "<div style='text-align: center;'> <h6 style='margin-bottom: 15px; color: whitesmoke;'>Registration Successful</h6> <p>Thank you <strong>" + username + "</p><p style='margin-bottom: 10px;'>Login to access your new account</p><button id='successLoginBtn' class='btn btn-success'>Login</button></div>";
     },
     validatePhone : function () {
         var phoneInput = $("#phone");
@@ -217,5 +218,21 @@ RegistrationController.prototype = {
             countryData.dialCode + phoneValue.substring(countryData.dialCode.length) :
                 countryData.dialCode + phoneValue;
 
+    },
+    setPhoneExt : function (dialCode) {
+    var extension = $("#phoneIntlExt");
+    $("#phoneInputIcon").hide();
+
+    extension.html("+" + dialCode);
+
+    var width = extension.outerWidth(true);
+
+    if(width + 24 > 43)
+        $("#phone").css("padding-left", width + "px");
+    },
+    createRegisterModal : function () {
+        var html = "<div style='text-align: center;'> <h6 style='margin-bottom: 15px; color: whitesmoke;'>Registration in process</h6> <i class='fa fa-spinner fa-3x fa-spin'></i> <p id='registrationStatusUpdate' style='margin-top: 40px;'></p></div>";
+
+        return createStatusModal(html);
     }
 };

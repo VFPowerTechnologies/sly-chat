@@ -62,7 +62,7 @@ ContactModel.prototype = {
                 KEYTAP.contactController.model.conversations[conversation.contact.email] = conversation;
             });
             KEYTAP.contactController.model.setCurrentContact(email);
-            KEYTAP.navigationController.smoothStateLoad("chat.html", pushCurrentPage);
+            KEYTAP.navigationController.loadPage("chat.html", pushCurrentPage);
         }.bind(email)).catch(function(e){
             KEYTAP.exceptionController.displayDebugMessage(e);
             console.log("Unable to fetch conversations: " + e);

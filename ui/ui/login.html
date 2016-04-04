@@ -1,47 +1,36 @@
 <div class="m-scene toolbar-inside main-content" id="main"> <!-- Page Container -->
-  <div id="statusModal" class="modal">
-    <div class='modalHeader'>
-      <h5>We're logging you in</h5>
-    </div>
-    <div class="modalContent">
-      <i class="fa fa-spinner fa-3x fa-spin"></i>
-    </div>
-  </div>
 
   <!-- Page Content -->
   <div class="snap-content main-content-body" id="content"  style="background: black;">
 
     <!-- Main Content -->
     <div class="scene_element signup scene_element--fadeinright valign-wrapper row" style="margin-bottom: 0">
-      <div class="valign col s12">
+      <div class="valign col s12" style="margin-left: 12px; margin-right: 12px;">
         <div class="container">
-          <div class="container white z-depth-2">
             <ul id="login-error" style="color: red;">
 
             </ul>
-            <form id="loginForm" action="post">
-              <div class="input-field col s12">
-                <i class="mdi mdi-account-circle prefix"></i>
-                <input class="validate" id="login" type="text" required autocapitalize="off">
-                <label for="login">Phone number or Email</label>
-              </div>
+            <form id="loginForm" method="post">
 
-              <div class="input-field col s12" style="margin-bottom:20px;">
-                <i class="mdi mdi-lock prefix"></i>
-                <input class="validate" id="login-psw" type="password" required>
-                <label for="login-psw">Password</label>
-              </div>
+                <div class="col s12" style="padding-left: 0; padding-right: 0;">
+                    <i class="mdi mdi-account-circle" style="position: absolute; padding: 15px 12px; pointer-events: none; font-size: 19px;"></i>
+                    <input id="login" class="validate" type="text" placeholder="Phone number or Email" autocapitalize="off" required style="padding-left: 43px;">
+                </div>
 
-              <button id="submitLoginBtn" type="submit" class="waves-effect waves-light btn-large primary-color fullwidth">Login</button>
-              <div class="col s12" id="test1" style="padding: 0; margin-bottom: 5px;">
-                <p class="todo-element">
-                  <input id="rememberMe" type="checkbox"> <label for="rememberMe">Remember Me</label>
-                </p>
-              </div>
-              <span>Don't have an account? <a id="registrationGoBtn" class="primary-color-text" href="#">Sign Up</a></span>
+                <div class="col s12" style="padding-left: 0; padding-right: 0;">
+                    <i class="mdi mdi-lock" style="position: absolute; padding: 15px 12px; pointer-events: none; font-size: 19px;"></i>
+                    <input id="login-psw" class="validate" type="password" placeholder="Password"  required style="padding-left: 43px;">
+                </div>
+
+                <button id="submitLoginBtn" type="submit" class="waves-effect waves-light btn-large secondary-color fullwidth">Login</button>
+                <div class="col s12" id="test1" style="padding: 0; margin-bottom: 5px;">
+                    <p>
+                        <input id="rememberMe" type="checkbox"> <label for="rememberMe">Remember Me</label>
+                    </p>
+                </div>
+                <span>Don't have an account? <a id="registrationGoBtn" style="color: #26a69a;" href="#">Sign Up</a></span>
             </form>
           </div>
-        </div>
       </div>
     </div> <!-- End of Main Contents -->
     <div id="blockui"></div>

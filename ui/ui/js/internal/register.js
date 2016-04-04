@@ -14,7 +14,10 @@ $(function(){
     //Set default country based on geo location.
     setTimeout(function() {
         var data = $("#hiddenPhoneInput").intlTelInput("getSelectedCountryData");
-        $("#countrySelect").val(data.iso2);
+        if(!$.isEmptyObject(data) && typeof data.iso2 != "undefined") {
+            $("#countrySelect").val(data.iso2);
+            KEYTAP.registrationController.setPhoneExt(data.dialCode);
+        }
     }, 100);
 
     //Get the country data.
@@ -34,6 +37,7 @@ $(function(){
                 setTimeout(function() {
                     var data = $("#hiddenPhoneInput").intlTelInput("getSelectedCountryData");
                     $("#countrySelect").val(data.iso2);
+                    KEYTAP.registrationController.setPhoneExt(data.dialCode);
                 }, 100);
             });
         },

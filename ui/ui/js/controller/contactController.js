@@ -79,7 +79,7 @@ ContactController.prototype = {
         links.bind("click", function (e) {
             e.preventDefault();
             var email = $(this).attr("id").split("contact%")[1];
-            KEYTAP.contactController.loadContactPage(email);
+            KEYTAP.contactController.loadContactPage(email, true);
         });
 
         iframe.contents().find(".contact-dropDown").bind("click", function(e) {
@@ -186,7 +186,7 @@ ContactController.prototype = {
 
         var nameLabel = document.createElement("label");
         nameLabel.for = "name";
-        nameLabel.innerHTML = "Name";
+        nameLabel.innerHTML = "Name:";
 
         var nameInput = document.createElement("INPUT");
         nameInput.id = "name";
@@ -197,7 +197,7 @@ ContactController.prototype = {
 
         var publicKeyLabel = document.createElement("label");
         publicKeyLabel.for = "publicKey";
-        publicKeyLabel.innerHTML = "Public Key";
+        publicKeyLabel.innerHTML = "Public Key:";
 
         var publicKeyInput = document.createElement("INPUT");
         publicKeyInput.id = "publicKey";
@@ -214,7 +214,7 @@ ContactController.prototype = {
         var emailInput = document.createElement("INPUT");
         emailInput.id = "email";
         emailInput.type = "hidden";
-        emailInput.value = contactDetails.email
+        emailInput.value = contactDetails.email;
 
         var navbar = document.createElement("div");
         navbar.className = "navbar-btn center-align";
@@ -229,7 +229,7 @@ ContactController.prototype = {
         cancelBtn.style.marginRight = "5px";
 
         var confirmBtn = document.createElement("button");
-        confirmBtn.className = "btn-sm primary-color";
+        confirmBtn.className = "btn-sm secondary-color";
         confirmBtn.id = "confirmBtn";
         confirmBtn.type = "submit";
         confirmBtn.innerHTML = "Confirm";

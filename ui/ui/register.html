@@ -1,13 +1,4 @@
 <div class="m-scene toolbar-inside main-content" id="main"> <!-- Page Container -->
-    <div id="statusModal" class="modal">
-        <div class='modalHeader'>
-            <h5>Registration in process</h5>
-        </div>
-        <div class="modalContent">
-            <i class="fa fa-spinner fa-3x fa-spin"></i>
-            <p id="registrationStatusUpdate" style="margin-top: 40px;"></p>
-        </div>
-    </div>
     <!-- Page Content -->
     <div class="snap-content main-content-body" id="content"  style="background: black;">
 
@@ -15,45 +6,45 @@
         <div class="scene_element signup scene_element--fadeinright row valign-wrapper"  style="margin-bottom: 0">
             <div class="valign col s12">
                 <div class="container">
-                    <div class="container white z-depth-2">
-                        <ul id="register-error" style="color: red">
+                    <ul id="register-error" style="color: red">
 
-                        </ul>
-                        <form id="registerForm" action="post">
-                            <div class="input-field col s12">
-                                <i class="mdi mdi-account-circle prefix"></i>
-                                <input class="validate" id="name" type="text" data-parsley-minlength="[4]" required data-parsley-pattern="^[a-zA-Z\s]+$">
-                                <label for="name">Name</label>
-                            </div>
+                    </ul>
+                    <form id="registerForm" method="post">
+                        <div class="col s12 group-form">
+                            <i class="mdi mdi-account-circle"></i>
+                            <input class="validate" id="name" type="text" data-parsley-minlength="[4]" required data-parsley-pattern="^[a-zA-Z\s]+$" placeholder="Name">
+                        </div>
 
-                            <div class="input-field col s12">
-                                <i class="mdi mdi-email prefix"></i>
-                                <input class="validate" id="email" type="email" required autocapitalize="off">
-                                <label for="email">Email</label>
-                            </div>
+                        <div class="col s12 group-form">
+                            <i class="mdi mdi-email"></i>
+                            <input class="validate" id="email" type="email" required autocapitalize="off" placeholder="Email">
+                        </div>
 
-                            <div class="input-field col s12">
-                                <i class="mdi mdi-phone prefix"></i>
-                                <label for="phone">Phone Number</label>
-                                <input type="tel" required class="form-control" id="phone">
-                            </div>
+                        <div class="col s12 group-form">
+                            <i class="mdi mdi-lock"></i>
+                            <input class="validate" id="password" type="password" data-parsley-minlength="[6]" required placeholder="Password">
+                        </div>
 
-                            <div class="input-field col s12">
-                                <select class="form-control" id="countrySelect">
-                                </select>
-                            </div>
+                        <div class="col s12 group-form">
+                            <h6 style="color: #9e9e9e; margin: 0; padding-top: 15px; padding-bottom: 15px;">Mobile Number</h6>
+                        </div>
 
-                            <input type="tel" id="hiddenPhoneInput" style="display: none">
+                        <div class="col s12 group-form">
+                            <i class="mdi mdi-map-marker"></i>
+                            <select id="countrySelect">
+                                <option selected disabled>Country</option>
+                            </select>
+                        </div>
 
-                            <div class="input-field col s12">
-                                <i class="mdi mdi-lock prefix"></i>
-                                <input class="validate" id="password" type="password" data-parsley-minlength="[6]" required>
-                                <label for="password">Password</label>
-                            </div>
-                            <button id="submitRegisterBtn" type="submit" class="waves-effect waves-light btn-large primary-color fullwidth">Create Account</button>
-                            <span>Already have an account? <a id="signInGoBtn" class="primary-color-text nav-link" href="#">Sign In</a></span>
-                        </form>
-                    </div>
+                        <input type="tel" id="hiddenPhoneInput" style="display: none">
+                        <div class="col s12 group-form">
+                            <span id="phoneIntlExt"></span><i id="phoneInputIcon" class="mdi mdi-phone"></i>
+                            <input type="tel" required class="form-control" id="phone" placeholder="Phone Number">
+                        </div>
+
+                        <button id="submitRegisterBtn" type="submit" class="waves-effect waves-light btn-large secondary-color fullwidth">Create Account</button>
+                        <span>Already have an account? <a id="signInGoBtn" style="color: #26a69a;" href="#">Sign In</a></span>
+                    </form>
                 </div>
             </div>
 

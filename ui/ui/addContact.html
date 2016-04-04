@@ -1,24 +1,23 @@
 <div class="m-scene main-content" id="main"> <!-- Page Container -->
 
     <!-- Page Content -->
-    <div class="snap-content main-content-body" id="content">
+    <div class="snap-content main-content-body" id="content" style="background: black;">
 
         <!-- Main Content -->
         <div class="scene_element signup scene_element--fadeinright valign-wrapper row">
             <div class="valign col s12">
                 <div class="container">
-                    <div id="contactFormContainer" class="container white z-depth-2">
+                    <div id="contactFormContainer">
                         <ul id="error" style="color: red">
 
                         </ul>
                         <form id="addContactForm" method="post">
-                            <div class="input-field col s12">
+                            <div class="group-form col s12">
                                 <i class="mdi mdi-account-circle prefix"></i>
-                                <input class="validate" id="username" type="text" required autocapitalize="off">
-                                <label for="username">Email or Phone Number</label>
+                                <input class="validate" id="username" type="text" required autocapitalize="off" placeholder="Email or Phone Number">
                             </div>
 
-                            <button id="newContactBtn" type="submit" class="waves-effect waves-light btn-large primary-color fullwidth">Add Contact</button>
+                            <button id="newContactBtn" type="submit" class="waves-effect waves-light btn-large secondary-color fullwidth">Add Contact</button>
                         </form>
                     </div>
                 </div>

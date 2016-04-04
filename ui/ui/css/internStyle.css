@@ -96,3 +96,120 @@
 .intl-tel-input {
     display: none;
 }
+html {
+    height: 100%;
+}
+input, select {
+    background-color: white !important;
+    -webkit-box-sizing: border-box !important; /* Safari/Chrome, other WebKit */
+    -moz-box-sizing: border-box !important;    /* Firefox, other Gecko */
+    box-sizing: border-box !important;         /* Opera/IE 8+ */
+    border-radius: 5px !important;
+    border: none;
+    border-bottom: 1px solid #9e9e9e;
+    outline: none;
+    height: 3rem;
+    width: 100%;
+    font-size: 1rem;
+    margin: 0 0 15px 0;
+    padding: 0;
+    box-shadow: none;
+    transition: all .3s;
+}
+input[type='checkbox']:checked + label {
+    color: #26a69a;
+}
+button {
+    border: none;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+}
+button.secondary-color {
+    background-color: #26a69a
+}
+button.btn-large {
+    height: 54px;
+    line-height: 56px;
+}
+.valign-wrapper {
+    align-items: center;
+    display: flex;
+}
+.valign-wrapper .valign {
+    display: block;
+}
+.row .col.s12 {
+    width: 100%;
+    margin-left: 0;
+}
+.row .col {
+    float: left;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    padding: 0 0.75rem;
+}
+.group-form {
+    padding-left: 0;
+    padding-right: 0;
+}
+.group-form i {
+    position: absolute;
+    padding: 15px 12px;
+    pointer-events: none;
+    font-size: 19px;
+    color: rgb(68, 68, 68);
+}
+#phoneIntlExt {
+    line-height: 1;
+    position: absolute;
+    padding: 15px 5px 15px 12px;
+    margin-right: 7px;
+    pointer-events: none;
+    font-size: 19px;
+    color: rgb(68, 68, 68);
+    border-right: 1px solid rgb(68, 68, 68);
+}
+.group-form input, select {
+    padding: 0 0 0 43px;
+    display: inline-block;
+}
+.secondary-color-text {
+    color: #26a69a;
+}
+.modal {
+    background-color: transparent;
+}
+.statusModal {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    min-height: 100%;
+    overflow: hidden;
+    color: whitesmoke;
+}
+.statusModal .modal-header {
+    display: none;
+}
+.statusModal .modal-dialog {
+    height: 100%;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+.statusModal .modal-content {
+    height: auto;
+    min-height: 100%;
+    align-items: center;
+    text-align: center;
+    display: flex;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 20px;
+    background-color: black;
+}
+.statusModal .modal-body {
+    width: 100%;
+}
