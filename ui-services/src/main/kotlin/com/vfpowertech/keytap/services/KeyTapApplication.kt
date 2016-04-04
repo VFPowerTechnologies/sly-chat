@@ -155,6 +155,13 @@ class KeyTapApplication {
         }
     }
 
+    fun schedulePreKeyUpload(keyRegenCount: Int) {
+        if (keyRegenCount <= 0)
+            return
+
+        log.info("Requested to generate {} new prekeys", keyRegenCount)
+    }
+
     /**
      * Attempts to login (either locally or remotely) using the given username and password.
      *
@@ -188,10 +195,7 @@ class KeyTapApplication {
                 }
             }
 
-            if (response.keyRegenCount > 0) {
-                //TODO schedule prekey upload in bg
-                log.info("Requested to generate {} new prekeys", response.keyRegenCount)
-            }
+            schedulePreKeyUpload(response.keyRegenCount)
         } failUi { e ->
             val ev = when (e) {
                 is AuthApiResponseException ->
@@ -272,6 +276,9 @@ class KeyTapApplication {
 
             //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
             fetchOfflineMessages()
+
+            //REMOVE ME
+            schedulePreKeyUpload(2)
         }
 
         emitLoginEvent(LoggedIn(accountInfo))

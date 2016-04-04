@@ -14,7 +14,12 @@ import com.vfpowertech.keytap.core.http.api.registration.RegistrationClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
 import com.vfpowertech.keytap.core.persistence.ContactInfo
-import org.junit.*
+import org.junit.Assume
+import org.junit.Before
+import org.junit.BeforeClass
+import org.junit.Test
+import org.whispersystems.libsignal.state.PreKeyRecord
+import org.whispersystems.libsignal.state.SignedPreKeyRecord
 import kotlin.test.*
 
 data class GeneratedSiteUser(
@@ -83,6 +88,12 @@ class WebApiIntegrationTest {
 
             if (devClient.getSignedPreKey(username) != signedPreKey)
                 throw DevServerInsaneException("Signed prekey functionality failed")
+
+            val lastResortPreKey = "l"
+            devClient.setLastResortPreKey(username, lastResortPreKey)
+
+            if (devClient.getLastResortPreKey(username) != lastResortPreKey)
+                throw DevServerInsaneException("Last resort prekey functionality failed")
 
             //contacts list
             val userB = newSiteUser(RegistrationInfo("b@a.com", "B", "000-000-0000"), password)
@@ -241,6 +252,12 @@ class WebApiIntegrationTest {
         return generatedPreKeys
     }
 
+    fun injectLastResortPreKey(username: String): PreKeyRecord {
+        val lastResortPreKey = generateLastResortPreKey()
+        devClient.setLastResortPreKey(username, serializeOneTimePreKeys(listOf(lastResortPreKey))[0])
+        return lastResortPreKey
+    }
+
     @Test
     fun `prekey storage request should store keys on the server when a valid auth token is used`() {
         val siteUser = injectNewSiteUser()
@@ -306,11 +323,35 @@ class WebApiIntegrationTest {
         assertTrue(serializedOneTimePreKeys.contains(preKeyData.preKey), "No matching one-time prekey found")
     }
 
-    //TODO after I fix last resort key stuff
-    @Ignore
+    fun assertNextPreKeyIs(username: String, authToken: String, expected: PreKeyRecord, signedPreKey: SignedPreKeyRecord) {
+        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
+
+        val response = client.retrieve(PreKeyRetrievalRequest(authToken, username))
+
+        assertTrue(response.isSuccess)
+
+        assertNotNull(response.keyData, "No prekeys found")
+        val preKeyData = response.keyData!!
+
+        val expectedOneTimePreKeys = serializePreKey(expected)
+        val expectedSignedPreKey = serializeSignedPreKey(signedPreKey)
+
+        assertEquals(expectedSignedPreKey, preKeyData.signedPreKey, "Signed prekey doesn't match")
+
+        assertEquals(expectedOneTimePreKeys, preKeyData.preKey, "One-time prekey doesn't match")
+    }
+
     @Test
     fun `prekey retrieval should return the last resort key once no other keys are available`() {
+        val siteUser = injectNewSiteUser()
+        val username = siteUser.user.username
+        val authToken = devClient.createAuthToken(siteUser.user.username)
 
+        val generatedPreKeys = injectPreKeys(username, siteUser.keyVault)
+        val lastResortPreKey = injectLastResortPreKey(username)
+
+        assertNextPreKeyIs(username, authToken, generatedPreKeys.oneTimePreKeys[0], generatedPreKeys.signedPreKey)
+        assertNextPreKeyIs(username, authToken, lastResortPreKey, generatedPreKeys.signedPreKey)
     }
 
     @Test
