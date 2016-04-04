@@ -4,12 +4,27 @@ import com.vfpowertech.keytap.core.relay.base.*
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.ByteToMessageDecoder
+import io.netty.handler.ssl.SslHandler
+import io.netty.util.concurrent.GenericFutureListener
+import nl.komponents.kovenant.Deferred
 import rx.Observer
 
 /** Handles converting received server messages into message instances. */
-class ServerMessageHandler(private val observer: Observer<in RelayConnectionEvent>) : ByteToMessageDecoder() {
+class ServerMessageHandler(
+    private val observer: Observer<in RelayConnectionEvent>,
+    private val sslHandshakeComplete: Deferred<Boolean, Exception>
+) : ByteToMessageDecoder() {
     private var lastHeader: Header? = null
     private var observerableComplete = false
+
+    override fun channelActive(ctx: ChannelHandlerContext) {
+        super.channelActive(ctx)
+
+        ctx.pipeline().get(SslHandler::class.java).handshakeFuture().addListener(GenericFutureListener { future ->
+            //error'll call exceptionCaught, so no need to care
+            sslHandshakeComplete.resolve(future.isSuccess)
+        })
+    }
 
     override fun decode(ctx: ChannelHandlerContext, `in`: ByteBuf, out: MutableList<Any>) {
         while (`in`.isReadable) {
