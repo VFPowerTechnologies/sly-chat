@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
+import com.vfpowertech.keytap.core.crypto.LAST_RESORT_PREKEY_ID
 import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import com.vfpowertech.keytap.core.persistence.PreKeyIds
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
@@ -8,6 +9,17 @@ import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
 
 class SQLitePreKeyPersistenceManager(private val sqlitePersistenceManager: SQLitePersistenceManager) : PreKeyPersistenceManager {
+    override fun putLastResortPreKey(lastResortPreKey: PreKeyRecord): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        assert(lastResortPreKey.id == LAST_RESORT_PREKEY_ID)
+        //should only be done once, so no need to update
+        connection.prepare("INSERT INTO unsigned_prekeys (id, serialized) VALUES (?, ?)").use { stmt ->
+            stmt.bind(1, lastResortPreKey.id)
+            stmt.bind(2, lastResortPreKey.serialize())
+            stmt.step()
+        }
+        Unit
+    }
+
     private inline fun <T> getPreKey(tableName: String, id: Int, crossinline constructor: (ByteArray) -> T): Promise<T?, Exception> =
         sqlitePersistenceManager.runQuery { connection ->
             connection.prepare("SELECT serialized FROM $tableName WHERE id=?").use { stmt ->
@@ -34,6 +46,7 @@ class SQLitePreKeyPersistenceManager(private val sqlitePersistenceManager: SQLit
 
     override fun getUnsignedPreKey(id: Int): Promise<PreKeyRecord?, Exception> =
         getPreKey("unsigned_prekeys", id) { PreKeyRecord(it) }
+
 
     override fun putGeneratedPreKeys(generatedPreKeys: GeneratedPreKeys): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
