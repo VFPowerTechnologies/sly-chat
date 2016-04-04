@@ -7,8 +7,8 @@ import org.whispersystems.libaxolotl.state.SignedPreKeyRecord
 /** A batch of generated prekeys */
 data class GeneratedPreKeys(
     val signedPreKey: SignedPreKeyRecord,
-    val oneTimePreKeys: List<PreKeyRecord>,
-    val lastResortPreKey: PreKeyRecord) {
+    val oneTimePreKeys: List<PreKeyRecord>
+) {
     /** Returns the next usable signed prekey ID. */
     fun nextSignedId(): Int = nextPreKeyId(signedPreKey.id)
 
