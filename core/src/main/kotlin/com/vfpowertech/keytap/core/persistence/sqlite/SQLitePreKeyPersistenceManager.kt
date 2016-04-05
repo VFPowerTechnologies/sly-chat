@@ -11,7 +11,7 @@ import org.whispersystems.libsignal.state.SignedPreKeyRecord
 class SQLitePreKeyPersistenceManager(private val sqlitePersistenceManager: SQLitePersistenceManager) : PreKeyPersistenceManager {
     override fun putLastResortPreKey(lastResortPreKey: PreKeyRecord): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         assert(lastResortPreKey.id == LAST_RESORT_PREKEY_ID)
-        //should only be done once, so no need to update
+        //should only be done once, so no need to update on conflict
         connection.prepare("INSERT INTO unsigned_prekeys (id, serialized) VALUES (?, ?)").use { stmt ->
             stmt.bind(1, lastResortPreKey.id)
             stmt.bind(2, lastResortPreKey.serialize())
@@ -50,14 +50,16 @@ class SQLitePreKeyPersistenceManager(private val sqlitePersistenceManager: SQLit
 
     override fun putGeneratedPreKeys(generatedPreKeys: GeneratedPreKeys): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
-            connection.prepare("INSERT INTO signed_prekeys (id, serialized) VALUES (?, ?)").use { stmt ->
+            //if we've looped back around, just overwriting the previous keys
+            //as the max key id is sufficiently large, this should never lead to any issues under normal circumstances
+            connection.prepare("INSERT OR REPLACE INTO signed_prekeys (id, serialized) VALUES (?, ?)").use { stmt ->
                 val signedPreKey = generatedPreKeys.signedPreKey
                 stmt.bind(1, signedPreKey.id)
                 stmt.bind(2, signedPreKey.serialize())
                 stmt.step()
             }
 
-            connection.batchInsert("INSERT INTO unsigned_prekeys (id, serialized) VALUES (?, ?)", generatedPreKeys.oneTimePreKeys) { stmt, unsignedPreKey ->
+            connection.batchInsert("INSERT OR REPLACE INTO unsigned_prekeys (id, serialized) VALUES (?, ?)", generatedPreKeys.oneTimePreKeys) { stmt, unsignedPreKey ->
                 stmt.bind(1, unsignedPreKey.id)
                 stmt.bind(2, unsignedPreKey.serialize())
             }

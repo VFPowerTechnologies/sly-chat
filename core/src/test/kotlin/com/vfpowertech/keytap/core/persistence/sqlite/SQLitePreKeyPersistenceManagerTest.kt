@@ -7,6 +7,8 @@ import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
+import org.whispersystems.libsignal.state.PreKeyRecord
+import org.whispersystems.libsignal.state.SignedPreKeyRecord
 import java.util.*
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -47,6 +49,13 @@ class SQLitePreKeyPersistenceManagerTest {
         assertNull(keyPersistenceManager.getUnsignedPreKey(1).get())
     }
 
+    fun assertSignedPreKeyPresent(expected: SignedPreKeyRecord) {
+        val got = assertNotNull(keyPersistenceManager.getSignedPreKey(expected.id).get(), "Key wasn't stored")
+
+        //cheap way of checking for equality
+        assertTrue(Arrays.equals(got.serialize(), expected.serialize()))
+    }
+
     @Test
     fun `putGeneratedKeys should be able to store and retrieve signed prekeys`() {
         val nextPreKeyIds = keyPersistenceManager.getNextPreKeyIds().get()
@@ -54,11 +63,20 @@ class SQLitePreKeyPersistenceManagerTest {
         val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, nextPreKeyIds.nextSignedId, nextPreKeyIds.nextUnsignedId, 2)
         keyPersistenceManager.putGeneratedPreKeys(generatedPreKeys).get()
 
-        val got = keyPersistenceManager.getSignedPreKey(generatedPreKeys.signedPreKey.id).get()
-        assertNotNull(got, "Key wasn't stored")
+        assertSignedPreKeyPresent(generatedPreKeys.signedPreKey)
+    }
 
-        //cheap way of checking for equality
-        assertTrue(Arrays.equals(got!!.serialize(), generatedPreKeys.signedPreKey.serialize()))
+    fun assertUnsignedPreKeyPresent(expected: PreKeyRecord) {
+        val id = expected.id
+        val got = assertNotNull(keyPersistenceManager.getUnsignedPreKey(id).get(), "Key $id not found")
+        assertTrue(Arrays.equals(got.serialize(), expected.serialize()), "Key $id was not serialized properly")
+
+    }
+
+    fun assertUnsignedPreKeysPresent(expected: List<PreKeyRecord>) {
+        for (unsignedPreKey in expected) {
+            assertUnsignedPreKeyPresent(unsignedPreKey)
+        }
     }
 
     @Test
@@ -68,12 +86,21 @@ class SQLitePreKeyPersistenceManagerTest {
         val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, nextPreKeyIds.nextSignedId, nextPreKeyIds.nextUnsignedId, 2)
         keyPersistenceManager.putGeneratedPreKeys(generatedPreKeys).get()
 
-        for (unsignedPreKey in generatedPreKeys.oneTimePreKeys) {
-            val id = unsignedPreKey.id
-            val got = keyPersistenceManager.getUnsignedPreKey(id).get()
-            assertNotNull(got, "Key $id not found")
-            assertTrue(Arrays.equals(got!!.serialize(), unsignedPreKey.serialize()), "Key $id was not serialized properly")
-        }
+        assertUnsignedPreKeysPresent(generatedPreKeys.oneTimePreKeys)
+    }
+
+    @Test
+    fun `putGeneratedKeys should update existing ids`() {
+        val nextPreKeyIds = keyPersistenceManager.getNextPreKeyIds().get()
+
+        val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, nextPreKeyIds.nextSignedId, nextPreKeyIds.nextUnsignedId, 2)
+        val generatedPreKeysUpdate = generatePrekeys(keyVault.identityKeyPair, nextPreKeyIds.nextSignedId, nextPreKeyIds.nextUnsignedId, 2)
+
+        keyPersistenceManager.putGeneratedPreKeys(generatedPreKeys).get()
+        keyPersistenceManager.putGeneratedPreKeys(generatedPreKeysUpdate).get()
+
+        assertSignedPreKeyPresent(generatedPreKeysUpdate.signedPreKey)
+        assertUnsignedPreKeysPresent(generatedPreKeysUpdate.oneTimePreKeys)
     }
 
     @Test
@@ -81,8 +108,6 @@ class SQLitePreKeyPersistenceManagerTest {
         val lastResortPreKey = generateLastResortPreKey()
 
         keyPersistenceManager.putLastResortPreKey(lastResortPreKey).get()
-        val got = keyPersistenceManager.getUnsignedPreKey(lastResortPreKey.id).get()
-        assertNotNull(got)
-        assertTrue(Arrays.equals(got!!.serialize(), lastResortPreKey.serialize()), "Key was not serialized properly")
+        assertUnsignedPreKeyPresent(lastResortPreKey)
     }
 }
