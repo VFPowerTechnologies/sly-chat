@@ -22,6 +22,8 @@ interface UserComponent {
 
     val accountInfoPersistenceManager: AccountInfoPersistenceManager
 
+    val preKeyPersistenceManager: PreKeyPersistenceManager
+
     val messengerService: MessengerService
 
     val notifierService: NotifierService
