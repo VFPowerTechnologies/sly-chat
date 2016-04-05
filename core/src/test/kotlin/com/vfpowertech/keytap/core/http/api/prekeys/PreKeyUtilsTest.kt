@@ -33,6 +33,7 @@ class PreKeyUtilsTest {
             null,
             username,
             SerializedPreKeySet(
+                keyVault.identityKeyPair.serialize().hexify(),
                 preKeyBundle.signedPreKey.serialize().hexify(),
                 preKeyBundle.oneTimePreKeys.first().serialize().hexify()
             )
