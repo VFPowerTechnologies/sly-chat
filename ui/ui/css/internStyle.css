@@ -1,5 +1,9 @@
+body div iframe {
+    -webkit-transform: translate3d(0,0,0);
+}
+
 .main-content {
-    margin-top: 52px;
+    margin-top: 56px;
 }
 
 .header-bar {
@@ -72,16 +76,21 @@
     border-right: none;
     bottom: 0;
     left: 0;
-    padding-right: 50px;
+    padding-right: 55px;
 }
 
 #newMessageSubmitBtn {
     position: absolute;
-    bottom: 5px;
     right: 5px;
     color: white;
     background: black;
     border: none;
+    bottom: 1px;
+    height: 43px;
+}
+
+.message {
+    box-shadow: 2px 2px 8px #212121;
 }
 
 .first-contact {
@@ -212,4 +221,20 @@ button.btn-large {
 }
 .statusModal .modal-body {
     width: 100%;
+}
+.form-wrapper {
+    height: 100%;
+    position: relative;
+    min-height: calc(100vh - 56px);
+    background-color: black;
+    padding: 0 15px 0 15px;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-bottom: 0 !important;
+    overflow: auto;
+}
+
+.form-wrapper .btn-large {
+    width: 100%;
+    margin: 20px 0;
 }

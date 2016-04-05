@@ -1,43 +1,41 @@
 <div class="m-scene toolbar-inside main-content" id="main"> <!-- Page Container -->
 
-  <!-- Page Content -->
-  <div class="snap-content main-content-body" id="content"  style="background: black;">
+    <!-- Page Content -->
+    <div class="snap-content main-content-body container" id="content"  style="background: black; padding: 0; height: 100%;">
 
-    <!-- Main Content -->
-    <div class="scene_element signup scene_element--fadeinright valign-wrapper row" style="margin-bottom: 0">
-      <div class="valign col s12" style="margin-left: 12px; margin-right: 12px;">
-        <div class="container">
-            <ul id="login-error" style="color: red;">
+        <!-- Main Content -->
+        <div class="valign-wrapper row form-wrapper">
+            <div class="valign col s12">
+                <div class="container">
+                    <ul id="login-error" style="color: red;">
+                    </ul>
+                    <form id="loginForm" method="post">
 
-            </ul>
-            <form id="loginForm" method="post">
+                        <div class="col s12" style="padding-left: 0; padding-right: 0;">
+                            <i class="mdi mdi-account-circle" style="position: absolute; padding: 15px 12px; pointer-events: none; font-size: 19px;"></i>
+                            <input id="login" class="validate" type="text" placeholder="Phone number or Email" autocapitalize="off" required style="padding-left: 43px;">
+                        </div>
 
-                <div class="col s12" style="padding-left: 0; padding-right: 0;">
-                    <i class="mdi mdi-account-circle" style="position: absolute; padding: 15px 12px; pointer-events: none; font-size: 19px;"></i>
-                    <input id="login" class="validate" type="text" placeholder="Phone number or Email" autocapitalize="off" required style="padding-left: 43px;">
+                        <div class="col s12" style="padding-left: 0; padding-right: 0;">
+                            <i class="mdi mdi-lock" style="position: absolute; padding: 15px 12px; pointer-events: none; font-size: 19px;"></i>
+                            <input id="login-psw" class="validate" type="password" placeholder="Password"  required style="padding-left: 43px;">
+                        </div>
+
+                        <button id="submitLoginBtn" type="submit" class="waves-effect waves-light btn-large secondary-color fullwidth">Login</button>
+                        <div class="col s12" id="test1" style="padding: 0; margin-bottom: 5px;">
+                            <p>
+                                <input id="rememberMe" type="checkbox"> <label for="rememberMe">Remember Me</label>
+                            </p>
+                        </div>
+                        <span>Don't have an account? <a id="registrationGoBtn" style="color: #26a69a;" href="#">Sign Up</a></span>
+                    </form>
                 </div>
+            </div>
+        </div> <!-- End of Main Contents -->
+        <div id="blockui"></div>
+    </div> <!-- End of Page Content -->
 
-                <div class="col s12" style="padding-left: 0; padding-right: 0;">
-                    <i class="mdi mdi-lock" style="position: absolute; padding: 15px 12px; pointer-events: none; font-size: 19px;"></i>
-                    <input id="login-psw" class="validate" type="password" placeholder="Password"  required style="padding-left: 43px;">
-                </div>
-
-                <button id="submitLoginBtn" type="submit" class="waves-effect waves-light btn-large secondary-color fullwidth">Login</button>
-                <div class="col s12" id="test1" style="padding: 0; margin-bottom: 5px;">
-                    <p>
-                        <input id="rememberMe" type="checkbox"> <label for="rememberMe">Remember Me</label>
-                    </p>
-                </div>
-                <span>Don't have an account? <a id="registrationGoBtn" style="color: #26a69a;" href="#">Sign Up</a></span>
-            </form>
-          </div>
-      </div>
-    </div> <!-- End of Main Contents -->
-    <div id="blockui"></div>
-  </div> <!-- End of Page Content -->
-
-  <!-- Specific page javascript -->
-  <script src="js/internal/stateCheck.js"></script>
-  <script src="js/internal/login.js"></script>
+    <!-- Specific page javascript -->
+    <script src="js/internal/login.js"></script>
 
 </div> <!-- End of Page Container -->

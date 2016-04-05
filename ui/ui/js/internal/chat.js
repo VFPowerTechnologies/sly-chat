@@ -1,3 +1,7 @@
+if(typeof $ == "undefined"){
+    window.location.href = "index.html";
+}
+
 $(function(){
     var currentContact = KEYTAP.contactController.getCurrentContact();
 
