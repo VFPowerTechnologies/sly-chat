@@ -103,10 +103,10 @@ class RelayClientManager(
         return relayClient ?: throw NoClientException()
     }
 
-    fun sendMessage(to: String, message: String, messageId: String) {
+    fun sendMessage(to: String, content: ByteArray, messageId: String) {
         val relayClient = getClientOrThrow()
 
-        relayClient.sendMessage(to, message, messageId)
+        relayClient.sendMessage(to, content, messageId)
     }
 
 }
