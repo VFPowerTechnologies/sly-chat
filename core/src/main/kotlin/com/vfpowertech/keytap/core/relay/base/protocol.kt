@@ -2,7 +2,6 @@
 @file:JvmName("RelayProtocol")
 package com.vfpowertech.keytap.core.relay.base
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.CommandCode.CLIENT_REGISTER_REQUEST
@@ -205,10 +204,7 @@ fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
     return RelayMessage(header, ByteArray(0))
 }
 
-fun createSendMessageMessage(userCredentials: UserCredentials, to: String, message: String, messageId: String): RelayMessage {
-    val messageContent = MessageContent(message)
-    val content = ObjectMapper().writeValueAsBytes(messageContent)
-
+fun createSendMessageMessage(userCredentials: UserCredentials, to: String, content: ByteArray, messageId: String): RelayMessage {
     val header = Header(
         1,
         content.size,

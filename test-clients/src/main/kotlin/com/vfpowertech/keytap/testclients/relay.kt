@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.testclients
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.core.relay.base.netty.NettyRelayConnector
 import javafx.application.Application
@@ -106,7 +107,8 @@ class App : Application() {
             }
 
             is ReceivedMessage -> {
-                mainWindow.chatMessages.appendText("${event.from}> ${event.message}\n")
+                val v = ObjectMapper().readValue(event.content, Map::class.java)
+                mainWindow.chatMessages.appendText("${event.from}> ${v["message"]}\n")
             }
 
             is UserOffline -> {
@@ -185,7 +187,8 @@ class App : Application() {
                 chatInput.text = ""
                 mainWindow.chatMessages.appendText("me> $t\n")
                 val messageId = "5248a1d7dc7e300ef2e18e30a6731455"
-                relayClient!!.sendMessage(mainWindow.sendToUsername.text, t, messageId)
+                val content = ObjectMapper().writeValueAsBytes(mapOf("message" to t))
+                relayClient!!.sendMessage(mainWindow.sendToUsername.text, content, messageId)
             }
         }
 

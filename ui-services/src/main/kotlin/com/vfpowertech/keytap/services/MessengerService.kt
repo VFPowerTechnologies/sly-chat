@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.persistence.*
 import com.vfpowertech.keytap.core.relay.ReceivedMessage
 import com.vfpowertech.keytap.core.relay.RelayClientEvent
@@ -22,6 +23,8 @@ class MessengerService(
     private val relayClientManager: RelayClientManager
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
+
+    private val objectMapper = ObjectMapper()
 
     private val newMessagesSubject = PublishSubject.create<MessageBundle>()
     val newMessages: Observable<MessageBundle> = newMessagesSubject
@@ -51,7 +54,9 @@ class MessengerService(
     }
 
     private fun handleReceivedMessage(event: ReceivedMessage) {
-        messagePersistenceManager.addMessage(event.from, false, event.message, 0) successUi { messageInfo ->
+        val message = objectMapper.readValue(event.content, MessageContent::class.java)
+
+        messagePersistenceManager.addMessage(event.from, false, message.message, 0) successUi { messageInfo ->
             newMessagesSubject.onNext(MessageBundle(event.from, listOf(messageInfo)))
         }
     }
@@ -66,7 +71,8 @@ class MessengerService(
 
     fun sendMessageTo(contactEmail: String, message: String): Promise<MessageInfo, Exception> {
         return messagePersistenceManager.addMessage(contactEmail, true, message, 0) map { messageInfo ->
-            relayClientManager.sendMessage(contactEmail, messageInfo.message, messageInfo.id)
+            val content = objectMapper.writeValueAsBytes(MessageContent(messageInfo.message))
+            relayClientManager.sendMessage(contactEmail, content, messageInfo.id)
             messageInfo
         }
     }
