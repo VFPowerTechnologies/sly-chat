@@ -13,4 +13,11 @@ interface PreKeyPersistenceManager {
     fun getSignedPreKey(id: Int): Promise<SignedPreKeyRecord?, Exception>
     fun getUnsignedPreKey(id: Int): Promise<PreKeyRecord?, Exception>
     fun getNextPreKeyIds(): Promise<PreKeyIds, Exception>
+    fun getSignedPreKeys(): Promise<List<SignedPreKeyRecord>, Exception>
+    fun removeSignedPreKey(id: Int): Promise<Unit, Exception>
+    fun removeUnsignedPreKey(id: Int): Promise<Unit, Exception>
+    fun containsUnsignedPreKey(id: Int): Promise<Boolean, Exception>
+    fun containsSignedPreKey(id: Int): Promise<Boolean, Exception>
+    fun putSignedPreKey(signedPreKey: SignedPreKeyRecord): Promise<Unit, Exception>
+    fun putUnsignedPreKey(unsignedPreKey: PreKeyRecord): Promise<Unit, Exception>
 }
