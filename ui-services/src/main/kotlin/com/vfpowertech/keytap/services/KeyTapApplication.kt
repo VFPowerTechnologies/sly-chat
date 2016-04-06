@@ -20,6 +20,7 @@ import com.vfpowertech.keytap.core.persistence.json.JsonInstallationDataPersiste
 import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonStartupInfoPersistenceManager
 import com.vfpowertech.keytap.core.relay.*
+import com.vfpowertech.keytap.services.crypto.deserializeEncryptedMessage
 import com.vfpowertech.keytap.services.di.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -435,10 +436,9 @@ class KeyTapApplication {
                 val messengerService = userComponent?.messengerService ?: throw RuntimeException("No longer logged in")
 
                 //TODO move this elsewhere?
-                val objectMapper = ObjectMapper()
                 val offlineMessages = response.messages.map { m ->
-                    val message = objectMapper.readValue(m.serializedMessage, MessageContent::class.java)
-                    OfflineMessage(m.from, m.timestamp, message.message)
+                    val encryptedMessage = deserializeEncryptedMessage(m.serializedMessage)
+                    OfflineMessage(m.from, m.timestamp, encryptedMessage)
                 }
 
                 messengerService.addOfflineMessages(offlineMessages) bind {
