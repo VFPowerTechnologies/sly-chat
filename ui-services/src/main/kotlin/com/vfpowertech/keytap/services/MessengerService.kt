@@ -67,9 +67,11 @@ class MessengerService(
         }
 
         messageCipherService.decrypt(event.from, upgraded) bind { message ->
-            messagePersistenceManager.addMessage(event.from, false, message, 0) successUi { messageInfo ->
+            messagePersistenceManager.addMessage(event.from, false, message, 0) mapUi  { messageInfo ->
                 newMessagesSubject.onNext(MessageBundle(event.from, listOf(messageInfo)))
             }
+        } fail { e ->
+            log.error("Error during received message handling: {}", e.message, e)
         }
     }
 
