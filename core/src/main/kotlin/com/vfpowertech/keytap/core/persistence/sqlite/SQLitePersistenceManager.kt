@@ -22,7 +22,8 @@ private val TABLE_NAMES = arrayListOf(
     "signed_prekeys",
     "unsigned_prekeys",
     "contacts",
-    "conversation_info"
+    "conversation_info",
+    "signal_sessions"
 )
 
 //localDataEncryptionParams don't work too well... they contain an IV, which wouldn't be reused
@@ -174,4 +175,8 @@ class SQLitePersistenceManager(
             initAsync() bind { realRunQuery(body) }
         else
             realRunQuery(body)
+
+    /** Blocks until query is complete. Just wraps runQuery and calls get() on the resulting promise. */
+    fun <R> syncRunQuery(body: (connection: SQLiteConnection) -> R): R =
+        runQuery(body).get()
 }
