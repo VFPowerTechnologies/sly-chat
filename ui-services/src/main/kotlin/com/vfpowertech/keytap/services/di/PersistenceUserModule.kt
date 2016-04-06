@@ -1,6 +1,5 @@
 package com.vfpowertech.keytap.services.di
 
-import com.vfpowertech.keytap.core.persistence.SessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.*
 import com.vfpowertech.keytap.core.persistence.json.JsonAccountInfoPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonKeyVaultPersistenceManager
@@ -11,8 +10,10 @@ import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePreKeyPersistenceManager
 import com.vfpowertech.keytap.services.UserLoginData
 import com.vfpowertech.keytap.services.UserPaths
+import com.vfpowertech.keytap.services.crypto.SQLiteSignalProtocolStore
 import dagger.Module
 import dagger.Provides
+import org.whispersystems.libsignal.state.SignalProtocolStore
 
 @Module
 class PersistenceUserModule {
@@ -55,4 +56,14 @@ class PersistenceUserModule {
     @Provides
     fun providesAccountInfoPersistenceManager(userPaths: UserPaths): AccountInfoPersistenceManager =
         JsonAccountInfoPersistenceManager(userPaths.accountInfoPath)
+
+    @UserScope
+    @Provides
+    fun providesSignalProtocolStore(
+        userLoginData: UserLoginData,
+        sqlitePersistenceManager: SQLitePersistenceManager,
+        preKeyPersistenceManager: PreKeyPersistenceManager,
+        contactsPersistenceManager: ContactsPersistenceManager
+    ): SignalProtocolStore =
+        SQLiteSignalProtocolStore(userLoginData, sqlitePersistenceManager, preKeyPersistenceManager, contactsPersistenceManager)
 }
