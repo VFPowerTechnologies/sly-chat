@@ -216,7 +216,7 @@ class RelayClient(
     }
 
     fun sendMessage(to: String, content: ByteArray, messageId: String) {
-        log.info("Sending message <<{}>> to <<{}>>", content, to)
+        log.info("Sending message <<{}>> to <<{}>>", messageId, to)
         val connection = getAuthConnectionOrThrow()
         connection.sendMessage(createSendMessageMessage(credentials, to, content, messageId))
     }
