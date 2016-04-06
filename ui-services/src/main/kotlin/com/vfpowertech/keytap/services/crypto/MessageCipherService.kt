@@ -1,17 +1,10 @@
 package com.vfpowertech.keytap.services.crypto
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.BuildConfig
-import com.vfpowertech.keytap.core.crypto.generateNewKeyVault
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.unhexify
 import com.vfpowertech.keytap.core.http.api.prekeys.*
-import com.vfpowertech.keytap.core.persistence.sqlite.SQLiteContactsPersistenceManager
-import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
-import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePreKeyPersistenceManager
 import com.vfpowertech.keytap.services.NoAuthTokenException
 import com.vfpowertech.keytap.services.UserLoginData
 import nl.komponents.kovenant.Promise
@@ -24,6 +17,13 @@ import org.whispersystems.libsignal.protocol.PreKeySignalMessage
 import org.whispersystems.libsignal.protocol.SignalMessage
 import org.whispersystems.libsignal.state.PreKeyBundle
 import org.whispersystems.libsignal.state.SignalProtocolStore
+import java.util.*
+
+data class DecryptionFailure(val cause: Throwable)
+data class MessageListDecryptionResult(
+    val succeeded: List<String>,
+    val failed: List<DecryptionFailure>
+)
 
 fun SerializedPreKeySet.toPreKeyBundle(): PreKeyBundle {
     val objectMapper = ObjectMapper()
@@ -101,18 +101,54 @@ class MessageCipherService(
         }
     }
 
+    /** Must be called with store lock held. */
+    private fun decryptEncryptedMessage(sessionCipher: SessionCipher, encryptedMessage: EncryptedMessageV0): String {
+        val payload = encryptedMessage.payload.unhexify()
+
+        val messageData = if (encryptedMessage.isPreKeyWhisper)
+            sessionCipher.decrypt(PreKeySignalMessage(payload))
+        else
+            sessionCipher.decrypt(SignalMessage(payload))
+
+        return String(messageData, Charsets.UTF_8)
+    }
+
     fun decrypt(contactEmail: String, encryptedMessage: EncryptedMessageV0): Promise<String, Exception> = task {
         val address = KeyTapAddress(contactEmail).toSignalAddress()
         val sessionCipher = SessionCipher(signalStore, address)
-        val payload = encryptedMessage.payload.unhexify()
 
         withStore {
-            val messageData = if (encryptedMessage.isPreKeyWhisper)
-                sessionCipher.decrypt(PreKeySignalMessage(payload))
-            else
-                sessionCipher.decrypt(SignalMessage(payload))
+            decryptEncryptedMessage(sessionCipher, encryptedMessage)
+        }
+    }
 
-            String(messageData, Charsets.UTF_8)
+    /** Must be called with store lock held. */
+    private fun decryptMessagesForUser(contactEmail: String, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
+        val failed = ArrayList<DecryptionFailure>()
+        val succeeded = ArrayList<String>()
+
+        val address = KeyTapAddress(contactEmail).toSignalAddress()
+        val sessionCipher = SessionCipher(signalStore, address)
+
+        encryptedMessages.forEach { encryptedMessage ->
+            try {
+                val message = decryptEncryptedMessage(sessionCipher, encryptedMessage)
+                succeeded.add(message)
+            }
+            catch (e: Throwable) {
+                failed.add(DecryptionFailure(e))
+            }
+        }
+
+        return MessageListDecryptionResult(succeeded, failed)
+    }
+
+    /** Decrypts multiple messages from multiple users at once. */
+    fun decryptMultiple(encryptedMessages: Map<String, List<EncryptedMessageV0>>): Promise<Map<String, MessageListDecryptionResult>, Exception> = task {
+        withStore { store ->
+            encryptedMessages.mapValues { entry ->
+                decryptMessagesForUser(entry.key, entry.value)
+            }
         }
     }
 }

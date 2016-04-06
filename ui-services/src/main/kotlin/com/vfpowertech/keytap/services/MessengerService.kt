@@ -5,9 +5,9 @@ import com.vfpowertech.keytap.core.persistence.*
 import com.vfpowertech.keytap.core.relay.ReceivedMessage
 import com.vfpowertech.keytap.core.relay.RelayClientEvent
 import com.vfpowertech.keytap.core.relay.ServerReceivedMessage
-import com.vfpowertech.keytap.services.crypto.EncryptedMessage
 import com.vfpowertech.keytap.services.crypto.EncryptedMessageV0
 import com.vfpowertech.keytap.services.crypto.MessageCipherService
+import com.vfpowertech.keytap.services.crypto.deserializeEncryptedMessage
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
 
-data class OfflineMessage(val from: String, val timestamp: Int, val message: String)
+data class OfflineMessage(val from: String, val timestamp: Int, val encryptedMessage: EncryptedMessageV0)
 data class MessageBundle(val contactEmail: String, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
 
@@ -59,14 +59,8 @@ class MessengerService(
     }
 
     private fun handleReceivedMessage(event: ReceivedMessage) {
-        val encryptedMessage = objectMapper.readValue(event.content, EncryptedMessage::class.java)
-
-        val upgraded = when (encryptedMessage) {
-            is EncryptedMessageV0 -> encryptedMessage
-            else -> throw RuntimeException("Received unknown message version")
-        }
-
-        messageCipherService.decrypt(event.from, upgraded) bind { message ->
+        val encryptedMessage = deserializeEncryptedMessage(event.content)
+        messageCipherService.decrypt(event.from, encryptedMessage) bind { message ->
             messagePersistenceManager.addMessage(event.from, false, message, 0) mapUi  { messageInfo ->
                 newMessagesSubject.onNext(MessageBundle(event.from, listOf(messageInfo)))
             }
@@ -107,16 +101,29 @@ class MessengerService(
 
     /* Other */
 
-    //TODO use cipher service here
     fun addOfflineMessages(offlineMessages: List<OfflineMessage>): Promise<Unit, Exception> {
         val grouped = offlineMessages.groupBy { it.from }
         val sortedByTimestamp = grouped.mapValues { it.value.sortedBy { it.timestamp } }
-        val groupedMessages = sortedByTimestamp.mapValues { it.value.map { it.message } }
+        val groupedEncryptedMessages = sortedByTimestamp.mapValues { it.value.map { it.encryptedMessage } }
 
-        return messagePersistenceManager.addReceivedMessages(groupedMessages) mapUi { groupedMessageInfo ->
-            val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
-            bundles.forEach {
-                newMessagesSubject.onNext(it.value)
+        return messageCipherService.decryptMultiple(groupedEncryptedMessages) bind { results ->
+            //XXX no idea what to do here really
+            results.map { entry ->
+                val contactEmail = entry.key
+                val result = entry.value
+                if (result.failed.isNotEmpty()) {
+                    log.error("Unable to decrypt {} messages for {}", result.failed.size, contactEmail)
+                    result.failed.map { log.error("", it) }
+                }
+            }
+
+            val groupedMessages = results.mapValues { it.value.succeeded }
+
+            messagePersistenceManager.addReceivedMessages(groupedMessages) mapUi { groupedMessageInfo ->
+                val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
+                bundles.forEach {
+                    newMessagesSubject.onNext(it.value)
+                }
             }
         }
     }
