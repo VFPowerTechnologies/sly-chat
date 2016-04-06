@@ -5,7 +5,11 @@ import com.vfpowertech.keytap.core.persistence.*
 import com.vfpowertech.keytap.core.relay.ReceivedMessage
 import com.vfpowertech.keytap.core.relay.RelayClientEvent
 import com.vfpowertech.keytap.core.relay.ServerReceivedMessage
+import com.vfpowertech.keytap.services.crypto.EncryptedMessage
+import com.vfpowertech.keytap.services.crypto.EncryptedMessageV0
+import com.vfpowertech.keytap.services.crypto.MessageCipherService
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -20,7 +24,8 @@ data class ContactRequest(val info: ContactInfo)
 class MessengerService(
     private val messagePersistenceManager: MessagePersistenceManager,
     private val contactsPersistenceManager: ContactsPersistenceManager,
-    private val relayClientManager: RelayClientManager
+    private val relayClientManager: RelayClientManager,
+    private val messageCipherService: MessageCipherService
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -54,10 +59,17 @@ class MessengerService(
     }
 
     private fun handleReceivedMessage(event: ReceivedMessage) {
-        val message = objectMapper.readValue(event.content, MessageContent::class.java)
+        val encryptedMessage = objectMapper.readValue(event.content, EncryptedMessage::class.java)
 
-        messagePersistenceManager.addMessage(event.from, false, message.message, 0) successUi { messageInfo ->
-            newMessagesSubject.onNext(MessageBundle(event.from, listOf(messageInfo)))
+        val upgraded = when (encryptedMessage) {
+            is EncryptedMessageV0 -> encryptedMessage
+            else -> throw RuntimeException("Received unknown message version")
+        }
+
+        messageCipherService.decrypt(event.from, upgraded) bind { message ->
+            messagePersistenceManager.addMessage(event.from, false, message, 0) successUi { messageInfo ->
+                newMessagesSubject.onNext(MessageBundle(event.from, listOf(messageInfo)))
+            }
         }
     }
 
@@ -70,10 +82,12 @@ class MessengerService(
     /* UIMessengerService interface */
 
     fun sendMessageTo(contactEmail: String, message: String): Promise<MessageInfo, Exception> {
-        return messagePersistenceManager.addMessage(contactEmail, true, message, 0) map { messageInfo ->
-            val content = objectMapper.writeValueAsBytes(MessageContent(messageInfo.message))
-            relayClientManager.sendMessage(contactEmail, content, messageInfo.id)
-            messageInfo
+        return messagePersistenceManager.addMessage(contactEmail, true, message, 0) bind { messageInfo ->
+            messageCipherService.encrypt(contactEmail, message) map { encryptedMessage ->
+                val content = objectMapper.writeValueAsBytes(encryptedMessage)
+                relayClientManager.sendMessage(contactEmail, content, messageInfo.id)
+                messageInfo
+            }
         }
     }
 
@@ -91,6 +105,7 @@ class MessengerService(
 
     /* Other */
 
+    //TODO use cipher service here
     fun addOfflineMessages(offlineMessages: List<OfflineMessage>): Promise<Unit, Exception> {
         val grouped = offlineMessages.groupBy { it.from }
         val sortedByTimestamp = grouped.mapValues { it.value.sortedBy { it.timestamp } }

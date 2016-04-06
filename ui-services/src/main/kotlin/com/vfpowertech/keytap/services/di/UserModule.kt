@@ -8,10 +8,12 @@ import com.vfpowertech.keytap.core.relay.RelayClient
 import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.RelayConnector
 import com.vfpowertech.keytap.services.*
+import com.vfpowertech.keytap.services.crypto.MessageCipherService
 import com.vfpowertech.keytap.services.ui.PlatformNotificationService
 import com.vfpowertech.keytap.services.ui.UIEventService
 import dagger.Module
 import dagger.Provides
+import org.whispersystems.libsignal.state.SignalProtocolStore
 import rx.Scheduler
 
 @Module
@@ -45,11 +47,12 @@ class UserModule(
     @UserScope
     @Provides
     fun providesMessengerService(
-    messagePersistenceManager: MessagePersistenceManager,
-    contactsPersistenceManager: ContactsPersistenceManager,
-    relayClientManager: RelayClientManager
+        messagePersistenceManager: MessagePersistenceManager,
+        contactsPersistenceManager: ContactsPersistenceManager,
+        relayClientManager: RelayClientManager,
+        messageCipherService: MessageCipherService
     ): MessengerService =
-        MessengerService(messagePersistenceManager, contactsPersistenceManager, relayClientManager)
+        MessengerService(messagePersistenceManager, contactsPersistenceManager, relayClientManager, messageCipherService)
 
     @UserScope
     @Provides
@@ -67,4 +70,13 @@ class UserModule(
         platformNotificationService: PlatformNotificationService
     ): NotifierService =
         NotifierService(messengerService, uiEventService, platformNotificationService)
+
+    @UserScope
+    @Provides
+    fun providesMessageCipherService(
+        userLoginData: UserLoginData,
+        serverUrls: ServerUrls,
+        signalProtocolStore: SignalProtocolStore
+    ): MessageCipherService =
+        MessageCipherService(userLoginData, signalProtocolStore, serverUrls)
 }
