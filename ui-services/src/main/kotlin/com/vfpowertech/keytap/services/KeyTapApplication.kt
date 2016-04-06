@@ -174,11 +174,7 @@ class KeyTapApplication {
     }
 
     fun schedulePreKeyUpload(keyRegenCount: Int) {
-        if (pushingPreKeys)
-            return
-        pushingPreKeys = true
-
-        if (keyRegenCount <= 0)
+        if (pushingPreKeys || keyRegenCount <= 0)
             return
 
         val userComponent = this.userComponent
@@ -196,6 +192,8 @@ class KeyTapApplication {
             return
         }
 
+        pushingPreKeys = true
+
         val preKeyPersistenceManager = userComponent.preKeyPersistenceManager
         //TODO need to mark whether or not a range has been pushed to the server or not
         //if the push fails, we should delete the batch?
@@ -210,12 +208,16 @@ class KeyTapApplication {
                 PreKeyStoreAsyncClient(appComponent.serverUrls.API_SERVER).store(request)
             }
         } successUi { response ->
-            if (!response.isSuccess)
-                throw RuntimeException(response.errorMessage)
+            pushingPreKeys = false
 
+            if (!response.isSuccess)
+                log.error("PreKey push failed: {}", response.errorMessage)
+            else
+                log.info("Pushed prekeys to server")
+        } failUi { e ->
             pushingPreKeys = false
-        } failUi {
-            pushingPreKeys = false
+
+            log.error("PreKey push failed: {}", e.message, e)
         }
     }
 
@@ -514,7 +516,7 @@ class KeyTapApplication {
             data.authToken = response.authToken
 
             schedulePreKeyUpload(response.keyRegenCount)
-            
+
             reconnectToRelay()
         } fail { e ->
             log.error("Unable to refresh auth token", e)
