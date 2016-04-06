@@ -1,6 +1,7 @@
 @file:JvmName("PreKeyUtils")
 package com.vfpowertech.keytap.core.http.api.prekeys
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.crypto.KeyVault
@@ -19,6 +20,7 @@ data class UnsignedPreKeyPublicData(
     @JsonProperty("key")
     val key: ByteArray
 ) {
+    @JsonIgnore
     fun getECPublicKey(): ECPublicKey =
         Curve.decodePoint(key, 0)
 }
@@ -37,6 +39,7 @@ data class SignedPreKeyPublicData(
     @JsonProperty("signature")
     val signature: ByteArray
 ) {
+    @JsonIgnore
     fun getECPublicKey(): ECPublicKey =
         Curve.decodePoint(key, 0)
 }
