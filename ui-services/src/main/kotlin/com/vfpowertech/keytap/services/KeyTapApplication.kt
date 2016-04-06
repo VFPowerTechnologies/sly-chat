@@ -513,7 +513,8 @@ class KeyTapApplication {
         } successUi { response ->
             data.authToken = response.authToken
 
-            //TODO key regen
+            schedulePreKeyUpload(response.keyRegenCount)
+            
             reconnectToRelay()
         } fail { e ->
             log.error("Unable to refresh auth token", e)
