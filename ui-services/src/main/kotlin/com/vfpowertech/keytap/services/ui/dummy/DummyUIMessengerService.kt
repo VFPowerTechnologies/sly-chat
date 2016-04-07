@@ -7,9 +7,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.concurrent.timerTask
 
-private fun nowTimestamp(): String {
+private fun nowTimestamp(): Long {
     val now = Date()
-    return SimpleDateFormat("yyyy-mm-dd HH:mm:ss").format(now)
+    return now.time
 }
 
 class DummyUIMessengerService(private val contactsService: UIContactsService) : UIMessengerService {
@@ -41,7 +41,7 @@ class DummyUIMessengerService(private val contactsService: UIContactsService) : 
         val count = 19
         for (i in 0..count) {
             val n = count - i
-            list.add(UIMessage(n.toString(), false, "YYYY-MM-DD HH:MM:SS", "Message $n"))
+            list.add(UIMessage(n.toString(), false, nowTimestamp(), "Message $n"))
         }
         return list
     }

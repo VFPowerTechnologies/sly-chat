@@ -16,6 +16,6 @@ package com.vfpowertech.keytap.services.ui
 data class UIMessage(
     val id: String,
     val isSent: Boolean,
-    val timestamp: String?,
+    val timestamp: Long?,
     val message: String
 )

@@ -8,14 +8,12 @@ import com.vfpowertech.keytap.services.MessengerService
 import com.vfpowertech.keytap.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
-import org.joda.time.format.DateTimeFormat
-import org.joda.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import rx.Subscription
 import java.util.*
 
-fun MessageInfo.toUI(formatter: DateTimeFormatter): UIMessage {
-    val timestamp = if (!isDelivered) null else formatter.print(timestamp)
+fun MessageInfo.toUI(): UIMessage {
+    val timestamp = if (!isDelivered) null else timestamp
     return UIMessage(id, isSent, timestamp, message)
 }
 
@@ -57,18 +55,14 @@ class UIMessengerServiceImpl(
         return app.userComponent?.messengerService ?: error("No user session has been established")
     }
 
-    //TODO locale formatting/etc
-    private fun getTimestampFormatter(): DateTimeFormatter =
-        DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss")
-
     /** First we add to the log, then we display it to the user. */
     private fun onNewMessages(messageBundle: MessageBundle) {
-        val messages = messageBundle.messages.map { it.toUI(getTimestampFormatter()) }
+        val messages = messageBundle.messages.map { it.toUI() }
         notifyNewMessageListeners(UIMessageInfo(messageBundle.contactEmail, messages))
     }
 
     private fun onMessageStatusUpdate(messageBundle: MessageBundle) {
-        val messages = messageBundle.messages.map { it.toUI(getTimestampFormatter()) }
+        val messages = messageBundle.messages.map { it.toUI() }
         notifyMessageStatusUpdateListeners(UIMessageInfo(messageBundle.contactEmail, messages))
     }
 
@@ -98,8 +92,7 @@ class UIMessengerServiceImpl(
 
     override fun getLastMessagesFor(contact: UIContactDetails, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
         return getMessengerServiceOrThrow().getLastMessagesFor(contact.email, startingAt, count) map { messages ->
-            val formatter = getTimestampFormatter()
-            messages.map { it.toUI(formatter) }
+            messages.map { it.toUI() }
         }
     }
 
@@ -108,11 +101,7 @@ class UIMessengerServiceImpl(
             convos.map {
                 val contact = it.contact
                 val info = it.info
-                val lastTimestamp = if (info.lastTimestamp != null)
-                    getTimestampFormatter().print(info.lastTimestamp)
-                else
-                    null
-                UIConversation(contact.toUI(), UIConversationStatus(true, info.unreadMessageCount, info.lastMessage, lastTimestamp))
+                UIConversation(contact.toUI(), UIConversationStatus(true, info.unreadMessageCount, info.lastMessage, info.lastTimestamp))
             }
         }
     }
