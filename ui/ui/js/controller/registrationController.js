@@ -220,15 +220,19 @@ RegistrationController.prototype = {
 
     },
     setPhoneExt : function (dialCode) {
-    var extension = $("#phoneIntlExt");
-    $("#phoneInputIcon").hide();
+        if(typeof dialCode != "undefined") {
+            var extension = $("#phoneIntlExt");
+            $("#phoneInputIcon").hide();
 
-    extension.html("+" + dialCode);
+            extension.html("+" + dialCode);
 
-    var width = extension.outerWidth(true);
+            var width = extension.outerWidth(true);
 
-    if(width + 24 > 43)
-        $("#phone").css("padding-left", width + "px");
+            if (width + 24 > 43)
+                $("#phone").css("padding-left", width + "px");
+
+            extension.removeClass("hidden");
+        }
     },
     createRegisterModal : function () {
         var html = "<div style='text-align: center;'> <h6 style='margin-bottom: 15px; color: whitesmoke;'>Registration in process</h6> <i class='fa fa-spinner fa-3x fa-spin'></i> <p id='registrationStatusUpdate' style='margin-top: 40px;'></p></div>";

@@ -3,6 +3,7 @@ var ChatController = function (model, contactController) {
     this.contactController = contactController;
     this.currentMessagePosition = 0;
     this.fetchingNumber = 100;
+    this.lastMessage = null;
 };
 
 ChatController.prototype = {
@@ -36,6 +37,7 @@ ChatController.prototype = {
         var messageNode = iframe.contents().find("#messages");
 
         var fragment = $(document.createDocumentFragment());
+        this.lastMessage = null;
         for (var i = messages.length - 1; i >= 0; --i) {
             fragment.append(this.createMessageNode(messages[i], contact.name));
         }
@@ -43,41 +45,84 @@ ChatController.prototype = {
         document.getElementById("chatContent").contentWindow.scrollTo(0, 9999999);
     },
     createMessageNode : function (message, contactName) {
+        if(message.sent == true)
+            contactName = KEYTAP.userInfoController.getUserInfo().name;
+        
         var fromClass = "";
 
-        if(message.sent == true){
-            fromClass = "message-right";
+        var node = $(document.createElement("li"));
+        node.attr("id", "message_" + message.id);
+
+        if(message.timestamp != null)
+            message.time = message.timestamp;
+        else
+            message.time = null;
+
+        if(this.lastMessage != null) {
+            if(this.lastMessage.sent == true && message.sent == true) {
+                if(message.time == null || this.lastMessage.time == null)
+                    fromClass = "message-right following-message";
+                else if(this.compareTime(this.lastMessage.time, message.time) == true)
+                    fromClass = "message-right following-message";
+                else {
+                    fromClass = "message-right first-message";
+                    node.append(createAvatar(contactName));
+                }
+            }
+            else if(this.lastMessage.sent == true && message.sent == false) {
+                fromClass = "message-left first-message";
+                node.append(createAvatar(contactName));
+            }
+            else if(this.lastMessage.sent == false && message.sent == true) {
+                fromClass = "message-right first-message";
+                node.append(createAvatar(contactName));
+            }
+            else if(this.lastMessage.sent == false && message.sent == false) {
+                if(this.compareTime(this.lastMessage.time, message.time) == true)
+                    fromClass = "message-left following-message";
+                else {
+                    fromClass = "message-left first-message";
+                    node.append(createAvatar(contactName));
+                }
+            }
         }
-        else{
-            fromClass = "message-left";
+        else {
+            if(message.sent == true) {
+                fromClass = "message-right first-message";
+                node.append(createAvatar(contactName));
+            }
+            else {
+                fromClass = "message-left first-message";
+                node.append(createAvatar(contactName));
+            }
         }
 
-        var node = "<li id='message_" + message.id + "' class='" + fromClass + "'>";
-        node += createAvatar(contactName);
+        node.addClass(fromClass);
 
-        var msgDiv = document.createElement('div');
-        msgDiv.setAttribute('class', 'message');
+        var messageDiv = $(document.createElement("div"));
+        messageDiv.addClass("message ");
 
-        var msgP = document.createElement('p');
-        msgP.textContent = message.message;
+        messageDiv.append("<p>" + message.message + "</p>");
 
-        var timeSpan = document.createElement('span');
+        var timespan = $(document.createElement("span"));
+        timespan.addClass("timespan");
 
         if(message.timestamp != null){
-            timeSpan.textContent = $.timeago(parseFormatedTimeString(message.timestamp).toISOString());
+            timespan.html($.timeago(new Date(message.timestamp).toISOString()));
         }else if(message.timestamp == null){
             if(message.sent == true)
-                timeSpan.textContent = "Delivering...";
+                timespan.html("Delivering...");
             else
-                timeSpan.textContent = message.timestamp;
+                timespan.html(message.timestamp);
         }
-        timeSpan.className = "timespan";
 
-        msgDiv.innerHTML = msgP.outerHTML + timeSpan.outerHTML;
+        messageDiv.append(timespan);
 
-        node += msgDiv.outerHTML + "</li>";
+        node.append(messageDiv);
 
-        return node;
+        this.lastMessage = message;
+
+        return $("<div/>").append(node).html();
     },
     submitNewMessage : function () {
         var message = this.newMessageInput.value;
@@ -95,13 +140,23 @@ ChatController.prototype = {
             });
         }
     },
+    compareTime : function (t1, t2) {
+        if(t1 > t2)
+            return false;
+        else if(t2 - t1 > 300000)
+            return false;
+        else if(t2 - t1 < 300000)
+            return true;
+
+        return false;
+    },
     addMessageUpdateListener : function () {
         messengerService.addMessageStatusUpdateListener(function (messageInfo) {
             messageInfo.messages.forEach(function (message) {
                 var messageDiv = $("#chatContent").contents().find("#message_" + message.id);
 
                 if(messageDiv.length && message.sent == true){
-                    messageDiv.find(".timespan").html($.timeago(parseFormatedTimeString(message.timestamp).toISOString()));// + '<i class="mdi mdi-checkbox-marked-circle pull-right"></i>';
+                    messageDiv.find(".timespan").html($.timeago(new Date(message.timestamp).toISOString()));
                 }
             });
         });
