@@ -1,4 +1,15 @@
-<div class="m-scene toolbar-inside main-content" id="main"> <!-- Page Container -->
+<!-- Page Container -->
+<div class="m-scene toolbar-inside main-content" id="main">
+
+    <!-- Top Menu Bar -->
+    <div id="navBar1" class="navbar-fixed-top">
+        <div class="navbar header-bar">
+            <span id="page-title">Phone Update</span>
+            <div id="networkStatus" class="center-align hidden">
+                <span style="width: auto; height: 20px; background: whitesmoke; padding-left: 10px; padding-right: 10px;">No connection available</span>
+            </div>
+        </div>
+    </div><!-- Top Menu Bar -->
 
     <!-- Page Content -->
     <div class="snap-content main-content-body" id="content"  style="background: black; height: 100%;">
@@ -30,7 +41,7 @@
                         <input type="tel" id="hiddenPhoneInput" style="display: none">
 
                         <div class="group-form col s12">
-                            <span id="phoneIntlExt"></span><i id="phoneInputIcon" class="mdi mdi-phone"></i>
+                            <span id="phoneIntlEx" class="hidden"></span><i id="phoneInputIcon" class="mdi mdi-phone"></i>
                             <input id="phone" type="tel" placeholder="Phone Number" required>
                         </div>
 

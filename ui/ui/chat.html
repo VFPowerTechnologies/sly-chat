@@ -1,21 +1,47 @@
-<div class="m-scene main-content" id="main" style="margin: 0; padding: 0;"> <!-- Page Container -->
+<!-- Page Container -->
+<div class="m-scene main-content" id="main" style="margin: 0; padding: 0; background-color: #eeeeee;">
 
-  <div class="navbar-fixed-bottom container">
-    <div class="navbar">
-      <div id="newMessageInputContainer" style="background: #fff; bottom: 0; left: 0; position: fixed; min-height: 45px; width: 100%;">
-        <form id="newMessageForm" method="post">
-          <textarea placeholder="Type your message" id="newMessageInput" name="newMessageInput" style="resize: none; height: 45px;"></textarea>
-          <button id="newMessageSubmitBtn"><i class="mdi mdi-send mdi-2x"></i></button>
-        </form>
-      </div>
+    <!-- Top Menu Bar -->
+    <div id="navBar1" class="navbar-fixed-top">
+        <div class="navbar header-bar">
+            <div class="open-left nav-btn" id="nav-menu-back">
+                <a href="#" id="backBtn"><i class="mdi mdi-arrow-left"></i></a>
+            </div>
+            <div id='navBarMenu' class="open-right dropdown" style="width: 56px;">
+                <button class="dropDownBtn" type="button" id="dropdownMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true"><i class="fa fa-ellipsis-v"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu">
+                    <li><a id="editProfileBtn" href="#"><i class="mdi mdi-account"></i>Profile</a></li>
+                    <li role="separator" class="divider"></li>
+                    <li><a id='addContactBtn' href="#"><i class="mdi mdi-account-plus"></i>Add contact</a></li>
+                    <li role="separator" class="divider"></li>
+                    <li><a id="logoutBtn" href="#"><i class="mdi mdi-logout"></i>Logout</a></li>
+                </ul>
+            </div>
+            <span id="page-title"></span>
+            <div id="networkStatus" class="center-align hidden">
+                <span style="width: auto; height: 20px; background: whitesmoke; padding-left: 10px; padding-right: 10px;">No connection available</span>
+            </div>
+            <div id="connectionStatus" class="center-align hidden">
+                <span style="width: auto; height: 20px; background: whitesmoke; padding-left: 10px; padding-right: 10px;">Disconnected</span>
+            </div>
+        </div>
+    </div><!-- End of Top Menu Bar -->
+
+    <div class="navbar-fixed-bottom container">
+        <div class="navbar">
+            <div id="newMessageInputContainer" style="background: #fff; bottom: 0; left: 0; position: fixed; min-height: 45px; width: 100%;">
+                <form id="newMessageForm" method="post">
+                    <textarea placeholder="Type your message" id="newMessageInput" name="newMessageInput" style="resize: none; height: 45px;"></textarea>
+                    <button id="newMessageSubmitBtn"><i class="mdi mdi-send mdi-2x"></i></button>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <iframe id="chatContent" src="iframe-content/chatContent.html" frameborder="0" onload="KEYTAP.chatController.init();" style="width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;" width="100%" height="100%">
+    <iframe id="chatContent" src="iframe-content/chatContent.html" frameborder="0" onload="KEYTAP.chatController.init();" style="width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;" width="100%" height="100%"></iframe>
 
-  </iframe>
-
-  <!-- Specific page javascript -->
-  <script src="js/internal/chat.js"></script>
+    <!-- Specific page javascript -->
+    <script src="js/internal/chat.js"></script>
 
 </div> <!-- End of Page Container -->

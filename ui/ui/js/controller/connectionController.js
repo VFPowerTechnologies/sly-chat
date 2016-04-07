@@ -18,20 +18,21 @@ ConnectionController.prototype = {
 
     handleConnectionDisplay: function () {
         var networkStatus = $("#networkStatus");
+        var connectionStatus = $("#connectionStatus");
 
         if(this.networkAvailable == false) {
             networkStatus.removeClass("hidden");
-            networkStatus.find("span").html("No connection available");
+            connectionStatus.addClass("hidden");
             $("#addContactBtn").prop("disabled", true);
         }
         else if(this.relayConnected == false) {
-            networkStatus.removeClass("hidden");
-            networkStatus.find("span").html("Disconnected");
+            networkStatus.addClass("hidden");
+            connectionStatus.removeClass("hidden");
             $("#addContactBtn").prop("disabled", false);
         }
         else {
             networkStatus.addClass("hidden");
-            networkStatus.find("span").html("");
+            connectionStatus.addClass("hidden");
             $("#addContactBtn").prop("disabled", false);
         }
     }
