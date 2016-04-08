@@ -1,5 +1,5 @@
 <!-- Page Container -->
-<div class="m-scene main-content" id="main" style="margin: 0; padding: 0; background-color: #eeeeee;">
+<div class="m-scene main-content" id="main" style="margin: 0; padding: 0 0 70px 0;  background-color: #eeeeee;">
 
     <!-- Top Menu Bar -->
     <div id="navBar1" class="navbar-fixed-top">
@@ -28,18 +28,18 @@
         </div>
     </div><!-- End of Top Menu Bar -->
 
-    <div class="navbar-fixed-bottom container">
-        <div class="navbar">
-            <div id="newMessageInputContainer" style="background: #fff; bottom: 0; left: 0; position: fixed; min-height: 45px; width: 100%;">
-                <form id="newMessageForm" method="post">
-                    <textarea placeholder="Type your message" id="newMessageInput" name="newMessageInput" style="resize: none; height: 45px;"></textarea>
-                    <button id="newMessageSubmitBtn"><i class="mdi mdi-send mdi-2x"></i></button>
-                </form>
-            </div>
+    <div class="navbar-fixed-bottom container bottom-chat-input">
+        <div class="navbar" style="margin-bottom: 0;">
+            <form id="newMessageForm" method="post">
+                <div id="chatInputContainer">
+                    <textarea placeholder="Type your message" id="newMessageInput" name="newMessageInput"></textarea>
+                </div>
+                <button class="btn" id="newMessageSubmitBtn"><i class="mdi mdi-send"></i></button>
+            </form>
         </div>
     </div>
 
-    <iframe id="chatContent" src="iframe-content/chatContent.html" frameborder="0" onload="KEYTAP.chatController.init();" style="width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;" width="100%" height="100%"></iframe>
+    <iframe id="chatContent" src="iframe-content/chatContent.html" frameborder="0" onload="KEYTAP.chatController.init();" style="width: 100%; height: 100%; margin: 0; padding: 0 0 52px 0; overflow: hidden; background-color: #eeeeee;" width="100%" height="100%"></iframe>
 
     <!-- Specific page javascript -->
     <script src="js/internal/chat.js"></script>

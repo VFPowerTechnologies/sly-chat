@@ -14,7 +14,7 @@ RecentChatController.prototype = {
             $('ul.tabs').tabs('select_tab', 'contactContent');
             $("#recentChatContent").hide();
 
-            recentChatContent.html("<div style='text-align: center'>No recent conversation</div>");
+            recentChatContent.html("<div style='text-align: center'>No recent conversations</div>");
         }
         else {
             $('ul.tabs').tabs('select_tab', 'recentChatContent');

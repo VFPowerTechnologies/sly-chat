@@ -114,7 +114,7 @@ ContactController.prototype = {
         var newContactBtn = $("#newContactBtn");
         newContactBtn.prop("disabled", true);
         if(this.model.validateContact("#addContactForm") == true && this.syncing == false){
-            var input = document.getElementById("username").value;
+            var input = $("#username").val().replace(/\s+/g, '');
             var phone = null;
             var username = null;
             if (validateEmail(input)){
@@ -136,7 +136,7 @@ ContactController.prototype = {
                 KEYTAP.exceptionController.displayDebugMessage(e);
                 console.error('Unable to add contact: ' + e.message);
                 $("#newContactBtn").prop("disabled", false);
-                $("#error").append("<li>" + e.message + "</li>");
+                $("#error").html("<li>" + e.message + "</li>");
             });
         }
         else{
@@ -266,13 +266,13 @@ ContactController.prototype = {
                 $("#newContactBtn").prop("disabled", false);
                 KEYTAP.exceptionController.displayDebugMessage(e);
                 console.error('Unable to add contact: ' + e.message);
-                $("#error").append("<li>" + e.message + "</li>");
+                $("#error").html("<li>" + e.message + "</li>");
             });
         }.bind(this));
 
         $("#cancelBtn").on("click", function (e) {
             e.preventDefault();
-            KEYTAP.navigationController.loadPage("addContact.html");
+            KEYTAP.navigationController.loadPage("addContact.html", false);
         });
     },
     displayDeleteContactModal: function(email) {

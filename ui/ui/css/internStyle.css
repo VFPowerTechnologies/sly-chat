@@ -247,9 +247,14 @@ button.btn-large {
 }
 .message {
     min-width: 100px;
-    max-width: 83%;
     width: auto;
     display: inline-block;
+}
+.first-message .message {
+    max-width: calc(100% - 71px); /* 100% of the width - margin and image */
+}
+.following-message .message {
+    max-width: calc(100% - 26px); /* 100% of the width - margin */
 }
 .message-left .message {
     margin-left: 10px !important;
@@ -263,22 +268,42 @@ button.btn-large {
     margin-top: 0;
 }
 #newMessageInput {
-    position: absolute;
-    border-bottom: none;
-    border-left: none;
-    border-right: none;
-    bottom: 0;
-    left: 0;
-    padding-right: 55px;
+    resize: none;
+    height: 45px;
+    background-color: #fff;
+    border: none;
+    border-radius: 5px;
+    display: inline-block;
+    outline: none;
+}
+#newMessageInput:focus {
+    outline: none;
+}
+#newMessageSubmitBtn:focus {
+    outline: none;
 }
 #newMessageSubmitBtn {
     position: absolute;
     right: 5px;
     color: white;
-    background: black;
+    background: #212121;
     border: none;
-    bottom: 1px;
-    height: 43px;
+    top: 0;
+    height: 45px;
+    outline: none;
+    padding: 0;
+    width: 45px;
+    border-radius: 25px;
+}
+.bottom-chat-input {
+    padding: 10px 10px 10px 20px;
+    background-color: #eeeeee;
+}
+#chatInputContainer {
+    padding-right: 55px;
+    width: 100%;
+    display: inline-block;
+    min-height: 48px;
 }
 .chat ul li.message-left .message {
     background-color: #fff !important;
