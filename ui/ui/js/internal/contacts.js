@@ -4,4 +4,7 @@ if(typeof $ == "undefined"){
 
 $(document).ready(function () {
     $("ul.tabs").tabs();
+
+    KEYTAP.contactController.init();
+    KEYTAP.recentChatController.init();
 });

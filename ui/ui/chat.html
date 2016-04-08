@@ -39,9 +39,30 @@
         </div>
     </div>
 
-    <iframe id="chatContent" src="iframe-content/chatContent.html" frameborder="0" onload="KEYTAP.chatController.init();" style="width: 100%; height: 100%; margin: 0; padding: 0 0 52px 0; overflow: hidden; background-color: #eeeeee;" width="100%" height="100%"></iframe>
+    <!-- Page Content -->
+    <div class="snap-content main-content-body" id="content" style="background-color: #eeeeee; height: 100%;">
 
-    <!-- Specific page javascript -->
-    <script src="js/internal/chat.js"></script>
+        <!-- Main Content -->
+        <div class="scene_element" style="background-color: #eeeeee;">
+
+            <div class="container" style="padding: 20px 10px 0 10px;">
+                <div class="row" style="width: 100%; margin: 0 0 0 0;">
+                    <div class="col s12" style="padding: 0 0 0 0;">
+                        <div class="chat">
+                            <ul id="messages" style="margin-bottom: 0; padding-bottom: 62px;">
+
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- End of Main Contents -->
+        <div id="blockui"></div>
+
+        <!-- Specific page javascript -->
+        <script src="js/internal/chat.js"></script>
+
+    </div> <!-- End of Page Content -->
 
 </div> <!-- End of Page Container -->

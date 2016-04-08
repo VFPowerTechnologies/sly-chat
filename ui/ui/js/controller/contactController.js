@@ -15,7 +15,7 @@ ContactController.prototype = {
         }
     },
     displayContacts : function (conversations) {
-        var contactList = $("#contactContent").contents().find("#contactList");
+        var contactList = $("#contactList");
         var fragment = $(document.createDocumentFragment());
 
         var i = 0;
@@ -63,8 +63,8 @@ ContactController.prototype = {
         var dropDown = '<div class="dropdown pull-right">';
         dropDown += '<a class="dropdown-toggle contact-dropDown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" href="#" style="text-decoration: none;">';
         dropDown += '&nbsp;<i class="fa fa-ellipsis-v"></i>&nbsp;</a>';
-        dropDown += '<ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu">';
-        dropDown += '<li><a href="#" id="deleteContact_' + email + '">Delete Contact</a></li>';
+        dropDown += '<ul class="contact-dropdown-menu dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu">';
+        dropDown += '<li style="text-align: center;"><a href="#" id="deleteContact_' + email + '">Delete Contact</a></li>';
         dropDown += '</ul></div>';
 
         return dropDown;
@@ -73,8 +73,7 @@ ContactController.prototype = {
         this.model.fetchConversationForChat(email, pushCurrentPage);
     },
     addEventListener : function () {
-        var iframe = $("#contactContent");
-        var links = iframe.contents().find(".contact-link");
+        var links = $(".contact-link");
 
         links.bind("click", function (e) {
             e.preventDefault();
@@ -82,19 +81,20 @@ ContactController.prototype = {
             KEYTAP.contactController.loadContactPage(email, true);
         });
 
-        iframe.contents().find(".contact-dropDown").bind("click", function(e) {
+        $(".contact-dropDown").bind("click", function(e) {
+            $(".contact-dropdown-menu").hide();
             $(this).next(".dropdown-menu").toggle();
             e.stopPropagation();
         });
 
-        iframe.contents().find("html").click(function(){
-            $("#contactContent").contents().find(".dropdown-menu").hide();
+        $("html body").click(function(){
+            $(".contact-dropdown-menu").hide();
         });
 
-        iframe.contents().find("[id^='deleteContact_']").bind("click", function(e){
+        $("[id^='deleteContact_']").bind("click", function(e){
             e.stopPropagation();
             e.preventDefault();
-            $("#contactContent").contents().find(".dropdown-menu").hide();
+            $(".contact-dropdown-menu").hide();
             if(KEYTAP.connectionController.networkAvailable == true && this.syncing == false) {
                 var email = e.currentTarget.id.split("_")[1];
                 this.displayDeleteContactModal(email);

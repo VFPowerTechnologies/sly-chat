@@ -69,8 +69,6 @@ LoginController.prototype = {
             $(".menu-hidden").show();
             this.modal.close();
 
-            console.log(initialPage);
-
             if(initialPage === null) {
                 KEYTAP.navigationController.loadPage('contacts.html');
                 KEYTAP.navigationController.clearHistory();

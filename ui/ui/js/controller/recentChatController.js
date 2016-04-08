@@ -8,17 +8,17 @@ RecentChatController.prototype = {
         this.model.fetchRecentChat();
     },
     displayRecentChat : function (recentChat) {
-        var recentChatContent = $("#recentChatContent").contents().find("#recentChatList");
+        var recentChatContent = $("#recentChatList");
 
         if ($.isEmptyObject(recentChat)) {
-            $('ul.tabs').tabs('select_tab', 'contactContent');
+            $('ul.tabs').tabs('select_tab', 'contactList');
             $("#recentChatContent").hide();
 
             recentChatContent.html("<div style='text-align: center'>No recent conversations</div>");
         }
         else {
-            $('ul.tabs').tabs('select_tab', 'recentChatContent');
-            $("#contactContent").hide();
+            $('ul.tabs').tabs('select_tab', 'recentChatList');
+            $("#contactList").hide();
 
 
             var fragment = $(document.createDocumentFragment());
@@ -54,21 +54,19 @@ RecentChatController.prototype = {
         else
             lastMessage = recentChat.status.lastMessage;
 
-        var date = parseFormatedTimeString(recentChat.status.lastTimestamp);
         var contactBlock = "";
 
         contactBlock += "<div class='" + contactLinkClass + "' id='contact%" + recentChat.contact.email + "'><div class='contact'>";
         contactBlock += createAvatar(recentChat.contact.name);
         contactBlock += "<p style='display: inline-block;'>" + recentChat.contact.name + "</p>";
-        contactBlock += "<p style='display: inline-block; float: right; font-size: 10px'>" + $.timeago(date) + "</p><br>";
+        contactBlock += "<p style='display: inline-block; float: right; font-size: 10px'>" + $.timeago(recentChat.status.lastTimestamp) + "</p><br>";
         contactBlock += "<p style='display: inline-block; float: left; font-size: 10px; line-height: 0;'>" + lastMessage + "</p>";
         contactBlock += "</div>" + newBadge + "</div>";
 
         return contactBlock;
     },
     addRecentChatEventListener : function () {
-        var iframe = $("#recentChatContent");
-        var links = iframe.contents().find(".contact-link");
+        var links = $(".contact-link");
 
         links.bind("click", function (e) {
             e.preventDefault();

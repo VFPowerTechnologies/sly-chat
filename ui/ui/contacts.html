@@ -21,10 +21,10 @@
             <div id="contactTabs" class="nav-btn" style="padding-left: 56px; padding-right: 56px; height: 56px;">
                 <ul class="tabs" style="background: transparent;">
                     <li class="tab col s6" style="height: 56px; line-height: 56px;">
-                        <a href="#recentChatContent" class="" style="color: #fff;">Chats</a>
+                        <a href="#recentChatList" class="" style="color: #fff;">Chats</a>
                     </li>
                     <li class="tab col s6" style="height: 56px; line-height: 56px;">
-                        <a href="#contactContent" style="color: #fff;">Contacts</a>
+                        <a href="#contactList" style="color: #fff;">Contacts</a>
                     </li>
                     <div class="indicator"></div>
                 </ul>
@@ -38,10 +38,28 @@
         </div>
     </div><!-- End of Top Menu Bar -->
 
-    <iframe id="contactContent" src="iframe-content/contactsContent.html" frameborder="0" style="width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #eeeeee;" height="100%" width="100%" onload="KEYTAP.contactController.init();"></iframe>
-    <iframe id="recentChatContent" src="iframe-content/recentChatContent.html" frameborder="0" style="width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #eeeeee;" height="100%" width="100%" onload="KEYTAP.recentChatController.init();"></iframe>
+    <!-- Page Content -->
+    <div class="snap-content main-content-body" id="content" style="background-color: #eeeeee; height: 100%;">
 
-    <!-- Specific page javascript -->
-    <script src="js/internal/contacts.js"></script>
+        <!-- Main Content -->
+        <div class="scene_element">
+            <div class="container">
+                <div class="row">
+                    <div id='contactList' class="col s12">
+
+                    </div>
+                    <div id='recentChatList' class="col s12">
+
+                    </div>
+                </div>
+            </div>
+        </div> <!-- End of Main Contents -->
+        <div id="blockui"></div>
+
+        <!-- Specific page javascript -->
+        <script src="js/internal/contacts.js"></script>
+
+
+    </div> <!-- End of Page Content -->
 
 </div> <!-- End of Page Container -->

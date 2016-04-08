@@ -1,5 +1,6 @@
 var ChatController = function (model, contactController) {
     this.model = model;
+    this.model.setController(this);
     this.contactController = contactController;
     this.currentMessagePosition = 0;
     this.fetchingNumber = 100;
@@ -8,12 +9,10 @@ var ChatController = function (model, contactController) {
 
 ChatController.prototype = {
     init : function () {
-        this.model.setController(this);
         var contact = this.contactController.getCurrentContact();
         this.model.fetchMessage(this.currentMessagePosition, this.fetchingNumber, contact);
         this.model.markConversationAsRead(this.contactController.getCurrentContact());
-        this.newMessageInput = document.getElementById('newMessageInput');
-        var self = this;
+        this.newMessageInput = $('#newMessageInput');
 
         $("#newMessageSubmitBtn").click(function (){
             $("#newMessageInput").focus();
@@ -21,11 +20,11 @@ ChatController.prototype = {
 
         $("#newMessageForm").submit(function () {
             $("#newMessageInput").trigger("click");
-            self.submitNewMessage();
+            this.submitNewMessage();
             return false;
-        });
+        }.bind(this));
 
-        $("#newMessageInput").on("keypress", function(e) {
+        this.newMessageInput.on("keypress", function(e) {
             if  (e.keyCode === 13 && !e.ctrlKey) {
                 e.preventDefault();
                 $("#newMessageForm").submit();
@@ -33,8 +32,7 @@ ChatController.prototype = {
         });
     },
     displayMessage : function (messages, contact) {
-        var iframe = $("#chatContent");
-        var messageNode = iframe.contents().find("#messages");
+        var messageNode = $("#messages");
 
         var fragment = $(document.createDocumentFragment());
         this.lastMessage = null;
@@ -42,7 +40,7 @@ ChatController.prototype = {
             fragment.append(this.createMessageNode(messages[i], contact.name));
         }
         messageNode.html(fragment);
-        document.getElementById("chatContent").contentWindow.scrollTo(0, 9999999);
+        this.scrollTop();
     },
     createMessageNode : function (message, contactName) {
         if(message.sent == true)
@@ -127,12 +125,12 @@ ChatController.prototype = {
     submitNewMessage : function () {
         var message = this.newMessageInput.value;
         if(message != ""){
-            var messageNode = $("#chatContent").contents().find("#messages");
+            var messageNode = $("#messages");
 
             messengerService.sendMessageTo(this.contactController.getCurrentContact(), message).then(function (messageDetails) {
                 this.newMessageInput.value = "";
                 messageNode.append(this.createMessageNode(messageDetails, KEYTAP.userInfoController.getUserInfo().name));
-                document.getElementById("chatContent").contentWindow.scrollTo(0, 9999999);
+                this.scrollTop();
                 $("#newMessageInput").click();
             }.bind(this)).catch(function (e) {
                 KEYTAP.exceptionController.displayDebugMessage(e);
@@ -153,7 +151,7 @@ ChatController.prototype = {
     addMessageUpdateListener : function () {
         messengerService.addMessageStatusUpdateListener(function (messageInfo) {
             messageInfo.messages.forEach(function (message) {
-                var messageDiv = $("#chatContent").contents().find("#message_" + message.id);
+                var messageDiv = $("#message_" + message.id);
 
                 if(messageDiv.length && message.sent == true){
                     messageDiv.find(".timespan").html($.timeago(new Date(message.timestamp).toISOString()));
@@ -174,7 +172,8 @@ ChatController.prototype = {
             var contactName = cachedContact.name;
 
             if(document.getElementById("currentPageChatEmail") != null && document.getElementById("currentPageChatEmail").innerHTML == contact){
-                var messageDiv = $("#chatContent").contents().find("#messages");
+                var messageDiv = $("#messages");
+
                 if(messageDiv.length){
                     //for the common case
                     if(messages.length == 1) {
@@ -182,14 +181,13 @@ ChatController.prototype = {
                         messageDiv.append(this.createMessageNode(message, contactName));
                     }
                     else {
-                        //for some reason, append() won't work unless we wrap the fragment before appending to it
                         var fragment = $(document.createDocumentFragment());
                         messages.forEach(function (message) {
                             fragment.append(this.createMessageNode(message, contactName));
                         }, this);
                         messageDiv.append(fragment);
                     }
-                    document.getElementById("chatContent").contentWindow.scrollTo(0, 9999999);
+                    this.scrollTop();
                     this.model.markConversationAsRead(this.contactController.getCurrentContact());
                 }
             }
@@ -204,5 +202,11 @@ ChatController.prototype = {
                 }
             }
         }.bind(this));
+    },
+    scrollTop : function () {
+        var lastMessage = $("ul#messages li:last");
+
+        if(typeof lastMessage != "undefined" && typeof lastMessage.offset() != "undefined")
+            $("html,body").scrollTop(lastMessage.offset().top);
     }
 };
