@@ -46,7 +46,7 @@ body div iframe {
     top: 0;
 }
 
-.contact-link {
+.contact-link, .recent-contact-link {
     height: 70px;
     line-height: 35px;
     padding-left: 5px;
@@ -56,13 +56,13 @@ body div iframe {
     border-bottom: 1px solid gray;
 }
 
-.contact {
-    padding-bottom: 2px;
-}
-
-.contact-link p {
+.contact-link p, .recent-contact-link p {
     font-size: 15px;
     font-family: 'Montserrat', sans-serif;
+}
+
+.contact {
+    padding-bottom: 2px;
 }
 
 .modalHeader {

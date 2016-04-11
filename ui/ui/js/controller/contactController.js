@@ -11,6 +11,7 @@ ContactController.prototype = {
             this.model.fetchConversation();
         }
         else{
+            KEYTAP.recentChatController.init(conversations);
             this.displayContacts(conversations);
         }
     },
@@ -73,14 +74,6 @@ ContactController.prototype = {
         this.model.fetchConversationForChat(email, pushCurrentPage);
     },
     addEventListener : function () {
-        var links = $(".contact-link");
-
-        links.bind("click", function (e) {
-            e.preventDefault();
-            var email = $(this).attr("id").split("contact%")[1];
-            KEYTAP.contactController.loadContactPage(email, true);
-        });
-
         $(".contact-dropDown").bind("click", function(e) {
             $(".contact-dropdown-menu").hide();
             $(this).next(".dropdown-menu").toggle();
@@ -89,6 +82,13 @@ ContactController.prototype = {
 
         $("html body").click(function(){
             $(".contact-dropdown-menu").hide();
+        });
+
+        $(".contact-link").bind("click", function (e) {
+            e.preventDefault();
+            var email = $(this).attr("id").split("contact%")[1];
+            KEYTAP.contactController.setCurrentContact(email);
+            KEYTAP.navigationController.loadPage("chat.html", true);
         });
 
         $("[id^='deleteContact_']").bind("click", function(e){

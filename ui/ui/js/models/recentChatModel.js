@@ -1,20 +1,17 @@
 var RecentChatModel = function () {};
 
 RecentChatModel.prototype = {
-    fetchRecentChat : function () {
-        messengerService.getConversations().then(function(conversations){
-            var conversation = this.orderByRecentChat(conversations);
-            var recentChat = [];
+    setRecentChat : function (conversations) {
+        var conversation = this.orderByRecentChat(conversations);
+        var recentChat = [];
 
-            conversation.forEach(function (chat) {
-                recentChat[chat.contact.email] = chat;
-            });
-
-            this.controller.displayRecentChat(recentChat);
-        }.bind(this)).catch(function(e){
-            KEYTAP.exceptionController.displayDebugMessage(e);
-            console.log("Unable to fetch conversations: " + e);
+        conversation.forEach(function (chat) {
+            recentChat[chat.contact.email] = chat;
         });
+
+        KEYTAP.chatController.model.fetchConversationMessages(conversation);
+
+        this.controller.displayRecentChat(recentChat);
     },
     setController : function (controller) {
         this.controller = controller;

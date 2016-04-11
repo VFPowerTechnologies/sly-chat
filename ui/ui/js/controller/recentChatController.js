@@ -4,23 +4,18 @@ var RecentChatController = function (model) {
 };
 
 RecentChatController.prototype = {
-    init : function () {
-        this.model.fetchRecentChat();
+    init : function (conversations) {
+        this.model.setRecentChat(conversations);
     },
     displayRecentChat : function (recentChat) {
         var recentChatContent = $("#recentChatList");
 
         if ($.isEmptyObject(recentChat)) {
             $('ul.tabs').tabs('select_tab', 'contactList');
-            $("#recentChatContent").hide();
 
             recentChatContent.html("<div style='text-align: center'>No recent conversations</div>");
         }
         else {
-            $('ul.tabs').tabs('select_tab', 'recentChatList');
-            $("#contactList").hide();
-
-
             var fragment = $(document.createDocumentFragment());
 
             var i = 0;
@@ -36,7 +31,7 @@ RecentChatController.prototype = {
         }
     },
     createRecentChat : function (recentChat, index) {
-        var contactLinkClass = "contact-link ";
+        var contactLinkClass = "recent-contact-link ";
         var newBadge = "";
 
         if(recentChat.status.unreadMessageCount > 0){
@@ -66,12 +61,11 @@ RecentChatController.prototype = {
         return contactBlock;
     },
     addRecentChatEventListener : function () {
-        var links = $(".contact-link");
-
-        links.bind("click", function (e) {
+        $(".recent-contact-link").bind("click", function (e) {
             e.preventDefault();
             var email = $(this).attr("id").split("contact%")[1];
-            KEYTAP.contactController.loadContactPage(email);
+            KEYTAP.contactController.setCurrentContact(email);
+            KEYTAP.navigationController.loadPage("chat.html", true);
         });
     }
 };

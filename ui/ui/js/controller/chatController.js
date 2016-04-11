@@ -12,7 +12,6 @@ ChatController.prototype = {
         var contact = this.contactController.getCurrentContact();
         this.model.fetchMessage(this.currentMessagePosition, this.fetchingNumber, contact);
         this.model.markConversationAsRead(this.contactController.getCurrentContact());
-        this.newMessageInput = $('#newMessageInput');
 
         $("#newMessageSubmitBtn").click(function (){
             $("#newMessageInput").focus();
@@ -24,7 +23,7 @@ ChatController.prototype = {
             return false;
         }.bind(this));
 
-        this.newMessageInput.on("keypress", function(e) {
+        $('#newMessageInput').on("keypress", function(e) {
             if  (e.keyCode === 13 && !e.ctrlKey) {
                 e.preventDefault();
                 $("#newMessageForm").submit();
@@ -123,15 +122,17 @@ ChatController.prototype = {
         return $("<div/>").append(node).html();
     },
     submitNewMessage : function () {
-        var message = this.newMessageInput.value;
+        var message = $('#newMessageInput').val();
         if(message != ""){
-            var messageNode = $("#messages");
+            var currentContact = this.contactController.getCurrentContact();
 
-            messengerService.sendMessageTo(this.contactController.getCurrentContact(), message).then(function (messageDetails) {
-                this.newMessageInput.value = "";
-                messageNode.append(this.createMessageNode(messageDetails, KEYTAP.userInfoController.getUserInfo().name));
+            messengerService.sendMessageTo(currentContact, message).then(function (messageDetails) {
+                this.model.pushNewMessage(currentContact.email, messageDetails);
+                var input = $('#newMessageInput');
+                input.val("");
+                $("#messages").append(this.createMessageNode(messageDetails, KEYTAP.userInfoController.getUserInfo().name));
                 this.scrollTop();
-                $("#newMessageInput").click();
+                input.click();
             }.bind(this)).catch(function (e) {
                 KEYTAP.exceptionController.displayDebugMessage(e);
                 console.log(e);
@@ -151,21 +152,28 @@ ChatController.prototype = {
     addMessageUpdateListener : function () {
         messengerService.addMessageStatusUpdateListener(function (messageInfo) {
             messageInfo.messages.forEach(function (message) {
+                this.model.updateMessage(messageInfo.contact, message);
                 var messageDiv = $("#message_" + message.id);
 
                 if(messageDiv.length && message.sent == true){
                     messageDiv.find(".timespan").html($.timeago(new Date(message.timestamp).toISOString()));
                 }
-            });
-        });
+            }.bind(this));
+        }.bind(this));
     },
     addNewMessageListener : function () {
         messengerService.addNewMessageListener(function (messageInfo) {
+
             if(messageInfo.messages.length <= 0)
                 return;
 
             var messages = messageInfo.messages;
             var contact = messageInfo.contact;
+
+            messages.forEach(function (message) {
+                this.model.pushNewMessage(contact, message);
+            }.bind(this));
+
             var cachedContact = this.contactController.getContact(contact);
             if(!cachedContact)
                 return;

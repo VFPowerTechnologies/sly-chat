@@ -26,12 +26,3 @@ $(document).ready(function(){
         console.log(e);
     });
 });
-
-function resizeWindow() {
-    var height = window.innerHeight - 56;
-    $("#main").css("height", height + "px");
-
-    if ($("#chatContent").length) {
-        document.getElementById("chatContent").contentWindow.scrollTo(0, 9999999);
-    }
-}

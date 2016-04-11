@@ -62,6 +62,7 @@ if (typeof KEYTAP == "undefined") {
             onStart: {
                 duration: duration_CONSTANT,
                 render: function ($container) {
+                    hideKeyBoard();
                     if(window.location.href.indexOf("chat.html") > -1) {
                         $(window.location).trigger("chatExited", {});
                     }
@@ -80,6 +81,7 @@ if (typeof KEYTAP == "undefined") {
 
             onAfter: function() {
                 KEYTAP.menuController.handleMenuDisplay();
+                resizeWindow();
             }
         };
 
@@ -163,4 +165,18 @@ if (typeof KEYTAP == "undefined") {
 
         return bd;
     }
+
+    function resizeWindow() {
+        var height = window.innerHeight - 56;
+        $("#main").css("height", height + "px");
+
+        if ($("#currentPageChatEmail").length && $("#messages").length) {
+            KEYTAP.chatController.scrollTop();
+        }
+    }
+
+    function hideKeyBoard () {
+        $("html body").click();
+    }
+
 }
