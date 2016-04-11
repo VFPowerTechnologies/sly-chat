@@ -2,6 +2,7 @@ var ContactController = function (model) {
     this.model = model;
     this.model.setController(this);
     this.syncing = false;
+    this.notify = null;
 };
 
 ContactController.prototype = {
@@ -34,11 +35,41 @@ ContactController.prototype = {
     addContactListSyncListener : function () {
         contactService.addContactListSyncListener(function (sync) {
             this.syncing = sync;
-            if(sync == false && window.location.href.indexOf("contacts.html") > -1){
-                this.model.resetContacts();
-                this.model.fetchConversation();
+            if(sync == true) {
+                this.showContactSyncingNotification();
+            }else{
+                this.closeNotification();
+                if(window.location.href.indexOf("contacts.html") > -1) {
+                    this.model.resetContacts();
+                    this.model.fetchConversation();
+                }
             }
         }.bind(this));
+    },
+    showContactSyncingNotification : function () {
+        this.notify = $.notify({
+            icon: "icon-pull-left fa fa-info-circle",
+            message: " Contact List is syncing"
+        }, {
+            type: "warning",
+            delay: 0,
+            allow_dismiss: false,
+            offset: {
+                y: 66,
+                x: 20
+            }
+        });
+    },
+    closeNotification : function () {
+        if(this.notify != null) {
+            this.notify.update("type", "success");
+            this.notify.update("message", "Sync is completed");
+            this.notify.update("icon", "fa fa-check-circle");
+
+            setTimeout(function () {
+                this.notify.close();
+            }.bind(this), 3000);
+        }
     },
     createContactBlock : function (contact, status, index) {
         var contactLinkClass = "contact-link ";

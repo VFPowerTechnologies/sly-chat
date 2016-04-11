@@ -357,3 +357,9 @@ button.btn-large {
 .tabs .tab a:hover, .tabs .tab a:focus{
     text-decoration: none;
 }
+
+/*Notification custom css*/
+[data-notify="container"] {
+    text-align: center;
+    padding: 0;
+}

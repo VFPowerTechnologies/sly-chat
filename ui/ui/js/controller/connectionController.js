@@ -1,6 +1,7 @@
 var ConnectionController = function () {
     this.networkAvailable = true;
     this.relayConnected = true;
+    this.connectionNotification = null;
 };
 
 ConnectionController.prototype = {
@@ -15,25 +16,57 @@ ConnectionController.prototype = {
             this.handleConnectionDisplay();
         }.bind(this));
     },
-
     handleConnectionDisplay: function () {
         var networkStatus = $("#networkStatus");
         var connectionStatus = $("#connectionStatus");
 
-        if(this.networkAvailable == false) {
-            networkStatus.removeClass("hidden");
-            connectionStatus.addClass("hidden");
-            $("#addContactBtn").prop("disabled", true);
+        var currentUrl = window.location.href;
+        var page = currentUrl.substring(currentUrl.lastIndexOf("/") + 1);
+        var notShowPageList = ["register.html", "login.html", "updatePhone.html", "smsVerification.html", "index.html"];
+
+
+        if(notShowPageList.indexOf(page) == -1) {
+            if (this.networkAvailable == false) {
+                if (this.connectionNotification == null)
+                    this.openNotification("No network available", "danger");
+                else
+                    this.updateNotification("No network available", "danger");
+                $("#addContactBtn").prop("disabled", true);
+            }
+            else if (this.relayConnected == false) {
+                if (this.connectionNotification == null)
+                    this.openNotification("Disconnected", "warning");
+                else
+                    this.updateNotification("Disconnected", "warning");
+                $("#addContactBtn").prop("disabled", false);
+            }
+            else {
+                this.closeNotification();
+                $("#addContactBtn").prop("disabled", false);
+            }
         }
-        else if(this.relayConnected == false) {
-            networkStatus.addClass("hidden");
-            connectionStatus.removeClass("hidden");
-            $("#addContactBtn").prop("disabled", false);
-        }
-        else {
-            networkStatus.addClass("hidden");
-            connectionStatus.addClass("hidden");
-            $("#addContactBtn").prop("disabled", false);
-        }
+    },
+    openNotification : function (message, notificationClass) {
+        this.connectionNotification = $.notify({
+            icon: "icon-pull-left fa fa-info-circle",
+            message: message
+        }, {
+            type: notificationClass,
+            newest_on_top: true,
+            delay: 0,
+            allow_dismiss: false,
+            offset: {
+                y: 66,
+                x: 20
+            }
+        });
+    },
+    closeNotification : function () {
+        this.connectionNotification.close();
+        this.connectionNotification = null;
+    },
+    updateNotification : function (message, notificationClass) {
+        this.connectionNotification.update("message", message);
+        this.connectionNotification.update("type", notificationClass);
     }
 };

@@ -56,5 +56,19 @@ MenuController.prototype = {
                 addContactBtn.prop("disabled", false);
                 addContactBtn.parent("li").removeClass("disabled");
         }
+
+        var notifContainer = $('[data-notify="container"]');
+        switch (page) {
+            case "login.html":
+            case "register.html":
+            case "updatePhone.html":
+            case "smsVerification.html":
+            case "index.html":
+                notifContainer.hide();
+                break;
+            default:
+                notifContainer.show();
+                break;
+        }
     }
 };

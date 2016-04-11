@@ -171,7 +171,6 @@ ChatController.prototype = {
         var messages = messageInfo.messages;
         var contact = messageInfo.contact;
 
-
         //Update the cached messageList
         messages.forEach(function (message) {
             this.model.pushNewMessage(contact, message);
