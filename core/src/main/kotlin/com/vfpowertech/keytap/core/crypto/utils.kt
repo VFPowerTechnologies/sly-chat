@@ -1,11 +1,11 @@
 package com.vfpowertech.keytap.core.crypto
 
-import com.vfpowertech.keytap.core.crypto.axolotl.GeneratedPreKeys
 import com.vfpowertech.keytap.core.crypto.ciphers.AESGCMParams
 import com.vfpowertech.keytap.core.crypto.ciphers.CipherParams
 import com.vfpowertech.keytap.core.crypto.hashes.BCryptParams
 import com.vfpowertech.keytap.core.crypto.hashes.HashParams
 import com.vfpowertech.keytap.core.crypto.hashes.SHA256Params
+import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import com.vfpowertech.keytap.core.require
 import org.spongycastle.crypto.Digest
 import org.spongycastle.crypto.digests.SHA256Digest
@@ -15,10 +15,11 @@ import org.spongycastle.crypto.modes.AEADBlockCipher
 import org.spongycastle.crypto.modes.GCMBlockCipher
 import org.spongycastle.crypto.params.AEADParameters
 import org.spongycastle.crypto.params.KeyParameter
-import org.whispersystems.libaxolotl.IdentityKeyPair
-import org.whispersystems.libaxolotl.state.AxolotlStore
-import org.whispersystems.libaxolotl.util.KeyHelper
-import org.whispersystems.libaxolotl.util.Medium
+import org.whispersystems.libsignal.IdentityKeyPair
+import org.whispersystems.libsignal.state.PreKeyRecord
+import org.whispersystems.libsignal.state.SignalProtocolStore
+import org.whispersystems.libsignal.util.KeyHelper
+import org.whispersystems.libsignal.util.Medium
 import java.security.SecureRandom
 
 //KeyHelper caps keys at Medium.VALUE-1 (unsigned 24bit)
@@ -202,6 +203,12 @@ fun decryptData(encryptionSpec: EncryptionSpec, ciphertext: ByteArray): ByteArra
     else -> throw IllegalArgumentException("Unknown cipher: ${encryptionSpec.params.algorithmName}")
 }
 
+val LAST_RESORT_PREKEY_ID = Medium.MAX_VALUE
+
+/** Generates a last resort prekey. Should only be generated once. This key will always have id set to Medium.MAX_VALUE. */
+fun generateLastResortPreKey(): PreKeyRecord =
+    KeyHelper.generateLastResortPreKey()
+
 /** Generate a new batch of prekeys */
 fun generatePrekeys(identityKeyPair: IdentityKeyPair, nextSignedPreKeyId: Int, nextPreKeyId: Int, count: Int): GeneratedPreKeys {
     require(nextSignedPreKeyId > 0, "nextSignedPreKeyId must be > 0")
@@ -210,19 +217,21 @@ fun generatePrekeys(identityKeyPair: IdentityKeyPair, nextSignedPreKeyId: Int, n
 
     val signedPrekey = KeyHelper.generateSignedPreKey(identityKeyPair, nextSignedPreKeyId)
     val oneTimePreKeys = KeyHelper.generatePreKeys(nextPreKeyId, count)
-    val lastResortPreKey = KeyHelper.generateLastResortPreKey()
 
-    return GeneratedPreKeys(signedPrekey, oneTimePreKeys, lastResortPreKey)
+    return GeneratedPreKeys(signedPrekey, oneTimePreKeys)
 }
 
 /** Add the prekeys into the given store */
-fun addPreKeysToStore(axolotlStore: AxolotlStore, generatedPreKeys: GeneratedPreKeys) {
-    axolotlStore.storeSignedPreKey(generatedPreKeys.signedPreKey.id, generatedPreKeys.signedPreKey)
+fun addPreKeysToStore(signalStore: SignalProtocolStore, generatedPreKeys: GeneratedPreKeys) {
+    signalStore.storeSignedPreKey(generatedPreKeys.signedPreKey.id, generatedPreKeys.signedPreKey)
 
     for (k in generatedPreKeys.oneTimePreKeys)
-        axolotlStore.storePreKey(k.id, k)
+        signalStore.storePreKey(k.id, k)
+}
 
-    axolotlStore.storePreKey(generatedPreKeys.lastResortPreKey.id, generatedPreKeys.lastResortPreKey)
+/** Should only be done once. */
+fun addLastResortPreKeyToStore(signalStore: SignalProtocolStore, lastResortPreKey: PreKeyRecord) {
+    signalStore.storePreKey(lastResortPreKey.id, lastResortPreKey)
 }
 
 /** Generates a new key vault for a new user. For use during registration. */

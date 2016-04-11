@@ -5,20 +5,22 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat
 import com.vfpowertech.keytap.core.crypto.KeyVault
+import com.vfpowertech.keytap.core.crypto.LAST_RESORT_PREKEY_ID
+import com.vfpowertech.keytap.core.crypto.generateLastResortPreKey
+import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.div
 import com.vfpowertech.keytap.core.http.api.contacts.*
 import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesAsyncClient
 import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesClearRequest
 import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesGetRequest
-import com.vfpowertech.keytap.core.persistence.AccountInfo
-import com.vfpowertech.keytap.core.persistence.ContactInfo
-import com.vfpowertech.keytap.core.persistence.InstallationData
-import com.vfpowertech.keytap.core.persistence.SessionData
+import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyStoreAsyncClient
+import com.vfpowertech.keytap.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
+import com.vfpowertech.keytap.core.persistence.*
 import com.vfpowertech.keytap.core.persistence.json.JsonInstallationDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonStartupInfoPersistenceManager
 import com.vfpowertech.keytap.core.relay.*
-import com.vfpowertech.keytap.core.relay.base.MessageContent
+import com.vfpowertech.keytap.services.crypto.deserializeEncryptedMessage
 import com.vfpowertech.keytap.services.di.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -27,6 +29,7 @@ import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
+import org.whispersystems.libsignal.state.PreKeyRecord
 import rx.Observable
 import rx.Subscription
 import rx.subjects.BehaviorSubject
@@ -73,6 +76,8 @@ class KeyTapApplication {
     lateinit var installationData: InstallationData
 
     private var fetchingOfflineMessages = false
+
+    private var pushingPreKeys = false
 
     val isAuthenticated: Boolean
         get() = userComponent != null
@@ -155,6 +160,68 @@ class KeyTapApplication {
         }
     }
 
+    private fun getLastResortPreKey(preKeyPersistenceManager: PreKeyPersistenceManager): Promise<PreKeyRecord, Exception> {
+        //TODO this needs to be done in a bg thread
+        return preKeyPersistenceManager.getUnsignedPreKey(LAST_RESORT_PREKEY_ID) bindUi { maybeLastResortPreKey ->
+            if (maybeLastResortPreKey != null)
+                Promise.ofSuccess<PreKeyRecord, Exception>(maybeLastResortPreKey)
+            else {
+                val lastResortPreKey = generateLastResortPreKey()
+                preKeyPersistenceManager.putLastResortPreKey(lastResortPreKey) map {
+                    lastResortPreKey
+                }
+            }
+        }
+    }
+
+    fun schedulePreKeyUpload(keyRegenCount: Int) {
+        if (pushingPreKeys || keyRegenCount <= 0)
+            return
+
+        val userComponent = this.userComponent
+        if (userComponent == null) {
+            log.warn("schedulePreKeyUpload called without a user session")
+            return
+        }
+
+        log.info("Requested to generate {} new prekeys", keyRegenCount)
+
+        val keyVault = userComponent.userLoginData.keyVault
+        val authToken = userComponent.userLoginData.authToken
+        if (authToken == null) {
+            log.error("Unable to push prekeys, no auth token available")
+            return
+        }
+
+        pushingPreKeys = true
+
+        val preKeyPersistenceManager = userComponent.preKeyPersistenceManager
+        //TODO need to mark whether or not a range has been pushed to the server or not
+        //if the push fails, we should delete the batch?
+        //TODO nfi what to do if server response fails
+        preKeyPersistenceManager.getNextPreKeyIds() map { preKeyIds ->
+            generatePrekeys(keyVault.identityKeyPair, preKeyIds.nextSignedId, preKeyIds.nextUnsignedId, keyRegenCount)
+        } bindUi { generatedPreKeys ->
+            preKeyPersistenceManager.putGeneratedPreKeys(generatedPreKeys) map { generatedPreKeys }
+        } bindUi { generatedPreKeys ->
+            getLastResortPreKey(preKeyPersistenceManager) bind { lastResortPreKey ->
+                val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, keyVault, generatedPreKeys, lastResortPreKey)
+                PreKeyStoreAsyncClient(appComponent.serverUrls.API_SERVER).store(request)
+            }
+        } successUi { response ->
+            pushingPreKeys = false
+
+            if (!response.isSuccess)
+                log.error("PreKey push failed: {}", response.errorMessage)
+            else
+                log.info("Pushed prekeys to server")
+        } failUi { e ->
+            pushingPreKeys = false
+
+            log.error("PreKey push failed: {}", e.message, e)
+        }
+    }
+
     /**
      * Attempts to login (either locally or remotely) using the given username and password.
      *
@@ -188,10 +255,7 @@ class KeyTapApplication {
                 }
             }
 
-            if (response.keyRegenCount > 0) {
-                //TODO schedule prekey upload in bg
-                log.info("Requested to generate {} new prekeys", response.keyRegenCount)
-            }
+            schedulePreKeyUpload(response.keyRegenCount)
         } failUi { e ->
             val ev = when (e) {
                 is AuthApiResponseException ->
@@ -372,10 +436,9 @@ class KeyTapApplication {
                 val messengerService = userComponent?.messengerService ?: throw RuntimeException("No longer logged in")
 
                 //TODO move this elsewhere?
-                val objectMapper = ObjectMapper()
                 val offlineMessages = response.messages.map { m ->
-                    val message = objectMapper.readValue(m.serializedMessage, MessageContent::class.java)
-                    OfflineMessage(m.from, m.timestamp, message.message)
+                    val encryptedMessage = deserializeEncryptedMessage(m.serializedMessage)
+                    OfflineMessage(m.from, m.timestamp, encryptedMessage)
                 }
 
                 messengerService.addOfflineMessages(offlineMessages) bind {
@@ -452,7 +515,8 @@ class KeyTapApplication {
         } successUi { response ->
             data.authToken = response.authToken
 
-            //TODO key regen
+            schedulePreKeyUpload(response.keyRegenCount)
+
             reconnectToRelay()
         } fail { e ->
             log.error("Unable to refresh auth token", e)

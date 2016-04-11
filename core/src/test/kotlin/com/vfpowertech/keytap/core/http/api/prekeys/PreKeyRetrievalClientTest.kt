@@ -13,19 +13,19 @@ import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-class PreKeyRetrieveClientTest {
+class PreKeyRetrievalClientTest {
     val objectMapper = ObjectMapper()
     val authToken = "000"
     val username = "test-user"
 
     @Test
     fun `retrieve should return a PreKeyRetrieveResponse when receiving a 200 response`() {
-        val identityKey = "aaaa"
+        val publicKey = "pppp"
         val preKey = "bbbb"
         val signedPreKey = "cccc"
 
         val request = PreKeyRetrievalRequest(authToken, username)
-        val response = PreKeyRetrievalResponse(null, username, SerializedPreKeySet(identityKey, signedPreKey, preKey))
+        val response = PreKeyRetrievalResponse(null, username, SerializedPreKeySet(publicKey, signedPreKey, preKey))
         val apiResult = ApiResult(null, response)
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))
 

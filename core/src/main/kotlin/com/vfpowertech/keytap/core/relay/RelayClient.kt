@@ -140,9 +140,7 @@ class RelayClient(
                     from
                 )
 
-                val messageContent = objectMapper.readValue(message.content, MessageContent::class.java)
-
-                emitEvent(ReceivedMessage(from, messageContent.message, messageId))
+                emitEvent(ReceivedMessage(from, message.content, messageId))
             }
 
             SERVER_USER_OFFLINE -> {
@@ -217,9 +215,9 @@ class RelayClient(
         wasDisconnectRequested = true
     }
 
-    fun sendMessage(to: String, message: String, messageId: String) {
-        log.info("Sending message <<{}>> to <<{}>>", message, to)
+    fun sendMessage(to: String, content: ByteArray, messageId: String) {
+        log.info("Sending message <<{}>> to <<{}>>", messageId, to)
         val connection = getAuthConnectionOrThrow()
-        connection.sendMessage(createSendMessageMessage(credentials, to, message, messageId))
+        connection.sendMessage(createSendMessageMessage(credentials, to, content, messageId))
     }
 }
