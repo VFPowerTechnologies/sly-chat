@@ -6,4 +6,6 @@ import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 @JSToJavaGenerate("WindowService")
 interface UIWindowService {
     fun minimize()
+
+    fun closeSoftKeyboard()
 }

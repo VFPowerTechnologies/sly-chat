@@ -7,4 +7,7 @@ class DesktopWindowService(private val stage: Stage) : UIWindowService {
     override fun minimize() {
         stage.isIconified = true
     }
+
+    override fun closeSoftKeyboard() {}
+
 }
