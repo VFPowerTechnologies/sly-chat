@@ -162,59 +162,87 @@ ChatController.prototype = {
         }.bind(this));
     },
     addNewMessageListener : function () {
-        messengerService.addNewMessageListener(function (messageInfo) {
+        messengerService.addNewMessageListener(this.handleNewMessageDisplay.bind(this));
+    },
+    handleNewMessageDisplay : function(messageInfo) {
+        if(messageInfo.messages.length <= 0)
+            return;
 
-            if(messageInfo.messages.length <= 0)
-                return;
+        var messages = messageInfo.messages;
+        var contact = messageInfo.contact;
 
-            var messages = messageInfo.messages;
-            var contact = messageInfo.contact;
 
-            messages.forEach(function (message) {
-                this.model.pushNewMessage(contact, message);
-            }.bind(this));
-
-            var cachedContact = this.contactController.getContact(contact);
-            if(!cachedContact)
-                return;
-            var contactName = cachedContact.name;
-
-            if(document.getElementById("currentPageChatEmail") != null && document.getElementById("currentPageChatEmail").innerHTML == contact){
-                var messageDiv = $("#messages");
-
-                if(messageDiv.length){
-                    //for the common case
-                    if(messages.length == 1) {
-                        var message = messages[0];
-                        messageDiv.append(this.createMessageNode(message, contactName));
-                    }
-                    else {
-                        var fragment = $(document.createDocumentFragment());
-                        messages.forEach(function (message) {
-                            fragment.append(this.createMessageNode(message, contactName));
-                        }, this);
-                        messageDiv.append(fragment);
-                    }
-                    this.scrollTop();
-                    this.model.markConversationAsRead(this.contactController.getCurrentContact());
-                }
-            }
-            else if($("#contactContent").length){
-                var contactBlock = $("#contactContent").contents().find("[id='contact%" + messageInfo.contact + "']");
-                if(contactBlock.length) {
-                    if (!contactBlock.hasClass("new-messages")) {
-                        var contactDiv = contactBlock.find(".contact");
-                        contactBlock.addClass("new-messages");
-                        contactDiv.after("<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>");
-                    }
-                }
-            }
+        //Update the cached messageList
+        messages.forEach(function (message) {
+            this.model.pushNewMessage(contact, message);
         }.bind(this));
+
+        //Get the contact that sent the message
+        var cachedContact = this.contactController.getContact(contact);
+        if(!cachedContact)
+            return;
+        var contactName = cachedContact.name;
+
+        this.updateChatPageNewMessage(messages, contactName, contact);
+        this.updateContactPageNewMessage(contact);
+        this.updateRecentChatNewMessage(messages, contact);
+    },
+    updateRecentChatNewMessage : function (messages, contactEmail) {
+        var recentContent = $("#recentChatList");
+        if(recentContent.length){
+            var recentBlock = $("[id='recent%" + contactEmail + "']");
+            if(recentBlock.length) {
+                var contactDiv = recentBlock.find(".contact");
+                if (!recentBlock.hasClass("new-messages")) {
+                    recentBlock.addClass("new-messages");
+                    contactDiv.after("<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>");
+                }
+
+                contactDiv.find(".recentTimestamp").html($.timeago(new Date(messages[messages.length - 1].timestamp).toISOString()));
+                contactDiv.find(".recentMessage").html(messages[messages.length - 1].message);
+            }
+        }
+    },
+    updateContactPageNewMessage : function (contactEmail) {
+        var contactContent = $("#contactList");
+        if(contactContent.length){
+            var contactBlock = $("[id='contact%" + contactEmail + "']");
+            if(contactBlock.length) {
+                if (!contactBlock.hasClass("new-messages")) {
+                    var contactDiv = contactBlock.find(".contact");
+                    contactBlock.addClass("new-messages");
+                    contactDiv.after("<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>");
+                }
+            }
+        }
+    },
+    updateChatPageNewMessage : function (messages, contactName, contactEmail) {
+        var currentPageEmail = $("#currentPageChatEmail");
+        if(currentPageEmail.length && currentPageEmail.html() == contactEmail){
+            var messageDiv = $("#messages");
+
+            if(messageDiv.length){
+                //for the common case
+                if(messages.length == 1) {
+                    var message = messages[0];
+                    messageDiv.append(this.createMessageNode(message, contactName));
+                }
+                else {
+                    var fragment = $(document.createDocumentFragment());
+                    messages.forEach(function (message) {
+                        fragment.append(this.createMessageNode(message, contactName));
+                    }, this);
+                    messageDiv.append(fragment);
+                }
+                this.scrollTop();
+                this.model.markConversationAsRead(this.contactController.getCurrentContact());
+            }
+        }
     },
     scrollTop : function () {
         var lastMessage = $("ul#messages li:last");
 
         if(typeof lastMessage != "undefined" && typeof lastMessage.offset() != "undefined")
-            $("html,body").scrollTop(lastMessage.offset().top);
+            $("#content").scrollTop(lastMessage.offset().top + $(".chat").height());
     }
 };

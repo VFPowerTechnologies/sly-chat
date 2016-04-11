@@ -51,11 +51,11 @@ RecentChatController.prototype = {
 
         var contactBlock = "";
 
-        contactBlock += "<div class='" + contactLinkClass + "' id='contact%" + recentChat.contact.email + "'><div class='contact'>";
+        contactBlock += "<div class='" + contactLinkClass + "' id='recent%" + recentChat.contact.email + "'><div class='contact'>";
         contactBlock += createAvatar(recentChat.contact.name);
         contactBlock += "<p style='display: inline-block;'>" + recentChat.contact.name + "</p>";
-        contactBlock += "<p style='display: inline-block; float: right; font-size: 10px'>" + $.timeago(recentChat.status.lastTimestamp) + "</p><br>";
-        contactBlock += "<p style='display: inline-block; float: left; font-size: 10px; line-height: 0;'>" + lastMessage + "</p>";
+        contactBlock += "<p class='recentTimestamp' style='display: inline-block; float: right; font-size: 10px'>" + $.timeago(recentChat.status.lastTimestamp) + "</p><br>";
+        contactBlock += "<p class='recentMessage' style='display: inline-block; float: left; font-size: 10px; line-height: 0;'>" + lastMessage + "</p>";
         contactBlock += "</div>" + newBadge + "</div>";
 
         return contactBlock;
@@ -63,7 +63,7 @@ RecentChatController.prototype = {
     addRecentChatEventListener : function () {
         $(".recent-contact-link").bind("click", function (e) {
             e.preventDefault();
-            var email = $(this).attr("id").split("contact%")[1];
+            var email = $(this).attr("id").split("recent%")[1];
             KEYTAP.contactController.setCurrentContact(email);
             KEYTAP.navigationController.loadPage("chat.html", true);
         });

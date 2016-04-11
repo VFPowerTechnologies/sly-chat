@@ -62,7 +62,6 @@ if (typeof KEYTAP == "undefined") {
             onStart: {
                 duration: duration_CONSTANT,
                 render: function ($container) {
-                    hideKeyBoard();
                     if(window.location.href.indexOf("chat.html") > -1) {
                         $(window.location).trigger("chatExited", {});
                     }
@@ -173,10 +172,6 @@ if (typeof KEYTAP == "undefined") {
         if ($("#currentPageChatEmail").length && $("#messages").length) {
             KEYTAP.chatController.scrollTop();
         }
-    }
-
-    function hideKeyBoard () {
-        $("html body").click();
     }
 
 }
