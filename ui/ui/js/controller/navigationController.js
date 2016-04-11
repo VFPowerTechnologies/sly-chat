@@ -18,7 +18,7 @@ NavigationController.prototype = {
                 KEYTAP.navigationController.loadPage("contacts.html", false);
             });
         }
-        else if(page.startsWith("user/")) {
+        else if(/^user\//.test(page)) {
             var email = page.split("/", 2)[1];
 
             //so we clear the history and set it to contacts > chat
