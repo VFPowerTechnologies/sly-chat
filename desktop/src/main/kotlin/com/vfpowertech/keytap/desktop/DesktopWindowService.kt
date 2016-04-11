@@ -8,6 +8,6 @@ class DesktopWindowService(private val stage: Stage) : UIWindowService {
         stage.isIconified = true
     }
 
-    override fun closeSoftKeyboard() = Unit
+    override fun closeSoftKeyboard() {}
 
 }
