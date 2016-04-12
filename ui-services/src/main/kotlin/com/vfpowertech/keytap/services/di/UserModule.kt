@@ -9,7 +9,6 @@ import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.RelayConnector
 import com.vfpowertech.keytap.services.*
 import com.vfpowertech.keytap.services.crypto.MessageCipherService
-import com.vfpowertech.keytap.services.PlatformNotificationService
 import com.vfpowertech.keytap.services.ui.UIEventService
 import dagger.Module
 import dagger.Provides
@@ -50,9 +49,10 @@ class UserModule(
         messagePersistenceManager: MessagePersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager,
         relayClientManager: RelayClientManager,
-        messageCipherService: MessageCipherService
+        messageCipherService: MessageCipherService,
+        userLoginData: UserLoginData
     ): MessengerService =
-        MessengerService(messagePersistenceManager, contactsPersistenceManager, relayClientManager, messageCipherService)
+        MessengerService(messagePersistenceManager, contactsPersistenceManager, relayClientManager, messageCipherService, userLoginData)
 
     @UserScope
     @Provides

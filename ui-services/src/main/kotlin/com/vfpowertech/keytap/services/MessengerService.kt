@@ -25,7 +25,9 @@ class MessengerService(
     private val messagePersistenceManager: MessagePersistenceManager,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val relayClientManager: RelayClientManager,
-    private val messageCipherService: MessageCipherService
+    private val messageCipherService: MessageCipherService,
+    //XXX this is only used to prevent self-sends
+    private val userLoginData: UserLoginData
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -58,12 +60,17 @@ class MessengerService(
         }
     }
 
+    /** Writes the received message and then fires the new messages subject. */
+    private fun writeReceivedMessage(from: String, decryptedMessage: String): Promise<Unit, Exception> {
+        return messagePersistenceManager.addMessage(from, false, decryptedMessage, 0) mapUi { messageInfo ->
+            newMessagesSubject.onNext(MessageBundle(from, listOf(messageInfo)))
+        }
+    }
+
     private fun handleReceivedMessage(event: ReceivedMessage) {
         val encryptedMessage = deserializeEncryptedMessage(event.content)
         messageCipherService.decrypt(event.from, encryptedMessage) bind { message ->
-            messagePersistenceManager.addMessage(event.from, false, message, 0) mapUi  { messageInfo ->
-                newMessagesSubject.onNext(MessageBundle(event.from, listOf(messageInfo)))
-            }
+            writeReceivedMessage(event.from, message)
         } fail { e ->
             log.error("Error during received message handling: {}", e.message, e)
         }
@@ -78,12 +85,35 @@ class MessengerService(
     /* UIMessengerService interface */
 
     fun sendMessageTo(contactEmail: String, message: String): Promise<MessageInfo, Exception> {
-        return messagePersistenceManager.addMessage(contactEmail, true, message, 0) bind { messageInfo ->
-            messageCipherService.encrypt(contactEmail, message) map { encryptedMessage ->
-                val content = objectMapper.writeValueAsBytes(encryptedMessage)
-                relayClientManager.sendMessage(contactEmail, content, messageInfo.id)
-                messageInfo
+        val isSelfMessage = contactEmail == userLoginData.username
+
+        val p = messagePersistenceManager.addMessage(contactEmail, true, message, 0)
+
+        //HACK
+        //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
+        return if (!isSelfMessage) {
+            p bind { messageInfo ->
+                messageCipherService.encrypt(contactEmail, message) map { encryptedMessage ->
+                    val content = objectMapper.writeValueAsBytes(encryptedMessage)
+                    relayClientManager.sendMessage(contactEmail, content, messageInfo.id)
+                    messageInfo
+                }
             }
+        }
+        else {
+            //we need to insure that the send message info is sent back to the ui before the ServerReceivedMessage is fired
+            //this is stupid but I don't feel like injecting an rx scheduler
+            p map { messageInfo ->
+                Thread.sleep(30)
+                messageInfo
+            } successUi { messageInfo ->
+                handleServerRecievedMessage(ServerReceivedMessage(contactEmail, messageInfo.id))
+                writeReceivedMessage(contactEmail, message) fail { e ->
+                    log.error("Unable to write self-sent message: {}", e.message, e)
+                }
+            }
+
+            p
         }
     }
 
