@@ -47,29 +47,33 @@ ContactController.prototype = {
         }.bind(this));
     },
     showContactSyncingNotification : function () {
-        this.notify = $.notify({
-            icon: "icon-pull-left fa fa-info-circle",
-            message: " Contact List is syncing"
-        }, {
-            type: "warning",
-            delay: 0,
-            allow_dismiss: false,
-            offset: {
-                y: 66,
-                x: 20
-            }
-        });
+        setTimeout(function() {
+            this.notify = $.notify({
+                icon: "icon-pull-left fa fa-info-circle",
+                message: " Contact List is syncing"
+            }, {
+                type: "warning",
+                delay: 0,
+                allow_dismiss: false,
+                offset: {
+                    y: 66,
+                    x: 20
+                }
+            });
+        }.bind(this), 300);
     },
     closeNotification : function () {
-        if(this.notify != null) {
-            this.notify.update("type", "success");
-            this.notify.update("message", "Sync is completed");
-            this.notify.update("icon", "fa fa-check-circle");
+        setTimeout(function() {
+            if(this.notify != null) {
+                this.notify.update("type", "success");
+                this.notify.update("message", "Sync is completed");
+                this.notify.update("icon", "fa fa-check-circle");
 
-            setTimeout(function () {
-                this.notify.close();
-            }.bind(this), 3000);
-        }
+                setTimeout(function () {
+                    this.notify.close();
+                }.bind(this), 3000);
+            }
+        }.bind(this), 300);
     },
     createContactBlock : function (contact, status, index) {
         var contactLinkClass = "contact-link ";
