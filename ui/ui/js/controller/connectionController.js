@@ -27,17 +27,11 @@ ConnectionController.prototype = {
 
         if(notShowPageList.indexOf(page) == -1) {
             if (this.networkAvailable == false) {
-                if (this.connectionNotification == null)
-                    this.openNotification("No network available", "danger");
-                else
-                    this.updateNotification("No network available", "danger");
+                this.updateNotification("No network available", "danger");
                 $("#addContactBtn").prop("disabled", true);
             }
             else if (this.relayConnected == false) {
-                if (this.connectionNotification == null)
-                    this.openNotification("Disconnected", "warning");
-                else
-                    this.updateNotification("Disconnected", "warning");
+                this.updateNotification("Disconnected", "warning");
                 $("#addContactBtn").prop("disabled", false);
             }
             else {
@@ -62,11 +56,18 @@ ConnectionController.prototype = {
         });
     },
     closeNotification : function () {
-        this.connectionNotification.close();
-        this.connectionNotification = null;
+        if(this.connectionNotification != null) {
+            this.connectionNotification.close();
+            this.connectionNotification = null;
+        }
     },
     updateNotification : function (message, notificationClass) {
-        this.connectionNotification.update("message", message);
-        this.connectionNotification.update("type", notificationClass);
+        if(this.connectionNotification != null) {
+            this.connectionNotification.update("message", message);
+            this.connectionNotification.update("type", notificationClass);
+        }
+        else {
+            this.openNotification(message, notificationClass);
+        }
     }
 };

@@ -31,8 +31,9 @@ NavigationController.prototype = {
         }
     },
     goBack : function () {
-        if($(".modal").is(":visible")){
-            $(".modal").modal("hide");
+        var modal = $(".modal");
+        if(modal.is(":visible")){
+            modal.modal("hide");
         }
         else{
             historyService.pop().then(function(url){
@@ -49,9 +50,7 @@ NavigationController.prototype = {
         }
     },
     pushHistory : function () {
-        historyService.push(window.location.href).then(function(){
-
-        }).catch(function(e){
+        historyService.push(window.location.href).catch(function(e){
             KEYTAP.exceptionController.displayDebugMessage(e);
             console.log(e);
         });
@@ -66,8 +65,7 @@ NavigationController.prototype = {
         this.smoothStateLoad(url);
     },
     clearHistory : function () {
-        historyService.clear().then(function() {
-        }).catch(function (e){
+        historyService.clear().catch(function (e){
             KEYTAP.exceptionController.displayDebugMessage(e);
             console.log("Could not clear history : " + e);
         });
@@ -104,5 +102,11 @@ NavigationController.prototype = {
         }
 
         smoothState.load(url);
+    },
+    loadMessageLink : function (url) {
+        platformService.openURL(url).catch(function (e) {
+            KEYTAP.exceptionController.displayDebugMessage(e);
+            console.log("An error occured while opening link " + e);
+        });
     }
 };

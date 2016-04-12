@@ -250,6 +250,10 @@ button.btn-large {
     width: auto;
     display: inline-block;
 }
+.message p {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
 .first-message .message {
     max-width: calc(100% - 71px); /* 100% of the width - margin and image */
 }

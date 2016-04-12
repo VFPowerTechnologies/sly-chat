@@ -17,6 +17,11 @@ ChatController.prototype = {
             $("#newMessageInput").focus();
         });
 
+        $(document).on("click", ".chatLink", function (e) {
+            e.preventDefault();
+            KEYTAP.navigationController.loadMessageLink(this.href);
+        });
+
         $("#newMessageForm").submit(function () {
             $("#newMessageInput").trigger("click");
             this.submitNewMessage();
@@ -99,7 +104,7 @@ ChatController.prototype = {
         var messageDiv = $(document.createElement("div"));
         messageDiv.addClass("message ");
 
-        messageDiv.append("<p>" + message.message + "</p>");
+        messageDiv.append("<p>" + formatTextForHTML(message.message) + "</p>");
 
         var timespan = $(document.createElement("span"));
         timespan.addClass("timespan");

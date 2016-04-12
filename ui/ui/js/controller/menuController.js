@@ -4,7 +4,12 @@ MenuController.prototype = {
     init : function () {
         $(document).on("click", "#backBtn", function (e) {
             e.preventDefault();
-            KEYTAP.navigationController.goBack();
+            windowService.closeSoftKeyboard().then(function () {
+                KEYTAP.navigationController.goBack();
+            }).catch(function (e) {
+                KEYTAP.exceptionController.displayDebugMessage(e);
+                console.log("An error occured while going back");
+            });
         });
 
         $(document).on("click", "#logoutBtn", function (e) {
