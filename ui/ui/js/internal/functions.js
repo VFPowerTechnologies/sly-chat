@@ -37,6 +37,7 @@ if (typeof KEYTAP == "undefined") {
     KEYTAP.chatController = new ChatController(new ChatModel(), KEYTAP.contactController);
     KEYTAP.chatController.addMessageUpdateListener();
     KEYTAP.chatController.addNewMessageListener();
+    KEYTAP.chatController.createChatLinkEvent();
 
     KEYTAP.navigationController = new NavigationController();
     KEYTAP.navigationController.init();

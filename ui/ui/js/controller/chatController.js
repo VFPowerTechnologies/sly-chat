@@ -17,11 +17,6 @@ ChatController.prototype = {
             $("#newMessageInput").focus();
         });
 
-        $(document).on("click", ".chatLink", function (e) {
-            e.preventDefault();
-            KEYTAP.navigationController.loadMessageLink(this.href);
-        });
-
         $("#newMessageForm").submit(function () {
             $("#newMessageInput").trigger("click");
             this.submitNewMessage();
@@ -45,6 +40,14 @@ ChatController.prototype = {
         }
         messageNode.html(fragment);
         this.scrollTop();
+    },
+    createChatLinkEvent : function () {
+        // Removed from init to prevent multiple event binding
+        // Chat message binding to open new browser page with url
+        $(document).on("click", ".chatLink", function (e) {
+            e.preventDefault();
+            KEYTAP.navigationController.loadMessageLink(this.href);
+        });
     },
     createMessageNode : function (message, contactName) {
         if(message.sent == true)
