@@ -7,6 +7,7 @@ import com.vfpowertech.keytap.core.PlatformInfo
 import com.vfpowertech.keytap.core.div
 import com.vfpowertech.keytap.services.AuthenticationService
 import com.vfpowertech.keytap.services.KeyTapApplication
+import com.vfpowertech.keytap.services.PlatformTelephonyService
 import com.vfpowertech.keytap.services.ui.*
 import com.vfpowertech.keytap.services.ui.dummy.*
 import com.vfpowertech.keytap.services.ui.impl.*

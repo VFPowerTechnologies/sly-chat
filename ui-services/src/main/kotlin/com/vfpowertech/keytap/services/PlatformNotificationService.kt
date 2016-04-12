@@ -1,4 +1,4 @@
-package com.vfpowertech.keytap.services.ui
+package com.vfpowertech.keytap.services
 
 interface PlatformNotificationService {
     fun clearMessageNotificationsForUser(contactEmail: String)

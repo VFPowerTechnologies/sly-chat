@@ -3,7 +3,7 @@ package com.vfpowertech.keytap.android
 import android.Manifest
 import android.content.Context
 import android.telephony.TelephonyManager
-import com.vfpowertech.keytap.services.ui.PlatformTelephonyService
+import com.vfpowertech.keytap.services.PlatformTelephonyService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 

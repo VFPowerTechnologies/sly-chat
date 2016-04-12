@@ -1,6 +1,6 @@
 package com.vfpowertech.keytap.desktop
 
-import com.vfpowertech.keytap.services.ui.PlatformNotificationService
+import com.vfpowertech.keytap.services.PlatformNotificationService
 
 //TODO
 class DesktopNotificationService : PlatformNotificationService {

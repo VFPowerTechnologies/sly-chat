@@ -16,6 +16,7 @@ if (typeof KEYTAP == "undefined") {
     window.windowService = new WindowService();
     window.eventService = new EventService();
     window.accountModifictationService = new AccountModificationService();
+    window.platformService = new PlatformService();
 
     KEYTAP.exceptionController = new ExceptionController();
 
