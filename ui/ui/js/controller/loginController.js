@@ -31,8 +31,7 @@ LoginController.prototype = {
             e.preventDefault();
             KEYTAP.navigationController.loadPage("register.html");
         });
-    },
-    registerForLoginEvents: function() {
+
         loginService.addLoginEventListener(this.onLoginEvent.bind(this));
     },
     onLoginEvent : function(ev) {

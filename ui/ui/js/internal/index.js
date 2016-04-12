@@ -7,8 +7,6 @@ $(document).ready(function(){
     });
 
     stateService.getState().then(function (state) {
-        KEYTAP.loginController.registerForLoginEvents();
-
         if(state != null && typeof state.currentPage != "undefined" && state.currentPage != null) {
             if(state.currentPage.indexOf("login.html") <= -1 && state.currentPage.indexOf("register.html") <= -1) {
                 $(".menu-hidden").show();
