@@ -9,7 +9,7 @@ import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.RelayConnector
 import com.vfpowertech.keytap.services.*
 import com.vfpowertech.keytap.services.crypto.MessageCipherService
-import com.vfpowertech.keytap.services.ui.PlatformNotificationService
+import com.vfpowertech.keytap.services.PlatformNotificationService
 import com.vfpowertech.keytap.services.ui.UIEventService
 import dagger.Module
 import dagger.Provides

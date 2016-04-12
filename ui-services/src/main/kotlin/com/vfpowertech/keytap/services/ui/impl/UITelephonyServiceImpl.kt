@@ -1,6 +1,6 @@
 package com.vfpowertech.keytap.services.ui.impl
 
-import com.vfpowertech.keytap.services.ui.PlatformTelephonyService
+import com.vfpowertech.keytap.services.PlatformTelephonyService
 import com.vfpowertech.keytap.services.ui.UITelephonyService
 import nl.komponents.kovenant.Promise
 

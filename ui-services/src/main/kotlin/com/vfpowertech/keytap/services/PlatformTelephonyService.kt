@@ -1,4 +1,4 @@
-package com.vfpowertech.keytap.services.ui
+package com.vfpowertech.keytap.services
 
 import nl.komponents.kovenant.Promise
 

@@ -3,8 +3,8 @@ package com.vfpowertech.keytap.services.di
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.PlatformInfo
 import com.vfpowertech.keytap.services.PlatformContacts
-import com.vfpowertech.keytap.services.ui.PlatformNotificationService
-import com.vfpowertech.keytap.services.ui.PlatformTelephonyService
+import com.vfpowertech.keytap.services.PlatformNotificationService
+import com.vfpowertech.keytap.services.PlatformTelephonyService
 import com.vfpowertech.keytap.services.ui.UIPlatformInfoService
 import com.vfpowertech.keytap.services.ui.UIWindowService
 import dagger.Module
