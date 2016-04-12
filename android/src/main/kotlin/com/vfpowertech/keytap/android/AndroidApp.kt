@@ -11,6 +11,7 @@ import com.almworks.sqlite4java.SQLite
 import com.google.android.gms.iid.InstanceID
 import com.vfpowertech.keytap.android.services.AndroidPlatformContacts
 import com.vfpowertech.keytap.android.services.AndroidUIPlatformInfoService
+import com.vfpowertech.keytap.android.services.AndroidUIPlatformService
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.http.api.gcm.GcmAsyncClient
 import com.vfpowertech.keytap.core.http.api.gcm.RegisterRequest
@@ -69,6 +70,7 @@ class AndroidApp : Application() {
             AndroidWindowService(this),
             AndroidPlatformContacts(this),
             notificationService,
+            AndroidUIPlatformService(this),
             AndroidSchedulers.mainThread()
         )
 

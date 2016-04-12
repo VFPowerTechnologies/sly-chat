@@ -7,6 +7,7 @@ import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import com.vfpowertech.keytap.desktop.jfx.jsconsole.ConsoleMessageAdded
 import com.vfpowertech.keytap.desktop.services.DesktopUIPlatformInfoService
+import com.vfpowertech.keytap.desktop.services.DesktopUIPlatformService
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.di.PlatformModule
 import com.vfpowertech.keytap.services.ui.createAppDirectories
@@ -77,6 +78,13 @@ class DesktopApp : Application() {
         val platformInfo = DesktopPlatformInfo()
         createAppDirectories(platformInfo)
 
+        val hostServices = try {
+           this.hostServices
+        }
+        catch (e: ClassNotFoundException) {
+            null
+        }
+
         val platformModule = PlatformModule(
             DesktopUIPlatformInfoService(),
             BuildConfig.DESKTOP_SERVER_URLS,
@@ -85,6 +93,7 @@ class DesktopApp : Application() {
             DesktopWindowService(primaryStage),
             DesktopPlatformContacts(),
             DesktopNotificationService(),
+            DesktopUIPlatformService(hostServices),
             JavaFxScheduler.getInstance()
         )
 

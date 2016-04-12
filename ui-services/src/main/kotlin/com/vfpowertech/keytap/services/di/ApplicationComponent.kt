@@ -50,6 +50,8 @@ interface ApplicationComponent {
 
     var accountModificationService: UIAccountModificationService
 
+    val platformService: UIPlatformService
+
     val platformContacts: PlatformContacts
 
     val serverUrls: BuildConfig.ServerUrls

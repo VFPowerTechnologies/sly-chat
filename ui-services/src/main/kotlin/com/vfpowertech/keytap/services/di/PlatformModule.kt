@@ -6,6 +6,7 @@ import com.vfpowertech.keytap.services.PlatformContacts
 import com.vfpowertech.keytap.services.PlatformNotificationService
 import com.vfpowertech.keytap.services.PlatformTelephonyService
 import com.vfpowertech.keytap.services.ui.UIPlatformInfoService
+import com.vfpowertech.keytap.services.ui.UIPlatformService
 import com.vfpowertech.keytap.services.ui.UIWindowService
 import dagger.Module
 import dagger.Provides
@@ -38,8 +39,12 @@ class PlatformModule(
     val providesPlatformContacts: PlatformContacts,
 
     @get:Singleton
-    @get:dagger.Provides
+    @get:Provides
     val providesPlatformNotificationService: PlatformNotificationService,
+
+    @get:Singleton
+    @get:Provides
+    val providesPlatformService: UIPlatformService,
 
     @get:Singleton
     @get:Provides
