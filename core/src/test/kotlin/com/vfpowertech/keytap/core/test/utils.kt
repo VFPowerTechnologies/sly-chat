@@ -16,7 +16,12 @@ fun createTempFileWithAutoDelete(suffix: String = ""): File {
 
 inline fun <R> withTempFile(suffix: String = "", body: (File) -> R): R {
     val f = File.createTempFile("keytap-test", suffix)
-    return body(f)
+    try {
+        return body(f)
+    }
+    finally {
+        f.delete()
+    }
 }
 
 fun <R> withTimeAs(millis: Long, body: () -> R): R {
