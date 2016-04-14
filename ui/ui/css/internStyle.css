@@ -35,7 +35,7 @@ body div iframe {
     outline: none;
 }
 
-#page-title {
+.page-title {
     font-size: 22px;
     color: #fff;
     line-height: 56px;
@@ -63,15 +63,6 @@ body div iframe {
 
 .contact {
     padding-bottom: 2px;
-}
-
-.modalHeader {
-    text-align: center;
-    margin-bottom: 50px;
-}
-
-.modalContent {
-    text-align: center;
 }
 
 .first-contact {
@@ -172,11 +163,12 @@ button.btn-large {
 .modal {
     background-color: transparent;
 }
-.statusModal {
+.modal-open .statusModal {
     padding: 0;
     margin: 0;
-    width: 100%;
-    min-height: 100%;
+    left: -1px;
+    width: 101%;
+    min-height: 101%;
     overflow: hidden;
     color: whitesmoke;
 }
@@ -203,6 +195,26 @@ button.btn-large {
 .statusModal .modal-body {
     width: 100%;
 }
+
+.modalHeader {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.modalContent {
+    text-align: center;
+}
+
+.statusModal.fade .modal-dialog {
+    -webkit-transition: -webkit-transform .3s ease-out;
+    -o-transition:      -o-transform .3s ease-out;
+    transition:         transform .3s ease-out;
+    -webkit-transform: translate(0, 0);
+    -ms-transform: translate(0, 0);
+    -o-transform: translate(0, 0);
+    transform: translate(0, 0);
+}
+
 .form-wrapper {
     height: 100%;
     position: relative;
@@ -366,4 +378,82 @@ button.btn-large {
 [data-notify="container"] {
     text-align: center;
     padding: 0;
+}
+
+/*Page load animation*/
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translate3d(0, 100%, 0);
+    }
+
+    100% {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes fadeInRight {
+    0% {
+        opacity: 0;
+        transform: translate3d(100%, 0, 0);
+    }
+
+    100% {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes fadeInLeft {
+    0% {
+        opacity: 0;
+        transform: translate3d(-100%, 0, 0);
+    }
+
+    100% {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/** Basic styles for an animated element */
+.m-scene .scene_element {
+    animation-duration: .45s;
+    transition-timing-function: ease-in;
+    animation-fill-mode: forwards;
+}
+
+.m-scene .is-exiting.scene_element {
+    animation-direction: alternate-reverse;
+}
+
+/** An element that fades in */
+.m-scene .scene_element--fadein {
+    animation-name: fadeIn;
+}
+
+/** An element that fades in and slides up */
+.m-scene .scene_element--fadeinup {
+    animation-name: fadeInUp;
+}
+
+/** An element that fades in and slides from the right */
+.m-scene .scene_element--fadeinright {
+    animation-name: fadeInRight;
+}
+
+/** An element that fades in and slides from the right */
+.m-scene .scene_element--fadeinleft {
+    animation-name: fadeInLeft;
 }
