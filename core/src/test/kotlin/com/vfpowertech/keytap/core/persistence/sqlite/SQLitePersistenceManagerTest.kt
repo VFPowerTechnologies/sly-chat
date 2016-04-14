@@ -2,6 +2,7 @@ package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConstants
 import com.almworks.sqlite4java.SQLiteException
+import com.vfpowertech.keytap.core.randomUUID
 import com.vfpowertech.keytap.core.test.withTempFile
 import org.junit.BeforeClass
 import org.junit.Test
@@ -25,7 +26,7 @@ class SQLitePersistenceManagerTest {
         return key
     }
 
-    fun <R> withPersistenceManager(path: File, key: ByteArray?, body: (SQLitePersistenceManager) -> R): R {
+    fun <R> withPersistenceManager(path: File?, key: ByteArray?, body: (SQLitePersistenceManager) -> R): R {
         val persistenceManager = SQLitePersistenceManager(path, key, null)
         return try {
             persistenceManager.init()
@@ -84,5 +85,28 @@ class SQLitePersistenceManagerTest {
     @Test
     fun `not providing a key should keep the database unencrypted`() {
         testDecryption(null, null, false)
+    }
+
+    @Test
+    fun `contents of database should be initialized if database is newly created`() {
+        //we can't use withTempFile here since that creates the file, which causes this to fail
+        val tempDir = File(System.getProperty("java.io.tmpdir"))
+
+        //for our purposes this should be fine
+        val path = File(tempDir, randomUUID())
+
+        try {
+            //need an actual path for file existence check
+            withPersistenceManager(path, null) { persistenceManager ->
+                persistenceManager.syncRunQuery { connection ->
+                    connection.prepare("SELECT * FROM contacts").use { stmt ->
+                        while (stmt.step()) {}
+                    }
+                }
+            }
+        }
+        finally {
+            path.delete()
+        }
     }
 }

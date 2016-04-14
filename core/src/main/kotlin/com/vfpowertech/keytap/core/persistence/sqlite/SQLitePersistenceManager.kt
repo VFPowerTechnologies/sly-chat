@@ -27,6 +27,8 @@ private val TABLE_NAMES = arrayListOf(
     "signal_sessions"
 )
 
+private data class InitializationResult(val initWasRequired: Boolean, val freshDatabase: Boolean)
+
 //localDataEncryptionParams don't work too well... they contain an IV, which wouldn't be reused
 //for the db, we also can't control cipher params anyways
 //for storing files, the iv would be per-block (no chaining blocks else we can't provide seek; is this an issue?)
@@ -95,9 +97,11 @@ class SQLitePersistenceManager(
      *
      * @return False if already initialized, true otherwise.
      */
-    private fun initQueue(): Boolean {
+    private fun initQueue(): InitializationResult {
         if (initialized)
-            return false
+            return InitializationResult(false, false)
+
+        val created = !(path?.exists() ?: false)
 
         sqliteQueue = SQLiteQueue(path)
         sqliteQueue.start()
@@ -110,15 +114,13 @@ class SQLitePersistenceManager(
         }
 
         initialized = true
-        return true
+        return InitializationResult(true, created)
     }
 
     /** Initialize new database or migrate existing database. Should be run off the main thread. */
-    private fun initContents(): Promise<Unit, Exception> {
-        val create = !(path?.exists() ?: false)
-
+    private fun initContents(freshDatabase: Boolean): Promise<Unit, Exception> {
         return realRunQuery { connection ->
-            if (!create) {
+            if (!freshDatabase) {
                 val version = getCurrentDatabaseVersion(connection)
                 if (version == LATEST_DATABASE_VERSION) {
                     logger.debug("Database is up to date")
@@ -147,15 +149,19 @@ class SQLitePersistenceManager(
      * Otherwise initialization finishes.
      */
     override fun init() {
-        if (!initQueue())
+        val initResult = initQueue()
+        if (!initResult.initWasRequired)
             return
-        initContents().get()
+        initContents(initResult.freshDatabase).get()
     }
 
     override fun initAsync(): Promise<Unit, Exception> {
-        initQueue()
+        val initResult = initQueue()
 
-        return initContents()
+        if (!initResult.initWasRequired)
+            return Promise.ofSuccess(Unit)
+
+        return initContents(initResult.freshDatabase)
     }
 
     override fun shutdown() {
