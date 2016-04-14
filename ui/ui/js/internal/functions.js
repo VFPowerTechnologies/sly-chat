@@ -19,39 +19,14 @@ if (typeof KEYTAP == "undefined") {
     window.platformService = new PlatformService();
 
     KEYTAP.exceptionController = new ExceptionController();
-
     KEYTAP.loginController = new LoginController(new LoginModel);
-    KEYTAP.loginController.init();
-
     KEYTAP.registrationController = new RegistrationController(new RegistrationModel());
-    KEYTAP.registrationController.init();
-    registrationService.addListener(function (registrationStatus) {
-        $("#registrationStatusUpdate").html(registrationStatus + "...");
-    });
-
     KEYTAP.contactController = new ContactController(new ContactModel());
-    KEYTAP.contactController.addContactListSyncListener();
-
     KEYTAP.recentChatController = new RecentChatController(new RecentChatModel());
-
     KEYTAP.chatController = new ChatController(new ChatModel(), KEYTAP.contactController);
-    KEYTAP.chatController.addMessageUpdateListener();
-    KEYTAP.chatController.addNewMessageListener();
-    KEYTAP.chatController.createChatLinkEvent();
-
     KEYTAP.navigationController = new NavigationController();
-    KEYTAP.navigationController.init();
-
     KEYTAP.menuController = new MenuController();
-    KEYTAP.menuController.init();
-
-    $(window.location).on("chatExited", function () {
-        KEYTAP.chatController.model.markConversationAsRead(KEYTAP.contactController.getCurrentContact());
-    });
-
     KEYTAP.connectionController = new ConnectionController();
-    KEYTAP.connectionController.init();
-
     KEYTAP.userInfoController = new UserInfoController(new UserInfoModel());
 
     //mouseheld event to trigger contact menu
@@ -93,14 +68,17 @@ if (typeof KEYTAP == "undefined") {
         return new Date(timestamp);
     }
 
-    function createAvatar (name) {
+    function createAvatar (name, color) {
+        if(color === undefined)
+            color = "#212121";
         var img = new Image();
         img.setAttribute('data-name', name);
         img.setAttribute('class', 'avatarCircle');
 
         $(img).initial({
             textColor: '#fff',
-            seed: 0
+            seed: 0,
+            backgroundColor: color
         });
 
         return img.outerHTML;
@@ -140,5 +118,29 @@ if (typeof KEYTAP == "undefined") {
             KEYTAP.chatController.scrollTop();
         }
     }
-
 }
+
+$(document).ready(function () {
+    KEYTAP.loginController.init();
+
+    KEYTAP.registrationController.init();
+    registrationService.addListener(function (registrationStatus) {
+        $("#registrationStatusUpdate").html(registrationStatus + "...");
+    });
+
+    KEYTAP.contactController.addContactListSyncListener();
+
+    KEYTAP.chatController.addMessageUpdateListener();
+    KEYTAP.chatController.addNewMessageListener();
+    KEYTAP.chatController.createChatLinkEvent();
+
+    KEYTAP.navigationController.init();
+
+    KEYTAP.menuController.init();
+
+    $(window.location).on("chatExited", function () {
+        KEYTAP.chatController.model.markConversationAsRead(KEYTAP.contactController.getCurrentContact());
+    });
+
+    KEYTAP.connectionController.init();
+});
