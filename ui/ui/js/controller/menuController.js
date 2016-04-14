@@ -37,6 +37,11 @@ MenuController.prototype = {
         var editProfileBtn = $("#editProfileBtn");
         var addContactBtn = $("#addContactBtn");
 
+        if(page == "chat.html" && (KEYTAP.connectionController.relayConnected == false || KEYTAP.connectionController.networkAvailable == false))
+            $("#newMessageSubmitBtn").prop("disabled", true);
+        else
+            $("#newMessageSubmitBtn").prop("disabled", false);
+
         switch (page) {
             case "addContact.html":
                 editProfileBtn.prop("disabled", false);

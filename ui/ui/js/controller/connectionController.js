@@ -29,14 +29,17 @@ ConnectionController.prototype = {
             if (this.networkAvailable == false) {
                 this.updateNotification("No network available", "danger");
                 $("#addContactBtn").prop("disabled", true);
+                $("#newMessageSubmitBtn").prop("disabled", true);
             }
             else if (this.relayConnected == false) {
                 this.updateNotification("Disconnected", "warning");
                 $("#addContactBtn").prop("disabled", false);
+                $("#newMessageSubmitBtn").prop("disabled", true);
             }
             else {
                 this.closeNotification();
                 $("#addContactBtn").prop("disabled", false);
+                $("#newMessageSubmitBtn").prop("disabled", false);
             }
         }
     },
