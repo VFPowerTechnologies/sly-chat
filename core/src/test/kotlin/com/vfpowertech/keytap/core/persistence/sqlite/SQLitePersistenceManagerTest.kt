@@ -80,4 +80,9 @@ class SQLitePersistenceManagerTest {
         val key = getRandomKey()
         testDecryption(key, key, false)
     }
+
+    @Test
+    fun `not providing a key should keep the database unencrypted`() {
+        testDecryption(null, null, false)
+    }
 }
