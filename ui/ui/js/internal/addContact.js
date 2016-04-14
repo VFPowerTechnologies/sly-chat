@@ -3,7 +3,5 @@ if(typeof $ == "undefined"){
 }
 
 $(function(){
-    document.getElementById("username").focus();
-
     KEYTAP.contactController.newContactEvent();
 });
