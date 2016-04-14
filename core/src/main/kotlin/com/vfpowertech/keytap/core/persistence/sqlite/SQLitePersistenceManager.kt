@@ -45,6 +45,12 @@ class SQLitePersistenceManager(
     private var initialized = false
     private val logger = LoggerFactory.getLogger(javaClass)
 
+    init {
+        require(localDataEncryptionKey == null || localDataEncryptionKey.size == 256/8) {
+            "SQLCipher encryption key must be 256bit, got a ${localDataEncryptionKey!!.size*8}bit key instead"
+        }
+    }
+
     private fun initializePreKeyIds(connection: SQLiteConnection) {
         val nextSignedId = randomPreKeyId()
         val nextUnsignedId = randomPreKeyId()
