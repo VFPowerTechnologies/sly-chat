@@ -54,42 +54,7 @@ if (typeof KEYTAP == "undefined") {
 
     KEYTAP.userInfoController = new UserInfoController(new UserInfoModel());
 
-// SmoothState, makes only the main div reload on page load.
-    $(function(){
-        'use strict';
-        var duration_CONSTANT = 250;
-        var options = {
-            prefetch: true,
-            cacheLength: 20,
-            onStart: {
-                duration: duration_CONSTANT,
-                render: function ($container) {
-                    if(window.location.href.indexOf("chat.html") > -1) {
-                        $(window.location).trigger("chatExited", {});
-                    }
-                    $container.addClass('is-exiting');
-                    smoothState.restartCSSAnimations();
-                }
-            },
-
-            onReady: {
-                duration: 0,
-                render: function ($container, $newContent) {
-                    $container.removeClass('is-exiting');
-                    $container.html($newContent);
-                }
-            },
-
-            onAfter: function() {
-                KEYTAP.menuController.handleMenuDisplay();
-                resizeWindow();
-            }
-        };
-
-        window.smoothState = $('#main').smoothState(options).data('smoothState');
-    });
-
-//mouseheld event to trigger contact menu
+    //mouseheld event to trigger contact menu
     (function($) {
         function startTrigger(e) {
             var $elem = $(this);

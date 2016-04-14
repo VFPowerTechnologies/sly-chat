@@ -101,12 +101,73 @@ NavigationController.prototype = {
             });
         }
 
-        smoothState.load(url);
+        this.load(url);
     },
     loadMessageLink : function (url) {
         platformService.openURL(url).catch(function (e) {
             KEYTAP.exceptionController.displayDebugMessage(e);
             console.log("An error occured while opening link " + e);
         });
+    },
+    load : function (url) {
+        // SmoothState, makes only the main div reload on page load.
+        $('#main').smoothState({
+            onStart: {
+                duration: 250,
+                render: function ($container) {
+                    if(window.location.href.indexOf("chat.html") > -1) {
+                        $(window.location).trigger("chatExited", {});
+                    }
+                }
+            },
+
+            onReady: {
+                duration: 0,
+                render: function ($container, $newContent) {
+                    $("#content").attr("id", "oldContent");
+                    var newDiv = $("<div>");
+                    newDiv.attr("id", "newMainDiv");
+                    newDiv.css("width", "100%");
+                    newDiv.css("position", "absolute");
+                    newDiv.css("z-index", 3);
+                    newDiv.addClass("m-scene toolbar-inside main-content");
+
+                    var mainDiv = $("#main");
+
+                    mainDiv.after(newDiv);
+                    mainDiv.attr("id", "oldMain");
+
+                    var fragment = $(document.createDocumentFragment());
+                    fragment.append($newContent);
+
+                    newDiv.html(fragment);
+
+                    var height = window.innerHeight - 56;
+                    newDiv.css("height", height + "px");
+
+                    $("#newMainDiv").attr("id", "main");
+
+                    var oldMain = $("#oldMain");
+
+                    oldMain.css("width", "100%");
+                    oldMain.css("position", "absolute");
+                    oldMain.css("z-index", 1);
+                }
+            },
+
+            onAfter: function() {
+                if($("#messages").length) {
+                    KEYTAP.chatController.scrollTop();
+                }
+
+                setTimeout(function () {
+                    var main = $("#main");
+                    $("#oldMain").remove();
+                    main.css('position', 'static');
+                    main.css('z-index', 'auto');
+                    KEYTAP.menuController.handleMenuDisplay();
+                }, 450);
+            }
+        }).data('smoothState').load(url);
     }
 };
