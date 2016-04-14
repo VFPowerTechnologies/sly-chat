@@ -160,7 +160,7 @@ button.btn-large {
 .secondary-color-text {
     color: #26a69a;
 }
-.modal {
+.statusModal {
     background-color: transparent;
 }
 .modal-open .statusModal {
