@@ -4,6 +4,7 @@ import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteJob
 import com.almworks.sqlite4java.SQLiteQueue
 import com.vfpowertech.keytap.core.crypto.ciphers.CipherParams
+import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.randomPreKeyId
 import com.vfpowertech.keytap.core.persistence.PersistenceManager
 import com.vfpowertech.keytap.core.readResourceFileText
@@ -37,7 +38,7 @@ private val TABLE_NAMES = arrayListOf(
  */
 class SQLitePersistenceManager(
     private val path: File?,
-    private val localDataEncryptionKey: ByteArray,
+    private val localDataEncryptionKey: ByteArray?,
     private val localDataEncryptionParams: CipherParams?
 ) : PersistenceManager {
     private lateinit var sqliteQueue: SQLiteQueue
@@ -94,6 +95,13 @@ class SQLitePersistenceManager(
 
         sqliteQueue = SQLiteQueue(path)
         sqliteQueue.start()
+
+        val encryptionKey = localDataEncryptionKey
+        if (encryptionKey != null) {
+            realRunQuery { connection ->
+                connection.exec("""PRAGMA key = "x'${encryptionKey.hexify()}'"""")
+            }.get()
+        }
 
         initialized = true
         return true
