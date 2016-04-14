@@ -64,5 +64,9 @@ ChatModel.prototype = {
         });
 
         this.arrayMap[email] = arrayMap;
+    },
+    clearCache : function () {
+        this.arrayMap = [];
+        this.fetchedConversation = [];
     }
 };

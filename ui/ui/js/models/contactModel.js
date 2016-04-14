@@ -83,5 +83,9 @@ ContactModel.prototype = {
         });
 
         return conversations;
+    },
+    clearCache : function () {
+        this.resetContacts();
+        this.currentContact = null;
     }
 };

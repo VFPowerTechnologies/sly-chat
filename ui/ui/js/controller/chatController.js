@@ -251,5 +251,8 @@ ChatController.prototype = {
 
         if(typeof lastMessage != "undefined" && typeof lastMessage.offset() != "undefined")
             $("#content").scrollTop(lastMessage.offset().top + $(".chat").height());
+    },
+    clearCache : function () {
+        this.model.clearCache();
     }
 };

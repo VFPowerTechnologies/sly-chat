@@ -345,6 +345,8 @@ ContactController.prototype = {
             modal.closeModal();
             modal.remove();
         }.bind(this));
-
+    },
+    clearCache : function () {
+        this.model.clearCache();
     }
 };

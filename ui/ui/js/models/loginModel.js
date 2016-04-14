@@ -1,18 +1,20 @@
 var LoginModel = function(){
-    var self = this;
+    this.items = {};
+    this.login = '';
+    this.password = '';
 };
 
 LoginModel.prototype = {
     setItems : function(items){
-        self.items = items;
-        self.login = items.login;
-        self.password = items.password;
+        this.items = items;
+        this.login = items.login;
+        this.password = items.password;
     },
     getPassword : function() {
-        return self.password;
+        return this.password;
     },
     getLogin : function() {
-        return self.login;
+        return this.login;
     },
     validate : function(){
         var validation = $("#loginForm").parsley({
@@ -29,5 +31,10 @@ LoginModel.prototype = {
         else{
             return false;
         }
+    },
+    clearCache : function () {
+        this.items = {};
+        this.login = '';
+        this.password = '';
     }
 };

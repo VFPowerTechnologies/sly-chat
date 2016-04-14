@@ -238,5 +238,8 @@ RegistrationController.prototype = {
         var html = "<div style='text-align: center;'> <h6 style='margin-bottom: 15px; color: whitesmoke;'>Registration in process</h6> <i class='fa fa-spinner fa-3x fa-spin'></i> <p id='registrationStatusUpdate' style='margin-top: 40px;'></p></div>";
 
         return createStatusModal(html);
+    },
+    clearCache : function () {
+        this.model.clearCache();
     }
 };

@@ -1,4 +1,6 @@
-var RegistrationModel = function () {};
+var RegistrationModel = function () {
+    this.items = {};
+};
 
 RegistrationModel.prototype = {
     setItems : function (items) {
@@ -23,5 +25,8 @@ RegistrationModel.prototype = {
     },
     getItems : function () {
         return this.items;
+    },
+    clearCache : function () {
+        this.items = {};
     }
 };

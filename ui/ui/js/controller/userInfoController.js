@@ -11,8 +11,9 @@ UserInfoController.prototype = {
         }
     },
     setUserInfo: function (userInfo) {
-        this.model.username = userInfo.email;
-        this.model.phoneNumber = userInfo["phone-number"];
-        this.model.name = userInfo.name;
+        this.model.setUserInfo(userInfo.email, userInfo["phone-number"], userInfo.name);
+    },
+    clearCache : function () {
+        this.model.setUserInfo('', '', '')
     }
 };

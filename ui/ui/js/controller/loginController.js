@@ -121,16 +121,29 @@ LoginController.prototype = {
         })
     },
     logout : function () {
+        loginService.logout().then(function () {
+            this.clearUiCacheOnLogout();
+        });
+    },
+    clearCache : function () {
+        this.model.clearCache();
+    },
+    createLoginModal: function () {
+        var html = "<div style='text-align: center;'> <h6 style='margin-bottom: 15px; color: whitesmoke;'>We are logging you in</h6> <i class='fa fa-spinner fa-3x fa-spin'></i> </div>";
+        return createStatusModal(html);
+    },
+    clearUiCacheOnLogout : function () {
         window.configService.setStartupInfo({lastLoggedInAccount: "", savedAccountPassword: null}).then(function () {
             console.log('Cleared saved info on logout');
         }).catch(function (e) {
             KEYTAP.exceptionController.displayDebugMessage(e);
             console.log(e);
         });
-        loginService.logout();
-    },
-    createLoginModal: function () {
-        var html = "<div style='text-align: center;'> <h6 style='margin-bottom: 15px; color: whitesmoke;'>We are logging you in</h6> <i class='fa fa-spinner fa-3x fa-spin'></i> </div>";
-        return createStatusModal(html);
+
+        KEYTAP.chatController.clearCache();
+        KEYTAP.contactController.clearCache();
+        this.clearCache();
+        KEYTAP.userInfoController.clearCache();
+        KEYTAP.registrationController.clearCache();
     }
 };
