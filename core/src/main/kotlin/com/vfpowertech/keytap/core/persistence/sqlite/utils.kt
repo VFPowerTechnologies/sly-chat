@@ -108,10 +108,7 @@ fun sqlite4JavaGetLibraryName(): String {
     val os = getOS()
     val arch = getArch(os)
 
-    //this doesn't include the 1.0 part, for some reason
-    val version = SQLite.getLibraryVersion()
-
-    return "sqlite4java-$os-$arch-1.0.$version"
+    return "sqlite4java-$os-$arch"
 }
 
 /** Loads the proper SQLite native library from the resource root. In core so it can be used by tests. */
