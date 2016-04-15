@@ -27,6 +27,9 @@ data class GeneratedSiteUser(
     val keyVault: KeyVault
 )
 
+fun SiteUser.toContactInfo(): ContactInfo =
+    ContactInfo(id, username, name, phoneNumber, publicKey)
+
 class WebApiIntegrationTest {
     companion object {
         val serverBaseUrl = "http://localhost:8000"
@@ -159,8 +162,8 @@ class WebApiIntegrationTest {
         return siteUser
     }
 
-    fun injectNamedSiteUser(username: String): GeneratedSiteUser {
-        val registrationInfo = RegistrationInfo(username, "name", "000-000-0000")
+    fun injectNamedSiteUser(username: String, phoneNumber: String = "1000000000"): GeneratedSiteUser {
+        val registrationInfo = RegistrationInfo(username, "name", phoneNumber)
         return injectSiteUser(registrationInfo)
     }
 
@@ -490,6 +493,32 @@ class WebApiIntegrationTest {
         val contacts = devClient.getContactList(userA.user.username)
 
         assertContactListEquals(listOf(aContacts[1]), contacts)
+    }
+
+    @Test
+    fun `findLocalContacts should find matches for both phone number and emails`() {
+        val bPhoneNumber = "15555555555"
+        val userA = injectNamedSiteUser("a@a.com").user
+        val userB = injectNamedSiteUser("b@a.com", bPhoneNumber).user
+        val userC = injectNamedSiteUser("c@a.com").user
+
+        val authToken = devClient.createAuthToken(userA.username)
+
+        val client = ContactClient(serverBaseUrl, JavaHttpClient())
+
+        val platformContacts = listOf(
+            PlatformContact("B", listOf(userC.username), listOf()),
+            PlatformContact("C", listOf(), listOf(bPhoneNumber))
+        )
+        val request = FindLocalContactsRequest(authToken, platformContacts)
+        val response = client.findLocalContacts(request)
+
+        val expected = listOf(
+            userB.toContactInfo(),
+            userC.toContactInfo()
+        )
+
+        assertEquals(expected, response.contacts.sortedBy { it.email })
     }
 
     @Test
