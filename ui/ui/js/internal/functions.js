@@ -18,17 +18,6 @@ if (typeof KEYTAP == "undefined") {
     window.accountModifictationService = new AccountModificationService();
     window.platformService = new PlatformService();
 
-    KEYTAP.exceptionController = new ExceptionController();
-    KEYTAP.loginController = new LoginController(new LoginModel);
-    KEYTAP.registrationController = new RegistrationController(new RegistrationModel());
-    KEYTAP.contactController = new ContactController(new ContactModel());
-    KEYTAP.recentChatController = new RecentChatController(new RecentChatModel());
-    KEYTAP.chatController = new ChatController(new ChatModel(), KEYTAP.contactController);
-    KEYTAP.navigationController = new NavigationController();
-    KEYTAP.menuController = new MenuController();
-    KEYTAP.connectionController = new ConnectionController();
-    KEYTAP.userInfoController = new UserInfoController(new UserInfoModel());
-
     //mouseheld event to trigger contact menu
     (function($) {
         function startTrigger(e) {
@@ -118,6 +107,17 @@ if (typeof KEYTAP == "undefined") {
             KEYTAP.chatController.scrollTop();
         }
     }
+
+    KEYTAP.exceptionController = new ExceptionController();
+    KEYTAP.loginController = new LoginController(new LoginModel);
+    KEYTAP.registrationController = new RegistrationController(new RegistrationModel());
+    KEYTAP.contactController = new ContactController(new ContactModel());
+    KEYTAP.recentChatController = new RecentChatController(new RecentChatModel());
+    KEYTAP.chatController = new ChatController(new ChatModel(), KEYTAP.contactController);
+    KEYTAP.navigationController = new NavigationController();
+    KEYTAP.menuController = new MenuController();
+    KEYTAP.connectionController = new ConnectionController();
+    KEYTAP.userInfoController = new UserInfoController(new UserInfoModel());
 }
 
 $(document).ready(function () {
