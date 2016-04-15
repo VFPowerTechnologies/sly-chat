@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.vfpowertech.keytap.core.PlatformContact
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.persistence.*
 import org.junit.After
 import org.junit.Before
@@ -20,9 +21,9 @@ class SQLiteContactsPersistenceManagerTest {
     val contactEmail = "a@a.com"
     val testMessage = "test message"
 
-    val contactA = ContactInfo(contactEmail, "a", "000-0000", "pubkey")
-    val contactA2 = ContactInfo("a2@a.com", "a2", "001-0000", "pubkey")
-    val contactC = ContactInfo("c@c.com", "c", "222-2222", "pubkey")
+    val contactA = ContactInfo(UserId(0), contactEmail, "a", "000-0000", "pubkey")
+    val contactA2 = ContactInfo(UserId(1), "a2@a.com", "a2", "001-0000", "pubkey")
+    val contactC = ContactInfo(UserId(2), "c@c.com", "c", "222-2222", "pubkey")
     val contactList = arrayListOf(
         contactA,
         contactA2,
@@ -77,8 +78,8 @@ class SQLiteContactsPersistenceManagerTest {
     @Test
     fun `getAll should return all stored contacts`() {
         val contacts = arrayListOf(
-            ContactInfo("a@a.com", "a", "000-0000", "pubkey"),
-            ContactInfo("b@b.com", "b", "000-0000", "pubkey")
+            ContactInfo(UserId(0), "a@a.com", "a", "000-0000", "pubkey"),
+            ContactInfo(UserId(1), "b@b.com", "b", "000-0000", "pubkey")
         )
 
         for (contact in contacts)
@@ -301,9 +302,9 @@ class SQLiteContactsPersistenceManagerTest {
 
     @Test
     fun `getDiff should return a proper diff`() {
-        val userA = ContactInfo("a@a.com", "a", "0", "pk")
-        val userB = ContactInfo("b@a.com", "a", "0", "pk")
-        val userC = ContactInfo("c@a.com", "a", "0", "pk")
+        val userA = ContactInfo(UserId(0), "a@a.com", "a", "0", "pk")
+        val userB = ContactInfo(UserId(1), "b@a.com", "a", "0", "pk")
+        val userC = ContactInfo(UserId(2), "c@a.com", "a", "0", "pk")
 
         for (user in listOf(userA, userB))
             contactsPersistenceManager.add(user).get()

@@ -5,6 +5,7 @@ import com.almworks.sqlite4java.SQLiteConstants
 import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import com.vfpowertech.keytap.core.PlatformContact
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.persistence.*
 import nl.komponents.kovenant.Promise
 import java.util.*
@@ -13,21 +14,23 @@ import java.util.*
 class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQLitePersistenceManager) : ContactsPersistenceManager {
     private fun contactInfoFromRow(stmt: SQLiteStatement) =
         ContactInfo(
-            stmt.columnString(0),
+            UserId(stmt.columnLong(0)),
             stmt.columnString(1),
             stmt.columnString(2),
-            stmt.columnString(3)
+            stmt.columnString(3),
+            stmt.columnString(4)
         )
 
     private fun contactInfoToRow(contactInfo: ContactInfo, stmt: SQLiteStatement) {
-        stmt.bind(1, contactInfo.email)
-        stmt.bind(2, contactInfo.name)
-        stmt.bind(3, contactInfo.phoneNumber)
-        stmt.bind(4, contactInfo.publicKey)
+        stmt.bind(1, contactInfo.id.id)
+        stmt.bind(2, contactInfo.email)
+        stmt.bind(3, contactInfo.name)
+        stmt.bind(4, contactInfo.phoneNumber)
+        stmt.bind(5, contactInfo.publicKey)
     }
 
     override fun get(email: String): Promise<ContactInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("SELECT email, name, phone_number, public_key FROM contacts WHERE email=?").use { stmt ->
+        connection.prepare("SELECT id, email, name, phone_number, public_key FROM contacts WHERE email=?").use { stmt ->
             stmt.bind(1, email)
             if (!stmt.step())
                 null
@@ -37,7 +40,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     }
 
     override fun getAll(): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("SELECT email, name, phone_number, public_key FROM contacts").use { stmt ->
+        connection.prepare("SELECT id, email, name, phone_number, public_key FROM contacts").use { stmt ->
             val r = ArrayList<ContactInfo>()
             while (stmt.step()) {
                 r.add(contactInfoFromRow(stmt))
@@ -49,7 +52,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     override fun getAllConversations(): Promise<List<Conversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val sql = """
 SELECT
-    email, name, phone_number, public_key,
+    id, email, name, phone_number, public_key,
     unread_count, last_message, last_timestamp
 FROM
     contacts
@@ -62,8 +65,8 @@ ON
         connection.prepare(sql).use { stmt ->
             stmt.map { stmt ->
                 val contact = contactInfoFromRow(stmt)
-                val lastTimestamp = if (!stmt.columnNull(6)) stmt.columnLong(6) else null
-                val info = ConversationInfo(contact.email, stmt.columnInt(4), stmt.columnString(5), lastTimestamp)
+                val lastTimestamp = if (!stmt.columnNull(7)) stmt.columnLong(7) else null
+                val info = ConversationInfo(contact.email, stmt.columnInt(5), stmt.columnString(6), lastTimestamp)
                 Conversation(contact, info)
             }
         }
@@ -108,7 +111,7 @@ ON
 
 
     private fun searchByLikeField(connection: SQLiteConnection, fieldName: String, searchValue: String): List<ContactInfo> =
-        connection.prepare("SELECT email, name, phone_number, public_key FROM contacts WHERE $fieldName LIKE ? ESCAPE '!'").use { stmt ->
+        connection.prepare("SELECT id, email, name, phone_number, public_key FROM contacts WHERE $fieldName LIKE ? ESCAPE '!'").use { stmt ->
             val escaped = escapeLikeString(searchValue, '!')
             stmt.bind(1, "%$escaped%")
             val r = ArrayList<ContactInfo>()
@@ -152,7 +155,7 @@ ON
     //is here for bulk addition within a single transaction when syncing up the contacts list
     private fun addContactNoTransaction(connection: SQLiteConnection, contactInfo: ContactInfo) {
         try {
-            connection.prepare("INSERT INTO contacts (email, name, phone_number, public_key) VALUES (?, ?, ?, ?)").use { stmt ->
+            connection.prepare("INSERT INTO contacts (id, email, name, phone_number, public_key) VALUES (?, ?, ?, ?, ?)").use { stmt ->
                 contactInfoToRow(contactInfo, stmt)
                 stmt.step()
             }
