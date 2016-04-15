@@ -31,11 +31,21 @@ class WebApiIntegrationTest {
     companion object {
         val serverBaseUrl = "http://localhost:8000"
 
+        //kinda hacky...
+        var currentUserId = 1L
+
+        fun nextUserId(): UserId {
+            val r = currentUserId
+            currentUserId += 1
+            return UserId(r)
+        }
+
         fun newSiteUser(registrationInfo: RegistrationInfo, password: String): GeneratedSiteUser {
             val keyVault = generateNewKeyVault(password)
             val serializedKeyVault = keyVault.serialize()
 
             val user = SiteUser(
+                nextUserId(),
                 registrationInfo.email,
                 keyVault.remotePasswordHash.hexify(),
                 keyVault.remotePasswordHashParams.serialize(),
@@ -173,7 +183,14 @@ class WebApiIntegrationTest {
         assertNull(result.errorMessage)
         assertNull(result.validationErrors)
 
+        val users = devClient.getUsers()
+
+        assertEquals(1, users.size)
+        val user = users[0]
+
         val expected = SiteUser(
+            //don't care about the id
+            user.id,
             dummyRegistrationInfo.email,
             keyVault.remotePasswordHash.hexify(),
             keyVault.remotePasswordHashParams.serialize(),
@@ -183,7 +200,8 @@ class WebApiIntegrationTest {
             keyVault.serialize()
         )
 
-        assertEquals(listOf(expected), devClient.getUsers())
+
+        assertEquals(expected, user)
     }
 
     @Test
@@ -359,7 +377,7 @@ class WebApiIntegrationTest {
         val siteUser = injectNewSiteUser()
         val authToken = devClient.createAuthToken(siteUser.user.username)
 
-        val contactDetails = ContactInfo(siteUser.user.username, siteUser.user.name, siteUser.user.phoneNumber, siteUser.user.publicKey)
+        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, siteUser.user.phoneNumber, siteUser.user.publicKey)
 
         val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
@@ -376,7 +394,7 @@ class WebApiIntegrationTest {
         val siteUser = injectNewSiteUser()
         val authToken = devClient.createAuthToken(siteUser.user.username)
 
-        val contactDetails = ContactInfo(siteUser.user.username, siteUser.user.name, siteUser.user.phoneNumber, siteUser.user.publicKey)
+        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, siteUser.user.phoneNumber, siteUser.user.publicKey)
 
         val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
@@ -488,6 +506,7 @@ class WebApiIntegrationTest {
         assertTrue(response.isSuccess)
 
         val expected = SiteUser(
+                user.user.id,
                 user.user.username,
                 user.keyVault.remotePasswordHash.hexify(),
                 user.keyVault.remotePasswordHashParams.serialize(),
@@ -514,6 +533,7 @@ class WebApiIntegrationTest {
         assertFalse(response.isSuccess)
 
         val expected = SiteUser(
+                user.user.id,
                 user.user.username,
                 user.keyVault.remotePasswordHash.hexify(),
                 user.keyVault.remotePasswordHashParams.serialize(),
