@@ -1,3 +1,5 @@
 package com.vfpowertech.keytap.core.persistence
 
-class InvalidMessageException(val contact: String, val messageId: String) : RuntimeException("Invalid message id ($messageId) for $contact")
+import com.vfpowertech.keytap.core.UserId
+
+class InvalidMessageException(val userId: UserId, val messageId: String) : RuntimeException("Invalid message id ($messageId) for ${userId.id}")

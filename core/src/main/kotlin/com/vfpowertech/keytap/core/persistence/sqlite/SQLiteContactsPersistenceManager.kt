@@ -29,9 +29,9 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         stmt.bind(5, contactInfo.publicKey)
     }
 
-    override fun get(email: String): Promise<ContactInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("SELECT id, email, name, phone_number, public_key FROM contacts WHERE email=?").use { stmt ->
-            stmt.bind(1, email)
+    override fun get(userId: UserId): Promise<ContactInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.prepare("SELECT id, email, name, phone_number, public_key FROM contacts WHERE id=?").use { stmt ->
+            stmt.bind(1, userId.id)
             if (!stmt.step())
                 null
             else
@@ -59,52 +59,52 @@ FROM
 JOIN
     conversation_info
 ON
-    contacts.email=conversation_info.contact_email
+    contacts.id=conversation_info.contact_id
         """
 
         connection.prepare(sql).use { stmt ->
             stmt.map { stmt ->
                 val contact = contactInfoFromRow(stmt)
                 val lastTimestamp = if (!stmt.columnNull(7)) stmt.columnLong(7) else null
-                val info = ConversationInfo(contact.email, stmt.columnInt(5), stmt.columnString(6), lastTimestamp)
+                val info = ConversationInfo(contact.id, stmt.columnInt(5), stmt.columnString(6), lastTimestamp)
                 Conversation(contact, info)
             }
         }
     }
 
-    private fun queryConversationInfo(connection: SQLiteConnection, contact: String): ConversationInfo {
-        return connection.prepare("SELECT unread_count, last_message, last_timestamp FROM conversation_info WHERE contact_email=?").use { stmt ->
-            stmt.bind(1, contact)
+    private fun queryConversationInfo(connection: SQLiteConnection, userId: UserId): ConversationInfo {
+        return connection.prepare("SELECT unread_count, last_message, last_timestamp FROM conversation_info WHERE contact_id=?").use { stmt ->
+            stmt.bind(1, userId.id)
             if (!stmt.step())
-                throw InvalidConversationException(contact)
+                throw InvalidConversationException(userId)
 
             val unreadCount = stmt.columnInt(0)
             val lastMessage = stmt.columnString(1)
             val lastTimestamp = if (!stmt.columnNull(2)) stmt.columnLong(2) else null
-            ConversationInfo(contact, unreadCount, lastMessage, lastTimestamp)
+            ConversationInfo(userId, unreadCount, lastMessage, lastTimestamp)
         }
     }
 
 
-    override fun getConversationInfo(email: String): Promise<ConversationInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun getConversationInfo(userId: UserId): Promise<ConversationInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
         try {
-            queryConversationInfo(connection, email)
+            queryConversationInfo(connection, userId)
         }
         catch (e: SQLiteException) {
             if (isInvalidTableException(e))
-                throw InvalidConversationException(email)
+                throw InvalidConversationException(userId)
             else
                 throw e
         }
     }
 
-    override fun markConversationAsRead(email: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("UPDATE conversation_info SET unread_count=0 WHERE contact_email=?").use { stmt ->
-            stmt.bind(1, email)
+    override fun markConversationAsRead(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.prepare("UPDATE conversation_info SET unread_count=0 WHERE contact_id=?").use { stmt ->
+            stmt.bind(1, userId.id)
             stmt.step()
         }
         if (connection.changes <= 0)
-            throw InvalidConversationException(email)
+            throw InvalidConversationException(userId)
 
         Unit
     }
@@ -134,21 +134,21 @@ ON
     }
 
     //never call when not inside a transition
-    private fun removeContactNoTransaction(connection: SQLiteConnection, email: String) {
-        connection.prepare("DELETE FROM conversation_info WHERE contact_email=?").use { stmt ->
-            stmt.bind(1, email)
+    private fun removeContactNoTransaction(connection: SQLiteConnection, userId: UserId) {
+        connection.prepare("DELETE FROM conversation_info WHERE contact_id=?").use { stmt ->
+            stmt.bind(1, userId.id)
             stmt.step()
         }
 
-        connection.prepare("DELETE FROM contacts WHERE email=?").use { stmt ->
-            stmt.bind(1, email)
+        connection.prepare("DELETE FROM contacts WHERE id=?").use { stmt ->
+            stmt.bind(1, userId.id)
 
             stmt.step()
             if (connection.changes <= 0)
-                throw InvalidContactException(email)
+                throw InvalidContactException(userId)
         }
 
-        ConversationTable.delete(connection, email)
+        ConversationTable.delete(connection, userId)
     }
 
     //never call when not inside a transition
@@ -160,12 +160,12 @@ ON
                 stmt.step()
             }
 
-            connection.prepare("INSERT INTO conversation_info (contact_email, unread_count, last_message) VALUES (?, 0, NULL)").use { stmt ->
-                stmt.bind(1, contactInfo.email)
+            connection.prepare("INSERT INTO conversation_info (contact_id, unread_count, last_message) VALUES (?, 0, NULL)").use { stmt ->
+                stmt.bind(1, contactInfo.id.id)
                 stmt.step()
             }
 
-            ConversationTable.create(connection, contactInfo.email)
+            ConversationTable.create(connection, contactInfo.id)
         }
         catch (e: SQLiteException) {
             if (e.baseErrorCode == SQLiteConstants.SQLITE_CONSTRAINT)
@@ -196,35 +196,35 @@ ON
 
             stmt.step()
             if (connection.changes <= 0)
-                throw InvalidContactException(contactInfo.email)
+                throw InvalidContactException(contactInfo.id)
         }
     }
 
     override fun remove(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withTransaction { removeContactNoTransaction(connection, contactInfo.email) }
+        connection.withTransaction { removeContactNoTransaction(connection, contactInfo.id) }
     }
 
-    override fun getDiff(emails: List<String>): Promise<ContactListDiff, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val remoteEmails = emails.toSet()
+    override fun getDiff(ids: List<UserId>): Promise<ContactListDiff, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val remoteIds = ids.toSet()
 
-        val localEmails = connection.prepare("SELECT email FROM contacts").use { stmt ->
-            val r = HashSet<String>()
+        val localIds = connection.prepare("SELECT id FROM contacts").use { stmt ->
+            val r = HashSet<UserId>()
             while (stmt.step()) {
-                r.add(stmt.columnString(0))
+                r.add(UserId(stmt.columnLong(0)))
             }
             r
         }
 
-        val removedEmails = HashSet(localEmails)
-        removedEmails.removeAll(remoteEmails)
+        val removedEmails = HashSet(localIds)
+        removedEmails.removeAll(remoteIds)
 
-        val addedEmails = HashSet(remoteEmails)
-        addedEmails.removeAll(localEmails)
+        val addedEmails = HashSet(remoteIds)
+        addedEmails.removeAll(localIds)
 
         ContactListDiff(addedEmails, removedEmails)
     }
 
-    override fun applyDiff(newContacts: List<ContactInfo>, removedContacts: List<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun applyDiff(newContacts: List<ContactInfo>, removedContacts: List<UserId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             newContacts.forEach { addContactNoTransaction(connection, it) }
             removedContacts.forEach { removeContactNoTransaction(connection, it) }

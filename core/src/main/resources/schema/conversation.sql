@@ -1,6 +1,6 @@
 -- Conversation table template; placeholder should be replaced at creation time
 -- Make sure to escape any ` in the name when substituting.
-CREATE TABLE IF NOT EXISTS `conv_%name%` (
+CREATE TABLE IF NOT EXISTS `conv_%id%` (
     -- message uuid
     id TEXT PRIMARY KEY NOT NULL,
     -- whether we sent this message or received it
@@ -19,4 +19,4 @@ CREATE TABLE IF NOT EXISTS `conv_%name%` (
     message TEXT NOT NULL
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS `unique_conv_%name%_timestamp_n` ON `conv_%name%` (timestamp, n);
+CREATE UNIQUE INDEX IF NOT EXISTS `unique_conv_%id%_timestamp_n` ON `conv_%id%` (timestamp, n);

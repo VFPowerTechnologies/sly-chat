@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteException
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.persistence.MessageInfo
 import com.vfpowertech.keytap.core.test.withTimeAs
 import org.junit.After
@@ -21,7 +22,7 @@ class SQLiteMessagePersistenceManagerTest {
         }
     }
 
-    val contact = "a@a.com"
+    val contact = UserId(0)
     val testMessage = "test message"
 
     lateinit var persistenceManager: SQLitePersistenceManager
@@ -62,18 +63,18 @@ class SQLiteMessagePersistenceManagerTest {
         assert(doesTableExist(tableName))
     }
 
-    fun createConvosFor(vararg contacts: String): Array<out String> {
+    fun createConvosFor(vararg contacts: UserId): Array<out UserId> {
         contacts.forEach { contact -> persistenceManager.runQuery { ConversationTable.create(it, contact) } }
         return contacts
     }
 
-    fun addMessage(contact: String, isSent: Boolean, message: String, ttl: Long): MessageInfo =
-        messagePersistenceManager.addMessage(contact, isSent, message, ttl).get()
+    fun addMessage(userId: UserId, isSent: Boolean, message: String, ttl: Long): MessageInfo =
+        messagePersistenceManager.addMessage(userId, isSent, message, ttl).get()
 
     @Test
     fun `createConversation should create a conversation table for the given user`() {
         createConvosFor(contact)
-        assertTableExists("conv_$contact")
+        assertTableExists(ConversationTable.getTablenameForContact(contact))
     }
 
     @Test
