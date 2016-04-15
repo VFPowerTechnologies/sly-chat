@@ -92,6 +92,26 @@ class GenBuildConfig extends DefaultTask {
         return props
     }
 
+    /**
+      * Returns the value found for a key; if debug is enabled, checks
+      * debug.<key> first. Throws InvalidUserDataException if key isn't found.
+      */
+    private static String findValueForKey(Properties settings, String key, boolean debug) {
+        if (debug) {
+            def v = settings.getProperty("debug.$key")
+            if (v != null)
+                return v
+
+        }
+
+        def v = settings.getProperty(key)
+        if (v == null)
+            throw new InvalidUserDataException("Missing setting $key in properties file")
+
+        return v
+    }
+
+    /** Returns the first found key's value. If none of the keys are present, throws InvalidUserDataException. */
     private static String findValueForKeys(Properties settings, String settingName, List<String> keys) {
         def v
         for (key in keys) {
@@ -132,6 +152,9 @@ class GenBuildConfig extends DefaultTask {
         def debug = stringToBoolean(settings.getProperty('debug'))
         vc.put('debug', debug)
 
+        def enableDatabaseEncryption = stringToBoolean(findValueForKey(settings, 'enableDatabaseEncryption', debug))
+        vc.put('enableDatabaseEncryption', enableDatabaseEncryption);
+
         vc.put('uiServiceType', getEnumValue(settings, debug, 'uiServiceType', ['DUMMY', 'REAL'], null))
 
         //adds <platform><SettingName> to context
@@ -167,11 +190,7 @@ class GenBuildConfig extends DefaultTask {
             }
         }
 
-        List<String> keys = []
-        if (debug)
-            keys.add('debug.uiServiceType')
-        keys.add('uiServiceType')
-        String componentTypeDefault = findValueForKeys(settings, 'uiServiceType', keys).toUpperCase()
+        String componentTypeDefault = findValueForKey(settings, 'uiServiceType', debug).toUpperCase()
 
         def componentTypes = componentTypes.collectEntries { component ->
             def value = getEnumValue(settings, debug, "uiServiceType.$component", ['DUMMY', 'REAL'], componentTypeDefault)
