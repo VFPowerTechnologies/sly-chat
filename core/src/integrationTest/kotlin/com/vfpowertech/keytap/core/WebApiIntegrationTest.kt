@@ -522,6 +522,27 @@ class WebApiIntegrationTest {
     }
 
     @Test
+    fun `fetchContactInfoById should fetch users with the given ids`() {
+        val userA = injectNamedSiteUser("a@a.com").user
+        val userB = injectNamedSiteUser("b@a.com").user
+        val userC = injectNamedSiteUser("c@a.com").user
+
+        val authToken = devClient.createAuthToken(userA.username)
+
+        val client = ContactClient(serverBaseUrl, JavaHttpClient())
+
+        val request = FetchContactInfoByIdRequest(authToken, listOf(userB.id, userC.id))
+        val response = client.fetchContactInfoById(request)
+
+        val expected = listOf(
+            userB.toContactInfo(),
+            userC.toContactInfo()
+        )
+
+        assertEquals(expected, response.contacts.sortedBy { it.email })
+    }
+
+    @Test
     fun `Update Phone should succeed when right password is provided`() {
         val user = newSiteUser(RegistrationInfo("a@a.com", "a", "000-000-0000"), password)
 

@@ -365,7 +365,7 @@ class KeyTapApplication {
                 log.debug("Removed contacts: {}", diff.removedContacts)
 
                 val contactsClient = ContactAsyncClient(appComponent.serverUrls.API_SERVER)
-                val request = FetchContactInfoByEmailRequest(authToken, diff.newContacts.toList())
+                val request = FetchContactInfoByIdRequest(authToken, diff.newContacts.toList())
                 contactsClient.fetchContactInfoByEmail(request) bind { response ->
                     contactsPersistenceManager.applyDiff(response.contacts, diff.removedContacts.toList())
                 }

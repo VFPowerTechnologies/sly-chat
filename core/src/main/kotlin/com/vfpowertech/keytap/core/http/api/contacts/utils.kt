@@ -32,8 +32,10 @@ fun encryptRemoteContactEntries(keyVault: KeyVault, contacts: List<UserId>): Lis
     }
 }
 
-fun decryptRemoteContactEntries(keyVault: KeyVault, contacts: List<RemoteContactEntry>): List<String> {
+fun decryptRemoteContactEntries(keyVault: KeyVault, contacts: List<RemoteContactEntry>): List<UserId> {
     val encSpec = EncryptionSpec(keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams)
 
-    return contacts.map { decryptData(encSpec, it.encryptedUserId.unhexify()).toString(Charsets.UTF_8) }
+    return contacts.map {
+        UserId(decryptData(encSpec, it.encryptedUserId.unhexify()).toString(Charsets.UTF_8).toLong())
+    }
 }
