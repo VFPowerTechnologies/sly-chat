@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services.di
 
+import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.persistence.*
 import com.vfpowertech.keytap.core.persistence.json.JsonAccountInfoPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonKeyVaultPersistenceManager
@@ -36,7 +37,11 @@ class PersistenceUserModule {
     @Provides
     fun providesSQLitePersistenceManager(userPaths: UserPaths, userLoginData: UserLoginData): SQLitePersistenceManager {
         val keyvault = userLoginData.keyVault
-        return SQLitePersistenceManager(userPaths.databasePath, keyvault.localDataEncryptionKey, keyvault.localDataEncryptionParams)
+        val key = if (BuildConfig.ENABLE_DATABASE_ENCRYPTION)
+            keyvault.localDataEncryptionKey
+        else
+            null
+        return SQLitePersistenceManager(userPaths.databasePath, key, keyvault.localDataEncryptionParams)
     }
 
     @UserScope

@@ -30,7 +30,7 @@ class SQLiteMessagePersistenceManagerTest {
 
     @Before
     fun before() {
-        persistenceManager = SQLitePersistenceManager(null, ByteArray(0), null)
+        persistenceManager = SQLitePersistenceManager(null, null, null)
         persistenceManager.init()
         contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)
         messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)

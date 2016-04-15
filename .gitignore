@@ -10,3 +10,4 @@ ui/ui/js/dispatcher.js
 ui/ui/js/build-config.js
 generated/
 ui-services/generated
+__pycache__/
