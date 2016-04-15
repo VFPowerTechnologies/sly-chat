@@ -5,6 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 data class RemoteContactEntry(
     @JsonProperty("hash")
     val hash: String,
-    @JsonProperty("encryptedEmail")
-    val encryptedEmail: String
+    @JsonProperty("encryptedUserId")
+    val encryptedUserId: String
 )

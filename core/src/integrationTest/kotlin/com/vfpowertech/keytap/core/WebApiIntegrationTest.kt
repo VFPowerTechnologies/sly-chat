@@ -108,7 +108,7 @@ class WebApiIntegrationTest {
             //contacts list
             val userB = newSiteUser(RegistrationInfo("b@a.com", "B", "000-000-0000"), password)
 
-            val contactsA = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.username))
+            val contactsA = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.id))
             devClient.addContacts(username, contactsA)
 
             val contacts = devClient.getContactList(username)
@@ -421,7 +421,7 @@ class WebApiIntegrationTest {
         val username = siteUser.user.username
         val authToken = devClient.createAuthToken(username)
 
-        val encryptedContacts = encryptRemoteContactEntries(siteUser.keyVault, listOf(contactUser.user.username))
+        val encryptedContacts = encryptRemoteContactEntries(siteUser.keyVault, listOf(contactUser.user.id))
         val request = AddContactsRequest(authToken, encryptedContacts)
 
         val client = ContactListClient(serverBaseUrl, JavaHttpClient())
@@ -438,7 +438,7 @@ class WebApiIntegrationTest {
         val userB = injectNamedSiteUser("b@a.com")
 
         val authToken = devClient.createAuthToken(userA.user.username)
-        val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.username))
+        val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.id))
         val request = AddContactsRequest(authToken, aContacts)
 
         val client = ContactListClient(serverBaseUrl, JavaHttpClient())
@@ -456,8 +456,8 @@ class WebApiIntegrationTest {
         val userB = injectNamedSiteUser("b@a.com")
         val userC = injectNamedSiteUser("c@a.com")
 
-        val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.username))
-        val bContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userC.user.username))
+        val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.id))
+        val bContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userC.user.id))
 
         devClient.addContacts(userA.user.username, aContacts)
         devClient.addContacts(userB.user.username, bContacts)
@@ -476,7 +476,7 @@ class WebApiIntegrationTest {
         val userB = injectNamedSiteUser("b@a.com")
         val userC = injectNamedSiteUser("c@a.com")
 
-        val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userC.user.username, userB.user.username))
+        val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userC.user.id, userB.user.id))
 
         devClient.addContacts(userA.user.username, aContacts)
 
