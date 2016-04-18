@@ -242,7 +242,7 @@ class KeyTapApplication {
         appComponent.authenticationService.auth(username, password) successUi { response ->
             val keyVault = response.keyVault
             //TODO need to put the username in the login response if the user used their phone number
-            createUserSession(UserLoginData(username, keyVault, response.authToken), response.accountInfo)
+            createUserSession(UserLoginData(response.accountInfo.id, username, keyVault, response.authToken), response.accountInfo)
 
             storeAccountData(keyVault, response.accountInfo)
 
@@ -408,11 +408,11 @@ class KeyTapApplication {
             log.debug("Found local contacts: {}", foundContacts)
 
             val client = ContactListAsyncClient(appComponent.serverUrls.API_SERVER)
-            val remoteContactEntries = encryptRemoteContactEntries(keyVault, foundContacts.contacts.map { it.email })
+            val remoteContactEntries = encryptRemoteContactEntries(keyVault, foundContacts.contacts.map { it.id })
             val request = AddContactsRequest(authToken, remoteContactEntries)
 
             client.addContacts(request) bind {
-                userComponent.contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.email, it.name, it.phoneNumber, it.publicKey) })
+                userComponent.contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.id, it.email, it.name, it.phoneNumber, it.publicKey) })
             }
         } fail { e ->
             log.error("Local contacts sync failed: {}", e.message, e)

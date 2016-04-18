@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.services
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.persistence.*
 import com.vfpowertech.keytap.core.relay.ReceivedMessage
 import com.vfpowertech.keytap.core.relay.RelayClientEvent
@@ -16,8 +17,8 @@ import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
 
-data class OfflineMessage(val from: String, val timestamp: Int, val encryptedMessage: EncryptedMessageV0)
-data class MessageBundle(val contactEmail: String, val messages: List<MessageInfo>)
+data class OfflineMessage(val from: UserId, val timestamp: Int, val encryptedMessage: EncryptedMessageV0)
+data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
 
 //all Observerables are run on the main thread
@@ -61,7 +62,7 @@ class MessengerService(
     }
 
     /** Writes the received message and then fires the new messages subject. */
-    private fun writeReceivedMessage(from: String, decryptedMessage: String): Promise<Unit, Exception> {
+    private fun writeReceivedMessage(from: UserId, decryptedMessage: String): Promise<Unit, Exception> {
         return messagePersistenceManager.addMessage(from, false, decryptedMessage, 0) mapUi { messageInfo ->
             newMessagesSubject.onNext(MessageBundle(from, listOf(messageInfo)))
         }
@@ -84,18 +85,18 @@ class MessengerService(
 
     /* UIMessengerService interface */
 
-    fun sendMessageTo(contactEmail: String, message: String): Promise<MessageInfo, Exception> {
-        val isSelfMessage = contactEmail == userLoginData.username
+    fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception> {
+        val isSelfMessage = userId == userLoginData.userId
 
-        val p = messagePersistenceManager.addMessage(contactEmail, true, message, 0)
+        val p = messagePersistenceManager.addMessage(userId, true, message, 0)
 
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         return if (!isSelfMessage) {
             p bind { messageInfo ->
-                messageCipherService.encrypt(contactEmail, message) map { encryptedMessage ->
+                messageCipherService.encrypt(userId, message) map { encryptedMessage ->
                     val content = objectMapper.writeValueAsBytes(encryptedMessage)
-                    relayClientManager.sendMessage(contactEmail, content, messageInfo.id)
+                    relayClientManager.sendMessage(userId, content, messageInfo.id)
                     messageInfo
                 }
             }
@@ -107,8 +108,8 @@ class MessengerService(
                 Thread.sleep(30)
                 messageInfo
             } successUi { messageInfo ->
-                handleServerRecievedMessage(ServerReceivedMessage(contactEmail, messageInfo.id))
-                writeReceivedMessage(contactEmail, message) fail { e ->
+                handleServerRecievedMessage(ServerReceivedMessage(userId, messageInfo.id))
+                writeReceivedMessage(userId, message) fail { e ->
                     log.error("Unable to write self-sent message: {}", e.message, e)
                 }
             }
@@ -117,16 +118,16 @@ class MessengerService(
         }
     }
 
-    fun getLastMessagesFor(contactEmail: String, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception> {
-        return messagePersistenceManager.getLastMessages(contactEmail, startingAt, count)
+    fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception> {
+        return messagePersistenceManager.getLastMessages(userId, startingAt, count)
     }
 
     fun getConversations(): Promise<List<Conversation>, Exception> {
         return contactsPersistenceManager.getAllConversations()
     }
 
-    fun markConversationAsRead(contactEmail: String): Promise<Unit, Exception> {
-        return contactsPersistenceManager.markConversationAsRead(contactEmail)
+    fun markConversationAsRead(userId: UserId): Promise<Unit, Exception> {
+        return contactsPersistenceManager.markConversationAsRead(userId)
     }
 
     /* Other */

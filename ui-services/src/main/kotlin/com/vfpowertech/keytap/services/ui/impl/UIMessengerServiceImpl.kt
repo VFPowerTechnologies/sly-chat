@@ -18,7 +18,7 @@ fun MessageInfo.toUI(): UIMessage {
 }
 
 fun ContactInfo.toUI(): UIContactDetails =
-    UIContactDetails(name, phoneNumber, email, publicKey)
+    UIContactDetails(id, name, phoneNumber, email, publicKey)
 
 /** This exists for the lifetime of the application. It wraps MessengerService, which exists for the lifetime of the user session. */
 class UIMessengerServiceImpl(
