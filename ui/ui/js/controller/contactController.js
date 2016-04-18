@@ -246,6 +246,11 @@ ContactController.prototype = {
         phoneInput.type = "hidden";
         phoneInput.value = contactDetails.phoneNumber;
 
+        var id = document.createElement("INPUT");
+        phoneInput.id = "user-id";
+        phoneInput.type = "hidden";
+        phoneInput.value = contactDetails.id;
+
         var emailInput = document.createElement("INPUT");
         emailInput.id = "email";
         emailInput.type = "hidden";
@@ -289,6 +294,7 @@ ContactController.prototype = {
         $("#confirmBtn").on("click", function (e) {
             e.preventDefault();
             contactService.addNewContact({
+                "id" : parseInt($("#user-id").val(), 10),
                 "name" : $("#name").val(),
                 "phoneNumber" : $("#phoneNumber").val(),
                 "email" : $("#email").val(),
