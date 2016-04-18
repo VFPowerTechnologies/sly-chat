@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
         val EXTRA_PENDING_MESSAGES_TYPE_SINGLE = "single"
         val EXTRA_PENDING_MESSAGES_TYPE_MULTI = "multi"
 
-        val EXTRA_USERNAME = "username"
+        val EXTRA_USERID = "username"
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
         val page = when (messagesType) {
             null -> return null
             EXTRA_PENDING_MESSAGES_TYPE_SINGLE -> {
-                val username = intent.getStringExtra(EXTRA_USERNAME) ?: throw RuntimeException("Missing EXTRA_USERNAME")
+                val username = intent.getStringExtra(EXTRA_USERID) ?: throw RuntimeException("Missing EXTRA_USERNAME")
                 "user/$username"
             }
             EXTRA_PENDING_MESSAGES_TYPE_MULTI -> "contacts"

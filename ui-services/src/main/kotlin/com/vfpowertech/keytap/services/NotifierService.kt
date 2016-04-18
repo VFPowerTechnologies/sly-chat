@@ -49,7 +49,7 @@ class NotifierService(
         }
 
         withContactInfo(messageBundle.userId) { contactInfo ->
-            platformNotificationService.addNewMessageNotification(contactInfo.email, messageBundle.messages.size)
+            platformNotificationService.addNewMessageNotification(contactInfo.toContactDisplayInfo(), messageBundle.messages.size)
         }
     }
 
@@ -64,7 +64,7 @@ class NotifierService(
                         val userId = UserId(event.extra.toLong())
                         currentlySelectedChatUser = userId
                         withContactInfo(userId) { contactInfo ->
-                            platformNotificationService.clearMessageNotificationsForUser(contactInfo.email)
+                            platformNotificationService.clearMessageNotificationsForUser(contactInfo.toContactDisplayInfo())
                         }
                     }
 

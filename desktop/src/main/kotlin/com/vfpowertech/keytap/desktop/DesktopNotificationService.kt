@@ -1,15 +1,17 @@
 package com.vfpowertech.keytap.desktop
 
+import com.vfpowertech.keytap.core.UserId
+import com.vfpowertech.keytap.services.ContactDisplayInfo
 import com.vfpowertech.keytap.services.PlatformNotificationService
 
 //TODO
 class DesktopNotificationService : PlatformNotificationService {
-    override fun clearMessageNotificationsForUser(contactEmail: String) {
-    }
-
     override fun clearAllMessageNotifications() {
     }
 
-    override fun addNewMessageNotification(contactEmail: String, messageCount: Int) {
+    override fun clearMessageNotificationsForUser(contact: ContactDisplayInfo) {
+    }
+
+    override fun addNewMessageNotification(contact: ContactDisplayInfo, messageCount: Int) {
     }
 }
