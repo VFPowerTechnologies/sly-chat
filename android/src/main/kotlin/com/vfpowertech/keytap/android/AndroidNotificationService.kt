@@ -66,13 +66,6 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
     /* Other */
 
-    fun addOfflineMessageData(list: List<OfflineMessageInfo>) {
-        list.forEach { info ->
-            newMessagesNotification.updateUser(info.username, NewMessageData(info.name, info.pendingCount))
-        }
-        updateNewMessagesNotification()
-    }
-
     private fun getNewMessagesNotificationContentText(): String {
         val notification = newMessagesNotification
 

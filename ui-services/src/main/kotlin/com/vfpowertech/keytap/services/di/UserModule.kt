@@ -67,9 +67,10 @@ class UserModule(
     fun providesNotifierService(
         messengerService: MessengerService,
         uiEventService: UIEventService,
+        contactsPersistenceManager: ContactsPersistenceManager,
         platformNotificationService: PlatformNotificationService
     ): NotifierService =
-        NotifierService(messengerService, uiEventService, platformNotificationService)
+        NotifierService(messengerService, uiEventService, contactsPersistenceManager, platformNotificationService)
 
     @UserScope
     @Provides

@@ -90,7 +90,7 @@ NavigationController.prototype = {
         }
         else if(/chat.html$/.test(url)) {
             page = "CONVO";
-            extra = KEYTAP.contactController.getCurrentContact().email;
+            extra = KEYTAP.contactController.getCurrentContact().id;
         }
 
         if(page !== undefined) {
