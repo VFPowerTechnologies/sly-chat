@@ -1,7 +1,6 @@
 package com.vfpowertech.keytap.services.ui.impl
 
 import com.vfpowertech.keytap.core.http.api.contacts.*
-import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.ui.UIContactDetails
@@ -42,24 +41,24 @@ class UIContactsServiceImpl(
 
     override fun updateContact(newContactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
         val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
-        return contactsPersistenceManager.update(ContactInfo(newContactDetails.email, newContactDetails.name, newContactDetails.phoneNumber, newContactDetails.publicKey)) map { newContactDetails }
+        return contactsPersistenceManager.update(newContactDetails.toNative()) map { newContactDetails }
     }
 
     override fun getContacts(): Promise<List<UIContactDetails>, Exception> {
         val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
         return contactsPersistenceManager.getAll() map { contacts ->
-            contacts.map { c -> UIContactDetails(c.name, c.phoneNumber, c.email, c.publicKey) }
+            contacts.map { it.toUI() }
         }
     }
 
     override fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
         val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
-        val contactInfo = ContactInfo(contactDetails.email, contactDetails.name, contactDetails.phoneNumber, contactDetails.publicKey)
+        val contactInfo = contactDetails.toNative()
 
         val authToken = app.userComponent?.userLoginData?.authToken ?: return Promise.ofFail(RuntimeException("Not logged in"))
         val keyVault = app.userComponent?.userLoginData?.keyVault ?: return Promise.ofFail(RuntimeException("Not logged in"))
 
-        val remoteContactEntries = encryptRemoteContactEntries(keyVault, listOf(contactDetails.email))
+        val remoteContactEntries = encryptRemoteContactEntries(keyVault, listOf(contactDetails.id))
 
         return contactListClient.addContacts(AddContactsRequest(authToken, remoteContactEntries)) bind {
             contactsPersistenceManager.add(contactInfo) map {
@@ -73,10 +72,10 @@ class UIContactsServiceImpl(
 
         val authToken = app.userComponent?.userLoginData?.authToken ?: return Promise.ofFail(RuntimeException("Not logged in"))
         val keyVault = app.userComponent?.userLoginData?.keyVault ?: return Promise.ofFail(RuntimeException("Not logged in"))
-        val remoteContactEntries = encryptRemoteContactEntries(keyVault, listOf(contactDetails.email)).map { it.hash }
+        val remoteContactEntries = encryptRemoteContactEntries(keyVault, listOf(contactDetails.id)).map { it.hash }
 
         return contactListClient.removeContacts(RemoveContactsRequest(authToken, remoteContactEntries)) bind {
-            contactsPersistenceManager.remove(ContactInfo(contactDetails.email, contactDetails.name, contactDetails.phoneNumber, contactDetails.publicKey))
+            contactsPersistenceManager.remove(contactDetails.toNative())
         }
     }
 
@@ -96,7 +95,7 @@ class UIContactsServiceImpl(
             }
             else {
                 val contactInfo = response.contactInfo!!
-                UINewContactResult(true, null, UIContactDetails(contactInfo.name, contactInfo.phoneNumber, contactInfo.email, contactInfo.publicKey))
+                UINewContactResult(true, null, contactInfo.toUI())
             }
         }
     }

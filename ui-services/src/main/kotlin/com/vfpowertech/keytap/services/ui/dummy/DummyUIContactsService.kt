@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services.ui.dummy
 
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.services.ui.UIContactDetails
 import com.vfpowertech.keytap.services.ui.UIContactsService
 import com.vfpowertech.keytap.services.ui.UINewContactResult
@@ -10,8 +11,8 @@ class DummyUIContactsService : UIContactsService {
     }
 
     private val contacts = hashMapOf(
-        "Contact A" to UIContactDetails("Contact A", "000-000-0000", "a@a.com", "dummyPublicKey"),
-        "Contact B" to UIContactDetails("Contact B", "111-111-1111", "b@b.com", "dummyPublicKedy")
+        "Contact A" to UIContactDetails(UserId(1000), "Contact A", "000-000-0000", "a@a.com", "dummyPublicKey"),
+        "Contact B" to UIContactDetails(UserId(1001), "Contact B", "111-111-1111", "b@b.com", "dummyPublicKedy")
     )
 
     override fun updateContact(newContactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
@@ -23,7 +24,7 @@ class DummyUIContactsService : UIContactsService {
     }
 
     override fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
-        return Promise.ofSuccess(UIContactDetails("", "", "", ""))
+        return Promise.ofSuccess(UIContactDetails(UserId(1002), "", "", "", ""))
     }
 
     override fun fetchNewContactInfo(email: String?, phoneNumber: String?): Promise<UINewContactResult, Exception>{
