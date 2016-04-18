@@ -24,7 +24,7 @@ MenuController.prototype = {
 
         $(document).on("click", "#editProfileBtn", function (e) {
             e.preventDefault();
-            //KEYTAP.navigationController.loadPage("profile.html", true);
+            KEYTAP.navigationController.loadPage("profile.html", true);
         });
     },
     handleMenuDisplay : function() {

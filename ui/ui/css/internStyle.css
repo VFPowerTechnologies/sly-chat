@@ -378,6 +378,27 @@ button.btn-large {
 [data-notify="container"] {
     text-align: center;
     padding: 0;
+    z-index: 100 !important;
+}
+
+/*Profile Page*/
+#profileAvatar img {
+    display: block;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.profileContainer .btn:focus {
+    outline: none;
+    text-decoration: none;
+    color: #fff;
+}
+
+.profileContainer input, select {
+    border: none;
 }
 
 /*Page load animation*/

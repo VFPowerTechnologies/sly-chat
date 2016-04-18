@@ -39,3 +39,33 @@ $(document).ready(function () {
         utilsScript: "js/external-lib/utils.js"
     });
 });
+
+function validatePhone() {
+    var phoneInput = $("#phone");
+    var hiddenPhoneInput = $("#hiddenPhoneInput");
+
+    var phoneValue = phoneInput.val();
+
+    hiddenPhoneInput.val(phoneValue);
+
+    var valid = hiddenPhoneInput.intlTelInput("isValidNumber");
+    var invalidDiv = $(".invalidPhone");
+
+    if(phoneValue == "")
+        invalidDiv.remove();
+
+    if(!valid) {
+        if(phoneValue != "") {
+            phoneInput.addClass("invalid");
+            if (!invalidDiv.length) {
+                phoneInput.after("<div class='pull-right invalidPhone filled' style='color: red;'><p>Phone Number seems invalid.</p></div>");
+            }
+        }
+    }
+    else {
+        phoneInput.removeClass("invalid");
+        invalidDiv.remove();
+    }
+
+    return valid;
+}
