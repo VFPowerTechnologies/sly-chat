@@ -48,8 +48,10 @@ class NotifierService(
                 return
         }
 
+        val lastMessage = messageBundle.messages.last()
+
         withContactInfo(messageBundle.userId) { contactInfo ->
-            platformNotificationService.addNewMessageNotification(contactInfo.toContactDisplayInfo(), messageBundle.messages.size)
+            platformNotificationService.addNewMessageNotification(contactInfo.toContactDisplayInfo(), lastMessage, messageBundle.messages.size)
         }
     }
 

@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
+import com.vfpowertech.keytap.core.persistence.MessageInfo
 import com.vfpowertech.keytap.services.ContactDisplayInfo
 import com.vfpowertech.keytap.services.PlatformNotificationService
 import java.util.*
@@ -59,7 +60,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         updateNewMessagesNotification()
     }
 
-    override fun addNewMessageNotification(contact: ContactDisplayInfo, messageCount: Int) {
+    override fun addNewMessageNotification(contact: ContactDisplayInfo, lastMessageInfo: MessageInfo, messageCount: Int) {
         newMessagesNotification.updateUser(contact, NewMessageData(contact.name, messageCount))
         updateNewMessagesNotification()
     }
