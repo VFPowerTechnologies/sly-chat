@@ -13,7 +13,7 @@ $(document).ready(function(){
             }
             if(state.currentPage.indexOf("chat.html") > -1) {
                 if (typeof state.currentContact != "undefined" && state.currentContact != null) {
-                    KEYTAP.contactController.loadContactPage(state.currentContact.email, false);
+                    KEYTAP.contactController.loadContactPage(state.currentContact.id, false);
                 }
             }else {
                 KEYTAP.navigationController.loadPage(state.currentPage, false);

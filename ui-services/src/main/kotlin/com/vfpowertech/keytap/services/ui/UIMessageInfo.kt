@@ -5,9 +5,9 @@ import com.vfpowertech.keytap.core.UserId
 /**
  * A message and its associated contact.
  *
- * @property contactId Contact's email.
+ * @property contact Contact's user id.
  */
 data class UIMessageInfo(
-    val contactId: UserId,
+    val contact: UserId,
     val messages: List<UIMessage>
 )

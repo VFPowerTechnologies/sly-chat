@@ -87,7 +87,7 @@ ContactController.prototype = {
         if(index == 0)
             contactLinkClass += " first-contact";
 
-        var contactBlock = "<div class='" + contactLinkClass + "' id='contact%" + contact.email + "'><div class='contact'>";
+        var contactBlock = "<div class='" + contactLinkClass + "' id='contact%" + contact.id + "'><div class='contact'>";
         contactBlock += createAvatar(contact.name);
         contactBlock += "<p style='display: inline-block;'>" + contact.name + "</p>";
         contactBlock += this.createContactDropDown(contact.email);

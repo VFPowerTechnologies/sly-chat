@@ -6,7 +6,7 @@ RecentChatModel.prototype = {
         var recentChat = [];
 
         conversation.forEach(function (chat) {
-            recentChat[chat.contact.email] = chat;
+            recentChat[chat.contact.id] = chat;
         });
 
         KEYTAP.chatController.model.fetchConversationMessages(conversation);
