@@ -313,7 +313,7 @@ class WebApiIntegrationTest {
 
         val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
         assertFailsWith(UnauthorizedException::class) {
-            client.retrieve(PreKeyRetrievalRequest("a", siteUser.user.username))
+            client.retrieve(PreKeyRetrievalRequest("a", siteUser.user.id))
         }
     }
 
@@ -329,7 +329,7 @@ class WebApiIntegrationTest {
 
         val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
 
-        val response = client.retrieve(PreKeyRetrievalRequest(authToken, username))
+        val response = client.retrieve(PreKeyRetrievalRequest(authToken, siteUser.user.id))
 
         assertTrue(response.isSuccess)
 
@@ -344,10 +344,10 @@ class WebApiIntegrationTest {
         assertTrue(serializedOneTimePreKeys.contains(preKeyData.preKey), "No matching one-time prekey found")
     }
 
-    fun assertNextPreKeyIs(username: String, authToken: String, expected: PreKeyRecord, signedPreKey: SignedPreKeyRecord) {
+    fun assertNextPreKeyIs(userId: UserId, authToken: String, expected: PreKeyRecord, signedPreKey: SignedPreKeyRecord) {
         val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
 
-        val response = client.retrieve(PreKeyRetrievalRequest(authToken, username))
+        val response = client.retrieve(PreKeyRetrievalRequest(authToken, userId))
 
         assertTrue(response.isSuccess)
 
@@ -366,13 +366,14 @@ class WebApiIntegrationTest {
     fun `prekey retrieval should return the last resort key once no other keys are available`() {
         val siteUser = injectNewSiteUser()
         val username = siteUser.user.username
+        val userId = siteUser.user.id
         val authToken = devClient.createAuthToken(siteUser.user.username)
 
         val generatedPreKeys = injectPreKeys(username, siteUser.keyVault)
         val lastResortPreKey = injectLastResortPreKey(username)
 
-        assertNextPreKeyIs(username, authToken, generatedPreKeys.oneTimePreKeys[0], generatedPreKeys.signedPreKey)
-        assertNextPreKeyIs(username, authToken, lastResortPreKey, generatedPreKeys.signedPreKey)
+        assertNextPreKeyIs(userId, authToken, generatedPreKeys.oneTimePreKeys[0], generatedPreKeys.signedPreKey)
+        assertNextPreKeyIs(userId, authToken, lastResortPreKey, generatedPreKeys.signedPreKey)
     }
 
     @Test
