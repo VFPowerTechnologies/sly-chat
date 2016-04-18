@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.testclients
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.core.relay.base.netty.NettyRelayConnector
 import javafx.application.Application
@@ -50,13 +51,13 @@ class MainWindow : VBox() {
         val usernamesBox = HBox()
         children.add(usernamesBox)
 
-        loginUsername = TextField("a@a.com")
+        loginUsername = TextField("1")
         usernamesBox.children.add(loginUsername)
 
         val swapBtn = Button("<->")
         usernamesBox.children.add(swapBtn)
 
-        sendToUsername = TextField("b@a.com")
+        sendToUsername = TextField("2")
         usernamesBox.children.add(sendToUsername)
 
         swapBtn.setOnAction {
@@ -188,7 +189,7 @@ class App : Application() {
                 mainWindow.chatMessages.appendText("me> $t\n")
                 val messageId = "5248a1d7dc7e300ef2e18e30a6731455"
                 val content = ObjectMapper().writeValueAsBytes(mapOf("message" to t))
-                relayClient!!.sendMessage(mainWindow.sendToUsername.text, content, messageId)
+                relayClient!!.sendMessage(UserId(mainWindow.sendToUsername.text.toLong()), content, messageId)
             }
         }
 
