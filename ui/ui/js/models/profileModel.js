@@ -1,10 +1,10 @@
-var UserInfoModel = function () {
+var ProfileModel = function () {
     this.username = "";
     this.phoneNumber = "";
     this.name = "";
 };
 
-UserInfoModel.prototype = {
+ProfileModel.prototype = {
     setUserInfo : function (username, phoneNumber, name) {
         this.username = username;
         this.phoneNumber = phoneNumber;

@@ -18,7 +18,8 @@
                 fontSize: 60,
                 fontWeight: 400,
                 fontFamily: 'HelveticaNeue-Light,Helvetica Neue Light,Helvetica Neue,Helvetica, Arial,Lucida Grande, sans-serif',
-                radius: 0
+                radius: 0,
+                backgroundColor: '#212121'
             }, options);
 
             // overriding from data attributes
@@ -47,7 +48,7 @@
                 'height': settings.height
             }).css({
                 //'background-color': colors[colorIndex],
-                'background-color' : '#212121',
+                'background-color' : settings.backgroundColor,
                 'width': settings.width+'px',
                 'height': settings.height+'px',
                 'border-radius': settings.radius+'px',

@@ -51,7 +51,7 @@ ChatController.prototype = {
     },
     createMessageNode : function (message, contactName) {
         if(message.sent == true)
-            contactName = KEYTAP.userInfoController.getUserInfo().name;
+            contactName = KEYTAP.profileController.getUserInfo().name;
 
         var fromClass = "";
 
@@ -138,7 +138,7 @@ ChatController.prototype = {
                 this.model.pushNewMessage(currentContact.email, messageDetails);
                 var input = $('#newMessageInput');
                 input.val("");
-                $("#messages").append(this.createMessageNode(messageDetails, KEYTAP.userInfoController.getUserInfo().name));
+                $("#messages").append(this.createMessageNode(messageDetails, KEYTAP.profileController.getUserInfo().name));
                 this.scrollTop();
                 input.click();
             }.bind(this)).catch(function (e) {

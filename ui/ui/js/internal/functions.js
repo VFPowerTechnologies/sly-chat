@@ -57,15 +57,18 @@ if (typeof KEYTAP == "undefined") {
         return new Date(timestamp);
     }
 
-    function createAvatar (name, color) {
+    function createAvatar (name, color, textColor) {
         if(color === undefined)
             color = "#212121";
+        if(textColor === undefined)
+            textColor = "#fff";
+
         var img = new Image();
         img.setAttribute('data-name', name);
         img.setAttribute('class', 'avatarCircle');
 
         $(img).initial({
-            textColor: '#fff',
+            textColor: textColor,
             seed: 0,
             backgroundColor: color
         });
@@ -108,6 +111,23 @@ if (typeof KEYTAP == "undefined") {
         }
     }
 
+    function validateForm (formId) {
+        var validation = $(formId).parsley({
+            errorClass: "invalid",
+            focus: 'none',
+            errorsWrapper: '<div class="pull-right parsley-errors-list" style="color: red;"></div>',
+            errorTemplate: '<p></p>'
+        });
+        var isValid = validation.validate();
+
+        if(isValid == true){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
     KEYTAP.exceptionController = new ExceptionController();
     KEYTAP.loginController = new LoginController(new LoginModel);
     KEYTAP.registrationController = new RegistrationController(new RegistrationModel());
@@ -117,7 +137,7 @@ if (typeof KEYTAP == "undefined") {
     KEYTAP.navigationController = new NavigationController();
     KEYTAP.menuController = new MenuController();
     KEYTAP.connectionController = new ConnectionController();
-    KEYTAP.userInfoController = new UserInfoController(new UserInfoModel());
+    KEYTAP.profileController = new ProfileController(new ProfileModel());
 }
 
 $(document).ready(function () {

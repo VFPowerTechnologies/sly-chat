@@ -56,7 +56,7 @@ LoginController.prototype = {
         var accountInfo = ev.accountInfo;
 
         stateService.getInitialPage().then(function (initialPage) {
-            KEYTAP.userInfoController.setUserInfo(accountInfo);
+            KEYTAP.profileController.setUserInfo(accountInfo);
             if($("#rememberMe").is(':checked')) {
                 window.configService.setStartupInfo({lastLoggedInAccount: this.model.getLogin(), savedAccountPassword: this.model.getPassword()}).then(function () {
                     console.log('Wrote startup info');
@@ -105,7 +105,7 @@ LoginController.prototype = {
         KEYTAP.navigationController.loadPage("login.html");
         KEYTAP.navigationController.clearHistory();
         KEYTAP.contactController.model.resetContacts();
-        KEYTAP.userInfoController.setUserInfo({
+        KEYTAP.profileController.setUserInfo({
             "name" : "",
             "phone-number" : "",
             "email" : ""
@@ -143,7 +143,7 @@ LoginController.prototype = {
         KEYTAP.chatController.clearCache();
         KEYTAP.contactController.clearCache();
         this.clearCache();
-        KEYTAP.userInfoController.clearCache();
+        KEYTAP.profileController.clearCache();
         KEYTAP.registrationController.clearCache();
     }
 };
