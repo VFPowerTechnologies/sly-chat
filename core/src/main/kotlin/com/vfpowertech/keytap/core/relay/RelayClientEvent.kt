@@ -1,5 +1,7 @@
 package com.vfpowertech.keytap.core.relay
 
+import com.vfpowertech.keytap.core.UserId
+
 /** Higher-level translations of underlying relay messages. Emitted by RelayClient. */
 interface RelayClientEvent
 
@@ -13,7 +15,7 @@ data class ConnectionLost(val wasRequested: Boolean, val error: Throwable? = nul
 class AuthenticationSuccessful() : RelayClientEvent
 class AuthenticationFailure() : RelayClientEvent
 class AuthenticationExpired() : RelayClientEvent
-data class ReceivedMessage(val from: String, val content: ByteArray, val messageId: String) : RelayClientEvent
-data class ServerReceivedMessage(val to: String, val messageId: String) : RelayClientEvent
-data class MessageSentToUser(val to: String, val messageId: String) : RelayClientEvent
-data class UserOffline(val to: String, val messageId: String) : RelayClientEvent
+data class ReceivedMessage(val from: UserId, val content: ByteArray, val messageId: String) : RelayClientEvent
+data class ServerReceivedMessage(val to: UserId, val messageId: String) : RelayClientEvent
+data class MessageSentToUser(val to: UserId, val messageId: String) : RelayClientEvent
+data class UserOffline(val to: UserId, val messageId: String) : RelayClientEvent

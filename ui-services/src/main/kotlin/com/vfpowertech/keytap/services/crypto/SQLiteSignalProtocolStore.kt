@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services.crypto
 
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
@@ -120,7 +121,7 @@ class SQLiteSignalProtocolStore(
 
     override fun isTrustedIdentity(name: String, identityKey: IdentityKey): Boolean {
         //don't trust anyone we haven't yet added to the contact list
-        val contact = contactsPersistenceManager.get(name).get() ?: return false
+        val contact = contactsPersistenceManager.get(UserId(name.toLong())).get() ?: return false
         return contact.publicKey == identityKey.serialize().hexify()
     }
 

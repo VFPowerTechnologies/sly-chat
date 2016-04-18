@@ -6,13 +6,14 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
+import com.vfpowertech.keytap.services.ContactDisplayInfo
 import com.vfpowertech.keytap.services.PlatformNotificationService
 import java.util.*
 
 data class NewMessageData(val name: String, val unreadCount: Int)
 
 class NewMessagesNotification {
-    val contents = HashMap<String, NewMessageData>()
+    val contents = HashMap<ContactDisplayInfo, NewMessageData>()
 
     fun hasNewMessages(): Boolean = contents.isNotEmpty()
     fun userCount(): Int = contents.size
@@ -22,19 +23,19 @@ class NewMessagesNotification {
     }
 
     /** Increases the unread count by the amount given in newMessageData. */
-    fun updateUser(username: String, newMessageData: NewMessageData) {
-        val current = contents[username]
+    fun updateUser(contact: ContactDisplayInfo, newMessageData: NewMessageData) {
+        val current = contents[contact]
         val newValue = if (current != null) {
             NewMessageData(current.name, current.unreadCount + newMessageData.unreadCount)
         }
         else
             newMessageData
 
-        contents[username] = newValue
+        contents[contact] = newValue
     }
 
-    fun clearUser(username: String) {
-        contents.remove(username)
+    fun clearUser(contact: ContactDisplayInfo) {
+        contents.remove(contact)
     }
 }
 
@@ -48,8 +49,8 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
     private val newMessagesNotification = NewMessagesNotification()
 
     /* PlatformNotificationService methods */
-    override fun clearMessageNotificationsForUser(contactEmail: String) {
-        newMessagesNotification.clearUser(contactEmail)
+    override fun clearMessageNotificationsForUser(contact: ContactDisplayInfo) {
+        newMessagesNotification.clearUser(contact)
         updateNewMessagesNotification()
     }
 
@@ -58,20 +59,12 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         updateNewMessagesNotification()
     }
 
-    override fun addNewMessageNotification(contactEmail: String, messageCount: Int) {
-        //TODO name
-        newMessagesNotification.updateUser(contactEmail, NewMessageData(contactEmail, messageCount))
+    override fun addNewMessageNotification(contact: ContactDisplayInfo, messageCount: Int) {
+        newMessagesNotification.updateUser(contact, NewMessageData(contact.name, messageCount))
         updateNewMessagesNotification()
     }
 
     /* Other */
-
-    fun addOfflineMessageData(list: List<OfflineMessageInfo>) {
-        list.forEach { info ->
-            newMessagesNotification.updateUser(info.username, NewMessageData(info.name, info.pendingCount))
-        }
-        updateNewMessagesNotification()
-    }
 
     private fun getNewMessagesNotificationContentText(): String {
         val notification = newMessagesNotification
@@ -112,7 +105,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
         if (isSingleUser) {
             val username = newMessagesNotification.contents.keys.first()
-            intent.putExtra(MainActivity.EXTRA_USERNAME, username)
+            intent.putExtra(MainActivity.EXTRA_USERID, username.id.id.toString())
         }
 
         return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_UPDATE_CURRENT)

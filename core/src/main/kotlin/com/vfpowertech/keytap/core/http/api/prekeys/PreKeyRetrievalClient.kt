@@ -8,7 +8,7 @@ class PreKeyRetrievalClient(private val serverBaseUrl: String, private val httpC
     fun retrieve(request: PreKeyRetrievalRequest): PreKeyRetrievalResponse {
         val params = listOf(
             "auth-token" to request.authToken,
-            "username" to request.username
+            "for" to request.userId.id.toString()
         )
 
         val url = "$serverBaseUrl/v1/retrieve"

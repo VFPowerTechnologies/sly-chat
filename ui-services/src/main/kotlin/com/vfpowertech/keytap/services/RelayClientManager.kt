@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services
 
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.services.di.UserComponent
 import org.slf4j.LoggerFactory
@@ -103,7 +104,7 @@ class RelayClientManager(
         return relayClient ?: throw NoClientException()
     }
 
-    fun sendMessage(to: String, content: ByteArray, messageId: String) {
+    fun sendMessage(to: UserId, content: ByteArray, messageId: String) {
         val relayClient = getClientOrThrow()
 
         relayClient.sendMessage(to, content, messageId)

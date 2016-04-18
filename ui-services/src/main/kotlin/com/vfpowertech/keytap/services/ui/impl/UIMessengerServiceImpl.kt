@@ -1,7 +1,5 @@
 package com.vfpowertech.keytap.services.ui.impl
 
-import com.vfpowertech.keytap.core.persistence.ContactInfo
-import com.vfpowertech.keytap.core.persistence.MessageInfo
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.MessageBundle
 import com.vfpowertech.keytap.services.MessengerService
@@ -11,14 +9,6 @@ import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import rx.Subscription
 import java.util.*
-
-fun MessageInfo.toUI(): UIMessage {
-    val timestamp = if (!isDelivered) null else timestamp
-    return UIMessage(id, isSent, timestamp, message)
-}
-
-fun ContactInfo.toUI(): UIContactDetails =
-    UIContactDetails(name, phoneNumber, email, publicKey)
 
 /** This exists for the lifetime of the application. It wraps MessengerService, which exists for the lifetime of the user session. */
 class UIMessengerServiceImpl(
@@ -58,18 +48,18 @@ class UIMessengerServiceImpl(
     /** First we add to the log, then we display it to the user. */
     private fun onNewMessages(messageBundle: MessageBundle) {
         val messages = messageBundle.messages.map { it.toUI() }
-        notifyNewMessageListeners(UIMessageInfo(messageBundle.contactEmail, messages))
+        notifyNewMessageListeners(UIMessageInfo(messageBundle.userId, messages))
     }
 
     private fun onMessageStatusUpdate(messageBundle: MessageBundle) {
         val messages = messageBundle.messages.map { it.toUI() }
-        notifyMessageStatusUpdateListeners(UIMessageInfo(messageBundle.contactEmail, messages))
+        notifyMessageStatusUpdateListeners(UIMessageInfo(messageBundle.userId, messages))
     }
 
     /* Interface methods. */
 
     override fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception> {
-        return getMessengerServiceOrThrow().sendMessageTo(contact.email, message) map { messageInfo ->
+        return getMessengerServiceOrThrow().sendMessageTo(contact.id, message) map { messageInfo ->
             UIMessage(messageInfo.id, true, null, message)
         }
     }
@@ -91,7 +81,7 @@ class UIMessengerServiceImpl(
     }
 
     override fun getLastMessagesFor(contact: UIContactDetails, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
-        return getMessengerServiceOrThrow().getLastMessagesFor(contact.email, startingAt, count) map { messages ->
+        return getMessengerServiceOrThrow().getLastMessagesFor(contact.id, startingAt, count) map { messages ->
             messages.map { it.toUI() }
         }
     }
@@ -107,7 +97,7 @@ class UIMessengerServiceImpl(
     }
 
     override fun markConversationAsRead(contact: UIContactDetails): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().markConversationAsRead(contact.email)
+        return getMessengerServiceOrThrow().markConversationAsRead(contact.id)
     }
 
     private fun notifyNewMessageListeners(messageInfo: UIMessageInfo) {

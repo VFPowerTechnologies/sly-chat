@@ -2,6 +2,7 @@
 @file:JvmName("RelayProtocol")
 package com.vfpowertech.keytap.core.relay.base
 
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.CommandCode.CLIENT_REGISTER_REQUEST
@@ -67,8 +68,8 @@ class InvalidPayloadException(val commandCode: Int) : RelayException("Invalid pa
 val PROTOCOL_VERSION_SIZE = 2
 val CONTENT_LENGTH_SIZE = 5
 val FROM_USER_TOKEN_SIZE = 32
-val FROM_USER_EMAIL_SIZE = 254
-val TO_USER_EMAIL_SIZE = 254
+val FROM_USER_ID_SIZE = 254
+val TO_USER_ID_SIZE = 254
 val MESSAGE_ID_SIZE = 32
 val MESSAGE_NUMBER_SIZE = 2
 val MESSAGE_NUMBER_TOTAL_SIZE = 2
@@ -79,8 +80,8 @@ data class Header(
     val contentLength: Int,
     //authToken
     val fromUserToken: String,
-    val fromUserEmail: String,
-    val toUserEmail: String,
+    val fromUserId: String,
+    val toUserId: String,
     //for tracking replies
     //can probably just use incremental ids for the log? although this won't work if logging is disabled
     val messageId: String,
@@ -90,8 +91,8 @@ data class Header(
 ) {
     init {
         require(fromUserToken.length <= FROM_USER_TOKEN_SIZE) { "fromUserToken: ${fromUserToken.length} > ${FROM_USER_TOKEN_SIZE}" }
-        require(fromUserEmail.length <= FROM_USER_EMAIL_SIZE) { "fromUserEmail: ${fromUserEmail.length} > ${FROM_USER_EMAIL_SIZE}" }
-        require(toUserEmail.length <= TO_USER_EMAIL_SIZE) { "toUserEmail: ${toUserEmail.length} > ${TO_USER_EMAIL_SIZE}" }
+        require(fromUserId.length <= FROM_USER_ID_SIZE) { "fromUserEmail: ${fromUserId.length} > ${FROM_USER_ID_SIZE}" }
+        require(toUserId.length <= TO_USER_ID_SIZE) { "toUserEmail: ${toUserId.length} > ${TO_USER_ID_SIZE}" }
         require(messageId.length <= MESSAGE_ID_SIZE) { "messageId: ${messageId.length} > ${MESSAGE_ID_SIZE}" }
         require(messageFragmentNumber < messageFragmentTotal) { "messageFragmentNumber >= messageFragmentTotal: $messageFragmentNumber >= $messageFragmentTotal" }
     }
@@ -138,8 +139,8 @@ fun headerFromBytes(bytes: ByteArray): Header {
     val contentLength = reader.read(CONTENT_LENGTH_SIZE).toInt()
 
     val fromUserToken = reader.read(FROM_USER_TOKEN_SIZE).rstrip()
-    val fromUserEmail = reader.read(FROM_USER_EMAIL_SIZE).rstrip()
-    val toUserEmail = reader.read(TO_USER_EMAIL_SIZE).rstrip()
+    val fromUserEmail = reader.read(FROM_USER_ID_SIZE).rstrip()
+    val toUserEmail = reader.read(TO_USER_ID_SIZE).rstrip()
 
     val messageId = reader.read(MESSAGE_ID_SIZE)
 
@@ -174,8 +175,8 @@ fun headerToString(header: Header): String {
         builder.append(version.leftZeroPad(PROTOCOL_VERSION_SIZE))
         builder.append(contentLength.leftZeroPad(CONTENT_LENGTH_SIZE))
         builder.append(fromUserToken.rightSpacePad(FROM_USER_TOKEN_SIZE))
-        builder.append(fromUserEmail.rightSpacePad(FROM_USER_EMAIL_SIZE))
-        builder.append(toUserEmail.rightSpacePad(TO_USER_EMAIL_SIZE))
+        builder.append(fromUserId.rightSpacePad(FROM_USER_ID_SIZE))
+        builder.append(toUserId.rightSpacePad(TO_USER_ID_SIZE))
         builder.append(messageId.rightSpacePad(MESSAGE_ID_SIZE))
         builder.append(messageFragmentNumber.leftZeroPad(MESSAGE_NUMBER_SIZE))
         builder.append(messageFragmentTotal.leftZeroPad(MESSAGE_NUMBER_TOTAL_SIZE))
@@ -193,7 +194,7 @@ fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
         1,
         0,
         userCredentials.authToken,
-        userCredentials.username,
+        userCredentials.userId.id.toString(),
         "",
         "",
         0,
@@ -204,13 +205,13 @@ fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
     return RelayMessage(header, ByteArray(0))
 }
 
-fun createSendMessageMessage(userCredentials: UserCredentials, to: String, content: ByteArray, messageId: String): RelayMessage {
+fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, content: ByteArray, messageId: String): RelayMessage {
     val header = Header(
         1,
         content.size,
         userCredentials.authToken,
-        userCredentials.username,
-        to,
+        userCredentials.userId.id.toString(),
+        to.id.toString(),
         messageId,
         0,
         1,

@@ -10,7 +10,7 @@ ContactModel.prototype = {
             var forContact = this.orderByName(conversations);
 
             forContact.forEach(function(conversation){
-                this.conversations[conversation.contact.email] = conversation;
+                this.conversations[conversation.contact.id] = conversation;
             }.bind(this));
 
             this.controller.displayContacts(this.conversations);
@@ -60,7 +60,7 @@ ContactModel.prototype = {
     fetchConversationForChat : function (email, pushCurrentPage) {
         messengerService.getConversations().then(function(conversations){
             conversations.forEach(function(conversation){
-                KEYTAP.contactController.model.conversations[conversation.contact.email] = conversation;
+                KEYTAP.contactController.model.conversations[conversation.contact.id] = conversation;
             });
             KEYTAP.contactController.model.setCurrentContact(email);
             KEYTAP.navigationController.loadPage("chat.html", pushCurrentPage);

@@ -15,7 +15,7 @@ class ContactAsyncClient(private val serverUrl: String) {
         newClient().findLocalContacts(request)
     }
 
-    fun fetchContactInfoByEmail(request: FetchContactInfoByEmailRequest): Promise<FetchContactInfoByEmailResponse, Exception> = task {
-        newClient().fetchContactInfoByEmail(request)
+    fun fetchContactInfoByEmail(request: FetchContactInfoByIdRequest): Promise<FetchContactInfoByIdResponse, Exception> = task {
+        newClient().fetchContactInfoById(request)
     }
 }

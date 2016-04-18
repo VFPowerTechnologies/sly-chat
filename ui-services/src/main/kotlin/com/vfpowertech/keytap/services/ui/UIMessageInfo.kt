@@ -1,11 +1,13 @@
 package com.vfpowertech.keytap.services.ui
 
+import com.vfpowertech.keytap.core.UserId
+
 /**
  * A message and its associated contact.
  *
- * @property contact Contact's email.
+ * @property contact Contact's user id.
  */
 data class UIMessageInfo(
-    val contact: String,
+    val contact: UserId,
     val messages: List<UIMessage>
 )

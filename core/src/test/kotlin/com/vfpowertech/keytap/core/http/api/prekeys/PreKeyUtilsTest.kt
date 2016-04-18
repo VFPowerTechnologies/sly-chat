@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.http.api.prekeys
 
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.generateNewKeyVault
 import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.crypto.hexify
@@ -13,7 +14,7 @@ import kotlin.test.assertTrue
 class PreKeyUtilsTest {
     val password = "test"
     val keyVault = generateNewKeyVault(password)
-    val username = "test-user"
+    val userId = UserId(1)
 
     fun assertKeySetEquals(expected: UserPreKeySet, got: UserPreKeySet) {
         //(Signed)PreKeyRecord don't implement equals
@@ -31,7 +32,7 @@ class PreKeyUtilsTest {
         val oneTimePreKey = preKeyBundle.oneTimePreKeys.first()
         val response = PreKeyRetrievalResponse(
             null,
-            username,
+            userId,
             SerializedPreKeySet(
                 keyVault.identityKeyPair.serialize().hexify(),
                 preKeyBundle.signedPreKey.serialize().hexify(),

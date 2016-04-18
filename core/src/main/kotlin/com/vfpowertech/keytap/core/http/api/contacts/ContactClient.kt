@@ -11,7 +11,7 @@ class ContactClient(private val serverBaseUrl: String, private val httpClient: H
         return apiPostRequest(httpClient, url, request, setOf(200, 400), typeRef())
     }
 
-    fun fetchContactInfoByEmail(request: FetchContactInfoByEmailRequest): FetchContactInfoByEmailResponse {
+    fun fetchContactInfoById(request: FetchContactInfoByIdRequest): FetchContactInfoByIdResponse {
         val url = "$serverBaseUrl/v1/contact/find"
 
         return apiPostRequest(httpClient, url, request, setOf(200, 400), typeRef())

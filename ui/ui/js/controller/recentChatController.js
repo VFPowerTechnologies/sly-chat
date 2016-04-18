@@ -51,7 +51,7 @@ RecentChatController.prototype = {
 
         var contactBlock = "";
 
-        contactBlock += "<div class='" + contactLinkClass + "' id='recent%" + recentChat.contact.email + "'><div class='contact'>";
+        contactBlock += "<div class='" + contactLinkClass + "' id='recent%" + recentChat.contact.id + "'><div class='contact'>";
         contactBlock += createAvatar(recentChat.contact.name);
         contactBlock += "<p style='display: inline-block;'>" + recentChat.contact.name + "</p>";
         contactBlock += "<p class='recentTimestamp' style='display: inline-block; float: right; font-size: 10px'>" + $.timeago(recentChat.status.lastTimestamp) + "</p><br>";

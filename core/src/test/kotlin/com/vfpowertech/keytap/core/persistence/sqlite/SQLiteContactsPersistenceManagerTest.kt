@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.vfpowertech.keytap.core.PlatformContact
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.persistence.*
 import org.junit.After
 import org.junit.Before
@@ -17,12 +18,12 @@ class SQLiteContactsPersistenceManagerTest {
         }
     }
 
-    val contactEmail = "a@a.com"
+    val contactId = UserId(1)
     val testMessage = "test message"
 
-    val contactA = ContactInfo(contactEmail, "a", "000-0000", "pubkey")
-    val contactA2 = ContactInfo("a2@a.com", "a2", "001-0000", "pubkey")
-    val contactC = ContactInfo("c@c.com", "c", "222-2222", "pubkey")
+    val contactA = ContactInfo(contactId, "a@a.com", "a", "000-0000", "pubkey")
+    val contactA2 = ContactInfo(UserId(2), "a2@a.com", "a2", "001-0000", "pubkey")
+    val contactC = ContactInfo(UserId(3), "c@c.com", "c", "222-2222", "pubkey")
     val contactList = arrayListOf(
         contactA,
         contactA2,
@@ -37,12 +38,12 @@ class SQLiteContactsPersistenceManagerTest {
             contactsPersistenceManager.add(contact).get()
     }
 
-    fun setConversationInfo(contact: String, unreadCount: Int, lastMessage: String?) {
+    fun setConversationInfo(userId: UserId, unreadCount: Int, lastMessage: String?) {
         persistenceManager.runQuery { connection ->
-            connection.prepare("UPDATE conversation_info SET unread_count=?, last_message=? WHERE contact_email=?").use { stmt ->
+            connection.prepare("UPDATE conversation_info SET unread_count=?, last_message=? WHERE contact_id=?").use { stmt ->
                 stmt.bind(1, unreadCount)
                 stmt.bind(2, lastMessage)
-                stmt.bind(3, contact)
+                stmt.bind(3, userId.id)
                 stmt.step()
             }
         }
@@ -60,25 +61,25 @@ class SQLiteContactsPersistenceManagerTest {
         persistenceManager.shutdown()
     }
 
-    fun doesConvTableExist(email: String): Boolean =
-        persistenceManager.runQuery { ConversationTable.exists(it, email) }.get()
+    fun doesConvTableExist(userId: UserId): Boolean =
+        persistenceManager.runQuery { ConversationTable.exists(it, userId) }.get()
 
     @Test
     fun `add should successfully add a contact and create a conversation table`() {
         val contact = contactA
         contactsPersistenceManager.add(contact).get()
-        val got = contactsPersistenceManager.get(contact.email).get()
+        val got = contactsPersistenceManager.get(contact.id).get()
 
         assertNotNull(got)
         assertEquals(contact, got)
-        assertTrue(doesConvTableExist(contact.email))
+        assertTrue(doesConvTableExist(contact.id), "Conversation table is missing")
     }
 
     @Test
     fun `getAll should return all stored contacts`() {
         val contacts = arrayListOf(
-            ContactInfo("a@a.com", "a", "000-0000", "pubkey"),
-            ContactInfo("b@b.com", "b", "000-0000", "pubkey")
+            ContactInfo(UserId(0), "a@a.com", "a", "000-0000", "pubkey"),
+            ContactInfo(UserId(1), "b@b.com", "b", "000-0000", "pubkey")
         )
 
         for (contact in contacts)
@@ -104,7 +105,7 @@ class SQLiteContactsPersistenceManagerTest {
         val updated = original.copy(name = "b", phoneNumber = "111-1111", publicKey = "pubkey2")
         contactsPersistenceManager.update(updated).get()
 
-        val got = contactsPersistenceManager.get(updated.email).get()
+        val got = contactsPersistenceManager.get(updated.id).get()
         assertEquals(updated, got)
     }
 
@@ -169,10 +170,10 @@ class SQLiteContactsPersistenceManagerTest {
 
         contactsPersistenceManager.remove(contactA)
 
-        val got = contactsPersistenceManager.get("a@a.com").get()
+        val got = contactsPersistenceManager.get(contactA.id).get()
 
         assertNull(got)
-        assertFalse(doesConvTableExist(contactA.email))
+        assertFalse(doesConvTableExist(contactA.id))
     }
 
     @Test
@@ -193,11 +194,11 @@ class SQLiteContactsPersistenceManagerTest {
     fun `getAllConversations should return a last message field if messages are available`() {
         loadContactList()
 
-        setConversationInfo(contactEmail, 2, testMessage)
+        setConversationInfo(contactId, 2, testMessage)
 
         val convos = contactsPersistenceManager.getAllConversations().get()
 
-        val a = convos.find { it.contact.email == contactEmail }!!
+        val a = convos.find { it.contact.id == contactId }!!
         val a2 = convos.find { it.contact == contactA2 }!!
 
         assertEquals(testMessage, a.info.lastMessage)
@@ -208,26 +209,26 @@ class SQLiteContactsPersistenceManagerTest {
     fun `getConversation should return a conversation if it exists`() {
         loadContactList()
 
-        contactsPersistenceManager.getConversationInfo(contactEmail).get()
+        contactsPersistenceManager.getConversationInfo(contactA.id).get()
     }
 
     @Test
     fun `getConversation should include unread message counts in a conversation`() {
         loadContactList()
 
-        val before = contactsPersistenceManager.getConversationInfo(contactEmail).get()
+        val before = contactsPersistenceManager.getConversationInfo(contactA.id).get()
         assertEquals(0, before.unreadMessageCount)
 
-        setConversationInfo(contactEmail, 1, testMessage)
+        setConversationInfo(contactId, 1, testMessage)
 
-        val after = contactsPersistenceManager.getConversationInfo(contactEmail).get()
+        val after = contactsPersistenceManager.getConversationInfo(contactA.id).get()
         assertEquals(1, after.unreadMessageCount)
     }
 
     @Test
     fun `getConversation should throw InvalidConversationException if the given conversation doesn't exist`() {
         assertFailsWith(InvalidConversationException::class) {
-            contactsPersistenceManager.getConversationInfo(contactEmail).get()
+            contactsPersistenceManager.getConversationInfo(contactA.id).get()
         }
     }
 
@@ -235,18 +236,18 @@ class SQLiteContactsPersistenceManagerTest {
     fun `markConversationAsRead should mark all unread messages as read`() {
         loadContactList()
 
-        setConversationInfo(contactEmail, 2, testMessage)
+        setConversationInfo(contactId, 2, testMessage)
 
-        contactsPersistenceManager.markConversationAsRead(contactEmail).get()
+        contactsPersistenceManager.markConversationAsRead(contactA.id).get()
 
-        val got = contactsPersistenceManager.getConversationInfo(contactEmail).get()
+        val got = contactsPersistenceManager.getConversationInfo(contactA.id).get()
         assertEquals(0, got.unreadMessageCount)
     }
 
     @Test
     fun `markConversationAsRead should throw InvalidConversationException if the given conversation doesn't exist`() {
         assertFailsWith(InvalidConversationException::class) {
-            contactsPersistenceManager.markConversationAsRead(contactEmail).get()
+            contactsPersistenceManager.markConversationAsRead(contactA.id).get()
         }
     }
 
@@ -301,18 +302,18 @@ class SQLiteContactsPersistenceManagerTest {
 
     @Test
     fun `getDiff should return a proper diff`() {
-        val userA = ContactInfo("a@a.com", "a", "0", "pk")
-        val userB = ContactInfo("b@a.com", "a", "0", "pk")
-        val userC = ContactInfo("c@a.com", "a", "0", "pk")
+        val userA = ContactInfo(UserId(0), "a@a.com", "a", "0", "pk")
+        val userB = ContactInfo(UserId(1), "b@a.com", "a", "0", "pk")
+        val userC = ContactInfo(UserId(2), "c@a.com", "a", "0", "pk")
 
         for (user in listOf(userA, userB))
             contactsPersistenceManager.add(user).get()
 
-        val remoteContacts = listOf(userA.email, userC.email)
+        val remoteContacts = listOf(userA.id, userC.id)
 
         val diff = contactsPersistenceManager.getDiff(remoteContacts).get()
 
-        val expected = ContactListDiff(setOf(userC.email), setOf(userB.email))
+        val expected = ContactListDiff(setOf(userC.id), setOf(userB.id))
 
         assertEquals(expected, diff)
     }

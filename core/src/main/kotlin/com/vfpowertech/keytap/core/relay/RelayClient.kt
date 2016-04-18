@@ -1,6 +1,6 @@
 package com.vfpowertech.keytap.core.relay
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.relay.RelayClientState.*
 import com.vfpowertech.keytap.core.relay.base.*
 import com.vfpowertech.keytap.core.relay.base.CommandCode.*
@@ -10,6 +10,9 @@ import rx.Observer
 import rx.Scheduler
 import rx.subjects.PublishSubject
 import java.net.InetSocketAddress
+
+private fun String.toUserId(): UserId =
+    UserId(toLong())
 
 /**
  * Higher-level abstraction over a relay server connection.
@@ -33,7 +36,6 @@ class RelayClient(
     private var state = DISCONNECTED
     private var wasDisconnectRequested = false
     private val publishSubject = PublishSubject.create<RelayClientEvent>()
-    private val objectMapper = ObjectMapper()
 
     /** Client event stream. Will never call onError; check ConnectionLost.error instead. */
     val events: Observable<RelayClientEvent> = publishSubject
@@ -105,7 +107,7 @@ class RelayClient(
             }
 
             SERVER_MESSAGE_SENT -> {
-                val to = message.header.toUserEmail
+                val to = message.header.toUserId
                 val messageId = message.header.messageId
                 log.info(
                     "Message <{}> to <<{}>> has been successfully sent",
@@ -115,11 +117,11 @@ class RelayClient(
 
                 //user was online and message was sent
                 //not sure we should bother with this event; client might not view it immediately/etc anyways
-                emitEvent(MessageSentToUser(to, messageId))
+                emitEvent(MessageSentToUser(to.toUserId(), messageId))
             }
 
             SERVER_MESSAGE_RECEIVED -> {
-                val to = message.header.toUserEmail
+                val to = message.header.toUserId
                 val messageId = message.header.messageId
                 log.info(
                     "Server has received message <{}> to <<{}>>",
@@ -127,12 +129,12 @@ class RelayClient(
                     to
                 )
 
-                emitEvent(ServerReceivedMessage(to, messageId))
+                emitEvent(ServerReceivedMessage(to.toUserId(), messageId))
             }
 
             //when receiving a message of this type, it indicates a new message from someone
             CLIENT_SEND_MESSAGE -> {
-                val from = message.header.fromUserEmail
+                val from = message.header.fromUserId
                 val messageId = message.header.messageId
                 log.info(
                     "Received message <{}> from <<{}>>",
@@ -140,11 +142,11 @@ class RelayClient(
                     from
                 )
 
-                emitEvent(ReceivedMessage(from, message.content, messageId))
+                emitEvent(ReceivedMessage(from.toUserId(), message.content, messageId))
             }
 
             SERVER_USER_OFFLINE -> {
-                val to = message.header.toUserEmail
+                val to = message.header.toUserId
                 val messageId = message.header.messageId
 
                 log.info(
@@ -153,7 +155,7 @@ class RelayClient(
                     messageId
                 )
 
-                emitEvent(UserOffline(to, messageId))
+                emitEvent(UserOffline(to.toUserId(), messageId))
             }
 
             else -> {
@@ -215,7 +217,7 @@ class RelayClient(
         wasDisconnectRequested = true
     }
 
-    fun sendMessage(to: String, content: ByteArray, messageId: String) {
+    fun sendMessage(to: UserId, content: ByteArray, messageId: String) {
         log.info("Sending message <<{}>> to <<{}>>", messageId, to)
         val connection = getAuthConnectionOrThrow()
         connection.sendMessage(createSendMessageMessage(credentials, to, content, messageId))

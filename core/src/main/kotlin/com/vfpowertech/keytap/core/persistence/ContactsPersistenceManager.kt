@@ -1,20 +1,21 @@
 package com.vfpowertech.keytap.core.persistence
 
 import com.vfpowertech.keytap.core.PlatformContact
+import com.vfpowertech.keytap.core.UserId
 import nl.komponents.kovenant.Promise
 
 /** Manages contacts. */
 interface ContactsPersistenceManager {
-    fun get(email: String): Promise<ContactInfo?, Exception>
+    fun get(userId: UserId): Promise<ContactInfo?, Exception>
     fun getAll(): Promise<List<ContactInfo>, Exception>
     /** Returns info for all available conversations. */
     fun getAllConversations(): Promise<List<Conversation>, Exception>
 
     /** Returns a ConversationInfo for the given user. */
-    fun getConversationInfo(email: String): Promise<ConversationInfo, Exception>
+    fun getConversationInfo(userId: UserId): Promise<ConversationInfo, Exception>
 
     /** Resets unread message count for the given contact's conversation. */
-    fun markConversationAsRead(email: String): Promise<Unit, Exception>
+    fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>
 
     /** Adds a new contact and conversation for a contact. */
     fun add(contactInfo: ContactInfo): Promise<Unit, Exception>
@@ -32,7 +33,7 @@ interface ContactsPersistenceManager {
     fun findMissing(platformContacts: List<PlatformContact>): Promise<List<PlatformContact>, Exception>
 
     /** Diff the current contact list with the given remote one. */
-    fun getDiff(emails: List<String>): Promise<ContactListDiff, Exception>
+    fun getDiff(ids: List<UserId>): Promise<ContactListDiff, Exception>
 
-    fun applyDiff(newContacts: List<ContactInfo>, removedContacts: List<String>): Promise<Unit, Exception>
+    fun applyDiff(newContacts: List<ContactInfo>, removedContacts: List<UserId>): Promise<Unit, Exception>
 }

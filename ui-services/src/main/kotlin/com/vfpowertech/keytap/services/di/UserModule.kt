@@ -31,7 +31,7 @@ class UserModule(
         relayConnector: RelayConnector,
         serverUrls: ServerUrls
     ): RelayClient {
-        val credentials = UserCredentials(userLoginData.username, userLoginData.authToken!!)
+        val credentials = UserCredentials(userLoginData.userId, userLoginData.username, userLoginData.authToken!!)
         return RelayClient(relayConnector, scheduler, serverUrls.RELAY_SERVER, credentials)
     }
 
@@ -67,9 +67,10 @@ class UserModule(
     fun providesNotifierService(
         messengerService: MessengerService,
         uiEventService: UIEventService,
+        contactsPersistenceManager: ContactsPersistenceManager,
         platformNotificationService: PlatformNotificationService
     ): NotifierService =
-        NotifierService(messengerService, uiEventService, platformNotificationService)
+        NotifierService(messengerService, uiEventService, contactsPersistenceManager, platformNotificationService)
 
     @UserScope
     @Provides

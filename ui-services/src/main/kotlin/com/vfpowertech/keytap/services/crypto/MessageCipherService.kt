@@ -2,6 +2,7 @@ package com.vfpowertech.keytap.services.crypto
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.BuildConfig
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.unhexify
 import com.vfpowertech.keytap.core.http.api.prekeys.*
@@ -55,24 +56,24 @@ class MessageCipherService(
         body(signalStore)
     }
 
-    private fun fetchPreKeyBundle(contactEmail: String): Promise<PreKeyBundle, Exception> {
+    private fun fetchPreKeyBundle(userId: UserId): Promise<PreKeyBundle, Exception> {
         val authToken = userLoginData.authToken ?: throw NoAuthTokenException()
-        val request = PreKeyRetrievalRequest(authToken, contactEmail)
+        val request = PreKeyRetrievalRequest(authToken, userId)
         return PreKeyRetrievalAsyncClient(serverUrls.API_SERVER).retrieve(request) map { response ->
             if (!response.isSuccess)
                 throw RuntimeException(response.errorMessage)
             else {
-                response.keyData ?: throw RuntimeException("No key data for $contactEmail")
+                response.keyData ?: throw RuntimeException("No key data for $userId")
                 response.keyData.toPreKeyBundle()
             }
         }
     }
 
-    private fun getSessionCipher(contactEmail: String): Promise<SessionCipher, Exception> {
-        val address = KeyTapAddress(contactEmail).toSignalAddress()
+    private fun getSessionCipher(userId: UserId): Promise<SessionCipher, Exception> {
+        val address = KeyTapAddress(userId).toSignalAddress()
         val containsSession = withStore { it.containsSession(address) }
         return if (!containsSession) {
-            fetchPreKeyBundle(contactEmail) map { bundle ->
+            fetchPreKeyBundle(userId) map { bundle ->
                 withStore {
                     val builder = SessionBuilder(it, address)
                     builder.process(bundle)
@@ -85,8 +86,8 @@ class MessageCipherService(
     }
 
     //requires fetching a prekey if a session is missing
-    fun encrypt(contactEmail: String, message: String): Promise<EncryptedMessageV0, Exception> {
-        return getSessionCipher(contactEmail) map { sessionCipher ->
+    fun encrypt(userId: UserId, message: String): Promise<EncryptedMessageV0, Exception> {
+        return getSessionCipher(userId) map { sessionCipher ->
             val encrypted = withStore {
                 sessionCipher.encrypt(message.toByteArray(Charsets.UTF_8))
             }
@@ -113,8 +114,8 @@ class MessageCipherService(
         return String(messageData, Charsets.UTF_8)
     }
 
-    fun decrypt(contactEmail: String, encryptedMessage: EncryptedMessageV0): Promise<String, Exception> = task {
-        val address = KeyTapAddress(contactEmail).toSignalAddress()
+    fun decrypt(userId: UserId, encryptedMessage: EncryptedMessageV0): Promise<String, Exception> = task {
+        val address = KeyTapAddress(userId).toSignalAddress()
         val sessionCipher = SessionCipher(signalStore, address)
 
         withStore {
@@ -123,11 +124,11 @@ class MessageCipherService(
     }
 
     /** Must be called with store lock held. */
-    private fun decryptMessagesForUser(contactEmail: String, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
+    private fun decryptMessagesForUser(userId: UserId, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
         val failed = ArrayList<DecryptionFailure>()
         val succeeded = ArrayList<String>()
 
-        val address = KeyTapAddress(contactEmail).toSignalAddress()
+        val address = KeyTapAddress(userId).toSignalAddress()
         val sessionCipher = SessionCipher(signalStore, address)
 
         encryptedMessages.forEach { encryptedMessage ->
@@ -144,7 +145,7 @@ class MessageCipherService(
     }
 
     /** Decrypts multiple messages from multiple users at once. */
-    fun decryptMultiple(encryptedMessages: Map<String, List<EncryptedMessageV0>>): Promise<Map<String, MessageListDecryptionResult>, Exception> = task {
+    fun decryptMultiple(encryptedMessages: Map<UserId, List<EncryptedMessageV0>>): Promise<Map<UserId, MessageListDecryptionResult>, Exception> = task {
         withStore { store ->
             encryptedMessages.mapValues { entry ->
                 decryptMessagesForUser(entry.key, entry.value)

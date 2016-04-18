@@ -19,11 +19,11 @@ NavigationController.prototype = {
             });
         }
         else if(/^user\//.test(page)) {
-            var email = page.split("/", 2)[1];
+            var id = page.split("/", 2)[1];
 
             //so we clear the history and set it to contacts > chat
             historyService.replace(["contacts.html"]).then(function () {
-                KEYTAP.contactController.loadContactPage(email, false);
+                KEYTAP.contactController.loadContactPage(id, false);
             });
         }
         else {
@@ -90,7 +90,7 @@ NavigationController.prototype = {
         }
         else if(/chat.html$/.test(url)) {
             page = "CONVO";
-            extra = KEYTAP.contactController.getCurrentContact().email;
+            extra = KEYTAP.contactController.getCurrentContact().id;
         }
 
         if(page !== undefined) {

@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.readResourceFileText
 
 /**
@@ -14,18 +15,21 @@ object ConversationTable {
         tableTemplate = javaClass.readResourceFileText("/schema/conversation.sql")
     }
 
-    fun create(connection: SQLiteConnection, contact: String) {
-        val sql = tableTemplate.replace("%name%", escapeBackticks(contact))
+    fun getTablenameForContact(userId: UserId) =
+        "conv_${userId.id}"
+
+    fun create(connection: SQLiteConnection, userId: UserId) {
+        val sql = tableTemplate.replace("%id%", userId.id.toString())
         connection.exec(sql)
     }
 
-    fun delete(connection: SQLiteConnection, contact: String) {
-        connection.exec("DROP TABLE IF EXISTS `conv_${escapeBackticks(contact)}`")
+    fun delete(connection: SQLiteConnection, userId: UserId) {
+        connection.exec("DROP TABLE IF EXISTS `conv_${userId.id}`")
     }
 
-    fun exists(connection: SQLiteConnection, contact: String): Boolean {
+    fun exists(connection: SQLiteConnection, userId: UserId): Boolean {
         connection.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").use { stmt ->
-            stmt.bind(1, "conv_$contact")
+            stmt.bind(1, getTablenameForContact(userId))
             return stmt.step()
         }
     }

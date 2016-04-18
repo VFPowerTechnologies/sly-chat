@@ -52,7 +52,7 @@ ChatController.prototype = {
     createMessageNode : function (message, contactName) {
         if(message.sent == true)
             contactName = KEYTAP.profileController.getUserInfo().name;
-        
+
         var fromClass = "";
 
         var node = $(document.createElement("li"));
@@ -186,8 +186,10 @@ ChatController.prototype = {
 
         //Get the contact that sent the message
         var cachedContact = this.contactController.getContact(contact);
-        if(!cachedContact)
+        if(!cachedContact) {
+            console.error("No cached contact for " + contact);
             return;
+        }
         var contactName = cachedContact.name;
 
         this.updateChatPageNewMessage(messages, contactName, contact);
@@ -223,9 +225,9 @@ ChatController.prototype = {
             }
         }
     },
-    updateChatPageNewMessage : function (messages, contactName, contactEmail) {
-        var currentPageEmail = $("#currentPageChatEmail");
-        if(currentPageEmail.length && currentPageEmail.html() == contactEmail){
+    updateChatPageNewMessage : function (messages, contactName, contactId) {
+        var currentPageId = $("#currentPageChatId");
+        if(currentPageId.length && currentPageId.html() == contactId){
             var messageDiv = $("#messages");
 
             if(messageDiv.length){

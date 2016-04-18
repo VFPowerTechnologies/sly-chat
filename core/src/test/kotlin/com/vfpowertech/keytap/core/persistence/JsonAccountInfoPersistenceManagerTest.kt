@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.persistence
 
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.persistence.json.JsonAccountInfoPersistenceManager
 import org.junit.After
 import org.junit.Before
@@ -9,7 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class JsonAccountInfoPersistenceManagerTest {
-    val accountInfo = AccountInfo("name", "email", "000-000-0000")
+    val accountInfo = AccountInfo(UserId(1), "name", "email", "000-000-0000")
     lateinit var accountManager: JsonAccountInfoPersistenceManager
     lateinit var tempFile: File
 

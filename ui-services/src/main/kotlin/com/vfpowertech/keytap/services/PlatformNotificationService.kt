@@ -1,7 +1,7 @@
 package com.vfpowertech.keytap.services
 
 interface PlatformNotificationService {
-    fun clearMessageNotificationsForUser(contactEmail: String)
+    fun clearMessageNotificationsForUser(contact: ContactDisplayInfo)
     fun clearAllMessageNotifications()
-    fun addNewMessageNotification(contactEmail: String, messageCount: Int)
+    fun addNewMessageNotification(contact: ContactDisplayInfo, messageCount: Int)
 }

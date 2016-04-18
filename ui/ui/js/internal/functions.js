@@ -106,7 +106,7 @@ if (typeof KEYTAP == "undefined") {
         var height = window.innerHeight - 56;
         $("#main").css("height", height + "px");
 
-        if ($("#currentPageChatEmail").length && $("#messages").length) {
+        if ($("#currentPageChatId").length && $("#messages").length) {
             KEYTAP.chatController.scrollTop();
         }
     }

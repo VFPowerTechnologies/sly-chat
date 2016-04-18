@@ -6,6 +6,6 @@ $(function(){
     KEYTAP.chatController.init();
     var currentContact = KEYTAP.contactController.getCurrentContact();
 
-    $("#currentPageChatEmail").html(currentContact.email);
+    $("#currentPageChatId").html(currentContact.id);
     $("#chat-page-title").html(currentContact.name);
 });

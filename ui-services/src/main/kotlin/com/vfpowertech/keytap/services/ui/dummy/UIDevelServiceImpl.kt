@@ -8,6 +8,6 @@ class DummyNotAvailableException(val serviceName: String) : UnsupportedOperation
 class UIDevelServiceImpl(private val messengerService: DummyUIMessengerService?) : UIDevelService {
     override fun receiveFakeMessage(contact: UIContactDetails, message: String) {
         messengerService ?: throw DummyNotAvailableException("MessengerService")
-        messengerService.receiveNewMessage(contact.email, message)
+        messengerService.receiveNewMessage(contact.id, message)
     }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.generateNewKeyVault
 import com.vfpowertech.keytap.core.crypto.getRandomBits
 import com.vfpowertech.keytap.core.crypto.hashes.BCryptParams
@@ -19,7 +20,7 @@ class AuthenticationClientTest {
     val objectMapper = ObjectMapper()
     val username = "test-user"
     val csrfToken = "csrf"
-    val accountInfo = AccountInfo("name", username, "0")
+    val accountInfo = AccountInfo(UserId(1), "name", username, "0")
 
     @Test
     fun `getParams should return a successful AuthenticationParamsResponse when receiving a 200 response`() {

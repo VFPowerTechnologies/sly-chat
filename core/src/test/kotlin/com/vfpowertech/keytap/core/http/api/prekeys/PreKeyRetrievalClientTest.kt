@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.http.api.ApiResult
@@ -16,7 +17,7 @@ import kotlin.test.assertFailsWith
 class PreKeyRetrievalClientTest {
     val objectMapper = ObjectMapper()
     val authToken = "000"
-    val username = "test-user"
+    val userId = UserId(1)
 
     @Test
     fun `retrieve should return a PreKeyRetrieveResponse when receiving a 200 response`() {
@@ -24,8 +25,8 @@ class PreKeyRetrievalClientTest {
         val preKey = "bbbb"
         val signedPreKey = "cccc"
 
-        val request = PreKeyRetrievalRequest(authToken, username)
-        val response = PreKeyRetrievalResponse(null, username, SerializedPreKeySet(publicKey, signedPreKey, preKey))
+        val request = PreKeyRetrievalRequest(authToken, userId)
+        val response = PreKeyRetrievalResponse(null, userId, SerializedPreKeySet(publicKey, signedPreKey, preKey))
         val apiResult = ApiResult(null, response)
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))
 
@@ -42,7 +43,7 @@ class PreKeyRetrievalClientTest {
 
     @Test
     fun `store should throw UnauthorizedException when receiving a 401 response`() {
-        val request = PreKeyRetrievalRequest(authToken, username)
+        val request = PreKeyRetrievalRequest(authToken, userId)
         val httpResponse = HttpResponse(401, HashMap(), "")
         val httpClient = mock<HttpClient>()
 

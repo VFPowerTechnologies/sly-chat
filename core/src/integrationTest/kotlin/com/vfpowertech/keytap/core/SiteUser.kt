@@ -5,6 +5,9 @@ import com.vfpowertech.keytap.core.crypto.SerializedCryptoParams
 import com.vfpowertech.keytap.core.crypto.SerializedKeyVault
 
 data class SiteUser(
+    @JsonProperty("id")
+    val id: UserId,
+
     @JsonProperty("username")
     val username: String,
 
