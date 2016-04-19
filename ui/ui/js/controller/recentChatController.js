@@ -18,19 +18,17 @@ RecentChatController.prototype = {
         else {
             var fragment = $(document.createDocumentFragment());
 
-            var i = 0;
-            for (var email in recentChat) {
-                if (recentChat.hasOwnProperty(email)) {
-                    fragment.append(this.createRecentChat(recentChat[email], i));
+            for (var id in recentChat) {
+                if (recentChat.hasOwnProperty(id)) {
+                    fragment.append(this.createRecentChat(recentChat[id]));
                 }
-                i++;
             }
 
             recentChatContent.html(fragment);
             this.addRecentChatEventListener();
         }
     },
-    createRecentChat : function (recentChat, index) {
+    createRecentChat : function (recentChat) {
         var contactLinkClass = "recent-contact-link ";
         var newBadge = "";
 
@@ -38,9 +36,6 @@ RecentChatController.prototype = {
             contactLinkClass += "new-messages";
             newBadge = "<span class='pull-right label label-warning' style='line-height: 0.8'>new</span>";
         }
-
-        if(index == 0)
-            contactLinkClass += " first-contact";
 
         var lastMessage;
 
@@ -51,7 +46,7 @@ RecentChatController.prototype = {
 
         var contactBlock = "";
 
-        contactBlock += "<div class='" + contactLinkClass + "' id='recent%" + recentChat.contact.id + "'><div class='contact'>";
+        contactBlock += "<div class='" + contactLinkClass + "' id='recent_" + recentChat.contact.id + "'><div class='contact'>";
         contactBlock += createAvatar(recentChat.contact.name);
         contactBlock += "<p style='display: inline-block;'>" + recentChat.contact.name + "</p>";
         contactBlock += "<p class='recentTimestamp' style='display: inline-block; float: right; font-size: 10px'>" + $.timeago(recentChat.status.lastTimestamp) + "</p><br>";
@@ -63,8 +58,8 @@ RecentChatController.prototype = {
     addRecentChatEventListener : function () {
         $(".recent-contact-link").bind("click", function (e) {
             e.preventDefault();
-            var email = $(this).attr("id").split("recent%")[1];
-            KEYTAP.contactController.setCurrentContact(email);
+            var id = $(this).attr("id").split("recent_")[1];
+            KEYTAP.contactController.setCurrentContact(id);
             KEYTAP.navigationController.loadPage("chat.html", true);
         });
     }

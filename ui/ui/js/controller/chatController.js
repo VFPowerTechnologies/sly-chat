@@ -11,7 +11,7 @@ ChatController.prototype = {
     init : function () {
         var contact = this.contactController.getCurrentContact();
         this.model.fetchMessage(this.currentMessagePosition, this.fetchingNumber, contact);
-        this.model.markConversationAsRead(this.contactController.getCurrentContact());
+        this.model.markConversationAsRead(contact);
 
         $("#newMessageSubmitBtn").click(function (){
             $("#newMessageInput").focus();
@@ -135,7 +135,6 @@ ChatController.prototype = {
             var currentContact = this.contactController.getCurrentContact();
 
             messengerService.sendMessageTo(currentContact, message).then(function (messageDetails) {
-                this.model.pushNewMessage(currentContact.email, messageDetails);
                 var input = $('#newMessageInput');
                 input.val("");
                 $("#messages").append(this.createMessageNode(messageDetails, KEYTAP.profileController.getUserInfo().name));
@@ -160,7 +159,6 @@ ChatController.prototype = {
     addMessageUpdateListener : function () {
         messengerService.addMessageStatusUpdateListener(function (messageInfo) {
             messageInfo.messages.forEach(function (message) {
-                this.model.updateMessage(messageInfo.contact, message);
                 var messageDiv = $("#message_" + message.id);
 
                 if(messageDiv.length && message.sent == true){
@@ -177,29 +175,24 @@ ChatController.prototype = {
             return;
 
         var messages = messageInfo.messages;
-        var contact = messageInfo.contact;
-
-        //Update the cached messageList
-        messages.forEach(function (message) {
-            this.model.pushNewMessage(contact, message);
-        }.bind(this));
+        var contactId = messageInfo.contact;
 
         //Get the contact that sent the message
-        var cachedContact = this.contactController.getContact(contact);
+        var cachedContact = this.contactController.getContact(contactId);
         if(!cachedContact) {
-            console.error("No cached contact for " + contact);
+            console.error("No cached contact for " + contactId);
             return;
         }
         var contactName = cachedContact.name;
 
-        this.updateChatPageNewMessage(messages, contactName, contact);
-        this.updateContactPageNewMessage(contact);
-        this.updateRecentChatNewMessage(messages, contact);
+        this.updateChatPageNewMessage(messages, contactName, contactId);
+        this.updateContactPageNewMessage(contactId);
+        this.updateRecentChatNewMessage(messages, contactId);
     },
-    updateRecentChatNewMessage : function (messages, contactEmail) {
+    updateRecentChatNewMessage : function (messages, contactId) {
         var recentContent = $("#recentChatList");
         if(recentContent.length){
-            var recentBlock = $("[id='recent%" + contactEmail + "']");
+            var recentBlock = $("#recent_" + contactId);
             if(recentBlock.length) {
                 var contactDiv = recentBlock.find(".contact");
                 if (!recentBlock.hasClass("new-messages")) {
@@ -212,10 +205,10 @@ ChatController.prototype = {
             }
         }
     },
-    updateContactPageNewMessage : function (contactEmail) {
+    updateContactPageNewMessage : function (contactId) {
         var contactContent = $("#contactList");
         if(contactContent.length){
-            var contactBlock = $("[id='contact%" + contactEmail + "']");
+            var contactBlock = $("#contact_" + contactId);
             if(contactBlock.length) {
                 if (!contactBlock.hasClass("new-messages")) {
                     var contactDiv = contactBlock.find(".contact");

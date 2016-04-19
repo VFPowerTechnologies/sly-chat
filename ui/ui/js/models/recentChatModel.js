@@ -2,16 +2,7 @@ var RecentChatModel = function () {};
 
 RecentChatModel.prototype = {
     setRecentChat : function (conversations) {
-        var conversation = this.orderByRecentChat(conversations);
-        var recentChat = [];
-
-        conversation.forEach(function (chat) {
-            recentChat[chat.contact.id] = chat;
-        });
-
-        KEYTAP.chatController.model.fetchConversationMessages(conversation);
-
-        this.controller.displayRecentChat(recentChat);
+        this.controller.displayRecentChat(this.orderByRecentChat(conversations));
     },
     setController : function (controller) {
         this.controller = controller;

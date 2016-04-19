@@ -13,7 +13,7 @@ ContactModel.prototype = {
                 this.conversations[conversation.contact.id] = conversation;
             }.bind(this));
 
-            this.controller.displayContacts(this.conversations);
+            this.controller.displayContacts(forContact);
         }.bind(this)).catch(function(e){
             KEYTAP.exceptionController.displayDebugMessage(e);
             console.log("Unable to fetch conversations: " + e);
@@ -28,43 +28,27 @@ ContactModel.prototype = {
     setController : function (controller) {
         this.controller = controller;
     },
-    setCurrentContact : function (email) {
-        this.currentContact = this.conversations[email].contact;
+    setCurrentContact : function (id) {
+        this.currentContact = this.conversations[id].contact;
     },
     getCurrentContact : function () {
         return this.currentContact;
     },
-    getContact : function (email) {
-        var conversation = this.conversations[email];
+    getContact : function (id) {
+        var conversation = this.conversations[id];
         if (!conversation)
             return null;
         else
             return conversation.contact;
     },
-    validateContact : function (formId) {
-        var validation = $(formId).parsley({
-            errorClass: "invalid",
-            focus: 'none',
-            errorsWrapper: '<div class="pull-right parsley-errors-list" style="color: red;"></div>',
-            errorTemplate: '<p></p>'
-        });
-        var isValid = validation.validate();
-
-        if(isValid == true){
-            return true;
-        }
-        else{
-            return false;
-        }
-    },
-    fetchConversationForChat : function (email, pushCurrentPage) {
+    fetchConversationForChat : function (id, pushCurrentPage) {
         messengerService.getConversations().then(function(conversations){
             conversations.forEach(function(conversation){
                 KEYTAP.contactController.model.conversations[conversation.contact.id] = conversation;
             });
-            KEYTAP.contactController.model.setCurrentContact(email);
+            KEYTAP.contactController.model.setCurrentContact(id);
             KEYTAP.navigationController.loadPage("chat.html", pushCurrentPage);
-        }.bind(email)).catch(function(e){
+        }.bind(id)).catch(function(e){
             KEYTAP.exceptionController.displayDebugMessage(e);
             console.log("Unable to fetch conversations: " + e);
         });

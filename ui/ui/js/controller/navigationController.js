@@ -134,7 +134,7 @@ NavigationController.prototype = {
 
                     var mainDiv = $("#main");
 
-                    mainDiv.after(newDiv);
+                    mainDiv.before(newDiv);
                     mainDiv.attr("id", "oldMain");
 
                     var fragment = $(document.createDocumentFragment());
@@ -145,7 +145,7 @@ NavigationController.prototype = {
                     var height = window.innerHeight - 56;
                     newDiv.css("height", height + "px");
 
-                    $("#newMainDiv").attr("id", "main");
+                    newDiv.attr("id", "main");
 
                     var oldMain = $("#oldMain");
 

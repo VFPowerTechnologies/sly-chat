@@ -7,25 +7,23 @@ var ContactController = function (model) {
 
 ContactController.prototype = {
     init : function () {
-        var conversations = this.model.getConversations();
-        if(conversations.length <= 0){
+        //var conversations = this.model.getConversations();
+        //if(conversations.length <= 0){
             this.model.fetchConversation();
-        }
-        else{
-            KEYTAP.recentChatController.init(conversations);
-            this.displayContacts(conversations);
-        }
+        //}
+        //else{
+        //    KEYTAP.recentChatController.init(conversations);
+        //    this.displayContacts(conversations);
+        //}
     },
     displayContacts : function (conversations) {
         var contactList = $("#contactList");
         var fragment = $(document.createDocumentFragment());
 
-        var i = 0;
-        for (var email in conversations) {
-            if(conversations.hasOwnProperty(email)) {
-                fragment.append(this.createContactBlock(conversations[email].contact, conversations[email].status, i));
+        for (var id in conversations) {
+            if(conversations.hasOwnProperty(id)) {
+                fragment.append(this.createContactBlock(conversations[id].contact, conversations[id].status));
             }
-            i++;
         }
 
         contactList.html(fragment);
@@ -75,7 +73,7 @@ ContactController.prototype = {
             }
         }.bind(this), 300);
     },
-    createContactBlock : function (contact, status, index) {
+    createContactBlock : function (contact, status) {
         var contactLinkClass = "contact-link ";
         var newBadge = "";
 
@@ -84,29 +82,26 @@ ContactController.prototype = {
             newBadge = "<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>";
         }
 
-        if(index == 0)
-            contactLinkClass += " first-contact";
-
-        var contactBlock = "<div class='" + contactLinkClass + "' id='contact%" + contact.id + "'><div class='contact'>";
+        var contactBlock = "<div class='" + contactLinkClass + "' id='contact_" + contact.id + "'><div class='contact'>";
         contactBlock += createAvatar(contact.name);
         contactBlock += "<p style='display: inline-block;'>" + contact.name + "</p>";
-        contactBlock += this.createContactDropDown(contact.email);
+        contactBlock += this.createContactDropDown(contact.id);
         contactBlock += "</div>" + newBadge + "</div>";
 
         return contactBlock;
     },
-    createContactDropDown: function (email) {
+    createContactDropDown: function (id) {
         var dropDown = '<div class="dropdown pull-right">';
         dropDown += '<a class="dropdown-toggle contact-dropDown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" href="#" style="text-decoration: none;">';
         dropDown += '&nbsp;<i class="fa fa-ellipsis-v"></i>&nbsp;</a>';
         dropDown += '<ul class="contact-dropdown-menu dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu">';
-        dropDown += '<li style="text-align: center;"><a href="#" id="deleteContact_' + email + '">Delete Contact</a></li>';
+        dropDown += '<li style="text-align: center;"><a href="#" id="deleteContact_' + id + '">Delete Contact</a></li>';
         dropDown += '</ul></div>';
 
         return dropDown;
     },
-    loadContactPage : function (email, pushCurrentPage) {
-        this.model.fetchConversationForChat(email, pushCurrentPage);
+    loadContactPage : function (id, pushCurrentPage) {
+        this.model.fetchConversationForChat(id, pushCurrentPage);
     },
     addEventListener : function () {
         $(".contact-dropDown").bind("click", function(e) {
@@ -121,8 +116,8 @@ ContactController.prototype = {
 
         $(".contact-link").bind("click", function (e) {
             e.preventDefault();
-            var email = $(this).attr("id").split("contact%")[1];
-            KEYTAP.contactController.setCurrentContact(email);
+            var id = $(this).attr("id").split("contact_")[1];
+            KEYTAP.contactController.setCurrentContact(id);
             KEYTAP.navigationController.loadPage("chat.html", true);
         });
 
@@ -131,24 +126,24 @@ ContactController.prototype = {
             e.preventDefault();
             $(".contact-dropdown-menu").hide();
             if(KEYTAP.connectionController.networkAvailable == true && this.syncing == false) {
-                var email = e.currentTarget.id.split("_")[1];
-                this.displayDeleteContactModal(email);
+                var id = e.currentTarget.id.split("_")[1];
+                this.displayDeleteContactModal(id);
             }
         }.bind(this));
     },
     getCurrentContact : function () {
         return this.model.getCurrentContact();
     },
-    setCurrentContact : function (email) {
-        this.model.setCurrentContact(email);
+    setCurrentContact : function (id) {
+        this.model.setCurrentContact(id);
     },
-    getContact : function (email) {
-        return this.model.getContact(email);
+    getContact : function (id) {
+        return this.model.getContact(id);
     },
     addNewContact : function () {
         var newContactBtn = $("#newContactBtn");
         newContactBtn.prop("disabled", true);
-        if(this.model.validateContact("#addContactForm") == true && this.syncing == false){
+        if(validateForm("#addContactForm") == true && this.syncing == false){
             var input = $("#username").val().replace(/\s+/g, '');
             var phone = null;
             var username = null;
@@ -179,7 +174,7 @@ ContactController.prototype = {
         }
     },
     updateContact : function () {
-        if(this.model.validateContact("#updateContactForm") == true){
+        if(validateForm("#updateContactForm") == true){
             var contact = this.model.getCurrentContact();
             contact.name = document.getElementById("name").value;
             contact.phoneNumber = document.getElementById("phone").value;
@@ -203,10 +198,10 @@ ContactController.prototype = {
             this.addNewContact();
         }.bind(this));
     },
-    deleteContact : function (email) {
-        contactService.removeContact(this.model.getContact(email)).then(function () {
+    deleteContact : function (id) {
+        contactService.removeContact(this.model.getContact(id)).then(function () {
             this.model.resetContacts();
-            KEYTAP.navigationController.loadPage("contacts.html");
+            KEYTAP.navigationController.loadPage("contacts.html", false);
         }.bind(this)).catch(function (e) {
             console.log(e);
         })
@@ -316,18 +311,18 @@ ContactController.prototype = {
             KEYTAP.navigationController.loadPage("addContact.html", false);
         });
     },
-    displayDeleteContactModal: function(email) {
+    displayDeleteContactModal: function(id) {
         var modalHtml = '<div id="deleteContactModal" class="modal">';
         modalHtml += '<div style="border-bottom: 1px solid black;"><h6 style="margin-left: 5px;">Please confirm</h6></div>';
         modalHtml += '<div class="modalContent row" style="margin-top: 10px; height: 60%;">';
         modalHtml += '<div style="text-align: center;">';
         modalHtml += '<h6>Are you sure You want to delete this contact?</h6><br>';
-        modalHtml += '<h6>' + email + '</h6>';
+        modalHtml += '<h6>' + this.getContact(id).email + '</h6>';
         modalHtml += '</div>';
         modalHtml += '</div>';
         modalHtml += '<div style="bottom: 0; text-align: center;">';
         modalHtml += '<button id="deleteContactModalClose" class="btn btn-info">Cancel</button>';
-        modalHtml += '<button id="deleteConfirm_' + email + '" class="btn red" style="margin-left: 5px;">Delete</button>';
+        modalHtml += '<button id="deleteConfirm_' + id + '" class="btn red" style="margin-left: 5px;">Delete</button>';
         modalHtml += '</div>';
         modalHtml += '</div>';
 
@@ -346,8 +341,8 @@ ContactController.prototype = {
 
         $("[id^='deleteConfirm_']").click(function(e){
             var buttonId = e.currentTarget.id;
-            var contactEmail = buttonId.split("_")[1];
-            this.deleteContact(contactEmail);
+            var contactId = buttonId.split("_")[1];
+            this.deleteContact(contactId);
             modal.closeModal();
             modal.remove();
         }.bind(this));
