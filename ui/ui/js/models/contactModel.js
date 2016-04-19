@@ -7,6 +7,7 @@ ContactModel.prototype = {
     fetchConversation : function () {
         messengerService.getConversations().then(function(conversations){
             KEYTAP.recentChatController.init(conversations);
+            KEYTAP.chatController.model.fetchConversationMessages(conversations);
             var forContact = this.orderByName(conversations);
 
             forContact.forEach(function(conversation){

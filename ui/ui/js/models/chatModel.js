@@ -1,16 +1,26 @@
-var ChatModel = function () {};
+var ChatModel = function () {
+    this.cachedConversation = [];
+};
 
 ChatModel.prototype = {
     setController : function (controller) {
         this.controller = controller;
     },
     fetchMessage : function (start, count, contact) {
-        messengerService.getLastMessagesFor(contact, start, count).then(function (messages) {
-            this.controller.displayMessage(messages, contact);//replaced by
-        }.bind(this)).catch(function (e) {
-            KEYTAP.exceptionController.displayDebugMessage(e);
-            console.error("Unable to fetch messages: " + e);
-        });
+        if(this.cachedConversation[contact.id] === undefined) {
+            messengerService.getLastMessagesFor(contact, start, count).then(function (messages) {
+                var organizedMessages = this.organizeMessages(messages);
+                this.storeCachedConversation(organizedMessages, contact);
+
+                this.controller.displayMessage(organizedMessages, contact);
+            }.bind(this)).catch(function (e) {
+                KEYTAP.exceptionController.displayDebugMessage(e);
+                console.error("Unable to fetch messages: " + e);
+            });
+        }
+        else {
+            this.controller.displayMessage(this.cachedConversation[contact.id], contact);
+        }
     },
     markConversationAsRead : function (contact) {
         messengerService.markConversationAsRead(contact).catch(function (e) {
@@ -18,15 +28,42 @@ ChatModel.prototype = {
             KEYTAP.exceptionController.displayDebugMessage(e);
         })
     },
-    fetchConversationMessages : function (conversation) {
-        conversation.forEach(function (convo) {
-            if(typeof this.fetchedConversation[convo.contact.email] === "undefined") {
-                messengerService.getLastMessagesFor(convo.contact, this.controller.currentMessagePosition, this.controller.fetchingNumber).then(function (messages) {
+    fetchConversationMessages : function (conversations) {
+        var actualConversation = KEYTAP.recentChatController.model.orderByRecentChat(conversations);
+        actualConversation.forEach(function (conversation) {
+            if(typeof this.cachedConversation[conversation.contact.id] === "undefined") {
+                messengerService.getLastMessagesFor(conversation.contact, this.controller.currentMessagePosition, this.controller.fetchingNumber).then(function (messages) {
+                    this.storeCachedConversation(this.organizeMessages(messages), conversation.contact);
                 }.bind(this)).catch(function (e) {
                     KEYTAP.exceptionController.displayDebugMessage(e);
                     console.error("Unable to fetch messages: " + e);
                 });
             }
         }.bind(this));
+    },
+    storeCachedConversation : function (messages, contact) {
+        if(Object.size(this.cachedConversation) <= 5) {
+            this.cachedConversation[contact.id] = messages;
+        }
+    },
+    pushNewMessage : function (contactId, message) {
+        if(this.cachedConversation[contactId] !== undefined) {
+            this.cachedConversation[contactId][message.id] = message;
+        }
+    },
+    updateMessage : function (contactId, message) {
+        if(this.cachedConversation[contactId] !== undefined) {
+            this.cachedConversation[contactId][message.id] = message;
+        }
+    },
+    organizeMessages : function (messages) {
+        messages.reverse();
+
+        var organizedMessages = [];
+        messages.forEach(function (message) {
+            organizedMessages[message.id] = message;
+        });
+
+        return organizedMessages;
     }
 };

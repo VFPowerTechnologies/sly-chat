@@ -128,6 +128,15 @@ if (typeof KEYTAP == "undefined") {
         }
     }
 
+    Object.size = function (obj) {
+        var size = 0;
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key)) size++;
+        }
+
+        return size;
+    };
+
     KEYTAP.exceptionController = new ExceptionController();
     KEYTAP.loginController = new LoginController(new LoginModel);
     KEYTAP.registrationController = new RegistrationController(new RegistrationModel());

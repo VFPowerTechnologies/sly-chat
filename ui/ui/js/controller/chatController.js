@@ -35,8 +35,10 @@ ChatController.prototype = {
 
         var fragment = $(document.createDocumentFragment());
         this.lastMessage = null;
-        for (var i = messages.length - 1; i >= 0; --i) {
-            fragment.append(this.createMessageNode(messages[i], contact.name));
+        for(var k in messages) {
+            if(messages.hasOwnProperty(k)) {
+                fragment.append(this.createMessageNode(messages[k], contact.name));
+            }
         }
         messageNode.html(fragment);
         this.scrollTop();
@@ -135,6 +137,7 @@ ChatController.prototype = {
             var currentContact = this.contactController.getCurrentContact();
 
             messengerService.sendMessageTo(currentContact, message).then(function (messageDetails) {
+                this.model.pushNewMessage(currentContact.id, messageDetails);
                 var input = $('#newMessageInput');
                 input.val("");
                 $("#messages").append(this.createMessageNode(messageDetails, KEYTAP.profileController.getUserInfo().name));
@@ -159,6 +162,7 @@ ChatController.prototype = {
     addMessageUpdateListener : function () {
         messengerService.addMessageStatusUpdateListener(function (messageInfo) {
             messageInfo.messages.forEach(function (message) {
+                this.model.updateMessage(messageInfo.contact, message);
                 var messageDiv = $("#message_" + message.id);
 
                 if(messageDiv.length && message.sent == true){
@@ -176,6 +180,10 @@ ChatController.prototype = {
 
         var messages = messageInfo.messages;
         var contactId = messageInfo.contact;
+
+        messages.forEach(function (message) {
+            this.model.pushNewMessage(contactId, message);
+        }.bind(this));
 
         //Get the contact that sent the message
         var cachedContact = this.contactController.getContact(contactId);
