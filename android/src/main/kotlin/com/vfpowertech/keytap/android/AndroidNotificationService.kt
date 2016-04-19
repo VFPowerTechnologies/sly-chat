@@ -5,12 +5,21 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Typeface
 import android.media.RingtoneManager
+import android.text.SpannableString
+import android.text.style.StyleSpan
+import com.vfpowertech.keytap.core.persistence.MessageInfo
 import com.vfpowertech.keytap.services.ContactDisplayInfo
 import com.vfpowertech.keytap.services.PlatformNotificationService
 import java.util.*
 
-data class NewMessageData(val name: String, val unreadCount: Int)
+data class NewMessageData(
+    val name: String,
+    val lastMessage: String,
+    val lastMessageTimestamp: Long,
+    val unreadCount: Int
+)
 
 class NewMessagesNotification {
     val contents = HashMap<ContactDisplayInfo, NewMessageData>()
@@ -26,7 +35,8 @@ class NewMessagesNotification {
     fun updateUser(contact: ContactDisplayInfo, newMessageData: NewMessageData) {
         val current = contents[contact]
         val newValue = if (current != null) {
-            NewMessageData(current.name, current.unreadCount + newMessageData.unreadCount)
+            val newUnreadCount = current.unreadCount + newMessageData.unreadCount
+            NewMessageData(current.name, newMessageData.lastMessage, newMessageData.lastMessageTimestamp, newUnreadCount)
         }
         else
             newMessageData
@@ -42,6 +52,8 @@ class NewMessagesNotification {
 class AndroidNotificationService(private val context: Context) : PlatformNotificationService {
     companion object {
         val NOTIFICATION_ID_NEW_MESSAGES: Int = 0
+        //api docs say 5, but 19+ allow up to 7
+        val MAX_NOTIFICATION_LINES = 7
     }
 
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -59,23 +71,64 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         updateNewMessagesNotification()
     }
 
-    override fun addNewMessageNotification(contact: ContactDisplayInfo, messageCount: Int) {
-        newMessagesNotification.updateUser(contact, NewMessageData(contact.name, messageCount))
+    override fun addNewMessageNotification(contact: ContactDisplayInfo, lastMessageInfo: MessageInfo, messageCount: Int) {
+        val newMessageData = NewMessageData(contact.name, lastMessageInfo.message, lastMessageInfo.timestamp, messageCount)
+        newMessagesNotification.updateUser(contact, newMessageData)
         updateNewMessagesNotification()
     }
 
     /* Other */
+
+    //TODO sort notifications by last message timestamp
+    private fun getInboxStyle(): Notification.InboxStyle? {
+        val notification = newMessagesNotification
+        if (notification.userCount() < 2)
+            return null
+
+        val inboxStyle = Notification.InboxStyle()
+
+        val needsSummary = notification.userCount() > MAX_NOTIFICATION_LINES
+
+        val entries = notification.contents.toList()
+
+        for (i in 0..MAX_NOTIFICATION_LINES-1) {
+            if (i >= entries.size)
+                break
+
+            val info = entries[i].second
+            val messageInfo = if (info.unreadCount == 1) info.lastMessage else "${info.unreadCount} messages"
+            val name = entries[i].first.name
+
+            val line = SpannableString("$name $messageInfo")
+            line.setSpan(StyleSpan(Typeface.BOLD), 0, name.length, 0)
+            inboxStyle.addLine(line)
+        }
+
+        if (needsSummary) {
+            //if we go over the limit, android adds a ... for us
+            //so we just add this to trigger that behavior
+            inboxStyle.addLine("...")
+
+            var remainingCount = 0
+            for (i in MAX_NOTIFICATION_LINES..entries.size-1)
+                remainingCount += entries[i].second.unreadCount
+
+            inboxStyle.setSummaryText("$remainingCount more messages")
+        }
+
+        return inboxStyle
+    }
 
     private fun getNewMessagesNotificationContentText(): String {
         val notification = newMessagesNotification
 
         return if (notification.userCount() == 1) {
             val info = notification.contents.values.first()
-            val username = info.name
             val count = info.unreadCount
-            //TODO fix this when we add i18n
-            val plural = if (count > 1) "s" else ""
-            "You have $count new message$plural from $username"
+            if (count == 1)
+                info.lastMessage
+            else
+                "$count new messages"
         }
         else {
             val users = notification.contents.values.map { it.name }
@@ -84,8 +137,15 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
     }
 
     private fun getNewMessagesNotificationTitle(): String {
-        val totalUnreadCount = newMessagesNotification.contents.values.fold(0) { acc, v -> acc + v.unreadCount }
-        return "$totalUnreadCount new messages"
+        val notification = newMessagesNotification
+
+        return if (notification.userCount() == 1) {
+            notification.contents.entries.first().key.name
+        }
+        else {
+            val totalUnreadCount = newMessagesNotification.contents.values.fold(0) { acc, v -> acc + v.unreadCount }
+            "$totalUnreadCount new messages"
+        }
     }
 
     private fun getNewMessagesNotificationIntent(): PendingIntent {
@@ -129,10 +189,6 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
         val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
-        //TODO inbox style notification
-        //we have up to 5 lines
-        //so if > 5 users, show 4 + "More"
-
         val notification = Notification.Builder(context)
             .setContentTitle(getNewMessagesNotificationTitle())
             .setContentText(getNewMessagesNotificationContentText())
@@ -141,6 +197,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setDeleteIntent(deletePendingIntent)
+            .setStyle(getInboxStyle())
             .build()
 
         notificationManager.notify(NOTIFICATION_ID_NEW_MESSAGES, notification)
