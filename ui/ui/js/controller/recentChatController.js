@@ -16,6 +16,7 @@ RecentChatController.prototype = {
             recentChatContent.html("<div style='text-align: center'>No recent conversations</div>");
         }
         else {
+            $('ul.tabs').tabs('select_tab', 'recentChatList');
             var fragment = $(document.createDocumentFragment());
 
             for (var id in recentChat) {
