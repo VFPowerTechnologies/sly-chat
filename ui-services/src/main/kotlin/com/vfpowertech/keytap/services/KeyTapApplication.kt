@@ -448,7 +448,7 @@ class KeyTapApplication {
             else
                 Promise.ofSuccess(Unit)
         } fail { e ->
-            log.error("Unable to fetch offline messages: {}", e, e)
+            log.error("Unable to fetch offline messages: {}", e.message, e)
         } alwaysUi {
             fetchingOfflineMessages = false
         }
