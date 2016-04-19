@@ -140,15 +140,15 @@ class MessengerService(
         return messageCipherService.decryptMultiple(groupedEncryptedMessages) bind { results ->
             //XXX no idea what to do here really
             results.map { entry ->
-                val contactEmail = entry.key
+                val contact = entry.key
                 val result = entry.value
                 if (result.failed.isNotEmpty()) {
-                    log.error("Unable to decrypt {} messages for {}", result.failed.size, contactEmail)
-                    result.failed.map { log.error("", it) }
+                    log.error("Unable to decrypt {} messages for {}", result.failed.size, contact.id)
+                    result.failed.forEach { log.error("Message decryption failure: {}", it.cause.message, it.cause) }
                 }
             }
 
-            val groupedMessages = results.mapValues { it.value.succeeded }
+            val groupedMessages = results.mapValues { it.value.succeeded }.filter { it.value.isNotEmpty() }
 
             messagePersistenceManager.addReceivedMessages(groupedMessages) mapUi { groupedMessageInfo ->
                 val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
