@@ -70,3 +70,7 @@ infix fun <V, V2> Promise<V, Exception>.bindUi(body: (V) -> Promise<V2, Exceptio
 
     return deferred.promise
 }
+
+fun createUserPaths(userPaths: UserPaths) {
+    userPaths.accountDir.mkdirs()
+}

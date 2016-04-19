@@ -10,7 +10,6 @@ import com.vfpowertech.keytap.core.persistence.PersistenceManager
 import com.vfpowertech.keytap.core.readResourceFileText
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
-import nl.komponents.kovenant.functional.bind
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -34,7 +33,7 @@ private data class InitializationResult(val initWasRequired: Boolean, val freshD
 //for storing files, the iv would be per-block (no chaining blocks else we can't provide seek; is this an issue?)
 
 /**
- * Lazily initialized at time of first query.
+ * Must be initialized prior to use. Once initialized, methods may be called from any thread.
  *
  * @param path Pass in null for an in-memory database.
  */
@@ -190,11 +189,11 @@ class SQLitePersistenceManager(
     }
 
     /** Wrapper around running an SQLiteJob, passing the result or failure into a Promise. */
-    fun <R> runQuery(body: (connection: SQLiteConnection) -> R): Promise<R, Exception> =
-        if (!initialized)
-            initAsync() bind { realRunQuery(body) }
-        else
-            realRunQuery(body)
+    fun <R> runQuery(body: (connection: SQLiteConnection) -> R): Promise<R, Exception> {
+        require(initialized) { "runQuery called before initialization" }
+
+        return realRunQuery(body)
+    }
 
     /** Blocks until query is complete. Just wraps runQuery and calls get() on the resulting promise. */
     fun <R> syncRunQuery(body: (connection: SQLiteConnection) -> R): R =
