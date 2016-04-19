@@ -25,6 +25,7 @@ import com.vfpowertech.keytap.services.di.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.task
 import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -239,24 +240,19 @@ class KeyTapApplication {
         //maybe just search every account dir available and find a number that way? kinda rough but works
 
         //if the unlock fails, we try remotely; this can occur if the password was changed remotely from another device
-        appComponent.authenticationService.auth(username, password) successUi { response ->
+        appComponent.authenticationService.auth(username, password) bindUi { response ->
             val keyVault = response.keyVault
             //TODO need to put the username in the login response if the user used their phone number
-            createUserSession(UserLoginData(response.accountInfo.id, username, keyVault, response.authToken), response.accountInfo)
+            val userComponent = createUserSession(UserLoginData(response.accountInfo.id, username, keyVault, response.authToken), response.accountInfo)
 
-            storeAccountData(keyVault, response.accountInfo)
-
-            val paths = appComponent.userPathsGenerator.getPaths(username)
-            val authToken = response.authToken
-            if (authToken != null) {
-                val cachedData = SessionData(authToken)
-                JsonSessionDataPersistenceManager(paths.sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).store(cachedData) fail { e ->
-                    log.error("Unable to save session data to disk: {}", e.message, e)
-                }
+            //until this finishes, nothing in the UserComponent should be touched
+            backgroundInitialization(userComponent, response.authToken) mapUi {
+                finalizeInit(userComponent, response.keyRegenCount)
             }
-
-            schedulePreKeyUpload(response.keyRegenCount)
         } failUi { e ->
+            //incase session initialization failed we need to clean up the user session here
+            destroyUserSession()
+
             val ev = when (e) {
                 is AuthApiResponseException ->
                     LoginFailed(e.errorMessage, null)
@@ -310,13 +306,43 @@ class KeyTapApplication {
 
         val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo))
         this.userComponent = userComponent
+
+        return userComponent
+    }
+
+    /**
+     * Handles initialization steps requiring IO, etc.
+     *
+     * Until this completes, do NOT use anything in the UserComponent.
+     */
+    private fun backgroundInitialization(userComponent: UserComponent, authToken: String): Promise<Unit, Exception> {
+        val userPaths = userComponent.userPaths
+        val accountInfo = userComponent.accountInfo
+        val persistenceManager = userComponent.sqlitePersistenceManager
+        val userLoginData = userComponent.userLoginData
+        val keyVault = userLoginData.keyVault
+        val username = userLoginData.username
+        val sessionDataPath = appComponent.userPathsGenerator.getPaths(username).sessionDataPath
+
+        //we could break this up into parts and emit progress events between stages
+        return task {
+            createUserPaths(userPaths)
+        } bind {
+            val cachedData = SessionData(authToken)
+            JsonSessionDataPersistenceManager(sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).store(cachedData)
+        } bind {
+            storeAccountData(keyVault, accountInfo)
+        } bind {
+            persistenceManager.initAsync()
+        }
+    }
+
+    /** called after a successful user session has been created to finish initializing components. */
+    private fun finalizeInit(userComponent: UserComponent, keyRegenCount: Int) {
+        initializeUserSession(userComponent)
+
         //dagger lazily initializes all components, so we need to force creation
         userComponent.notifierService.init()
-
-        //doing disk io here is bad, but...
-        createUserPaths(userComponent.userPaths)
-
-        initializeUserSession(userComponent)
 
         userSessionAvailableSubject.onNext(true)
 
@@ -336,11 +362,10 @@ class KeyTapApplication {
 
             //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
             fetchOfflineMessages()
+            schedulePreKeyUpload(keyRegenCount)
         }
 
-        emitLoginEvent(LoggedIn(accountInfo))
-
-        return userComponent
+        emitLoginEvent(LoggedIn(userComponent.accountInfo))
     }
 
     /** Syncs the local contact list with the remote contact list. */
@@ -454,10 +479,7 @@ class KeyTapApplication {
         }
     }
 
-    private fun createUserPaths(userPaths: UserPaths) {
-        userPaths.accountDir.mkdirs()
-    }
-
+    /** Subscribe to events, connect to relay (if network available). */
     private fun initializeUserSession(userComponent: UserComponent) {
         userComponent.relayClientManager.onlineStatus.subscribe {
             onRelayStatusChange(it)
@@ -597,12 +619,7 @@ class KeyTapApplication {
     }
 
     fun destroyUserSession() {
-        val userComponent = this.userComponent
-        if (userComponent == null) {
-            log.warn("destroyUserSession called but no session exists")
-            emitLoginEvent(LoggedOut())
-            return
-        }
+        val userComponent = this.userComponent ?: return
 
         log.info("Destroying user session")
 
@@ -628,9 +645,10 @@ class KeyTapApplication {
         destroyUserSession()
     }
 
-    fun storeAccountData(keyVault: KeyVault, accountInfo: AccountInfo): Promise<Unit, Exception> {
+    private fun storeAccountData(keyVault: KeyVault, accountInfo: AccountInfo): Promise<Unit, Exception> {
         val userComponent = this.userComponent ?: error("No user session")
 
+        //TODO combine?
         userComponent.accountInfoPersistenceManager.store(accountInfo) fail { e ->
             log.error("Unable to store account info: {}", e.message, e)
         }
