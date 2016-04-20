@@ -121,8 +121,6 @@ class MessengerService(
 
         val connectionTag = relayClientManager.connectionTag
 
-        println("Processing queue")
-
         try {
             //XXX this is so nasty
             messageQueue.forEach { userId, messages ->
