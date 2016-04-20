@@ -102,6 +102,10 @@ LoginController.prototype = {
         }
     },
     onLogout : function() {
+        window.configService.setStartupInfo({lastLoggedInAccount: "", savedAccountPassword: null}).catch(function (e) {
+            KEYTAP.exceptionController.displayDebugMessage(e);
+            console.log(e);
+        });
         KEYTAP.navigationController.loadPage("login.html");
         KEYTAP.navigationController.clearHistory();
         KEYTAP.contactController.model.resetContacts();
