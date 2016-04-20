@@ -122,12 +122,25 @@ VALUES
         queryLastMessages(connection, userId, startingAt, count)
     }
 
-    override fun getUndeliveredMessages(userId: UserId): Promise<List<MessageInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val table = ConversationTable.getTablenameForContact(userId)
-
-        connection.prepare("SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM $table WHERE is_delivered=0").use { stmt ->
-            stmt.map { rowToMessageInfo(it) }
+    override fun getUndeliveredMessages(): Promise<Map<UserId, List<MessageInfo>>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val contactIds = connection.prepare("SELECT contact_id FROM conversation_info").use { stmt ->
+            stmt.map { UserId(it.columnLong(0)) }
         }
+
+        val r = HashMap<UserId, List<MessageInfo>>()
+
+        for (userId in contactIds) {
+            val table = ConversationTable.getTablenameForContact(userId)
+
+            val messages = connection.prepare("SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM $table WHERE is_delivered=0 ORDER BY timestamp, n").use { stmt ->
+                stmt.map { rowToMessageInfo(it) }
+            }
+
+            if (messages.isNotEmpty())
+                r[userId] = messages
+        }
+
+        r
     }
 
     private fun messageInfoToRow(messageInfo: MessageInfo, stmt: SQLiteStatement) {

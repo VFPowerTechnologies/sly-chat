@@ -22,6 +22,6 @@ interface MessagePersistenceManager {
     /** Retrieve the last n messages for the given contact starting backwards at the given index. */
     fun getLastMessages(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception>
 
-    /** Returns all unsent messages. */
-    fun getUndeliveredMessages(userId: UserId): Promise<List<MessageInfo>, Exception>
+    /** Returns all unsent messages. If a contact has no undelievered messages, it won't be included in the result. */
+    fun getUndeliveredMessages(): Promise<Map<UserId, List<MessageInfo>>, Exception>
 }
