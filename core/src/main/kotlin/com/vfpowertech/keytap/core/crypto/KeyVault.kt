@@ -22,8 +22,8 @@ import org.whispersystems.libsignal.IdentityKeyPair
 class KeyVault(
     val identityKeyPair: IdentityKeyPair,
 
-    var remotePasswordHash: ByteArray,
-    var remotePasswordHashParams: HashParams,
+    val remotePasswordHash: ByteArray,
+    val remotePasswordHashParams: HashParams,
     val keyPasswordHash: ByteArray,
 
     val keyPasswordHashParams: HashParams,
