@@ -1,37 +1,70 @@
 package com.vfpowertech.keytap.services.ui.impl
 
-import com.vfpowertech.keytap.core.crypto.HashDeserializers
-import com.vfpowertech.keytap.core.crypto.hashPasswordWithParams
-import com.vfpowertech.keytap.core.crypto.hexify
-import com.vfpowertech.keytap.core.http.api.accountUpdate.AccountUpdateAsyncClient
-import com.vfpowertech.keytap.core.http.api.accountUpdate.UpdatePhoneRequest
-import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationAsyncClient
-import com.vfpowertech.keytap.services.AuthApiResponseException
+import com.vfpowertech.keytap.core.PlatformInfo
+import com.vfpowertech.keytap.core.UserId
+import com.vfpowertech.keytap.core.http.api.accountUpdate.*
+import com.vfpowertech.keytap.core.persistence.AccountInfo
+import com.vfpowertech.keytap.core.persistence.json.JsonAccountInfoPersistenceManager
+import com.vfpowertech.keytap.services.KeyTapApplication
+import com.vfpowertech.keytap.services.UserPathsGenerator
 import com.vfpowertech.keytap.services.ui.UIAccountModificationService
-import com.vfpowertech.keytap.services.ui.UIUpdatePhoneInfo
-import com.vfpowertech.keytap.services.ui.UIUpdatePhoneResult
+import com.vfpowertech.keytap.services.ui.UIAccountUpdateResult
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 
 class UIAccountModificationServiceImpl(
-        serverUrl: String
+    private val app: KeyTapApplication,
+    serverUrl: String,
+    platformInfo: PlatformInfo
 ) : UIAccountModificationService {
-    private val loginClient = AuthenticationAsyncClient(serverUrl)
-    private val accountUpdateClient = AccountUpdateAsyncClient(serverUrl);
+    private val accountUpdateClient = AccountUpdateAsyncClient(serverUrl)
+    private val userPathsGenerator = UserPathsGenerator(platformInfo)
 
-    override fun updatePhone(info: UIUpdatePhoneInfo): Promise<UIUpdatePhoneResult, Exception> {
-        return loginClient.getParams(info.email) bind { response ->
-            if (response.errorMessage != null)
-                throw AuthApiResponseException(response.errorMessage)
+    override fun updateName(name: String): Promise<UIAccountUpdateResult, Exception> {
+        val authToken = app.userComponent?.userLoginData?.authToken ?: return Promise.ofFail(RuntimeException("Not logged in"))
+        val username = app.userComponent?.userLoginData?.username ?: return Promise.ofFail(RuntimeException("Not logged in"))
 
-            val authParams = response.params!!
+        val paths = userPathsGenerator.getPaths(username)
 
-            val hashParams = HashDeserializers.deserialize(authParams.hashParams)
-            val hash = hashPasswordWithParams(info.password, hashParams)
+        return accountUpdateClient.updateName(UpdateNameRequest(authToken, name)) bind { response ->
+            if(response.isSuccess === true && response.accountInfo !== null) {
+                val newAccountInfo = AccountInfo(UserId(response.accountInfo.id), response.accountInfo.name, response.accountInfo.username, response.accountInfo.phoneNumber)
 
-            accountUpdateClient.updatePhone(UpdatePhoneRequest(info.email, hash.hexify(), info.phoneNumber)) map { response ->
-                UIUpdatePhoneResult(response.isSuccess, response.errorMessage)
+                JsonAccountInfoPersistenceManager(paths.accountInfoPath).store(newAccountInfo) map { result ->
+                    UIAccountUpdateResult(newAccountInfo, response.isSuccess, response.errorMessage)
+                }
+            }
+            else {
+                Promise.ofSuccess(UIAccountUpdateResult(null, response.isSuccess, response.errorMessage))
+            }
+        }
+    }
+
+    override fun requestPhoneUpdate(phoneNumber: String): Promise<UIAccountUpdateResult, Exception> {
+        val authToken = app.userComponent?.userLoginData?.authToken ?: return Promise.ofFail(RuntimeException("Not logged in"))
+
+        return accountUpdateClient.requestPhoneUpdate(RequestPhoneUpdateRequest(authToken, phoneNumber)) map { response ->
+                UIAccountUpdateResult(null, response.isSuccess, response.errorMessage)
+        }
+    }
+
+    override fun confirmPhoneNumber(smsCode: String): Promise<UIAccountUpdateResult, Exception> {
+        val authToken = app.userComponent?.userLoginData?.authToken ?: return Promise.ofFail(RuntimeException("Not logged in"))
+        val username = app.userComponent?.userLoginData?.username ?: return Promise.ofFail(RuntimeException("Not logged in"))
+
+        val paths = userPathsGenerator.getPaths(username)
+
+        return accountUpdateClient.confirmPhoneNumber(ConfirmPhoneNumberRequest(authToken, smsCode)) bind { response ->
+            if(response.isSuccess === true && response.accountInfo !== null) {
+                val newAccountInfo = AccountInfo(UserId(response.accountInfo.id), response.accountInfo.name, response.accountInfo.username, response.accountInfo.phoneNumber)
+
+                JsonAccountInfoPersistenceManager(paths.accountInfoPath).store(newAccountInfo) map { result ->
+                    UIAccountUpdateResult(newAccountInfo, response.isSuccess, response.errorMessage)
+                }
+            }
+            else {
+                Promise.ofSuccess(UIAccountUpdateResult(null, response.isSuccess, response.errorMessage))
             }
         }
     }

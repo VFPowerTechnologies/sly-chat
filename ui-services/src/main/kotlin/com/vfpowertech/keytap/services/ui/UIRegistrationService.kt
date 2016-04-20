@@ -16,4 +16,7 @@ interface UIRegistrationService {
     fun submitVerificationCode(username: String, code: String): Promise<UISmsVerificationStatus, Exception>
 
     fun resendVerificationCode(username: String): Promise<UISmsVerificationStatus, Exception>
+
+    /** Update phone with the given info */
+    fun updatePhone(info: UIUpdatePhoneInfo): Promise<UIUpdatePhoneResult, Exception>
 }

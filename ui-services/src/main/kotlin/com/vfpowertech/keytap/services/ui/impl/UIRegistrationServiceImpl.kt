@@ -1,14 +1,17 @@
 package com.vfpowertech.keytap.services.ui.impl
 
+import com.vfpowertech.keytap.core.crypto.HashDeserializers
+import com.vfpowertech.keytap.core.crypto.hashPasswordWithParams
+import com.vfpowertech.keytap.core.crypto.hexify
+import com.vfpowertech.keytap.core.http.api.accountUpdate.UpdatePhoneRequest
+import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationAsyncClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationAsyncClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
 import com.vfpowertech.keytap.core.http.api.registration.SmsResendRequest
 import com.vfpowertech.keytap.core.http.api.registration.SmsVerificationRequest
-import com.vfpowertech.keytap.services.ui.UIRegistrationService
-import com.vfpowertech.keytap.services.ui.UIRegistrationInfo
-import com.vfpowertech.keytap.services.ui.UIRegistrationResult
-import com.vfpowertech.keytap.services.ui.UISmsVerificationStatus
+import com.vfpowertech.keytap.services.AuthApiResponseException
+import com.vfpowertech.keytap.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
@@ -21,6 +24,7 @@ class UIRegistrationServiceImpl(
     private val logger = LoggerFactory.getLogger(javaClass)
     private val listeners = ArrayList<(String) -> Unit>()
     private val registrationClient = RegistrationAsyncClient(serverUrl)
+    private val loginClient = AuthenticationAsyncClient(serverUrl)
 
     override fun doRegistration(info: UIRegistrationInfo): Promise<UIRegistrationResult, Exception> {
         val username = info.email
@@ -69,6 +73,22 @@ class UIRegistrationServiceImpl(
     override fun resendVerificationCode(username: String): Promise<UISmsVerificationStatus, Exception> {
         return registrationClient.resendSmsCode(SmsResendRequest(username)) map { response ->
             UISmsVerificationStatus(response.isSuccess, response.errorMessage)
+        }
+    }
+
+    override fun updatePhone(info: UIUpdatePhoneInfo): Promise<UIUpdatePhoneResult, Exception> {
+        return loginClient.getParams(info.email) bind { response ->
+            if (response.errorMessage != null)
+                throw AuthApiResponseException(response.errorMessage)
+
+            val authParams = response.params!!
+
+            val hashParams = HashDeserializers.deserialize(authParams.hashParams)
+            val hash = hashPasswordWithParams(info.password, hashParams)
+
+            registrationClient.updatePhone(UpdatePhoneRequest(info.email, hash.hexify(), info.phoneNumber)) map { response ->
+                UIUpdatePhoneResult(response.isSuccess, response.errorMessage)
+            }
         }
     }
 }
