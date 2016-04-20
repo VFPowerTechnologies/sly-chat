@@ -16,10 +16,13 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
+import java.util.*
 
 data class OfflineMessage(val from: UserId, val timestamp: Int, val encryptedMessage: EncryptedMessageV0)
 data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
+
+data class QueuedMessage(val userId: UserId, val messageInfo: MessageInfo)
 
 //all Observerables are run on the main thread
 class MessengerService(
@@ -44,8 +47,75 @@ class MessengerService(
     private val contactRequestsSubject = PublishSubject.create<List<ContactRequest>>()
     val contactRequests: Observable<List<ContactRequest>> = contactRequestsSubject
 
+    private val messageQueue = ArrayDeque<QueuedMessage>()
+
     init {
         relayClientManager.events.subscribe { onRelayEvent(it) }
+        relayClientManager.onlineStatus.subscribe { onRelayConnect(it) }
+    }
+
+    //Ship all undelivered messages
+    //TODO optimize this
+    private fun onRelayConnect(connected: Boolean) {
+        if (!connected) {
+            messageQueue.clear()
+            return
+        }
+
+        messagePersistenceManager.getUndeliveredMessages() successUi { undelivered ->
+            undelivered.forEach { e ->
+                val contactId = e.key
+                val messages = e.value
+
+                messages.forEach { m ->
+                    messageQueue.add(QueuedMessage(contactId, m))
+                }
+            }
+
+            processMessageQueue()
+        }
+    }
+
+    private fun addToQueue(userId: UserId, messageInfo: MessageInfo) {
+        messageQueue.add(QueuedMessage(userId, messageInfo))
+        processMessageQueue()
+    }
+
+    private fun processMessageQueue() {
+        if (!relayClientManager.isOnline)
+            return
+
+        val connectionTag = relayClientManager.connectionTag
+
+        println("Processing queue")
+
+        try {
+            //TODO encryptMulti
+            while (messageQueue.isNotEmpty()) {
+                val queuedMessage = messageQueue.first
+
+                val userId = queuedMessage.userId
+                val messageInfo = queuedMessage.messageInfo
+                val message = messageInfo.message
+
+                //TODO
+                //XXX the issue here is that exceptions are raised from relayClientManager.send usually, not encrypt
+                //also if one of the messages causes a relay disconnect, the relay may reconnect before the others are processed
+                //so then on reconnect undelivered messages will get queued so we'll end up sending double messages
+                messageCipherService.encrypt(userId, message) map { encryptedMessage ->
+                    val content = objectMapper.writeValueAsBytes(encryptedMessage)
+                    relayClientManager.sendMessage(connectionTag, userId, content, messageInfo.id)
+                } fail { e ->
+                    println("Unable to send message")
+                    e.printStackTrace()
+                }
+
+                messageQueue.pop()
+            }
+        }
+        catch (t: Throwable) {
+            log.error("An error occured while sending messages: {}", t.message, t)
+        }
     }
 
     private fun onRelayEvent(event: RelayClientEvent) {
@@ -93,12 +163,8 @@ class MessengerService(
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         return if (!isSelfMessage) {
-            p bind { messageInfo ->
-                messageCipherService.encrypt(userId, message) map { encryptedMessage ->
-                    val content = objectMapper.writeValueAsBytes(encryptedMessage)
-                    relayClientManager.sendMessage(userId, content, messageInfo.id)
-                    messageInfo
-                }
+            p successUi { messageInfo ->
+                addToQueue(userId, messageInfo)
             }
         }
         else {
