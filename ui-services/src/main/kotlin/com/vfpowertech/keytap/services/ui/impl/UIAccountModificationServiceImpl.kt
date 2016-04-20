@@ -31,7 +31,7 @@ class UIAccountModificationServiceImpl(
             if(response.isSuccess === true && response.accountInfo !== null) {
                 val newAccountInfo = AccountInfo(UserId(response.accountInfo.id), response.accountInfo.name, response.accountInfo.username, response.accountInfo.phoneNumber)
 
-                JsonAccountInfoPersistenceManager(paths.accountInfoPath).store(newAccountInfo) map { result ->
+                JsonAccountInfoPersistenceManager(paths.accountInfoPath).store(newAccountInfo) map {
                     UIAccountUpdateResult(newAccountInfo, response.isSuccess, response.errorMessage)
                 }
             }
@@ -59,7 +59,7 @@ class UIAccountModificationServiceImpl(
             if(response.isSuccess === true && response.accountInfo !== null) {
                 val newAccountInfo = AccountInfo(UserId(response.accountInfo.id), response.accountInfo.name, response.accountInfo.username, response.accountInfo.phoneNumber)
 
-                JsonAccountInfoPersistenceManager(paths.accountInfoPath).store(newAccountInfo) map { result ->
+                JsonAccountInfoPersistenceManager(paths.accountInfoPath).store(newAccountInfo) map {
                     UIAccountUpdateResult(newAccountInfo, response.isSuccess, response.errorMessage)
                 }
             }
