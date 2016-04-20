@@ -6,6 +6,7 @@ import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.unhexify
 import com.vfpowertech.keytap.core.http.api.prekeys.*
+import com.vfpowertech.keytap.core.persistence.MessageInfo
 import com.vfpowertech.keytap.services.NoAuthTokenException
 import com.vfpowertech.keytap.services.UserLoginData
 import nl.komponents.kovenant.Promise
@@ -24,6 +25,12 @@ data class DecryptionFailure(val cause: Throwable)
 data class MessageListDecryptionResult(
     val succeeded: List<String>,
     val failed: List<DecryptionFailure>
+)
+
+data class EncryptionFailure(val cause: Throwable)
+data class MessageListEncryptionResult(
+    val succeeded: List<String>,
+    val failed: List<EncryptionFailure>
 )
 
 fun SerializedPreKeySet.toPreKeyBundle(): PreKeyBundle {
@@ -85,22 +92,30 @@ class MessageCipherService(
             Promise.ofSuccess(SessionCipher(signalStore, address))
     }
 
-    //requires fetching a prekey if a session is missing
-    fun encrypt(userId: UserId, message: String): Promise<EncryptedMessageV0, Exception> {
+    private fun encryptMessages(userId: UserId, messages: List<String>): Promise<List<EncryptedMessageV0>, Exception> {
         return getSessionCipher(userId) map { sessionCipher ->
-            val encrypted = withStore {
-                sessionCipher.encrypt(message.toByteArray(Charsets.UTF_8))
-            }
+            withStore {
+                messages.map { message ->
+                    val encrypted = sessionCipher.encrypt(message.toByteArray(Charsets.UTF_8))
 
-            val isPreKey = when (encrypted) {
-                is PreKeySignalMessage -> true
-                is SignalMessage -> false
-                else -> throw RuntimeException("Invalid message type: ${encrypted.javaClass.name}")
-            }
+                    val isPreKey = when (encrypted) {
+                        is PreKeySignalMessage -> true
+                        is SignalMessage -> false
+                        else -> throw RuntimeException("Invalid message type: ${encrypted.javaClass.name}")
+                    }
 
-            EncryptedMessageV0(isPreKey, encrypted.serialize().hexify())
+                    EncryptedMessageV0(isPreKey, encrypted.serialize().hexify())
+                }
+            }
         }
     }
+
+    //requires fetching a prekey if a session is missing
+    fun encrypt(userId: UserId, message: String): Promise<EncryptedMessageV0, Exception> =
+        encryptMessages(userId, listOf(message)) map { it.first() }
+
+    fun encryptMulti(userId: UserId, messages: List<String>): Promise<List<EncryptedMessageV0>, Exception> =
+        encryptMessages(userId, messages)
 
     /** Must be called with store lock held. */
     private fun decryptEncryptedMessage(sessionCipher: SessionCipher, encryptedMessage: EncryptedMessageV0): String {

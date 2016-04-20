@@ -22,7 +22,41 @@ data class OfflineMessage(val from: UserId, val timestamp: Int, val encryptedMes
 data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
 
-data class QueuedMessage(val userId: UserId, val messageInfo: MessageInfo)
+class MessageQueue {
+    private val queue = HashMap<UserId, ArrayList<MessageInfo>>()
+
+    fun add(userId: UserId, messageInfo: MessageInfo) {
+        val current = queue[userId]
+        val q = if (current == null) {
+            val q = ArrayList<MessageInfo>()
+            queue[userId] = q
+            q
+        }
+        else
+            current
+
+        q.add(messageInfo)
+    }
+
+    fun removeUser(userId: UserId) {
+        queue.remove(userId)
+    }
+
+    fun forEach(body: (UserId, List<MessageInfo>) -> Unit) {
+        if (queue.isEmpty())
+            return
+
+        //to allow modification while iterating
+        val copy = HashMap(queue)
+        copy.forEach { userId, messages -> body(userId, ArrayList(messages)) }
+    }
+
+    fun clear() {
+        queue.clear()
+    }
+
+    fun isNotEmpty(): Boolean = queue.isNotEmpty()
+}
 
 //all Observerables are run on the main thread
 class MessengerService(
@@ -47,7 +81,7 @@ class MessengerService(
     private val contactRequestsSubject = PublishSubject.create<List<ContactRequest>>()
     val contactRequests: Observable<List<ContactRequest>> = contactRequestsSubject
 
-    private val messageQueue = ArrayDeque<QueuedMessage>()
+    private val messageQueue = MessageQueue()
 
     init {
         relayClientManager.events.subscribe { onRelayEvent(it) }
@@ -68,7 +102,7 @@ class MessengerService(
                 val messages = e.value
 
                 messages.forEach { m ->
-                    messageQueue.add(QueuedMessage(contactId, m))
+                    messageQueue.add(contactId, m)
                 }
             }
 
@@ -77,7 +111,7 @@ class MessengerService(
     }
 
     private fun addToQueue(userId: UserId, messageInfo: MessageInfo) {
-        messageQueue.add(QueuedMessage(userId, messageInfo))
+        messageQueue.add(userId, messageInfo)
         processMessageQueue()
     }
 
@@ -90,27 +124,21 @@ class MessengerService(
         println("Processing queue")
 
         try {
-            //TODO encryptMulti
-            while (messageQueue.isNotEmpty()) {
-                val queuedMessage = messageQueue.first
-
-                val userId = queuedMessage.userId
-                val messageInfo = queuedMessage.messageInfo
-                val message = messageInfo.message
-
-                //TODO
-                //XXX the issue here is that exceptions are raised from relayClientManager.send usually, not encrypt
-                //also if one of the messages causes a relay disconnect, the relay may reconnect before the others are processed
-                //so then on reconnect undelivered messages will get queued so we'll end up sending double messages
-                messageCipherService.encrypt(userId, message) map { encryptedMessage ->
-                    val content = objectMapper.writeValueAsBytes(encryptedMessage)
-                    relayClientManager.sendMessage(connectionTag, userId, content, messageInfo.id)
+            //XXX this is so nasty
+            messageQueue.forEach { userId, messages ->
+                messageCipherService.encryptMulti(userId, messages.map { it.message }) map { encryptedMessages ->
+                    var i = 0
+                    encryptedMessages.forEach { encryptedMessage ->
+                        val id = messages[i].id
+                        i += 1
+                        val content = objectMapper.writeValueAsBytes(encryptedMessage)
+                        relayClientManager.sendMessage(connectionTag, userId, content, id)
+                    }
                 } fail { e ->
-                    println("Unable to send message")
-                    e.printStackTrace()
+                    log.error("Unable to send messages to {}: {}", userId, e.message, e)
                 }
 
-                messageQueue.pop()
+                messageQueue.removeUser(userId)
             }
         }
         catch (t: Throwable) {
