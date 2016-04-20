@@ -109,6 +109,8 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun provideAccountModificationService(
-        serverUrls: BuildConfig.ServerUrls
-    ): UIAccountModificationService = UIAccountModificationServiceImpl(serverUrls.API_SERVER)
+        app: KeyTapApplication,
+        serverUrls: BuildConfig.ServerUrls,
+        platformInfo: PlatformInfo
+    ): UIAccountModificationService = UIAccountModificationServiceImpl(app, serverUrls.API_SERVER, platformInfo)
 }

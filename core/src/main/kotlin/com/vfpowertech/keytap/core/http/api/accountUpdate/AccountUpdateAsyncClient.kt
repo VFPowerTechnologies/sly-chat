@@ -7,7 +7,15 @@ import nl.komponents.kovenant.task
 class AccountUpdateAsyncClient(private val serverUrl: String) {
     private fun newClient() = AccountUpdateClient(serverUrl, JavaHttpClient())
 
-    fun updatePhone(request: UpdatePhoneRequest): Promise<UpdatePhoneResponse, Exception> = task {
-         newClient().updatePhone(request)
+    fun updateName(request: UpdateNameRequest): Promise<AccountUpdateResponse, Exception> = task {
+        newClient().updateName(request)
+    }
+
+    fun requestPhoneUpdate(request: RequestPhoneUpdateRequest): Promise<AccountUpdateResponse, Exception> = task {
+        newClient().requestPhoneUpdate(request)
+    }
+
+    fun confirmPhoneNumber(request: ConfirmPhoneNumberRequest): Promise<AccountUpdateResponse, Exception> = task {
+        newClient().confirmPhoneNumber(request)
     }
 }

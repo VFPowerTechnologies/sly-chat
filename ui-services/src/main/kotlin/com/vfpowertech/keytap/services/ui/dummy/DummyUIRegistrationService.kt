@@ -1,9 +1,6 @@
 package com.vfpowertech.keytap.services.ui.dummy
 
-import com.vfpowertech.keytap.services.ui.UIRegistrationInfo
-import com.vfpowertech.keytap.services.ui.UIRegistrationService
-import com.vfpowertech.keytap.services.ui.UIRegistrationResult
-import com.vfpowertech.keytap.services.ui.UISmsVerificationStatus
+import com.vfpowertech.keytap.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.task
@@ -42,5 +39,9 @@ class DummyUIRegistrationService() : UIRegistrationService {
 
     override fun resendVerificationCode(username: String): Promise<UISmsVerificationStatus, Exception> {
         return Promise.ofSuccess(UISmsVerificationStatus(true, null));
+    }
+
+    override fun updatePhone(info: UIUpdatePhoneInfo): Promise<UIUpdatePhoneResult, Exception> {
+        return Promise.ofSuccess(UIUpdatePhoneResult(true, null));
     }
 }
