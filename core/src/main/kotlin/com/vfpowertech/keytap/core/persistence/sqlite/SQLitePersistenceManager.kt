@@ -190,7 +190,7 @@ class SQLitePersistenceManager(
 
     /** Wrapper around running an SQLiteJob, passing the result or failure into a Promise. */
     fun <R> runQuery(body: (connection: SQLiteConnection) -> R): Promise<R, Exception> {
-        require(initialized) { "runQuery called before initialization" }
+        //require(initialized) { "runQuery called before initialization" }
 
         return realRunQuery(body)
     }
