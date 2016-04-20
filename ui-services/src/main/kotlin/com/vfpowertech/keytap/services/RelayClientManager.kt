@@ -76,7 +76,8 @@ class RelayClientManager(
 
                 override fun onNext(event: RelayClientEvent) {
                     when (event) {
-                        is ConnectionEstablished -> setOnlineStatus(true)
+                        //we only mark the relay connection as usable once authentication has completed
+                        is AuthenticationSuccessful -> setOnlineStatus(true)
                         is ConnectionLost -> setOnlineStatus(false)
                         is ConnectionFailure -> relayClient = null
                     }
