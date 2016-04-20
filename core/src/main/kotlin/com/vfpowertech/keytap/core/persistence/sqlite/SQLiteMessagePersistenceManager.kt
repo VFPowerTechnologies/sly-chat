@@ -112,7 +112,7 @@ VALUES
     }
 
     private fun queryLastMessages(connection: SQLiteConnection, userId: UserId, startingAt: Int, count: Int): List<MessageInfo> {
-        val sql = "SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM ${ConversationTable.getTablenameForContact(userId)} ORDER BY timestamp DESC LIMIT $count OFFSET $startingAt"
+        val sql = "SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM ${ConversationTable.getTablenameForContact(userId)} ORDER BY timestamp DESC, n DESC LIMIT $count OFFSET $startingAt"
         return connection.prepare(sql).use { stmt ->
             stmt.map { rowToMessageInfo(it) }
         }
