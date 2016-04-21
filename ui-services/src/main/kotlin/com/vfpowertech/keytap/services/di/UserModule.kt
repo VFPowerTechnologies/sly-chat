@@ -60,7 +60,7 @@ class UserModule(
         userLoginData: UserLoginData,
         userPathsGenerator: UserPathsGenerator
     ): UserPaths =
-        userPathsGenerator.getPaths(userLoginData.username)
+        userPathsGenerator.getPaths(userLoginData.userId)
 
     @UserScope
     @Provides
