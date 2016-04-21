@@ -4,7 +4,7 @@ import com.vfpowertech.keytap.services.LoginEvent
 import com.vfpowertech.keytap.services.ui.UILoginService
 
 class DummyUILoginService : UILoginService {
-    override fun login(emailOrPhoneNumber: String, password: String) {
+    override fun login(emailOrPhoneNumber: String, password: String, rememberMe: Boolean) {
     }
 
     override fun addLoginEventListener(listener: (LoginEvent) -> Unit) {

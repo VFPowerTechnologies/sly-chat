@@ -57,14 +57,6 @@ LoginController.prototype = {
 
         stateService.getInitialPage().then(function (initialPage) {
             KEYTAP.profileController.setUserInfo(accountInfo);
-            if($("#rememberMe").is(':checked')) {
-                window.configService.setStartupInfo({lastLoggedInAccount: this.model.getLogin(), savedAccountPassword: this.model.getPassword()}).then(function () {
-                    console.log('Wrote startup info');
-                }).catch(function (e) {
-                    KEYTAP.exceptionController.displayDebugMessage(e);
-                    console.log(e);
-                });
-            }
             $(".menu-hidden").show();
             this.modal.close();
 
@@ -102,10 +94,6 @@ LoginController.prototype = {
         }
     },
     onLogout : function() {
-        window.configService.setStartupInfo({lastLoggedInAccount: "", savedAccountPassword: null}).catch(function (e) {
-            KEYTAP.exceptionController.displayDebugMessage(e);
-            console.log(e);
-        });
         KEYTAP.navigationController.loadPage("login.html");
         KEYTAP.navigationController.clearHistory();
         KEYTAP.contactController.model.resetContacts();
@@ -116,7 +104,8 @@ LoginController.prototype = {
         });
     },
     login : function() {
-        loginService.login(this.model.getLogin(), this.model.getPassword());
+        var rememberMe = $("#rememberMe").is(':checked');
+        loginService.login(this.model.getLogin(), this.model.getPassword(), rememberMe);
     },
     setInfo : function(login, password) {
         this.model.setItems({
@@ -137,13 +126,6 @@ LoginController.prototype = {
         return createStatusModal(html);
     },
     clearUiCacheOnLogout : function () {
-        window.configService.setStartupInfo({lastLoggedInAccount: "", savedAccountPassword: null}).then(function () {
-            console.log('Cleared saved info on logout');
-        }).catch(function (e) {
-            KEYTAP.exceptionController.displayDebugMessage(e);
-            console.log(e);
-        });
-
         KEYTAP.chatController.clearCache();
         KEYTAP.contactController.clearCache();
         this.clearCache();
