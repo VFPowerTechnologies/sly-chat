@@ -55,4 +55,7 @@ fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponen
 
     val platformService = applicationComponent.platformService
     dispatcher.registerService("PlatformService", UIPlatformServiceToJavaProxy(platformService, dispatcher))
+
+    val loadService = applicationComponent.loadService
+    dispatcher.registerService("LoadService", UILoadServiceToJavaProxy(loadService, dispatcher))
 }

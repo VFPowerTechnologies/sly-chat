@@ -113,6 +113,10 @@ class MainActivity : AppCompatActivity() {
         setAppActivity()
     }
 
+    fun hideSplashImage() {
+        println("==================== hide ===============")
+    }
+
     override fun onSaveInstanceState(outState: Bundle?) {
         super.onSaveInstanceState(outState)
         webView.saveState(outState)

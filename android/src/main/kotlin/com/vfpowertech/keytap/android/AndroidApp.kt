@@ -10,6 +10,7 @@ import android.support.v4.content.ContextCompat
 import com.almworks.sqlite4java.SQLite
 import com.google.android.gms.iid.InstanceID
 import com.vfpowertech.keytap.android.services.AndroidPlatformContacts
+import com.vfpowertech.keytap.android.services.AndroidUILoadService
 import com.vfpowertech.keytap.android.services.AndroidUIPlatformInfoService
 import com.vfpowertech.keytap.android.services.AndroidUIPlatformService
 import com.vfpowertech.keytap.core.BuildConfig
@@ -71,6 +72,7 @@ class AndroidApp : Application() {
             AndroidPlatformContacts(this),
             notificationService,
             AndroidUIPlatformService(this),
+            AndroidUILoadService(this),
             AndroidSchedulers.mainThread()
         )
 
