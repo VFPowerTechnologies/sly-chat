@@ -23,9 +23,9 @@ class UIAccountModificationServiceImpl(
 
     override fun updateName(name: String): Promise<UIAccountUpdateResult, Exception> {
         val authToken = app.userComponent?.userLoginData?.authToken ?: return Promise.ofFail(RuntimeException("Not logged in"))
-        val username = app.userComponent?.userLoginData?.username ?: return Promise.ofFail(RuntimeException("Not logged in"))
+        val userId = app.userComponent?.userLoginData?.userId ?: return Promise.ofFail(RuntimeException("Not logged in"))
 
-        val paths = userPathsGenerator.getPaths(username)
+        val paths = userPathsGenerator.getPaths(userId)
 
         return accountUpdateClient.updateName(UpdateNameRequest(authToken, name)) bind { response ->
             if(response.isSuccess === true && response.accountInfo !== null) {
@@ -51,9 +51,9 @@ class UIAccountModificationServiceImpl(
 
     override fun confirmPhoneNumber(smsCode: String): Promise<UIAccountUpdateResult, Exception> {
         val authToken = app.userComponent?.userLoginData?.authToken ?: return Promise.ofFail(RuntimeException("Not logged in"))
-        val username = app.userComponent?.userLoginData?.username ?: return Promise.ofFail(RuntimeException("Not logged in"))
+        val userId = app.userComponent?.userLoginData?.userId ?: return Promise.ofFail(RuntimeException("Not logged in"))
 
-        val paths = userPathsGenerator.getPaths(username)
+        val paths = userPathsGenerator.getPaths(userId)
 
         return accountUpdateClient.confirmPhoneNumber(ConfirmPhoneNumberRequest(authToken, smsCode)) bind { response ->
             if(response.isSuccess === true && response.accountInfo !== null) {

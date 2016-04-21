@@ -321,8 +321,8 @@ class KeyTapApplication {
         val persistenceManager = userComponent.sqlitePersistenceManager
         val userLoginData = userComponent.userLoginData
         val keyVault = userLoginData.keyVault
-        val username = userLoginData.username
-        val sessionDataPath = appComponent.userPathsGenerator.getPaths(username).sessionDataPath
+        val userId = userLoginData.userId
+        val sessionDataPath = appComponent.userPathsGenerator.getPaths(userId).sessionDataPath
 
         //we could break this up into parts and emit progress events between stages
         return task {

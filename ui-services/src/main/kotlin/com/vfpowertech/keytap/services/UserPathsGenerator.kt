@@ -1,18 +1,26 @@
 package com.vfpowertech.keytap.services
 
 import com.vfpowertech.keytap.core.PlatformInfo
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.div
+import java.io.File
 
 class UserPathsGenerator(private val platformInfo: PlatformInfo) {
-    fun getPaths(username: String): UserPaths {
-        val accountsDir = platformInfo.appFileStorageDirectory / "accounts" / username
+    companion object {
+        val ACCOUNT_INFO_FILENAME = "account-info.json"
+    }
+
+    val accountsDir = platformInfo.appFileStorageDirectory / "accounts"
+
+    fun getPaths(userId: UserId): UserPaths {
+        val userAccountDir = accountsDir / userId.id.toString()
 
         return UserPaths(
-            accountsDir,
-            accountsDir / "keyvault.json",
-            accountsDir / "account-info.json",
-            accountsDir / "session-data.json",
-            accountsDir / "db.sqlite3"
+            userAccountDir,
+            userAccountDir / "keyvault.json",
+            userAccountDir / ACCOUNT_INFO_FILENAME,
+            userAccountDir / "session-data.json",
+            userAccountDir / "db.sqlite3"
         )
     }
 }

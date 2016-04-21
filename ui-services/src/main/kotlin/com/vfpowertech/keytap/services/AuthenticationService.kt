@@ -1,12 +1,15 @@
 package com.vfpowertech.keytap.services
 
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.HashDeserializers
 import com.vfpowertech.keytap.core.crypto.KeyVault
 import com.vfpowertech.keytap.core.crypto.hashPasswordWithParams
 import com.vfpowertech.keytap.core.crypto.hexify
+import com.vfpowertech.keytap.core.div
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationAsyncClient
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
 import com.vfpowertech.keytap.core.kovenant.fallbackTo
+import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.json.JsonAccountInfoPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonKeyVaultPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
@@ -14,6 +17,7 @@ import com.vfpowertech.keytap.services.ui.impl.asyncCheckPath
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.task
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
@@ -69,26 +73,53 @@ class AuthenticationService(
         }
     }
 
-    fun localAuth(emailOrPhoneNumber: String, password: String): Promise<AuthResult, Exception> {
-        val paths = userPathsGenerator.getPaths(emailOrPhoneNumber)
+    private fun findAccountFor(emailOrPhoneNumber: String): AccountInfo? {
+        val accountsDir = userPathsGenerator.accountsDir
 
-        //XXX I need to figure out a better way to do this stuff
-        return asyncCheckPath(paths.keyVaultPath) bind {
+        if (!accountsDir.exists())
+            return null
+
+        for (accountDir in accountsDir.listFiles()) {
+            if (!accountDir.isDirectory)
+                continue
+
+            //ignore non-numeric dirs
+            try {
+                 accountDir.name.toLong()
+            }
+            catch (e: NumberFormatException) {
+                continue
+            }
+
+            val accountInfoFile = accountDir / UserPathsGenerator.ACCOUNT_INFO_FILENAME
+            val accountInfo = JsonAccountInfoPersistenceManager(accountInfoFile).retrieveSync() ?: continue
+
+            if (emailOrPhoneNumber == accountInfo.phoneNumber ||
+                emailOrPhoneNumber == accountInfo.email)
+                return accountInfo
+        }
+
+        return null
+    }
+
+    fun localAuth(emailOrPhoneNumber: String, password: String): Promise<AuthResult, Exception> {
+        return task {
+            findAccountFor(emailOrPhoneNumber) ?: throw RuntimeException("No matching account found")
+        } bind { accountInfo ->
+            val paths = userPathsGenerator.getPaths(accountInfo.id)
+
+            //if this doesn't exist it'll throw and we'll just try remote auth
             val keyVaultPersistenceManager = JsonKeyVaultPersistenceManager(paths.keyVaultPath)
 
             keyVaultPersistenceManager.retrieve(password) bind { keyVault ->
                 asyncCheckPath(paths.sessionDataPath) bind {
                     JsonSessionDataPersistenceManager(it, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).retrieve()
-                } bind { sessionData ->
-                    JsonAccountInfoPersistenceManager(paths.accountInfoPath).retrieve() map { accountInfo ->
-                        if (accountInfo == null)
-                            throw RuntimeException("No account-info.json available")
-
-                        log.debug("Local authentication successful")
-                        AuthResult(sessionData.authToken, 0, keyVault, accountInfo)
-                    }
+                } map { sessionData ->
+                    log.debug("Local authentication successful")
+                    AuthResult(sessionData.authToken, 0, keyVault, accountInfo)
                 }
             }
+
         }
     }
 
