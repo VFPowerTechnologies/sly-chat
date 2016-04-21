@@ -1,7 +1,6 @@
 package com.vfpowertech.keytap.services
 
 import com.fasterxml.jackson.core.JsonParseException
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat
 import com.vfpowertech.keytap.core.crypto.KeyVault
@@ -16,6 +15,7 @@ import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesGetRequest
 import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyStoreAsyncClient
 import com.vfpowertech.keytap.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
 import com.vfpowertech.keytap.core.persistence.*
+import com.vfpowertech.keytap.core.persistence.json.JsonAccountInfoPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonInstallationDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonStartupInfoPersistenceManager
@@ -35,6 +35,7 @@ import rx.Observable
 import rx.Subscription
 import rx.subjects.BehaviorSubject
 import java.util.*
+
 
 class KeyTapApplication {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -146,11 +147,27 @@ class KeyTapApplication {
             return
         }
 
-        val path = appComponent.platformInfo.appFileStorageDirectory / "startup-info.json"
+        val userPathsGenerator = appComponent.userPathsGenerator
+
+        val path = userPathsGenerator.startupInfoPath
         val startupInfoPersistenceManager = JsonStartupInfoPersistenceManager(path)
-        startupInfoPersistenceManager.retrieve() successUi { startupInfo ->
-            if (startupInfo != null && startupInfo.savedAccountPassword != null)
-                login(startupInfo.lastLoggedInAccount, startupInfo.savedAccountPassword)
+
+        //XXX this is kinda inefficient, since we already have the userid, then we fetch the email to pass to the normal login functions
+        startupInfoPersistenceManager.retrieve() map { startupInfo ->
+            if (startupInfo != null) {
+                val accountInfoPath = userPathsGenerator.getAccountInfoPath(startupInfo.lastLoggedInAccount)
+                val accountInfo = JsonAccountInfoPersistenceManager(accountInfoPath).retrieveSync()
+                if (accountInfo != null)
+                    AutoLoginInfo(accountInfo.email, startupInfo.savedAccountPassword)
+                else
+                    null
+            }
+            else
+                null
+        } successUi { autoLoginInfo ->
+            if (autoLoginInfo != null)
+                //don't update the info since it's not needed
+                login(autoLoginInfo.username, autoLoginInfo.password, false)
             else
                 emitLoginEvent(LoggedOut())
             initializationComplete()
@@ -228,7 +245,7 @@ class KeyTapApplication {
      *
      * Emits LoggedIn or LoginFailed.
      */
-    fun login(username: String, password: String) {
+    fun login(username: String, password: String, rememberMe: Boolean) {
         if (loginState != LoginState.LOGGED_OUT) {
             log.warn("Attempt to call login() while state was {}", loginState)
             return
@@ -246,7 +263,7 @@ class KeyTapApplication {
             val userComponent = createUserSession(UserLoginData(response.accountInfo.id, username, keyVault, response.authToken), response.accountInfo)
 
             //until this finishes, nothing in the UserComponent should be touched
-            backgroundInitialization(userComponent, response.authToken) mapUi {
+            backgroundInitialization(userComponent, response.authToken, password, rememberMe) mapUi {
                 finalizeInit(userComponent, response.keyRegenCount)
             }
         } failUi { e ->
@@ -270,8 +287,12 @@ class KeyTapApplication {
      * Emits LoggedOut.
      */
     fun logout() {
-        if (destroyUserSession())
+        if (destroyUserSession()) {
             emitLoginEvent(LoggedOut())
+            task { appComponent.userPathsGenerator.startupInfoPath.delete() }.fail { e ->
+                log.error("Error removing startup info: {}", e.message, e)
+            }
+        }
     }
 
     fun updateNetworkStatus(isAvailable: Boolean) {
@@ -316,7 +337,7 @@ class KeyTapApplication {
      *
      * Until this completes, do NOT use anything in the UserComponent.
      */
-    private fun backgroundInitialization(userComponent: UserComponent, authToken: String): Promise<Unit, Exception> {
+    private fun backgroundInitialization(userComponent: UserComponent, authToken: String, password: String, rememberMe: Boolean): Promise<Unit, Exception> {
         val userPaths = userComponent.userPaths
         val accountInfo = userComponent.accountInfo
         val persistenceManager = userComponent.sqlitePersistenceManager
@@ -324,6 +345,7 @@ class KeyTapApplication {
         val keyVault = userLoginData.keyVault
         val userId = userLoginData.userId
         val sessionDataPath = appComponent.userPathsGenerator.getPaths(userId).sessionDataPath
+        val startupInfoPath = appComponent.userPathsGenerator.startupInfoPath
 
         //we could break this up into parts and emit progress events between stages
         return task {
@@ -333,6 +355,13 @@ class KeyTapApplication {
             JsonSessionDataPersistenceManager(sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).store(cachedData)
         } bind {
             storeAccountData(keyVault, accountInfo)
+        } bind {
+            if (rememberMe) {
+                val startupInfo = StartupInfo(userId, password)
+                JsonStartupInfoPersistenceManager(startupInfoPath).store(startupInfo)
+            }
+            else
+                Promise.ofSuccess<Unit, Exception>(Unit)
         } bind {
             persistenceManager.initAsync()
         }

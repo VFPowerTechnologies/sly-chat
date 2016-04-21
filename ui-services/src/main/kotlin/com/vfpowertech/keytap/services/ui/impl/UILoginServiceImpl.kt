@@ -65,7 +65,7 @@ class UILoginServiceImpl(
     }
 
     //this should use the keyvault is available, falling back to remote auth to retrieve it
-    override fun login(emailOrPhoneNumber: String, password: String) {
-        app.login(emailOrPhoneNumber, password)
+    override fun login(emailOrPhoneNumber: String, password: String, rememberMe: Boolean) {
+        app.login(emailOrPhoneNumber, password, rememberMe)
     }
 }
