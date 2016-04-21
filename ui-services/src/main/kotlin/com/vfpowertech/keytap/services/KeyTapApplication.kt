@@ -265,12 +265,13 @@ class KeyTapApplication {
     }
 
     /**
-     * Log out of the current session.
+     * Log out of the current session. Meant to be called when the user explicitly requests to terminate a session.
      *
      * Emits LoggedOut.
      */
     fun logout() {
-        destroyUserSession()
+        if (destroyUserSession())
+            emitLoginEvent(LoggedOut())
     }
 
     fun updateNetworkStatus(isAvailable: Boolean) {
@@ -618,8 +619,9 @@ class KeyTapApplication {
         userComponent.relayClientManager.disconnect()
     }
 
-    fun destroyUserSession() {
-        val userComponent = this.userComponent ?: return
+    /** Returns true if a session was present, false otherwise. */
+    fun destroyUserSession(): Boolean {
+        val userComponent = this.userComponent ?: return false
 
         log.info("Destroying user session")
 
@@ -638,7 +640,7 @@ class KeyTapApplication {
 
         this.userComponent = null
 
-        emitLoginEvent(LoggedOut())
+        return true
     }
 
     fun shutdown() {
