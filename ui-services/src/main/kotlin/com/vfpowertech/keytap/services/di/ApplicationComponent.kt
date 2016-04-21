@@ -32,8 +32,6 @@ interface ApplicationComponent {
 
     val uiNetworkStatusService: UINetworkStatusService
 
-    val uiConfigService: UIConfigService
-
     val stateService: UIStateService
 
     val eventService: UIEventService

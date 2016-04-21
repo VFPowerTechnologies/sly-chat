@@ -10,7 +10,6 @@ if (typeof KEYTAP == "undefined") {
     window.historyService = new HistoryService();
     window.develService = new DevelService();
     window.networkStatusService = new NetworkStatusService();
-    window.configService = new ConfigService();
     window.stateService = new StateService();
     window.telephonyService = new TelephonyService();
     window.windowService = new WindowService();

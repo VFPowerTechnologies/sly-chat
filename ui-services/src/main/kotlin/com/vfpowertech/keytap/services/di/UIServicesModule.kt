@@ -86,12 +86,6 @@ class UIServicesModule {
 
     @Singleton
     @Provides
-    fun providerConfigService(): UIConfigService {
-        return UIConfigServiceImpl()
-    }
-
-    @Singleton
-    @Provides
     fun providesStateService(): UIStateService = UIStateService()
 
     @Singleton
