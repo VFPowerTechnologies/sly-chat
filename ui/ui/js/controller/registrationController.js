@@ -109,7 +109,7 @@ RegistrationController.prototype = {
             var phoneValid = this.validatePhone();
 
             if (isValid && phoneValid) {
-                accountModifictationService.updatePhone({
+                registrationService.updatePhone({
                     "email": KEYTAP.loginController.model.getLogin(),
                     "password": $("#phoneUpdatePassword").val(),
                     "phoneNumber": phone

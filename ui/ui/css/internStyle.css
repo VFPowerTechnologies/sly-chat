@@ -192,6 +192,12 @@ button.btn-large {
     margin-bottom: 20px;
     background-color: black;
 }
+.whiteModal .modal-content {
+    background-color: #fff;
+}
+.darkModal .modal-content {
+    background-color: black;
+}
 .statusModal .modal-body {
     width: 100%;
 }

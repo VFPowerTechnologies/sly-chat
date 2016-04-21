@@ -9,5 +9,14 @@ ProfileModel.prototype = {
         this.username = username;
         this.phoneNumber = phoneNumber;
         this.name = name;
+    },
+    setName : function (name) {
+        this.name = name;
+    },
+    setUsername : function (username) {
+        this.username = username;
+    },
+    setPhoneNumber : function (phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 };
