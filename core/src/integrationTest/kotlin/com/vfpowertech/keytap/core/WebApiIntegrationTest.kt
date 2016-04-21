@@ -549,7 +549,7 @@ class WebApiIntegrationTest {
 
         devClient.addUser(user.user)
 
-        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+        val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
 
         val request = UpdatePhoneRequest(user.user.username, user.user.passwordHash, "111-111-1111")
         val response = client.updatePhone(request)
@@ -576,7 +576,7 @@ class WebApiIntegrationTest {
 
         devClient.addUser(user.user)
 
-        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+        val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
 
         val request = UpdatePhoneRequest(user.user.username, "wrongPassword", "111-111-1111")
         val response = client.updatePhone(request)
