@@ -18,4 +18,8 @@ class AccountUpdateAsyncClient(private val serverUrl: String) {
     fun confirmPhoneNumber(request: ConfirmPhoneNumberRequest): Promise<AccountUpdateResponse, Exception> = task {
         newClient().confirmPhoneNumber(request)
     }
+
+    fun updateEmail(request: UpdateEmailRequest): Promise<AccountUpdateResponse, Exception> = task {
+        newClient().updateEmail(request)
+    }
 }
