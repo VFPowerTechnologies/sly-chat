@@ -95,7 +95,7 @@ if (typeof KEYTAP == "undefined") {
         var html = $("<div>").append(modalContent).html();
 
         var bd = new BootstrapDialog();
-        bd.setCssClass("statusModal");
+        bd.setCssClass("statusModal darkModal fullModal");
         bd.setClosable(false);
         bd.setMessage(html);
 

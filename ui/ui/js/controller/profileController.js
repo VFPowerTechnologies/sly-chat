@@ -124,7 +124,7 @@ ProfileController.prototype = {
                 countryData.dialCode + phoneValue;
     },
     createSmsVerificationModal: function () {
-        var html = '<div class="valign-wrapper row form-wrapper" style="background-color: #fff; padding: 0;">' +
+        var html = '<div class="valign-wrapper row form-wrapper" style="background-color: #fff; padding: 0; min-height: 100%;">' +
             '<div class="valign col s12" style="padding: 0;">' +
                 '<div class="container" style="margin: 0; padding: 0;">' +
                     '<ul id="verification-error" style="color: red;">' +
@@ -137,8 +137,8 @@ ProfileController.prototype = {
                         '</div>' +
                         '<input type="hidden" id="email">' +
                     '</form>' +
-                    '<button class="waves-effect waves-light btn-large secondary-color" style="width: 45%; margin: 10px 5px 10px 5px;" onclick="KEYTAP.profileController.confirmPhone();">Confirm</button>' +
-                    '<button class="waves-effect waves-light btn-large" style="background-color: red; width: 45%; margin: 10px 5px 10px 5px;" onclick="BootstrapDialog.closeAll();">Cancel</button>' +
+                    '<button class="waves-effect waves-light btn-lg" style="width: 40%; background-color: red; margin: 10px 5px 10px 5px; padding: 10px 8px;" onclick="BootstrapDialog.closeAll();">Cancel</button>' +
+                    '<button class="waves-effect waves-light btn-lg secondary-color" style="width: 40%; margin: 10px 5px 10px 5px; padding: 10px 8px;" onclick="KEYTAP.profileController.confirmPhone();">Confirm</button>' +
                     '<div style="text-align: center">' +
                         '<span>' +
                             'Didn\'t receive your verification code? <br>' +
@@ -162,7 +162,7 @@ ProfileController.prototype = {
         var htmlContent = $("<div>").append(html).html();
 
         var bd = new BootstrapDialog();
-        bd.setCssClass("statusModal whiteModal");
+        bd.setCssClass("statusModal whiteModal mediumModal");
         bd.setClosable(false);
         bd.setMessage(htmlContent);
 
