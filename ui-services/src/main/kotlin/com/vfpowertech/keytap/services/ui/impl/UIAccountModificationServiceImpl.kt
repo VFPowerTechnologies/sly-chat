@@ -45,7 +45,7 @@ class UIAccountModificationServiceImpl(
         val authToken = app.userComponent?.userLoginData?.authToken ?: return Promise.ofFail(RuntimeException("Not logged in"))
 
         return accountUpdateClient.requestPhoneUpdate(RequestPhoneUpdateRequest(authToken, phoneNumber)) map { response ->
-                UIAccountUpdateResult(null, response.isSuccess, response.errorMessage)
+            UIAccountUpdateResult(null, response.isSuccess, response.errorMessage)
         }
     }
 
