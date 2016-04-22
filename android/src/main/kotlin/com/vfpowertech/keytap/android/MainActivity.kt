@@ -6,10 +6,13 @@ import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.view.KeyEvent
+import android.view.animation.Animation
+import android.view.animation.TranslateAnimation
 import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.keytap.core.BuildConfig
@@ -111,6 +114,26 @@ class MainActivity : AppCompatActivity() {
             webView.loadUrl("file:///android_asset/ui/index.html")
 
         setAppActivity()
+    }
+
+    fun hideSplashImage() {
+        val splashView = findViewById(R.id.splashImageView)
+
+        val animation = TranslateAnimation(0f, 0f, 0f, splashView.height.toFloat())
+        animation.duration = 500
+        animation.fillAfter = true
+        animation.setAnimationListener(object : Animation.AnimationListener {
+            override fun onAnimationEnd(animation: Animation) {
+                val layout = findViewById(R.id.frameLayout) as FrameLayout
+                layout.removeViewInLayout(splashView)
+            }
+
+            override fun onAnimationRepeat(animation: Animation) {}
+
+            override fun onAnimationStart(animation: Animation) {}
+        })
+
+        splashView.startAnimation(animation)
     }
 
     override fun onSaveInstanceState(outState: Bundle?) {

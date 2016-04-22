@@ -6,6 +6,7 @@ import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import com.vfpowertech.keytap.desktop.jfx.jsconsole.ConsoleMessageAdded
+import com.vfpowertech.keytap.desktop.services.DesktopUILoadService
 import com.vfpowertech.keytap.desktop.services.DesktopUIPlatformInfoService
 import com.vfpowertech.keytap.desktop.services.DesktopUIPlatformService
 import com.vfpowertech.keytap.services.KeyTapApplication
@@ -94,6 +95,7 @@ class DesktopApp : Application() {
             DesktopPlatformContacts(),
             DesktopNotificationService(),
             DesktopUIPlatformService(hostServices),
+            DesktopUILoadService(),
             JavaFxScheduler.getInstance()
         )
 

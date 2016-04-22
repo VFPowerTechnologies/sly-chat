@@ -5,6 +5,7 @@ import com.vfpowertech.keytap.core.PlatformInfo
 import com.vfpowertech.keytap.services.PlatformContacts
 import com.vfpowertech.keytap.services.PlatformNotificationService
 import com.vfpowertech.keytap.services.PlatformTelephonyService
+import com.vfpowertech.keytap.services.ui.UILoadService
 import com.vfpowertech.keytap.services.ui.UIPlatformInfoService
 import com.vfpowertech.keytap.services.ui.UIPlatformService
 import com.vfpowertech.keytap.services.ui.UIWindowService
@@ -45,6 +46,10 @@ class PlatformModule(
     @get:Singleton
     @get:Provides
     val providesPlatformService: UIPlatformService,
+
+    @get:Singleton
+    @get:Provides
+    val providesLoadService: UILoadService,
 
     @get:Singleton
     @get:Provides

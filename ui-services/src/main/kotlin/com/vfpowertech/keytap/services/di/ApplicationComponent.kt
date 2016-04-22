@@ -46,6 +46,8 @@ interface ApplicationComponent {
 
     val windowService: UIWindowService
 
+    val loadService: UILoadService
+
     var accountModificationService: UIAccountModificationService
 
     val platformService: UIPlatformService
