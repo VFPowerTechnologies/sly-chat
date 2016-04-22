@@ -90,10 +90,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val app = AndroidApp.get(this)
-
-        app.appComponent.stateService.initialPage = getInitialPage(intent)
-
         //hide titlebar
         supportActionBar?.hide()
 
@@ -103,6 +99,8 @@ class MainActivity : AppCompatActivity() {
         webView = findViewById(R.id.webView) as WebView
 
         hadSavedBundle = savedInstanceState != null
+
+        setAppActivity()
     }
 
     private fun subToLoadComplete() {
@@ -170,6 +168,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun init(hadSavedBundle: Boolean) {
+        val app = AndroidApp.get(this)
+
+        app.appComponent.stateService.initialPage = getInitialPage(intent)
+
         loadCompleteSubscription?.unsubscribe()
         loadCompleteSubscription = null
 
@@ -196,8 +198,6 @@ class MainActivity : AppCompatActivity() {
 
         if (!hadSavedBundle)
             webView.loadUrl("file:///android_asset/ui/index.html")
-
-        setAppActivity()
     }
 
     fun hideSplashImage() {

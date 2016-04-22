@@ -117,6 +117,10 @@ class AndroidApp : Application() {
             dispatcher = androidUiDispatcher()
         }
 
+        runGcmInit()
+    }
+
+    private fun init() {
         val platformInfo = AndroidPlatformInfo(this)
         createAppDirectories(platformInfo)
 
@@ -148,8 +152,6 @@ class AndroidApp : Application() {
             else
                 onUserSessionDestroyed()
         }
-
-        runGcmInit()
     }
 
     private fun runGcmInit() {
@@ -164,6 +166,7 @@ class AndroidApp : Application() {
             if (loadError == null) {
                 gcmInitComplete = true
                 log.debug("GCM init successful")
+                init()
                 app.autoLogin()
             }
             else {
