@@ -61,8 +61,30 @@ ProfileController.prototype = {
     },
     updateEmail : function (e) {
         e.preventDefault();
+        var button = $("#submitEmailUpdateBtn");
+        button.prop("disabled", true);
         if(validateForm("#updateEmailForm")) {
             var email = $("#profileEmail").val();
+
+            accountModifictationService.updateEmail(email).then(function (result) {
+                if (result.successful === true) {
+                    $("#profileEmail").val("");
+                    this.model.setUsername(email);
+                    $("#profileEmailDisplay").html(email);
+                    button.prop("disabled", false);
+                }
+                else {
+                    console.log(result.errorMessage);
+                    button.prop("disabled", false);
+                }
+            }.bind(this)).catch(function (e){
+                console.log(e);
+                KEYTAP.exceptionController.displayDebugMessage(e);
+                button.prop("disabled", false);
+            });
+        }
+        else {
+            button.prop("disabled", false);
         }
     },
     updateName : function (e) {
