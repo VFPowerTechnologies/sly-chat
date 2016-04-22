@@ -158,6 +158,8 @@ class WebApiIntegrationTest {
 
     val devClient = DevClient(serverBaseUrl, JavaHttpClient())
 
+    var counter = 1111111111;
+
     fun injectSiteUser(registrationInfo: RegistrationInfo): GeneratedSiteUser {
         val siteUser = newSiteUser(registrationInfo, password)
 
@@ -166,8 +168,9 @@ class WebApiIntegrationTest {
         return siteUser
     }
 
-    fun injectNamedSiteUser(username: String, phoneNumber: String): GeneratedSiteUser {
+    fun injectNamedSiteUser(username: String, phoneNumber: String = counter.toString()): GeneratedSiteUser {
         val registrationInfo = RegistrationInfo(username, "name", phoneNumber)
+        counter++
         return injectSiteUser(registrationInfo)
     }
 
@@ -423,7 +426,7 @@ class WebApiIntegrationTest {
     @Test
     fun `Adding contacts to the user's contact list should register the contacts remotely`() {
         val siteUser = injectNewSiteUser()
-        val contactUser = injectNamedSiteUser("a@a.com", "1111111111")
+        val contactUser = injectNamedSiteUser("a@a.com")
 
         val username = siteUser.user.username
         val authToken = devClient.createAuthToken(username)
@@ -441,8 +444,8 @@ class WebApiIntegrationTest {
 
     @Test
     fun `Adding a duplicate contact should cause no errors`() {
-        val userA = injectNamedSiteUser("a@a.com", "1111111111")
-        val userB = injectNamedSiteUser("b@a.com", "2222222222")
+        val userA = injectNamedSiteUser("a@a.com")
+        val userB = injectNamedSiteUser("b@a.com")
 
         val authToken = devClient.createAuthToken(userA.user.username)
         val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.id))
@@ -459,9 +462,9 @@ class WebApiIntegrationTest {
 
     @Test
     fun `Fetching a contact list should fetch only contacts for that user`() {
-        val userA = injectNamedSiteUser("a@a.com", "1111111111")
-        val userB = injectNamedSiteUser("b@a.com", "2222222222")
-        val userC = injectNamedSiteUser("c@a.com", "3333333333")
+        val userA = injectNamedSiteUser("a@a.com")
+        val userB = injectNamedSiteUser("b@a.com")
+        val userC = injectNamedSiteUser("c@a.com")
 
         val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.id))
         val bContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userC.user.id))
@@ -479,9 +482,9 @@ class WebApiIntegrationTest {
 
     @Test
     fun `Removing a contact should remove only that contact`() {
-        val userA = injectNamedSiteUser("a@a.com", "1111111111")
-        val userB = injectNamedSiteUser("b@a.com", "2222222222")
-        val userC = injectNamedSiteUser("c@a.com", "3333333333")
+        val userA = injectNamedSiteUser("a@a.com")
+        val userB = injectNamedSiteUser("b@a.com")
+        val userC = injectNamedSiteUser("c@a.com")
 
         val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userC.user.id, userB.user.id))
 
@@ -502,9 +505,9 @@ class WebApiIntegrationTest {
     @Test
     fun `findLocalContacts should find matches for both phone number and emails`() {
         val bPhoneNumber = "15555555555"
-        val userA = injectNamedSiteUser("a@a.com", "1111111111").user
+        val userA = injectNamedSiteUser("a@a.com").user
         val userB = injectNamedSiteUser("b@a.com", bPhoneNumber).user
-        val userC = injectNamedSiteUser("c@a.com", "3333333333").user
+        val userC = injectNamedSiteUser("c@a.com").user
 
         val authToken = devClient.createAuthToken(userA.username)
 
@@ -527,9 +530,9 @@ class WebApiIntegrationTest {
 
     @Test
     fun `fetchContactInfoById should fetch users with the given ids`() {
-        val userA = injectNamedSiteUser("a@a.com", "1111111111").user
-        val userB = injectNamedSiteUser("b@a.com", "2222222222").user
-        val userC = injectNamedSiteUser("c@a.com", "3333333333").user
+        val userA = injectNamedSiteUser("a@a.com").user
+        val userB = injectNamedSiteUser("b@a.com").user
+        val userC = injectNamedSiteUser("c@a.com").user
 
         val authToken = devClient.createAuthToken(userA.username)
 
@@ -548,7 +551,7 @@ class WebApiIntegrationTest {
 
     @Test
     fun `Update Phone should succeed when right password is provided`() {
-        val user = injectNamedSiteUser("a@a.com", "1111111111")
+        val user = injectNamedSiteUser("a@a.com")
 
         val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
 
@@ -575,7 +578,7 @@ class WebApiIntegrationTest {
 
     @Test
     fun `Update Phone should fail when wrong password is provided`() {
-        val user = injectNamedSiteUser("a@a.com", "1111111111")
+        val user = injectNamedSiteUser("a@a.com")
 
         val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
 
@@ -600,7 +603,7 @@ class WebApiIntegrationTest {
 
     @Test
     fun `Update Email should succeed when email is available`() {
-        val userA = injectNamedSiteUser("a@a.com", "1111111111").user
+        val userA = injectNamedSiteUser("a@a.com").user
 
         val authToken = devClient.createAuthToken(userA.username)
 
@@ -617,8 +620,8 @@ class WebApiIntegrationTest {
 
     @Test
     fun `Update Email should fail when email is not available`() {
-        val userA = injectNamedSiteUser("a@a.com", "1111111111").user
-        injectNamedSiteUser("b@b.com", "2222222222").user
+        val userA = injectNamedSiteUser("a@a.com").user
+        injectNamedSiteUser("b@b.com").user
 
         val authToken = devClient.createAuthToken(userA.username)
 
@@ -634,7 +637,7 @@ class WebApiIntegrationTest {
 
     @Test
     fun `Update Name should succeed`() {
-        val userA = injectNamedSiteUser("a@a.com", "1111111111").user
+        val userA = injectNamedSiteUser("a@a.com").user
 
         val authToken = devClient.createAuthToken(userA.username)
 
@@ -651,7 +654,7 @@ class WebApiIntegrationTest {
 
     @Test
     fun `Update Phone should succeed when phone is available`() {
-        val userA = injectNamedSiteUser("a@a.com", "1111111111").user
+        val userA = injectNamedSiteUser("a@a.com").user
 
         val authToken = devClient.createAuthToken(userA.username)
 
@@ -673,7 +676,7 @@ class WebApiIntegrationTest {
 
     @Test
     fun `Update Phone should fail when phone is not available`() {
-        val userA = injectNamedSiteUser("a@a.com", "1111111111").user
+        val userA = injectNamedSiteUser("a@a.com").user
         injectNamedSiteUser("b@b.com", "2222222222").user
 
         val authToken = devClient.createAuthToken(userA.username)
