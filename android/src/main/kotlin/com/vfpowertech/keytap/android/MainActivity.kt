@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.android
 
 import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -25,6 +26,7 @@ import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import org.slf4j.LoggerFactory
+import rx.Subscription
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
@@ -40,7 +42,13 @@ class MainActivity : AppCompatActivity() {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
+    //this is set whether or not initialization was successful
+    //since we always quit the application on successful init, there's no need to retry it
+    private var isInitialized = false
     private var isActive = false
+    private var hadSavedBundle: Boolean = false
+
+    private var loadCompleteSubscription: Subscription? = null
 
     var navigationService: NavigationService? = null
     private lateinit var webView: WebView
@@ -48,7 +56,6 @@ class MainActivity : AppCompatActivity() {
     private var nextPermRequestCode = 0
     private val permRequestCodeToDeferred = HashMap<Int, Deferred<Boolean, Exception>>()
 
-    //TODO
     /** Returns the initial page to launch after login, if any. Used when invoked via a notification intent. */
     private fun getInitialPage(intent: Intent): String? {
         if (intent.action != ACTION_VIEW_MESSAGES)
@@ -95,23 +102,39 @@ class MainActivity : AppCompatActivity() {
 
         webView = findViewById(R.id.webView) as WebView
 
-        app.loadComplete.subscribe { loadError ->
+        hadSavedBundle = savedInstanceState != null
+    }
+
+    private fun subToLoadComplete() {
+        if (loadCompleteSubscription != null)
+            return
+
+        val app = AndroidApp.get(this)
+        loadCompleteSubscription = app.loadComplete.subscribe { loadError ->
+            isInitialized = true
+
             if (loadError == null)
-                init(savedInstanceState)
+                init(hadSavedBundle)
             else
                 handleLoadError(loadError)
         }
     }
 
     private fun handleLoadError(loadError: LoadError) {
-        when (loadError.type) {
+        val dialog = when (loadError.type) {
             LoadErrorType.NO_PLAY_SERVICES -> handlePlayServicesError(loadError.errorCode)
             LoadErrorType.SSL_PROVIDER_INSTALLATION_FAILURE -> handleSslProviderInstallationFailure(loadError.errorCode)
             LoadErrorType.UNKNOWN -> handleUnknownLoadError(loadError.cause)
         }
+
+        dialog.setOnDismissListener {
+            finish()
+        }
+
+        dialog.show()
     }
 
-    private fun showInitFailureDialog(message: String) {
+    private fun getInitFailureDialog(message: String): AlertDialog {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Initialization Failure")
         builder.setPositiveButton("Close Application", { dialog, id ->
@@ -120,60 +143,36 @@ class MainActivity : AppCompatActivity() {
 
         builder.setMessage(message)
 
-        val dialog = builder.create()
-
-        dialog.setOnCancelListener {
-            finish()
-        }
-
-        dialog.show()
+        return builder.create()
     }
 
-    private fun handleUnknownLoadError(cause: Throwable?) {
+    private fun handleUnknownLoadError(cause: Throwable?): AlertDialog {
         val message = if (cause != null)
             "An unexpected error occured: ${cause.message}"
         else
             //XXX shouldn't happen
             "An unknown error occured but not information is available"
 
-        showInitFailureDialog(message)
+        return getInitFailureDialog(message)
     }
 
-    private fun handleSslProviderInstallationFailure(errorCode: Int) {
-        val dialog = GoogleApiAvailability.getInstance().getErrorDialog(this, errorCode, 0)
-        dialog.setOnDismissListener {
-            finish()
-        }
-        dialog.show()
+    private fun handleSslProviderInstallationFailure(errorCode: Int): Dialog {
+        return GoogleApiAvailability.getInstance().getErrorDialog(this, errorCode, 0)
     }
 
-    private fun handlePlayServicesError(errorCode: Int) {
+    private fun handlePlayServicesError(errorCode: Int): Dialog {
         val apiAvailability = GoogleApiAvailability.getInstance()
 
-        if (apiAvailability.isUserResolvableError(errorCode)) {
-            val dialog = apiAvailability.getErrorDialog(this, errorCode, 0)
-
-            dialog.setOnDismissListener {
-                //for certain errors, the dialog is just closeable (eg: corrupt play services install)
-                //if the dialog opens any other activity, we're put in the background so do nothing
-                //otherwise, close the app since the user took no action to resolve the issue
-                if (isActive)
-                    finish()
-            }
-
-            dialog.setOnCancelListener {
-                //if the user cancels the dialog we can't continue (since nothing's changed)
-                finish()
-            }
-
-            dialog.show()
-        }
-        else {
-            showInitFailureDialog("Unsupported device")
-        }
+        return if (apiAvailability.isUserResolvableError(errorCode))
+            apiAvailability.getErrorDialog(this, errorCode, 0)
+        else
+            getInitFailureDialog("Unsupported device")
     }
 
-    private fun init(savedInstanceState: Bundle?) {
+    private fun init(hadSavedBundle: Boolean) {
+        loadCompleteSubscription?.unsubscribe()
+        loadCompleteSubscription = null
+
         if (BuildConfig.DEBUG)
             WebView.setWebContentsDebuggingEnabled(true)
 
@@ -195,7 +194,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        if (savedInstanceState == null)
+        if (!hadSavedBundle)
             webView.loadUrl("file:///android_asset/ui/index.html")
 
         setAppActivity()
@@ -232,17 +231,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setAppActivity() {
+        isActive = true
         AndroidApp.get(this).currentActivity = this
     }
 
     private fun clearAppActivity() {
+        isActive = false
         AndroidApp.get(this).currentActivity = null
     }
 
     override fun onPause() {
         clearAppActivity()
-        isActive = false
         super.onPause()
+
+        val sub = loadCompleteSubscription
+        if (sub != null) {
+            sub.unsubscribe()
+            loadCompleteSubscription = null
+        }
     }
 
     override fun onDestroy() {
@@ -252,11 +258,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        isActive = true
         setAppActivity()
 
-        //if we enabled play services/etc, try to init again
-        AndroidApp.get(this).attemptGcmInit()
+        if (!isInitialized)
+            subToLoadComplete()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

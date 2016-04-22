@@ -177,10 +177,6 @@ class AndroidApp : Application() {
         }
     }
 
-    fun attemptGcmInit() {
-        runGcmInit()
-    }
-
     fun isFocusedActivity(): Boolean = currentActivity != null
 
     //this serves to also handle any issues where somehow the settings get out of sync and multiple users
