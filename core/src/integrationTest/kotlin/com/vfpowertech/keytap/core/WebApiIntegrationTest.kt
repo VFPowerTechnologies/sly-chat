@@ -180,6 +180,7 @@ class WebApiIntegrationTest {
 
     @Before
     fun before() {
+        counter = 1111111111
         devClient.clear()
     }
 
