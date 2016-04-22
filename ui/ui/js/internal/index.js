@@ -1,4 +1,6 @@
 $(document).ready(function(){
+    window.firstLoad = true;
+
     var height = window.innerHeight - 56;
     $("#main").css("height", height + "px");
 

@@ -7,7 +7,7 @@ import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.view.KeyEvent
 import android.view.animation.Animation
-import android.view.animation.TranslateAnimation
+import android.view.animation.AlphaAnimation
 import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -119,9 +119,9 @@ class MainActivity : AppCompatActivity() {
     fun hideSplashImage() {
         val splashView = findViewById(R.id.splashImageView)
 
-        val animation = TranslateAnimation(0f, 0f, 0f, splashView.height.toFloat())
+        val animation = AlphaAnimation(1f, 0f)
         animation.duration = 500
-        animation.fillAfter = true
+        animation.startOffset = 500
         animation.setAnimationListener(object : Animation.AnimationListener {
             override fun onAnimationEnd(animation: Animation) {
                 val layout = findViewById(R.id.frameLayout) as FrameLayout

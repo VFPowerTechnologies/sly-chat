@@ -156,6 +156,11 @@ NavigationController.prototype = {
             },
 
             onAfter: function() {
+                if(window.firstLoad === true) {
+                    window.firstLoad = false;
+                    loadService.loadComplete();
+                }
+
                 if($("#messages").length) {
                     KEYTAP.chatController.scrollTop();
                 }

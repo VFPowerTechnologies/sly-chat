@@ -18,9 +18,6 @@ if (typeof KEYTAP == "undefined") {
     window.platformService = new PlatformService();
     window.loadService = new LoadService();
 
-    //FIXME
-    loadService.loadComplete();
-
     //mouseheld event to trigger contact menu
     (function($) {
         function startTrigger(e) {
