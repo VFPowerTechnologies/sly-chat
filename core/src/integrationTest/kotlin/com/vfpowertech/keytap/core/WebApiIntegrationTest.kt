@@ -4,8 +4,12 @@ import com.vfpowertech.keytap.core.crypto.*
 import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import com.vfpowertech.keytap.core.http.JavaHttpClient
 import com.vfpowertech.keytap.core.http.api.UnauthorizedException
-import com.vfpowertech.keytap.core.http.api.accountUpdate.AccountUpdateClient
-import com.vfpowertech.keytap.core.http.api.accountUpdate.UpdatePhoneRequest
+import com.vfpowertech.keytap.core.http.api.accountUpdate.AccountUpdateClient;
+import com.vfpowertech.keytap.core.http.api.accountUpdate.RequestPhoneUpdateRequest;
+import com.vfpowertech.keytap.core.http.api.accountUpdate.ConfirmPhoneNumberRequest;
+import com.vfpowertech.keytap.core.http.api.accountUpdate.UpdatePhoneRequest;
+import com.vfpowertech.keytap.core.http.api.accountUpdate.UpdateEmailRequest;
+import com.vfpowertech.keytap.core.http.api.accountUpdate.UpdateNameRequest;
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationClient
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
 import com.vfpowertech.keytap.core.http.api.contacts.*
@@ -154,6 +158,8 @@ class WebApiIntegrationTest {
 
     val devClient = DevClient(serverBaseUrl, JavaHttpClient())
 
+    var counter = 1111111111;
+
     fun injectSiteUser(registrationInfo: RegistrationInfo): GeneratedSiteUser {
         val siteUser = newSiteUser(registrationInfo, password)
 
@@ -162,8 +168,9 @@ class WebApiIntegrationTest {
         return siteUser
     }
 
-    fun injectNamedSiteUser(username: String, phoneNumber: String = "1000000000"): GeneratedSiteUser {
+    fun injectNamedSiteUser(username: String, phoneNumber: String = counter.toString()): GeneratedSiteUser {
         val registrationInfo = RegistrationInfo(username, "name", phoneNumber)
+        counter++
         return injectSiteUser(registrationInfo)
     }
 
@@ -173,6 +180,7 @@ class WebApiIntegrationTest {
 
     @Before
     fun before() {
+        counter = 1111111111
         devClient.clear()
     }
 
@@ -202,7 +210,6 @@ class WebApiIntegrationTest {
             dummyRegistrationInfo.phoneNumber,
             keyVault.serialize()
         )
-
 
         assertEquals(expected, user)
     }
@@ -545,13 +552,13 @@ class WebApiIntegrationTest {
 
     @Test
     fun `Update Phone should succeed when right password is provided`() {
-        val user = newSiteUser(RegistrationInfo("a@a.com", "a", "000-000-0000"), password)
-
-        devClient.addUser(user.user)
+        val user = injectNamedSiteUser("a@a.com")
 
         val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
 
-        val request = UpdatePhoneRequest(user.user.username, user.user.passwordHash, "111-111-1111")
+        val newPhone = "123453456"
+
+        val request = UpdatePhoneRequest(user.user.username, user.user.passwordHash, newPhone)
         val response = client.updatePhone(request)
 
         assertTrue(response.isSuccess)
@@ -563,7 +570,7 @@ class WebApiIntegrationTest {
                 user.keyVault.remotePasswordHashParams.serialize(),
                 user.keyVault.fingerprint,
                 user.user.name,
-                "111-111-1111",
+                newPhone,
                 user.keyVault.serialize()
         )
 
@@ -572,13 +579,11 @@ class WebApiIntegrationTest {
 
     @Test
     fun `Update Phone should fail when wrong password is provided`() {
-        val user = newSiteUser(RegistrationInfo("a@a.com", "a", "000-000-0000"), password)
-
-        devClient.addUser(user.user)
+        val user = injectNamedSiteUser("a@a.com")
 
         val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
 
-        val request = UpdatePhoneRequest(user.user.username, "wrongPassword", "111-111-1111")
+        val request = UpdatePhoneRequest(user.user.username, "wrongPassword", "1111111111")
         val response = client.updatePhone(request)
 
         assertFalse(response.isSuccess)
@@ -595,5 +600,100 @@ class WebApiIntegrationTest {
         )
 
         assertEquals(listOf(expected), devClient.getUsers());
+    }
+
+    @Test
+    fun `Update Email should succeed when email is available`() {
+        val userA = injectNamedSiteUser("a@a.com").user
+
+        val authToken = devClient.createAuthToken(userA.username)
+
+        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+
+        val newEmail = "b@b.com"
+
+        val request = UpdateEmailRequest(authToken, newEmail)
+        val response = client.updateEmail(request);
+
+        assertTrue(response.isSuccess);
+        assertEquals(response.accountInfo!!.username, newEmail)
+    }
+
+    @Test
+    fun `Update Email should fail when email is not available`() {
+        val userA = injectNamedSiteUser("a@a.com").user
+        injectNamedSiteUser("b@b.com").user
+
+        val authToken = devClient.createAuthToken(userA.username)
+
+        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+
+        val newEmail = "b@b.com"
+
+        val request = UpdateEmailRequest(authToken, newEmail)
+        val response = client.updateEmail(request);
+
+        assertFalse(response.isSuccess);
+    }
+
+    @Test
+    fun `Update Name should succeed`() {
+        val userA = injectNamedSiteUser("a@a.com").user
+
+        val authToken = devClient.createAuthToken(userA.username)
+
+        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+
+        val newName = "newName"
+
+        val request = UpdateNameRequest(authToken, newName)
+        val response = client.updateName(request);
+
+        assertTrue(response.isSuccess);
+        assertEquals(response.accountInfo!!.name, newName)
+    }
+
+    @Test
+    fun `Update Phone should succeed when phone is available`() {
+        val userA = injectNamedSiteUser("a@a.com").user
+
+        val authToken = devClient.createAuthToken(userA.username)
+
+        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+
+        val newPhone = "12345678901"
+
+        val request = RequestPhoneUpdateRequest(authToken, newPhone)
+        val response = client.requestPhoneUpdate(request);
+
+        assertTrue(response.isSuccess);
+
+        val secondRequest = ConfirmPhoneNumberRequest(authToken, "12345")
+        val secondResponse = client.confirmPhoneNumber(secondRequest);
+
+        assertTrue(secondResponse.isSuccess);
+        assertEquals(secondResponse.accountInfo!!.phoneNumber, newPhone)
+    }
+
+    @Test
+    fun `Update Phone should fail when phone is not available`() {
+        val userA = injectNamedSiteUser("a@a.com").user
+        injectNamedSiteUser("b@b.com", "2222222222").user
+
+        val authToken = devClient.createAuthToken(userA.username)
+
+        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+
+        val newPhone = "2222222222"
+
+        val request = RequestPhoneUpdateRequest(authToken, newPhone)
+        val response = client.requestPhoneUpdate(request);
+
+        assertTrue(response.isSuccess);
+
+        val secondRequest = ConfirmPhoneNumberRequest(authToken, "12345")
+        val secondResponse = client.confirmPhoneNumber(secondRequest);
+
+        assertFalse(secondResponse.isSuccess);
     }
 }

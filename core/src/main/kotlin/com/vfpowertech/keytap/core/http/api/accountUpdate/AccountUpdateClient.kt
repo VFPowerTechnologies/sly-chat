@@ -23,4 +23,10 @@ class AccountUpdateClient(private val serverBaseUrl: String, private val httpCli
 
         return apiPostRequest(httpClient, url, request, setOf(200, 400), typeRef())
     }
+
+    fun updateEmail(request: UpdateEmailRequest): AccountUpdateResponse {
+        val url = "$serverBaseUrl/v1/account/update/email"
+
+        return apiPostRequest(httpClient, url, request, setOf(200, 400), typeRef())
+    }
 }

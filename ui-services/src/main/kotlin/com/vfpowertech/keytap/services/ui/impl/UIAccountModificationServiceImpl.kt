@@ -68,4 +68,24 @@ class UIAccountModificationServiceImpl(
             }
         }
     }
+
+    override fun updateEmail(email: String): Promise<UIAccountUpdateResult, Exception> {
+        val authToken = app.userComponent?.userLoginData?.authToken ?: return Promise.ofFail(RuntimeException("Not logged in"))
+        val userId = app.userComponent?.userLoginData?.userId ?: return Promise.ofFail(RuntimeException("Not logged in"))
+
+        val paths = userPathsGenerator.getPaths(userId)
+
+        return accountUpdateClient.updateEmail(UpdateEmailRequest(authToken, email)) bind { response ->
+            if(response.isSuccess === true && response.accountInfo !== null) {
+                val newAccountInfo = AccountInfo(UserId(response.accountInfo.id), response.accountInfo.name, response.accountInfo.username, response.accountInfo.phoneNumber)
+
+                JsonAccountInfoPersistenceManager(paths.accountInfoPath).store(newAccountInfo) map {
+                    UIAccountUpdateResult(newAccountInfo, response.isSuccess, response.errorMessage)
+                }
+            }
+            else {
+                Promise.ofSuccess(UIAccountUpdateResult(null, response.isSuccess, response.errorMessage))
+            }
+        }
+    }
 }

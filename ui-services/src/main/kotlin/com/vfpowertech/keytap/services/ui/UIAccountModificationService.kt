@@ -22,4 +22,9 @@ interface UIAccountModificationService {
      * Confirm and update the requested phone number.
      */
     fun confirmPhoneNumber(smsCode: String): Promise<UIAccountUpdateResult, Exception>
+
+    /**
+     * Update the user email with the given one.
+     */
+    fun updateEmail(email: String): Promise<UIAccountUpdateResult, Exception>
 }
