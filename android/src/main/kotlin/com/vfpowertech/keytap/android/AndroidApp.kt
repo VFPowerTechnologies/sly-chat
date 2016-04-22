@@ -90,6 +90,9 @@ class AndroidApp : Application() {
 
     val app: KeyTapApplication = KeyTapApplication()
 
+    //if AndroidUILoadService.loadComplete is called while we're paused (eg: during the permissions dialog)
+    private var queuedLoadComplete = false
+
     private val loadCompleteSubject = BehaviorSubject.create<LoadError>()
     val loadComplete: Observable<LoadError> = loadCompleteSubject.observeOn(AndroidSchedulers.mainThread())
 
@@ -101,9 +104,13 @@ class AndroidApp : Application() {
     var currentActivity: MainActivity? = null
         set(value) {
             field = value
+
             val notifierService = app.userComponent?.notifierService
             if (notifierService != null)
                 notifierService.isUiVisible = value != null
+
+            if (queuedLoadComplete)
+                queuedLoadComplete = hideSplashImage() == false
         }
 
     lateinit var appComponent: ApplicationComponent
@@ -328,6 +335,17 @@ class AndroidApp : Application() {
         val activity = currentActivity ?: return Promise.ofSuccess(false)
 
         return activity.requestPermission(permission)
+    }
+
+    private fun hideSplashImage(): Boolean {
+        val currentActivity = currentActivity as? MainActivity ?: return false
+
+        currentActivity.hideSplashImage()
+        return true
+    }
+
+    fun uiLoadCompleted() {
+        queuedLoadComplete = hideSplashImage() == false
     }
 
     companion object {
