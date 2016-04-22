@@ -266,11 +266,16 @@ class MainActivity : AppCompatActivity() {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            if (navigationService != null) {
+            if (navigationService != null)
                 navigationService!!.goBack()
-                return true
-            }
+            //if we haven't loaded the web ui, we're either still in the loading screen or on some error dialog that'll
+            //terminate the app anyways
+            else
+                finish()
+
+            return true
         }
+
         return super.onKeyDown(keyCode, event)
     }
 
