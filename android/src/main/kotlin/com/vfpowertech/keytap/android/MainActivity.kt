@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.android
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -13,6 +14,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import com.google.android.gms.common.GoogleApiAvailability
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.keytap.core.BuildConfig
@@ -37,6 +39,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
+
+    private var isActive = false
 
     var navigationService: NavigationService? = null
     private lateinit var webView: WebView
@@ -86,12 +90,93 @@ class MainActivity : AppCompatActivity() {
         //hide titlebar
         supportActionBar?.hide()
 
+        //display loading screen and wait for app to finish loading
         setContentView(R.layout.activity_main)
 
+        webView = findViewById(R.id.webView) as WebView
+
+        app.loadComplete.subscribe { loadError ->
+            if (loadError == null)
+                init(savedInstanceState)
+            else
+                handleLoadError(loadError)
+        }
+    }
+
+    private fun handleLoadError(loadError: LoadError) {
+        when (loadError.type) {
+            LoadErrorType.NO_PLAY_SERVICES -> handlePlayServicesError(loadError.errorCode)
+            LoadErrorType.SSL_PROVIDER_INSTALLATION_FAILURE -> handleSslProviderInstallationFailure(loadError.errorCode)
+            LoadErrorType.UNKNOWN -> handleUnknownLoadError(loadError.cause)
+        }
+    }
+
+    private fun showInitFailureDialog(message: String) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Initialization Failure")
+        builder.setPositiveButton("Close Application", { dialog, id ->
+            finish()
+        })
+
+        builder.setMessage(message)
+
+        val dialog = builder.create()
+
+        dialog.setOnCancelListener {
+            finish()
+        }
+
+        dialog.show()
+    }
+
+    private fun handleUnknownLoadError(cause: Throwable?) {
+        val message = if (cause != null)
+            "An unexpected error occured: ${cause.message}"
+        else
+            //XXX shouldn't happen
+            "An unknown error occured but not information is available"
+
+        showInitFailureDialog(message)
+    }
+
+    private fun handleSslProviderInstallationFailure(errorCode: Int) {
+        val dialog = GoogleApiAvailability.getInstance().getErrorDialog(this, errorCode, 0)
+        dialog.setOnDismissListener {
+            finish()
+        }
+        dialog.show()
+    }
+
+    private fun handlePlayServicesError(errorCode: Int) {
+        val apiAvailability = GoogleApiAvailability.getInstance()
+
+        if (apiAvailability.isUserResolvableError(errorCode)) {
+            val dialog = apiAvailability.getErrorDialog(this, errorCode, 0)
+
+            dialog.setOnDismissListener {
+                //for certain errors, the dialog is just closeable (eg: corrupt play services install)
+                //if the dialog opens any other activity, we're put in the background so do nothing
+                //otherwise, close the app since the user took no action to resolve the issue
+                if (isActive)
+                    finish()
+            }
+
+            dialog.setOnCancelListener {
+                //if the user cancels the dialog we can't continue (since nothing's changed)
+                finish()
+            }
+
+            dialog.show()
+        }
+        else {
+            showInitFailureDialog("Unsupported device")
+        }
+    }
+
+    private fun init(savedInstanceState: Bundle?) {
         if (BuildConfig.DEBUG)
             WebView.setWebContentsDebuggingEnabled(true)
 
-        webView = findViewById(R.id.webView) as WebView
         webView.settings.javaScriptEnabled = true
         webView.settings.allowFileAccessFromFileURLs = true
 
@@ -156,6 +241,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         clearAppActivity()
+        isActive = false
         super.onPause()
     }
 
@@ -166,7 +252,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        isActive = true
         setAppActivity()
+
+        //if we enabled play services/etc, try to init again
+        AndroidApp.get(this).attemptGcmInit()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

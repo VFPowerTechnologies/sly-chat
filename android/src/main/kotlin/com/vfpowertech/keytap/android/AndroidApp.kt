@@ -8,7 +8,12 @@ import android.net.ConnectivityManager
 import android.preference.PreferenceManager
 import android.support.v4.content.ContextCompat
 import com.almworks.sqlite4java.SQLite
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException
+import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.iid.InstanceID
+import com.google.android.gms.security.ProviderInstaller
 import com.vfpowertech.keytap.android.services.AndroidPlatformContacts
 import com.vfpowertech.keytap.android.services.AndroidUILoadService
 import com.vfpowertech.keytap.android.services.AndroidUIPlatformInfoService
@@ -25,14 +30,68 @@ import com.vfpowertech.keytap.services.di.PlatformModule
 import com.vfpowertech.keytap.services.ui.createAppDirectories
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.android.androidUiDispatcher
+import nl.komponents.kovenant.task
 import nl.komponents.kovenant.ui.KovenantUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
+import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
+import rx.subjects.BehaviorSubject
 import java.util.*
 
+enum class LoadErrorType {
+    SSL_PROVIDER_INSTALLATION_FAILURE,
+    NO_PLAY_SERVICES,
+    UNKNOWN
+}
+
+//only one of errorCode or cause will be provided
+data class LoadError(
+    val type: LoadErrorType,
+    //0 if not provided
+    val errorCode: Int,
+    val cause: Throwable?
+)
+
+/** Will never leak any exceptions. */
+fun gcmInit(context: Context): LoadError? {
+    try {
+        val apiAvailability = GoogleApiAvailability.getInstance()
+
+        val resultCode = apiAvailability.isGooglePlayServicesAvailable(context)
+
+        if (resultCode != ConnectionResult.SUCCESS)
+            return LoadError(LoadErrorType.NO_PLAY_SERVICES, resultCode, null)
+
+        try {
+            ProviderInstaller.installIfNeeded(context)
+        }
+        catch (e: GooglePlayServicesRepairableException) {
+            return LoadError(LoadErrorType.SSL_PROVIDER_INSTALLATION_FAILURE, e.connectionStatusCode, null)
+
+        }
+        catch (e: GooglePlayServicesNotAvailableException) {
+            //shouldn't happen?
+            return LoadError(LoadErrorType.NO_PLAY_SERVICES, e.errorCode, null)
+        }
+
+        return null
+    }
+    catch (t: Throwable) {
+        return LoadError(LoadErrorType.UNKNOWN, 0, t)
+    }
+}
+
+fun gcmInitAsync(context: Context): Promise<LoadError?, Exception> = task { gcmInit(context) }
+
 class AndroidApp : Application() {
+    private var gcmInitRunning = false
+    private var gcmInitComplete = false
+
     val app: KeyTapApplication = KeyTapApplication()
+
+    private val loadCompleteSubject = BehaviorSubject.create<LoadError>()
+    val loadComplete: Observable<LoadError> = loadCompleteSubject.observeOn(AndroidSchedulers.mainThread())
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -90,7 +149,36 @@ class AndroidApp : Application() {
                 onUserSessionDestroyed()
         }
 
-        app.autoLogin()
+        runGcmInit()
+    }
+
+    private fun runGcmInit() {
+        if (gcmInitComplete || gcmInitRunning)
+            return
+
+        gcmInitRunning = true
+
+        gcmInitAsync(this) successUi { loadError ->
+            gcmInitRunning = false
+
+            if (loadError == null) {
+                gcmInitComplete = true
+                log.debug("GCM init successful")
+                app.autoLogin()
+            }
+            else {
+                if (loadError.cause != null)
+                    log.error("GCM init failure: {}: errorCode={}", loadError.cause.message, loadError.cause)
+                else
+                    log.error("GCM init failure: {}: {}", loadError.type, loadError.errorCode)
+            }
+
+            loadCompleteSubject.onNext(loadError)
+        }
+    }
+
+    fun attemptGcmInit() {
+        runGcmInit()
     }
 
     fun isFocusedActivity(): Boolean = currentActivity != null
