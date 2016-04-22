@@ -18,51 +18,7 @@
     <link href="css/materialize.min.css" rel="stylesheet" type="text/css">
     <link href="css/style.css" rel="stylesheet" type="text/css">
     <link href="css/internStyle.css" rel="stylesheet" type="text/css">
-    <script src="js/build-config.js"></script>
-    <script src="js/dispatcher.js"></script>
-    <script src="js/jvm-service/registration-service.js"></script>
-    <script src="js/jvm-service/platform-info-service.js"></script>
-    <script src="js/jvm-service/messenger-service.js"></script>
-    <script src="js/jvm-service/login-service.js"></script>
-    <script src="js/jvm-service/contacts-service.js"></script>
-    <script src="js/jvm-service/history-service.js"></script>
-    <script src="js/jvm-service/devel-service.js"></script>
-    <script src="js/jvm-service/network-status-service.js"></script>
-    <script src="js/jvm-service/state-service.js"></script>
-    <script src="js/jvm-service/telephony-service.js"></script>
-    <script src="js/jvm-service/window-service.js"></script>
-    <script src="js/jvm-service/event-service.js"></script>
-    <script src="js/jvm-service/account-modification-service.js"></script>
-    <script src="js/jvm-service/platform-service.js"></script>
-    <script src="js/jvm-service/load-service.js"></script>
     <script src="js/external-lib/jquery-2.2.0.min.js"></script>
-    <script src="js/models/loginModel.js"></script>
-    <script src="js/models/registrationModel.js"></script>
-    <script src="js/models/contactModel.js"></script>
-    <script src="js/models/chatModel.js"></script>
-    <script src="js/models/profileModel.js"></script>
-    <script src="js/models/recentChatModel.js"></script>
-    <script src="js/controller/loginController.js"></script>
-    <script src="js/controller/registrationController.js"></script>
-    <script src="js/controller/contactController.js"></script>
-    <script src="js/controller/chatController.js"></script>
-    <script src="js/controller/navigationController.js"></script>
-    <script src="js/controller/menuController.js"></script>
-    <script src="js/controller/exceptionController.js"></script>
-    <script src="js/controller/connectionController.js"></script>
-    <script src="js/controller/profileController.js"></script>
-    <script src="js/controller/recentChatController.js"></script>
-    <script src="js/external-lib/bootstrap.min.js"></script>
-    <script src="js/external-lib/materialize.min.js"></script>
-    <script src="js/external-lib/jquery.smoothState.js"></script>
-    <script src="js/external-lib/initial.js"></script>
-    <script src="js/external-lib/parsley.min.js"></script>
-    <script src="js/external-lib/bootstrap-dialog.js"></script>
-    <script src="js/external-lib/intlTelInput.js"></script>
-    <script src="js/external-lib/jquery.timeago.js"></script>
-    <script src="js/external-lib/bootstrap-notify.min.js"></script>
-    <script src="js/internal/text-helper.js"></script>
-    <script src="js/internal/functions.js"></script>
 </head>
 <body style="overflow: hidden;">
 <div id="exceptionModal" class="modal">
@@ -84,10 +40,63 @@
 </div>
 <div class="m-scene toolbar-inside main-content" id="main"> <!-- Page Container -->
 
+    <div class="valign-wrapper row" style="background-color: #eeeeee; width: 100%; height: calc(100% + 60px); margin-top: -60px; overflow: hidden;">
+        <div class="valign col s12">
+            <div class="container" style="text-align: center;">
+                <h5>Loading your application</h5>
+                <i class='fa fa-spinner fa-3x fa-spin'></i>
+            </div>
+        </div>
+    </div>
+
     <!-- Specific page javascript -->
     <script src="js/internal/index.js"></script>
 
 </div> <!-- End of Page Container -->
+<script src="js/build-config.js"></script>
+<script src="js/dispatcher.js"></script>
+<script src="js/jvm-service/registration-service.js"></script>
+<script src="js/jvm-service/platform-info-service.js"></script>
+<script src="js/jvm-service/messenger-service.js"></script>
+<script src="js/jvm-service/login-service.js"></script>
+<script src="js/jvm-service/contacts-service.js"></script>
+<script src="js/jvm-service/history-service.js"></script>
+<script src="js/jvm-service/devel-service.js"></script>
+<script src="js/jvm-service/network-status-service.js"></script>
+<script src="js/jvm-service/state-service.js"></script>
+<script src="js/jvm-service/telephony-service.js"></script>
+<script src="js/jvm-service/window-service.js"></script>
+<script src="js/jvm-service/event-service.js"></script>
+<script src="js/jvm-service/account-modification-service.js"></script>
+<script src="js/jvm-service/platform-service.js"></script>
+    <script src="js/jvm-service/load-service.js"></script>
+<script src="js/models/loginModel.js"></script>
+<script src="js/models/registrationModel.js"></script>
+<script src="js/models/contactModel.js"></script>
+<script src="js/models/chatModel.js"></script>
+<script src="js/models/profileModel.js"></script>
+<script src="js/models/recentChatModel.js"></script>
+<script src="js/controller/loginController.js"></script>
+<script src="js/controller/registrationController.js"></script>
+<script src="js/controller/contactController.js"></script>
+<script src="js/controller/chatController.js"></script>
+<script src="js/controller/navigationController.js"></script>
+<script src="js/controller/menuController.js"></script>
+<script src="js/controller/exceptionController.js"></script>
+<script src="js/controller/connectionController.js"></script>
+<script src="js/controller/profileController.js"></script>
+<script src="js/controller/recentChatController.js"></script>
+<script src="js/external-lib/bootstrap.min.js"></script>
+<script src="js/external-lib/materialize.min.js"></script>
+<script src="js/external-lib/jquery.smoothState.js"></script>
+<script src="js/external-lib/initial.js"></script>
+<script src="js/external-lib/parsley.min.js"></script>
+<script src="js/external-lib/bootstrap-dialog.js"></script>
+<script src="js/external-lib/intlTelInput.js"></script>
+<script src="js/external-lib/jquery.timeago.js"></script>
+<script src="js/external-lib/bootstrap-notify.min.js"></script>
+<script src="js/internal/text-helper.js"></script>
+<script src="js/internal/functions.js"></script>
 
 </body>
 </html>
