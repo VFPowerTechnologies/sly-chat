@@ -535,7 +535,7 @@ class KeyTapApplication {
             }
 
             is AuthenticationSuccessful -> {
-
+                fetchOfflineMessages()
             }
 
             is AuthenticationExpired -> {
@@ -607,8 +607,8 @@ class KeyTapApplication {
         log.info("Attempting to reconnect to relay in {}s", reconnectionTimer.waitTimeSeconds)
     }
 
-    private fun onRelayStatusChange(newStatus: Boolean) {
-        relayAvailableSubject.onNext(newStatus)
+    private fun onRelayStatusChange(isOnline: Boolean) {
+        relayAvailableSubject.onNext(isOnline)
     }
 
     /** Fetches auth token if none is given, then connects to the relay. */
