@@ -46,13 +46,23 @@ class UserModule(
     @UserScope
     @Provides
     fun providesMessengerService(
+        application: KeyTapApplication,
+        scheduler: Scheduler,
         messagePersistenceManager: MessagePersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager,
         relayClientManager: RelayClientManager,
         messageCipherService: MessageCipherService,
         userLoginData: UserLoginData
     ): MessengerService =
-        MessengerService(messagePersistenceManager, contactsPersistenceManager, relayClientManager, messageCipherService, userLoginData)
+        MessengerService(
+            application,
+            scheduler,
+            messagePersistenceManager,
+            contactsPersistenceManager,
+            relayClientManager,
+            messageCipherService,
+            userLoginData
+        )
 
     @UserScope
     @Provides

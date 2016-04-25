@@ -10,13 +10,14 @@ import com.vfpowertech.keytap.services.crypto.EncryptedMessageV0
 import com.vfpowertech.keytap.services.crypto.MessageCipherService
 import com.vfpowertech.keytap.services.crypto.MessageListDecryptionResult
 import com.vfpowertech.keytap.services.crypto.deserializeEncryptedMessage
+import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.functional.bind
+import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.functional.map
-import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.Scheduler
 import rx.subjects.PublishSubject
 import java.util.*
 
@@ -32,6 +33,9 @@ data class EncryptionOk(val encryptedMessage: EncryptedMessageV0, val connection
 data class EncryptionPreKeyFetchFailure(val cause: Throwable): EncryptionResult
 data class EncryptionUnknownFailure(val cause: Throwable): EncryptionResult
 
+data class DecryptionResult(val userId: UserId, val result: MessageListDecryptionResult)
+data class OfflineDecryptionResult(val results: Map<UserId, MessageListDecryptionResult>)
+
 interface MessageSendResult {
     val messageId: String
 }
@@ -41,6 +45,8 @@ data class MessageSendOk(val to: UserId, override val messageId: String) : Messa
 
 //all Observerables are run on the main thread
 class MessengerService(
+    private val application: KeyTapApplication,
+    private val scheduler: Scheduler,
     private val messagePersistenceManager: MessagePersistenceManager,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val relayClientManager: RelayClientManager,
@@ -68,13 +74,32 @@ class MessengerService(
     private val receivedMessageQueue = ArrayDeque<QueuedReceivedMessage>()
     private var currentReceivedMessage: QueuedReceivedMessage? = null
 
+    private var currentOffline: Deferred<Unit, Exception>? = null
+
     init {
         relayClientManager.events.subscribe { onRelayEvent(it) }
         relayClientManager.onlineStatus.subscribe { onRelayConnect(it) }
+
+        messageCipherService.encryptedMessages.observeOn(scheduler).subscribe {
+            processEncryptionResult(it)
+        }
+
+        messageCipherService.decryptedMessages.observeOn(scheduler).subscribe {
+            processDecryptionResult(it.userId, it.result)
+        }
+
+        messageCipherService.offlineDecryptedMessages.observeOn(scheduler).subscribe {
+            processOfflineDecryption(it)
+        }
+
+        application.userSessionAvailable.subscribe { isAvailable ->
+            if (isAvailable)
+                messageCipherService.start()
+            else
+                messageCipherService.shutdown()
+        }
     }
 
-    //Ship all undelivered messages
-    //TODO optimize this
     private fun onRelayConnect(connected: Boolean) {
         if (!connected) {
             sendMessageQueue.clear()
@@ -192,11 +217,7 @@ class MessengerService(
         val connectionTag = relayClientManager.connectionTag
 
         val message = sendMessageQueue.first
-        messageCipherService.encrypt(message.to, message.messageInfo.message) successUi { encryptedMessage ->
-            processEncryptionResult(EncryptionOk(encryptedMessage, connectionTag))
-        } failUi { e ->
-            processEncryptionResult(EncryptionUnknownFailure(e))
-        }
+        messageCipherService.encrypt(message.to, message.messageInfo.message, connectionTag)
         currentSendMessage = message
     }
 
@@ -230,11 +251,7 @@ class MessengerService(
 
         val message = receivedMessageQueue.first
 
-        messageCipherService.decryptMessagesForUser(message.from, message.encryptedMessages) bindUi { result ->
-            processDecryptionResult(message.from, result)
-        } fail { e ->
-            log.error("Error during received message handling: {}", e.message, e)
-        }
+        messageCipherService.decrypt(message.from, message.encryptedMessages)
 
         currentReceivedMessage = message
     }
@@ -322,24 +339,43 @@ class MessengerService(
 
     /* Other */
 
+    private fun processOfflineDecryption(result: OfflineDecryptionResult) {
+        val d = currentOffline
+        currentOffline = null
+        if (d == null) {
+            log.error("processOfflineDecryption called with no deferred set")
+            return
+        }
+
+        val results = result.results
+
+        results.forEach {
+            logFailedDecryptionResults(it.key, it.value)
+        }
+
+        val groupedMessages = results.mapValues { it.value.succeeded }.filter { it.value.isNotEmpty() }
+
+        messagePersistenceManager.addReceivedMessages(groupedMessages) mapUi { groupedMessageInfo ->
+            val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
+            bundles.forEach {
+                newMessagesSubject.onNext(it.value)
+            }
+        } success { d.resolve(Unit) } fail { d.reject(it) }
+    }
+
+    //should only ever be called once
     fun addOfflineMessages(offlineMessages: List<OfflineMessage>): Promise<Unit, Exception> {
+        if (currentOffline != null)
+            throw IllegalStateException("addOfflineMessages called with pending request")
+
         val grouped = offlineMessages.groupBy { it.from }
         val sortedByTimestamp = grouped.mapValues { it.value.sortedBy { it.timestamp } }
         val groupedEncryptedMessages = sortedByTimestamp.mapValues { it.value.map { it.encryptedMessage } }
 
-        return messageCipherService.decryptMultiple(groupedEncryptedMessages) bind { results ->
-            results.forEach {
-                logFailedDecryptionResults(it.key, it.value)
-            }
+        messageCipherService.decryptOffline(groupedEncryptedMessages)
 
-            val groupedMessages = results.mapValues { it.value.succeeded }.filter { it.value.isNotEmpty() }
-
-            messagePersistenceManager.addReceivedMessages(groupedMessages) mapUi { groupedMessageInfo ->
-                val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
-                bundles.forEach {
-                    newMessagesSubject.onNext(it.value)
-                }
-            }
-        }
+        val d = deferred<Unit, Exception>()
+        currentOffline = d
+        return d.promise
     }
 }
