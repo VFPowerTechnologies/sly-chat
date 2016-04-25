@@ -13,6 +13,8 @@ interface MessagePersistenceManager {
      */
     fun addMessage(userId: UserId, isSent: Boolean, message: String, ttl: Long): Promise<MessageInfo, Exception>
 
+    fun addSelfMessage(userId: UserId, message: String): Promise<MessageInfo, Exception>
+
     /** Stores the given list of received messages in the given order. There must not be any empty message lists. */
     fun addReceivedMessages(messages: Map<UserId, List<String>>): Promise<Map<UserId, List<MessageInfo>>, Exception>
 
@@ -22,6 +24,6 @@ interface MessagePersistenceManager {
     /** Retrieve the last n messages for the given contact starting backwards at the given index. */
     fun getLastMessages(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception>
 
-    /** Returns all unsent messages. */
-    fun getUndeliveredMessages(userId: UserId): Promise<List<MessageInfo>, Exception>
+    /** Returns all unsent messages. If a contact has no undelievered messages, it won't be included in the result. */
+    fun getUndeliveredMessages(): Promise<Map<UserId, List<MessageInfo>>, Exception>
 }

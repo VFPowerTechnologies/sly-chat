@@ -67,15 +67,25 @@ VALUES
         }
     }
 
+    private fun addMessageReal(connection: SQLiteConnection, userId: UserId, messageInfo: MessageInfo): MessageInfo {
+        connection.withTransaction {
+            insertMessage(connection, userId, messageInfo)
+            updateConversationInfo(connection, userId, messageInfo.isSent, messageInfo.message, messageInfo.timestamp, 1)
+        }
+
+        return messageInfo
+    }
+
     //TODO retry if id taken
     override fun addMessage(userId: UserId, isSent: Boolean, message: String, ttl: Long): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val messageInfo = newMessageInfo(isSent, message, ttl)
-        connection.withTransaction {
-            insertMessage(connection, userId, messageInfo)
-            updateConversationInfo(connection, userId, isSent, message, messageInfo.timestamp, 1)
-        }
+        addMessageReal(connection, userId, messageInfo)
+    }
 
-        messageInfo
+    override fun addSelfMessage(userId: UserId, message: String): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val messageInfo = MessageInfo(getMessageId(), message, getCurrentTimestamp(), true, true, 0)
+
+        addMessageReal(connection, userId, messageInfo)
     }
 
     //TODO optimize this
@@ -112,7 +122,7 @@ VALUES
     }
 
     private fun queryLastMessages(connection: SQLiteConnection, userId: UserId, startingAt: Int, count: Int): List<MessageInfo> {
-        val sql = "SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM ${ConversationTable.getTablenameForContact(userId)} ORDER BY timestamp DESC LIMIT $count OFFSET $startingAt"
+        val sql = "SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM ${ConversationTable.getTablenameForContact(userId)} ORDER BY timestamp DESC, n DESC LIMIT $count OFFSET $startingAt"
         return connection.prepare(sql).use { stmt ->
             stmt.map { rowToMessageInfo(it) }
         }
@@ -122,12 +132,25 @@ VALUES
         queryLastMessages(connection, userId, startingAt, count)
     }
 
-    override fun getUndeliveredMessages(userId: UserId): Promise<List<MessageInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val table = ConversationTable.getTablenameForContact(userId)
-
-        connection.prepare("SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM $table WHERE is_delivered=0").use { stmt ->
-            stmt.map { rowToMessageInfo(it) }
+    override fun getUndeliveredMessages(): Promise<Map<UserId, List<MessageInfo>>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val contactIds = connection.prepare("SELECT contact_id FROM conversation_info").use { stmt ->
+            stmt.map { UserId(it.columnLong(0)) }
         }
+
+        val r = HashMap<UserId, List<MessageInfo>>()
+
+        for (userId in contactIds) {
+            val table = ConversationTable.getTablenameForContact(userId)
+
+            val messages = connection.prepare("SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM $table WHERE is_delivered=0 ORDER BY timestamp, n").use { stmt ->
+                stmt.map { rowToMessageInfo(it) }
+            }
+
+            if (messages.isNotEmpty())
+                r[userId] = messages
+        }
+
+        r
     }
 
     private fun messageInfoToRow(messageInfo: MessageInfo, stmt: SQLiteStatement) {
