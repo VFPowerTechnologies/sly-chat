@@ -25,7 +25,7 @@ data class OfflineMessage(val from: UserId, val timestamp: Int, val encryptedMes
 data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
 
-data class QueuedMessage(val to: UserId, val messageInfo: MessageInfo)
+data class QueuedMessage(val to: UserId, val messageInfo: MessageInfo, val connectionTag: Int)
 data class QueuedReceivedMessage(val from: UserId, val encryptedMessages: List<EncryptedMessageV0>)
 
 interface EncryptionResult
@@ -112,7 +112,7 @@ class MessengerService(
                 val userId = e.key
                 val messages = e.value
 
-                messages.forEach { sendMessageQueue.add(QueuedMessage(userId, it)) }
+                messages.forEach { addToQueue(userId, it) }
             }
 
             processSendMessageQueue()
@@ -120,7 +120,11 @@ class MessengerService(
     }
 
     private fun addToQueue(userId: UserId, messageInfo: MessageInfo) {
-        sendMessageQueue.add(QueuedMessage(userId, messageInfo))
+        //once we're back online the queue'll get filled with all unsent messages
+        if (!relayClientManager.isOnline)
+            return
+
+        sendMessageQueue.add(QueuedMessage(userId, messageInfo, relayClientManager.connectionTag))
         processSendMessageQueue()
     }
 
@@ -214,11 +218,16 @@ class MessengerService(
         if (sendMessageQueue.isEmpty())
             return
 
-        val connectionTag = relayClientManager.connectionTag
-
         val message = sendMessageQueue.first
-        messageCipherService.encrypt(message.to, message.messageInfo.message, connectionTag)
-        currentSendMessage = message
+
+        if (message.connectionTag != relayClientManager.connectionTag) {
+            log.debug("Dropping out message from send queue")
+            nextSendMessage()
+        }
+        else {
+            messageCipherService.encrypt(message.to, message.messageInfo.message, message.connectionTag)
+            currentSendMessage = message
+        }
     }
 
     private fun processDecryptionResult(from: UserId, result: MessageListDecryptionResult): Promise<Unit, Exception> {
