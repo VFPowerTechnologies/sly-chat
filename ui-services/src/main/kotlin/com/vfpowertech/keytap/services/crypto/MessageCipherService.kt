@@ -139,7 +139,7 @@ class MessageCipherService(
     }
 
     /** Must be called with store lock held. */
-    private fun decryptMessagesForUser(userId: UserId, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
+    private fun decryptMessagesForUserReal(userId: UserId, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
         val failed = ArrayList<DecryptionFailure>()
         val succeeded = ArrayList<String>()
 
@@ -159,11 +159,16 @@ class MessageCipherService(
         return MessageListDecryptionResult(succeeded, failed)
     }
 
+
+    fun decryptMessagesForUser(userId: UserId, encryptedMessages: List<EncryptedMessageV0>): Promise<MessageListDecryptionResult, Exception> = task {
+        withStore { decryptMessagesForUserReal(userId, encryptedMessages) }
+    }
+
     /** Decrypts multiple messages from multiple users at once. */
     fun decryptMultiple(encryptedMessages: Map<UserId, List<EncryptedMessageV0>>): Promise<Map<UserId, MessageListDecryptionResult>, Exception> = task {
         withStore { store ->
             encryptedMessages.mapValues { entry ->
-                decryptMessagesForUser(entry.key, entry.value)
+                decryptMessagesForUserReal(entry.key, entry.value)
             }
         }
     }

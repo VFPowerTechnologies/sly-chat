@@ -8,10 +8,12 @@ import com.vfpowertech.keytap.core.relay.RelayClientEvent
 import com.vfpowertech.keytap.core.relay.ServerReceivedMessage
 import com.vfpowertech.keytap.services.crypto.EncryptedMessageV0
 import com.vfpowertech.keytap.services.crypto.MessageCipherService
+import com.vfpowertech.keytap.services.crypto.MessageListDecryptionResult
 import com.vfpowertech.keytap.services.crypto.deserializeEncryptedMessage
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -22,41 +24,30 @@ data class OfflineMessage(val from: UserId, val timestamp: Int, val encryptedMes
 data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
 
-class MessageQueue {
-    private val queue = HashMap<UserId, ArrayList<MessageInfo>>()
+data class QueuedMessage(val to: UserId, val messageInfo: MessageInfo)
+data class QueuedReceivedMessage(val from: UserId, val encryptedMessages: List<EncryptedMessageV0>)
 
-    fun add(userId: UserId, messageInfo: MessageInfo) {
-        val current = queue[userId]
-        val q = if (current == null) {
-            val q = ArrayList<MessageInfo>()
-            queue[userId] = q
-            q
-        }
-        else
-            current
+//possiblities: 1) ok 2) prekey fetch failed 3) unknown
+interface EncryptionResult
+data class EncryptionOk(val encryptedMessage: EncryptedMessageV0, val connectionTag: Int) : EncryptionResult
+data class EncryptionPreKeyFetchFailure(val cause: Throwable): EncryptionResult
+data class EncryptionUnknownFailure(val cause: Throwable): EncryptionResult
 
-        q.add(messageInfo)
-    }
+//TODO groups
+//possiblities: 1) ok 2) decryption failure 3) unknown
+interface DecryptionResult
+data class DecryptionOk(val message: String) : DecryptionResult
+data class DecryptionFailure2(val cause: Throwable) : DecryptionResult
+data class DecryptionUnknownFailure(val cause: Throwable) : DecryptionResult
 
-    fun removeUser(userId: UserId) {
-        queue.remove(userId)
-    }
-
-    fun forEach(body: (UserId, List<MessageInfo>) -> Unit) {
-        if (queue.isEmpty())
-            return
-
-        //to allow modification while iterating
-        val copy = HashMap(queue)
-        copy.forEach { userId, messages -> body(userId, ArrayList(messages)) }
-    }
-
-    fun clear() {
-        queue.clear()
-    }
-
-    fun isNotEmpty(): Boolean = queue.isNotEmpty()
+interface MessageSendResult {
+    val messageId: String
 }
+data class MessageSendOk(val to: UserId, override val messageId: String) : MessageSendResult
+//data class MessageSendDisconnectFailure() : MessageSendResult
+//data class MessageSendDeviceMismatch() : MessageSendResult
+//data class MessageSendUnknownFailure(val cause: Throwable) : MessageSendResult
+
 
 //all Observerables are run on the main thread
 class MessengerService(
@@ -81,7 +72,11 @@ class MessengerService(
     private val contactRequestsSubject = PublishSubject.create<List<ContactRequest>>()
     val contactRequests: Observable<List<ContactRequest>> = contactRequestsSubject
 
-    private val messageQueue = MessageQueue()
+    private val sendMessageQueue = ArrayDeque<QueuedMessage>()
+    private var currentSendMessage: QueuedMessage? = null
+
+    private val receivedMessageQueue = ArrayDeque<QueuedReceivedMessage>()
+    private var currentReceivedMessage: QueuedReceivedMessage? = null
 
     init {
         relayClientManager.events.subscribe { onRelayEvent(it) }
@@ -92,56 +87,166 @@ class MessengerService(
     //TODO optimize this
     private fun onRelayConnect(connected: Boolean) {
         if (!connected) {
-            messageQueue.clear()
+            sendMessageQueue.clear()
+            currentSendMessage = null
             return
         }
 
         messagePersistenceManager.getUndeliveredMessages() successUi { undelivered ->
             undelivered.forEach { e ->
-                val contactId = e.key
+                val userId = e.key
                 val messages = e.value
 
-                messages.forEach { m ->
-                    messageQueue.add(contactId, m)
-                }
+                messages.forEach { sendMessageQueue.add(QueuedMessage(userId, it)) }
             }
 
-            processMessageQueue()
+            processSendMessageQueue()
         }
     }
 
     private fun addToQueue(userId: UserId, messageInfo: MessageInfo) {
-        messageQueue.add(userId, messageInfo)
-        processMessageQueue()
+        sendMessageQueue.add(QueuedMessage(userId, messageInfo))
+        processSendMessageQueue()
     }
 
-    private fun processMessageQueue() {
+    private fun processEncryptionResult(result: EncryptionResult) {
+        //this can occur if we get disconnected during the encryption process
+        //the queue'll be reset on disconnect, so just do nothing
         if (!relayClientManager.isOnline)
+            return
+
+        val message = currentSendMessage
+
+        if (message != null) {
+            val userId = message.to
+            //we don't check this against the current id as even during a disconnect the last message could also be
+            //the first message to resend
+            val messageId = message.messageInfo.id
+
+            when (result) {
+                is EncryptionOk -> {
+                    //if we got disconnected while we were encrypting, just ignore the message as it'll just be encrypted again
+                    //sendMessage'll ignore any message without a matching connectionTag
+                    val content = objectMapper.writeValueAsBytes(result.encryptedMessage)
+                    relayClientManager.sendMessage(result.connectionTag, userId, content, messageId)
+                }
+
+                is EncryptionUnknownFailure -> {
+                    log.error("Unknown error during encryption: {}", result.cause.message, result.cause)
+                    processSendMessageQueue()
+                }
+
+                else -> throw RuntimeException("Unknown result: $result")
+            }
+        }
+        else {
+            //can occur if we disconnect and then receive a message, so do nothing
+            log.warn("processEncryptionResult called but currentMessage was null")
+        }
+    }
+
+    private fun processMessageSendResult(result: MessageSendResult) {
+        val message = currentSendMessage
+
+        if (message != null) {
+            val messageId = message.messageInfo.id
+
+            when (result) {
+                is MessageSendOk -> {
+                    //this should never happen; nfi what to do if it does? try to send again?
+                    //no idea what would cause this either
+                    if (result.messageId != messageId) {
+                        log.error("Message mismatch")
+                    }
+                    else {
+                        val to = result.to
+                        messagePersistenceManager.markMessageAsDelivered(to, messageId) successUi { messageInfo ->
+                            messageUpdatesSubject.onNext(MessageBundle(to, listOf(messageInfo)))
+                        } fail { e ->
+                            log.error("Unable to write message to log: {}", e.message, e)
+                        }
+                    }
+
+                    nextSendMessage()
+                }
+
+                //TODO on device mismatch, handle mismatch then process queue again
+
+                //TODO failures
+                else -> throw RuntimeException("Unknown message send result: $result")
+            }
+        }
+        else {
+            log.error("ProcessMessageSendResult called but currentMessage was null")
+            processSendMessageQueue()
+        }
+    }
+
+    private fun nextSendMessage() {
+        currentSendMessage = null
+        sendMessageQueue.pop()
+        processSendMessageQueue()
+    }
+
+    private fun processSendMessageQueue() {
+        if (!relayClientManager.isOnline)
+            return
+
+        //waiting on a message
+        if (currentSendMessage != null)
+            return
+
+        if (sendMessageQueue.isEmpty())
             return
 
         val connectionTag = relayClientManager.connectionTag
 
-        try {
-            //XXX this is so nasty
-            messageQueue.forEach { userId, messages ->
-                messageCipherService.encryptMulti(userId, messages.map { it.message }) map { encryptedMessages ->
-                    var i = 0
-                    encryptedMessages.forEach { encryptedMessage ->
-                        val id = messages[i].id
-                        i += 1
-                        val content = objectMapper.writeValueAsBytes(encryptedMessage)
-                        relayClientManager.sendMessage(connectionTag, userId, content, id)
-                    }
-                } fail { e ->
-                    log.error("Unable to send messages to {}: {}", userId, e.message, e)
-                }
+        val message = sendMessageQueue.first
+        messageCipherService.encrypt(message.to, message.messageInfo.message) successUi { encryptedMessage ->
+            processEncryptionResult(EncryptionOk(encryptedMessage, connectionTag))
+        } failUi { e ->
+            processEncryptionResult(EncryptionUnknownFailure(e))
+        }
+        currentSendMessage = message
+    }
 
-                messageQueue.removeUser(userId)
+    private fun processDecryptionResult(from: UserId, result: MessageListDecryptionResult): Promise<Unit, Exception> {
+        logFailedDecryptionResults(from, result)
+
+        val messages = if (result.succeeded.isNotEmpty())
+            hashMapOf(from to result.succeeded)
+        else
+            hashMapOf()
+
+        return messagePersistenceManager.addReceivedMessages(messages) mapUi { groupedMessageInfo ->
+            val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
+            bundles.forEach {
+                newMessagesSubject.onNext(it.value)
             }
+
+            currentReceivedMessage = null
+            receivedMessageQueue.pop()
+
+            processReceivedMessageQueue()
         }
-        catch (t: Throwable) {
-            log.error("An error occured while sending messages: {}", t.message, t)
+    }
+
+    private fun processReceivedMessageQueue() {
+        if (currentReceivedMessage != null)
+            return
+
+        if (receivedMessageQueue.isEmpty())
+            return
+
+        val message = receivedMessageQueue.first
+
+        messageCipherService.decryptMessagesForUser(message.from, message.encryptedMessages) bindUi { result ->
+            processDecryptionResult(message.from, result)
+        } fail { e ->
+            log.error("Error during received message handling: {}", e.message, e)
         }
+
+        currentReceivedMessage = message
     }
 
     private fun onRelayEvent(event: RelayClientEvent) {
@@ -166,16 +271,19 @@ class MessengerService(
 
     private fun handleReceivedMessage(event: ReceivedMessage) {
         val encryptedMessage = deserializeEncryptedMessage(event.content)
-        messageCipherService.decrypt(event.from, encryptedMessage) bind { message ->
-            writeReceivedMessage(event.from, message)
-        } fail { e ->
-            log.error("Error during received message handling: {}", e.message, e)
-        }
+        receivedMessageQueue.add(QueuedReceivedMessage(event.from, listOf(encryptedMessage)))
+        processReceivedMessageQueue()
     }
 
     private fun handleServerRecievedMessage(event: ServerReceivedMessage) {
-        messagePersistenceManager.markMessageAsDelivered(event.to, event.messageId) successUi { messageInfo ->
-            messageUpdatesSubject.onNext(MessageBundle(event.to, listOf(messageInfo)))
+        processMessageSendResult(MessageSendOk(event.to, event.messageId))
+    }
+
+    private fun logFailedDecryptionResults(userId: UserId, result: MessageListDecryptionResult) {
+        //XXX no idea what to do here really
+        if (result.failed.isNotEmpty()) {
+            log.error("Unable to decrypt {} messages for {}", result.failed.size, userId)
+            result.failed.forEach { log.error("Message decryption failure: {}", it.cause.message, it.cause) }
         }
     }
 
@@ -230,14 +338,8 @@ class MessengerService(
         val groupedEncryptedMessages = sortedByTimestamp.mapValues { it.value.map { it.encryptedMessage } }
 
         return messageCipherService.decryptMultiple(groupedEncryptedMessages) bind { results ->
-            //XXX no idea what to do here really
-            results.map { entry ->
-                val contact = entry.key
-                val result = entry.value
-                if (result.failed.isNotEmpty()) {
-                    log.error("Unable to decrypt {} messages for {}", result.failed.size, contact.id)
-                    result.failed.forEach { log.error("Message decryption failure: {}", it.cause.message, it.cause) }
-                }
+            results.forEach {
+                logFailedDecryptionResults(it.key, it.value)
             }
 
             val groupedMessages = results.mapValues { it.value.succeeded }.filter { it.value.isNotEmpty() }
