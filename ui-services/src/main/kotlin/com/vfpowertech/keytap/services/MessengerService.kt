@@ -27,27 +27,17 @@ data class ContactRequest(val info: ContactInfo)
 data class QueuedMessage(val to: UserId, val messageInfo: MessageInfo)
 data class QueuedReceivedMessage(val from: UserId, val encryptedMessages: List<EncryptedMessageV0>)
 
-//possiblities: 1) ok 2) prekey fetch failed 3) unknown
 interface EncryptionResult
 data class EncryptionOk(val encryptedMessage: EncryptedMessageV0, val connectionTag: Int) : EncryptionResult
 data class EncryptionPreKeyFetchFailure(val cause: Throwable): EncryptionResult
 data class EncryptionUnknownFailure(val cause: Throwable): EncryptionResult
 
-//TODO groups
-//possiblities: 1) ok 2) decryption failure 3) unknown
-interface DecryptionResult
-data class DecryptionOk(val message: String) : DecryptionResult
-data class DecryptionFailure2(val cause: Throwable) : DecryptionResult
-data class DecryptionUnknownFailure(val cause: Throwable) : DecryptionResult
-
 interface MessageSendResult {
     val messageId: String
 }
 data class MessageSendOk(val to: UserId, override val messageId: String) : MessageSendResult
-//data class MessageSendDisconnectFailure() : MessageSendResult
 //data class MessageSendDeviceMismatch() : MessageSendResult
 //data class MessageSendUnknownFailure(val cause: Throwable) : MessageSendResult
-
 
 //all Observerables are run on the main thread
 class MessengerService(
