@@ -67,15 +67,25 @@ VALUES
         }
     }
 
+    private fun addMessageReal(connection: SQLiteConnection, userId: UserId, messageInfo: MessageInfo): MessageInfo {
+        connection.withTransaction {
+            insertMessage(connection, userId, messageInfo)
+            updateConversationInfo(connection, userId, messageInfo.isSent, messageInfo.message, messageInfo.timestamp, 1)
+        }
+
+        return messageInfo
+    }
+
     //TODO retry if id taken
     override fun addMessage(userId: UserId, isSent: Boolean, message: String, ttl: Long): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val messageInfo = newMessageInfo(isSent, message, ttl)
-        connection.withTransaction {
-            insertMessage(connection, userId, messageInfo)
-            updateConversationInfo(connection, userId, isSent, message, messageInfo.timestamp, 1)
-        }
+        addMessageReal(connection, userId, messageInfo)
+    }
 
-        messageInfo
+    override fun addSelfMessage(userId: UserId, message: String): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val messageInfo = MessageInfo(getMessageId(), message, getCurrentTimestamp(), true, true, 0)
+
+        addMessageReal(connection, userId, messageInfo)
     }
 
     //TODO optimize this

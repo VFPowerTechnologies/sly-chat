@@ -13,6 +13,8 @@ interface MessagePersistenceManager {
      */
     fun addMessage(userId: UserId, isSent: Boolean, message: String, ttl: Long): Promise<MessageInfo, Exception>
 
+    fun addSelfMessage(userId: UserId, message: String): Promise<MessageInfo, Exception>
+
     /** Stores the given list of received messages in the given order. There must not be any empty message lists. */
     fun addReceivedMessages(messages: Map<UserId, List<String>>): Promise<Map<UserId, List<MessageInfo>>, Exception>
 

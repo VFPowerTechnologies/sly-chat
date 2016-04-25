@@ -164,6 +164,12 @@ class MessengerService(
         }
     }
 
+    private fun markMessageAsDelivered(to: UserId, messageId: String): Promise<MessageInfo, Exception> {
+        return messagePersistenceManager.markMessageAsDelivered(to, messageId) successUi { messageInfo ->
+            messageUpdatesSubject.onNext(MessageBundle(to, listOf(messageInfo)))
+        }
+    }
+
     private fun processMessageSendResult(result: MessageSendResult) {
         val message = currentSendMessage
 
@@ -178,10 +184,7 @@ class MessengerService(
                         log.error("Message mismatch")
                     }
                     else {
-                        val to = result.to
-                        messagePersistenceManager.markMessageAsDelivered(to, messageId) successUi { messageInfo ->
-                            messageUpdatesSubject.onNext(MessageBundle(to, listOf(messageInfo)))
-                        } fail { e ->
+                        markMessageAsDelivered(result.to, messageId) fail { e ->
                             log.error("Unable to write message to log: {}", e.message, e)
                         }
                     }
@@ -308,29 +311,22 @@ class MessengerService(
     fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception> {
         val isSelfMessage = userId == userLoginData.userId
 
-        val p = messagePersistenceManager.addMessage(userId, true, message, 0)
-
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         return if (!isSelfMessage) {
-            p successUi { messageInfo ->
+            messagePersistenceManager.addMessage(userId, true, message, 0) successUi { messageInfo ->
                 addToQueue(userId, messageInfo)
             }
         }
         else {
             //we need to insure that the send message info is sent back to the ui before the ServerReceivedMessage is fired
             //this is stupid but I don't feel like injecting an rx scheduler
-            p map { messageInfo ->
+            messagePersistenceManager.addSelfMessage(userId, message) map { messageInfo ->
                 Thread.sleep(30)
                 messageInfo
             } successUi { messageInfo ->
-                handleServerRecievedMessage(ServerReceivedMessage(userId, messageInfo.id))
-                writeReceivedMessage(userId, message) fail { e ->
-                    log.error("Unable to write self-sent message: {}", e.message, e)
-                }
+                writeReceivedMessage(userId, messageInfo.message)
             }
-
-            p
         }
     }
 
