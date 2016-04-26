@@ -4,7 +4,6 @@ import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceComponent
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceType
 import com.vfpowertech.keytap.core.PlatformInfo
-import com.vfpowertech.keytap.services.AuthenticationService
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.PlatformTelephonyService
 import com.vfpowertech.keytap.services.ui.*
@@ -35,12 +34,11 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun provideLoginService(
-        app: KeyTapApplication,
-        authenticationService: AuthenticationService
+        app: KeyTapApplication
     ): UILoginService = getImplementation(
         UIServiceComponent.LOGIN,
         { DummyUILoginService() },
-        { UILoginServiceImpl(app, authenticationService) }
+        { UILoginServiceImpl(app) }
     )
 
     @Singleton
