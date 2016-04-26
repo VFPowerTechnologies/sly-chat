@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 class UserLoginData(
     val userId: UserId,
-    val username: String,
+    val deviceId: Int,
     val keyVault: KeyVault,
     authToken: String?
 ) {

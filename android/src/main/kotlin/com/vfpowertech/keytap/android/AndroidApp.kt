@@ -19,6 +19,7 @@ import com.vfpowertech.keytap.android.services.AndroidUILoadService
 import com.vfpowertech.keytap.android.services.AndroidUIPlatformInfoService
 import com.vfpowertech.keytap.android.services.AndroidUIPlatformService
 import com.vfpowertech.keytap.core.BuildConfig
+import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.http.api.gcm.GcmAsyncClient
 import com.vfpowertech.keytap.core.http.api.gcm.RegisterRequest
 import com.vfpowertech.keytap.core.http.api.gcm.RegisterResponse
@@ -198,7 +199,8 @@ class AndroidApp : Application() {
 
         val editor = sharedPrefs.edit()
         usernames.forEach { username ->
-            editor.putBoolean(AndroidPreferences.getTokenSentToServer(username), false)
+            val userId = UserId(username.toLong())
+            editor.putBoolean(AndroidPreferences.getTokenSentToServer(userId), false)
         }
         editor.apply()
     }
@@ -215,7 +217,7 @@ class AndroidApp : Application() {
 
         //TODO queue if network isn't active
         if (app.isNetworkAvailable)
-            gcmFetchToken(this, userComponent.userLoginData.username).successUi { onGCMTokenRefresh(it.username, it.token) }
+            gcmFetchToken(this, userComponent.userLoginData.userId).successUi { onGCMTokenRefresh(it.userId, it.token) }
     }
 
     private fun pushGcmTokenToServer(authToken: String, token: String): Promise<RegisterResponse, Exception> {
@@ -224,14 +226,14 @@ class AndroidApp : Application() {
         return GcmAsyncClient(serverUrl).register(request)
     }
 
-    fun onGCMTokenRefresh(username: String, token: String) {
+    fun onGCMTokenRefresh(userId: UserId, token: String) {
         val userComponent = app.userComponent ?: return
 
         //if we've logged out since, do nothing (the token'll be refreshed again on next login)
-        if (userComponent.userLoginData.username != username)
+        if (userComponent.userLoginData.userId != userId)
             return
 
-        log.debug("Received GCM token for {}: {}", username, token)
+        log.debug("Received GCM token for {}: {}", userId, token)
 
         val authToken = userComponent.userLoginData.authToken
         if (authToken == null) {
@@ -246,7 +248,8 @@ class AndroidApp : Application() {
                 val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
                 val usernames = HashSet(sharedPrefs.getStringSet(AndroidPreferences.tokenUserList, HashSet()))
                 val editor = sharedPrefs.edit()
-                editor.putBoolean(AndroidPreferences.getTokenSentToServer(username), true)
+                val username = userId.id.toString()
+                editor.putBoolean(AndroidPreferences.getTokenSentToServer(userId), true)
                 usernames.add(username)
                 editor.putStringSet(AndroidPreferences.tokenUserList, usernames)
                 editor.apply()
@@ -279,12 +282,12 @@ class AndroidApp : Application() {
 
     private fun onUserSessionCreated() {
         val userComponent = app.userComponent!!
-        val username = userComponent.userLoginData.username
+        val userId = userComponent.userLoginData.userId
 
         userComponent.notifierService.isUiVisible = currentActivity != null
 
         val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
-        val tokenSent = sharedPrefs.getBoolean(AndroidPreferences.getTokenSentToServer(username), false)
+        val tokenSent = sharedPrefs.getBoolean(AndroidPreferences.getTokenSentToServer(userId), false)
         if (!tokenSent)
             refreshGCMToken()
     }
@@ -303,7 +306,7 @@ class AndroidApp : Application() {
         val userComponent = app.userComponent ?: return
 
         val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
-        sharedPrefs.edit().putBoolean(AndroidPreferences.getTokenSentToServer(userComponent.userLoginData.username), false).apply()
+        sharedPrefs.edit().putBoolean(AndroidPreferences.getTokenSentToServer(userComponent.userLoginData.userId), false).apply()
 
         //this is a best effort attempt at unregistering
         //even if this fails, the token'll be invalidated on the next login that registers one

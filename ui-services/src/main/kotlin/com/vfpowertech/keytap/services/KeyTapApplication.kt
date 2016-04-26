@@ -260,7 +260,8 @@ class KeyTapApplication {
         appComponent.authenticationService.auth(username, password, installationData.registrationId) bindUi { response ->
             val keyVault = response.keyVault
             //TODO need to put the username in the login response if the user used their phone number
-            val userComponent = createUserSession(UserLoginData(response.accountInfo.id, username, keyVault, response.authToken), response.accountInfo)
+            val userLoginData = UserLoginData(response.accountInfo.id, response.accountInfo.deviceId, username, keyVault, response.authToken)
+            val userComponent = createUserSession(userLoginData, response.accountInfo)
 
             //until this finishes, nothing in the UserComponent should be touched
             backgroundInitialization(userComponent, response.authToken, password, rememberMe) mapUi {
