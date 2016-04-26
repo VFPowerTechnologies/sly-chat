@@ -2,6 +2,7 @@ package com.vfpowertech.keytap.services.crypto
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.BuildConfig
+import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.unhexify
@@ -155,7 +156,7 @@ class MessageCipherService(
         val failed = ArrayList<DecryptionFailure>()
         val succeeded = ArrayList<String>()
 
-        val address = KeyTapAddress(userId).toSignalAddress()
+        val address = KeyTapAddress(userId, 0).toSignalAddress()
         val sessionCipher = SessionCipher(signalStore, address)
 
         encryptedMessages.forEach { encryptedMessage ->
@@ -199,7 +200,7 @@ class MessageCipherService(
     }
 
     private fun getSessionCipher(userId: UserId): SessionCipher {
-        val address = KeyTapAddress(userId).toSignalAddress()
+        val address = KeyTapAddress(userId, 0).toSignalAddress()
         val containsSession = signalStore.containsSession(address)
 
         return if (containsSession)
