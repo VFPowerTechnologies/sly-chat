@@ -27,16 +27,26 @@ class UIAccountModificationServiceImpl(
 
         val paths = userPathsGenerator.getPaths(userId)
 
-        return accountUpdateClient.updateName(UpdateNameRequest(authToken, name)) bind { response ->
-            if(response.isSuccess === true && response.accountInfo !== null) {
-                val newAccountInfo = AccountInfo(UserId(response.accountInfo.id), response.accountInfo.name, response.accountInfo.username, response.accountInfo.phoneNumber)
+        return JsonAccountInfoPersistenceManager(paths.accountInfoPath).retrieve() bind { oldAccountInfo ->
+            if (oldAccountInfo == null)
+                throw RuntimeException("Missing account info")
 
-                JsonAccountInfoPersistenceManager(paths.accountInfoPath).store(newAccountInfo) map {
-                    UIAccountUpdateResult(newAccountInfo, response.isSuccess, response.errorMessage)
+            accountUpdateClient.updateName(UpdateNameRequest(authToken, name)) bind { response ->
+                if (response.isSuccess === true && response.accountInfo !== null) {
+                    val newAccountInfo = AccountInfo(
+                        UserId(response.accountInfo.id),
+                        response.accountInfo.name,
+                        response.accountInfo.username,
+                        response.accountInfo.phoneNumber,
+                        oldAccountInfo.deviceId
+                    )
+
+                    JsonAccountInfoPersistenceManager(paths.accountInfoPath).store(newAccountInfo) map {
+                        UIAccountUpdateResult(newAccountInfo, response.isSuccess, response.errorMessage)
+                    }
+                } else {
+                    Promise.ofSuccess(UIAccountUpdateResult(null, response.isSuccess, response.errorMessage))
                 }
-            }
-            else {
-                Promise.ofSuccess(UIAccountUpdateResult(null, response.isSuccess, response.errorMessage))
             }
         }
     }
@@ -57,7 +67,14 @@ class UIAccountModificationServiceImpl(
 
         return accountUpdateClient.confirmPhoneNumber(ConfirmPhoneNumberRequest(authToken, smsCode)) bind { response ->
             if(response.isSuccess === true && response.accountInfo !== null) {
-                val newAccountInfo = AccountInfo(UserId(response.accountInfo.id), response.accountInfo.name, response.accountInfo.username, response.accountInfo.phoneNumber)
+                //FIXME
+                val newAccountInfo = AccountInfo(
+                    UserId(response.accountInfo.id),
+                    response.accountInfo.name,
+                    response.accountInfo.username,
+                    response.accountInfo.phoneNumber,
+                    0
+                )
 
                 JsonAccountInfoPersistenceManager(paths.accountInfoPath).store(newAccountInfo) map {
                     UIAccountUpdateResult(newAccountInfo, response.isSuccess, response.errorMessage)
@@ -75,16 +92,26 @@ class UIAccountModificationServiceImpl(
 
         val paths = userPathsGenerator.getPaths(userId)
 
-        return accountUpdateClient.updateEmail(UpdateEmailRequest(authToken, email)) bind { response ->
-            if(response.isSuccess === true && response.accountInfo !== null) {
-                val newAccountInfo = AccountInfo(UserId(response.accountInfo.id), response.accountInfo.name, response.accountInfo.username, response.accountInfo.phoneNumber)
+        return JsonAccountInfoPersistenceManager(paths.accountInfoPath).retrieve() bind { oldAccountInfo ->
+            if (oldAccountInfo == null)
+                throw RuntimeException("Missing account info")
 
-                JsonAccountInfoPersistenceManager(paths.accountInfoPath).store(newAccountInfo) map {
-                    UIAccountUpdateResult(newAccountInfo, response.isSuccess, response.errorMessage)
+            accountUpdateClient.updateEmail(UpdateEmailRequest(authToken, email)) bind { response ->
+                if (response.isSuccess === true && response.accountInfo !== null) {
+                    val newAccountInfo = AccountInfo(
+                        UserId(response.accountInfo.id),
+                        response.accountInfo.name,
+                        response.accountInfo.username,
+                        response.accountInfo.phoneNumber,
+                        oldAccountInfo.deviceId
+                    )
+
+                    JsonAccountInfoPersistenceManager(paths.accountInfoPath).store(newAccountInfo) map {
+                        UIAccountUpdateResult(newAccountInfo, response.isSuccess, response.errorMessage)
+                    }
+                } else {
+                    Promise.ofSuccess(UIAccountUpdateResult(null, response.isSuccess, response.errorMessage))
                 }
-            }
-            else {
-                Promise.ofSuccess(UIAccountUpdateResult(null, response.isSuccess, response.errorMessage))
             }
         }
     }

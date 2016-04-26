@@ -30,7 +30,10 @@ class AuthenticationService(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun refreshAuthToken(username: String, remotePasswordHash: ByteArray): Promise<AuthTokenRefreshResult, Exception> {
+    fun refreshAuthToken(accountInfo: AccountInfo, registrationId: Int, remotePasswordHash: ByteArray): Promise<AuthTokenRefreshResult, Exception> {
+        val username = accountInfo.email
+        val deviceId = accountInfo.deviceId
+
         return loginClient.getParams(username) map { resp ->
             if (resp.errorMessage != null)
                 throw AuthApiResponseException(resp.errorMessage)
@@ -38,7 +41,7 @@ class AuthenticationService(
             //TODO make sure hash params still match
             resp.params!!.csrfToken
         } bind { csrfToken ->
-            val request = AuthenticationRequest(username, remotePasswordHash.hexify(), csrfToken)
+            val request = AuthenticationRequest(username, remotePasswordHash.hexify(), csrfToken, registrationId, deviceId)
             loginClient.auth(request)
         } map { resp ->
             if (resp.errorMessage != null)
@@ -48,7 +51,7 @@ class AuthenticationService(
         }
     }
 
-    fun remoteAuth(username: String, password: String): Promise<AuthResult, Exception> {
+    fun remoteAuth(username: String, password: String, registrationId: Int): Promise<AuthResult, Exception> {
         return loginClient.getParams(username) bind { response ->
             if (response.errorMessage != null)
                 throw AuthApiResponseException(response.errorMessage)
@@ -58,7 +61,8 @@ class AuthenticationService(
             val hashParams = HashDeserializers.deserialize(authParams.hashParams)
             val hash = hashPasswordWithParams(password, hashParams)
 
-            val request = AuthenticationRequest(username, hash.hexify(), authParams.csrfToken)
+            //only ever used if no local data is present, so assume a new device?
+            val request = AuthenticationRequest(username, hash.hexify(), authParams.csrfToken, registrationId, 0)
 
             loginClient.auth(request) map { response ->
                 if (response.errorMessage != null)
@@ -122,7 +126,7 @@ class AuthenticationService(
     }
 
     /** Attempts to authentication using a local session first, then falls back to remote authentication. */
-    fun auth(emailOrPhoneNumber: String, password: String): Promise<AuthResult, Exception> {
-        return localAuth(emailOrPhoneNumber, password) fallbackTo { remoteAuth(emailOrPhoneNumber, password) }
+    fun auth(emailOrPhoneNumber: String, password: String, registrationId: Int): Promise<AuthResult, Exception> {
+        return localAuth(emailOrPhoneNumber, password) fallbackTo { remoteAuth(emailOrPhoneNumber, password, registrationId) }
     }
 }

@@ -257,7 +257,7 @@ class KeyTapApplication {
         //maybe just search every account dir available and find a number that way? kinda rough but works
 
         //if the unlock fails, we try remotely; this can occur if the password was changed remotely from another device
-        appComponent.authenticationService.auth(username, password) bindUi { response ->
+        appComponent.authenticationService.auth(username, password, installationData.registrationId) bindUi { response ->
             val keyVault = response.keyVault
             //TODO need to put the username in the login response if the user used their phone number
             val userComponent = createUserSession(UserLoginData(response.accountInfo.id, username, keyVault, response.authToken), response.accountInfo)
@@ -561,7 +561,7 @@ class KeyTapApplication {
 
         val sessionDataPersistenceManager = userComponent.sessionDataPersistenceManager
 
-        appComponent.authenticationService.refreshAuthToken(data.username, remotePasswordHash) bind { response ->
+        appComponent.authenticationService.refreshAuthToken(userComponent.accountInfo, installationData.registrationId, remotePasswordHash) bind { response ->
             log.info("Got new auth token")
             sessionDataPersistenceManager.store(SessionData(response.authToken)) map { response }
         } successUi { response ->
