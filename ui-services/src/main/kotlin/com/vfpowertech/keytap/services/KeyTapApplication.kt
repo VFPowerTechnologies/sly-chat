@@ -118,7 +118,7 @@ class KeyTapApplication {
             generated
         }
 
-        log.info("Installation ID: {}", installationData.installationId)
+        log.info("Installation ID: {}; registration ID: {}", installationData.installationId, installationData.registrationId)
     }
 
     private fun initializeApplicationServices() {
