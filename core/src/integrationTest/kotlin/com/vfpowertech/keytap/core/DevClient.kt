@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.core
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
@@ -23,6 +24,17 @@ data class UserGcmTokenList(
     val tokens: List<UserGcmTokenInfo>
 )
 
+data class Device(
+    @JsonProperty("id")
+    val id: Int,
+    @JsonProperty("registrationId")
+    val registrationId: Int,
+    @JsonProperty("isActive")
+    val isActive: Boolean
+)
+
+val DEFAULT_DEVICE_ID = 1
+
 /** Client for web api server dev functionality. */
 class DevClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     private val objectMapper = ObjectMapper()
@@ -32,6 +44,22 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
 
         throwOnFailure(httpClient.postJSON("$serverBaseUrl$url", body))
    }
+
+    private fun <T> postRequest(request: Any, url: String, clazz: Class<T>): T {
+        val body = objectMapper.writeValueAsBytes(request)
+
+        val response = httpClient.postJSON("$serverBaseUrl$url", body)
+        throwOnFailure(response)
+
+        return objectMapper.readValue(response.body, clazz)
+    }
+
+    private fun <T> getRequest(url: String, typeReference: TypeReference<T>): T {
+        val response = httpClient.get("$serverBaseUrl$url")
+        throwOnFailure(response)
+
+        return objectMapper.readValue(response.body, typeReference)
+    }
 
     private fun <T> getRequest(url: String, clazz: Class<T>): T {
         val response = httpClient.get("$serverBaseUrl$url")
@@ -63,51 +91,51 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         throwOnFailure(response)
     }
 
-    fun createAuthToken(username: String): String {
-        val response = httpClient.postJSON("$serverBaseUrl/dev/auth/$username", ByteArray(0))
+    fun createAuthToken(username: String, deviceId: Int = DEFAULT_DEVICE_ID): String {
+        val response = httpClient.postJSON("$serverBaseUrl/dev/auth/$username/$deviceId", ByteArray(0))
         throwOnFailure(response)
 
         return objectMapper.readValue(response.body, SiteAuthTokenData::class.java).authToken
     }
 
-    fun getAuthToken(username: String): String {
-        return getRequest("/dev/auth/$username", SiteAuthTokenData::class.java).authToken
+    fun getAuthToken(username: String, deviceId: Int = DEFAULT_DEVICE_ID): String {
+        return getRequest("/dev/auth/$username/$deviceId", SiteAuthTokenData::class.java).authToken
     }
 
-    fun getPreKeys(username: String): SitePreKeyData {
-        return getRequest("/dev/prekeys/one-time/$username", SitePreKeyData::class.java)
+    fun getPreKeys(username: String, deviceId: Int = DEFAULT_DEVICE_ID): SitePreKeyData {
+        return getRequest("/dev/prekeys/one-time/$username/$deviceId", SitePreKeyData::class.java)
     }
 
-    fun addOneTimePreKeys(username: String, preKeys: List<String>) {
+    fun addOneTimePreKeys(username: String, preKeys: List<String>, deviceId: Int = DEFAULT_DEVICE_ID) {
         val request = mapOf(
             "oneTimePreKeys" to preKeys
         )
 
-        postRequestNoResponse(request, "/dev/prekeys/one-time/$username")
+        postRequestNoResponse(request, "/dev/prekeys/one-time/$username/$deviceId")
     }
 
-    fun getSignedPreKey(username: String): String? {
-        return getRequest("/dev/prekeys/signed/$username", SiteSignedPreKeyData::class.java).signedPreKey
+    fun getSignedPreKey(username: String, deviceId: Int = DEFAULT_DEVICE_ID): String? {
+        return getRequest("/dev/prekeys/signed/$username/$deviceId", SiteSignedPreKeyData::class.java).signedPreKey
     }
 
-    fun setSignedPreKey(username: String, signedPreKey: String) {
+    fun setSignedPreKey(username: String, signedPreKey: String, deviceId: Int = DEFAULT_DEVICE_ID) {
         val request = mapOf(
             "signedPreKey" to signedPreKey
         )
 
-        postRequestNoResponse(request, "/dev/prekeys/signed/$username")
+        postRequestNoResponse(request, "/dev/prekeys/signed/$username/$deviceId")
     }
 
-    fun getLastResortPreKey(username: String): String? {
-        return getRequest("/dev/prekeys/last-resort/$username", SiteLastResortPreKeyData::class.java).lastResortPreKey
+    fun getLastResortPreKey(username: String, deviceId: Int = DEFAULT_DEVICE_ID): String? {
+        return getRequest("/dev/prekeys/last-resort/$username/$deviceId", SiteLastResortPreKeyData::class.java).lastResortPreKey
     }
 
-    fun setLastResortPreKey(username: String, lastResortPreKey: String) {
+    fun setLastResortPreKey(username: String, lastResortPreKey: String, deviceId: Int = DEFAULT_DEVICE_ID) {
         val request = mapOf(
             "lastResortPreKey" to lastResortPreKey
         )
 
-        postRequestNoResponse(request, "/dev/prekeys/last-resort/$username")
+        postRequestNoResponse(request, "/dev/prekeys/last-resort/$username/$deviceId")
     }
 
     fun getContactList(username: String): List<RemoteContactEntry> {
@@ -141,5 +169,18 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
 
     fun getGcmTokens(username: String): List<UserGcmTokenInfo> {
         return getRequest("/dev/gcm/$username", UserGcmTokenList::class.java).tokens
+    }
+
+    fun getDevices(username: String): List<Device> {
+        return getRequest("/dev/users/$username/devices", typeRef<List<Device>>())
+    }
+
+    fun addDevice(username: String, registrationId: Int, isActive: Boolean): Int {
+        val request = mapOf(
+            "registrationId" to registrationId,
+            "isActive" to isActive
+        )
+
+        return postRequest(request, "/dev/users/$username/devices", Int::class.java)
     }
 }
