@@ -6,10 +6,13 @@ import com.vfpowertech.keytap.core.typeRef
 
 class PreKeyRetrievalClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     fun retrieve(request: PreKeyRetrievalRequest): PreKeyRetrievalResponse {
-        val params = listOf(
+        val params = mutableListOf(
             "auth-token" to request.authToken,
-            "for" to request.userId.id.toString()
+            "user" to request.userId.id.toString()
         )
+
+        if (request.deviceIds.isNotEmpty())
+            params.add("devices" to request.deviceIds.joinToString(","))
 
         val url = "$serverBaseUrl/v1/retrieve"
 

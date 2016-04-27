@@ -8,7 +8,6 @@ import com.vfpowertech.keytap.core.crypto.KeyVault
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import com.vfpowertech.keytap.core.crypto.signal.UserPreKeySet
-import com.vfpowertech.keytap.core.crypto.unhexify
 import org.whispersystems.libsignal.ecc.Curve
 import org.whispersystems.libsignal.ecc.ECPublicKey
 import org.whispersystems.libsignal.state.PreKeyRecord
@@ -75,11 +74,13 @@ fun preKeyStorageRequestFromGeneratedPreKeys(
     return PreKeyStoreRequest(authToken, identityKey, signedPreKey, oneTimePreKeys, serializedLastResortKey)
 }
 
+//FIXME
 fun userPreKeySetFromRetrieveResponse(response: PreKeyRetrievalResponse): UserPreKeySet? {
-    val keyData = response.keyData ?: return null
+    return null
+    //val keyData = response.keyData ?: return null
 
-    return UserPreKeySet(
-        SignedPreKeyRecord(keyData.signedPreKey.unhexify()),
-        PreKeyRecord(keyData.preKey.unhexify())
-    )
+    //return UserPreKeySet(
+    //    SignedPreKeyRecord(keyData.signedPreKey.unhexify()),
+    //    PreKeyRecord(keyData.preKey.unhexify())
+    //)
 }

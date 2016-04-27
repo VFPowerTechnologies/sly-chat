@@ -340,8 +340,8 @@ class WebApiIntegrationTest {
 
         assertTrue(response.isSuccess)
 
-        assertNotNull(response.keyData, "No prekeys found")
-        val preKeyData = response.keyData!!
+        assertNotNull(response.bundles, "No prekeys found")
+        val preKeyData = response.bundles!!
 
         val serializedOneTimePreKeys = serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys)
         val expectedSignedPreKey = serializeSignedPreKey(generatedPreKeys.signedPreKey)
@@ -358,8 +358,8 @@ class WebApiIntegrationTest {
 
         assertTrue(response.isSuccess)
 
-        assertNotNull(response.keyData, "No prekeys found")
-        val preKeyData = response.keyData!!
+        assertNotNull(response.bundles, "No prekeys found")
+        val preKeyData = response.bundles!!
 
         val expectedOneTimePreKeys = serializePreKey(expected)
         val expectedSignedPreKey = serializeSignedPreKey(signedPreKey)
