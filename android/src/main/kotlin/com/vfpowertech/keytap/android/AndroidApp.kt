@@ -217,7 +217,7 @@ class AndroidApp : Application() {
 
         //TODO queue if network isn't active
         if (app.isNetworkAvailable)
-            gcmFetchToken(this, userComponent.userLoginData.userId).successUi { onGCMTokenRefresh(it.userId, it.token) }
+            gcmFetchToken(this, userComponent.userLoginData.address.id).successUi { onGCMTokenRefresh(it.userId, it.token) }
     }
 
     private fun pushGcmTokenToServer(authToken: String, token: String): Promise<RegisterResponse, Exception> {
@@ -230,7 +230,7 @@ class AndroidApp : Application() {
         val userComponent = app.userComponent ?: return
 
         //if we've logged out since, do nothing (the token'll be refreshed again on next login)
-        if (userComponent.userLoginData.userId != userId)
+        if (userComponent.userLoginData.address.id != userId)
             return
 
         log.debug("Received GCM token for {}: {}", userId, token)

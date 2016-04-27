@@ -72,7 +72,7 @@ class RelayClient(
     }
 
     private fun authenticate() {
-        log.info("Authenticating as {}", credentials.userId)
+        log.info("Authenticating as {}", credentials.address)
         val connection = getConnectionOrThrow()
         connection.sendMessage(createAuthRequest(credentials))
         state = AUTHENTICATING

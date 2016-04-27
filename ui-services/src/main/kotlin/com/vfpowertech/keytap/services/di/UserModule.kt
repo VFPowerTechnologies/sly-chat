@@ -31,7 +31,7 @@ class UserModule(
         relayConnector: RelayConnector,
         serverUrls: ServerUrls
     ): RelayClient {
-        val credentials = UserCredentials(userLoginData.userId, userLoginData.authToken!!)
+        val credentials = UserCredentials(userLoginData.address, userLoginData.authToken!!)
         return RelayClient(relayConnector, scheduler, serverUrls.RELAY_SERVER, credentials)
     }
 

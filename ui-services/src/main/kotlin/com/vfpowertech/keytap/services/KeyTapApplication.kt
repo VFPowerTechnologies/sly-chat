@@ -3,6 +3,7 @@ package com.vfpowertech.keytap.services
 import com.fasterxml.jackson.core.JsonParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat
+import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.crypto.KeyVault
 import com.vfpowertech.keytap.core.crypto.LAST_RESORT_PREKEY_ID
 import com.vfpowertech.keytap.core.crypto.generateLastResortPreKey
@@ -260,7 +261,8 @@ class KeyTapApplication {
         appComponent.authenticationService.auth(username, password, installationData.registrationId) bindUi { response ->
             val keyVault = response.keyVault
             //TODO need to put the username in the login response if the user used their phone number
-            val userLoginData = UserLoginData(response.accountInfo.id, response.accountInfo.deviceId, username, keyVault, response.authToken)
+            val address = KeyTapAddress(response.accountInfo.id, response.accountInfo.deviceId)
+            val userLoginData = UserLoginData(address, keyVault, response.authToken)
             val userComponent = createUserSession(userLoginData, response.accountInfo)
 
             //until this finishes, nothing in the UserComponent should be touched
