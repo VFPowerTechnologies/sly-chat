@@ -8,19 +8,15 @@ data class PreKeyStoreRequest(
     @get:JsonProperty("auth-token")
     val authToken: String,
 
-    @param:JsonProperty("identity-key")
-    @get:JsonProperty("identity-key")
+    @JsonProperty("identityKey")
     val identityKey: String,
 
-    @param:JsonProperty("signed-prekey")
-    @get:JsonProperty("signed-prekey")
+    @JsonProperty("signedPreKey")
     val signedPreKey: String,
 
-    @param:JsonProperty("one-time-prekeys")
-    @get:JsonProperty("one-time-prekeys")
+    @param:JsonProperty("oneTimePreKeys")
     val oneTimePreKeys: List<String>,
 
-    @param:JsonProperty("last-resort-prekey")
-    @get:JsonProperty("last-resort-prekey")
+    @JsonProperty("lastResortPreKey")
     val lastResortPreKey: String
 )
