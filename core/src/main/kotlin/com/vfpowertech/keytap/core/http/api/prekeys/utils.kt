@@ -7,9 +7,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.crypto.KeyVault
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
-import com.vfpowertech.keytap.core.crypto.signal.UserPreKeySet
+import com.vfpowertech.keytap.core.crypto.unhexify
+import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.ecc.Curve
 import org.whispersystems.libsignal.ecc.ECPublicKey
+import org.whispersystems.libsignal.state.PreKeyBundle
 import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
 
@@ -74,13 +76,20 @@ fun preKeyStorageRequestFromGeneratedPreKeys(
     return PreKeyStoreRequest(authToken, identityKey, signedPreKey, oneTimePreKeys, serializedLastResortKey)
 }
 
-//FIXME
-fun userPreKeySetFromRetrieveResponse(response: PreKeyRetrievalResponse): UserPreKeySet? {
-    return null
-    //val keyData = response.keyData ?: return null
-
-    //return UserPreKeySet(
-    //    SignedPreKeyRecord(keyData.signedPreKey.unhexify()),
-    //    PreKeyRecord(keyData.preKey.unhexify())
-    //)
+fun SerializedPreKeySet.toPreKeyBundle(deviceId: Int): PreKeyBundle {
+    val objectMapper = ObjectMapper()
+    val registrationId = registrationId
+    println(preKey)
+    val oneTimePreKey = objectMapper.readValue(preKey, UnsignedPreKeyPublicData::class.java)
+    val signedPreKey = objectMapper.readValue(signedPreKey, SignedPreKeyPublicData::class.java)
+    return PreKeyBundle(
+        registrationId,
+        deviceId,
+        oneTimePreKey.id,
+        oneTimePreKey.getECPublicKey(),
+        signedPreKey.id,
+        signedPreKey.getECPublicKey(),
+        signedPreKey.signature,
+        IdentityKey(publicKey.unhexify(), 0)
+    )
 }

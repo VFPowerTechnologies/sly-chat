@@ -10,7 +10,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class JsonAccountInfoPersistenceManagerTest {
-    val accountInfo = AccountInfo(UserId(1), "name", "email", "000-000-0000")
+    val deviceId = 1
+    val accountInfo = AccountInfo(UserId(1), "name", "email", "000-000-0000", deviceId)
     lateinit var accountManager: JsonAccountInfoPersistenceManager
     lateinit var tempFile: File
 
