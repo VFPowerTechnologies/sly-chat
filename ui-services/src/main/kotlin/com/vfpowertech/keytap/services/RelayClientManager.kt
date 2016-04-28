@@ -9,6 +9,7 @@ import rx.Observer
 import rx.Scheduler
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
+import java.util.*
 
 /**
  * Wrapper around a relay connection.
@@ -37,6 +38,19 @@ class RelayClientManager(
     /** Received relay messages. */
     val events: Observable<RelayClientEvent> = eventsSubject
 
+    /**
+     * Random value from [0, Integer.MAX) to id the current connection.
+     *
+     * Used to prevent messages destined for a previous connection from being sent, in the event of things like message
+     * encryption being completed between a disconnect and reconnect.
+     */
+    var connectionTag: Int = 0
+        private set
+
+    private fun resetConnectionTag() {
+        connectionTag = Random().nextInt(Integer.MAX_VALUE)
+    }
+
     private fun onClientCompleted() {
         log.debug("Relay event observable completed")
         setOnlineStatus(false)
@@ -47,6 +61,8 @@ class RelayClientManager(
         this.isOnline = isOnline
         if (!isOnline)
             relayClient = null
+        else
+            resetConnectionTag()
 
         onlineStatusSubject.onNext(isOnline)
     }
@@ -76,7 +92,8 @@ class RelayClientManager(
 
                 override fun onNext(event: RelayClientEvent) {
                     when (event) {
-                        is ConnectionEstablished -> setOnlineStatus(true)
+                        //we only mark the relay connection as usable once authentication has completed
+                        is AuthenticationSuccessful -> setOnlineStatus(true)
                         is ConnectionLost -> setOnlineStatus(false)
                         is ConnectionFailure -> relayClient = null
                     }
@@ -104,8 +121,13 @@ class RelayClientManager(
         return relayClient ?: throw NoClientException()
     }
 
-    fun sendMessage(to: UserId, content: ByteArray, messageId: String) {
+    fun sendMessage(connectionTag: Int, to: UserId, content: ByteArray, messageId: String) {
         val relayClient = getClientOrThrow()
+
+        if (connectionTag != this.connectionTag) {
+            log.debug("Dropping message {} to {} due to connection tag mismatch", messageId, to.id)
+            return
+        }
 
         relayClient.sendMessage(to, content, messageId)
     }

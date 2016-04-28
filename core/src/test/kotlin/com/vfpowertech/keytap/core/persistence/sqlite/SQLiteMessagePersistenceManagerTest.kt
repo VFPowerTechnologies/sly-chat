@@ -64,7 +64,16 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     fun createConvosFor(vararg contacts: UserId): Array<out UserId> {
-        contacts.forEach { contact -> persistenceManager.runQuery { ConversationTable.create(it, contact) } }
+        contacts.forEach { contact ->
+            persistenceManager.syncRunQuery { ConversationTable.create(it, contact) }
+            //XXX this is used by SQLiteContactsPersistenceManager, so should probably find a way to share this code
+            persistenceManager.syncRunQuery { connection ->
+                connection.prepare("INSERT INTO conversation_info (contact_id, unread_count, last_message) VALUES (?, 0, NULL)").use { stmt ->
+                    stmt.bind(1, contact.id)
+                    stmt.step()
+                }
+            }
+        }
         return contacts
     }
 
@@ -140,19 +149,26 @@ class SQLiteMessagePersistenceManagerTest {
 
     @Test
     fun `getUndeliveredMessages should return all undelivered messages`() {
-        createConvosFor(contact)
+        val contact2 = UserId(contact.id+1)
+        val contact3 = UserId(contact2.id+1)
+        createConvosFor(contact, contact2, contact3)
 
-        addMessage(contact, false, testMessage, 0)
+        val contacts = listOf(contact, contact2)
 
-        val count = 2
+        val expected = contacts.map { c ->
+            val messages = (0..6).map { i ->
+                val isSent = (i % 2) == 0
+                addMessage(c, isSent, "Message $i", 0)
+            }.filter { !it.isDelivered }
 
-        val messages = ArrayList<MessageInfo>()
-        for (i in 0..count-1)
-            messages.add(addMessage(contact, true, testMessage, 0))
+            c to messages
+        }.toMap()
 
-        val undelivered = messagePersistenceManager.getUndeliveredMessages(contact).get()
-        assertEquals(count, undelivered.size)
+        val undelivered = messagePersistenceManager.getUndeliveredMessages().get()
+        val gotContacts = undelivered.keys.sortedBy { it.id }
 
-        undelivered.forEach { assertFalse(it.isDelivered) }
+        assertEquals(contacts, gotContacts)
+
+        assertEquals(expected, undelivered)
     }
 }

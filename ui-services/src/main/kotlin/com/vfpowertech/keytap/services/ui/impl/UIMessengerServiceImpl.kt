@@ -60,7 +60,7 @@ class UIMessengerServiceImpl(
 
     override fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception> {
         return getMessengerServiceOrThrow().sendMessageTo(contact.id, message) map { messageInfo ->
-            UIMessage(messageInfo.id, true, null, message)
+            messageInfo.toUI()
         }
     }
 
