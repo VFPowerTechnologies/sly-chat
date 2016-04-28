@@ -721,4 +721,27 @@ class WebApiIntegrationTest {
 
         assertFalse(secondResponse.isSuccess);
     }
+
+    @Test
+    fun `attempting to authenticate with active devices maxed out should fail`() {
+        val userA = injectNewSiteUser()
+        val username = userA.user.username
+        val maxDevices = devClient.getMaxDevices()
+
+        for (i in 0..maxDevices-1)
+            devClient.addDevice(username, 12345, true)
+
+        val client = AuthenticationClient(serverBaseUrl, JavaHttpClient())
+
+        val paramsApiResult = client.getParams(username)
+        assertTrue(paramsApiResult.isSuccess, "Unable to fetch params")
+
+        val csrfToken = paramsApiResult.params!!.csrfToken
+        val authRequest = AuthenticationRequest(username, userA.keyVault.remotePasswordHash.hexify(), csrfToken, defaultRegistrationId, 0)
+
+        val authResponse = client.auth(authRequest)
+
+        assertFalse(authResponse.isSuccess, "Auth succeeded")
+        assertTrue("too many registered devices" in authResponse.errorMessage!!.toLowerCase())
+    }
 }

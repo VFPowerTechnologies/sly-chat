@@ -175,6 +175,10 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         return getRequest("/dev/users/$username/devices", typeRef<List<Device>>())
     }
 
+    fun getMaxDevices(): Int {
+        return getRequest("/dev/config/max-devices", Int::class.java)
+    }
+
     fun addDevice(username: String, registrationId: Int, isActive: Boolean): Int {
         val request = mapOf(
             "registrationId" to registrationId,
