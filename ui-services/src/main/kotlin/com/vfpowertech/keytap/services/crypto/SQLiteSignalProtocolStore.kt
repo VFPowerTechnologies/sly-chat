@@ -5,6 +5,7 @@ import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
+import com.vfpowertech.keytap.core.persistence.sqlite.map
 import com.vfpowertech.keytap.core.persistence.sqlite.use
 import com.vfpowertech.keytap.services.UserLoginData
 import org.whispersystems.libsignal.IdentityKey
@@ -42,8 +43,15 @@ class SQLiteSignalProtocolStore(
         }
     }
 
+    //since we don't have the concept of a master device, we return all devices
     override fun getSubDeviceSessions(name: String): List<Int> {
-        throw UnsupportedOperationException()
+        return sqlitePersistenceManager.syncRunQuery { connection ->
+            connection.prepare("SELECT address FROM signal_sessions WHERE address LIKE '$name:%'").use { stmt ->
+                stmt.map {
+                    it.columnString(0).split(":")[1].toInt()
+                }
+            }
+        }
     }
 
     override fun deleteAllSessions(name: String) {
