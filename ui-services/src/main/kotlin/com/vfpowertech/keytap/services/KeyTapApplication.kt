@@ -224,7 +224,7 @@ class KeyTapApplication {
             preKeyPersistenceManager.putGeneratedPreKeys(generatedPreKeys) map { generatedPreKeys }
         } bindUi { generatedPreKeys ->
             getLastResortPreKey(preKeyPersistenceManager) bind { lastResortPreKey ->
-                val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, keyVault, generatedPreKeys, lastResortPreKey)
+                val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, installationData.registrationId, keyVault, generatedPreKeys, lastResortPreKey)
                 PreKeyStoreAsyncClient(appComponent.serverUrls.API_SERVER).store(request)
             }
         } successUi { response ->

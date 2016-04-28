@@ -8,6 +8,9 @@ data class PreKeyStoreRequest(
     @get:JsonProperty("auth-token")
     val authToken: String,
 
+    @JsonProperty("registrationId")
+    val registrationId: Int,
+
     @JsonProperty("identityKey")
     val identityKey: String,
 

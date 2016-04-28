@@ -117,7 +117,8 @@ class WebApiIntegrationTest {
 
             val contacts = devClient.getContactList(username)
 
-            assertEquals(contactsA, contacts)
+            if (contacts != contactsA)
+                throw DevServerInsaneException("Contacts functionality failed")
 
             //GCM
             val installationId = randomUUID()
@@ -126,18 +127,27 @@ class WebApiIntegrationTest {
 
             val gcmTokens = devClient.getGcmTokens(username)
 
-            assertEquals(listOf(UserGcmTokenInfo(installationId, gcmToken)), gcmTokens)
+            if (gcmTokens != listOf(UserGcmTokenInfo(installationId, gcmToken)))
+                throw DevServerInsaneException("GCM functionality failed")
 
             devClient.unregisterGcmToken(username, installationId)
 
-            assertEquals(0, devClient.getGcmTokens(username).size)
+            if (devClient.getGcmTokens(username).size != 0)
+                throw DevServerInsaneException("GCM functionality failed")
 
             //devices
             val deviceId = devClient.addDevice(username, defaultRegistrationId, true)
+            val deviceId2 = devClient.addDevice(username, defaultRegistrationId+1, false)
 
             val devices = devClient.getDevices(username)
 
-            assertEquals(listOf(Device(deviceId, defaultRegistrationId, true)), devices)
+            val expected = listOf(
+                Device(deviceId, defaultRegistrationId, true),
+                Device(deviceId2, defaultRegistrationId+1, false)
+            )
+
+            if (devices != expected)
+                throw DevServerInsaneException("Device functionality failed")
         }
 
         //only run if server is up
@@ -270,7 +280,7 @@ class WebApiIntegrationTest {
         val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 1)
         val lastResortPreKey = generateLastResortPreKey()
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys("a", keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys("a", defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
         val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
 
@@ -293,16 +303,18 @@ class WebApiIntegrationTest {
     }
 
     @Test
-    fun `prekey storage request should store keys on the server when a valid auth token is used`() {
+    fun `prekey storage request should store keys on the server when a valid auth token and device id is used`() {
         val siteUser = injectNewSiteUser()
         val keyVault = siteUser.keyVault
         val username = siteUser.user.username
 
-        val authToken = devClient.createAuthToken(username)
+        val deviceId = devClient.addDevice(username, defaultRegistrationId, true)
+
+        val authToken = devClient.createAuthToken(username, deviceId)
         val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 1)
         val lastResortPreKey = generateLastResortPreKey()
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
         val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
 
@@ -318,6 +330,44 @@ class WebApiIntegrationTest {
         assertEquals(expectedOneTimePreKeys, preKeys.oneTimePreKeys, "One-time prekeys don't match")
         assertEquals(expectedSignedPreKey, preKeys.signedPreKey, "Signed prekey doesn't match")
         assertEquals(expectedLastResortPreKey, preKeys.lastResortPreKey, "Last resort prekey doesn't match")
+    }
+
+    @Test
+    fun `attempting to push prekeys to a non-registered device should fail`() {
+        val siteUser = injectNewSiteUser()
+        val keyVault = siteUser.keyVault
+        val username = siteUser.user.username
+
+        val authToken = devClient.createAuthToken(username)
+        val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 1)
+        val lastResortPreKey = generateLastResortPreKey()
+
+        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
+
+        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+
+        val response = client.store(request)
+        assertFalse(response.isSuccess, "Upload succeeded")
+    }
+
+    @Test
+    fun `attempting to push prekeys to an inactive device should fail`() {
+        val siteUser = injectNewSiteUser()
+        val keyVault = siteUser.keyVault
+        val username = siteUser.user.username
+
+        val deviceId = devClient.addDevice(username, defaultRegistrationId, false)
+
+        val authToken = devClient.createAuthToken(username, deviceId)
+        val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 1)
+        val lastResortPreKey = generateLastResortPreKey()
+
+        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
+
+        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+
+        val response = client.store(request)
+        assertFalse(response.isSuccess, "Upload succeeded")
     }
 
     @Test

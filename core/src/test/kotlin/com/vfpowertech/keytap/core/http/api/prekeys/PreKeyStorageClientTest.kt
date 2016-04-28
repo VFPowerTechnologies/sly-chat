@@ -21,13 +21,14 @@ class PreKeyStorageClientTest {
     val objectMapper = ObjectMapper()
     val keyVaultPassword = "test"
     val keyVault = generateNewKeyVault(keyVaultPassword)
+    val defaultRegistrationId = 12345
     val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 10)
     val lastResortPreKey = generateLastResortPreKey()
     val authToken = "000"
 
     @Test
     fun `store should return a successful PreKeyStorageResponse when receiving a 200 response`() {
-        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
         val response = PreKeyStoreResponse(null)
         val apiResult = ApiResult(null, response)
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))
@@ -47,7 +48,7 @@ class PreKeyStorageClientTest {
 
     @Test
     fun `store should throw UnauthorizedException when receiving a 401 response`() {
-        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
         val httpResponse = HttpResponse(401, HashMap(), "")
         val httpClient = mock<HttpClient>()
 

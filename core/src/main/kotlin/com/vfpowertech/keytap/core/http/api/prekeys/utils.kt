@@ -63,6 +63,7 @@ fun serializeSignedPreKey(signedPreKeyRecord: SignedPreKeyRecord): String =
 
 fun preKeyStorageRequestFromGeneratedPreKeys(
     authToken: String,
+    registrationId: Int,
     keyVault: KeyVault,
     generatedPreKeys: GeneratedPreKeys,
     lastResortPreKey: PreKeyRecord
@@ -73,7 +74,7 @@ fun preKeyStorageRequestFromGeneratedPreKeys(
     val oneTimePreKeys = serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys)
     val serializedLastResortKey = serializePreKey(lastResortPreKey)
 
-    return PreKeyStoreRequest(authToken, identityKey, signedPreKey, oneTimePreKeys, serializedLastResortKey)
+    return PreKeyStoreRequest(authToken, registrationId, identityKey, signedPreKey, oneTimePreKeys, serializedLastResortKey)
 }
 
 fun SerializedPreKeySet.toPreKeyBundle(deviceId: Int): PreKeyBundle {
