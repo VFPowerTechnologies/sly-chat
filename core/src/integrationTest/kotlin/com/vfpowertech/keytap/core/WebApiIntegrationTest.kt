@@ -337,11 +337,14 @@ class WebApiIntegrationTest {
         val siteUser = injectNewSiteUser()
         val username = siteUser.user.username
 
+        val requestingSiteUser = injectNamedSiteUser("b@a.com")
+        val requestingUsername = requestingSiteUser.user.username
+
         val deviceId = devClient.addDevice(username, defaultRegistrationId, true)
 
         val generatedPreKeys = injectPreKeys(username, siteUser.keyVault, deviceId)
 
-        val authToken = devClient.createAuthToken(username, deviceId)
+        val authToken = devClient.createAuthToken(requestingUsername)
 
         val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
 
