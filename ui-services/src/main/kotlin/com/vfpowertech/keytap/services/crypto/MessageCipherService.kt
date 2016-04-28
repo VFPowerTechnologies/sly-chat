@@ -1,5 +1,7 @@
 package com.vfpowertech.keytap.services.crypto
 
+import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.UserId
@@ -33,6 +35,15 @@ private data class EncryptionWork(val userId: UserId, val message: String, val c
 private data class DecryptionWork(val userId: UserId, val encryptedMessages: List<EncryptedMessageV0>) : CipherWork
 private data class OfflineDecryptionWork(val encryptedMessages: Map<UserId, List<EncryptedMessageV0>>) : CipherWork
 private class NoMoreWork : CipherWork
+
+/** Represents a single message to a user. */
+@JsonFormat(shape = JsonFormat.Shape.ARRAY)
+@JsonPropertyOrder("deviceId", "registrationId", "payload")
+data class MessageData(
+    val deviceId: Int,
+    val registrationId: Int,
+    val payload: EncryptedMessageV0
+)
 
 class MessageCipherService(
     private val userLoginData: UserLoginData,
@@ -106,18 +117,24 @@ class MessageCipherService(
         val userId = work.userId
         val message = work.message
         val result = try {
-            val sessionCipher = getSessionCipher(userId)
+            val sessionCiphers = getSessionCiphers(userId)
 
-            val encrypted = sessionCipher.encrypt(message.toByteArray(Charsets.UTF_8))
+            val messages = sessionCiphers.map {
+                val deviceId = it.first
+                val sessionCipher = it.second
+                val encrypted = sessionCipher.encrypt(message.toByteArray(Charsets.UTF_8))
 
-            val isPreKey = when (encrypted) {
-                is PreKeySignalMessage -> true
-                is SignalMessage -> false
-                else -> throw RuntimeException("Invalid message type: ${encrypted.javaClass.name}")
+                val isPreKey = when (encrypted) {
+                    is PreKeySignalMessage -> true
+                    is SignalMessage -> false
+                    else -> throw RuntimeException("Invalid message type: ${encrypted.javaClass.name}")
+                }
+
+                val m = EncryptedMessageV0(isPreKey, encrypted.serialize().hexify())
+                MessageData(deviceId, sessionCipher.remoteRegistrationId, m)
             }
 
-            val m = EncryptedMessageV0(isPreKey, encrypted.serialize().hexify())
-            EncryptionOk(m, work.connectionTag)
+            EncryptionOk(messages, work.connectionTag)
         }
         catch (e: Exception) {
             EncryptionUnknownFailure(e)
@@ -197,34 +214,28 @@ class MessageCipherService(
         }
     }
 
-    private fun getSessionCipher(userId: UserId): SessionCipher {
+    private fun getSessionCiphers(userId: UserId): List<Pair<Int, SessionCipher>> {
         //FIXME
         val devices = signalStore.getSubDeviceSessions(userId.id.toString())
 
         //check if we have any listed devices; if not, then fetch prekeys
         //else send what we have to relay and it'll tell us what to fix
         return if (devices.isNotEmpty()) {
-            val sessionCiphers = devices.map {
-                val address = KeyTapAddress(userId, it).toSignalAddress()
-                SessionCipher(signalStore, address)
+            devices.map { deviceId ->
+                val address = KeyTapAddress(userId, deviceId).toSignalAddress()
+                deviceId to SessionCipher(signalStore, address)
             }
-
-            //FIXME
-            sessionCiphers[0]
         }
         else {
             val bundles = fetchPreKeyBundles(userId)
 
-            val sessionCiphers = bundles.map { bundle ->
+            bundles.map { bundle ->
                 val address = KeyTapAddress(userId, bundle.deviceId).toSignalAddress()
                 val builder = SessionBuilder(signalStore, address)
                 //this can fail with an InvalidKeyException if the signed key signature doesn't match
                 builder.process(bundle)
-                SessionCipher(signalStore, address)
+                bundle.deviceId to SessionCipher(signalStore, address)
             }
-
-            //FIXME
-            sessionCiphers[0]
         }
     }
 }
