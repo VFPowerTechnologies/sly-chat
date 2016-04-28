@@ -79,7 +79,7 @@ fun preKeyStorageRequestFromGeneratedPreKeys(
 fun SerializedPreKeySet.toPreKeyBundle(deviceId: Int): PreKeyBundle {
     val objectMapper = ObjectMapper()
     val registrationId = registrationId
-    println(preKey)
+    
     val oneTimePreKey = objectMapper.readValue(preKey, UnsignedPreKeyPublicData::class.java)
     val signedPreKey = objectMapper.readValue(signedPreKey, SignedPreKeyPublicData::class.java)
     return PreKeyBundle(
