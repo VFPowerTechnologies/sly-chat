@@ -150,6 +150,8 @@ if (typeof KEYTAP == "undefined") {
 }
 
 $(document).ready(function () {
+    window.beforeResizeHeight = window.innerHeight;
+
     KEYTAP.loginController.init();
 
     KEYTAP.registrationController.init();
@@ -173,3 +175,12 @@ $(document).ready(function () {
 
     KEYTAP.connectionController.init();
 });
+
+//Dirty fix for screen is pushed down when user hides keyboard
+window.onresize = function(e) {
+    if(window.beforeResizeHeight < window.innerHeight) {
+        $('html, body').scrollTop(0);
+        $('input').blur();
+    }
+    window.beforeResizeHeight = window.innerHeight;
+};

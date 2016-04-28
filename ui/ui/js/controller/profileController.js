@@ -7,7 +7,7 @@ ProfileController.prototype = {
     init : function() {
         var userInfo = this.getUserInfo();
 
-        $("#profileAvatar").html("<a href='#'>" + createAvatar(userInfo.name, "#fff", "#212121") + "</a>");
+        $("#profileAvatar").html("<a id='takeProfilePictureBtn' href='#'>" + createAvatar(userInfo.name, "#fff", "#212121") + "</a>");
 
         $("#profileNameDisplay").html(userInfo.name);
 
@@ -37,6 +37,8 @@ ProfileController.prototype = {
         var button = $("#submitUpdatePhoneBtn");
 
         button.prop("disabled", true);
+        $("#updatePhoneFormDiv .formError").html("");
+
         if(formValid == true && phoneValid == true) {
             var phone = this.getFormattedPhoneNumber();
 
@@ -46,11 +48,11 @@ ProfileController.prototype = {
                     this.openSmsVerificationModal();
                 }
                 else {
-                    console.log(result.errorMessage);
+                    $("#updatePhoneFormDiv .formError").html("<li>" + result.errorMessage + "</li>");
                     button.prop("disabled", false);
                 }
             }.bind(this)).catch(function (e) {
-                console.log("an error occured while updating phone");
+                $("#updatePhoneFormDiv .formError").html("<li>An error occured</li>");
                 KEYTAP.exceptionController.displayDebugMessage(e);
                 button.prop("disabled", false);
             });
@@ -63,6 +65,7 @@ ProfileController.prototype = {
         e.preventDefault();
         var button = $("#submitEmailUpdateBtn");
         button.prop("disabled", true);
+        $("#updateEmailFormDiv .formError").html("");
         if(validateForm("#updateEmailForm")) {
             var email = $("#profileEmail").val();
 
@@ -74,11 +77,11 @@ ProfileController.prototype = {
                     button.prop("disabled", false);
                 }
                 else {
-                    console.log(result.errorMessage);
+                    $("#updateEmailFormDiv .formError").html("<li>" + result.errorMessage + "</li>");
                     button.prop("disabled", false);
                 }
             }.bind(this)).catch(function (e){
-                console.log(e);
+                $("#updateEmailFormDiv .formError").html("<li>An error occured</li>");
                 KEYTAP.exceptionController.displayDebugMessage(e);
                 button.prop("disabled", false);
             });
@@ -91,6 +94,7 @@ ProfileController.prototype = {
         e.preventDefault();
         var button = $("#submitUpdateName");
         button.prop("disabled", true);
+        $("#updateNameDiv .formError").html("");
         if(validateForm("#updateNameForm")) {
             var name = $("#profileName").val();
 
@@ -102,11 +106,11 @@ ProfileController.prototype = {
                     button.prop("disabled", false);
                 }
                 else {
-                    console.log(result.errorMessage);
+                    $("#updateNameDiv .formError").html("<li>" + result.errorMessage + "</li>");
                     button.prop("disabled", false);
                 }
             }.bind(this)).catch(function (e){
-                console.log(e);
+                $("#updateNameDiv .formError").html("<li>An error occured</li>");
                 KEYTAP.exceptionController.displayDebugMessage(e);
                 button.prop("disabled", false);
             });
@@ -125,10 +129,10 @@ ProfileController.prototype = {
                     this.modal.close();
                 }
                 else {
-                    console.log(result.errorMessage);
+                    $("#verification-error").html("<li>" + result.errorMessage + "</li>");
                 }
             }.bind(this)).catch(function (e) {
-                console.log("An error occured while confirming phone number");
+                $("#verification-error").html("<li>An error occured</li>");
                 KEYTAP.exceptionController.displayDebugMessage(e);
             })
         }
