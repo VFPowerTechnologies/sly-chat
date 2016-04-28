@@ -50,11 +50,13 @@ ProfileController.prototype = {
                 else {
                     $("#updatePhoneFormDiv .formError").html("<li>" + result.errorMessage + "</li>");
                     button.prop("disabled", false);
+                    this.displayNotification("Phone number update has failed", "danger");
                 }
             }.bind(this)).catch(function (e) {
                 $("#updatePhoneFormDiv .formError").html("<li>An error occured</li>");
                 KEYTAP.exceptionController.displayDebugMessage(e);
                 button.prop("disabled", false);
+                this.displayNotification("Phone number update has failed", "danger");
             });
         }
         else {
@@ -75,15 +77,18 @@ ProfileController.prototype = {
                     this.model.setUsername(email);
                     $("#profileEmailDisplay").html(email);
                     button.prop("disabled", false);
+                    this.displayNotification("Your email has been updated", "success");
                 }
                 else {
                     $("#updateEmailFormDiv .formError").html("<li>" + result.errorMessage + "</li>");
                     button.prop("disabled", false);
+                    this.displayNotification("Email update has failed", "danger");
                 }
             }.bind(this)).catch(function (e){
                 $("#updateEmailFormDiv .formError").html("<li>An error occured</li>");
                 KEYTAP.exceptionController.displayDebugMessage(e);
                 button.prop("disabled", false);
+                this.displayNotification("Email update has failed", "danger");
             });
         }
         else {
@@ -104,15 +109,18 @@ ProfileController.prototype = {
                     this.model.setName(name);
                     $("#profileNameDisplay").html(name);
                     button.prop("disabled", false);
+                    this.displayNotification("Your name has been updated", "success");
                 }
                 else {
                     $("#updateNameDiv .formError").html("<li>" + result.errorMessage + "</li>");
                     button.prop("disabled", false);
+                    this.displayNotification("Name update has failed", "danger");
                 }
             }.bind(this)).catch(function (e){
                 $("#updateNameDiv .formError").html("<li>An error occured</li>");
                 KEYTAP.exceptionController.displayDebugMessage(e);
                 button.prop("disabled", false);
+                this.displayNotification("Name update has failed", "danger");
             });
         }
         else {
@@ -127,13 +135,16 @@ ProfileController.prototype = {
                     $("#phone").val("");
                     this.model.setPhoneNumber(result.accountInfo['phone-number']);
                     this.modal.close();
+                    this.displayNotification("Your phone number has been updated", "success");
                 }
                 else {
                     $("#verification-error").html("<li>" + result.errorMessage + "</li>");
+                    this.displayNotification("Phone number update has failed", "danger");
                 }
             }.bind(this)).catch(function (e) {
                 $("#verification-error").html("<li>An error occured</li>");
                 KEYTAP.exceptionController.displayDebugMessage(e);
+                this.displayNotification("Phone number update has failed", "danger");
             })
         }
     },
@@ -196,5 +207,19 @@ ProfileController.prototype = {
     },
     openSmsVerificationModal : function () {
         this.modal.open();
+    },
+    displayNotification : function (message, type) {
+        var notify = $.notify({
+            icon: "icon-pull-left fa fa-info-circle",
+            message: message
+        }, {
+            type: type,
+            delay: 3000,
+            allow_dismiss: false,
+            offset: {
+                y: 66,
+                x: 20
+            }
+        });
     }
 };
