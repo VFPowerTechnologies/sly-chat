@@ -108,6 +108,16 @@ class SQLitePreKeyPersistenceManager(private val sqlitePersistenceManager: SQLit
     override fun removeUnsignedPreKey(id: Int): Promise<Unit, Exception> =
         removePreKey("unsigned_prekeys", id)
 
+    override fun removeUnsignedPreKeyRange(start: Int, end: Int): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.prepare("DELETE FROM unsigned_prekeys WHERE id >= ? AND id < ?").use { stmt ->
+            stmt.bind(1, start)
+            stmt.bind(2, end)
+            stmt.step()
+            Unit
+        }
+    }
+
+
     override fun containsUnsignedPreKey(id: Int): Promise<Boolean, Exception> =
         containsPreKey("unsigned_prekeys", id)
 

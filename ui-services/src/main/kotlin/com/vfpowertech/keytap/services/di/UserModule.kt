@@ -4,6 +4,7 @@ import com.vfpowertech.keytap.core.BuildConfig.ServerUrls
 import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.MessagePersistenceManager
+import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
 import com.vfpowertech.keytap.core.relay.RelayClient
 import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.RelayConnector
@@ -90,4 +91,13 @@ class UserModule(
         signalProtocolStore: SignalProtocolStore
     ): MessageCipherService =
         MessageCipherService(userLoginData, signalProtocolStore, serverUrls)
+
+    @UserScope
+    @Provides
+    fun providesPreKeyManager(
+        serverUrls: ServerUrls,
+        userLoginData: UserLoginData,
+        preKeyPersistenceManager: PreKeyPersistenceManager
+    ): PreKeyManager =
+        PreKeyManager(serverUrls.API_SERVER, userLoginData, preKeyPersistenceManager)
 }
