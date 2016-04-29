@@ -211,7 +211,8 @@ fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, conte
         content.size,
         userCredentials.authToken,
         userCredentials.address.asString(),
-        to.id.toString(),
+        //HACK HACK HACK
+        "${to.id}:1",
         messageId,
         0,
         1,

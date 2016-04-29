@@ -28,12 +28,22 @@ data class DecryptionFailure(val cause: Throwable)
 data class MessageListDecryptionResult(
     val succeeded: List<String>,
     val failed: List<DecryptionFailure>
-)
+) {
+    fun merge(other: MessageListDecryptionResult): MessageListDecryptionResult {
+        val succeededMerged = ArrayList(succeeded)
+        succeededMerged.addAll(other.succeeded)
+
+        val failedMerged = ArrayList(failed)
+        failedMerged.addAll(other.failed)
+
+        return MessageListDecryptionResult(succeededMerged, failedMerged)
+    }
+}
 
 private interface CipherWork
 private data class EncryptionWork(val userId: UserId, val message: String, val connectionTag: Int) : CipherWork
-private data class DecryptionWork(val userId: UserId, val encryptedMessages: List<EncryptedMessageV0>) : CipherWork
-private data class OfflineDecryptionWork(val encryptedMessages: Map<UserId, List<EncryptedMessageV0>>) : CipherWork
+private data class DecryptionWork(val address: KeyTapAddress, val encryptedMessages: List<EncryptedMessageV0>) : CipherWork
+private data class OfflineDecryptionWork(val encryptedMessages: Map<KeyTapAddress, List<EncryptedMessageV0>>) : CipherWork
 private class NoMoreWork : CipherWork
 
 /** Represents a single message to a user. */
@@ -89,12 +99,12 @@ class MessageCipherService(
         workQueue.add(EncryptionWork(userId, message, connectionTag))
     }
 
-    fun decryptOffline(encryptedMessages: Map<UserId, List<EncryptedMessageV0>>) {
+    fun decryptOffline(encryptedMessages: Map<KeyTapAddress, List<EncryptedMessageV0>>) {
        workQueue.add(OfflineDecryptionWork(encryptedMessages))
     }
 
-    fun decrypt(userId: UserId, messages: List<EncryptedMessageV0>) {
-        workQueue.add(DecryptionWork(userId,  messages))
+    fun decrypt(address: KeyTapAddress, messages: List<EncryptedMessageV0>) {
+        workQueue.add(DecryptionWork(address,  messages))
     }
 
     override fun run() {
@@ -154,12 +164,11 @@ class MessageCipherService(
         return String(messageData, Charsets.UTF_8)
     }
 
-    private fun decryptMessagesForUser(userId: UserId, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
+    private fun decryptMessagesForUser(address: KeyTapAddress, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
         val failed = ArrayList<DecryptionFailure>()
         val succeeded = ArrayList<String>()
 
-        val address = KeyTapAddress(userId, 0).toSignalAddress()
-        val sessionCipher = SessionCipher(signalStore, address)
+        val sessionCipher = SessionCipher(signalStore, address.toSignalAddress())
 
         encryptedMessages.forEach { encryptedMessage ->
             try {
@@ -175,16 +184,26 @@ class MessageCipherService(
     }
 
     private fun handleOfflineDecryption(work: OfflineDecryptionWork) {
-        val result = work.encryptedMessages.mapValues { entry ->
-            decryptMessagesForUser(entry.key, entry.value)
+        //here we map from possible multiple KeyTapAddresses of the same user to the same user id
+        val result = HashMap<UserId, MessageListDecryptionResult>()
+
+        work.encryptedMessages.forEach { entry ->
+            val address = entry.key
+            val decrypted = decryptMessagesForUser(address, entry.value)
+
+            val existing = result[address.id]
+            if (existing == null)
+                result[address.id] = decrypted
+            else
+                result[address.id] = existing.merge(decrypted)
         }
 
         offlineSubject.onNext(OfflineDecryptionResult(result))
     }
 
     private fun handleDecryption(work: DecryptionWork) {
-        val result = decryptMessagesForUser(work.userId, work.encryptedMessages)
-        decryptionSubject.onNext(DecryptionResult(work.userId, result))
+        val result = decryptMessagesForUser(work.address, work.encryptedMessages)
+        decryptionSubject.onNext(DecryptionResult(work.address.id, result))
     }
 
     private fun fetchPreKeyBundles(userId: UserId): List<PreKeyBundle> {

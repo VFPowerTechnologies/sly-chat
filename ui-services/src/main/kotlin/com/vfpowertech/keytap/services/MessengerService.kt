@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.services
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.persistence.*
 import com.vfpowertech.keytap.core.relay.ReceivedMessage
@@ -18,12 +19,12 @@ import rx.Scheduler
 import rx.subjects.PublishSubject
 import java.util.*
 
-data class OfflineMessage(val from: UserId, val timestamp: Int, val encryptedMessage: EncryptedMessageV0)
+data class OfflineMessage(val from: KeyTapAddress, val timestamp: Int, val encryptedMessage: EncryptedMessageV0)
 data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
 
 data class QueuedMessage(val to: UserId, val messageInfo: MessageInfo, val connectionTag: Int)
-data class QueuedReceivedMessage(val from: UserId, val encryptedMessages: List<EncryptedMessageV0>)
+data class QueuedReceivedMessage(val from: KeyTapAddress, val encryptedMessages: List<EncryptedMessageV0>)
 
 interface EncryptionResult
 data class EncryptionOk(val encryptedMessages: List<MessageData>, val connectionTag: Int) : EncryptionResult

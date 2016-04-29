@@ -1,7 +1,34 @@
 package com.vfpowertech.keytap.core
 
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.JsonToken
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonDeserializer
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import org.whispersystems.libsignal.SignalProtocolAddress
+import java.io.IOException
 
+class KeyTapAddressDeserializer : JsonDeserializer<KeyTapAddress>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): KeyTapAddress {
+        val text = p.text
+
+        if (p.currentToken != JsonToken.VALUE_STRING)
+            throw IOException("Expected VALUE_STRING, got ${p.currentToken} for $text")
+
+        val parts = text.split(":", limit = 2)
+        if (parts.size != 2)
+            throw IOException("Invalid address format: $text")
+
+        try {
+            return KeyTapAddress(UserId(parts[0].toLong()), parts[1].toInt())
+        }
+        catch (e: NumberFormatException) {
+            throw IOException("Invalid address format: $text", e)
+        }
+    }
+}
+
+@JsonDeserialize(using = KeyTapAddressDeserializer::class)
 class KeyTapAddress(val id: UserId, val deviceId: Int) {
     fun toSignalAddress(): SignalProtocolAddress = SignalProtocolAddress(id.id.toString(), deviceId)
 
