@@ -95,9 +95,8 @@ class UserModule(
     @UserScope
     @Provides
     fun providesPreKeyManager(
-        serverUrls: ServerUrls,
         userLoginData: UserLoginData,
         preKeyPersistenceManager: PreKeyPersistenceManager
     ): PreKeyManager =
-        PreKeyManager(serverUrls.API_SERVER, userLoginData, preKeyPersistenceManager)
+        PreKeyManager(userLoginData, preKeyPersistenceManager)
 }

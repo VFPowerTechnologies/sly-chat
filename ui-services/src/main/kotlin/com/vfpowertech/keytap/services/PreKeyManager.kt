@@ -11,7 +11,6 @@ import nl.komponents.kovenant.functional.map
 import org.whispersystems.libsignal.state.PreKeyRecord
 
 class PreKeyManager(
-    private val serverUrl: String,
     private val userLoginData: UserLoginData,
     private val preKeyPersistenceManager: PreKeyPersistenceManager
 ) {
