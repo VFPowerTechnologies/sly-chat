@@ -340,7 +340,7 @@ class KeyTapApplication {
      *
      * Until this completes, do NOT use anything in the UserComponent.
      */
-    private fun backgroundInitialization(userComponent: UserComponent, authToken: String, password: String, rememberMe: Boolean): Promise<Unit, Exception> {
+    private fun backgroundInitialization(userComponent: UserComponent, authToken: String?, password: String, rememberMe: Boolean): Promise<Unit, Exception> {
         val userPaths = userComponent.userPaths
         val accountInfo = userComponent.accountInfo
         val persistenceManager = userComponent.sqlitePersistenceManager
@@ -354,8 +354,12 @@ class KeyTapApplication {
         return task {
             createUserPaths(userPaths)
         } bind {
-            val cachedData = SessionData(authToken)
-            JsonSessionDataPersistenceManager(sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).store(cachedData)
+            if (authToken != null) {
+                val cachedData = SessionData(authToken)
+                JsonSessionDataPersistenceManager(sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).store(cachedData)
+            }
+            else
+                Promise.ofSuccess(Unit)
         } bind {
             storeAccountData(keyVault, accountInfo)
         } bind {

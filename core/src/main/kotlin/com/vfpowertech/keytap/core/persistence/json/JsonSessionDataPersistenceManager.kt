@@ -1,10 +1,10 @@
 package com.vfpowertech.keytap.core.persistence.json
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.vfpowertech.keytap.core.persistence.SessionDataPersistenceManager
 import com.vfpowertech.keytap.core.crypto.ciphers.CipherParams
 import com.vfpowertech.keytap.core.persistence.SerializedSessionData
 import com.vfpowertech.keytap.core.persistence.SessionData
+import com.vfpowertech.keytap.core.persistence.SessionDataPersistenceManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 import java.io.File
@@ -22,10 +22,14 @@ class JsonSessionDataPersistenceManager(
     }
 
     override fun retrieve(): Promise<SessionData, Exception> = task {
+        retrieveSync()
+    }
+
+    fun retrieveSync(): SessionData {
         val bytes = path.inputStream().use {
             it.readBytes()
         }
 
-        objectMapper.readValue(bytes, SerializedSessionData::class.java).deserialize(localDataEncryptionKey, localDataEncryptionParams)
+        return objectMapper.readValue(bytes, SerializedSessionData::class.java).deserialize(localDataEncryptionKey, localDataEncryptionParams)
     }
 }

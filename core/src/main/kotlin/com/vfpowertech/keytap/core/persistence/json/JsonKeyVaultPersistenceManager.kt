@@ -15,6 +15,9 @@ class JsonKeyVaultPersistenceManager(private val path: File) : KeyVaultPersisten
         KeyVault.fromStorage(keyVaultStorage, password)
     }
 
+    fun retrieveSync(password: String): KeyVault =
+        KeyVault.fromStorage(keyVaultStorage, password)
+
     override fun store(keyVault: KeyVault): Promise<Unit, Exception> = task {
         keyVault.toStorage(keyVaultStorage)
     }
