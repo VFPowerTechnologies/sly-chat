@@ -97,7 +97,6 @@ class AuthenticationService(
         val hashParams = HashDeserializers.deserialize(authParams.hashParams)
         val hash = hashPasswordWithParams(password, hashParams)
 
-        //TODO if deviceId == 0, gen prekeys
         val request = AuthenticationRequest(emailOrPhoneNumber, hash.hexify(), authParams.csrfToken, registrationId, deviceId)
 
         val response = loginClient.auth(request)
