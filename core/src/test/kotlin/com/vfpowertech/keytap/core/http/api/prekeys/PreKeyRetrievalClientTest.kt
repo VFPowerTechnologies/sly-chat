@@ -17,6 +17,8 @@ import kotlin.test.assertFailsWith
 class PreKeyRetrievalClientTest {
     val objectMapper = ObjectMapper()
     val authToken = "000"
+    val registrationId = 0
+    val deviceId = 0
     val userId = UserId(1)
 
     @Test
@@ -25,8 +27,8 @@ class PreKeyRetrievalClientTest {
         val preKey = "bbbb"
         val signedPreKey = "cccc"
 
-        val request = PreKeyRetrievalRequest(authToken, userId)
-        val response = PreKeyRetrievalResponse(null, userId, SerializedPreKeySet(publicKey, signedPreKey, preKey))
+        val request = PreKeyRetrievalRequest(authToken, userId, listOf())
+        val response = PreKeyRetrievalResponse(null, hashMapOf(deviceId to SerializedPreKeySet(registrationId, publicKey, signedPreKey, preKey)))
         val apiResult = ApiResult(null, response)
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))
 
@@ -43,7 +45,7 @@ class PreKeyRetrievalClientTest {
 
     @Test
     fun `store should throw UnauthorizedException when receiving a 401 response`() {
-        val request = PreKeyRetrievalRequest(authToken, userId)
+        val request = PreKeyRetrievalRequest(authToken, userId, listOf())
         val httpResponse = HttpResponse(401, HashMap(), "")
         val httpClient = mock<HttpClient>()
 

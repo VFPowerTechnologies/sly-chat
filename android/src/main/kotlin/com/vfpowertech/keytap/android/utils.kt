@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import com.google.android.gms.gcm.GoogleCloudMessaging
 import com.google.android.gms.iid.InstanceID
+import com.vfpowertech.keytap.core.UserId
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
@@ -19,9 +20,9 @@ fun androidRunInMain(context: Context?, body: () -> Unit) {
     Handler(mainLooper).post(body)
 }
 
-data class GCMTokenData(val username: String, val token: String)
+data class GCMTokenData(val userId: UserId, val token: String)
 
-fun gcmFetchToken(context: Context, username: String): Promise<GCMTokenData, Exception> {
+fun gcmFetchToken(context: Context, userId: UserId): Promise<GCMTokenData, Exception> {
     val instanceId = InstanceID.getInstance(context)
     val defaultSenderId = context.getString(R.string.gcm_defaultSenderId)
     return task {
@@ -34,7 +35,7 @@ fun gcmFetchToken(context: Context, username: String): Promise<GCMTokenData, Exc
             GoogleCloudMessaging.INSTANCE_ID_SCOPE,
             null
         )
-        GCMTokenData(username, token)
+        GCMTokenData(userId, token)
     }
 }
 

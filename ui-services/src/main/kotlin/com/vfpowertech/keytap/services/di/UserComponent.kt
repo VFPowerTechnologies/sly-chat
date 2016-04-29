@@ -37,5 +37,7 @@ interface UserComponent {
     fun createRelayClient(): RelayClient
 
     val relayClientManager: RelayClientManager
+
+    val preKeyManager: PreKeyManager
 }
 

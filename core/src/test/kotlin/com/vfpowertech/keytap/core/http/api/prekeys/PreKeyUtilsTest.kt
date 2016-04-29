@@ -1,49 +1,65 @@
 package com.vfpowertech.keytap.core.http.api.prekeys
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.generateNewKeyVault
 import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.crypto.hexify
-import com.vfpowertech.keytap.core.crypto.signal.UserPreKeySet
 import org.junit.Test
+import org.whispersystems.libsignal.state.PreKeyBundle
 import java.util.*
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class PreKeyUtilsTest {
     val password = "test"
     val keyVault = generateNewKeyVault(password)
     val userId = UserId(1)
+    val deviceId = 1
 
-    fun assertKeySetEquals(expected: UserPreKeySet, got: UserPreKeySet) {
+    fun assertBundleEquals(expected: PreKeyBundle, got: PreKeyBundle) {
+        assertEquals(expected.registrationId, got.registrationId, "Registration IDs differ")
+        assertEquals(expected.deviceId, got.deviceId, "Device IDs differ")
+
         //(Signed)PreKeyRecord don't implement equals
-        assertEquals(expected.signedPreKey.id, got.signedPreKey.id, "Signed PreKey IDs differ")
+        assertEquals(expected.signedPreKeyId, got.signedPreKeyId, "Signed PreKey IDs differ")
         assertTrue(Arrays.equals(expected.signedPreKey.serialize(), got.signedPreKey.serialize()), "Signed PreKeys differ")
+        assertTrue(Arrays.equals(expected.signedPreKeySignature, got.signedPreKeySignature), "Signed PreKeys signatures differ")
 
-        assertEquals(expected.oneTimePreKey.id, got.oneTimePreKey.id, "One-time PreKey IDs differ")
-        assertTrue(Arrays.equals(expected.oneTimePreKey.serialize(), got.oneTimePreKey.serialize()), "Signed PreKeys differ")
+        assertEquals(expected.preKeyId, got.preKeyId, "One-time PreKey IDs differ")
+        assertTrue(Arrays.equals(expected.preKey.serialize(), got.preKey.serialize()), "Signed PreKeys differ")
+
+        assertTrue(Arrays.equals(expected.identityKey.serialize(), got.identityKey.serialize()), "Identity keys differ")
     }
 
     @Test
-    fun `userPreKeySetFromRetrievalResponse should properly deserialize keys from a response`() {
+    fun `toPreKeyBundle should properly deserialize keys from a SerializedPreKeySet`() {
         val preKeyBundle = generatePrekeys(keyVault.identityKeyPair, 1, 1, 1)
         val signedPreKey = preKeyBundle.signedPreKey
         val oneTimePreKey = preKeyBundle.oneTimePreKeys.first()
-        val response = PreKeyRetrievalResponse(
-            null,
-            userId,
-            SerializedPreKeySet(
-                keyVault.identityKeyPair.serialize().hexify(),
-                preKeyBundle.signedPreKey.serialize().hexify(),
-                preKeyBundle.oneTimePreKeys.first().serialize().hexify()
-            )
+        val registrationId = 12345
+        val deviceId = 1
+        val objectMapper = ObjectMapper()
+        val serializedPreKeySet = SerializedPreKeySet(
+            registrationId,
+            keyVault.identityKeyPair.publicKey.serialize().hexify(),
+            objectMapper.writeValueAsString(signedPreKey.toPublicData()),
+            objectMapper.writeValueAsString(preKeyBundle.oneTimePreKeys.first().toPublicData())
         )
 
-        val expected = UserPreKeySet(signedPreKey, oneTimePreKey)
+        val expected = PreKeyBundle(
+                registrationId,
+                deviceId,
+                oneTimePreKey.id,
+                oneTimePreKey.keyPair.publicKey,
+                signedPreKey.id,
+                signedPreKey.keyPair.publicKey,
+                signedPreKey.signature,
+                keyVault.identityKeyPair.publicKey
+            )
 
-        val got = userPreKeySetFromRetrieveResponse(response)
-        assertNotNull(got)
-        assertKeySetEquals(expected, got!!)
+        val got = serializedPreKeySet.toPreKeyBundle(deviceId)
+
+        assertBundleEquals(expected, got)
     }
 }

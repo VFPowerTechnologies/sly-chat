@@ -7,12 +7,24 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.crypto.KeyVault
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
-import com.vfpowertech.keytap.core.crypto.signal.UserPreKeySet
 import com.vfpowertech.keytap.core.crypto.unhexify
+import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.ecc.Curve
 import org.whispersystems.libsignal.ecc.ECPublicKey
+import org.whispersystems.libsignal.state.PreKeyBundle
 import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
+
+data class SerializedPreKeyBundle(
+    @JsonProperty("signedPreKey")
+    val signedPreKey: String,
+
+    @param:JsonProperty("oneTimePreKeys")
+    val oneTimePreKeys: List<String>,
+
+    @JsonProperty("lastResortPreKey")
+    val lastResortPreKey: String
+)
 
 data class UnsignedPreKeyPublicData(
     @JsonProperty("id")
@@ -60,26 +72,45 @@ fun serializeOneTimePreKeys(oneTimePreKeys: List<PreKeyRecord>): List<String> =
 fun serializeSignedPreKey(signedPreKeyRecord: SignedPreKeyRecord): String =
     ObjectMapper().writeValueAsString(signedPreKeyRecord.toPublicData())
 
+fun serializedBundleFromGeneratedPreKeys(
+    generatedPreKeys: GeneratedPreKeys,
+    lastResortPreKey: PreKeyRecord
+): SerializedPreKeyBundle {
+    return SerializedPreKeyBundle(
+        serializeSignedPreKey(generatedPreKeys.signedPreKey),
+        serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys),
+        serializePreKey(lastResortPreKey)
+    )
+}
+
 fun preKeyStorageRequestFromGeneratedPreKeys(
     authToken: String,
+    registrationId: Int,
     keyVault: KeyVault,
     generatedPreKeys: GeneratedPreKeys,
     lastResortPreKey: PreKeyRecord
 ): PreKeyStoreRequest {
     val identityKey = keyVault.identityKeyPair.publicKey.serialize().hexify()
 
-    val signedPreKey = serializeSignedPreKey(generatedPreKeys.signedPreKey)
-    val oneTimePreKeys = serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys)
-    val serializedLastResortKey = serializePreKey(lastResortPreKey)
+    val bundle = serializedBundleFromGeneratedPreKeys(generatedPreKeys, lastResortPreKey)
 
-    return PreKeyStoreRequest(authToken, identityKey, signedPreKey, oneTimePreKeys, serializedLastResortKey)
+    return PreKeyStoreRequest(authToken, registrationId, identityKey, bundle)
 }
 
-fun userPreKeySetFromRetrieveResponse(response: PreKeyRetrievalResponse): UserPreKeySet? {
-    val keyData = response.keyData ?: return null
+fun SerializedPreKeySet.toPreKeyBundle(deviceId: Int): PreKeyBundle {
+    val objectMapper = ObjectMapper()
+    val registrationId = registrationId
 
-    return UserPreKeySet(
-        SignedPreKeyRecord(keyData.signedPreKey.unhexify()),
-        PreKeyRecord(keyData.preKey.unhexify())
+    val oneTimePreKey = objectMapper.readValue(preKey, UnsignedPreKeyPublicData::class.java)
+    val signedPreKey = objectMapper.readValue(signedPreKey, SignedPreKeyPublicData::class.java)
+    return PreKeyBundle(
+        registrationId,
+        deviceId,
+        oneTimePreKey.id,
+        oneTimePreKey.getECPublicKey(),
+        signedPreKey.id,
+        signedPreKey.getECPublicKey(),
+        signedPreKey.signature,
+        IdentityKey(publicKey.unhexify(), 0)
     )
 }

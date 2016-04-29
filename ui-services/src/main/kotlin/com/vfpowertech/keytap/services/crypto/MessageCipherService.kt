@@ -1,14 +1,18 @@
 package com.vfpowertech.keytap.services.crypto
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import com.vfpowertech.keytap.core.BuildConfig
+import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.unhexify
 import com.vfpowertech.keytap.core.http.JavaHttpClient
-import com.vfpowertech.keytap.core.http.api.prekeys.*
+import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrievalClient
+import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrievalRequest
+import com.vfpowertech.keytap.core.http.api.prekeys.toPreKeyBundle
 import com.vfpowertech.keytap.services.*
-import org.whispersystems.libsignal.IdentityKey
+import org.slf4j.LoggerFactory
 import org.whispersystems.libsignal.SessionBuilder
 import org.whispersystems.libsignal.SessionCipher
 import org.whispersystems.libsignal.protocol.PreKeySignalMessage
@@ -24,31 +28,32 @@ data class DecryptionFailure(val cause: Throwable)
 data class MessageListDecryptionResult(
     val succeeded: List<String>,
     val failed: List<DecryptionFailure>
-)
+) {
+    fun merge(other: MessageListDecryptionResult): MessageListDecryptionResult {
+        val succeededMerged = ArrayList(succeeded)
+        succeededMerged.addAll(other.succeeded)
 
-fun SerializedPreKeySet.toPreKeyBundle(): PreKeyBundle {
-    val objectMapper = ObjectMapper()
-    val registrationId = 0
-    val deviceId = 1
-    val oneTimePreKey = objectMapper.readValue(preKey, UnsignedPreKeyPublicData::class.java)
-    val signedPreKey = objectMapper.readValue(signedPreKey, SignedPreKeyPublicData::class.java)
-    return PreKeyBundle(
-        registrationId,
-        deviceId,
-        oneTimePreKey.id,
-        oneTimePreKey.getECPublicKey(),
-        signedPreKey.id,
-        signedPreKey.getECPublicKey(),
-        signedPreKey.signature,
-        IdentityKey(publicKey.unhexify(), 0)
-    )
+        val failedMerged = ArrayList(failed)
+        failedMerged.addAll(other.failed)
+
+        return MessageListDecryptionResult(succeededMerged, failedMerged)
+    }
 }
 
 private interface CipherWork
 private data class EncryptionWork(val userId: UserId, val message: String, val connectionTag: Int) : CipherWork
-private data class DecryptionWork(val userId: UserId, val encryptedMessages: List<EncryptedMessageV0>) : CipherWork
-private data class OfflineDecryptionWork(val encryptedMessages: Map<UserId, List<EncryptedMessageV0>>) : CipherWork
+private data class DecryptionWork(val address: KeyTapAddress, val encryptedMessages: List<EncryptedMessageV0>) : CipherWork
+private data class OfflineDecryptionWork(val encryptedMessages: Map<KeyTapAddress, List<EncryptedMessageV0>>) : CipherWork
 private class NoMoreWork : CipherWork
+
+/** Represents a single message to a user. */
+@JsonFormat(shape = JsonFormat.Shape.ARRAY)
+@JsonPropertyOrder("deviceId", "registrationId", "payload")
+data class MessageData(
+    val deviceId: Int,
+    val registrationId: Int,
+    val payload: EncryptedMessageV0
+)
 
 class MessageCipherService(
     private val userLoginData: UserLoginData,
@@ -57,6 +62,8 @@ class MessageCipherService(
     private val serverUrls: BuildConfig.ServerUrls
 ) : Runnable {
     private var thread: Thread? = null
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     private val workQueue = ArrayBlockingQueue<CipherWork>(20)
     private val encryptionSubject = PublishSubject.create<EncryptionResult>()
@@ -92,12 +99,12 @@ class MessageCipherService(
         workQueue.add(EncryptionWork(userId, message, connectionTag))
     }
 
-    fun decryptOffline(encryptedMessages: Map<UserId, List<EncryptedMessageV0>>) {
+    fun decryptOffline(encryptedMessages: Map<KeyTapAddress, List<EncryptedMessageV0>>) {
        workQueue.add(OfflineDecryptionWork(encryptedMessages))
     }
 
-    fun decrypt(userId: UserId, messages: List<EncryptedMessageV0>) {
-        workQueue.add(DecryptionWork(userId,  messages))
+    fun decrypt(address: KeyTapAddress, messages: List<EncryptedMessageV0>) {
+        workQueue.add(DecryptionWork(address,  messages))
     }
 
     override fun run() {
@@ -120,18 +127,24 @@ class MessageCipherService(
         val userId = work.userId
         val message = work.message
         val result = try {
-            val sessionCipher = getSessionCipher(userId)
+            val sessionCiphers = getSessionCiphers(userId)
 
-            val encrypted = sessionCipher.encrypt(message.toByteArray(Charsets.UTF_8))
+            val messages = sessionCiphers.map {
+                val deviceId = it.first
+                val sessionCipher = it.second
+                val encrypted = sessionCipher.encrypt(message.toByteArray(Charsets.UTF_8))
 
-            val isPreKey = when (encrypted) {
-                is PreKeySignalMessage -> true
-                is SignalMessage -> false
-                else -> throw RuntimeException("Invalid message type: ${encrypted.javaClass.name}")
+                val isPreKey = when (encrypted) {
+                    is PreKeySignalMessage -> true
+                    is SignalMessage -> false
+                    else -> throw RuntimeException("Invalid message type: ${encrypted.javaClass.name}")
+                }
+
+                val m = EncryptedMessageV0(isPreKey, encrypted.serialize().hexify())
+                MessageData(deviceId, sessionCipher.remoteRegistrationId, m)
             }
 
-            val m = EncryptedMessageV0(isPreKey, encrypted.serialize().hexify())
-            EncryptionOk(m, work.connectionTag)
+            EncryptionOk(messages, work.connectionTag)
         }
         catch (e: Exception) {
             EncryptionUnknownFailure(e)
@@ -151,12 +164,11 @@ class MessageCipherService(
         return String(messageData, Charsets.UTF_8)
     }
 
-    private fun decryptMessagesForUser(userId: UserId, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
+    private fun decryptMessagesForUser(address: KeyTapAddress, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
         val failed = ArrayList<DecryptionFailure>()
         val succeeded = ArrayList<String>()
 
-        val address = KeyTapAddress(userId).toSignalAddress()
-        val sessionCipher = SessionCipher(signalStore, address)
+        val sessionCipher = SessionCipher(signalStore, address.toSignalAddress())
 
         encryptedMessages.forEach { encryptedMessage ->
             try {
@@ -172,43 +184,77 @@ class MessageCipherService(
     }
 
     private fun handleOfflineDecryption(work: OfflineDecryptionWork) {
-        val result = work.encryptedMessages.mapValues { entry ->
-            decryptMessagesForUser(entry.key, entry.value)
+        //here we map from possible multiple KeyTapAddresses of the same user to the same user id
+        val result = HashMap<UserId, MessageListDecryptionResult>()
+
+        work.encryptedMessages.forEach { entry ->
+            val address = entry.key
+            val decrypted = decryptMessagesForUser(address, entry.value)
+
+            val existing = result[address.id]
+            if (existing == null)
+                result[address.id] = decrypted
+            else
+                result[address.id] = existing.merge(decrypted)
         }
 
         offlineSubject.onNext(OfflineDecryptionResult(result))
     }
 
     private fun handleDecryption(work: DecryptionWork) {
-        val result = decryptMessagesForUser(work.userId, work.encryptedMessages)
-        decryptionSubject.onNext(DecryptionResult(work.userId, result))
+        val result = decryptMessagesForUser(work.address, work.encryptedMessages)
+        decryptionSubject.onNext(DecryptionResult(work.address.id, result))
     }
 
-    private fun fetchPreKeyBundle(userId: UserId): PreKeyBundle {
+    private fun fetchPreKeyBundles(userId: UserId): List<PreKeyBundle> {
         //FIXME
         val authToken = userLoginData.authToken ?: throw NoAuthTokenException()
-        val request = PreKeyRetrievalRequest(authToken, userId)
+        val request = PreKeyRetrievalRequest(authToken, userId, listOf())
         val response = PreKeyRetrievalClient(serverUrls.API_SERVER, JavaHttpClient()).retrieve(request)
 
-        return if (!response.isSuccess)
+        if (!response.isSuccess)
             throw RuntimeException(response.errorMessage)
         else {
-            response.keyData ?: throw RuntimeException("No key data for $userId")
-            response.keyData.toPreKeyBundle()
+            if (response.bundles.isEmpty())
+                throw RuntimeException("No key data for $userId")
+
+            val bundles = ArrayList<PreKeyBundle>()
+
+            for ((deviceId, bundle) in response.bundles) {
+                if (bundle == null) {
+                    log.error("No key data available for {}:{}", userId, deviceId)
+                    continue
+                }
+
+                bundles.add(bundle.toPreKeyBundle(deviceId))
+            }
+
+            return bundles
         }
     }
 
-    private fun getSessionCipher(userId: UserId): SessionCipher {
-        val address = KeyTapAddress(userId).toSignalAddress()
-        val containsSession = signalStore.containsSession(address)
+    private fun getSessionCiphers(userId: UserId): List<Pair<Int, SessionCipher>> {
+        //FIXME
+        val devices = signalStore.getSubDeviceSessions(userId.id.toString())
 
-        return if (containsSession)
-            SessionCipher(signalStore, address)
+        //check if we have any listed devices; if not, then fetch prekeys
+        //else send what we have to relay and it'll tell us what to fix
+        return if (devices.isNotEmpty()) {
+            devices.map { deviceId ->
+                val address = KeyTapAddress(userId, deviceId).toSignalAddress()
+                deviceId to SessionCipher(signalStore, address)
+            }
+        }
         else {
-            val bundle = fetchPreKeyBundle(userId)
-            val builder = SessionBuilder(signalStore, address)
-            builder.process(bundle)
-            SessionCipher(signalStore, address)
+            val bundles = fetchPreKeyBundles(userId)
+
+            bundles.map { bundle ->
+                val address = KeyTapAddress(userId, bundle.deviceId).toSignalAddress()
+                val builder = SessionBuilder(signalStore, address)
+                //this can fail with an InvalidKeyException if the signed key signature doesn't match
+                builder.process(bundle)
+                bundle.deviceId to SessionCipher(signalStore, address)
+            }
         }
     }
 }

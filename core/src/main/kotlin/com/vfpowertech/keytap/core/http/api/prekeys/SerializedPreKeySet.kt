@@ -3,15 +3,15 @@ package com.vfpowertech.keytap.core.http.api.prekeys
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class SerializedPreKeySet(
-    @param:JsonProperty("pubkey")
-    @get:JsonProperty("pubkey")
+    @JsonProperty("registrationId")
+    val registrationId: Int,
+
+    @JsonProperty("publicKey")
     val publicKey: String,
 
-    @param:JsonProperty("signed-prekey")
-    @get:JsonProperty("signed-prekey")
+    @JsonProperty("signedPreKey")
     val signedPreKey: String,
 
-    @param:JsonProperty("prekey")
-    @get:JsonProperty("prekey")
+    @JsonProperty("preKey")
     val preKey: String
 )

@@ -1,13 +1,10 @@
 package com.vfpowertech.keytap.services.ui.impl
 
-import com.vfpowertech.keytap.services.AuthResult
-import com.vfpowertech.keytap.services.AuthenticationService
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.LoginEvent
 import com.vfpowertech.keytap.services.ui.UILoginService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
-import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileNotFoundException
 import java.util.*
@@ -21,10 +18,8 @@ fun asyncCheckPath(path: File): Promise<File, Exception> = task {
 }
 
 class UILoginServiceImpl(
-    private val app: KeyTapApplication,
-    private val authenticationService: AuthenticationService
+    private val app: KeyTapApplication
 ) : UILoginService {
-    private val log = LoggerFactory.getLogger(javaClass)
     private val listeners = ArrayList<(LoginEvent) -> Unit>()
     //cached value; is null until initialized
     private var lastLoginEvent: LoginEvent? = null
@@ -53,15 +48,6 @@ class UILoginServiceImpl(
 
     override fun logout() {
         app.logout()
-    }
-
-    private fun localAuth(emailOrPhoneNumber: String, password: String): Promise<AuthResult, Exception> {
-        return authenticationService.localAuth(emailOrPhoneNumber, password)
-    }
-
-    private fun remoteAuth(emailOrPhoneNumber: String, password: String): Promise<AuthResult, Exception> {
-        //XXX technically we don't need to re-write the value on every login
-        return authenticationService.remoteAuth(emailOrPhoneNumber, password)
     }
 
     //this should use the keyvault is available, falling back to remote auth to retrieve it

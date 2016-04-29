@@ -20,7 +20,9 @@ class AuthenticationClientTest {
     val objectMapper = ObjectMapper()
     val username = "test-user"
     val csrfToken = "csrf"
-    val accountInfo = AccountInfo(UserId(1), "name", username, "0")
+    val registrationId = 1
+    val deviceId = 1
+    val accountInfo = AccountInfo(UserId(1), "name", username, "0", deviceId)
 
     @Test
     fun `getParams should return a successful AuthenticationParamsResponse when receiving a 200 response`() {
@@ -50,7 +52,7 @@ class AuthenticationClientTest {
 
         whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)
 
-        val request = AuthenticationRequest(username, "hash", csrfToken)
+        val request = AuthenticationRequest(username, "hash", csrfToken, registrationId, deviceId)
 
         val client = AuthenticationClient("localhost", httpClient)
         val got = client.auth(request)

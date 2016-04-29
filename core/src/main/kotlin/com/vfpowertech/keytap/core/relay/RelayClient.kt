@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.relay
 
+import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.relay.RelayClientState.*
 import com.vfpowertech.keytap.core.relay.base.*
@@ -11,8 +12,11 @@ import rx.Scheduler
 import rx.subjects.PublishSubject
 import java.net.InetSocketAddress
 
-private fun String.toUserId(): UserId =
-    UserId(toLong())
+//HACK HACK HACK
+private fun String.toUserId(): UserId {
+    val parts = split(":", limit = 2)
+    return UserId(parts[0].toLong())
+}
 
 /**
  * Higher-level abstraction over a relay server connection.
@@ -72,7 +76,7 @@ class RelayClient(
     }
 
     private fun authenticate() {
-        log.info("Authenticating as {}", credentials.username)
+        log.info("Authenticating as {}", credentials.address)
         val connection = getConnectionOrThrow()
         connection.sendMessage(createAuthRequest(credentials))
         state = AUTHENTICATING
@@ -142,7 +146,7 @@ class RelayClient(
                     from
                 )
 
-                emitEvent(ReceivedMessage(from.toUserId(), message.content, messageId))
+                emitEvent(ReceivedMessage(KeyTapAddress.fromString(from)!!, message.content, messageId))
             }
 
             SERVER_USER_OFFLINE -> {

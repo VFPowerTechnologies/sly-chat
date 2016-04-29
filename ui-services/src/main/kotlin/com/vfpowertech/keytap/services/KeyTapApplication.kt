@@ -3,10 +3,8 @@ package com.vfpowertech.keytap.services
 import com.fasterxml.jackson.core.JsonParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat
+import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.crypto.KeyVault
-import com.vfpowertech.keytap.core.crypto.LAST_RESORT_PREKEY_ID
-import com.vfpowertech.keytap.core.crypto.generateLastResortPreKey
-import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.div
 import com.vfpowertech.keytap.core.http.api.contacts.*
 import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesAsyncClient
@@ -30,7 +28,6 @@ import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
-import org.whispersystems.libsignal.state.PreKeyRecord
 import rx.Observable
 import rx.Subscription
 import rx.subjects.BehaviorSubject
@@ -118,7 +115,7 @@ class KeyTapApplication {
             generated
         }
 
-        log.info("Installation ID: {}", installationData.installationId)
+        log.info("Installation ID: {}; registration ID: {}", installationData.installationId, installationData.registrationId)
     }
 
     private fun initializeApplicationServices() {
@@ -178,20 +175,6 @@ class KeyTapApplication {
         }
     }
 
-    private fun getLastResortPreKey(preKeyPersistenceManager: PreKeyPersistenceManager): Promise<PreKeyRecord, Exception> {
-        //TODO this needs to be done in a bg thread
-        return preKeyPersistenceManager.getUnsignedPreKey(LAST_RESORT_PREKEY_ID) bindUi { maybeLastResortPreKey ->
-            if (maybeLastResortPreKey != null)
-                Promise.ofSuccess<PreKeyRecord, Exception>(maybeLastResortPreKey)
-            else {
-                val lastResortPreKey = generateLastResortPreKey()
-                preKeyPersistenceManager.putLastResortPreKey(lastResortPreKey) map {
-                    lastResortPreKey
-                }
-            }
-        }
-    }
-
     fun schedulePreKeyUpload(keyRegenCount: Int) {
         if (pushingPreKeys || keyRegenCount <= 0)
             return
@@ -213,19 +196,13 @@ class KeyTapApplication {
 
         pushingPreKeys = true
 
-        val preKeyPersistenceManager = userComponent.preKeyPersistenceManager
         //TODO need to mark whether or not a range has been pushed to the server or not
         //if the push fails, we should delete the batch?
         //TODO nfi what to do if server response fails
-        preKeyPersistenceManager.getNextPreKeyIds() map { preKeyIds ->
-            generatePrekeys(keyVault.identityKeyPair, preKeyIds.nextSignedId, preKeyIds.nextUnsignedId, keyRegenCount)
-        } bindUi { generatedPreKeys ->
-            preKeyPersistenceManager.putGeneratedPreKeys(generatedPreKeys) map { generatedPreKeys }
-        } bindUi { generatedPreKeys ->
-            getLastResortPreKey(preKeyPersistenceManager) bind { lastResortPreKey ->
-                val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, keyVault, generatedPreKeys, lastResortPreKey)
-                PreKeyStoreAsyncClient(appComponent.serverUrls.API_SERVER).store(request)
-            }
+        userComponent.preKeyManager.generate() bind { r ->
+            val (generatedPreKeys, lastResortPreKey) = r
+            val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, installationData.registrationId, keyVault, generatedPreKeys, lastResortPreKey)
+            PreKeyStoreAsyncClient(appComponent.serverUrls.API_SERVER).store(request)
         } successUi { response ->
             pushingPreKeys = false
 
@@ -257,10 +234,12 @@ class KeyTapApplication {
         //maybe just search every account dir available and find a number that way? kinda rough but works
 
         //if the unlock fails, we try remotely; this can occur if the password was changed remotely from another device
-        appComponent.authenticationService.auth(username, password) bindUi { response ->
+        appComponent.authenticationService.auth(username, password, installationData.registrationId) bindUi { response ->
             val keyVault = response.keyVault
             //TODO need to put the username in the login response if the user used their phone number
-            val userComponent = createUserSession(UserLoginData(response.accountInfo.id, username, keyVault, response.authToken), response.accountInfo)
+            val address = KeyTapAddress(response.accountInfo.id, response.accountInfo.deviceId)
+            val userLoginData = UserLoginData(address, keyVault, response.authToken)
+            val userComponent = createUserSession(userLoginData, response.accountInfo)
 
             //until this finishes, nothing in the UserComponent should be touched
             backgroundInitialization(userComponent, response.authToken, password, rememberMe) mapUi {
@@ -337,7 +316,7 @@ class KeyTapApplication {
      *
      * Until this completes, do NOT use anything in the UserComponent.
      */
-    private fun backgroundInitialization(userComponent: UserComponent, authToken: String, password: String, rememberMe: Boolean): Promise<Unit, Exception> {
+    private fun backgroundInitialization(userComponent: UserComponent, authToken: String?, password: String, rememberMe: Boolean): Promise<Unit, Exception> {
         val userPaths = userComponent.userPaths
         val accountInfo = userComponent.accountInfo
         val persistenceManager = userComponent.sqlitePersistenceManager
@@ -351,8 +330,12 @@ class KeyTapApplication {
         return task {
             createUserPaths(userPaths)
         } bind {
-            val cachedData = SessionData(authToken)
-            JsonSessionDataPersistenceManager(sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).store(cachedData)
+            if (authToken != null) {
+                val cachedData = SessionData(authToken)
+                JsonSessionDataPersistenceManager(sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).store(cachedData)
+            }
+            else
+                Promise.ofSuccess(Unit)
         } bind {
             storeAccountData(keyVault, accountInfo)
         } bind {
@@ -561,7 +544,7 @@ class KeyTapApplication {
 
         val sessionDataPersistenceManager = userComponent.sessionDataPersistenceManager
 
-        appComponent.authenticationService.refreshAuthToken(data.username, remotePasswordHash) bind { response ->
+        appComponent.authenticationService.refreshAuthToken(userComponent.accountInfo, installationData.registrationId, remotePasswordHash) bind { response ->
             log.info("Got new auth token")
             sessionDataPersistenceManager.store(SessionData(response.authToken)) map { response }
         } successUi { response ->

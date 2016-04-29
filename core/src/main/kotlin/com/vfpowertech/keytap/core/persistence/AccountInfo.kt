@@ -15,5 +15,8 @@ data class AccountInfo(
 
     @param:JsonProperty("phone-number")
     @get:JsonProperty("phone-number")
-    val phoneNumber: String
+    val phoneNumber: String,
+
+    @JsonProperty("deviceId")
+    val deviceId: Int
 )
