@@ -15,6 +15,17 @@ import org.whispersystems.libsignal.state.PreKeyBundle
 import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
 
+data class SerializedPreKeyBundle(
+    @JsonProperty("signedPreKey")
+    val signedPreKey: String,
+
+    @param:JsonProperty("oneTimePreKeys")
+    val oneTimePreKeys: List<String>,
+
+    @JsonProperty("lastResortPreKey")
+    val lastResortPreKey: String
+)
+
 data class UnsignedPreKeyPublicData(
     @JsonProperty("id")
     val id: Int,
@@ -61,6 +72,17 @@ fun serializeOneTimePreKeys(oneTimePreKeys: List<PreKeyRecord>): List<String> =
 fun serializeSignedPreKey(signedPreKeyRecord: SignedPreKeyRecord): String =
     ObjectMapper().writeValueAsString(signedPreKeyRecord.toPublicData())
 
+fun serializedBundleFromGeneratedPreKeys(
+    generatedPreKeys: GeneratedPreKeys,
+    lastResortPreKey: PreKeyRecord
+): SerializedPreKeyBundle {
+    return SerializedPreKeyBundle(
+        serializeSignedPreKey(generatedPreKeys.signedPreKey),
+        serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys),
+        serializePreKey(lastResortPreKey)
+    )
+}
+
 fun preKeyStorageRequestFromGeneratedPreKeys(
     authToken: String,
     registrationId: Int,
@@ -70,11 +92,9 @@ fun preKeyStorageRequestFromGeneratedPreKeys(
 ): PreKeyStoreRequest {
     val identityKey = keyVault.identityKeyPair.publicKey.serialize().hexify()
 
-    val signedPreKey = serializeSignedPreKey(generatedPreKeys.signedPreKey)
-    val oneTimePreKeys = serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys)
-    val serializedLastResortKey = serializePreKey(lastResortPreKey)
+    val bundle = serializedBundleFromGeneratedPreKeys(generatedPreKeys, lastResortPreKey)
 
-    return PreKeyStoreRequest(authToken, registrationId, identityKey, signedPreKey, oneTimePreKeys, serializedLastResortKey)
+    return PreKeyStoreRequest(authToken, registrationId, identityKey, bundle)
 }
 
 fun SerializedPreKeySet.toPreKeyBundle(deviceId: Int): PreKeyBundle {
