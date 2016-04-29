@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core
 
+import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -29,11 +30,18 @@ data class Device(
     val id: Int,
     @JsonProperty("registrationId")
     val registrationId: Int,
-    @JsonProperty("isActive")
-    val isActive: Boolean
+    @JsonProperty("state")
+    val state: DeviceState
 )
 
 val DEFAULT_DEVICE_ID = 1
+
+@JsonFormat(shape = JsonFormat.Shape.NUMBER)
+enum class DeviceState {
+    INACTIVE,
+    PENDING,
+    ACTIVE
+}
 
 /** Client for web api server dev functionality. */
 class DevClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
@@ -179,10 +187,10 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         return getRequest("/dev/config/max-devices", Int::class.java)
     }
 
-    fun addDevice(username: String, registrationId: Int, isActive: Boolean): Int {
+    fun addDevice(username: String, registrationId: Int, state: DeviceState): Int {
         val request = mapOf(
             "registrationId" to registrationId,
-            "isActive" to isActive
+            "state" to state
         )
 
         return postRequest(request, "/dev/users/$username/devices", Int::class.java)

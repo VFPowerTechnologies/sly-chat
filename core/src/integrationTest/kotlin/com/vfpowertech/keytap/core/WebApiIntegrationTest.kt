@@ -137,14 +137,14 @@ class WebApiIntegrationTest {
                 throw DevServerInsaneException("GCM functionality failed")
 
             //devices
-            val deviceId = devClient.addDevice(username, defaultRegistrationId, true)
-            val deviceId2 = devClient.addDevice(username, defaultRegistrationId+1, false)
+            val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+            val deviceId2 = devClient.addDevice(username, defaultRegistrationId+1, DeviceState.INACTIVE)
 
             val devices = devClient.getDevices(username)
 
             val expected = listOf(
-                Device(deviceId, defaultRegistrationId, true),
-                Device(deviceId2, defaultRegistrationId+1, false)
+                Device(deviceId, defaultRegistrationId, DeviceState.ACTIVE),
+                Device(deviceId2, defaultRegistrationId+1, DeviceState.INACTIVE)
             )
 
             if (devices != expected)
@@ -272,7 +272,7 @@ class WebApiIntegrationTest {
         val siteUser = userA.user
         val username = siteUser.username
 
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, true)
+        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
         val authApiResult = sendAuthRequestForUser(userA, deviceId)
         assertTrue(authApiResult.isSuccess, "auth failed: ${authApiResult.errorMessage}")
@@ -282,19 +282,28 @@ class WebApiIntegrationTest {
         assertEquals(siteUser.keyVault, receivedSerializedKeyVault)
     }
 
-    @Test
-    fun `attempting to authenticate with active devices maxed out should fail`() {
+    fun runMaxDeviceTest(state: DeviceState) {
         val userA = injectNewSiteUser()
         val username = userA.user.username
         val maxDevices = devClient.getMaxDevices()
 
         for (i in 0..maxDevices-1)
-            devClient.addDevice(username, 12345, true)
+            devClient.addDevice(username, 12345, state)
 
         val response = sendAuthRequestForUser(userA, 0)
 
         assertFalse(response.isSuccess, "Auth succeeded")
         assertTrue("too many registered devices" in response.errorMessage!!.toLowerCase())
+    }
+
+    @Test
+    fun `attempting to authenticate with active devices maxed out should fail`() {
+        runMaxDeviceTest(DeviceState.ACTIVE)
+    }
+
+    @Test
+    fun `attempting to authenticate with pending devices maxed out should fail`() {
+        runMaxDeviceTest(DeviceState.PENDING)
     }
 
     @Test
@@ -342,7 +351,7 @@ class WebApiIntegrationTest {
         val keyVault = siteUser.keyVault
         val username = siteUser.user.username
 
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, true)
+        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
         val authToken = devClient.createAuthToken(username, deviceId)
         val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
@@ -380,7 +389,7 @@ class WebApiIntegrationTest {
         val keyVault = siteUser.keyVault
         val username = siteUser.user.username
 
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, false)
+        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.INACTIVE)
 
         val authToken = devClient.createAuthToken(username, deviceId)
         val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
@@ -391,6 +400,30 @@ class WebApiIntegrationTest {
 
         val response = client.store(request)
         assertFalse(response.isSuccess, "Upload succeeded")
+    }
+
+    @Test
+    fun `attempting to push prekeys to an pending device should success and update device state`() {
+        val siteUser = injectNewSiteUser()
+        val keyVault = siteUser.keyVault
+        val username = siteUser.user.username
+        val registrationId = defaultRegistrationId
+
+        val deviceId = devClient.addDevice(username, registrationId, DeviceState.PENDING)
+
+        val authToken = devClient.createAuthToken(username, deviceId)
+        val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
+
+        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, registrationId, keyVault, generatedPreKeys, lastResortPreKey)
+
+        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+
+        val response = client.store(request)
+        assertTrue(response.isSuccess, "Upload failed: ${response.errorMessage}")
+
+        val devices = devClient.getDevices(username)
+        val updatedDevice = Device(deviceId, registrationId, DeviceState.ACTIVE)
+        assertEquals(listOf(updatedDevice), devices)
     }
 
     @Test
@@ -406,6 +439,28 @@ class WebApiIntegrationTest {
     //TODO more elaborate tests
 
     @Test
+    fun `prekey retrieval should fail when the target user has no active devices`() {
+        val siteUser = injectNewSiteUser()
+        val username = siteUser.user.username
+
+        val requestingSiteUser = injectNamedSiteUser("b@a.com")
+        val requestingUsername = requestingSiteUser.user.username
+
+        devClient.addDevice(username, defaultRegistrationId, DeviceState.PENDING)
+        devClient.addDevice(username, defaultRegistrationId, DeviceState.INACTIVE)
+
+        val authToken = devClient.createAuthToken(requestingUsername)
+
+        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
+
+        val response = client.retrieve(PreKeyRetrievalRequest(authToken, siteUser.user.id, listOf()))
+
+        assertTrue(response.isSuccess)
+
+        assertTrue(response.bundles.isEmpty(), "Bundle not empty")
+    }
+
+    @Test
     fun `prekey retrieval should return the next available prekey when a valid auth token is used`() {
         val siteUser = injectNewSiteUser()
         val username = siteUser.user.username
@@ -413,7 +468,7 @@ class WebApiIntegrationTest {
         val requestingSiteUser = injectNamedSiteUser("b@a.com")
         val requestingUsername = requestingSiteUser.user.username
 
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, true)
+        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
         val generatedPreKeys = injectPreKeys(username, siteUser.keyVault, deviceId)
 
@@ -470,7 +525,7 @@ class WebApiIntegrationTest {
         val username = siteUser.user.username
         val userId = siteUser.user.id
 
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, true)
+        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
         val authToken = devClient.createAuthToken(siteUser.user.username, deviceId)
 
