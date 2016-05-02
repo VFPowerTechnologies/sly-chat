@@ -8,6 +8,7 @@ import com.vfpowertech.keytap.core.UnauthorizedException
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.http.get
+import com.vfpowertech.keytap.core.relay.UserCredentials
 
 fun <T> getValueFromApiResult(apiResult: ApiResult<T>, response: HttpResponse): T {
     //should never happen as ApiResult has checks in its constructor for this stuff
@@ -45,16 +46,29 @@ fun <T> valueFromApi(response: HttpResponse, validResponseCodes: Set<Int>, typeR
     return getValueFromApiResult(apiResult, response)
 }
 
+private fun userCredentialsToHeaders(userCredentials: UserCredentials?): List<Pair<String, String>> {
+    return if (userCredentials != null) {
+        //TODO
+        listOf("Authentication" to "Basic")
+    }
+    else
+        listOf()
+}
+
 /** Posts the given request to the given url as JSON, then passes the response to valueFromApi. */
-fun <R, T> apiPostRequest(httpClient: HttpClient, url: String, request: R, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+fun <R, T> apiPostRequest(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, request: R, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
     val objectMapper = ObjectMapper()
     val jsonRequest = objectMapper.writeValueAsBytes(request)
 
-    val resp = httpClient.postJSON(url, jsonRequest)
+    val headers = userCredentialsToHeaders(userCredentials)
+
+    val resp = httpClient.postJSON(url, jsonRequest, headers)
     return valueFromApi(resp, validResponseCodes, typeReference)
 }
 
-fun <T> apiGetRequest(httpClient: HttpClient, url: String, params: List<Pair<String, String>>, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
-    val resp = httpClient.get(url, params)
+fun <T> apiGetRequest(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, params: List<Pair<String, String>>, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+    val headers = userCredentialsToHeaders(userCredentials)
+
+    val resp = httpClient.get(url, params, headers)
     return valueFromApi(resp, validResponseCodes, typeReference)
 }
