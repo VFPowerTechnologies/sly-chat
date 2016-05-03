@@ -180,6 +180,8 @@ class MainActivity : AppCompatActivity() {
 
         webView.settings.javaScriptEnabled = true
         webView.settings.allowFileAccessFromFileURLs = true
+        webView.settings.allowUniversalAccessFromFileURLs = true
+        webView.settings.blockNetworkLoads = true
 
         initJSLogging(webView)
 
