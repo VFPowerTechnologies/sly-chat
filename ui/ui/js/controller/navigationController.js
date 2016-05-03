@@ -173,6 +173,6 @@ NavigationController.prototype = {
                     KEYTAP.menuController.handleMenuDisplay();
                 }, 450);
             }
-        }).data('smoothState').load(url);
+        }).data('smoothState').load(url, false);
     }
 };

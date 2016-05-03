@@ -67,7 +67,6 @@ LoginController.prototype = {
             else
             {
                 KEYTAP.navigationController.goTo(initialPage);
-                KEYTAP.navigationController.clearHistory();
             }
         }.bind(this));
     },
