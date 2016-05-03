@@ -239,7 +239,7 @@ class SQLiteMessagePersistenceManagerTest {
         messagePersistenceManager.deleteMessages(contact, listOf(messageInfo.id)).get()
 
         val lastConversationInfo = getLastConversationInfo(contact) ?: throw AssertionError("No last conversation info")
-        
+
         assertEmptyLastConversationInfo(lastConversationInfo)
     }
 

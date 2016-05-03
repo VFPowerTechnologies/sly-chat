@@ -109,4 +109,12 @@ class UIMessengerServiceImpl(
         for (listener in messageStatusUpdateListeners)
             listener(messageInfo)
     }
+
+    override fun deleteAllMessagesFor(contact: UIContactDetails): Promise<Unit, Exception> {
+        return getMessengerServiceOrThrow().deleteAllMessages(contact.id)
+    }
+
+    override fun deleteMessagesFor(contact: UIContactDetails, messages: List<String>): Promise<Unit, Exception> {
+        return getMessengerServiceOrThrow().deleteMessages(contact.id, messages)
+    }
 }

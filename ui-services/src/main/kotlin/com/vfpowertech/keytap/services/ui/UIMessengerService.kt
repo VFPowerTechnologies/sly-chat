@@ -41,6 +41,17 @@ interface UIMessengerService {
      */
     fun getLastMessagesFor(contact: UIContactDetails, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception>
 
+    /** Delete all messages for the given contact. */
+    fun deleteAllMessagesFor(contact: UIContactDetails): Promise<Unit, Exception>
+
+    /**
+     * Deletes all the given messages from the given contact's conversation.
+     *
+     * @param contact Contact.
+     * @param messages List of message IDs to delete.
+     */
+    fun deleteMessagesFor(contact: UIContactDetails, messages: List<String>): Promise<Unit, Exception>
+
     /**
      * @return Pairs of UIContact -> UIConversation for every available contact.
      */
