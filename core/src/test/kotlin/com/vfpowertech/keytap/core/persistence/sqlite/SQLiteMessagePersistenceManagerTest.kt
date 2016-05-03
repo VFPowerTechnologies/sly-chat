@@ -11,7 +11,10 @@ import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
+
+private data class LastConversationInfo(val unreadCount: Int, val lastMessage: String?, val lastTimestamp: Long?)
 
 class SQLiteMessagePersistenceManagerTest {
     companion object {
@@ -61,6 +64,29 @@ class SQLiteMessagePersistenceManagerTest {
 
     fun assertTableExists(tableName: String) {
         assert(doesTableExist(tableName))
+    }
+
+    private fun getLastConversationInfo(contact: UserId): LastConversationInfo? {
+        return persistenceManager.syncRunQuery { connection ->
+            connection.prepare("SELECT unread_count, last_message, last_timestamp FROM conversation_info WHERE contact_id=?").use { stmt ->
+                stmt.bind(1, contact.id)
+                if (!stmt.step())
+                    null
+                else {
+                    val lastMessage = if (stmt.columnNull(1))
+                        null
+                    else
+                        stmt.columnString(1)
+
+                    val timestamp = if (stmt.columnNull(2))
+                        null
+                    else
+                        stmt.columnLong(2)
+
+                    LastConversationInfo(stmt.columnInt(0), lastMessage, timestamp)
+                }
+            }
+        }
     }
 
     fun createConvosFor(vararg contacts: UserId): Array<out UserId> {
@@ -170,5 +196,84 @@ class SQLiteMessagePersistenceManagerTest {
         assertEquals(contacts, gotContacts)
 
         assertEquals(expected, undelivered)
+    }
+
+    private fun assertEmptyLastConversationInfo(lastConversationInfo: LastConversationInfo) {
+        assertEquals(0, lastConversationInfo.unreadCount, "Invalid unreadCount")
+        assertNull(lastConversationInfo.lastMessage, "lastMessage isn't null")
+        assertNull(lastConversationInfo.lastTimestamp, "lastTimestamp isn't null")
+    }
+
+    @Test
+    fun `deleteAllMessages should remove all messages and update the conversion info for the corresponding user`() {
+        createConvosFor(contact)
+        addMessage(contact, false, "received", 0)
+        addMessage(contact, true, "sent", 0)
+
+        messagePersistenceManager.deleteAllMessages(contact).get()
+        assertEquals(0, messagePersistenceManager.getLastMessages(contact, 0, 100).get().size, "Should not have any messages")
+
+        val lastConversationInfo = getLastConversationInfo(contact) ?: throw AssertionError("No last conversation info")
+
+        assertEmptyLastConversationInfo(lastConversationInfo)
+    }
+
+    @Test
+    fun `deleteMessages should do nothing if the message list is empty`() {
+        createConvosFor(contact)
+
+        addMessage(contact, false, "received", 0)
+        addMessage(contact, true, "sent", 0)
+
+        messagePersistenceManager.deleteMessages(contact, listOf()).get()
+
+        assertEquals(2, messagePersistenceManager.getLastMessages(contact, 0, 100).get().size, "Message count doesn't match")
+    }
+
+    @Test
+    fun `deleteMessages should remove the specified messages and update conversation info for the corresponding user (empty result)`() {
+        createConvosFor(contact)
+
+        val messageInfo = addMessage(contact, false, "received", 0)
+
+        messagePersistenceManager.deleteMessages(contact, listOf(messageInfo.id)).get()
+
+        val lastConversationInfo = getLastConversationInfo(contact) ?: throw AssertionError("No last conversation info")
+
+        assertEmptyLastConversationInfo(lastConversationInfo)
+    }
+
+    @Test
+    fun `deleteMessages should remove the specified messages and update conversation info for the corresponding user (remaining result)`() {
+        createConvosFor(contact)
+
+        val keep = ArrayList<MessageInfo>()
+        val remove = ArrayList<MessageInfo>()
+
+        for (i in 0..8) {
+            val list = if (i % 2 == 0) remove else keep
+
+            list.add(addMessage(contact, false, "received $i", 0))
+            list.add(addMessage(contact, true, "sent $i", 0))
+        }
+
+        messagePersistenceManager.deleteMessages(contact, remove.map { it.id }).get()
+
+        //match returned order
+        val keepSorted = keep.reversed()
+        val remainingSorted = messagePersistenceManager.getLastMessages(contact, 0, 100).get()
+
+        assertEquals(keepSorted, remainingSorted, "Invalid remaining messages")
+
+        val lastConversationInfo = getLastConversationInfo(contact) ?: throw AssertionError("No last conversation info")
+
+        val lastMessage = keepSorted.filter { it.isSent == false }.last()
+
+        //can't be done (see impl notes)
+        //val expectedUnread = keepSorted.filter { it.isSent == false }.size
+
+        //assertEquals(expectedUnread, lastConversationInfo.unreadCount, "Invalid unreadCount")
+        assertEquals(lastMessage.message, lastConversationInfo.lastMessage, "lastMessage doesn't match")
+        assertEquals(lastMessage.timestamp, lastConversationInfo.lastTimestamp, "lastTimestamp doesn't match")
     }
 }

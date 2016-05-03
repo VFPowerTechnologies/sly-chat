@@ -342,6 +342,14 @@ class MessengerService(
         return contactsPersistenceManager.markConversationAsRead(userId)
     }
 
+    fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception> {
+        return messagePersistenceManager.deleteMessages(userId, messageIds)
+    }
+
+    fun deleteAllMessages(userId: UserId): Promise<Unit, Exception> {
+        return messagePersistenceManager.deleteAllMessages(userId)
+    }
+
     /* Other */
 
     private fun processOfflineDecryption(result: OfflineDecryptionResult) {

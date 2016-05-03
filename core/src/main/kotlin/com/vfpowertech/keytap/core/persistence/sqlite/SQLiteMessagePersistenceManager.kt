@@ -153,6 +153,60 @@ VALUES
         r
     }
 
+    private fun getLastReceivedMessage(connection: SQLiteConnection, userId: UserId): MessageInfo? {
+        val table = ConversationTable.getTablenameForContact(userId)
+
+        return connection.prepare("SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM $table WHERE is_sent=0 ORDER BY timestamp, n LIMIT 1").use { stmt ->
+            if (!stmt.step())
+                null
+            else
+                rowToMessageInfo(stmt)
+        }
+    }
+
+    override fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        if (!messageIds.isEmpty()) {
+            val table = ConversationTable.getTablenameForContact(userId)
+
+            connection.prepare("DELETE FROM $table WHERE id IN (${getPlaceholders(messageIds.size)})").use { stmt ->
+                for (i in 1..messageIds.size)
+                    stmt.bind(i, messageIds[i-1])
+
+                stmt.step()
+            }
+
+            val lastMessage = getLastReceivedMessage(connection, userId)
+            if (lastMessage == null) {
+                resetConversationInfo(connection, userId)
+            }
+            else {
+                //regarding the unread count
+                //right now we can't do squat about this... we don't actually keep track of which individual messages are unread
+                //although, if someone deletes an individual message, they're in the contact chat's page, which means the unread count
+                //would have been set to zero anyways
+                updateConversationInfo(connection, userId, lastMessage.isSent, lastMessage.message, lastMessage.timestamp, 0)
+            }
+        }
+
+        Unit
+    }
+
+    private fun resetConversationInfo(connection: SQLiteConnection, userId: UserId) {
+        connection.prepare("UPDATE conversation_info set unread_count=0, last_message=null, last_timestamp=null where contact_id=?").use { stmt ->
+            stmt.bind(1, userId.id)
+            stmt.step()
+        }
+    }
+
+    override fun deleteAllMessages(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val table = ConversationTable.getTablenameForContact(userId)
+
+        connection.exec("DELETE FROM $table")
+        resetConversationInfo(connection,  userId)
+
+        Unit
+    }
+
     private fun messageInfoToRow(messageInfo: MessageInfo, stmt: SQLiteStatement) {
         stmt.bind(1, messageInfo.id)
         stmt.bind(2, messageInfo.isSent.toInt())

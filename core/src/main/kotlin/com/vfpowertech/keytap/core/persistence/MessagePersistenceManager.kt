@@ -26,4 +26,8 @@ interface MessagePersistenceManager {
 
     /** Returns all unsent messages. If a contact has no undelievered messages, it won't be included in the result. */
     fun getUndeliveredMessages(): Promise<Map<UserId, List<MessageInfo>>, Exception>
+
+    fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception>
+
+    fun deleteAllMessages(userId: UserId): Promise<Unit, Exception>
 }
