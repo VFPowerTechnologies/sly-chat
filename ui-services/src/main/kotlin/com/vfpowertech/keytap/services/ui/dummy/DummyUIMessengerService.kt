@@ -13,6 +13,14 @@ private fun nowTimestamp(): Long {
 }
 
 class DummyUIMessengerService(private val contactsService: UIContactsService) : UIMessengerService {
+    override fun deleteAllMessagesFor(contact: UIContactDetails): Promise<Unit, Exception> {
+        return Promise.ofSuccess(Unit)
+    }
+
+    override fun deleteMessagesFor(contact: UIContactDetails, messages: List<String>): Promise<Unit, Exception> {
+        return Promise.ofSuccess(Unit)
+    }
+
     private val timer = Timer(true)
     private val newMessageListeners = ArrayList<(UIMessageInfo) -> Unit>()
     private val messageStatusUpdateListeners = ArrayList<(UIMessageInfo) -> Unit>()
