@@ -100,8 +100,16 @@ class KeyTapApplication {
         val userComponent = userComponent ?: return
         userComponent.userLoginData.authToken ?: return
 
-        //TODO run inside sync notification for ui
-        syncLocalContacts(userComponent)
+        //TODO don't run if other sync is running
+        //TODO queue if offline
+        if (isNetworkAvailable) {
+            contactListSyncingSubject.onNext(true)
+            syncLocalContacts(userComponent) fail { e ->
+                log.error("Local contact sync failed: {}", e.message, e)
+            } alwaysUi {
+                contactListSyncingSubject.onNext(false)
+            }
+        }
     }
 
     //XXX this is kinda bad since we block on the main thread, but it's only done once during init anyways
