@@ -15,7 +15,6 @@ data class GeoLocationInfo(
     @get:JsonProperty("city")
     val city: String?,
 
-
     @param:JsonProperty("loc")
     @get:JsonProperty("loc")
     val loc: String?,
