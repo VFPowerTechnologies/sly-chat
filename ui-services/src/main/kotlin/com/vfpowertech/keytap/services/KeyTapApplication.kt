@@ -90,6 +90,18 @@ class KeyTapApplication {
         initializeApplicationServices()
 
         initInstallationData()
+
+        appComponent.platformContacts.contactsUpdated.subscribe {
+            onPlatformContactsUpdated()
+        }
+    }
+
+    private fun onPlatformContactsUpdated() {
+        val userComponent = userComponent ?: return
+        userComponent.userLoginData.authToken ?: return
+
+        //TODO run inside sync notification for ui
+        syncLocalContacts(userComponent)
     }
 
     //XXX this is kinda bad since we block on the main thread, but it's only done once during init anyways

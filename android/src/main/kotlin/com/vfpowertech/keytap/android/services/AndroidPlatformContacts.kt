@@ -3,8 +3,10 @@ package com.vfpowertech.keytap.android.services
 import android.Manifest
 import android.content.AsyncQueryHandler
 import android.content.Context
+import android.database.ContentObserver
 import android.database.Cursor
 import android.os.Handler
+import android.provider.ContactsContract
 import android.provider.ContactsContract.CommonDataKinds
 import android.provider.ContactsContract.Data
 import com.vfpowertech.keytap.android.AndroidApp
@@ -15,9 +17,25 @@ import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.ui.successUi
+import rx.Observable
+import rx.subjects.PublishSubject
 import java.util.*
 
 class AndroidPlatformContacts(private val context: Context) : PlatformContacts {
+    private val contactsUpdateSubject = PublishSubject.create<Unit>()
+    override val contactsUpdated: Observable<Unit> = contactsUpdateSubject
+
+    init {
+        val observer = object : ContentObserver(Handler(context.mainLooper)) {
+            override fun onChange(selfChange: Boolean) {
+                super.onChange(selfChange)
+                contactsUpdateSubject.onNext(Unit)
+            }
+        }
+
+        context.contentResolver.registerContentObserver(ContactsContract.Contacts.CONTENT_URI, true, observer)
+    }
+
     override fun fetchContacts(): Promise<List<PlatformContact>, Exception> {
         val deferred = deferred<List<PlatformContact>, Exception>()
 
