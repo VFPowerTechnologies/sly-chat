@@ -48,6 +48,8 @@ interface ApplicationComponent {
 
     val loadService: UILoadService
 
+    val infoService: UIInfoService
+
     var accountModificationService: UIAccountModificationService
 
     val platformService: UIPlatformService
