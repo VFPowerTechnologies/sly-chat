@@ -37,7 +37,7 @@ class KeyTapAddress(val id: UserId, val deviceId: Int) {
 
     companion object {
         fun fromString(s: String): KeyTapAddress? {
-            val parts = s.split('.', limit = 2)
+            val parts = s.split(':', limit = 2)
             if (parts.size != 2)
                 return null
 
