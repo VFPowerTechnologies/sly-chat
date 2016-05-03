@@ -25,15 +25,19 @@ $(document).ready(function () {
     $("#hiddenPhoneInput").intlTelInput({
         initialCountry: "auto",
         geoIpLookup: function(callback) {
-            $.get('http://ipinfo.io', function() {}, "jsonp").always(function(resp) {
-                var countryCode = (resp && resp.country) ? resp.country : "";
-                callback(countryCode);
+            infoService.getGeoLocation().then(function (country) {
+                if(country !== null) {
+                    console.log("country is: " + country);
+                    callback(country);
 
-                setTimeout(function() {
-                    var data = $("#hiddenPhoneInput").intlTelInput("getSelectedCountryData");
-                    $("#countrySelect").val(data.iso2);
-                    KEYTAP.registrationController.setPhoneExt(data.dialCode);
-                }, 100);
+                    setTimeout(function () {
+                        var data = $("#hiddenPhoneInput").intlTelInput("getSelectedCountryData");
+                        $("#countrySelect").val(data.iso2);
+                        KEYTAP.registrationController.setPhoneExt(data.dialCode);
+                    }, 100);
+                }
+            }).catch(function (e) {
+                KEYTAP.exceptionController.displayDebugMessage(e);
             });
         },
         utilsScript: "js/external-lib/utils.js"
