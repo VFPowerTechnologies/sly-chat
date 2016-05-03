@@ -180,8 +180,10 @@ class MainActivity : AppCompatActivity() {
 
         webView.settings.javaScriptEnabled = true
         webView.settings.allowFileAccessFromFileURLs = true
-        webView.settings.allowUniversalAccessFromFileURLs = true
         webView.settings.blockNetworkLoads = true
+        
+        //Allow javascript to push history state to the webview
+        webView.settings.allowUniversalAccessFromFileURLs = true
 
         initJSLogging(webView)
 
