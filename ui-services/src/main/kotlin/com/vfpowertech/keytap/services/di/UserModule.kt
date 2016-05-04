@@ -95,10 +95,12 @@ class UserModule(
     @UserScope
     @Provides
     fun providesPreKeyManager(
+        application: KeyTapApplication,
+        serverUrls: ServerUrls,
         userLoginData: UserLoginData,
         preKeyPersistenceManager: PreKeyPersistenceManager
     ): PreKeyManager =
-        PreKeyManager(userLoginData, preKeyPersistenceManager)
+        PreKeyManager(application, serverUrls.API_SERVER, userLoginData, preKeyPersistenceManager)
 
     @UserScope
     @Provides

@@ -7,8 +7,6 @@ import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.crypto.KeyVault
 import com.vfpowertech.keytap.core.div
 import com.vfpowertech.keytap.core.http.api.contacts.*
-import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyStoreAsyncClient
-import com.vfpowertech.keytap.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
 import com.vfpowertech.keytap.core.persistence.*
 import com.vfpowertech.keytap.core.persistence.json.JsonAccountInfoPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonInstallationDataPersistenceManager
@@ -199,36 +197,7 @@ class KeyTapApplication {
             return
         }
 
-        log.info("Requested to generate {} new prekeys", keyRegenCount)
-
-        val keyVault = userComponent.userLoginData.keyVault
-        val authToken = userComponent.userLoginData.authToken
-        if (authToken == null) {
-            log.error("Unable to push prekeys, no auth token available")
-            return
-        }
-
-        pushingPreKeys = true
-
-        //TODO need to mark whether or not a range has been pushed to the server or not
-        //if the push fails, we should delete the batch?
-        //TODO nfi what to do if server response fails
-        userComponent.preKeyManager.generate() bind { r ->
-            val (generatedPreKeys, lastResortPreKey) = r
-            val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, installationData.registrationId, keyVault, generatedPreKeys, lastResortPreKey)
-            PreKeyStoreAsyncClient(appComponent.serverUrls.API_SERVER).store(request)
-        } successUi { response ->
-            pushingPreKeys = false
-
-            if (!response.isSuccess)
-                log.error("PreKey push failed: {}", response.errorMessage)
-            else
-                log.info("Pushed prekeys to server")
-        } failUi { e ->
-            pushingPreKeys = false
-
-            log.error("PreKey push failed: {}", e.message, e)
-        }
+        userComponent.preKeyManager.scheduleUpload(keyRegenCount)
     }
 
     /**

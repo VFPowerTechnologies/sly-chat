@@ -4,22 +4,46 @@ import com.vfpowertech.keytap.core.crypto.LAST_RESORT_PREKEY_ID
 import com.vfpowertech.keytap.core.crypto.generateLastResortPreKey
 import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
+import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyStoreAsyncClient
+import com.vfpowertech.keytap.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.ui.failUi
+import nl.komponents.kovenant.ui.successUi
+import org.slf4j.LoggerFactory
 import org.whispersystems.libsignal.state.PreKeyRecord
 
+//TODO right now this only regens new keys on online
+//should also check after processing a prekey from a received message
 class PreKeyManager(
+    private val application: KeyTapApplication,
+    private val serverUrl: String,
     private val userLoginData: UserLoginData,
     private val preKeyPersistenceManager: PreKeyPersistenceManager
 ) {
-    fun generate(): Promise<Pair<GeneratedPreKeys, PreKeyRecord>, Exception> {
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    private var scheduledKeyCount = 0
+
+    private var running = false
+
+    private var isOnline = false
+
+    init {
+        application.networkAvailable.subscribe { status ->
+            isOnline = status
+            if (status && scheduledKeyCount > 0)
+                scheduleUpload(scheduledKeyCount)
+        }
+    }
+
+    private fun generate(count: Int): Promise<Pair<GeneratedPreKeys, PreKeyRecord>, Exception> {
         val keyVault = userLoginData.keyVault
-        val keyRegenCount = 30
 
         return preKeyPersistenceManager.getNextPreKeyIds() bind { preKeyIds ->
-            val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, preKeyIds.nextSignedId, preKeyIds.nextUnsignedId, keyRegenCount)
+            val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, preKeyIds.nextSignedId, preKeyIds.nextUnsignedId, count)
             preKeyPersistenceManager.putGeneratedPreKeys(generatedPreKeys) map { generatedPreKeys }
         } bindUi { generatedPreKeys ->
             getLastResortPreKey(preKeyPersistenceManager) map { lastResortPreKey ->
@@ -29,7 +53,7 @@ class PreKeyManager(
     }
 
     //assumes the keys are generated in a range
-    fun removeGeneratedKeys(generatedPreKeys: GeneratedPreKeys): Promise<Unit, Exception> {
+    private fun removeGeneratedKeys(generatedPreKeys: GeneratedPreKeys): Promise<Unit, Exception> {
         if (generatedPreKeys.oneTimePreKeys.isEmpty())
             return Promise.ofSuccess(Unit)
 
@@ -38,6 +62,48 @@ class PreKeyManager(
 
         return preKeyPersistenceManager.removeUnsignedPreKeyRange(start, end) bind {
             preKeyPersistenceManager.removeSignedPreKey(generatedPreKeys.signedPreKey.id)
+        }
+    }
+
+    fun scheduleUpload(keyRegenCount: Int) {
+        if (!isOnline) {
+            scheduledKeyCount = keyRegenCount
+            return
+        }
+
+        if (running || keyRegenCount <= 0)
+            return
+
+        log.info("Requested to generate {} new prekeys", keyRegenCount)
+
+        val keyVault = userLoginData.keyVault
+        val authToken = userLoginData.authToken
+        if (authToken == null) {
+            log.error("Unable to push prekeys, no auth token available")
+            return
+        }
+
+        scheduledKeyCount = 0
+        running = true
+
+        //TODO need to mark whether or not a range has been pushed to the server or not
+        //if the push fails, we should delete the batch?
+        //TODO nfi what to do if server response fails
+        generate(keyRegenCount) bind { r ->
+            val (generatedPreKeys, lastResortPreKey) = r
+            val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, application.installationData.registrationId, keyVault, generatedPreKeys, lastResortPreKey)
+            PreKeyStoreAsyncClient(serverUrl).store(request)
+        } successUi { response ->
+            running = false
+
+            if (!response.isSuccess)
+                log.error("PreKey push failed: {}", response.errorMessage)
+            else
+                log.info("Pushed prekeys to server")
+        } failUi { e ->
+            running = false
+
+            log.error("PreKey push failed: {}", e.message, e)
         }
     }
 
