@@ -69,6 +69,9 @@ class AndroidPlatformContacts(private val context: Context) : PlatformContacts {
                 catch (e: Exception) {
                     deferred.reject(e)
                 }
+                finally {
+                    cursor.close()
+                }
             }
 
             private fun realOnQueryComplete(cursor: Cursor): List<PlatformContact> {
