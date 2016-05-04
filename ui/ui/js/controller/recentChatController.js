@@ -41,7 +41,7 @@ RecentChatController.prototype = {
         var lastMessage;
 
         if (recentChat.status.lastMessage.length > 40)
-            lastMessage = recentChat.status.lastMessage.substring(0, 40) + "...";
+            lastMessage = recentChat.status.lastMessage.substring(0, 40) + " ...";
         else
             lastMessage = recentChat.status.lastMessage;
 
@@ -51,7 +51,7 @@ RecentChatController.prototype = {
         contactBlock += createAvatar(recentChat.contact.name);
         contactBlock += "<p style='display: inline-block;'>" + recentChat.contact.name + "</p>";
         contactBlock += "<p class='recentTimestamp' style='display: inline-block; float: right; font-size: 10px'>" + $.timeago(recentChat.status.lastTimestamp) + "</p><br>";
-        contactBlock += "<p class='recentMessage' style='display: inline-block; float: left; font-size: 10px; line-height: 0;'>" + lastMessage + "</p>";
+        contactBlock += "<p class='recentMessage' style='display: inline-block; float: left; font-size: 10px; line-height: 0;'>" + createTextNode(lastMessage) + "</p>";
         contactBlock += "</div>" + newBadge + "</div>";
 
         return contactBlock;

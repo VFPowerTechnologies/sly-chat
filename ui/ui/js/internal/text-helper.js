@@ -13,3 +13,10 @@ function formatTextForHTML(content) {
     safeContent = safeContent.replace(/\n/g, '<br/>');
     return safeContent;
 }
+
+function createTextNode (string) {
+    var pre = document.createElement("pre");
+    var text = document.createTextNode(string);
+    pre.appendChild(text);
+    return pre.innerHTML;
+}

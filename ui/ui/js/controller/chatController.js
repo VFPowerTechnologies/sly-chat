@@ -109,7 +109,7 @@ ChatController.prototype = {
         var messageDiv = $(document.createElement("div"));
         messageDiv.addClass("message ");
 
-        messageDiv.append("<p>" + formatTextForHTML(message.message) + "</p>");
+        messageDiv.append("<p>" + formatTextForHTML(createTextNode(message.message)) + "</p>");
 
         var timespan = $(document.createElement("span"));
         timespan.addClass("timespan");
