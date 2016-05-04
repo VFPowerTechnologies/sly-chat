@@ -111,4 +111,23 @@ class UserModule(
         messengerService: MessengerService
     ): OfflineMessageManager =
         OfflineMessageManager(application, userLoginData, serverUrls.API_SERVER, messengerService)
+
+    @UserScope
+    @Provides
+    fun providesContactSyncManager(
+        application: KeyTapApplication,
+        userLoginData: UserLoginData,
+        accountInfo: AccountInfo,
+        serverUrls: ServerUrls,
+        platformContacts: PlatformContacts,
+        contactsPersistenceManager: ContactsPersistenceManager
+    ): ContactSyncManager =
+        ContactSyncManager(
+            application,
+            userLoginData,
+            accountInfo,
+            serverUrls.API_SERVER,
+            platformContacts,
+            contactsPersistenceManager
+        )
 }

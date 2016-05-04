@@ -41,5 +41,7 @@ interface UserComponent {
     val preKeyManager: PreKeyManager
 
     val offlineMessageManager: OfflineMessageManager
+
+    val contactSyncManager: ContactSyncManager
 }
 
