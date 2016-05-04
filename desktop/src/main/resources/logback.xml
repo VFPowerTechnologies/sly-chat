@@ -6,6 +6,8 @@
             <pattern>${MSG_PATTERN}</pattern>
         </encoder>
     </appender>
+    <logger name="com.vfpowertech.jsbridge.core.dispatcher.Dispatcher" level="INFO" />
+    <logger name="io.netty" level="INFO" />
     <root level="trace">
         <appender-ref ref="stdout" />
     </root>
