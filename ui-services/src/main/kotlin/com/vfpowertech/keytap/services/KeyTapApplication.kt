@@ -25,7 +25,7 @@ import rx.Observable
 import rx.Subscription
 import rx.subjects.BehaviorSubject
 import java.util.*
-
+import java.util.concurrent.TimeUnit
 
 class KeyTapApplication {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -84,7 +84,9 @@ class KeyTapApplication {
 
         initInstallationData()
 
-        appComponent.platformContacts.contactsUpdated.subscribe {
+        //android can fire these events multiple time in succession (eg: when google account sync is occuring)
+        //so we clamp down the number of events we process
+        appComponent.platformContacts.contactsUpdated.debounce(4000, TimeUnit.MILLISECONDS).subscribe {
             onPlatformContactsUpdated()
         }
     }
