@@ -39,5 +39,7 @@ interface UserComponent {
     val relayClientManager: RelayClientManager
 
     val preKeyManager: PreKeyManager
+
+    val offlineMessageManager: OfflineMessageManager
 }
 

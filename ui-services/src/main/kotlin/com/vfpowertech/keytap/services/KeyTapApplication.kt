@@ -7,9 +7,6 @@ import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.crypto.KeyVault
 import com.vfpowertech.keytap.core.div
 import com.vfpowertech.keytap.core.http.api.contacts.*
-import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesAsyncClient
-import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesClearRequest
-import com.vfpowertech.keytap.core.http.api.offline.OfflineMessagesGetRequest
 import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyStoreAsyncClient
 import com.vfpowertech.keytap.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
 import com.vfpowertech.keytap.core.persistence.*
@@ -18,7 +15,6 @@ import com.vfpowertech.keytap.core.persistence.json.JsonInstallationDataPersiste
 import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonStartupInfoPersistenceManager
 import com.vfpowertech.keytap.core.relay.*
-import com.vfpowertech.keytap.services.crypto.deserializeEncryptedMessage
 import com.vfpowertech.keytap.services.di.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -73,8 +69,6 @@ class KeyTapApplication {
         private set
 
     lateinit var installationData: InstallationData
-
-    private var fetchingOfflineMessages = false
 
     private var pushingPreKeys = false
 
@@ -479,37 +473,7 @@ class KeyTapApplication {
 
     //TODO queue if offline/etc
     fun fetchOfflineMessages() {
-        if (fetchingOfflineMessages)
-            return
-
-        fetchingOfflineMessages = true
-
-        val authToken = userComponent?.userLoginData?.authToken ?: return
-
-        log.info("Fetching offline messages")
-
-        val offlineMessagesClient = OfflineMessagesAsyncClient(appComponent.serverUrls.API_SERVER)
-        offlineMessagesClient.get(OfflineMessagesGetRequest(authToken)) bindUi { response ->
-            if (response.messages.isNotEmpty()) {
-                val messengerService = userComponent?.messengerService ?: throw RuntimeException("No longer logged in")
-
-                //TODO move this elsewhere?
-                val offlineMessages = response.messages.map { m ->
-                    val encryptedMessage = deserializeEncryptedMessage(m.serializedMessage)
-                    OfflineMessage(m.from, m.timestamp, encryptedMessage)
-                }
-
-                messengerService.addOfflineMessages(offlineMessages) bind {
-                    offlineMessagesClient.clear(OfflineMessagesClearRequest(authToken, response.range))
-                }
-            }
-            else
-                Promise.ofSuccess(Unit)
-        } fail { e ->
-            log.error("Unable to fetch offline messages: {}", e.message, e)
-        } alwaysUi {
-            fetchingOfflineMessages = false
-        }
+        userComponent?.offlineMessageManager?.fetch()
     }
 
     /** Subscribe to events, connect to relay (if network available). */

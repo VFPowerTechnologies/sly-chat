@@ -99,4 +99,14 @@ class UserModule(
         preKeyPersistenceManager: PreKeyPersistenceManager
     ): PreKeyManager =
         PreKeyManager(userLoginData, preKeyPersistenceManager)
+
+    @UserScope
+    @Provides
+    fun providesOfflineMessageManager(
+        application: KeyTapApplication,
+        userLoginData: UserLoginData,
+        serverUrls: ServerUrls,
+        messengerService: MessengerService
+    ): OfflineMessageManager =
+        OfflineMessageManager(application, userLoginData, serverUrls.API_SERVER, messengerService)
 }
