@@ -95,8 +95,39 @@ class UserModule(
     @UserScope
     @Provides
     fun providesPreKeyManager(
+        application: KeyTapApplication,
+        serverUrls: ServerUrls,
         userLoginData: UserLoginData,
         preKeyPersistenceManager: PreKeyPersistenceManager
     ): PreKeyManager =
-        PreKeyManager(userLoginData, preKeyPersistenceManager)
+        PreKeyManager(application, serverUrls.API_SERVER, userLoginData, preKeyPersistenceManager)
+
+    @UserScope
+    @Provides
+    fun providesOfflineMessageManager(
+        application: KeyTapApplication,
+        userLoginData: UserLoginData,
+        serverUrls: ServerUrls,
+        messengerService: MessengerService
+    ): OfflineMessageManager =
+        OfflineMessageManager(application, userLoginData, serverUrls.API_SERVER, messengerService)
+
+    @UserScope
+    @Provides
+    fun providesContactSyncManager(
+        application: KeyTapApplication,
+        userLoginData: UserLoginData,
+        accountInfo: AccountInfo,
+        serverUrls: ServerUrls,
+        platformContacts: PlatformContacts,
+        contactsPersistenceManager: ContactsPersistenceManager
+    ): ContactSyncManager =
+        ContactSyncManager(
+            application,
+            userLoginData,
+            accountInfo,
+            serverUrls.API_SERVER,
+            platformContacts,
+            contactsPersistenceManager
+        )
 }
