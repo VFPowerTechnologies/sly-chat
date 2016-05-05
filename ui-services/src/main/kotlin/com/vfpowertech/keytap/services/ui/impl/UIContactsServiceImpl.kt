@@ -3,6 +3,7 @@ package com.vfpowertech.keytap.services.ui.impl
 import com.vfpowertech.keytap.core.http.api.contacts.*
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.services.KeyTapApplication
+import com.vfpowertech.keytap.services.di.UserComponent
 import com.vfpowertech.keytap.services.ui.UIContactDetails
 import com.vfpowertech.keytap.services.ui.UIContactsService
 import com.vfpowertech.keytap.services.ui.UINewContactResult
@@ -23,6 +24,10 @@ class UIContactsServiceImpl(
 
     init {
         app.contactListSyncing.subscribe { updateContactListSyncing(it) }
+    }
+
+    private fun getUserComponentOrThrow(): UserComponent {
+        return app.userComponent ?: throw IllegalStateException("Not logged in")
     }
 
     private fun updateContactListSyncing(value: Boolean) {
@@ -55,14 +60,17 @@ class UIContactsServiceImpl(
         val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
         val contactInfo = contactDetails.toNative()
 
-        val authToken = app.userComponent?.userLoginData?.authToken ?: return Promise.ofFail(RuntimeException("Not logged in"))
-        val keyVault = app.userComponent?.userLoginData?.keyVault ?: return Promise.ofFail(RuntimeException("Not logged in"))
+        val userComponent = getUserComponentOrThrow()
+
+        val keyVault = userComponent.userLoginData.keyVault
 
         val remoteContactEntries = encryptRemoteContactEntries(keyVault, listOf(contactDetails.id))
 
-        return contactListClient.addContacts(AddContactsRequest(authToken, remoteContactEntries)) bind {
-            contactsPersistenceManager.add(contactInfo) map {
-                contactDetails
+        return userComponent.authTokenManager.run { authToken ->
+            contactListClient.addContacts(AddContactsRequest(authToken.string, remoteContactEntries)) bind {
+                contactsPersistenceManager.add(contactInfo) map {
+                    contactDetails
+                }
             }
         }
     }
@@ -70,12 +78,16 @@ class UIContactsServiceImpl(
     override fun removeContact(contactDetails: UIContactDetails): Promise<Unit, Exception> {
         val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
 
-        val authToken = app.userComponent?.userLoginData?.authToken ?: return Promise.ofFail(RuntimeException("Not logged in"))
-        val keyVault = app.userComponent?.userLoginData?.keyVault ?: return Promise.ofFail(RuntimeException("Not logged in"))
+        val userComponent = getUserComponentOrThrow()
+
+        val keyVault = userComponent.userLoginData.keyVault
+
         val remoteContactEntries = encryptRemoteContactEntries(keyVault, listOf(contactDetails.id)).map { it.hash }
 
-        return contactListClient.removeContacts(RemoveContactsRequest(authToken, remoteContactEntries)) bind {
-            contactsPersistenceManager.remove(contactDetails.toNative())
+        return userComponent.authTokenManager.run { authToken ->
+            contactListClient.removeContacts(RemoveContactsRequest(authToken.string, remoteContactEntries)) bind {
+                contactsPersistenceManager.remove(contactDetails.toNative())
+            }
         }
     }
 
@@ -84,18 +96,18 @@ class UIContactsServiceImpl(
             return Promise.ofSuccess(UINewContactResult(false, "Username or phone number must be provided", null))
         }
 
-        val authToken = app.userComponent?.userLoginData?.authToken!!
-        val newContactRequest: Promise<FetchContactResponse, Exception>
+        val userComponent = getUserComponentOrThrow()
 
-        newContactRequest = contactClient.fetchNewContactInfo(NewContactRequest(authToken, email, phoneNumber))
+        return userComponent.authTokenManager.run { authToken ->
+            val request = NewContactRequest(authToken.string, email, phoneNumber)
 
-        return newContactRequest map  { response ->
-            if (response.errorMessage != null) {
-                UINewContactResult(false, response.errorMessage, null)
-            }
-            else {
-                val contactInfo = response.contactInfo!!
-                UINewContactResult(true, null, contactInfo.toUI())
+            contactClient.fetchNewContactInfo(request) map { response ->
+                if (response.errorMessage != null) {
+                    UINewContactResult(false, response.errorMessage, null)
+                } else {
+                    val contactInfo = response.contactInfo!!
+                    UINewContactResult(true, null, contactInfo.toUI())
+                }
             }
         }
     }
