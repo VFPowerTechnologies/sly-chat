@@ -90,11 +90,12 @@ class UserModule(
     @UserScope
     @Provides
     fun providesMessageCipherService(
+        authTokenManager: AuthTokenManager,
         userLoginData: UserLoginData,
         serverUrls: ServerUrls,
         signalProtocolStore: SignalProtocolStore
     ): MessageCipherService =
-        MessageCipherService(userLoginData, signalProtocolStore, serverUrls)
+        MessageCipherService(authTokenManager, userLoginData, signalProtocolStore, serverUrls)
 
     @UserScope
     @Provides
