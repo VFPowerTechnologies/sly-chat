@@ -98,9 +98,10 @@ class UserModule(
         application: KeyTapApplication,
         serverUrls: ServerUrls,
         userLoginData: UserLoginData,
-        preKeyPersistenceManager: PreKeyPersistenceManager
+        preKeyPersistenceManager: PreKeyPersistenceManager,
+        authTokenManager: AuthTokenManager
     ): PreKeyManager =
-        PreKeyManager(application, serverUrls.API_SERVER, userLoginData, preKeyPersistenceManager)
+        PreKeyManager(application, serverUrls.API_SERVER, userLoginData, preKeyPersistenceManager, authTokenManager)
 
     @UserScope
     @Provides
