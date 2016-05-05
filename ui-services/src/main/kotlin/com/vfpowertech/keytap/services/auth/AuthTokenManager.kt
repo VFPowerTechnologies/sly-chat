@@ -38,6 +38,11 @@ class AuthTokenManager(
         newTokenSubject.onNext(authToken)
     }
 
+    /** Used to set an initial token externally. */
+    fun setToken(authToken: AuthToken) {
+        updateCachedToken(authToken)
+    }
+
     private fun onProviderEvent(event: TokenEvent) {
         log.info("Received event: {}", event)
 

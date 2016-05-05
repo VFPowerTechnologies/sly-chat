@@ -2,7 +2,6 @@ package com.vfpowertech.keytap.services
 
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.relay.*
-import com.vfpowertech.keytap.services.di.UserComponent
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Observer
@@ -22,7 +21,6 @@ import java.util.*
  */
 class RelayClientManager(
     private val scheduler: Scheduler,
-    private val userComponent: UserComponent,
     private val relayClientFactory: RelayClientFactory
 ) {
     private val log = LoggerFactory.getLogger(javaClass)

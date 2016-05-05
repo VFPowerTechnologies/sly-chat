@@ -13,6 +13,7 @@ import com.vfpowertech.keytap.core.persistence.json.JsonInstallationDataPersiste
 import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonStartupInfoPersistenceManager
 import com.vfpowertech.keytap.core.relay.*
+import com.vfpowertech.keytap.services.auth.AuthToken
 import com.vfpowertech.keytap.services.di.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -61,6 +62,8 @@ class KeyTapApplication {
 
     private var contactsSyncSub: Subscription? = null
 
+    private var newTokenSyncSub: Subscription? = null
+
     private val loginEventsSubject = BehaviorSubject.create<LoginEvent>()
     val loginEvents: Observable<LoginEvent> = loginEventsSubject
 
@@ -93,7 +96,6 @@ class KeyTapApplication {
 
     private fun onPlatformContactsUpdated() {
         val userComponent = userComponent ?: return
-        userComponent.userLoginData.authToken ?: return
 
         log.debug("Platform contacts updated")
 
@@ -217,11 +219,18 @@ class KeyTapApplication {
             val keyVault = response.keyVault
             //TODO need to put the username in the login response if the user used their phone number
             val address = KeyTapAddress(response.accountInfo.id, response.accountInfo.deviceId)
-            val userLoginData = UserLoginData(address, keyVault, response.authToken)
+            val userLoginData = UserLoginData(address, keyVault)
             val userComponent = createUserSession(userLoginData, response.accountInfo)
+
+            if (response.authToken != null)
+                userComponent.authTokenManager.setToken(AuthToken(response.authToken))
 
             contactsSyncSub = userComponent.contactSyncManager.status.subscribe {
                 contactListSyncingSubject.onNext(it)
+            }
+
+            newTokenSyncSub = userComponent.authTokenManager.newToken.subscribe {
+                onNewToken(it)
             }
 
             //until this finishes, nothing in the UserComponent should be touched
@@ -241,6 +250,24 @@ class KeyTapApplication {
 
             emitLoginEvent(ev)
         }
+    }
+
+    private fun onNewToken(authToken: AuthToken?) {
+        val userComponent = userComponent ?: return
+
+        //TODO delete
+        if (authToken == null)
+            return
+
+        log.info("Updating on-disk session data")
+
+        val sessionDataPersistenceManager = userComponent.sessionDataPersistenceManager
+        sessionDataPersistenceManager.store(SessionData(authToken.string)) fail { e ->
+            log.error("Unable to write session data to disk: {}", e.message, e)
+        }
+
+        if (!userComponent.relayClientManager.isOnline)
+            connectToRelay()
     }
 
     /**
@@ -274,10 +301,7 @@ class KeyTapApplication {
             return
         }
 
-        //do nothing if we're not logged in
-        val userComponent = this.userComponent ?: return
-
-        connectToRelay(userComponent)
+        connectToRelay()
 
         fetchOfflineMessages()
     }
@@ -368,7 +392,7 @@ class KeyTapApplication {
             return
         }
 
-        connectToRelay(userComponent)
+        connectToRelay()
     }
 
     private fun handleRelayClientEvent(event: RelayClientEvent) {
@@ -401,24 +425,7 @@ class KeyTapApplication {
 
     private fun refreshAuthToken() {
         val userComponent = userComponent ?: error("No user session")
-        val data = userComponent.userLoginData
-        data.authToken = null
-        val remotePasswordHash = data.keyVault.remotePasswordHash
-
-        val sessionDataPersistenceManager = userComponent.sessionDataPersistenceManager
-
-        appComponent.authenticationService.refreshAuthToken(userComponent.accountInfo, installationData.registrationId, remotePasswordHash) bind { response ->
-            log.info("Got new auth token")
-            sessionDataPersistenceManager.store(SessionData(response.authToken)) map { response }
-        } successUi { response ->
-            data.authToken = response.authToken
-
-            schedulePreKeyUpload(response.keyRegenCount)
-
-            reconnectToRelay()
-        } fail { e ->
-            log.error("Unable to refresh auth token", e)
-        }
+        userComponent.authTokenManager.invalidateToken()
     }
 
     private fun reconnectToRelay() {
@@ -442,7 +449,7 @@ class KeyTapApplication {
             val currentUserComponent = this.userComponent
             if (currentUserComponent != null) {
                 if (userComponent.accountInfo == currentUserComponent.accountInfo)
-                    connectToRelay(currentUserComponent)
+                    connectToRelay()
                 else
                     log.warn("Ignoring reconnect from previously logged in account")
             }
@@ -457,26 +464,13 @@ class KeyTapApplication {
         relayAvailableSubject.onNext(isOnline)
     }
 
-    /** Fetches auth token if none is given, then connects to the relay. */
-    private fun connectToRelay(userComponent: UserComponent) {
+    /**
+     * Connect to the relay server.
+     */
+    private fun connectToRelay() {
         if (!isNetworkAvailable)
             return
 
-        val userLoginData = userComponent.userLoginData
-        if (userLoginData.authToken == null) {
-            log.info("No auth token, fetching new")
-            refreshAuthToken()
-        }
-        else
-            doRelayLogin()
-    }
-
-    /**
-     * Actually log into the relay server.
-     *
-     * If an authToken is given, it's used to overwrite the currently set auth token.
-     */
-    private fun doRelayLogin() {
         val userComponent = this.userComponent
         if (userComponent == null) {
             log.warn("User session has already been terminated")
@@ -503,6 +497,9 @@ class KeyTapApplication {
 
         contactsSyncSub?.unsubscribe()
         contactsSyncSub = null
+
+        newTokenSyncSub?.unsubscribe()
+        newTokenSyncSub = null
 
         log.info("Destroying user session")
 

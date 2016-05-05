@@ -39,10 +39,9 @@ class UserModule(
     @Provides
     fun providesRelayClientManager(
         scheduler: Scheduler,
-        userComponent: UserComponent,
         relayClientFactory: RelayClientFactory
     ): RelayClientManager =
-        RelayClientManager(scheduler, userComponent, relayClientFactory)
+        RelayClientManager(scheduler, relayClientFactory)
 
     @UserScope
     @Provides
