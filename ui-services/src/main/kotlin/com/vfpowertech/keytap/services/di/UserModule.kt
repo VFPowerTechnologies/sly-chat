@@ -121,7 +121,8 @@ class UserModule(
         accountInfo: AccountInfo,
         serverUrls: ServerUrls,
         platformContacts: PlatformContacts,
-        contactsPersistenceManager: ContactsPersistenceManager
+        contactsPersistenceManager: ContactsPersistenceManager,
+        authTokenManager: AuthTokenManager
     ): ContactSyncManager =
         ContactSyncManager(
             application,
@@ -129,7 +130,8 @@ class UserModule(
             accountInfo,
             serverUrls.API_SERVER,
             platformContacts,
-            contactsPersistenceManager
+            contactsPersistenceManager,
+            authTokenManager
         )
 
     @UserScope
