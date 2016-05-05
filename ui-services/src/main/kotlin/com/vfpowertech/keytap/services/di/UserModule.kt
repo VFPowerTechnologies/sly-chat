@@ -9,6 +9,9 @@ import com.vfpowertech.keytap.core.relay.RelayClient
 import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.RelayConnector
 import com.vfpowertech.keytap.services.*
+import com.vfpowertech.keytap.services.auth.AuthTokenManager
+import com.vfpowertech.keytap.services.auth.AuthenticationServiceTokenProvider
+import com.vfpowertech.keytap.services.auth.TokenProvider
 import com.vfpowertech.keytap.services.crypto.MessageCipherService
 import com.vfpowertech.keytap.services.ui.UIEventService
 import dagger.Module
@@ -32,7 +35,8 @@ class UserModule(
         relayConnector: RelayConnector,
         serverUrls: ServerUrls
     ): RelayClient {
-        val credentials = UserCredentials(userLoginData.address, userLoginData.authToken!!)
+        //FIXME
+        val credentials = UserCredentials(userLoginData.address, "AuthToken")
         return RelayClient(relayConnector, scheduler, serverUrls.RELAY_SERVER, credentials)
     }
 
@@ -130,4 +134,26 @@ class UserModule(
             platformContacts,
             contactsPersistenceManager
         )
+
+    @UserScope
+    @Provides
+    fun providesTokenProvider(
+        application: KeyTapApplication,
+        userLoginData: UserLoginData,
+        accountInfo: AccountInfo,
+        authenticationService: AuthenticationService
+    ): TokenProvider =
+        AuthenticationServiceTokenProvider(
+            application,
+            accountInfo,
+            userLoginData.keyVault,
+            authenticationService
+        )
+
+    @UserScope
+    @Provides
+    fun providesAuthTokenManager(
+        tokenProvider: TokenProvider
+    ): AuthTokenManager =
+        AuthTokenManager(tokenProvider)
 }

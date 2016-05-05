@@ -4,6 +4,7 @@ import com.vfpowertech.keytap.core.persistence.*
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
 import com.vfpowertech.keytap.core.relay.RelayClient
 import com.vfpowertech.keytap.services.*
+import com.vfpowertech.keytap.services.auth.AuthTokenManager
 import dagger.Subcomponent
 
 /** Scoped to a user's login session. */
@@ -43,5 +44,6 @@ interface UserComponent {
     val offlineMessageManager: OfflineMessageManager
 
     val contactSyncManager: ContactSyncManager
-}
 
+    val authTokenManager: AuthTokenManager
+}
