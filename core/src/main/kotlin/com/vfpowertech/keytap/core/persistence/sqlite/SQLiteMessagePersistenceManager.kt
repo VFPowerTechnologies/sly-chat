@@ -156,7 +156,7 @@ VALUES
     private fun getLastConvoMessage(connection: SQLiteConnection, userId: UserId): MessageInfo? {
         val table = ConversationTable.getTablenameForContact(userId)
 
-        return connection.prepare("SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM $table ORDER BY timestamp, n LIMIT 1").use { stmt ->
+        return connection.prepare("SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM $table ORDER BY timestamp DESC, n DESC LIMIT 1").use { stmt ->
             if (!stmt.step())
                 null
             else

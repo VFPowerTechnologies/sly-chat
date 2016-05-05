@@ -267,7 +267,7 @@ class SQLiteMessagePersistenceManagerTest {
 
         val lastConversationInfo = getLastConversationInfo(contact) ?: throw AssertionError("No last conversation info")
 
-        val lastMessage = keepSorted.filter { it.isSent == false }.last()
+        val lastMessage = keepSorted.first()
 
         //can't be done (see impl notes)
         //val expectedUnread = keepSorted.filter { it.isSent == false }.size
