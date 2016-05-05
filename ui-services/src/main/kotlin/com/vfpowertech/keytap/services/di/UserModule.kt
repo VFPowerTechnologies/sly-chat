@@ -5,8 +5,6 @@ import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.MessagePersistenceManager
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
-import com.vfpowertech.keytap.core.relay.RelayClient
-import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.RelayConnector
 import com.vfpowertech.keytap.services.*
 import com.vfpowertech.keytap.services.auth.AuthTokenManager
@@ -28,25 +26,23 @@ class UserModule(
     @get:Provides
     val providersAccountInfo: AccountInfo
 ) {
+    @UserScope
     @Provides
-    fun provideRelayClient(
-        userLoginData: UserLoginData,
+    fun provideRelayClientFactory(
         scheduler: Scheduler,
         relayConnector: RelayConnector,
         serverUrls: ServerUrls
-    ): RelayClient {
-        //FIXME
-        val credentials = UserCredentials(userLoginData.address, "AuthToken")
-        return RelayClient(relayConnector, scheduler, serverUrls.RELAY_SERVER, credentials)
-    }
+    ): RelayClientFactory=
+        RelayClientFactory(scheduler, relayConnector, serverUrls)
 
     @UserScope
     @Provides
     fun providesRelayClientManager(
         scheduler: Scheduler,
-        userComponent: UserComponent
+        userComponent: UserComponent,
+        relayClientFactory: RelayClientFactory
     ): RelayClientManager =
-        RelayClientManager(scheduler, userComponent)
+        RelayClientManager(scheduler, userComponent, relayClientFactory)
 
     @UserScope
     @Provides

@@ -21,8 +21,9 @@ import java.util.*
  * All exposed observables fire on the main thread.
  */
 class RelayClientManager(
-    val scheduler: Scheduler,
-    val userComponent: UserComponent
+    private val scheduler: Scheduler,
+    private val userComponent: UserComponent,
+    private val relayClientFactory: RelayClientFactory
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -72,16 +73,13 @@ class RelayClientManager(
     }
 
     /** Connect to the relay. */
-    fun connect() {
+    fun connect(userCredentials: UserCredentials) {
         if (relayClient != null)
             error("Already connected")
 
         log.info("Attempting to connect to relay")
 
-        val loginData = userComponent.userLoginData
-        val authToken = loginData.authToken ?: throw ReauthenticationRequiredException()
-
-        val client = userComponent.createRelayClient()
+        val client = relayClientFactory.createClient(userCredentials)
 
         client.events
             .observeOn(scheduler)

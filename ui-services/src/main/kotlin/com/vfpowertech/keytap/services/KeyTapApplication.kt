@@ -468,7 +468,7 @@ class KeyTapApplication {
             refreshAuthToken()
         }
         else
-            doRelayLogin(null)
+            doRelayLogin()
     }
 
     /**
@@ -476,17 +476,20 @@ class KeyTapApplication {
      *
      * If an authToken is given, it's used to overwrite the currently set auth token.
      */
-    private fun doRelayLogin(authToken: String?) {
+    private fun doRelayLogin() {
         val userComponent = this.userComponent
         if (userComponent == null) {
             log.warn("User session has already been terminated")
             return
         }
 
-        if (authToken != null)
-            userComponent.userLoginData.authToken = authToken
-
-        userComponent.relayClientManager.connect()
+        val username = userComponent.userLoginData.address
+        //FIXME
+        userComponent.authTokenManager.runUi { authToken ->
+            val userCredentials = UserCredentials(username, authToken.string)
+            userComponent.relayClientManager.connect(userCredentials)
+            Promise.ofSuccess<Unit, Exception>(Unit)
+        }
     }
 
     private fun deinitializeUserSession(userComponent: UserComponent) {

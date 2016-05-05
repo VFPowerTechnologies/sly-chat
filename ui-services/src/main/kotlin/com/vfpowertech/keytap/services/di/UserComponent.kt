@@ -2,7 +2,6 @@ package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.core.persistence.*
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
-import com.vfpowertech.keytap.core.relay.RelayClient
 import com.vfpowertech.keytap.services.*
 import com.vfpowertech.keytap.services.auth.AuthTokenManager
 import dagger.Subcomponent
@@ -34,8 +33,6 @@ interface UserComponent {
     val accountInfo: AccountInfo
 
     val userPaths: UserPaths
-
-    fun createRelayClient(): RelayClient
 
     val relayClientManager: RelayClientManager
 
