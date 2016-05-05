@@ -107,11 +107,11 @@ class UserModule(
     @Provides
     fun providesOfflineMessageManager(
         application: KeyTapApplication,
-        userLoginData: UserLoginData,
         serverUrls: ServerUrls,
-        messengerService: MessengerService
+        messengerService: MessengerService,
+        authTokenManager: AuthTokenManager
     ): OfflineMessageManager =
-        OfflineMessageManager(application, userLoginData, serverUrls.API_SERVER, messengerService)
+        OfflineMessageManager(application, serverUrls.API_SERVER, messengerService, authTokenManager)
 
     @UserScope
     @Provides
