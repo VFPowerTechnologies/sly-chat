@@ -64,7 +64,7 @@ class ContactSyncManager(
 
         val contactsPersistenceManager = contactsPersistenceManager
 
-        return authTokenManager.run { authToken ->
+        return authTokenManager.bind { authToken ->
             client.getContacts(GetContactsRequest(authToken.string)) bind { response ->
                 val emails = decryptRemoteContactEntries(keyVault, response.contacts)
                 contactsPersistenceManager.getDiff(emails) bind { diff ->
@@ -89,7 +89,7 @@ class ContactSyncManager(
         val phoneNumber = phoneNumberUtil.parse("+${accountInfo.phoneNumber}", null)
         val defaultRegion = phoneNumberUtil.getRegionCodeForCountryCode(phoneNumber.countryCode)
 
-        return authTokenManager.run { authToken ->
+        return authTokenManager.bind { authToken ->
             platformContacts.fetchContacts() map { contacts ->
                 val phoneNumberUtil = PhoneNumberUtil.getInstance()
 

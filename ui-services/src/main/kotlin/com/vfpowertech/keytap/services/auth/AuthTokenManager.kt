@@ -2,10 +2,12 @@ package com.vfpowertech.keytap.services.auth
 
 import com.vfpowertech.keytap.services.bindRecoverForUi
 import com.vfpowertech.keytap.services.bindUi
+import com.vfpowertech.keytap.services.mapUi
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.functional.bind
+import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.BehaviorSubject
@@ -90,7 +92,39 @@ class AuthTokenManager(
         processQueue()
     }
 
-    private fun <T> wrapWithRetry(onUiThread:Boolean, what: (AuthToken) -> Promise<T, Exception>, remainingTries: Int): Promise<T, Exception> {
+    //don't like the code dup here, but no real way to not do this
+    private fun <T> wrapWithRetryMap(onUiThread:Boolean, what: (AuthToken) -> T, remainingTries: Int): Promise<T, Exception> {
+        val d = deferred<AuthToken, Exception>()
+
+        val p = d.promise
+
+        val p2 = if (!onUiThread)
+            p map { authToken ->
+                what(authToken)
+            }
+        else
+            p mapUi { authToken ->
+                what(authToken)
+            }
+
+        val p3 = p2 bindRecoverForUi { e: AuthTokenExpiredException ->
+            log.debug("Remaining retry attempts: {}", remainingTries)
+
+            if (remainingTries == 0)
+                throw e
+
+            invalidateToken()
+
+            wrapWithRetryMap(onUiThread, what, remainingTries-1)
+        }
+
+        addToQueue(d)
+
+        return p3
+
+    }
+
+    private fun <T> wrapWithRetryBind(onUiThread:Boolean, what: (AuthToken) -> Promise<T, Exception>, remainingTries: Int): Promise<T, Exception> {
         val d = deferred<AuthToken, Exception>()
 
         val p = d.promise
@@ -112,7 +146,7 @@ class AuthTokenManager(
 
             invalidateToken()
 
-            wrapWithRetry(onUiThread, what, remainingTries-1)
+            wrapWithRetryBind(onUiThread, what, remainingTries-1)
         }
 
         addToQueue(d)
@@ -133,13 +167,21 @@ class AuthTokenManager(
      * If the task raises AuthTokenExpiredException, an attempt to fetch a new token and rerun the task will occur. This
      * may occur multiple times.
      */
-    fun <T> run(what: (AuthToken) -> Promise<T, Exception>): Promise<T, Exception> {
-        return wrapWithRetry(false, what, MAX_RETRIES)
+    fun <T> bind(what: (AuthToken) -> Promise<T, Exception>): Promise<T, Exception> {
+        return wrapWithRetryBind(false, what, MAX_RETRIES)
     }
 
-    /** Version of run that runs the given body on the main UI thread. */
-    fun <T> runUi(what: (AuthToken) -> Promise<T, Exception>): Promise<T, Exception> {
-        return wrapWithRetry(true, what, MAX_RETRIES)
+    /** Version of bind that runs the given body on the main UI thread. */
+    fun <T> bindUi(what: (AuthToken) -> Promise<T, Exception>): Promise<T, Exception> {
+        return wrapWithRetryBind(true, what, MAX_RETRIES)
+    }
+
+    fun <T> map(what: (AuthToken) -> T): Promise<T, Exception> {
+        return wrapWithRetryMap(false, what, MAX_RETRIES)
+    }
+
+    fun <T> mapUi(what: (AuthToken) -> T): Promise<T, Exception> {
+        return wrapWithRetryMap(true, what, MAX_RETRIES)
     }
 }
 

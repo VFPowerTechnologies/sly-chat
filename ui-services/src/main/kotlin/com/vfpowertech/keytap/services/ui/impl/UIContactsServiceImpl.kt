@@ -66,7 +66,7 @@ class UIContactsServiceImpl(
 
         val remoteContactEntries = encryptRemoteContactEntries(keyVault, listOf(contactDetails.id))
 
-        return userComponent.authTokenManager.run { authToken ->
+        return userComponent.authTokenManager.bind { authToken ->
             contactListClient.addContacts(AddContactsRequest(authToken.string, remoteContactEntries)) bind {
                 contactsPersistenceManager.add(contactInfo) map {
                     contactDetails
@@ -84,7 +84,7 @@ class UIContactsServiceImpl(
 
         val remoteContactEntries = encryptRemoteContactEntries(keyVault, listOf(contactDetails.id)).map { it.hash }
 
-        return userComponent.authTokenManager.run { authToken ->
+        return userComponent.authTokenManager.bind { authToken ->
             contactListClient.removeContacts(RemoveContactsRequest(authToken.string, remoteContactEntries)) bind {
                 contactsPersistenceManager.remove(contactDetails.toNative())
             }
@@ -98,7 +98,7 @@ class UIContactsServiceImpl(
 
         val userComponent = getUserComponentOrThrow()
 
-        return userComponent.authTokenManager.run { authToken ->
+        return userComponent.authTokenManager.bind { authToken ->
             val request = NewContactRequest(authToken.string, email, phoneNumber)
 
             contactClient.fetchNewContactInfo(request) map { response ->

@@ -478,11 +478,10 @@ class KeyTapApplication {
         }
 
         val username = userComponent.userLoginData.address
-        //FIXME
-        userComponent.authTokenManager.runUi { authToken ->
+
+        userComponent.authTokenManager.mapUi { authToken ->
             val userCredentials = UserCredentials(username, authToken.string)
             userComponent.relayClientManager.connect(userCredentials)
-            Promise.ofSuccess<Unit, Exception>(Unit)
         }
     }
 

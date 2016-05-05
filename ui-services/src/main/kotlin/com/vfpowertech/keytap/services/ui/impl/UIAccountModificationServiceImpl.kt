@@ -30,7 +30,7 @@ class UIAccountModificationServiceImpl(
         val userComponent = getUserComponentOrThrow()
         val paths = userComponent.userPaths
 
-        return userComponent.authTokenManager.run { authToken ->
+        return userComponent.authTokenManager.bind { authToken ->
             JsonAccountInfoPersistenceManager(paths.accountInfoPath).retrieve() bind { oldAccountInfo ->
                 if (oldAccountInfo == null)
                     throw RuntimeException("Missing account info")
@@ -59,7 +59,7 @@ class UIAccountModificationServiceImpl(
     override fun requestPhoneUpdate(phoneNumber: String): Promise<UIAccountUpdateResult, Exception> {
         val userComponent = getUserComponentOrThrow()
 
-        return userComponent.authTokenManager.run { authToken ->
+        return userComponent.authTokenManager.bind { authToken ->
             accountUpdateClient.requestPhoneUpdate(RequestPhoneUpdateRequest(authToken.string, phoneNumber)) map { response ->
                 UIAccountUpdateResult(null, response.isSuccess, response.errorMessage)
             }
@@ -70,7 +70,7 @@ class UIAccountModificationServiceImpl(
         val userComponent = getUserComponentOrThrow()
         val paths = userComponent.userPaths
 
-        return userComponent.authTokenManager.run { authToken ->
+        return userComponent.authTokenManager.bind { authToken ->
             accountUpdateClient.confirmPhoneNumber(ConfirmPhoneNumberRequest(authToken.string, smsCode)) bind { response ->
                 if (response.isSuccess === true && response.accountInfo !== null) {
                     //FIXME
@@ -96,7 +96,7 @@ class UIAccountModificationServiceImpl(
         val userComponent = getUserComponentOrThrow()
         val paths = userComponent.userPaths
 
-        return userComponent.authTokenManager.run { authToken ->
+        return userComponent.authTokenManager.bind { authToken ->
             JsonAccountInfoPersistenceManager(paths.accountInfoPath).retrieve() bind { oldAccountInfo ->
                 if (oldAccountInfo == null)
                     throw RuntimeException("Missing account info")

@@ -86,7 +86,7 @@ class PreKeyManager(
         //TODO need to mark whether or not a range has been pushed to the server or not
         //if the push fails, we should delete the batch?
         //TODO nfi what to do if server response fails
-        authTokenManager.run { authToken ->
+        authTokenManager.bind { authToken ->
             generate(keyRegenCount) bind { r ->
                 val (generatedPreKeys, lastResortPreKey) = r
                 val request = preKeyStorageRequestFromGeneratedPreKeys(authToken.string, application.installationData.registrationId, keyVault, generatedPreKeys, lastResortPreKey)

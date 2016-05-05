@@ -10,11 +10,9 @@ import com.vfpowertech.keytap.core.crypto.unhexify
 import com.vfpowertech.keytap.core.http.JavaHttpClient
 import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrievalClient
 import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrievalRequest
-import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrievalResponse
 import com.vfpowertech.keytap.core.http.api.prekeys.toPreKeyBundle
 import com.vfpowertech.keytap.services.*
 import com.vfpowertech.keytap.services.auth.AuthTokenManager
-import nl.komponents.kovenant.Promise
 import org.slf4j.LoggerFactory
 import org.whispersystems.libsignal.SessionBuilder
 import org.whispersystems.libsignal.SessionCipher
@@ -211,11 +209,9 @@ class MessageCipherService(
     }
 
     private fun fetchPreKeyBundles(userId: UserId): List<PreKeyBundle> {
-        //FIXME
-        val response = authTokenManager.run { authToken ->
+        val response = authTokenManager.map { authToken ->
             val request = PreKeyRetrievalRequest(authToken.string, userId, listOf())
-            val response = PreKeyRetrievalClient(serverUrls.API_SERVER, JavaHttpClient()).retrieve(request)
-            Promise.ofSuccess<PreKeyRetrievalResponse, Exception>(response)
+            PreKeyRetrievalClient(serverUrls.API_SERVER, JavaHttpClient()).retrieve(request)
         }.get()
 
         if (!response.isSuccess)

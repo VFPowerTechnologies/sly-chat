@@ -46,7 +46,7 @@ class OfflineMessageManager(
 
         log.info("Fetching offline messages")
 
-        authTokenManager.run { authToken ->
+        authTokenManager.bind { authToken ->
             val offlineMessagesClient = OfflineMessagesAsyncClient(serverUrl)
             offlineMessagesClient.get(OfflineMessagesGetRequest(authToken.string)) bindUi { response ->
                 if (response.messages.isNotEmpty()) {
