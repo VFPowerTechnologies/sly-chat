@@ -153,10 +153,10 @@ VALUES
         r
     }
 
-    private fun getLastReceivedMessage(connection: SQLiteConnection, userId: UserId): MessageInfo? {
+    private fun getLastConvoMessage(connection: SQLiteConnection, userId: UserId): MessageInfo? {
         val table = ConversationTable.getTablenameForContact(userId)
 
-        return connection.prepare("SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM $table WHERE is_sent=0 ORDER BY timestamp, n LIMIT 1").use { stmt ->
+        return connection.prepare("SELECT id, is_sent, timestamp, ttl, is_delivered, message FROM $table ORDER BY timestamp, n LIMIT 1").use { stmt ->
             if (!stmt.step())
                 null
             else
@@ -175,7 +175,7 @@ VALUES
                 stmt.step()
             }
 
-            val lastMessage = getLastReceivedMessage(connection, userId)
+            val lastMessage = getLastConvoMessage(connection, userId)
             if (lastMessage == null) {
                 resetConversationInfo(connection, userId)
             }
