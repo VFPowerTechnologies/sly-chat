@@ -274,10 +274,6 @@ class MessengerService(
                 handleReceivedMessage(event)
 
             is ServerReceivedMessage -> handleServerRecievedMessage(event)
-
-            else -> {
-                log.warn("Unhandled RelayClientEvent: {}", event)
-            }
         }
     }
 

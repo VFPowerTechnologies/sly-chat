@@ -52,7 +52,7 @@ enum class CommandCode(val code: Int) {
     }
 }
 
-open class RelayException(message: String?, cause: Throwable?) : RuntimeException("Relay Exception") {
+open class RelayException(message: String?, cause: Throwable?) : RuntimeException(message, cause) {
     constructor() : this(null, null)
 
     constructor(message: String) : this(message, null)
@@ -212,7 +212,7 @@ fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, conte
         userCredentials.authToken,
         userCredentials.address.asString(),
         //HACK HACK HACK
-        "${to.id}:1",
+        "${to.long}:1",
         messageId,
         0,
         1,

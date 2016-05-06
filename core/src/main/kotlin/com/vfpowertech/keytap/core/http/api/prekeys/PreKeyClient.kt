@@ -9,7 +9,7 @@ class PreKeyClient(private val serverBaseUrl: String, private val httpClient: Ht
     fun retrieve(request: PreKeyRetrievalRequest): PreKeyRetrievalResponse {
         val params = mutableListOf(
             "auth-token" to request.authToken,
-            "user" to request.userId.id.toString()
+            "user" to request.userId.long.toString()
         )
 
         if (request.deviceIds.isNotEmpty())

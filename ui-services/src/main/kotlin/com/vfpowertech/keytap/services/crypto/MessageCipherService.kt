@@ -237,7 +237,7 @@ class MessageCipherService(
 
     private fun getSessionCiphers(userId: UserId): List<Pair<Int, SessionCipher>> {
         //FIXME
-        val devices = signalStore.getSubDeviceSessions(userId.id.toString())
+        val devices = signalStore.getSubDeviceSessions(userId.long.toString())
 
         //check if we have any listed devices; if not, then fetch prekeys
         //else send what we have to relay and it'll tell us what to fix

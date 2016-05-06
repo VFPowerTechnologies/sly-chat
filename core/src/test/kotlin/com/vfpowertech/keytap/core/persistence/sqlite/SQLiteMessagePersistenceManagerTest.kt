@@ -69,7 +69,7 @@ class SQLiteMessagePersistenceManagerTest {
     private fun getLastConversationInfo(contact: UserId): LastConversationInfo? {
         return persistenceManager.syncRunQuery { connection ->
             connection.prepare("SELECT unread_count, last_message, last_timestamp FROM conversation_info WHERE contact_id=?").use { stmt ->
-                stmt.bind(1, contact.id)
+                stmt.bind(1, contact.long)
                 if (!stmt.step())
                     null
                 else {
@@ -95,7 +95,7 @@ class SQLiteMessagePersistenceManagerTest {
             //XXX this is used by SQLiteContactsPersistenceManager, so should probably find a way to share this code
             persistenceManager.syncRunQuery { connection ->
                 connection.prepare("INSERT INTO conversation_info (contact_id, unread_count, last_message) VALUES (?, 0, NULL)").use { stmt ->
-                    stmt.bind(1, contact.id)
+                    stmt.bind(1, contact.long)
                     stmt.step()
                 }
             }
@@ -175,8 +175,8 @@ class SQLiteMessagePersistenceManagerTest {
 
     @Test
     fun `getUndeliveredMessages should return all undelivered messages`() {
-        val contact2 = UserId(contact.id+1)
-        val contact3 = UserId(contact2.id+1)
+        val contact2 = UserId(contact.long +1)
+        val contact3 = UserId(contact2.long +1)
         createConvosFor(contact, contact2, contact3)
 
         val contacts = listOf(contact, contact2)
@@ -191,7 +191,7 @@ class SQLiteMessagePersistenceManagerTest {
         }.toMap()
 
         val undelivered = messagePersistenceManager.getUndeliveredMessages().get()
-        val gotContacts = undelivered.keys.sortedBy { it.id }
+        val gotContacts = undelivered.keys.sortedBy { it.long }
 
         assertEquals(contacts, gotContacts)
 

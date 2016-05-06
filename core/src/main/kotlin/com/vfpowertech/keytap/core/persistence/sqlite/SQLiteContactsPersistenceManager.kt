@@ -22,7 +22,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         )
 
     private fun contactInfoToRow(contactInfo: ContactInfo, stmt: SQLiteStatement) {
-        stmt.bind(1, contactInfo.id.id)
+        stmt.bind(1, contactInfo.id.long)
         stmt.bind(2, contactInfo.email)
         stmt.bind(3, contactInfo.name)
         stmt.bind(4, contactInfo.phoneNumber)
@@ -31,7 +31,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
     override fun get(userId: UserId): Promise<ContactInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.prepare("SELECT id, email, name, phone_number, public_key FROM contacts WHERE id=?").use { stmt ->
-            stmt.bind(1, userId.id)
+            stmt.bind(1, userId.long)
             if (!stmt.step())
                 null
             else
@@ -74,7 +74,7 @@ ON
 
     private fun queryConversationInfo(connection: SQLiteConnection, userId: UserId): ConversationInfo {
         return connection.prepare("SELECT unread_count, last_message, last_timestamp FROM conversation_info WHERE contact_id=?").use { stmt ->
-            stmt.bind(1, userId.id)
+            stmt.bind(1, userId.long)
             if (!stmt.step())
                 throw InvalidConversationException(userId)
 
@@ -100,7 +100,7 @@ ON
 
     override fun markConversationAsRead(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.prepare("UPDATE conversation_info SET unread_count=0 WHERE contact_id=?").use { stmt ->
-            stmt.bind(1, userId.id)
+            stmt.bind(1, userId.long)
             stmt.step()
         }
         if (connection.changes <= 0)
@@ -136,12 +136,12 @@ ON
     //never call when not inside a transition
     private fun removeContactNoTransaction(connection: SQLiteConnection, userId: UserId) {
         connection.prepare("DELETE FROM conversation_info WHERE contact_id=?").use { stmt ->
-            stmt.bind(1, userId.id)
+            stmt.bind(1, userId.long)
             stmt.step()
         }
 
         connection.prepare("DELETE FROM contacts WHERE id=?").use { stmt ->
-            stmt.bind(1, userId.id)
+            stmt.bind(1, userId.long)
 
             stmt.step()
             if (connection.changes <= 0)
@@ -161,7 +161,7 @@ ON
             }
 
             connection.prepare("INSERT INTO conversation_info (contact_id, unread_count, last_message) VALUES (?, 0, NULL)").use { stmt ->
-                stmt.bind(1, contactInfo.id.id)
+                stmt.bind(1, contactInfo.id.long)
                 stmt.step()
             }
 

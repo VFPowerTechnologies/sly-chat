@@ -7,10 +7,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 
 class UserIdSerializer : JsonSerializer<UserId>() {
     override fun serialize(value: UserId, gen: JsonGenerator, serializers: SerializerProvider) {
-        gen.writeNumber(value.id)
+        gen.writeNumber(value.long)
     }
 }
 
 /** Represents a user's ID. */
 @JsonSerialize(using = UserIdSerializer::class)
-data class UserId(val id: Long)
+data class UserId(val long: Long)

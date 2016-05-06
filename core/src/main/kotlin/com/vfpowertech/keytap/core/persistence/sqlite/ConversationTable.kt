@@ -16,15 +16,15 @@ object ConversationTable {
     }
 
     fun getTablenameForContact(userId: UserId) =
-        "conv_${userId.id}"
+        "conv_${userId.long}"
 
     fun create(connection: SQLiteConnection, userId: UserId) {
-        val sql = tableTemplate.replace("%id%", userId.id.toString())
+        val sql = tableTemplate.replace("%id%", userId.long.toString())
         connection.exec(sql)
     }
 
     fun delete(connection: SQLiteConnection, userId: UserId) {
-        connection.exec("DROP TABLE IF EXISTS `conv_${userId.id}`")
+        connection.exec("DROP TABLE IF EXISTS `conv_${userId.long}`")
     }
 
     fun exists(connection: SQLiteConnection, userId: UserId): Boolean {
