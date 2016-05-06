@@ -115,7 +115,7 @@ class SQLiteMessagePersistenceManagerTest {
     @Test
     fun `createConversation should not error if a conversation table already exists`() {
         createConvosFor(contact)
-        createConvosFor(contact)
+        assertTableExists(ConversationTable.getTablenameForContact(contact))
     }
 
     @Test
