@@ -165,7 +165,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
         if (isSingleUser) {
             val username = newMessagesNotification.contents.keys.first()
-            intent.putExtra(MainActivity.EXTRA_USERID, username.id.id.toString())
+            intent.putExtra(MainActivity.EXTRA_USERID, username.id.long.toString())
         }
 
         return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_UPDATE_CURRENT)

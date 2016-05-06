@@ -5,6 +5,7 @@ import com.vfpowertech.keytap.core.http.api.contacts.*
 import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
+import com.vfpowertech.keytap.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
@@ -19,7 +20,8 @@ class ContactSyncManager(
     private val accountInfo: AccountInfo,
     private val serverUrl: String,
     private val platformContacts: PlatformContacts,
-    private val contactsPersistenceManager: ContactsPersistenceManager
+    private val contactsPersistenceManager: ContactsPersistenceManager,
+    private val authTokenManager: AuthTokenManager
 ) {
     companion object {
         private enum class ContactSyncType {
@@ -59,24 +61,21 @@ class ContactSyncManager(
         val client = ContactListAsyncClient(serverUrl)
 
         val keyVault = userLoginData.keyVault
-        val authToken = userLoginData.authToken
-        if (authToken == null) {
-            log.debug("authToken is null, aborting remote contacts sync")
-            return Promise.ofFail(RuntimeException("Null authToken"))
-        }
 
         val contactsPersistenceManager = contactsPersistenceManager
 
-        return client.getContacts(GetContactsRequest(authToken)) bind { response ->
-            val emails = decryptRemoteContactEntries(keyVault, response.contacts)
-            contactsPersistenceManager.getDiff(emails) bind { diff ->
-                log.debug("New contacts: {}", diff.newContacts)
-                log.debug("Removed contacts: {}", diff.removedContacts)
+        return authTokenManager.bind { authToken ->
+            client.getContacts(GetContactsRequest(authToken.string)) bind { response ->
+                val emails = decryptRemoteContactEntries(keyVault, response.contacts)
+                contactsPersistenceManager.getDiff(emails) bind { diff ->
+                    log.debug("New contacts: {}", diff.newContacts)
+                    log.debug("Removed contacts: {}", diff.removedContacts)
 
-                val contactsClient = ContactAsyncClient(serverUrl)
-                val request = FetchContactInfoByIdRequest(authToken, diff.newContacts.toList())
-                contactsClient.fetchContactInfoByEmail(request) bind { response ->
-                    contactsPersistenceManager.applyDiff(response.contacts, diff.removedContacts.toList())
+                    val contactsClient = ContactAsyncClient(serverUrl)
+                    val request = FetchContactInfoByIdRequest(authToken.string, diff.newContacts.toList())
+                    contactsClient.fetchContactInfoByEmail(request) bind { response ->
+                        contactsPersistenceManager.applyDiff(response.contacts, diff.removedContacts.toList())
+                    }
                 }
             }
         }
@@ -84,47 +83,41 @@ class ContactSyncManager(
 
     /** Attempts to find any registered users matching the user's local contacts. */
     private fun syncLocalContacts(): Promise<Unit, Exception> {
-        val authToken = userLoginData.authToken
-        if (authToken == null) {
-            log.debug("authToken is null, aborting local contacts sync")
-            return Promise.ofFail(RuntimeException("Null authToken"))
-        }
-
         val keyVault = userLoginData.keyVault
 
         val phoneNumberUtil = PhoneNumberUtil.getInstance()
         val phoneNumber = phoneNumberUtil.parse("+${accountInfo.phoneNumber}", null)
         val defaultRegion = phoneNumberUtil.getRegionCodeForCountryCode(phoneNumber.countryCode)
 
-        return platformContacts.fetchContacts() map { contacts ->
-            val phoneNumberUtil = PhoneNumberUtil.getInstance()
+        return authTokenManager.bind { authToken ->
+            platformContacts.fetchContacts() map { contacts ->
+                val phoneNumberUtil = PhoneNumberUtil.getInstance()
 
-            val updated = contacts.map { contact ->
-                val phoneNumbers = contact.phoneNumbers.map { parsePhoneNumber(it, defaultRegion) }.filter { it != null }.map { phoneNumberUtil.format(it, PhoneNumberUtil.PhoneNumberFormat.E164).substring(1) }
-                contact.copy(phoneNumbers = phoneNumbers)
+                val updated = contacts.map { contact ->
+                    val phoneNumbers = contact.phoneNumbers.map { parsePhoneNumber(it, defaultRegion) }.filter { it != null }.map { phoneNumberUtil.format(it, PhoneNumberUtil.PhoneNumberFormat.E164).substring(1) }
+                    contact.copy(phoneNumbers = phoneNumbers)
+                }
+
+                log.debug("Platform contacts: {}", updated)
+
+                updated
+            } bind { contacts ->
+                contactsPersistenceManager.findMissing(contacts)
+            } bind { missingContacts ->
+                log.debug("Missing local contacts:", missingContacts)
+                val client = ContactAsyncClient(serverUrl)
+                client.findLocalContacts(FindLocalContactsRequest(authToken.string, missingContacts))
+            } bind { foundContacts ->
+                log.debug("Found local contacts: {}", foundContacts)
+
+                val client = ContactListAsyncClient(serverUrl)
+                val remoteContactEntries = encryptRemoteContactEntries(keyVault, foundContacts.contacts.map { it.id })
+                val request = AddContactsRequest(authToken.string, remoteContactEntries)
+
+                client.addContacts(request) bind {
+                    contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.id, it.email, it.name, it.phoneNumber, it.publicKey) })
+                }
             }
-
-            log.debug("Platform contacts: {}", updated)
-
-            updated
-        } bind { contacts ->
-            contactsPersistenceManager.findMissing(contacts)
-        } bind { missingContacts ->
-            log.debug("Missing local contacts:", missingContacts)
-            val client = ContactAsyncClient(serverUrl)
-            client.findLocalContacts(FindLocalContactsRequest(authToken, missingContacts))
-        } bind { foundContacts ->
-            log.debug("Found local contacts: {}", foundContacts)
-
-            val client = ContactListAsyncClient(serverUrl)
-            val remoteContactEntries = encryptRemoteContactEntries(keyVault, foundContacts.contacts.map { it.id })
-            val request = AddContactsRequest(authToken, remoteContactEntries)
-
-            client.addContacts(request) bind {
-                contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.id, it.email, it.name, it.phoneNumber, it.publicKey) })
-            }
-        } fail { e ->
-            log.error("Local contacts sync failed: {}", e.message, e)
         }
     }
 

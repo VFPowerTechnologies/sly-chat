@@ -6,6 +6,7 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.Phonenumber
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
+import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 
 fun parsePhoneNumber(s: String, defaultRegion: String): Phonenumber.PhoneNumber? {
@@ -70,6 +71,30 @@ infix fun <V, V2> Promise<V, Exception>.bindUi(body: (V) -> Promise<V2, Exceptio
 
     return deferred.promise
 }
+
+infix fun <V> Promise<V, Exception>.bindRecoverUi(body: (Exception) -> Promise<V, Exception>): Promise<V, Exception> {
+    val d = deferred<V, Exception>()
+
+    successUi { d.resolve(it) }
+
+    failUi { e ->
+        try {
+            body(e) successUi { d.resolve(it) } failUi { d.reject(it) }
+        }
+        catch (e: Exception) {
+            d.reject(e)
+        }
+    }
+
+    return d.promise
+}
+
+infix inline fun <reified E : Exception, T> Promise<T, Exception>.bindRecoverForUi(crossinline body: (E) -> Promise<T, Exception>): Promise<T, Exception> =
+    bindRecoverUi { e ->
+        if (e is E) body(e)
+        else throw e
+    }
+
 
 fun createUserPaths(userPaths: UserPaths) {
     userPaths.accountDir.mkdirs()

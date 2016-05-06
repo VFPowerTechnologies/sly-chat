@@ -20,11 +20,7 @@ data class AuthenticationData(
 
     @param:JsonProperty("auth-upgrade")
     @get:JsonProperty("auth-upgrade")
-    val authUpgrade: AuthUpgradeInfo?,
-
-    @param:JsonProperty("key-regen")
-    @get:JsonProperty("key-regen")
-    val keyRegenCount: Int
+    val authUpgrade: AuthUpgradeInfo?
 )
 
 data class AuthenticationResponse(

@@ -43,7 +43,7 @@ class SQLiteContactsPersistenceManagerTest {
             connection.prepare("UPDATE conversation_info SET unread_count=?, last_message=? WHERE contact_id=?").use { stmt ->
                 stmt.bind(1, unreadCount)
                 stmt.bind(2, lastMessage)
-                stmt.bind(3, userId.id)
+                stmt.bind(3, userId.long)
                 stmt.step()
             }
         }

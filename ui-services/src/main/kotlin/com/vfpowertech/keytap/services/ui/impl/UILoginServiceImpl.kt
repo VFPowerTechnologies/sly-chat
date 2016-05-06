@@ -3,19 +3,7 @@ package com.vfpowertech.keytap.services.ui.impl
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.LoginEvent
 import com.vfpowertech.keytap.services.ui.UILoginService
-import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.task
-import java.io.File
-import java.io.FileNotFoundException
 import java.util.*
-
-/** Rejects the promise with java.io.FileNotFoundException if path doesn't exist. Otherwise resolves with the given path. */
-fun asyncCheckPath(path: File): Promise<File, Exception> = task {
-    if (!path.exists())
-        throw FileNotFoundException()
-    else
-        path
-}
 
 class UILoginServiceImpl(
     private val app: KeyTapApplication

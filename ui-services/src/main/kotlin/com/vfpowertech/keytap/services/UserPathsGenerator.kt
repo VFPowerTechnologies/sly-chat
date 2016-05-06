@@ -14,11 +14,11 @@ class UserPathsGenerator(private val platformInfo: PlatformInfo) {
     val startupInfoPath = platformInfo.appFileStorageDirectory / "startup-info.json"
 
     fun getAccountInfoPath(userId: UserId): File {
-        return accountsDir / userId.id.toString() / ACCOUNT_INFO_FILENAME
+        return accountsDir / userId.long.toString() / ACCOUNT_INFO_FILENAME
     }
 
     fun getPaths(userId: UserId): UserPaths {
-        val userAccountDir = accountsDir / userId.id.toString()
+        val userAccountDir = accountsDir / userId.long.toString()
 
         return UserPaths(
             userAccountDir,

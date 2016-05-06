@@ -8,10 +8,11 @@ import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.unhexify
 import com.vfpowertech.keytap.core.http.JavaHttpClient
-import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrievalClient
+import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyClient
 import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrievalRequest
 import com.vfpowertech.keytap.core.http.api.prekeys.toPreKeyBundle
 import com.vfpowertech.keytap.services.*
+import com.vfpowertech.keytap.services.auth.AuthTokenManager
 import org.slf4j.LoggerFactory
 import org.whispersystems.libsignal.SessionBuilder
 import org.whispersystems.libsignal.SessionCipher
@@ -56,6 +57,7 @@ data class MessageData(
 )
 
 class MessageCipherService(
+    private val authTokenManager: AuthTokenManager,
     private val userLoginData: UserLoginData,
     //the store is only ever used in the work thread, so no locking is done
     private val signalStore: SignalProtocolStore,
@@ -207,10 +209,10 @@ class MessageCipherService(
     }
 
     private fun fetchPreKeyBundles(userId: UserId): List<PreKeyBundle> {
-        //FIXME
-        val authToken = userLoginData.authToken ?: throw NoAuthTokenException()
-        val request = PreKeyRetrievalRequest(authToken, userId, listOf())
-        val response = PreKeyRetrievalClient(serverUrls.API_SERVER, JavaHttpClient()).retrieve(request)
+        val response = authTokenManager.map { authToken ->
+            val request = PreKeyRetrievalRequest(authToken.string, userId, listOf())
+            PreKeyClient(serverUrls.API_SERVER, JavaHttpClient()).retrieve(request)
+        }.get()
 
         if (!response.isSuccess)
             throw RuntimeException(response.errorMessage)
@@ -235,7 +237,7 @@ class MessageCipherService(
 
     private fun getSessionCiphers(userId: UserId): List<Pair<Int, SessionCipher>> {
         //FIXME
-        val devices = signalStore.getSubDeviceSessions(userId.id.toString())
+        val devices = signalStore.getSubDeviceSessions(userId.long.toString())
 
         //check if we have any listed devices; if not, then fetch prekeys
         //else send what we have to relay and it'll tell us what to fix

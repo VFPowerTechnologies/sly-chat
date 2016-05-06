@@ -8,7 +8,7 @@ import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.http.api.ApiResult
-import com.vfpowertech.keytap.core.http.api.UnauthorizedException
+import com.vfpowertech.keytap.core.UnauthorizedException
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
@@ -36,7 +36,7 @@ class PreKeyRetrievalClientTest {
 
         whenever(httpClient.get(any())).thenReturn(httpResponse)
 
-        val client = PreKeyRetrievalClient("localhost", httpClient)
+        val client = PreKeyClient("localhost", httpClient)
 
         val got = client.retrieve(request)
 
@@ -51,7 +51,7 @@ class PreKeyRetrievalClientTest {
 
         whenever(httpClient.get(any())).thenReturn(httpResponse)
 
-        val client = PreKeyRetrievalClient("localhost", httpClient)
+        val client = PreKeyClient("localhost", httpClient)
 
         assertFailsWith(UnauthorizedException::class) { client.retrieve(request) }
     }

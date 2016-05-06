@@ -235,20 +235,16 @@ class AndroidApp : Application() {
 
         log.debug("Received GCM token for {}: {}", userId, token)
 
-        val authToken = userComponent.userLoginData.authToken
-        if (authToken == null) {
-            log.warn("Unable to push GCM token to server, no auth token available")
-            return
-        }
-
-        pushGcmTokenToServer(authToken, token) successUi { response ->
+        userComponent.authTokenManager.bind { authToken ->
+            pushGcmTokenToServer(authToken.string, token)
+        } successUi { response ->
             if (response.isSuccess) {
                 log.info("GCM token successfully registered with server")
 
                 val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
                 val usernames = HashSet(sharedPrefs.getStringSet(AndroidPreferences.tokenUserList, HashSet()))
                 val editor = sharedPrefs.edit()
-                val username = userId.id.toString()
+                val username = userId.long.toString()
                 editor.putBoolean(AndroidPreferences.getTokenSentToServer(userId), true)
                 usernames.add(username)
                 editor.putStringSet(AndroidPreferences.tokenUserList, usernames)
@@ -313,16 +309,13 @@ class AndroidApp : Application() {
         if (app.isNetworkAvailable) {
             deleteGCMToken()
 
-            val authToken = userComponent.userLoginData.authToken
-            if (authToken != null) {
-                val serverUrl = app.appComponent.serverUrls.API_SERVER
-                val request = UnregisterRequest(authToken, app.installationData.installationId)
-                GcmAsyncClient(serverUrl).unregister(request) fail { e ->
-                    log.error("Unable to unregister GCM token with server: {}", e.message, e)
-                }
+            val serverUrl = app.appComponent.serverUrls.API_SERVER
+            userComponent.authTokenManager.bind { authToken ->
+                val request = UnregisterRequest(authToken.string, app.installationData.installationId)
+                GcmAsyncClient(serverUrl).unregister(request)
+            } fail { e ->
+                log.error("Unable to unregister GCM token with server: {}", e.message, e)
             }
-            else
-                log.warn("Not auth token available, unable to unregister remove token")
         }
     }
 
