@@ -214,7 +214,7 @@ class KeyTapApplication {
         //if the unlock fails, we try remotely; this can occur if the password was changed remotely from another device
         appComponent.authenticationService.auth(username, password, installationData.registrationId) bindUi { response ->
             val keyVault = response.keyVault
-            
+
             val address = KeyTapAddress(response.accountInfo.id, response.accountInfo.deviceId)
             val userLoginData = UserLoginData(address, keyVault)
             val userComponent = createUserSession(userLoginData, response.accountInfo)
@@ -251,14 +251,19 @@ class KeyTapApplication {
 
     private fun onNewToken(authToken: AuthToken?) {
         val userComponent = userComponent ?: return
+        val sessionDataPersistenceManager = userComponent.sessionDataPersistenceManager
 
-        //TODO delete
-        if (authToken == null)
+        if (authToken == null) {
+            //XXX it's unlikely but possible this might run AFTER a new token comes in and gets written to disk
+            //depending on load and scheduler behavior
+            sessionDataPersistenceManager.delete() fail { e ->
+                log.error("Error during session data file removal: {}", e.message, e)
+            }
             return
+        }
 
         log.info("Updating on-disk session data")
 
-        val sessionDataPersistenceManager = userComponent.sessionDataPersistenceManager
         sessionDataPersistenceManager.store(SessionData(authToken.string)) fail { e ->
             log.error("Unable to write session data to disk: {}", e.message, e)
         }

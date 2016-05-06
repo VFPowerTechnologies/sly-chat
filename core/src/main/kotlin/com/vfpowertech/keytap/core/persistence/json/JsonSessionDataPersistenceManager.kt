@@ -32,4 +32,8 @@ class JsonSessionDataPersistenceManager(
 
         return objectMapper.readValue(bytes, SerializedSessionData::class.java).deserialize(localDataEncryptionKey, localDataEncryptionParams)
     }
+
+    override fun delete(): Promise<Boolean, Exception> = task {
+        path.delete()
+    }
 }
