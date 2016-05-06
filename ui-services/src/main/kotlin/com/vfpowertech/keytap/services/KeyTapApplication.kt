@@ -227,10 +227,6 @@ class KeyTapApplication {
                 contactListSyncingSubject.onNext(it)
             }
 
-            newTokenSyncSub = userComponent.authTokenManager.newToken.subscribe {
-                onNewToken(it)
-            }
-
             //until this finishes, nothing in the UserComponent should be touched
             backgroundInitialization(userComponent, response.authToken, password, rememberMe, accountInfo) mapUi {
                 finalizeInit(userComponent, accountInfo)
@@ -363,6 +359,10 @@ class KeyTapApplication {
 
     /** called after a successful user session has been created to finish initializing components. */
     private fun finalizeInit(userComponent: UserComponent, accountInfo: AccountInfo) {
+        newTokenSyncSub = userComponent.authTokenManager.newToken.subscribe {
+            onNewToken(it)
+        }
+
         initializeUserSession(userComponent)
 
         //dagger lazily initializes all components, so we need to force creation
@@ -384,6 +384,8 @@ class KeyTapApplication {
 
     /** Subscribe to events, connect to relay (if network available). */
     private fun initializeUserSession(userComponent: UserComponent) {
+        //this is here because this writes session data to disk, so we need to make sure the directories are set up
+        //prior to this being called
         userComponent.relayClientManager.onlineStatus.subscribe {
             onRelayStatusChange(it)
         }
