@@ -139,13 +139,11 @@ class UserModule(
     fun providesTokenProvider(
         application: KeyTapApplication,
         userLoginData: UserLoginData,
-        accountInfo: AccountInfo,
         authenticationService: AuthenticationService
     ): TokenProvider =
         AuthenticationServiceTokenProvider(
             application,
-            accountInfo,
-            userLoginData.keyVault,
+            userLoginData,
             authenticationService
         )
 

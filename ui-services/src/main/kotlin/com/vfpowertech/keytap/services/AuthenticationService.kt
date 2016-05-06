@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services
 
+import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.crypto.*
 import com.vfpowertech.keytap.core.div
 import com.vfpowertech.keytap.core.http.JavaHttpClient
@@ -32,26 +33,31 @@ class AuthenticationService(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun refreshAuthToken(accountInfo: AccountInfo, registrationId: Int, remotePasswordHash: ByteArray): Promise<AuthTokenRefreshResult, Exception> {
-        val username = accountInfo.email
-        val deviceId = accountInfo.deviceId
-        //FIXME
+    fun refreshAuthToken(address: KeyTapAddress, registrationId: Int, remotePasswordHash: ByteArray): Promise<AuthTokenRefreshResult, Exception> {
+        val deviceId = address.deviceId
+
         val loginClient = AuthenticationAsyncClient(serverUrl)
 
-        return loginClient.getParams(username) map { resp ->
-            if (resp.errorMessage != null)
-                throw AuthApiResponseException(resp.errorMessage)
+        val path = userPathsGenerator.getAccountInfoPath(address.id)
 
-            //TODO make sure hash params still match
-            resp.params!!.csrfToken
-        } bind { csrfToken ->
-            val request = AuthenticationRequest(username, remotePasswordHash.hexify(), csrfToken, registrationId, deviceId)
-            loginClient.auth(request)
-        } map { resp ->
-            if (resp.errorMessage != null)
-                throw AuthApiResponseException(resp.errorMessage)
+        return JsonAccountInfoPersistenceManager(path).retrieve() bind { accountInfo ->
+            val username = accountInfo!!.email
 
-            AuthTokenRefreshResult(resp.data!!.authToken)
+            loginClient.getParams(username) map { resp ->
+                if (resp.errorMessage != null)
+                    throw AuthApiResponseException(resp.errorMessage)
+
+                //TODO make sure hash params still match
+                resp.params!!.csrfToken
+            } bind { csrfToken ->
+                val request = AuthenticationRequest(username, remotePasswordHash.hexify(), csrfToken, registrationId, deviceId)
+                loginClient.auth(request)
+            } map { resp ->
+                if (resp.errorMessage != null)
+                    throw AuthApiResponseException(resp.errorMessage)
+
+                AuthTokenRefreshResult(resp.data!!.authToken)
+            }
         }
     }
 
