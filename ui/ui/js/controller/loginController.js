@@ -93,7 +93,6 @@ LoginController.prototype = {
         }
     },
     onLogout : function() {
-        console.log('logging out');
         KEYTAP.navigationController.clearHistory();
         KEYTAP.contactController.model.resetContacts();
         KEYTAP.profileController.setUserInfo({
