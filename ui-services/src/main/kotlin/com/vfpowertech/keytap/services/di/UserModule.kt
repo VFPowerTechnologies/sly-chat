@@ -1,7 +1,7 @@
 package com.vfpowertech.keytap.services.di
 
 import com.vfpowertech.keytap.core.BuildConfig.ServerUrls
-import com.vfpowertech.keytap.core.persistence.AccountInfo
+import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.MessagePersistenceManager
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
@@ -21,10 +21,7 @@ import rx.Scheduler
 class UserModule(
     @get:UserScope
     @get:Provides
-    val providesUserLoginData: UserLoginData,
-    @get:UserScope
-    @get:Provides
-    val providesAccountInfo: AccountInfo
+    val providesUserLoginData: UserLoginData
 ) {
     @UserScope
     @Provides
@@ -118,7 +115,7 @@ class UserModule(
     fun providesContactSyncManager(
         application: KeyTapApplication,
         userLoginData: UserLoginData,
-        accountInfo: AccountInfo,
+        accountInfoPersistenceManager: AccountInfoPersistenceManager,
         serverUrls: ServerUrls,
         platformContacts: PlatformContacts,
         contactsPersistenceManager: ContactsPersistenceManager,
@@ -127,7 +124,7 @@ class UserModule(
         ContactSyncManager(
             application,
             userLoginData,
-            accountInfo,
+            accountInfoPersistenceManager,
             serverUrls.API_SERVER,
             platformContacts,
             contactsPersistenceManager,

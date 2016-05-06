@@ -215,9 +215,10 @@ class KeyTapApplication {
         appComponent.authenticationService.auth(username, password, installationData.registrationId) bindUi { response ->
             val keyVault = response.keyVault
 
-            val address = KeyTapAddress(response.accountInfo.id, response.accountInfo.deviceId)
+            val accountInfo = response.accountInfo
+            val address = KeyTapAddress(accountInfo.id, accountInfo.deviceId)
             val userLoginData = UserLoginData(address, keyVault)
-            val userComponent = createUserSession(userLoginData, response.accountInfo)
+            val userComponent = createUserSession(userLoginData)
 
             if (response.authToken != null)
                 userComponent.authTokenManager.setToken(AuthToken(response.authToken))
@@ -231,8 +232,8 @@ class KeyTapApplication {
             }
 
             //until this finishes, nothing in the UserComponent should be touched
-            backgroundInitialization(userComponent, response.authToken, password, rememberMe) mapUi {
-                finalizeInit(userComponent)
+            backgroundInitialization(userComponent, response.authToken, password, rememberMe, accountInfo) mapUi {
+                finalizeInit(userComponent, accountInfo)
             }
         } failUi { e ->
             //incase session initialization failed we need to clean up the user session here
@@ -310,13 +311,13 @@ class KeyTapApplication {
         fetchOfflineMessages()
     }
 
-    fun createUserSession(userLoginData: UserLoginData, accountInfo: AccountInfo): UserComponent {
+    fun createUserSession(userLoginData: UserLoginData): UserComponent {
         if (userComponent != null)
             error("UserComponent already loaded")
 
         log.info("Creating user session")
 
-        val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo))
+        val userComponent = appComponent.plus(UserModule(userLoginData))
         this.userComponent = userComponent
 
         return userComponent
@@ -327,9 +328,8 @@ class KeyTapApplication {
      *
      * Until this completes, do NOT use anything in the UserComponent.
      */
-    private fun backgroundInitialization(userComponent: UserComponent, authToken: String?, password: String, rememberMe: Boolean): Promise<Unit, Exception> {
+    private fun backgroundInitialization(userComponent: UserComponent, authToken: String?, password: String, rememberMe: Boolean, accountInfo: AccountInfo): Promise<Unit, Exception> {
         val userPaths = userComponent.userPaths
-        val accountInfo = userComponent.accountInfo
         val persistenceManager = userComponent.sqlitePersistenceManager
         val userLoginData = userComponent.userLoginData
         val keyVault = userLoginData.keyVault
@@ -362,7 +362,7 @@ class KeyTapApplication {
     }
 
     /** called after a successful user session has been created to finish initializing components. */
-    private fun finalizeInit(userComponent: UserComponent) {
+    private fun finalizeInit(userComponent: UserComponent, accountInfo: AccountInfo) {
         initializeUserSession(userComponent)
 
         //dagger lazily initializes all components, so we need to force creation
@@ -374,7 +374,7 @@ class KeyTapApplication {
         //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
         fetchOfflineMessages()
 
-        emitLoginEvent(LoggedIn(userComponent.accountInfo))
+        emitLoginEvent(LoggedIn(accountInfo))
     }
 
     //TODO queue if offline/etc
@@ -451,7 +451,7 @@ class KeyTapApplication {
 
             val currentUserComponent = this.userComponent
             if (currentUserComponent != null) {
-                if (userComponent.accountInfo == currentUserComponent.accountInfo)
+                if (userComponent.userLoginData.address == currentUserComponent.userLoginData.address)
                     connectToRelay()
                 else
                     log.warn("Ignoring reconnect from previously logged in account")
