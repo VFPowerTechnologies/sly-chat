@@ -152,7 +152,7 @@ class MessengerService(
 
                 is EncryptionUnknownFailure -> {
                     log.error("Unknown error during encryption: {}", result.cause.message, result.cause)
-                    processSendMessageQueue()
+                    nextSendMessage()
                 }
 
                 else -> throw RuntimeException("Unknown result: $result")
