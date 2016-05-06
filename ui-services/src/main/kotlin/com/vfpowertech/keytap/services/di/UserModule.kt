@@ -24,7 +24,7 @@ class UserModule(
     val providesUserLoginData: UserLoginData,
     @get:UserScope
     @get:Provides
-    val providersAccountInfo: AccountInfo
+    val providesAccountInfo: AccountInfo
 ) {
     @UserScope
     @Provides
