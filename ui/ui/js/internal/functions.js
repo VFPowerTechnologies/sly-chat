@@ -194,7 +194,9 @@ $(document).ready(function () {
     KEYTAP.menuController.init();
 
     $(window.location).on("chatExited", function () {
-        KEYTAP.chatController.model.markConversationAsRead(KEYTAP.contactController.getCurrentContact());
+        //don't do anything if logged out
+        if (KEYTAP.profileController.getUserInfo()["name"] !== "")
+            KEYTAP.chatController.model.markConversationAsRead(KEYTAP.contactController.getCurrentContact());
     });
 
     KEYTAP.connectionController.init();

@@ -93,7 +93,7 @@ LoginController.prototype = {
         }
     },
     onLogout : function() {
-        KEYTAP.navigationController.loadPage("login.html");
+        console.log('logging out');
         KEYTAP.navigationController.clearHistory();
         KEYTAP.contactController.model.resetContacts();
         KEYTAP.profileController.setUserInfo({
@@ -101,6 +101,8 @@ LoginController.prototype = {
             "phone-number" : "",
             "email" : ""
         });
+        //do this last, so that everything's been reset before loading a new page
+        KEYTAP.navigationController.loadPage("login.html");
     },
     login : function() {
         var rememberMe = $("#rememberMe").is(':checked');
