@@ -3,7 +3,7 @@ package com.vfpowertech.keytap.core
 import com.vfpowertech.keytap.core.crypto.*
 import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import com.vfpowertech.keytap.core.http.JavaHttpClient
-import com.vfpowertech.keytap.core.UnauthorizedException
+import com.vfpowertech.keytap.core.http.api.ApiException
 import com.vfpowertech.keytap.core.http.api.accountUpdate.*
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationClient
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
@@ -307,21 +307,42 @@ class WebApiIntegrationTest {
     }
 
     @Test
+    fun `prekey info should reflect the current server prekey count`() {
+        val siteUser = injectNewSiteUser()
+        val username = siteUser.user.username
+
+        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+
+        val authToken = devClient.createAuthToken(siteUser.user.username, deviceId)
+
+        val maxCount = devClient.getPreKeyMaxCount()
+
+        val generatedPreKeys = injectPreKeys(username, siteUser.keyVault, deviceId, maxCount)
+
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
+
+        val response = client.getInfo(PreKeyInfoRequest(authToken))
+
+        assertEquals(generatedPreKeys.oneTimePreKeys.size, response.remaining, "Invalid remaining keys")
+        assertEquals(0, response.uploadCount, "Invalid uploadCount")
+    }
+
+    @Test
     fun `prekey storage request should fail when an invalid auth token is used`() {
         val keyVault = generateNewKeyVault(password)
         val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
 
         val request = preKeyStorageRequestFromGeneratedPreKeys("a", defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         assertFailsWith(UnauthorizedException::class) {
             client.store(request)
         }
     }
 
-    fun injectPreKeys(username: String, keyVault: KeyVault, deviceId: Int = DEFAULT_DEVICE_ID): GeneratedPreKeys {
-        val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 1)
+    fun injectPreKeys(username: String, keyVault: KeyVault, deviceId: Int = DEFAULT_DEVICE_ID, count: Int = 1): GeneratedPreKeys {
+        val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, count)
         devClient.addOneTimePreKeys(username, serializeOneTimePreKeys(generatedPreKeys.oneTimePreKeys), deviceId)
         devClient.setSignedPreKey(username, serializeSignedPreKey(generatedPreKeys.signedPreKey), deviceId)
         return generatedPreKeys
@@ -358,7 +379,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.store(request)
         assertTrue(response.isSuccess)
@@ -377,7 +398,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.store(request)
         assertFalse(response.isSuccess, "Upload succeeded")
@@ -396,7 +417,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.store(request)
         assertFalse(response.isSuccess, "Upload succeeded")
@@ -416,7 +437,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, registrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.store(request)
         assertTrue(response.isSuccess, "Upload failed: ${response.errorMessage}")
@@ -427,10 +448,35 @@ class WebApiIntegrationTest {
     }
 
     @Test
+    fun `prekey storage should fail when too many keys are uploaded`() {
+        val siteUser = injectNewSiteUser()
+        val username = siteUser.user.username
+
+        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+
+        val authToken = devClient.createAuthToken(siteUser.user.username, deviceId)
+
+        val maxCount = devClient.getPreKeyMaxCount()
+
+        val generatedPreKeys = injectPreKeys(username, siteUser.keyVault, deviceId, maxCount+1)
+        val lastResortPreKey = generateLastResortPreKey()
+
+        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, siteUser.keyVault, generatedPreKeys, lastResortPreKey)
+
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
+
+        val exception = assertFailsWith<ApiException> {
+            client.store(request)
+        }
+
+        assertTrue("too many" in exception.message!!.toLowerCase(), "Invalid error message: ${exception.message}")
+    }
+
+    @Test
     fun `prekey retrieval should fail when an invalid auth token is used`() {
         val siteUser = injectNewSiteUser()
 
-        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
         assertFailsWith(UnauthorizedException::class) {
             client.retrieve(PreKeyRetrievalRequest("a", siteUser.user.id, listOf()))
         }
@@ -451,7 +497,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(requestingUsername)
 
-        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.retrieve(PreKeyRetrievalRequest(authToken, siteUser.user.id, listOf()))
 
@@ -474,7 +520,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(requestingUsername)
 
-        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.retrieve(PreKeyRetrievalRequest(authToken, siteUser.user.id, listOf()))
 
@@ -497,7 +543,7 @@ class WebApiIntegrationTest {
     }
 
     fun assertNextPreKeyIs(userId: UserId, authToken: String, expected: PreKeyRecord, signedPreKey: SignedPreKeyRecord) {
-        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.retrieve(PreKeyRetrievalRequest(authToken, userId, listOf()))
 

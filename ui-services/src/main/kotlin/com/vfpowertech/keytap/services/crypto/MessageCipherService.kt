@@ -8,7 +8,7 @@ import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.unhexify
 import com.vfpowertech.keytap.core.http.JavaHttpClient
-import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrievalClient
+import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyClient
 import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyRetrievalRequest
 import com.vfpowertech.keytap.core.http.api.prekeys.toPreKeyBundle
 import com.vfpowertech.keytap.services.*
@@ -211,7 +211,7 @@ class MessageCipherService(
     private fun fetchPreKeyBundles(userId: UserId): List<PreKeyBundle> {
         val response = authTokenManager.map { authToken ->
             val request = PreKeyRetrievalRequest(authToken.string, userId, listOf())
-            PreKeyRetrievalClient(serverUrls.API_SERVER, JavaHttpClient()).retrieve(request)
+            PreKeyClient(serverUrls.API_SERVER, JavaHttpClient()).retrieve(request)
         }.get()
 
         if (!response.isSuccess)

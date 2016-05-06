@@ -232,7 +232,7 @@ class KeyTapApplication {
 
             //until this finishes, nothing in the UserComponent should be touched
             backgroundInitialization(userComponent, response.authToken, password, rememberMe) mapUi {
-                finalizeInit(userComponent, response.keyRegenCount)
+                finalizeInit(userComponent)
             }
         } failUi { e ->
             //incase session initialization failed we need to clean up the user session here
@@ -253,6 +253,8 @@ class KeyTapApplication {
         val userComponent = userComponent ?: return
         val sessionDataPersistenceManager = userComponent.sessionDataPersistenceManager
 
+        log.info("Updating on-disk session data")
+
         if (authToken == null) {
             //XXX it's unlikely but possible this might run AFTER a new token comes in and gets written to disk
             //depending on load and scheduler behavior
@@ -262,14 +264,14 @@ class KeyTapApplication {
             return
         }
 
-        log.info("Updating on-disk session data")
-
         sessionDataPersistenceManager.store(SessionData(authToken.string)) fail { e ->
             log.error("Unable to write session data to disk: {}", e.message, e)
         }
 
         if (!userComponent.relayClientManager.isOnline)
             connectToRelay()
+
+        userComponent.preKeyManager.checkForUpload()
     }
 
     /**
@@ -360,7 +362,7 @@ class KeyTapApplication {
     }
 
     /** called after a successful user session has been created to finish initializing components. */
-    private fun finalizeInit(userComponent: UserComponent, keyRegenCount: Int) {
+    private fun finalizeInit(userComponent: UserComponent) {
         initializeUserSession(userComponent)
 
         //dagger lazily initializes all components, so we need to force creation
@@ -371,7 +373,6 @@ class KeyTapApplication {
         userComponent.contactSyncManager.fullSync()
         //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
         fetchOfflineMessages()
-        schedulePreKeyUpload(keyRegenCount)
 
         emitLoginEvent(LoggedIn(userComponent.accountInfo))
     }

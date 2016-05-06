@@ -187,6 +187,10 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         return getRequest("/dev/config/max-devices", Int::class.java)
     }
 
+    fun getPreKeyMaxCount(): Int {
+        return getRequest("/dev/prekeys/max-count", Int::class.java)
+    }
+
     fun addDevice(username: String, registrationId: Int, state: DeviceState): Int {
         val request = mapOf(
             "registrationId" to registrationId,

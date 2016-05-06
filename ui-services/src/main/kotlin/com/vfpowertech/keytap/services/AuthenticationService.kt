@@ -51,7 +51,7 @@ class AuthenticationService(
             if (resp.errorMessage != null)
                 throw AuthApiResponseException(resp.errorMessage)
 
-            AuthTokenRefreshResult(resp.data!!.authToken, resp.data!!.keyRegenCount)
+            AuthTokenRefreshResult(resp.data!!.authToken)
         }
     }
 
@@ -105,7 +105,7 @@ class AuthenticationService(
 
         val data = response.data!!
         val keyVault = KeyVault.deserialize(data.keyVault, password)
-        return AuthResult(data.authToken, data.keyRegenCount, keyVault, data.accountInfo)
+        return AuthResult(data.authToken, keyVault, data.accountInfo)
     }
 
     private fun localAuth(emailOrPhoneNumber: String, password: String): LocalAuthOutcome {
@@ -135,7 +135,7 @@ class AuthenticationService(
             null
         }
 
-        return LocalAuthOutcome.Successful(AuthResult(authToken, 0, keyVault, accountInfo))
+        return LocalAuthOutcome.Successful(AuthResult(authToken, keyVault, accountInfo))
     }
 
     private fun authSync(emailOrPhoneNumber: String, password: String, registrationId: Int): AuthResult {
