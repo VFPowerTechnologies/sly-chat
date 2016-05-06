@@ -6,5 +6,5 @@ object AndroidPreferences {
     val tokenUserList: String = "tokenUserList"
 
     fun getTokenSentToServer(userId: UserId): String =
-        "${userId.id}/tokenSentToServer"
+        "${userId.long}/tokenSentToServer"
 }

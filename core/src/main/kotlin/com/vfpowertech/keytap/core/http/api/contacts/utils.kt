@@ -6,7 +6,7 @@ import com.vfpowertech.keytap.core.crypto.*
 import org.spongycastle.crypto.digests.SHA256Digest
 
 private fun UserId.toByteArray(): ByteArray =
-    id.toString().toByteArray(Charsets.UTF_8)
+    long.toString().toByteArray(Charsets.UTF_8)
 
 /** Returns the SHA256 hash of the local encryption key and the given user id as a hex string. */
 fun getEmailHash(keyVault: KeyVault, userId: UserId): String {

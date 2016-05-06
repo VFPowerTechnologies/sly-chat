@@ -62,7 +62,7 @@ VALUES
         connection.prepare("UPDATE conversation_info SET $unreadCountFragment last_message=?, last_timestamp=? WHERE contact_id=?").use { stmt ->
             stmt.bind(1, lastMessage)
             stmt.bind(2, lastTimestamp)
-            stmt.bind(3, userId.id)
+            stmt.bind(3, userId.long)
             stmt.step()
         }
     }
@@ -193,7 +193,7 @@ VALUES
 
     private fun resetConversationInfo(connection: SQLiteConnection, userId: UserId) {
         connection.prepare("UPDATE conversation_info set unread_count=0, last_message=null, last_timestamp=null where contact_id=?").use { stmt ->
-            stmt.bind(1, userId.id)
+            stmt.bind(1, userId.long)
             stmt.step()
         }
     }

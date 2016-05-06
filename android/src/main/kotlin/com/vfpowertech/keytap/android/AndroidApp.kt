@@ -244,7 +244,7 @@ class AndroidApp : Application() {
                 val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
                 val usernames = HashSet(sharedPrefs.getStringSet(AndroidPreferences.tokenUserList, HashSet()))
                 val editor = sharedPrefs.edit()
-                val username = userId.id.toString()
+                val username = userId.long.toString()
                 editor.putBoolean(AndroidPreferences.getTokenSentToServer(userId), true)
                 usernames.add(username)
                 editor.putStringSet(AndroidPreferences.tokenUserList, usernames)

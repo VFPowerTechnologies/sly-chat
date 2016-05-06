@@ -121,7 +121,7 @@ class RelayClientManager(
         val relayClient = getClientOrThrow()
 
         if (connectionTag != this.connectionTag) {
-            log.debug("Dropping message {} to {} due to connection tag mismatch", messageId, to.id)
+            log.debug("Dropping message {} to {} due to connection tag mismatch", messageId, to.long)
             return
         }
 
