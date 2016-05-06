@@ -3,7 +3,6 @@ package com.vfpowertech.keytap.services.di
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceComponent
 import com.vfpowertech.keytap.core.BuildConfig.UIServiceType
-import com.vfpowertech.keytap.core.PlatformInfo
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.PlatformTelephonyService
 import com.vfpowertech.keytap.services.ui.*
@@ -100,9 +99,8 @@ class UIServicesModule {
     @Provides
     fun provideAccountModificationService(
         app: KeyTapApplication,
-        serverUrls: BuildConfig.ServerUrls,
-        platformInfo: PlatformInfo
-    ): UIAccountModificationService = UIAccountModificationServiceImpl(app, serverUrls.API_SERVER, platformInfo)
+        serverUrls: BuildConfig.ServerUrls
+    ): UIAccountModificationService = UIAccountModificationServiceImpl(app, serverUrls.API_SERVER)
 
     @Singleton
     @Provides
