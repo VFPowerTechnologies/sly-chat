@@ -7,14 +7,7 @@ var ContactController = function (model) {
 
 ContactController.prototype = {
     init : function () {
-        //var conversations = this.model.getConversations();
-        //if(conversations.length <= 0){
-            this.model.fetchConversation();
-        //}
-        //else{
-        //    KEYTAP.recentChatController.init(conversations);
-        //    this.displayContacts(conversations);
-        //}
+        this.model.fetchConversation();
     },
     displayContacts : function (conversations) {
         var contactList = $("#contactList");
@@ -27,8 +20,6 @@ ContactController.prototype = {
         }
 
         contactList.html(fragment);
-
-        this.addEventListener();
     },
     addContactListSyncListener : function () {
         contactService.addContactListSyncListener(function (sync) {
@@ -82,54 +73,39 @@ ContactController.prototype = {
             newBadge = "<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>";
         }
 
-        var contactBlock = "<div class='" + contactLinkClass + "' id='contact_" + contact.id + "'><div class='contact'>";
-        contactBlock += createAvatar(contact.name);
-        contactBlock += "<p style='display: inline-block;'>" + contact.name + "</p>";
-        contactBlock += this.createContactDropDown(contact.id);
-        contactBlock += "</div>" + newBadge + "</div>";
+        var contactBlockDiv = $("<div class='" + contactLinkClass + "' id='contact_" + contact.id + "'></div>");
+        var contactBlockHtml = "<div class='contact'>" + createAvatar(contact.name) + "<p style='display: inline-block;'>" +
+            contact.name + "</p>" +
+            "</div>" + newBadge;
+        contactBlockDiv.html(contactBlockHtml);
 
-        return contactBlock;
-    },
-    createContactDropDown: function (id) {
-        var dropDown = '<div class="dropdown pull-right">';
-        dropDown += '<a class="dropdown-toggle contact-dropDown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" href="#" style="text-decoration: none;">';
-        dropDown += '&nbsp;<i class="fa fa-ellipsis-v"></i>&nbsp;</a>';
-        dropDown += '<ul class="contact-dropdown-menu dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu">';
-        dropDown += '<li style="text-align: center;"><a href="#" id="deleteContact_' + id + '">Delete Contact</a></li>';
-        dropDown += '</ul></div>';
-
-        return dropDown;
-    },
-    loadContactPage : function (id, pushCurrentPage) {
-        this.model.fetchConversationForChat(id, pushCurrentPage);
-    },
-    addEventListener : function () {
-        $(".contact-dropDown").bind("click", function(e) {
-            $(".contact-dropdown-menu").hide();
-            $(this).next(".dropdown-menu").toggle();
-            e.stopPropagation();
-        });
-
-        $("html body").click(function(){
-            $(".contact-dropdown-menu").hide();
-        });
-
-        $(".contact-link").bind("click", function (e) {
+        contactBlockDiv.click(function (e) {
             e.preventDefault();
             var id = $(this).attr("id").split("contact_")[1];
             KEYTAP.contactController.setCurrentContact(id);
             KEYTAP.navigationController.loadPage("chat.html", true);
         });
 
-        $("[id^='deleteContact_']").bind("click", function(e){
-            e.stopPropagation();
+        contactBlockDiv.on("mouseheld", function (e) {
             e.preventDefault();
-            $(".contact-dropdown-menu").hide();
-            if(KEYTAP.connectionController.networkAvailable == true && this.syncing == false) {
-                var id = e.currentTarget.id.split("_")[1];
-                this.displayDeleteContactModal(id);
-            }
-        }.bind(this));
+            vibrate(50);
+            var contextMenu = KEYTAP.contactController.openContactContextLikeMenu(contact.id);
+            contextMenu.open();
+        });
+
+        return contactBlockDiv;
+    },
+    openContactContextLikeMenu : function (contactId) {
+        var html = "<div class='contextLikeMenu'>" +
+            "<ul>" +
+                "<li><a id='deleteContact_" + contactId + "' href='#'>Delete Contact</a></li>" +
+            "</ul>" +
+        "</div>";
+
+        return createContextLikeMenu(html, true);
+    },
+    loadContactPage : function (id, pushCurrentPage) {
+        this.model.fetchConversationForChat(id, pushCurrentPage);
     },
     getCurrentContact : function () {
         return this.model.getCurrentContact();

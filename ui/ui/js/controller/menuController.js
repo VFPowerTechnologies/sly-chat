@@ -26,6 +26,13 @@ MenuController.prototype = {
             e.preventDefault();
             KEYTAP.navigationController.loadPage("profile.html", true);
         });
+
+        $(document).on("click", "#deleteWholeConversation", function(e){
+            e.preventDefault();
+            var currentContact = KEYTAP.contactController.getCurrentContact();
+            BootstrapDialog.closeAll();
+            KEYTAP.chatController.createDeleteWholeConversationDialog(currentContact);
+        });
     },
     handleMenuDisplay : function() {
         // handle the connection status display on each page load

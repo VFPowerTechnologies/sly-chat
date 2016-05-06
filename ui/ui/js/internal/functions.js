@@ -45,7 +45,7 @@ if (typeof KEYTAP == "undefined") {
                 $this.unbind('mousedown', startTrigger);
                 $this.unbind('mouseleave mouseup', stopTrigger);
             },
-            time: 1000
+            time: 200
         };
     })(jQuery);
 
@@ -103,6 +103,21 @@ if (typeof KEYTAP == "undefined") {
         return bd;
     }
 
+    /**
+     *
+     * @param htmlContent String content of the dialog.
+     * @param closable Bool if dialog is closable or not.
+     * @returns {*}
+     */
+    function createContextLikeMenu(htmlContent, closable) {
+        var bd = new BootstrapDialog();
+        bd.setClosable(closable);
+        bd.setMessage(htmlContent);
+        bd.setCssClass("contextLikeModal whiteModal mediumModal");
+
+        return bd;
+    }
+
     function resizeWindow() {
         var height = window.innerHeight - 56;
         $("#main").css("height", height + "px");
@@ -138,6 +153,13 @@ if (typeof KEYTAP == "undefined") {
         return size;
     };
 
+    function vibrate (delay) {
+        var supportsVibrate = "vibrate" in navigator;
+
+        if(supportsVibrate)
+            navigator.vibrate(delay);
+    }
+
     KEYTAP.exceptionController = new ExceptionController();
     KEYTAP.loginController = new LoginController(new LoginModel);
     KEYTAP.registrationController = new RegistrationController(new RegistrationModel());
@@ -165,6 +187,7 @@ $(document).ready(function () {
     KEYTAP.chatController.addMessageUpdateListener();
     KEYTAP.chatController.addNewMessageListener();
     KEYTAP.chatController.createChatLinkEvent();
+    KEYTAP.chatController.createMessageNodeEvent();
 
     KEYTAP.navigationController.init();
 
@@ -178,10 +201,11 @@ $(document).ready(function () {
 });
 
 //Dirty fix for screen is pushed down when user hides keyboard
-window.onresize = function(e) {
-    if(window.beforeResizeHeight < window.innerHeight) {
-        $('html, body').scrollTop(0);
-        $('input').blur();
-    }
-    window.beforeResizeHeight = window.innerHeight;
-};
+//window.onresize = function(e) {
+//    console.log("window is resized");
+//    if(window.beforeResizeHeight < window.innerHeight) {
+//        $('html, body').scrollTop(0);
+//        $('input').blur();
+//    }
+//    window.beforeResizeHeight = window.innerHeight;
+//};

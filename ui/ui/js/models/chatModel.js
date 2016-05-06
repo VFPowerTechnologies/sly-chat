@@ -65,5 +65,8 @@ ChatModel.prototype = {
         });
 
         return organizedMessages;
+    },
+    clearCache : function () {
+        this.cachedConversation = [];
     }
 };
