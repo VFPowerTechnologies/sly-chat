@@ -2,7 +2,7 @@ package com.vfpowertech.keytap.services
 
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.vfpowertech.keytap.core.http.api.contacts.*
-import com.vfpowertech.keytap.core.persistence.AccountInfo
+import com.vfpowertech.keytap.core.persistence.AccountInfoPersistenceManager
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.services.auth.AuthTokenManager
@@ -17,7 +17,7 @@ import rx.subjects.BehaviorSubject
 class ContactSyncManager(
     private val application: KeyTapApplication,
     private val userLoginData: UserLoginData,
-    private val accountInfo: AccountInfo,
+    private val accountInfoPersistenceManager: AccountInfoPersistenceManager,
     private val serverUrl: String,
     private val platformContacts: PlatformContacts,
     private val contactsPersistenceManager: ContactsPersistenceManager,
@@ -81,41 +81,48 @@ class ContactSyncManager(
         }
     }
 
+    private fun getDefaultRegionCode(): Promise<String, Exception> {
+        //FIXME
+        return accountInfoPersistenceManager.retrieve() map { accountInfo ->
+            val phoneNumberUtil = PhoneNumberUtil.getInstance()
+            val phoneNumber = phoneNumberUtil.parse("+${accountInfo!!.phoneNumber}", null)
+            phoneNumberUtil.getRegionCodeForCountryCode(phoneNumber.countryCode)
+        }
+    }
+
     /** Attempts to find any registered users matching the user's local contacts. */
     private fun syncLocalContacts(): Promise<Unit, Exception> {
         val keyVault = userLoginData.keyVault
 
-        val phoneNumberUtil = PhoneNumberUtil.getInstance()
-        val phoneNumber = phoneNumberUtil.parse("+${accountInfo.phoneNumber}", null)
-        val defaultRegion = phoneNumberUtil.getRegionCodeForCountryCode(phoneNumber.countryCode)
+        return getDefaultRegionCode() bind { defaultRegion ->
+            authTokenManager.bind { authToken ->
+                platformContacts.fetchContacts() map { contacts ->
+                    val phoneNumberUtil = PhoneNumberUtil.getInstance()
 
-        return authTokenManager.bind { authToken ->
-            platformContacts.fetchContacts() map { contacts ->
-                val phoneNumberUtil = PhoneNumberUtil.getInstance()
+                    val updated = contacts.map { contact ->
+                        val phoneNumbers = contact.phoneNumbers.map { parsePhoneNumber(it, defaultRegion) }.filter { it != null }.map { phoneNumberUtil.format(it, PhoneNumberUtil.PhoneNumberFormat.E164).substring(1) }
+                        contact.copy(phoneNumbers = phoneNumbers)
+                    }
 
-                val updated = contacts.map { contact ->
-                    val phoneNumbers = contact.phoneNumbers.map { parsePhoneNumber(it, defaultRegion) }.filter { it != null }.map { phoneNumberUtil.format(it, PhoneNumberUtil.PhoneNumberFormat.E164).substring(1) }
-                    contact.copy(phoneNumbers = phoneNumbers)
-                }
+                    log.debug("Platform contacts: {}", updated)
 
-                log.debug("Platform contacts: {}", updated)
+                    updated
+                } bind { contacts ->
+                    contactsPersistenceManager.findMissing(contacts)
+                } bind { missingContacts ->
+                    log.debug("Missing local contacts:", missingContacts)
+                    val client = ContactAsyncClient(serverUrl)
+                    client.findLocalContacts(FindLocalContactsRequest(authToken.string, missingContacts))
+                } bind { foundContacts ->
+                    log.debug("Found local contacts: {}", foundContacts)
 
-                updated
-            } bind { contacts ->
-                contactsPersistenceManager.findMissing(contacts)
-            } bind { missingContacts ->
-                log.debug("Missing local contacts:", missingContacts)
-                val client = ContactAsyncClient(serverUrl)
-                client.findLocalContacts(FindLocalContactsRequest(authToken.string, missingContacts))
-            } bind { foundContacts ->
-                log.debug("Found local contacts: {}", foundContacts)
+                    val client = ContactListAsyncClient(serverUrl)
+                    val remoteContactEntries = encryptRemoteContactEntries(keyVault, foundContacts.contacts.map { it.id })
+                    val request = AddContactsRequest(authToken.string, remoteContactEntries)
 
-                val client = ContactListAsyncClient(serverUrl)
-                val remoteContactEntries = encryptRemoteContactEntries(keyVault, foundContacts.contacts.map { it.id })
-                val request = AddContactsRequest(authToken.string, remoteContactEntries)
-
-                client.addContacts(request) bind {
-                    contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.id, it.email, it.name, it.phoneNumber, it.publicKey) })
+                    client.addContacts(request) bind {
+                        contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.id, it.email, it.name, it.phoneNumber, it.publicKey) })
+                    }
                 }
             }
         }

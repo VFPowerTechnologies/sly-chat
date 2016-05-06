@@ -1,9 +1,8 @@
 package com.vfpowertech.keytap.services.auth
 
-import com.vfpowertech.keytap.core.crypto.KeyVault
-import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.services.AuthenticationService
 import com.vfpowertech.keytap.services.KeyTapApplication
+import com.vfpowertech.keytap.services.UserLoginData
 import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -13,8 +12,7 @@ import rx.subjects.PublishSubject
 
 class AuthenticationServiceTokenProvider(
     private val application: KeyTapApplication,
-    private val accountInfo: AccountInfo,
-    private val keyVault: KeyVault,
+    private val userLoginData: UserLoginData,
     private val authenticationService: AuthenticationService
 ) : TokenProvider {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -37,9 +35,9 @@ class AuthenticationServiceTokenProvider(
         eventsSubject.onNext(TokenEvent.Expired())
 
         authenticationService.refreshAuthToken(
-            accountInfo,
+            userLoginData.address,
             application.installationData.registrationId,
-            keyVault.remotePasswordHash
+            userLoginData.keyVault.remotePasswordHash
         ) successUi { response ->
             log.info("Refreshed auth token")
             //TODO maybe move AuthToken out to core as a wrapped type?

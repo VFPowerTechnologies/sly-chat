@@ -30,8 +30,6 @@ interface UserComponent {
 
     val userLoginData: UserLoginData
 
-    val accountInfo: AccountInfo
-
     val userPaths: UserPaths
 
     val relayClientManager: RelayClientManager
