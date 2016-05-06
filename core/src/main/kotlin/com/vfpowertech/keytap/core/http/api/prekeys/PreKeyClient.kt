@@ -15,14 +15,24 @@ class PreKeyClient(private val serverBaseUrl: String, private val httpClient: Ht
         if (request.deviceIds.isNotEmpty())
             params.add("devices" to request.deviceIds.joinToString(","))
 
-        val url = "$serverBaseUrl/v1/retrieve"
+        val url = "$serverBaseUrl/v1/prekeys"
 
         return apiGetRequest(httpClient, url, params, setOf(200, 400), typeRef())
     }
 
     fun store(request: PreKeyStoreRequest): PreKeyStoreResponse {
-        val url = "$serverBaseUrl/v1/store"
+        val url = "$serverBaseUrl/v1/prekeys"
 
         return apiPostRequest(httpClient, url, request, setOf(200, 400), typeRef())
+    }
+
+    fun getInfo(request: PreKeyInfoRequest): PreKeyInfoResponse {
+        val params = listOf(
+            "auth-token" to request.authToken
+        )
+
+        val url = "$serverBaseUrl/v1/prekeys/info"
+
+        return apiGetRequest(httpClient, url, params, setOf(200, 400), typeRef())
     }
 }

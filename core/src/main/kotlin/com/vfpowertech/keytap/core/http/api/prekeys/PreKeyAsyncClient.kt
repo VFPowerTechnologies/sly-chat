@@ -14,4 +14,8 @@ class PreKeyAsyncClient(private val serverUrl: String) {
     fun store(request: PreKeyStoreRequest): Promise<PreKeyStoreResponse, Exception> = task {
         newClient().store(request)
     }
+
+    fun getInfo(request: PreKeyInfoRequest): Promise<PreKeyInfoResponse, Exception> = task {
+        newClient().getInfo(request)
+    }
 }
