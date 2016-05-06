@@ -7,6 +7,7 @@ import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyStoreAsyncClient
 import com.vfpowertech.keytap.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
+import com.vfpowertech.keytap.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
@@ -21,7 +22,8 @@ class PreKeyManager(
     private val application: KeyTapApplication,
     private val serverUrl: String,
     private val userLoginData: UserLoginData,
-    private val preKeyPersistenceManager: PreKeyPersistenceManager
+    private val preKeyPersistenceManager: PreKeyPersistenceManager,
+    private val authTokenManager: AuthTokenManager
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -77,11 +79,6 @@ class PreKeyManager(
         log.info("Requested to generate {} new prekeys", keyRegenCount)
 
         val keyVault = userLoginData.keyVault
-        val authToken = userLoginData.authToken
-        if (authToken == null) {
-            log.error("Unable to push prekeys, no auth token available")
-            return
-        }
 
         scheduledKeyCount = 0
         running = true
@@ -89,10 +86,12 @@ class PreKeyManager(
         //TODO need to mark whether or not a range has been pushed to the server or not
         //if the push fails, we should delete the batch?
         //TODO nfi what to do if server response fails
-        generate(keyRegenCount) bind { r ->
-            val (generatedPreKeys, lastResortPreKey) = r
-            val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, application.installationData.registrationId, keyVault, generatedPreKeys, lastResortPreKey)
-            PreKeyStoreAsyncClient(serverUrl).store(request)
+        authTokenManager.bind { authToken ->
+            generate(keyRegenCount) bind { r ->
+                val (generatedPreKeys, lastResortPreKey) = r
+                val request = preKeyStorageRequestFromGeneratedPreKeys(authToken.string, application.installationData.registrationId, keyVault, generatedPreKeys, lastResortPreKey)
+                PreKeyStoreAsyncClient(serverUrl).store(request)
+            }
         } successUi { response ->
             running = false
 

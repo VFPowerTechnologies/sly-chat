@@ -5,10 +5,11 @@ import com.vfpowertech.keytap.core.persistence.AccountInfo
 import com.vfpowertech.keytap.core.persistence.ContactsPersistenceManager
 import com.vfpowertech.keytap.core.persistence.MessagePersistenceManager
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
-import com.vfpowertech.keytap.core.relay.RelayClient
-import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.RelayConnector
 import com.vfpowertech.keytap.services.*
+import com.vfpowertech.keytap.services.auth.AuthTokenManager
+import com.vfpowertech.keytap.services.auth.AuthenticationServiceTokenProvider
+import com.vfpowertech.keytap.services.auth.TokenProvider
 import com.vfpowertech.keytap.services.crypto.MessageCipherService
 import com.vfpowertech.keytap.services.ui.UIEventService
 import dagger.Module
@@ -25,24 +26,22 @@ class UserModule(
     @get:Provides
     val providersAccountInfo: AccountInfo
 ) {
+    @UserScope
     @Provides
-    fun provideRelayClient(
-        userLoginData: UserLoginData,
+    fun provideRelayClientFactory(
         scheduler: Scheduler,
         relayConnector: RelayConnector,
         serverUrls: ServerUrls
-    ): RelayClient {
-        val credentials = UserCredentials(userLoginData.address, userLoginData.authToken!!)
-        return RelayClient(relayConnector, scheduler, serverUrls.RELAY_SERVER, credentials)
-    }
+    ): RelayClientFactory=
+        RelayClientFactory(scheduler, relayConnector, serverUrls)
 
     @UserScope
     @Provides
     fun providesRelayClientManager(
         scheduler: Scheduler,
-        userComponent: UserComponent
+        relayClientFactory: RelayClientFactory
     ): RelayClientManager =
-        RelayClientManager(scheduler, userComponent)
+        RelayClientManager(scheduler, relayClientFactory)
 
     @UserScope
     @Provides
@@ -86,11 +85,12 @@ class UserModule(
     @UserScope
     @Provides
     fun providesMessageCipherService(
+        authTokenManager: AuthTokenManager,
         userLoginData: UserLoginData,
         serverUrls: ServerUrls,
         signalProtocolStore: SignalProtocolStore
     ): MessageCipherService =
-        MessageCipherService(userLoginData, signalProtocolStore, serverUrls)
+        MessageCipherService(authTokenManager, userLoginData, signalProtocolStore, serverUrls)
 
     @UserScope
     @Provides
@@ -98,19 +98,20 @@ class UserModule(
         application: KeyTapApplication,
         serverUrls: ServerUrls,
         userLoginData: UserLoginData,
-        preKeyPersistenceManager: PreKeyPersistenceManager
+        preKeyPersistenceManager: PreKeyPersistenceManager,
+        authTokenManager: AuthTokenManager
     ): PreKeyManager =
-        PreKeyManager(application, serverUrls.API_SERVER, userLoginData, preKeyPersistenceManager)
+        PreKeyManager(application, serverUrls.API_SERVER, userLoginData, preKeyPersistenceManager, authTokenManager)
 
     @UserScope
     @Provides
     fun providesOfflineMessageManager(
         application: KeyTapApplication,
-        userLoginData: UserLoginData,
         serverUrls: ServerUrls,
-        messengerService: MessengerService
+        messengerService: MessengerService,
+        authTokenManager: AuthTokenManager
     ): OfflineMessageManager =
-        OfflineMessageManager(application, userLoginData, serverUrls.API_SERVER, messengerService)
+        OfflineMessageManager(application, serverUrls.API_SERVER, messengerService, authTokenManager)
 
     @UserScope
     @Provides
@@ -120,7 +121,8 @@ class UserModule(
         accountInfo: AccountInfo,
         serverUrls: ServerUrls,
         platformContacts: PlatformContacts,
-        contactsPersistenceManager: ContactsPersistenceManager
+        contactsPersistenceManager: ContactsPersistenceManager,
+        authTokenManager: AuthTokenManager
     ): ContactSyncManager =
         ContactSyncManager(
             application,
@@ -128,6 +130,29 @@ class UserModule(
             accountInfo,
             serverUrls.API_SERVER,
             platformContacts,
-            contactsPersistenceManager
+            contactsPersistenceManager,
+            authTokenManager
         )
+
+    @UserScope
+    @Provides
+    fun providesTokenProvider(
+        application: KeyTapApplication,
+        userLoginData: UserLoginData,
+        accountInfo: AccountInfo,
+        authenticationService: AuthenticationService
+    ): TokenProvider =
+        AuthenticationServiceTokenProvider(
+            application,
+            accountInfo,
+            userLoginData.keyVault,
+            authenticationService
+        )
+
+    @UserScope
+    @Provides
+    fun providesAuthTokenManager(
+        tokenProvider: TokenProvider
+    ): AuthTokenManager =
+        AuthTokenManager(tokenProvider)
 }

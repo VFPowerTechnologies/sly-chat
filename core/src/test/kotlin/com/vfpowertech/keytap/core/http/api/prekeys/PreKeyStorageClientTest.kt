@@ -10,7 +10,7 @@ import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.http.api.ApiResult
-import com.vfpowertech.keytap.core.http.api.UnauthorizedException
+import com.vfpowertech.keytap.core.UnauthorizedException
 import org.junit.Ignore
 import org.junit.Test
 import java.util.*
