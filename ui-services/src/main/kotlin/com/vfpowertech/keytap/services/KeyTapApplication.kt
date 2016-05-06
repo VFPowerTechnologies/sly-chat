@@ -211,13 +211,10 @@ class KeyTapApplication {
 
         emitLoginEvent(LoggingIn())
 
-        //TODO this only works if an email is given; we need to somehow keep a list of phone numbers -> emails somewhere
-        //maybe just search every account dir available and find a number that way? kinda rough but works
-
         //if the unlock fails, we try remotely; this can occur if the password was changed remotely from another device
         appComponent.authenticationService.auth(username, password, installationData.registrationId) bindUi { response ->
             val keyVault = response.keyVault
-            //TODO need to put the username in the login response if the user used their phone number
+            
             val address = KeyTapAddress(response.accountInfo.id, response.accountInfo.deviceId)
             val userLoginData = UserLoginData(address, keyVault)
             val userComponent = createUserSession(userLoginData, response.accountInfo)
