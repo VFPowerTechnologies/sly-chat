@@ -4,7 +4,7 @@ import com.vfpowertech.keytap.core.crypto.LAST_RESORT_PREKEY_ID
 import com.vfpowertech.keytap.core.crypto.generateLastResortPreKey
 import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
-import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyStoreAsyncClient
+import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyAsyncClient
 import com.vfpowertech.keytap.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
 import com.vfpowertech.keytap.services.auth.AuthTokenManager
@@ -90,7 +90,7 @@ class PreKeyManager(
             generate(keyRegenCount) bind { r ->
                 val (generatedPreKeys, lastResortPreKey) = r
                 val request = preKeyStorageRequestFromGeneratedPreKeys(authToken.string, application.installationData.registrationId, keyVault, generatedPreKeys, lastResortPreKey)
-                PreKeyStoreAsyncClient(serverUrl).store(request)
+                PreKeyAsyncClient(serverUrl).store(request)
             }
         } successUi { response ->
             running = false

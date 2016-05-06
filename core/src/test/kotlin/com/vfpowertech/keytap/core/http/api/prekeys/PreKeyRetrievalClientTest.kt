@@ -36,7 +36,7 @@ class PreKeyRetrievalClientTest {
 
         whenever(httpClient.get(any())).thenReturn(httpResponse)
 
-        val client = PreKeyRetrievalClient("localhost", httpClient)
+        val client = PreKeyClient("localhost", httpClient)
 
         val got = client.retrieve(request)
 
@@ -51,7 +51,7 @@ class PreKeyRetrievalClientTest {
 
         whenever(httpClient.get(any())).thenReturn(httpResponse)
 
-        val client = PreKeyRetrievalClient("localhost", httpClient)
+        val client = PreKeyClient("localhost", httpClient)
 
         assertFailsWith(UnauthorizedException::class) { client.retrieve(request) }
     }

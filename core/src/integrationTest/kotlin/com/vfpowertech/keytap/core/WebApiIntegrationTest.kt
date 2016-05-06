@@ -3,7 +3,6 @@ package com.vfpowertech.keytap.core
 import com.vfpowertech.keytap.core.crypto.*
 import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import com.vfpowertech.keytap.core.http.JavaHttpClient
-import com.vfpowertech.keytap.core.UnauthorizedException
 import com.vfpowertech.keytap.core.http.api.accountUpdate.*
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationClient
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
@@ -313,7 +312,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys("a", defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         assertFailsWith(UnauthorizedException::class) {
             client.store(request)
@@ -358,7 +357,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.store(request)
         assertTrue(response.isSuccess)
@@ -377,7 +376,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.store(request)
         assertFalse(response.isSuccess, "Upload succeeded")
@@ -396,7 +395,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.store(request)
         assertFalse(response.isSuccess, "Upload succeeded")
@@ -416,7 +415,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, registrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = PreKeyStorageClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.store(request)
         assertTrue(response.isSuccess, "Upload failed: ${response.errorMessage}")
@@ -430,7 +429,7 @@ class WebApiIntegrationTest {
     fun `prekey retrieval should fail when an invalid auth token is used`() {
         val siteUser = injectNewSiteUser()
 
-        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
         assertFailsWith(UnauthorizedException::class) {
             client.retrieve(PreKeyRetrievalRequest("a", siteUser.user.id, listOf()))
         }
@@ -451,7 +450,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(requestingUsername)
 
-        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.retrieve(PreKeyRetrievalRequest(authToken, siteUser.user.id, listOf()))
 
@@ -474,7 +473,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(requestingUsername)
 
-        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.retrieve(PreKeyRetrievalRequest(authToken, siteUser.user.id, listOf()))
 
@@ -497,7 +496,7 @@ class WebApiIntegrationTest {
     }
 
     fun assertNextPreKeyIs(userId: UserId, authToken: String, expected: PreKeyRecord, signedPreKey: SignedPreKeyRecord) {
-        val client = PreKeyRetrievalClient(serverBaseUrl, JavaHttpClient())
+        val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.retrieve(PreKeyRetrievalRequest(authToken, userId, listOf()))
 

@@ -2,9 +2,10 @@ package com.vfpowertech.keytap.core.http.api.prekeys
 
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.api.apiGetRequest
+import com.vfpowertech.keytap.core.http.api.apiPostRequest
 import com.vfpowertech.keytap.core.typeRef
 
-class PreKeyRetrievalClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
+class PreKeyClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     fun retrieve(request: PreKeyRetrievalRequest): PreKeyRetrievalResponse {
         val params = mutableListOf(
             "auth-token" to request.authToken,
@@ -17,5 +18,11 @@ class PreKeyRetrievalClient(private val serverBaseUrl: String, private val httpC
         val url = "$serverBaseUrl/v1/retrieve"
 
         return apiGetRequest(httpClient, url, params, setOf(200, 400), typeRef())
+    }
+
+    fun store(request: PreKeyStoreRequest): PreKeyStoreResponse {
+        val url = "$serverBaseUrl/v1/store"
+
+        return apiPostRequest(httpClient, url, request, setOf(200, 400), typeRef())
     }
 }
