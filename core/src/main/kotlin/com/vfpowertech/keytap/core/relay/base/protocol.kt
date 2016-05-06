@@ -52,7 +52,7 @@ enum class CommandCode(val code: Int) {
     }
 }
 
-open class RelayException(message: String?, cause: Throwable?) : RuntimeException("Relay Exception") {
+open class RelayException(message: String?, cause: Throwable?) : RuntimeException(message, cause) {
     constructor() : this(null, null)
 
     constructor(message: String) : this(message, null)
