@@ -4,6 +4,7 @@ package com.vfpowertech.keytap.core.http.api
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.vfpowertech.keytap.core.UnauthorizedException
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.http.get
@@ -31,7 +32,7 @@ private fun <T> readValueOrThrowInvalid(response: HttpResponse, typeReference: T
 fun <T> valueFromApi(response: HttpResponse, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
     val apiResult = when (response.code) {
         401 ->
-            throw UnauthorizedException(response)
+            throw UnauthorizedException()
         in validResponseCodes ->
             readValueOrThrowInvalid(response, typeReference)
         in 500..599 -> {

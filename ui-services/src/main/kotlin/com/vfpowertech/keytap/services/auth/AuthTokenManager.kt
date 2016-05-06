@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services.auth
 
+import com.vfpowertech.keytap.core.UnauthorizedException
 import com.vfpowertech.keytap.services.bindRecoverForUi
 import com.vfpowertech.keytap.services.bindUi
 import com.vfpowertech.keytap.services.mapUi
@@ -107,7 +108,7 @@ class AuthTokenManager(
                 what(authToken)
             }
 
-        val p3 = p2 bindRecoverForUi { e: AuthTokenExpiredException ->
+        val p3 = p2 bindRecoverForUi { e: UnauthorizedException ->
             log.debug("Remaining retry attempts: {}", remainingTries)
 
             if (remainingTries == 0)
@@ -138,7 +139,7 @@ class AuthTokenManager(
                 what(authToken)
             }
 
-        val p3 = p2 bindRecoverForUi { e: AuthTokenExpiredException ->
+        val p3 = p2 bindRecoverForUi { e: UnauthorizedException ->
             log.debug("Remaining retry attempts: {}", remainingTries)
 
             if (remainingTries == 0)
