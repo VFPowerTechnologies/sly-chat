@@ -277,9 +277,14 @@ class KeyTapApplication {
      * Emits LoggedOut.
      */
     fun logout() {
+        val sessionDataPath = userComponent?.userPaths?.sessionDataPath
+
         if (destroyUserSession()) {
             emitLoginEvent(LoggedOut())
-            task { appComponent.userPathsGenerator.startupInfoPath.delete() }.fail { e ->
+            task {
+                appComponent.userPathsGenerator.startupInfoPath.delete()
+                sessionDataPath?.delete()
+            }.fail { e ->
                 log.error("Error removing startup info: {}", e.message, e)
             }
         }
