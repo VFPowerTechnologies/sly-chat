@@ -1,4 +1,4 @@
 CREATE TABLE IF NOT EXISTS signal_sessions(
-    address TEXT NOT NULL UNIQUE,
+    address TEXT PRIMARY KEY NOT NULL,
     session BLOB NOT NULL
 )
