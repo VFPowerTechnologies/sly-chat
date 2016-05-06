@@ -253,6 +253,8 @@ class KeyTapApplication {
         val userComponent = userComponent ?: return
         val sessionDataPersistenceManager = userComponent.sessionDataPersistenceManager
 
+        log.info("Updating on-disk session data")
+
         if (authToken == null) {
             //XXX it's unlikely but possible this might run AFTER a new token comes in and gets written to disk
             //depending on load and scheduler behavior
@@ -262,14 +264,14 @@ class KeyTapApplication {
             return
         }
 
-        log.info("Updating on-disk session data")
-
         sessionDataPersistenceManager.store(SessionData(authToken.string)) fail { e ->
             log.error("Unable to write session data to disk: {}", e.message, e)
         }
 
         if (!userComponent.relayClientManager.isOnline)
             connectToRelay()
+
+        userComponent.preKeyManager.checkForUpload()
     }
 
     /**

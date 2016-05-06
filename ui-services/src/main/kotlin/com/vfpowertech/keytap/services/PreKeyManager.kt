@@ -5,6 +5,7 @@ import com.vfpowertech.keytap.core.crypto.generateLastResortPreKey
 import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyAsyncClient
+import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyInfoRequest
 import com.vfpowertech.keytap.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
 import com.vfpowertech.keytap.services.auth.AuthTokenManager
@@ -64,6 +65,15 @@ class PreKeyManager(
 
         return preKeyPersistenceManager.removeUnsignedPreKeyRange(start, end) bind {
             preKeyPersistenceManager.removeSignedPreKey(generatedPreKeys.signedPreKey.id)
+        }
+    }
+
+    fun checkForUpload() {
+        authTokenManager.bind { authToken ->
+            PreKeyAsyncClient(serverUrl).getInfo(PreKeyInfoRequest(authToken.string)) mapUi { response ->
+                log.debug("Remaining prekeys: {}, requested to upload {}", response.remaining, response.uploadCount)
+                scheduleUpload(response.uploadCount)
+            }
         }
     }
 
