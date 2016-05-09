@@ -220,8 +220,11 @@ class KeyTapApplication {
             val userLoginData = UserLoginData(address, keyVault)
             val userComponent = createUserSession(userLoginData)
 
+            val authTokenManager = userComponent.authTokenManager
             if (response.authToken != null)
-                userComponent.authTokenManager.setToken(AuthToken(response.authToken))
+                authTokenManager.setToken(AuthToken(response.authToken))
+            else
+                authTokenManager.invalidateToken()
 
             contactsSyncSub = userComponent.contactSyncManager.status.subscribe {
                 contactListSyncingSubject.onNext(it)

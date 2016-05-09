@@ -80,10 +80,6 @@ class AuthTokenManager(
 
     /** Invalid the current token. Can be used by long-running tasks that aren't scoped to a single Promise. */
     fun invalidateToken() {
-        //the token provider'll provide us with a new token when it's ready
-        if (currentToken == null)
-            return
-
         currentToken = null
         tokenProvider.invalidateToken()
     }
