@@ -7,14 +7,24 @@ import com.vfpowertech.keytap.core.crypto.hashes.HashParams
 import com.vfpowertech.keytap.core.crypto.hashes.SHA256Params
 import java.util.*
 
+interface Deserializer<T> {
+    val algorithmName: String
+    fun deserialize(params: Map<String, String>): T
+}
+
 abstract class Deserializers<T> {
-    private var deserializers = HashMap<String, (Map<String, String>) -> T>()
+    private var deserializers = HashMap<String, Deserializer<T>>()
 
     init {
         initSerializers()
     }
 
-    fun registerDeserializer(algorithmName: String, deserializer: (Map<String, String>) -> T) {
+    fun register(deserializer: Deserializer<T>) {
+        val algorithmName = deserializer.algorithmName
+        
+        if (algorithmName in deserializers)
+            throw IllegalArgumentException("Deserializer for $algorithmName already registered")
+
         deserializers[algorithmName] = deserializer
     }
 
@@ -24,7 +34,7 @@ abstract class Deserializers<T> {
         if (deserializer == null)
             throw IllegalArgumentException("Unsupported algorithm: $algorithmName")
 
-        return deserializer(serializedParams.params)
+        return deserializer.deserialize(serializedParams.params)
     }
 
     abstract fun initSerializers()
@@ -32,13 +42,13 @@ abstract class Deserializers<T> {
 
 object HashDeserializers : Deserializers<HashParams>() {
     override fun initSerializers() {
-        registerDeserializer(BCryptParams.algorithmName, { BCryptParams.deserialize(it) })
-        registerDeserializer(SHA256Params.algorithmName, { SHA256Params.deserialize(it) })
+        register(BCryptParams)
+        register(SHA256Params)
     }
 }
 
 object CipherDeserializers : Deserializers<CipherParams>() {
     override fun initSerializers() {
-        registerDeserializer(AESGCMParams.algorithmName, { AESGCMParams.deserialize(it) })
+        register(AESGCMParams)
     }
 }
