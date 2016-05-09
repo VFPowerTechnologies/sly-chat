@@ -16,11 +16,7 @@ data class AuthenticationData(
 
     @param:JsonProperty("account-info")
     @get:JsonProperty("account-info")
-    val accountInfo: AccountInfo,
-
-    @param:JsonProperty("auth-upgrade")
-    @get:JsonProperty("auth-upgrade")
-    val authUpgrade: AuthUpgradeInfo?
+    val accountInfo: AccountInfo
 )
 
 data class AuthenticationResponse(
