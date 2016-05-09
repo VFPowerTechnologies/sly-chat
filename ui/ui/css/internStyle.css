@@ -431,6 +431,33 @@ button.btn-large {
     background-color: #DEDEDE;
     border-radius: 5px;
 }
+.message_selected .avatarCircle {
+    display: none;
+}
+.message_selected .check {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background-color: #212121;
+    color: white;
+    line-height: 45px;
+    text-align: center;
+}
+.message_selected.message-right .check {
+    float: right;
+}
+.message_selected.message-left .check {
+    float: left;
+}
+.message_selected.following-message.message-right {
+    padding-right: 0;
+}
+.message_selected.following-message.message-left {
+    padding-left: 0;
+}
+.message_selected .message {
+    max-width: calc(100% - 71px);
+}
 .contextLikeMenu a {
     color: #212121;
     padding-left: 10px;

@@ -61,10 +61,10 @@ ChatController.prototype = {
                 }
                 else {
                     if ($(this).hasClass("message_selected")) {
-                        $(this).removeClass("message_selected");
+                        KEYTAP.chatController.deselectMessage($(this));
                     }
                     else {
-                        $(this).addClass("message_selected");
+                        KEYTAP.chatController.selectMessage($(this));
                     }
                 }
             }
@@ -94,8 +94,8 @@ ChatController.prototype = {
             this.messageToDelete = [];
             this.selectMode = false;
             $(".message_selected").each(function (index, item) {
-                $(item).removeClass("message_selected");
-            });
+                this.deselectMessage($(item));
+            }.bind(this));
             BootstrapDialog.closeAll();
         }.bind(this));
 
@@ -103,8 +103,8 @@ ChatController.prototype = {
             e.preventDefault();
             this.selectMode = true;
             this.messageToDelete.forEach(function (id) {
-                $("#message_" + id).addClass("message_selected");
-            });
+                this.selectMessage($("#message_" + id));
+            }.bind(this));
             this.messageMenu.close();
             $("#main").prepend(this.createMultipleDeleteMenu());
         }.bind(this));
@@ -113,8 +113,8 @@ ChatController.prototype = {
             e.preventDefault();
             this.selectMode = false;
             $(".message_selected").each(function (index, item) {
-                $(item).removeClass("message_selected");
-            });
+                this.deselectMessage($(item));
+            }.bind(this));
             $("#multipleDeleteMenu").remove();
             this.messageToDelete = [];
         }.bind(this));
@@ -123,6 +123,7 @@ ChatController.prototype = {
             e.preventDefault();
             var messagesSelected = $(".message_selected");
             if(messagesSelected.length >= 1) {
+                this.messageToDelete = [];
                 messagesSelected.each(function (index, item) {
                     this.messageToDelete.push($(item).attr("id").split("_")[1]);
                 }.bind(this));
@@ -144,6 +145,24 @@ ChatController.prototype = {
             BootstrapDialog.closeAll();
             KEYTAP.contactController.displayDeleteContactModal(id);
         });
+    },
+    /**
+     * Select the element and add styling to the node.
+     *
+     * @param messageElement Jquery element.
+     */
+    selectMessage : function (messageElement) {
+        messageElement.addClass("message_selected");
+        messageElement.prepend("<div class='check'><i class='fa fa-check fa-3x'></i>");
+    },
+    /**
+     * Deselect message and remove selected style.
+     *
+     * @param messageElement Jquery element.
+     */
+    deselectMessage : function (messageElement) {
+        messageElement.removeClass("message_selected");
+        messageElement.children(".check").remove();
     },
     /**
      * Create a context like menu for messages manipulation options.
