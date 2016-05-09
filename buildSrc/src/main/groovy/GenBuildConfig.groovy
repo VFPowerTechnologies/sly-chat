@@ -92,6 +92,45 @@ class GenBuildConfig extends DefaultTask {
         return props
     }
 
+    private static long getMsConversationAmount(String unit) {
+        switch (unit) {
+            case 'ms':
+                return 1
+
+            case 's':
+                return 1000
+
+            case 'm':
+                return 60 * 1000
+
+            case 'h':
+                return 60 * 60 * 1000
+
+            case 'd':
+                return 24 * 60 * 60 * 1000
+
+            default:
+                throw new IllegalArgumentException("Invalid time unit: $unit")
+        }
+    }
+
+    /**
+     * Returns milliseconds from a given key. Checks debug.<key> if debug is true.
+     */
+    private static long findMsForKey(Properties settings, String key, boolean debug) {
+        def s = findValueForKey(settings, key, debug);
+
+        def matcher = s =~ /(\d+)(ms|s|m|h|d)/
+        if (!matcher)
+            throw new InvalidUserDataException("$s is an invalid time format string")
+
+        def v = Long.parseLong(matcher.group(1))
+        def unit = matcher.group(2)
+        def conversionAmount = getMsConversationAmount(unit)
+
+        return v * conversionAmount
+    }
+
     /**
       * Returns the value found for a key; if debug is enabled, checks
       * debug.<key> first. Throws InvalidUserDataException if key isn't found.
@@ -156,6 +195,8 @@ class GenBuildConfig extends DefaultTask {
         vc.put('enableDatabaseEncryption', enableDatabaseEncryption);
 
         vc.put('uiServiceType', getEnumValue(settings, debug, 'uiServiceType', ['DUMMY', 'REAL'], null))
+
+        vc.put('relayKeepAliveIntervalMs', findMsForKey(settings, 'relayServer.keepAlive', debug))
 
         //adds <platform><SettingName> to context
         def urlSettings = [

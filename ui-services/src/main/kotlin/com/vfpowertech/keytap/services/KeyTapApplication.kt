@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.services
 
 import com.fasterxml.jackson.core.JsonParseException
+import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.crypto.KeyVault
 import com.vfpowertech.keytap.core.div
@@ -90,7 +91,8 @@ class KeyTapApplication {
 
         initInstallationData()
 
-        keepAliveObservable = Observable.interval(2000, 2000, TimeUnit.MILLISECONDS, appComponent.rxScheduler)
+        val interval = BuildConfig.relayKeepAliveIntervalMs
+        keepAliveObservable = Observable.interval(interval, interval, TimeUnit.MILLISECONDS, appComponent.rxScheduler)
 
         //android can fire these events multiple time in succession (eg: when google account sync is occuring)
         //so we clamp down the number of events we process
