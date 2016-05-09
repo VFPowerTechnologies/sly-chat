@@ -208,16 +208,16 @@ RegistrationController.prototype = {
     },
     getFormattedPhoneNumber : function () {
         var hiddenPhoneInput = $("#hiddenPhoneInput");
-
-        var countryData = hiddenPhoneInput.intlTelInput("getSelectedCountryData");
         var phoneValue = $("#phone").val();
 
         hiddenPhoneInput.intlTelInput("setNumber", phoneValue);
 
-        return phoneValue.indexOf(countryData.dialCode) == 0 ?
-            countryData.dialCode + phoneValue.substring(countryData.dialCode.length) :
-                countryData.dialCode + phoneValue;
+        var phoneNumber =  hiddenPhoneInput.intlTelInput("getNumber");
 
+        if (phoneNumber.charAt(0) === "+")
+            return phoneNumber.substr(1);
+        else
+            return phoneNumber;
     },
     setPhoneExt : function (dialCode) {
         if(typeof dialCode != "undefined") {

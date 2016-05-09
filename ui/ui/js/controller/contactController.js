@@ -36,20 +36,18 @@ ContactController.prototype = {
         }.bind(this));
     },
     showContactSyncingNotification : function () {
-        setTimeout(function() {
-            this.notify = $.notify({
-                icon: "icon-pull-left fa fa-info-circle",
-                message: " Contact List is syncing"
-            }, {
-                type: "warning",
-                delay: 0,
-                allow_dismiss: false,
-                offset: {
-                    y: 66,
-                    x: 20
-                }
-            });
-        }.bind(this), 300);
+        this.notify = $.notify({
+            icon: "icon-pull-left fa fa-info-circle",
+            message: " Contact List is syncing"
+        }, {
+            type: "warning",
+            delay: 0,
+            allow_dismiss: false,
+            offset: {
+                y: 66,
+                x: 20
+            }
+        });
     },
     closeNotification : function () {
         setTimeout(function() {
