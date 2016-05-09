@@ -128,4 +128,7 @@ class RelayClientManager(
         relayClient.sendMessage(to, content, messageId)
     }
 
+    fun sendPing() {
+        getClientOrThrow().sendPing()
+    }
 }
