@@ -162,6 +162,10 @@ class RelayClient(
                 emitEvent(UserOffline(to.toUserId(), messageId))
             }
 
+            SERVER_PONG -> {
+                log.debug("PONG")
+            }
+
             else -> {
                 log.warn("Unhandled message type: {}", message.header.commandCode)
             }
@@ -225,5 +229,11 @@ class RelayClient(
         log.info("Sending message <<{}>> to <<{}>>", messageId, to.long)
         val connection = getAuthConnectionOrThrow()
         connection.sendMessage(createSendMessageMessage(credentials, to, content, messageId))
+    }
+
+    fun sendPing() {
+        log.debug("PING")
+        val connection = getAuthConnectionOrThrow()
+        connection.sendMessage(createPingMessage())
     }
 }

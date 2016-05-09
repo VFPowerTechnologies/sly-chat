@@ -5,14 +5,15 @@ package com.vfpowertech.keytap.core.relay.base
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.relay.UserCredentials
-import com.vfpowertech.keytap.core.relay.base.CommandCode.CLIENT_REGISTER_REQUEST
-import com.vfpowertech.keytap.core.relay.base.CommandCode.CLIENT_SEND_MESSAGE
+import com.vfpowertech.keytap.core.relay.base.CommandCode.*
 import java.util.*
 
 val HEADER_SIZE = 589
 //CSP
 val SIGNATURE = "CSP"
 val SIGNATURE_BYTES = SIGNATURE.toByteArray(Charsets.US_ASCII)
+
+val PROTOCOL_VERSION_1 = 1
 
 //CLIENT_ indicates a client->server command, SERVER_ server->client
 enum class CommandCode(val code: Int) {
@@ -38,7 +39,9 @@ enum class CommandCode(val code: Int) {
     CLIENT_FILE_TRANSFER_ACCEPT(12),
     CLIENT_FILE_TRANSFER_DATA(13),
     CLIENT_FILE_TRANSFER_COMPLETE(14),
-    CLIENT_FILE_TRANSFER_CANCEL_OR_REJECT(15);
+    CLIENT_FILE_TRANSFER_CANCEL_OR_REJECT(15),
+    CLIENT_PING(16),
+    SERVER_PONG(17);
 
     companion object {
         private val cachedValues = values()
@@ -191,7 +194,7 @@ fun headerToByteArray(header: Header): ByteArray =
 /** Create a new auth request. */
 fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
     val header = Header(
-        1,
+        PROTOCOL_VERSION_1,
         0,
         userCredentials.authToken,
         userCredentials.address.asString(),
@@ -207,7 +210,7 @@ fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
 
 fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, content: ByteArray, messageId: String): RelayMessage {
     val header = Header(
-        1,
+        PROTOCOL_VERSION_1,
         content.size,
         userCredentials.authToken,
         userCredentials.address.asString(),
@@ -220,4 +223,20 @@ fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, conte
     )
 
     return RelayMessage(header, content)
+}
+
+fun createPingMessage(): RelayMessage {
+    val header = Header(
+        PROTOCOL_VERSION_1,
+        0,
+        "",
+        "",
+        "",
+        "",
+        0,
+        1,
+        CLIENT_PING
+    )
+
+    return RelayMessage(header, ByteArray(0))
 }

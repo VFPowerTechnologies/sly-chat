@@ -51,4 +51,6 @@ public class BuildConfig {
     public static final ServerUrls ANDROID_SERVER_URLS = new ServerUrls("$androidHttpApiServer", $androidRelayServer);
 
     public static final UIServiceMap UI_SERVICE_MAP = new UIServiceMap();
+
+    public static final long relayKeepAliveIntervalMs = $relayKeepAliveIntervalMs;
 }
