@@ -14,7 +14,7 @@ data class AESGCMParams(
         require(authTagLength > 0, "authTagLength must be > 0")
     }
 
-    override val algorithmName: String = "aes-gcm"
+    override val algorithmName: String = AESGCMParams.algorithmName
 
     override val keyType: String = "AES"
 
@@ -26,6 +26,8 @@ data class AESGCMParams(
     }
 
     companion object {
+        val algorithmName: String = "aes-gcm"
+
         fun deserialize(params: Map<String, String>): CipherParams {
             return AESGCMParams(
                 params["iv"]!!.unhexify(),
