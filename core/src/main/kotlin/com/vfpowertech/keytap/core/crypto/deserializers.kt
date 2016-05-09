@@ -32,7 +32,7 @@ abstract class Deserializers<T> {
 
 object HashDeserializers : Deserializers<HashParams>() {
     override fun initSerializers() {
-        registerDeserializer("bcrypt", { BCryptParams.deserialize(it) })
+        registerDeserializer("bcrypt-sha256", { BCryptParams.deserialize(it) })
         registerDeserializer("sha-256", { SHA256Params.deserialize(it) })
     }
 }

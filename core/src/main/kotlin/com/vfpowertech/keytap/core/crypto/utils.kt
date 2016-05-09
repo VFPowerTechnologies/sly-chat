@@ -1,5 +1,7 @@
+@file:JvmName("CryptoUtils")
 package com.vfpowertech.keytap.core.crypto
 
+import com.vfpowertech.keytap.core.base64encode
 import com.vfpowertech.keytap.core.crypto.ciphers.AESGCMParams
 import com.vfpowertech.keytap.core.crypto.ciphers.CipherParams
 import com.vfpowertech.keytap.core.crypto.hashes.BCryptParams
@@ -102,7 +104,19 @@ fun hashPasswordForRemoteWithDefaults(password: String): HashData {
  */
 fun hashPasswordWithParams(password: String, params: HashParams): ByteArray = when (params) {
     is BCryptParams -> {
-        BCrypt.generate(password.toByteArray(Charsets.UTF_8), params.salt, params.cost)
+        //this design is from passlib, to get around the 72 password length limitation (incase)
+        //see https://pythonhosted.org/passlib/lib/passlib.hash.bcrypt_sha256.html
+        val digester = SHA256Digest()
+        val hash = digester.processInput(password.toByteArray(Charsets.UTF_8))
+
+        //44b string
+        val encoded = base64encode(hash).toByteArray(Charsets.US_ASCII)
+
+        //password must be nul-terminated to prevent collisions in repeated passwords (eg: test and testtest)
+        val input = ByteArray(encoded.size+1)
+        System.arraycopy(encoded, 0, input, 0, encoded.size)
+
+        BCrypt.generate(input, params.salt, params.cost)
     }
     else -> hashDataWithParams(password.toByteArray(Charsets.UTF_8), params)
 }

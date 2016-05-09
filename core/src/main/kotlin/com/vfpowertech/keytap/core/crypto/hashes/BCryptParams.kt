@@ -25,7 +25,7 @@ data class BCryptParams(
         require(cost >= 4 && cost <= 30, "cost must be within the range [4, 30]")
     }
 
-    override val algorithmName: String = "bcrypt"
+    override val algorithmName: String = "bcrypt-sha256"
 
     override fun serialize(): SerializedCryptoParams {
         return SerializedCryptoParams(algorithmName, mapOf(
