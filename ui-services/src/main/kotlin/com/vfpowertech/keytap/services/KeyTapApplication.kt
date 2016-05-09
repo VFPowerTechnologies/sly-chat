@@ -74,6 +74,9 @@ class KeyTapApplication {
 
     private var pushingPreKeys = false
 
+    private lateinit var keepAliveObservable: Observable<Long>
+    private var keepAliveTimerSub: Subscription? = null
+
     val isAuthenticated: Boolean
         get() = userComponent != null
 
@@ -86,6 +89,8 @@ class KeyTapApplication {
         initializeApplicationServices()
 
         initInstallationData()
+
+        keepAliveObservable = Observable.interval(2000, 2000, TimeUnit.MILLISECONDS, appComponent.rxScheduler)
 
         //android can fire these events multiple time in succession (eg: when google account sync is occuring)
         //so we clamp down the number of events we process
@@ -408,16 +413,33 @@ class KeyTapApplication {
         connectToRelay()
     }
 
+    private fun startRelayKeepAlive() {
+        keepAliveTimerSub = keepAliveObservable.subscribe {
+            userComponent?.relayClientManager?.sendPing()
+        }
+    }
+
+    private fun stopRelayKeepAlive() {
+        keepAliveTimerSub?.unsubscribe()
+        keepAliveTimerSub = null
+    }
+
     private fun handleRelayClientEvent(event: RelayClientEvent) {
         when (event) {
             is ConnectionEstablished -> reconnectionTimer.reset()
-            is ConnectionLost -> if (!event.wasRequested) reconnectToRelay()
+            is ConnectionLost -> {
+                stopRelayKeepAlive()
+
+                if (!event.wasRequested) reconnectToRelay()
+            }
             is ConnectionFailure -> {
                 log.warn("Connection to relay failed: {}", event.error.message)
                 reconnectToRelay()
             }
 
             is AuthenticationSuccessful -> {
+                startRelayKeepAlive()
+
                 fetchOfflineMessages()
             }
 
