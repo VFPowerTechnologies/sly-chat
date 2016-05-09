@@ -27,9 +27,7 @@ $(document).ready(function () {
         geoIpLookup: function(callback) {
             infoService.getGeoLocation().then(function (country) {
                 if(country !== null) {
-                    console.log("country is: " + country);
                     callback(country);
-
                     setTimeout(function () {
                         var data = $("#hiddenPhoneInput").intlTelInput("getSelectedCountryData");
                         $("#countrySelect").val(data.iso2);
