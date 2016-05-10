@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.testclients
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.relay.*
 import com.vfpowertech.keytap.core.relay.base.netty.NettyRelayConnector

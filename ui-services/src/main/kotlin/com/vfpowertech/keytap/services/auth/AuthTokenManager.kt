@@ -2,7 +2,7 @@ package com.vfpowertech.keytap.services.auth
 
 import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.UnauthorizedException
-import com.vfpowertech.keytap.core.relay.UserCredentials
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.services.bindRecoverForUi
 import com.vfpowertech.keytap.services.bindUi
 import com.vfpowertech.keytap.services.mapUi

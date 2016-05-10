@@ -9,7 +9,7 @@ import com.vfpowertech.keytap.core.base64encode
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.http.get
-import com.vfpowertech.keytap.core.relay.UserCredentials
+import com.vfpowertech.keytap.core.UserCredentials
 
 fun <T> getValueFromApiResult(apiResult: ApiResult<T>, response: HttpResponse): T {
     //should never happen as ApiResult has checks in its constructor for this stuff

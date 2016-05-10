@@ -3,7 +3,7 @@ package com.vfpowertech.keytap.services.ui.impl
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.http.api.accountupdate.*
 import com.vfpowertech.keytap.core.persistence.AccountInfo
-import com.vfpowertech.keytap.core.relay.UserCredentials
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.di.UserComponent
 import com.vfpowertech.keytap.services.ui.UIAccountModificationService

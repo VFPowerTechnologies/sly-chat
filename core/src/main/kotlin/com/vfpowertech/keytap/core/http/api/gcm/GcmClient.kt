@@ -4,7 +4,7 @@ import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.api.ApiResult
 import com.vfpowertech.keytap.core.http.api.EmptyResponse
 import com.vfpowertech.keytap.core.http.api.apiPostRequest
-import com.vfpowertech.keytap.core.relay.UserCredentials
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.typeRef
 
 class GcmClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {

@@ -4,7 +4,7 @@ package com.vfpowertech.keytap.core.relay.base
 
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.hexify
-import com.vfpowertech.keytap.core.relay.UserCredentials
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.CommandCode.*
 import java.util.*
 

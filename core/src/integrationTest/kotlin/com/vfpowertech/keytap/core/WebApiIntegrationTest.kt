@@ -15,7 +15,7 @@ import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
 import com.vfpowertech.keytap.core.http.get
 import com.vfpowertech.keytap.core.persistence.ContactInfo
-import com.vfpowertech.keytap.core.relay.UserCredentials
+import com.vfpowertech.keytap.core.UserCredentials
 import org.junit.Assume
 import org.junit.Before
 import org.junit.BeforeClass

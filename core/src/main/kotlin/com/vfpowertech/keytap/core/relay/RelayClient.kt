@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.core.relay
 
 import com.vfpowertech.keytap.core.KeyTapAddress
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.relay.RelayClientState.*
 import com.vfpowertech.keytap.core.relay.base.*

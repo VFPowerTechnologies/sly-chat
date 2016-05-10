@@ -24,7 +24,7 @@ import com.vfpowertech.keytap.core.http.api.gcm.GcmAsyncClient
 import com.vfpowertech.keytap.core.http.api.gcm.RegisterRequest
 import com.vfpowertech.keytap.core.http.api.gcm.RegisterResponse
 import com.vfpowertech.keytap.core.http.api.gcm.UnregisterRequest
-import com.vfpowertech.keytap.core.relay.UserCredentials
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.LoginState
 import com.vfpowertech.keytap.services.di.ApplicationComponent

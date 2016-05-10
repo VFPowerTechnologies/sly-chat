@@ -2,7 +2,7 @@ package com.vfpowertech.keytap.core.http.api.contacts
 
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.api.apiPostRequest
-import com.vfpowertech.keytap.core.relay.UserCredentials
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.typeRef
 
 class ContactClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {

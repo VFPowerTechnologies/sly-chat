@@ -3,7 +3,7 @@ package com.vfpowertech.keytap.core.http.api.prekeys
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.api.apiGetRequest
 import com.vfpowertech.keytap.core.http.api.apiPostRequest
-import com.vfpowertech.keytap.core.relay.UserCredentials
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.typeRef
 
 class PreKeyClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {

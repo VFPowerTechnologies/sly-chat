@@ -1,7 +1,7 @@
 package com.vfpowertech.keytap.core.http.api.contacts
 
 import com.vfpowertech.keytap.core.http.JavaHttpClient
-import com.vfpowertech.keytap.core.relay.UserCredentials
+import com.vfpowertech.keytap.core.UserCredentials
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
