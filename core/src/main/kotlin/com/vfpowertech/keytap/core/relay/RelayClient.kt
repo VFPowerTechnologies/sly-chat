@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.relay
 
+import com.vfpowertech.keytap.core.ADDRESS_USERID_DEVICEID_DELIMITER
 import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.UserId
@@ -15,7 +16,7 @@ import java.net.InetSocketAddress
 
 //HACK HACK HACK
 private fun String.toUserId(): UserId {
-    val parts = split(":", limit = 2)
+    val parts = split(ADDRESS_USERID_DEVICEID_DELIMITER, limit = 2)
     return UserId(parts[0].toLong())
 }
 

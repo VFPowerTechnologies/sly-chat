@@ -2,6 +2,7 @@
 @file:JvmName("RelayProtocol")
 package com.vfpowertech.keytap.core.relay.base
 
+import com.vfpowertech.keytap.core.ADDRESS_USERID_DEVICEID_DELIMITER
 import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.hexify
@@ -215,7 +216,7 @@ fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, conte
         userCredentials.authToken.string,
         userCredentials.address.asString(),
         //HACK HACK HACK
-        "${to.long}:1",
+        "${to.long}${ADDRESS_USERID_DEVICEID_DELIMITER}1",
         messageId,
         0,
         1,

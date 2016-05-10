@@ -49,8 +49,7 @@ fun <T> valueFromApi(response: HttpResponse, validResponseCodes: Set<Int>, typeR
 
 private fun userCredentialsToHeaders(userCredentials: UserCredentials?): List<Pair<String, String>> {
     return if (userCredentials != null) {
-        //RFC2617 doesn't allow colons in username, as it's used to delimit the username and password fields
-        val username = userCredentials.address.asString().replace(':', '.')
+        val username = userCredentials.address.asString()
         val creds = "$username:${userCredentials.authToken.string}".toByteArray(Charsets.UTF_8)
         listOf("Authorization" to "Basic ${base64encode(creds)}")
     }
