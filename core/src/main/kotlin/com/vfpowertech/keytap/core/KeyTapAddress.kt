@@ -29,7 +29,7 @@ class KeyTapAddressDeserializer : JsonDeserializer<KeyTapAddress>() {
 }
 
 @JsonDeserialize(using = KeyTapAddressDeserializer::class)
-class KeyTapAddress(val id: UserId, val deviceId: Int) {
+data class KeyTapAddress(val id: UserId, val deviceId: Int) {
     fun toSignalAddress(): SignalProtocolAddress = SignalProtocolAddress(id.long.toString(), deviceId)
 
     /** Returns the address serialized as a string. Function name choosen to not conflict with toString. */
