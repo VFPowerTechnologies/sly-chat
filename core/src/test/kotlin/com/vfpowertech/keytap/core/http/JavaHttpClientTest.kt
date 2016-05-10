@@ -30,7 +30,7 @@ class JavaHttpClientTest {
     fun `get should return a body on 200`() {
         Assume.assumeTrue(doOnlineTests)
 
-        val response = client.get("http://www.google.com/")
+        val response = client.get("http://www.google.com/", listOf())
         assertEquals(200, response.code)
         assertTrue(response.body.length > 0)
     }
@@ -39,7 +39,7 @@ class JavaHttpClientTest {
     fun `get should return a body on 404`() {
         Assume.assumeTrue(doOnlineTests)
 
-        val response = client.get("http://www.google.com/dfafadfa")
+        val response = client.get("http://www.google.com/dfafadfa", listOf())
         assertEquals(404, response.code)
         assertTrue(response.body.length > 0)
     }
@@ -52,7 +52,7 @@ class JavaHttpClientTest {
         val post = Post(null, 1, "title", "body")
         val body = objectMapper.writeValueAsBytes(post)
 
-        val response = client.postJSON("http://jsonplaceholder.typicode.com/posts", body)
+        val response = client.postJSON("http://jsonplaceholder.typicode.com/posts", body, listOf())
         assertEquals(201, response.code)
 
         val returnedPost = objectMapper.readValue(response.body, Post::class.java)
@@ -67,6 +67,6 @@ class JavaHttpClientTest {
         val url = "https://wrong.host.badssl.com/"
 
         val client = JavaHttpClient()
-        client.get(url)
+        client.get(url, listOf())
     }
 }

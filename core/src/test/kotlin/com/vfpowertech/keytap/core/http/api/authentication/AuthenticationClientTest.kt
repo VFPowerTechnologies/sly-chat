@@ -32,7 +32,7 @@ class AuthenticationClientTest {
         val apiResult = ApiResult(null, response)
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))
 
-        whenever(httpClient.get(any())).thenReturn(httpResponse)
+        whenever(httpClient.get(any(), any())).thenReturn(httpResponse)
 
         val client = AuthenticationClient("localhost", httpClient)
         val got = client.getParams(username)
@@ -46,11 +46,11 @@ class AuthenticationClientTest {
         val serializedKeyVault = generateNewKeyVault(password).serialize()
 
         val httpClient = mock<HttpClient>()
-        val response = AuthenticationResponse(null, AuthenticationData("auth", serializedKeyVault, accountInfo, null))
+        val response = AuthenticationResponse(null, AuthenticationData("auth", serializedKeyVault, accountInfo))
         val apiResult = ApiResult(null, response)
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))
 
-        whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)
+        whenever(httpClient.postJSON(any(), any(), any())).thenReturn(httpResponse)
 
         val request = AuthenticationRequest(username, "hash", csrfToken, registrationId, deviceId)
 
