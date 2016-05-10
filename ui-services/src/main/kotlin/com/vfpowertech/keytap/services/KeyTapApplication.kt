@@ -20,6 +20,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.task
+import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -73,13 +74,10 @@ class KeyTapApplication {
 
     lateinit var installationData: InstallationData
 
-    private var pushingPreKeys = false
-
     private lateinit var keepAliveObservable: Observable<Long>
     private var keepAliveTimerSub: Subscription? = null
 
-    val isAuthenticated: Boolean
-        get() = userComponent != null
+    private var connectingToRelay = false
 
     fun init(platformModule: PlatformModule) {
         appComponent = DaggerApplicationComponent.builder()
@@ -190,19 +188,6 @@ class KeyTapApplication {
             emitLoginEvent(LoggedOut())
             initializationComplete()
         }
-    }
-
-    private fun schedulePreKeyUpload(keyRegenCount: Int) {
-        if (pushingPreKeys || keyRegenCount <= 0)
-            return
-
-        val userComponent = this.userComponent
-        if (userComponent == null) {
-            log.warn("schedulePreKeyUpload called without a user session")
-            return
-        }
-
-        userComponent.preKeyManager.scheduleUpload(keyRegenCount)
     }
 
     /**
@@ -392,7 +377,6 @@ class KeyTapApplication {
         emitLoginEvent(LoggedIn(accountInfo))
     }
 
-    //TODO queue if offline/etc
     fun fetchOfflineMessages() {
         userComponent?.offlineMessageManager?.fetch()
     }
@@ -508,17 +492,30 @@ class KeyTapApplication {
         if (!isNetworkAvailable)
             return
 
+        if (connectingToRelay)
+            return
+
         val userComponent = this.userComponent
         if (userComponent == null) {
             log.warn("User session has already been terminated")
             return
         }
 
+        if (userComponent.relayClientManager.isOnline)
+            return
+
+        connectingToRelay = true
+
         val username = userComponent.userLoginData.address
 
         userComponent.authTokenManager.mapUi { authToken ->
             val userCredentials = UserCredentials(username, authToken.string)
             userComponent.relayClientManager.connect(userCredentials)
+        } fail { e ->
+            log.error("Unable to retrieve auth token for relay connection: {}", e.message, e)
+        } alwaysUi {
+            //after connect() is called, relayClientManager.isOnline will be true
+            connectingToRelay = false
         }
     }
 

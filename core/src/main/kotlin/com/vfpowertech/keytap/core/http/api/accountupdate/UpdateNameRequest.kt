@@ -1,4 +1,4 @@
-package com.vfpowertech.keytap.core.http.api.accountUpdate
+package com.vfpowertech.keytap.core.http.api.accountupdate
 
 import com.fasterxml.jackson.annotation.JsonProperty
 

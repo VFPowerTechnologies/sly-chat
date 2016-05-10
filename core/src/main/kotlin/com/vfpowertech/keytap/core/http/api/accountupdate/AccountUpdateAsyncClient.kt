@@ -1,4 +1,4 @@
-package com.vfpowertech.keytap.core.http.api.accountUpdate
+package com.vfpowertech.keytap.core.http.api.accountupdate
 
 import com.vfpowertech.keytap.core.http.JavaHttpClient
 import nl.komponents.kovenant.Promise

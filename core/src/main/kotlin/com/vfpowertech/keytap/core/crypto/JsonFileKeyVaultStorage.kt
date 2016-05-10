@@ -2,11 +2,7 @@ package com.vfpowertech.keytap.core.crypto
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.http.slurpInputStreamReader
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.InputStreamReader
+import java.io.*
 
 /** Implementation of a KeyVaultStorage that stores its data in a json file on disk. */
 class JsonFileKeyVaultStorage(val path: File) : KeyVaultStorage {
@@ -17,7 +13,7 @@ class JsonFileKeyVaultStorage(val path: File) : KeyVaultStorage {
         return objectMapper.readValue(json, SerializedKeyVault::class.java)
     }
 
-    override fun write(serializedKeyVault: SerializedKeyVault) {
+    override fun write(serializedKeyVault: SerializedKeyVaultV1) {
         val jsonBytes = objectMapper.writeValueAsBytes(serializedKeyVault)
         FileOutputStream(path).use { it.write(jsonBytes) }
     }

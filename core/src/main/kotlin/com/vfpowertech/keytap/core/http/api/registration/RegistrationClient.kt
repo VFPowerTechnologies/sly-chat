@@ -1,8 +1,8 @@
 package com.vfpowertech.keytap.core.http.api.registration
 
 import com.vfpowertech.keytap.core.http.HttpClient
-import com.vfpowertech.keytap.core.http.api.accountUpdate.UpdatePhoneRequest
-import com.vfpowertech.keytap.core.http.api.accountUpdate.UpdatePhoneResponse
+import com.vfpowertech.keytap.core.http.api.accountupdate.UpdatePhoneRequest
+import com.vfpowertech.keytap.core.http.api.accountupdate.UpdatePhoneResponse
 import com.vfpowertech.keytap.core.http.api.apiPostRequest
 import com.vfpowertech.keytap.core.typeRef
 

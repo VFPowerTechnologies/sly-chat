@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.core.crypto.hashes
 
+import com.vfpowertech.keytap.core.crypto.Deserializer
 import com.vfpowertech.keytap.core.crypto.SerializedCryptoParams
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.crypto.unhexify
@@ -25,7 +26,7 @@ data class BCryptParams(
         require(cost >= 4 && cost <= 30, "cost must be within the range [4, 30]")
     }
 
-    override val algorithmName: String = "bcrypt"
+    override val algorithmName: String = BCryptParams.algorithmName
 
     override fun serialize(): SerializedCryptoParams {
         return SerializedCryptoParams(algorithmName, mapOf(
@@ -34,8 +35,10 @@ data class BCryptParams(
         ))
     }
 
-    companion object {
-        fun deserialize(params: Map<String, String>): HashParams {
+    companion object : Deserializer<HashParams> {
+        override val algorithmName: String = "bcrypt-sha256"
+
+        override fun deserialize(params: Map<String, String>): HashParams {
             return BCryptParams(
                 params["salt"]!!.unhexify(),
                 Integer.parseInt(params["cost"]!!)

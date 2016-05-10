@@ -1,8 +1,8 @@
 package com.vfpowertech.keytap.core.http.api.registration
 
 import com.vfpowertech.keytap.core.http.JavaHttpClient
-import com.vfpowertech.keytap.core.http.api.accountUpdate.UpdatePhoneRequest
-import com.vfpowertech.keytap.core.http.api.accountUpdate.UpdatePhoneResponse
+import com.vfpowertech.keytap.core.http.api.accountupdate.UpdatePhoneRequest
+import com.vfpowertech.keytap.core.http.api.accountupdate.UpdatePhoneResponse
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
