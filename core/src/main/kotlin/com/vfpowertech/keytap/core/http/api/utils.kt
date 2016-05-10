@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.UnauthorizedException
+import com.vfpowertech.keytap.core.base64encode
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.http.get
@@ -48,8 +49,10 @@ fun <T> valueFromApi(response: HttpResponse, validResponseCodes: Set<Int>, typeR
 
 private fun userCredentialsToHeaders(userCredentials: UserCredentials?): List<Pair<String, String>> {
     return if (userCredentials != null) {
-        //TODO
-        listOf("Authentication" to "Basic")
+        //RFC2617 doesn't allow colons in username, as it's used to delimit the username and password fields
+        val username = userCredentials.address.asString().replace(':', '.')
+        val creds = "$username:${userCredentials.authToken}".toByteArray(Charsets.UTF_8)
+        listOf("Authentication" to "Basic ${base64encode(creds)}")
     }
     else
         listOf()
