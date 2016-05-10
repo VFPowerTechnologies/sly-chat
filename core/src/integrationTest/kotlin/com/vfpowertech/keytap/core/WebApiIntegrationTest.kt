@@ -4,7 +4,7 @@ import com.vfpowertech.keytap.core.crypto.*
 import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import com.vfpowertech.keytap.core.http.JavaHttpClient
 import com.vfpowertech.keytap.core.http.api.ApiException
-import com.vfpowertech.keytap.core.http.api.accountUpdate.*
+import com.vfpowertech.keytap.core.http.api.accountupdate.*
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationClient
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationRequest
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationResponse

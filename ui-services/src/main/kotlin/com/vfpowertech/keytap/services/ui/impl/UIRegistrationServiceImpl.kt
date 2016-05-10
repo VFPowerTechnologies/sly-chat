@@ -3,7 +3,7 @@ package com.vfpowertech.keytap.services.ui.impl
 import com.vfpowertech.keytap.core.crypto.HashDeserializers
 import com.vfpowertech.keytap.core.crypto.hashPasswordWithParams
 import com.vfpowertech.keytap.core.crypto.hexify
-import com.vfpowertech.keytap.core.http.api.accountUpdate.UpdatePhoneRequest
+import com.vfpowertech.keytap.core.http.api.accountupdate.UpdatePhoneRequest
 import com.vfpowertech.keytap.core.http.api.authentication.AuthenticationAsyncClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationAsyncClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
