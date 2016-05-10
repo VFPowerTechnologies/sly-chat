@@ -19,12 +19,12 @@ import com.vfpowertech.keytap.android.services.AndroidUILoadService
 import com.vfpowertech.keytap.android.services.AndroidUIPlatformInfoService
 import com.vfpowertech.keytap.android.services.AndroidUIPlatformService
 import com.vfpowertech.keytap.core.BuildConfig
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.http.api.gcm.GcmAsyncClient
 import com.vfpowertech.keytap.core.http.api.gcm.RegisterRequest
 import com.vfpowertech.keytap.core.http.api.gcm.RegisterResponse
 import com.vfpowertech.keytap.core.http.api.gcm.UnregisterRequest
-import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.LoginState
 import com.vfpowertech.keytap.services.di.ApplicationComponent
@@ -234,7 +234,7 @@ class AndroidApp : Application() {
         if (userComponent.userLoginData.address.id != userId)
             return
 
-        log.debug("Received GCM token for {}: {}", userId, token)
+        log.debug("Received GCM token for user {}: {}", userId.long, token)
 
         userComponent.authTokenManager.bind { userCredentials ->
             pushGcmTokenToServer(userCredentials, token)
