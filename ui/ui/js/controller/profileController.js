@@ -33,14 +33,14 @@ ProfileController.prototype = {
     requestPhoneUpdate : function (e) {
         e.preventDefault();
         var formValid = validateForm("#updatePhoneForm");
-        var phoneValid = validatePhone();
+        var phoneValid = this.validatePhone();
         var button = $("#submitUpdatePhoneBtn");
 
         button.prop("disabled", true);
         $("#updatePhoneFormDiv .formError").html("");
 
         if(formValid == true && phoneValid == true) {
-            var phone = this.getFormattedPhoneNumber();
+            var phone = getFormatedPhoneNumber($("#phone").val(), $("#countrySelect").val());
 
             accountModifictationService.requestPhoneUpdate(phone).then(function (result) {
                 if (result.successful === true) {
@@ -148,18 +148,6 @@ ProfileController.prototype = {
             })
         }
     },
-    getFormattedPhoneNumber : function () {
-        var hiddenPhoneInput = $("#hiddenPhoneInput");
-
-        var countryData = hiddenPhoneInput.intlTelInput("getSelectedCountryData");
-        var phoneValue = $("#phone").val();
-
-        hiddenPhoneInput.intlTelInput("setNumber", phoneValue);
-
-        return phoneValue.indexOf(countryData.dialCode) == 0 ?
-            countryData.dialCode + phoneValue.substring(countryData.dialCode.length) :
-                countryData.dialCode + phoneValue;
-    },
     createSmsVerificationModal: function () {
         var html = '<div class="valign-wrapper row form-wrapper" style="background-color: #fff; padding: 0; min-height: 100%;">' +
             '<div class="valign col s12" style="padding: 0;">' +
@@ -221,5 +209,29 @@ ProfileController.prototype = {
                 x: 20
             }
         });
+    },
+    validatePhone : function () {
+        var phoneInput = $("#phone");
+        var phoneValue = phoneInput.val();
+        var valid = validatePhone(phoneValue, $("#countrySelect").val());
+        var invalidDiv = $(".invalidPhone");
+
+        if(phoneValue == "")
+            invalidDiv.remove();
+
+        if(!valid) {
+            if(phoneValue != "") {
+                phoneInput.addClass("invalid");
+                if (!invalidDiv.length) {
+                    phoneInput.after("<div class='pull-right invalidPhone filled' style='color: red;'><p>Phone Number seems invalid.</p></div>");
+                }
+            }
+        }
+        else {
+            phoneInput.removeClass("invalid");
+            invalidDiv.remove();
+        }
+
+        return valid;
     }
 };

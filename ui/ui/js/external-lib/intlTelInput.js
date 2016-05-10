@@ -978,7 +978,7 @@
                 this._updatePlaceholder();
             }
             this.utilsScriptDeferred.resolve();
-        }
+        },
     };
     // using https://github.com/jquery-boilerplate/jquery-boilerplate/wiki/Extending-jQuery-Boilerplate
     // (adapted to allow public functions)
@@ -1054,6 +1054,20 @@
     };
     // version
     $.fn[pluginName].version = "8.4.8";
+
+    // find the country data for the given country code
+    // the ignoreOnlyCountriesOption is only used during init() while parsing the onlyCountries array
+    $.fn[pluginName].getSpecifiedCountryData = function(countryCode) {
+        var countryList = allCountries;
+        for (var i = 0; i < countryList.length; i++) {
+            if (countryList[i].iso2 == countryCode) {
+                return countryList[i];
+            }
+        }
+
+        return null;
+    };
+
     // Tell JSHint to ignore this warning: "character may get silently deleted by one or more browsers"
     // jshint -W100
     // Array of country objects for the flag dropdown.

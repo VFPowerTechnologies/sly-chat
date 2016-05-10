@@ -8,7 +8,7 @@ RegistrationController.prototype = {
         $(document).on("click", "#submitRegisterBtn", function(e){
             e.preventDefault();
 
-            var phone = this.getFormattedPhoneNumber();
+            var phone = getFormatedPhoneNumber($("#phone").val(), $("#countrySelect").val());
 
             var submitRegisterBtn = $("#submitRegisterBtn");
 
@@ -103,12 +103,14 @@ RegistrationController.prototype = {
                 errorTemplate: '<p></p>'
             });
 
-            var phone = this.getFormattedPhoneNumber();
-
             var isValid = validation.validate();
             var phoneValid = this.validatePhone();
 
             if (isValid && phoneValid) {
+                var phoneVal = $("#phone").val();
+                var countryVal = $("#countrySelect").val();
+                var phone = getFormatedPhoneNumber(phoneVal, countryVal);
+
                 registrationService.updatePhone({
                     "email": KEYTAP.loginController.model.getLogin(),
                     "password": $("#phoneUpdatePassword").val(),
@@ -136,19 +138,12 @@ RegistrationController.prototype = {
         }.bind(this));
 
         $(document).on("change", "#countrySelect", function(e) {
-            var hiddenPhoneInput = $("#hiddenPhoneInput");
-            hiddenPhoneInput.intlTelInput("setCountry", $("#countrySelect").val());
-            hiddenPhoneInput.intlTelInput("setNumber", $("#phone").val());
-
             var ext = $("#countrySelect :selected").text().split("+")[1];
-
             this.setPhoneExt(ext);
-
             this.validatePhone();
         }.bind(this));
 
         $(document).on("change keyup", "#phone", function (e) {
-            $("#hiddenPhoneInput").intlTelInput("setNumber", $("#phone").val());
             if($(".invalidPhone").length)
                 this.validatePhone();
         }.bind(this));
@@ -183,9 +178,8 @@ RegistrationController.prototype = {
     },
     validatePhone : function () {
         var phoneInput = $("#phone");
-        var hiddenPhoneInput = $("#hiddenPhoneInput");
         var phoneValue = phoneInput.val();
-        var valid = hiddenPhoneInput.intlTelInput("isValidNumber");
+        var valid = validatePhone(phoneValue, $("#countrySelect").val());
         var invalidDiv = $(".invalidPhone");
 
         if(phoneValue == "")
@@ -205,19 +199,6 @@ RegistrationController.prototype = {
         }
 
         return valid;
-    },
-    getFormattedPhoneNumber : function () {
-        var hiddenPhoneInput = $("#hiddenPhoneInput");
-        var phoneValue = $("#phone").val();
-
-        hiddenPhoneInput.intlTelInput("setNumber", phoneValue);
-
-        var phoneNumber =  hiddenPhoneInput.intlTelInput("getNumber");
-
-        if (phoneNumber.charAt(0) === "+")
-            return phoneNumber.substr(1);
-        else
-            return phoneNumber;
     },
     setPhoneExt : function (dialCode) {
         if(typeof dialCode != "undefined") {
@@ -241,5 +222,5 @@ RegistrationController.prototype = {
     },
     clearCache : function () {
         this.model.clearCache();
-    }
+    },
 };

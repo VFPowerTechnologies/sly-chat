@@ -1,19 +1,12 @@
 $(document).ready(function () {
+    $.fn.intlTelInput.loadUtils("js/external-lib/utils.js");
+
     window.telephonyService.getDevicePhoneNumber().then(function (maybePhoneNumber) {
         if (maybePhoneNumber !== null) {
             $('label[for="phone"]').addClass("active");
             $("#phone").val(maybePhoneNumber);
         }
     });
-
-    //Set default country based on geo location.
-    setTimeout(function() {
-        var data = $("#hiddenPhoneInput").intlTelInput("getSelectedCountryData");
-        if(!$.isEmptyObject(data) && typeof data.iso2 != "undefined") {
-            $("#countrySelect").val(data.iso2);
-            KEYTAP.registrationController.setPhoneExt(data.dialCode);
-        }
-    }, 100);
 
     //Get the country data.
     var countryData = $.fn.intlTelInput.getCountryData();
@@ -22,52 +15,40 @@ $(document).ready(function () {
         $("#countrySelect").append("<option value='" + country.iso2 + "'>" + country.name + " +" + country.dialCode +  "</option>");
     });
 
-    $("#hiddenPhoneInput").intlTelInput({
-        initialCountry: "auto",
-        geoIpLookup: function(callback) {
-            infoService.getGeoLocation().then(function (country) {
-                if(country !== null) {
-                    callback(country);
-                    setTimeout(function () {
-                        var data = $("#hiddenPhoneInput").intlTelInput("getSelectedCountryData");
-                        $("#countrySelect").val(data.iso2);
-                        KEYTAP.registrationController.setPhoneExt(data.dialCode);
-                    }, 100);
+    infoService.getGeoLocation().then(function (country) {
+        if(country !== null) {
+            setTimeout(function () {
+                var data = getCountryData(country);
+                if(data != null) {
+                    $("#countrySelect").val(data.iso2);
+                    KEYTAP.registrationController.setPhoneExt(data.dialCode);
                 }
-            }).catch(function (e) {
-                KEYTAP.exceptionController.displayDebugMessage(e);
-            });
-        },
-        utilsScript: "js/external-lib/utils.js"
+            }, 100);
+        }
+    }).catch(function (e) {
+        KEYTAP.exceptionController.displayDebugMessage(e);
     });
 });
 
-function validatePhone() {
-    var phoneInput = $("#phone");
-    var hiddenPhoneInput = $("#hiddenPhoneInput");
+function getCountryData(iso2) {
+    return $.fn.intlTelInput.getSpecifiedCountryData(iso2.toLowerCase());
+}
 
-    var phoneValue = phoneInput.val();
+function getFormatedPhoneNumber(number, iso2) {
+    var phoneNumber = '';
 
-    hiddenPhoneInput.val(phoneValue);
+    if (window.intlTelInputUtils)
+        phoneNumber = intlTelInputUtils.formatNumber(number, iso2);
 
-    var valid = hiddenPhoneInput.intlTelInput("isValidNumber");
-    var invalidDiv = $(".invalidPhone");
+    if (phoneNumber.charAt(0) === "+")
+        return phoneNumber.substr(1);
+    else
+        return phoneNumber;
+}
 
-    if(phoneValue == "")
-        invalidDiv.remove();
-
-    if(!valid) {
-        if(phoneValue != "") {
-            phoneInput.addClass("invalid");
-            if (!invalidDiv.length) {
-                phoneInput.after("<div class='pull-right invalidPhone filled' style='color: red;'><p>Phone Number seems invalid.</p></div>");
-            }
-        }
-    }
-    else {
-        phoneInput.removeClass("invalid");
-        invalidDiv.remove();
-    }
-
-    return valid;
+function validatePhone(phone, iso2) {
+    if(typeof window.intlTelInputUtils !== "undefined")
+        return intlTelInputUtils.isValidNumber(phone, iso2);
+    else
+        return false;
 }
