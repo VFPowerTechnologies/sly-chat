@@ -427,6 +427,16 @@ button.btn-large {
 #messages, .contact-link {
     -webkit-user-select: none;
 }
+#multipleDeleteMenu {
+    position: fixed;
+    top: 0;
+    height: 56px;
+    width: 100%;
+    background-color: #212121;
+    z-index: 3000;
+    text-align: center;
+    line-height: 56px;
+}
 .message_selected {
     background-color: #DEDEDE;
     border-radius: 5px;

@@ -228,9 +228,9 @@ ChatController.prototype = {
      * @returns {string}
      */
     createMultipleDeleteMenu : function () {
-        return "<div id='multipleDeleteMenu' style='position: fixed; top: 3px; height: 50px; width: 100%; background-color: #eeeeee; z-index: 3000; text-align: center; line-height: 50px;'>" +
-            "<button id='confirmMultipleDeleteButton' class='btn btn-sm secondary-color' style='margin-right: 5px;'>Delete</button>" +
-            "<button id='cancelMultipleDeleteButton' class='btn btn-sm red'>Cancel</button>" +
+        return "<div id='multipleDeleteMenu'>" +
+            "<button id='confirmMultipleDeleteButton' class='btn btn-sm red' style='margin-right: 5px;'>Delete</button>" +
+            "<button id='cancelMultipleDeleteButton' class='btn btn-sm' style='background-color: #eeeeee; color: #212121;'>Cancel</button>" +
         "</div>";
     },
     /**
