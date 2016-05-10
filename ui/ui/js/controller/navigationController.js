@@ -50,10 +50,14 @@ NavigationController.prototype = {
         }
     },
     pushHistory : function () {
-        historyService.push(window.location.href).catch(function(e){
-            KEYTAP.exceptionController.displayDebugMessage(e);
-            console.log(e);
-        });
+        var currentUrl = window.location.href;
+        var currentPage = currentUrl.substring(currentUrl.lastIndexOf("/") + 1);
+        if(currentPage !== "index.html") {
+            historyService.push(window.location.href).catch(function (e) {
+                KEYTAP.exceptionController.displayDebugMessage(e);
+                console.log(e);
+            });
+        }
     },
     loadPage : function (url, pushCurrentPage) {
         if(pushCurrentPage === undefined)
