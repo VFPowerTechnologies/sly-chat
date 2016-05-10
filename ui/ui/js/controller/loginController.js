@@ -116,7 +116,7 @@ LoginController.prototype = {
     logout : function () {
         loginService.logout().then(function () {
             this.clearUiCacheOnLogout();
-        });
+        }.bind(this));
     },
     clearCache : function () {
         this.model.clearCache();
