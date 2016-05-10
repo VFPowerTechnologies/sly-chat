@@ -377,7 +377,6 @@ class KeyTapApplication {
         emitLoginEvent(LoggedIn(accountInfo))
     }
 
-    //TODO queue if offline/etc
     fun fetchOfflineMessages() {
         userComponent?.offlineMessageManager?.fetch()
     }
