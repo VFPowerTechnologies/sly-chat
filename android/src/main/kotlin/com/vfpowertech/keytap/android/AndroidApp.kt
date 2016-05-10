@@ -24,6 +24,7 @@ import com.vfpowertech.keytap.core.http.api.gcm.GcmAsyncClient
 import com.vfpowertech.keytap.core.http.api.gcm.RegisterRequest
 import com.vfpowertech.keytap.core.http.api.gcm.RegisterResponse
 import com.vfpowertech.keytap.core.http.api.gcm.UnregisterRequest
+import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.LoginState
 import com.vfpowertech.keytap.services.di.ApplicationComponent
@@ -220,10 +221,10 @@ class AndroidApp : Application() {
             gcmFetchToken(this, userComponent.userLoginData.address.id).successUi { onGCMTokenRefresh(it.userId, it.token) }
     }
 
-    private fun pushGcmTokenToServer(authToken: String, token: String): Promise<RegisterResponse, Exception> {
+    private fun pushGcmTokenToServer(userCredentials: UserCredentials, token: String): Promise<RegisterResponse, Exception> {
         val serverUrl = app.appComponent.serverUrls.API_SERVER
-        val request = RegisterRequest(authToken, token, app.installationData.installationId)
-        return GcmAsyncClient(serverUrl).register(request)
+        val request = RegisterRequest(token, app.installationData.installationId)
+        return GcmAsyncClient(serverUrl).register(userCredentials, request)
     }
 
     fun onGCMTokenRefresh(userId: UserId, token: String) {
@@ -235,8 +236,8 @@ class AndroidApp : Application() {
 
         log.debug("Received GCM token for {}: {}", userId, token)
 
-        userComponent.authTokenManager.bind { authToken ->
-            pushGcmTokenToServer(authToken.string, token)
+        userComponent.authTokenManager.bind { userCredentials ->
+            pushGcmTokenToServer(userCredentials, token)
         } successUi { response ->
             if (response.isSuccess) {
                 log.info("GCM token successfully registered with server")
@@ -310,9 +311,9 @@ class AndroidApp : Application() {
             deleteGCMToken()
 
             val serverUrl = app.appComponent.serverUrls.API_SERVER
-            userComponent.authTokenManager.bind { authToken ->
-                val request = UnregisterRequest(authToken.string, app.installationData.installationId)
-                GcmAsyncClient(serverUrl).unregister(request)
+            userComponent.authTokenManager.bind { userCredentials ->
+                val request = UnregisterRequest(app.installationData.installationId)
+                GcmAsyncClient(serverUrl).unregister(userCredentials, request)
             } fail { e ->
                 log.error("Unable to unregister GCM token with server: {}", e.message, e)
             }
