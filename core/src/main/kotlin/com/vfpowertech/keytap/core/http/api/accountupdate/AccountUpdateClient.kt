@@ -1,32 +1,32 @@
 package com.vfpowertech.keytap.core.http.api.accountupdate
 
 import com.vfpowertech.keytap.core.http.HttpClient
-import com.vfpowertech.keytap.core.http.api.apiPostRequest
+import com.vfpowertech.keytap.core.http.api.apiPostRequest2
+import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.core.typeRef
 
 class AccountUpdateClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
-
-    fun updateName(request: UpdateNameRequest): AccountUpdateResponse {
+    fun updateName(userCredentials: UserCredentials, request: UpdateNameRequest): AccountUpdateResponse {
         val url = "$serverBaseUrl/v1/account/update/name"
 
-        return apiPostRequest(httpClient, url, request, setOf(200, 400), typeRef())
+        return apiPostRequest2(httpClient, url, userCredentials, request, setOf(200, 400), typeRef())
     }
 
-    fun requestPhoneUpdate(request: RequestPhoneUpdateRequest): AccountUpdateResponse {
+    fun requestPhoneUpdate(userCredentials: UserCredentials, request: RequestPhoneUpdateRequest): AccountUpdateResponse {
         val url = "$serverBaseUrl/v1/account/request/phoneUpdate"
 
-        return apiPostRequest(httpClient, url, request, setOf(200, 400), typeRef())
+        return apiPostRequest2(httpClient, url, userCredentials, request, setOf(200, 400), typeRef())
     }
 
-    fun confirmPhoneNumber(request: ConfirmPhoneNumberRequest): AccountUpdateResponse {
+    fun confirmPhoneNumber(userCredentials: UserCredentials, request: ConfirmPhoneNumberRequest): AccountUpdateResponse {
         val url = "$serverBaseUrl/v1/account/update/phoneNumber"
 
-        return apiPostRequest(httpClient, url, request, setOf(200, 400), typeRef())
+        return apiPostRequest2(httpClient, url, userCredentials, request, setOf(200, 400), typeRef())
     }
 
-    fun updateEmail(request: UpdateEmailRequest): AccountUpdateResponse {
+    fun updateEmail(userCredentials: UserCredentials, request: UpdateEmailRequest): AccountUpdateResponse {
         val url = "$serverBaseUrl/v1/account/update/email"
 
-        return apiPostRequest(httpClient, url, request, setOf(200, 400), typeRef())
+        return apiPostRequest2(httpClient, url, userCredentials, request, setOf(200, 400), typeRef())
     }
 }
