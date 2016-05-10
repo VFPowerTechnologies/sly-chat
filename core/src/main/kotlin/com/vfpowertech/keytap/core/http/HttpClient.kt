@@ -16,3 +16,10 @@ fun HttpClient.get(url: String, queryParams: List<Pair<String, String>>, headers
     return get(fullUrl, headers)
 }
 
+fun HttpClient.get(url: String): HttpResponse {
+   return get(url, listOf())
+}
+
+fun HttpClient.postJSON(url: String, body: ByteArray): HttpResponse {
+    return postJSON(url, body, listOf())
+}
