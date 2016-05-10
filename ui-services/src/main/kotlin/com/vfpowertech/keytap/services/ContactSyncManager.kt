@@ -64,16 +64,16 @@ class ContactSyncManager(
 
         val contactsPersistenceManager = contactsPersistenceManager
 
-        return authTokenManager.bind { authToken ->
-            client.getContacts(GetContactsRequest(authToken.string)) bind { response ->
+        return authTokenManager.bind { userCredentials ->
+            client.getContacts(userCredentials) bind { response ->
                 val emails = decryptRemoteContactEntries(keyVault, response.contacts)
                 contactsPersistenceManager.getDiff(emails) bind { diff ->
                     log.debug("New contacts: {}", diff.newContacts)
                     log.debug("Removed contacts: {}", diff.removedContacts)
 
                     val contactsClient = ContactAsyncClient(serverUrl)
-                    val request = FetchContactInfoByIdRequest(authToken.string, diff.newContacts.toList())
-                    contactsClient.fetchContactInfoByEmail(request) bind { response ->
+                    val request = FetchContactInfoByIdRequest(diff.newContacts.toList())
+                    contactsClient.fetchContactInfoByEmail(userCredentials, request) bind { response ->
                         contactsPersistenceManager.applyDiff(response.contacts, diff.removedContacts.toList())
                     }
                 }
@@ -95,7 +95,7 @@ class ContactSyncManager(
         val keyVault = userLoginData.keyVault
 
         return getDefaultRegionCode() bind { defaultRegion ->
-            authTokenManager.bind { authToken ->
+            authTokenManager.bind { userCredentials ->
                 platformContacts.fetchContacts() map { contacts ->
                     val phoneNumberUtil = PhoneNumberUtil.getInstance()
 
@@ -112,15 +112,15 @@ class ContactSyncManager(
                 } bind { missingContacts ->
                     log.debug("Missing local contacts:", missingContacts)
                     val client = ContactAsyncClient(serverUrl)
-                    client.findLocalContacts(FindLocalContactsRequest(authToken.string, missingContacts))
+                    client.findLocalContacts(userCredentials, FindLocalContactsRequest(missingContacts))
                 } bind { foundContacts ->
                     log.debug("Found local contacts: {}", foundContacts)
 
                     val client = ContactListAsyncClient(serverUrl)
                     val remoteContactEntries = encryptRemoteContactEntries(keyVault, foundContacts.contacts.map { it.id })
-                    val request = AddContactsRequest(authToken.string, remoteContactEntries)
+                    val request = AddContactsRequest(remoteContactEntries)
 
-                    client.addContacts(request) bind {
+                    client.addContacts(userCredentials, request) bind {
                         contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.id, it.email, it.name, it.phoneNumber, it.publicKey) })
                     }
                 }

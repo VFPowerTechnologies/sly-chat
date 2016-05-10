@@ -1,3 +1,5 @@
 package com.vfpowertech.keytap.services
 
-data class AuthTokenRefreshResult(val authToken: String)
+import com.vfpowertech.keytap.core.AuthToken
+
+data class AuthTokenRefreshResult(val authToken: AuthToken)

@@ -11,9 +11,6 @@ data class SiteUser(
     @JsonProperty("username")
     val username: String,
 
-    @JsonProperty("passwordHash")
-    val passwordHash: String,
-
     @JsonProperty("hashParams")
     val hashParams: SerializedCryptoParams,
 

@@ -30,7 +30,7 @@ class RegistrationClientTest {
         val apiValue = ApiResult(null, registerResponse)
         val httpResponse = HttpResponse(200, mapOf(), objectMapper.writeValueAsString(apiValue))
 
-        whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)
+        whenever(httpClient.postJSON(any(), any(), any())).thenReturn(httpResponse)
 
         val client = RegistrationClient("localhost", httpClient)
 
@@ -46,7 +46,7 @@ class RegistrationClientTest {
         val apiValue = ApiResult(null, registerResponse)
         val httpResponse = HttpResponse(400, mapOf(), objectMapper.writeValueAsString(apiValue))
 
-        whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)
+        whenever(httpClient.postJSON(any(), any(), any())).thenReturn(httpResponse)
 
         val client = RegistrationClient("localhost", httpClient)
 
@@ -60,7 +60,7 @@ class RegistrationClientTest {
         val httpClient = mock<HttpClient>()
         val httpResponse = HttpResponse(500, HashMap(), """{"error": {"message": "error message"}}""")
 
-        whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)
+        whenever(httpClient.postJSON(any(), any(), any())).thenReturn(httpResponse)
 
         val client = RegistrationClient("localhost", httpClient)
         assertFailsWith(ServerErrorException::class) { client.register(request) }
@@ -71,7 +71,7 @@ class RegistrationClientTest {
         val httpClient = mock<HttpClient>()
         val httpResponse = HttpResponse(100, HashMap(), "")
 
-        whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)
+        whenever(httpClient.postJSON(any(), any(), any())).thenReturn(httpResponse)
 
         val client = RegistrationClient("localhost", httpClient)
         assertFailsWith(UnexpectedResponseException::class) { client.register(request) }
@@ -82,7 +82,7 @@ class RegistrationClientTest {
         val httpClient = mock<HttpClient>()
         val httpResponse = HttpResponse(200, HashMap(), "{\"status\":\"failed\"}")
 
-        whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)
+        whenever(httpClient.postJSON(any(), any(), any())).thenReturn(httpResponse)
 
         val client = RegistrationClient("localhost", httpClient)
         assertFailsWith(InvalidResponseBodyException::class) { client.register(request) }

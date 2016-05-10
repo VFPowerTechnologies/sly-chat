@@ -2,7 +2,7 @@ package com.vfpowertech.keytap.services
 
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.relay.RelayClient
-import com.vfpowertech.keytap.core.relay.UserCredentials
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.RelayConnector
 import rx.Scheduler
 

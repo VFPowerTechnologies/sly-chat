@@ -5,6 +5,8 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.UnauthorizedException
+import com.vfpowertech.keytap.core.UserCredentials
+import com.vfpowertech.keytap.core.base64encode
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.http.get
@@ -45,16 +47,29 @@ fun <T> valueFromApi(response: HttpResponse, validResponseCodes: Set<Int>, typeR
     return getValueFromApiResult(apiResult, response)
 }
 
-/** Posts the given request to the given url as JSON, then passes the response to valueFromApi. */
-fun <R, T> apiPostRequest(httpClient: HttpClient, url: String, request: R, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+private fun userCredentialsToHeaders(userCredentials: UserCredentials?): List<Pair<String, String>> {
+    return if (userCredentials != null) {
+        val username = userCredentials.address.asString()
+        val creds = "$username:${userCredentials.authToken.string}".toByteArray(Charsets.UTF_8)
+        listOf("Authorization" to "Basic ${base64encode(creds)}")
+    }
+    else
+        listOf()
+}
+
+fun <R, T> apiPostRequest(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, request: R, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
     val objectMapper = ObjectMapper()
     val jsonRequest = objectMapper.writeValueAsBytes(request)
 
-    val resp = httpClient.postJSON(url, jsonRequest)
+    val headers = userCredentialsToHeaders(userCredentials)
+
+    val resp = httpClient.postJSON(url, jsonRequest, headers)
     return valueFromApi(resp, validResponseCodes, typeReference)
 }
 
-fun <T> apiGetRequest(httpClient: HttpClient, url: String, params: List<Pair<String, String>>, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
-    val resp = httpClient.get(url, params)
+fun <T> apiGetRequest(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, params: List<Pair<String, String>>, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+    val headers = userCredentialsToHeaders(userCredentials)
+
+    val resp = httpClient.get(url, params, headers)
     return valueFromApi(resp, validResponseCodes, typeReference)
 }

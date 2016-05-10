@@ -4,10 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 /** All stores are in stored as hexified strings. */
 data class PreKeyStoreRequest(
-    @param:JsonProperty("auth-token")
-    @get:JsonProperty("auth-token")
-    val authToken: String,
-
     @JsonProperty("registrationId")
     val registrationId: Int,
 
