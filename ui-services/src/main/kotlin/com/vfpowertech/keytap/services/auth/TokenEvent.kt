@@ -1,5 +1,7 @@
 package com.vfpowertech.keytap.services.auth
 
+import com.vfpowertech.keytap.core.AuthToken
+
 sealed class TokenEvent {
     class Expired() : TokenEvent() {
         override fun toString(): String =

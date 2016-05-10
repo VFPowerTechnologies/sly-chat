@@ -2,9 +2,9 @@
 @file:JvmName("RelayProtocol")
 package com.vfpowertech.keytap.core.relay.base
 
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.hexify
-import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.relay.base.CommandCode.*
 import java.util.*
 
@@ -196,7 +196,7 @@ fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
     val header = Header(
         PROTOCOL_VERSION_1,
         0,
-        userCredentials.authToken,
+        userCredentials.authToken.string,
         userCredentials.address.asString(),
         "",
         "",
@@ -212,7 +212,7 @@ fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, conte
     val header = Header(
         PROTOCOL_VERSION_1,
         content.size,
-        userCredentials.authToken,
+        userCredentials.authToken.string,
         userCredentials.address.asString(),
         //HACK HACK HACK
         "${to.long}:1",

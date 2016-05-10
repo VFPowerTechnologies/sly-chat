@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services.auth
 
+import com.vfpowertech.keytap.core.AuthToken
 import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.UnauthorizedException
 import com.vfpowertech.keytap.core.UserCredentials
@@ -100,11 +101,11 @@ class AuthTokenManager(
 
         val p2 = if (!onUiThread)
             p map { authToken ->
-                what(UserCredentials(address, authToken.string))
+                what(UserCredentials(address, authToken))
             }
         else
             p mapUi { authToken ->
-                what(UserCredentials(address, authToken.string))
+                what(UserCredentials(address, authToken))
             }
 
         val p3 = p2 bindRecoverForUi { e: UnauthorizedException ->
@@ -131,11 +132,11 @@ class AuthTokenManager(
 
         val p2 = if (!onUiThread)
             p bind { authToken ->
-                what(UserCredentials(address, authToken.string))
+                what(UserCredentials(address, authToken))
             }
         else
             p bindUi { authToken ->
-                what(UserCredentials(address, authToken.string))
+                what(UserCredentials(address, authToken))
             }
 
         val p3 = p2 bindRecoverForUi { e: UnauthorizedException ->

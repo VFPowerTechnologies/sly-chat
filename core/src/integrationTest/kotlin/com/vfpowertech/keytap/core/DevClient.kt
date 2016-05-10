@@ -126,14 +126,14 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         throwOnFailure(response)
     }
 
-    fun createAuthToken(username: String, deviceId: Int = DEFAULT_DEVICE_ID): String {
+    fun createAuthToken(username: String, deviceId: Int = DEFAULT_DEVICE_ID): AuthToken {
         val response = httpClient.postJSON("$serverBaseUrl/dev/auth/$username/$deviceId", ByteArray(0))
         throwOnFailure(response)
 
         return objectMapper.readValue(response.body, SiteAuthTokenData::class.java).authToken
     }
 
-    fun getAuthToken(username: String, deviceId: Int = DEFAULT_DEVICE_ID): String {
+    fun getAuthToken(username: String, deviceId: Int = DEFAULT_DEVICE_ID): AuthToken {
         return getRequest("/dev/auth/$username/$deviceId", SiteAuthTokenData::class.java).authToken
     }
 

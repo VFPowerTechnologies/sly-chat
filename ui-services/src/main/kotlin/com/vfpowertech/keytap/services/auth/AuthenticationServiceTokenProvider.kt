@@ -40,8 +40,7 @@ class AuthenticationServiceTokenProvider(
             userLoginData.keyVault.remotePasswordHash
         ) successUi { response ->
             log.info("Refreshed auth token")
-            //TODO maybe move AuthToken out to core as a wrapped type?
-            eventsSubject.onNext(TokenEvent.New(AuthToken(response.authToken)))
+            eventsSubject.onNext(TokenEvent.New(response.authToken))
         } failUi { e ->
             log.error("Unable to get new auth token: {}", e, e.message)
             eventsSubject.onNext(TokenEvent.Error(e))

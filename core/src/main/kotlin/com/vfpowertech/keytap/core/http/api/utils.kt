@@ -5,11 +5,11 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.UnauthorizedException
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.base64encode
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.http.get
-import com.vfpowertech.keytap.core.UserCredentials
 
 fun <T> getValueFromApiResult(apiResult: ApiResult<T>, response: HttpResponse): T {
     //should never happen as ApiResult has checks in its constructor for this stuff
@@ -51,7 +51,7 @@ private fun userCredentialsToHeaders(userCredentials: UserCredentials?): List<Pa
     return if (userCredentials != null) {
         //RFC2617 doesn't allow colons in username, as it's used to delimit the username and password fields
         val username = userCredentials.address.asString().replace(':', '.')
-        val creds = "$username:${userCredentials.authToken}".toByteArray(Charsets.UTF_8)
+        val creds = "$username:${userCredentials.authToken.string}".toByteArray(Charsets.UTF_8)
         listOf("Authorization" to "Basic ${base64encode(creds)}")
     }
     else

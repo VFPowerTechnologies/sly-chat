@@ -15,7 +15,6 @@ import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
 import com.vfpowertech.keytap.core.http.get
 import com.vfpowertech.keytap.core.persistence.ContactInfo
-import com.vfpowertech.keytap.core.UserCredentials
 import org.junit.Assume
 import org.junit.Before
 import org.junit.BeforeClass
@@ -32,11 +31,11 @@ data class GeneratedSiteUser(
 fun SiteUser.toContactInfo(): ContactInfo =
     ContactInfo(id, username, name, phoneNumber, publicKey)
 
-fun GeneratedSiteUser.getUserCredentials(authToken: String, deviceId: Int = DEFAULT_DEVICE_ID): UserCredentials {
+fun GeneratedSiteUser.getUserCredentials(authToken: AuthToken, deviceId: Int = DEFAULT_DEVICE_ID): UserCredentials {
     return user.getUserCredentials(authToken, deviceId)
 }
 
-fun SiteUser.getUserCredentials(authToken: String, deviceId: Int = DEFAULT_DEVICE_ID): UserCredentials {
+fun SiteUser.getUserCredentials(authToken: AuthToken, deviceId: Int = DEFAULT_DEVICE_ID): UserCredentials {
     return UserCredentials(
         KeyTapAddress(id, deviceId),
         authToken
@@ -182,7 +181,7 @@ class WebApiIntegrationTest {
 
     val dummyRegistrationInfo = RegistrationInfo("c@a.com", "name", "000-000-0000")
     val password = "test"
-    val invalidUserCredentials = UserCredentials(KeyTapAddress(UserId(999999), 999), "")
+    val invalidUserCredentials = UserCredentials(KeyTapAddress(UserId(999999), 999), AuthToken(""))
 
     val devClient = DevClient(serverBaseUrl, JavaHttpClient())
 
@@ -554,7 +553,7 @@ class WebApiIntegrationTest {
         assertTrue(serializedOneTimePreKeys.contains(preKeyData.preKey), "No matching one-time prekey found")
     }
 
-    fun assertNextPreKeyIs(userId: UserId, authToken: String, expected: PreKeyRecord, signedPreKey: SignedPreKeyRecord) {
+    fun assertNextPreKeyIs(userId: UserId, authToken: AuthToken, expected: PreKeyRecord, signedPreKey: SignedPreKeyRecord) {
         val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val userCredentials = UserCredentials(KeyTapAddress(userId, DEFAULT_DEVICE_ID), authToken)

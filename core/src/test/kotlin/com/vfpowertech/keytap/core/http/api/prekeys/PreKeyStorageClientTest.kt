@@ -4,16 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
-import com.vfpowertech.keytap.core.KeyTapAddress
-import com.vfpowertech.keytap.core.UnauthorizedException
-import com.vfpowertech.keytap.core.UserId
+import com.vfpowertech.keytap.core.*
 import com.vfpowertech.keytap.core.crypto.generateLastResortPreKey
 import com.vfpowertech.keytap.core.crypto.generateNewKeyVault
 import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.http.api.ApiResult
-import com.vfpowertech.keytap.core.UserCredentials
 import org.junit.Ignore
 import org.junit.Test
 import java.util.*
@@ -27,7 +24,7 @@ class PreKeyClientTest {
     val defaultRegistrationId = 12345
     val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 10)
     val lastResortPreKey = generateLastResortPreKey()
-    val userCredentials = UserCredentials(KeyTapAddress(UserId(1), 1), "000")
+    val userCredentials = UserCredentials(KeyTapAddress(UserId(1), 1), AuthToken("000"))
 
     @Test
     fun `store should return a successful PreKeyStorageResponse when receiving a 200 response`() {
