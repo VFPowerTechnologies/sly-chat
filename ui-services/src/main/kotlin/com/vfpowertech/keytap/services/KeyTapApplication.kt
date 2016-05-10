@@ -20,6 +20,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.task
+import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -77,6 +78,8 @@ class KeyTapApplication {
 
     private lateinit var keepAliveObservable: Observable<Long>
     private var keepAliveTimerSub: Subscription? = null
+
+    private var connectingToRelay = false
 
     val isAuthenticated: Boolean
         get() = userComponent != null
@@ -508,11 +511,19 @@ class KeyTapApplication {
         if (!isNetworkAvailable)
             return
 
+        if (connectingToRelay)
+            return
+
         val userComponent = this.userComponent
         if (userComponent == null) {
             log.warn("User session has already been terminated")
             return
         }
+
+        if (userComponent.relayClientManager.isOnline)
+            return
+
+        connectingToRelay = true
 
         val username = userComponent.userLoginData.address
 
@@ -521,6 +532,9 @@ class KeyTapApplication {
             userComponent.relayClientManager.connect(userCredentials)
         } fail { e ->
             log.error("Unable to retrieve auth token for relay connection: {}", e.message, e)
+        } alwaysUi {
+            //after connect() is called, relayClientManager.isOnline will be true
+            connectingToRelay = false
         }
     }
 
