@@ -15,7 +15,7 @@ data class SHA256Params(
     }
 
     companion object : Deserializer<HashParams> {
-        override val algorithmName: String = "sha-256"
+        override val algorithmName: String = "sha256"
 
         override fun deserialize(params: Map<String, String>): HashParams {
             return SHA256Params(
