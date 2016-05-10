@@ -224,7 +224,7 @@ class MessageCipherService(
 
             for ((deviceId, bundle) in response.bundles) {
                 if (bundle == null) {
-                    log.error("No key data available for {}:{}", userId, deviceId)
+                    log.error("No key data available for {}:{}", userId.long, deviceId)
                     continue
                 }
 
