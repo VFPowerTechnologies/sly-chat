@@ -97,6 +97,7 @@ class RelayClientManager(
                     this@RelayClientManager.eventsSubject.onNext(event)
                 }
 
+                //will never be called
                 override fun onError(e: Throwable) {
                     this@RelayClientManager.onClientError(e)
                 }
