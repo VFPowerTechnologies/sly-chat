@@ -52,14 +52,21 @@ private fun userCredentialsToHeaders(userCredentials: UserCredentials?): List<Pa
         //RFC2617 doesn't allow colons in username, as it's used to delimit the username and password fields
         val username = userCredentials.address.asString().replace(':', '.')
         val creds = "$username:${userCredentials.authToken}".toByteArray(Charsets.UTF_8)
-        listOf("Authentication" to "Basic ${base64encode(creds)}")
+        listOf("Authorization" to "Basic ${base64encode(creds)}")
     }
     else
         listOf()
 }
 
 /** Posts the given request to the given url as JSON, then passes the response to valueFromApi. */
-fun <R, T> apiPostRequest(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, request: R, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+fun <R, T> apiPostRequest(httpClient: HttpClient, url: String, request: R, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+    val objectMapper = ObjectMapper()
+    val jsonRequest = objectMapper.writeValueAsBytes(request)
+
+    val resp = httpClient.postJSON(url, jsonRequest, listOf())
+    return valueFromApi(resp, validResponseCodes, typeReference)
+}
+fun <R, T> apiPostRequest2(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, request: R, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
     val objectMapper = ObjectMapper()
     val jsonRequest = objectMapper.writeValueAsBytes(request)
 
@@ -69,8 +76,14 @@ fun <R, T> apiPostRequest(httpClient: HttpClient, url: String, userCredentials: 
     return valueFromApi(resp, validResponseCodes, typeReference)
 }
 
-fun <T> apiGetRequest(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, params: List<Pair<String, String>>, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+fun <T> apiGetRequest(httpClient: HttpClient, url: String, params: List<Pair<String, String>>, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+    val resp = httpClient.get(url, params, listOf())
+    return valueFromApi(resp, validResponseCodes, typeReference)
+}
+
+fun <T> apiGetRequest2(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, params: List<Pair<String, String>>, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
     val headers = userCredentialsToHeaders(userCredentials)
+    println(headers)
 
     val resp = httpClient.get(url, params, headers)
     return valueFromApi(resp, validResponseCodes, typeReference)
