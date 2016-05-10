@@ -84,7 +84,6 @@ fun serializedBundleFromGeneratedPreKeys(
 }
 
 fun preKeyStorageRequestFromGeneratedPreKeys(
-    authToken: String,
     registrationId: Int,
     keyVault: KeyVault,
     generatedPreKeys: GeneratedPreKeys,
@@ -94,7 +93,7 @@ fun preKeyStorageRequestFromGeneratedPreKeys(
 
     val bundle = serializedBundleFromGeneratedPreKeys(generatedPreKeys, lastResortPreKey)
 
-    return PreKeyStoreRequest(authToken, registrationId, identityKey, bundle)
+    return PreKeyStoreRequest(registrationId, identityKey, bundle)
 }
 
 fun SerializedPreKeySet.toPreKeyBundle(deviceId: Int): PreKeyBundle {

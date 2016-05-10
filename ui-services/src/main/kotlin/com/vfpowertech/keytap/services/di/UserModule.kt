@@ -147,7 +147,8 @@ class UserModule(
     @UserScope
     @Provides
     fun providesAuthTokenManager(
+        userLoginData: UserLoginData,
         tokenProvider: TokenProvider
     ): AuthTokenManager =
-        AuthTokenManager(tokenProvider)
+        AuthTokenManager(userLoginData.address, tokenProvider)
 }

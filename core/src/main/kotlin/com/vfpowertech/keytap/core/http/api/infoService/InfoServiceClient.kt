@@ -11,7 +11,7 @@ class InfoServiceClient(private val httpClient: HttpClient) {
     fun getGeoLocationInfo(): GeoLocationInfo? {
         val url = "http://ipinfo.io/json"
 
-        val resp = httpClient.get(url)
+        val resp = httpClient.get(url, listOf())
 
         return try {
             ObjectMapper().readValue<GeoLocationInfo>(resp.body, typeRef<GeoLocationInfo>())

@@ -4,9 +4,14 @@ import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.vfpowertech.keytap.core.crypto.SerializedCryptoParams
+import com.vfpowertech.keytap.core.crypto.SerializedKeyVaultV1
+import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.http.api.contacts.RemoteContactEntry
+import com.vfpowertech.keytap.core.http.get
+import com.vfpowertech.keytap.core.http.postJSON
 
 data class SiteContactList(
     @JsonProperty("contacts")
@@ -32,6 +37,17 @@ data class Device(
     val registrationId: Int,
     @JsonProperty("state")
     val state: DeviceState
+)
+
+data class RegisterSiteUserRequest(
+    val id: UserId,
+    val username: String,
+    val passwordHash: String,
+    val hashParams: SerializedCryptoParams,
+    val publicKey: String,
+    val name: String,
+    val phoneNumber: String,
+    val keyVault: SerializedKeyVaultV1
 )
 
 val DEFAULT_DEVICE_ID = 1
@@ -88,8 +104,19 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         return objectMapper.readValue<List<SiteUser>>(response.body, typeRef<List<SiteUser>>())
     }
 
-    fun addUser(siteUser: SiteUser) {
-        val body = objectMapper.writeValueAsBytes(siteUser)
+    fun addUser(siteUser: GeneratedSiteUser) {
+        val user = siteUser.user
+        val request = RegisterSiteUserRequest(
+            user.id,
+            user.username,
+            siteUser.keyVault.remotePasswordHash.hexify(),
+            user.hashParams,
+            user.publicKey,
+            user.name,
+            user.phoneNumber,
+            user.keyVault
+        )
+        val body = objectMapper.writeValueAsBytes(request)
         val response = httpClient.postJSON("$serverBaseUrl/dev/users", body)
         throwOnFailure(response)
     }
@@ -99,14 +126,14 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         throwOnFailure(response)
     }
 
-    fun createAuthToken(username: String, deviceId: Int = DEFAULT_DEVICE_ID): String {
+    fun createAuthToken(username: String, deviceId: Int = DEFAULT_DEVICE_ID): AuthToken {
         val response = httpClient.postJSON("$serverBaseUrl/dev/auth/$username/$deviceId", ByteArray(0))
         throwOnFailure(response)
 
         return objectMapper.readValue(response.body, SiteAuthTokenData::class.java).authToken
     }
 
-    fun getAuthToken(username: String, deviceId: Int = DEFAULT_DEVICE_ID): String {
+    fun getAuthToken(username: String, deviceId: Int = DEFAULT_DEVICE_ID): AuthToken {
         return getRequest("/dev/auth/$username/$deviceId", SiteAuthTokenData::class.java).authToken
     }
 

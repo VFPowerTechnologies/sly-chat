@@ -13,6 +13,7 @@ import com.vfpowertech.keytap.core.http.api.prekeys.*
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationClient
 import com.vfpowertech.keytap.core.http.api.registration.RegistrationInfo
 import com.vfpowertech.keytap.core.http.api.registration.registrationRequestFromKeyVault
+import com.vfpowertech.keytap.core.http.get
 import com.vfpowertech.keytap.core.persistence.ContactInfo
 import org.junit.Assume
 import org.junit.Before
@@ -29,6 +30,17 @@ data class GeneratedSiteUser(
 
 fun SiteUser.toContactInfo(): ContactInfo =
     ContactInfo(id, username, name, phoneNumber, publicKey)
+
+fun GeneratedSiteUser.getUserCredentials(authToken: AuthToken, deviceId: Int = DEFAULT_DEVICE_ID): UserCredentials {
+    return user.getUserCredentials(authToken, deviceId)
+}
+
+fun SiteUser.getUserCredentials(authToken: AuthToken, deviceId: Int = DEFAULT_DEVICE_ID): UserCredentials {
+    return UserCredentials(
+        KeyTapAddress(id, deviceId),
+        authToken
+    )
+}
 
 class WebApiIntegrationTest {
     companion object {
@@ -52,7 +64,6 @@ class WebApiIntegrationTest {
             val user = SiteUser(
                 nextUserId(),
                 registrationInfo.email,
-                keyVault.remotePasswordHash.hexify(),
                 keyVault.remotePasswordHashParams.serialize(),
                 keyVault.fingerprint,
                 registrationInfo.name,
@@ -75,7 +86,7 @@ class WebApiIntegrationTest {
             val userA = newSiteUser(RegistrationInfo(username, "a", "000-000-0000"), password)
             val siteUser = userA.user
 
-            devClient.addUser(siteUser)
+            devClient.addUser(userA)
 
             val users = devClient.getUsers()
 
@@ -170,6 +181,7 @@ class WebApiIntegrationTest {
 
     val dummyRegistrationInfo = RegistrationInfo("c@a.com", "name", "000-000-0000")
     val password = "test"
+    val invalidUserCredentials = UserCredentials(KeyTapAddress(UserId(999999), 999), AuthToken(""))
 
     val devClient = DevClient(serverBaseUrl, JavaHttpClient())
 
@@ -178,7 +190,7 @@ class WebApiIntegrationTest {
     fun injectSiteUser(registrationInfo: RegistrationInfo): GeneratedSiteUser {
         val siteUser = newSiteUser(registrationInfo, password)
 
-        devClient.addUser(siteUser.user)
+        devClient.addUser(siteUser)
 
         return siteUser
     }
@@ -225,7 +237,6 @@ class WebApiIntegrationTest {
             //don't care about the id
             user.id,
             dummyRegistrationInfo.email,
-            keyVault.remotePasswordHash.hexify(),
             keyVault.remotePasswordHashParams.serialize(),
             keyVault.fingerprint,
             dummyRegistrationInfo.name,
@@ -321,7 +332,7 @@ class WebApiIntegrationTest {
 
         val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
-        val response = client.getInfo(PreKeyInfoRequest(authToken))
+        val response = client.getInfo(siteUser.getUserCredentials(authToken))
 
         assertEquals(generatedPreKeys.oneTimePreKeys.size, response.remaining, "Invalid remaining keys")
         assertEquals(0, response.uploadCount, "Invalid uploadCount")
@@ -332,12 +343,12 @@ class WebApiIntegrationTest {
         val keyVault = generateNewKeyVault(password)
         val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys("a", defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
         val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         assertFailsWith(UnauthorizedException::class) {
-            client.store(request)
+            client.store(invalidUserCredentials, request)
         }
     }
 
@@ -377,11 +388,11 @@ class WebApiIntegrationTest {
         val authToken = devClient.createAuthToken(username, deviceId)
         val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
         val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
-        val response = client.store(request)
+        val response = client.store(siteUser.getUserCredentials(authToken, deviceId), request)
         assertTrue(response.isSuccess)
 
         assertPreKeysStored(username, deviceId, generatedPreKeys, lastResortPreKey)
@@ -396,11 +407,11 @@ class WebApiIntegrationTest {
         val authToken = devClient.createAuthToken(username)
         val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
         val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
-        val response = client.store(request)
+        val response = client.store(siteUser.getUserCredentials(authToken), request)
         assertFalse(response.isSuccess, "Upload succeeded")
     }
 
@@ -415,11 +426,11 @@ class WebApiIntegrationTest {
         val authToken = devClient.createAuthToken(username, deviceId)
         val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
         val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
-        val response = client.store(request)
+        val response = client.store(siteUser.getUserCredentials(authToken, deviceId), request)
         assertFalse(response.isSuccess, "Upload succeeded")
     }
 
@@ -435,11 +446,11 @@ class WebApiIntegrationTest {
         val authToken = devClient.createAuthToken(username, deviceId)
         val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, registrationId, keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(registrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
         val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
-        val response = client.store(request)
+        val response = client.store(siteUser.getUserCredentials(authToken, deviceId), request)
         assertTrue(response.isSuccess, "Upload failed: ${response.errorMessage}")
 
         val devices = devClient.getDevices(username)
@@ -461,12 +472,12 @@ class WebApiIntegrationTest {
         val generatedPreKeys = injectPreKeys(username, siteUser.keyVault, deviceId, maxCount+1)
         val lastResortPreKey = generateLastResortPreKey()
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys(authToken, defaultRegistrationId, siteUser.keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, siteUser.keyVault, generatedPreKeys, lastResortPreKey)
 
         val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val exception = assertFailsWith<ApiException> {
-            client.store(request)
+            client.store(siteUser.getUserCredentials(authToken, deviceId), request)
         }
 
         assertTrue("too many" in exception.message!!.toLowerCase(), "Invalid error message: ${exception.message}")
@@ -478,7 +489,7 @@ class WebApiIntegrationTest {
 
         val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
         assertFailsWith(UnauthorizedException::class) {
-            client.retrieve(PreKeyRetrievalRequest("a", siteUser.user.id, listOf()))
+            client.retrieve(invalidUserCredentials, PreKeyRetrievalRequest(siteUser.user.id, listOf()))
         }
     }
 
@@ -499,7 +510,7 @@ class WebApiIntegrationTest {
 
         val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
-        val response = client.retrieve(PreKeyRetrievalRequest(authToken, siteUser.user.id, listOf()))
+        val response = client.retrieve(requestingSiteUser.getUserCredentials(authToken), PreKeyRetrievalRequest(siteUser.user.id, listOf()))
 
         assertTrue(response.isSuccess)
 
@@ -522,7 +533,7 @@ class WebApiIntegrationTest {
 
         val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
-        val response = client.retrieve(PreKeyRetrievalRequest(authToken, siteUser.user.id, listOf()))
+        val response = client.retrieve(requestingSiteUser.getUserCredentials(authToken, deviceId), PreKeyRetrievalRequest(siteUser.user.id, listOf()))
 
         assertTrue(response.isSuccess)
 
@@ -542,10 +553,12 @@ class WebApiIntegrationTest {
         assertTrue(serializedOneTimePreKeys.contains(preKeyData.preKey), "No matching one-time prekey found")
     }
 
-    fun assertNextPreKeyIs(userId: UserId, authToken: String, expected: PreKeyRecord, signedPreKey: SignedPreKeyRecord) {
+    fun assertNextPreKeyIs(userId: UserId, authToken: AuthToken, expected: PreKeyRecord, signedPreKey: SignedPreKeyRecord) {
         val client = PreKeyClient(serverBaseUrl, JavaHttpClient())
 
-        val response = client.retrieve(PreKeyRetrievalRequest(authToken, userId, listOf()))
+        val userCredentials = UserCredentials(KeyTapAddress(userId, DEFAULT_DEVICE_ID), authToken)
+
+        val response = client.retrieve(userCredentials, PreKeyRetrievalRequest(userId, listOf()))
 
         assertTrue(response.isSuccess)
 
@@ -591,7 +604,7 @@ class WebApiIntegrationTest {
 
         val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
-        val contactResponseEmail = client.fetchContactInfo(NewContactRequest(authToken, siteUser.user.username, null))
+        val contactResponseEmail = client.fetchContactInfo(siteUser.getUserCredentials(authToken), NewContactRequest(siteUser.user.username, null))
         assertTrue(contactResponseEmail.isSuccess)
 
         val receivedEmailContactInfo = contactResponseEmail.contactInfo!!
@@ -608,7 +621,7 @@ class WebApiIntegrationTest {
 
         val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
-        val contactResponse = client.fetchContactInfo(NewContactRequest(authToken, null, siteUser.user.phoneNumber))
+        val contactResponse = client.fetchContactInfo(siteUser.getUserCredentials(authToken), NewContactRequest(null, siteUser.user.phoneNumber))
         assertTrue(contactResponse.isSuccess)
 
         val receivedContactInfo = contactResponse.contactInfo!!
@@ -632,10 +645,10 @@ class WebApiIntegrationTest {
         val authToken = devClient.createAuthToken(username)
 
         val encryptedContacts = encryptRemoteContactEntries(siteUser.keyVault, listOf(contactUser.user.id))
-        val request = AddContactsRequest(authToken, encryptedContacts)
+        val request = AddContactsRequest(encryptedContacts)
 
         val client = ContactListClient(serverBaseUrl, JavaHttpClient())
-        client.addContacts(request)
+        client.addContacts(siteUser.getUserCredentials(authToken), request)
 
         val contacts = devClient.getContactList(username)
 
@@ -649,11 +662,12 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(userA.user.username)
         val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.id))
-        val request = AddContactsRequest(authToken, aContacts)
+        val request = AddContactsRequest(aContacts)
 
         val client = ContactListClient(serverBaseUrl, JavaHttpClient())
-        client.addContacts(request)
-        client.addContacts(request)
+        val userCredentials = userA.getUserCredentials(authToken)
+        client.addContacts(userCredentials, request)
+        client.addContacts(userCredentials, request)
 
         val contacts = devClient.getContactList(userA.user.username)
 
@@ -675,7 +689,7 @@ class WebApiIntegrationTest {
         val client = ContactListClient(serverBaseUrl, JavaHttpClient())
 
         val authToken = devClient.createAuthToken(userA.user.username)
-        val response = client.getContacts(GetContactsRequest(authToken))
+        val response = client.getContacts(userA.getUserCredentials(authToken))
 
         assertContactListEquals(aContacts, response.contacts)
     }
@@ -694,8 +708,8 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(userA.user.username)
 
-        val request = RemoveContactsRequest(authToken, listOf(aContacts[0].hash))
-        client.removeContacts(request)
+        val request = RemoveContactsRequest(listOf(aContacts[0].hash))
+        client.removeContacts(userA.getUserCredentials(authToken), request)
 
         val contacts = devClient.getContactList(userA.user.username)
 
@@ -717,8 +731,8 @@ class WebApiIntegrationTest {
             PlatformContact("B", listOf(userC.username), listOf()),
             PlatformContact("C", listOf(), listOf(bPhoneNumber))
         )
-        val request = FindLocalContactsRequest(authToken, platformContacts)
-        val response = client.findLocalContacts(request)
+        val request = FindLocalContactsRequest(platformContacts)
+        val response = client.findLocalContacts(userA.getUserCredentials(authToken), request)
 
         val expected = listOf(
             userB.toContactInfo(),
@@ -738,8 +752,8 @@ class WebApiIntegrationTest {
 
         val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
-        val request = FetchContactInfoByIdRequest(authToken, listOf(userB.id, userC.id))
-        val response = client.fetchContactInfoById(request)
+        val request = FetchContactInfoByIdRequest(listOf(userB.id, userC.id))
+        val response = client.fetchContactInfoById(userA.getUserCredentials(authToken), request)
 
         val expected = listOf(
             userB.toContactInfo(),
@@ -757,15 +771,14 @@ class WebApiIntegrationTest {
 
         val newPhone = "123453456"
 
-        val request = UpdatePhoneRequest(user.user.username, user.user.passwordHash, newPhone)
+        val request = UpdatePhoneRequest(user.user.username, user.keyVault.remotePasswordHash.hexify(), newPhone)
         val response = client.updatePhone(request)
 
-        assertTrue(response.isSuccess)
+        assertTrue(response.isSuccess, "Update request failed: ${response.errorMessage}")
 
         val expected = SiteUser(
                 user.user.id,
                 user.user.username,
-                user.keyVault.remotePasswordHash.hexify(),
                 user.keyVault.remotePasswordHashParams.serialize(),
                 user.keyVault.fingerprint,
                 user.user.name,
@@ -790,7 +803,6 @@ class WebApiIntegrationTest {
         val expected = SiteUser(
                 user.user.id,
                 user.user.username,
-                user.keyVault.remotePasswordHash.hexify(),
                 user.keyVault.remotePasswordHashParams.serialize(),
                 user.keyVault.fingerprint,
                 user.user.name,
@@ -811,8 +823,8 @@ class WebApiIntegrationTest {
 
         val newEmail = "b@b.com"
 
-        val request = UpdateEmailRequest(authToken, newEmail)
-        val response = client.updateEmail(request);
+        val request = UpdateEmailRequest(newEmail)
+        val response = client.updateEmail(userA.getUserCredentials(authToken), request);
 
         assertTrue(response.isSuccess);
         assertEquals(response.accountInfo!!.username, newEmail)
@@ -829,8 +841,8 @@ class WebApiIntegrationTest {
 
         val newEmail = "b@b.com"
 
-        val request = UpdateEmailRequest(authToken, newEmail)
-        val response = client.updateEmail(request);
+        val request = UpdateEmailRequest(newEmail)
+        val response = client.updateEmail(userA.getUserCredentials(authToken), request);
 
         assertFalse(response.isSuccess);
     }
@@ -845,8 +857,8 @@ class WebApiIntegrationTest {
 
         val newName = "newName"
 
-        val request = UpdateNameRequest(authToken, newName)
-        val response = client.updateName(request);
+        val request = UpdateNameRequest(newName)
+        val response = client.updateName(userA.getUserCredentials(authToken), request);
 
         assertTrue(response.isSuccess);
         assertEquals(response.accountInfo!!.name, newName)
@@ -862,13 +874,14 @@ class WebApiIntegrationTest {
 
         val newPhone = "12345678901"
 
-        val request = RequestPhoneUpdateRequest(authToken, newPhone)
-        val response = client.requestPhoneUpdate(request);
+        val request = RequestPhoneUpdateRequest(newPhone)
+        val userCredentials = userA.getUserCredentials(authToken)
+        val response = client.requestPhoneUpdate(userCredentials, request);
 
         assertTrue(response.isSuccess);
 
-        val secondRequest = ConfirmPhoneNumberRequest(authToken, "12345")
-        val secondResponse = client.confirmPhoneNumber(secondRequest);
+        val secondRequest = ConfirmPhoneNumberRequest("12345")
+        val secondResponse = client.confirmPhoneNumber(userCredentials, secondRequest);
 
         assertTrue(secondResponse.isSuccess);
         assertEquals(secondResponse.accountInfo!!.phoneNumber, newPhone)
@@ -885,8 +898,8 @@ class WebApiIntegrationTest {
 
         val newPhone = "2222222222"
 
-        val request = RequestPhoneUpdateRequest(authToken, newPhone)
-        val response = client.requestPhoneUpdate(request);
+        val request = RequestPhoneUpdateRequest(newPhone)
+        val response = client.requestPhoneUpdate(userA.getUserCredentials(authToken), request);
 
         assertFalse(response.isSuccess, "Update failed");
     }

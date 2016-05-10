@@ -1,6 +1,9 @@
 package com.vfpowertech.keytap.services.auth
 
+import com.vfpowertech.keytap.core.AuthToken
+import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.UnauthorizedException
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.services.bindRecoverForUi
 import com.vfpowertech.keytap.services.bindUi
 import com.vfpowertech.keytap.services.mapUi
@@ -17,6 +20,7 @@ import java.util.*
 //XXX what do I do regarding network connectivity? I guess just hand out the token, and then the tasks can fail due to connection issues?
 //likewise, any token refresh would end up with an error
 class AuthTokenManager(
+    private val address: KeyTapAddress,
     private val tokenProvider: TokenProvider
 ) {
     companion object {
@@ -90,18 +94,18 @@ class AuthTokenManager(
     }
 
     //don't like the code dup here, but no real way to not do this
-    private fun <T> wrapWithRetryMap(onUiThread:Boolean, what: (AuthToken) -> T, remainingTries: Int): Promise<T, Exception> {
+    private fun <T> wrapWithRetryMap(onUiThread: Boolean, what: (UserCredentials) -> T, remainingTries: Int): Promise<T, Exception> {
         val d = deferred<AuthToken, Exception>()
 
         val p = d.promise
 
         val p2 = if (!onUiThread)
             p map { authToken ->
-                what(authToken)
+                what(UserCredentials(address, authToken))
             }
         else
             p mapUi { authToken ->
-                what(authToken)
+                what(UserCredentials(address, authToken))
             }
 
         val p3 = p2 bindRecoverForUi { e: UnauthorizedException ->
@@ -121,18 +125,18 @@ class AuthTokenManager(
 
     }
 
-    private fun <T> wrapWithRetryBind(onUiThread:Boolean, what: (AuthToken) -> Promise<T, Exception>, remainingTries: Int): Promise<T, Exception> {
+    private fun <T> wrapWithRetryBind(onUiThread: Boolean, what: (UserCredentials) -> Promise<T, Exception>, remainingTries: Int): Promise<T, Exception> {
         val d = deferred<AuthToken, Exception>()
 
         val p = d.promise
 
         val p2 = if (!onUiThread)
             p bind { authToken ->
-                what(authToken)
+                what(UserCredentials(address, authToken))
             }
         else
             p bindUi { authToken ->
-                what(authToken)
+                what(UserCredentials(address, authToken))
             }
 
         val p3 = p2 bindRecoverForUi { e: UnauthorizedException ->
@@ -164,20 +168,20 @@ class AuthTokenManager(
      * If the task raises AuthTokenExpiredException, an attempt to fetch a new token and rerun the task will occur. This
      * may occur multiple times.
      */
-    fun <T> bind(what: (AuthToken) -> Promise<T, Exception>): Promise<T, Exception> {
+    fun <T> bind(what: (UserCredentials) -> Promise<T, Exception>): Promise<T, Exception> {
         return wrapWithRetryBind(false, what, MAX_RETRIES)
     }
 
     /** Version of bind that runs the given body on the main UI thread. */
-    fun <T> bindUi(what: (AuthToken) -> Promise<T, Exception>): Promise<T, Exception> {
+    fun <T> bindUi(what: (UserCredentials) -> Promise<T, Exception>): Promise<T, Exception> {
         return wrapWithRetryBind(true, what, MAX_RETRIES)
     }
 
-    fun <T> map(what: (AuthToken) -> T): Promise<T, Exception> {
+    fun <T> map(what: (UserCredentials) -> T): Promise<T, Exception> {
         return wrapWithRetryMap(false, what, MAX_RETRIES)
     }
 
-    fun <T> mapUi(what: (AuthToken) -> T): Promise<T, Exception> {
+    fun <T> mapUi(what: (UserCredentials) -> T): Promise<T, Exception> {
         return wrapWithRetryMap(true, what, MAX_RETRIES)
     }
 }

@@ -1,6 +1,7 @@
 package com.vfpowertech.keytap.services
 
 import com.fasterxml.jackson.core.JsonParseException
+import com.vfpowertech.keytap.core.AuthToken
 import com.vfpowertech.keytap.core.BuildConfig
 import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.crypto.KeyVault
@@ -14,7 +15,6 @@ import com.vfpowertech.keytap.core.persistence.json.JsonInstallationDataPersiste
 import com.vfpowertech.keytap.core.persistence.json.JsonSessionDataPersistenceManager
 import com.vfpowertech.keytap.core.persistence.json.JsonStartupInfoPersistenceManager
 import com.vfpowertech.keytap.core.relay.*
-import com.vfpowertech.keytap.services.auth.AuthToken
 import com.vfpowertech.keytap.services.di.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -214,7 +214,7 @@ class KeyTapApplication {
 
             val authTokenManager = userComponent.authTokenManager
             if (response.authToken != null)
-                authTokenManager.setToken(AuthToken(response.authToken))
+                authTokenManager.setToken(response.authToken)
             else
                 authTokenManager.invalidateToken()
 
@@ -256,7 +256,7 @@ class KeyTapApplication {
             return
         }
 
-        sessionDataPersistenceManager.store(SessionData(authToken.string)) fail { e ->
+        sessionDataPersistenceManager.store(SessionData(authToken)) fail { e ->
             log.error("Unable to write session data to disk: {}", e.message, e)
         }
 
@@ -324,7 +324,7 @@ class KeyTapApplication {
      *
      * Until this completes, do NOT use anything in the UserComponent.
      */
-    private fun backgroundInitialization(userComponent: UserComponent, authToken: String?, password: String, rememberMe: Boolean, accountInfo: AccountInfo): Promise<Unit, Exception> {
+    private fun backgroundInitialization(userComponent: UserComponent, authToken: AuthToken?, password: String, rememberMe: Boolean, accountInfo: AccountInfo): Promise<Unit, Exception> {
         val userPaths = userComponent.userPaths
         val persistenceManager = userComponent.sqlitePersistenceManager
         val userLoginData = userComponent.userLoginData
@@ -506,10 +506,7 @@ class KeyTapApplication {
 
         connectingToRelay = true
 
-        val username = userComponent.userLoginData.address
-
-        userComponent.authTokenManager.mapUi { authToken ->
-            val userCredentials = UserCredentials(username, authToken.string)
+        userComponent.authTokenManager.mapUi { userCredentials ->
             userComponent.relayClientManager.connect(userCredentials)
         } fail { e ->
             log.error("Unable to retrieve auth token for relay connection: {}", e.message, e)

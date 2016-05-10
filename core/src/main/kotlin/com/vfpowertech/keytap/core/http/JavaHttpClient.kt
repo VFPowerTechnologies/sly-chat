@@ -71,11 +71,14 @@ private fun getHttpConnection(url: URL): HttpURLConnection {
 
 
 class JavaHttpClient : HttpClient {
-    override fun get(url: String): HttpResponse {
+    override fun get(url: String, headers: List<Pair<String, String>>): HttpResponse {
         val connection = getHttpConnection(url)
         connection.doInput = true
         connection.requestMethod = "GET"
         connection.useCaches = false
+
+        for (header in headers)
+            connection.setRequestProperty(header.first, header.second)
 
         connection.connect()
 
@@ -85,10 +88,13 @@ class JavaHttpClient : HttpClient {
         return HttpResponse(connection.responseCode, headers, data)
     }
 
-    override fun postJSON(url: String, body: ByteArray): HttpResponse {
+    override fun postJSON(url: String, body: ByteArray, headers: List<Pair<String, String>>): HttpResponse {
         val connection = getHttpConnection(url)
         connection.doInput = true
         connection.doOutput = true
+
+        for (header in headers)
+            connection.setRequestProperty(header.first, header.second)
 
         connection.setRequestProperty("Content-Type", "application/json")
         connection.setFixedLengthStreamingMode(body.size)

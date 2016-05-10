@@ -1,5 +1,6 @@
 package com.vfpowertech.keytap.services
 
+import com.vfpowertech.keytap.core.UserCredentials
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.relay.*
 import org.slf4j.LoggerFactory

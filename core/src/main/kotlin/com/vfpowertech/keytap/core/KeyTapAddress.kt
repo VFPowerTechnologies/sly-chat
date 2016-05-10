@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import org.whispersystems.libsignal.SignalProtocolAddress
 import java.io.IOException
 
+val ADDRESS_USERID_DEVICEID_DELIMITER = "."
+
 class KeyTapAddressDeserializer : JsonDeserializer<KeyTapAddress>() {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): KeyTapAddress {
         val text = p.text
@@ -15,7 +17,7 @@ class KeyTapAddressDeserializer : JsonDeserializer<KeyTapAddress>() {
         if (p.currentToken != JsonToken.VALUE_STRING)
             throw IOException("Expected VALUE_STRING, got ${p.currentToken} for $text")
 
-        val parts = text.split(":", limit = 2)
+        val parts = text.split(ADDRESS_USERID_DEVICEID_DELIMITER, limit = 2)
         if (parts.size != 2)
             throw IOException("Invalid address format: $text")
 
@@ -33,11 +35,11 @@ data class KeyTapAddress(val id: UserId, val deviceId: Int) {
     fun toSignalAddress(): SignalProtocolAddress = SignalProtocolAddress(id.long.toString(), deviceId)
 
     /** Returns the address serialized as a string. Function name choosen to not conflict with toString. */
-    fun asString(): String = "${id.long}:$deviceId"
+    fun asString(): String = id.long.toString() + ADDRESS_USERID_DEVICEID_DELIMITER + deviceId.toString()
 
     companion object {
         fun fromString(s: String): KeyTapAddress? {
-            val parts = s.split(':', limit = 2)
+            val parts = s.split(ADDRESS_USERID_DEVICEID_DELIMITER, limit = 2)
             if (parts.size != 2)
                 return null
 

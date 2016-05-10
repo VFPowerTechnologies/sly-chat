@@ -209,9 +209,9 @@ class MessageCipherService(
     }
 
     private fun fetchPreKeyBundles(userId: UserId): List<PreKeyBundle> {
-        val response = authTokenManager.map { authToken ->
-            val request = PreKeyRetrievalRequest(authToken.string, userId, listOf())
-            PreKeyClient(serverUrls.API_SERVER, JavaHttpClient()).retrieve(request)
+        val response = authTokenManager.map { userCredentials ->
+            val request = PreKeyRetrievalRequest(userId, listOf())
+            PreKeyClient(serverUrls.API_SERVER, JavaHttpClient()).retrieve(userCredentials, request)
         }.get()
 
         if (!response.isSuccess)
@@ -224,7 +224,7 @@ class MessageCipherService(
 
             for ((deviceId, bundle) in response.bundles) {
                 if (bundle == null) {
-                    log.error("No key data available for {}:{}", userId, deviceId)
+                    log.error("No key data available for {}:{}", userId.long, deviceId)
                     continue
                 }
 
