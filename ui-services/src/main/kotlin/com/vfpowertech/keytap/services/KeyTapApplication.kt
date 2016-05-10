@@ -74,15 +74,10 @@ class KeyTapApplication {
 
     lateinit var installationData: InstallationData
 
-    private var pushingPreKeys = false
-
     private lateinit var keepAliveObservable: Observable<Long>
     private var keepAliveTimerSub: Subscription? = null
 
     private var connectingToRelay = false
-
-    val isAuthenticated: Boolean
-        get() = userComponent != null
 
     fun init(platformModule: PlatformModule) {
         appComponent = DaggerApplicationComponent.builder()
@@ -193,19 +188,6 @@ class KeyTapApplication {
             emitLoginEvent(LoggedOut())
             initializationComplete()
         }
-    }
-
-    private fun schedulePreKeyUpload(keyRegenCount: Int) {
-        if (pushingPreKeys || keyRegenCount <= 0)
-            return
-
-        val userComponent = this.userComponent
-        if (userComponent == null) {
-            log.warn("schedulePreKeyUpload called without a user session")
-            return
-        }
-
-        userComponent.preKeyManager.scheduleUpload(keyRegenCount)
     }
 
     /**
