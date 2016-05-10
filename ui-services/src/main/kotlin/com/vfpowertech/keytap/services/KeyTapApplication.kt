@@ -506,10 +506,7 @@ class KeyTapApplication {
 
         connectingToRelay = true
 
-        val username = userComponent.userLoginData.address
-
-        userComponent.authTokenManager.mapUi { authToken ->
-            val userCredentials = UserCredentials(username, authToken.string)
+        userComponent.authTokenManager.mapUi { userCredentials ->
             userComponent.relayClientManager.connect(userCredentials)
         } fail { e ->
             log.error("Unable to retrieve auth token for relay connection: {}", e.message, e)

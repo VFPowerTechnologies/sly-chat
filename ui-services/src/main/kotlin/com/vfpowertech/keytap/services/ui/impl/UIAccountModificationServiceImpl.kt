@@ -3,6 +3,7 @@ package com.vfpowertech.keytap.services.ui.impl
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.http.api.accountupdate.*
 import com.vfpowertech.keytap.core.persistence.AccountInfo
+import com.vfpowertech.keytap.core.relay.UserCredentials
 import com.vfpowertech.keytap.services.KeyTapApplication
 import com.vfpowertech.keytap.services.di.UserComponent
 import com.vfpowertech.keytap.services.ui.UIAccountModificationService
@@ -24,12 +25,12 @@ class UIAccountModificationServiceImpl(
     override fun updateName(name: String): Promise<UIAccountUpdateResult, Exception> {
         val userComponent = getUserComponentOrThrow()
 
-        return userComponent.authTokenManager.bind { authToken ->
+        return userComponent.authTokenManager.bind { userCredentials ->
             userComponent.accountInfoPersistenceManager.retrieve() bind { oldAccountInfo ->
                 if (oldAccountInfo == null)
                     throw RuntimeException("Missing account info")
 
-                accountUpdateClient.updateName(UpdateNameRequest(authToken.string, name)) bind { response ->
+                accountUpdateClient.updateName(userCredentials, UpdateNameRequest(name)) bind { response ->
                     if (response.isSuccess === true && response.accountInfo !== null) {
                         val newAccountInfo = AccountInfo(
                             UserId(response.accountInfo.id),
@@ -53,8 +54,8 @@ class UIAccountModificationServiceImpl(
     override fun requestPhoneUpdate(phoneNumber: String): Promise<UIAccountUpdateResult, Exception> {
         val userComponent = getUserComponentOrThrow()
 
-        return userComponent.authTokenManager.bind { authToken ->
-            accountUpdateClient.requestPhoneUpdate(RequestPhoneUpdateRequest(authToken.string, phoneNumber)) map { response ->
+        return userComponent.authTokenManager.bind { userCredentials ->
+            accountUpdateClient.requestPhoneUpdate(userCredentials, RequestPhoneUpdateRequest(phoneNumber)) map { response ->
                 UIAccountUpdateResult(null, response.isSuccess, response.errorMessage)
             }
         }
@@ -65,8 +66,8 @@ class UIAccountModificationServiceImpl(
 
         val accountInfoPersistenceManager = userComponent.accountInfoPersistenceManager
 
-        return userComponent.authTokenManager.bind { authToken ->
-            accountUpdateClient.confirmPhoneNumber(ConfirmPhoneNumberRequest(authToken.string, smsCode)) bind { response ->
+        return userComponent.authTokenManager.bind { userCredentials ->
+            accountUpdateClient.confirmPhoneNumber(userCredentials, ConfirmPhoneNumberRequest(smsCode)) bind { response ->
                 if (response.isSuccess === true && response.accountInfo !== null) {
                     //FIXME
                     val newAccountInfo = AccountInfo(
@@ -92,12 +93,12 @@ class UIAccountModificationServiceImpl(
 
         val accountInfoPersistenceManager = userComponent.accountInfoPersistenceManager
 
-        return userComponent.authTokenManager.bind { authToken ->
+        return userComponent.authTokenManager.bind { userCredentials ->
             accountInfoPersistenceManager.retrieve() bind { oldAccountInfo ->
                 if (oldAccountInfo == null)
                     throw RuntimeException("Missing account info")
 
-                accountUpdateClient.updateEmail(UpdateEmailRequest(authToken.string, email)) bind { response ->
+                accountUpdateClient.updateEmail(userCredentials, UpdateEmailRequest(email)) bind { response ->
                     if (response.isSuccess === true && response.accountInfo !== null) {
                         val newAccountInfo = AccountInfo(
                             UserId(response.accountInfo.id),

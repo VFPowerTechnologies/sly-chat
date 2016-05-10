@@ -5,7 +5,6 @@ import com.vfpowertech.keytap.core.crypto.generateLastResortPreKey
 import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.crypto.signal.GeneratedPreKeys
 import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyAsyncClient
-import com.vfpowertech.keytap.core.http.api.prekeys.PreKeyInfoRequest
 import com.vfpowertech.keytap.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
 import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
 import com.vfpowertech.keytap.services.auth.AuthTokenManager
@@ -69,8 +68,8 @@ class PreKeyManager(
     }
 
     fun checkForUpload() {
-        authTokenManager.bind { authToken ->
-            PreKeyAsyncClient(serverUrl).getInfo(PreKeyInfoRequest(authToken.string)) mapUi { response ->
+        authTokenManager.bind { userCredentials ->
+            PreKeyAsyncClient(serverUrl).getInfo(userCredentials) mapUi { response ->
                 log.debug("Remaining prekeys: {}, requested to upload {}", response.remaining, response.uploadCount)
                 scheduleUpload(response.uploadCount)
             }
@@ -96,11 +95,11 @@ class PreKeyManager(
         //TODO need to mark whether or not a range has been pushed to the server or not
         //if the push fails, we should delete the batch?
         //TODO nfi what to do if server response fails
-        authTokenManager.bind { authToken ->
+        authTokenManager.bind { userCredentials ->
             generate(keyRegenCount) bind { r ->
                 val (generatedPreKeys, lastResortPreKey) = r
-                val request = preKeyStorageRequestFromGeneratedPreKeys(authToken.string, application.installationData.registrationId, keyVault, generatedPreKeys, lastResortPreKey)
-                PreKeyAsyncClient(serverUrl).store(request)
+                val request = preKeyStorageRequestFromGeneratedPreKeys(application.installationData.registrationId, keyVault, generatedPreKeys, lastResortPreKey)
+                PreKeyAsyncClient(serverUrl).store(userCredentials, request)
             }
         } successUi { response ->
             running = false
