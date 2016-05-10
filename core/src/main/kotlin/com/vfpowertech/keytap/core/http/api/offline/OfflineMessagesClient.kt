@@ -10,7 +10,7 @@ import com.vfpowertech.keytap.core.typeRef
 
 class OfflineMessagesClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     fun get(userCredentials: UserCredentials): OfflineMessagesGetResponse {
-        val url = "$serverBaseUrl/v1/messages/get"
+        val url = "$serverBaseUrl/v1/messages"
         return apiGetRequest(httpClient, url, userCredentials, listOf(), setOf(200), typeRef())
     }
 
