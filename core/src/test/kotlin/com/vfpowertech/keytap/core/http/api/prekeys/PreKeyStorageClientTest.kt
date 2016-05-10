@@ -37,7 +37,7 @@ class PreKeyClientTest {
         whenever(httpClient.postJSON(any(), any())).thenReturn(httpResponse)
         val client = PreKeyClient("localhost", httpClient)
 
-        val got = client.store(request)
+        val got = client.store(, request)
 
         assertEquals(response, got)
     }
@@ -56,6 +56,6 @@ class PreKeyClientTest {
 
         val client = PreKeyClient("localhost", httpClient)
 
-        assertFailsWith(UnauthorizedException::class) { client.store(request) }
+        assertFailsWith(UnauthorizedException::class) { client.store(, request) }
     }
 }
