@@ -83,7 +83,6 @@ fun <T> apiGetRequest(httpClient: HttpClient, url: String, params: List<Pair<Str
 
 fun <T> apiGetRequest2(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, params: List<Pair<String, String>>, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
     val headers = userCredentialsToHeaders(userCredentials)
-    println(headers)
 
     val resp = httpClient.get(url, params, headers)
     return valueFromApi(resp, validResponseCodes, typeReference)
