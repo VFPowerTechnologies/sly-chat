@@ -253,6 +253,10 @@ class KeyTapApplication {
             sessionDataPersistenceManager.delete() fail { e ->
                 log.error("Error during session data file removal: {}", e.message, e)
             }
+
+            //need to reconnect, since the token is no longer valid
+            userComponent.relayClientManager.disconnect()
+            
             return
         }
 
