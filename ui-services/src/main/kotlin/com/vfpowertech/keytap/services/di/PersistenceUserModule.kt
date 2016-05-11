@@ -9,7 +9,7 @@ import com.vfpowertech.keytap.core.persistence.sqlite.SQLiteContactsPersistenceM
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLiteMessagePersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePreKeyPersistenceManager
-import com.vfpowertech.keytap.services.UserLoginData
+import com.vfpowertech.keytap.services.UserData
 import com.vfpowertech.keytap.services.UserPaths
 import com.vfpowertech.keytap.services.crypto.SQLiteSignalProtocolStore
 import dagger.Module
@@ -35,7 +35,7 @@ class PersistenceUserModule {
 
     @UserScope
     @Provides
-    fun providesSQLitePersistenceManager(userPaths: UserPaths, userLoginData: UserLoginData): SQLitePersistenceManager {
+    fun providesSQLitePersistenceManager(userPaths: UserPaths, userLoginData: UserData): SQLitePersistenceManager {
         val keyvault = userLoginData.keyVault
         val key = if (BuildConfig.ENABLE_DATABASE_ENCRYPTION)
             keyvault.localDataEncryptionKey
@@ -52,7 +52,7 @@ class PersistenceUserModule {
 
     @UserScope
     @Provides
-    fun providesSessionDataPersistenceManager(userPaths: UserPaths, userLoginData: UserLoginData): SessionDataPersistenceManager {
+    fun providesSessionDataPersistenceManager(userPaths: UserPaths, userLoginData: UserData): SessionDataPersistenceManager {
         val keyvault = userLoginData.keyVault
         return JsonSessionDataPersistenceManager(userPaths.sessionDataPath, keyvault.localDataEncryptionKey, keyvault.localDataEncryptionParams)
     }
@@ -65,7 +65,7 @@ class PersistenceUserModule {
     @UserScope
     @Provides
     fun providesSignalProtocolStore(
-        userLoginData: UserLoginData,
+        userLoginData: UserData,
         sqlitePersistenceManager: SQLitePersistenceManager,
         preKeyPersistenceManager: PreKeyPersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager

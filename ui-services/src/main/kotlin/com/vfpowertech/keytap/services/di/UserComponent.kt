@@ -28,7 +28,7 @@ interface UserComponent {
 
     val notifierService: NotifierService
 
-    val userLoginData: UserLoginData
+    val userLoginData: UserData
 
     val userPaths: UserPaths
 

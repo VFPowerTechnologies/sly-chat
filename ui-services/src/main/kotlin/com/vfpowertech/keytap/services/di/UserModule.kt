@@ -21,7 +21,7 @@ import rx.Scheduler
 class UserModule(
     @get:UserScope
     @get:Provides
-    val providesUserLoginData: UserLoginData
+    val providesUserLoginData: UserData
 ) {
     @UserScope
     @Provides
@@ -49,7 +49,7 @@ class UserModule(
         contactsPersistenceManager: ContactsPersistenceManager,
         relayClientManager: RelayClientManager,
         messageCipherService: MessageCipherService,
-        userLoginData: UserLoginData
+        userLoginData: UserData
     ): MessengerService =
         MessengerService(
             application,
@@ -64,7 +64,7 @@ class UserModule(
     @UserScope
     @Provides
     fun providersUserPaths(
-        userLoginData: UserLoginData,
+        userLoginData: UserData,
         userPathsGenerator: UserPathsGenerator
     ): UserPaths =
         userPathsGenerator.getPaths(userLoginData.userId)
@@ -83,7 +83,7 @@ class UserModule(
     @Provides
     fun providesMessageCipherService(
         authTokenManager: AuthTokenManager,
-        userLoginData: UserLoginData,
+        userLoginData: UserData,
         serverUrls: ServerUrls,
         signalProtocolStore: SignalProtocolStore
     ): MessageCipherService =
@@ -94,7 +94,7 @@ class UserModule(
     fun providesPreKeyManager(
         application: KeyTapApplication,
         serverUrls: ServerUrls,
-        userLoginData: UserLoginData,
+        userLoginData: UserData,
         preKeyPersistenceManager: PreKeyPersistenceManager,
         authTokenManager: AuthTokenManager
     ): PreKeyManager =
@@ -114,7 +114,7 @@ class UserModule(
     @Provides
     fun providesContactSyncManager(
         application: KeyTapApplication,
-        userLoginData: UserLoginData,
+        userLoginData: UserData,
         accountInfoPersistenceManager: AccountInfoPersistenceManager,
         serverUrls: ServerUrls,
         platformContacts: PlatformContacts,
@@ -135,7 +135,7 @@ class UserModule(
     @Provides
     fun providesTokenProvider(
         application: KeyTapApplication,
-        userLoginData: UserLoginData,
+        userLoginData: UserData,
         authenticationService: AuthenticationService
     ): TokenProvider =
         AuthenticationServiceTokenProvider(
@@ -147,7 +147,7 @@ class UserModule(
     @UserScope
     @Provides
     fun providesAuthTokenManager(
-        userLoginData: UserLoginData,
+        userLoginData: UserData,
         tokenProvider: TokenProvider
     ): AuthTokenManager =
         AuthTokenManager(userLoginData.address, tokenProvider)

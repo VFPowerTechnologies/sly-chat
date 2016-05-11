@@ -2,7 +2,7 @@ package com.vfpowertech.keytap.services.auth
 
 import com.vfpowertech.keytap.services.AuthenticationService
 import com.vfpowertech.keytap.services.KeyTapApplication
-import com.vfpowertech.keytap.services.UserLoginData
+import com.vfpowertech.keytap.services.UserData
 import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -12,7 +12,7 @@ import rx.subjects.PublishSubject
 
 class AuthenticationServiceTokenProvider(
     private val application: KeyTapApplication,
-    private val userLoginData: UserLoginData,
+    private val userLoginData: UserData,
     private val authenticationService: AuthenticationService
 ) : TokenProvider {
     private val log = LoggerFactory.getLogger(javaClass)

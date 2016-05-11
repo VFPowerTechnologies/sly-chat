@@ -209,7 +209,7 @@ class KeyTapApplication {
 
             val accountInfo = response.accountInfo
             val address = KeyTapAddress(accountInfo.id, accountInfo.deviceId)
-            val userLoginData = UserLoginData(address, keyVault)
+            val userLoginData = UserData(address, keyVault)
             val userComponent = createUserSession(userLoginData)
 
             val authTokenManager = userComponent.authTokenManager
@@ -307,7 +307,7 @@ class KeyTapApplication {
         fetchOfflineMessages()
     }
 
-    fun createUserSession(userLoginData: UserLoginData): UserComponent {
+    fun createUserSession(userLoginData: UserData): UserComponent {
         if (userComponent != null)
             error("UserComponent already loaded")
 
