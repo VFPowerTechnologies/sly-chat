@@ -1,6 +1,6 @@
 package com.vfpowertech.keytap.services.ui.impl
 
-import com.vfpowertech.keytap.core.http.api.infoService.InfoServiceAsyncClient
+import com.vfpowertech.keytap.core.http.api.infoservice.InfoServiceAsyncClient
 import com.vfpowertech.keytap.services.ui.UIInfoService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map

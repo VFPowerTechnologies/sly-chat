@@ -1,4 +1,4 @@
-package com.vfpowertech.keytap.core.http.api.infoService
+package com.vfpowertech.keytap.core.http.api.infoservice
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
