@@ -10,11 +10,11 @@ import com.vfpowertech.keytap.core.typeRef
 class GcmClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     fun register(userCredentials: UserCredentials, request: RegisterRequest): RegisterResponse {
         val url = "$serverBaseUrl/v1/gcm/register"
-        return apiPostRequest(httpClient, url, userCredentials, request, setOf(200, 400, 403), typeRef())
+        return apiPostRequest(httpClient, url, userCredentials, request, typeRef())
     }
 
     fun unregister(userCredentials: UserCredentials, request: UnregisterRequest) {
         val url = "$serverBaseUrl/v1/gcm/unregister"
-        apiPostRequest(httpClient, url, userCredentials, request, setOf(200), typeRef<ApiResult<EmptyResponse>>())
+        apiPostRequest(httpClient, url, userCredentials, request, typeRef<ApiResult<EmptyResponse>>())
     }
 }

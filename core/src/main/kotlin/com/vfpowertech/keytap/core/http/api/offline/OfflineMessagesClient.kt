@@ -11,11 +11,11 @@ import com.vfpowertech.keytap.core.typeRef
 class OfflineMessagesClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     fun get(userCredentials: UserCredentials): OfflineMessagesGetResponse {
         val url = "$serverBaseUrl/v1/messages"
-        return apiGetRequest(httpClient, url, userCredentials, listOf(), setOf(200), typeRef())
+        return apiGetRequest(httpClient, url, userCredentials, listOf(), typeRef())
     }
 
     fun clear(userCredentials: UserCredentials, request: OfflineMessagesClearRequest) {
         val url = "$serverBaseUrl/v1/messages/clear"
-        apiPostRequest(httpClient, url, userCredentials, request, setOf(200, 400), typeRef<ApiResult<EmptyResponse>>())
+        apiPostRequest(httpClient, url, userCredentials, request, typeRef<ApiResult<EmptyResponse>>())
     }
 }

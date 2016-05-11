@@ -17,18 +17,18 @@ class PreKeyClient(private val serverBaseUrl: String, private val httpClient: Ht
 
         val url = "$serverBaseUrl/v1/prekeys"
 
-        return apiGetRequest(httpClient, url, userCredentials, params, setOf(200, 400), typeRef())
+        return apiGetRequest(httpClient, url, userCredentials, params, typeRef())
     }
 
     fun store(userCredentials: UserCredentials, request: PreKeyStoreRequest): PreKeyStoreResponse {
         val url = "$serverBaseUrl/v1/prekeys"
 
-        return apiPostRequest(httpClient, url, userCredentials, request, setOf(200, 400), typeRef())
+        return apiPostRequest(httpClient, url, userCredentials, request, typeRef())
     }
 
     fun getInfo(userCredentials: UserCredentials): PreKeyInfoResponse {
         val url = "$serverBaseUrl/v1/prekeys/info"
 
-        return apiGetRequest(httpClient, url, userCredentials, listOf(), setOf(200, 400), typeRef())
+        return apiGetRequest(httpClient, url, userCredentials, listOf(), typeRef())
     }
 }

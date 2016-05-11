@@ -13,24 +13,24 @@ class RegistrationClient(private val serverBaseUrl: String, private val httpClie
     fun register(request: RegisterRequest): RegisterResponse {
         val url = "$serverBaseUrl/v1/register"
 
-        return apiPostRequest(httpClient, url, null, request, setOf(200, 400), typeRef())
+        return apiPostRequest(httpClient, url, null, request, typeRef())
     }
 
     fun verifySmsCode(request: SmsVerificationRequest): SmsVerificationResponse {
         val url = "$serverBaseUrl/v1/sms/verification"
 
-        return apiPostRequest(httpClient, url, null, request, setOf(200, 400), typeRef())
+        return apiPostRequest(httpClient, url, null, request, typeRef())
     }
 
     fun resendSmsCode(request: SmsResendRequest): SmsVerificationResponse {
         val url = "$serverBaseUrl/v1/sms/resend"
 
-        return apiPostRequest(httpClient, url, null, request, setOf(200, 400), typeRef())
+        return apiPostRequest(httpClient, url, null, request, typeRef())
     }
 
     fun updatePhone(request: UpdatePhoneRequest): UpdatePhoneResponse {
         val url = "$serverBaseUrl/v1/account/update/phone"
 
-        return apiPostRequest(httpClient, url, null, request, setOf(200, 400), typeRef())
+        return apiPostRequest(httpClient, url, null, request, typeRef())
     }
 }

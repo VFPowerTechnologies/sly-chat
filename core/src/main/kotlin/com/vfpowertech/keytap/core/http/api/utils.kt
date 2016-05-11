@@ -31,11 +31,11 @@ private fun <T> readValueOrThrowInvalid(response: HttpResponse, typeReference: T
 }
 
 /** Throws an ApiResultException if an api-level error occured, otherwise returns the request value. */
-fun <T> valueFromApi(response: HttpResponse, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+fun <T> valueFromApi(response: HttpResponse, typeReference: TypeReference<ApiResult<T>>): T {
     val apiResult = when (response.code) {
         401 ->
             throw UnauthorizedException()
-        in validResponseCodes ->
+        200, 400 ->
             readValueOrThrowInvalid(response, typeReference)
         in 500..599 -> {
             val apiValue = readValueOrThrowInvalid(response, typeReference)
@@ -57,19 +57,19 @@ private fun userCredentialsToHeaders(userCredentials: UserCredentials?): List<Pa
         listOf()
 }
 
-fun <R, T> apiPostRequest(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, request: R, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+fun <R, T> apiPostRequest(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, request: R, typeReference: TypeReference<ApiResult<T>>): T {
     val objectMapper = ObjectMapper()
     val jsonRequest = objectMapper.writeValueAsBytes(request)
 
     val headers = userCredentialsToHeaders(userCredentials)
 
     val resp = httpClient.postJSON(url, jsonRequest, headers)
-    return valueFromApi(resp, validResponseCodes, typeReference)
+    return valueFromApi(resp, typeReference)
 }
 
-fun <T> apiGetRequest(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, params: List<Pair<String, String>>, validResponseCodes: Set<Int>, typeReference: TypeReference<ApiResult<T>>): T {
+fun <T> apiGetRequest(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, params: List<Pair<String, String>>, typeReference: TypeReference<ApiResult<T>>): T {
     val headers = userCredentialsToHeaders(userCredentials)
 
     val resp = httpClient.get(url, params, headers)
-    return valueFromApi(resp, validResponseCodes, typeReference)
+    return valueFromApi(resp, typeReference)
 }

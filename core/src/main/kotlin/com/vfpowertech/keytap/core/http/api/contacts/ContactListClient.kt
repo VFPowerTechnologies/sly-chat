@@ -12,18 +12,18 @@ class ContactListClient(private val serverBaseUrl: String, private val httpClien
     fun addContacts(userCredentials: UserCredentials, request: AddContactsRequest): Unit {
         val url = "$serverBaseUrl/v1/contact-list/add"
 
-        apiPostRequest(httpClient, url, userCredentials, request, setOf(200), typeRef<ApiResult<EmptyResponse>>())
+        apiPostRequest(httpClient, url, userCredentials, request, typeRef<ApiResult<EmptyResponse>>())
     }
 
     fun removeContacts(userCredentials: UserCredentials, request: RemoveContactsRequest): Unit {
         val url = "$serverBaseUrl/v1/contact-list/remove"
 
-        apiPostRequest(httpClient, url, userCredentials, request, setOf(200), typeRef<ApiResult<EmptyResponse>>())
+        apiPostRequest(httpClient, url, userCredentials, request, typeRef<ApiResult<EmptyResponse>>())
     }
 
     fun getContacts(userCredentials: UserCredentials): GetContactsResponse {
         val url = "$serverBaseUrl/v1/contact-list"
 
-        return apiGetRequest(httpClient, url, userCredentials, listOf(), setOf(200), typeRef())
+        return apiGetRequest(httpClient, url, userCredentials, listOf(), typeRef())
     }
 }
