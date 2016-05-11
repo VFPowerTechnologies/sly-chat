@@ -469,6 +469,13 @@ button.btn-large {
     text-align: center;
     line-height: 56px;
 }
+#multipleDeleteMenu button {
+    height: 56px;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    color: #eeeeee;
+}
 .message_selected {
     background-color: #DEDEDE;
     border-radius: 5px;

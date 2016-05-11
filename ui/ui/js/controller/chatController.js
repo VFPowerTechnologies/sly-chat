@@ -230,8 +230,8 @@ ChatController.prototype = {
      */
     createMultipleDeleteMenu : function () {
         return "<div id='multipleDeleteMenu'>" +
-            "<button id='confirmMultipleDeleteButton' class='btn btn-sm red' style='margin-right: 5px;'>Delete</button>" +
-            "<button id='cancelMultipleDeleteButton' class='btn btn-sm' style='background-color: #eeeeee; color: #212121;'>Cancel</button>" +
+            "<button id='confirmMultipleDeleteButton' class='btn btn-sm'>Delete</button>" +
+            "<button id='cancelMultipleDeleteButton' class='btn btn-sm'>Cancel</button>" +
         "</div>";
     },
     /**
