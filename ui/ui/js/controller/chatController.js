@@ -193,13 +193,14 @@ ChatController.prototype = {
             title = "Delete this message?";
 
         var html = "<div>" +
-            "<h6>" + title + "</h6>" +
-            "<p>Are you sure? This action cannot be undone.</p>" +
+            "<h6 class='contextLikeModal-title'>" + title + "</h6>" +
+            "<p class='contextLikeModal-content'>Are you sure? This action cannot be undone.</p>" +
         "</div>" +
-        "<div style='margin-bottom: 5px;'>" +
-            "<button id='confirmDeleteMessage' class='btn btn-sm secondary-color' style='margin-right: 5px;'>Confirm</button>" +
-            "<button id='cancelCloseModal' class='btn btn-sm red'>Cancel</button>" +
+        "<div class='contextLikeModal-nav'>" +
+            "<button id='confirmDeleteMessage' class='btn btn-sm transparentBtn'>Confirm</button>" +
+            "<button id='cancelCloseModal' class='btn btn-sm transparentBtn'>Cancel</button>" +
         "</div>";
+
 
         var modal = createContextLikeMenu(html, false);
         modal.open();
@@ -211,12 +212,12 @@ ChatController.prototype = {
      */
     createDeleteWholeConversationDialog : function (contact) {
         var html = "<div>" +
-            "<h6>Delete Conversation?</h6>" +
-            "<p>Are you sure you want to delete your conversation with " + contact.name + "</p>" +
+            "<h6 class='contextLikeModal-title'>Delete Conversation?</h6>" +
+            "<p class='contextLikeModal-content'>Are you sure you want to delete your conversation with " + contact.name + "</p>" +
         "</div>" +
-        "<div style='margin-bottom: 5px;'>" +
-            "<button id='confirmDeleteConversation' class='btn btn-sm secondary-color' style='margin-right: 5px;'>Confirm</button>" +
-            "<button id='cancelCloseModal' class='btn btn-sm red'>Cancel</button>" +
+        "<div class='contextLikeModal-nav'>" +
+            "<button id='confirmDeleteConversation' class='btn btn-sm transparentBtn'>Confirm</button>" +
+            "<button id='cancelCloseModal' class='btn btn-sm transparentBtn'>Cancel</button>" +
         "</div>";
 
         var modal = createContextLikeMenu(html, false);

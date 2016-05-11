@@ -2,6 +2,24 @@ body div iframe {
     -webkit-transform: translate3d(0,0,0);
 }
 
+.transparentBtn {
+    background-color: transparent;
+    box-shadow: none;
+    color: #0086C5;
+    padding: 10px;
+    height: 36px;
+    line-height: 1px;
+    outline: none !important;
+}
+
+.transparentBtn:hover, .transparentBtn:focus {
+    color: #0086C5;
+    background-color: #eeeeee;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
 .main-content {
     margin-top: 56px;
 }
@@ -234,6 +252,20 @@ button.btn-large {
     box-shadow: none;
     width: 100%;
     max-height: 100%;
+}
+.contextLikeModal-title {
+    margin-left: 5px;
+    width: 100%;
+    text-align: left;
+}
+.contextLikeModal-content {
+    margin-left: 5px;
+    width: 100%;
+    text-align: left;
+}
+.contextLikeModal-nav {
+    margin-bottom: 5px;
+    float: right;
 }
 .contextLikeModal .modal-header {
     display: none;

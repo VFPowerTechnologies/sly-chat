@@ -9,6 +9,19 @@ ContactController.prototype = {
     init : function () {
         this.model.fetchConversation();
     },
+    addContactPageEvent : function () {
+        $(document).on('click', "#deleteContactModalClose", function(e) {
+            e.preventDefault();
+            BootstrapDialog.closeAll();
+        });
+
+        $(document).on("click", "[id^='deleteConfirm_']", function(e){
+            var buttonId = e.currentTarget.id;
+            var contactId = buttonId.split("_")[1];
+            this.deleteContact(contactId);
+            BootstrapDialog.closeAll();
+        }.bind(this));
+    },
     displayContacts : function (conversations) {
         var contactList = $("#contactList");
         var fragment = $(document.createDocumentFragment());
@@ -286,40 +299,18 @@ ContactController.prototype = {
         });
     },
     displayDeleteContactModal: function(id) {
-        var modalHtml = '<div id="deleteContactModal" class="modal">';
-        modalHtml += '<div style="border-bottom: 1px solid black;"><h6 style="margin-left: 5px;">Please confirm</h6></div>';
-        modalHtml += '<div class="modalContent row" style="margin-top: 10px; height: 60%;">';
-        modalHtml += '<div style="text-align: center;">';
-        modalHtml += '<h6>Are you sure You want to delete this contact?</h6><br>';
-        modalHtml += '<h6>' + this.getContact(id).email + '</h6>';
-        modalHtml += '</div>';
-        modalHtml += '</div>';
-        modalHtml += '<div style="bottom: 0; text-align: center;">';
-        modalHtml += '<button id="deleteContactModalClose" class="btn btn-info">Cancel</button>';
-        modalHtml += '<button id="deleteConfirm_' + id + '" class="btn red" style="margin-left: 5px;">Delete</button>';
-        modalHtml += '</div>';
-        modalHtml += '</div>';
+        var html = "<div>" +
+            "<h6 class='contextLikeModal-title'>Delete Contact?</h6>" +
+            "<p class='contextLikeModal-content'>Are you sure you want to delete " + this.getContact(id).email + "?</p>" +
+            "</div>" +
+            "<div class='contextLikeModal-nav'>" +
+            "<button id='deleteConfirm_" + id + "' class='btn btn-sm transparentBtn'>Confirm</button>" +
+            "<button id='deleteContactModalClose' class='btn btn-sm transparentBtn'>Cancel</button>" +
+            "</div>";
 
-        $("html body").append(modalHtml);
 
-        var modal = $("#deleteContactModal");
-        modal.openModal({
-            dismissible: false
-        });
-
-        $("#deleteContactModalClose").click(function(e) {
-            e.preventDefault();
-            modal.closeModal();
-            modal.remove();
-        });
-
-        $("[id^='deleteConfirm_']").click(function(e){
-            var buttonId = e.currentTarget.id;
-            var contactId = buttonId.split("_")[1];
-            this.deleteContact(contactId);
-            modal.closeModal();
-            modal.remove();
-        }.bind(this));
+        var modal = createContextLikeMenu(html, false);
+        modal.open();
     },
     clearCache : function () {
         this.model.clearCache();
