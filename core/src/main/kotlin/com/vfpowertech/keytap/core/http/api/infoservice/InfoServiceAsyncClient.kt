@@ -1,4 +1,4 @@
-package com.vfpowertech.keytap.core.http.api.infoService
+package com.vfpowertech.keytap.core.http.api.infoservice
 
 import com.vfpowertech.keytap.core.http.JavaHttpClient
 import nl.komponents.kovenant.Promise

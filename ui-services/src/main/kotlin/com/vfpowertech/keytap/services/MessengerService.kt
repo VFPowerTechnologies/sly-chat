@@ -50,7 +50,7 @@ class MessengerService(
     private val relayClientManager: RelayClientManager,
     private val messageCipherService: MessageCipherService,
     //XXX this is only used to prevent self-sends
-    private val userLoginData: UserLoginData
+    private val userLoginData: UserData
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 

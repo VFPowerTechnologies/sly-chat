@@ -16,7 +16,7 @@ import rx.subjects.BehaviorSubject
 
 class ContactSyncManager(
     private val application: KeyTapApplication,
-    private val userLoginData: UserLoginData,
+    private val userLoginData: UserData,
     private val accountInfoPersistenceManager: AccountInfoPersistenceManager,
     private val serverUrl: String,
     private val platformContacts: PlatformContacts,

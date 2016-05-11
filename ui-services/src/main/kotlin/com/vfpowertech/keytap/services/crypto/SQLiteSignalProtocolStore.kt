@@ -7,7 +7,7 @@ import com.vfpowertech.keytap.core.persistence.PreKeyPersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.SQLitePersistenceManager
 import com.vfpowertech.keytap.core.persistence.sqlite.map
 import com.vfpowertech.keytap.core.persistence.sqlite.use
-import com.vfpowertech.keytap.services.UserLoginData
+import com.vfpowertech.keytap.services.UserData
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.SignalProtocolAddress
@@ -17,7 +17,7 @@ import org.whispersystems.libsignal.state.SignalProtocolStore
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
 
 class SQLiteSignalProtocolStore(
-    private val userLoginData: UserLoginData,
+    private val userLoginData: UserData,
     private val sqlitePersistenceManager: SQLitePersistenceManager,
     private val preKeyPersistenceManager: PreKeyPersistenceManager,
     private val contactsPersistenceManager: ContactsPersistenceManager

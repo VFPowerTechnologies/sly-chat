@@ -209,7 +209,7 @@ class KeyTapApplication {
 
             val accountInfo = response.accountInfo
             val address = KeyTapAddress(accountInfo.id, accountInfo.deviceId)
-            val userLoginData = UserLoginData(address, keyVault)
+            val userLoginData = UserData(address, keyVault)
             val userComponent = createUserSession(userLoginData)
 
             val authTokenManager = userComponent.authTokenManager
@@ -253,6 +253,10 @@ class KeyTapApplication {
             sessionDataPersistenceManager.delete() fail { e ->
                 log.error("Error during session data file removal: {}", e.message, e)
             }
+
+            //need to reconnect, since the token is no longer valid
+            userComponent.relayClientManager.disconnect()
+            
             return
         }
 
@@ -307,7 +311,7 @@ class KeyTapApplication {
         fetchOfflineMessages()
     }
 
-    fun createUserSession(userLoginData: UserLoginData): UserComponent {
+    fun createUserSession(userLoginData: UserData): UserComponent {
         if (userComponent != null)
             error("UserComponent already loaded")
 
@@ -495,11 +499,7 @@ class KeyTapApplication {
         if (connectingToRelay)
             return
 
-        val userComponent = this.userComponent
-        if (userComponent == null) {
-            log.warn("User session has already been terminated")
-            return
-        }
+        val userComponent = this.userComponent ?: return
 
         if (userComponent.relayClientManager.isOnline)
             return

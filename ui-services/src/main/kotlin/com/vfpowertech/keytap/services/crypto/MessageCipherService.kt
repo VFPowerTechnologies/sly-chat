@@ -58,7 +58,7 @@ data class MessageData(
 
 class MessageCipherService(
     private val authTokenManager: AuthTokenManager,
-    private val userLoginData: UserLoginData,
+    private val userLoginData: UserData,
     //the store is only ever used in the work thread, so no locking is done
     private val signalStore: SignalProtocolStore,
     private val serverUrls: BuildConfig.ServerUrls

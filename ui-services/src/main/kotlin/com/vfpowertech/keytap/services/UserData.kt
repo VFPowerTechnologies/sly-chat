@@ -4,7 +4,7 @@ import com.vfpowertech.keytap.core.KeyTapAddress
 import com.vfpowertech.keytap.core.UserId
 import com.vfpowertech.keytap.core.crypto.KeyVault
 
-class UserLoginData(
+class UserData(
     val address: KeyTapAddress,
     val keyVault: KeyVault
 ) {

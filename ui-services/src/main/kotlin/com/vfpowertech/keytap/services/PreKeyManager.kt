@@ -21,7 +21,7 @@ import org.whispersystems.libsignal.state.PreKeyRecord
 class PreKeyManager(
     private val application: KeyTapApplication,
     private val serverUrl: String,
-    private val userLoginData: UserLoginData,
+    private val userLoginData: UserData,
     private val preKeyPersistenceManager: PreKeyPersistenceManager,
     private val authTokenManager: AuthTokenManager
 ) {
