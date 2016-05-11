@@ -5,6 +5,6 @@ if(typeof $ == "undefined"){
 $(document).ready(function () {
     $("#backToSmsVerification").click(function (e) {
         e.preventDefault();
-        KEYTAP.navigationController.loadPage("smsVerification.html");
+        KEYTAP.navigationController.loadPage("smsVerification.html", false);
     });
 });

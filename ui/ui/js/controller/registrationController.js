@@ -35,7 +35,7 @@ RegistrationController.prototype = {
 
         $(document).on("click", "#signInGoBtn", function (e) {
             e.preventDefault();
-            KEYTAP.navigationController.loadPage("login.html");
+            KEYTAP.navigationController.goBack();
         });
 
         $(document).on("click", "#successLoginBtn", function (e) {
@@ -86,7 +86,7 @@ RegistrationController.prototype = {
 
         $(document).on("click", "#updatePhoneNumberLink", function (e) {
             e.preventDefault();
-            KEYTAP.navigationController.loadPage("updatePhone.html");
+            KEYTAP.navigationController.loadPage("updatePhone.html", false);
         });
 
         $(document).on("click", "#updatePhoneSubmitBtn", function (e) {
