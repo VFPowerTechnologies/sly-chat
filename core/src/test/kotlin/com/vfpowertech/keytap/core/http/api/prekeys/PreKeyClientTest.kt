@@ -11,7 +11,6 @@ import com.vfpowertech.keytap.core.crypto.generatePrekeys
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
 import com.vfpowertech.keytap.core.http.api.ApiResult
-import org.junit.Ignore
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
@@ -24,6 +23,9 @@ class PreKeyClientTest {
     val defaultRegistrationId = 12345
     val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 10)
     val lastResortPreKey = generateLastResortPreKey()
+    val userId = UserId(1)
+    val deviceId = 0
+    val registrationId = 0
     val userCredentials = UserCredentials(KeyTapAddress(UserId(1), 1), AuthToken("000"))
 
     @Test
@@ -42,10 +44,6 @@ class PreKeyClientTest {
         assertEquals(response, got)
     }
 
-    @Ignore("TODO")
-    @Test
-    fun `store should throw ??? on 400 error`() {}
-
     @Test
     fun `store should throw UnauthorizedException when receiving a 401 response`() {
         val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
@@ -58,4 +56,27 @@ class PreKeyClientTest {
 
         assertFailsWith(UnauthorizedException::class) { client.store(userCredentials, request) }
     }
+
+    @Test
+    fun `retrieve should return a PreKeyRetrieveResponse when receiving a 200 response`() {
+        val publicKey = "pppp"
+        val preKey = "bbbb"
+        val signedPreKey = "cccc"
+
+        val request = PreKeyRetrievalRequest(userId, listOf())
+        val response = PreKeyRetrievalResponse(null, hashMapOf(deviceId to SerializedPreKeySet(registrationId, publicKey, signedPreKey, preKey)))
+        val apiResult = ApiResult(null, response)
+        val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))
+
+        val httpClient = mock<HttpClient>()
+
+        whenever(httpClient.get(any(), any())).thenReturn(httpResponse)
+
+        val client = PreKeyClient("localhost", httpClient)
+
+        val got = client.retrieve(userCredentials, request)
+
+        assertEquals(response, got)
+    }
+
 }
