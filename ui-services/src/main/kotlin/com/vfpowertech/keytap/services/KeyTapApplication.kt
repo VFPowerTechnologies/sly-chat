@@ -495,11 +495,7 @@ class KeyTapApplication {
         if (connectingToRelay)
             return
 
-        val userComponent = this.userComponent
-        if (userComponent == null) {
-            log.warn("User session has already been terminated")
-            return
-        }
+        val userComponent = this.userComponent ?: return
 
         if (userComponent.relayClientManager.isOnline)
             return
