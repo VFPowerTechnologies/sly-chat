@@ -75,7 +75,7 @@ class GenBuildConfig extends DefaultTask {
     File srcRoot = new File(generateRoot, 'src/main/java')
     //kotlinc seems to really freak out if this isn't in the proper dir
     //`java.lang.IllegalStateException: Requested BuildConfig, got com.vfpowertech.keytap.core.BuildConfig`
-    File outputDirectory = new File(srcRoot, 'com/vfpowertech/keytap/core')
+    File outputDirectory = new File(srcRoot, 'io/slychat/messenger/core')
 
     @OutputFile
     File outputFile = new File(outputDirectory, 'BuildConfig.java')
