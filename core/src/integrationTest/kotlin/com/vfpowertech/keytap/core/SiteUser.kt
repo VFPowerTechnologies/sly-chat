@@ -2,7 +2,7 @@ package com.vfpowertech.keytap.core
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.vfpowertech.keytap.core.crypto.SerializedCryptoParams
-import com.vfpowertech.keytap.core.crypto.SerializedKeyVaultV1
+import com.vfpowertech.keytap.core.crypto.SerializedKeyVault
 
 data class SiteUser(
     @JsonProperty("id")
@@ -24,5 +24,5 @@ data class SiteUser(
     val phoneNumber: String,
 
     @JsonProperty("keyVault")
-    val keyVault: SerializedKeyVaultV1
+    val keyVault: SerializedKeyVault
 )

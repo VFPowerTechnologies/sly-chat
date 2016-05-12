@@ -3,7 +3,7 @@ package com.vfpowertech.keytap.core.http.api.authentication
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.vfpowertech.keytap.core.AuthToken
-import com.vfpowertech.keytap.core.crypto.SerializedKeyVaultV1
+import com.vfpowertech.keytap.core.crypto.SerializedKeyVault
 import com.vfpowertech.keytap.core.persistence.AccountInfo
 
 data class AuthenticationData(
@@ -13,7 +13,7 @@ data class AuthenticationData(
 
     @param:JsonProperty("key-vault")
     @get:JsonProperty("key-vault")
-    val keyVault: SerializedKeyVaultV1,
+    val keyVault: SerializedKeyVault,
 
     @param:JsonProperty("account-info")
     @get:JsonProperty("account-info")

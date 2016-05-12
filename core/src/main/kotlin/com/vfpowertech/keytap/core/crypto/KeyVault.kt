@@ -50,10 +50,10 @@ class KeyVault(
             return identityKeyPair.publicKey.serialize().hexify()
         }
 
-    fun serialize(): SerializedKeyVaultV1 {
+    fun serialize(): SerializedKeyVault {
         val encryptedKeyPair = getEncryptedPrivateKey()
 
-        return SerializedKeyVaultV1(
+        return SerializedKeyVault(
             encryptedKeyPair.hexify(),
             keyPasswordHashParams.serialize(),
             keyPairCipherParams.serialize(),
@@ -68,16 +68,10 @@ class KeyVault(
     }
 
     companion object {
-        private fun upgradeSerializedKeyVault(serializedKeyVault: SerializedKeyVault): SerializedKeyVaultV1 {
-            return when (serializedKeyVault) {
-                is SerializedKeyVaultV1 -> serializedKeyVault
-                else -> throw RuntimeException("Unknown keyvault format")
-            }
-        }
         fun fromStorage(keyVaultStorage: KeyVaultStorage, password: String): KeyVault =
-            deserialize(upgradeSerializedKeyVault(keyVaultStorage.read()), password)
+            deserialize(keyVaultStorage.read(), password)
 
-        fun deserialize(serialized: SerializedKeyVaultV1, password: String): KeyVault {
+        fun deserialize(serialized: SerializedKeyVault, password: String): KeyVault {
             val encryptedKeyPairData = serialized.encryptedKeyPair
 
             val keyPairCipherParams = CipherDeserializers.deserialize(

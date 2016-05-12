@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.keytap.core.crypto.SerializedCryptoParams
-import com.vfpowertech.keytap.core.crypto.SerializedKeyVaultV1
+import com.vfpowertech.keytap.core.crypto.SerializedKeyVault
 import com.vfpowertech.keytap.core.crypto.hexify
 import com.vfpowertech.keytap.core.http.HttpClient
 import com.vfpowertech.keytap.core.http.HttpResponse
@@ -47,7 +47,7 @@ data class RegisterSiteUserRequest(
     val publicKey: String,
     val name: String,
     val phoneNumber: String,
-    val keyVault: SerializedKeyVaultV1
+    val keyVault: SerializedKeyVault
 )
 
 val DEFAULT_DEVICE_ID = 1

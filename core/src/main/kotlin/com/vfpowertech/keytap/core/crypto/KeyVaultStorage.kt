@@ -17,5 +17,5 @@ package com.vfpowertech.keytap.core.crypto
  */
 interface KeyVaultStorage {
     fun read(): SerializedKeyVault
-    fun write(serializedKeyVault: SerializedKeyVaultV1)
+    fun write(serializedKeyVault: SerializedKeyVault)
 }

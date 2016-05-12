@@ -13,7 +13,7 @@ class JsonFileKeyVaultStorage(val path: File) : KeyVaultStorage {
         return objectMapper.readValue(json, SerializedKeyVault::class.java)
     }
 
-    override fun write(serializedKeyVault: SerializedKeyVaultV1) {
+    override fun write(serializedKeyVault: SerializedKeyVault) {
         val jsonBytes = objectMapper.writeValueAsBytes(serializedKeyVault)
         FileOutputStream(path).use { it.write(jsonBytes) }
     }
