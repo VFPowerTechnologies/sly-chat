@@ -25,7 +25,7 @@ import io.slychat.messenger.core.http.api.gcm.GcmAsyncClient
 import io.slychat.messenger.core.http.api.gcm.RegisterRequest
 import io.slychat.messenger.core.http.api.gcm.RegisterResponse
 import io.slychat.messenger.core.http.api.gcm.UnregisterRequest
-import io.slychat.messenger.services.KeyTapApplication
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
@@ -90,7 +90,7 @@ class AndroidApp : Application() {
     private var gcmInitRunning = false
     private var gcmInitComplete = false
 
-    val app: KeyTapApplication = KeyTapApplication()
+    val app: SlyApplication = SlyApplication()
 
     //if AndroidUILoadService.loadComplete is called while we're paused (eg: during the permissions dialog)
     private var queuedLoadComplete = false

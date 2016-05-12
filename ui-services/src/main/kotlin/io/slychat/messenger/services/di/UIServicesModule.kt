@@ -3,7 +3,7 @@ package io.slychat.messenger.services.di
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.UIServiceComponent
 import io.slychat.messenger.core.BuildConfig.UIServiceType
-import io.slychat.messenger.services.KeyTapApplication
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.PlatformTelephonyService
 import io.slychat.messenger.services.ui.*
 import io.slychat.messenger.services.ui.dummy.*
@@ -33,7 +33,7 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun provideLoginService(
-        app: KeyTapApplication
+        app: SlyApplication
     ): UILoginService = getImplementation(
         UIServiceComponent.LOGIN,
         { DummyUILoginService() },
@@ -44,7 +44,7 @@ class UIServicesModule {
     @Provides
     fun provideContactsService(
         serverUrls: BuildConfig.ServerUrls,
-        app: KeyTapApplication
+        app: SlyApplication
     ): UIContactsService = getImplementation(
         UIServiceComponent.CONTACTS,
         { DummyUIContactsService() },
@@ -54,7 +54,7 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun provideMessengerService(
-        app: KeyTapApplication,
+        app: SlyApplication,
         contactsService: UIContactsService
     ): UIMessengerService = getImplementation(
         UIServiceComponent.MESSENGER,
@@ -75,7 +75,7 @@ class UIServicesModule {
 
     @Singleton
     @Provides
-    fun provideNetworkStatusService(app: KeyTapApplication): UINetworkStatusService = getImplementation(
+    fun provideNetworkStatusService(app: SlyApplication): UINetworkStatusService = getImplementation(
         UIServiceComponent.NETWORK_STATUS,
         { DummyUINetworkStatusService() },
         { UINetworkStatusServiceImpl(app) }
@@ -98,7 +98,7 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun provideAccountModificationService(
-        app: KeyTapApplication,
+        app: SlyApplication,
         serverUrls: BuildConfig.ServerUrls
     ): UIAccountModificationService = UIAccountModificationServiceImpl(app, serverUrls.API_SERVER)
 

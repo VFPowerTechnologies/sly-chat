@@ -1,7 +1,7 @@
 package io.slychat.messenger.services
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.slychat.messenger.core.KeyTapAddress
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
@@ -19,12 +19,12 @@ import rx.Scheduler
 import rx.subjects.PublishSubject
 import java.util.*
 
-data class OfflineMessage(val from: KeyTapAddress, val timestamp: Int, val encryptedMessage: EncryptedMessageV0)
+data class OfflineMessage(val from: SlyAddress, val timestamp: Int, val encryptedMessage: EncryptedMessageV0)
 data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
 
 data class QueuedMessage(val to: UserId, val messageInfo: MessageInfo, val connectionTag: Int)
-data class QueuedReceivedMessage(val from: KeyTapAddress, val encryptedMessages: List<EncryptedMessageV0>)
+data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessages: List<EncryptedMessageV0>)
 
 interface EncryptionResult
 data class EncryptionOk(val encryptedMessages: List<MessageData>, val connectionTag: Int) : EncryptionResult
@@ -43,7 +43,7 @@ data class MessageSendOk(val to: UserId, override val messageId: String) : Messa
 
 //all Observerables are run on the main thread
 class MessengerService(
-    private val application: KeyTapApplication,
+    private val application: SlyApplication,
     private val scheduler: Scheduler,
     private val messagePersistenceManager: MessagePersistenceManager,
     private val contactsPersistenceManager: ContactsPersistenceManager,

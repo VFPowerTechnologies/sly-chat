@@ -3,7 +3,7 @@ package io.slychat.messenger.services.crypto
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import io.slychat.messenger.core.BuildConfig
-import io.slychat.messenger.core.KeyTapAddress
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.hexify
 import io.slychat.messenger.core.crypto.unhexify
@@ -43,8 +43,8 @@ data class MessageListDecryptionResult(
 
 private interface CipherWork
 private data class EncryptionWork(val userId: UserId, val message: String, val connectionTag: Int) : CipherWork
-private data class DecryptionWork(val address: KeyTapAddress, val encryptedMessages: List<EncryptedMessageV0>) : CipherWork
-private data class OfflineDecryptionWork(val encryptedMessages: Map<KeyTapAddress, List<EncryptedMessageV0>>) : CipherWork
+private data class DecryptionWork(val address: SlyAddress, val encryptedMessages: List<EncryptedMessageV0>) : CipherWork
+private data class OfflineDecryptionWork(val encryptedMessages: Map<SlyAddress, List<EncryptedMessageV0>>) : CipherWork
 private class NoMoreWork : CipherWork
 
 /** Represents a single message to a user. */
@@ -101,11 +101,11 @@ class MessageCipherService(
         workQueue.add(EncryptionWork(userId, message, connectionTag))
     }
 
-    fun decryptOffline(encryptedMessages: Map<KeyTapAddress, List<EncryptedMessageV0>>) {
+    fun decryptOffline(encryptedMessages: Map<SlyAddress, List<EncryptedMessageV0>>) {
        workQueue.add(OfflineDecryptionWork(encryptedMessages))
     }
 
-    fun decrypt(address: KeyTapAddress, messages: List<EncryptedMessageV0>) {
+    fun decrypt(address: SlyAddress, messages: List<EncryptedMessageV0>) {
         workQueue.add(DecryptionWork(address,  messages))
     }
 
@@ -166,7 +166,7 @@ class MessageCipherService(
         return String(messageData, Charsets.UTF_8)
     }
 
-    private fun decryptMessagesForUser(address: KeyTapAddress, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
+    private fun decryptMessagesForUser(address: SlyAddress, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
         val failed = ArrayList<DecryptionFailure>()
         val succeeded = ArrayList<String>()
 
@@ -243,7 +243,7 @@ class MessageCipherService(
         //else send what we have to relay and it'll tell us what to fix
         return if (devices.isNotEmpty()) {
             devices.map { deviceId ->
-                val address = KeyTapAddress(userId, deviceId).toSignalAddress()
+                val address = SlyAddress(userId, deviceId).toSignalAddress()
                 deviceId to SessionCipher(signalStore, address)
             }
         }
@@ -251,7 +251,7 @@ class MessageCipherService(
             val bundles = fetchPreKeyBundles(userId)
 
             bundles.map { bundle ->
-                val address = KeyTapAddress(userId, bundle.deviceId).toSignalAddress()
+                val address = SlyAddress(userId, bundle.deviceId).toSignalAddress()
                 val builder = SessionBuilder(signalStore, address)
                 //this can fail with an InvalidKeyException if the signed key signature doesn't match
                 builder.process(bundle)

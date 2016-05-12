@@ -3,7 +3,7 @@ package io.slychat.messenger.services.di
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.services.AuthenticationService
-import io.slychat.messenger.services.KeyTapApplication
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.UserPathsGenerator
 import dagger.Module
 import dagger.Provides
@@ -13,7 +13,7 @@ import javax.inject.Singleton
 class ApplicationModule(
     @get:Singleton
     @get:Provides
-    val providesApplication: KeyTapApplication
+    val providesApplication: SlyApplication
 ) {
     @Singleton
     @Provides

@@ -10,8 +10,8 @@ import java.io.IOException
 
 val ADDRESS_USERID_DEVICEID_DELIMITER = "."
 
-class KeyTapAddressDeserializer : JsonDeserializer<KeyTapAddress>() {
-    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): KeyTapAddress {
+class SlyAddressDeserializer : JsonDeserializer<SlyAddress>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): SlyAddress {
         val text = p.text
 
         if (p.currentToken != JsonToken.VALUE_STRING)
@@ -22,7 +22,7 @@ class KeyTapAddressDeserializer : JsonDeserializer<KeyTapAddress>() {
             throw IOException("Invalid address format: $text")
 
         try {
-            return KeyTapAddress(UserId(parts[0].toLong()), parts[1].toInt())
+            return SlyAddress(UserId(parts[0].toLong()), parts[1].toInt())
         }
         catch (e: NumberFormatException) {
             throw IOException("Invalid address format: $text", e)
@@ -30,15 +30,15 @@ class KeyTapAddressDeserializer : JsonDeserializer<KeyTapAddress>() {
     }
 }
 
-@JsonDeserialize(using = KeyTapAddressDeserializer::class)
-data class KeyTapAddress(val id: UserId, val deviceId: Int) {
+@JsonDeserialize(using = SlyAddressDeserializer::class)
+data class SlyAddress(val id: UserId, val deviceId: Int) {
     fun toSignalAddress(): SignalProtocolAddress = SignalProtocolAddress(id.long.toString(), deviceId)
 
     /** Returns the address serialized as a string. Function name choosen to not conflict with toString. */
     fun asString(): String = id.long.toString() + ADDRESS_USERID_DEVICEID_DELIMITER + deviceId.toString()
 
     companion object {
-        fun fromString(s: String): KeyTapAddress? {
+        fun fromString(s: String): SlyAddress? {
             val parts = s.split(ADDRESS_USERID_DEVICEID_DELIMITER, limit = 2)
             if (parts.size != 2)
                 return null
@@ -46,7 +46,7 @@ data class KeyTapAddress(val id: UserId, val deviceId: Int) {
             try {
                 val userId = parts[0].toLong()
                 val deviceId = parts[1].toInt()
-                return KeyTapAddress(UserId(userId), deviceId)
+                return SlyAddress(UserId(userId), deviceId)
             }
             catch (e: NumberFormatException) {
                 return null

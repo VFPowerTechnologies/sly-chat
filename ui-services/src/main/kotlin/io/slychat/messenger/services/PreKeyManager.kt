@@ -19,7 +19,7 @@ import org.whispersystems.libsignal.state.PreKeyRecord
 //TODO right now this only regens new keys on online
 //should also check after processing a prekey from a received message
 class PreKeyManager(
-    private val application: KeyTapApplication,
+    private val application: SlyApplication,
     private val serverUrl: String,
     private val userLoginData: UserData,
     private val preKeyPersistenceManager: PreKeyPersistenceManager,

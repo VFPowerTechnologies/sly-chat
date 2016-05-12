@@ -1,12 +1,12 @@
 package io.slychat.messenger.services.ui.impl
 
-import io.slychat.messenger.services.KeyTapApplication
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.LoginEvent
 import io.slychat.messenger.services.ui.UILoginService
 import java.util.*
 
 class UILoginServiceImpl(
-    private val app: KeyTapApplication
+    private val app: SlyApplication
 ) : UILoginService {
     private val listeners = ArrayList<(LoginEvent) -> Unit>()
     //cached value; is null until initialized

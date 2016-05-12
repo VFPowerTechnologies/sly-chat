@@ -10,7 +10,7 @@ import nl.komponents.kovenant.ui.alwaysUi
 import org.slf4j.LoggerFactory
 
 class OfflineMessageManager(
-    private val application: KeyTapApplication,
+    private val application: SlyApplication,
     private val serverUrl: String,
     private val messengerService: MessengerService,
     private val authTokenManager: AuthTokenManager

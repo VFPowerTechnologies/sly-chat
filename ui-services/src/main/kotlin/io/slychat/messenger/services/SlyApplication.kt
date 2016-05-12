@@ -3,7 +3,7 @@ package io.slychat.messenger.services
 import com.fasterxml.jackson.core.JsonParseException
 import io.slychat.messenger.core.AuthToken
 import io.slychat.messenger.core.BuildConfig
-import io.slychat.messenger.core.KeyTapAddress
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.div
 import io.slychat.messenger.core.persistence.AccountInfo
@@ -30,7 +30,7 @@ import rx.subjects.BehaviorSubject
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class KeyTapApplication {
+class SlyApplication {
     private val log = LoggerFactory.getLogger(javaClass)
 
     var isNetworkAvailable = false
@@ -46,7 +46,7 @@ class KeyTapApplication {
         private set
 
     private var isInitialized = false
-    private val onInitListeners = ArrayList<(KeyTapApplication) -> Unit>()
+    private val onInitListeners = ArrayList<(SlyApplication) -> Unit>()
 
     //the following observables never complete or error and are valid for the lifetime of the application
     //only changes in value are emitted from these
@@ -208,7 +208,7 @@ class KeyTapApplication {
             val keyVault = response.keyVault
 
             val accountInfo = response.accountInfo
-            val address = KeyTapAddress(accountInfo.id, accountInfo.deviceId)
+            val address = SlyAddress(accountInfo.id, accountInfo.deviceId)
             val userLoginData = UserData(address, keyVault)
             val userComponent = createUserSession(userLoginData)
 
@@ -575,7 +575,7 @@ class KeyTapApplication {
     }
 
     /** Adds a function to be called once the app has finished initializing. */
-    fun addOnInitListener(body: (KeyTapApplication) -> Unit) {
+    fun addOnInitListener(body: (SlyApplication) -> Unit) {
         if (isInitialized)
             body(this)
         else

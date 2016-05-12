@@ -9,7 +9,7 @@ import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
 import io.slychat.messenger.desktop.services.DesktopUILoadService
 import io.slychat.messenger.desktop.services.DesktopUIPlatformInfoService
 import io.slychat.messenger.desktop.services.DesktopUIPlatformService
-import io.slychat.messenger.services.KeyTapApplication
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.ui.createAppDirectories
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory
 import rx.schedulers.JavaFxScheduler
 
 class DesktopApp : Application() {
-    private val app: KeyTapApplication = KeyTapApplication()
+    private val app: SlyApplication = SlyApplication()
 
     /** Enable the (hidden) debugger WebEngine feature */
     private fun enableDebugger(engine: WebEngine) {

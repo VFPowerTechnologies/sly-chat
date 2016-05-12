@@ -27,7 +27,7 @@ class PreKeyClientTest {
     val userId = UserId(1)
     val deviceId = 0
     val registrationId = 0
-    val userCredentials = UserCredentials(KeyTapAddress(UserId(1), 1), AuthToken("000"))
+    val userCredentials = UserCredentials(SlyAddress(UserId(1), 1), AuthToken("000"))
 
     @Test
     fun `store should return a successful PreKeyStorageResponse when receiving a 200 response`() {

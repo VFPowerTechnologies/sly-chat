@@ -43,7 +43,7 @@ class UserModule(
     @UserScope
     @Provides
     fun providesMessengerService(
-        application: KeyTapApplication,
+        application: SlyApplication,
         scheduler: Scheduler,
         messagePersistenceManager: MessagePersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager,
@@ -92,7 +92,7 @@ class UserModule(
     @UserScope
     @Provides
     fun providesPreKeyManager(
-        application: KeyTapApplication,
+        application: SlyApplication,
         serverUrls: ServerUrls,
         userLoginData: UserData,
         preKeyPersistenceManager: PreKeyPersistenceManager,
@@ -103,7 +103,7 @@ class UserModule(
     @UserScope
     @Provides
     fun providesOfflineMessageManager(
-        application: KeyTapApplication,
+        application: SlyApplication,
         serverUrls: ServerUrls,
         messengerService: MessengerService,
         authTokenManager: AuthTokenManager
@@ -113,7 +113,7 @@ class UserModule(
     @UserScope
     @Provides
     fun providesContactSyncManager(
-        application: KeyTapApplication,
+        application: SlyApplication,
         userLoginData: UserData,
         accountInfoPersistenceManager: AccountInfoPersistenceManager,
         serverUrls: ServerUrls,
@@ -134,7 +134,7 @@ class UserModule(
     @UserScope
     @Provides
     fun providesTokenProvider(
-        application: KeyTapApplication,
+        application: SlyApplication,
         userLoginData: UserData,
         authenticationService: AuthenticationService
     ): TokenProvider =

@@ -2,7 +2,7 @@ package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
-import io.slychat.messenger.services.KeyTapApplication
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.ui.UIContactDetails
 import io.slychat.messenger.services.ui.UIContactsService
@@ -13,7 +13,7 @@ import nl.komponents.kovenant.functional.map
 import java.util.*
 
 class UIContactsServiceImpl(
-    private val app: KeyTapApplication,
+    private val app: SlyApplication,
     serverUrl: String
 ) : UIContactsService {
     private val contactClient = ContactAsyncClient(serverUrl)

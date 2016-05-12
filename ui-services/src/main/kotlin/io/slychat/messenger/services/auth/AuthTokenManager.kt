@@ -1,7 +1,7 @@
 package io.slychat.messenger.services.auth
 
 import io.slychat.messenger.core.AuthToken
-import io.slychat.messenger.core.KeyTapAddress
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UnauthorizedException
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.services.bindRecoverForUi
@@ -20,7 +20,7 @@ import java.util.*
 //XXX what do I do regarding network connectivity? I guess just hand out the token, and then the tasks can fail due to connection issues?
 //likewise, any token refresh would end up with an error
 class AuthTokenManager(
-    private val address: KeyTapAddress,
+    private val address: SlyAddress,
     private val tokenProvider: TokenProvider
 ) {
     companion object {

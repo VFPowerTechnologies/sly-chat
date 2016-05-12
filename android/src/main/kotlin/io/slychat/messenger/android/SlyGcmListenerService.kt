@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.gcm.GcmListenerService
 import io.slychat.messenger.core.typeRef
-import io.slychat.messenger.core.typeRef
 import org.slf4j.LoggerFactory
 
 data class OfflineMessageInfo(
@@ -19,7 +18,7 @@ data class OfflineMessageInfo(
 
 val GCM_TYPE_OFFLINE_MESSAGE = "offline-message"
 
-class KeyTapGcmListenerService : GcmListenerService() {
+class SlyGcmListenerService : GcmListenerService() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun onMessageReceived(from: String, data: Bundle) {

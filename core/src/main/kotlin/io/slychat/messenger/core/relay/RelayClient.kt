@@ -1,7 +1,7 @@
 package io.slychat.messenger.core.relay
 
 import io.slychat.messenger.core.ADDRESS_USERID_DEVICEID_DELIMITER
-import io.slychat.messenger.core.KeyTapAddress
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.relay.RelayClientState.*
@@ -148,7 +148,7 @@ class RelayClient(
                     from
                 )
 
-                emitEvent(ReceivedMessage(KeyTapAddress.fromString(from)!!, message.content, messageId))
+                emitEvent(ReceivedMessage(SlyAddress.fromString(from)!!, message.content, messageId))
             }
 
             SERVER_USER_OFFLINE -> {

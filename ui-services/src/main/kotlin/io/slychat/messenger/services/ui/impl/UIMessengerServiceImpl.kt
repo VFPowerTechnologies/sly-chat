@@ -1,6 +1,6 @@
 package io.slychat.messenger.services.ui.impl
 
-import io.slychat.messenger.services.KeyTapApplication
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.MessageBundle
 import io.slychat.messenger.services.MessengerService
 import io.slychat.messenger.services.ui.*
@@ -12,7 +12,7 @@ import java.util.*
 
 /** This exists for the lifetime of the application. It wraps MessengerService, which exists for the lifetime of the user session. */
 class UIMessengerServiceImpl(
-    private val app: KeyTapApplication
+    private val app: SlyApplication
 ) : UIMessengerService {
     private val log = LoggerFactory.getLogger(javaClass)
 

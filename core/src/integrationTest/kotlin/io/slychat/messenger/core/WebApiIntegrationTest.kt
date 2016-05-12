@@ -42,7 +42,7 @@ fun GeneratedSiteUser.getUserCredentials(authToken: AuthToken, deviceId: Int = D
 
 fun SiteUser.getUserCredentials(authToken: AuthToken, deviceId: Int = DEFAULT_DEVICE_ID): UserCredentials {
     return UserCredentials(
-        KeyTapAddress(id, deviceId),
+        SlyAddress(id, deviceId),
         authToken
     )
 }
@@ -186,7 +186,7 @@ class WebApiIntegrationTest {
 
     val dummyRegistrationInfo = RegistrationInfo("c@a.com", "name", "000-000-0000")
     val password = "test"
-    val invalidUserCredentials = UserCredentials(KeyTapAddress(UserId(999999), 999), AuthToken(""))
+    val invalidUserCredentials = UserCredentials(SlyAddress(UserId(999999), 999), AuthToken(""))
 
     val devClient = DevClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
 
@@ -561,7 +561,7 @@ class WebApiIntegrationTest {
     fun assertNextPreKeyIs(userId: UserId, authToken: AuthToken, expected: PreKeyRecord, signedPreKey: SignedPreKeyRecord) {
         val client = PreKeyClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
 
-        val userCredentials = UserCredentials(KeyTapAddress(userId, DEFAULT_DEVICE_ID), authToken)
+        val userCredentials = UserCredentials(SlyAddress(userId, DEFAULT_DEVICE_ID), authToken)
 
         val response = client.retrieve(userCredentials, PreKeyRetrievalRequest(userId, listOf()))
 

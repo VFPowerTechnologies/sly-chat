@@ -1,12 +1,12 @@
 package io.slychat.messenger.services.ui.impl
 
-import io.slychat.messenger.services.KeyTapApplication
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.ui.UINetworkStatus
 import io.slychat.messenger.services.ui.UINetworkStatusService
 import io.slychat.messenger.services.ui.UIRelayStatus
 import java.util.*
 
-class UINetworkStatusServiceImpl(private val application: KeyTapApplication) : UINetworkStatusService {
+class UINetworkStatusServiceImpl(private val application: SlyApplication) : UINetworkStatusService {
     private val networkStatusListeners = ArrayList<(UINetworkStatus) -> Unit>()
     private val relayStatusListeners = ArrayList<(UIRelayStatus) -> Unit>()
 

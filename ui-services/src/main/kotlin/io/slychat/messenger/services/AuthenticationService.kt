@@ -1,6 +1,6 @@
 package io.slychat.messenger.services
 
-import io.slychat.messenger.core.KeyTapAddress
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.div
 import io.slychat.messenger.core.http.JavaHttpClient
@@ -34,7 +34,7 @@ class AuthenticationService(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun refreshAuthToken(address: KeyTapAddress, registrationId: Int, remotePasswordHash: ByteArray): Promise<AuthTokenRefreshResult, Exception> {
+    fun refreshAuthToken(address: SlyAddress, registrationId: Int, remotePasswordHash: ByteArray): Promise<AuthTokenRefreshResult, Exception> {
         val deviceId = address.deviceId
 
         val loginClient = AuthenticationAsyncClient(serverUrl)

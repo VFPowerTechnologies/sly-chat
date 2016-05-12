@@ -1,11 +1,11 @@
 package io.slychat.messenger.core.http.api.offline
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import io.slychat.messenger.core.KeyTapAddress
+import io.slychat.messenger.core.SlyAddress
 
 data class SerializedOfflineMessage(
     @JsonProperty("from")
-    val from: KeyTapAddress,
+    val from: SlyAddress,
     @JsonProperty("timestamp")
     val timestamp: Int,
     @JsonProperty("message")
