@@ -44,7 +44,7 @@ RegistrationController.prototype = {
             KEYTAP.loginController.modal.open();
             var info = this.model.getItems();
             KEYTAP.loginController.setInfo(info.email, info.password);
-            KEYTAP.loginController.login();
+            KEYTAP.loginController.login(true);
         }.bind(this));
 
         $(document).on("click", "#submitVerificationCode", function (e) {

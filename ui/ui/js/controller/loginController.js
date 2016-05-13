@@ -19,7 +19,6 @@ LoginController.prototype = {
 
             if(this.model.validate() == true){
                 this.login();
-
                 this.modal.open();
             }
             else{
@@ -103,8 +102,10 @@ LoginController.prototype = {
         //do this last, so that everything's been reset before loading a new page
         KEYTAP.navigationController.loadPage("login.html");
     },
-    login : function() {
-        var rememberMe = $("#rememberMe").is(':checked');
+    login : function(rememberMe) {
+        if(typeof rememberMe === "undefined")
+            rememberMe = $("#rememberMe").is(':checked');
+
         loginService.login(this.model.getLogin(), this.model.getPassword(), rememberMe);
     },
     setInfo : function(login, password) {
