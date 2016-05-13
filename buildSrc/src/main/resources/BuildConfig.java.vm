@@ -1,4 +1,4 @@
-package com.vfpowertech.keytap.core;
+package io.slychat.messenger.core;
 
 import java.net.InetSocketAddress;
 import org.jetbrains.annotations.NotNull;
