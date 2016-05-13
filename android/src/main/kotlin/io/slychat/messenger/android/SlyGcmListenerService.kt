@@ -2,9 +2,7 @@ package io.slychat.messenger.android
 
 import android.os.Bundle
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.gcm.GcmListenerService
-import io.slychat.messenger.core.typeRef
 import org.slf4j.LoggerFactory
 
 data class OfflineMessageInfo(
@@ -36,12 +34,9 @@ class SlyGcmListenerService : GcmListenerService() {
         val infoSerialized = data.getString("info")
         val account = data.getString("account")
 
-        val objectMapper = ObjectMapper()
-        val info: Array<OfflineMessageInfo> = objectMapper.readValue(infoSerialized, typeRef<Array<OfflineMessageInfo>>())
-
         val app = AndroidApp.get(this)
         androidRunInMain(this) {
-            app.onGCMMessage(account, info)
+            app.onGCMMessage(account)
         }
     }
 }

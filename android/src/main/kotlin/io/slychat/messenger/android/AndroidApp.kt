@@ -25,8 +25,8 @@ import io.slychat.messenger.core.http.api.gcm.GcmAsyncClient
 import io.slychat.messenger.core.http.api.gcm.RegisterRequest
 import io.slychat.messenger.core.http.api.gcm.RegisterResponse
 import io.slychat.messenger.core.http.api.gcm.UnregisterRequest
-import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.LoginState
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.ui.createAppDirectories
@@ -260,7 +260,7 @@ class AndroidApp : Application() {
         }
     }
 
-    fun onGCMMessage(account: String, offlineMessageInfoList: Array<OfflineMessageInfo>) {
+    fun onGCMMessage(account: String) {
         //it's possible we might receive a message targetting a diff account that was previously logged in
         app.addOnInitListener { app ->
             //the app might not be finished logging in yet
