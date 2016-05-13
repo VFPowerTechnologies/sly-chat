@@ -9,8 +9,17 @@
             android:layout_height="fill_parent"
             android:id="@+id/webView" android:layout_alignParentLeft="true" android:layout_marginLeft="0dp"
             android:layout_alignParentTop="true" android:layout_marginTop="0dp" android:visibility="visible"/>
-    <ImageView
+
+    <FrameLayout
+            android:id="@+id/splashImageView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:id="@+id/splashImageView" android:layout_gravity="left|top" android:background="#777777"/>
+            android:layout_gravity="center"
+            android:background="#847c60">
+        <ImageView
+                android:layout_width="79dp"
+                android:layout_height="79dp"
+                android:id="@+id/splashLogo" android:layout_gravity="center" android:background="@drawable/ic_launcher"/>
+    </FrameLayout>
+
 </FrameLayout>
