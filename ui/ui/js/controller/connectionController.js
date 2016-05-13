@@ -31,8 +31,12 @@ ConnectionController.prototype = {
                 $("#addContactBtn").prop("disabled", true);
             }
             else if (this.relayConnected == false) {
-                this.updateNotification("Waiting for connection...", "warning");
-                $("#addContactBtn").prop("disabled", false);
+                setTimeout(function () {
+                    if(this.relayConnected == false) {
+                        this.updateNotification("Waiting for connection...", "warning");
+                        $("#addContactBtn").prop("disabled", false);
+                    }
+                }.bind(this), 2000);
             }
             else {
                 this.closeNotification();
@@ -49,6 +53,7 @@ ConnectionController.prototype = {
             newest_on_top: true,
             delay: 0,
             allow_dismiss: false,
+            allow_duplicates: false,
             offset: {
                 y: 66,
                 x: 20
