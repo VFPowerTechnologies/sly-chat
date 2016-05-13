@@ -1,0 +1,28 @@
+package io.slychat.messenger.core.http.api.authentication
+
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonProperty
+import io.slychat.messenger.core.crypto.SerializedCryptoParams
+
+data class AuthenticationParams(
+    @param:JsonProperty("csrf")
+    @get:JsonProperty("csrf")
+    val csrfToken: String,
+
+    @param:JsonProperty("hash-params")
+    @get:JsonProperty("hash-params")
+    val hashParams: SerializedCryptoParams
+)
+
+data class AuthenticationParamsResponse(
+    @param:JsonProperty("error-message")
+    @get:JsonProperty("error-message")
+    val errorMessage: String?,
+
+    @param:JsonProperty("params")
+    @get:JsonProperty("params")
+    val params: AuthenticationParams?
+) {
+    @get:JsonIgnore
+    val isSuccess: Boolean = errorMessage == null
+}

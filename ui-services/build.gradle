@@ -19,7 +19,7 @@ kapt {
 
     arguments {
         arg('jsOutputDir', jsOutputDir)
-        arg('jsCallbackPackage', 'com.vfpowertech.keytap.core.services.jscallback')
+        arg('jsCallbackPackage', 'io.slychat.messenger.core.services.jscallback')
         arg('jsAddModuleExports', 'false')
     }
 }

@@ -1,4 +1,4 @@
-rootProject.name = 'keytap'
+rootProject.name = 'sly'
 
 include 'desktop'
 include 'android'
