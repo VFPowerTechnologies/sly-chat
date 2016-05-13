@@ -31,7 +31,7 @@ ConnectionController.prototype = {
                 $("#addContactBtn").prop("disabled", true);
             }
             else if (this.relayConnected == false) {
-                this.updateNotification("Disconnected", "warning");
+                this.updateNotification("Waiting for connection...", "warning");
                 $("#addContactBtn").prop("disabled", false);
             }
             else {
