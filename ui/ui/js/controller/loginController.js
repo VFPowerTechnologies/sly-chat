@@ -12,10 +12,7 @@ LoginController.prototype = {
 
             loginBtn.prop("disabled", true);
 
-            this.model.setItems({
-                "login" : $("#login").val().replace(/\s+/g, ''),
-                "password" : $("#login-psw").val()
-            });
+            this.setInfo($("#login").val().replace(/\s+/g, ''), $("#login-psw").val());
 
             if(this.model.validate() == true){
                 this.login();
@@ -53,7 +50,6 @@ LoginController.prototype = {
     },
     onLoginSuccessful : function(ev) {
         var accountInfo = ev.accountInfo;
-
         stateService.getInitialPage().then(function (initialPage) {
             KEYTAP.profileController.setUserInfo(accountInfo);
             $(".menu-hidden").show();
@@ -78,12 +74,14 @@ LoginController.prototype = {
                 KEYTAP.navigationController.loadPage("smsVerification.html");
             }
             else {
+                this.setInfo("", "");
                 document.getElementById("login-error").innerHTML = "<li>An error occurred: " + errorMessage + "</li>";
                 $("#submitLoginBtn").prop("disabled", false);
                 this.modal.close();
             }
         }
         else {
+            this.setInfo("", "");
             this.modal.close();
             KEYTAP.exceptionController.displayDebugMessage(e);
             document.getElementById("login-error").innerHTML = "<li>An unexpected error occurred</li>";
@@ -98,6 +96,10 @@ LoginController.prototype = {
             "name" : "",
             "phone-number" : "",
             "email" : ""
+        });
+        this.model.setItems({
+            "login" : "",
+            "password" : ""
         });
         //do this last, so that everything's been reset before loading a new page
         KEYTAP.navigationController.loadPage("login.html");
