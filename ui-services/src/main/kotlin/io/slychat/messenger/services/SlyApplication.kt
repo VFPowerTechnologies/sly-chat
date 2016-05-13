@@ -94,9 +94,10 @@ class SlyApplication {
 
         //android can fire these events multiple time in succession (eg: when google account sync is occuring)
         //so we clamp down the number of events we process
-        appComponent.platformContacts.contactsUpdated.debounce(4000, TimeUnit.MILLISECONDS).subscribe {
-            onPlatformContactsUpdated()
-        }
+        appComponent.platformContacts.contactsUpdated
+            .debounce(4000, TimeUnit.MILLISECONDS)
+            .observeOn(appComponent.rxScheduler)
+            .subscribe { onPlatformContactsUpdated() }
     }
 
     private fun onPlatformContactsUpdated() {
