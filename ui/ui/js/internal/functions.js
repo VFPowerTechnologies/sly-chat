@@ -114,6 +114,7 @@ if (typeof KEYTAP == "undefined") {
         bd.setClosable(closable);
         bd.setMessage(htmlContent);
         bd.setCssClass("contextLikeModal whiteModal mediumModal");
+        bd.setAnimate(false);
 
         return bd;
     }

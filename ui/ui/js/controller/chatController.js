@@ -173,7 +173,9 @@ ChatController.prototype = {
         var html = "<div class='contextLikeMenu' id='messageContextMenu'>" +
             "<ul>" +
                 "<li><a id='copyMessage' href='#'>Copy Message Text</a></li>" +
+                "<li role='separator' class='divider'></li>" +
                 "<li><a id='deleteMessage' href='#'>Delete Message</a></li>" +
+                "<li role='separator' class='divider'></li>" +
                 "<li><a id='deleteMultipleMessage' href='#'>Delete Multiple Messages</a></li>" +
             "</ul>" +
         "</div>";
@@ -192,13 +194,13 @@ ChatController.prototype = {
         else
             title = "Delete this message?";
 
-        var html = "<div>" +
+        var html = "<div class='contextLikeModalContent'>" +
             "<h6 class='contextLikeModal-title'>" + title + "</h6>" +
-            "<p class='contextLikeModal-content'>Are you sure? This action cannot be undone.</p>" +
-        "</div>" +
-        "<div class='contextLikeModal-nav'>" +
-            "<button id='confirmDeleteMessage' class='btn btn-sm transparentBtn'>Confirm</button>" +
-            "<button id='cancelCloseModal' class='btn btn-sm transparentBtn'>Cancel</button>" +
+            "<p class='contextLikeModal-content'>Are you sure?<br> This action cannot be undone.</p>" +
+            "<div class='contextLikeModal-nav'>" +
+                "<button id='cancelCloseModal' class='btn btn-sm transparentBtn'>Cancel</button>" +
+                "<button id='confirmDeleteMessage' class='btn btn-sm transparentBtn'>Confirm</button>" +
+            "</div>" +
         "</div>";
 
 
@@ -211,13 +213,13 @@ ChatController.prototype = {
      * @param contact Contact
      */
     createDeleteWholeConversationDialog : function (contact) {
-        var html = "<div>" +
+        var html = "<div class='contextLikeModalContent'>" +
             "<h6 class='contextLikeModal-title'>Delete Conversation?</h6>" +
             "<p class='contextLikeModal-content'>Are you sure you want to delete your conversation with " + contact.name + "</p>" +
-        "</div>" +
-        "<div class='contextLikeModal-nav'>" +
-            "<button id='confirmDeleteConversation' class='btn btn-sm transparentBtn'>Confirm</button>" +
-            "<button id='cancelCloseModal' class='btn btn-sm transparentBtn'>Cancel</button>" +
+            "<div class='contextLikeModal-nav'>" +
+                "<button id='cancelCloseModal' class='btn btn-sm transparentBtn'>Cancel</button>" +
+                "<button id='confirmDeleteConversation' class='btn btn-sm transparentBtn'>Confirm</button>" +
+            "</div>" +
         "</div>";
 
         var modal = createContextLikeMenu(html, false);
@@ -230,8 +232,8 @@ ChatController.prototype = {
      */
     createMultipleDeleteMenu : function () {
         return "<div id='multipleDeleteMenu'>" +
-            "<button id='confirmMultipleDeleteButton' class='btn btn-sm'>Delete</button>" +
             "<button id='cancelMultipleDeleteButton' class='btn btn-sm'>Cancel</button>" +
+            "<button id='confirmMultipleDeleteButton' class='btn btn-sm'>Delete</button>" +
         "</div>";
     },
     /**

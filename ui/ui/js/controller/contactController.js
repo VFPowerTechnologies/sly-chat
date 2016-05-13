@@ -242,21 +242,20 @@ ContactController.prototype = {
         navbar.className = "navbar-btn center-align";
 
         var cancelBtn = document.createElement("button");
-        cancelBtn.className = "btn-sm red";
+        cancelBtn.className = "btn-sm transparentBtn";
         cancelBtn.id = "cancelBtn";
         cancelBtn.type = "submit";
         cancelBtn.innerHTML = "Cancel";
-        cancelBtn.style.border = "none";
-        cancelBtn.style.color = "white";
-        cancelBtn.style.marginRight = "5px";
+        cancelBtn.style.fontSize = "18px";
+        cancelBtn.style.color = "#eeeeee";
 
         var confirmBtn = document.createElement("button");
-        confirmBtn.className = "btn-sm secondary-color";
+        confirmBtn.className = "btn-sm transparentBtn";
         confirmBtn.id = "confirmBtn";
         confirmBtn.type = "submit";
         confirmBtn.innerHTML = "Confirm";
-        confirmBtn.style.border = "none";
-        confirmBtn.style.color = "white";
+        confirmBtn.style.fontSize = "18px";
+        confirmBtn.style.color = "#eeeeee";
 
         form.appendChild(nameLabel);
         form.appendChild(nameInput);
@@ -284,7 +283,7 @@ ContactController.prototype = {
 
             }).then(function () {
                 this.model.resetContacts();
-                KEYTAP.navigationController.loadPage("contacts.html");
+                KEYTAP.navigationController.loadPage("contacts.html", false);
             }.bind(this)).catch(function (e) {
                 $("#newContactBtn").prop("disabled", false);
                 KEYTAP.exceptionController.displayDebugMessage(e);
@@ -299,15 +298,14 @@ ContactController.prototype = {
         });
     },
     displayDeleteContactModal: function(id) {
-        var html = "<div>" +
+        var html = "<div class='contextLikeModalContent'>" +
             "<h6 class='contextLikeModal-title'>Delete Contact?</h6>" +
             "<p class='contextLikeModal-content'>Are you sure you want to delete " + this.getContact(id).email + "?</p>" +
-            "</div>" +
             "<div class='contextLikeModal-nav'>" +
-            "<button id='deleteConfirm_" + id + "' class='btn btn-sm transparentBtn'>Confirm</button>" +
-            "<button id='deleteContactModalClose' class='btn btn-sm transparentBtn'>Cancel</button>" +
-            "</div>";
-
+                "<button id='deleteContactModalClose' class='btn btn-sm transparentBtn'>Cancel</button>" +
+                "<button id='deleteConfirm_" + id + "' class='btn btn-sm transparentBtn'>Confirm</button>" +
+            "</div>" +
+        "</div>";
 
         var modal = createContextLikeMenu(html, false);
         modal.open();
