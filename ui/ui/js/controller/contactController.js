@@ -56,6 +56,7 @@ ContactController.prototype = {
             type: "warning",
             delay: 0,
             allow_dismiss: false,
+            allow_duplicates: false,
             offset: {
                 y: 66,
                 x: 20
@@ -63,17 +64,15 @@ ContactController.prototype = {
         });
     },
     closeNotification : function () {
-        setTimeout(function() {
-            if(this.notify != null) {
-                this.notify.update("type", "success");
-                this.notify.update("message", "Sync is completed");
-                this.notify.update("icon", "fa fa-check-circle");
+        if(this.notify != null) {
+            this.notify.update("type", "success");
+            this.notify.update("message", "Sync is completed");
+            this.notify.update("icon", "fa fa-check-circle");
 
-                setTimeout(function () {
-                    this.notify.close();
-                }.bind(this), 3000);
-            }
-        }.bind(this), 300);
+            setTimeout(function () {
+                this.notify.close();
+            }.bind(this), 3000);
+        }
     },
     createContactBlock : function (contact, status) {
         var contactLinkClass = "contact-link ";

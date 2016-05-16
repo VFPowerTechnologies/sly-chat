@@ -6,7 +6,7 @@ var ChatController = function (model, contactController) {
     this.fetchingNumber = 100;
     this.lastMessage = null;
     this.messageMenu = this.createMessagesMenu();
-    this.messageToDelete = [];
+    this.selectedMessage = [];
     this.selectMode = false;
 };
 
@@ -16,7 +16,7 @@ ChatController.prototype = {
         this.model.fetchMessage(this.currentMessagePosition, this.fetchingNumber, contact);
         this.model.markConversationAsRead(contact);
 
-        this.messageToDelete = [];
+        this.selectedMessage = [];
         this.selectMode = false;
 
         $("#newMessageSubmitBtn").click(function (){
@@ -68,6 +68,9 @@ ChatController.prototype = {
                     }
                 }
             }
+            else {
+                $(this).find(".message-details").toggle();
+            }
         });
 
         $(document).on("click", "#copyMessage", function (e) {
@@ -82,16 +85,16 @@ ChatController.prototype = {
 
         $(document).on("click", "#confirmDeleteMessage", function (e) {
             e.preventDefault();
-            if(this.messageToDelete.length >= 1) {
-                this.deleteMessage(this.contactController.getCurrentContact(), this.messageToDelete);
+            if(this.selectedMessage.length >= 1) {
+                this.deleteMessage(this.contactController.getCurrentContact(), this.selectedMessage);
             }
-            this.messageToDelete = [];
+            this.selectedMessage = [];
             BootstrapDialog.closeAll();
         }.bind(this));
 
         $(document).on("click", "#cancelCloseModal", function (e) {
             e.preventDefault();
-            this.messageToDelete = [];
+            this.selectedMessage = [];
             this.selectMode = false;
             $(".message_selected").each(function (index, item) {
                 this.deselectMessage($(item));
@@ -102,7 +105,7 @@ ChatController.prototype = {
         $(document).on("click", "#deleteMultipleMessage", function (e) {
             e.preventDefault();
             this.selectMode = true;
-            this.messageToDelete.forEach(function (id) {
+            this.selectedMessage.forEach(function (id) {
                 this.selectMessage($("#message_" + id));
             }.bind(this));
             this.messageMenu.close();
@@ -116,16 +119,16 @@ ChatController.prototype = {
                 this.deselectMessage($(item));
             }.bind(this));
             $("#multipleDeleteMenu").remove();
-            this.messageToDelete = [];
+            this.selectedMessage = [];
         }.bind(this));
 
         $(document).on("click", "#confirmMultipleDeleteButton", function (e) {
             e.preventDefault();
             var messagesSelected = $(".message_selected");
             if(messagesSelected.length >= 1) {
-                this.messageToDelete = [];
+                this.selectedMessage = [];
                 messagesSelected.each(function (index, item) {
-                    this.messageToDelete.push($(item).attr("id").split("_")[1]);
+                    this.selectedMessage.push($(item).attr("id").split("_")[1]);
                 }.bind(this));
 
                 $("#multipleDeleteMenu").remove();
@@ -324,8 +327,17 @@ ChatController.prototype = {
                 timespan.html(message.timestamp);
         }
 
-        messageDiv.append(timespan);
+        var messageDetailsTime = $(document.createElement("p"));
+        messageDetailsTime.addClass("message-details");
+        messageDetailsTime.html("Received at " + new Date(message.timestamp).toLocaleString() + ".");
 
+        var messageDetailsSecure = $(document.createElement("p"));
+        messageDetailsSecure.addClass("message-details");
+        messageDetailsSecure.html("<i class='fa fa-lock' style='color: green; margin-right: 3px;'></i> This Message is secure.");
+
+        messageDiv.append(timespan);
+        messageDiv.prepend(messageDetailsTime);
+        messageDiv.append(messageDetailsSecure);
         node.append(messageDiv);
 
         this.lastMessage = message;
@@ -334,7 +346,7 @@ ChatController.prototype = {
         node.on("mouseheld", function (e) {
             if(KEYTAP.chatController.selectMode == false) {
                 vibrate(50);
-                KEYTAP.chatController.messageToDelete = [$(this).attr("id").split("_")[1]];
+                KEYTAP.chatController.selectedMessage = [$(this).attr("id").split("_")[1]];
                 KEYTAP.chatController.messageMenu.open();
             }
         });

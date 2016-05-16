@@ -49,7 +49,7 @@
             strings: {
                 prefixAgo: null,
                 prefixFromNow: null,
-                suffixAgo: "",
+                suffixAgo: "ago",
                 suffixFromNow: "from now",
                 inPast: 'any moment now',
                 seconds: "Now",
@@ -57,11 +57,11 @@
                 minutes: "%d minutes",
                 hour: "1 hour",
                 hours: "%d hours",
-                day: "a day",
+                day: "1 day",
                 days: "%d days",
-                month: "a month",
+                month: "1 month",
                 months: "%d months",
-                year: "a year",
+                year: "1 year",
                 years: "%d years",
                 wordSeparator: " ",
                 numbers: []
