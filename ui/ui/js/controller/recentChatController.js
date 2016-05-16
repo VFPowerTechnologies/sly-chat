@@ -47,12 +47,14 @@ RecentChatController.prototype = {
 
         var contactBlock = "";
 
+        var lockIcon = "<i class='fa fa-lock' style='float: right; color: green;'></i>";
+
         contactBlock += "<div class='" + contactLinkClass + "' id='recent_" + recentChat.contact.id + "'><div class='contact'>";
         contactBlock += createAvatar(recentChat.contact.name);
         contactBlock += "<p style='display: inline-block;'>" + recentChat.contact.name + "</p>";
         contactBlock += "<p class='recentTimestamp' style='display: inline-block; float: right; font-size: 10px'>" + $.timeago(recentChat.status.lastTimestamp) + "</p><br>";
         contactBlock += "<p class='recentMessage' style='display: inline-block; float: left; font-size: 10px; line-height: 0;'>" + createTextNode(lastMessage) + "</p>";
-        contactBlock += "</div>" + newBadge + "</div>";
+        contactBlock += "</div>" + newBadge + lockIcon + "</div>";
 
         return contactBlock;
     },
