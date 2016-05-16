@@ -192,7 +192,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         val notification = Notification.Builder(context)
             .setContentTitle(getNewMessagesNotificationTitle())
             .setContentText(getNewMessagesNotificationContentText())
-            .setSmallIcon(R.drawable.ic_mms_black_24dp)
+            .setSmallIcon(R.drawable.notification)
             .setSound(soundUri)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
