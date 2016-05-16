@@ -5,9 +5,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.crypto.hexify
-import io.slychat.messenger.core.crypto.unhexify
-import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyRetrievalRequest
 import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
@@ -142,7 +139,7 @@ class MessageCipherService(
                     else -> throw RuntimeException("Invalid message type: ${encrypted.javaClass.name}")
                 }
 
-                val m = EncryptedMessageV0(isPreKey, encrypted.serialize().hexify())
+                val m = EncryptedMessageV0(isPreKey, encrypted.serialize())
                 MessageData(deviceId, sessionCipher.remoteRegistrationId, m)
             }
 
@@ -156,7 +153,7 @@ class MessageCipherService(
     }
 
     private fun decryptEncryptedMessage(sessionCipher: SessionCipher, encryptedMessage: EncryptedMessageV0): String {
-        val payload = encryptedMessage.payload.unhexify()
+        val payload = encryptedMessage.payload
 
         val messageData = if (encryptedMessage.isPreKeyWhisper)
             sessionCipher.decrypt(PreKeySignalMessage(payload))
