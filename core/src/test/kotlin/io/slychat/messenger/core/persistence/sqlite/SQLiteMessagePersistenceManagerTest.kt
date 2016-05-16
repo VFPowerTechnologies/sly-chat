@@ -140,7 +140,7 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
-    fun `markMessageAsDelivered should update isDelivered and timestamp fields`() {
+    fun `markMessageAsDelivered should update isDelivered and receivedTimestamp fields`() {
         createConvosFor(contact)
 
         val sentMessageInfo = addMessage(contact, true, testMessage, 0)
@@ -151,7 +151,7 @@ class SQLiteMessagePersistenceManagerTest {
             messagePersistenceManager.markMessageAsDelivered(contact, sentMessageInfo.id).get()
         }
 
-        assertEquals(expectedTimestamp, updatedMessageInfo.timestamp)
+        assertEquals(expectedTimestamp, updatedMessageInfo.receivedTimestamp)
         assertTrue(updatedMessageInfo.isDelivered)
     }
 

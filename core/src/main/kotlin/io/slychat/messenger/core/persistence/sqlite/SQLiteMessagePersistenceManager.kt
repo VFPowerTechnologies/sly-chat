@@ -105,7 +105,7 @@ VALUES
     override fun markMessageAsDelivered(userId: UserId, messageId: String): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val table = ConversationTable.getTablenameForContact(userId)
 
-        connection.prepare("UPDATE $table SET is_delivered=1, timestamp=? WHERE id=?").use { stmt ->
+        connection.prepare("UPDATE $table SET is_delivered=1, received_timestamp=? WHERE id=?").use { stmt ->
             stmt.bind(1, getCurrentTimestamp())
             stmt.bind(2, messageId)
             stmt.step()
