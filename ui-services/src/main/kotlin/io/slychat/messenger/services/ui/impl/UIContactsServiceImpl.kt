@@ -4,6 +4,9 @@ import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.formatPhoneNumber
+import io.slychat.messenger.services.getAccountRegionCode
+import io.slychat.messenger.services.parsePhoneNumber
 import io.slychat.messenger.services.ui.UIContactDetails
 import io.slychat.messenger.services.ui.UIContactsService
 import io.slychat.messenger.services.ui.UINewContactResult
@@ -96,17 +99,37 @@ class UIContactsServiceImpl(
             return Promise.ofSuccess(UINewContactResult(false, "Username or phone number must be provided", null))
         }
 
+        //PhoneNumberUtil.parse actually accepts letters, but since this tends to go unused anyways, we just reject
+        //phone numbers with letters in them
+        if (phoneNumber != null) {
+            if (phoneNumber.any { it.isLetter() })
+                return Promise.ofSuccess(UINewContactResult(false, "Not a valid phone number", null))
+        }
+
         val userComponent = getUserComponentOrThrow()
 
         return userComponent.authTokenManager.bind { userCredentials ->
-            val request = NewContactRequest(email, phoneNumber)
+            val queryPhoneNumber = if (phoneNumber != null) {
+                val accountInfo = userComponent.accountInfoPersistenceManager.retrieveSync()!!
+                val defaultRegionCode = getAccountRegionCode(accountInfo)
+                val p = parsePhoneNumber(phoneNumber, defaultRegionCode)
+                if (p != null) formatPhoneNumber(p) else null
+            }
+            else
+                null
 
-            contactClient.fetchNewContactInfo(userCredentials, request) map { response ->
-                if (response.errorMessage != null) {
-                    UINewContactResult(false, response.errorMessage, null)
-                } else {
-                    val contactInfo = response.contactInfo!!
-                    UINewContactResult(true, null, contactInfo.toUI())
+            if (phoneNumber != null && queryPhoneNumber == null)
+                Promise.ofSuccess(UINewContactResult(false, "Not a valid phone number", null))
+            else {
+                val request = NewContactRequest(email, queryPhoneNumber)
+
+                contactClient.fetchNewContactInfo(userCredentials, request) map { response ->
+                    if (response.errorMessage != null) {
+                        UINewContactResult(false, response.errorMessage, null)
+                    } else {
+                        val contactInfo = response.contactInfo!!
+                        UINewContactResult(true, null, contactInfo.toUI())
+                    }
                 }
             }
         }

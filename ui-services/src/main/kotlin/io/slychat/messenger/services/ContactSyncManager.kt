@@ -1,6 +1,7 @@
 package io.slychat.messenger.services
 
 import com.google.i18n.phonenumbers.PhoneNumberUtil
+import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.ContactInfo
@@ -82,12 +83,7 @@ class ContactSyncManager(
     }
 
     private fun getDefaultRegionCode(): Promise<String, Exception> {
-        //FIXME
-        return accountInfoPersistenceManager.retrieve() map { accountInfo ->
-            val phoneNumberUtil = PhoneNumberUtil.getInstance()
-            val phoneNumber = phoneNumberUtil.parse("+${accountInfo!!.phoneNumber}", null)
-            phoneNumberUtil.getRegionCodeForCountryCode(phoneNumber.countryCode)
-        }
+        return accountInfoPersistenceManager.retrieve() map { getAccountRegionCode(it!!) }
     }
 
     /** Attempts to find any registered users matching the user's local contacts. */
@@ -100,7 +96,10 @@ class ContactSyncManager(
                     val phoneNumberUtil = PhoneNumberUtil.getInstance()
 
                     val updated = contacts.map { contact ->
-                        val phoneNumbers = contact.phoneNumbers.map { parsePhoneNumber(it, defaultRegion) }.filter { it != null }.map { phoneNumberUtil.format(it, PhoneNumberUtil.PhoneNumberFormat.E164).substring(1) }
+                        val phoneNumbers = contact.phoneNumbers
+                            .map { parsePhoneNumber(it, defaultRegion) }
+                            .filter { it != null }
+                            .map { phoneNumberUtil.format(it, PhoneNumberFormat.E164).substring(1) }
                         contact.copy(phoneNumbers = phoneNumbers)
                     }
 

@@ -1,15 +1,15 @@
 package io.slychat.messenger.services.di
 
+import dagger.Module
+import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.UIServiceComponent
 import io.slychat.messenger.core.BuildConfig.UIServiceType
-import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.PlatformTelephonyService
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.ui.*
 import io.slychat.messenger.services.ui.dummy.*
 import io.slychat.messenger.services.ui.impl.*
-import dagger.Module
-import dagger.Provides
 import javax.inject.Singleton
 
 @Module

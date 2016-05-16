@@ -1,5 +1,7 @@
 package io.slychat.messenger.services.di
 
+import dagger.Module
+import dagger.Provides
 import io.slychat.messenger.core.BuildConfig.ServerUrls
 import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
@@ -12,8 +14,6 @@ import io.slychat.messenger.services.auth.AuthenticationServiceTokenProvider
 import io.slychat.messenger.services.auth.TokenProvider
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.ui.UIEventService
-import dagger.Module
-import dagger.Provides
 import org.whispersystems.libsignal.state.SignalProtocolStore
 import rx.Scheduler
 

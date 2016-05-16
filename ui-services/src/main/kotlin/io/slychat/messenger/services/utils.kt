@@ -4,6 +4,7 @@ package io.slychat.messenger.services
 import com.google.i18n.phonenumbers.NumberParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.Phonenumber
+import io.slychat.messenger.core.persistence.AccountInfo
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.ui.failUi
@@ -28,6 +29,17 @@ fun parsePhoneNumber(s: String, defaultRegion: String): Phonenumber.PhoneNumber?
     catch (e: NumberParseException) {
         return null
     }
+}
+
+fun getAccountRegionCode(accountInfo: AccountInfo): String {
+    val phoneNumberUtil = PhoneNumberUtil.getInstance()
+    val phoneNumber = phoneNumberUtil.parse("+${accountInfo.phoneNumber}", null)
+    return phoneNumberUtil.getRegionCodeForCountryCode(phoneNumber.countryCode)
+}
+
+fun formatPhoneNumber(phonenumber: Phonenumber.PhoneNumber): String {
+    val phoneNumberUtil = PhoneNumberUtil.getInstance()
+    return phoneNumberUtil.format(phonenumber, PhoneNumberUtil.PhoneNumberFormat.E164).substring(1)
 }
 
 infix fun <V, V2> Promise<V, Exception>.mapUi(body: (V) -> V2): Promise<V2, Exception> {
