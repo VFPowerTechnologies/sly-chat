@@ -228,7 +228,10 @@ class MessengerService(
             nextSendMessage()
         }
         else {
-            messageCipherService.encrypt(message.to, message.messageInfo.message, message.connectionTag)
+            val messageInfo = message.messageInfo
+            val textMessage = SingleUserTextMessage(messageInfo.timestamp, messageInfo.message)
+            val serialized = ObjectMapper().writeValueAsBytes(textMessage)
+            messageCipherService.encrypt(message.to, serialized, message.connectionTag)
             currentSendMessage = message
         }
     }
@@ -241,7 +244,12 @@ class MessengerService(
         else
             hashMapOf()
 
-        return messagePersistenceManager.addReceivedMessages(messages) mapUi { groupedMessageInfo ->
+        val objectMapper = ObjectMapper()
+        val messageStrings = messages.mapValues {
+            it.value.map { objectMapper.readValue(it, SingleUserTextMessage::class.java).message }
+        }
+
+        return messagePersistenceManager.addReceivedMessages(messageStrings) mapUi { groupedMessageInfo ->
             val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
             bundles.forEach {
                 newMessagesSubject.onNext(it.value)
@@ -362,7 +370,13 @@ class MessengerService(
             logFailedDecryptionResults(it.key, it.value)
         }
 
-        val groupedMessages = results.mapValues { it.value.succeeded }.filter { it.value.isNotEmpty() }
+        val objectMapper = ObjectMapper()
+        val groupedMessages = results
+            .mapValues {
+                it.value.succeeded
+                    .map { objectMapper.readValue(it, SingleUserTextMessage::class.java).message }
+            }
+            .filter { it.value.isNotEmpty() }
 
         messagePersistenceManager.addReceivedMessages(groupedMessages) mapUi { groupedMessageInfo ->
             val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
