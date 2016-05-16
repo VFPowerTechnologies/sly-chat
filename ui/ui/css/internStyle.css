@@ -273,6 +273,12 @@ button.btn-large {
 .contextLikeModal .modal-header {
     display: none;
 }
+#contactDetailsCloseDiv {
+    position: fixed;
+    top: 5px;
+    right: 10px;
+    color: red;
+}
 .contextLikeModal .modal-dialog {
     height: auto;
     width: auto;
@@ -318,7 +324,7 @@ button.btn-large {
     overflow: hidden;
 }
 .whiteModal .modal-content {
-    background-color: #fff;
+    background-color: #eeeeee;
     color: #9e9e9e;
 }
 .darkModal .modal-content {

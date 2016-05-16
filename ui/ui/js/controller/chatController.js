@@ -148,6 +148,13 @@ ChatController.prototype = {
             BootstrapDialog.closeAll();
             KEYTAP.contactController.displayDeleteContactModal(id);
         });
+
+        $(document).on("click", "[id^='contactDetails_']", function (e) {
+            e.preventDefault();
+            var id = $(this).attr("id").split("_")[1];
+            BootstrapDialog.closeAll();
+            KEYTAP.contactController.displayContactDetailsModal(id);
+        });
     },
     /**
      * Select the element and add styling to the node.
