@@ -8,4 +8,8 @@ interface UIWindowService {
     fun minimize()
 
     fun closeSoftKeyboard()
+
+    fun copyTextToClipboard(text: String)
+
+    fun getTextFromClipboard(): String?
 }
