@@ -100,6 +100,7 @@ class DesktopApp : Application() {
         )
 
         app.init(platformModule)
+        app.isInBackground = false
 
         val appComponent = app.appComponent
         app.userSessionAvailable.subscribe {
