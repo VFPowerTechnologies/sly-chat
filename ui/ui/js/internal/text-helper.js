@@ -4,7 +4,7 @@ function linkify(content) {
     return content.replace(linkDetectionRegex, function (url) {
         var address;
         address = /[a-zA-Z]+:\/\//.test(url) ? url : "http://" + url;
-        return "<a class='chatLink' href='" + address + "'>" + url + "</a>";
+        return "<a class='chatLink' href='" + address + "' style='text-decoration: underline'>" + url + "</a>";
     });
 }
 

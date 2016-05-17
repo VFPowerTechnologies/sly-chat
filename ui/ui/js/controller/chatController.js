@@ -252,6 +252,7 @@ ChatController.prototype = {
     createChatLinkEvent : function () {
         $(document).on("click", ".chatLink", function (e) {
             e.preventDefault();
+            e.stopPropagation();
             KEYTAP.navigationController.loadMessageLink(this.href);
         });
     },
