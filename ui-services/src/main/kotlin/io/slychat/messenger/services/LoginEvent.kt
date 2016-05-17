@@ -23,7 +23,7 @@ class LoggingIn : LoginEvent {
         get() = LoginState.LOGGING_IN
 }
 
-class LoggedIn(val accountInfo: AccountInfo) : LoginEvent {
+class LoggedIn(val accountInfo: AccountInfo, val publicKey: String) : LoginEvent {
     override val state: LoginState
         get() = LoginState.LOGGED_IN
 }

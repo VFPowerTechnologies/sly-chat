@@ -379,7 +379,9 @@ class SlyApplication {
         //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
         fetchOfflineMessages()
 
-        emitLoginEvent(LoggedIn(accountInfo))
+        val publicKey = userComponent.userLoginData.keyVault.fingerprint
+
+        emitLoginEvent(LoggedIn(accountInfo, publicKey))
     }
 
     fun fetchOfflineMessages() {
