@@ -38,9 +38,13 @@ ProfileController.prototype = {
 
         $("#pubkeyDialog").click(function (e) {
             e.preventDefault();
-            BootstrapDialog.closeAll();
-            this.displayNotification("Public Key has been copied to clipboard", "success");
-            console.log(this.model.publicKey);
+            windowService.copyTextToClipboard(publicKey).then(function () {
+                BootstrapDialog.closeAll();
+                this.displayNotification("Public Key has been copied to clipboard", "success");
+            }.bind(this)).catch(function (e) {
+                KEYTAP.exceptionController.displayDebugMessage(e);
+                console.log("An error occured while copying public key to clipboard");
+            });
         }.bind(this));
     },
     setUserInfo: function (userInfo, publicKey) {
