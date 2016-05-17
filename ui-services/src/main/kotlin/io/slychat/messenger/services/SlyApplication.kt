@@ -79,6 +79,19 @@ class SlyApplication {
 
     private var connectingToRelay = false
 
+    var isInBackground: Boolean = true
+        set(value) {
+            field = value
+
+            if (value)
+                disconnectFromRelay()
+            else
+                connectToRelay()
+        }
+
+        get() = field
+
+
     fun init(platformModule: PlatformModule) {
         appComponent = DaggerApplicationComponent.builder()
             .platformModule(platformModule)
@@ -256,8 +269,8 @@ class SlyApplication {
             }
 
             //need to reconnect, since the token is no longer valid
-            userComponent.relayClientManager.disconnect()
-            
+            disconnectFromRelay()
+
             return
         }
 
@@ -265,8 +278,7 @@ class SlyApplication {
             log.error("Unable to write session data to disk: {}", e.message, e)
         }
 
-        if (!userComponent.relayClientManager.isOnline)
-            connectToRelay()
+        connectToRelay()
 
         userComponent.preKeyManager.checkForUpload()
     }
@@ -303,7 +315,7 @@ class SlyApplication {
         if (!isAvailable) {
             //airplane mode tells us the network is unavailable but doesn't actually disconnect us; we still receive
             //data but can't send it (at least on the emu)
-            userComponent?.relayClientManager?.disconnect()
+            disconnectFromRelay()
             return
         }
 
@@ -502,6 +514,9 @@ class SlyApplication {
         if (connectingToRelay)
             return
 
+        if (isInBackground)
+            return
+
         val userComponent = this.userComponent ?: return
 
         if (userComponent.relayClientManager.isOnline)
@@ -519,9 +534,14 @@ class SlyApplication {
         }
     }
 
+    private fun disconnectFromRelay() {
+        val userComponent = this.userComponent ?: return
+        userComponent.relayClientManager.disconnect()
+    }
+
     private fun deinitializeUserSession(userComponent: UserComponent) {
         userComponent.sqlitePersistenceManager.shutdown()
-        userComponent.relayClientManager.disconnect()
+        disconnectFromRelay()
     }
 
     /** Returns true if a session was present, false otherwise. */

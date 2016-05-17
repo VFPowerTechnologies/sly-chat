@@ -207,8 +207,8 @@ class SQLitePersistenceManager(
         init(LATEST_DATABASE_VERSION)
     }
 
-    /** INTERNAL DO NOT USE */
-    fun init(latestVersion: Int) {
+    /** Used to cause migrations to only be run up to a certain version. Used in tests only. */
+    internal fun init(latestVersion: Int) {
         val initResult = initQueue()
         if (!initResult.initWasRequired)
             return

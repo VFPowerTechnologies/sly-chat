@@ -113,6 +113,8 @@ class AndroidApp : Application() {
 
             if (queuedLoadComplete)
                 queuedLoadComplete = hideSplashImage() == false
+
+            app.isInBackground = value == null
         }
 
     lateinit var appComponent: ApplicationComponent

@@ -66,22 +66,26 @@ class DatabaseMigrationTest {
         assertTrue(sql.contains(colDef, true), "Missing column def: $colDef")
     }
 
+    fun check0To1(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        ConversationTable.getConversationTableNames(connection).forEach { tableName ->
+            assertColDef(connection, tableName, "received_timestamp INTEGER NOT NULL")
+
+            connection.prepare("SELECT id, timestamp, received_timestamp FROM $tableName").use { stmt ->
+                stmt.foreach {
+                    val id = stmt.columnString(0)
+                    val timestamp = stmt.columnLong(1)
+                    val receivedTimestamp = stmt.columnLong(2)
+
+                    assertEquals(timestamp, receivedTimestamp, "Message id=$id has an invalid timestamp")
+                }
+            }
+        }
+    }
+
     @Test
     fun `migration 0 to 1`() {
         withTestDatabase(0, 1) { persistenceManager, connection ->
-            ConversationTable.getConversationTableNames(connection).forEach { tableName ->
-                assertColDef(connection, tableName, "received_timestamp INTEGER NOT NULL")
-
-                connection.prepare("SELECT id, timestamp, received_timestamp FROM $tableName").use { stmt ->
-                    stmt.foreach {
-                        val id = stmt.columnString(0)
-                        val timestamp = stmt.columnLong(1)
-                        val receivedTimestamp = stmt.columnLong(2)
-
-                        assertEquals(timestamp, receivedTimestamp, "Message id=$id has an invalid timestamp")
-                    }
-                }
-            }
+            check0To1(persistenceManager, connection)
         }
     }
 }
