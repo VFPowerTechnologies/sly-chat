@@ -28,8 +28,7 @@ class DatabaseMigrationTest {
 
             val persistenceManager = SQLitePersistenceManager(file, null, null)
             try {
-                //TODO control migration version
-                persistenceManager.init()
+                persistenceManager.init(to)
                 assertEquals(to, persistenceManager.currentDatabaseVersionSync(), "Invalid database version after init")
                 val atomic = AtomicReference<Throwable>()
                 persistenceManager.syncRunQuery { connection ->

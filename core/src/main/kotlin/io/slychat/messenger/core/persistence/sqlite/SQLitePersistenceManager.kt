@@ -132,16 +132,16 @@ class SQLitePersistenceManager(
     }
 
     /** Initialize new database or migrate existing database. Should be run off the main thread. */
-    private fun initContents(freshDatabase: Boolean): Promise<Unit, Exception> {
+    private fun initContents(freshDatabase: Boolean, latestVersion: Int): Promise<Unit, Exception> {
         return realRunQuery { connection ->
             if (!freshDatabase) {
                 val version = getCurrentDatabaseVersion(connection)
-                if (version == LATEST_DATABASE_VERSION) {
+                if (version == latestVersion) {
                     logger.debug("Database is up to date")
                 }
                 else {
-                    logger.info("Performing migration from version {} to {}", version, LATEST_DATABASE_VERSION)
-                    migrateDatabase(connection, version, LATEST_DATABASE_VERSION)
+                    logger.info("Performing migration from version {} to {}", version, latestVersion)
+                    migrateDatabase(connection, version, latestVersion)
                 }
             }
             else {
@@ -204,10 +204,15 @@ class SQLitePersistenceManager(
      * Otherwise initialization finishes.
      */
     override fun init() {
+        init(LATEST_DATABASE_VERSION)
+    }
+
+    /** INTERNAL DO NOT USE */
+    fun init(latestVersion: Int) {
         val initResult = initQueue()
         if (!initResult.initWasRequired)
             return
-        initContents(initResult.freshDatabase).get()
+        initContents(initResult.freshDatabase, latestVersion).get()
     }
 
     override fun initAsync(): Promise<Unit, Exception> {
@@ -216,7 +221,7 @@ class SQLitePersistenceManager(
         if (!initResult.initWasRequired)
             return Promise.ofSuccess(Unit)
 
-        return initContents(initResult.freshDatabase)
+        return initContents(initResult.freshDatabase, LATEST_DATABASE_VERSION)
     }
 
     override fun shutdown() {
