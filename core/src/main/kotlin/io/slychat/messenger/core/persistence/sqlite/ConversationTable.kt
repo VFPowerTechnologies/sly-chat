@@ -33,4 +33,11 @@ object ConversationTable {
             return stmt.step()
         }
     }
+
+    fun getConversationTableNames(connection: SQLiteConnection): List<String> {
+        return connection.prepare("SELECT id FROM contacts").use { stmt ->
+            stmt.map { it.columnLong(0) }
+                .map { ConversationTable.getTablenameForContact(UserId(it)) }
+        }
+    }
 }

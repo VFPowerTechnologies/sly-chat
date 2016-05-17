@@ -326,13 +326,11 @@ ChatController.prototype = {
         var timespan = $(document.createElement("span"));
         timespan.addClass("timespan");
 
-        if(message.timestamp != null){
+        if(message.sent && message.receivedTimestamp == 0){
+            timespan.html("Delivering...");
+        }
+        else {
             timespan.html($.timeago(new Date(message.timestamp).toISOString()));
-        }else if(message.timestamp == null){
-            if(message.sent == true)
-                timespan.html("Delivering...");
-            else
-                timespan.html(message.timestamp);
         }
 
         var messageDetailsTime = $(document.createElement("p"));

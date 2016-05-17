@@ -13,6 +13,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
+import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Scheduler
@@ -228,7 +229,10 @@ class MessengerService(
             nextSendMessage()
         }
         else {
-            messageCipherService.encrypt(message.to, message.messageInfo.message, message.connectionTag)
+            val messageInfo = message.messageInfo
+            val textMessage = SingleUserTextMessage(messageInfo.timestamp, messageInfo.message)
+            val serialized = ObjectMapper().writeValueAsBytes(textMessage)
+            messageCipherService.encrypt(message.to, serialized, message.connectionTag)
             currentSendMessage = message
         }
     }
@@ -241,7 +245,15 @@ class MessengerService(
         else
             hashMapOf()
 
-        return messagePersistenceManager.addReceivedMessages(messages) mapUi { groupedMessageInfo ->
+        val objectMapper = ObjectMapper()
+        val messageStrings = messages.mapValues {
+            it.value.map {
+                val message = objectMapper.readValue(it, SingleUserTextMessage::class.java)
+                ReceivedMessageInfo(message.message, message.timestamp)
+            }
+        }
+
+        return messagePersistenceManager.addReceivedMessages(messageStrings) mapUi { groupedMessageInfo ->
             val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
             bundles.forEach {
                 newMessagesSubject.onNext(it.value)
@@ -278,8 +290,8 @@ class MessengerService(
     }
 
     /** Writes the received message and then fires the new messages subject. */
-    private fun writeReceivedMessage(from: UserId, decryptedMessage: String): Promise<Unit, Exception> {
-        return messagePersistenceManager.addMessage(from, false, decryptedMessage, 0) mapUi { messageInfo ->
+    private fun writeReceivedSelfMessage(from: UserId, decryptedMessage: String): Promise<Unit, Exception> {
+        return messagePersistenceManager.addReceivedMessage(from, ReceivedMessageInfo(decryptedMessage, DateTime().millis), 0) mapUi { messageInfo ->
             newMessagesSubject.onNext(MessageBundle(from, listOf(messageInfo)))
         }
     }
@@ -310,7 +322,7 @@ class MessengerService(
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         return if (!isSelfMessage) {
-            messagePersistenceManager.addMessage(userId, true, message, 0) successUi { messageInfo ->
+            messagePersistenceManager.addSentMessage(userId, message, 0) successUi { messageInfo ->
                 addToQueue(userId, messageInfo)
             }
         }
@@ -321,7 +333,7 @@ class MessengerService(
                 Thread.sleep(30)
                 messageInfo
             } successUi { messageInfo ->
-                writeReceivedMessage(userId, messageInfo.message)
+                writeReceivedSelfMessage(userId, messageInfo.message)
             }
         }
     }
@@ -362,7 +374,15 @@ class MessengerService(
             logFailedDecryptionResults(it.key, it.value)
         }
 
-        val groupedMessages = results.mapValues { it.value.succeeded }.filter { it.value.isNotEmpty() }
+        val objectMapper = ObjectMapper()
+        val groupedMessages = results
+            .mapValues {
+                it.value.succeeded.map {
+                    val message = objectMapper.readValue(it, SingleUserTextMessage::class.java)
+                    ReceivedMessageInfo(message.message,  message.timestamp)
+                }
+            }
+            .filter { it.value.isNotEmpty() }
 
         messagePersistenceManager.addReceivedMessages(groupedMessages) mapUi { groupedMessageInfo ->
             val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }

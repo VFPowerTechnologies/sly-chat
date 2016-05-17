@@ -5,9 +5,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.crypto.hexify
-import io.slychat.messenger.core.crypto.unhexify
-import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyRetrievalRequest
 import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
@@ -27,7 +24,7 @@ import java.util.concurrent.ArrayBlockingQueue
 
 data class DecryptionFailure(val cause: Throwable)
 data class MessageListDecryptionResult(
-    val succeeded: List<String>,
+    val succeeded: List<ByteArray>,
     val failed: List<DecryptionFailure>
 ) {
     fun merge(other: MessageListDecryptionResult): MessageListDecryptionResult {
@@ -42,7 +39,7 @@ data class MessageListDecryptionResult(
 }
 
 private interface CipherWork
-private data class EncryptionWork(val userId: UserId, val message: String, val connectionTag: Int) : CipherWork
+private data class EncryptionWork(val userId: UserId, val message: ByteArray, val connectionTag: Int) : CipherWork
 private data class DecryptionWork(val address: SlyAddress, val encryptedMessages: List<EncryptedMessageV0>) : CipherWork
 private data class OfflineDecryptionWork(val encryptedMessages: Map<SlyAddress, List<EncryptedMessageV0>>) : CipherWork
 private class NoMoreWork : CipherWork
@@ -58,7 +55,6 @@ data class MessageData(
 
 class MessageCipherService(
     private val authTokenManager: AuthTokenManager,
-    private val userLoginData: UserData,
     //the store is only ever used in the work thread, so no locking is done
     private val signalStore: SignalProtocolStore,
     private val serverUrls: BuildConfig.ServerUrls
@@ -97,7 +93,7 @@ class MessageCipherService(
         thread = null
     }
 
-    fun encrypt(userId: UserId, message: String, connectionTag: Int) {
+    fun encrypt(userId: UserId, message: ByteArray, connectionTag: Int) {
         workQueue.add(EncryptionWork(userId, message, connectionTag))
     }
 
@@ -134,7 +130,7 @@ class MessageCipherService(
             val messages = sessionCiphers.map {
                 val deviceId = it.first
                 val sessionCipher = it.second
-                val encrypted = sessionCipher.encrypt(message.toByteArray(Charsets.UTF_8))
+                val encrypted = sessionCipher.encrypt(message)
 
                 val isPreKey = when (encrypted) {
                     is PreKeySignalMessage -> true
@@ -142,7 +138,7 @@ class MessageCipherService(
                     else -> throw RuntimeException("Invalid message type: ${encrypted.javaClass.name}")
                 }
 
-                val m = EncryptedMessageV0(isPreKey, encrypted.serialize().hexify())
+                val m = EncryptedMessageV0(isPreKey, encrypted.serialize())
                 MessageData(deviceId, sessionCipher.remoteRegistrationId, m)
             }
 
@@ -155,20 +151,20 @@ class MessageCipherService(
         encryptionSubject.onNext(result)
     }
 
-    private fun decryptEncryptedMessage(sessionCipher: SessionCipher, encryptedMessage: EncryptedMessageV0): String {
-        val payload = encryptedMessage.payload.unhexify()
+    private fun decryptEncryptedMessage(sessionCipher: SessionCipher, encryptedMessage: EncryptedMessageV0): ByteArray {
+        val payload = encryptedMessage.payload
 
         val messageData = if (encryptedMessage.isPreKeyWhisper)
             sessionCipher.decrypt(PreKeySignalMessage(payload))
         else
             sessionCipher.decrypt(SignalMessage(payload))
 
-        return String(messageData, Charsets.UTF_8)
+        return messageData
     }
 
     private fun decryptMessagesForUser(address: SlyAddress, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
         val failed = ArrayList<DecryptionFailure>()
-        val succeeded = ArrayList<String>()
+        val succeeded = ArrayList<ByteArray>()
 
         val sessionCipher = SessionCipher(signalStore, address.toSignalAddress())
 

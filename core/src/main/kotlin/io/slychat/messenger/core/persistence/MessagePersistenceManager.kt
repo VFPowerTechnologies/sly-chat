@@ -11,12 +11,14 @@ interface MessagePersistenceManager {
      * @param message The message content itself.
      * @param ttl Unix time in seconds until when the message should be kept. If 0, is kept indefinitely, if < 0 is to be purged on startup.
      */
-    fun addMessage(userId: UserId, isSent: Boolean, message: String, ttl: Long): Promise<MessageInfo, Exception>
+    fun addSentMessage(userId: UserId, message: String, ttl: Long): Promise<MessageInfo, Exception>
+
+    fun addReceivedMessage(from: UserId, info: ReceivedMessageInfo, ttl: Long): Promise<MessageInfo, Exception>
 
     fun addSelfMessage(userId: UserId, message: String): Promise<MessageInfo, Exception>
 
     /** Stores the given list of received messages in the given order. There must not be any empty message lists. */
-    fun addReceivedMessages(messages: Map<UserId, List<String>>): Promise<Map<UserId, List<MessageInfo>>, Exception>
+    fun addReceivedMessages(messages: Map<UserId, List<ReceivedMessageInfo>>): Promise<Map<UserId, List<MessageInfo>>, Exception>
 
     /** Marks a sent message as being received and updates its timestamp to the current time. */
     fun markMessageAsDelivered(userId: UserId, messageId: String): Promise<MessageInfo, Exception>

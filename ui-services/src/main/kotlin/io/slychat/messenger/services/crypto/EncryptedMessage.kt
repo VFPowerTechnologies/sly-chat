@@ -9,7 +9,7 @@ data class EncryptedMessageV0(
     @JsonProperty("preKeyWhisper")
     val isPreKeyWhisper: Boolean,
     @JsonProperty("payload")
-    val payload: String
+    val payload: ByteArray
 ) : EncryptedMessage
 
 //TODO make sealed once data classes can be sealable
