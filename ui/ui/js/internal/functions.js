@@ -54,6 +54,19 @@ if (typeof KEYTAP == "undefined") {
         return re.test(email);
     }
 
+    function formatPublicKey(publicKey) {
+        var publicKeyArr = publicKey.match(/.{1,4}/g);
+        var formated = '';
+        publicKeyArr.forEach(function (item, index) {
+            if(index > publicKeyArr.length - 4)
+                formated += " <span style='color: red'>" + item + "</span>";
+            else
+                formated += item + " ";
+        });
+
+        return formated;
+    }
+
     function parseFormatedTimeString (timestamp) {
         return new Date(timestamp);
     }

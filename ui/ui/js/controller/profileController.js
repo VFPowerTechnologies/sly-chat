@@ -13,6 +13,12 @@ ProfileController.prototype = {
 
         $("#profileEmailDisplay").html(userInfo.username);
 
+        $("#profilePubKeyBtn").click(function (e) {
+            e.preventDefault();
+            var pubKey = this.model.publicKey;
+            this.openPublicKeyInfoDialog(pubKey);
+        }.bind(this));
+
         $("#submitEmailUpdateBtn").click(this.updateEmail.bind(this));
         $("#submitUpdatePhoneBtn").click(this.requestPhoneUpdate.bind(this));
         $("#submitUpdateName").click(this.updateName.bind(this));
@@ -24,6 +30,18 @@ ProfileController.prototype = {
             "name" : this.model.name,
             "publicKey" : this.model.publicKey
         }
+    },
+    openPublicKeyInfoDialog : function (publicKey) {
+        var html = "<span id='pubkeyDialog'>" + formatPublicKey(publicKey) + "<br><small class='pull-right'>Click to copy to clipboard.</small></span>";
+        var pubKeyDialog = createContextLikeMenu(html, true);
+        pubKeyDialog.open();
+
+        $("#pubkeyDialog").click(function (e) {
+            e.preventDefault();
+            BootstrapDialog.closeAll();
+            this.displayNotification("Public Key has been copied to clipboard", "success");
+            console.log(this.model.publicKey);
+        }.bind(this));
     },
     setUserInfo: function (userInfo, publicKey) {
         this.model.setUserInfo(userInfo.email, userInfo["phone-number"], userInfo.name, publicKey);

@@ -127,7 +127,7 @@ ContactController.prototype = {
             "<p>" + contact.email + "</p>" +
             "<h6>Public Key:</h6>" +
             "<div style='border: 1px solid #212121;'" +
-                "<p style='max-width: 100%;'>" + this.formatPublicKey(contact.publicKey) + "</p>" +
+                "<p style='max-width: 100%;'>" + formatPublicKey(contact.publicKey) + "</p>" +
             "</div>" +
             "</div>";
 
@@ -136,18 +136,6 @@ ContactController.prototype = {
         contactDetailsModal.setClosable(true);
         contactDetailsModal.setMessage(html);
         contactDetailsModal.open();
-    },
-    formatPublicKey : function (publicKey) {
-        var publicKeyArr = publicKey.match(/.{1,4}/g);
-        var formated = '';
-        publicKeyArr.forEach(function (item, index) {
-            if(index > publicKeyArr.length - 4)
-                formated += " <span style='color: red'>" + item + "</span>";
-            else
-                formated += item + " ";
-        });
-
-        return formated;
     },
     loadContactPage : function (id, pushCurrentPage) {
         this.model.fetchConversationForChat(id, pushCurrentPage);
