@@ -8,7 +8,8 @@ package io.slychat.messenger.services.ui
  *
  * @property id Message ID.
  * @property isSent Whether or not this was a message we sent someone.
- * @property timestamp Formatted timestamp for when message was received. If null, is currently waiting to be sent.
+ * @property timestamp Timestamp for when message was sent.
+ * @property receivedTimestamp Timestamp for when message was received; if isSent is true, then this is when the server received the message, otherwise this is when the client received the message.
  * @property message Message body, including any formatting data.
  *
  * @constructor
@@ -16,6 +17,7 @@ package io.slychat.messenger.services.ui
 data class UIMessage(
     val id: String,
     val isSent: Boolean,
-    val timestamp: Long?,
+    val timestamp: Long,
+    val receivedTimestamp: Long,
     val message: String
 )
