@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS `conv_%id%` (
     timestamp INTEGER NOT NULL,
     -- for sent messages, this is updated when the server receives the message
     -- for received message, this is set to the time the client received the message from the server
-    received_timestamp INTEGER DEFAULT 0,
+    received_timestamp INTEGER NOT NULL,
     -- used when timestamp is equal to guarantee order
     n INTEGER NOT NULL,
     -- for messages that expire, this should be set to a unix time (in ms) in the future; otherwise 0

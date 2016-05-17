@@ -75,6 +75,11 @@ inline fun <T> SQLiteStatement.map(body: (SQLiteStatement) -> T): List<T> {
     return results
 }
 
+inline fun SQLiteStatement.foreach(body: (SQLiteStatement) -> Unit) {
+    while (step())
+        body(this)
+}
+
 fun escapeBackticks(s: String) = s.replace("`", "``")
 
 fun getPlaceholders(n: Int): String =

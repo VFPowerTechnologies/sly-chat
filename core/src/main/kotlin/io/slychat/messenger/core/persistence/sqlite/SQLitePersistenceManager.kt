@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 /** The latest database version number. */
-private val LATEST_DATABASE_VERSION = 0
+private val LATEST_DATABASE_VERSION = 1
 
 /** Table names in creation order. */
 private val TABLE_NAMES = arrayListOf(
@@ -83,13 +83,19 @@ class SQLitePersistenceManager(
         }
     }
 
+    private fun setCurrentDatabaseVersion(connection: SQLiteConnection, version: Int) {
+        connection.exec("PRAGMA user_version = $version")
+    }
+
     private fun getCurrentDatabaseVersion(connection: SQLiteConnection): Int {
-        val stmt = connection.prepare("PRAGMA user_version")
-        return stmt.use { stmt ->
+        return connection.prepare("PRAGMA user_version").use { stmt ->
             stmt.step()
             stmt.columnInt(0)
         }
     }
+
+    fun currentDatabaseVersion(): Promise<Int, Exception> = runQuery { getCurrentDatabaseVersion(it) }
+    fun currentDatabaseVersionSync(): Int = currentDatabaseVersion().get()
 
     /**
      * Initialize the worker queue.
@@ -100,7 +106,16 @@ class SQLitePersistenceManager(
         if (initialized)
             return InitializationResult(false, false)
 
-        val created = !(path?.exists() ?: false)
+        //this is here because I'm an idiot and shoulda set the initial database version to 1 from zero; when using
+        //temp files, the path exists but it still needs to create the contents
+        val created = if (path == null)
+            true
+        else {
+            if (path.exists())
+                path.length() == 0L
+            else
+                true
+        }
 
         sqliteQueue = SQLiteQueue(path)
         sqliteQueue.start()
@@ -126,16 +141,57 @@ class SQLitePersistenceManager(
                 }
                 else {
                     logger.info("Performing migration from version {} to {}", version, LATEST_DATABASE_VERSION)
-                    //TODO
-                    //if number isn't update to date, apply migrations for each missing version in turn
-                    //run each migration within a transaction, ending with updating the user_version (within the transaction)
-                    //use savepoints so if the upgrade fails we can rollback completely? seems pointless though
-                    //make sure to upgrade all conv_* tables as well
-                    throw UnsupportedOperationException()
+                    migrateDatabase(connection, version, LATEST_DATABASE_VERSION)
                 }
             }
             else {
                 initializeDatabase(connection)
+            }
+        }
+    }
+
+    private fun readResourceAsString(path: String): String? =
+        javaClass.getResourceAsStream(path)?.use { it.reader(Charsets.UTF_8).readText() }
+
+    private fun getGeneralMigration(version: Int): String? =
+        readResourceAsString("/migrations/$version/general.sql")
+
+    private fun getConvoMigration(version: Int): String? =
+        readResourceAsString("/migrations/$version/convo.sql")
+
+    /**
+     * @param version Current database version number.
+     */
+    private fun applyGeneralMigration(connection: SQLiteConnection, version: Int, sql: String) {
+        throw UnsupportedOperationException("General migration not implemented")
+    }
+
+    private fun applyConvoMigration(connection: SQLiteConnection, version: Int, sqlTemplate: String) {
+        logger.info("Applying convo migration for {}", version)
+
+        ConversationTable.getConversationTableNames(connection).forEach { tableName ->
+            logger.info("Updating {}", tableName)
+            val sql = sqlTemplate.replace("%tableName%", tableName)
+            connection.exec(sql)
+        }
+    }
+
+    /**
+     * Applies incremental migrations from one version to another.
+     */
+    private fun migrateDatabase(connection: SQLiteConnection, from: Int, to: Int) {
+        //XXX maybe we should use a savepoint to undo the entire conversation if migration fails along the way?
+        for (version in from..to-1) {
+            connection.withTransaction {
+                val general = getGeneralMigration(version)
+                if (general != null)
+                    applyGeneralMigration(connection, version, general)
+
+                val convo = getConvoMigration(version)
+                if (convo != null)
+                    applyConvoMigration(connection, version, convo)
+
+                setCurrentDatabaseVersion(connection, version+1)
             }
         }
     }
