@@ -4,4 +4,5 @@ if(typeof $ == "undefined"){
 
 $(function(){
     KEYTAP.contactController.newContactEvent();
+    $("#username").focus();
 });

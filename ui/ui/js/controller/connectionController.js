@@ -20,45 +20,44 @@ ConnectionController.prototype = {
         var networkStatus = $("#networkStatus");
         var connectionStatus = $("#connectionStatus");
 
+        if (this.networkAvailable == false) {
+            this.updateNotification("No network available", "danger");
+            $("#addContactBtn").prop("disabled", true);
+        }
+        else if (this.relayConnected == false) {
+            setTimeout(function () {
+                if(this.relayConnected == false && this.networkAvailable == true) {
+                    this.updateNotification("Waiting for connection...", "warning");
+                    $("#addContactBtn").prop("disabled", false);
+                }
+            }.bind(this), 2000);
+        }
+        else {
+            this.closeNotification();
+            $("#addContactBtn").prop("disabled", false);
+        }
+    },
+    openNotification : function (message, notificationClass) {
         var currentUrl = window.location.href;
         var page = currentUrl.substring(currentUrl.lastIndexOf("/") + 1);
         var notShowPageList = ["register.html", "login.html", "updatePhone.html", "smsVerification.html", "index.html"];
 
-
         if(notShowPageList.indexOf(page) == -1) {
-            if (this.networkAvailable == false) {
-                this.updateNotification("No network available", "danger");
-                $("#addContactBtn").prop("disabled", true);
-            }
-            else if (this.relayConnected == false) {
-                setTimeout(function () {
-                    if(this.relayConnected == false) {
-                        this.updateNotification("Waiting for connection...", "warning");
-                        $("#addContactBtn").prop("disabled", false);
-                    }
-                }.bind(this), 2000);
-            }
-            else {
-                this.closeNotification();
-                $("#addContactBtn").prop("disabled", false);
-            }
+            this.connectionNotification = $.notify({
+                icon: "icon-pull-left fa fa-info-circle",
+                message: message
+            }, {
+                type: notificationClass,
+                newest_on_top: true,
+                delay: 0,
+                allow_dismiss: false,
+                allow_duplicates: false,
+                offset: {
+                    y: 66,
+                    x: 20
+                }
+            });
         }
-    },
-    openNotification : function (message, notificationClass) {
-        this.connectionNotification = $.notify({
-            icon: "icon-pull-left fa fa-info-circle",
-            message: message
-        }, {
-            type: notificationClass,
-            newest_on_top: true,
-            delay: 0,
-            allow_dismiss: false,
-            allow_duplicates: false,
-            offset: {
-                y: 66,
-                x: 20
-            }
-        });
     },
     closeNotification : function () {
         if(this.connectionNotification != null) {
