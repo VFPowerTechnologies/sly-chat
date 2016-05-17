@@ -50,8 +50,9 @@ LoginController.prototype = {
     },
     onLoginSuccessful : function(ev) {
         var accountInfo = ev.accountInfo;
+        var publicKey = ev.publicKey;
         stateService.getInitialPage().then(function (initialPage) {
-            KEYTAP.profileController.setUserInfo(accountInfo);
+            KEYTAP.profileController.setUserInfo(accountInfo, publicKey);
             $(".menu-hidden").show();
             this.modal.close();
 
@@ -83,9 +84,8 @@ LoginController.prototype = {
         else {
             this.setInfo("", "");
             this.modal.close();
-            KEYTAP.exceptionController.displayDebugMessage(e);
             document.getElementById("login-error").innerHTML = "<li>An unexpected error occurred</li>";
-            console.log("An unexpected error occured: " + e);
+            console.log("An unexpected error occured: " + ev);
             $("#submitLoginBtn").prop("disabled", false);
         }
     },

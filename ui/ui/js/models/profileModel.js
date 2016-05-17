@@ -2,13 +2,15 @@ var ProfileModel = function () {
     this.username = "";
     this.phoneNumber = "";
     this.name = "";
+    this.publicKey = "";
 };
 
 ProfileModel.prototype = {
-    setUserInfo : function (username, phoneNumber, name) {
+    setUserInfo : function (username, phoneNumber, name, publicKey) {
         this.username = username;
         this.phoneNumber = phoneNumber;
         this.name = name;
+        this.publicKey = publicKey;
     },
     setName : function (name) {
         this.name = name;

@@ -21,11 +21,12 @@ ProfileController.prototype = {
         return {
             "username" : this.model.username,
             "phoneNumber" : this.model.phoneNumber,
-            "name" : this.model.name
+            "name" : this.model.name,
+            "publicKey" : this.model.publicKey
         }
     },
-    setUserInfo: function (userInfo) {
-        this.model.setUserInfo(userInfo.email, userInfo["phone-number"], userInfo.name);
+    setUserInfo: function (userInfo, publicKey) {
+        this.model.setUserInfo(userInfo.email, userInfo["phone-number"], userInfo.name, publicKey);
     },
     clearCache : function () {
         this.model.setUserInfo('', '', '')
