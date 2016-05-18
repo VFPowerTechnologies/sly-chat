@@ -291,7 +291,6 @@ ChatController.prototype = {
 
         if(message != null) {
             this.messageMenu.close();
-            console.log(message);
             var html = "<div class='detailsModalClose'><a href='#' onclick='BootstrapDialog.closeAll();'><i class='mdi mdi-arrow-left'></i></a></div>" +
                 "<div class='message-details'>" +
                     this.buildMessageDetailsHtml(message, contact) +
