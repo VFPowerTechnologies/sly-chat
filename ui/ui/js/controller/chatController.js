@@ -75,7 +75,31 @@ ChatController.prototype = {
 
         $(document).on("click", "#copyMessage", function (e) {
             e.preventDefault();
-        });
+            if(this.selectedMessage.length == 1) {
+                var messageId = this.selectedMessage[0];
+                var messageText = this.model.cachedConversation[this.contactController.getCurrentContact().id][messageId].message;
+                if(typeof messageText !== "undefined" || messageText !== "" || messageText != null) {
+                    windowService.copyTextToClipboard(messageText).then(function () {
+                        this.messageMenu.close();
+                        $.notify({
+                            icon: "icon-pull-left fa fa-info-circle",
+                            message: "Message has been copied to clipboard"
+                        }, {
+                            type: "success",
+                            delay: 3000,
+                            allow_dismiss: false,
+                            offset: {
+                                y: 66,
+                                x: 20
+                            }
+                        });
+                    }.bind(this)).catch(function (e) {
+                        KEYTAP.exceptionController.displayDebugMessage(e);
+                        console.log("An error occured, could not copy message to clipboard.");
+                    })
+                }
+            }
+        }.bind(this));
 
         $(document).on("click", "#deleteMessage", function (e) {
             e.preventDefault();
