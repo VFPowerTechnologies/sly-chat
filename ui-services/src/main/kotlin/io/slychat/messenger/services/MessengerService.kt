@@ -3,15 +3,18 @@ package io.slychat.messenger.services
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.core.relay.ServerReceivedMessage
 import io.slychat.messenger.services.crypto.*
-import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.ui.alwaysUi
+import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
@@ -33,7 +36,6 @@ data class EncryptionPreKeyFetchFailure(val cause: Throwable): EncryptionResult
 data class EncryptionUnknownFailure(val cause: Throwable): EncryptionResult
 
 data class DecryptionResult(val userId: UserId, val result: MessageListDecryptionResult)
-data class OfflineDecryptionResult(val results: Map<UserId, MessageListDecryptionResult>)
 
 interface MessageSendResult {
     val messageId: String
@@ -73,8 +75,6 @@ class MessengerService(
     private val receivedMessageQueue = ArrayDeque<QueuedReceivedMessage>()
     private var currentReceivedMessage: QueuedReceivedMessage? = null
 
-    private var currentOffline: Deferred<Unit, Exception>? = null
-
     init {
         relayClientManager.events.subscribe { onRelayEvent(it) }
         relayClientManager.onlineStatus.subscribe { onRelayConnect(it) }
@@ -87,11 +87,8 @@ class MessengerService(
             processDecryptionResult(it.userId, it.result)
         }
 
-        messageCipherService.offlineDecryptedMessages.observeOn(scheduler).subscribe {
-            processOfflineDecryption(it)
-        }
-
         application.userSessionAvailable.subscribe { isAvailable ->
+            //TODO fetch from message queue and fill the receivedMessageQueue
             if (isAvailable)
                 messageCipherService.start()
             else
@@ -296,10 +293,21 @@ class MessengerService(
         }
     }
 
+    private fun addReceivedMessageToQueue(from: SlyAddress, encryptedMessages: List<EncryptedMessageV0>) {
+        receivedMessageQueue.add(QueuedReceivedMessage(from, encryptedMessages))
+        processReceivedMessageQueue()
+    }
+
     private fun handleReceivedMessage(event: ReceivedMessage) {
         val encryptedMessage = deserializeEncryptedMessage(event.content)
-        receivedMessageQueue.add(QueuedReceivedMessage(event.from, listOf(encryptedMessage)))
-        processReceivedMessageQueue()
+        //TODO
+        val timestamp = currentTimestamp()
+        val queuedMessage = io.slychat.messenger.core.persistence.QueuedMessage(QueuedMessageId(event.from, event.messageId), timestamp, "")
+        messagePersistenceManager.addToQueue(listOf()) alwaysUi  {
+            addReceivedMessageToQueue(event.from, listOf(encryptedMessage))
+        } fail { e ->
+            log.error("Unable to add encrypted messages to queue: {}", e.message, e)
+        }
     }
 
     private fun handleServerRecievedMessage(event: ServerReceivedMessage) {
@@ -360,51 +368,30 @@ class MessengerService(
 
     /* Other */
 
-    private fun processOfflineDecryption(result: OfflineDecryptionResult) {
-        val d = currentOffline
-        currentOffline = null
-        if (d == null) {
-            log.error("processOfflineDecryption called with no deferred set")
-            return
-        }
-
-        val results = result.results
-
-        results.forEach {
-            logFailedDecryptionResults(it.key, it.value)
-        }
-
-        val objectMapper = ObjectMapper()
-        val groupedMessages = results
-            .mapValues {
-                it.value.succeeded.map {
-                    val message = objectMapper.readValue(it, SingleUserTextMessage::class.java)
-                    ReceivedMessageInfo(message.message,  message.timestamp)
-                }
-            }
-            .filter { it.value.isNotEmpty() }
-
-        messagePersistenceManager.addReceivedMessages(groupedMessages) mapUi { groupedMessageInfo ->
-            val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
-            bundles.forEach {
-                newMessagesSubject.onNext(it.value)
-            }
-        } success { d.resolve(Unit) } fail { d.reject(it) }
-    }
-
-    //should only ever be called once
     fun addOfflineMessages(offlineMessages: List<OfflineMessage>): Promise<Unit, Exception> {
-        if (currentOffline != null)
-            throw IllegalStateException("addOfflineMessages called with pending request")
-
-        val grouped = offlineMessages.groupBy { it.from }
-        val sortedByTimestamp = grouped.mapValues { it.value.sortedBy { it.timestamp } }
-        val groupedEncryptedMessages = sortedByTimestamp.mapValues { it.value.map { it.encryptedMessage } }
-
-        messageCipherService.decryptOffline(groupedEncryptedMessages)
+        val q = offlineMessages.map { om ->
+            //FIXME
+            val id = QueuedMessageId(om.from, randomUUID())
+            val message = ObjectMapper().writeValueAsString(om.encryptedMessage)
+            io.slychat.messenger.core.persistence.QueuedMessage(id, om.timestamp, message)
+        }
 
         val d = deferred<Unit, Exception>()
-        currentOffline = d
+
+        messagePersistenceManager.addToQueue(q) successUi {
+            d.resolve(Unit)
+
+            val grouped = offlineMessages.groupBy { it.from }
+            val sortedByTimestamp = grouped.mapValues { it.value.sortedBy { it.timestamp } }
+            val groupedEncryptedMessages = sortedByTimestamp.mapValues { it.value.map { it.encryptedMessage } }
+
+            groupedEncryptedMessages.map { e ->
+                addReceivedMessageToQueue(e.key, e.value)
+            }
+        } failUi {
+            d.reject(it)
+        }
+
         return d.promise
     }
 }

@@ -8,7 +8,10 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.prekeys.PreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyRetrievalRequest
 import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
-import io.slychat.messenger.services.*
+import io.slychat.messenger.services.DecryptionResult
+import io.slychat.messenger.services.EncryptionOk
+import io.slychat.messenger.services.EncryptionResult
+import io.slychat.messenger.services.EncryptionUnknownFailure
 import io.slychat.messenger.services.auth.AuthTokenManager
 import org.slf4j.LoggerFactory
 import org.whispersystems.libsignal.SessionBuilder
@@ -26,22 +29,11 @@ data class DecryptionFailure(val cause: Throwable)
 data class MessageListDecryptionResult(
     val succeeded: List<ByteArray>,
     val failed: List<DecryptionFailure>
-) {
-    fun merge(other: MessageListDecryptionResult): MessageListDecryptionResult {
-        val succeededMerged = ArrayList(succeeded)
-        succeededMerged.addAll(other.succeeded)
-
-        val failedMerged = ArrayList(failed)
-        failedMerged.addAll(other.failed)
-
-        return MessageListDecryptionResult(succeededMerged, failedMerged)
-    }
-}
+)
 
 private interface CipherWork
 private data class EncryptionWork(val userId: UserId, val message: ByteArray, val connectionTag: Int) : CipherWork
 private data class DecryptionWork(val address: SlyAddress, val encryptedMessages: List<EncryptedMessageV0>) : CipherWork
-private data class OfflineDecryptionWork(val encryptedMessages: Map<SlyAddress, List<EncryptedMessageV0>>) : CipherWork
 private class NoMoreWork : CipherWork
 
 /** Represents a single message to a user. */
@@ -70,9 +62,6 @@ class MessageCipherService(
     private val decryptionSubject = PublishSubject.create<DecryptionResult>()
     val decryptedMessages: Observable<DecryptionResult> = decryptionSubject
 
-    private val offlineSubject = PublishSubject.create<OfflineDecryptionResult>()
-    val offlineDecryptedMessages = offlineSubject
-
     fun start() {
         if (thread != null)
             return
@@ -97,10 +86,6 @@ class MessageCipherService(
         workQueue.add(EncryptionWork(userId, message, connectionTag))
     }
 
-    fun decryptOffline(encryptedMessages: Map<SlyAddress, List<EncryptedMessageV0>>) {
-       workQueue.add(OfflineDecryptionWork(encryptedMessages))
-    }
-
     fun decrypt(address: SlyAddress, messages: List<EncryptedMessageV0>) {
         workQueue.add(DecryptionWork(address,  messages))
     }
@@ -112,7 +97,6 @@ class MessageCipherService(
             when (work) {
                 is EncryptionWork -> handleEncryption(work)
                 is DecryptionWork -> handleDecryption(work)
-                is OfflineDecryptionWork -> handleOfflineDecryption(work)
                 is NoMoreWork -> break@loop
                 else -> {
                     println("Unknown work type")
@@ -179,24 +163,6 @@ class MessageCipherService(
         }
 
         return MessageListDecryptionResult(succeeded, failed)
-    }
-
-    private fun handleOfflineDecryption(work: OfflineDecryptionWork) {
-        //here we map from possible multiple KeyTapAddresses of the same user to the same user id
-        val result = HashMap<UserId, MessageListDecryptionResult>()
-
-        work.encryptedMessages.forEach { entry ->
-            val address = entry.key
-            val decrypted = decryptMessagesForUser(address, entry.value)
-
-            val existing = result[address.id]
-            if (existing == null)
-                result[address.id] = decrypted
-            else
-                result[address.id] = existing.merge(decrypted)
-        }
-
-        offlineSubject.onNext(OfflineDecryptionResult(result))
     }
 
     private fun handleDecryption(work: DecryptionWork) {
