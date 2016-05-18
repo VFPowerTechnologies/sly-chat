@@ -20,7 +20,7 @@ import rx.Scheduler
 import rx.subjects.PublishSubject
 import java.util.*
 
-data class OfflineMessage(val from: SlyAddress, val timestamp: Int, val encryptedMessage: EncryptedMessageV0)
+data class OfflineMessage(val from: SlyAddress, val timestamp: Long, val encryptedMessage: EncryptedMessageV0)
 data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
 
