@@ -292,7 +292,7 @@ ChatController.prototype = {
         if(message != null) {
             this.messageMenu.close();
             console.log(message);
-            var html = "<div class='detailsModalClose'><a href='#' onclick='BootstrapDialog.closeAll();'><i class='fa fa-close fa-2x'></i></a></div>" +
+            var html = "<div class='detailsModalClose'><a href='#' onclick='BootstrapDialog.closeAll();'><i class='mdi mdi-arrow-left'></i></a></div>" +
                 "<div class='message-details'>" +
                     this.buildMessageDetailsHtml(message, contact) +
                 "</div>";
@@ -310,7 +310,6 @@ ChatController.prototype = {
         var sentTime = new Date(message.timestamp).toLocaleString();
         var receivedTime = new Date(message.receivedTimestamp).toLocaleString();
         if(message.sent) {
-            //message was sent by user
             html = "<h6>You sent this message</h6>" +
                 "<h6>To:</h6>" +
                 "<p>" + contact.name + "</p>" +
@@ -325,7 +324,6 @@ ChatController.prototype = {
                 "<h6>Encrypted: <i class='fa fa-check-square-o' style='color: green'></i></h6>";
         }
         else {
-            //message was received
             html = "<h6>Contact Name:</h6>" +
                 "<p>" + contact.name + "</p>" +
                 "<h6>Contact Email:</h6>" +

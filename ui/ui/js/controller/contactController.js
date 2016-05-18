@@ -86,6 +86,7 @@ ContactController.prototype = {
         var contactBlockDiv = $("<div class='" + contactLinkClass + "' id='contact_" + contact.id + "'></div>");
         var contactBlockHtml = "<div class='contact'>" + createAvatar(contact.name) + "<p style='display: inline-block;'>" +
             contact.name + "</p>" +
+            "<p class='contact-email'>" + contact.email + "</p>" +
             "</div>" + newBadge;
         contactBlockDiv.html(contactBlockHtml);
 
@@ -119,7 +120,7 @@ ContactController.prototype = {
     displayContactDetailsModal : function (id) {
         var contact = this.getContact(id);
 
-        var html = "<div class='detailsModalClose'><a href='#' onclick='BootstrapDialog.closeAll();'><i class='fa fa-close fa-2x'></i></a></div>" +
+        var html = "<div class='detailsModalClose'><a href='#' onclick='BootstrapDialog.closeAll();'><i class='mdi mdi-arrow-left'></i></a></div>" +
             "<div class='contact-details'>" +
             "<h6>Name:</h6>" +
             "<p>" + contact.name + "</p>" +

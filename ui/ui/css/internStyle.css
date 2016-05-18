@@ -69,17 +69,22 @@ body div iframe {
 
 .contact-link, .recent-contact-link {
     height: 70px;
-    line-height: 35px;
+    line-height: 25px;
     padding-left: 5px;
     padding-right: 5px;
     cursor: pointer;
     margin-bottom: 2px;
-    border-bottom: 1px solid gray;
 }
 
 .contact-link p, .recent-contact-link p {
     font-size: 15px;
     font-family: 'Montserrat', sans-serif;
+}
+
+.contact-link .contact-email {
+    font-size: 10px;
+    line-height: 15px;
+    color: gray;
 }
 
 .contact {

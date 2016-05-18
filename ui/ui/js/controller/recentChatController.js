@@ -53,7 +53,7 @@ RecentChatController.prototype = {
         contactBlock += createAvatar(recentChat.contact.name);
         contactBlock += "<p style='display: inline-block;'>" + recentChat.contact.name + "</p>";
         contactBlock += "<p class='recentTimestamp' style='display: inline-block; float: right; font-size: 10px'>" + $.timeago(recentChat.status.lastTimestamp) + "</p><br>";
-        contactBlock += "<p class='recentMessage' style='display: inline-block; float: left; font-size: 10px; line-height: 0;'>" + createTextNode(lastMessage) + "</p>";
+        contactBlock += "<p class='recentMessage' style='display: inline-block; float: left; font-size: 10px; line-height: 10px;'>" + createTextNode(lastMessage) + "</p>";
         contactBlock += "</div>" + newBadge + lockIcon + "</div>";
 
         return contactBlock;
