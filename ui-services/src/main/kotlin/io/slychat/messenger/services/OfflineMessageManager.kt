@@ -2,8 +2,10 @@ package io.slychat.messenger.services
 
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClient
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesClearRequest
+import io.slychat.messenger.core.persistence.Package
+import io.slychat.messenger.core.persistence.PackageId
+import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.services.auth.AuthTokenManager
-import io.slychat.messenger.services.crypto.deserializeEncryptedMessage
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.alwaysUi
@@ -49,10 +51,8 @@ class OfflineMessageManager(
             val offlineMessagesClient = OfflineMessagesAsyncClient(serverUrl)
             offlineMessagesClient.get(userCredentials) bindUi { response ->
                 if (response.messages.isNotEmpty()) {
-                    //TODO move this elsewhere?
                     val offlineMessages = response.messages.map { m ->
-                        val encryptedMessage = deserializeEncryptedMessage(m.serializedMessage)
-                        OfflineMessage(m.from, m.timestamp, encryptedMessage)
+                        Package(PackageId(m.from, randomUUID()), m.timestamp, m.serializedMessage)
                     }
 
                     messengerService.addOfflineMessages(offlineMessages) bind {

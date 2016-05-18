@@ -242,9 +242,9 @@ VALUES
         return MessageInfo(id, message, timestamp, receivedTimestamp, isSent, isDelivered, ttl)
     }
 
-    override fun addToQueue(message: QueuedMessage): Promise<Unit, Exception> = addToQueue(listOf(message))
+    override fun addToQueue(message: Package): Promise<Unit, Exception> = addToQueue(listOf(message))
 
-    override fun addToQueue(messages: List<QueuedMessage>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun addToQueue(messages: List<Package>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val sql = "INSERT INTO message_queue (address, message_id, timestamp, message) VALUES (?, ?, ?, ?)"
         connection.batchInsertWithinTransaction(sql, messages) { stmt, queuedMessage ->
             stmt.bind(1, queuedMessage.id.address.asString())
@@ -254,7 +254,7 @@ VALUES
         }
     }
 
-    private fun removeFromQueueNoTransaction(connection: SQLiteConnection, messageIds: List<QueuedMessageId>) {
+    private fun removeFromQueueNoTransaction(connection: SQLiteConnection, messageIds: List<PackageId>) {
         messageIds.forEach { queuedMessage ->
             connection.prepare("DELETE FROM message_queue WHERE address=? AND message_id=?").use { stmt ->
                 stmt.bind(1, queuedMessage.address.asString())
@@ -264,25 +264,25 @@ VALUES
         }
     }
 
-    override fun removeFromQueue(messageId: QueuedMessageId): Promise<Unit, Exception> = removeFromQueue(listOf(messageId))
+    override fun removeFromQueue(messageId: PackageId): Promise<Unit, Exception> = removeFromQueue(listOf(messageId))
 
-    override fun removeFromQueue(messageIds: List<QueuedMessageId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun removeFromQueue(messageIds: List<PackageId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             removeFromQueueNoTransaction(connection, messageIds)
         }
     }
 
-    override fun getQueuedMessages(): Promise<List<QueuedMessage>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun getQueuedMessages(): Promise<List<Package>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.prepare("SELECT address, message_id, timestamp, message FROM message_queue").use { stmt ->
             stmt.map {
-                val id = QueuedMessageId(
+                val id = PackageId(
                     SlyAddress.fromString(stmt.columnString(0))!!,
                     stmt.columnString(1)
                 )
                 val timestamp = stmt.columnLong(2)
                 val message = stmt.columnString(3)
 
-                QueuedMessage(id, timestamp, message)
+                Package(id, timestamp, message)
             }
         }
     }

@@ -5,13 +5,13 @@ import io.slychat.messenger.core.UserId
 import nl.komponents.kovenant.Promise
 
 
-data class QueuedMessageId(
+data class PackageId(
     val address: SlyAddress,
     val messageId: String
 )
 
-data class QueuedMessage(
-    val id: QueuedMessageId,
+data class Package(
+    val id: PackageId,
     val timestamp: Long,
     val message: String
 )
@@ -50,13 +50,13 @@ interface MessagePersistenceManager {
     fun deleteAllMessages(userId: UserId): Promise<Unit, Exception>
 
     /** Stores a received message prior to decryption. */
-    fun addToQueue(message: QueuedMessage): Promise<Unit, Exception>
+    fun addToQueue(message: Package): Promise<Unit, Exception>
 
-    fun addToQueue(messages: List<QueuedMessage>): Promise<Unit, Exception>
+    fun addToQueue(messages: List<Package>): Promise<Unit, Exception>
 
-    fun removeFromQueue(messageId: QueuedMessageId): Promise<Unit, Exception>
+    fun removeFromQueue(messageId: PackageId): Promise<Unit, Exception>
 
-    fun removeFromQueue(messageIds: List<QueuedMessageId>): Promise<Unit, Exception>
+    fun removeFromQueue(messageIds: List<PackageId>): Promise<Unit, Exception>
 
-    fun getQueuedMessages(): Promise<List<QueuedMessage>, Exception>
+    fun getQueuedMessages(): Promise<List<Package>, Exception>
 }

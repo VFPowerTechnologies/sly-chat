@@ -5,8 +5,8 @@ import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.MessageInfo
-import io.slychat.messenger.core.persistence.QueuedMessage
-import io.slychat.messenger.core.persistence.QueuedMessageId
+import io.slychat.messenger.core.persistence.Package
+import io.slychat.messenger.core.persistence.PackageId
 import io.slychat.messenger.core.persistence.ReceivedMessageInfo
 import io.slychat.messenger.core.test.withTimeAs
 import org.joda.time.DateTime
@@ -344,9 +344,9 @@ class SQLiteMessagePersistenceManagerTest {
         assertEquals(lastMessage.timestamp, lastConversationInfo.lastTimestamp, "lastTimestamp doesn't match")
     }
 
-    private fun queuedMessageFromInt(address: SlyAddress, i: Int): QueuedMessage {
-        return QueuedMessage(
-            QueuedMessageId(address, "$i"),
+    private fun queuedMessageFromInt(address: SlyAddress, i: Int): Package {
+        return Package(
+            PackageId(address, "$i"),
             currentTimestamp() + (i * 10),
             "message $i"
         )

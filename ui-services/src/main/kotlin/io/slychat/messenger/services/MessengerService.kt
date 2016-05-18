@@ -5,7 +5,6 @@ import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.core.relay.ServerReceivedMessage
@@ -23,7 +22,6 @@ import rx.Scheduler
 import rx.subjects.PublishSubject
 import java.util.*
 
-data class OfflineMessage(val from: SlyAddress, val timestamp: Long, val encryptedMessage: EncryptedMessageV0)
 data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
 
@@ -302,7 +300,7 @@ class MessengerService(
         val encryptedMessage = deserializeEncryptedMessage(event.content)
         //TODO
         val timestamp = currentTimestamp()
-        val queuedMessage = io.slychat.messenger.core.persistence.QueuedMessage(QueuedMessageId(event.from, event.messageId), timestamp, "")
+        val queuedMessage = Package(PackageId(event.from, event.messageId), timestamp, "")
         messagePersistenceManager.addToQueue(listOf()) alwaysUi  {
             addReceivedMessageToQueue(event.from, listOf(encryptedMessage))
         } fail { e ->
@@ -368,25 +366,20 @@ class MessengerService(
 
     /* Other */
 
-    fun addOfflineMessages(offlineMessages: List<OfflineMessage>): Promise<Unit, Exception> {
-        val q = offlineMessages.map { om ->
-            //FIXME
-            val id = QueuedMessageId(om.from, randomUUID())
-            val message = ObjectMapper().writeValueAsString(om.encryptedMessage)
-            io.slychat.messenger.core.persistence.QueuedMessage(id, om.timestamp, message)
-        }
-
+    fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception> {
         val d = deferred<Unit, Exception>()
 
-        messagePersistenceManager.addToQueue(q) successUi {
+        messagePersistenceManager.addToQueue(offlineMessages) successUi {
             d.resolve(Unit)
 
-            val grouped = offlineMessages.groupBy { it.from }
+            val grouped = offlineMessages.groupBy { it.id.address }
             val sortedByTimestamp = grouped.mapValues { it.value.sortedBy { it.timestamp } }
-            val groupedEncryptedMessages = sortedByTimestamp.mapValues { it.value.map { it.encryptedMessage } }
 
-            groupedEncryptedMessages.map { e ->
-                addReceivedMessageToQueue(e.key, e.value)
+            sortedByTimestamp.map { e ->
+                val encryptedMessages = e.value.map {
+                    deserializeEncryptedMessage(it.message)
+                }
+                addReceivedMessageToQueue(e.key, encryptedMessages)
             }
         } failUi {
             d.reject(it)
