@@ -2,6 +2,7 @@
 package io.slychat.messenger.core
 
 import com.fasterxml.jackson.core.type.TypeReference
+import org.joda.time.DateTime
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
@@ -69,6 +70,9 @@ operator fun String.div(child: String): File =
 /** Returns a random UUID as a string, without dashes. */
 fun randomUUID(): String =
     UUID.randomUUID().toString().replace("-", "")
+
+/** Returns the current time in milliseconds. */
+fun currentTimestamp(): Long = DateTime().millis
 
 private val base64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 //https://en.wikibooks.org/wiki/Algorithm_Implementation/Miscellaneous/Base64#Java
