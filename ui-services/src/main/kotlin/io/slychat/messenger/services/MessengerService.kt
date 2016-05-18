@@ -297,11 +297,13 @@ class MessengerService(
     }
 
     private fun handleReceivedMessage(event: ReceivedMessage) {
-        val encryptedMessage = deserializeEncryptedMessage(event.content)
-        //TODO
         val timestamp = currentTimestamp()
-        val queuedMessage = Package(PackageId(event.from, event.messageId), timestamp, "")
-        messagePersistenceManager.addToQueue(listOf()) alwaysUi  {
+        //XXX this is kinda hacky...
+        //the issue is that since offline messages are deserialized via jackson, using a byte array would require the
+        //relay or web server to store them as base64; need to come back and fix this stuff
+        val pkg = Package(PackageId(event.from, event.messageId), timestamp, String(event.content, Charsets.UTF_8))
+        messagePersistenceManager.addToQueue(listOf(pkg)) alwaysUi {
+            val encryptedMessage = deserializeEncryptedMessage(event.content)
             addReceivedMessageToQueue(event.from, listOf(encryptedMessage))
         } fail { e ->
             log.error("Unable to add encrypted messages to queue: {}", e.message, e)
