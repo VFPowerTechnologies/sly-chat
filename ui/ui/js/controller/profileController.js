@@ -172,7 +172,7 @@ ProfileController.prototype = {
         }
     },
     createSmsVerificationModal: function () {
-        var html = '<div class="valign-wrapper row form-wrapper" style="background-color: #fff; padding: 0; min-height: 100%;">' +
+        var html = '<div class="valign-wrapper row form-wrapper" style="background-color: #fff; padding: 10px; min-height: 100%;">' +
             '<div class="valign col s12" style="padding: 0;">' +
                 '<div class="container" style="margin: 0; padding: 0;">' +
                     '<ul id="verification-error" style="color: red;">' +
@@ -210,7 +210,7 @@ ProfileController.prototype = {
         var htmlContent = $("<div>").append(html).html();
 
         var bd = new BootstrapDialog();
-        bd.setCssClass("statusModal whiteModal mediumModal");
+        bd.setCssClass("noHeaderModal centerAlignDialog whiteModal mediumModal");
         bd.setClosable(false);
         bd.setMessage(htmlContent);
 

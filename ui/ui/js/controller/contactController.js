@@ -119,7 +119,7 @@ ContactController.prototype = {
     displayContactDetailsModal : function (id) {
         var contact = this.getContact(id);
 
-        var html = "<div id='contactDetailsCloseDiv'><a href='#' onclick='BootstrapDialog.closeAll();'><i class='fa fa-close fa-2x'></i></a></div>" +
+        var html = "<div class='detailsModalClose'><a href='#' onclick='BootstrapDialog.closeAll();'><i class='fa fa-close fa-2x'></i></a></div>" +
             "<div class='contact-details'>" +
             "<h6>Name:</h6>" +
             "<p>" + contact.name + "</p>" +
@@ -132,7 +132,7 @@ ContactController.prototype = {
             "</div>";
 
         var contactDetailsModal = new BootstrapDialog();
-        contactDetailsModal.setCssClass("statusModal whiteModal fullModal");
+        contactDetailsModal.setCssClass("fullPageDialog whiteModal noHeaderModal centerAlignDialog");
         contactDetailsModal.setClosable(true);
         contactDetailsModal.setMessage(html);
         contactDetailsModal.open();
