@@ -1,8 +1,12 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteException
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.MessageInfo
+import io.slychat.messenger.core.persistence.QueuedMessage
+import io.slychat.messenger.core.persistence.QueuedMessageId
 import io.slychat.messenger.core.persistence.ReceivedMessageInfo
 import io.slychat.messenger.core.test.withTimeAs
 import org.joda.time.DateTime
@@ -338,5 +342,49 @@ class SQLiteMessagePersistenceManagerTest {
         //assertEquals(expectedUnread, lastConversationInfo.unreadCount, "Invalid unreadCount")
         assertEquals(lastMessage.message, lastConversationInfo.lastMessage, "lastMessage doesn't match")
         assertEquals(lastMessage.timestamp, lastConversationInfo.lastTimestamp, "lastTimestamp doesn't match")
+    }
+
+    private fun queuedMessageFromInt(address: SlyAddress, i: Int): QueuedMessage {
+        return QueuedMessage(
+            QueuedMessageId(address, "$i"),
+            currentTimestamp() + (i * 10),
+            "message $i"
+        )
+    }
+
+    @Test
+    fun `addQueuedMessages should store the given messages`() {
+        val address = SlyAddress(UserId(1), 1)
+        val queuedMessages = (0..1).map { queuedMessageFromInt(address, it) }
+
+        messagePersistenceManager.addToQueue(queuedMessages).get()
+        val got = messagePersistenceManager.getQueuedMessages().get()
+
+        val expected = queuedMessages.sortedBy { it.timestamp }
+        val gotSorted = got.sortedBy { it.timestamp }
+
+        assertEquals(queuedMessages.size, gotSorted.size, "Invalid number of messages")
+        assertEquals(expected, gotSorted, "Invalid messages")
+    }
+
+    @Test
+    fun `removeQueuedMessages should remove the given messages`() {
+        val address = SlyAddress(UserId(1), 1)
+        val queuedMessages = (0..3).map { queuedMessageFromInt(address, it) }
+
+        val toRemove = queuedMessages.subList(0, 2)
+        val toKeep = queuedMessages.subList(2, 4)
+
+        messagePersistenceManager.addToQueue(queuedMessages).get()
+        messagePersistenceManager.removeFromQueue(toRemove.map { it.id }).get()
+
+        val remaining = messagePersistenceManager.getQueuedMessages().get()
+
+        assertEquals(toKeep.size, remaining.size, "Invalid number of messages")
+
+        val remainingSorted = remaining.sortedBy { it.timestamp }
+        val toKeepSorted = toKeep.sortedBy { it.timestamp }
+
+        assertEquals(toKeepSorted, remainingSorted, "Invalid messages")
     }
 }

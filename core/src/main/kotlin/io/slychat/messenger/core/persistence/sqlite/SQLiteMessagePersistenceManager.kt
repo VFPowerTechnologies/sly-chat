@@ -2,11 +2,10 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteStatement
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.InvalidMessageException
-import io.slychat.messenger.core.persistence.MessageInfo
-import io.slychat.messenger.core.persistence.MessagePersistenceManager
-import io.slychat.messenger.core.persistence.ReceivedMessageInfo
+import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.randomUUID
 import nl.komponents.kovenant.Promise
 import org.joda.time.DateTime
 import java.util.*
@@ -17,8 +16,7 @@ fun Boolean.toInt(): Int = if (this) 1 else 0
 class SQLiteMessagePersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
 ) : MessagePersistenceManager {
-    private fun getMessageId(): String =
-        UUID.randomUUID().toString().replace("-", "")
+    private fun getMessageId(): String = randomUUID()
 
     private fun getCurrentTimestamp(): Long = DateTime().millis
 
@@ -242,5 +240,50 @@ VALUES
         val message = stmt.columnString(6)
 
         return MessageInfo(id, message, timestamp, receivedTimestamp, isSent, isDelivered, ttl)
+    }
+
+    override fun addToQueue(message: QueuedMessage): Promise<Unit, Exception> = addToQueue(listOf(message))
+
+    override fun addToQueue(messages: List<QueuedMessage>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val sql = "INSERT INTO message_queue (address, message_id, timestamp, message) VALUES (?, ?, ?, ?)"
+        connection.batchInsertWithinTransaction(sql, messages) { stmt, queuedMessage ->
+            stmt.bind(1, queuedMessage.id.address.asString())
+            stmt.bind(2, queuedMessage.id.messageId)
+            stmt.bind(3, queuedMessage.timestamp)
+            stmt.bind(4, queuedMessage.message)
+        }
+    }
+
+    private fun removeFromQueueNoTransaction(connection: SQLiteConnection, messageIds: List<QueuedMessageId>) {
+        messageIds.forEach { queuedMessage ->
+            connection.prepare("DELETE FROM message_queue WHERE address=? AND message_id=?").use { stmt ->
+                stmt.bind(1, queuedMessage.address.asString())
+                stmt.bind(2, queuedMessage.messageId)
+                stmt.step()
+            }
+        }
+    }
+
+    override fun removeFromQueue(messageId: QueuedMessageId): Promise<Unit, Exception> = removeFromQueue(listOf(messageId))
+
+    override fun removeFromQueue(messageIds: List<QueuedMessageId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            removeFromQueueNoTransaction(connection, messageIds)
+        }
+    }
+
+    override fun getQueuedMessages(): Promise<List<QueuedMessage>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.prepare("SELECT address, message_id, timestamp, message FROM message_queue").use { stmt ->
+            stmt.map {
+                val id = QueuedMessageId(
+                    SlyAddress.fromString(stmt.columnString(0))!!,
+                    stmt.columnString(1)
+                )
+                val timestamp = stmt.columnLong(2)
+                val message = stmt.columnString(3)
+
+                QueuedMessage(id, timestamp, message)
+            }
+        }
     }
 }
