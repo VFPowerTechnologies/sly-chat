@@ -179,6 +179,14 @@ ChatController.prototype = {
             BootstrapDialog.closeAll();
             KEYTAP.contactController.displayContactDetailsModal(id);
         });
+
+        $(document).on("click", "#messageDetailsBtn", function (e) {
+            e.preventDefault();
+            if(this.selectedMessage.length == 1) {
+                var messageId = this.selectedMessage[0];
+                this.displayMessageDetails(messageId);
+            }
+        }.bind(this));
     },
     /**
      * Select the element and add styling to the node.
@@ -206,6 +214,8 @@ ChatController.prototype = {
     createMessagesMenu : function () {
         var html = "<div class='contextLikeMenu' id='messageContextMenu'>" +
             "<ul>" +
+                "<li><a id='messageDetailsBtn' href='#'>Message Details</a></li>" +
+                "<li role='separator' class='divider'></li>" +
                 "<li><a id='copyMessage' href='#'>Copy Message Text</a></li>" +
                 "<li role='separator' class='divider'></li>" +
                 "<li><a id='deleteMessage' href='#'>Delete Message</a></li>" +
@@ -269,6 +279,71 @@ ChatController.prototype = {
             "<button id='cancelMultipleDeleteButton' class='btn btn-sm'>Cancel</button>" +
             "<button id='confirmMultipleDeleteButton' class='btn btn-sm'>Delete</button>" +
         "</div>";
+    },
+    /**
+     * Retrieve message details and display it in dialog.
+     *
+     * @param messageId String.
+     */
+    displayMessageDetails : function (messageId) {
+        var contact = this.contactController.getCurrentContact();
+        var message = this.model.getMessage(contact, messageId);
+
+        if(message != null) {
+            this.messageMenu.close();
+            console.log(message);
+            var html = "<div class='detailsModalClose'><a href='#' onclick='BootstrapDialog.closeAll();'><i class='fa fa-close fa-2x'></i></a></div>" +
+                "<div class='message-details'>" +
+                    this.buildMessageDetailsHtml(message, contact) +
+                "</div>";
+
+            var contactDetailsModal = new BootstrapDialog();
+
+            contactDetailsModal.setCssClass("fullPageDialog whiteModal noHeaderModal centerAlignDialog");
+            contactDetailsModal.setClosable(true);
+            contactDetailsModal.setMessage(html);
+            contactDetailsModal.open();
+        }
+    },
+    buildMessageDetailsHtml : function (message, contact) {
+        var html = "";
+        var sentTime = new Date(message.timestamp).toLocaleString();
+        var receivedTime = new Date(message.receivedTimestamp).toLocaleString();
+        if(message.sent) {
+            //message was sent by user
+            html = "<h6>You sent this message</h6>" +
+                "<h6>To:</h6>" +
+                "<p>" + contact.name + "</p>" +
+                "<h6>Contact Public Key</h6>" +
+                "<div style='border: 1px solid #212121;'" +
+                    "<p style='max-width: 100%;'>" + formatPublicKey(contact.publicKey) + "</p>" +
+                "</div>" +
+                "<h6>Message Id</h6>" +
+                "<p>" + message.id + "</p>" +
+                "<h6>Sent Time:</h6>" +
+                "<p>" + sentTime + "</p>" +
+                "<h6>Encrypted: <i class='fa fa-check-square-o' style='color: green'></i></h6>";
+        }
+        else {
+            //message was received
+            html = "<h6>Contact Name:</h6>" +
+                "<p>" + contact.name + "</p>" +
+                "<h6>Contact Email:</h6>" +
+                "<p>" + contact.email + "</p>" +
+                "<h6>Contact Public Key:</h6>" +
+                "<div style='border: 1px solid #212121;'" +
+                "<p style='max-width: 100%;'>" + formatPublicKey(contact.publicKey) + "</p>" +
+                "</div>" +
+                "<h6>Message Id:</h6>" +
+                "<p>" + message.id + "</p>" +
+                "<h6>Message Sent Time:</h6>" +
+                "<p>" + sentTime + "</p>" +
+                "<h6>Message Received Time:</h6>" +
+                "<p>" + receivedTime + "</p>" +
+                "<h6>Encrypted: <i class='fa fa-check-square-o' style='color: green'></i></h6>";
+        }
+
+        return html;
     },
     /**
      * Create event to open messages links into a new window.

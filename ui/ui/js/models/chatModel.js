@@ -66,6 +66,14 @@ ChatModel.prototype = {
 
         return organizedMessages;
     },
+    getMessage : function (contact, messageId) {
+        var message = this.cachedConversation[contact.id][messageId];
+
+        if(typeof message !== "undefined" && message !== null)
+            return message;
+        else
+            return null;
+    },
     clearCache : function () {
         this.cachedConversation = [];
     }

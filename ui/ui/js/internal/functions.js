@@ -109,7 +109,7 @@ if (typeof KEYTAP == "undefined") {
         var html = $("<div>").append(modalContent).html();
 
         var bd = new BootstrapDialog();
-        bd.setCssClass("statusModal darkModal fullModal");
+        bd.setCssClass("fullPageDialog noHeaderModal darkModal centerAlignDialog");
         bd.setClosable(false);
         bd.setMessage(html);
 
