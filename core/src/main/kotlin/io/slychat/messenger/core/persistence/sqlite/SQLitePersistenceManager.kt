@@ -23,7 +23,8 @@ private val TABLE_NAMES = arrayListOf(
     "unsigned_prekeys",
     "contacts",
     "conversation_info",
-    "signal_sessions"
+    "signal_sessions",
+    "message_queue"
 )
 
 private data class InitializationResult(val initWasRequired: Boolean, val freshDatabase: Boolean)
