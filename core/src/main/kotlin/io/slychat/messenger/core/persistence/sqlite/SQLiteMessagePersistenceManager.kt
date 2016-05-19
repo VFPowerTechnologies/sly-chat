@@ -4,10 +4,9 @@ import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.randomUUID
 import nl.komponents.kovenant.Promise
-import org.joda.time.DateTime
 import java.util.*
 
 fun Boolean.toInt(): Int = if (this) 1 else 0
@@ -16,23 +15,6 @@ fun Boolean.toInt(): Int = if (this) 1 else 0
 class SQLiteMessagePersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
 ) : MessagePersistenceManager {
-    private fun getMessageId(): String = randomUUID()
-
-    private fun getCurrentTimestamp(): Long = DateTime().millis
-
-    //only for received messages
-    private fun addReceivedMessagesNoTransaction(connection: SQLiteConnection, userId: UserId, messages: List<ReceivedMessageInfo>): List<MessageInfo> {
-        return messages.map { message ->
-            addReceivedMessage(connection, message, userId, 0)
-        }
-    }
-
-    private fun addReceivedMessage(connection: SQLiteConnection, message: ReceivedMessageInfo, userId: UserId, ttl: Long): MessageInfo {
-        val messageInfo = newMessageInfo(false, message.message, message.sentTimestamp, ttl)
-        insertMessage(connection, userId, messageInfo)
-        return messageInfo
-    }
-
     private fun insertMessage(connection: SQLiteConnection, userId: UserId, messageInfo: MessageInfo) {
         val table = ConversationTable.getTablenameForContact(userId)
         val sql = """
@@ -49,15 +31,6 @@ VALUES
             stmt.bind(8, messageInfo.timestamp)
             stmt.step()
         }
-    }
-
-    private fun newMessageInfo(isSent: Boolean, message: String, sentTimestamp: Long, ttl: Long): MessageInfo {
-        val id = getMessageId()
-        val sentTimestamp = if (isSent) getCurrentTimestamp() else sentTimestamp
-        val receivedTimestamp = if (isSent) 0 else getCurrentTimestamp()
-        val isDelivered = !isSent
-
-        return MessageInfo(id, message, sentTimestamp, receivedTimestamp, isSent, isDelivered, ttl)
     }
 
     private fun updateConversationInfo(connection: SQLiteConnection, userId: UserId, isSent: Boolean, lastMessage: String, lastTimestamp: Long, unreadIncrement: Int) {
@@ -80,27 +53,6 @@ VALUES
         return messageInfo
     }
 
-    //TODO retry if id taken
-    override fun addSentMessage(userId: UserId, message: String, ttl: Long): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val messageInfo = newMessageInfo(true, message, 0, ttl)
-        addMessageReal(connection, userId, messageInfo)
-    }
-
-    override fun addReceivedMessage(from: UserId, info: ReceivedMessageInfo, ttl: Long): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withTransaction {
-            val messageInfo = addReceivedMessage(connection, info, from, ttl)
-            updateConversationInfo(connection, from, false, messageInfo.message, messageInfo.timestamp, 1)
-            messageInfo
-        }
-    }
-
-    override fun addSelfMessage(userId: UserId, message: String): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val timestamp = getCurrentTimestamp()
-        val messageInfo = MessageInfo(getMessageId(), message, timestamp, timestamp, true, true, 0)
-
-        addMessageReal(connection, userId, messageInfo)
-    }
-
     override fun addMessage(userId: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
         addMessageReal(connection, userId, messageInfo)
         messageInfo
@@ -114,24 +66,11 @@ VALUES
         }
     }
 
-    //TODO optimize this
-    override fun addReceivedMessages(messages: Map<UserId, List<ReceivedMessageInfo>>): Promise<Map<UserId, List<MessageInfo>>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withTransaction {
-            messages.mapValues { e ->
-                val userId = e.key
-                val messages = e.value
-                val info = addReceivedMessagesNoTransaction(connection, userId, messages)
-                updateConversationInfo(connection, userId, false, messages.last().message, info.last().timestamp, messages.size)
-                info
-            }
-        }
-    }
-
     override fun markMessageAsDelivered(userId: UserId, messageId: String): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val table = ConversationTable.getTablenameForContact(userId)
 
         connection.prepare("UPDATE $table SET is_delivered=1, received_timestamp=? WHERE id=?").use { stmt ->
-            stmt.bind(1, getCurrentTimestamp())
+            stmt.bind(1, currentTimestamp())
             stmt.bind(2, messageId)
             stmt.step()
         }

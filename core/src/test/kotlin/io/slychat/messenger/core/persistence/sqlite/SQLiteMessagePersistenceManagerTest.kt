@@ -7,7 +7,6 @@ import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.MessageInfo
 import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.persistence.PackageId
-import io.slychat.messenger.core.persistence.ReceivedMessageInfo
 import io.slychat.messenger.core.test.withTimeAs
 import org.joda.time.DateTime
 import org.junit.After
@@ -15,7 +14,10 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import java.util.*
-import kotlin.test.*
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 private data class LastConversationInfo(val unreadCount: Int, val lastMessage: String?, val lastTimestamp: Long?)
 
@@ -107,10 +109,12 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     fun addMessage(userId: UserId, isSent: Boolean, message: String, ttl: Long): MessageInfo {
-        return if (isSent)
-            messagePersistenceManager.addSentMessage(userId, message, ttl).get()
+        val messageInfo = if (isSent)
+            MessageInfo.newSent(message, ttl)
         else
-            messagePersistenceManager.addReceivedMessage(userId,  ReceivedMessageInfo(message, DateTime().millis), ttl).get()
+             MessageInfo.newReceived(message, currentTimestamp(), ttl)
+
+        return messagePersistenceManager.addMessage(userId, messageInfo).get()
     }
 
     @Test
@@ -147,17 +151,17 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
-    fun `addReceivedMessageInfo should update conversation info`() {
+    fun `addMessageInfo should update conversation info`() {
         createConvosFor(contact)
 
         val timestamp = DateTime().millis
 
-        val info = ReceivedMessageInfo("message", timestamp)
-        messagePersistenceManager.addReceivedMessage(contact, info, 0).get()
+        val messageInfo = MessageInfo.newSent("message", 0)
+        messagePersistenceManager.addMessage(contact, messageInfo).get()
         val lastConversationInfo = getLastConversationInfo(contact) ?: throw AssertionError("No last conversation info")
 
         assertEquals(timestamp, lastConversationInfo.lastTimestamp, "Timestamp wasn't updated")
-        assertEquals(info.message, lastConversationInfo.lastMessage, "Message wasn't updated")
+        assertEquals(messageInfo.message, lastConversationInfo.lastMessage, "Message wasn't updated")
     }
 
     @Test
@@ -177,49 +181,19 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
-    fun `addReceivedMessages should add all messages`() {
+    fun `addMessages should add all messages`() {
         val user1 = UserId(1)
-        val base = DateTime()
+        val base = currentTimestamp()
         val user1Messages = listOf(
-            ReceivedMessageInfo("message 1", base.millis),
-            ReceivedMessageInfo("message 2", base.millis + 1000)
-        )
-        val user2 = UserId(2)
-        val user2Messages = listOf(
-            ReceivedMessageInfo("message 3", base.millis + 2000),
-            ReceivedMessageInfo("message 4", base.millis + 4000)
+            MessageInfo.newReceived("message 1", base, 0),
+            MessageInfo.newReceived("message 2", base + 1000, 0)
         )
 
-        createConvosFor(user1, user2)
+        createConvosFor(user1)
 
-        val messages = mapOf(
-            user1 to user1Messages,
-            user2 to user2Messages
-        )
+        val messageInfoMap = messagePersistenceManager.addMessages(user1, user1Messages).get()
 
-        val messageInfoMap = messagePersistenceManager.addReceivedMessages(messages).get()
-
-        val u1Messages = assertNotNull(messageInfoMap[user1], "Missing UserId(1) messages")
-        val u2Messages = assertNotNull(messageInfoMap[user2], "Missing UserId(2) messages")
-
-        for ((original, got) in listOf(user1Messages to u1Messages, user2Messages to u2Messages)) {
-            assertEquals(2, got.size)
-
-            val sorted = got.sortedBy { it.timestamp }
-                .map { ReceivedMessageInfo(it.message, it.timestamp) }
-
-            assertEquals(original, sorted, "Invalid messages")
-        }
-    }
-
-    @Test
-    fun `addSelfMessage should set receivedTimestamp`() {
-        val self = UserId(1)
-        createConvosFor(self)
-
-        val messageInfo = messagePersistenceManager.addSelfMessage(self, "message").get()
-
-        assertEquals(messageInfo.timestamp, messageInfo.receivedTimestamp, "Received timestamp isn't set")
+        assertEquals(user1Messages, messageInfoMap, "MessageInfo lists don't match")
     }
 
     @Test
