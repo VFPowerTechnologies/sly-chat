@@ -220,13 +220,11 @@ VALUES
         }
     }
 
-    override fun removeFromQueue(packageId: PackageId): Promise<Unit, Exception> = removeFromQueue(listOf(packageId))
+    override fun removeFromQueue(packageId: PackageId): Promise<Unit, Exception> = removeFromQueue(packageId.address.id, listOf(packageId.messageId))
 
-    override fun removeFromQueue(packageIds: List<PackageId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun removeFromQueue(userId: UserId, messageIds: List<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
-            packageIds.forEach { packageId ->
-                removeFromQueueNoTransaction(connection, packageId.address.id, packageIds.map { it.messageId })
-            }
+            removeFromQueueNoTransaction(connection, userId, messageIds)
         }
     }
 

@@ -45,7 +45,7 @@ interface MessagePersistenceManager {
 
     fun removeFromQueue(packageId: PackageId): Promise<Unit, Exception>
 
-    fun removeFromQueue(packageIds: List<PackageId>): Promise<Unit, Exception>
+    fun removeFromQueue(userId: UserId, messageIds: List<String>): Promise<Unit, Exception>
 
     fun getQueuedMessages(): Promise<List<Package>, Exception>
 }

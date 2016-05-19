@@ -398,7 +398,7 @@ class SQLiteMessagePersistenceManagerTest {
         val toKeep = queuedMessages.subList(2, 4)
 
         messagePersistenceManager.addToQueue(queuedMessages).get()
-        messagePersistenceManager.removeFromQueue(toRemove.map { it.id }).get()
+        messagePersistenceManager.removeFromQueue(address.id, toRemove.map { it.id.messageId }).get()
 
         val remaining = messagePersistenceManager.getQueuedMessages().get()
 
