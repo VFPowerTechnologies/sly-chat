@@ -25,7 +25,7 @@ import java.util.*
 data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
 
-data class EncryptedMessageInfo(val messageId: String, val payload: EncryptedMessageV0)
+data class EncryptedMessageInfo(val messageId: String, val payload: EncryptedPackagePayloadV0)
 
 data class QueuedSendMessage(val to: UserId, val messageInfo: MessageInfo, val connectionTag: Int)
 data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessages: List<EncryptedMessageInfo>)
@@ -304,7 +304,7 @@ class MessengerService(
 
         sortedByTimestamp.map { e ->
             val encryptedMessages = e.value.map {
-                val payload = deserializeEncryptedMessage(it.payload)
+                val payload = deserializeEncryptedPackagePayload(it.payload)
                 EncryptedMessageInfo(it.id.messageId, payload)
             }
             receivedMessageQueue.add(QueuedReceivedMessage(e.key, encryptedMessages))

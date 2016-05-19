@@ -44,7 +44,7 @@ private class NoMoreWork : CipherWork
 data class MessageData(
     val deviceId: Int,
     val registrationId: Int,
-    val payload: EncryptedMessageV0
+    val payload: EncryptedPackagePayloadV0
 )
 
 class MessageCipherService(
@@ -124,7 +124,7 @@ class MessageCipherService(
                     else -> throw RuntimeException("Invalid message type: ${encrypted.javaClass.name}")
                 }
 
-                val m = EncryptedMessageV0(isPreKey, encrypted.serialize())
+                val m = EncryptedPackagePayloadV0(isPreKey, encrypted.serialize())
                 MessageData(deviceId, sessionCipher.remoteRegistrationId, m)
             }
 
@@ -137,10 +137,10 @@ class MessageCipherService(
         encryptionSubject.onNext(result)
     }
 
-    private fun decryptEncryptedMessage(sessionCipher: SessionCipher, encryptedMessage: EncryptedMessageV0): ByteArray {
-        val payload = encryptedMessage.payload
+    private fun decryptEncryptedMessage(sessionCipher: SessionCipher, encryptedPackagePayload: EncryptedPackagePayloadV0): ByteArray {
+        val payload = encryptedPackagePayload.payload
 
-        val messageData = if (encryptedMessage.isPreKeyWhisper)
+        val messageData = if (encryptedPackagePayload.isPreKeyWhisper)
             sessionCipher.decrypt(PreKeySignalMessage(payload))
         else
             sessionCipher.decrypt(SignalMessage(payload))
