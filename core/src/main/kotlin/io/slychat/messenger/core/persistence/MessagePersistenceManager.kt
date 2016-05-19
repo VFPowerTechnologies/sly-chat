@@ -39,9 +39,9 @@ interface MessagePersistenceManager {
     fun deleteAllMessages(userId: UserId): Promise<Unit, Exception>
 
     /** Stores a received message prior to decryption. */
-    fun addToQueue(message: Package): Promise<Unit, Exception>
+    fun addToQueue(pkg: Package): Promise<Unit, Exception>
 
-    fun addToQueue(messages: List<Package>): Promise<Unit, Exception>
+    fun addToQueue(packages: List<Package>): Promise<Unit, Exception>
 
     fun removeFromQueue(packageId: PackageId): Promise<Unit, Exception>
 

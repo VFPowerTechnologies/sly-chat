@@ -197,11 +197,11 @@ VALUES
         return MessageInfo(id, message, timestamp, receivedTimestamp, isSent, isDelivered, ttl)
     }
 
-    override fun addToQueue(message: Package): Promise<Unit, Exception> = addToQueue(listOf(message))
+    override fun addToQueue(pkg: Package): Promise<Unit, Exception> = addToQueue(listOf(pkg))
 
-    override fun addToQueue(messages: List<Package>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun addToQueue(packages: List<Package>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val sql = "INSERT INTO message_queue (user_id, device_id, message_id, timestamp, payload) VALUES (?, ?, ?, ?, ?)"
-        connection.batchInsertWithinTransaction(sql, messages) { stmt, queuedMessage ->
+        connection.batchInsertWithinTransaction(sql, packages) { stmt, queuedMessage ->
             stmt.bind(1, queuedMessage.id.address.id.long)
             stmt.bind(2, queuedMessage.id.address.deviceId)
             stmt.bind(3, queuedMessage.id.messageId)
