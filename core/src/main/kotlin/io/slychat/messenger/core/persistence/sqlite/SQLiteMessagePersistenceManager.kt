@@ -228,20 +228,30 @@ VALUES
         }
     }
 
-    override fun getQueuedMessages(): Promise<List<Package>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("SELECT user_id, device_id, message_id, timestamp, payload FROM package_queue").use { stmt ->
-            stmt.map {
-                val userId = UserId(stmt.columnLong(0))
-                val address = SlyAddress(userId, stmt.columnInt(1))
-                val id = PackageId(
-                    address,
-                    stmt.columnString(2)
-                )
-                val timestamp = stmt.columnLong(3)
-                val message = stmt.columnString(4)
+    override fun getQueuedPackages(userId: UserId): Promise<List<Package>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.prepare("SELECT user_id, device_id, message_id, timestamp, payload FROM package_queue WHERE user_id=?").use { stmt ->
+            stmt.bind(1, userId.long)
 
-                Package(id, timestamp, message)
-            }
+            stmt.map { rowToPackage(stmt) }
         }
+    }
+
+    override fun getQueuedPackages(): Promise<List<Package>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.prepare("SELECT user_id, device_id, message_id, timestamp, payload FROM package_queue").use { stmt ->
+            stmt.map { rowToPackage(stmt) }
+        }
+    }
+
+    private fun rowToPackage(stmt: SQLiteStatement): Package {
+        val userId = UserId(stmt.columnLong(0))
+        val address = SlyAddress(userId, stmt.columnInt(1))
+        val id = PackageId(
+            address,
+            stmt.columnString(2)
+        )
+        val timestamp = stmt.columnLong(3)
+        val message = stmt.columnString(4)
+
+        return Package(id, timestamp, message)
     }
 }

@@ -157,8 +157,8 @@ class SQLiteMessagePersistenceManagerTest {
 
         messagePersistenceManager.addMessage(address.id, messageInfo).get()
 
-        val queued = messagePersistenceManager.getQueuedMessages().get()
-        assertTrue(queued.isEmpty(), "Queued messages not empty")
+        val queued = messagePersistenceManager.getQueuedPackages(userId).get()
+        assertTrue(queued.isEmpty(), "Queued packages not empty")
     }
 
     @Test
@@ -183,10 +183,9 @@ class SQLiteMessagePersistenceManagerTest {
 
         messagePersistenceManager.addMessages(userId, messages).get()
 
-        val queued = messagePersistenceManager.getQueuedMessages().get()
+        val queued = messagePersistenceManager.getQueuedPackages(userId).get()
 
-        assertTrue(queued.isEmpty(), "Queued messages not empty: $queued")
-
+        assertTrue(queued.isEmpty(), "Queued packages not empty: $queued")
     }
 
     @Test
@@ -366,7 +365,7 @@ class SQLiteMessagePersistenceManagerTest {
         assertEquals(lastMessage.timestamp, lastConversationInfo.lastTimestamp, "lastTimestamp doesn't match")
     }
 
-    private fun queuedMessageFromInt(address: SlyAddress, i: Int): Package {
+    private fun queuedPackageFromInt(address: SlyAddress, i: Int): Package {
         return Package(
             PackageId(address, "$i"),
             currentTimestamp() + (i * 10),
@@ -375,12 +374,12 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
-    fun `addQueuedMessages should store the given messages`() {
+    fun `addToQueue should store the given messages`() {
         val address = SlyAddress(UserId(1), 1)
-        val queuedMessages = (0..1).map { queuedMessageFromInt(address, it) }
+        val queuedMessages = (0..1).map { queuedPackageFromInt(address, it) }
 
         messagePersistenceManager.addToQueue(queuedMessages).get()
-        val got = messagePersistenceManager.getQueuedMessages().get()
+        val got = messagePersistenceManager.getQueuedPackages().get()
 
         val expected = queuedMessages.sortedBy { it.timestamp }
         val gotSorted = got.sortedBy { it.timestamp }
@@ -390,17 +389,32 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
-    fun `removeQueuedMessages should remove the given messages`() {
+    fun `getQueuedPackages(UserId) should only return packages for the given user`() {
+        val address1 = SlyAddress(UserId(1), 1)
+        val address2 = SlyAddress(UserId(2), 1)
+        val queuedPackages1 = (0..1).map { queuedPackageFromInt(address1, it) }
+        val queuedPackages2 = (0..1).map { queuedPackageFromInt(address2, it) }
+
+        messagePersistenceManager.addToQueue(queuedPackages1).get()
+        messagePersistenceManager.addToQueue(queuedPackages2).get()
+
+        val got = messagePersistenceManager.getQueuedPackages(address1.id).get()
+
+        assertEquals(queuedPackages1, got, "Packages don't match")
+    }
+
+    @Test
+    fun `removeFromQueue should remove the given messages`() {
         val address = SlyAddress(UserId(1), 1)
-        val queuedMessages = (0..3).map { queuedMessageFromInt(address, it) }
+        val queuedPackages = (0..3).map { queuedPackageFromInt(address, it) }
 
-        val toRemove = queuedMessages.subList(0, 2)
-        val toKeep = queuedMessages.subList(2, 4)
+        val toRemove = queuedPackages.subList(0, 2)
+        val toKeep = queuedPackages.subList(2, 4)
 
-        messagePersistenceManager.addToQueue(queuedMessages).get()
+        messagePersistenceManager.addToQueue(queuedPackages).get()
         messagePersistenceManager.removeFromQueue(address.id, toRemove.map { it.id.messageId }).get()
 
-        val remaining = messagePersistenceManager.getQueuedMessages().get()
+        val remaining = messagePersistenceManager.getQueuedPackages().get()
 
         assertEquals(toKeep.size, remaining.size, "Invalid number of messages")
 
