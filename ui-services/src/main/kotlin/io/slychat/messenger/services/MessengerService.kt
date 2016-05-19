@@ -234,9 +234,8 @@ class MessengerService(
         }
     }
 
-    private fun processDecryptionResult(from: UserId, result: MessageListDecryptionResult): Promise<Unit, Exception> {
-        //FIXME need to delete these from the queue
-        logFailedDecryptionResults(from, result)
+    private fun processDecryptionResult(from: UserId, result: MessageListDecryptionResult) {
+        handleFailedDecryptionResults(from, result)
 
         val messages = result.succeeded
 
@@ -247,7 +246,7 @@ class MessengerService(
             MessageInfo.newReceived(it.messageId, message.message, message.timestamp, currentTimestamp(), 0)
         }
 
-        return messagePersistenceManager.addMessages(from, messageStrings) mapUi { messageInfo ->
+        messagePersistenceManager.addMessages(from, messageStrings) mapUi { messageInfo ->
             val bundle = MessageBundle(from, messageInfo)
             newMessagesSubject.onNext(bundle)
 
@@ -255,6 +254,8 @@ class MessengerService(
             receivedMessageQueue.pop()
 
             processReceivedMessageQueue()
+        } fail { e ->
+            log.error("Unable to store decrypted messages: {}", e.message, e)
         }
     }
 
@@ -313,11 +314,15 @@ class MessengerService(
         processMessageSendResult(MessageSendOk(event.to, event.messageId))
     }
 
-    private fun logFailedDecryptionResults(userId: UserId, result: MessageListDecryptionResult) {
-        //XXX no idea what to do here really
-        if (result.failed.isNotEmpty()) {
-            log.error("Unable to decrypt {} messages for {}", result.failed.size, userId)
-            result.failed.forEach { log.error("Message decryption failure: {}", it.result.cause.message, it.result.cause) }
+    private fun handleFailedDecryptionResults(userId: UserId, result: MessageListDecryptionResult) {
+        if (result.failed.isEmpty())
+            return
+
+        log.error("Unable to decrypt {} messages for {}", result.failed.size, userId)
+        result.failed.forEach { log.error("Message decryption failure: {}", it.result.cause.message, it.result.cause) }
+
+        messagePersistenceManager.removeFromQueue(userId, result.failed.map { it.messageId }).fail { e ->
+            log.error("Unable to remove failed decryption packages from queue: {}", e.message, e)
         }
     }
 

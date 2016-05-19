@@ -200,7 +200,7 @@ VALUES
     override fun addToQueue(pkg: Package): Promise<Unit, Exception> = addToQueue(listOf(pkg))
 
     override fun addToQueue(packages: List<Package>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val sql = "INSERT INTO message_queue (user_id, device_id, message_id, timestamp, payload) VALUES (?, ?, ?, ?, ?)"
+        val sql = "INSERT INTO package_queue (user_id, device_id, message_id, timestamp, payload) VALUES (?, ?, ?, ?, ?)"
         connection.batchInsertWithinTransaction(sql, packages) { stmt, queuedMessage ->
             stmt.bind(1, queuedMessage.id.address.id.long)
             stmt.bind(2, queuedMessage.id.address.deviceId)
@@ -212,7 +212,7 @@ VALUES
 
     private fun removeFromQueueNoTransaction(connection: SQLiteConnection, userId: UserId, messageIds: List<String>) {
         messageIds.forEach { messageId ->
-            connection.prepare("DELETE FROM message_queue WHERE user_id=? AND message_id=?").use { stmt ->
+            connection.prepare("DELETE FROM package_queue WHERE user_id=? AND message_id=?").use { stmt ->
                 stmt.bind(1, userId.long)
                 stmt.bind(2, messageId)
                 stmt.step()
@@ -229,7 +229,7 @@ VALUES
     }
 
     override fun getQueuedMessages(): Promise<List<Package>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("SELECT user_id, device_id, message_id, timestamp, payload FROM message_queue").use { stmt ->
+        connection.prepare("SELECT user_id, device_id, message_id, timestamp, payload FROM package_queue").use { stmt ->
             stmt.map {
                 val userId = UserId(stmt.columnLong(0))
                 val address = SlyAddress(userId, stmt.columnInt(1))

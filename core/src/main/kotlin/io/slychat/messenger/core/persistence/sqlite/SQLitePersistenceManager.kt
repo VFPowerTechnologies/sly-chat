@@ -24,7 +24,7 @@ private val TABLE_NAMES = arrayListOf(
     "contacts",
     "conversation_info",
     "signal_sessions",
-    "message_queue"
+    "package_queue"
 )
 
 private data class InitializationResult(val initWasRequired: Boolean, val freshDatabase: Boolean)
