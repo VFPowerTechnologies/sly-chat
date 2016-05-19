@@ -245,12 +245,12 @@ VALUES
     override fun addToQueue(message: Package): Promise<Unit, Exception> = addToQueue(listOf(message))
 
     override fun addToQueue(messages: List<Package>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val sql = "INSERT INTO message_queue (address, message_id, timestamp, message) VALUES (?, ?, ?, ?)"
+        val sql = "INSERT INTO message_queue (address, message_id, timestamp, payload) VALUES (?, ?, ?, ?)"
         connection.batchInsertWithinTransaction(sql, messages) { stmt, queuedMessage ->
             stmt.bind(1, queuedMessage.id.address.asString())
             stmt.bind(2, queuedMessage.id.messageId)
             stmt.bind(3, queuedMessage.timestamp)
-            stmt.bind(4, queuedMessage.message)
+            stmt.bind(4, queuedMessage.payload)
         }
     }
 
@@ -273,7 +273,7 @@ VALUES
     }
 
     override fun getQueuedMessages(): Promise<List<Package>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("SELECT address, message_id, timestamp, message FROM message_queue").use { stmt ->
+        connection.prepare("SELECT address, message_id, timestamp, payload FROM message_queue").use { stmt ->
             stmt.map {
                 val id = PackageId(
                     SlyAddress.fromString(stmt.columnString(0))!!,

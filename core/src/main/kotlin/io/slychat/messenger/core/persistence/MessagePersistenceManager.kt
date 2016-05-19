@@ -4,7 +4,6 @@ import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
 import nl.komponents.kovenant.Promise
 
-
 data class PackageId(
     val address: SlyAddress,
     val messageId: String
@@ -13,7 +12,7 @@ data class PackageId(
 data class Package(
     val id: PackageId,
     val timestamp: Long,
-    val message: String
+    val payload: String
 )
 
 interface MessagePersistenceManager {

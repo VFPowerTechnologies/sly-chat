@@ -379,7 +379,7 @@ class MessengerService(
 
             sortedByTimestamp.map { e ->
                 val encryptedMessages = e.value.map {
-                    deserializeEncryptedMessage(it.message)
+                    deserializeEncryptedMessage(it.payload)
                 }
                 addReceivedMessageToQueue(e.key, encryptedMessages)
             }
