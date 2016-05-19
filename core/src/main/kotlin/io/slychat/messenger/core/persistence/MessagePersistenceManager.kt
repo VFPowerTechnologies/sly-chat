@@ -30,6 +30,13 @@ interface MessagePersistenceManager {
     fun addSelfMessage(userId: UserId, message: String): Promise<MessageInfo, Exception>
 
     /**
+     * Updates the conversation info for the given UserId.
+     */
+    fun addMessage(userId: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception>
+
+    fun addMessages(userId: UserId, messages: List<MessageInfo>): Promise<List<MessageInfo>, Exception>
+
+    /**
      * Stores the given list of received messages in the given order. There must not be any empty message lists.
      * This also removes any corresponding messages in the queue.
      */

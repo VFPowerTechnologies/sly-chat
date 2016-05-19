@@ -101,6 +101,19 @@ VALUES
         addMessageReal(connection, userId, messageInfo)
     }
 
+    override fun addMessage(userId: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        addMessageReal(connection, userId, messageInfo)
+        messageInfo
+    }
+
+    override fun addMessages(userId: UserId, messages: List<MessageInfo>): Promise<List<MessageInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            messages.map { insertMessage(connection, userId, it) }
+            updateConversationInfo(connection, userId, false, messages.last().message, messages.last().timestamp, messages.size)
+            messages
+        }
+    }
+
     //TODO optimize this
     override fun addReceivedMessages(messages: Map<UserId, List<ReceivedMessageInfo>>): Promise<Map<UserId, List<MessageInfo>>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {

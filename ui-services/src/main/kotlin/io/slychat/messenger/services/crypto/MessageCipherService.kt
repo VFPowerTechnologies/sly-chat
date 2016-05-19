@@ -8,10 +8,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.prekeys.PreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyRetrievalRequest
 import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
-import io.slychat.messenger.services.DecryptionResult
-import io.slychat.messenger.services.EncryptionOk
-import io.slychat.messenger.services.EncryptionResult
-import io.slychat.messenger.services.EncryptionUnknownFailure
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
 import org.slf4j.LoggerFactory
 import org.whispersystems.libsignal.SessionBuilder
@@ -25,15 +22,20 @@ import rx.subjects.PublishSubject
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 
+data class MessageDecryptionResult<T>(
+    val messageId: String,
+    val result: T
+)
+
 data class DecryptionFailure(val cause: Throwable)
 data class MessageListDecryptionResult(
-    val succeeded: List<ByteArray>,
-    val failed: List<DecryptionFailure>
+    val succeeded: List<MessageDecryptionResult<ByteArray>>,
+    val failed: List<MessageDecryptionResult<DecryptionFailure>>
 )
 
 private interface CipherWork
 private data class EncryptionWork(val userId: UserId, val message: ByteArray, val connectionTag: Int) : CipherWork
-private data class DecryptionWork(val address: SlyAddress, val encryptedMessages: List<EncryptedMessageV0>) : CipherWork
+private data class DecryptionWork(val address: SlyAddress, val encryptedMessages: List<EncryptedMessageInfo>) : CipherWork
 private class NoMoreWork : CipherWork
 
 /** Represents a single message to a user. */
@@ -86,7 +88,7 @@ class MessageCipherService(
         workQueue.add(EncryptionWork(userId, message, connectionTag))
     }
 
-    fun decrypt(address: SlyAddress, messages: List<EncryptedMessageV0>) {
+    fun decrypt(address: SlyAddress, messages: List<EncryptedMessageInfo>) {
         workQueue.add(DecryptionWork(address,  messages))
     }
 
@@ -146,19 +148,21 @@ class MessageCipherService(
         return messageData
     }
 
-    private fun decryptMessagesForUser(address: SlyAddress, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
-        val failed = ArrayList<DecryptionFailure>()
-        val succeeded = ArrayList<ByteArray>()
+    private fun decryptMessagesForUser(address: SlyAddress, encryptedMessages: List<EncryptedMessageInfo>): MessageListDecryptionResult {
+        val failed = ArrayList<MessageDecryptionResult<DecryptionFailure>>()
+        val succeeded = ArrayList<MessageDecryptionResult<ByteArray>>()
 
         val sessionCipher = SessionCipher(signalStore, address.toSignalAddress())
 
-        encryptedMessages.forEach { encryptedMessage ->
+        encryptedMessages.forEach { encryptedMessageInfo ->
             try {
-                val message = decryptEncryptedMessage(sessionCipher, encryptedMessage)
-                succeeded.add(message)
+                val message = decryptEncryptedMessage(sessionCipher, encryptedMessageInfo.payload)
+                val result = MessageDecryptionResult(encryptedMessageInfo.messageId, message)
+                succeeded.add(result)
             }
             catch (e: Throwable) {
-                failed.add(DecryptionFailure(e))
+                val result = MessageDecryptionResult(encryptedMessageInfo.messageId, DecryptionFailure(e))
+                failed.add(result)
             }
         }
 

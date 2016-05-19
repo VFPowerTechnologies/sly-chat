@@ -5,6 +5,7 @@ import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.core.relay.ServerReceivedMessage
@@ -25,8 +26,10 @@ import java.util.*
 data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
 
-data class QueuedMessage(val to: UserId, val messageInfo: MessageInfo, val connectionTag: Int)
-data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessages: List<EncryptedMessageV0>)
+data class EncryptedMessageInfo(val messageId: String, val payload: EncryptedMessageV0)
+
+data class QueuedSendMessage(val to: UserId, val messageInfo: MessageInfo, val connectionTag: Int)
+data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessages: List<EncryptedMessageInfo>)
 
 interface EncryptionResult
 data class EncryptionOk(val encryptedMessages: List<MessageData>, val connectionTag: Int) : EncryptionResult
@@ -67,8 +70,8 @@ class MessengerService(
     private val contactRequestsSubject = PublishSubject.create<List<ContactRequest>>()
     val contactRequests: Observable<List<ContactRequest>> = contactRequestsSubject
 
-    private val sendMessageQueue = ArrayDeque<QueuedMessage>()
-    private var currentSendMessage: QueuedMessage? = null
+    private val sendMessageQueue = ArrayDeque<QueuedSendMessage>()
+    private var currentSendMessage: QueuedSendMessage? = null
 
     private val receivedMessageQueue = ArrayDeque<QueuedReceivedMessage>()
     private var currentReceivedMessage: QueuedReceivedMessage? = null
@@ -118,7 +121,7 @@ class MessengerService(
         if (!relayClientManager.isOnline)
             return
 
-        sendMessageQueue.add(QueuedMessage(userId, messageInfo, relayClientManager.connectionTag))
+        sendMessageQueue.add(QueuedSendMessage(userId, messageInfo, relayClientManager.connectionTag))
         processSendMessageQueue()
     }
 
@@ -233,26 +236,21 @@ class MessengerService(
     }
 
     private fun processDecryptionResult(from: UserId, result: MessageListDecryptionResult): Promise<Unit, Exception> {
+        //FIXME need to delete these from the queue
         logFailedDecryptionResults(from, result)
 
-        val messages = if (result.succeeded.isNotEmpty())
-            hashMapOf(from to result.succeeded)
-        else
-            hashMapOf()
+        val messages = result.succeeded
 
         val objectMapper = ObjectMapper()
-        val messageStrings = messages.mapValues {
-            it.value.map {
-                val message = objectMapper.readValue(it, SingleUserTextMessage::class.java)
-                ReceivedMessageInfo(message.message, message.timestamp)
-            }
+        val messageStrings = messages.map {
+            val message = objectMapper.readValue(it.result, SingleUserTextMessage::class.java)
+            ReceivedMessageInfo(message.message, message.timestamp)
+            MessageInfo.newReceived(it.messageId, message.message, message.timestamp, currentTimestamp(), 0)
         }
 
-        return messagePersistenceManager.addReceivedMessages(messageStrings) mapUi { groupedMessageInfo ->
-            val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
-            bundles.forEach {
-                newMessagesSubject.onNext(it.value)
-            }
+        return messagePersistenceManager.addMessages(from, messageStrings) mapUi { messageInfo ->
+            val bundle = MessageBundle(from, messageInfo)
+            newMessagesSubject.onNext(bundle)
 
             currentReceivedMessage = null
             receivedMessageQueue.pop()
@@ -291,7 +289,7 @@ class MessengerService(
         }
     }
 
-    private fun addReceivedMessageToQueue(from: SlyAddress, encryptedMessages: List<EncryptedMessageV0>) {
+    private fun addReceivedMessageToQueue(from: SlyAddress, encryptedMessages: List<EncryptedMessageInfo>) {
         receivedMessageQueue.add(QueuedReceivedMessage(from, encryptedMessages))
         processReceivedMessageQueue()
     }
@@ -301,10 +299,11 @@ class MessengerService(
         //XXX this is kinda hacky...
         //the issue is that since offline messages are deserialized via jackson, using a byte array would require the
         //relay or web server to store them as base64; need to come back and fix this stuff
-        val pkg = Package(PackageId(event.from, event.messageId), timestamp, String(event.content, Charsets.UTF_8))
+        val pkg = Package(PackageId(event.from, randomUUID()), timestamp, String(event.content, Charsets.UTF_8))
         messagePersistenceManager.addToQueue(listOf(pkg)) alwaysUi {
             val encryptedMessage = deserializeEncryptedMessage(event.content)
-            addReceivedMessageToQueue(event.from, listOf(encryptedMessage))
+            val info = EncryptedMessageInfo(pkg.id.messageId, encryptedMessage)
+            addReceivedMessageToQueue(event.from, listOf(info))
         } fail { e ->
             log.error("Unable to add encrypted messages to queue: {}", e.message, e)
         }
@@ -318,7 +317,7 @@ class MessengerService(
         //XXX no idea what to do here really
         if (result.failed.isNotEmpty()) {
             log.error("Unable to decrypt {} messages for {}", result.failed.size, userId)
-            result.failed.forEach { log.error("Message decryption failure: {}", it.cause.message, it.cause) }
+            result.failed.forEach { log.error("Message decryption failure: {}", it.result.cause.message, it.result.cause) }
         }
     }
 
@@ -330,7 +329,8 @@ class MessengerService(
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         return if (!isSelfMessage) {
-            messagePersistenceManager.addSentMessage(userId, message, 0) successUi { messageInfo ->
+            val messageInfo = MessageInfo.newSent(message, currentTimestamp(), 0, 0)
+            messagePersistenceManager.addMessage(userId, messageInfo) successUi { messageInfo ->
                 addToQueue(userId, messageInfo)
             }
         }
@@ -379,7 +379,8 @@ class MessengerService(
 
             sortedByTimestamp.map { e ->
                 val encryptedMessages = e.value.map {
-                    deserializeEncryptedMessage(it.payload)
+                    val payload = deserializeEncryptedMessage(it.payload)
+                    EncryptedMessageInfo(it.id.messageId, payload)
                 }
                 addReceivedMessageToQueue(e.key, encryptedMessages)
             }

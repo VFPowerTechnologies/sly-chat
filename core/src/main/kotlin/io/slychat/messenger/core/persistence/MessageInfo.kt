@@ -1,5 +1,7 @@
 package io.slychat.messenger.core.persistence
 
+import io.slychat.messenger.core.randomUUID
+
 /**
  * Information about a conversation contact.
  *
@@ -17,6 +19,17 @@ data class MessageInfo(
     val isDelivered: Boolean,
     val ttl: Long
 ) {
+    companion object {
+        fun newSent(id: String, message: String, timestamp: Long, receivedTimestamp: Long, ttl: Long): MessageInfo =
+            MessageInfo(id, message, timestamp, receivedTimestamp, true, false, ttl)
+
+        fun newSent(message: String, timestamp: Long, receivedTimestamp: Long, ttl: Long): MessageInfo =
+            MessageInfo(randomUUID(), message, timestamp, receivedTimestamp, true, false, ttl)
+
+        fun newReceived(id: String, message: String, timestamp: Long, receivedTimestamp: Long, ttl: Long): MessageInfo =
+            MessageInfo(id, message, timestamp, receivedTimestamp, false, true, ttl)
+    }
+
     init {
         if (!isSent) require(isDelivered) { "isDelivered must be true when isSent is false" }
     }
