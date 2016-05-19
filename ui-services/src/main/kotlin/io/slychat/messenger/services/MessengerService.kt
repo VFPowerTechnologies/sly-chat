@@ -16,7 +16,6 @@ import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
-import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Scheduler
@@ -284,7 +283,8 @@ class MessengerService(
 
     /** Writes the received message and then fires the new messages subject. */
     private fun writeReceivedSelfMessage(from: UserId, decryptedMessage: String): Promise<Unit, Exception> {
-        return messagePersistenceManager.addReceivedMessage(from, ReceivedMessageInfo(decryptedMessage, DateTime().millis), 0) mapUi { messageInfo ->
+        val messageInfo = MessageInfo.newReceived(decryptedMessage, currentTimestamp(), 0)
+        return messagePersistenceManager.addMessage(from, messageInfo) mapUi { messageInfo ->
             newMessagesSubject.onNext(MessageBundle(from, listOf(messageInfo)))
         }
     }
@@ -329,15 +329,16 @@ class MessengerService(
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         return if (!isSelfMessage) {
-            val messageInfo = MessageInfo.newSent(message, currentTimestamp(), 0, 0)
+            val messageInfo = MessageInfo.newSent(message, 0)
+
             messagePersistenceManager.addMessage(userId, messageInfo) successUi { messageInfo ->
                 addToQueue(userId, messageInfo)
             }
         }
         else {
+            val messageInfo = MessageInfo.newSelfSent(message, 0)
             //we need to insure that the send message info is sent back to the ui before the ServerReceivedMessage is fired
-            //this is stupid but I don't feel like injecting an rx scheduler
-            messagePersistenceManager.addSelfMessage(userId, message) map { messageInfo ->
+            messagePersistenceManager.addMessage(userId, messageInfo) map { messageInfo ->
                 Thread.sleep(30)
                 messageInfo
             } successUi { messageInfo ->

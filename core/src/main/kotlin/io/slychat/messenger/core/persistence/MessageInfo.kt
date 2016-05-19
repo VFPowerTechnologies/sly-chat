@@ -1,5 +1,6 @@
 package io.slychat.messenger.core.persistence
 
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.randomUUID
 
 /**
@@ -23,11 +24,28 @@ data class MessageInfo(
         fun newSent(id: String, message: String, timestamp: Long, receivedTimestamp: Long, ttl: Long): MessageInfo =
             MessageInfo(id, message, timestamp, receivedTimestamp, true, false, ttl)
 
+        fun newSent(message: String, ttl: Long): MessageInfo =
+            MessageInfo(randomUUID(), message, currentTimestamp(), 0, true, false, ttl)
+
+        fun newSelfSent(message: String, ttl: Long): MessageInfo {
+            val receivedTimestamp = currentTimestamp()
+            return MessageInfo(randomUUID(), message, receivedTimestamp, receivedTimestamp, true, true, ttl)
+        }
+
+        fun newSent(message: String, timestamp: Long, ttl: Long): MessageInfo =
+            MessageInfo(randomUUID(), message, timestamp, 0, true, false, ttl)
+
         fun newSent(message: String, timestamp: Long, receivedTimestamp: Long, ttl: Long): MessageInfo =
             MessageInfo(randomUUID(), message, timestamp, receivedTimestamp, true, false, ttl)
 
         fun newReceived(id: String, message: String, timestamp: Long, receivedTimestamp: Long, ttl: Long): MessageInfo =
             MessageInfo(id, message, timestamp, receivedTimestamp, false, true, ttl)
+
+        fun newReceived(message: String, timestamp: Long, receivedTimestamp: Long, ttl: Long): MessageInfo =
+            MessageInfo(randomUUID(), message, timestamp, receivedTimestamp, false, true, ttl)
+
+        fun newReceived(message: String, timestamp: Long, ttl: Long): MessageInfo =
+            MessageInfo(randomUUID(), message, timestamp, currentTimestamp(), false, true, ttl)
     }
 
     init {
