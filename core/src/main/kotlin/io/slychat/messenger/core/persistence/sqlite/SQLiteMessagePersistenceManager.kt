@@ -55,12 +55,15 @@ VALUES
 
     override fun addMessage(userId: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
         addMessageReal(connection, userId, messageInfo)
+        if (!messageInfo.isSent)
+            removeFromQueueNoTransaction(connection, userId, listOf(messageInfo.id))
         messageInfo
     }
 
     override fun addMessages(userId: UserId, messages: List<MessageInfo>): Promise<List<MessageInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             messages.map { insertMessage(connection, userId, it) }
+            removeFromQueueNoTransaction(connection, userId, messages.filter { !it.isSent }.map { it.id })
             updateConversationInfo(connection, userId, false, messages.last().message, messages.last().timestamp, messages.size)
             messages
         }
@@ -197,42 +200,47 @@ VALUES
     override fun addToQueue(message: Package): Promise<Unit, Exception> = addToQueue(listOf(message))
 
     override fun addToQueue(messages: List<Package>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val sql = "INSERT INTO message_queue (address, message_id, timestamp, payload) VALUES (?, ?, ?, ?)"
+        val sql = "INSERT INTO message_queue (user_id, device_id, message_id, timestamp, payload) VALUES (?, ?, ?, ?, ?)"
         connection.batchInsertWithinTransaction(sql, messages) { stmt, queuedMessage ->
-            stmt.bind(1, queuedMessage.id.address.asString())
-            stmt.bind(2, queuedMessage.id.messageId)
-            stmt.bind(3, queuedMessage.timestamp)
-            stmt.bind(4, queuedMessage.payload)
+            stmt.bind(1, queuedMessage.id.address.id.long)
+            stmt.bind(2, queuedMessage.id.address.deviceId)
+            stmt.bind(3, queuedMessage.id.messageId)
+            stmt.bind(4, queuedMessage.timestamp)
+            stmt.bind(5, queuedMessage.payload)
         }
     }
 
-    private fun removeFromQueueNoTransaction(connection: SQLiteConnection, messageIds: List<PackageId>) {
-        messageIds.forEach { queuedMessage ->
-            connection.prepare("DELETE FROM message_queue WHERE address=? AND message_id=?").use { stmt ->
-                stmt.bind(1, queuedMessage.address.asString())
-                stmt.bind(2, queuedMessage.messageId)
+    private fun removeFromQueueNoTransaction(connection: SQLiteConnection, userId: UserId, messageIds: List<String>) {
+        messageIds.forEach { messageId ->
+            connection.prepare("DELETE FROM message_queue WHERE user_id=? AND message_id=?").use { stmt ->
+                stmt.bind(1, userId.long)
+                stmt.bind(2, messageId)
                 stmt.step()
             }
         }
     }
 
-    override fun removeFromQueue(messageId: PackageId): Promise<Unit, Exception> = removeFromQueue(listOf(messageId))
+    override fun removeFromQueue(packageId: PackageId): Promise<Unit, Exception> = removeFromQueue(listOf(packageId))
 
-    override fun removeFromQueue(messageIds: List<PackageId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun removeFromQueue(packageIds: List<PackageId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
-            removeFromQueueNoTransaction(connection, messageIds)
+            packageIds.forEach { packageId ->
+                removeFromQueueNoTransaction(connection, packageId.address.id, packageIds.map { it.messageId })
+            }
         }
     }
 
     override fun getQueuedMessages(): Promise<List<Package>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("SELECT address, message_id, timestamp, payload FROM message_queue").use { stmt ->
+        connection.prepare("SELECT user_id, device_id, message_id, timestamp, payload FROM message_queue").use { stmt ->
             stmt.map {
+                val userId = UserId(stmt.columnLong(0))
+                val address = SlyAddress(userId, stmt.columnInt(1))
                 val id = PackageId(
-                    SlyAddress.fromString(stmt.columnString(0))!!,
-                    stmt.columnString(1)
+                    address,
+                    stmt.columnString(2)
                 )
-                val timestamp = stmt.columnLong(2)
-                val message = stmt.columnString(3)
+                val timestamp = stmt.columnLong(3)
+                val message = stmt.columnString(4)
 
                 Package(id, timestamp, message)
             }

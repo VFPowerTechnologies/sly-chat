@@ -7,6 +7,7 @@ import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.MessageInfo
 import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.persistence.PackageId
+import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.test.withTimeAs
 import org.joda.time.DateTime
 import org.junit.After
@@ -139,6 +140,53 @@ class SQLiteMessagePersistenceManagerTest {
         assertEquals(ttl, messageInfo.ttl)
         assertTrue(messageInfo.isSent)
         assertFalse(messageInfo.isDelivered)
+    }
+
+    @Test
+    fun `addMessage should remove a corresponding queued message if it exists`() {
+        val userId = UserId(1)
+        createConvosFor(userId)
+
+        val messageId = randomUUID()
+        val address = SlyAddress(userId, 1)
+        val pkg = Package(PackageId(address, messageId), currentTimestamp(), "payload")
+
+        messagePersistenceManager.addToQueue(pkg).get()
+
+        val messageInfo = MessageInfo.newReceived(messageId, "message", currentTimestamp(), currentTimestamp(), 0)
+
+        messagePersistenceManager.addMessage(address.id, messageInfo).get()
+
+        val queued = messagePersistenceManager.getQueuedMessages().get()
+        assertTrue(queued.isEmpty(), "Queued messages not empty")
+    }
+
+    @Test
+    fun `addMessages should remove all corresponding messages if they exist`() {
+        val userId = UserId(1)
+        val address = SlyAddress(userId, 1)
+        createConvosFor(userId)
+
+        fun newReceivedMessage(i: Int): MessageInfo =
+            MessageInfo.newReceived("message $i", currentTimestamp())
+
+        val with = (0..1).map { newReceivedMessage(it) }
+        val withOut = (2..3).map { newReceivedMessage(it) }
+
+        val messages = ArrayList<MessageInfo>()
+        messages.addAll(withOut)
+        messages.addAll(with)
+
+        val packages = with.map { Package(PackageId(address, it.id), currentTimestamp(), it.message) }
+
+        messagePersistenceManager.addToQueue(packages).get()
+
+        messagePersistenceManager.addMessages(userId, messages).get()
+
+        val queued = messagePersistenceManager.getQueuedMessages().get()
+
+        assertTrue(queued.isEmpty(), "Queued messages not empty: $queued")
+
     }
 
     @Test

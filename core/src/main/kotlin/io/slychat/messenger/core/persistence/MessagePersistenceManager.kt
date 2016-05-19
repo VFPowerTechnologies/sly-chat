@@ -18,6 +18,8 @@ data class Package(
 interface MessagePersistenceManager {
     /**
      * Updates the conversation info for the given UserId.
+     *
+     * For received messages, must also delete the corresponding queued message.
      */
     fun addMessage(userId: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception>
 
@@ -41,9 +43,9 @@ interface MessagePersistenceManager {
 
     fun addToQueue(messages: List<Package>): Promise<Unit, Exception>
 
-    fun removeFromQueue(messageId: PackageId): Promise<Unit, Exception>
+    fun removeFromQueue(packageId: PackageId): Promise<Unit, Exception>
 
-    fun removeFromQueue(messageIds: List<PackageId>): Promise<Unit, Exception>
+    fun removeFromQueue(packageIds: List<PackageId>): Promise<Unit, Exception>
 
     fun getQueuedMessages(): Promise<List<Package>, Exception>
 }

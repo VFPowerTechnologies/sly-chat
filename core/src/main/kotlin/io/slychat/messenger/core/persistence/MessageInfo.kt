@@ -46,6 +46,9 @@ data class MessageInfo(
 
         fun newReceived(message: String, timestamp: Long, ttl: Long): MessageInfo =
             MessageInfo(randomUUID(), message, timestamp, currentTimestamp(), false, true, ttl)
+
+        fun newReceived(message: String, timestamp: Long): MessageInfo =
+            MessageInfo(randomUUID(), message, timestamp, currentTimestamp(), false, true, 0)
     }
 
     init {
