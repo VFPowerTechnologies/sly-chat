@@ -5,27 +5,15 @@ import com.almworks.sqlite4java.SQLiteJob
 import com.almworks.sqlite4java.SQLiteQueue
 import io.slychat.messenger.core.crypto.ciphers.CipherParams
 import io.slychat.messenger.core.crypto.hexify
-import io.slychat.messenger.core.crypto.randomPreKeyId
 import io.slychat.messenger.core.persistence.PersistenceManager
-import io.slychat.messenger.core.readResourceFileText
+import io.slychat.messenger.core.persistence.sqlite.migrations.DatabaseMigrationInitial
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import org.slf4j.LoggerFactory
 import java.io.File
 
 /** The latest database version number. */
-private val LATEST_DATABASE_VERSION = 1
-
-/** Table names in creation order. */
-private val TABLE_NAMES = arrayListOf(
-    "prekey_ids",
-    "signed_prekeys",
-    "unsigned_prekeys",
-    "contacts",
-    "conversation_info",
-    "signal_sessions",
-    "package_queue"
-)
+private val LATEST_DATABASE_VERSION = 2
 
 private data class InitializationResult(val initWasRequired: Boolean, val freshDatabase: Boolean)
 
@@ -53,12 +41,6 @@ class SQLitePersistenceManager(
         }
     }
 
-    private fun initializePreKeyIds(connection: SQLiteConnection) {
-        val nextSignedId = randomPreKeyId()
-        val nextUnsignedId = randomPreKeyId()
-        connection.exec("INSERT INTO prekey_ids (next_signed_id, next_unsigned_id) VALUES ($nextSignedId, $nextUnsignedId)")
-    }
-
     /**
      * Responsible for initial database creation.
      *
@@ -66,20 +48,7 @@ class SQLitePersistenceManager(
      */
     private fun initializeDatabase(connection: SQLiteConnection) {
         connection.withTransaction {
-            for (tableName in TABLE_NAMES) {
-                val sql = javaClass.readResourceFileText("/schema/$tableName.sql")
-                logger.debug("Creating table {}", tableName)
-                try {
-                    connection.exec(sql)
-                }
-                catch (t: Throwable) {
-                    logger.error("Creation of table {} failed", tableName, t)
-                    throw TableCreationFailedException(tableName, t)
-                }
-            }
-
-            initializePreKeyIds(connection)
-
+            DatabaseMigrationInitial().apply(connection)
             connection.exec("PRAGMA user_version = $LATEST_DATABASE_VERSION")
         }
     }
@@ -151,29 +120,13 @@ class SQLitePersistenceManager(
         }
     }
 
-    private fun readResourceAsString(path: String): String? =
-        javaClass.getResourceAsStream(path)?.use { it.reader(Charsets.UTF_8).readText() }
-
-    private fun getGeneralMigration(version: Int): String? =
-        readResourceAsString("/migrations/$version/general.sql")
-
-    private fun getConvoMigration(version: Int): String? =
-        readResourceAsString("/migrations/$version/convo.sql")
-
-    /**
-     * @param version Current database version number.
-     */
-    private fun applyGeneralMigration(connection: SQLiteConnection, version: Int, sql: String) {
-        throw UnsupportedOperationException("General migration not implemented")
-    }
-
-    private fun applyConvoMigration(connection: SQLiteConnection, version: Int, sqlTemplate: String) {
-        logger.info("Applying convo migration for {}", version)
-
-        ConversationTable.getConversationTableNames(connection).forEach { tableName ->
-            logger.info("Updating {}", tableName)
-            val sql = sqlTemplate.replace("%tableName%", tableName)
-            connection.exec(sql)
+    private fun getMigrationObject(version: Int): DatabaseMigration {
+        try {
+            val cls = Class.forName("io.slychat.messenger.core.persistence.sqlite.migrations.DatabaseMigration$version")
+            return cls.newInstance() as DatabaseMigration
+        }
+        catch (e: ClassNotFoundException) {
+            throw RuntimeException("No migration found for version=$version")
         }
     }
 
@@ -181,17 +134,10 @@ class SQLitePersistenceManager(
      * Applies incremental migrations from one version to another.
      */
     private fun migrateDatabase(connection: SQLiteConnection, from: Int, to: Int) {
-        //XXX maybe we should use a savepoint to undo the entire conversation if migration fails along the way?
+        //XXX maybe we should use a savepoint to undo the entire conversion if migration fails along the way?
         for (version in from..to-1) {
             connection.withTransaction {
-                val general = getGeneralMigration(version)
-                if (general != null)
-                    applyGeneralMigration(connection, version, general)
-
-                val convo = getConvoMigration(version)
-                if (convo != null)
-                    applyConvoMigration(connection, version, convo)
-
+                getMigrationObject(version).apply(connection)
                 setCurrentDatabaseVersion(connection, version+1)
             }
         }
