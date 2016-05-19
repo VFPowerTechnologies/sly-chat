@@ -3,29 +3,32 @@ package io.slychat.messenger.services
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.core.relay.ServerReceivedMessage
 import io.slychat.messenger.services.crypto.*
-import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.ui.alwaysUi
+import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
-import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Scheduler
 import rx.subjects.PublishSubject
 import java.util.*
 
-data class OfflineMessage(val from: SlyAddress, val timestamp: Int, val encryptedMessage: EncryptedMessageV0)
 data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
 data class ContactRequest(val info: ContactInfo)
 
-data class QueuedMessage(val to: UserId, val messageInfo: MessageInfo, val connectionTag: Int)
-data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessages: List<EncryptedMessageV0>)
+data class EncryptedMessageInfo(val messageId: String, val payload: EncryptedPackagePayloadV0)
+
+data class QueuedSendMessage(val to: UserId, val messageInfo: MessageInfo, val connectionTag: Int)
+data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessages: List<EncryptedMessageInfo>)
 
 interface EncryptionResult
 data class EncryptionOk(val encryptedMessages: List<MessageData>, val connectionTag: Int) : EncryptionResult
@@ -33,7 +36,6 @@ data class EncryptionPreKeyFetchFailure(val cause: Throwable): EncryptionResult
 data class EncryptionUnknownFailure(val cause: Throwable): EncryptionResult
 
 data class DecryptionResult(val userId: UserId, val result: MessageListDecryptionResult)
-data class OfflineDecryptionResult(val results: Map<UserId, MessageListDecryptionResult>)
 
 interface MessageSendResult {
     val messageId: String
@@ -67,13 +69,11 @@ class MessengerService(
     private val contactRequestsSubject = PublishSubject.create<List<ContactRequest>>()
     val contactRequests: Observable<List<ContactRequest>> = contactRequestsSubject
 
-    private val sendMessageQueue = ArrayDeque<QueuedMessage>()
-    private var currentSendMessage: QueuedMessage? = null
+    private val sendMessageQueue = ArrayDeque<QueuedSendMessage>()
+    private var currentSendMessage: QueuedSendMessage? = null
 
     private val receivedMessageQueue = ArrayDeque<QueuedReceivedMessage>()
     private var currentReceivedMessage: QueuedReceivedMessage? = null
-
-    private var currentOffline: Deferred<Unit, Exception>? = null
 
     init {
         relayClientManager.events.subscribe { onRelayEvent(it) }
@@ -87,15 +87,21 @@ class MessengerService(
             processDecryptionResult(it.userId, it.result)
         }
 
-        messageCipherService.offlineDecryptedMessages.observeOn(scheduler).subscribe {
-            processOfflineDecryption(it)
-        }
-
         application.userSessionAvailable.subscribe { isAvailable ->
-            if (isAvailable)
+            if (isAvailable) {
+                initializeReceiveQueue()
                 messageCipherService.start()
-            else
+            }
+            else {
+                receivedMessageQueue.clear()
                 messageCipherService.shutdown()
+            }
+        }
+    }
+
+    private fun initializeReceiveQueue() {
+        messagePersistenceManager.getQueuedPackages() successUi { packages ->
+            addPackagesToReceivedQueue(packages)
         }
     }
 
@@ -123,7 +129,7 @@ class MessengerService(
         if (!relayClientManager.isOnline)
             return
 
-        sendMessageQueue.add(QueuedMessage(userId, messageInfo, relayClientManager.connectionTag))
+        sendMessageQueue.add(QueuedSendMessage(userId, messageInfo, relayClientManager.connectionTag))
         processSendMessageQueue()
     }
 
@@ -237,32 +243,27 @@ class MessengerService(
         }
     }
 
-    private fun processDecryptionResult(from: UserId, result: MessageListDecryptionResult): Promise<Unit, Exception> {
-        logFailedDecryptionResults(from, result)
+    private fun processDecryptionResult(from: UserId, result: MessageListDecryptionResult) {
+        handleFailedDecryptionResults(from, result)
 
-        val messages = if (result.succeeded.isNotEmpty())
-            hashMapOf(from to result.succeeded)
-        else
-            hashMapOf()
+        val messages = result.succeeded
 
         val objectMapper = ObjectMapper()
-        val messageStrings = messages.mapValues {
-            it.value.map {
-                val message = objectMapper.readValue(it, SingleUserTextMessage::class.java)
-                ReceivedMessageInfo(message.message, message.timestamp)
-            }
+        val messageStrings = messages.map {
+            val message = objectMapper.readValue(it.result, SingleUserTextMessage::class.java)
+            MessageInfo.newReceived(it.messageId, message.message, message.timestamp, currentTimestamp(), 0)
         }
 
-        return messagePersistenceManager.addReceivedMessages(messageStrings) mapUi { groupedMessageInfo ->
-            val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
-            bundles.forEach {
-                newMessagesSubject.onNext(it.value)
-            }
+        messagePersistenceManager.addMessages(from, messageStrings) mapUi { messageInfo ->
+            val bundle = MessageBundle(from, messageInfo)
+            newMessagesSubject.onNext(bundle)
 
             currentReceivedMessage = null
             receivedMessageQueue.pop()
 
             processReceivedMessageQueue()
+        } fail { e ->
+            log.error("Unable to store decrypted messages: {}", e.message, e)
         }
     }
 
@@ -291,26 +292,54 @@ class MessengerService(
 
     /** Writes the received message and then fires the new messages subject. */
     private fun writeReceivedSelfMessage(from: UserId, decryptedMessage: String): Promise<Unit, Exception> {
-        return messagePersistenceManager.addReceivedMessage(from, ReceivedMessageInfo(decryptedMessage, DateTime().millis), 0) mapUi { messageInfo ->
+        val messageInfo = MessageInfo.newReceived(decryptedMessage, currentTimestamp(), 0)
+        return messagePersistenceManager.addMessage(from, messageInfo) mapUi { messageInfo ->
             newMessagesSubject.onNext(MessageBundle(from, listOf(messageInfo)))
         }
     }
 
+    private fun addPackagesToReceivedQueue(packages: List<Package>) {
+        val grouped = packages.groupBy { it.id.address }
+        val sortedByTimestamp = grouped.mapValues { it.value.sortedBy { it.timestamp } }
+
+        sortedByTimestamp.map { e ->
+            val encryptedMessages = e.value.map {
+                val payload = deserializeEncryptedPackagePayload(it.payload)
+                EncryptedMessageInfo(it.id.messageId, payload)
+            }
+            receivedMessageQueue.add(QueuedReceivedMessage(e.key, encryptedMessages))
+            processReceivedMessageQueue()
+        }
+    }
+
     private fun handleReceivedMessage(event: ReceivedMessage) {
-        val encryptedMessage = deserializeEncryptedMessage(event.content)
-        receivedMessageQueue.add(QueuedReceivedMessage(event.from, listOf(encryptedMessage)))
-        processReceivedMessageQueue()
+        val timestamp = currentTimestamp()
+        //XXX this is kinda hacky...
+        //the issue is that since offline messages are deserialized via jackson, using a byte array would require the
+        //relay or web server to store them as base64; need to come back and fix this stuff
+        val pkg = Package(PackageId(event.from, randomUUID()), timestamp, String(event.content, Charsets.UTF_8))
+        val packages = listOf(pkg)
+
+        messagePersistenceManager.addToQueue(packages) alwaysUi {
+            addPackagesToReceivedQueue(packages)
+        } fail { e ->
+            log.error("Unable to add encrypted messages to queue: {}", e.message, e)
+        }
     }
 
     private fun handleServerRecievedMessage(event: ServerReceivedMessage) {
         processMessageSendResult(MessageSendOk(event.to, event.messageId))
     }
 
-    private fun logFailedDecryptionResults(userId: UserId, result: MessageListDecryptionResult) {
-        //XXX no idea what to do here really
-        if (result.failed.isNotEmpty()) {
-            log.error("Unable to decrypt {} messages for {}", result.failed.size, userId)
-            result.failed.forEach { log.error("Message decryption failure: {}", it.cause.message, it.cause) }
+    private fun handleFailedDecryptionResults(userId: UserId, result: MessageListDecryptionResult) {
+        if (result.failed.isEmpty())
+            return
+
+        log.error("Unable to decrypt {} messages for {}", result.failed.size, userId)
+        result.failed.forEach { log.error("Message decryption failure: {}", it.result.cause.message, it.result.cause) }
+
+        messagePersistenceManager.removeFromQueue(userId, result.failed.map { it.messageId }).fail { e ->
+            log.error("Unable to remove failed decryption packages from queue: {}", e.message, e)
         }
     }
 
@@ -322,14 +351,16 @@ class MessengerService(
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         return if (!isSelfMessage) {
-            messagePersistenceManager.addSentMessage(userId, message, 0) successUi { messageInfo ->
+            val messageInfo = MessageInfo.newSent(message, 0)
+
+            messagePersistenceManager.addMessage(userId, messageInfo) successUi { messageInfo ->
                 addToQueue(userId, messageInfo)
             }
         }
         else {
+            val messageInfo = MessageInfo.newSelfSent(message, 0)
             //we need to insure that the send message info is sent back to the ui before the ServerReceivedMessage is fired
-            //this is stupid but I don't feel like injecting an rx scheduler
-            messagePersistenceManager.addSelfMessage(userId, message) map { messageInfo ->
+            messagePersistenceManager.addMessage(userId, messageInfo) map { messageInfo ->
                 Thread.sleep(30)
                 messageInfo
             } successUi { messageInfo ->
@@ -360,51 +391,17 @@ class MessengerService(
 
     /* Other */
 
-    private fun processOfflineDecryption(result: OfflineDecryptionResult) {
-        val d = currentOffline
-        currentOffline = null
-        if (d == null) {
-            log.error("processOfflineDecryption called with no deferred set")
-            return
-        }
-
-        val results = result.results
-
-        results.forEach {
-            logFailedDecryptionResults(it.key, it.value)
-        }
-
-        val objectMapper = ObjectMapper()
-        val groupedMessages = results
-            .mapValues {
-                it.value.succeeded.map {
-                    val message = objectMapper.readValue(it, SingleUserTextMessage::class.java)
-                    ReceivedMessageInfo(message.message,  message.timestamp)
-                }
-            }
-            .filter { it.value.isNotEmpty() }
-
-        messagePersistenceManager.addReceivedMessages(groupedMessages) mapUi { groupedMessageInfo ->
-            val bundles = groupedMessageInfo.mapValues { e -> MessageBundle(e.key, e.value) }
-            bundles.forEach {
-                newMessagesSubject.onNext(it.value)
-            }
-        } success { d.resolve(Unit) } fail { d.reject(it) }
-    }
-
-    //should only ever be called once
-    fun addOfflineMessages(offlineMessages: List<OfflineMessage>): Promise<Unit, Exception> {
-        if (currentOffline != null)
-            throw IllegalStateException("addOfflineMessages called with pending request")
-
-        val grouped = offlineMessages.groupBy { it.from }
-        val sortedByTimestamp = grouped.mapValues { it.value.sortedBy { it.timestamp } }
-        val groupedEncryptedMessages = sortedByTimestamp.mapValues { it.value.map { it.encryptedMessage } }
-
-        messageCipherService.decryptOffline(groupedEncryptedMessages)
-
+    fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception> {
         val d = deferred<Unit, Exception>()
-        currentOffline = d
+
+        messagePersistenceManager.addToQueue(offlineMessages) successUi {
+            d.resolve(Unit)
+
+            addPackagesToReceivedQueue(offlineMessages)
+        } failUi {
+            d.reject(it)
+        }
+
         return d.promise
     }
 }

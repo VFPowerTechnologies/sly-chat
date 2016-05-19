@@ -5,20 +5,13 @@ import nl.komponents.kovenant.Promise
 
 interface MessagePersistenceManager {
     /**
-     * Appends a new message for the given user. Auto-generates a unique message id, along with a timestamp.
+     * Updates the conversation info for the given UserId.
      *
-     * @param userId
-     * @param message The message content itself.
-     * @param ttl Unix time in seconds until when the message should be kept. If 0, is kept indefinitely, if < 0 is to be purged on startup.
+     * For received messages, must also delete the corresponding queued message.
      */
-    fun addSentMessage(userId: UserId, message: String, ttl: Long): Promise<MessageInfo, Exception>
+    fun addMessage(userId: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception>
 
-    fun addReceivedMessage(from: UserId, info: ReceivedMessageInfo, ttl: Long): Promise<MessageInfo, Exception>
-
-    fun addSelfMessage(userId: UserId, message: String): Promise<MessageInfo, Exception>
-
-    /** Stores the given list of received messages in the given order. There must not be any empty message lists. */
-    fun addReceivedMessages(messages: Map<UserId, List<ReceivedMessageInfo>>): Promise<Map<UserId, List<MessageInfo>>, Exception>
+    fun addMessages(userId: UserId, messages: List<MessageInfo>): Promise<List<MessageInfo>, Exception>
 
     /** Marks a sent message as being received and updates its timestamp to the current time. */
     fun markMessageAsDelivered(userId: UserId, messageId: String): Promise<MessageInfo, Exception>
@@ -32,4 +25,17 @@ interface MessagePersistenceManager {
     fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception>
 
     fun deleteAllMessages(userId: UserId): Promise<Unit, Exception>
+
+    /** Stores a received message prior to decryption. */
+    fun addToQueue(pkg: Package): Promise<Unit, Exception>
+
+    fun addToQueue(packages: List<Package>): Promise<Unit, Exception>
+
+    fun removeFromQueue(packageId: PackageId): Promise<Unit, Exception>
+
+    fun removeFromQueue(userId: UserId, messageIds: List<String>): Promise<Unit, Exception>
+
+    fun getQueuedPackages(userId: UserId): Promise<List<Package>, Exception>
+
+    fun getQueuedPackages(): Promise<List<Package>, Exception>
 }

@@ -1,9 +1,13 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteException
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.MessageInfo
-import io.slychat.messenger.core.persistence.ReceivedMessageInfo
+import io.slychat.messenger.core.persistence.Package
+import io.slychat.messenger.core.persistence.PackageId
+import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.test.withTimeAs
 import org.joda.time.DateTime
 import org.junit.After
@@ -11,7 +15,10 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import java.util.*
-import kotlin.test.*
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 private data class LastConversationInfo(val unreadCount: Int, val lastMessage: String?, val lastTimestamp: Long?)
 
@@ -103,10 +110,12 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     fun addMessage(userId: UserId, isSent: Boolean, message: String, ttl: Long): MessageInfo {
-        return if (isSent)
-            messagePersistenceManager.addSentMessage(userId, message, ttl).get()
+        val messageInfo = if (isSent)
+            MessageInfo.newSent(message, ttl)
         else
-            messagePersistenceManager.addReceivedMessage(userId,  ReceivedMessageInfo(message, DateTime().millis), ttl).get()
+             MessageInfo.newReceived(message, currentTimestamp(), ttl)
+
+        return messagePersistenceManager.addMessage(userId, messageInfo).get()
     }
 
     @Test
@@ -134,6 +143,52 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
+    fun `addMessage should remove a corresponding queued message if it exists`() {
+        val userId = UserId(1)
+        createConvosFor(userId)
+
+        val messageId = randomUUID()
+        val address = SlyAddress(userId, 1)
+        val pkg = Package(PackageId(address, messageId), currentTimestamp(), "payload")
+
+        messagePersistenceManager.addToQueue(pkg).get()
+
+        val messageInfo = MessageInfo.newReceived(messageId, "message", currentTimestamp(), currentTimestamp(), 0)
+
+        messagePersistenceManager.addMessage(address.id, messageInfo).get()
+
+        val queued = messagePersistenceManager.getQueuedPackages(userId).get()
+        assertTrue(queued.isEmpty(), "Queued packages not empty")
+    }
+
+    @Test
+    fun `addMessages should remove all corresponding messages if they exist`() {
+        val userId = UserId(1)
+        val address = SlyAddress(userId, 1)
+        createConvosFor(userId)
+
+        fun newReceivedMessage(i: Int): MessageInfo =
+            MessageInfo.newReceived("message $i", currentTimestamp())
+
+        val with = (0..1).map { newReceivedMessage(it) }
+        val withOut = (2..3).map { newReceivedMessage(it) }
+
+        val messages = ArrayList<MessageInfo>()
+        messages.addAll(withOut)
+        messages.addAll(with)
+
+        val packages = with.map { Package(PackageId(address, it.id), currentTimestamp(), it.message) }
+
+        messagePersistenceManager.addToQueue(packages).get()
+
+        messagePersistenceManager.addMessages(userId, messages).get()
+
+        val queued = messagePersistenceManager.getQueuedPackages(userId).get()
+
+        assertTrue(queued.isEmpty(), "Queued packages not empty: $queued")
+    }
+
+    @Test
     fun `addSentMessage should add a valid received message`() {
         createConvosFor(contact)
 
@@ -143,17 +198,17 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
-    fun `addReceivedMessageInfo should update conversation info`() {
+    fun `addMessageInfo should update conversation info`() {
         createConvosFor(contact)
 
         val timestamp = DateTime().millis
 
-        val info = ReceivedMessageInfo("message", timestamp)
-        messagePersistenceManager.addReceivedMessage(contact, info, 0).get()
+        val messageInfo = MessageInfo.newSent("message", 0)
+        messagePersistenceManager.addMessage(contact, messageInfo).get()
         val lastConversationInfo = getLastConversationInfo(contact) ?: throw AssertionError("No last conversation info")
 
         assertEquals(timestamp, lastConversationInfo.lastTimestamp, "Timestamp wasn't updated")
-        assertEquals(info.message, lastConversationInfo.lastMessage, "Message wasn't updated")
+        assertEquals(messageInfo.message, lastConversationInfo.lastMessage, "Message wasn't updated")
     }
 
     @Test
@@ -173,49 +228,19 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
-    fun `addReceivedMessages should add all messages`() {
+    fun `addMessages should add all messages`() {
         val user1 = UserId(1)
-        val base = DateTime()
+        val base = currentTimestamp()
         val user1Messages = listOf(
-            ReceivedMessageInfo("message 1", base.millis),
-            ReceivedMessageInfo("message 2", base.millis + 1000)
-        )
-        val user2 = UserId(2)
-        val user2Messages = listOf(
-            ReceivedMessageInfo("message 3", base.millis + 2000),
-            ReceivedMessageInfo("message 4", base.millis + 4000)
+            MessageInfo.newReceived("message 1", base, 0),
+            MessageInfo.newReceived("message 2", base + 1000, 0)
         )
 
-        createConvosFor(user1, user2)
+        createConvosFor(user1)
 
-        val messages = mapOf(
-            user1 to user1Messages,
-            user2 to user2Messages
-        )
+        val messageInfoMap = messagePersistenceManager.addMessages(user1, user1Messages).get()
 
-        val messageInfoMap = messagePersistenceManager.addReceivedMessages(messages).get()
-
-        val u1Messages = assertNotNull(messageInfoMap[user1], "Missing UserId(1) messages")
-        val u2Messages = assertNotNull(messageInfoMap[user2], "Missing UserId(2) messages")
-
-        for ((original, got) in listOf(user1Messages to u1Messages, user2Messages to u2Messages)) {
-            assertEquals(2, got.size)
-
-            val sorted = got.sortedBy { it.timestamp }
-                .map { ReceivedMessageInfo(it.message, it.timestamp) }
-
-            assertEquals(original, sorted, "Invalid messages")
-        }
-    }
-
-    @Test
-    fun `addSelfMessage should set receivedTimestamp`() {
-        val self = UserId(1)
-        createConvosFor(self)
-
-        val messageInfo = messagePersistenceManager.addSelfMessage(self, "message").get()
-
-        assertEquals(messageInfo.timestamp, messageInfo.receivedTimestamp, "Received timestamp isn't set")
+        assertEquals(user1Messages, messageInfoMap, "MessageInfo lists don't match")
     }
 
     @Test
@@ -338,5 +363,64 @@ class SQLiteMessagePersistenceManagerTest {
         //assertEquals(expectedUnread, lastConversationInfo.unreadCount, "Invalid unreadCount")
         assertEquals(lastMessage.message, lastConversationInfo.lastMessage, "lastMessage doesn't match")
         assertEquals(lastMessage.timestamp, lastConversationInfo.lastTimestamp, "lastTimestamp doesn't match")
+    }
+
+    private fun queuedPackageFromInt(address: SlyAddress, i: Int): Package {
+        return Package(
+            PackageId(address, "$i"),
+            currentTimestamp() + (i * 10),
+            "message $i"
+        )
+    }
+
+    @Test
+    fun `addToQueue should store the given messages`() {
+        val address = SlyAddress(UserId(1), 1)
+        val queuedMessages = (0..1).map { queuedPackageFromInt(address, it) }
+
+        messagePersistenceManager.addToQueue(queuedMessages).get()
+        val got = messagePersistenceManager.getQueuedPackages().get()
+
+        val expected = queuedMessages.sortedBy { it.timestamp }
+        val gotSorted = got.sortedBy { it.timestamp }
+
+        assertEquals(queuedMessages.size, gotSorted.size, "Invalid number of messages")
+        assertEquals(expected, gotSorted, "Invalid messages")
+    }
+
+    @Test
+    fun `getQueuedPackages(UserId) should only return packages for the given user`() {
+        val address1 = SlyAddress(UserId(1), 1)
+        val address2 = SlyAddress(UserId(2), 1)
+        val queuedPackages1 = (0..1).map { queuedPackageFromInt(address1, it) }
+        val queuedPackages2 = (0..1).map { queuedPackageFromInt(address2, it) }
+
+        messagePersistenceManager.addToQueue(queuedPackages1).get()
+        messagePersistenceManager.addToQueue(queuedPackages2).get()
+
+        val got = messagePersistenceManager.getQueuedPackages(address1.id).get()
+
+        assertEquals(queuedPackages1, got, "Packages don't match")
+    }
+
+    @Test
+    fun `removeFromQueue should remove the given messages`() {
+        val address = SlyAddress(UserId(1), 1)
+        val queuedPackages = (0..3).map { queuedPackageFromInt(address, it) }
+
+        val toRemove = queuedPackages.subList(0, 2)
+        val toKeep = queuedPackages.subList(2, 4)
+
+        messagePersistenceManager.addToQueue(queuedPackages).get()
+        messagePersistenceManager.removeFromQueue(address.id, toRemove.map { it.id.messageId }).get()
+
+        val remaining = messagePersistenceManager.getQueuedPackages().get()
+
+        assertEquals(toKeep.size, remaining.size, "Invalid number of messages")
+
+        val remainingSorted = remaining.sortedBy { it.timestamp }
+        val toKeepSorted = toKeep.sortedBy { it.timestamp }
+
+        assertEquals(toKeepSorted, remainingSorted, "Invalid messages")
     }
 }

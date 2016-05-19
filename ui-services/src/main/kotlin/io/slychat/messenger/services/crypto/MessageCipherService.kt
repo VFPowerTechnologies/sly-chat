@@ -22,26 +22,20 @@ import rx.subjects.PublishSubject
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 
+data class MessageDecryptionResult<T>(
+    val messageId: String,
+    val result: T
+)
+
 data class DecryptionFailure(val cause: Throwable)
 data class MessageListDecryptionResult(
-    val succeeded: List<ByteArray>,
-    val failed: List<DecryptionFailure>
-) {
-    fun merge(other: MessageListDecryptionResult): MessageListDecryptionResult {
-        val succeededMerged = ArrayList(succeeded)
-        succeededMerged.addAll(other.succeeded)
-
-        val failedMerged = ArrayList(failed)
-        failedMerged.addAll(other.failed)
-
-        return MessageListDecryptionResult(succeededMerged, failedMerged)
-    }
-}
+    val succeeded: List<MessageDecryptionResult<ByteArray>>,
+    val failed: List<MessageDecryptionResult<DecryptionFailure>>
+)
 
 private interface CipherWork
 private data class EncryptionWork(val userId: UserId, val message: ByteArray, val connectionTag: Int) : CipherWork
-private data class DecryptionWork(val address: SlyAddress, val encryptedMessages: List<EncryptedMessageV0>) : CipherWork
-private data class OfflineDecryptionWork(val encryptedMessages: Map<SlyAddress, List<EncryptedMessageV0>>) : CipherWork
+private data class DecryptionWork(val address: SlyAddress, val encryptedMessages: List<EncryptedMessageInfo>) : CipherWork
 private class NoMoreWork : CipherWork
 
 /** Represents a single message to a user. */
@@ -50,7 +44,7 @@ private class NoMoreWork : CipherWork
 data class MessageData(
     val deviceId: Int,
     val registrationId: Int,
-    val payload: EncryptedMessageV0
+    val payload: EncryptedPackagePayloadV0
 )
 
 class MessageCipherService(
@@ -69,9 +63,6 @@ class MessageCipherService(
 
     private val decryptionSubject = PublishSubject.create<DecryptionResult>()
     val decryptedMessages: Observable<DecryptionResult> = decryptionSubject
-
-    private val offlineSubject = PublishSubject.create<OfflineDecryptionResult>()
-    val offlineDecryptedMessages = offlineSubject
 
     fun start() {
         if (thread != null)
@@ -97,11 +88,7 @@ class MessageCipherService(
         workQueue.add(EncryptionWork(userId, message, connectionTag))
     }
 
-    fun decryptOffline(encryptedMessages: Map<SlyAddress, List<EncryptedMessageV0>>) {
-       workQueue.add(OfflineDecryptionWork(encryptedMessages))
-    }
-
-    fun decrypt(address: SlyAddress, messages: List<EncryptedMessageV0>) {
+    fun decrypt(address: SlyAddress, messages: List<EncryptedMessageInfo>) {
         workQueue.add(DecryptionWork(address,  messages))
     }
 
@@ -112,7 +99,6 @@ class MessageCipherService(
             when (work) {
                 is EncryptionWork -> handleEncryption(work)
                 is DecryptionWork -> handleDecryption(work)
-                is OfflineDecryptionWork -> handleOfflineDecryption(work)
                 is NoMoreWork -> break@loop
                 else -> {
                     println("Unknown work type")
@@ -138,7 +124,7 @@ class MessageCipherService(
                     else -> throw RuntimeException("Invalid message type: ${encrypted.javaClass.name}")
                 }
 
-                val m = EncryptedMessageV0(isPreKey, encrypted.serialize())
+                val m = EncryptedPackagePayloadV0(isPreKey, encrypted.serialize())
                 MessageData(deviceId, sessionCipher.remoteRegistrationId, m)
             }
 
@@ -151,10 +137,10 @@ class MessageCipherService(
         encryptionSubject.onNext(result)
     }
 
-    private fun decryptEncryptedMessage(sessionCipher: SessionCipher, encryptedMessage: EncryptedMessageV0): ByteArray {
-        val payload = encryptedMessage.payload
+    private fun decryptEncryptedMessage(sessionCipher: SessionCipher, encryptedPackagePayload: EncryptedPackagePayloadV0): ByteArray {
+        val payload = encryptedPackagePayload.payload
 
-        val messageData = if (encryptedMessage.isPreKeyWhisper)
+        val messageData = if (encryptedPackagePayload.isPreKeyWhisper)
             sessionCipher.decrypt(PreKeySignalMessage(payload))
         else
             sessionCipher.decrypt(SignalMessage(payload))
@@ -162,41 +148,25 @@ class MessageCipherService(
         return messageData
     }
 
-    private fun decryptMessagesForUser(address: SlyAddress, encryptedMessages: List<EncryptedMessageV0>): MessageListDecryptionResult {
-        val failed = ArrayList<DecryptionFailure>()
-        val succeeded = ArrayList<ByteArray>()
+    private fun decryptMessagesForUser(address: SlyAddress, encryptedMessages: List<EncryptedMessageInfo>): MessageListDecryptionResult {
+        val failed = ArrayList<MessageDecryptionResult<DecryptionFailure>>()
+        val succeeded = ArrayList<MessageDecryptionResult<ByteArray>>()
 
         val sessionCipher = SessionCipher(signalStore, address.toSignalAddress())
 
-        encryptedMessages.forEach { encryptedMessage ->
+        encryptedMessages.forEach { encryptedMessageInfo ->
             try {
-                val message = decryptEncryptedMessage(sessionCipher, encryptedMessage)
-                succeeded.add(message)
+                val message = decryptEncryptedMessage(sessionCipher, encryptedMessageInfo.payload)
+                val result = MessageDecryptionResult(encryptedMessageInfo.messageId, message)
+                succeeded.add(result)
             }
             catch (e: Throwable) {
-                failed.add(DecryptionFailure(e))
+                val result = MessageDecryptionResult(encryptedMessageInfo.messageId, DecryptionFailure(e))
+                failed.add(result)
             }
         }
 
         return MessageListDecryptionResult(succeeded, failed)
-    }
-
-    private fun handleOfflineDecryption(work: OfflineDecryptionWork) {
-        //here we map from possible multiple KeyTapAddresses of the same user to the same user id
-        val result = HashMap<UserId, MessageListDecryptionResult>()
-
-        work.encryptedMessages.forEach { entry ->
-            val address = entry.key
-            val decrypted = decryptMessagesForUser(address, entry.value)
-
-            val existing = result[address.id]
-            if (existing == null)
-                result[address.id] = decrypted
-            else
-                result[address.id] = existing.merge(decrypted)
-        }
-
-        offlineSubject.onNext(OfflineDecryptionResult(result))
     }
 
     private fun handleDecryption(work: DecryptionWork) {

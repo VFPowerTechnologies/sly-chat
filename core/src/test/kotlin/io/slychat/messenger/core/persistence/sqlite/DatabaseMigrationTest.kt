@@ -1,6 +1,7 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
+import com.almworks.sqlite4java.SQLiteException
 import io.slychat.messenger.core.test.withTempFile
 import org.junit.BeforeClass
 import org.junit.Test
@@ -66,6 +67,20 @@ class DatabaseMigrationTest {
         assertTrue(sql.contains(colDef, true), "Missing column def: $colDef")
     }
 
+    fun assertTableExists(connection: SQLiteConnection, tableName: String) {
+        try {
+            connection.prepare("SELECT 1 FROM $tableName").use { stmt ->
+                stmt.step()
+            }
+        }
+        catch (e: SQLiteException) {
+            if (e.message?.contains("no such table") ?: false)
+                throw AssertionError("Table $tableName is missing")
+            else
+                throw e
+        }
+    }
+
     fun check0To1(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         ConversationTable.getConversationTableNames(connection).forEach { tableName ->
             assertColDef(connection, tableName, "received_timestamp INTEGER NOT NULL")
@@ -86,6 +101,17 @@ class DatabaseMigrationTest {
     fun `migration 0 to 1`() {
         withTestDatabase(0, 1) { persistenceManager, connection ->
             check0To1(persistenceManager, connection)
+        }
+    }
+
+    fun check1To2(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertTableExists(connection, "package_queue")
+    }
+
+    @Test
+    fun `migration 1 to 2`() {
+        withTestDatabase(1, 2) { persistenceManager, connection ->
+            check1To2(persistenceManager, connection)
         }
     }
 }

@@ -7,7 +7,7 @@ data class SerializedOfflineMessage(
     @JsonProperty("from")
     val from: SlyAddress,
     @JsonProperty("timestamp")
-    val timestamp: Int,
+    val timestamp: Long,
     @JsonProperty("message")
     val serializedMessage: String
 )
