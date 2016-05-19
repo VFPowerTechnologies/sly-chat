@@ -242,7 +242,6 @@ class MessengerService(
         val objectMapper = ObjectMapper()
         val messageStrings = messages.map {
             val message = objectMapper.readValue(it.result, SingleUserTextMessage::class.java)
-            ReceivedMessageInfo(message.message, message.timestamp)
             MessageInfo.newReceived(it.messageId, message.message, message.timestamp, currentTimestamp(), 0)
         }
 
