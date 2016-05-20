@@ -12,9 +12,8 @@ import io.slychat.messenger.core.relay.ServerReceivedMessage
 import io.slychat.messenger.services.crypto.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
+import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
-import nl.komponents.kovenant.ui.alwaysUi
-import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -100,6 +99,7 @@ class MessengerService(
     }
 
     private fun initializeReceiveQueue() {
+        //FIXME need to only get queued packages for contacts that exist
         messagePersistenceManager.getQueuedPackages() successUi { packages ->
             addPackagesToReceivedQueue(packages)
         }
@@ -320,8 +320,14 @@ class MessengerService(
         val pkg = Package(PackageId(event.from, randomUUID()), timestamp, String(event.content, Charsets.UTF_8))
         val packages = listOf(pkg)
 
-        messagePersistenceManager.addToQueue(packages) alwaysUi {
-            addPackagesToReceivedQueue(packages)
+        messagePersistenceManager.addToQueue(packages) bind {
+            contactsPersistenceManager.exists(event.from.id) successUi { exists ->
+                if (exists)
+                    addPackagesToReceivedQueue(packages)
+                else {
+                    //TODO
+                }
+            }
         } fail { e ->
             log.error("Unable to add encrypted messages to queue: {}", e.message, e)
         }
@@ -394,11 +400,25 @@ class MessengerService(
     fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception> {
         val d = deferred<Unit, Exception>()
 
-        messagePersistenceManager.addToQueue(offlineMessages) successUi {
+        messagePersistenceManager.addToQueue(offlineMessages) success {
             d.resolve(Unit)
 
-            addPackagesToReceivedQueue(offlineMessages)
-        } failUi {
+            val users = HashSet<UserId>()
+            users.addAll(offlineMessages.map { it.id.address.id })
+
+            contactsPersistenceManager.exists(users) successUi { exists ->
+                val missing = HashSet(users)
+                missing.removeAll(exists)
+
+                //TODO
+                val toProcess = if (missing.isNotEmpty())
+                    offlineMessages.filter { exists.contains(it.id.address.id) }
+                else
+                    offlineMessages
+
+                addPackagesToReceivedQueue(toProcess)
+            }
+        } fail {
             d.reject(it)
         }
 
