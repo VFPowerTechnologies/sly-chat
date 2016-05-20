@@ -3,7 +3,6 @@ package io.slychat.messenger.services.ui.impl
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.accountupdate.*
 import io.slychat.messenger.core.persistence.AccountInfo
-import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.ui.UIAccountModificationService

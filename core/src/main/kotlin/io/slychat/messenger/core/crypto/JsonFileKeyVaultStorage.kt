@@ -1,8 +1,6 @@
 package io.slychat.messenger.core.crypto
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.slychat.messenger.core.http.slurpInputStreamReader
-import io.slychat.messenger.core.http.slurpInputStreamReader
 import java.io.*
 
 /** Implementation of a KeyVaultStorage that stores its data in a json file on disk. */

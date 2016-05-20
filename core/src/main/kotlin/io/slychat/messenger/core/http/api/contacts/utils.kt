@@ -3,7 +3,6 @@ package io.slychat.messenger.core.http.api.contacts
 
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.*
-import io.slychat.messenger.core.crypto.*
 import org.spongycastle.crypto.digests.SHA256Digest
 
 private fun UserId.toByteArray(): ByteArray =

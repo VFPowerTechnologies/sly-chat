@@ -1,13 +1,11 @@
 package io.slychat.messenger.core.relay.base.netty
 
-import io.slychat.messenger.core.relay.base.HEADER_SIZE
-import io.slychat.messenger.core.relay.base.HEADER_SIZE
-import io.slychat.messenger.core.relay.base.RelayMessage
-import io.slychat.messenger.core.relay.base.headerToByteArray
-import io.slychat.messenger.core.relay.base.headerToByteArray
 import io.netty.channel.ChannelHandlerAdapter
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelPromise
+import io.slychat.messenger.core.relay.base.HEADER_SIZE
+import io.slychat.messenger.core.relay.base.RelayMessage
+import io.slychat.messenger.core.relay.base.headerToByteArray
 
 /** Handles converting client->server messages. */
 class ClientMessageHandler : ChannelHandlerAdapter() {

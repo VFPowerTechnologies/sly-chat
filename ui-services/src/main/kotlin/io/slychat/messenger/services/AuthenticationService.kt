@@ -3,7 +3,6 @@ package io.slychat.messenger.services
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.div
-import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
@@ -11,7 +10,6 @@ import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonKeyVaultPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
-import io.slychat.messenger.core.crypto.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map

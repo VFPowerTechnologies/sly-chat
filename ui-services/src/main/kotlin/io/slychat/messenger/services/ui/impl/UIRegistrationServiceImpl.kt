@@ -5,23 +5,17 @@ import io.slychat.messenger.core.crypto.hashPasswordWithParams
 import io.slychat.messenger.core.crypto.hexify
 import io.slychat.messenger.core.http.api.accountupdate.UpdatePhoneRequest
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
-import io.slychat.messenger.core.http.api.registration.RegistrationAsyncClient
-import io.slychat.messenger.core.http.api.registration.RegistrationInfo
-import io.slychat.messenger.core.http.api.registration.registrationRequestFromKeyVault
-import io.slychat.messenger.core.http.api.registration.SmsResendRequest
-import io.slychat.messenger.core.http.api.registration.SmsVerificationRequest
+import io.slychat.messenger.core.http.api.registration.*
 import io.slychat.messenger.services.AuthApiResponseException
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
-import org.slf4j.LoggerFactory
-import java.util.ArrayList
+import java.util.*
 
 class UIRegistrationServiceImpl(
     serverUrl: String
 ) : UIRegistrationService {
-    private val logger = LoggerFactory.getLogger(javaClass)
     private val listeners = ArrayList<(String) -> Unit>()
     private val registrationClient = RegistrationAsyncClient(serverUrl)
     private val loginClient = AuthenticationAsyncClient(serverUrl)

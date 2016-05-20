@@ -1,7 +1,6 @@
 package io.slychat.messenger.core.http.api.prekeys
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.generateNewKeyVault
 import io.slychat.messenger.core.crypto.generatePrekeys
 import io.slychat.messenger.core.crypto.hexify
@@ -14,8 +13,6 @@ import kotlin.test.assertTrue
 class PreKeyUtilsTest {
     val password = "test"
     val keyVault = generateNewKeyVault(password)
-    val userId = UserId(1)
-    val deviceId = 1
 
     fun assertBundleEquals(expected: PreKeyBundle, got: PreKeyBundle) {
         assertEquals(expected.registrationId, got.registrationId, "Registration IDs differ")

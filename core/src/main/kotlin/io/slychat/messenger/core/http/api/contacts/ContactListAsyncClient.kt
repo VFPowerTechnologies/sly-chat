@@ -1,6 +1,5 @@
 package io.slychat.messenger.core.http.api.contacts
 
-import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.UserCredentials
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task

@@ -11,7 +11,6 @@ import io.slychat.messenger.core.crypto.generatePrekeys
 import io.slychat.messenger.core.http.HttpClient
 import io.slychat.messenger.core.http.HttpResponse
 import io.slychat.messenger.core.http.api.ApiResult
-import io.slychat.messenger.core.*
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals

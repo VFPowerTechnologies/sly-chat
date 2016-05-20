@@ -1,6 +1,5 @@
 package io.slychat.messenger.desktop
 
-import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.MessageInfo
 import io.slychat.messenger.services.ContactDisplayInfo
 import io.slychat.messenger.services.PlatformNotificationService

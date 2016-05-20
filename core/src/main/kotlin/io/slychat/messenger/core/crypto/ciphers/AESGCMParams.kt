@@ -4,7 +4,6 @@ import io.slychat.messenger.core.crypto.Deserializer
 import io.slychat.messenger.core.crypto.SerializedCryptoParams
 import io.slychat.messenger.core.crypto.hexify
 import io.slychat.messenger.core.crypto.unhexify
-import io.slychat.messenger.core.require
 
 data class AESGCMParams(
     val iv: ByteArray,

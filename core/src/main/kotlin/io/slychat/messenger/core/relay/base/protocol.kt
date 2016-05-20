@@ -64,7 +64,7 @@ open class RelayException(message: String?, cause: Throwable?) : RuntimeExceptio
     constructor(cause: Throwable) : this(null, cause)
 }
 
-class InvalidHeaderSizeException(val size: Int) : RelayException("Header size expected to be ${HEADER_SIZE}, got $size")
+class InvalidHeaderSizeException(val size: Int) : RelayException("Header size expected to be $HEADER_SIZE, got $size")
 class InvalidHeaderSignatureException(val signature: String) : RelayException("Expected header signatured, got $signature")
 class InvalidProtocolVersionException(val version: Int) : RelayException("Unsupported protocol version: $version")
 class InvalidPayloadException(val commandCode: Int) : RelayException("Invalid payload for command $commandCode")
@@ -94,10 +94,10 @@ data class Header(
     val commandCode: CommandCode
 ) {
     init {
-        require(fromUserToken.length <= FROM_USER_TOKEN_SIZE) { "fromUserToken: ${fromUserToken.length} > ${FROM_USER_TOKEN_SIZE}" }
-        require(fromUserId.length <= FROM_USER_ID_SIZE) { "fromUserEmail: ${fromUserId.length} > ${FROM_USER_ID_SIZE}" }
-        require(toUserId.length <= TO_USER_ID_SIZE) { "toUserEmail: ${toUserId.length} > ${TO_USER_ID_SIZE}" }
-        require(messageId.length <= MESSAGE_ID_SIZE) { "messageId: ${messageId.length} > ${MESSAGE_ID_SIZE}" }
+        require(fromUserToken.length <= FROM_USER_TOKEN_SIZE) { "fromUserToken: ${fromUserToken.length} > $FROM_USER_TOKEN_SIZE" }
+        require(fromUserId.length <= FROM_USER_ID_SIZE) { "fromUserEmail: ${fromUserId.length} > $FROM_USER_ID_SIZE" }
+        require(toUserId.length <= TO_USER_ID_SIZE) { "toUserEmail: ${toUserId.length} > $TO_USER_ID_SIZE" }
+        require(messageId.length <= MESSAGE_ID_SIZE) { "messageId: ${messageId.length} > $MESSAGE_ID_SIZE" }
         require(messageFragmentNumber < messageFragmentTotal) { "messageFragmentNumber >= messageFragmentTotal: $messageFragmentNumber >= $messageFragmentTotal" }
     }
 }

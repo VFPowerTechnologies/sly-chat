@@ -1,7 +1,6 @@
 package io.slychat.messenger.core.crypto.signal
 
 import io.slychat.messenger.core.crypto.nextPreKeyId
-import io.slychat.messenger.core.crypto.nextPreKeyId
 import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
 

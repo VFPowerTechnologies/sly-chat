@@ -11,7 +11,6 @@ import io.slychat.messenger.core.http.HttpClient
 import io.slychat.messenger.core.http.HttpResponse
 import io.slychat.messenger.core.http.api.contacts.RemoteContactEntry
 import io.slychat.messenger.core.http.get
-import io.slychat.messenger.core.http.get
 import io.slychat.messenger.core.http.postJSON
 
 data class SiteContactList(

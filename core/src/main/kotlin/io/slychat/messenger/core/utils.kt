@@ -30,8 +30,8 @@ fun Class<*>.readResourceFileText(path: String): String =
 fun getSharedLibFileName(base: String): String {
     val os = System.getProperty("os.name")
     return when {
-        os == "Linux" -> "lib${base}.so"
-        os.startsWith("Windows") -> "${base}.dll"
+        os == "Linux" -> "lib$base.so"
+        os.startsWith("Windows") -> "$base.dll"
     //TODO osx
         else -> throw UnsupportedOperationException("Unsupported OS: $os")
     }

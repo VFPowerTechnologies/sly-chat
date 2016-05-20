@@ -9,8 +9,6 @@ import io.slychat.messenger.core.crypto.hashes.HashParams
 import io.slychat.messenger.core.crypto.hashes.SCryptParams
 import io.slychat.messenger.core.crypto.hashes.SHA256Params
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
-import io.slychat.messenger.core.require
-import io.slychat.messenger.core.base64encode
 import org.spongycastle.crypto.Digest
 import org.spongycastle.crypto.digests.SHA256Digest
 import org.spongycastle.crypto.engines.AESFastEngine

@@ -2,7 +2,6 @@ package io.slychat.messenger.core
 
 import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
-import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.ApiException
 import io.slychat.messenger.core.http.api.accountupdate.*
 import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
@@ -15,10 +14,6 @@ import io.slychat.messenger.core.http.api.registration.RegistrationInfo
 import io.slychat.messenger.core.http.api.registration.registrationRequestFromKeyVault
 import io.slychat.messenger.core.http.get
 import io.slychat.messenger.core.persistence.ContactInfo
-import io.slychat.messenger.core.crypto.*
-import io.slychat.messenger.core.http.api.accountupdate.AccountUpdateClient
-import io.slychat.messenger.core.http.api.accountupdate.RequestPhoneUpdateRequest
-import io.slychat.messenger.core.http.api.accountupdate.UpdatePhoneRequest
 import org.junit.Assume
 import org.junit.Before
 import org.junit.BeforeClass
@@ -172,7 +167,7 @@ class WebApiIntegrationTest {
         @JvmStatic
         fun beforeClass() {
             try {
-                val response = io.slychat.messenger.core.http.JavaHttpClient().get("${serverBaseUrl}/dev")
+                val response = io.slychat.messenger.core.http.JavaHttpClient().get("$serverBaseUrl/dev")
                 if (response.code == 404)
                     throw ServerDevModeDisabledException()
             }

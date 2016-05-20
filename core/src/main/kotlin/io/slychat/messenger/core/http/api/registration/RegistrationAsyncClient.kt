@@ -1,6 +1,5 @@
 package io.slychat.messenger.core.http.api.registration
 
-import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.accountupdate.UpdatePhoneRequest
 import io.slychat.messenger.core.http.api.accountupdate.UpdatePhoneResponse
 import nl.komponents.kovenant.Promise

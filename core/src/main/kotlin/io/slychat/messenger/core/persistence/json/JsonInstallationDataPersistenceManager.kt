@@ -2,8 +2,6 @@ package io.slychat.messenger.core.persistence.json
 
 import io.slychat.messenger.core.persistence.InstallationData
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
-import io.slychat.messenger.core.persistence.json.readObjectFromJsonFile
-import io.slychat.messenger.core.persistence.json.writeObjectToJsonFile
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 import java.io.File
