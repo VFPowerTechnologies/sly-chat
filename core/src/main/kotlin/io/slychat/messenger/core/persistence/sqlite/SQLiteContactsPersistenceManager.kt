@@ -49,6 +49,24 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         }
     }
 
+    override fun exists(userId: UserId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.prepare("SELECT 1 FROM contacts WHERE id=?").use { stmt ->
+            stmt.bind(1, userId.long)
+            stmt.step()
+        }
+    }
+
+    override fun exists(users: Set<UserId>): Promise<Set<UserId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val sql = "SELECT id FROM contacts WHERE id IN (${getPlaceholders(users.size)})"
+        connection.prepare(sql).use { stmt ->
+            users.forEachIndexed { i, userId ->
+                stmt.bind(i+1, userId.long)
+            }
+
+            stmt.mapToSet { UserId(stmt.columnLong(0)) }
+        }
+    }
+
     override fun getAllConversations(): Promise<List<Conversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val sql = """
 SELECT

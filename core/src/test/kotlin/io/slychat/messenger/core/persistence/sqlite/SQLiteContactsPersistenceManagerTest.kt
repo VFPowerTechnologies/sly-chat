@@ -7,6 +7,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
+import java.util.*
 import kotlin.test.*
 
 class SQLiteContactsPersistenceManagerTest {
@@ -316,5 +317,34 @@ class SQLiteContactsPersistenceManagerTest {
         val expected = ContactListDiff(setOf(userC.id), setOf(userB.id))
 
         assertEquals(expected, diff)
+    }
+
+    @Test
+    fun `exists(UserId) should return true if a user exists`() {
+        contactsPersistenceManager.add(contactA).get()
+
+        assertTrue(contactsPersistenceManager.exists(contactA.id).get(), "User should exist")
+    }
+
+    @Test
+    fun `exists(UserId) should return false if a user exists`() {
+        assertFalse(contactsPersistenceManager.exists(contactA.id).get(), "User shouldn't exist")
+    }
+
+    @Test
+    fun `exists(List) should return all existing users in the asked set`() {
+        val contacts = listOf(contactA, contactA2)
+        for (contact in contacts)
+            contactsPersistenceManager.add(contact).get()
+
+        val query = hashSetOf(contactC.id)
+        query.addAll(contacts.map { it.id })
+
+        val exists = contactsPersistenceManager.exists(query).get()
+
+        val shouldExist = HashSet<UserId>()
+        shouldExist.addAll(contacts.map { it.id })
+
+        assertEquals(shouldExist, exists, "Invalid users")
     }
 }

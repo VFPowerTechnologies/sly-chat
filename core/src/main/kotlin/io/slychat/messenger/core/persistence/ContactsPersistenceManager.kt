@@ -8,6 +8,12 @@ import nl.komponents.kovenant.Promise
 interface ContactsPersistenceManager {
     fun get(userId: UserId): Promise<ContactInfo?, Exception>
     fun getAll(): Promise<List<ContactInfo>, Exception>
+
+    fun exists(userId: UserId): Promise<Boolean, Exception>
+    fun exists(users: Set<UserId>): Promise<Set<UserId>, Exception>
+
+    //fun getPending(): Promise<List<ContactInfo>, Exception>
+
     /** Returns info for all available conversations. */
     fun getAllConversations(): Promise<List<Conversation>, Exception>
 
