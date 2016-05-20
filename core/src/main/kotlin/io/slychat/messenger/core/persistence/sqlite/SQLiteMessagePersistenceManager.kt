@@ -237,6 +237,18 @@ VALUES
         Unit
     }
 
+    override fun removeFromQueue(users: Set<UserId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            connection.prepare("DELETE FROM package_queue WHERE user_id=?").use { stmt ->
+                users.forEach {
+                    stmt.bind(1, it.long)
+                    stmt.step()
+                    stmt.reset(true)
+                }
+            }
+        }
+    }
+
     override fun getQueuedPackages(userId: UserId): Promise<List<Package>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.prepare("SELECT user_id, device_id, message_id, timestamp, payload FROM package_queue WHERE user_id=?").use { stmt ->
             stmt.bind(1, userId.long)

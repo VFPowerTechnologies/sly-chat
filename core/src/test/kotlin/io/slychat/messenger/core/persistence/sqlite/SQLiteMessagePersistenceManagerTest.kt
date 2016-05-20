@@ -425,7 +425,7 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
-    fun `removeFromQueue(UserId) should remove all given packages for a user`() {
+    fun `removeFromQueue(UserId) should remove all packages for a user`() {
         val address = SlyAddress(UserId(1), 1)
         val queuedPackages = (0..3).map { queuedPackageFromInt(address, it) }
 
@@ -436,5 +436,25 @@ class SQLiteMessagePersistenceManagerTest {
         val queued = messagePersistenceManager.getQueuedPackages(address.id).get()
 
         assertTrue(queued.isEmpty(), "Packages not deleted")
+    }
+
+    @Test
+    fun `removeFromQueue(Set) should remove all packages for the given users`() {
+        val address1 = SlyAddress(UserId(1), 1)
+        val address2 = SlyAddress(UserId(2), 1)
+        val address3 = SlyAddress(UserId(3), 1)
+        val queuedPackages1 = (0..1).map { queuedPackageFromInt(address1, it) }
+        val queuedPackages2 = (0..1).map { queuedPackageFromInt(address2, it) }
+        val queuedPackages3 = (0..1).map { queuedPackageFromInt(address3, it) }
+
+        messagePersistenceManager.addToQueue(queuedPackages1).get()
+        messagePersistenceManager.addToQueue(queuedPackages2).get()
+        messagePersistenceManager.addToQueue(queuedPackages3).get()
+
+        messagePersistenceManager.removeFromQueue(setOf(address1.id, address2.id)).get()
+
+        val queued = messagePersistenceManager.getQueuedPackages().get()
+
+        assertEquals(queuedPackages3, queued, "Invalid package list")
     }
 }
