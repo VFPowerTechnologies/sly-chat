@@ -189,7 +189,7 @@ ON
         }
         catch (e: SQLiteException) {
             if (e.baseErrorCode == SQLiteConstants.SQLITE_CONSTRAINT)
-                throw DuplicateContactException(contactInfo.email)
+                return
 
             throw e
         }

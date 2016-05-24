@@ -78,6 +78,13 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
+    fun `add should do nothing if the contact already exists`() {
+        val contact = contactA
+        for (i in 0..2)
+            contactsPersistenceManager.add(contact).get()
+    }
+
+    @Test
     fun `getAll should return all stored contacts`() {
         val contacts = arrayListOf(
             ContactInfo(UserId(0), "a@a.com", "a", false, "000-0000", "pubkey"),
@@ -90,14 +97,6 @@ class SQLiteContactsPersistenceManagerTest {
         val got = contactsPersistenceManager.getAll().get()
 
         assertEquals(contacts, got)
-    }
-
-    @Test
-    fun `put should throw DuplicateContactException when inserting a duplicate contact`() {
-        contactsPersistenceManager.add(contactA).get()
-        assertFailsWith(DuplicateContactException::class) {
-            contactsPersistenceManager.add(contactA).get()
-        }
     }
 
     @Test
