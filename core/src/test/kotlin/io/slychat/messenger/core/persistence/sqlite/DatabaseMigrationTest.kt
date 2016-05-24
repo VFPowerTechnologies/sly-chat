@@ -114,4 +114,15 @@ class DatabaseMigrationTest {
             check1To2(persistenceManager, connection)
         }
     }
+
+    fun check2To3(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertColDef(connection, "contacts", "is_pending INTEGER NOT NULL")
+    }
+
+    @Test
+    fun `migration 2 to 3`() {
+        withTestDatabase(2, 3) { persistenceManager, connection ->
+            check2To3(persistenceManager, connection)
+        }
+    }
 }
