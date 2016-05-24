@@ -22,7 +22,6 @@ import rx.subjects.PublishSubject
 import java.util.*
 
 data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
-data class ContactRequest(val info: ContactInfo)
 
 data class EncryptedMessageInfo(val messageId: String, val payload: EncryptedPackagePayloadV0)
 
@@ -64,10 +63,6 @@ class MessengerService(
 
     private val messageUpdatesSubject = PublishSubject.create<MessageBundle>()
     val messageUpdates: Observable<MessageBundle> = messageUpdatesSubject
-
-    //TODO
-    private val contactRequestsSubject = PublishSubject.create<List<ContactRequest>>()
-    val contactRequests: Observable<List<ContactRequest>> = contactRequestsSubject
 
     private val sendMessageQueue = ArrayDeque<QueuedSendMessage>()
     private var currentSendMessage: QueuedSendMessage? = null

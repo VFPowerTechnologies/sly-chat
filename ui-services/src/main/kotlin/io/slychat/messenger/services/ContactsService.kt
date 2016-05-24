@@ -14,23 +14,11 @@ import rx.Observable
 import rx.subjects.PublishSubject
 import java.util.*
 
-interface ContactEvent
-
-class ContactsAdded(val contacts: List<ContactInfo>) : ContactEvent
-//if was pending, delete stuff (happens once a user rejects adding
-class ContactsRemoved(val contacts: List<ContactInfo>) : ContactEvent
-class ContactsModified(val contacts: List<ContactInfo>) : ContactEvent
-class ContactRequests(val contacts: List<ContactInfo>) : ContactEvent
-//sent by contact lookup for invalid ids
-class InvalidContacts(val contacts: Set<UserId>) : ContactEvent
-
 enum class ContactAddPolicy {
     AUTO,
     ASK,
     REJECT
 }
-data class AddRequestResult(val invalid: Set<UserId>)
-
 data class ContactRequestResponse(
     val responses: Map<ContactInfo, Boolean>
 )
@@ -93,8 +81,6 @@ class ContactsService(
             log.error("Unable to add new contacts: {}", e.message, e)
         }
     }
-
-    //TODO maybe fire as events, since we might need to fetch stuff on startup/etc?
 
     //fire contactsadded with pending=true
     //if policy is ask, then fire reqests as well

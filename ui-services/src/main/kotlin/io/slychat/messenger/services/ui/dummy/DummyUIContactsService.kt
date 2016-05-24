@@ -2,12 +2,16 @@ package io.slychat.messenger.services.ui.dummy
 
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.services.ui.UIContactDetails
+import io.slychat.messenger.services.ui.UIContactEvent
 import io.slychat.messenger.services.ui.UIContactsService
 import io.slychat.messenger.services.ui.UINewContactResult
 import nl.komponents.kovenant.Promise
 
 class DummyUIContactsService : UIContactsService {
     override fun addContactListSyncListener(listener: (Boolean) -> Unit) {
+    }
+
+    override fun addContactEventListener(listener: (UIContactEvent) -> Unit) {
     }
 
     private val contacts = hashMapOf(

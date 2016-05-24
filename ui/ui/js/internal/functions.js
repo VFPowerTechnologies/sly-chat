@@ -197,6 +197,7 @@ $(document).ready(function () {
     });
 
     KEYTAP.contactController.addContactListSyncListener();
+    KEYTAP.contactController.addContactEventListener();
     KEYTAP.contactController.addContactPageEvent();
 
     KEYTAP.chatController.addMessageUpdateListener();
