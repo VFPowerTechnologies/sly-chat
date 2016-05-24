@@ -19,6 +19,9 @@ inline fun <R> SQLiteStatement.use(body: (SQLiteStatement) -> R): R =
         body(this)
     }
     finally {
+        //this is here because if an SQLiteException is thrown outside this block, sqlite4java'll pointlessly log the full
+        //exception trace if we call dispose before reset
+        this.reset()
         this.dispose()
     }
 
