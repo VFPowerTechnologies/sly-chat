@@ -74,7 +74,7 @@ class ContactSyncManager(
 
                     val contactsClient = ContactAsyncClient(serverUrl)
                     val request = FetchContactInfoByIdRequest(diff.newContacts.toList())
-                    contactsClient.fetchContactInfoByEmail(userCredentials, request) bind { response ->
+                    contactsClient.fetchContactInfoById(userCredentials, request) bind { response ->
                         contactsPersistenceManager.applyDiff(response.contacts, diff.removedContacts.toList())
                     }
                 }
