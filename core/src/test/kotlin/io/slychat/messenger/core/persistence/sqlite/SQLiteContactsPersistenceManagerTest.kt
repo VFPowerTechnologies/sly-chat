@@ -1,6 +1,7 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.PlatformContact
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import org.junit.After
@@ -371,5 +372,30 @@ class SQLiteContactsPersistenceManagerTest {
         val updated = assertNotNull(contactsPersistenceManager.get(contactA.id).get(), "Missing user")
 
         assertFalse(updated.isPending, "Pending state not updated")
+    }
+
+    @Test
+    fun `getUnadded should return only user ids for which packages have no corresponding contacts entry`() {
+        contactsPersistenceManager.add(contactA).get()
+
+        val contactAddress = SlyAddress(contactId, 1)
+        val newId = UserId(contactId.long+1)
+        val newAddress1 = SlyAddress(newId, 1)
+        val newAddress2 = SlyAddress(newId, 2)
+
+        //XXX this is kinda nasty, but this function needs access to tables from both
+        val messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
+
+        val packages = listOf(
+            Package(PackageId(contactAddress, "msgid"), 0, ""),
+            Package(PackageId(newAddress1, "msgid"), 0, ""),
+            Package(PackageId(newAddress2, "msgid2"), 0, "")
+        )
+
+        messagePersistenceManager.addToQueue(packages).get()
+
+        val unadded = contactsPersistenceManager.getUnadded().get()
+
+        assertEquals(setOf(newId), unadded, "Invalid user id list")
     }
 }
