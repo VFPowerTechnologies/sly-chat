@@ -41,5 +41,7 @@ interface MessagePersistenceManager {
 
     fun getQueuedPackages(userId: UserId): Promise<List<Package>, Exception>
 
+    fun getQueuedPackages(users: Set<UserId>): Promise<List<Package>, Exception>
+
     fun getQueuedPackages(): Promise<List<Package>, Exception>
 }

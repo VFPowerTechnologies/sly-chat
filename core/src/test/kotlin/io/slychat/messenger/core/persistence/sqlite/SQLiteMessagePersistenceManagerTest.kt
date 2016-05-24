@@ -404,6 +404,23 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
+    fun `getQueuedPackages(Set) should only return packages for the given users`() {
+        val addresses = (0..2).map { SlyAddress(UserId(it.toLong()), 1) }
+
+        val queuedPackages = addresses.map { address ->
+            (0..1).map { queuedPackageFromInt(address, it) }
+        }
+
+        messagePersistenceManager.addToQueue(queuedPackages.flatten()).get()
+
+        val interestedUsers = addresses.subList(0, 2).map { it.id }.toSet()
+
+        val packages = messagePersistenceManager.getQueuedPackages(interestedUsers).get()
+
+        assertTrue(packages.all { it.id.address.id in interestedUsers }, "Invalid package list")
+    }
+
+    @Test
     fun `removeFromQueue should remove the given packages`() {
         val address = SlyAddress(UserId(1), 1)
         val queuedPackages = (0..3).map { queuedPackageFromInt(address, it) }

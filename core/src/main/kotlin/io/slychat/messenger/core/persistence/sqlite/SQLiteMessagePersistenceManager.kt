@@ -257,6 +257,16 @@ VALUES
         }
     }
 
+    override fun getQueuedPackages(users: Set<UserId>): Promise<List<Package>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val sql = "SELECT user_id, device_id, message_id, timestamp, payload FROM package_queue where user_id IN (${getPlaceholders(users.size)})"
+        connection.withPrepared(sql) { stmt ->
+            users.forEachIndexed { i, userId ->
+                stmt.bind(i+1, userId.long)
+            }
+            stmt.map { rowToPackage(stmt) }
+        }
+    }
+
     override fun getQueuedPackages(): Promise<List<Package>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.prepare("SELECT user_id, device_id, message_id, timestamp, payload FROM package_queue").use { stmt ->
             stmt.map { rowToPackage(stmt) }
