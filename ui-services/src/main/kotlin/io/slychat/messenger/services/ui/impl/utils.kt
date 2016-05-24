@@ -3,6 +3,7 @@ package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.generateNewKeyVault
+import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.MessageInfo
 import io.slychat.messenger.services.ui.UIContactDetails
@@ -18,9 +19,13 @@ fun MessageInfo.toUI(): UIMessage {
     return UIMessage(id, isSent, timestamp, receivedTimestamp, message)
 }
 
+fun ApiContactInfo.toUI(): UIContactDetails =
+    UIContactDetails(id, name, phoneNumber, email, publicKey)
+
 fun ContactInfo.toUI(): UIContactDetails =
     UIContactDetails(id, name, phoneNumber, email, publicKey)
 
+//FIXME
 fun UIContactDetails.toNative(): ContactInfo =
-    ContactInfo(id, email, name, phoneNumber, publicKey)
+    ContactInfo(id, email, name, false, phoneNumber, publicKey)
 

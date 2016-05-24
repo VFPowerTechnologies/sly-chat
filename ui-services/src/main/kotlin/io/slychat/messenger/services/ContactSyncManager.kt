@@ -75,7 +75,8 @@ class ContactSyncManager(
                     val contactsClient = ContactAsyncClient(serverUrl)
                     val request = FetchContactInfoByIdRequest(diff.newContacts.toList())
                     contactsClient.fetchContactInfoById(userCredentials, request) bind { response ->
-                        contactsPersistenceManager.applyDiff(response.contacts, diff.removedContacts.toList())
+                        val newContacts = response.contacts.map { it.toCore(false) }
+                        contactsPersistenceManager.applyDiff(newContacts, diff.removedContacts.toList())
                     }
                 }
             }
@@ -120,7 +121,7 @@ class ContactSyncManager(
                     val request = AddContactsRequest(remoteContactEntries)
 
                     client.addContacts(userCredentials, request) bind {
-                        contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.id, it.email, it.name, it.phoneNumber, it.publicKey) })
+                        contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.id, it.email, it.name, false, it.phoneNumber, it.publicKey) })
                     }
                 }
             }
