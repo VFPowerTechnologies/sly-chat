@@ -60,12 +60,12 @@ VALUES
         messageInfo
     }
 
-    override fun addMessages(userId: UserId, messages: List<MessageInfo>): Promise<List<MessageInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun addMessages(userId: UserId, messages: Collection<MessageInfo>): Promise<List<MessageInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             messages.map { insertMessage(connection, userId, it) }
             removeFromQueueNoTransaction(connection, userId, messages.filter { !it.isSent }.map { it.id })
             updateConversationInfo(connection, userId, false, messages.last().message, messages.last().timestamp, messages.size)
-            messages
+            messages.toList()
         }
     }
 
@@ -132,13 +132,14 @@ VALUES
         }
     }
 
-    override fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun deleteMessages(userId: UserId, messageIds: Collection<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         if (!messageIds.isEmpty()) {
             val table = ConversationTable.getTablenameForContact(userId)
 
             connection.prepare("DELETE FROM $table WHERE id IN (${getPlaceholders(messageIds.size)})").use { stmt ->
-                for (i in 1..messageIds.size)
-                    stmt.bind(i, messageIds[i-1])
+                messageIds.forEachIndexed { i, messageId ->
+                    stmt.bind(i+1, messageId)
+                }
 
                 stmt.step()
             }
@@ -199,7 +200,7 @@ VALUES
 
     override fun addToQueue(pkg: Package): Promise<Unit, Exception> = addToQueue(listOf(pkg))
 
-    override fun addToQueue(packages: List<Package>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun addToQueue(packages: Collection<Package>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val sql = "INSERT INTO package_queue (user_id, device_id, message_id, timestamp, payload) VALUES (?, ?, ?, ?, ?)"
         connection.batchInsertWithinTransaction(sql, packages) { stmt, queuedMessage ->
             stmt.bind(1, queuedMessage.id.address.id.long)
@@ -210,7 +211,7 @@ VALUES
         }
     }
 
-    private fun removeFromQueueNoTransaction(connection: SQLiteConnection, userId: UserId, messageIds: List<String>) {
+    private fun removeFromQueueNoTransaction(connection: SQLiteConnection, userId: UserId, messageIds: Collection<String>) {
         messageIds.forEach { messageId ->
             connection.prepare("DELETE FROM package_queue WHERE user_id=? AND message_id=?").use { stmt ->
                 stmt.bind(1, userId.long)
@@ -222,7 +223,7 @@ VALUES
 
     override fun removeFromQueue(packageId: PackageId): Promise<Unit, Exception> = removeFromQueue(packageId.address.id, listOf(packageId.messageId))
 
-    override fun removeFromQueue(userId: UserId, messageIds: List<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun removeFromQueue(userId: UserId, messageIds: Collection<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             removeFromQueueNoTransaction(connection, userId, messageIds)
         }
@@ -257,7 +258,7 @@ VALUES
         }
     }
 
-    override fun getQueuedPackages(users: Set<UserId>): Promise<List<Package>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun getQueuedPackages(users: Collection<UserId>): Promise<List<Package>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val sql = "SELECT user_id, device_id, message_id, timestamp, payload FROM package_queue where user_id IN (${getPlaceholders(users.size)})"
         connection.withPrepared(sql) { stmt ->
             users.forEachIndexed { i, userId ->
