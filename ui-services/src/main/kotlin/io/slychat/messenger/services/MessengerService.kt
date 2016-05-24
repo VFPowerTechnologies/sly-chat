@@ -47,6 +47,7 @@ data class MessageSendOk(val to: UserId, override val messageId: String) : Messa
 class MessengerService(
     private val application: SlyApplication,
     private val scheduler: Scheduler,
+    private val contactsService: ContactsService,
     private val messagePersistenceManager: MessagePersistenceManager,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val relayClientManager: RelayClientManager,
@@ -96,6 +97,31 @@ class MessengerService(
                 messageCipherService.shutdown()
             }
         }
+
+        contactsService.contactEvents.subscribe { onContactEvent(it) }
+    }
+
+    private fun onContactEvent(event: ContactEvent) {
+        when (event) {
+            is ContactsAdded -> {
+                val map = event.contacts.map { it.id }.toSet()
+                messagePersistenceManager.getQueuedPackages(map) successUi {
+                    addPackagesToReceivedQueue(it)
+                } fail { e ->
+                    log.error("Unable to fetch queued packages: {}", e.message, e)
+                }
+            }
+
+            is InvalidContacts -> {
+                log.info("Messages for invalid user ids: {}", event.contacts.map { it.long }.joinToString(","))
+                messagePersistenceManager.removeFromQueue(event.contacts) fail { e ->
+                    log.error("Unable to remove missing contacts: {}", e.message, e)
+                }
+            }
+
+            //else do nothing; for requests the ui'll get something for it, and then call the ContactsService
+        }
+
     }
 
     private fun initializeReceiveQueue() {
@@ -325,7 +351,7 @@ class MessengerService(
                 if (exists)
                     addPackagesToReceivedQueue(packages)
                 else {
-                    //TODO
+                    contactsService.addPendingContacts(setOf(event.from.id))
                 }
             }
         } fail { e ->
@@ -409,6 +435,9 @@ class MessengerService(
             contactsPersistenceManager.exists(users) successUi { exists ->
                 val missing = HashSet(users)
                 missing.removeAll(exists)
+
+                //will receive events at a later time for added/removed
+                contactsService.addPendingContacts(missing)
 
                 //TODO
                 val toProcess = if (missing.isNotEmpty())

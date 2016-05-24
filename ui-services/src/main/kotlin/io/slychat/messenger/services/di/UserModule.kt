@@ -2,6 +2,7 @@ package io.slychat.messenger.services.di
 
 import dagger.Module
 import dagger.Provides
+import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.ServerUrls
 import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
@@ -42,9 +43,20 @@ class UserModule(
 
     @UserScope
     @Provides
+    fun providesContactsService(
+        authTokenManager: AuthTokenManager,
+        serverUrls: BuildConfig.ServerUrls,
+        application: SlyApplication,
+        contactsPersistenceManager: ContactsPersistenceManager
+    ): ContactsService =
+        ContactsService(authTokenManager, serverUrls, application, contactsPersistenceManager)
+
+    @UserScope
+    @Provides
     fun providesMessengerService(
         application: SlyApplication,
         scheduler: Scheduler,
+        contactsService: ContactsService,
         messagePersistenceManager: MessagePersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager,
         relayClientManager: RelayClientManager,
@@ -54,6 +66,7 @@ class UserModule(
         MessengerService(
             application,
             scheduler,
+            contactsService,
             messagePersistenceManager,
             contactsPersistenceManager,
             relayClientManager,
