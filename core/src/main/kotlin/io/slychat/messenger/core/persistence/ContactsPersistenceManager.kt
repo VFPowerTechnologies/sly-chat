@@ -12,7 +12,11 @@ interface ContactsPersistenceManager {
     fun exists(userId: UserId): Promise<Boolean, Exception>
     fun exists(users: Set<UserId>): Promise<Set<UserId>, Exception>
 
-    //fun getPending(): Promise<List<ContactInfo>, Exception>
+    /** Get pending users. */
+    fun getPending(): Promise<List<ContactInfo>, Exception>
+
+    /** Mark the given users as not pending. */
+    fun markAccepted(users: Set<UserId>): Promise<Unit, Exception>
 
     /** Returns info for all available conversations. */
     fun getAllConversations(): Promise<List<Conversation>, Exception>

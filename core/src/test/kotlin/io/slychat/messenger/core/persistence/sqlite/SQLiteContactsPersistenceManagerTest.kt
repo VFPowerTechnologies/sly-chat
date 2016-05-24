@@ -347,4 +347,29 @@ class SQLiteContactsPersistenceManagerTest {
 
         assertEquals(shouldExist, exists, "Invalid users")
     }
+
+    @Test
+    fun `getPending should return only pending users`() {
+        val contactA = ContactInfo(UserId(1), "a@a.com", "a", true, null, "pk")
+        val contactB = ContactInfo(UserId(2), "b@a.com", "b", false, null, "pk")
+        val contacts = listOf(contactA, contactB)
+
+        contacts.forEach { contactsPersistenceManager.add(it).get() }
+
+        val pending = contactsPersistenceManager.getPending().get()
+
+        assertEquals(listOf(contactA), pending, "Invalid pending contacts")
+    }
+
+    @Test
+    fun `markAccepted should mark the given user as no longer pending`() {
+        val contactA = ContactInfo(UserId(1), "a@a.com", "a", true, null, "pk")
+        contactsPersistenceManager.add(contactA).get()
+
+        contactsPersistenceManager.markAccepted(setOf(contactA.id)).get()
+
+        val updated = assertNotNull(contactsPersistenceManager.get(contactA.id).get(), "Missing user")
+
+        assertFalse(updated.isPending, "Pending state not updated")
+    }
 }

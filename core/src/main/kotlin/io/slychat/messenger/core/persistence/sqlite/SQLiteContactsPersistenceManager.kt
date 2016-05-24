@@ -291,4 +291,22 @@ ON
 
         missing
     }
+
+    override fun getPending(): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withPrepared("SELECT id, email, name, is_pending, phone_number, public_key FROM contacts WHERE is_pending=1") { stmt ->
+            stmt.map { contactInfoFromRow(stmt) }
+        }
+    }
+
+    override fun markAccepted(users: Set<UserId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            connection.withPrepared("UPDATE contacts SET is_pending=0 WHERE id=?") { stmt ->
+                users.forEach {
+                    stmt.bind(1, it.long)
+                    stmt.step()
+                    stmt.reset()
+                }
+            }
+        }
+    }
 }
