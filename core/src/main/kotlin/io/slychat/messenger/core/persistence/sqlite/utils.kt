@@ -22,6 +22,10 @@ inline fun <R> SQLiteStatement.use(body: (SQLiteStatement) -> R): R =
         this.dispose()
     }
 
+inline fun <R> SQLiteConnection.withPrepared(sql: String, body: (SQLiteStatement) -> R): R {
+    return this.prepare(sql).use { body(it) }
+}
+
 inline fun <R> SQLiteConnection.withTransaction(body: (SQLiteConnection) -> R): R {
     this.exec("BEGIN TRANSACTION")
     return try {
