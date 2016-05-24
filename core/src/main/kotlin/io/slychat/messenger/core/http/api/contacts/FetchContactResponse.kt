@@ -2,7 +2,6 @@ package io.slychat.messenger.core.http.api.contacts
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
-import io.slychat.messenger.core.persistence.ContactInfo
 
 data class FetchContactResponse(
     @param:JsonProperty("error-message")
@@ -11,7 +10,7 @@ data class FetchContactResponse(
 
     @param:JsonProperty("contact-info")
     @get:JsonProperty("contact-info")
-    val contactInfo: ContactInfo?
+    val contactInfo: ApiContactInfo?
 ) {
     @get:JsonIgnore
     val isSuccess: Boolean = errorMessage == null
