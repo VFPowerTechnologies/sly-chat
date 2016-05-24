@@ -17,20 +17,22 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
             UserId(stmt.columnLong(0)),
             stmt.columnString(1),
             stmt.columnString(2),
-            stmt.columnString(3),
-            stmt.columnString(4)
+            stmt.columnInt(3) != 0,
+            stmt.columnString(4),
+            stmt.columnString(5)
         )
 
     private fun contactInfoToRow(contactInfo: ContactInfo, stmt: SQLiteStatement) {
         stmt.bind(1, contactInfo.id.long)
         stmt.bind(2, contactInfo.email)
         stmt.bind(3, contactInfo.name)
-        stmt.bind(4, contactInfo.phoneNumber)
-        stmt.bind(5, contactInfo.publicKey)
+        stmt.bind(4, contactInfo.isPending.toInt())
+        stmt.bind(5, contactInfo.phoneNumber)
+        stmt.bind(6, contactInfo.publicKey)
     }
 
     override fun get(userId: UserId): Promise<ContactInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("SELECT id, email, name, phone_number, public_key FROM contacts WHERE id=?").use { stmt ->
+        connection.prepare("SELECT id, email, name, is_pending, phone_number, public_key FROM contacts WHERE id=?").use { stmt ->
             stmt.bind(1, userId.long)
             if (!stmt.step())
                 null
@@ -40,7 +42,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     }
 
     override fun getAll(): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("SELECT id, email, name, phone_number, public_key FROM contacts").use { stmt ->
+        connection.prepare("SELECT id, email, name, is_pending, phone_number, public_key FROM contacts").use { stmt ->
             val r = ArrayList<ContactInfo>()
             while (stmt.step()) {
                 r.add(contactInfoFromRow(stmt))
@@ -70,7 +72,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     override fun getAllConversations(): Promise<List<Conversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val sql = """
 SELECT
-    id, email, name, phone_number, public_key,
+    id, email, name, is_pending, phone_number, public_key,
     unread_count, last_message, last_timestamp
 FROM
     contacts
@@ -83,8 +85,8 @@ ON
         connection.prepare(sql).use { stmt ->
             stmt.map { stmt ->
                 val contact = contactInfoFromRow(stmt)
-                val lastTimestamp = if (!stmt.columnNull(7)) stmt.columnLong(7) else null
-                val info = ConversationInfo(contact.id, stmt.columnInt(5), stmt.columnString(6), lastTimestamp)
+                val lastTimestamp = if (!stmt.columnNull(8)) stmt.columnLong(8) else null
+                val info = ConversationInfo(contact.id, stmt.columnInt(6), stmt.columnString(7), lastTimestamp)
                 Conversation(contact, info)
             }
         }
@@ -129,7 +131,7 @@ ON
 
 
     private fun searchByLikeField(connection: SQLiteConnection, fieldName: String, searchValue: String): List<ContactInfo> =
-        connection.prepare("SELECT id, email, name, phone_number, public_key FROM contacts WHERE $fieldName LIKE ? ESCAPE '!'").use { stmt ->
+        connection.prepare("SELECT id, email, name, is_pending, phone_number, public_key FROM contacts WHERE $fieldName LIKE ? ESCAPE '!'").use { stmt ->
             val escaped = escapeLikeString(searchValue, '!')
             stmt.bind(1, "%$escaped%")
             val r = ArrayList<ContactInfo>()
@@ -173,7 +175,7 @@ ON
     //is here for bulk addition within a single transaction when syncing up the contacts list
     private fun addContactNoTransaction(connection: SQLiteConnection, contactInfo: ContactInfo) {
         try {
-            connection.prepare("INSERT INTO contacts (id, email, name, phone_number, public_key) VALUES (?, ?, ?, ?, ?)").use { stmt ->
+            connection.prepare("INSERT INTO contacts (id, email, name, is_pending, phone_number, public_key) VALUES (?, ?, ?, ?, ?, ?)").use { stmt ->
                 contactInfoToRow(contactInfo, stmt)
                 stmt.step()
             }

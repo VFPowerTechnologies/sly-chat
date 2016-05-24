@@ -22,9 +22,9 @@ class SQLiteContactsPersistenceManagerTest {
     val contactId = UserId(1)
     val testMessage = "test message"
 
-    val contactA = ContactInfo(contactId, "a@a.com", "a", "000-0000", "pubkey")
-    val contactA2 = ContactInfo(UserId(2), "a2@a.com", "a2", "001-0000", "pubkey")
-    val contactC = ContactInfo(UserId(3), "c@c.com", "c", "222-2222", "pubkey")
+    val contactA = ContactInfo(contactId, "a@a.com", "a", false, "000-0000", "pubkey")
+    val contactA2 = ContactInfo(UserId(2), "a2@a.com", "a2", false, "001-0000", "pubkey")
+    val contactC = ContactInfo(UserId(3), "c@c.com", "c", false, "222-2222", "pubkey")
     val contactList = arrayListOf(
         contactA,
         contactA2,
@@ -79,8 +79,8 @@ class SQLiteContactsPersistenceManagerTest {
     @Test
     fun `getAll should return all stored contacts`() {
         val contacts = arrayListOf(
-            ContactInfo(UserId(0), "a@a.com", "a", "000-0000", "pubkey"),
-            ContactInfo(UserId(1), "b@b.com", "b", "000-0000", "pubkey")
+            ContactInfo(UserId(0), "a@a.com", "a", false, "000-0000", "pubkey"),
+            ContactInfo(UserId(1), "b@b.com", "b", false, "000-0000", "pubkey")
         )
 
         for (contact in contacts)
@@ -303,9 +303,9 @@ class SQLiteContactsPersistenceManagerTest {
 
     @Test
     fun `getDiff should return a proper diff`() {
-        val userA = ContactInfo(UserId(0), "a@a.com", "a", "0", "pk")
-        val userB = ContactInfo(UserId(1), "b@a.com", "a", "0", "pk")
-        val userC = ContactInfo(UserId(2), "c@a.com", "a", "0", "pk")
+        val userA = ContactInfo(UserId(0), "a@a.com", "a", false, "0", "pk")
+        val userB = ContactInfo(UserId(1), "b@a.com", "a", false, "0", "pk")
+        val userC = ContactInfo(UserId(2), "c@a.com", "a", false, "0", "pk")
 
         for (user in listOf(userA, userB))
             contactsPersistenceManager.add(user).get()
