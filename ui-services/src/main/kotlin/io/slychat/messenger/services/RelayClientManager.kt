@@ -130,6 +130,12 @@ class RelayClientManager(
         relayClient.sendMessage(to, content, messageId)
     }
 
+    fun sendMessageReceivedAck(messageId: String) {
+        val relayClient = getClientOrThrow()
+
+        relayClient.sendMessageReceivedAck(messageId)
+    }
+
     fun sendPing() {
         getClientOrThrow().sendPing()
     }

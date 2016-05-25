@@ -42,7 +42,8 @@ enum class CommandCode(val code: Int) {
     CLIENT_FILE_TRANSFER_COMPLETE(14),
     CLIENT_FILE_TRANSFER_CANCEL_OR_REJECT(15),
     CLIENT_PING(16),
-    SERVER_PONG(17);
+    SERVER_PONG(17),
+    CLIENT_RECEIVED_MESSAGE(18);
 
     companion object {
         private val cachedValues = values()
@@ -240,4 +241,22 @@ fun createPingMessage(): RelayMessage {
     )
 
     return RelayMessage(header, ByteArray(0))
+}
+
+fun createMessageReceivedMessage(userCredentials: UserCredentials, messageId: String): RelayMessage {
+    val content = messageId.toByteArray(Charsets.UTF_8)
+
+    val header = Header(
+        PROTOCOL_VERSION_1,
+        content.size,
+        userCredentials.authToken.string,
+        userCredentials.address.asString(),
+        "",
+        "",
+        0,
+        1,
+        CLIENT_RECEIVED_MESSAGE
+    )
+
+    return RelayMessage(header, content)
 }

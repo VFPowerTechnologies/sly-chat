@@ -233,6 +233,13 @@ class RelayClient(
         connection.sendMessage(createSendMessageMessage(credentials, to, content, messageId))
     }
 
+    fun sendMessageReceivedAck(messageId: String) {
+        log.info("Sending ack to server for message <<{}>>", messageId)
+        val connection = getAuthConnectionOrThrow()
+
+        connection.sendMessage(createMessageReceivedMessage(credentials, messageId))
+    }
+
     fun sendPing() {
         log.debug("PING")
         val connection = getAuthConnectionOrThrow()

@@ -347,7 +347,9 @@ class MessengerService(
         val pkg = Package(PackageId(event.from, randomUUID()), timestamp, String(event.content, Charsets.UTF_8))
         val packages = listOf(pkg)
 
-        processPackages(packages)
+        processPackages(packages) successUi {
+            relayClientManager.sendMessageReceivedAck(event.messageId)
+        }
     }
 
     private fun handleServerRecievedMessage(event: ServerReceivedMessage) {
