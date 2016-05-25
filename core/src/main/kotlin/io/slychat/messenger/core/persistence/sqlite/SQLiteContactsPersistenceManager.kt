@@ -173,7 +173,7 @@ ON
 
     //never call when not inside a transition
     //is here for bulk addition within a single transaction when syncing up the contacts list
-    private fun addContactNoTransaction(connection: SQLiteConnection, contactInfo: ContactInfo) {
+    private fun addContactNoTransaction(connection: SQLiteConnection, contactInfo: ContactInfo): Boolean {
         try {
             connection.prepare("INSERT INTO contacts (id, email, name, is_pending, phone_number, public_key) VALUES (?, ?, ?, ?, ?, ?)").use { stmt ->
                 contactInfoToRow(contactInfo, stmt)
@@ -189,22 +189,31 @@ ON
         }
         catch (e: SQLiteException) {
             if (e.baseErrorCode == SQLiteConstants.SQLITE_CONSTRAINT)
-                return
+                return false
 
             throw e
         }
+
+        return true
     }
 
-    private fun addContact(connection: SQLiteConnection, contactInfo: ContactInfo) {
-        connection.withTransaction { addContactNoTransaction(connection, contactInfo) }
+    private fun addContact(connection: SQLiteConnection, contactInfo: ContactInfo): Boolean {
+        return connection.withTransaction { addContactNoTransaction(connection, contactInfo) }
     }
 
-    override fun add(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun add(contactInfo: ContactInfo): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
         addContact(connection, contactInfo)
     }
 
-    override fun addAll(contacts: List<ContactInfo>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        contacts.forEach { addContact(connection, it) }
+    override fun addAll(contacts: List<ContactInfo>): Promise<Set<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val newContacts = HashSet<ContactInfo>()
+
+        contacts.forEach {
+            if (addContact(connection, it))
+                newContacts.add(it)
+        }
+
+        newContacts
     }
 
     override fun update(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->

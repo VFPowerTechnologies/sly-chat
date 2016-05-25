@@ -69,7 +69,7 @@ class SQLiteContactsPersistenceManagerTest {
     @Test
     fun `add should successfully add a contact and create a conversation table`() {
         val contact = contactA
-        contactsPersistenceManager.add(contact).get()
+        assertTrue(contactsPersistenceManager.add(contact).get())
         val got = contactsPersistenceManager.get(contact.id).get()
 
         assertNotNull(got)
@@ -78,10 +78,24 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `add should do nothing if the contact already exists`() {
+    fun `add should do nothing and return false if the contact already exists`() {
         val contact = contactA
+        contactsPersistenceManager.add(contact).get()
         for (i in 0..2)
-            contactsPersistenceManager.add(contact).get()
+            assertFalse(contactsPersistenceManager.add(contact).get(), "Contact not considered duplicate")
+    }
+
+    @Test
+    fun `addAll should return the list of new contacts added`() {
+        contactsPersistenceManager.add(contactA).get()
+
+        val newContacts = listOf(contactA2, contactC)
+        val allContacts = mutableListOf(contactA)
+        allContacts.addAll(newContacts)
+
+        val added = contactsPersistenceManager.addAll(allContacts).get()
+
+        assertEquals(newContacts.toSet(), added, "Invalid added contacts")
     }
 
     @Test
