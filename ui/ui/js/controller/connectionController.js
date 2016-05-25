@@ -5,6 +5,10 @@ var ConnectionController = function () {
 };
 
 ConnectionController.prototype = {
+    /**
+     * Init function, create the listener for relay connection and network connection.
+     * Ran only once on connection controller initiation.
+     */
     init : function () {
         networkStatusService.addRelayStatusChangeListener(function (status) {
             this.relayConnected = status.online;
@@ -16,6 +20,9 @@ ConnectionController.prototype = {
             this.handleConnectionDisplay();
         }.bind(this));
     },
+    /**
+     * Handle connection notification display.
+     */
     handleConnectionDisplay: function () {
         var networkStatus = $("#networkStatus");
         var connectionStatus = $("#connectionStatus");
@@ -37,6 +44,12 @@ ConnectionController.prototype = {
             $("#addContactBtn").prop("disabled", false);
         }
     },
+    /**
+     * Opens or update the notification if it's already opened.
+     *
+     * @param message
+     * @param notificationClass
+     */
     openNotification : function (message, notificationClass) {
         var currentUrl = window.location.href;
         var page = currentUrl.substring(currentUrl.lastIndexOf("/") + 1);
@@ -59,12 +72,21 @@ ConnectionController.prototype = {
             });
         }
     },
+    /**
+     * Close the notification.
+     */
     closeNotification : function () {
         if(this.connectionNotification != null) {
             this.connectionNotification.close();
             this.connectionNotification = null;
         }
     },
+    /**
+     * Update the notification.
+     *
+     * @param message
+     * @param notificationClass
+     */
     updateNotification : function (message, notificationClass) {
         if(this.connectionNotification != null) {
             this.connectionNotification.update("message", message);

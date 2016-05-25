@@ -6,15 +6,28 @@ var ContactController = function (model) {
 };
 
 ContactController.prototype = {
+    /**
+     * Loads the contacts on each contacts.html page load.
+     */
     init : function () {
         this.model.fetchConversation();
     },
+    /**
+     * Add Contact page event.
+     * Run only once on Contact Controller init.
+     */
     addContactPageEvent : function () {
+        /**
+         * Click event for delete contact cancel button.
+         */
         $(document).on('click', "#deleteContactModalClose", function(e) {
             e.preventDefault();
             BootstrapDialog.closeAll();
         });
 
+        /**
+         * Click event for delete contact button.
+         */
         $(document).on("click", "[id^='deleteConfirm_']", function(e){
             var buttonId = e.currentTarget.id;
             var contactId = buttonId.split("_")[1];
@@ -22,6 +35,11 @@ ContactController.prototype = {
             BootstrapDialog.closeAll();
         }.bind(this));
     },
+    /**
+     * Display contact function.
+     *
+     * @param conversations
+     */
     displayContacts : function (conversations) {
         var contactList = $("#contactList");
         var fragment = $(document.createDocumentFragment());
@@ -34,6 +52,9 @@ ContactController.prototype = {
 
         contactList.html(fragment);
     },
+    /**
+     * Add contact syncing listener.
+     */
     addContactListSyncListener : function () {
         contactService.addContactListSyncListener(function (sync) {
             this.syncing = sync;
@@ -48,6 +69,9 @@ ContactController.prototype = {
             }
         }.bind(this));
     },
+    /**
+     * Add contact event listener.
+     */
     addContactEventListener : function () {
         contactService.addContactEventListener(function (ev) {
             switch(ev.type) {
@@ -60,6 +84,9 @@ ContactController.prototype = {
             }
         }.bind(this));
     },
+    /**
+     * Opens contact sync notification.
+     */
     showContactSyncingNotification : function () {
         this.notify = $.notify({
             icon: "icon-pull-left fa fa-info-circle",
@@ -75,6 +102,9 @@ ContactController.prototype = {
             }
         });
     },
+    /**
+     * Close contact sync notification.
+     */
     closeNotification : function () {
         if(this.notify != null) {
             this.notify.update("type", "success");
@@ -86,6 +116,13 @@ ContactController.prototype = {
             }.bind(this), 3000);
         }
     },
+    /**
+     * Create each contact node.
+     *
+     * @param contact
+     * @param status
+     * @returns {*|jQuery|HTMLElement}
+     */
     createContactBlock : function (contact, status) {
         var contactLinkClass = "contact-link ";
         var newBadge = "";
@@ -102,6 +139,9 @@ ContactController.prototype = {
             "</div>" + newBadge;
         contactBlockDiv.html(contactBlockHtml);
 
+        /**
+         * Click event for each contact block.
+         */
         contactBlockDiv.click(function (e) {
             e.preventDefault();
             var id = $(this).attr("id").split("contact_")[1];
@@ -109,6 +149,9 @@ ContactController.prototype = {
             KEYTAP.navigationController.loadPage("chat.html", true);
         });
 
+        /**
+         * Mouse held event for each contact block.
+         */
         contactBlockDiv.on("mouseheld", function (e) {
             e.preventDefault();
             vibrate(50);
@@ -118,6 +161,12 @@ ContactController.prototype = {
 
         return contactBlockDiv;
     },
+    /**
+     * Opens the contact menu on contact node long press.
+     *
+     * @param contactId
+     * @returns {*}
+     */
     openContactContextLikeMenu : function (contactId) {
         var html = "<div class='contextLikeMenu'>" +
             "<ul>" +
@@ -129,6 +178,11 @@ ContactController.prototype = {
 
         return createContextLikeMenu(html, true);
     },
+    /**
+     * Opens the contact details dialog.
+     *
+     * @param id
+     */
     displayContactDetailsModal : function (id) {
         var contact = this.getContact(id);
 
@@ -150,18 +204,43 @@ ContactController.prototype = {
         contactDetailsModal.setMessage(html);
         contactDetailsModal.open();
     },
+    /**
+     * Fetch contact information then load the contact page.
+     *
+     * @param id
+     * @param pushCurrentPage
+     */
     loadContactPage : function (id, pushCurrentPage) {
         this.model.fetchConversationForChat(id, pushCurrentPage);
     },
+    /**
+     * Get the current selected contact.
+     *
+     * @returns {*}
+     */
     getCurrentContact : function () {
         return this.model.getCurrentContact();
     },
+    /**
+     * Set the current contact.
+     *
+     * @param id
+     */
     setCurrentContact : function (id) {
         this.model.setCurrentContact(id);
     },
+    /**
+     * Get the specified contact.
+     *
+     * @param id
+     * @returns {*}
+     */
     getContact : function (id) {
         return this.model.getContact(id);
     },
+    /**
+     * Add new contact if valid.
+     */
     addNewContact : function () {
         var newContactBtn = $("#newContactBtn");
         newContactBtn.prop("disabled", true);
@@ -195,6 +274,9 @@ ContactController.prototype = {
             newContactBtn.prop("disabled", false);
         }
     },
+    /**
+     * Update contact with the given information.
+     */
     updateContact : function () {
         if(validateForm("#updateContactForm") == true){
             var contact = this.model.getCurrentContact();
@@ -213,6 +295,9 @@ ContactController.prototype = {
             });
         }
     },
+    /**
+     * Create the new contact button event.
+     */
     newContactEvent : function() {
         $("#newContactBtn").click(function (e) {
             e.preventDefault();
@@ -220,6 +305,11 @@ ContactController.prototype = {
             this.addNewContact();
         }.bind(this));
     },
+    /**
+     * Delete contact with the specified id.
+     *
+     * @param id
+     */
     deleteContact : function (id) {
         contactService.removeContact(this.model.getContact(id)).then(function () {
             this.model.resetContacts();
@@ -228,9 +318,18 @@ ContactController.prototype = {
             console.log(e);
         })
     },
+    /**
+     * Get the conversation object from the model.
+     * @returns {*}
+     */
     getConversations : function () {
         return this.model.getConversations();
     },
+    /**
+     * Create the confirm new contact form.
+     *
+     * @param contactDetails
+     */
     createConfirmContactForm : function (contactDetails) {
         var form = document.createElement("form");
         form.id = "addContactForm";
@@ -332,6 +431,11 @@ ContactController.prototype = {
             KEYTAP.navigationController.loadPage("addContact.html", false);
         });
     },
+    /**
+     * Display the delete contact dialog.
+     *
+     * @param id
+     */
     displayDeleteContactModal: function(id) {
         var html = "<div class='contextLikeModalContent'>" +
             "<h6 class='contextLikeModal-title'>Delete Contact?</h6>" +
@@ -345,6 +449,9 @@ ContactController.prototype = {
         var modal = createContextLikeMenu(html, false);
         modal.open();
     },
+    /**
+     * Clear the cache from the model.
+     */
     clearCache : function () {
         this.model.clearCache();
     }

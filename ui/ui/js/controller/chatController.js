@@ -11,6 +11,9 @@ var ChatController = function (model, contactController) {
 };
 
 ChatController.prototype = {
+    /**
+     * Init function on each contact page loads.
+     */
     init : function () {
         var contact = this.contactController.getCurrentContact();
         this.model.fetchMessage(this.currentMessagePosition, this.fetchingNumber, contact);
@@ -36,6 +39,12 @@ ChatController.prototype = {
             }
         });
     },
+    /**
+     * Display all messages for the current contact.
+     *
+     * @param messages
+     * @param contact
+     */
     displayMessage : function (messages, contact) {
         var messageNode = $("#messages");
 
@@ -51,8 +60,12 @@ ChatController.prototype = {
     },
     /**
      * Create all event relative to messages manipulation options.
+     * Ran only once on controller init.
      */
     createMessageNodeEvent : function () {
+        /**
+         * Click event for each message node.
+         */
         $(document).on("click", "[id^='message_']", function (e) {
             e.preventDefault();
             if(KEYTAP.chatController.selectMode == true) {
@@ -73,6 +86,9 @@ ChatController.prototype = {
             }
         });
 
+        /**
+         * Click event for copy message to clipboard button.
+         */
         $(document).on("click", "#copyMessage", function (e) {
             e.preventDefault();
             if(this.selectedMessage.length == 1) {
@@ -101,12 +117,18 @@ ChatController.prototype = {
             }
         }.bind(this));
 
+        /**
+         * Click event for delete message button.
+         */
         $(document).on("click", "#deleteMessage", function (e) {
             e.preventDefault();
             this.messageMenu.close();
             this.createDeleteMessageConfirmDialog(false);
         }.bind(this));
 
+        /**
+         * Click event for delete message confirmation.
+         */
         $(document).on("click", "#confirmDeleteMessage", function (e) {
             e.preventDefault();
             if(this.selectedMessage.length >= 1) {
@@ -116,6 +138,9 @@ ChatController.prototype = {
             BootstrapDialog.closeAll();
         }.bind(this));
 
+        /**
+         * Click event for cancel button.
+         */
         $(document).on("click", "#cancelCloseModal", function (e) {
             e.preventDefault();
             this.selectedMessage = [];
@@ -126,6 +151,9 @@ ChatController.prototype = {
             BootstrapDialog.closeAll();
         }.bind(this));
 
+        /**
+         * Click event for delete multiple message button.
+         */
         $(document).on("click", "#deleteMultipleMessage", function (e) {
             e.preventDefault();
             this.selectMode = true;
@@ -136,6 +164,9 @@ ChatController.prototype = {
             $("#main").prepend(this.createMultipleDeleteMenu());
         }.bind(this));
 
+        /**
+         * Click event for cancel multiple delete button.
+         */
         $(document).on("click", "#cancelMultipleDeleteButton", function (e) {
             e.preventDefault();
             this.selectMode = false;
@@ -146,6 +177,9 @@ ChatController.prototype = {
             this.selectedMessage = [];
         }.bind(this));
 
+        /**
+         * Click event for multiple delete confirm button.
+         */
         $(document).on("click", "#confirmMultipleDeleteButton", function (e) {
             e.preventDefault();
             var messagesSelected = $(".message_selected");
@@ -160,12 +194,18 @@ ChatController.prototype = {
             }
         }.bind(this));
 
+        /**
+         * Click event for confirm delete whole conversation.
+         */
         $(document).on("click", "#confirmDeleteConversation", function (e) {
             e.preventDefault();
             BootstrapDialog.closeAll();
             this.deleteConversation(KEYTAP.contactController.getCurrentContact().id);
         }.bind(this));
 
+        /**
+         * Click event for delete contact button.
+         */
         $(document).on("click", "[id^='deleteContact_']", function (e) {
             e.preventDefault();
             var id = $(this).attr("id").split("_")[1];
@@ -173,6 +213,9 @@ ChatController.prototype = {
             KEYTAP.contactController.displayDeleteContactModal(id);
         });
 
+        /**
+         * Click event for contact details button.
+         */
         $(document).on("click", "[id^='contactDetails_']", function (e) {
             e.preventDefault();
             var id = $(this).attr("id").split("_")[1];
@@ -180,6 +223,9 @@ ChatController.prototype = {
             KEYTAP.contactController.displayContactDetailsModal(id);
         });
 
+        /**
+         * Click event for message detail button.
+         */
         $(document).on("click", "#messageDetailsBtn", function (e) {
             e.preventDefault();
             if(this.selectedMessage.length == 1) {
@@ -304,6 +350,13 @@ ChatController.prototype = {
             contactDetailsModal.open();
         }
     },
+    /**
+     * Build the message details dialog.
+     *
+     * @param message
+     * @param contact
+     * @returns {string}
+     */
     buildMessageDetailsHtml : function (message, contact) {
         var html = "";
         var sentTime = new Date(message.timestamp).toLocaleString();
@@ -476,6 +529,13 @@ ChatController.prototype = {
             });
         }
     },
+    /**
+     * Check if the time difference between two timestamp is bigger than 5 min.
+     *
+     * @param t1
+     * @param t2
+     * @returns {boolean}
+     */
     compareTime : function (t1, t2) {
         if(t1 > t2)
             return false;
@@ -486,6 +546,9 @@ ChatController.prototype = {
 
         return false;
     },
+    /**
+     * Add message update listener.
+     */
     addMessageUpdateListener : function () {
         messengerService.addMessageStatusUpdateListener(function (messageInfo) {
             messageInfo.messages.forEach(function (message) {
@@ -498,9 +561,17 @@ ChatController.prototype = {
             }.bind(this));
         }.bind(this));
     },
+    /**
+     * Add new message listener.
+     */
     addNewMessageListener : function () {
         messengerService.addNewMessageListener(this.handleNewMessageDisplay.bind(this));
     },
+    /**
+     * Handle new message display.
+     *
+     * @param messageInfo
+     */
     handleNewMessageDisplay : function(messageInfo) {
         if(messageInfo.messages.length <= 0)
             return;
@@ -524,6 +595,12 @@ ChatController.prototype = {
         this.updateContactPageNewMessage(contactId);
         this.updateRecentChatNewMessage(messages, contactId);
     },
+    /**
+     * Update the recent chat message if on contacts.html page.
+     *
+     * @param messages
+     * @param contactId
+     */
     updateRecentChatNewMessage : function (messages, contactId) {
         var recentContent = $("#recentChatList");
         if(recentContent.length){
@@ -541,6 +618,11 @@ ChatController.prototype = {
             }
         }
     },
+    /**
+     * Update the contacts if on contacts.html page.
+     *
+     * @param contactId
+     */
     updateContactPageNewMessage : function (contactId) {
         var contactContent = $("#contactList");
         if(contactContent.length){
