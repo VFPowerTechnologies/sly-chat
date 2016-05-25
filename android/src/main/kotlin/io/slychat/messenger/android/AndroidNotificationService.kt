@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Typeface
 import android.media.RingtoneManager
+import android.net.Uri
 import android.text.SpannableString
 import android.text.style.StyleSpan
 import io.slychat.messenger.core.persistence.MessageInfo
@@ -199,7 +200,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         val pendingIntent = getNewMessagesNotificationIntent()
         val deletePendingIntent = getNewMessagesNotificationDeleteIntent()
 
-        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        val soundUri = getNotificationSound()
 
         val notification = Notification.Builder(context)
             .setContentTitle(getNewMessagesNotificationTitle())
@@ -227,10 +228,14 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         return getPendingIntentForService(intent)
     }
 
+    private fun getNotificationSound(): Uri {
+       return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+    }
+
     fun showLoggedOutNotification(accountName: String, info: List<OfflineMessageInfo>) {
         val pendingIntent = getLoggedOffNotificationIntent()
 
-        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        val soundUri = getNotificationSound()
 
         val notificationTitle = if (info.size == 1) {
             "New messages from ${info[0].name}"
