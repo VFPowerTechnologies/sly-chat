@@ -42,6 +42,9 @@ data class MessageSendOk(val to: UserId, override val messageId: String) : Messa
 //data class MessageSendDeviceMismatch() : MessageSendResult
 //data class MessageSendUnknownFailure(val cause: Throwable) : MessageSendResult
 
+val List<Package>.users: Set<UserId>
+    get() = mapTo(HashSet()) { it.id.address.id }
+
 //all Observerables are run on the main thread
 class MessengerService(
     private val application: SlyApplication,
@@ -120,8 +123,11 @@ class MessengerService(
     }
 
     private fun initializeReceiveQueue() {
-        //FIXME need to only get queued packages for contacts that exist
-        messagePersistenceManager.getQueuedPackages() successUi { packages ->
+        messagePersistenceManager.getQueuedPackages() bind { packages ->
+            contactsPersistenceManager.exists(packages.users) map { exists ->
+                packages.filter { it.id.address.id in exists }
+            }
+        } successUi { packages ->
             addPackagesToReceivedQueue(packages)
         }
     }
@@ -408,7 +414,7 @@ class MessengerService(
 
     /** Filter out packages which belong to blocked users, etc. */
     private fun filterPackages(packages: List<Package>): Promise<List<Package>, Exception> {
-        val users = packages.mapTo(HashSet()) { it.id.address.id }
+        val users = packages.users
         return contactsService.allowMessagesFrom(users) map { allowedUsers ->
             val rejected = HashSet(users)
             rejected.removeAll(allowedUsers)
