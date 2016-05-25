@@ -162,7 +162,7 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
-    fun `addMessages should remove all corresponding messages if they exist`() {
+    fun `addMessages should remove all corresponding queued packages if they exist`() {
         val userId = UserId(1)
         val address = SlyAddress(userId, 1)
         createConvosFor(userId)
