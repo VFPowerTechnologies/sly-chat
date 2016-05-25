@@ -341,17 +341,7 @@ class MessengerService(
         val pkg = Package(PackageId(event.from, randomUUID()), timestamp, String(event.content, Charsets.UTF_8))
         val packages = listOf(pkg)
 
-        messagePersistenceManager.addToQueue(packages) bind {
-            contactsPersistenceManager.exists(event.from.id) successUi { exists ->
-                if (exists)
-                    addPackagesToReceivedQueue(packages)
-                else {
-                    contactsService.addPendingContacts(setOf(event.from.id))
-                }
-            }
-        } fail { e ->
-            log.error("Unable to add encrypted messages to queue: {}", e.message, e)
-        }
+        processPackages(packages)
     }
 
     private fun handleServerRecievedMessage(event: ServerReceivedMessage) {
@@ -424,8 +414,10 @@ class MessengerService(
         messagePersistenceManager.addToQueue(offlineMessages) success {
             d.resolve(Unit)
 
+    private fun processPackages(packages: List<Package>): Promise<Unit, Exception> {
+        return messagePersistenceManager.addToQueue(packages) success {
             val users = HashSet<UserId>()
-            users.addAll(offlineMessages.map { it.id.address.id })
+            users.addAll(packages.map { it.id.address.id })
 
             contactsPersistenceManager.exists(users) successUi { exists ->
                 val missing = HashSet(users)
@@ -434,14 +426,25 @@ class MessengerService(
                 //will receive events at a later time for added/removed
                 contactsService.addPendingContacts(missing)
 
-                //TODO
                 val toProcess = if (missing.isNotEmpty())
-                    offlineMessages.filter { exists.contains(it.id.address.id) }
+                    packages.filter { exists.contains(it.id.address.id) }
                 else
-                    offlineMessages
+                    packages
 
                 addPackagesToReceivedQueue(toProcess)
+            } fail { e ->
+                log.error("Failed to add packages to queue: {}", e.message, e)
             }
+        }
+    }
+
+    /* Other */
+
+    fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception> {
+        val d = deferred<Unit, Exception>()
+
+        processPackages(offlineMessages) success {
+            d.resolve(Unit)
         } fail {
             d.reject(it)
         }
