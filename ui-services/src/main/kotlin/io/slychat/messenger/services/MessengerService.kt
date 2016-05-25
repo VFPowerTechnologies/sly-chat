@@ -98,7 +98,7 @@ class MessengerService(
 
     private fun onContactEvent(event: ContactEvent) {
         when (event) {
-            is ContactsAdded -> {
+            is ContactEvent.Added -> {
                 val map = event.contacts.map { it.id }.toSet()
                 messagePersistenceManager.getQueuedPackages(map) successUi {
                     addPackagesToReceivedQueue(it)
@@ -107,7 +107,7 @@ class MessengerService(
                 }
             }
 
-            is InvalidContacts -> {
+            is ContactEvent.InvalidContacts -> {
                 log.info("Messages for invalid user ids: {}", event.contacts.map { it.long }.joinToString(","))
                 messagePersistenceManager.removeFromQueue(event.contacts) fail { e ->
                     log.error("Unable to remove missing contacts: {}", e.message, e)

@@ -66,7 +66,7 @@ class ContactsService(
 
         //XXX blacklist? at least temporarily or something
         if (missing.isNotEmpty())
-            contactEventsSubject.onNext(InvalidContacts(missing))
+            contactEventsSubject.onNext(ContactEvent.InvalidContacts(missing))
 
         val isPending = if (policy == ContactAddPolicy.AUTO) false else true
 
@@ -75,9 +75,9 @@ class ContactsService(
         contactsPersistenceManager.addAll(contacts) successUi { newContacts ->
             if (newContacts.isNotEmpty()) {
                 val ev = if (policy == ContactAddPolicy.AUTO)
-                    ContactsAdded(newContacts)
+                    ContactEvent.Added(newContacts)
                 else
-                    ContactRequests(newContacts)
+                    ContactEvent.Request(newContacts)
 
                 contactEventsSubject.onNext(ev)
             }

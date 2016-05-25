@@ -7,13 +7,13 @@ enum class UIContactEventType {
 
 interface UIContactEvent {
     val type: UIContactEventType
-}
 
-class UIContactsAdded(val contacts: List<UIContactDetails>) : UIContactEvent {
-    override val type = UIContactEventType.ADD
-}
+    class Added(val contacts: List<UIContactDetails>) : UIContactEvent {
+        override val type = UIContactEventType.ADD
+    }
 
-class UIContactRequests(val contacts: List<UIContactDetails>) : UIContactEvent {
-    override val type = UIContactEventType.REQUEST
-}
+    class Request(val contacts: List<UIContactDetails>) : UIContactEvent {
+        override val type = UIContactEventType.REQUEST
+    }
 
+}

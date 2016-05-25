@@ -4,7 +4,10 @@ import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.di.UserComponent
-import io.slychat.messenger.services.ui.*
+import io.slychat.messenger.services.ui.UIContactDetails
+import io.slychat.messenger.services.ui.UIContactEvent
+import io.slychat.messenger.services.ui.UIContactsService
+import io.slychat.messenger.services.ui.UINewContactResult
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
@@ -40,11 +43,11 @@ class UIContactsServiceImpl(
 
     private fun onContactEvent(event: ContactEvent) {
         val ev = when (event) {
-            is ContactsAdded ->
-                UIContactsAdded(event.contacts.map { it.toUI() })
+            is ContactEvent.Added ->
+                UIContactEvent.Added(event.contacts.map { it.toUI() })
 
-            is ContactRequests ->
-                UIContactRequests(event.contacts.map { it.toUI() })
+            is ContactEvent.Request ->
+                UIContactEvent.Request(event.contacts.map { it.toUI() })
 
             else -> null
         }
