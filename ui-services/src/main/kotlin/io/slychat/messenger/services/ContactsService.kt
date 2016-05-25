@@ -72,13 +72,15 @@ class ContactsService(
 
         val contacts = response.contacts.map { it.toCore(isPending) }
 
-        contactsPersistenceManager.addAll(contacts) successUi {
-            val ev = if (policy == ContactAddPolicy.AUTO)
-                ContactsAdded(contacts)
-            else
-                ContactRequests(contacts)
+        contactsPersistenceManager.addAll(contacts) successUi { newContacts ->
+            if (newContacts.isNotEmpty()) {
+                val ev = if (policy == ContactAddPolicy.AUTO)
+                    ContactsAdded(newContacts)
+                else
+                    ContactRequests(newContacts)
 
-            contactEventsSubject.onNext(ev)
+                contactEventsSubject.onNext(ev)
+            }
         } fail { e ->
             log.error("Unable to add new contacts: {}", e.message, e)
         }

@@ -4,7 +4,6 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
-import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Promise
@@ -121,7 +120,7 @@ class ContactSyncManager(
                     val request = AddContactsRequest(remoteContactEntries)
 
                     client.addContacts(userCredentials, request) bind {
-                        contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.id, it.email, it.name, false, it.phoneNumber, it.publicKey) })
+                        contactsPersistenceManager.addAll(foundContacts.contacts.map { it.toCore(false) }) map { Unit }
                     }
                 }
             }
