@@ -406,34 +406,41 @@ class MessengerService(
         return messagePersistenceManager.deleteAllMessages(userId)
     }
 
-    /* Other */
+    /** Filter out packages which belong to blocked users, etc. */
+    private fun filterPackages(packages: List<Package>): Promise<List<Package>, Exception> {
+        val users = packages.mapTo(HashSet()) { it.id.address.id }
+        return contactsService.allowMessagesFrom(users) map { allowedUsers ->
+            val rejected = HashSet(users)
+            rejected.removeAll(allowedUsers)
+            if (rejected.isNotEmpty())
+                log.info("Reject messages from users: {}", rejected.map { it.long })
 
-    fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception> {
-        val d = deferred<Unit, Exception>()
-
-        messagePersistenceManager.addToQueue(offlineMessages) success {
-            d.resolve(Unit)
+            packages.filter { it.id.address.id in allowedUsers }
+        }
+    }
 
     private fun processPackages(packages: List<Package>): Promise<Unit, Exception> {
-        return messagePersistenceManager.addToQueue(packages) success {
-            val users = HashSet<UserId>()
-            users.addAll(packages.map { it.id.address.id })
+        return filterPackages(packages) bind { filtered ->
+            messagePersistenceManager.addToQueue(filtered) success {
+                val users = HashSet<UserId>()
+                users.addAll(packages.map { it.id.address.id })
 
-            contactsPersistenceManager.exists(users) successUi { exists ->
-                val missing = HashSet(users)
-                missing.removeAll(exists)
+                contactsPersistenceManager.exists(users) successUi { exists ->
+                    val missing = HashSet(users)
+                    missing.removeAll(exists)
 
-                //will receive events at a later time for added/removed
-                contactsService.addPendingContacts(missing)
+                    //will receive events at a later time for added/removed
+                    contactsService.addPendingContacts(missing)
 
-                val toProcess = if (missing.isNotEmpty())
-                    packages.filter { exists.contains(it.id.address.id) }
-                else
-                    packages
+                    val toProcess = if (missing.isNotEmpty())
+                        packages.filter { exists.contains(it.id.address.id) }
+                    else
+                        packages
 
-                addPackagesToReceivedQueue(toProcess)
-            } fail { e ->
-                log.error("Failed to add packages to queue: {}", e.message, e)
+                    addPackagesToReceivedQueue(toProcess)
+                } fail { e ->
+                    log.error("Failed to add packages to queue: {}", e.message, e)
+                }
             }
         }
     }

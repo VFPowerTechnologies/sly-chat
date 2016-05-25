@@ -8,6 +8,7 @@ import io.slychat.messenger.core.http.api.contacts.FetchContactInfoByIdResponse
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.auth.AuthTokenManager
+import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -19,6 +20,7 @@ enum class ContactAddPolicy {
     ASK,
     REJECT
 }
+
 data class ContactRequestResponse(
     val responses: Map<ContactInfo, Boolean>
 )
@@ -48,12 +50,12 @@ class ContactsService(
     }
 
     private fun onNetworkStatusChange(available: Boolean) {
-
     }
 
     //add a new non-pending contact for which we already have info (from the ui's add new contact dialog)
-    //fun addContact(contactInfo: ContactInfo): Promise<Unit, Exception> {
-    //}
+    fun addContact(contactInfo: ContactInfo): Promise<Unit, Exception> {
+        throw NotImplementedError("addContact")
+    }
 
     //we want to keep the policy we had when we started processing
     private fun handleContactLookupResponse(policy: ContactAddPolicy, users: Set<UserId>, response: FetchContactInfoByIdResponse) {
@@ -82,8 +84,15 @@ class ContactsService(
         }
     }
 
-    //fire contactsadded with pending=true
-    //if policy is ask, then fire reqests as well
+    //in the future, this will also check for blocked/deleted users
+    fun allowMessagesFrom(users: Set<UserId>): Promise<Set<UserId>, Exception> {
+        //avoid errors if the caller modifiers the set after giving it
+        val usersCopy = HashSet(users)
+        return when (contactAddPolicy) {
+            ContactAddPolicy.REJECT -> contactsPersistenceManager.exists(usersCopy)
+            else -> Promise.ofSuccess(usersCopy)
+        }
+    }
 
     //fetch+add contacts in pending state (behavior depends on ContactAddPolicy)
     fun addPendingContacts(users: Set<UserId>) {
@@ -105,8 +114,8 @@ class ContactsService(
         }
     }
 
-    //remove pending state or
+    //TODO
     fun processContactRequestResponse(response: ContactRequestResponse) {
-
+        log.debug("TODO: processContactRequestResponse")
     }
 }
