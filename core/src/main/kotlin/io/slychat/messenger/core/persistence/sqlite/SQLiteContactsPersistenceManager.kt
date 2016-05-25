@@ -197,20 +197,18 @@ ON
         return true
     }
 
-    private fun addContact(connection: SQLiteConnection, contactInfo: ContactInfo): Boolean {
-        return connection.withTransaction { addContactNoTransaction(connection, contactInfo) }
-    }
-
     override fun add(contactInfo: ContactInfo): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        addContact(connection, contactInfo)
+        connection.withTransaction { addContactNoTransaction(connection, contactInfo) }
     }
 
     override fun addAll(contacts: List<ContactInfo>): Promise<Set<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val newContacts = HashSet<ContactInfo>()
 
-        contacts.forEach {
-            if (addContact(connection, it))
-                newContacts.add(it)
+        connection.withTransaction {
+            contacts.forEach {
+                if (addContactNoTransaction(connection, it))
+                    newContacts.add(it)
+            }
         }
 
         newContacts
