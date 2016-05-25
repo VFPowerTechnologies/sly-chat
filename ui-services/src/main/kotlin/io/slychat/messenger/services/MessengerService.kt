@@ -43,7 +43,7 @@ data class MessageSendOk(val to: UserId, override val messageId: String) : Messa
 //data class MessageSendUnknownFailure(val cause: Throwable) : MessageSendResult
 
 val List<Package>.users: Set<UserId>
-    get() = mapTo(HashSet()) { it.id.address.id }
+    get() = mapTo(HashSet()) { it.userId }
 
 //all Observerables are run on the main thread
 class MessengerService(
@@ -125,7 +125,7 @@ class MessengerService(
     private fun initializeReceiveQueue() {
         messagePersistenceManager.getQueuedPackages() bind { packages ->
             contactsPersistenceManager.exists(packages.users) map { exists ->
-                packages.filter { it.id.address.id in exists }
+                packages.filter { it.userId in exists }
             }
         } successUi { packages ->
             addPackagesToReceivedQueue(packages)
