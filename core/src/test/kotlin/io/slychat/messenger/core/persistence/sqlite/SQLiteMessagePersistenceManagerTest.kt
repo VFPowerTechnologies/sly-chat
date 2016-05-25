@@ -189,6 +189,11 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
+    fun `addMessages should do nothing when given an empty list`() {
+        assertTrue(messagePersistenceManager.addMessages(UserId(0), listOf()).get().isEmpty(), "List not empty")
+    }
+
+    @Test
     fun `addSentMessage should add a valid received message`() {
         createConvosFor(contact)
 

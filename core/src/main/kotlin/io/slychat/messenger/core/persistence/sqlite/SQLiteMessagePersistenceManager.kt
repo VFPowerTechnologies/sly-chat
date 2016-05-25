@@ -61,12 +61,16 @@ VALUES
     }
 
     override fun addMessages(userId: UserId, messages: Collection<MessageInfo>): Promise<List<MessageInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withTransaction {
-            messages.map { insertMessage(connection, userId, it) }
-            removeFromQueueNoTransaction(connection, userId, messages.filter { !it.isSent }.map { it.id })
-            updateConversationInfo(connection, userId, false, messages.last().message, messages.last().timestamp, messages.size)
-            messages.toList()
+        if (messages.isNotEmpty()) {
+            connection.withTransaction {
+                messages.map { insertMessage(connection, userId, it) }
+                removeFromQueueNoTransaction(connection, userId, messages.filter { !it.isSent }.map { it.id })
+                updateConversationInfo(connection, userId, false, messages.last().message, messages.last().timestamp, messages.size)
+                messages.toList()
+            }
         }
+        else
+            listOf()
     }
 
     override fun markMessageAsDelivered(userId: UserId, messageId: String): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
