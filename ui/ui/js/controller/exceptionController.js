@@ -1,6 +1,11 @@
 var ExceptionController = function () {};
 
 ExceptionController.prototype = {
+    /**
+     * Display the debug dialog if on DEBUG.
+     *
+     * @param exception
+     */
     displayDebugMessage : function (exception) {
         if(window.buildConfig.DEBUG == true) {
             var modal = $("#exceptionModal");
@@ -16,4 +21,4 @@ ExceptionController.prototype = {
             });
         }
     }
-}
+};
