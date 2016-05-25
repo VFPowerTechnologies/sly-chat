@@ -4,6 +4,7 @@ import android.os.Bundle
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.gcm.GcmListenerService
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.typeRef
 import org.slf4j.LoggerFactory
@@ -36,13 +37,16 @@ class SlyGcmListenerService : GcmListenerService() {
 
         val infoSerialized = data.getString("info")
         val objectMapper = ObjectMapper()
-        val info: Array<OfflineMessageInfo> = objectMapper.readValue(infoSerialized, typeRef<Array<OfflineMessageInfo>>())
+        val info: List<OfflineMessageInfo> = objectMapper.readValue(infoSerialized, typeRef<List<OfflineMessageInfo>>())
 
-        val account = data.getString("account")
+        val accountStr = data.getString("account")
+        val account = SlyAddress.fromString(accountStr) ?: throw RuntimeException("Invalid account address format: $accountStr")
+
+        val accountName = data.getString("accountName")
 
         val app = AndroidApp.get(this)
         androidRunInMain(this) {
-            app.onGCMMessage(account)
+            app.onGCMMessage(account, accountName, info)
         }
     }
 }

@@ -19,6 +19,7 @@ import io.slychat.messenger.android.services.AndroidUILoadService
 import io.slychat.messenger.android.services.AndroidUIPlatformInfoService
 import io.slychat.messenger.android.services.AndroidUIPlatformService
 import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.gcm.GcmAsyncClient
@@ -89,6 +90,9 @@ fun gcmInitAsync(context: Context): Promise<LoadError?, Exception> = task { gcmI
 class AndroidApp : Application() {
     private var gcmInitRunning = false
     private var gcmInitComplete = false
+
+    //TODO move this into settings
+    private var noNotificationsOnLogout = false
 
     val app: SlyApplication = SlyApplication()
 
@@ -262,7 +266,7 @@ class AndroidApp : Application() {
         }
     }
 
-    fun onGCMMessage(account: String) {
+    fun onGCMMessage(account: SlyAddress, accountName: String, info: List<OfflineMessageInfo>) {
         //it's possible we might receive a message targetting a diff account that was previously logged in
         app.addOnInitListener { app ->
             //the app might not be finished logging in yet
@@ -271,11 +275,20 @@ class AndroidApp : Application() {
             //in this case we just delete the token, as every new login reregisters a new token anyways
             //so if we have no auto-login but we're still receiving gcm messages we haven't deleted the existing token
             if (app.loginState == LoginState.LOGGED_OUT) {
-                log.warn("Got a GCM message but no longer logged in; invalidating token")
-                deleteGCMToken()
+                if (noNotificationsOnLogout) {
+                    log.warn("Got a GCM message but no longer logged in; invalidating token")
+                    deleteGCMToken()
+                }
+                else
+                    notificationService.showLoggedOutNotification(accountName, info)
             }
-            else if (app.loginState == LoginState.LOGGED_IN)
-                app.fetchOfflineMessages()
+            else if (app.loginState == LoginState.LOGGED_IN) {
+                //could maybe occur that we get older gcm messages for an account we were previously logged in as
+                if (account == app.userComponent!!.userLoginData.address)
+                    app.fetchOfflineMessages()
+                else
+                    log.warn("Got GCM message for different account: $account")
+            }
         }
     }
 
@@ -291,8 +304,10 @@ class AndroidApp : Application() {
             refreshGCMToken()
     }
 
-    private fun deleteGCMToken() {
-        gcmDeleteToken(this) fail { e ->
+    fun deleteGCMToken() {
+        gcmDeleteToken(this) success {
+            log.info("GCM token invalidated")
+        } fail { e ->
             if (e.message == InstanceID.ERROR_SERVICE_NOT_AVAILABLE || e.message == InstanceID.ERROR_TIMEOUT)
                 log.error("InstanceID service unavailable: {}", e.message)
             else
@@ -309,7 +324,7 @@ class AndroidApp : Application() {
 
         //this is a best effort attempt at unregistering
         //even if this fails, the token'll be invalidated on the next login that registers one
-        if (app.isNetworkAvailable) {
+        if (app.isNetworkAvailable && noNotificationsOnLogout) {
             deleteGCMToken()
 
             val serverUrl = app.appComponent.serverUrls.API_SERVER

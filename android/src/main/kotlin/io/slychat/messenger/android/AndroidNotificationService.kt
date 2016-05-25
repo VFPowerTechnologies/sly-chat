@@ -148,12 +148,24 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         }
     }
 
-    private fun getNewMessagesNotificationIntent(): PendingIntent {
+    private fun getMainActivityIntent(): Intent {
         val intent = Intent(context, MainActivity::class.java)
-        intent.action = MainActivity.ACTION_VIEW_MESSAGES
 
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+
+        return intent
+    }
+
+    private fun getPendingIntentForActivity(intent: Intent): PendingIntent =
+        PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_UPDATE_CURRENT)
+
+    private fun getPendingIntentForService(intent: Intent): PendingIntent =
+        PendingIntent.getService(context, 0, intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_UPDATE_CURRENT)
+
+    private fun getNewMessagesNotificationIntent(): PendingIntent {
+        val intent = getMainActivityIntent()
+        intent.action = MainActivity.ACTION_VIEW_MESSAGES
 
         val isSingleUser = newMessagesNotification.userCount() == 1
         val typeExtra = if (isSingleUser)
@@ -168,13 +180,13 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
             intent.putExtra(MainActivity.EXTRA_USERID, username.id.long.toString())
         }
 
-        return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_UPDATE_CURRENT)
+        return getPendingIntentForActivity(intent)
     }
 
     private fun getNewMessagesNotificationDeleteIntent(): PendingIntent {
         val intent = Intent(context, NotificationDeletionService::class.java)
 
-        return PendingIntent.getService(context, 0, intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_UPDATE_CURRENT)
+        return getPendingIntentForService(intent)
     }
 
     //updates the current new message notification based on the current data
@@ -200,6 +212,60 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
             .setStyle(getInboxStyle())
             .build()
 
+        notificationManager.notify(NOTIFICATION_ID_NEW_MESSAGES, notification)
+    }
+
+    private fun getLoggedOffNotificationIntent(): PendingIntent {
+        val intent = getMainActivityIntent()
+        intent.action = Intent.ACTION_MAIN
+        intent.addCategory(Intent.CATEGORY_LAUNCHER)
+        return getPendingIntentForActivity(intent)
+    }
+
+    private fun getStopMessagesIntent(): PendingIntent {
+        val intent = Intent(context, NotificationStopService::class.java)
+        return getPendingIntentForService(intent)
+    }
+
+    fun showLoggedOutNotification(accountName: String, info: List<OfflineMessageInfo>) {
+        val pendingIntent = getLoggedOffNotificationIntent()
+
+        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+
+        val notificationTitle = if (info.size == 1) {
+            "New messages from ${info[0].name}"
+        }
+        else {
+            val totalMessages = info.fold(0) { z, b ->
+                z + b.pendingCount
+            }
+            "$totalMessages new messages"
+        }
+
+        val notificationText = if (info.size == 1) {
+            val pendingCount = info[0].pendingCount
+            val s = "$pendingCount new message"
+            if (pendingCount > 1)
+                s + "s"
+            else
+                s
+        }
+        else {
+            "New notifications for $accountName from " + info.map { it.name }.joinToString(", ")
+        }
+
+        val notification = Notification.Builder(context)
+            .setContentTitle(notificationTitle)
+            .setContentText(notificationText)
+            .setSmallIcon(R.drawable.notification)
+            .setSound(soundUri)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            //FIXME icon
+            .addAction(R.drawable.notification, "Stop receiving notifications", getStopMessagesIntent())
+            .build()
+
+        //just reuse the same notification id, as both of these don't currently coexist
         notificationManager.notify(NOTIFICATION_ID_NEW_MESSAGES, notification)
     }
 }
