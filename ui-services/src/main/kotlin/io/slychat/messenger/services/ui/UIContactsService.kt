@@ -9,6 +9,13 @@ interface UIContactsService {
     /** Adds a listener to be notified on contact sync start/stop. Listener will be called after registration with current value. */
     fun addContactListSyncListener(listener: (Boolean) -> Unit)
 
+    /**
+     * Listener for when another user wants to add you as a contact, and the privacy settings require user confirmation.
+     *
+     * It's the responsibility of the UI to present the information to the user and then add the contact afterwards if the user wishes it.
+     */
+    fun addContactEventListener(listener: (UIContactEvent) -> Unit)
+
     /** Retrieve list of contacts. UIContact.id will not be null. */
     fun getContacts(): Promise<List<UIContactDetails>, Exception>
 

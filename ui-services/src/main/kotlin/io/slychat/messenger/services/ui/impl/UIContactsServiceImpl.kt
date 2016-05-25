@@ -2,31 +2,58 @@ package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
-import io.slychat.messenger.services.SlyApplication
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.di.UserComponent
-import io.slychat.messenger.services.formatPhoneNumber
-import io.slychat.messenger.services.getAccountRegionCode
-import io.slychat.messenger.services.parsePhoneNumber
 import io.slychat.messenger.services.ui.UIContactDetails
+import io.slychat.messenger.services.ui.UIContactEvent
 import io.slychat.messenger.services.ui.UIContactsService
 import io.slychat.messenger.services.ui.UINewContactResult
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
+import rx.Subscription
 import java.util.*
 
 class UIContactsServiceImpl(
     private val app: SlyApplication,
     serverUrl: String
 ) : UIContactsService {
+
     private val contactClient = ContactAsyncClient(serverUrl)
     private val contactListClient = ContactListAsyncClient(serverUrl)
 
     private val contactListSyncListeners = ArrayList<(Boolean) -> Unit>()
     private var isContactListSyncing = false
 
+    private var contactEventSub: Subscription? = null
+    private val contactEventListeners = ArrayList<(UIContactEvent) -> Unit>()
+
     init {
         app.contactListSyncing.subscribe { updateContactListSyncing(it) }
+        app.userSessionAvailable.subscribe { isAvailable ->
+            if (!isAvailable) {
+                contactEventSub?.unsubscribe()
+                contactEventSub = null
+            }
+            else {
+                contactEventSub = getUserComponentOrThrow().contactsService.contactEvents.subscribe { onContactEvent(it) }
+            }
+        }
+    }
+
+    private fun onContactEvent(event: ContactEvent) {
+        val ev = when (event) {
+            is ContactEvent.Added ->
+                UIContactEvent.Added(event.contacts.map { it.toUI() })
+
+            is ContactEvent.Request ->
+                UIContactEvent.Request(event.contacts.map { it.toUI() })
+
+            else -> null
+        }
+
+        if (ev != null)
+            contactEventListeners.forEach { it(ev) }
     }
 
     private fun getUserComponentOrThrow(): UserComponent {
@@ -42,6 +69,10 @@ class UIContactsServiceImpl(
     override fun addContactListSyncListener(listener: (Boolean) -> Unit) {
         contactListSyncListeners.add(listener)
         listener(isContactListSyncing)
+    }
+
+    override fun addContactEventListener(listener: (UIContactEvent) -> Unit) {
+        contactEventListeners.add(listener)
     }
 
     private fun getContactsPersistenceManagerOrThrow(): ContactsPersistenceManager =

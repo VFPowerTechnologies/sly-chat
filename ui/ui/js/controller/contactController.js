@@ -48,6 +48,18 @@ ContactController.prototype = {
             }
         }.bind(this));
     },
+    addContactEventListener : function () {
+        contactService.addContactEventListener(function (ev) {
+            switch(ev.type) {
+                case 'ADD':
+                    if(window.location.href.indexOf("contacts.html") > -1) {
+                        this.model.resetContacts();
+                        KEYTAP.navigationController.loadPage("contacts.html", false);
+                    }
+                    break;
+            }
+        }.bind(this));
+    },
     showContactSyncingNotification : function () {
         this.notify = $.notify({
             icon: "icon-pull-left fa fa-info-circle",

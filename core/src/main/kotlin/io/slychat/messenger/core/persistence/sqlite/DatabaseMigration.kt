@@ -57,7 +57,9 @@ abstract class DatabaseMigration(
      * @param version Current database version number.
      */
     private fun applyGeneralMigration(connection: SQLiteConnection, version: Int, sql: String) {
-        throw UnsupportedOperationException("General migration not implemented")
+        log.info("Applying general migration for {}", version)
+
+        connection.exec(sql)
     }
 
     private fun applyConvoMigration(connection: SQLiteConnection, version: Int, sqlTemplate: String) {

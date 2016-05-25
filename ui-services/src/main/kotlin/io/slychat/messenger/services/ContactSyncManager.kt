@@ -4,7 +4,6 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
-import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Promise
@@ -74,8 +73,9 @@ class ContactSyncManager(
 
                     val contactsClient = ContactAsyncClient(serverUrl)
                     val request = FetchContactInfoByIdRequest(diff.newContacts.toList())
-                    contactsClient.fetchContactInfoByEmail(userCredentials, request) bind { response ->
-                        contactsPersistenceManager.applyDiff(response.contacts, diff.removedContacts.toList())
+                    contactsClient.fetchContactInfoById(userCredentials, request) bind { response ->
+                        val newContacts = response.contacts.map { it.toCore(false) }
+                        contactsPersistenceManager.applyDiff(newContacts, diff.removedContacts.toList())
                     }
                 }
             }
@@ -120,7 +120,7 @@ class ContactSyncManager(
                     val request = AddContactsRequest(remoteContactEntries)
 
                     client.addContacts(userCredentials, request) bind {
-                        contactsPersistenceManager.addAll(foundContacts.contacts.map { ContactInfo(it.id, it.email, it.name, it.phoneNumber, it.publicKey) })
+                        contactsPersistenceManager.addAll(foundContacts.contacts.map { it.toCore(false) }) map { Unit }
                     }
                 }
             }

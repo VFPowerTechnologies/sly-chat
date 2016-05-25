@@ -8,6 +8,16 @@ import nl.komponents.kovenant.Promise
 interface ContactsPersistenceManager {
     fun get(userId: UserId): Promise<ContactInfo?, Exception>
     fun getAll(): Promise<List<ContactInfo>, Exception>
+
+    fun exists(userId: UserId): Promise<Boolean, Exception>
+    fun exists(users: Set<UserId>): Promise<Set<UserId>, Exception>
+
+    /** Get pending users. */
+    fun getPending(): Promise<List<ContactInfo>, Exception>
+
+    /** Mark the given users as not pending. */
+    fun markAccepted(users: Set<UserId>): Promise<Unit, Exception>
+
     /** Returns info for all available conversations. */
     fun getAllConversations(): Promise<List<Conversation>, Exception>
 
@@ -17,9 +27,11 @@ interface ContactsPersistenceManager {
     /** Resets unread message count for the given contact's conversation. */
     fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>
 
-    /** Adds a new contact and conversation for a contact. */
-    fun add(contactInfo: ContactInfo): Promise<Unit, Exception>
-    fun addAll(contacts: List<ContactInfo>): Promise<Unit, Exception>
+    /** Adds a new contact and conversation for a contact. Returns true if contact was not already present. */
+    fun add(contactInfo: ContactInfo): Promise<Boolean, Exception>
+
+    /** Adds all the given contacts and returns the list of contacts were not previously present. */
+    fun addAll(contacts: List<ContactInfo>): Promise<Set<ContactInfo>, Exception>
     /** Updates the given contact's info. */
     fun update(contactInfo: ContactInfo): Promise<Unit, Exception>
     /** Removes a contact and their associated conversation. */
@@ -36,4 +48,7 @@ interface ContactsPersistenceManager {
     fun getDiff(ids: List<UserId>): Promise<ContactListDiff, Exception>
 
     fun applyDiff(newContacts: List<ContactInfo>, removedContacts: List<UserId>): Promise<Unit, Exception>
+
+    /** Contacts with pending messages but no available info. */
+    fun getUnadded(): Promise<Set<UserId>, Exception>
 }

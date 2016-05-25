@@ -1,8 +1,8 @@
 package io.slychat.messenger.services.ui.impl
 
-import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.MessageBundle
 import io.slychat.messenger.services.MessengerService
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
@@ -74,10 +74,6 @@ class UIMessengerServiceImpl(
 
     override fun addConversationStatusUpdateListener(listener: (UIConversation) -> Unit) {
         log.debug("addConversationStatusUpdateListener: TODO")
-    }
-
-    override fun addNewContactRequestListener(listener: (UIContactDetails) -> Unit) {
-        log.debug("addNewContactRequestListener: TODO")
     }
 
     override fun getLastMessagesFor(contact: UIContactDetails, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {

@@ -19,8 +19,15 @@ inline fun <R> SQLiteStatement.use(body: (SQLiteStatement) -> R): R =
         body(this)
     }
     finally {
+        //this is here because if an SQLiteException is thrown outside this block, sqlite4java'll pointlessly log the full
+        //exception trace if we call dispose before reset
+        this.reset()
         this.dispose()
     }
+
+inline fun <R> SQLiteConnection.withPrepared(sql: String, body: (SQLiteStatement) -> R): R {
+    return this.prepare(sql).use { body(it) }
+}
 
 inline fun <R> SQLiteConnection.withTransaction(body: (SQLiteConnection) -> R): R {
     this.exec("BEGIN TRANSACTION")
@@ -65,16 +72,22 @@ fun isInvalidTableException(e: SQLiteException): Boolean {
         e.baseErrorCode == SQLiteConstants.SQLITE_ERROR && "no such table:" in message
 }
 
-/** Calls the given function on all available query results. */
-inline fun <T> SQLiteStatement.map(body: (SQLiteStatement) -> T): List<T> {
-    val results = ArrayList<T>()
-
+/** Collects all results into the given mutable collection and returns the same collection. */
+inline fun <T, C : MutableCollection<T>> SQLiteStatement.mapToCollection(body: (SQLiteStatement) -> T, results: C): C {
     while (step())
         results.add(body(this))
 
     return results
 }
 
+/** Calls the given function on all available query results. */
+inline fun <T> SQLiteStatement.map(body: (SQLiteStatement) -> T): List<T> =
+    mapToCollection(body, ArrayList<T>())
+
+inline fun <T> SQLiteStatement.mapToSet(body: (SQLiteStatement) -> T): Set<T> =
+    mapToCollection(body, HashSet<T>())
+
+/** Iterates through all results. */
 inline fun SQLiteStatement.foreach(body: (SQLiteStatement) -> Unit) {
     while (step())
         body(this)

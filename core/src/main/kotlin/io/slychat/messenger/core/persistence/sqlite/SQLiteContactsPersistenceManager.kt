@@ -17,20 +17,22 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
             UserId(stmt.columnLong(0)),
             stmt.columnString(1),
             stmt.columnString(2),
-            stmt.columnString(3),
-            stmt.columnString(4)
+            stmt.columnInt(3) != 0,
+            stmt.columnString(4),
+            stmt.columnString(5)
         )
 
     private fun contactInfoToRow(contactInfo: ContactInfo, stmt: SQLiteStatement) {
         stmt.bind(1, contactInfo.id.long)
         stmt.bind(2, contactInfo.email)
         stmt.bind(3, contactInfo.name)
-        stmt.bind(4, contactInfo.phoneNumber)
-        stmt.bind(5, contactInfo.publicKey)
+        stmt.bind(4, contactInfo.isPending.toInt())
+        stmt.bind(5, contactInfo.phoneNumber)
+        stmt.bind(6, contactInfo.publicKey)
     }
 
     override fun get(userId: UserId): Promise<ContactInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("SELECT id, email, name, phone_number, public_key FROM contacts WHERE id=?").use { stmt ->
+        connection.prepare("SELECT id, email, name, is_pending, phone_number, public_key FROM contacts WHERE id=?").use { stmt ->
             stmt.bind(1, userId.long)
             if (!stmt.step())
                 null
@@ -40,7 +42,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     }
 
     override fun getAll(): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("SELECT id, email, name, phone_number, public_key FROM contacts").use { stmt ->
+        connection.prepare("SELECT id, email, name, is_pending, phone_number, public_key FROM contacts").use { stmt ->
             val r = ArrayList<ContactInfo>()
             while (stmt.step()) {
                 r.add(contactInfoFromRow(stmt))
@@ -49,10 +51,28 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         }
     }
 
+    override fun exists(userId: UserId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.prepare("SELECT 1 FROM contacts WHERE id=?").use { stmt ->
+            stmt.bind(1, userId.long)
+            stmt.step()
+        }
+    }
+
+    override fun exists(users: Set<UserId>): Promise<Set<UserId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val sql = "SELECT id FROM contacts WHERE id IN (${getPlaceholders(users.size)})"
+        connection.prepare(sql).use { stmt ->
+            users.forEachIndexed { i, userId ->
+                stmt.bind(i+1, userId.long)
+            }
+
+            stmt.mapToSet { UserId(stmt.columnLong(0)) }
+        }
+    }
+
     override fun getAllConversations(): Promise<List<Conversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val sql = """
 SELECT
-    id, email, name, phone_number, public_key,
+    id, email, name, is_pending, phone_number, public_key,
     unread_count, last_message, last_timestamp
 FROM
     contacts
@@ -65,8 +85,8 @@ ON
         connection.prepare(sql).use { stmt ->
             stmt.map { stmt ->
                 val contact = contactInfoFromRow(stmt)
-                val lastTimestamp = if (!stmt.columnNull(7)) stmt.columnLong(7) else null
-                val info = ConversationInfo(contact.id, stmt.columnInt(5), stmt.columnString(6), lastTimestamp)
+                val lastTimestamp = if (!stmt.columnNull(8)) stmt.columnLong(8) else null
+                val info = ConversationInfo(contact.id, stmt.columnInt(6), stmt.columnString(7), lastTimestamp)
                 Conversation(contact, info)
             }
         }
@@ -111,7 +131,7 @@ ON
 
 
     private fun searchByLikeField(connection: SQLiteConnection, fieldName: String, searchValue: String): List<ContactInfo> =
-        connection.prepare("SELECT id, email, name, phone_number, public_key FROM contacts WHERE $fieldName LIKE ? ESCAPE '!'").use { stmt ->
+        connection.prepare("SELECT id, email, name, is_pending, phone_number, public_key FROM contacts WHERE $fieldName LIKE ? ESCAPE '!'").use { stmt ->
             val escaped = escapeLikeString(searchValue, '!')
             stmt.bind(1, "%$escaped%")
             val r = ArrayList<ContactInfo>()
@@ -153,9 +173,9 @@ ON
 
     //never call when not inside a transition
     //is here for bulk addition within a single transaction when syncing up the contacts list
-    private fun addContactNoTransaction(connection: SQLiteConnection, contactInfo: ContactInfo) {
+    private fun addContactNoTransaction(connection: SQLiteConnection, contactInfo: ContactInfo): Boolean {
         try {
-            connection.prepare("INSERT INTO contacts (id, email, name, phone_number, public_key) VALUES (?, ?, ?, ?, ?)").use { stmt ->
+            connection.prepare("INSERT INTO contacts (id, email, name, is_pending, phone_number, public_key) VALUES (?, ?, ?, ?, ?, ?)").use { stmt ->
                 contactInfoToRow(contactInfo, stmt)
                 stmt.step()
             }
@@ -169,22 +189,29 @@ ON
         }
         catch (e: SQLiteException) {
             if (e.baseErrorCode == SQLiteConstants.SQLITE_CONSTRAINT)
-                throw DuplicateContactException(contactInfo.email)
+                return false
 
             throw e
         }
+
+        return true
     }
 
-    private fun addContact(connection: SQLiteConnection, contactInfo: ContactInfo) {
+    override fun add(contactInfo: ContactInfo): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction { addContactNoTransaction(connection, contactInfo) }
     }
 
-    override fun add(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        addContact(connection, contactInfo)
-    }
+    override fun addAll(contacts: List<ContactInfo>): Promise<Set<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val newContacts = HashSet<ContactInfo>()
 
-    override fun addAll(contacts: List<ContactInfo>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        contacts.forEach { addContact(connection, it) }
+        connection.withTransaction {
+            contacts.forEach {
+                if (addContactNoTransaction(connection, it))
+                    newContacts.add(it)
+            }
+        }
+
+        newContacts
     }
 
     override fun update(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -270,5 +297,30 @@ ON
         }
 
         missing
+    }
+
+    override fun getPending(): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withPrepared("SELECT id, email, name, is_pending, phone_number, public_key FROM contacts WHERE is_pending=1") { stmt ->
+            stmt.map { contactInfoFromRow(stmt) }
+        }
+    }
+
+    override fun markAccepted(users: Set<UserId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            connection.withPrepared("UPDATE contacts SET is_pending=0 WHERE id=?") { stmt ->
+                users.forEach {
+                    stmt.bind(1, it.long)
+                    stmt.step()
+                    stmt.reset()
+                }
+            }
+        }
+    }
+
+    override fun getUnadded(): Promise<Set<UserId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val sql = "SELECT DISTINCT user_id FROM package_queue LEFT OUTER JOIN contacts ON user_id=contacts.id WHERE id IS null"
+        connection.withPrepared(sql) { stmt ->
+            stmt.mapToSet { UserId(stmt.columnLong(0)) }
+        }
     }
 }

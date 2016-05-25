@@ -1,12 +1,14 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.PlatformContact
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
+import java.util.*
 import kotlin.test.*
 
 class SQLiteContactsPersistenceManagerTest {
@@ -21,9 +23,9 @@ class SQLiteContactsPersistenceManagerTest {
     val contactId = UserId(1)
     val testMessage = "test message"
 
-    val contactA = ContactInfo(contactId, "a@a.com", "a", "000-0000", "pubkey")
-    val contactA2 = ContactInfo(UserId(2), "a2@a.com", "a2", "001-0000", "pubkey")
-    val contactC = ContactInfo(UserId(3), "c@c.com", "c", "222-2222", "pubkey")
+    val contactA = ContactInfo(contactId, "a@a.com", "a", false, "000-0000", "pubkey")
+    val contactA2 = ContactInfo(UserId(2), "a2@a.com", "a2", false, "001-0000", "pubkey")
+    val contactC = ContactInfo(UserId(3), "c@c.com", "c", false, "222-2222", "pubkey")
     val contactList = arrayListOf(
         contactA,
         contactA2,
@@ -67,7 +69,7 @@ class SQLiteContactsPersistenceManagerTest {
     @Test
     fun `add should successfully add a contact and create a conversation table`() {
         val contact = contactA
-        contactsPersistenceManager.add(contact).get()
+        assertTrue(contactsPersistenceManager.add(contact).get())
         val got = contactsPersistenceManager.get(contact.id).get()
 
         assertNotNull(got)
@@ -76,10 +78,31 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
+    fun `add should do nothing and return false if the contact already exists`() {
+        val contact = contactA
+        contactsPersistenceManager.add(contact).get()
+        for (i in 0..2)
+            assertFalse(contactsPersistenceManager.add(contact).get(), "Contact not considered duplicate")
+    }
+
+    @Test
+    fun `addAll should return the list of new contacts added`() {
+        contactsPersistenceManager.add(contactA).get()
+
+        val newContacts = listOf(contactA2, contactC)
+        val allContacts = mutableListOf(contactA)
+        allContacts.addAll(newContacts)
+
+        val added = contactsPersistenceManager.addAll(allContacts).get()
+
+        assertEquals(newContacts.toSet(), added, "Invalid added contacts")
+    }
+
+    @Test
     fun `getAll should return all stored contacts`() {
         val contacts = arrayListOf(
-            ContactInfo(UserId(0), "a@a.com", "a", "000-0000", "pubkey"),
-            ContactInfo(UserId(1), "b@b.com", "b", "000-0000", "pubkey")
+            ContactInfo(UserId(0), "a@a.com", "a", false, "000-0000", "pubkey"),
+            ContactInfo(UserId(1), "b@b.com", "b", false, "000-0000", "pubkey")
         )
 
         for (contact in contacts)
@@ -88,14 +111,6 @@ class SQLiteContactsPersistenceManagerTest {
         val got = contactsPersistenceManager.getAll().get()
 
         assertEquals(contacts, got)
-    }
-
-    @Test
-    fun `put should throw DuplicateContactException when inserting a duplicate contact`() {
-        contactsPersistenceManager.add(contactA).get()
-        assertFailsWith(DuplicateContactException::class) {
-            contactsPersistenceManager.add(contactA).get()
-        }
     }
 
     @Test
@@ -302,9 +317,9 @@ class SQLiteContactsPersistenceManagerTest {
 
     @Test
     fun `getDiff should return a proper diff`() {
-        val userA = ContactInfo(UserId(0), "a@a.com", "a", "0", "pk")
-        val userB = ContactInfo(UserId(1), "b@a.com", "a", "0", "pk")
-        val userC = ContactInfo(UserId(2), "c@a.com", "a", "0", "pk")
+        val userA = ContactInfo(UserId(0), "a@a.com", "a", false, "0", "pk")
+        val userB = ContactInfo(UserId(1), "b@a.com", "a", false, "0", "pk")
+        val userC = ContactInfo(UserId(2), "c@a.com", "a", false, "0", "pk")
 
         for (user in listOf(userA, userB))
             contactsPersistenceManager.add(user).get()
@@ -316,5 +331,84 @@ class SQLiteContactsPersistenceManagerTest {
         val expected = ContactListDiff(setOf(userC.id), setOf(userB.id))
 
         assertEquals(expected, diff)
+    }
+
+    @Test
+    fun `exists(UserId) should return true if a user exists`() {
+        contactsPersistenceManager.add(contactA).get()
+
+        assertTrue(contactsPersistenceManager.exists(contactA.id).get(), "User should exist")
+    }
+
+    @Test
+    fun `exists(UserId) should return false if a user exists`() {
+        assertFalse(contactsPersistenceManager.exists(contactA.id).get(), "User shouldn't exist")
+    }
+
+    @Test
+    fun `exists(List) should return all existing users in the asked set`() {
+        val contacts = listOf(contactA, contactA2)
+        for (contact in contacts)
+            contactsPersistenceManager.add(contact).get()
+
+        val query = hashSetOf(contactC.id)
+        query.addAll(contacts.map { it.id })
+
+        val exists = contactsPersistenceManager.exists(query).get()
+
+        val shouldExist = HashSet<UserId>()
+        shouldExist.addAll(contacts.map { it.id })
+
+        assertEquals(shouldExist, exists, "Invalid users")
+    }
+
+    @Test
+    fun `getPending should return only pending users`() {
+        val contactA = ContactInfo(UserId(1), "a@a.com", "a", true, null, "pk")
+        val contactB = ContactInfo(UserId(2), "b@a.com", "b", false, null, "pk")
+        val contacts = listOf(contactA, contactB)
+
+        contacts.forEach { contactsPersistenceManager.add(it).get() }
+
+        val pending = contactsPersistenceManager.getPending().get()
+
+        assertEquals(listOf(contactA), pending, "Invalid pending contacts")
+    }
+
+    @Test
+    fun `markAccepted should mark the given user as no longer pending`() {
+        val contactA = ContactInfo(UserId(1), "a@a.com", "a", true, null, "pk")
+        contactsPersistenceManager.add(contactA).get()
+
+        contactsPersistenceManager.markAccepted(setOf(contactA.id)).get()
+
+        val updated = assertNotNull(contactsPersistenceManager.get(contactA.id).get(), "Missing user")
+
+        assertFalse(updated.isPending, "Pending state not updated")
+    }
+
+    @Test
+    fun `getUnadded should return only user ids for which packages have no corresponding contacts entry`() {
+        contactsPersistenceManager.add(contactA).get()
+
+        val contactAddress = SlyAddress(contactId, 1)
+        val newId = UserId(contactId.long+1)
+        val newAddress1 = SlyAddress(newId, 1)
+        val newAddress2 = SlyAddress(newId, 2)
+
+        //XXX this is kinda nasty, but this function needs access to tables from both
+        val messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
+
+        val packages = listOf(
+            Package(PackageId(contactAddress, "msgid"), 0, ""),
+            Package(PackageId(newAddress1, "msgid"), 0, ""),
+            Package(PackageId(newAddress2, "msgid2"), 0, "")
+        )
+
+        messagePersistenceManager.addToQueue(packages).get()
+
+        val unadded = contactsPersistenceManager.getUnadded().get()
+
+        assertEquals(setOf(newId), unadded, "Invalid user id list")
     }
 }
