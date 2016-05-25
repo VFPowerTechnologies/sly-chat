@@ -35,21 +35,27 @@ class ContactsService(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
+    private var isNetworkAvailable = false
+
     private val contactClient = ContactAsyncClient(serverUrls.API_SERVER)
 
     private val contactEventsSubject = PublishSubject.create<ContactEvent>()
     val contactEvents: Observable<ContactEvent> = contactEventsSubject
 
-    private var isNetworkAvailable = false
-
-    private val pendingLookup = HashSet<UserId>()
-
     init {
-        //TODO
-        //application.networkAvailable.subscribe { onNetworkStatusChange(it) }
+        application.networkAvailable.subscribe { onNetworkStatusChange(it) }
     }
 
-    private fun onNetworkStatusChange(available: Boolean) {
+    private fun onNetworkStatusChange(isAvailable: Boolean) {
+        isNetworkAvailable = isAvailable
+
+        if (isAvailable) {
+            contactsPersistenceManager.getUnadded() successUi { users ->
+                addPendingContacts(users)
+            } fail { e ->
+                log.error("Failed to fetch unadded users on startup")
+            }
+        }
     }
 
     //add a new non-pending contact for which we already have info (from the ui's add new contact dialog)
@@ -96,22 +102,26 @@ class ContactsService(
         }
     }
 
+    //this will be called on network up
     //fetch+add contacts in pending state (behavior depends on ContactAddPolicy)
     fun addPendingContacts(users: Set<UserId>) {
+        if (!isNetworkAvailable)
+            return
+
+        if (users.isEmpty())
+            return
+
         //ignore messages from people in the contact list
         if (contactAddPolicy == ContactAddPolicy.REJECT)
             return
 
-        //FIXME need to queue when network is offline or something
-        //also don't run more than one request a time?
-        //if a user keeps sending message we could end up requesting his info multiple times
         authTokenManager.bind { userCredentials ->
             val request = FetchContactInfoByIdRequest(users.toList())
             contactClient.fetchContactInfoById(userCredentials, request)
         } successUi { response ->
             handleContactLookupResponse(contactAddPolicy, users, response)
         } fail { e ->
-            //XXX if this fails, if recoverable (connection error), reschedule
+            //the only recoverable error would be a network error; when the network is restored, this'll get called again
             log.error("Unable to fetch contact info: {}", e.message, e)
         }
     }
