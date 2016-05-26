@@ -287,7 +287,7 @@ class AndroidApp : Application() {
                 if (account == app.userComponent!!.userLoginData.address)
                     app.fetchOfflineMessages()
                 else
-                    log.warn("Got GCM message for different account: $account")
+                    log.warn("Got GCM message for different account ($account);ignoring")
             }
         }
     }

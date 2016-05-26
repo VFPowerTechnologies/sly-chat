@@ -92,7 +92,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
         val entries = notification.contents.toList()
 
-        for (i in 0..MAX_NOTIFICATION_LINES -1) {
+        for (i in 0..MAX_NOTIFICATION_LINES - 1) {
             if (i >= entries.size)
                 break
 
@@ -232,6 +232,47 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
        return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
     }
 
+    //XXX this shares a decent bit of code with getInboxStyle, maybe find a way to centralize it
+    //biggest diff is accessing the fields, as well as logged in having actual messages
+    //write an adaptor class so we only have one of these (the overall setup is the same for both cases)
+    private fun getLoggedOutInboxStyle(info: List<OfflineMessageInfo>): Notification.InboxStyle? {
+        if (info.size < 2)
+            return null
+
+        val inboxStyle = Notification.InboxStyle()
+
+        val needsSummary = info.size > MAX_NOTIFICATION_LINES
+
+        for (i in 0..MAX_NOTIFICATION_LINES - 1) {
+           if (i >= info.size)
+               break
+
+            val userInfo = info[i]
+            val name = userInfo.name
+
+            val messageInfo = if (userInfo.pendingCount == 1)
+                "1 new message"
+            else
+                "${userInfo.pendingCount} new messages"
+
+            val line = SpannableString("$name $messageInfo")
+            line.setSpan(StyleSpan(Typeface.BOLD), 0, name.length, 0)
+            inboxStyle.addLine(line)
+        }
+
+        if (needsSummary) {
+            inboxStyle.addLine("...")
+
+            var remainingCount = 0
+            for (i in MAX_NOTIFICATION_LINES..info.size-1)
+                remainingCount += info[i].pendingCount
+
+            inboxStyle.setSummaryText("$remainingCount more messages")
+        }
+
+        return inboxStyle
+    }
+
     fun showLoggedOutNotification(accountName: String, info: List<OfflineMessageInfo>) {
         val pendingIntent = getLoggedOffNotificationIntent()
 
@@ -256,7 +297,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
                 s
         }
         else {
-            "New notifications for $accountName from " + info.map { it.name }.joinToString(", ")
+            "New messages for $accountName"
         }
 
         val notification = Notification.Builder(context)
@@ -266,6 +307,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
             .setSound(soundUri)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
+            .setStyle(getLoggedOutInboxStyle(info))
             //FIXME icon
             .addAction(R.drawable.notification, "Stop receiving notifications", getStopMessagesIntent())
             .build()
