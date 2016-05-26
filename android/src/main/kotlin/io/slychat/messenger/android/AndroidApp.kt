@@ -34,6 +34,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.android.androidUiDispatcher
 import nl.komponents.kovenant.task
 import nl.komponents.kovenant.ui.KovenantUi
+import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -89,6 +90,8 @@ fun gcmInitAsync(context: Context): Promise<LoadError?, Exception> = task { gcmI
 class AndroidApp : Application() {
     private var gcmInitRunning = false
     private var gcmInitComplete = false
+
+    private var gcmRegistering = false
 
     //TODO move this into settings
     private var noNotificationsOnLogout = false
@@ -210,18 +213,44 @@ class AndroidApp : Application() {
     }
 
     fun onGCMTokenRefreshRequired() {
-        refreshGCMToken()
+        refreshGCMToken(true)
     }
 
-    private fun refreshGCMToken() {
+    private fun refreshGCMToken(force: Boolean) {
+        //we need to make sure we reset all tokens on force, since we may receive this when no user is logged in
+        if (force)
+            resetTokenSentForUsers()
+
         val userComponent = app.userComponent ?: return
+        val userId = userComponent.userLoginData.userId
+
+        if (gcmRegistering)
+            return
+
+        if (!force) {
+            val tokenSent = AndroidPreferences.getTokenSentToServer(this, userId)
+            if (tokenSent)
+                return
+        }
+
+        AndroidPreferences.setIgnoreNotifications(this, false)
 
         //make sure only the current user has token sent set to true
-        resetTokenSentForUsers()
+        //don't need to do this twice, since if we're forcing we've already done this
+        if (!force)
+            resetTokenSentForUsers()
 
-        //TODO queue if network isn't active
-        if (app.isNetworkAvailable)
-            gcmFetchToken(this, userComponent.userLoginData.address.id).successUi { onGCMTokenRefresh(it.userId, it.token) }
+        if (app.isNetworkAvailable) {
+            gcmRegistering = true
+
+            gcmFetchToken(this, userComponent.userLoginData.address.id) successUi {
+                gcmRegistering = false
+                onGCMTokenRefresh(it.userId, it.token)
+            } failUi { e ->
+                log.error("GCM token registration failed: {}", e.message, e)
+                gcmRegistering = false
+            }
+        }
     }
 
     private fun pushGcmTokenToServer(userCredentials: UserCredentials, token: String): Promise<RegisterResponse, Exception> {
@@ -297,22 +326,20 @@ class AndroidApp : Application() {
 
     private fun onUserSessionCreated() {
         val userComponent = app.userComponent!!
-        val userId = userComponent.userLoginData.userId
 
         userComponent.notifierService.isUiVisible = currentActivity != null
 
-        AndroidPreferences.setIgnoreNotifications(this, false)
-        val tokenSent = AndroidPreferences.getTokenSentToServer(this, userId)
-        if (!tokenSent)
-            refreshGCMToken()
+        refreshGCMToken(false)
     }
 
     fun stopReceivingNotifications() {
-        AndroidPreferences.setIgnoreNotifications(this, true)
         deleteGCMToken()
     }
 
     private fun deleteGCMToken() {
+        resetTokenSentForUsers()
+        AndroidPreferences.setIgnoreNotifications(this, true)
+
         gcmDeleteToken(this) success {
             log.info("GCM token invalidated")
         } fail { e ->
@@ -327,9 +354,9 @@ class AndroidApp : Application() {
         //occurs on startup when we first register for events
         val userComponent = app.userComponent ?: return
 
-        AndroidPreferences.setTokenSentToServer(this, userComponent.userLoginData.userId, false)
-
         if (noNotificationsOnLogout) {
+            AndroidPreferences.setTokenSentToServer(this, userComponent.userLoginData.userId, false)
+
             AndroidPreferences.setIgnoreNotifications(this, true)
 
             //this is a best effort attempt at unregistering
@@ -350,6 +377,8 @@ class AndroidApp : Application() {
 
     fun updateNetworkStatus(isConnected: Boolean) {
         app.updateNetworkStatus(isConnected)
+
+        refreshGCMToken(false)
     }
 
     /** Use to request a runtime permission. If no activity is available, succeeds with false. */
