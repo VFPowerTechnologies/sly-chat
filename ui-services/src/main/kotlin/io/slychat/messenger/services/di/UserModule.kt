@@ -47,9 +47,10 @@ class UserModule(
         authTokenManager: AuthTokenManager,
         serverUrls: BuildConfig.ServerUrls,
         application: SlyApplication,
-        contactsPersistenceManager: ContactsPersistenceManager
+        contactsPersistenceManager: ContactsPersistenceManager,
+        contactSyncManager: ContactSyncManager
     ): ContactsService =
-        ContactsService(authTokenManager, serverUrls, application, contactsPersistenceManager)
+        ContactsService(authTokenManager, serverUrls, application, contactsPersistenceManager, contactSyncManager)
 
     @UserScope
     @Provides

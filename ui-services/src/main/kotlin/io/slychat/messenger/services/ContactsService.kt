@@ -30,12 +30,15 @@ class ContactsService(
     private val serverUrls: BuildConfig.ServerUrls,
     private val application: SlyApplication,
     private val contactsPersistenceManager: ContactsPersistenceManager,
+    private val contactSyncManager: ContactSyncManager,
     //update in regards to config changes?
     private var contactAddPolicy: ContactAddPolicy = ContactAddPolicy.AUTO
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private var isNetworkAvailable = false
+
+    private var isContactSyncActive = false
 
     private val contactClient = ContactAsyncClient(serverUrls.API_SERVER)
 
@@ -44,18 +47,26 @@ class ContactsService(
 
     init {
         application.networkAvailable.subscribe { onNetworkStatusChange(it) }
+        contactSyncManager.status.subscribe {
+            isContactSyncActive = it
+            if (!isContactSyncActive)
+                processUnadded()
+        }
+    }
+
+    private fun processUnadded() {
+        contactsPersistenceManager.getUnadded() successUi { users ->
+            addPendingContacts(users)
+        } fail { e ->
+            log.error("Failed to fetch unadded users on startup")
+        }
     }
 
     private fun onNetworkStatusChange(isAvailable: Boolean) {
         isNetworkAvailable = isAvailable
 
-        if (isAvailable) {
-            contactsPersistenceManager.getUnadded() successUi { users ->
-                addPendingContacts(users)
-            } fail { e ->
-                log.error("Failed to fetch unadded users on startup")
-            }
-        }
+        if (isAvailable)
+            processUnadded()
     }
 
     //add a new non-pending contact for which we already have info (from the ui's add new contact dialog)
@@ -105,7 +116,7 @@ class ContactsService(
     //this will be called on network up
     //fetch+add contacts in pending state (behavior depends on ContactAddPolicy)
     fun addPendingContacts(users: Set<UserId>) {
-        if (!isNetworkAvailable)
+        if (!isNetworkAvailable || isContactSyncActive)
             return
 
         if (users.isEmpty())
