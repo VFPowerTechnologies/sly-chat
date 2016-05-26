@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
-import android.preference.PreferenceManager
 import android.support.v4.content.ContextCompat
 import com.almworks.sqlite4java.SQLite
 import com.google.android.gms.common.ConnectionResult
@@ -200,16 +199,14 @@ class AndroidApp : Application() {
     //this serves to also handle any issues where somehow the settings get out of sync and multiple users
     //have tokenSent=true
     private fun resetTokenSentForUsers() {
-        val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val usernames = AndroidPreferences.getTokenUserList(this)
 
-        val usernames = sharedPrefs.getStringSet(AndroidPreferences.tokenUserList, setOf())
-
-        val editor = sharedPrefs.edit()
-        usernames.forEach { username ->
-            val userId = UserId(username.toLong())
-            editor.putBoolean(AndroidPreferences.getTokenSentToServer(userId), false)
+        AndroidPreferences.withEditor(this) {
+            usernames.forEach { username ->
+                val userId = UserId(username.toLong())
+                setTokenSentToServer(userId, false)
+            }
         }
-        editor.apply()
     }
 
     fun onGCMTokenRefreshRequired() {
@@ -248,14 +245,13 @@ class AndroidApp : Application() {
             if (response.isSuccess) {
                 log.info("GCM token successfully registered with server")
 
-                val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
-                val usernames = HashSet(sharedPrefs.getStringSet(AndroidPreferences.tokenUserList, HashSet()))
-                val editor = sharedPrefs.edit()
-                val username = userId.long.toString()
-                editor.putBoolean(AndroidPreferences.getTokenSentToServer(userId), true)
-                usernames.add(username)
-                editor.putStringSet(AndroidPreferences.tokenUserList, usernames)
-                editor.apply()
+                val usernames = HashSet(AndroidPreferences.getTokenUserList(this))
+                AndroidPreferences.withEditor(this) {
+                    val username = userId.long.toString()
+                    setTokenSentToServer(userId, true)
+                    usernames.add(username)
+                    setTokenUserList(usernames)
+                }
             }
             //TODO
             else {
@@ -267,6 +263,13 @@ class AndroidApp : Application() {
     }
 
     fun onGCMMessage(account: SlyAddress, accountName: String, info: List<OfflineMessageInfo>) {
+        //this can occur if we logged out when there was no network connection, or from a notification after we've
+        //already requested the token to be deleted
+        if (AndroidPreferences.getIgnoreNotifications(this)) {
+            deleteGCMToken()
+            return
+        }
+
         //it's possible we might receive a message targetting a diff account that was previously logged in
         app.addOnInitListener { app ->
             //the app might not be finished logging in yet
@@ -298,13 +301,18 @@ class AndroidApp : Application() {
 
         userComponent.notifierService.isUiVisible = currentActivity != null
 
-        val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
-        val tokenSent = sharedPrefs.getBoolean(AndroidPreferences.getTokenSentToServer(userId), false)
+        AndroidPreferences.setIgnoreNotifications(this, false)
+        val tokenSent = AndroidPreferences.getTokenSentToServer(this, userId)
         if (!tokenSent)
             refreshGCMToken()
     }
 
-    fun deleteGCMToken() {
+    fun stopReceivingNotifications() {
+        AndroidPreferences.setIgnoreNotifications(this, true)
+        deleteGCMToken()
+    }
+
+    private fun deleteGCMToken() {
         gcmDeleteToken(this) success {
             log.info("GCM token invalidated")
         } fail { e ->
@@ -319,20 +327,23 @@ class AndroidApp : Application() {
         //occurs on startup when we first register for events
         val userComponent = app.userComponent ?: return
 
-        val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
-        sharedPrefs.edit().putBoolean(AndroidPreferences.getTokenSentToServer(userComponent.userLoginData.userId), false).apply()
+        AndroidPreferences.setTokenSentToServer(this, userComponent.userLoginData.userId, false)
 
-        //this is a best effort attempt at unregistering
-        //even if this fails, the token'll be invalidated on the next login that registers one
-        if (app.isNetworkAvailable && noNotificationsOnLogout) {
-            deleteGCMToken()
+        if (noNotificationsOnLogout) {
+            AndroidPreferences.setIgnoreNotifications(this, true)
 
-            val serverUrl = app.appComponent.serverUrls.API_SERVER
-            userComponent.authTokenManager.bind { userCredentials ->
-                val request = UnregisterRequest(app.installationData.installationId)
-                GcmAsyncClient(serverUrl).unregister(userCredentials, request)
-            } fail { e ->
-                log.error("Unable to unregister GCM token with server: {}", e.message, e)
+            //this is a best effort attempt at unregistering
+            //even if this fails, the token'll be invalidated on the next login that registers one
+            if (app.isNetworkAvailable) {
+                deleteGCMToken()
+
+                val serverUrl = app.appComponent.serverUrls.API_SERVER
+                userComponent.authTokenManager.bind { userCredentials ->
+                    val request = UnregisterRequest(app.installationData.installationId)
+                    GcmAsyncClient(serverUrl).unregister(userCredentials, request)
+                } fail { e ->
+                    log.error("Unable to unregister GCM token with server: {}", e.message, e)
+                }
             }
         }
     }

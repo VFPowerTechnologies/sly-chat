@@ -13,7 +13,7 @@ class NotificationStopService : Service() {
     override fun onCreate() {
         val app = AndroidApp.get(this)
         app.notificationService.clearAllMessageNotifications()
-        app.deleteGCMToken()
+        app.stopReceivingNotifications()
         stopSelf()
     }
 }
