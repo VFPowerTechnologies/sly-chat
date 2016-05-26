@@ -15,6 +15,54 @@ import io.slychat.messenger.services.ContactDisplayInfo
 import io.slychat.messenger.services.PlatformNotificationService
 import java.util.*
 
+interface InboxStyleAdapter {
+    val userCount: Int
+
+    fun getEntryName(i: Int): String
+    fun getEntryInfoLine(i: Int): String
+    fun getEntryUnreadCount(i: Int): Int
+}
+
+class OfflineMessageInfoInboxStyleAdapter(private val info: List<OfflineMessageInfo>) : InboxStyleAdapter {
+    override val userCount: Int = info.size
+
+    override fun getEntryName(i: Int): String {
+        return info[i].name
+    }
+
+    override fun getEntryInfoLine(i: Int): String {
+        val userInfo = info[i]
+        return if (userInfo.pendingCount == 1)
+            "1 new message"
+        else
+            "${userInfo.pendingCount} new messages"
+
+    }
+
+    override fun getEntryUnreadCount(i: Int): Int {
+        return info[i].pendingCount
+    }
+}
+
+class NewMessageNotificationInboxStyleAdapter(private val newMessagesNotification: NewMessagesNotification) : InboxStyleAdapter {
+    override val userCount: Int = newMessagesNotification.userCount()
+
+    private val entries = newMessagesNotification.contents.toList()
+
+    override fun getEntryName(i: Int): String {
+        return entries[i].first.name
+    }
+
+    override fun getEntryInfoLine(i: Int): String {
+        val info = entries[i].second
+        return if (info.unreadCount == 1) info.lastMessage else "${info.unreadCount} messages"
+    }
+
+    override fun getEntryUnreadCount(i: Int): Int {
+        return entries[i].second.unreadCount
+    }
+}
+
 data class NewMessageData(
     val name: String,
     val lastMessage: String,
@@ -80,25 +128,22 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
     /* Other */
 
-    //TODO sort notifications by last message timestamp
-    private fun getInboxStyle(): Notification.InboxStyle? {
-        val notification = newMessagesNotification
-        if (notification.userCount() < 2)
+    private fun getInboxStyle(adapter: InboxStyleAdapter): Notification.InboxStyle? {
+        val userCount = adapter.userCount
+
+        if (userCount < 2)
             return null
 
         val inboxStyle = Notification.InboxStyle()
 
-        val needsSummary = notification.userCount() > MAX_NOTIFICATION_LINES
-
-        val entries = notification.contents.toList()
+        val needsSummary = userCount > MAX_NOTIFICATION_LINES
 
         for (i in 0..MAX_NOTIFICATION_LINES - 1) {
-            if (i >= entries.size)
+            if (i >= userCount)
                 break
 
-            val info = entries[i].second
-            val messageInfo = if (info.unreadCount == 1) info.lastMessage else "${info.unreadCount} messages"
-            val name = entries[i].first.name
+            val messageInfo = adapter.getEntryInfoLine(i)
+            val name = adapter.getEntryName(i)
 
             val line = SpannableString("$name $messageInfo")
             line.setSpan(StyleSpan(Typeface.BOLD), 0, name.length, 0)
@@ -111,13 +156,18 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
             inboxStyle.addLine("...")
 
             var remainingCount = 0
-            for (i in MAX_NOTIFICATION_LINES..entries.size-1)
-                remainingCount += entries[i].second.unreadCount
+            for (i in MAX_NOTIFICATION_LINES..userCount-1)
+                remainingCount += adapter.getEntryUnreadCount(i)
 
             inboxStyle.setSummaryText("$remainingCount more messages")
         }
 
         return inboxStyle
+    }
+
+    //TODO sort notifications by last message timestamp
+    private fun getLoggedInInboxStyle(): Notification.InboxStyle? {
+        return getInboxStyle(NewMessageNotificationInboxStyleAdapter(newMessagesNotification))
     }
 
     private fun getNewMessagesNotificationContentText(): String {
@@ -210,7 +260,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setDeleteIntent(deletePendingIntent)
-            .setStyle(getInboxStyle())
+            .setStyle(getLoggedInInboxStyle())
             .build()
 
         notificationManager.notify(NOTIFICATION_ID_NEW_MESSAGES, notification)
@@ -236,41 +286,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
     //biggest diff is accessing the fields, as well as logged in having actual messages
     //write an adaptor class so we only have one of these (the overall setup is the same for both cases)
     private fun getLoggedOutInboxStyle(info: List<OfflineMessageInfo>): Notification.InboxStyle? {
-        if (info.size < 2)
-            return null
-
-        val inboxStyle = Notification.InboxStyle()
-
-        val needsSummary = info.size > MAX_NOTIFICATION_LINES
-
-        for (i in 0..MAX_NOTIFICATION_LINES - 1) {
-           if (i >= info.size)
-               break
-
-            val userInfo = info[i]
-            val name = userInfo.name
-
-            val messageInfo = if (userInfo.pendingCount == 1)
-                "1 new message"
-            else
-                "${userInfo.pendingCount} new messages"
-
-            val line = SpannableString("$name $messageInfo")
-            line.setSpan(StyleSpan(Typeface.BOLD), 0, name.length, 0)
-            inboxStyle.addLine(line)
-        }
-
-        if (needsSummary) {
-            inboxStyle.addLine("...")
-
-            var remainingCount = 0
-            for (i in MAX_NOTIFICATION_LINES..info.size-1)
-                remainingCount += info[i].pendingCount
-
-            inboxStyle.setSummaryText("$remainingCount more messages")
-        }
-
-        return inboxStyle
+        return getInboxStyle(OfflineMessageInfoInboxStyleAdapter(info))
     }
 
     fun showLoggedOutNotification(accountName: String, info: List<OfflineMessageInfo>) {
