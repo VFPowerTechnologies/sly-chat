@@ -67,7 +67,7 @@ class SQLiteContactsPersistenceManagerTest {
         persistenceManager.runQuery { ConversationTable.exists(it, userId) }.get()
 
     @Test
-    fun `add should successfully add a contact and create a conversation table`() {
+    fun `add should successfully add a contact, create a conversation table and add a corresponding remote update`() {
         val contact = contactA
         assertTrue(contactsPersistenceManager.add(contact).get())
         val got = contactsPersistenceManager.get(contact.id).get()
@@ -75,18 +75,24 @@ class SQLiteContactsPersistenceManagerTest {
         assertNotNull(got)
         assertEquals(contact, got)
         assertTrue(doesConvTableExist(contact.id), "Conversation table is missing")
+
+        val update = RemoteContactUpdate(contactId, RemoteContactUpdateType.ADD)
+        assertEquals(listOf(update), contactsPersistenceManager.getRemoteUpdates().get(), "Invalid remote update list")
+
     }
 
     @Test
     fun `add should do nothing and return false if the contact already exists`() {
         val contact = contactA
         contactsPersistenceManager.add(contact).get()
-        for (i in 0..2)
+        for (i in 0..2) {
             assertFalse(contactsPersistenceManager.add(contact).get(), "Contact not considered duplicate")
+            assertEquals(1, contactsPersistenceManager.getRemoteUpdates().get().size, "Invalid number of remote updates")
+        }
     }
 
     @Test
-    fun `addAll should return the list of new contacts added`() {
+    fun `addAll should return the list of new contacts added and add corresponding remote updates`() {
         contactsPersistenceManager.add(contactA).get()
 
         val newContacts = listOf(contactA2, contactC)
@@ -96,6 +102,12 @@ class SQLiteContactsPersistenceManagerTest {
         val added = contactsPersistenceManager.addAll(allContacts).get()
 
         assertEquals(newContacts.toSet(), added, "Invalid added contacts")
+
+        val expectedUpdates = allContacts.map { RemoteContactUpdate(it.id, RemoteContactUpdateType.ADD) }.sortedBy { it.userId.long }
+
+        val updates = contactsPersistenceManager.getRemoteUpdates().get().sortedBy { it.userId.long }
+
+        assertEquals(expectedUpdates, updates, "Invalid remote update list")
     }
 
     @Test
