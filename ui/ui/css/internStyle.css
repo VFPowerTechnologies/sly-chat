@@ -335,7 +335,7 @@ button.btn-large {
 .last-sent-message .message p {
     margin-bottom: 5px;
 }
-#messages, .contact-link {
+#messages, .contact-link, .recent-contact-link {
     -webkit-user-select: none;
 }
 #messages .message-details {

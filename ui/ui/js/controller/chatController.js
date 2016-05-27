@@ -197,11 +197,12 @@ ChatController.prototype = {
         /**
          * Click event for confirm delete whole conversation.
          */
-        $(document).on("click", "#confirmDeleteConversation", function (e) {
+        $(document).on("click", "[id^='confirmDeleteConversation_']", function (e) {
             e.preventDefault();
             BootstrapDialog.closeAll();
-            this.deleteConversation(KEYTAP.contactController.getCurrentContact().id);
-        }.bind(this));
+            var id = $(this).attr("id").split("_")[1];
+            KEYTAP.chatController.deleteConversation(id);
+        });
 
         /**
          * Click event for delete contact button.
@@ -308,7 +309,7 @@ ChatController.prototype = {
             "<p class='contextLikeModal-content'>Are you sure you want to delete your conversation with " + contact.name + "</p>" +
             "<div class='contextLikeModal-nav'>" +
                 "<button id='cancelCloseModal' class='btn btn-sm transparentBtn'>Cancel</button>" +
-                "<button id='confirmDeleteConversation' class='btn btn-sm transparentBtn'>Confirm</button>" +
+                "<button id='confirmDeleteConversation_" + contact.id + "' class='btn btn-sm transparentBtn'>Confirm</button>" +
             "</div>" +
         "</div>";
 
@@ -687,7 +688,7 @@ ChatController.prototype = {
         messengerService.deleteAllMessagesFor(KEYTAP.contactController.getContact(id)).then(function () {
             this.clearCache();
             BootstrapDialog.closeAll();
-            KEYTAP.navigationController.loadPage("chat.html", false);
+            KEYTAP.navigationController.loadPage("contacts.html", false);
             this.openNotification("The conversation has been deleted successfully.", "success");
         }.bind(this)).catch(function (e) {
             BootstrapDialog.closeAll();
@@ -695,7 +696,7 @@ ChatController.prototype = {
             this.openNotification("The conversation could not be deleted.", "warning");
             console.log("couldn't delete the conversation ");
             console.log(e);
-        });
+        }.bind(this));
     },
     /**
      * Deletes all the given messages from the given contact's conversation.

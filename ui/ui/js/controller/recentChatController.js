@@ -26,8 +26,16 @@ RecentChatController.prototype = {
             }
 
             recentChatContent.html(fragment);
-            this.addRecentChatEventListener();
         }
+    },
+    createRecentChatEvent : function () {
+        $(document).on("click", "[id^='deleteConversation_']", function (e) {
+            e.preventDefault();
+            var contactId = $(this).attr("id").split("_")[1];
+            var contact = KEYTAP.contactController.getContact(contactId);
+
+            KEYTAP.chatController.createDeleteWholeConversationDialog(contact);
+        });
     },
     createRecentChat : function (recentChat) {
         var contactLinkClass = "recent-contact-link ";
@@ -49,21 +57,46 @@ RecentChatController.prototype = {
 
         var lockIcon = "<i class='fa fa-lock' style='float: right; color: green;'></i>";
 
-        contactBlock += "<div class='" + contactLinkClass + "' id='recent_" + recentChat.contact.id + "'><div class='contact'>";
+        var contactBlockDiv = $("<div class='" + contactLinkClass + "' id='recent_" + recentChat.contact.id + "'></div>");
+        contactBlock += "<div class='contact'>";
         contactBlock += createAvatar(recentChat.contact.name);
         contactBlock += "<p style='display: inline-block;'>" + recentChat.contact.name + "</p>";
         contactBlock += "<p class='recentTimestamp' style='display: inline-block; float: right; font-size: 10px'>" + $.timeago(recentChat.status.lastTimestamp) + "</p><br>";
         contactBlock += "<p class='recentMessage' style='display: inline-block; float: left; font-size: 10px; line-height: 10px;'>" + createTextNode(lastMessage) + "</p>";
-        contactBlock += "</div>" + newBadge + lockIcon + "</div>";
+        contactBlock += "</div>" + newBadge + lockIcon;
 
-        return contactBlock;
-    },
-    addRecentChatEventListener : function () {
-        $(".recent-contact-link").bind("click", function (e) {
+        contactBlockDiv.html(contactBlock);
+
+        contactBlockDiv.on("click", function (e) {
             e.preventDefault();
-            var id = $(this).attr("id").split("recent_")[1];
-            KEYTAP.contactController.setCurrentContact(id);
+            KEYTAP.contactController.setCurrentContact(recentChat.contact.id);
             KEYTAP.navigationController.loadPage("chat.html", true);
         });
+
+        contactBlockDiv.on("mouseheld", function (e) {
+            e.preventDefault();
+            vibrate(50);
+            var contextMenu = KEYTAP.recentChatController.openRecentChatContextLikeMenu(recentChat.contact.id);
+            contextMenu.open();
+        });
+
+        return contactBlockDiv;
+    },
+    /**
+     * Opens the recent chat menu on recent chat node long press.
+     *
+     * @param contactId
+     * @returns {*}
+     */
+    openRecentChatContextLikeMenu : function (contactId) {
+        var html = "<div class='contextLikeMenu'>" +
+            "<ul>" +
+            "<li><a id='contactDetails_" + contactId + "' href='#'>Contact Details</a></li>" +
+            "<li role='separator' class='divider'></li>" +
+            "<li><a id='deleteConversation_" + contactId + "' href='#'>Delete Conversation</a></li>" +
+            "</ul>" +
+            "</div>";
+
+        return createContextLikeMenu(html, true);
     }
 };

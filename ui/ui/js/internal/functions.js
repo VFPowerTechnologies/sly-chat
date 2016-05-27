@@ -205,6 +205,8 @@ $(document).ready(function () {
     KEYTAP.chatController.createChatLinkEvent();
     KEYTAP.chatController.createMessageNodeEvent();
 
+    KEYTAP.recentChatController.createRecentChatEvent();
+
     KEYTAP.navigationController.init();
 
     KEYTAP.menuController.init();
