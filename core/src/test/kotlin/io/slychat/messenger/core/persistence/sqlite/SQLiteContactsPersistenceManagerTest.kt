@@ -411,4 +411,45 @@ class SQLiteContactsPersistenceManagerTest {
 
         assertEquals(setOf(newId), unadded, "Invalid user id list")
     }
+
+    @Test
+    fun `addRemoteUpdates should register added updates`() {
+        val remoteUpdates = listOf(
+            RemoteContactUpdate(UserId(1), RemoteContactUpdateType.ADD),
+            RemoteContactUpdate(UserId(2), RemoteContactUpdateType.REMOVE)
+        )
+        contactsPersistenceManager.addRemoteUpdate(remoteUpdates).get()
+
+        val got = contactsPersistenceManager.getRemoteUpdates().get()
+
+        assertEquals(remoteUpdates, got, "Invalid remote updates")
+    }
+
+    @Test
+    fun `addRemoteUpdates should overwrite an existing records`() {
+        val userId = UserId(1)
+        val update1 = RemoteContactUpdate(userId, RemoteContactUpdateType.ADD)
+        val update2 = RemoteContactUpdate(userId, RemoteContactUpdateType.REMOVE)
+
+        contactsPersistenceManager.addRemoteUpdate(listOf(update1)).get()
+        contactsPersistenceManager.addRemoteUpdate(listOf(update2)).get()
+
+        val got = contactsPersistenceManager.getRemoteUpdates().get()
+
+        assertEquals(listOf(update2), got, "Invalid remote updates")
+    }
+
+    @Test
+    fun `remoteRemoteUpdates should remove only the given updates`() {
+        val update1 = RemoteContactUpdate(UserId(1), RemoteContactUpdateType.ADD)
+        val update2 = RemoteContactUpdate(UserId(2), RemoteContactUpdateType.ADD)
+
+        contactsPersistenceManager.addRemoteUpdate(listOf(update1, update2)).get()
+
+        contactsPersistenceManager.removeRemoteUpdates(listOf(update2)).get()
+
+        val got = contactsPersistenceManager.getRemoteUpdates().get()
+
+        assertEquals(listOf(update1), got, "Invalid remote updates")
+    }
 }

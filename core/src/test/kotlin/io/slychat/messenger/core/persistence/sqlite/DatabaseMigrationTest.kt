@@ -125,4 +125,15 @@ class DatabaseMigrationTest {
             check2To3(persistenceManager, connection)
         }
     }
+
+    fun check3To4(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertTableExists(connection, "remote_contact_updates")
+    }
+
+    @Test
+    fun `migration 3 to 4`() {
+        withTestDatabase(3, 4) { persistenceManager, connection ->
+            check3To4(persistenceManager, connection)
+        }
+    }
 }

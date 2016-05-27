@@ -323,4 +323,33 @@ ON
             stmt.mapToSet { UserId(stmt.columnLong(0)) }
         }
     }
+
+    override fun addRemoteUpdate(remoteUpdates: List<RemoteContactUpdate>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.batchInsertWithinTransaction("INSERT OR REPLACE INTO remote_contact_updates (contact_id, type) VALUES (?, ?)", remoteUpdates) { stmt, item ->
+            stmt.bind(1, item.userId.long)
+            stmt.bind(2, item.type.toString())
+        }
+    }
+
+    override fun getRemoteUpdates(): Promise<List<RemoteContactUpdate>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withPrepared("SELECT contact_id, type FROM remote_contact_updates") { stmt ->
+            stmt.map {
+                val userId = UserId(stmt.columnLong(0))
+                val type = RemoteContactUpdateType.valueOf(stmt.columnString(1))
+                RemoteContactUpdate(userId, type)
+            }
+        }
+    }
+
+    override fun removeRemoteUpdates(remoteUpdates: List<RemoteContactUpdate>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            connection.withPrepared("DELETE FROM remote_contact_updates WHERE contact_id=?") { stmt ->
+                remoteUpdates.forEach { item ->
+                    stmt.bind(1, item.userId.long)
+                    stmt.step()
+                    stmt.reset()
+                }
+            }
+        }
+    }
 }

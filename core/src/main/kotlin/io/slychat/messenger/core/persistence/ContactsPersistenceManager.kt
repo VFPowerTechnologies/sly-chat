@@ -51,4 +51,8 @@ interface ContactsPersistenceManager {
 
     /** Contacts with pending messages but no available info. */
     fun getUnadded(): Promise<Set<UserId>, Exception>
+
+    fun addRemoteUpdate(remoteUpdates: List<RemoteContactUpdate>): Promise<Unit, Exception>
+    fun getRemoteUpdates(): Promise<List<RemoteContactUpdate>, Exception>
+    fun removeRemoteUpdates(remoteUpdates: List<RemoteContactUpdate>): Promise<Unit, Exception>
 }
