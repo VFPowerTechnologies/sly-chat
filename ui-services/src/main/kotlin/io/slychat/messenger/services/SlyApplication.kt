@@ -59,11 +59,6 @@ class SlyApplication {
     private val userSessionAvailableSubject = BehaviorSubject.create(false)
     val userSessionAvailable: Observable<Boolean> = userSessionAvailableSubject
 
-    private val contactListSyncingSubject = BehaviorSubject.create(false)
-    val contactListSyncing: Observable<Boolean> = contactListSyncingSubject
-
-    private var contactsSyncSub: Subscription? = null
-
     private var newTokenSyncSub: Subscription? = null
 
     private val loginEventsSubject = BehaviorSubject.create<LoginEvent>()
@@ -233,10 +228,6 @@ class SlyApplication {
                 authTokenManager.setToken(response.authToken)
             else
                 authTokenManager.invalidateToken()
-
-            contactsSyncSub = userComponent.contactSyncManager.status.subscribe {
-                contactListSyncingSubject.onNext(it)
-            }
 
             //until this finishes, nothing in the UserComponent should be touched
             backgroundInitialization(userComponent, response.authToken, password, rememberMe, accountInfo) mapUi {
@@ -561,9 +552,6 @@ class SlyApplication {
     /** Returns true if a session was present, false otherwise. */
     fun destroyUserSession(): Boolean {
         val userComponent = this.userComponent ?: return false
-
-        contactsSyncSub?.unsubscribe()
-        contactsSyncSub = null
 
         newTokenSyncSub?.unsubscribe()
         newTokenSyncSub = null

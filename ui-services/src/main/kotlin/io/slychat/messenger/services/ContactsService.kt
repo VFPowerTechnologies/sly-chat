@@ -38,7 +38,8 @@ class ContactsService(
 
     private var isNetworkAvailable = false
 
-    private var isContactSyncActive = false
+    var isContactSyncActive = false
+        private set
 
     private val contactClient = ContactAsyncClient(serverUrls.API_SERVER)
 
@@ -49,6 +50,7 @@ class ContactsService(
         application.networkAvailable.subscribe { onNetworkStatusChange(it) }
         contactSyncManager.status.subscribe {
             isContactSyncActive = it
+            contactEventsSubject.onNext(ContactEvent.Sync(it))
             if (!isContactSyncActive)
                 processUnadded()
         }

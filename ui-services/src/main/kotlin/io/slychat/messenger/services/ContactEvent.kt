@@ -11,4 +11,5 @@ interface ContactEvent {
     class Request(val contacts: Set<ContactInfo>) : ContactEvent
     //sent by contact lookup for invalid ids
     class InvalidContacts(val contacts: Set<UserId>) : ContactEvent
+    class Sync(val isRunning: Boolean) : ContactEvent
 }

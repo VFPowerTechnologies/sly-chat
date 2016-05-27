@@ -196,7 +196,6 @@ $(document).ready(function () {
         $("#registrationStatusUpdate").html(registrationStatus + "...");
     });
 
-    KEYTAP.contactController.addContactListSyncListener();
     KEYTAP.contactController.addContactEventListener();
     KEYTAP.contactController.addContactPageEvent();
 

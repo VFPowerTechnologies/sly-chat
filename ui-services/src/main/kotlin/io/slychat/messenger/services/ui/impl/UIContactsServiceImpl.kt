@@ -29,16 +29,19 @@ class UIContactsServiceImpl(
     private val contactEventListeners = ArrayList<(UIContactEvent) -> Unit>()
 
     init {
-        app.contactListSyncing.subscribe { updateContactListSyncing(it) }
         app.userSessionAvailable.subscribe { isAvailable ->
             if (!isAvailable) {
                 contactEventSub?.unsubscribe()
                 contactEventSub = null
             }
             else {
-                contactEventSub = getUserComponentOrThrow().contactsService.contactEvents.subscribe { onContactEvent(it) }
+                contactEventSub = getContactsServiceOrThrow().contactEvents.subscribe { onContactEvent(it) }
             }
         }
+    }
+
+    private fun getContactsServiceOrThrow(): ContactsService {
+        return app.userComponent?.contactsService ?: throw IllegalStateException("Not logged in")
     }
 
     private fun onContactEvent(event: ContactEvent) {
@@ -48,6 +51,9 @@ class UIContactsServiceImpl(
 
             is ContactEvent.Request ->
                 UIContactEvent.Request(event.contacts.map { it.toUI() })
+
+            is ContactEvent.Sync ->
+                UIContactEvent.Sync(event.isRunning)
 
             else -> null
         }
@@ -60,19 +66,13 @@ class UIContactsServiceImpl(
         return app.userComponent ?: throw IllegalStateException("Not logged in")
     }
 
-    private fun updateContactListSyncing(value: Boolean) {
-        isContactListSyncing = value
-        for (listener in contactListSyncListeners)
-            listener(value)
-    }
-
-    override fun addContactListSyncListener(listener: (Boolean) -> Unit) {
-        contactListSyncListeners.add(listener)
-        listener(isContactListSyncing)
-    }
-
     override fun addContactEventListener(listener: (UIContactEvent) -> Unit) {
         contactEventListeners.add(listener)
+
+        val contactsService = getContactsServiceOrThrow()
+
+        //replay any status events
+        listener(UIContactEvent.Sync(contactsService.isContactSyncActive))
     }
 
     private fun getContactsPersistenceManagerOrThrow(): ContactsPersistenceManager =

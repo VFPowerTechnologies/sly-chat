@@ -2,7 +2,8 @@ package io.slychat.messenger.services.ui
 
 enum class UIContactEventType {
     ADD,
-    REQUEST
+    REQUEST,
+    SYNC
 }
 
 interface UIContactEvent {
@@ -16,4 +17,7 @@ interface UIContactEvent {
         override val type = UIContactEventType.REQUEST
     }
 
+    class Sync(val isRunning: Boolean) : UIContactEvent {
+        override val type = UIContactEventType.SYNC
+    }
 }
