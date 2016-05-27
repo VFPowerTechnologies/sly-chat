@@ -139,4 +139,7 @@ class RelayClientManager(
     fun sendPing() {
         getClientOrThrow().sendPing()
     }
+
+    val state: RelayClientState?
+        get() = relayClient?.state
 }

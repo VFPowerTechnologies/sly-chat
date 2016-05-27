@@ -78,6 +78,8 @@ class SlyApplication {
     private var keepAliveTimerSub: Subscription? = null
 
     private var connectingToRelay = false
+    //if we're disconnecting and we get a connect request during that time, we force a reconnect on disconnect
+    private var wantRelayReconnect = false
 
     var isInBackground: Boolean = true
         set(value) {
@@ -431,12 +433,17 @@ class SlyApplication {
 
     private fun handleRelayClientEvent(event: RelayClientEvent) {
         when (event) {
-            is ConnectionEstablished -> reconnectionTimer.reset()
+            is ConnectionEstablished -> {
+                wantRelayReconnect = false
+                reconnectionTimer.reset()
+            }
+
             is ConnectionLost -> {
                 stopRelayKeepAlive()
 
-                if (!event.wasRequested) reconnectToRelay()
+                if (!event.wasRequested || wantRelayReconnect) reconnectToRelay()
             }
+
             is ConnectionFailure -> {
                 log.warn("Connection to relay failed: {}", event.error.message)
                 reconnectToRelay()
@@ -469,6 +476,8 @@ class SlyApplication {
     }
 
     private fun reconnectToRelay() {
+        wantRelayReconnect = false
+
         if (!isNetworkAvailable)
             return
 
@@ -519,13 +528,18 @@ class SlyApplication {
 
         val userComponent = this.userComponent ?: return
 
-        if (userComponent.relayClientManager.isOnline)
+        val relayClientManager = userComponent.relayClientManager
+
+        if (relayClientManager.state == RelayClientState.DISCONNECTING)
+            wantRelayReconnect = true
+
+        if (relayClientManager.isOnline)
             return
 
         connectingToRelay = true
 
         userComponent.authTokenManager.mapUi { userCredentials ->
-            userComponent.relayClientManager.connect(userCredentials)
+            relayClientManager.connect(userCredentials)
         } fail { e ->
             log.error("Unable to retrieve auth token for relay connection: {}", e.message, e)
         } alwaysUi {

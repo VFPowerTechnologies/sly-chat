@@ -39,7 +39,8 @@ class RelayClient(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private var relayConnection: RelayConnection? = null
-    private var state = DISCONNECTED
+    var state = DISCONNECTED
+        private set
     private var wasDisconnectRequested = false
     private val publishSubject = PublishSubject.create<RelayClientEvent>()
 
