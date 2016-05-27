@@ -70,6 +70,8 @@
 
         <service android:name="io.slychat.messenger.android.NotificationDeletionService" android:exported="false" />
 
+        <service android:name="io.slychat.messenger.android.NotificationStopService" android:exported="false" />
+
     </application>
 
 </manifest>
