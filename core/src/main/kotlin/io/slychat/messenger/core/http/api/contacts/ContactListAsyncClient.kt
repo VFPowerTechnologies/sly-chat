@@ -18,4 +18,8 @@ class ContactListAsyncClient(private val serverUrl: String) {
     fun getContacts(userCredentials: UserCredentials): Promise<GetContactsResponse, Exception> = task {
         newClient().getContacts(userCredentials)
     }
+
+    fun updateContacts(userCredentials: UserCredentials, request: UpdateContactsRequest): Promise<Unit, Exception> = task {
+        newClient().updateContacts(userCredentials, request)
+    }
 }

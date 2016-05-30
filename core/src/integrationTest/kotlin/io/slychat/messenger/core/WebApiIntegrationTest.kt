@@ -2,6 +2,7 @@ package io.slychat.messenger.core
 
 import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
+import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.ApiException
 import io.slychat.messenger.core.http.api.accountupdate.*
 import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
@@ -629,11 +630,11 @@ class WebApiIntegrationTest {
         assertEquals(contactDetails, receivedContactInfo.toCore(false))
     }
 
-    fun assertContactListEquals(expected: List<RemoteContactEntry>, actual: List<RemoteContactEntry>) {
+    fun assertContactListEquals(expected: List<RemoteContactEntry>, actual: List<RemoteContactEntry>, message: String? = null) {
         val sortedLocalContacts = expected.sortedBy { it.hash }
         val sortedRemoteContacts = actual.sortedBy { it.hash }
 
-        assertEquals(sortedLocalContacts, sortedRemoteContacts)
+        assertEquals(sortedLocalContacts, sortedRemoteContacts, message)
     }
 
     @Test
@@ -714,6 +715,32 @@ class WebApiIntegrationTest {
         val contacts = devClient.getContactList(userA.user.username)
 
         assertContactListEquals(listOf(aContacts[1]), contacts)
+    }
+
+    @Test
+    fun `Updating contacts should add and remove the given contacts`() {
+        val userA = injectNamedSiteUser("a@a.com")
+        val userB = injectNamedSiteUser("b@a.com")
+        val userC = injectNamedSiteUser("c@a.com")
+        val userD = injectNamedSiteUser("d@a.com")
+
+        val contactList = encryptRemoteContactEntries(userA.keyVault, listOf(userB, userC, userD).map { it.user.id })
+
+        devClient.addContacts(userA.user.username, contactList.subList(0, contactList.size))
+
+        val client = ContactListClient(serverBaseUrl, JavaHttpClient())
+
+        val authToken = devClient.createAuthToken(userA.user.username)
+
+        val request = updateRequestFromContactInfo(userA.keyVault, listOf(userB.user.id), listOf(userC.user.id))
+
+        client.updateContacts(userA.getUserCredentials(authToken), request)
+
+        val contacts = devClient.getContactList(userA.user.username)
+
+        val expected = listOf(contactList[0], contactList[2])
+
+        assertContactListEquals(expected, contacts, "Local and remote contact lists don't match")
     }
 
     @Test
