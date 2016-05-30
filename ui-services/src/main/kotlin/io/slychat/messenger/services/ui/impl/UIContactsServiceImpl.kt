@@ -45,6 +45,9 @@ class UIContactsServiceImpl(
             is ContactEvent.Added ->
                 UIContactEvent.Added(event.contacts.map { it.toUI() })
 
+            is ContactEvent.Removed ->
+                UIContactEvent.Removed(event.contacts.map { it.toUI() })
+
             is ContactEvent.Request ->
                 UIContactEvent.Request(event.contacts.map { it.toUI() })
 
