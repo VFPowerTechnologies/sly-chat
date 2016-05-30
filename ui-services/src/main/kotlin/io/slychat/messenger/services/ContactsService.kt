@@ -18,48 +18,6 @@ import rx.Observable
 import rx.subjects.PublishSubject
 import java.util.*
 
-class ContactJobDesc {
-    var unadded: Boolean = false
-        private set
-
-    var updateRemote: Boolean = false
-        private set
-
-    var localSync: Boolean = false
-        private set
-
-    var remoteSync: Boolean = false
-        private set
-
-    fun localSync(): ContactJobDesc {
-        unadded = true
-        localSync = true
-        updateRemote = true
-        return this
-    }
-
-    fun remoteSync(): ContactJobDesc {
-        unadded = true
-        localSync = true
-        updateRemote = true
-        remoteSync = true
-        return this
-    }
-
-    fun processUnadded(): ContactJobDesc {
-        unadded = true
-        updateRemote = true
-        return this
-    }
-
-    fun updateRemote(): ContactJobDesc {
-        //while not strictly necessary, might as well
-        unadded = true
-        updateRemote = true
-        return this
-    }
-}
-
 enum class ContactAddPolicy {
     AUTO,
     ASK,
@@ -81,32 +39,25 @@ class ContactsService(
     //update in regards to config changes?
     private var contactAddPolicy: ContactAddPolicy = ContactAddPolicy.AUTO
 ) {
-    /** Syncs the local contact list with the remote contact list. */
-    private fun syncRemoteContactsList(): Promise<Unit, Exception> {
-        log.debug("Beginning remote contact list sync")
+    private val log = LoggerFactory.getLogger(javaClass)
 
-        val client = ContactListAsyncClient(serverUrl)
+    private var isNetworkAvailable = false
 
-        val keyVault = userLoginData.keyVault
+    var isContactSyncActive = false
+        private set
 
-        val contactsPersistenceManager = contactsPersistenceManager
+    private val contactClient = ContactAsyncClient(serverUrl)
+    private val contactListClient = ContactListAsyncClient(serverUrl)
 
-        return authTokenManager.bind { userCredentials ->
-            client.getContacts(userCredentials) bind { response ->
-                val emails = decryptRemoteContactEntries(keyVault, response.contacts)
-                contactsPersistenceManager.getDiff(emails) bind { diff ->
-                    log.debug("New contacts: {}", diff.newContacts)
-                    log.debug("Removed contacts: {}", diff.removedContacts)
+    private val contactEventsSubject = PublishSubject.create<ContactEvent>()
 
-                    val contactsClient = ContactAsyncClient(serverUrl)
-                    val request = FetchContactInfoByIdRequest(diff.newContacts.toList())
-                    contactsClient.fetchContactInfoById(userCredentials, request) bind { response ->
-                        val newContacts = response.contacts.map { it.toCore(false) }
-                        contactsPersistenceManager.applyDiff(newContacts, diff.removedContacts.toList())
-                    }
-                }
-            }
-        }
+    val contactEvents: Observable<ContactEvent> = contactEventsSubject
+
+    private var currentRunningJob: Promise<Unit, Exception>? = null
+    private var queuedJob: ContactJobDescription? = null
+
+    init {
+        application.networkAvailable.subscribe { onNetworkStatusChange(it) }
     }
 
     private fun getDefaultRegionCode(): Promise<String, Exception> {
@@ -116,6 +67,7 @@ class ContactsService(
     /** Attempts to find any registered users matching the user's local contacts. */
     private fun syncLocalContacts(): Promise<Unit, Exception> {
         log.info("Beginning local contact sync")
+
         return getDefaultRegionCode() bind { defaultRegion ->
             authTokenManager.bind { userCredentials ->
                 platformContacts.fetchContacts() map { contacts ->
@@ -147,24 +99,37 @@ class ContactsService(
         }
     }
 
-    private val log = LoggerFactory.getLogger(javaClass)
+    /** Syncs the local contact list with the remote contact list. */
+    private fun syncRemoteContactsList(): Promise<Unit, Exception> {
+        log.debug("Beginning remote contact list sync")
 
-    private var isNetworkAvailable = false
+        val client = ContactListAsyncClient(serverUrl)
 
-    var isContactSyncActive = false
-        private set
+        val keyVault = userLoginData.keyVault
 
-    private val contactClient = ContactAsyncClient(serverUrl)
+        val contactsPersistenceManager = contactsPersistenceManager
 
-    private val contactEventsSubject = PublishSubject.create<ContactEvent>()
-    val contactEvents: Observable<ContactEvent> = contactEventsSubject
+        return authTokenManager.bind { userCredentials ->
+            client.getContacts(userCredentials) bind { response ->
+                val emails = decryptRemoteContactEntries(keyVault, response.contacts)
+                contactsPersistenceManager.getDiff(emails) bind { diff ->
+                    log.debug("New contacts: {}", diff.newContacts)
+                    log.debug("Removed contacts: {}", diff.removedContacts)
 
-    init {
-        application.networkAvailable.subscribe { onNetworkStatusChange(it) }
+                    val contactsClient = ContactAsyncClient(serverUrl)
+                    val request = FetchContactInfoByIdRequest(diff.newContacts.toList())
+                    contactsClient.fetchContactInfoById(userCredentials, request) bind { response ->
+                        val newContacts = response.contacts.map { it.toCore(false) }
+                        contactsPersistenceManager.applyDiff(newContacts, diff.removedContacts.toList())
+                    }
+                }
+            }
+        }
     }
 
     private fun processUnadded(): Promise<Unit, Exception> {
         log.info("Processing unadded contacts")
+
         return contactsPersistenceManager.getUnadded() bind { users ->
             addPendingContacts(users)
         } fail { e ->
@@ -179,20 +144,21 @@ class ContactsService(
             processJob()
     }
 
-    //add a new non-pending contact for which we already have info (from the ui's add new contact dialog)
+    /** Add a new non-pending contact for which we already have info. */
     fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
         return contactsPersistenceManager.add(contactInfo) successUi { wasAdded ->
             if (wasAdded) {
-                withCurrentJob { updateRemote() }
+                withCurrentJob { doUpdateRemoteContactList() }
                 contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
             }
         }
     }
 
+    /** Remove the given contact from the contact list. */
     fun removeContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
         return contactsPersistenceManager.remove(contactInfo) successUi { wasRemoved ->
             if (wasRemoved) {
-                withCurrentJob { updateRemote() }
+                withCurrentJob { doUpdateRemoteContactList() }
                 contactEventsSubject.onNext(ContactEvent.Removed(setOf(contactInfo)))
             }
         }
@@ -227,6 +193,7 @@ class ContactsService(
         }
     }
 
+    /** Filter out users whose messages we should ignore. */
     //in the future, this will also check for blocked/deleted users
     fun allowMessagesFrom(users: Set<UserId>): Promise<Set<UserId>, Exception> {
         //avoid errors if the caller modifiers the set after giving it
@@ -238,20 +205,19 @@ class ContactsService(
     }
 
     //called from MessengerService
-    fun processPendingContacts() {
-        withCurrentJob { processUnadded() }
+    fun doProcessUnaddedContacts() {
+        withCurrentJob { doProcessUnaddedContacts() }
     }
 
-    fun remoteSync() {
-        withCurrentJob { remoteSync() }
+    fun doRemoteSync() {
+        withCurrentJob { doRemoteSync() }
     }
 
-    fun localSync() {
-        withCurrentJob { localSync() }
+    fun doLocalSync() {
+        withCurrentJob { doLocalSync() }
     }
 
-    //this will be called on network up
-    //fetch+add contacts in pending state (behavior depends on ContactAddPolicy)
+    /** Process the given unadded users. */
     private fun addPendingContacts(users: Set<UserId>): Promise<Unit, Exception> {
         if (users.isEmpty())
             return Promise.ofSuccess(Unit)
@@ -271,11 +237,10 @@ class ContactsService(
         }
     }
 
-    private fun updateRemote(): Promise<Unit, Exception> {
+    private fun updateRemoteContactList(): Promise<Unit, Exception> {
         log.info("Beginning remote contact list update")
-        return contactsPersistenceManager.getRemoteUpdates() bind { updates ->
-            val client = ContactListAsyncClient(serverUrl)
 
+        return contactsPersistenceManager.getRemoteUpdates() bind { updates ->
             val adds = updates.filter { it.type == RemoteContactUpdateType.ADD }.map { it.userId }
             val removes = updates.filter { it.type == RemoteContactUpdateType.REMOVE }.map { it.userId }
 
@@ -290,7 +255,7 @@ class ContactsService(
 
                 authTokenManager.bind { userCredentials ->
                     val request = updateRequestFromContactInfo(keyVault, adds, removes)
-                    client.updateContacts(userCredentials, request)
+                    contactListClient.updateContacts(userCredentials, request)
                 } bind {
                     contactsPersistenceManager.removeRemoteUpdates(updates)
                 }
@@ -303,25 +268,26 @@ class ContactsService(
         log.debug("TODO: processContactRequestResponse")
     }
 
-    private var currentRunningJob: Promise<Unit, Exception>? = null
-    private var queuedJob: ContactJobDesc? = null
-
-    private fun runJob(jobDesc: ContactJobDesc): Promise<Unit, Exception> {
+    /** Create and run a job with the given job description. */
+    private fun runJob(jobDescription: ContactJobDescription): Promise<Unit, Exception> {
         val jobRunners = ArrayList<(Unit) -> Promise<Unit, Exception>>()
 
-        if (jobDesc.unadded)
+        if (jobDescription.unadded)
             jobRunners.add { processUnadded() }
 
-        if (jobDesc.localSync)
+        if (jobDescription.localSync)
             jobRunners.add { syncLocalContacts() }
 
-        if (jobDesc.updateRemote)
-            jobRunners.add { updateRemote() }
+        if (jobDescription.updateRemote)
+            jobRunners.add { updateRemoteContactList() }
 
-        if (jobDesc.remoteSync)
+        if (jobDescription.remoteSync)
             jobRunners.add {
+                isContactSyncActive = true
                 contactEventsSubject.onNext(ContactEvent.Sync(true))
+
                 syncRemoteContactsList() alwaysUi {
+                    isContactSyncActive = false
                     contactEventsSubject.onNext(ContactEvent.Sync(false))
                 }
             }
@@ -333,13 +299,15 @@ class ContactsService(
         return job
     }
 
+    /** Process the next queued job if no job is currently running and the network is active. */
     private fun processJob() {
-        if (currentRunningJob != null)
+        if (currentRunningJob != null || !isNetworkAvailable)
             return
 
         val queuedJob = this.queuedJob ?: return
 
         val job = runJob(queuedJob)
+
         currentRunningJob = job
         this.queuedJob = null
 
@@ -352,17 +320,19 @@ class ContactsService(
         }
     }
 
+    /** Process the next queued job, if any. */
     private fun nextJob() {
         currentRunningJob = null
         processJob()
     }
 
-    private fun withCurrentJob(body: ContactJobDesc.() -> Unit) {
+    /** Used to mark job components for execution. */
+    private fun withCurrentJob(body: ContactJobDescription.() -> Unit) {
         val queuedJob = this.queuedJob
         val job = if (queuedJob != null)
             queuedJob
         else {
-            val desc = ContactJobDesc()
+            val desc = ContactJobDescription()
             this.queuedJob = desc
             desc
         }

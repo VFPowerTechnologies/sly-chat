@@ -115,7 +115,7 @@ class SlyApplication {
 
         log.debug("Platform contacts updated")
 
-        userComponent.contactsService.localSync()
+        userComponent.contactsService.doLocalSync()
     }
 
     //XXX this is kinda bad since we block on the main thread, but it's only done once during init anyways
@@ -380,7 +380,7 @@ class SlyApplication {
 
         userSessionAvailableSubject.onNext(true)
 
-        userComponent.contactsService.remoteSync()
+        userComponent.contactsService.doRemoteSync()
         //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
         fetchOfflineMessages()
 
