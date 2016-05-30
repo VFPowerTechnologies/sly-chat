@@ -12,6 +12,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.alwaysUi
+import nl.komponents.kovenant.ui.promiseOnUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -289,16 +290,23 @@ class ContactsService(
 
         if (jobDescription.remoteSync)
             jobRunners.add {
-                isContactSyncActive = true
-                contactEventsSubject.onNext(ContactEvent.Sync(true))
-
                 syncRemoteContactsList() alwaysUi {
                     isContactSyncActive = false
                     contactEventsSubject.onNext(ContactEvent.Sync(false))
                 }
             }
 
-        val job = jobRunners.fold(Promise.ofSuccess<Unit, Exception>(Unit)) { z, v ->
+        //if remote sync is at all enabled, we want the entire process to lock down the contact list
+        val initial = if (jobDescription.remoteSync) {
+            promiseOnUi {
+                isContactSyncActive = true
+                contactEventsSubject.onNext(ContactEvent.Sync(true))
+            }
+        }
+        else
+            Promise.ofSuccess<Unit, Exception>(Unit)
+
+        val job = jobRunners.fold(initial) { z, v ->
             z bindUi v
         }
 
