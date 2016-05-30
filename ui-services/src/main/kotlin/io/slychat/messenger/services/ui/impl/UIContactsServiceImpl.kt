@@ -43,13 +43,16 @@ class UIContactsServiceImpl(
     private fun onContactEvent(event: ContactEvent) {
         val ev = when (event) {
             is ContactEvent.Added ->
-                UIContactEvent.Added(event.contacts.map { it.toUI() })
+                UIContactEvent.Added(event.contacts.toUI())
 
             is ContactEvent.Removed ->
-                UIContactEvent.Removed(event.contacts.map { it.toUI() })
+                UIContactEvent.Removed(event.contacts.toUI())
+
+            is ContactEvent.Updated ->
+                UIContactEvent.Updated(event.contacts.toUI())
 
             is ContactEvent.Request ->
-                UIContactEvent.Request(event.contacts.map { it.toUI() })
+                UIContactEvent.Request(event.contacts.toUI())
 
             is ContactEvent.Sync ->
                 UIContactEvent.Sync(event.isRunning)
@@ -78,14 +81,14 @@ class UIContactsServiceImpl(
         app.userComponent?.contactsPersistenceManager ?: error("No UserComponent available")
 
     override fun updateContact(newContactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
-        val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
-        return contactsPersistenceManager.update(newContactDetails.toNative()) map { newContactDetails }
+        val contactsService = getContactsServiceOrThrow()
+        return contactsService.updateContact(newContactDetails.toNative()) map { newContactDetails }
     }
 
     override fun getContacts(): Promise<List<UIContactDetails>, Exception> {
         val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
         return contactsPersistenceManager.getAll() map { contacts ->
-            contacts.map { it.toUI() }
+            contacts.toUI()
         }
     }
 

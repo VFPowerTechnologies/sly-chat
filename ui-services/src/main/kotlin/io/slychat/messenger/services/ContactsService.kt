@@ -164,6 +164,12 @@ class ContactsService(
         }
     }
 
+    fun updateContact(contactInfo: ContactInfo): Promise<Unit, Exception> {
+        return contactsPersistenceManager.update(contactInfo) successUi {
+            contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactInfo)))
+        }
+    }
+
     //we want to keep the policy we had when we started processing
     private fun handleContactLookupResponse(policy: ContactAddPolicy, users: Set<UserId>, response: FetchContactInfoByIdResponse): Promise<Unit, Exception> {
         val foundIds = response.contacts.mapTo(HashSet()) { it.id }
