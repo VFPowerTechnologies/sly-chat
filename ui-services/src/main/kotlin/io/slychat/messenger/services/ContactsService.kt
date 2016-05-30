@@ -12,6 +12,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.alwaysUi
+import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
@@ -179,8 +180,22 @@ class ContactsService(
     }
 
     //add a new non-pending contact for which we already have info (from the ui's add new contact dialog)
-    fun addContact(contactInfo: ContactInfo): Promise<Unit, Exception> {
-        throw NotImplementedError("addContact")
+    fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
+        return contactsPersistenceManager.add(contactInfo) successUi { wasAdded ->
+            if (wasAdded) {
+                withCurrentJob { updateRemote() }
+                contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
+            }
+        }
+    }
+
+    fun removeContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
+        return contactsPersistenceManager.remove(contactInfo) successUi { wasRemoved ->
+            if (wasRemoved) {
+                withCurrentJob { updateRemote() }
+                contactEventsSubject.onNext(ContactEvent.Removed(setOf(contactInfo)))
+            }
+        }
     }
 
     //we want to keep the policy we had when we started processing
@@ -224,18 +239,15 @@ class ContactsService(
 
     //called from MessengerService
     fun processPendingContacts() {
-        getNewOrPending().processUnadded()
-        processJob()
+        withCurrentJob { processUnadded() }
     }
 
     fun remoteSync() {
-        getNewOrPending().remoteSync()
-        processJob()
+        withCurrentJob { remoteSync() }
     }
 
     fun localSync() {
-        getNewOrPending().localSync()
-        processJob()
+        withCurrentJob { localSync() }
     }
 
     //this will be called on network up
@@ -339,13 +351,18 @@ class ContactsService(
         processJob()
     }
 
-    private fun getNewOrPending(): ContactJobDesc {
+    private fun withCurrentJob(body: ContactJobDesc.() -> Unit) {
         val queuedJob = this.queuedJob
-        if (queuedJob != null)
-            return queuedJob
+        val job = if (queuedJob != null)
+            queuedJob
+        else {
+            val desc = ContactJobDesc()
+            this.queuedJob = desc
+            desc
+        }
 
-        val desc = ContactJobDesc()
-        this.queuedJob = desc
-        return desc
+        job.body()
+
+        processJob()
     }
 }

@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui.impl
 
-import io.slychat.messenger.core.http.api.contacts.*
+import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
+import io.slychat.messenger.core.http.api.contacts.NewContactRequest
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.di.UserComponent
@@ -9,7 +10,6 @@ import io.slychat.messenger.services.ui.UIContactEvent
 import io.slychat.messenger.services.ui.UIContactsService
 import io.slychat.messenger.services.ui.UINewContactResult
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import rx.Subscription
 import java.util.*
@@ -20,10 +20,6 @@ class UIContactsServiceImpl(
 ) : UIContactsService {
 
     private val contactClient = ContactAsyncClient(serverUrl)
-    private val contactListClient = ContactListAsyncClient(serverUrl)
-
-    private val contactListSyncListeners = ArrayList<(Boolean) -> Unit>()
-    private var isContactListSyncing = false
 
     private var contactEventSub: Subscription? = null
     private val contactEventListeners = ArrayList<(UIContactEvent) -> Unit>()
@@ -91,38 +87,19 @@ class UIContactsServiceImpl(
     }
 
     override fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
-        val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
         val contactInfo = contactDetails.toNative()
 
-        val userComponent = getUserComponentOrThrow()
+        val contactsService = getContactsServiceOrThrow()
 
-        val keyVault = userComponent.userLoginData.keyVault
-
-        val remoteContactEntries = encryptRemoteContactEntries(keyVault, listOf(contactDetails.id))
-
-        return userComponent.authTokenManager.bind { userCredentials ->
-            contactListClient.addContacts(userCredentials, AddContactsRequest(remoteContactEntries)) bind {
-                contactsPersistenceManager.add(contactInfo) map {
-                    contactDetails
-                }
-            }
-        }
+        return contactsService.addContact(contactInfo) map { contactDetails }
     }
 
     override fun removeContact(contactDetails: UIContactDetails): Promise<Unit, Exception> {
-        val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
+        val contactInfo = contactDetails.toNative()
 
-        val userComponent = getUserComponentOrThrow()
+        val contactsService = getContactsServiceOrThrow()
 
-        val keyVault = userComponent.userLoginData.keyVault
-
-        val remoteContactEntries = encryptRemoteContactEntries(keyVault, listOf(contactDetails.id)).map { it.hash }
-
-        return userComponent.authTokenManager.bind { userCredentials ->
-            contactListClient.removeContacts(userCredentials, RemoveContactsRequest(remoteContactEntries)) bind {
-                contactsPersistenceManager.remove(contactDetails.toNative())
-            }
-        }
+        return contactsService.removeContact(contactInfo) map { Unit }
     }
 
     override fun fetchNewContactInfo(email: String?, phoneNumber: String?): Promise<UINewContactResult, Exception> {
