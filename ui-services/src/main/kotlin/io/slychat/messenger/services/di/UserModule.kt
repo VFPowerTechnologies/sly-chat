@@ -48,9 +48,19 @@ class UserModule(
         serverUrls: BuildConfig.ServerUrls,
         application: SlyApplication,
         contactsPersistenceManager: ContactsPersistenceManager,
-        contactSyncManager: ContactSyncManager
+        userLoginData: UserData,
+        accountInfoPersistenceManager: AccountInfoPersistenceManager,
+        platformContacts: PlatformContacts
     ): ContactsService =
-        ContactsService(authTokenManager, serverUrls, application, contactsPersistenceManager, contactSyncManager)
+        ContactsService(
+            authTokenManager,
+            serverUrls.API_SERVER,
+            application,
+            contactsPersistenceManager,
+            userLoginData,
+            accountInfoPersistenceManager,
+            platformContacts
+        )
 
     @UserScope
     @Provides
@@ -122,27 +132,6 @@ class UserModule(
         authTokenManager: AuthTokenManager
     ): OfflineMessageManager =
         OfflineMessageManager(application, serverUrls.API_SERVER, messengerService, authTokenManager)
-
-    @UserScope
-    @Provides
-    fun providesContactSyncManager(
-        application: SlyApplication,
-        userLoginData: UserData,
-        accountInfoPersistenceManager: AccountInfoPersistenceManager,
-        serverUrls: ServerUrls,
-        platformContacts: PlatformContacts,
-        contactsPersistenceManager: ContactsPersistenceManager,
-        authTokenManager: AuthTokenManager
-    ): ContactSyncManager =
-        ContactSyncManager(
-            application,
-            userLoginData,
-            accountInfoPersistenceManager,
-            serverUrls.API_SERVER,
-            platformContacts,
-            contactsPersistenceManager,
-            authTokenManager
-        )
 
     @UserScope
     @Provides
