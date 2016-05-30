@@ -93,7 +93,7 @@ class ContactsService(
                 } bind { foundContacts ->
                     log.debug("Found local contacts: {}", foundContacts)
 
-                    contactsPersistenceManager.addAll(foundContacts.contacts.map { it.toCore(false) }) map { Unit }
+                    contactsPersistenceManager.add(foundContacts.contacts.map { it.toCore(false) }) map { Unit }
                 }
             }
         }
@@ -179,7 +179,7 @@ class ContactsService(
 
         val contacts = response.contacts.map { it.toCore(isPending) }
 
-        return contactsPersistenceManager.addAll(contacts) mapUi { newContacts ->
+        return contactsPersistenceManager.add(contacts) mapUi { newContacts ->
             if (newContacts.isNotEmpty()) {
                 val ev = if (policy == ContactAddPolicy.AUTO)
                     ContactEvent.Added(newContacts)

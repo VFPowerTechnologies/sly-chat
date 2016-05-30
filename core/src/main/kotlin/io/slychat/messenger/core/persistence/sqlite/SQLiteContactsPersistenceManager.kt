@@ -213,7 +213,7 @@ ON
         }
     }
 
-    override fun addAll(contacts: List<ContactInfo>): Promise<Set<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun add(contacts: Collection<ContactInfo>): Promise<Set<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val newContacts = HashSet<ContactInfo>()
 
         connection.withTransaction {
@@ -257,7 +257,7 @@ ON
         }
     }
 
-    override fun getDiff(ids: List<UserId>): Promise<ContactListDiff, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun getDiff(ids: Collection<UserId>): Promise<ContactListDiff, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val remoteIds = ids.toSet()
 
         val localIds = connection.prepare("SELECT id FROM contacts").use { stmt ->
@@ -277,7 +277,7 @@ ON
         ContactListDiff(addedEmails, removedEmails)
     }
 
-    override fun applyDiff(newContacts: List<ContactInfo>, removedContacts: List<UserId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun applyDiff(newContacts: Collection<ContactInfo>, removedContacts: Collection<UserId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             newContacts.forEach { addContactNoTransaction(connection, it) }
             removedContacts.forEach { removeContactNoTransaction(connection, it) }
@@ -350,14 +350,14 @@ ON
         }
     }
 
-    private fun addRemoteUpdateNoTransaction(connection: SQLiteConnection, remoteUpdates: List<RemoteContactUpdate>) {
+    private fun addRemoteUpdateNoTransaction(connection: SQLiteConnection, remoteUpdates: Collection<RemoteContactUpdate>) {
         connection.batchInsert("INSERT OR REPLACE INTO remote_contact_updates (contact_id, type) VALUES (?, ?)", remoteUpdates) { stmt, item ->
             stmt.bind(1, item.userId.long)
             stmt.bind(2, item.type.toString())
         }
     }
 
-    override fun addRemoteUpdate(remoteUpdates: List<RemoteContactUpdate>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun addRemoteUpdate(remoteUpdates: Collection<RemoteContactUpdate>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             addRemoteUpdateNoTransaction(connection, remoteUpdates)
         }
@@ -373,7 +373,7 @@ ON
         }
     }
 
-    override fun removeRemoteUpdates(remoteUpdates: List<RemoteContactUpdate>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun removeRemoteUpdates(remoteUpdates: Collection<RemoteContactUpdate>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             connection.withPrepared("DELETE FROM remote_contact_updates WHERE contact_id=?") { stmt ->
                 remoteUpdates.forEach { item ->

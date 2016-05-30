@@ -92,14 +92,14 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `addAll should return the list of new contacts added and add corresponding remote updates`() {
+    fun `add(List) should return the list of new contacts added and add corresponding remote updates`() {
         contactsPersistenceManager.add(contactA).get()
 
         val newContacts = listOf(contactA2, contactC)
         val allContacts = mutableListOf(contactA)
         allContacts.addAll(newContacts)
 
-        val added = contactsPersistenceManager.addAll(allContacts).get()
+        val added = contactsPersistenceManager.add(allContacts).get()
 
         assertEquals(newContacts.toSet(), added, "Invalid added contacts")
 
