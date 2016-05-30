@@ -276,18 +276,24 @@ class ContactsService(
         return contactsPersistenceManager.getRemoteUpdates() bind { updates ->
             val client = ContactListAsyncClient(serverUrl)
 
-            //FIXME add api to do both at once
             val adds = updates.filter { it.type == RemoteContactUpdateType.ADD }.map { it.userId }
             val removes = updates.filter { it.type == RemoteContactUpdateType.REMOVE }.map { it.userId }
 
-            val keyVault = userLoginData.keyVault
+            if (adds.isEmpty() && removes.isEmpty()) {
+                log.info("No new contacts")
+                Promise.ofSuccess(Unit)
+            }
+            else {
+                log.info("Remote update: add={}; remove={}", adds.map { it.long }, removes.map { it.long })
 
-            authTokenManager.bind { userCredentials ->
-                val remoteContactEntries = encryptRemoteContactEntries(keyVault, adds)
-                val request = AddContactsRequest(remoteContactEntries)
-                client.addContacts(userCredentials, request)
-            } bind {
-                contactsPersistenceManager.removeRemoteUpdates(updates)
+                val keyVault = userLoginData.keyVault
+
+                authTokenManager.bind { userCredentials ->
+                    val request = updateRequestFromContactInfo(keyVault, adds, removes)
+                    client.updateContacts(userCredentials, request)
+                } bind {
+                    contactsPersistenceManager.removeRemoteUpdates(updates)
+                }
             }
         }
     }
