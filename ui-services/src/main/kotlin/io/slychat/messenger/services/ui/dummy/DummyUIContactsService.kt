@@ -8,9 +8,6 @@ import io.slychat.messenger.services.ui.UINewContactResult
 import nl.komponents.kovenant.Promise
 
 class DummyUIContactsService : UIContactsService {
-    override fun addContactListSyncListener(listener: (Boolean) -> Unit) {
-    }
-
     override fun addContactEventListener(listener: (UIContactEvent) -> Unit) {
     }
 

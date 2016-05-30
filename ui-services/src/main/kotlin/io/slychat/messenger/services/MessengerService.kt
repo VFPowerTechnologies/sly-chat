@@ -437,8 +437,8 @@ class MessengerService(
                     val missing = HashSet(users)
                     missing.removeAll(exists)
 
-                    //will receive events at a later time for added/removed
-                    contactsService.addPendingContacts(missing)
+                    if (missing.isNotEmpty())
+                        contactsService.doProcessUnaddedContacts()
 
                     val toProcess = if (missing.isNotEmpty())
                         packages.filter { exists.contains(it.id.address.id) }

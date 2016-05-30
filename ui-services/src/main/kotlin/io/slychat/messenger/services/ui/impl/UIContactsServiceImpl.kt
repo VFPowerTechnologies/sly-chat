@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui.impl
 
-import io.slychat.messenger.core.http.api.contacts.*
+import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
+import io.slychat.messenger.core.http.api.contacts.NewContactRequest
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.di.UserComponent
@@ -9,7 +10,6 @@ import io.slychat.messenger.services.ui.UIContactEvent
 import io.slychat.messenger.services.ui.UIContactsService
 import io.slychat.messenger.services.ui.UINewContactResult
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import rx.Subscription
 import java.util.*
@@ -20,34 +20,46 @@ class UIContactsServiceImpl(
 ) : UIContactsService {
 
     private val contactClient = ContactAsyncClient(serverUrl)
-    private val contactListClient = ContactListAsyncClient(serverUrl)
-
-    private val contactListSyncListeners = ArrayList<(Boolean) -> Unit>()
-    private var isContactListSyncing = false
 
     private var contactEventSub: Subscription? = null
     private val contactEventListeners = ArrayList<(UIContactEvent) -> Unit>()
 
+    private var isContactSyncActive = false
+
     init {
-        app.contactListSyncing.subscribe { updateContactListSyncing(it) }
         app.userSessionAvailable.subscribe { isAvailable ->
             if (!isAvailable) {
                 contactEventSub?.unsubscribe()
                 contactEventSub = null
             }
             else {
-                contactEventSub = getUserComponentOrThrow().contactsService.contactEvents.subscribe { onContactEvent(it) }
+                contactEventSub = getContactsServiceOrThrow().contactEvents.subscribe { onContactEvent(it) }
             }
         }
+    }
+
+    private fun getContactsServiceOrThrow(): ContactsService {
+        return app.userComponent?.contactsService ?: throw IllegalStateException("Not logged in")
     }
 
     private fun onContactEvent(event: ContactEvent) {
         val ev = when (event) {
             is ContactEvent.Added ->
-                UIContactEvent.Added(event.contacts.map { it.toUI() })
+                UIContactEvent.Added(event.contacts.toUI())
+
+            is ContactEvent.Removed ->
+                UIContactEvent.Removed(event.contacts.toUI())
+
+            is ContactEvent.Updated ->
+                UIContactEvent.Updated(event.contacts.toUI())
 
             is ContactEvent.Request ->
-                UIContactEvent.Request(event.contacts.map { it.toUI() })
+                UIContactEvent.Request(event.contacts.toUI())
+
+            is ContactEvent.Sync -> {
+                isContactSyncActive = event.isRunning
+                UIContactEvent.Sync(event.isRunning)
+            }
 
             else -> null
         }
@@ -60,69 +72,42 @@ class UIContactsServiceImpl(
         return app.userComponent ?: throw IllegalStateException("Not logged in")
     }
 
-    private fun updateContactListSyncing(value: Boolean) {
-        isContactListSyncing = value
-        for (listener in contactListSyncListeners)
-            listener(value)
-    }
-
-    override fun addContactListSyncListener(listener: (Boolean) -> Unit) {
-        contactListSyncListeners.add(listener)
-        listener(isContactListSyncing)
-    }
-
     override fun addContactEventListener(listener: (UIContactEvent) -> Unit) {
         contactEventListeners.add(listener)
+
+        //replay any status events
+        listener(UIContactEvent.Sync(isContactSyncActive))
     }
 
     private fun getContactsPersistenceManagerOrThrow(): ContactsPersistenceManager =
         app.userComponent?.contactsPersistenceManager ?: error("No UserComponent available")
 
     override fun updateContact(newContactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
-        val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
-        return contactsPersistenceManager.update(newContactDetails.toNative()) map { newContactDetails }
+        val contactsService = getContactsServiceOrThrow()
+        return contactsService.updateContact(newContactDetails.toNative()) map { newContactDetails }
     }
 
     override fun getContacts(): Promise<List<UIContactDetails>, Exception> {
         val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
         return contactsPersistenceManager.getAll() map { contacts ->
-            contacts.map { it.toUI() }
+            contacts.toUI()
         }
     }
 
     override fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
-        val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
         val contactInfo = contactDetails.toNative()
 
-        val userComponent = getUserComponentOrThrow()
+        val contactsService = getContactsServiceOrThrow()
 
-        val keyVault = userComponent.userLoginData.keyVault
-
-        val remoteContactEntries = encryptRemoteContactEntries(keyVault, listOf(contactDetails.id))
-
-        return userComponent.authTokenManager.bind { userCredentials ->
-            contactListClient.addContacts(userCredentials, AddContactsRequest(remoteContactEntries)) bind {
-                contactsPersistenceManager.add(contactInfo) map {
-                    contactDetails
-                }
-            }
-        }
+        return contactsService.addContact(contactInfo) map { contactDetails }
     }
 
     override fun removeContact(contactDetails: UIContactDetails): Promise<Unit, Exception> {
-        val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
+        val contactInfo = contactDetails.toNative()
 
-        val userComponent = getUserComponentOrThrow()
+        val contactsService = getContactsServiceOrThrow()
 
-        val keyVault = userComponent.userLoginData.keyVault
-
-        val remoteContactEntries = encryptRemoteContactEntries(keyVault, listOf(contactDetails.id)).map { it.hash }
-
-        return userComponent.authTokenManager.bind { userCredentials ->
-            contactListClient.removeContacts(userCredentials, RemoveContactsRequest(remoteContactEntries)) bind {
-                contactsPersistenceManager.remove(contactDetails.toNative())
-            }
-        }
+        return contactsService.removeContact(contactInfo) map { Unit }
     }
 
     override fun fetchNewContactInfo(email: String?, phoneNumber: String?): Promise<UINewContactResult, Exception> {

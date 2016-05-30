@@ -39,3 +39,10 @@ fun decryptRemoteContactEntries(keyVault: KeyVault, contacts: List<RemoteContact
         UserId(decryptData(encSpec, it.encryptedUserId.unhexify()).toString(Charsets.UTF_8).toLong())
     }
 }
+
+fun updateRequestFromContactInfo(keyVault: KeyVault, addContacts: List<UserId>, removeContacts: List<UserId>): UpdateContactsRequest {
+    val add = encryptRemoteContactEntries(keyVault, addContacts)
+    val remove = encryptRemoteContactEntries(keyVault, removeContacts).map { it.hash }
+
+    return UpdateContactsRequest(add, remove)
+}

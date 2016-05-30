@@ -2,6 +2,7 @@ package io.slychat.messenger.core
 
 import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
+import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.ApiException
 import io.slychat.messenger.core.http.api.accountupdate.*
 import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
@@ -29,7 +30,7 @@ data class GeneratedSiteUser(
 )
 
 fun SiteUser.toContactInfo(): ContactInfo =
-    ContactInfo(id, username, name, phoneNumber, publicKey)
+    ContactInfo(id, username, name, false, phoneNumber, publicKey)
 
 fun GeneratedSiteUser.getUserCredentials(authToken: AuthToken, deviceId: Int = DEFAULT_DEVICE_ID): UserCredentials {
     return user.getUserCredentials(authToken, deviceId)
@@ -600,7 +601,7 @@ class WebApiIntegrationTest {
         val siteUser = injectNewSiteUser()
         val authToken = devClient.createAuthToken(siteUser.user.username)
 
-        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, siteUser.user.phoneNumber, siteUser.user.publicKey)
+        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, false, siteUser.user.phoneNumber, siteUser.user.publicKey)
 
         val client = ContactClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
 
@@ -609,7 +610,7 @@ class WebApiIntegrationTest {
 
         val receivedEmailContactInfo = contactResponseEmail.contactInfo!!
 
-        assertEquals(contactDetails, receivedEmailContactInfo)
+        assertEquals(contactDetails, receivedEmailContactInfo.toCore(false))
     }
 
     @Test
@@ -617,7 +618,7 @@ class WebApiIntegrationTest {
         val siteUser = injectNewSiteUser()
         val authToken = devClient.createAuthToken(siteUser.user.username)
 
-        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, siteUser.user.phoneNumber, siteUser.user.publicKey)
+        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, false, siteUser.user.phoneNumber, siteUser.user.publicKey)
 
         val client = ContactClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
 
@@ -626,14 +627,14 @@ class WebApiIntegrationTest {
 
         val receivedContactInfo = contactResponse.contactInfo!!
 
-        assertEquals(contactDetails, receivedContactInfo)
+        assertEquals(contactDetails, receivedContactInfo.toCore(false))
     }
 
-    fun assertContactListEquals(expected: List<RemoteContactEntry>, actual: List<RemoteContactEntry>) {
+    fun assertContactListEquals(expected: List<RemoteContactEntry>, actual: List<RemoteContactEntry>, message: String? = null) {
         val sortedLocalContacts = expected.sortedBy { it.hash }
         val sortedRemoteContacts = actual.sortedBy { it.hash }
 
-        assertEquals(sortedLocalContacts, sortedRemoteContacts)
+        assertEquals(sortedLocalContacts, sortedRemoteContacts, message)
     }
 
     @Test
@@ -717,6 +718,32 @@ class WebApiIntegrationTest {
     }
 
     @Test
+    fun `Updating contacts should add and remove the given contacts`() {
+        val userA = injectNamedSiteUser("a@a.com")
+        val userB = injectNamedSiteUser("b@a.com")
+        val userC = injectNamedSiteUser("c@a.com")
+        val userD = injectNamedSiteUser("d@a.com")
+
+        val contactList = encryptRemoteContactEntries(userA.keyVault, listOf(userB, userC, userD).map { it.user.id })
+
+        devClient.addContacts(userA.user.username, contactList.subList(0, contactList.size))
+
+        val client = ContactListClient(serverBaseUrl, JavaHttpClient())
+
+        val authToken = devClient.createAuthToken(userA.user.username)
+
+        val request = updateRequestFromContactInfo(userA.keyVault, listOf(userB.user.id), listOf(userC.user.id))
+
+        client.updateContacts(userA.getUserCredentials(authToken), request)
+
+        val contacts = devClient.getContactList(userA.user.username)
+
+        val expected = listOf(contactList[0], contactList[2])
+
+        assertContactListEquals(expected, contacts, "Local and remote contact lists don't match")
+    }
+
+    @Test
     fun `findLocalContacts should find matches for both phone number and emails`() {
         val bPhoneNumber = "15555555555"
         val userA = injectNamedSiteUser("a@a.com").user
@@ -739,7 +766,7 @@ class WebApiIntegrationTest {
             userC.toContactInfo()
         )
 
-        assertEquals(expected, response.contacts.sortedBy { it.email })
+        assertEquals(expected, response.contacts.sortedBy { it.email }.map { it.toCore(false) })
     }
 
     @Test
@@ -760,7 +787,7 @@ class WebApiIntegrationTest {
             userC.toContactInfo()
         )
 
-        assertEquals(expected, response.contacts.sortedBy { it.email })
+        assertEquals(expected, response.contacts.sortedBy { it.email }.map { it.toCore(false) })
     }
 
     @Test

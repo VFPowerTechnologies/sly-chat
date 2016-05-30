@@ -25,6 +25,9 @@ fun ApiContactInfo.toUI(): UIContactDetails =
 fun ContactInfo.toUI(): UIContactDetails =
     UIContactDetails(id, name, phoneNumber, email, publicKey)
 
+fun Iterable<ContactInfo>.toUI(): List<UIContactDetails> =
+    map { it.toUI() }
+
 //FIXME
 fun UIContactDetails.toNative(): ContactInfo =
     ContactInfo(id, email, name, false, phoneNumber, publicKey)

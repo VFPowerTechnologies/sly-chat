@@ -52,33 +52,32 @@ ContactController.prototype = {
 
         contactList.html(fragment);
     },
-    /**
-     * Add contact syncing listener.
-     */
-    addContactListSyncListener : function () {
-        contactService.addContactListSyncListener(function (sync) {
-            this.syncing = sync;
-            if(sync == true) {
-                this.showContactSyncingNotification();
-            }else{
-                this.closeNotification();
-                if(window.location.href.indexOf("contacts.html") > -1) {
-                    this.model.resetContacts();
-                    this.model.fetchConversation();
-                }
-            }
-        }.bind(this));
-    },
+
     /**
      * Add contact event listener.
      */
     addContactEventListener : function () {
         contactService.addContactEventListener(function (ev) {
             switch(ev.type) {
-                case 'ADD':
+                case "ADD":
+                case 'REMOVE':
                     if(window.location.href.indexOf("contacts.html") > -1) {
                         this.model.resetContacts();
                         KEYTAP.navigationController.loadPage("contacts.html", false);
+                    }
+                    break;
+
+
+                case "SYNC":
+                    this.syncing = ev.running;
+                    if(ev.running == true) {
+                        this.showContactSyncingNotification();
+                    }else{
+                        this.closeNotification();
+                        if(window.location.href.indexOf("contacts.html") > -1) {
+                            this.model.resetContacts();
+                            this.model.fetchConversation();
+                        }
                     }
                     break;
             }
@@ -311,10 +310,7 @@ ContactController.prototype = {
      * @param id
      */
     deleteContact : function (id) {
-        contactService.removeContact(this.model.getContact(id)).then(function () {
-            this.model.resetContacts();
-            KEYTAP.navigationController.loadPage("contacts.html", false);
-        }.bind(this)).catch(function (e) {
+        contactService.removeContact(this.model.getContact(id)).catch(function (e) {
             console.log(e);
         })
     },
