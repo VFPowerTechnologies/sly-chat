@@ -287,9 +287,7 @@ class ContactsService(
 
         if (jobDescription.remoteSync)
             jobRunners.add {
-                syncRemoteContactsList() alwaysUi {
-                    contactEventsSubject.onNext(ContactEvent.Sync(false))
-                }
+                syncRemoteContactsList()
             }
 
         //if remote sync is at all enabled, we want the entire process to lock down the contact list
@@ -303,6 +301,12 @@ class ContactsService(
 
         val job = jobRunners.fold(initial) { z, v ->
             z bindUi v
+        }
+
+        if (jobDescription.remoteSync) {
+            job alwaysUi {
+                contactEventsSubject.onNext(ContactEvent.Sync(false))
+            }
         }
 
         return job
