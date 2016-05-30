@@ -29,7 +29,7 @@ data class GeneratedSiteUser(
 )
 
 fun SiteUser.toContactInfo(): ContactInfo =
-    ContactInfo(id, username, name, phoneNumber, publicKey)
+    ContactInfo(id, username, name, false, phoneNumber, publicKey)
 
 fun GeneratedSiteUser.getUserCredentials(authToken: AuthToken, deviceId: Int = DEFAULT_DEVICE_ID): UserCredentials {
     return user.getUserCredentials(authToken, deviceId)
@@ -600,7 +600,7 @@ class WebApiIntegrationTest {
         val siteUser = injectNewSiteUser()
         val authToken = devClient.createAuthToken(siteUser.user.username)
 
-        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, siteUser.user.phoneNumber, siteUser.user.publicKey)
+        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, false, siteUser.user.phoneNumber, siteUser.user.publicKey)
 
         val client = ContactClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
 
@@ -609,7 +609,7 @@ class WebApiIntegrationTest {
 
         val receivedEmailContactInfo = contactResponseEmail.contactInfo!!
 
-        assertEquals(contactDetails, receivedEmailContactInfo)
+        assertEquals(contactDetails, receivedEmailContactInfo.toCore(false))
     }
 
     @Test
@@ -617,7 +617,7 @@ class WebApiIntegrationTest {
         val siteUser = injectNewSiteUser()
         val authToken = devClient.createAuthToken(siteUser.user.username)
 
-        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, siteUser.user.phoneNumber, siteUser.user.publicKey)
+        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, false, siteUser.user.phoneNumber, siteUser.user.publicKey)
 
         val client = ContactClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
 
@@ -626,7 +626,7 @@ class WebApiIntegrationTest {
 
         val receivedContactInfo = contactResponse.contactInfo!!
 
-        assertEquals(contactDetails, receivedContactInfo)
+        assertEquals(contactDetails, receivedContactInfo.toCore(false))
     }
 
     fun assertContactListEquals(expected: List<RemoteContactEntry>, actual: List<RemoteContactEntry>) {
@@ -739,7 +739,7 @@ class WebApiIntegrationTest {
             userC.toContactInfo()
         )
 
-        assertEquals(expected, response.contacts.sortedBy { it.email })
+        assertEquals(expected, response.contacts.sortedBy { it.email }.map { it.toCore(false) })
     }
 
     @Test
@@ -760,7 +760,7 @@ class WebApiIntegrationTest {
             userC.toContactInfo()
         )
 
-        assertEquals(expected, response.contacts.sortedBy { it.email })
+        assertEquals(expected, response.contacts.sortedBy { it.email }.map { it.toCore(false) })
     }
 
     @Test
