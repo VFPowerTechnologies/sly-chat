@@ -48,6 +48,8 @@ VALUES
         connection.withTransaction {
             insertMessage(connection, userId, messageInfo)
             updateConversationInfo(connection, userId, messageInfo.isSent, messageInfo.message, messageInfo.timestamp, 1)
+            if (!messageInfo.isSent)
+                removeFromQueueNoTransaction(connection, userId, listOf(messageInfo.id))
         }
 
         return messageInfo
@@ -55,8 +57,6 @@ VALUES
 
     override fun addMessage(userId: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
         addMessageReal(connection, userId, messageInfo)
-        if (!messageInfo.isSent)
-            removeFromQueueNoTransaction(connection, userId, listOf(messageInfo.id))
         messageInfo
     }
 
