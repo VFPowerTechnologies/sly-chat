@@ -154,21 +154,25 @@ ON
     }
 
     //never call when not inside a transition
-    private fun removeContactNoTransaction(connection: SQLiteConnection, userId: UserId) {
-        connection.prepare("DELETE FROM conversation_info WHERE contact_id=?").use { stmt ->
-            stmt.bind(1, userId.long)
-            stmt.step()
-        }
-
+    private fun removeContactNoTransaction(connection: SQLiteConnection, userId: UserId): Boolean {
         connection.prepare("DELETE FROM contacts WHERE id=?").use { stmt ->
             stmt.bind(1, userId.long)
 
             stmt.step()
-            if (connection.changes <= 0)
-                throw InvalidContactException(userId)
         }
 
-        ConversationTable.delete(connection, userId)
+        val wasRemoved = connection.changes > 0
+
+        if (wasRemoved) {
+            connection.prepare("DELETE FROM conversation_info WHERE contact_id=?").use { stmt ->
+                stmt.bind(1, userId.long)
+                stmt.step()
+            }
+
+            ConversationTable.delete(connection, userId)
+        }
+
+        return wasRemoved
     }
 
     //never call when not inside a transition
@@ -240,12 +244,16 @@ ON
         }
     }
 
-    override fun remove(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun remove(contactInfo: ContactInfo): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             val userId = contactInfo.id
-            removeContactNoTransaction(connection, userId)
-            val remoteUpdates = listOf(RemoteContactUpdate(userId, RemoteContactUpdateType.REMOVE))
-            addRemoteUpdateNoTransaction(connection, remoteUpdates)
+            val wasRemoved = removeContactNoTransaction(connection, userId)
+            if (wasRemoved) {
+                val remoteUpdates = listOf(RemoteContactUpdate(userId, RemoteContactUpdateType.REMOVE))
+                addRemoteUpdateNoTransaction(connection, remoteUpdates)
+            }
+
+            wasRemoved
         }
     }
 
