@@ -10,7 +10,6 @@ buildscript {
 }
 
 apply plugin: 'com.android.application'
-apply plugin: 'com.google.gms.google-services'
 apply plugin: 'kotlin-android'
 
 android {
@@ -60,3 +59,5 @@ dependencies {
     compile "io.reactivex:rxandroid:$versions.rxandroid"
     compile "com.google.android.gms:play-services-gcm:$versions.playServices"
 }
+
+apply plugin: 'com.google.gms.google-services'

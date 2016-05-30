@@ -13,6 +13,8 @@
 
 -dontwarn org.joda.convert.**
 
+-dontwarn nl.komponents.kovenant.unsafe.**
+
 -keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
 
 -keep class !kotlin.**,!io.netty.**,!com.fasterxml.jackson.**,!org.spongycastle.**,!com.google.protobuf.** { *; }
