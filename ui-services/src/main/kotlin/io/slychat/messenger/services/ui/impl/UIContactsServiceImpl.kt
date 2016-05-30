@@ -24,6 +24,8 @@ class UIContactsServiceImpl(
     private var contactEventSub: Subscription? = null
     private val contactEventListeners = ArrayList<(UIContactEvent) -> Unit>()
 
+    private var isContactSyncActive = false
+
     init {
         app.userSessionAvailable.subscribe { isAvailable ->
             if (!isAvailable) {
@@ -54,8 +56,10 @@ class UIContactsServiceImpl(
             is ContactEvent.Request ->
                 UIContactEvent.Request(event.contacts.toUI())
 
-            is ContactEvent.Sync ->
+            is ContactEvent.Sync -> {
+                isContactSyncActive = event.isRunning
                 UIContactEvent.Sync(event.isRunning)
+            }
 
             else -> null
         }
@@ -71,10 +75,8 @@ class UIContactsServiceImpl(
     override fun addContactEventListener(listener: (UIContactEvent) -> Unit) {
         contactEventListeners.add(listener)
 
-        val contactsService = getContactsServiceOrThrow()
-
         //replay any status events
-        listener(UIContactEvent.Sync(contactsService.isContactSyncActive))
+        listener(UIContactEvent.Sync(isContactSyncActive))
     }
 
     private fun getContactsPersistenceManagerOrThrow(): ContactsPersistenceManager =

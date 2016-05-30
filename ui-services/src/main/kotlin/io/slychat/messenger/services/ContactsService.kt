@@ -44,9 +44,6 @@ class ContactsService(
 
     private var isNetworkAvailable = false
 
-    var isContactSyncActive = false
-        private set
-
     private val contactClient = ContactAsyncClient(serverUrl)
     private val contactListClient = ContactListAsyncClient(serverUrl)
 
@@ -291,7 +288,6 @@ class ContactsService(
         if (jobDescription.remoteSync)
             jobRunners.add {
                 syncRemoteContactsList() alwaysUi {
-                    isContactSyncActive = false
                     contactEventsSubject.onNext(ContactEvent.Sync(false))
                 }
             }
@@ -299,7 +295,6 @@ class ContactsService(
         //if remote sync is at all enabled, we want the entire process to lock down the contact list
         val initial = if (jobDescription.remoteSync) {
             promiseOnUi {
-                isContactSyncActive = true
                 contactEventsSubject.onNext(ContactEvent.Sync(true))
             }
         }
