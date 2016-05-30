@@ -9,7 +9,6 @@ import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.persistence.PackageId
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.test.withTimeAs
-import org.joda.time.DateTime
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
@@ -206,13 +205,11 @@ class SQLiteMessagePersistenceManagerTest {
     fun `addMessageInfo should update conversation info`() {
         createConvosFor(contact)
 
-        val timestamp = DateTime().millis
-
         val messageInfo = MessageInfo.newSent("message", 0)
         messagePersistenceManager.addMessage(contact, messageInfo).get()
         val lastConversationInfo = getLastConversationInfo(contact) ?: throw AssertionError("No last conversation info")
 
-        assertEquals(timestamp, lastConversationInfo.lastTimestamp, "Timestamp wasn't updated")
+        assertEquals(messageInfo.timestamp, lastConversationInfo.lastTimestamp, "Timestamp wasn't updated")
         assertEquals(messageInfo.message, lastConversationInfo.lastMessage, "Message wasn't updated")
     }
 
