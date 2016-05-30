@@ -60,11 +60,13 @@ ContactController.prototype = {
         contactService.addContactEventListener(function (ev) {
             switch(ev.type) {
                 case "ADD":
+                case 'REMOVE':
                     if(window.location.href.indexOf("contacts.html") > -1) {
                         this.model.resetContacts();
                         KEYTAP.navigationController.loadPage("contacts.html", false);
                     }
                     break;
+
 
                 case "SYNC":
                     this.syncing = ev.running;
@@ -308,10 +310,7 @@ ContactController.prototype = {
      * @param id
      */
     deleteContact : function (id) {
-        contactService.removeContact(this.model.getContact(id)).then(function () {
-            this.model.resetContacts();
-            KEYTAP.navigationController.loadPage("contacts.html", false);
-        }.bind(this)).catch(function (e) {
+        contactService.removeContact(this.model.getContact(id)).catch(function (e) {
             console.log(e);
         })
     },
