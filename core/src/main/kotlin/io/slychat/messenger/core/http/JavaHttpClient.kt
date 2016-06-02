@@ -1,7 +1,10 @@
 package io.slychat.messenger.core.http
 
 import io.slychat.messenger.core.tls.TrustAllTrustManager
-import java.io.*
+import java.io.BufferedReader
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.io.Reader
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.SecureRandom
@@ -87,6 +90,7 @@ class JavaHttpClient : HttpClient {
 
     override fun postJSON(url: String, body: ByteArray, headers: List<Pair<String, String>>): HttpResponse {
         val connection = getHttpConnection(url)
+        connection.requestMethod = "POST"
         connection.doInput = true
         connection.doOutput = true
 
