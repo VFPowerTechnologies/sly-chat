@@ -94,14 +94,14 @@ class MessageCipherService(
 
     override fun run() {
         loop@ while (true) {
-            val work = workQueue.poll() ?: continue
+            val work = workQueue.take() ?: continue
 
             when (work) {
                 is EncryptionWork -> handleEncryption(work)
                 is DecryptionWork -> handleDecryption(work)
                 is NoMoreWork -> break@loop
                 else -> {
-                    println("Unknown work type")
+                    log.error("Unknown work type")
                 }
             }
         }
