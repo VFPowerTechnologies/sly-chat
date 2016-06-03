@@ -21,10 +21,7 @@ import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.http.api.gcm.GcmAsyncClient
-import io.slychat.messenger.core.http.api.gcm.RegisterRequest
-import io.slychat.messenger.core.http.api.gcm.RegisterResponse
-import io.slychat.messenger.core.http.api.gcm.UnregisterRequest
+import io.slychat.messenger.core.http.api.gcm.*
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.di.ApplicationComponent
@@ -107,6 +104,9 @@ class AndroidApp : Application() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     lateinit var notificationService: AndroidNotificationService
+
+    //set to true once we've made this request once since startup
+    private var hasCheckedGcmTokenStatus = false
 
     /** Points to the current activity, if one is set. Used to request permissions from various services. */
     var currentActivity: MainActivity? = null
@@ -214,6 +214,28 @@ class AndroidApp : Application() {
 
     fun onGCMTokenRefreshRequired() {
         refreshGCMToken(true)
+    }
+
+    private fun checkGCMTokenStatus() {
+        if (!app.isNetworkAvailable || hasCheckedGcmTokenStatus)
+            return
+
+        val userComponent = app.userComponent ?: return
+
+        val serverUrl = app.appComponent.serverUrls.API_SERVER
+        val request = IsRegisteredRequest(app.installationData.installationId)
+        userComponent.authTokenManager.bind { userCredentials ->
+            GcmAsyncClient(serverUrl).isRegistered(userCredentials, request)
+        } successUi { response ->
+            log.info("GCM token is registered: {}", response.isRegistered)
+
+            if (!response.isRegistered)
+                refreshGCMToken(true)
+
+            hasCheckedGcmTokenStatus = true
+        } fail { e ->
+            log.error("Unable to check GCM token status: {}", e.message, e)
+        }
     }
 
     private fun refreshGCMToken(force: Boolean) {
@@ -329,7 +351,7 @@ class AndroidApp : Application() {
 
         userComponent.notifierService.isUiVisible = currentActivity != null
 
-        refreshGCMToken(false)
+        checkGCM()
     }
 
     fun stopReceivingNotifications() {
@@ -351,6 +373,8 @@ class AndroidApp : Application() {
     }
 
     private fun onUserSessionDestroyed() {
+        hasCheckedGcmTokenStatus = false
+
         //occurs on startup when we first register for events
         val userComponent = app.userComponent ?: return
 
@@ -375,10 +399,19 @@ class AndroidApp : Application() {
         }
     }
 
+    private fun checkGCM() {
+        if (!hasCheckedGcmTokenStatus)
+            checkGCMTokenStatus()
+        else
+            refreshGCMToken(false)
+    }
+
     fun updateNetworkStatus(isConnected: Boolean) {
         app.updateNetworkStatus(isConnected)
 
-        refreshGCMToken(false)
+        if (isConnected) {
+            checkGCM()
+        }
     }
 
     /** Use to request a runtime permission. If no activity is available, succeeds with false. */

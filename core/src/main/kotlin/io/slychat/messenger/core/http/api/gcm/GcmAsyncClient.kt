@@ -7,6 +7,10 @@ import nl.komponents.kovenant.task
 class GcmAsyncClient(private val serverUrl: String) {
     private fun newClient(): GcmClient = GcmClient(serverUrl, io.slychat.messenger.core.http.JavaHttpClient())
 
+    fun isRegistered(userCredentials: UserCredentials, request: IsRegisteredRequest): Promise<IsRegisteredResponse, Exception> = task {
+        newClient().isRegistered(userCredentials, request)
+    }
+
     fun register(userCredentials: UserCredentials, request: RegisterRequest): Promise<RegisterResponse, Exception> = task {
         newClient().register(userCredentials, request)
     }

@@ -9,6 +9,8 @@ import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
 import io.slychat.messenger.core.http.api.authentication.AuthenticationResponse
 import io.slychat.messenger.core.http.api.contacts.*
+import io.slychat.messenger.core.http.api.gcm.GcmClient
+import io.slychat.messenger.core.http.api.gcm.IsRegisteredRequest
 import io.slychat.messenger.core.http.api.prekeys.*
 import io.slychat.messenger.core.http.api.registration.RegistrationClient
 import io.slychat.messenger.core.http.api.registration.RegistrationInfo
@@ -929,5 +931,36 @@ class WebApiIntegrationTest {
         val response = client.requestPhoneUpdate(userA.getUserCredentials(authToken), request);
 
         assertFalse(response.isSuccess, "Update failed");
+    }
+
+    fun checkGCMTokenStatus(user: SiteUser, installationId: String, exists: Boolean) {
+        val client = GcmClient(serverBaseUrl, JavaHttpClient())
+
+        val authToken = devClient.createAuthToken(user.username)
+
+        val request = IsRegisteredRequest(installationId)
+        val response = client.isRegistered(user.getUserCredentials(authToken), request)
+
+        assertEquals(exists, response.isRegistered, "Invalid gcm token status")
+    }
+
+    @Test
+    fun `gcm isRegistered should return true if token is registered`() {
+        val userA = injectNamedSiteUser("a@a.com").user
+
+        val installationId = "-"
+        val token = "gcm"
+
+        devClient.registerGcmToken(userA.username, installationId, token)
+
+        checkGCMTokenStatus(userA, installationId, true)
+    }
+
+    @Test
+    fun `gcm isRegistered should return false if token is not registered`() {
+        val userA = injectNamedSiteUser("a@a.com").user
+
+        val installationId = "-"
+        checkGCMTokenStatus(userA, installationId, false)
     }
 }
