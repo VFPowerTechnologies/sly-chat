@@ -2,6 +2,9 @@ package io.slychat.messenger.core;
 
 import java.net.InetSocketAddress;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import io.slychat.messenger.core.sentry.DSN;
 
 public class BuildConfig {
     public static class ServerUrls {
@@ -53,4 +56,7 @@ public class BuildConfig {
     public static final UIServiceMap UI_SERVICE_MAP = new UIServiceMap();
 
     public static final long relayKeepAliveIntervalMs = $relayKeepAliveIntervalMs;
+
+    @Nullable
+    public static final DSN sentryDsn = $sentryDsn;
 }

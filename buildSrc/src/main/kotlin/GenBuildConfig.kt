@@ -8,6 +8,8 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import java.io.File
+import java.net.URI
+import java.net.URISyntaxException
 import java.util.*
 
 open class GenBuildConfig : DefaultTask() {
@@ -131,6 +133,32 @@ open class GenBuildConfig : DefaultTask() {
 
             return "new InetSocketAddress(\"$host\", $port)"
         }
+
+        /** Parses a sentry DSN. Returns null for malformed DSNs. */
+        private fun sentryDSNFromString(s: String): String {
+            try {
+                val uri = URI(s)
+
+                val userInfo = uri.userInfo
+                val parts = userInfo.split(':', limit = 2)
+                if (parts.size != 2)
+                    throw InvalidUserDataException("Invalid auth for sentryDsn")
+
+                val publicKey = parts[0]
+                val privateKey = parts[1]
+
+                val path = uri.path
+                if (path.length < 2)
+                    throw InvalidUserDataException("Missing projectId for sentryDsn")
+
+                val projectId = path.substring(1)
+
+                return """new DSN("$publicKey", "$privateKey", "$projectId", "${uri.scheme}", "${uri.host}", ${uri.port})"""
+            }
+            catch (e: URISyntaxException) {
+                throw InvalidUserDataException("Invalid URI syntax for sentryDsn: $s")
+            }
+        }
     }
 
     private val projectRoot = project.projectDir
@@ -230,6 +258,14 @@ open class GenBuildConfig : DefaultTask() {
 
         vc.put("componentEnumTypes", componentEnumTypes)
         vc.put("componentTypes", componentTypes.entries)
+
+        val maybeSentryDsn = findValueForKey(settings, "sentryDsn", debug)
+        val sentryDsn = if (maybeSentryDsn.isEmpty())
+            "null"
+        else
+            sentryDSNFromString(maybeSentryDsn)
+
+        vc.put("sentryDsn", sentryDsn)
 
         outputFile.writer().use {
             val vt = ve.getTemplate("/BuildConfig.java.vm")
