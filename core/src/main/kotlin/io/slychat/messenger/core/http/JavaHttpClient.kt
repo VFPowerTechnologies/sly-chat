@@ -89,6 +89,13 @@ class JavaHttpClient : HttpClient {
     }
 
     override fun postJSON(url: String, body: ByteArray, headers: List<Pair<String, String>>): HttpResponse {
+        val newHeaders = headers.toMutableList()
+        newHeaders.add("Content-Type" to "application/json")
+
+        return post(url, body, newHeaders)
+    }
+
+    override fun post(url: String, body: ByteArray, headers: List<Pair<String, String>>): HttpResponse {
         val connection = getHttpConnection(url)
         connection.requestMethod = "POST"
         connection.doInput = true
@@ -97,7 +104,6 @@ class JavaHttpClient : HttpClient {
         for (header in headers)
             connection.setRequestProperty(header.first, header.second)
 
-        connection.setRequestProperty("Content-Type", "application/json")
         connection.setFixedLengthStreamingMode(body.size)
 
         connection.connect()
