@@ -6,7 +6,6 @@ buildscript {
         versions = [
             kotlin: '1.0.2',
             slf4j: '1.7.13',
-            androidLogger: '1.3.6',
             logbackClassic: '1.1.3',
             roboVM: '1.13.0',
             jackson: '2.6.4',
