@@ -15,6 +15,7 @@ import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenc
 import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonStartupInfoPersistenceManager
 import io.slychat.messenger.core.relay.*
+import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
 import io.slychat.messenger.services.di.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -76,6 +77,8 @@ class SlyApplication {
     //if we're disconnecting and we get a connect request during that time, we force a reconnect on disconnect
     private var wantRelayReconnect = false
 
+    private var bugReportSubmitter: ReportSubmitterCommunicator<ByteArray>? = null
+
     var isInBackground: Boolean = true
         set(value) {
             field = value
@@ -101,6 +104,8 @@ class SlyApplication {
 
         val interval = BuildConfig.relayKeepAliveIntervalMs
         keepAliveObservable = Observable.interval(interval, interval, TimeUnit.MILLISECONDS, appComponent.rxScheduler)
+
+        bugReportSubmitter = initSentry(appComponent)
 
         //android can fire these events multiple time in succession (eg: when google account sync is occuring)
         //so we clamp down the number of events we process
@@ -304,6 +309,8 @@ class SlyApplication {
         log.info("Network is available: {}", isAvailable)
 
         networkAvailableSubject.onNext(isAvailable)
+
+        bugReportSubmitter?.updateNetworkStatus(isAvailable)
 
         if (!isAvailable) {
             //airplane mode tells us the network is unavailable but doesn't actually disconnect us; we still receive
