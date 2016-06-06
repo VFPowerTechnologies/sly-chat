@@ -6,9 +6,19 @@
             <pattern>${MSG_PATTERN}</pattern>
         </encoder>
     </appender>
+
+    <appender name="sentry" class="io.slychat.messenger.desktop.sentry.SentryAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
     <logger name="com.vfpowertech.jsbridge.core.dispatcher.Dispatcher" level="INFO" />
     <logger name="io.netty" level="INFO" />
     <root level="trace">
         <appender-ref ref="stdout" />
+        <appender-ref ref="sentry" />
     </root>
 </configuration>
