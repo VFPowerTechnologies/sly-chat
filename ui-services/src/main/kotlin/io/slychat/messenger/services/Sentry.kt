@@ -30,10 +30,11 @@ object Sentry {
     }
 
     fun submit(builder: SentryEventBuilder) = synchronized(this) {
+        val communicator = this.communicator ?: return
+
         val event = generateEvent(builder)
 
         val report = event.serialize()
-        val communicator = this.communicator ?: return
 
         communicator.submit(report)
     }
