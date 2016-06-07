@@ -1,6 +1,12 @@
 package org.slf4j.impl
 
 import android.util.Log
+import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.core.sentry.LoggerLevel
+import io.slychat.messenger.core.sentry.SentryEventBuilder
+import io.slychat.messenger.core.sentry.ThrowableThrowableAdapter
+import io.slychat.messenger.core.sentry.extractCulprit
+import io.slychat.messenger.services.Sentry
 import org.slf4j.helpers.MarkerIgnoringBase
 import org.slf4j.helpers.MessageFormatter
 
@@ -150,6 +156,32 @@ class LoggerAdapter(
         }
     }
 
+    private fun getCulpritFromStacktrace(): String {
+        val stackTraceElements = Thread.currentThread().stackTrace
+        if (stackTraceElements.size < 7)
+            return loggerName
+
+        //VMSTack.getThreadStackTrace
+        //Thread.getStackTrace
+        //getCulpritFromStacktrace
+        //logInternal
+        //log
+        //error|info|etc
+        //<actual caller>
+        val caller = stackTraceElements[6]
+
+        return extractCulprit(caller)
+    }
+
+    private fun androidLevelToSentryLevel(level: Int): LoggerLevel = when (level) {
+        Log.VERBOSE -> LoggerLevel.TRACE
+        Log.DEBUG -> LoggerLevel.DEBUG
+        Log.INFO -> LoggerLevel.INFO
+        Log.WARN -> LoggerLevel.WARN
+        Log.ERROR -> LoggerLevel.ERROR
+        else -> throw IllegalArgumentException("Invalid log level: $level")
+    }
+
     private fun logInternal(priority: Int, message: String, throwable: Throwable?) {
         val m = if (throwable != null) {
             val s = Log.getStackTraceString(throwable)
@@ -159,5 +191,36 @@ class LoggerAdapter(
             message
 
         Log.println(priority, loggerName, m)
+
+        //hacky
+        if (priority == Log.ERROR) {
+            val currentThread = Thread.currentThread()
+
+            val threadName = currentThread.name
+            val timestamp = currentTimestamp()
+            val culprit = getCulpritFromStacktrace()
+            val level = androidLevelToSentryLevel(priority)
+
+            val builder = SentryEventBuilder(
+                loggerName,
+                threadName,
+                level,
+                timestamp,
+                message,
+                culprit
+            )
+
+            if (throwable != null)
+                builder.withExceptionInterface(ThrowableThrowableAdapter(throwable))
+
+            val ev = builder.build()
+
+            try {
+                Sentry.submit(ev)
+            }
+            catch (t: Throwable) {
+                Log.wtf("LoggerAdapter", "Failed to submit bug report: ${t.message}")
+            }
+        }
     }
 }
