@@ -6,7 +6,6 @@ import ch.qos.logback.core.AppenderBase
 import io.slychat.messenger.core.sentry.LoggerLevel
 import io.slychat.messenger.core.sentry.SentryEventBuilder
 import io.slychat.messenger.core.sentry.extractCulprit
-import io.slychat.messenger.core.sentry.serialize
 import io.slychat.messenger.services.Sentry
 import org.slf4j.LoggerFactory
 
@@ -52,8 +51,7 @@ class SentryAppender : AppenderBase<ILoggingEvent>() {
         val ev = builder.build()
 
         try {
-            val report = ev.serialize()
-            Sentry.submit(report)
+            Sentry.submit(ev)
         }
         catch (t: Throwable) {
             //avoid calling back into here

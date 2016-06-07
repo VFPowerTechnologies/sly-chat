@@ -57,11 +57,6 @@ fun extractCulprit(stackTraceElement: StackTraceElement): String {
     return "${stackTraceElement.className}.${stackTraceElement.methodName}(${stackTraceElement.fileName}:${stackTraceElement.lineNumber})"
 }
 
-fun extractCulprit(throwableAdapter: ThrowableAdapter): String {
-    val stacktraceTop = throwableAdapter.stacktraceElements[0]
-    return extractCulprit(stacktraceTop)
-}
-
 fun extractStacktrace(throwableAdapter: ThrowableAdapter): StacktraceInterface {
     return StacktraceInterface(throwableAdapter.stacktraceElements.map { st ->
         val module = st.className
