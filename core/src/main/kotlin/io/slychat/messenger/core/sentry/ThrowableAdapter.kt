@@ -117,6 +117,9 @@ class SentryEventBuilder(
     private var exceptionInterface: Collection<ExceptionInterface>? = null
     private var messageInterface: MessageInterface? = null
 
+    private var osName: String? = null
+    private var osVersion: String? = null
+
     private fun formatTimestamp(): String {
         val format = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(DateTimeZone.UTC)
         return format.print(timestamp)
@@ -133,7 +136,24 @@ class SentryEventBuilder(
         return this
     }
 
+    fun withOs(name: String, version: String): SentryEventBuilder {
+        osName = name
+        osVersion = version
+        return this
+    }
+
     fun build(): SentryEvent {
+        val tags = mutableMapOf(
+            "arch" to System.getProperty("os.arch")
+        )
+
+        if (osName != null) {
+            tags["osName"] = osName
+
+            if (osVersion != null)
+                tags["osVersion"] = osVersion
+        }
+
         return SentryEvent(
             randomUUID(),
             loggerName,
@@ -143,11 +163,7 @@ class SentryEventBuilder(
             formatTimestamp(),
             messageInterface,
             exceptionInterface,
-            mapOf(
-                "osName" to System.getProperty("os.name"),
-                "osVersion" to System.getProperty("os.version"),
-                "arch" to System.getProperty("os.arch")
-            ),
+            tags,
             mapOf(
                 "Thread Name" to threadName
             )
