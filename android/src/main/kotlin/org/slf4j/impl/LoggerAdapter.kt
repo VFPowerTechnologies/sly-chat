@@ -217,10 +217,8 @@ class LoggerAdapter(
 
             builder.withOs("Android", Build.VERSION.RELEASE)
 
-            val ev = builder.build()
-
             try {
-                Sentry.submit(ev)
+                Sentry.submit(builder)
             }
             catch (t: Throwable) {
                 Log.wtf("LoggerAdapter", "Failed to submit bug report: ${t.message}")

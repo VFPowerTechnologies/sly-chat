@@ -50,10 +50,8 @@ class SentryAppender : AppenderBase<ILoggingEvent>() {
 
         builder.withOs(System.getProperty("os.name"), System.getProperty("os.version"))
 
-        val ev = builder.build()
-
         try {
-            Sentry.submit(ev)
+            Sentry.submit(builder)
         }
         catch (t: Throwable) {
             //avoid calling back into here
