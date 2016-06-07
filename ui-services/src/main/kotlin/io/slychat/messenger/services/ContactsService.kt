@@ -131,7 +131,7 @@ class ContactsService(
         return contactsPersistenceManager.getUnadded() bind { users ->
             addPendingContacts(users)
         } fail { e ->
-            log.error("Failed to fetch unadded users on startup")
+            log.error("Failed to fetch unadded users on startup: {}", e.message, e)
         }
     }
 

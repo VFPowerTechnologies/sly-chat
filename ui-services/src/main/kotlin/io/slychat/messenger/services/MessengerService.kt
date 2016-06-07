@@ -360,11 +360,11 @@ class MessengerService(
         if (result.failed.isEmpty())
             return
 
-        log.error("Unable to decrypt {} messages for {}", result.failed.size, userId)
-        result.failed.forEach { log.error("Message decryption failure: {}", it.result.cause.message, it.result.cause) }
+        log.warn("Unable to decrypt {} messages for {}", result.failed.size, userId)
+        result.failed.forEach { log.warn("Message decryption failure: {}", it.result.cause.message, it.result.cause) }
 
         messagePersistenceManager.removeFromQueue(userId, result.failed.map { it.messageId }).fail { e ->
-            log.error("Unable to remove failed decryption packages from queue: {}", e.message, e)
+            log.warn("Unable to remove failed decryption packages from queue: {}", e.message, e)
         }
     }
 
