@@ -3,8 +3,8 @@ package io.slychat.messenger.services
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
 import io.slychat.messenger.core.sentry.SentryEvent
+import io.slychat.messenger.core.sentry.SentryEventBuilder
 import io.slychat.messenger.core.sentry.serialize
-import java.util.*
 
 /** Frontend for the logger service, and for keeping extra environment info for sentry events. */
 object Sentry {
@@ -29,30 +29,28 @@ object Sentry {
         this.userAddress = userAddress
     }
 
-    fun submit(event: SentryEvent) = synchronized(this) {
-        val event2 = addExtraInfo(event)
+    fun submit(builder: SentryEventBuilder) = synchronized(this) {
+        val event = generateEvent(builder)
 
-        val report = event2.serialize()
+        val report = event.serialize()
         val communicator = this.communicator ?: return
 
         communicator.submit(report)
     }
 
-    private fun addExtraInfo(event: SentryEvent): SentryEvent {
-        val tags = HashMap(event.tags)
+    private fun generateEvent(builder: SentryEventBuilder): SentryEvent {
+        val webViewVersion = this.webViewVersion
         if (webViewVersion != null)
-            tags["webViewVersion"] = webViewVersion
+            builder.withTag("webViewVersion", webViewVersion)
 
-        val extra = HashMap(event.extra)
+        val installationId = this.installationId
         if (installationId != null)
-            extra["Installation ID"] = installationId
+            builder.withTag("Installation ID", installationId)
 
         val userAddress = this.userAddress
-        if (userAddress != null) {
-            extra["User ID"] = userAddress.id.long.toString()
-            extra["Device ID"] = userAddress.deviceId.toString()
-        }
+        if (userAddress != null)
+            builder.withUserInterface(userAddress.asString(), userAddress.id.long.toString())
 
-        return event.copy(tags = tags, extra = extra)
+        return builder.build()
     }
 }

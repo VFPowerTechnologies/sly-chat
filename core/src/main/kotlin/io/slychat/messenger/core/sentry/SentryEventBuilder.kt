@@ -3,6 +3,7 @@ package io.slychat.messenger.core.sentry
 import io.slychat.messenger.core.randomUUID
 import org.joda.time.DateTimeZone
 import org.joda.time.format.DateTimeFormat
+import java.util.*
 
 class SentryEventBuilder(
     val loggerName: String,
@@ -14,9 +15,13 @@ class SentryEventBuilder(
 ) {
     private var exceptionInterface: Collection<ExceptionInterface>? = null
     private var messageInterface: MessageInterface? = null
+    private var userInterface: UserInterface? = null
 
     private var osName: String? = null
     private var osVersion: String? = null
+
+    private val tags = HashMap<String, String>()
+    private val extra = HashMap<String, String>()
 
     private fun formatTimestamp(): String {
         val format = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(DateTimeZone.UTC)
@@ -31,6 +36,21 @@ class SentryEventBuilder(
 
     fun withMessageInterface(message: String, params: Collection<String>): SentryEventBuilder {
         messageInterface = MessageInterface(message, params)
+        return this
+    }
+
+    fun withUserInterface(id: String, username: String): SentryEventBuilder {
+        userInterface = UserInterface(id, username)
+        return this
+    }
+
+    fun withTag(k: String, v: String): SentryEventBuilder {
+        tags[k] = v
+        return this
+    }
+
+    fun withExtra(k: String, v: String): SentryEventBuilder {
+        extra[k] = v
         return this
     }
 
@@ -61,6 +81,7 @@ class SentryEventBuilder(
             formatTimestamp(),
             messageInterface,
             exceptionInterface,
+            userInterface,
             tags,
             mapOf(
                 "Thread Name" to threadName

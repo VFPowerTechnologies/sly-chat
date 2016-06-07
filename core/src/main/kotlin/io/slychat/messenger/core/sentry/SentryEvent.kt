@@ -3,6 +3,9 @@ package io.slychat.messenger.core.sentry
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.slychat.messenger.core.BuildConfig
 
+//https://docs.getsentry.com/hosted/clientdev/ for general client info
+//https://docs.getsentry.com/hosted/clientdev/interfaces/ for interface documentation
+
 data class MessageInterface(
     val message: String,
     val params: Collection<String>
@@ -31,6 +34,11 @@ data class ExceptionInterface(
     val stacktrace: StacktraceInterface?
 )
 
+data class UserInterface(
+    val id: String,
+    val username: String
+)
+
 data class SentryEvent(
     @get:JsonProperty("event_id")
     val eventId: String,
@@ -46,6 +54,8 @@ data class SentryEvent(
     //non-empty list or null
     @get:JsonProperty("sentry.interfaces.Exception")
     val exception: Collection<ExceptionInterface>?,
+    @get:JsonProperty("sentry.interfaces.User")
+    val user: UserInterface?,
     val tags: Map<String, String>,
     //thread-name etc
     val extra: Map<String, String>
