@@ -48,6 +48,8 @@ class SentryAppender : AppenderBase<ILoggingEvent>() {
         if (eventObject.argumentArray != null)
             builder.withMessageInterface(eventObject.message, eventObject.argumentArray.map { it?.toString() ?: "null" })
 
+        builder.withOs(System.getProperty("os.name"), System.getProperty("os.version"))
+
         val ev = builder.build()
 
         try {

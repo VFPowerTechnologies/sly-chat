@@ -1,5 +1,6 @@
 package org.slf4j.impl
 
+import android.os.Build
 import android.util.Log
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.sentry.LoggerLevel
@@ -198,6 +199,7 @@ class LoggerAdapter(
 
             val threadName = currentThread.name
             val timestamp = currentTimestamp()
+            //WARNING don't move this into another function call without editting the stacktrace logic in the function
             val culprit = getCulpritFromStacktrace()
             val level = androidLevelToSentryLevel(priority)
 
@@ -212,6 +214,8 @@ class LoggerAdapter(
 
             if (throwable != null)
                 builder.withExceptionInterface(ThrowableThrowableAdapter(throwable))
+
+            builder.withOs("Android", Build.VERSION.RELEASE)
 
             val ev = builder.build()
 
