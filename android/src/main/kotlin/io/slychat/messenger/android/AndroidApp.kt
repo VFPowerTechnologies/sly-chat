@@ -23,6 +23,7 @@ import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.gcm.*
 import io.slychat.messenger.services.LoginState
+import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
@@ -158,6 +159,15 @@ class AndroidApp : Application() {
 
         app.init(platformModule)
         appComponent = app.appComponent
+
+        val packageManager = packageManager
+        try {
+            val info = packageManager.getPackageInfo("com.google.android.webview", 0)
+            Sentry.setWebViewInfo(info.versionName)
+        }
+        catch (e: PackageManager.NameNotFoundException) {
+            //do nothing
+        }
 
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         val networkReceiver = NetworkStatusReceiver()

@@ -102,6 +102,8 @@ class SlyApplication {
 
         initInstallationData()
 
+        Sentry.setInstallationId(installationData.installationId)
+
         val interval = BuildConfig.relayKeepAliveIntervalMs
         keepAliveObservable = Observable.interval(interval, interval, TimeUnit.MILLISECONDS, appComponent.rxScheduler)
 
@@ -332,6 +334,8 @@ class SlyApplication {
 
         val userComponent = appComponent.plus(UserModule(userLoginData))
         this.userComponent = userComponent
+
+        Sentry.setUserAddress(userComponent.userLoginData.address)
 
         return userComponent
     }
@@ -579,6 +583,8 @@ class SlyApplication {
         deinitializeUserSession(userComponent)
 
         this.userComponent = null
+
+        Sentry.setUserAddress(null)
 
         return true
     }

@@ -38,6 +38,7 @@ data class SentryEvent(
     val level: String,
     val message: String,
     //this is set to either the caller data's top stack element, or the logger name if that's not available
+    //this only shows up in Sentry if the exception interface is present
     val culprit: String,
     val timestamp: String,
     @get:JsonProperty("sentry.interfaces.Message")
