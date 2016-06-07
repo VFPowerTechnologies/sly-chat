@@ -14,6 +14,7 @@ data class MessageInterface(
 data class SentryStackFrame(
     val filename: String,
     val module: String,
+    //note that at least the top most non-app frame will still be shown, but nothing below it
     @get:JsonProperty("in_app")
     val inApp: Boolean,
     val function: String,

@@ -39,14 +39,14 @@ class ThrowableThrowableAdapter(
         }
 }
 
-//from DefaultRavenFactory
+//from DefaultRavenFactory plus a few extras
 private val ignoreTracesFrom = listOf(
     "com.sun.",
     "java.",
     "javax.",
-    "org.omg.",
     "sun.",
-    "junit.",
+    "android.",
+    "com.android.",
     "com.intellij.rt."
 )
 
