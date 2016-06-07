@@ -101,7 +101,7 @@ class MessageCipherService(
                 is DecryptionWork -> handleDecryption(work)
                 is NoMoreWork -> break@loop
                 else -> {
-                    log.error("Unknown work type")
+                    log.error("Unknown work type: {}", work)
                 }
             }
         }
