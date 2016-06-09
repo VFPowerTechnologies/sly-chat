@@ -8,8 +8,9 @@ import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.view.KeyEvent
-import android.view.animation.Animation
+import android.view.WindowManager
 import android.view.animation.AlphaAnimation
+import android.view.animation.Animation
 import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -89,6 +90,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        //XXX make optional? enable by default and change on user login after reading config
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
 
         //hide titlebar
         supportActionBar?.hide()
