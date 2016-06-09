@@ -19,8 +19,8 @@ data class SiteContactList(
 )
 
 data class UserGcmTokenInfo(
-    @JsonProperty("installationId")
-    val installationId: String,
+    @JsonProperty("deviceId")
+    val deviceId: Int,
     @JsonProperty("token")
     val token: String
 )
@@ -185,18 +185,18 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         postRequestNoResponse(request, "/dev/contact-list/$username")
     }
 
-    fun registerGcmToken(username: String, installationId: String, token: String) {
+    fun registerGcmToken(username: String, deviceId: Int, token: String) {
         val request = mapOf(
-            "installationId" to installationId,
+            "deviceId" to deviceId,
             "token" to token
         )
 
         postRequestNoResponse(request, "/dev/gcm/register/$username")
     }
 
-    fun unregisterGcmToken(username: String, installationId: String) {
+    fun unregisterGcmToken(username: String, deviceId: Int) {
         val request = mapOf(
-            "installationId" to installationId
+            "deviceId" to deviceId
         )
 
         postRequestNoResponse(request, "/dev/gcm/unregister/$username")

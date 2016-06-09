@@ -10,7 +10,6 @@ import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
 import io.slychat.messenger.core.http.api.authentication.AuthenticationResponse
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.http.api.gcm.GcmClient
-import io.slychat.messenger.core.http.api.gcm.IsRegisteredRequest
 import io.slychat.messenger.core.http.api.prekeys.*
 import io.slychat.messenger.core.http.api.registration.RegistrationClient
 import io.slychat.messenger.core.http.api.registration.RegistrationInfo
@@ -135,21 +134,6 @@ class WebApiIntegrationTest {
             if (contacts != contactsA)
                 throw DevServerInsaneException("Contacts functionality failed")
 
-            //GCM
-            val installationId = randomUUID()
-            val gcmToken = randomUUID()
-            devClient.registerGcmToken(username, installationId, gcmToken)
-
-            val gcmTokens = devClient.getGcmTokens(username)
-
-            if (gcmTokens != listOf(UserGcmTokenInfo(installationId, gcmToken)))
-                throw DevServerInsaneException("GCM functionality failed")
-
-            devClient.unregisterGcmToken(username, installationId)
-
-            if (devClient.getGcmTokens(username).size != 0)
-                throw DevServerInsaneException("GCM functionality failed")
-
             //devices
             val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
             val deviceId2 = devClient.addDevice(username, defaultRegistrationId +1, DeviceState.INACTIVE)
@@ -163,6 +147,20 @@ class WebApiIntegrationTest {
 
             if (devices != expected)
                 throw DevServerInsaneException("Device functionality failed")
+
+            //GCM
+            val gcmToken = randomUUID()
+            devClient.registerGcmToken(username, deviceId, gcmToken)
+
+            val gcmTokens = devClient.getGcmTokens(username)
+
+            if (gcmTokens != listOf(UserGcmTokenInfo(deviceId, gcmToken)))
+                throw DevServerInsaneException("GCM functionality failed")
+
+            devClient.unregisterGcmToken(username, deviceId)
+
+            if (devClient.getGcmTokens(username).size != 0)
+                throw DevServerInsaneException("GCM functionality failed")
         }
 
         //only run if server is up
@@ -933,13 +931,12 @@ class WebApiIntegrationTest {
         assertFalse(response.isSuccess, "Update failed");
     }
 
-    fun checkGCMTokenStatus(user: SiteUser, installationId: String, exists: Boolean) {
+    fun checkGCMTokenStatus(user: SiteUser, exists: Boolean) {
         val client = GcmClient(serverBaseUrl, JavaHttpClient())
 
         val authToken = devClient.createAuthToken(user.username)
 
-        val request = IsRegisteredRequest(installationId)
-        val response = client.isRegistered(user.getUserCredentials(authToken), request)
+        val response = client.isRegistered(user.getUserCredentials(authToken))
 
         assertEquals(exists, response.isRegistered, "Invalid gcm token status")
     }
@@ -948,19 +945,19 @@ class WebApiIntegrationTest {
     fun `gcm isRegistered should return true if token is registered`() {
         val userA = injectNamedSiteUser("a@a.com").user
 
-        val installationId = "-"
         val token = "gcm"
 
-        devClient.registerGcmToken(userA.username, installationId, token)
+        val deviceId = devClient.addDevice(userA.username, defaultRegistrationId, DeviceState.ACTIVE)
 
-        checkGCMTokenStatus(userA, installationId, true)
+        devClient.registerGcmToken(userA.username, deviceId, token)
+
+        checkGCMTokenStatus(userA, true)
     }
 
     @Test
     fun `gcm isRegistered should return false if token is not registered`() {
         val userA = injectNamedSiteUser("a@a.com").user
 
-        val installationId = "-"
-        checkGCMTokenStatus(userA, installationId, false)
+        checkGCMTokenStatus(userA, false)
     }
 }
