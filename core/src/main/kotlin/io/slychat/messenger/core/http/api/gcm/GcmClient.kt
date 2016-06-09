@@ -11,10 +11,7 @@ import io.slychat.messenger.core.typeRef
 class GcmClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     fun isRegistered(userCredentials: UserCredentials): IsRegisteredResponse {
         val url = "$serverBaseUrl/v1/gcm/registered"
-        val params = listOf(
-            "deviceId" to userCredentials.address.deviceId.toString()
-        )
-        return apiGetRequest(httpClient, url, userCredentials, params, typeRef())
+        return apiGetRequest(httpClient, url, userCredentials, emptyList(), typeRef())
     }
 
     fun register(userCredentials: UserCredentials, request: RegisterRequest): RegisterResponse {

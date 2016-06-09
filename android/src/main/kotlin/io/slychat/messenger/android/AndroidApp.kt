@@ -286,7 +286,7 @@ class AndroidApp : Application() {
 
     private fun pushGcmTokenToServer(userCredentials: UserCredentials, token: String): Promise<RegisterResponse, Exception> {
         val serverUrl = app.appComponent.serverUrls.API_SERVER
-        val request = RegisterRequest(token, userCredentials.address.deviceId)
+        val request = RegisterRequest(token)
         return GcmAsyncClient(serverUrl).register(userCredentials, request)
     }
 
