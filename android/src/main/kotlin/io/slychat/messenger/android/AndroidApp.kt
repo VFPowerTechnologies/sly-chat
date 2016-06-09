@@ -233,9 +233,8 @@ class AndroidApp : Application() {
         val userComponent = app.userComponent ?: return
 
         val serverUrl = app.appComponent.serverUrls.API_SERVER
-        val request = IsRegisteredRequest(app.installationData.installationId)
         userComponent.authTokenManager.bind { userCredentials ->
-            GcmAsyncClient(serverUrl).isRegistered(userCredentials, request)
+            GcmAsyncClient(serverUrl).isRegistered(userCredentials)
         } successUi { response ->
             log.info("GCM token is registered: {}", response.isRegistered)
 
@@ -287,7 +286,7 @@ class AndroidApp : Application() {
 
     private fun pushGcmTokenToServer(userCredentials: UserCredentials, token: String): Promise<RegisterResponse, Exception> {
         val serverUrl = app.appComponent.serverUrls.API_SERVER
-        val request = RegisterRequest(token, app.installationData.installationId)
+        val request = RegisterRequest(token, userCredentials.address.deviceId)
         return GcmAsyncClient(serverUrl).register(userCredentials, request)
     }
 
