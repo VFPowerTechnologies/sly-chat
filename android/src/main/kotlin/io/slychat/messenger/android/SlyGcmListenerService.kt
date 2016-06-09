@@ -10,8 +10,6 @@ import io.slychat.messenger.core.typeRef
 import org.slf4j.LoggerFactory
 
 data class OfflineMessageInfo(
-    @JsonProperty("userId")
-    val userId: UserId,
     @JsonProperty("name")
     val name: String,
     @JsonProperty("pendingCount")
