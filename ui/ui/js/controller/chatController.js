@@ -480,7 +480,8 @@ ChatController.prototype = {
             timespan.html("Delivering...");
         }
         else {
-            timespan.html($.timeago(new Date(message.timestamp).toISOString()));
+            var newDate = new Date(message.timestamp).toISOString();
+            timespan.html("<time class='timeago' datetime='" + newDate + "'>" + $.timeago(newDate) + "</time>");
         }
 
         var messageDetailsTime = $(document.createElement("p"));
@@ -557,7 +558,8 @@ ChatController.prototype = {
                 var messageDiv = $("#message_" + message.id);
 
                 if(messageDiv.length && message.sent == true){
-                    messageDiv.find(".timespan").html($.timeago(new Date(message.timestamp).toISOString()));
+                    var newDate = new Date(message.timestamp).toISOString();
+                    messageDiv.find(".timespan").html("<time class='timeago' datetime='" + newDate + "'>" + $.timeago(newDate) + "</time>");
                 }
             }.bind(this));
         }.bind(this));
@@ -595,6 +597,8 @@ ChatController.prototype = {
         this.updateChatPageNewMessage(messages, contactName, contactId);
         this.updateContactPageNewMessage(contactId);
         this.updateRecentChatNewMessage(messages, contactId);
+
+        $(".timeago").timeago();
     },
     /**
      * Update the recent chat message if on contacts.html page.
@@ -614,7 +618,8 @@ ChatController.prototype = {
                     contactDiv.after("<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>");
                 }
 
-                contactDiv.find(".recentTimestamp").html($.timeago(new Date(messages[messages.length - 1].timestamp).toISOString()));
+                var newDate = new Date(messages[messages.length - 1].timestamp).toISOString();
+                contactDiv.find(".recentTimestamp").html("<time class='timeago' datetime='" + newDate + "'>" + $.timeago(newDate) + "</time>");
                 contactDiv.find(".recentMessage").html(messages[messages.length - 1].message);
             }
         }
