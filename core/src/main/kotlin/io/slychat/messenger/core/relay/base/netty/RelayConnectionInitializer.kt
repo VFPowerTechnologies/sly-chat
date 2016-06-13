@@ -23,12 +23,15 @@ class RelayConnectionInitializer(
     private val sslHandshakeComplete: Deferred<Boolean, Exception>
 ) : ChannelInitializer<SocketChannel>() {
     private fun getSSLEngine(): SSLEngine {
-        //FIXME
         val sslContext = SSLContext.getInstance("TLSv1.2")
+        //FIXME
         sslContext.init(null, arrayOf(TrustAllTrustManager()), null)
 
         val engine = sslContext.createSSLEngine()
+        engine.enabledProtocols = arrayOf("TLSv1.2")
+        engine.enabledCipherSuites = arrayOf("TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384")
         engine.useClientMode = true
+
         return engine
     }
 
