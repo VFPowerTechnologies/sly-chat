@@ -31,7 +31,7 @@ class ServerMessageHandler(
 
             val hostname = (ctx.channel().remoteAddress() as InetSocketAddress).hostName
 
-            val isHostVerified = if (BuildConfig.DISABLE_HOST_VERIFICATION)
+            val isHostVerified = if (BuildConfig.TLS_DISABLE_HOSTNAME_VERIFICATION)
                 true
             else {
                 val sslHandler = ctx.pipeline().get(SslHandler::class.java)

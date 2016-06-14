@@ -226,7 +226,7 @@ open class GenBuildConfig : DefaultTask() {
         vc.put("relayKeepAliveIntervalMs", findMsForKey(settings, "relayServer.keepAlive", debug))
 
         vc.put("disableCertificateVerification", findBoolForKey(settings, "tls.disableCertificateVerification", debug))
-        vc.put("disableHostVerification", findBoolForKey(settings, "tls.disableHostVerification", debug))
+        vc.put("disableHostnameVerification", findBoolForKey(settings, "tls.disableHostnameVerification", debug))
 
         //adds <platform><SettingName> to context
         val urlSettings = listOf(

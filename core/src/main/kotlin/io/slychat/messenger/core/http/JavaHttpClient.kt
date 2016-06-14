@@ -2,18 +2,17 @@ package io.slychat.messenger.core.http
 
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.crypto.tls.TLS12SocketFactory
-import io.slychat.messenger.core.crypto.tls.configureSSL
 import io.slychat.messenger.core.tls.TrustAllTrustManager
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.Reader
 import java.net.HttpURLConnection
-import java.net.InetAddress
-import java.net.Socket
 import java.net.URL
 import java.security.SecureRandom
-import javax.net.ssl.*
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLContext
 
 
 fun slurpInputStreamReader(reader: Reader, suggestedBufferSize: Int = 0): String {
@@ -71,7 +70,7 @@ private fun getHttpConnection(url: URL): HttpURLConnection {
 
         connection.sslSocketFactory = TLS12SocketFactory(sslContext)
 
-        if (BuildConfig.DISABLE_HOST_VERIFICATION) {
+        if (BuildConfig.TLS_DISABLE_HOSTNAME_VERIFICATION) {
             connection.hostnameVerifier = HostnameVerifier { hostname, session ->
                 true
             }
