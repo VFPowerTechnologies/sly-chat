@@ -108,6 +108,9 @@ open class GenBuildConfig : DefaultTask() {
             return v * conversionAmount
         }
 
+        private fun findBoolForKey(settings: Properties, key: String, debug: Boolean): Boolean =
+            stringToBoolean(findValueForKey(settings, key, debug))
+
         private fun getMsConversationAmount(unit: String): Long = when (unit) {
             "ms" -> 1
             "s" -> 1000
@@ -215,12 +218,15 @@ open class GenBuildConfig : DefaultTask() {
         val debug = stringToBoolean(settings.getProperty("debug"))
         vc.put("debug", debug)
 
-        val enableDatabaseEncryption = stringToBoolean(findValueForKey(settings, "enableDatabaseEncryption", debug))
+        val enableDatabaseEncryption = findBoolForKey(settings, "enableDatabaseEncryption", debug)
         vc.put("enableDatabaseEncryption", enableDatabaseEncryption);
 
         vc.put("uiServiceType", getEnumValue(settings, debug, "uiServiceType", listOf("DUMMY", "REAL"), null))
 
         vc.put("relayKeepAliveIntervalMs", findMsForKey(settings, "relayServer.keepAlive", debug))
+
+        vc.put("disableCertificateVerification", findBoolForKey(settings, "tls.disableCertificateVerification", debug))
+        vc.put("disableHostVerification", findBoolForKey(settings, "tls.disableHostVerification", debug))
 
         //adds <platform><SettingName> to context
         val urlSettings = listOf(
