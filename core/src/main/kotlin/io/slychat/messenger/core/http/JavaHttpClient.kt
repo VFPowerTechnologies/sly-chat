@@ -1,16 +1,20 @@
 package io.slychat.messenger.core.http
 
+import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.crypto.tls.TLS12SocketFactory
+import io.slychat.messenger.core.crypto.tls.configureSSL
 import io.slychat.messenger.core.tls.TrustAllTrustManager
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.Reader
 import java.net.HttpURLConnection
+import java.net.InetAddress
+import java.net.Socket
 import java.net.URL
 import java.security.SecureRandom
-import javax.net.ssl.HostnameVerifier
-import javax.net.ssl.HttpsURLConnection
-import javax.net.ssl.SSLContext
+import javax.net.ssl.*
+
 
 fun slurpInputStreamReader(reader: Reader, suggestedBufferSize: Int = 0): String {
     val bufferSize = if (suggestedBufferSize > 0) suggestedBufferSize else 1024
@@ -62,9 +66,16 @@ private fun getHttpConnection(url: URL): HttpURLConnection {
     val connection = url.openConnection() as HttpURLConnection
     if (connection is HttpsURLConnection) {
         val sslContext = SSLContext.getInstance("TLSv1.2")
+
         sslContext.init(null, arrayOf(TrustAllTrustManager()), SecureRandom())
-        connection.sslSocketFactory = sslContext.socketFactory
-        connection.hostnameVerifier = HostnameVerifier { p0, p1 -> true }
+
+        connection.sslSocketFactory = TLS12SocketFactory(sslContext)
+
+        if (BuildConfig.DISABLE_HOST_VERIFICATION) {
+            connection.hostnameVerifier = HostnameVerifier { hostname, session ->
+                true
+            }
+        }
     }
     return connection
 }

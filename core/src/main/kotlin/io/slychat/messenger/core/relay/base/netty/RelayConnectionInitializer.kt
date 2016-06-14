@@ -3,6 +3,7 @@ package io.slychat.messenger.core.relay.base.netty
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
 import io.netty.handler.ssl.SslHandler
+import io.slychat.messenger.core.crypto.tls.configureSSL
 import io.slychat.messenger.core.relay.base.RelayConnectionEvent
 import io.slychat.messenger.core.tls.TrustAllTrustManager
 import nl.komponents.kovenant.Deferred
@@ -28,8 +29,7 @@ class RelayConnectionInitializer(
         sslContext.init(null, arrayOf(TrustAllTrustManager()), null)
 
         val engine = sslContext.createSSLEngine()
-        engine.enabledProtocols = arrayOf("TLSv1.2")
-        engine.enabledCipherSuites = arrayOf("TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384")
+        configureSSL(engine)
         engine.useClientMode = true
 
         return engine
