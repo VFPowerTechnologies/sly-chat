@@ -62,4 +62,6 @@ public class BuildConfig {
 
     @Nullable
     public static final DSN sentryDsn = $sentryDsn;
+
+    public static final byte[] caCert = $caCert;
 }

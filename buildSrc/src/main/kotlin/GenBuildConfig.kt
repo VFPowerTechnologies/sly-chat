@@ -204,6 +204,16 @@ open class GenBuildConfig : DefaultTask() {
         return props
     }
 
+    private fun getCACertificate(debug: Boolean): String {
+        val filename = "certs/ca-cert%s.pem".format(if (debug) ".debug" else "")
+
+        return File(projectRoot, filename).readText()
+    }
+
+    private fun convertToByteArrayNotation(s: String): String {
+        return s.toByteArray().map { it.toString() }.joinToString(",", "{", "}")
+    }
+
     @TaskAction
     fun run() {
         val rootProject = project.rootProject
@@ -279,6 +289,11 @@ open class GenBuildConfig : DefaultTask() {
             sentryDSNFromString(maybeSentryDsn)
 
         vc.put("sentryDsn", sentryDsn)
+
+        val cert = getCACertificate(debug)
+
+        val inline = convertToByteArrayNotation(cert)
+        vc.put("caCert", inline)
 
         outputFile.writer().use {
             val vt = ve.getTemplate("/BuildConfig.java.vm")

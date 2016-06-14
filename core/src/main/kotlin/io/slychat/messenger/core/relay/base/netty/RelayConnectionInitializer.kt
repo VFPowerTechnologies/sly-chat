@@ -4,8 +4,8 @@ import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
 import io.netty.handler.ssl.SslHandler
 import io.slychat.messenger.core.crypto.tls.configureSSL
+import io.slychat.messenger.core.crypto.tls.getTrustManagers
 import io.slychat.messenger.core.relay.base.RelayConnectionEvent
-import io.slychat.messenger.core.tls.TrustAllTrustManager
 import nl.komponents.kovenant.Deferred
 import rx.Observer
 import javax.net.ssl.SSLContext
@@ -25,8 +25,10 @@ class RelayConnectionInitializer(
 ) : ChannelInitializer<SocketChannel>() {
     private fun getSSLEngine(): SSLEngine {
         val sslContext = SSLContext.getInstance("TLSv1.2")
-        //FIXME
-        sslContext.init(null, arrayOf(TrustAllTrustManager()), null)
+
+        val trustManagers = getTrustManagers()
+
+        sslContext.init(null, trustManagers, null)
 
         val engine = sslContext.createSSLEngine()
         configureSSL(engine)

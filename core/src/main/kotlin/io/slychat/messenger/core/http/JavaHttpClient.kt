@@ -2,7 +2,7 @@ package io.slychat.messenger.core.http
 
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.crypto.tls.TLS12SocketFactory
-import io.slychat.messenger.core.tls.TrustAllTrustManager
+import io.slychat.messenger.core.crypto.tls.getTrustManagers
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -66,7 +66,7 @@ private fun getHttpConnection(url: URL): HttpURLConnection {
     if (connection is HttpsURLConnection) {
         val sslContext = SSLContext.getInstance("TLSv1.2")
 
-        sslContext.init(null, arrayOf(TrustAllTrustManager()), SecureRandom())
+        sslContext.init(null, getTrustManagers(), SecureRandom())
 
         connection.sslSocketFactory = TLS12SocketFactory(sslContext)
 

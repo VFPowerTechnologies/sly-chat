@@ -433,6 +433,15 @@ class SlyApplication {
         keepAliveTimerSub = null
     }
 
+    //for things like cert verification failure, this has like 3 layers of "General SSLEngine problem" which isn't very useful
+    private fun getRelayConnectionErrorMessage(exception: Throwable): String? {
+        var current: Throwable? = exception
+        while (current != null && current.message?.contains("General SSLEngine problem") ?: false)
+            current = current.cause
+
+        return current?.message ?: exception.message
+    }
+
     private fun handleRelayClientEvent(event: RelayClientEvent) {
         when (event) {
             is ConnectionEstablished -> {
@@ -447,7 +456,7 @@ class SlyApplication {
             }
 
             is ConnectionFailure -> {
-                log.warn("Connection to relay failed: {}", event.error.message)
+                log.warn("Connection to relay failed: {}", getRelayConnectionErrorMessage(event.error))
                 reconnectToRelay()
             }
 
