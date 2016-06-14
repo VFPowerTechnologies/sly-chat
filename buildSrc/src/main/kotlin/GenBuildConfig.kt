@@ -172,6 +172,13 @@ open class GenBuildConfig : DefaultTask() {
     @InputFile
     val localPropertiesPath = File(projectRoot, "local.properties")
 
+    //this is kinda hacky...
+    @InputFile
+    val buildConfigJavaTemplate = File(projectRoot, "buildSrc/src/main/resources/BuildConfig.java.vm")
+
+    @InputFile
+    val buildConfigJSTemplate = File(projectRoot, "buildSrc/src/main/resources/build-config.js.vm")
+
     //TODO maybe let these be overriden as settings (or set as relative paths to the project root)
     val generateRoot = File(projectRoot, "generated")
 
