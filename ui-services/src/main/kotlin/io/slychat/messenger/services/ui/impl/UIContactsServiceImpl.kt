@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.ui.impl
 
+import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
 import io.slychat.messenger.core.http.api.contacts.NewContactRequest
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
@@ -16,10 +17,11 @@ import java.util.*
 
 class UIContactsServiceImpl(
     private val app: SlyApplication,
-    serverUrl: String
+    serverUrl: String,
+    httpClientFactory: HttpClientFactory
 ) : UIContactsService {
 
-    private val contactClient = ContactAsyncClient(serverUrl)
+    private val contactClient = ContactAsyncClient(serverUrl, httpClientFactory)
 
     private var contactEventSub: Subscription? = null
     private val contactEventListeners = ArrayList<(UIContactEvent) -> Unit>()

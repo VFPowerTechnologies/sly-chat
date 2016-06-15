@@ -5,6 +5,7 @@ import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.UIServiceComponent
 import io.slychat.messenger.core.BuildConfig.UIServiceType
+import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.services.PlatformTelephonyService
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.ui.*
@@ -23,11 +24,12 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun provideRegistrationService(
-        serverUrls: BuildConfig.ServerUrls
+        serverUrls: BuildConfig.ServerUrls,
+        @SlyHttp httpClientFactory: HttpClientFactory
     ): UIRegistrationService = getImplementation(
         UIServiceComponent.REGISTRATION,
         { DummyUIRegistrationService() },
-        { UIRegistrationServiceImpl(serverUrls.API_SERVER) }
+        { UIRegistrationServiceImpl(serverUrls.API_SERVER, httpClientFactory) }
     )
 
     @Singleton
@@ -44,11 +46,12 @@ class UIServicesModule {
     @Provides
     fun provideContactsService(
         serverUrls: BuildConfig.ServerUrls,
+        @SlyHttp httpClientFactory: HttpClientFactory,
         app: SlyApplication
     ): UIContactsService = getImplementation(
         UIServiceComponent.CONTACTS,
         { DummyUIContactsService() },
-        { UIContactsServiceImpl(app, serverUrls.API_SERVER) }
+        { UIContactsServiceImpl(app, serverUrls.API_SERVER, httpClientFactory) }
     )
 
     @Singleton
@@ -99,10 +102,13 @@ class UIServicesModule {
     @Provides
     fun provideAccountModificationService(
         app: SlyApplication,
+        @SlyHttp httpClientFactory: HttpClientFactory,
         serverUrls: BuildConfig.ServerUrls
-    ): UIAccountModificationService = UIAccountModificationServiceImpl(app, serverUrls.API_SERVER)
+    ): UIAccountModificationService = UIAccountModificationServiceImpl(app, httpClientFactory, serverUrls.API_SERVER)
 
     @Singleton
     @Provides
-    fun provideUIInfoService(): UIInfoService = UIInfoServiceImpl()
+    fun provideUIInfoService(
+        @ExternalHttp httpClientFactory: HttpClientFactory
+    ): UIInfoService = UIInfoServiceImpl(httpClientFactory)
 }

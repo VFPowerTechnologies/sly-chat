@@ -3,6 +3,7 @@ package io.slychat.messenger.services.ui.impl
 import io.slychat.messenger.core.crypto.HashDeserializers
 import io.slychat.messenger.core.crypto.hashPasswordWithParams
 import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.accountupdate.UpdatePhoneRequest
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.registration.*
@@ -14,11 +15,12 @@ import nl.komponents.kovenant.functional.map
 import java.util.*
 
 class UIRegistrationServiceImpl(
-    serverUrl: String
+    serverUrl: String,
+    httpClientFactory: HttpClientFactory
 ) : UIRegistrationService {
     private val listeners = ArrayList<(String) -> Unit>()
-    private val registrationClient = RegistrationAsyncClient(serverUrl)
-    private val loginClient = AuthenticationAsyncClient(serverUrl)
+    private val registrationClient = RegistrationAsyncClient(serverUrl, httpClientFactory)
+    private val loginClient = AuthenticationAsyncClient(serverUrl, httpClientFactory)
 
     override fun doRegistration(info: UIRegistrationInfo): Promise<UIRegistrationResult, Exception> {
         val username = info.email

@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.ServerUrls
+import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.persistence.MessagePersistenceManager
@@ -50,12 +51,14 @@ class UserModule(
         contactsPersistenceManager: ContactsPersistenceManager,
         userLoginData: UserData,
         accountInfoPersistenceManager: AccountInfoPersistenceManager,
+        @SlyHttp httpClientFactory: HttpClientFactory,
         platformContacts: PlatformContacts
     ): ContactsService =
         ContactsService(
             authTokenManager,
             serverUrls.API_SERVER,
             application,
+            httpClientFactory,
             contactsPersistenceManager,
             userLoginData,
             accountInfoPersistenceManager,
@@ -108,9 +111,10 @@ class UserModule(
     fun providesMessageCipherService(
         authTokenManager: AuthTokenManager,
         serverUrls: ServerUrls,
-        signalProtocolStore: SignalProtocolStore
+        signalProtocolStore: SignalProtocolStore,
+        @SlyHttp httpClientFactory: HttpClientFactory
     ): MessageCipherService =
-        MessageCipherService(authTokenManager, signalProtocolStore, serverUrls)
+        MessageCipherService(authTokenManager, httpClientFactory, signalProtocolStore, serverUrls)
 
     @UserScope
     @Provides
@@ -119,9 +123,10 @@ class UserModule(
         serverUrls: ServerUrls,
         userLoginData: UserData,
         preKeyPersistenceManager: PreKeyPersistenceManager,
+        @SlyHttp httpClientFactory: HttpClientFactory,
         authTokenManager: AuthTokenManager
     ): PreKeyManager =
-        PreKeyManager(application, serverUrls.API_SERVER, userLoginData, preKeyPersistenceManager, authTokenManager)
+        PreKeyManager(application, serverUrls.API_SERVER, httpClientFactory, userLoginData, preKeyPersistenceManager, authTokenManager)
 
     @UserScope
     @Provides
@@ -129,9 +134,10 @@ class UserModule(
         application: SlyApplication,
         serverUrls: ServerUrls,
         messengerService: MessengerService,
+        @SlyHttp httpClientFactory: HttpClientFactory,
         authTokenManager: AuthTokenManager
     ): OfflineMessageManager =
-        OfflineMessageManager(application, serverUrls.API_SERVER, messengerService, authTokenManager)
+        OfflineMessageManager(application, serverUrls.API_SERVER, httpClientFactory, messengerService, authTokenManager)
 
     @UserScope
     @Provides

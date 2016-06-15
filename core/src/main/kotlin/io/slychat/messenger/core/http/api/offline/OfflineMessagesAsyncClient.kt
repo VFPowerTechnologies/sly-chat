@@ -1,11 +1,12 @@
 package io.slychat.messenger.core.http.api.offline
 
 import io.slychat.messenger.core.UserCredentials
+import io.slychat.messenger.core.http.HttpClientFactory
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
-class OfflineMessagesAsyncClient(private val serverUrl: String) {
-    private fun newClient(): OfflineMessagesClient = OfflineMessagesClient(serverUrl, io.slychat.messenger.core.http.JavaHttpClient())
+class OfflineMessagesAsyncClient(private val serverUrl: String, private val factory: HttpClientFactory) {
+    private fun newClient(): OfflineMessagesClient = OfflineMessagesClient(serverUrl, factory.create())
 
     fun get(userCredentials: UserCredentials): Promise<OfflineMessagesGetResponse, Exception> = task {
         newClient().get(userCredentials)

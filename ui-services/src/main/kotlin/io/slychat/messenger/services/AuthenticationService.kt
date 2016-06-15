@@ -3,6 +3,7 @@ package io.slychat.messenger.services
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.div
+import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
@@ -20,6 +21,7 @@ import java.io.FileNotFoundException
 /** API for various remote authentication functionality. */
 class AuthenticationService(
     private val serverUrl: String,
+    private val httpClientFactory: HttpClientFactory,
     private val userPathsGenerator: UserPathsGenerator
 ) {
     companion object {
@@ -32,10 +34,10 @@ class AuthenticationService(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
+    private val loginClient = AuthenticationAsyncClient(serverUrl, httpClientFactory)
+
     fun refreshAuthToken(address: SlyAddress, registrationId: Int, remotePasswordHash: ByteArray): Promise<AuthTokenRefreshResult, Exception> {
         val deviceId = address.deviceId
-
-        val loginClient = AuthenticationAsyncClient(serverUrl)
 
         val path = userPathsGenerator.getAccountInfoPath(address.id)
 
@@ -90,7 +92,7 @@ class AuthenticationService(
     }
 
     private fun remoteAuth(emailOrPhoneNumber: String, password: String, registrationId: Int, deviceId: Int): AuthResult {
-        val loginClient = AuthenticationClient(serverUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val loginClient = AuthenticationClient(serverUrl, httpClientFactory.create())
 
         val paramsResponse = loginClient.getParams(emailOrPhoneNumber)
 

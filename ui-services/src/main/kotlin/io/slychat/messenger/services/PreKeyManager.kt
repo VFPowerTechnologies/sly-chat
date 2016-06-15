@@ -4,6 +4,7 @@ import io.slychat.messenger.core.crypto.LAST_RESORT_PREKEY_ID
 import io.slychat.messenger.core.crypto.generateLastResortPreKey
 import io.slychat.messenger.core.crypto.generatePrekeys
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
+import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
 import io.slychat.messenger.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
 import io.slychat.messenger.core.persistence.PreKeyPersistenceManager
@@ -21,6 +22,7 @@ import org.whispersystems.libsignal.state.PreKeyRecord
 class PreKeyManager(
     private val application: SlyApplication,
     private val serverUrl: String,
+    httpClientFactory: HttpClientFactory,
     private val userLoginData: UserData,
     private val preKeyPersistenceManager: PreKeyPersistenceManager,
     private val authTokenManager: AuthTokenManager
@@ -32,6 +34,8 @@ class PreKeyManager(
     private var running = false
 
     private var isOnline = false
+
+    val preKeyAsyncClient = PreKeyAsyncClient(serverUrl, httpClientFactory)
 
     init {
         application.networkAvailable.subscribe { status ->
@@ -69,7 +73,7 @@ class PreKeyManager(
 
     fun checkForUpload() {
         authTokenManager.bind { userCredentials ->
-            PreKeyAsyncClient(serverUrl).getInfo(userCredentials) mapUi { response ->
+            preKeyAsyncClient.getInfo(userCredentials) mapUi { response ->
                 log.debug("Remaining prekeys: {}, requested to upload {}", response.remaining, response.uploadCount)
                 scheduleUpload(response.uploadCount)
             }
@@ -99,7 +103,7 @@ class PreKeyManager(
             generate(keyRegenCount) bind { r ->
                 val (generatedPreKeys, lastResortPreKey) = r
                 val request = preKeyStorageRequestFromGeneratedPreKeys(application.installationData.registrationId, keyVault, generatedPreKeys, lastResortPreKey)
-                PreKeyAsyncClient(serverUrl).store(userCredentials, request)
+                preKeyAsyncClient.store(userCredentials, request)
             }
         } successUi { response ->
             running = false

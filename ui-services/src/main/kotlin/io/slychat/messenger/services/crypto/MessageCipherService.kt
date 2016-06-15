@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.prekeys.PreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyRetrievalRequest
 import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
@@ -49,6 +50,7 @@ data class MessageData(
 
 class MessageCipherService(
     private val authTokenManager: AuthTokenManager,
+    private val httpClientFactory: HttpClientFactory,
     //the store is only ever used in the work thread, so no locking is done
     private val signalStore: SignalProtocolStore,
     private val serverUrls: BuildConfig.ServerUrls
@@ -177,7 +179,7 @@ class MessageCipherService(
     private fun fetchPreKeyBundles(userId: UserId): List<PreKeyBundle> {
         val response = authTokenManager.map { userCredentials ->
             val request = PreKeyRetrievalRequest(userId, listOf())
-            PreKeyClient(serverUrls.API_SERVER, io.slychat.messenger.core.http.JavaHttpClient()).retrieve(userCredentials, request)
+            PreKeyClient(serverUrls.API_SERVER, httpClientFactory.create()).retrieve(userCredentials, request)
         }.get()
 
         if (!response.isSuccess)

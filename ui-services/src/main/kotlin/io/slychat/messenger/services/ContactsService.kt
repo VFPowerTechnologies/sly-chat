@@ -2,6 +2,7 @@ package io.slychat.messenger.services
 
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.ContactInfo
@@ -33,6 +34,7 @@ class ContactsService(
     private val authTokenManager: AuthTokenManager,
     private val serverUrl: String,
     private val application: SlyApplication,
+    httpClientFactory: HttpClientFactory,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val userLoginData: UserData,
     private val accountInfoPersistenceManager: AccountInfoPersistenceManager,
@@ -44,8 +46,8 @@ class ContactsService(
 
     private var isNetworkAvailable = false
 
-    private val contactClient = ContactAsyncClient(serverUrl)
-    private val contactListClient = ContactListAsyncClient(serverUrl)
+    private val contactClient = ContactAsyncClient(serverUrl, httpClientFactory)
+    private val contactListClient = ContactListAsyncClient(serverUrl, httpClientFactory)
 
     private val contactEventsSubject = PublishSubject.create<ContactEvent>()
 
@@ -86,8 +88,7 @@ class ContactsService(
                     contactsPersistenceManager.findMissing(contacts)
                 } bind { missingContacts ->
                     log.debug("Missing local contacts:", missingContacts)
-                    val client = ContactAsyncClient(serverUrl)
-                    client.findLocalContacts(userCredentials, FindLocalContactsRequest(missingContacts))
+                    contactClient.findLocalContacts(userCredentials, FindLocalContactsRequest(missingContacts))
                 } bind { foundContacts ->
                     log.debug("Found local contacts: {}", foundContacts)
 
@@ -101,22 +102,19 @@ class ContactsService(
     private fun syncRemoteContactsList(): Promise<Unit, Exception> {
         log.debug("Beginning remote contact list sync")
 
-        val client = ContactListAsyncClient(serverUrl)
-
         val keyVault = userLoginData.keyVault
 
         val contactsPersistenceManager = contactsPersistenceManager
 
         return authTokenManager.bind { userCredentials ->
-            client.getContacts(userCredentials) bind { response ->
+            contactListClient.getContacts(userCredentials) bind { response ->
                 val emails = decryptRemoteContactEntries(keyVault, response.contacts)
                 contactsPersistenceManager.getDiff(emails) bind { diff ->
                     log.debug("New contacts: {}", diff.newContacts)
                     log.debug("Removed contacts: {}", diff.removedContacts)
 
-                    val contactsClient = ContactAsyncClient(serverUrl)
                     val request = FetchContactInfoByIdRequest(diff.newContacts.toList())
-                    contactsClient.fetchContactInfoById(userCredentials, request) bind { response ->
+                    contactClient.fetchContactInfoById(userCredentials, request) bind { response ->
                         val newContacts = response.contacts.map { it.toCore(false) }
                         contactsPersistenceManager.applyDiff(newContacts, diff.removedContacts.toList())
                     }
