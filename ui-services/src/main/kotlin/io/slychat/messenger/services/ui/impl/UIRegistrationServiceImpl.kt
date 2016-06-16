@@ -15,12 +15,10 @@ import nl.komponents.kovenant.functional.map
 import java.util.*
 
 class UIRegistrationServiceImpl(
-    serverUrl: String,
-    httpClientFactory: HttpClientFactory
+    private val registrationClient: RegistrationAsyncClient,
+    private val loginClient: AuthenticationAsyncClient
 ) : UIRegistrationService {
     private val listeners = ArrayList<(String) -> Unit>()
-    private val registrationClient = RegistrationAsyncClient(serverUrl, httpClientFactory)
-    private val loginClient = AuthenticationAsyncClient(serverUrl, httpClientFactory)
 
     override fun doRegistration(info: UIRegistrationInfo): Promise<UIRegistrationResult, Exception> {
         val username = info.email

@@ -14,10 +14,8 @@ import nl.komponents.kovenant.functional.map
 
 class UIAccountModificationServiceImpl(
     private val app: SlyApplication,
-    httpClientFactory: HttpClientFactory,
-    serverUrl: String
+    private val accountUpdateClient: AccountUpdateAsyncClient
 ) : UIAccountModificationService {
-    private val accountUpdateClient = AccountUpdateAsyncClient(serverUrl, httpClientFactory)
 
     private fun getUserComponentOrThrow(): UserComponent {
         return app.userComponent ?: throw IllegalStateException("Not logged in")

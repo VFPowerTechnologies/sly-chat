@@ -2,7 +2,6 @@ package io.slychat.messenger.services
 
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.ContactInfo
@@ -32,9 +31,9 @@ data class ContactRequestResponse(
 
 class ContactsService(
     private val authTokenManager: AuthTokenManager,
-    private val serverUrl: String,
     private val application: SlyApplication,
-    httpClientFactory: HttpClientFactory,
+    private val contactClient: ContactAsyncClient,
+    private val contactListClient: ContactListAsyncClient,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val userLoginData: UserData,
     private val accountInfoPersistenceManager: AccountInfoPersistenceManager,
@@ -45,9 +44,6 @@ class ContactsService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private var isNetworkAvailable = false
-
-    private val contactClient = ContactAsyncClient(serverUrl, httpClientFactory)
-    private val contactListClient = ContactListAsyncClient(serverUrl, httpClientFactory)
 
     private val contactEventsSubject = PublishSubject.create<ContactEvent>()
 

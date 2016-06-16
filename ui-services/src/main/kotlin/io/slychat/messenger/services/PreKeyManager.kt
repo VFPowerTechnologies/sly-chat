@@ -4,7 +4,6 @@ import io.slychat.messenger.core.crypto.LAST_RESORT_PREKEY_ID
 import io.slychat.messenger.core.crypto.generateLastResortPreKey
 import io.slychat.messenger.core.crypto.generatePrekeys
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
-import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
 import io.slychat.messenger.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
 import io.slychat.messenger.core.persistence.PreKeyPersistenceManager
@@ -21,9 +20,8 @@ import org.whispersystems.libsignal.state.PreKeyRecord
 //should also check after processing a prekey from a received message
 class PreKeyManager(
     private val application: SlyApplication,
-    private val serverUrl: String,
-    httpClientFactory: HttpClientFactory,
     private val userLoginData: UserData,
+    private val preKeyAsyncClient: PreKeyAsyncClient,
     private val preKeyPersistenceManager: PreKeyPersistenceManager,
     private val authTokenManager: AuthTokenManager
 ) {
@@ -34,8 +32,6 @@ class PreKeyManager(
     private var running = false
 
     private var isOnline = false
-
-    val preKeyAsyncClient = PreKeyAsyncClient(serverUrl, httpClientFactory)
 
     init {
         application.networkAvailable.subscribe { status ->

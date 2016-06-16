@@ -1,6 +1,5 @@
 package io.slychat.messenger.services
 
-import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClient
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesClearRequest
 import io.slychat.messenger.core.persistence.Package
@@ -14,8 +13,7 @@ import org.slf4j.LoggerFactory
 
 class OfflineMessageManager(
     private val application: SlyApplication,
-    private val serverUrl: String,
-    httpClientFactory: HttpClientFactory,
+    private val offlineMessagesClient: OfflineMessagesAsyncClient,
     private val messengerService: MessengerService,
     private val authTokenManager: AuthTokenManager
 ) {
@@ -26,8 +24,6 @@ class OfflineMessageManager(
     private var running = false
 
     private var isOnline = false
-
-    private val offlineMessagesClient = OfflineMessagesAsyncClient(serverUrl, httpClientFactory)
 
     init {
         application.networkAvailable.subscribe { status ->

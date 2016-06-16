@@ -5,6 +5,10 @@ import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.ServerUrls
 import io.slychat.messenger.core.http.HttpClientFactory
+import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
+import io.slychat.messenger.core.http.api.contacts.ContactListAsyncClient
+import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClient
+import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
 import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.persistence.MessagePersistenceManager
@@ -31,7 +35,7 @@ class UserModule(
         scheduler: Scheduler,
         relayConnector: RelayConnector,
         serverUrls: ServerUrls
-    ): RelayClientFactory=
+    ): RelayClientFactory =
         RelayClientFactory(scheduler, relayConnector, serverUrls)
 
     @UserScope
@@ -53,17 +57,22 @@ class UserModule(
         accountInfoPersistenceManager: AccountInfoPersistenceManager,
         @SlyHttp httpClientFactory: HttpClientFactory,
         platformContacts: PlatformContacts
-    ): ContactsService =
-        ContactsService(
+    ): ContactsService {
+        val serverUrl = serverUrls.API_SERVER
+        val contactClient = ContactAsyncClient(serverUrl, httpClientFactory)
+        val contactListClient = ContactListAsyncClient(serverUrl, httpClientFactory)
+
+        return ContactsService(
             authTokenManager,
-            serverUrls.API_SERVER,
             application,
-            httpClientFactory,
+            contactClient,
+            contactListClient,
             contactsPersistenceManager,
             userLoginData,
             accountInfoPersistenceManager,
             platformContacts
         )
+    }
 
     @UserScope
     @Provides
@@ -125,8 +134,18 @@ class UserModule(
         preKeyPersistenceManager: PreKeyPersistenceManager,
         @SlyHttp httpClientFactory: HttpClientFactory,
         authTokenManager: AuthTokenManager
-    ): PreKeyManager =
-        PreKeyManager(application, serverUrls.API_SERVER, httpClientFactory, userLoginData, preKeyPersistenceManager, authTokenManager)
+    ): PreKeyManager {
+        val serverUrl = serverUrls.API_SERVER
+        val preKeyAsyncClient = PreKeyAsyncClient(serverUrl, httpClientFactory)
+
+        return PreKeyManager(
+            application,
+            userLoginData,
+            preKeyAsyncClient,
+            preKeyPersistenceManager,
+            authTokenManager
+        )
+    }
 
     @UserScope
     @Provides
@@ -136,8 +155,17 @@ class UserModule(
         messengerService: MessengerService,
         @SlyHttp httpClientFactory: HttpClientFactory,
         authTokenManager: AuthTokenManager
-    ): OfflineMessageManager =
-        OfflineMessageManager(application, serverUrls.API_SERVER, httpClientFactory, messengerService, authTokenManager)
+    ): OfflineMessageManager {
+        val serverUrl = serverUrls.API_SERVER
+        val offlineMessagesClient = OfflineMessagesAsyncClient(serverUrl, httpClientFactory)
+
+        return OfflineMessageManager(
+            application,
+            offlineMessagesClient,
+            messengerService,
+            authTokenManager
+        )
+    }
 
     @UserScope
     @Provides
