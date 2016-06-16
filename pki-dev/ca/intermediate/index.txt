@@ -1,3 +1,2 @@
-V	360609135828Z		1000	unknown	/C=CA/ST=Quebec/L=Montreal/O=Keystream Systems/CN=test.api.slychat.io/emailAddress=ca@slychat.io
-V	360609195512Z		1001	unknown	/C=CA/ST=Quebec/L=Montreal/O=Keystream Systems/CN=test.relay.slychat.io/emailAddress=ca@slychat.io
-R	360609195827Z	160614200644Z	1002	unknown	/C=CA/ST=Quebec/L=Montreal/O=Keystream Systems/CN=revoked.slychat.io/emailAddress=ca@slychat.io
+V	210430152006Z		1000	unknown	/C=CA/ST=Quebec/L=Montreal/O=Keystream Systems/CN=api.slychat.io/emailAddress=ca@slychat.io
+R	210430152034Z	160615152039Z	1001	unknown	/C=CA/ST=Quebec/L=Montreal/O=Keystream Systems/CN=revoked.slychat.io/emailAddress=ca@slychat.io

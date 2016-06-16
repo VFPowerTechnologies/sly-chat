@@ -9,11 +9,12 @@ fi
 cd $(dirname "$0")/ca
 
 SITE="$1"
+INTERMEDIATE="${2:-intermediate}"
 
-openssl ca -config intermediate/openssl.cnf \
-    -revoke intermediate/certs/$SITE.cert.pem \
+openssl ca -config "$INTERMEDIATE/openssl.cnf" \
+    -revoke "$INTERMEDIATE/certs/$SITE.cert.pem" \
     -batch
 
-openssl ca -config intermediate/openssl.cnf \
-      -gencrl -out intermediate/crl/intermediate.crl.pem \
+openssl ca -config "$INTERMEDIATE/openssl.cnf" \
+      -gencrl -out "$INTERMEDIATE/crl/intermediate.crl.pem" \
       -batch

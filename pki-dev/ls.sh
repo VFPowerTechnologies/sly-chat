@@ -3,4 +3,6 @@ set -eu
 
 cd $(dirname "$0")/ca
 
-ls -c1 intermediate/certs/*.chained.cert.pem
+INTERMEDIATE=${1:-intermediate}
+
+ls -c1 $INTERMEDIATE/certs/*.chained.cert.pem

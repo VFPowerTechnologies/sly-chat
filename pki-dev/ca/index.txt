@@ -1,1 +1,2 @@
-V	260612133515Z		1000	unknown	/C=CA/ST=Quebec/O=Keystream Systems/CN=Keystream Intermediate CA/emailAddress=ca@slychat.io
+R	260613151915Z	160615152236Z	1000	unknown	/C=CA/ST=Quebec/O=Keystream Systems/CN=Keystream Revoked CA/emailAddress=ca@slychat.io
+V	260613151930Z		1001	unknown	/C=CA/ST=Quebec/O=Keystream Systems/CN=Keystream Intermediate CA/emailAddress=ca@slychat.io
