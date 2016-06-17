@@ -5,12 +5,12 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.ByteToMessageDecoder
 import io.netty.handler.ssl.SslHandler
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
+import io.slychat.messenger.core.crypto.tls.verifyHostname
 import io.slychat.messenger.core.relay.base.*
 import nl.komponents.kovenant.Deferred
 import rx.Observer
 import java.net.InetSocketAddress
 import java.security.cert.CertificateException
-import javax.net.ssl.HttpsURLConnection
 
 /** Handles converting received server messages into message instances. */
 class ServerMessageHandler(
@@ -36,7 +36,7 @@ class ServerMessageHandler(
             else {
                 val sslHandler = ctx.pipeline().get(SslHandler::class.java)
                 val session = sslHandler.engine().session
-                HttpsURLConnection.getDefaultHostnameVerifier().verify(hostname, session)
+                verifyHostname(hostname, session)
             }
 
             sslHandshakeComplete.resolve(isHostVerified)
