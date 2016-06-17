@@ -4,9 +4,9 @@ import org.spongycastle.asn1.ASN1InputStream
 import org.spongycastle.asn1.ASN1OctetString
 import org.spongycastle.asn1.DERIA5String
 import org.spongycastle.asn1.x509.*
-import java.security.cert.CRLReason
-import java.security.cert.CertificateRevokedException
+import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
+import java.util.*
 import javax.net.ssl.X509TrustManager
 import javax.security.auth.x500.X500Principal
 
@@ -71,6 +71,14 @@ internal fun getCertificateCRLDistributionURIs(cert: X509Certificate): Collectio
     return distributionURIs
 }
 
+//can't use CertificateRevokedException as it's android API 24+
+//ditto with CRLReason
+class CertificateRevokedException(
+    val certificate: X509Certificate,
+    val date: Date,
+    val issuer: X500Principal
+) : CertificateException("DN: <<${certificate.subjectDN}>> has been revoked")
+
 /**
  * Checks all available distribution points for an expired certificate.
  *
@@ -94,15 +102,13 @@ internal fun checkCertificateCRL(cert: X509Certificate, issuerCert: X509Certific
 
         val date = entry.revocationDate
         //can be null
-        val reason = entry.revocationReason ?: CRLReason.UNSPECIFIED
         val issuer = entry.certificateIssuer ?: X500Principal(cert.issuerDN.name)
 
-        //throws if any of the args are null
         throw CertificateRevokedException(
+            cert,
             date,
-            reason,
-            issuer,
-            emptyMap())
+            issuer
+        )
     }
 }
 

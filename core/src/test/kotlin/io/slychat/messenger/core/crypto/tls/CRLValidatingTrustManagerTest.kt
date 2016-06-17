@@ -3,7 +3,6 @@ package io.slychat.messenger.core.crypto.tls
 import org.junit.Test
 import java.io.InputStream
 import java.security.cert.CertificateFactory
-import java.security.cert.CertificateRevokedException
 import java.security.cert.X509CRL
 import java.security.cert.X509Certificate
 import kotlin.test.assertEquals
