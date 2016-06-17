@@ -29,3 +29,8 @@ openssl req -config openssl.cnf \
      -new -x509 -days 7300 -sha256 -extensions v3_ca \
      -subj "$SUBJECT" \
      -out certs/ca.cert.pem
+
+#generate an empty CRL
+openssl ca -config openssl.cnf \
+      -gencrl -out crl/ca.crl.pem \
+      -batch

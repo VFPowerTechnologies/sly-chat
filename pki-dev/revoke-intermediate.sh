@@ -6,6 +6,8 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
+umask 0077
+
 cd $(dirname "$0")/ca
 
 INTERMEDIATE="$1"

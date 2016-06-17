@@ -17,7 +17,7 @@ INTERMEDIATE="${2:-intermediate}"
 openssl genrsa -out "$INTERMEDIATE/private/$SITE.key.pem" 2048
 
 #generate CSR
-SUBJECT="/C=CA/ST=Quebec/L=Montreal/O=Keystream Information Systems/OU=Keystream Information Systems Certificate Authority/CN=$SITE/emailAddress=ca@slychat.io/"
+SUBJECT="/C=CA/ST=Quebec/L=Montreal/O=Keystream Information Systems/OU=Sly Messenger/CN=$SITE/emailAddress=ca@slychat.io/"
 openssl req -config "$INTERMEDIATE/openssl.cnf" \
     -key "$INTERMEDIATE/private/$SITE.key.pem" \
     -subj "$SUBJECT" \
