@@ -1,18 +1,13 @@
 package io.slychat.messenger.core.http
 
-import io.slychat.messenger.core.BuildConfig
-import io.slychat.messenger.core.crypto.tls.TLS12SocketFactory
-import io.slychat.messenger.core.crypto.tls.getTrustManagers
+import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.Reader
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.SecureRandom
-import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.HttpsURLConnection
-import javax.net.ssl.SSLContext
 
 
 fun slurpInputStreamReader(reader: Reader, suggestedBufferSize: Int = 0): String {
@@ -59,33 +54,28 @@ fun readStreamResponse(connection: HttpURLConnection, headers: Map<String, List<
     return data
 }
 
-private fun getHttpConnection(url: String): HttpURLConnection = getHttpConnection(URL(url))
+class JavaHttpClient(
+    private val config: HttpClientConfig = HttpClientConfig(3000, 3000),
+    private val sslConfigurator: SSLConfigurator? = null
+) : HttpClient {
+    private fun getHttpConnection(url: String): HttpURLConnection = getHttpConnection(URL(url))
 
-private fun getHttpConnection(url: URL): HttpURLConnection {
-    val connection = url.openConnection() as HttpURLConnection
-    if (connection is HttpsURLConnection) {
-        val sslContext = SSLContext.getInstance("TLSv1.2")
+    private fun getHttpConnection(url: URL): HttpURLConnection {
+        val connection = url.openConnection() as HttpURLConnection
+        if (connection is HttpsURLConnection)
+            sslConfigurator?.configure(connection)
 
-        sslContext.init(null, getTrustManagers(), SecureRandom())
-
-        connection.sslSocketFactory = TLS12SocketFactory(sslContext)
-
-        if (BuildConfig.TLS_DISABLE_HOSTNAME_VERIFICATION) {
-            connection.hostnameVerifier = HostnameVerifier { hostname, session ->
-                true
-            }
-        }
+        return connection
     }
-    return connection
-}
 
-
-class JavaHttpClient : HttpClient {
     override fun get(url: String, headers: List<Pair<String, String>>): HttpResponse {
         val connection = getHttpConnection(url)
         connection.doInput = true
         connection.requestMethod = "GET"
         connection.useCaches = false
+
+        connection.connectTimeout = config.connectTimeoutMs
+        connection.readTimeout = config.readTimeoutMs
 
         for (header in headers)
             connection.setRequestProperty(header.first, header.second)

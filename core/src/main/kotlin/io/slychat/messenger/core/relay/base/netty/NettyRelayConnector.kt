@@ -5,6 +5,7 @@ import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelOption
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioSocketChannel
+import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.relay.base.RelayConnectionEstablished
 import io.slychat.messenger.core.relay.base.RelayConnectionEvent
 import io.slychat.messenger.core.relay.base.RelayConnector
@@ -13,7 +14,7 @@ import rx.Observable
 import java.net.InetSocketAddress
 
 class NettyRelayConnector : RelayConnector {
-    override fun connect(address: InetSocketAddress): Observable<RelayConnectionEvent> =
+    override fun connect(address: InetSocketAddress, sslConfigurator: SSLConfigurator): Observable<RelayConnectionEvent> =
         Observable.create({ subscriber ->
             val sslHandshakeComplete = deferred<Boolean, Exception>()
 
@@ -23,7 +24,7 @@ class NettyRelayConnector : RelayConnector {
                 .group(eventLoopGroup)
                 .channel(NioSocketChannel::class.java)
                 .option(ChannelOption.SO_KEEPALIVE, true)
-                .handler(RelayConnectionInitializer(subscriber, sslHandshakeComplete))
+                .handler(RelayConnectionInitializer(subscriber, sslHandshakeComplete, sslConfigurator))
 
             val channelFuture = bootstrap.connect(address)
             channelFuture.addListener(ChannelFutureListener { cf ->

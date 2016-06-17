@@ -1,19 +1,23 @@
 package io.slychat.messenger.core.crypto.tls
 
+import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import java.net.InetAddress
 import java.net.Socket
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
 
-class TLS12SocketFactory(private val sslContext: SSLContext) : SSLSocketFactory() {
+class TLS12SocketFactory(
+    private val sslContext: SSLContext,
+    private val sslConfigurator: SSLConfigurator
+) : SSLSocketFactory() {
     private val internalFactory: SSLSocketFactory = sslContext.socketFactory
 
     private fun socketSetup(socket: Socket?): Socket? {
         if (socket == null || socket !is SSLSocket)
             return socket
 
-        configureSSL(socket)
+        sslConfigurator.configure(SSLSocketSSLSettingsAdapter(socket))
 
         return socket
     }

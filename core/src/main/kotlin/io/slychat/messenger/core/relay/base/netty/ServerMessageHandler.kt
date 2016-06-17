@@ -5,7 +5,6 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.ByteToMessageDecoder
 import io.netty.handler.ssl.SslHandler
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
-import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.relay.base.*
 import nl.komponents.kovenant.Deferred
 import rx.Observer
@@ -16,7 +15,8 @@ import javax.net.ssl.HttpsURLConnection
 /** Handles converting received server messages into message instances. */
 class ServerMessageHandler(
     private val observer: Observer<in RelayConnectionEvent>,
-    private val sslHandshakeComplete: Deferred<Boolean, Exception>
+    private val sslHandshakeComplete: Deferred<Boolean, Exception>,
+    private val disableHostnameVerification: Boolean
 ) : ByteToMessageDecoder() {
     private var lastHeader: Header? = null
     private var observerableComplete = false
@@ -31,7 +31,7 @@ class ServerMessageHandler(
 
             val hostname = (ctx.channel().remoteAddress() as InetSocketAddress).hostName
 
-            val isHostVerified = if (BuildConfig.TLS_DISABLE_HOSTNAME_VERIFICATION)
+            val isHostVerified = if (disableHostnameVerification)
                 true
             else {
                 val sslHandler = ctx.pipeline().get(SslHandler::class.java)

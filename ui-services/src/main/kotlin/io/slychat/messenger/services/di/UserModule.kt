@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.ServerUrls
+import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
 import io.slychat.messenger.core.http.api.contacts.ContactListAsyncClient
@@ -34,9 +35,10 @@ class UserModule(
     fun provideRelayClientFactory(
         scheduler: Scheduler,
         relayConnector: RelayConnector,
-        serverUrls: ServerUrls
+        serverUrls: ServerUrls,
+        sslConfigurator: SSLConfigurator
     ): RelayClientFactory =
-        RelayClientFactory(scheduler, relayConnector, serverUrls)
+        RelayClientFactory(scheduler, relayConnector, serverUrls, sslConfigurator)
 
     @UserScope
     @Provides

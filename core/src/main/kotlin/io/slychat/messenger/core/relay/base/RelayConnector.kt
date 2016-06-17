@@ -1,5 +1,6 @@
 package io.slychat.messenger.core.relay.base
 
+import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import rx.Observable
 import java.net.InetSocketAddress
 
@@ -15,5 +16,5 @@ interface RelayConnector {
      * When either the server is disconnected, or ServerConnection.disconnect is called, onNext will receive
      * a RelayConnectionLost message, followed by onComplete.
      */
-    fun connect(address: InetSocketAddress): Observable<RelayConnectionEvent>
+    fun connect(address: InetSocketAddress, sslConfigurator: SSLConfigurator): Observable<RelayConnectionEvent>
 }
