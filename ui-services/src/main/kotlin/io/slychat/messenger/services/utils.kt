@@ -124,7 +124,7 @@ fun initSentry(applicationComponent: ApplicationComponent): ReportSubmitterCommu
 
     val storage = FileReportStorage(bugReportsPath)
 
-    val client = RavenReportSubmitClient(dsn)
+    val client = RavenReportSubmitClient(dsn, applicationComponent.slyHttpClientFactory)
 
     val queue = ArrayBlockingQueue<ReporterMessage<ByteArray>>(10)
 

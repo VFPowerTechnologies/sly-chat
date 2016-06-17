@@ -1,11 +1,15 @@
 package io.slychat.messenger.core.sentry
 
+import io.slychat.messenger.core.http.HttpClientFactory
 import java.net.ConnectException
 
-class RavenReportSubmitClient(private val dsn: DSN) : ReportSubmitClient<ByteArray> {
+class RavenReportSubmitClient(
+    private val dsn: DSN,
+    private val httpClientFactory: HttpClientFactory
+) : ReportSubmitClient<ByteArray> {
     override fun submit(report: ByteArray): ReportSubmitError? {
         try {
-            postEvent(dsn, report)
+            postEvent(dsn, httpClientFactory, report)
             return null
         }
         catch (e: ConnectException) {
