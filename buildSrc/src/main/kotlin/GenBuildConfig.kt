@@ -244,6 +244,7 @@ open class GenBuildConfig : DefaultTask() {
 
         vc.put("disableCertificateVerification", findBoolForKey(settings, "tls.disableCertificateVerification", debug))
         vc.put("disableHostnameVerification", findBoolForKey(settings, "tls.disableHostnameVerification", debug))
+        vc.put("disableCRLVerification", findBoolForKey(settings, "tls.disableCRLVerification", debug))
 
         //adds <platform><SettingName> to context
         val urlSettings = listOf(

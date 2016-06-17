@@ -52,6 +52,7 @@ public class BuildConfig {
 
     public static final boolean TLS_DISABLE_CERTIFICATE_VERIFICATION = $disableCertificateVerification;
     public static final boolean TLS_DISABLE_HOSTNAME_VERIFICATION = $disableHostnameVerification;
+    public static final boolean TLS_DISABLE_CRL_VERIFICATION = $disableCRLVerification;
 
     public static final ServerUrls DESKTOP_SERVER_URLS = new ServerUrls("$desktopHttpApiServer", $desktopRelayServer);
     public static final ServerUrls ANDROID_SERVER_URLS = new ServerUrls("$androidHttpApiServer", $androidRelayServer);

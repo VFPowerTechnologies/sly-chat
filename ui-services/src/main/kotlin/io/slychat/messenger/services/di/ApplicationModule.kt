@@ -42,7 +42,7 @@ class ApplicationModule(
             cert,
             crlFetcher,
             BuildConfig.TLS_DISABLE_HOSTNAME_VERIFICATION,
-            true,
+            BuildConfig.TLS_DISABLE_CRL_VERIFICATION,
             BuildConfig.TLS_DISABLE_CERTIFICATE_VERIFICATION
         )
     }
