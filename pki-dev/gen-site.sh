@@ -6,6 +6,8 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
+umask 0077
+
 cd $(dirname "$0")/ca
 
 SITE="$1"
@@ -15,8 +17,10 @@ INTERMEDIATE="${2:-intermediate}"
 openssl genrsa -out "$INTERMEDIATE/private/$SITE.key.pem" 2048
 
 #generate CSR
+SUBJECT="/C=CA/ST=Quebec/L=Montreal/O=Keystream Information Systems/OU=Keystream Information Systems Certificate Authority/CN=$SITE/emailAddress=ca@slychat.io/"
 openssl req -config "$INTERMEDIATE/openssl.cnf" \
     -key "$INTERMEDIATE/private/$SITE.key.pem" \
+    -subj "$SUBJECT" \
     -new -sha256 -out "$INTERMEDIATE/csr/$SITE.csr.pem"
 
 #sign CSR and generate cert

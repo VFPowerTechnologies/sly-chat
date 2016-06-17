@@ -6,10 +6,10 @@ import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.crypto.tls.CachingCRLFetcher
 import io.slychat.messenger.core.crypto.tls.JavaHttpCRLFetcher
+import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.JavaHttpClientFactory
-import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.services.AuthenticationService
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.UserPathsGenerator
@@ -42,7 +42,7 @@ class ApplicationModule(
             cert,
             crlFetcher,
             BuildConfig.TLS_DISABLE_HOSTNAME_VERIFICATION,
-            false,
+            true,
             BuildConfig.TLS_DISABLE_CERTIFICATE_VERIFICATION
         )
     }

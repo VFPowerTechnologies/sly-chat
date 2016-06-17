@@ -81,8 +81,8 @@ emailAddress                    = Email Address
 countryName_default             = CA
 stateOrProvinceName_default     = Quebec
 localityName_default            = Montreal
-0.organizationName_default      = Keystream Systems
-organizationalUnitName_default  =
+0.organizationName_default      = Keystream Information Systems
+organizationalUnitName_default  = Keystream Information Systems Certificate Authority
 emailAddress_default            = ca@slychat.io
 
 [ v3_ca ]

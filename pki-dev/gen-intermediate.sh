@@ -2,13 +2,20 @@
 set -eu
 
 if [ $# -lt 1 ]; then
-    echo "No domain name given"
+    echo "No intermediate CA name given"
     exit 1
 fi
+
+umask 0077
 
 cd $(dirname "$0")/ca
 
 INTERMEDIATE="$1"
+
+if [ -e "$INTERMEDIATE" ]; then
+    echo "CA already exists"
+    exit 1
+fi
 
 mkdir "$INTERMEDIATE"
 echo 1000 > "$INTERMEDIATE/serial"
@@ -23,6 +30,8 @@ sed -e "s/INTERMEDIATE_DIR/$INTERMEDIATE/" ../intermediate-openssl-template.cnf 
 
 #generated a private key
 openssl genrsa -out "$INTERMEDIATE/private/intermediate.key.pem" 4096
+
+chmod 400 "$INTERMEDIATE/private/intermediate.key.pem"
 
 #generate a CSR for the intermediate CA
 openssl req -config "$INTERMEDIATE/openssl.cnf" -new -sha256 \
