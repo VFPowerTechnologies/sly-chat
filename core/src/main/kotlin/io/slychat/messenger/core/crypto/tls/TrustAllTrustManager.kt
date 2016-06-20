@@ -1,9 +1,8 @@
-package io.slychat.messenger.core.tls
+package io.slychat.messenger.core.crypto.tls
 
 import java.security.cert.X509Certificate
 import javax.net.ssl.X509TrustManager
 
-//TODO only trust given cert pulled from resource (unless debug is on)
 class TrustAllTrustManager : X509TrustManager {
     override fun checkClientTrusted(chain: Array<out X509Certificate>, p1: String) {
         throw UnsupportedOperationException()

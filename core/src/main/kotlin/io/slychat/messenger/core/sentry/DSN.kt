@@ -8,6 +8,8 @@ data class DSN(
     val host: String,
     val port: Int
 ) {
-    fun getStoreUrl(): String =
-        "$scheme://$host:$port/api/$projectId/store/"
+    fun getStoreUrl(): String {
+        val port = if (this.port == -1) "" else ":$port"
+        return "$scheme://$host$port/api/$projectId/store/"
+    }
 }

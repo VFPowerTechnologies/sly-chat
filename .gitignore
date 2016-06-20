@@ -11,3 +11,4 @@ ui/ui/js/build-config.js
 generated/
 ui-services/generated
 __pycache__/
+*.old

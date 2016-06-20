@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.accountupdate.*
 import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.services.SlyApplication
@@ -13,9 +14,8 @@ import nl.komponents.kovenant.functional.map
 
 class UIAccountModificationServiceImpl(
     private val app: SlyApplication,
-    serverUrl: String
+    private val accountUpdateClient: AccountUpdateAsyncClient
 ) : UIAccountModificationService {
-    private val accountUpdateClient = AccountUpdateAsyncClient(serverUrl)
 
     private fun getUserComponentOrThrow(): UserComponent {
         return app.userComponent ?: throw IllegalStateException("Not logged in")

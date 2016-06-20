@@ -5,6 +5,12 @@ import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.UIServiceComponent
 import io.slychat.messenger.core.BuildConfig.UIServiceType
+import io.slychat.messenger.core.http.HttpClientFactory
+import io.slychat.messenger.core.http.api.accountupdate.AccountUpdateAsyncClient
+import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
+import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
+import io.slychat.messenger.core.http.api.infoservice.InfoServiceAsyncClient
+import io.slychat.messenger.core.http.api.registration.RegistrationAsyncClient
 import io.slychat.messenger.services.PlatformTelephonyService
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.ui.*
@@ -23,11 +29,17 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun provideRegistrationService(
-        serverUrls: BuildConfig.ServerUrls
+        serverUrls: BuildConfig.ServerUrls,
+        @SlyHttp httpClientFactory: HttpClientFactory
     ): UIRegistrationService = getImplementation(
         UIServiceComponent.REGISTRATION,
         { DummyUIRegistrationService() },
-        { UIRegistrationServiceImpl(serverUrls.API_SERVER) }
+        {
+            val serverUrl = serverUrls.API_SERVER
+            val registrationClient = RegistrationAsyncClient(serverUrl, httpClientFactory)
+            val loginClient = AuthenticationAsyncClient(serverUrl, httpClientFactory)
+            UIRegistrationServiceImpl(registrationClient, loginClient)
+        }
     )
 
     @Singleton
@@ -44,11 +56,16 @@ class UIServicesModule {
     @Provides
     fun provideContactsService(
         serverUrls: BuildConfig.ServerUrls,
+        @SlyHttp httpClientFactory: HttpClientFactory,
         app: SlyApplication
     ): UIContactsService = getImplementation(
         UIServiceComponent.CONTACTS,
         { DummyUIContactsService() },
-        { UIContactsServiceImpl(app, serverUrls.API_SERVER) }
+        {
+            val serverUrl = serverUrls.API_SERVER
+            val contactClient = ContactAsyncClient(serverUrl, httpClientFactory)
+            UIContactsServiceImpl(app, contactClient)
+        }
     )
 
     @Singleton
@@ -99,10 +116,20 @@ class UIServicesModule {
     @Provides
     fun provideAccountModificationService(
         app: SlyApplication,
+        @SlyHttp httpClientFactory: HttpClientFactory,
         serverUrls: BuildConfig.ServerUrls
-    ): UIAccountModificationService = UIAccountModificationServiceImpl(app, serverUrls.API_SERVER)
+    ): UIAccountModificationService {
+        val serverUrl = serverUrls.API_SERVER
+        val accountUpdateClient = AccountUpdateAsyncClient(serverUrl, httpClientFactory)
+        return UIAccountModificationServiceImpl(app, accountUpdateClient)
+    }
 
     @Singleton
     @Provides
-    fun provideUIInfoService(): UIInfoService = UIInfoServiceImpl()
+    fun provideUIInfoService(
+        @ExternalHttp httpClientFactory: HttpClientFactory
+    ): UIInfoService {
+        val infoServiceClient = InfoServiceAsyncClient(httpClientFactory)
+        return UIInfoServiceImpl(infoServiceClient)
+    }
 }

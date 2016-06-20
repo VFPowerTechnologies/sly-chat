@@ -108,6 +108,9 @@ open class GenBuildConfig : DefaultTask() {
             return v * conversionAmount
         }
 
+        private fun findBoolForKey(settings: Properties, key: String, debug: Boolean): Boolean =
+            stringToBoolean(findValueForKey(settings, key, debug))
+
         private fun getMsConversationAmount(unit: String): Long = when (unit) {
             "ms" -> 1
             "s" -> 1000
@@ -131,7 +134,7 @@ open class GenBuildConfig : DefaultTask() {
             val host = parts[0]
             val port = parts[1]
 
-            return "new InetSocketAddress(\"$host\", $port)"
+            return "InetSocketAddress.createUnresolved(\"$host\", $port)"
         }
 
         /** Parses a sentry DSN. Returns null for malformed DSNs. */
@@ -169,6 +172,13 @@ open class GenBuildConfig : DefaultTask() {
     @InputFile
     val localPropertiesPath = File(projectRoot, "local.properties")
 
+    //this is kinda hacky...
+    @InputFile
+    val buildConfigJavaTemplate = File(projectRoot, "buildSrc/src/main/resources/BuildConfig.java.vm")
+
+    @InputFile
+    val buildConfigJSTemplate = File(projectRoot, "buildSrc/src/main/resources/build-config.js.vm")
+
     //TODO maybe let these be overriden as settings (or set as relative paths to the project root)
     val generateRoot = File(projectRoot, "generated")
 
@@ -194,6 +204,16 @@ open class GenBuildConfig : DefaultTask() {
         return props
     }
 
+    private fun getCACertificate(debug: Boolean): String {
+        val filename = "certs/ca-cert%s.pem".format(if (debug) ".debug" else "")
+
+        return File(projectRoot, filename).readText()
+    }
+
+    private fun convertToByteArrayNotation(s: String): String {
+        return s.toByteArray().map { it.toString() }.joinToString(",", "{", "}")
+    }
+
     @TaskAction
     fun run() {
         val rootProject = project.rootProject
@@ -215,12 +235,16 @@ open class GenBuildConfig : DefaultTask() {
         val debug = stringToBoolean(settings.getProperty("debug"))
         vc.put("debug", debug)
 
-        val enableDatabaseEncryption = stringToBoolean(findValueForKey(settings, "enableDatabaseEncryption", debug))
+        val enableDatabaseEncryption = findBoolForKey(settings, "enableDatabaseEncryption", debug)
         vc.put("enableDatabaseEncryption", enableDatabaseEncryption);
 
         vc.put("uiServiceType", getEnumValue(settings, debug, "uiServiceType", listOf("DUMMY", "REAL"), null))
 
         vc.put("relayKeepAliveIntervalMs", findMsForKey(settings, "relayServer.keepAlive", debug))
+
+        vc.put("disableCertificateVerification", findBoolForKey(settings, "tls.disableCertificateVerification", debug))
+        vc.put("disableHostnameVerification", findBoolForKey(settings, "tls.disableHostnameVerification", debug))
+        vc.put("disableCRLVerification", findBoolForKey(settings, "tls.disableCRLVerification", debug))
 
         //adds <platform><SettingName> to context
         val urlSettings = listOf(
@@ -266,6 +290,11 @@ open class GenBuildConfig : DefaultTask() {
             sentryDSNFromString(maybeSentryDsn)
 
         vc.put("sentryDsn", sentryDsn)
+
+        val cert = getCACertificate(debug)
+
+        val inline = convertToByteArrayNotation(cert)
+        vc.put("caCert", inline)
 
         outputFile.writer().use {
             val vt = ve.getTemplate("/BuildConfig.java.vm")

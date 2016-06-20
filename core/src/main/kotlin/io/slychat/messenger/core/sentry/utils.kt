@@ -4,7 +4,7 @@ package io.slychat.messenger.core.sentry
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.BuildConfig
-import io.slychat.messenger.core.http.JavaHttpClient
+import io.slychat.messenger.core.http.HttpClientFactory
 import java.io.ByteArrayOutputStream
 import java.util.zip.DeflaterOutputStream
 
@@ -22,7 +22,7 @@ fun SentryEvent.serialize(): ByteArray {
     return byteStream.toByteArray()
 }
 
-fun postEvent(dsn: DSN, bytes: ByteArray) {
+fun postEvent(dsn: DSN, httpClientFactory: HttpClientFactory, bytes: ByteArray) {
     val url = dsn.getStoreUrl()
 
     val timestamp = System.currentTimeMillis().toString()
@@ -38,7 +38,7 @@ fun postEvent(dsn: DSN, bytes: ByteArray) {
         "X-Sentry-Auth" to authHeader
     )
 
-    val client = JavaHttpClient()
+    val client = httpClientFactory.create()
 
     //400 for malformed data
     //401 if key is invalid

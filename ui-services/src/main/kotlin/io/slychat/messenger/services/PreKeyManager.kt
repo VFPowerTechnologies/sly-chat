@@ -20,8 +20,8 @@ import org.whispersystems.libsignal.state.PreKeyRecord
 //should also check after processing a prekey from a received message
 class PreKeyManager(
     private val application: SlyApplication,
-    private val serverUrl: String,
     private val userLoginData: UserData,
+    private val preKeyAsyncClient: PreKeyAsyncClient,
     private val preKeyPersistenceManager: PreKeyPersistenceManager,
     private val authTokenManager: AuthTokenManager
 ) {
@@ -69,7 +69,7 @@ class PreKeyManager(
 
     fun checkForUpload() {
         authTokenManager.bind { userCredentials ->
-            PreKeyAsyncClient(serverUrl).getInfo(userCredentials) mapUi { response ->
+            preKeyAsyncClient.getInfo(userCredentials) mapUi { response ->
                 log.debug("Remaining prekeys: {}, requested to upload {}", response.remaining, response.uploadCount)
                 scheduleUpload(response.uploadCount)
             }
@@ -99,7 +99,7 @@ class PreKeyManager(
             generate(keyRegenCount) bind { r ->
                 val (generatedPreKeys, lastResortPreKey) = r
                 val request = preKeyStorageRequestFromGeneratedPreKeys(application.installationData.registrationId, keyVault, generatedPreKeys, lastResortPreKey)
-                PreKeyAsyncClient(serverUrl).store(userCredentials, request)
+                preKeyAsyncClient.store(userCredentials, request)
             }
         } successUi { response ->
             running = false

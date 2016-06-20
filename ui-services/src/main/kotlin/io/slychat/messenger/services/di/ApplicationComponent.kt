@@ -1,12 +1,13 @@
 package io.slychat.messenger.services.di
 
+import dagger.Component
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.PlatformInfo
+import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.services.AuthenticationService
 import io.slychat.messenger.services.PlatformContacts
 import io.slychat.messenger.services.UserPathsGenerator
 import io.slychat.messenger.services.ui.*
-import dagger.Component
 import rx.Scheduler
 import javax.inject.Singleton
 
@@ -57,6 +58,12 @@ interface ApplicationComponent {
     val platformContacts: PlatformContacts
 
     val serverUrls: BuildConfig.ServerUrls
+
+    @get:SlyHttp
+    val slyHttpClientFactory: HttpClientFactory
+
+    @get:ExternalHttp
+    val externalHttpClientFactory: HttpClientFactory
 
     fun plus(userModule: UserModule): UserComponent
 }

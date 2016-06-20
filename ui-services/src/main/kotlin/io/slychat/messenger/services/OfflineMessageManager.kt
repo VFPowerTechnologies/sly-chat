@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 
 class OfflineMessageManager(
     private val application: SlyApplication,
-    private val serverUrl: String,
+    private val offlineMessagesClient: OfflineMessagesAsyncClient,
     private val messengerService: MessengerService,
     private val authTokenManager: AuthTokenManager
 ) {
@@ -48,7 +48,6 @@ class OfflineMessageManager(
         log.info("Fetching offline messages")
 
         authTokenManager.bind { userCredentials ->
-            val offlineMessagesClient = OfflineMessagesAsyncClient(serverUrl)
             offlineMessagesClient.get(userCredentials) bindUi { response ->
                 if (response.messages.isNotEmpty()) {
                     val offlineMessages = response.messages.map { m ->

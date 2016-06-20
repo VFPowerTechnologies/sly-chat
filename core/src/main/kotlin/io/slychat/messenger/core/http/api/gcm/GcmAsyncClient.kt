@@ -1,11 +1,12 @@
 package io.slychat.messenger.core.http.api.gcm
 
 import io.slychat.messenger.core.UserCredentials
+import io.slychat.messenger.core.http.HttpClientFactory
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
-class GcmAsyncClient(private val serverUrl: String) {
-    private fun newClient(): GcmClient = GcmClient(serverUrl, io.slychat.messenger.core.http.JavaHttpClient())
+class GcmAsyncClient(private val serverUrl: String, private val factory: HttpClientFactory) {
+    private fun newClient(): GcmClient = GcmClient(serverUrl, factory.create())
 
     fun isRegistered(userCredentials: UserCredentials): Promise<IsRegisteredResponse, Exception> = task {
         newClient().isRegistered(userCredentials)

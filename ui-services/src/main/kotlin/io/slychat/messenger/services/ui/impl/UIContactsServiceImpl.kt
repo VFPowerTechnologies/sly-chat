@@ -16,10 +16,8 @@ import java.util.*
 
 class UIContactsServiceImpl(
     private val app: SlyApplication,
-    serverUrl: String
+    private val contactClient: ContactAsyncClient
 ) : UIContactsService {
-
-    private val contactClient = ContactAsyncClient(serverUrl)
 
     private var contactEventSub: Subscription? = null
     private val contactEventListeners = ArrayList<(UIContactEvent) -> Unit>()

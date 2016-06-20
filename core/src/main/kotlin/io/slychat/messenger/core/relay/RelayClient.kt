@@ -4,6 +4,7 @@ import io.slychat.messenger.core.ADDRESS_USERID_DEVICEID_DELIMITER
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.relay.RelayClientState.*
 import io.slychat.messenger.core.relay.base.*
 import io.slychat.messenger.core.relay.base.CommandCode.*
@@ -35,7 +36,8 @@ class RelayClient(
     private val connector: RelayConnector,
     private val scheduler: Scheduler,
     private val serverAddress: InetSocketAddress,
-    private val credentials : UserCredentials
+    private val credentials : UserCredentials,
+    private val sslConfigurator: SSLConfigurator
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private var relayConnection: RelayConnection? = null
@@ -198,7 +200,7 @@ class RelayClient(
     }
 
     fun connect() {
-        connector.connect(serverAddress)
+        connector.connect(serverAddress, sslConfigurator)
             .observeOn(scheduler)
             .subscribe(object : Observer<RelayConnectionEvent> {
                 override fun onCompleted() {
