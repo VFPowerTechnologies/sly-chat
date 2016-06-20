@@ -134,7 +134,7 @@ open class GenBuildConfig : DefaultTask() {
             val host = parts[0]
             val port = parts[1]
 
-            return "new InetSocketAddress(\"$host\", $port)"
+            return "InetSocketAddress.createUnresolved(\"$host\", $port)"
         }
 
         /** Parses a sentry DSN. Returns null for malformed DSNs. */
