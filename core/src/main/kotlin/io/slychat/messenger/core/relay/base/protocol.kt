@@ -43,7 +43,8 @@ enum class CommandCode(val code: Int) {
     CLIENT_FILE_TRANSFER_CANCEL_OR_REJECT(15),
     CLIENT_PING(16),
     SERVER_PONG(17),
-    CLIENT_RECEIVED_MESSAGE(18);
+    CLIENT_RECEIVED_MESSAGE(18),
+    SERVER_DEVICE_MISMATCH(19);
 
     companion object {
         private val cachedValues = values()
