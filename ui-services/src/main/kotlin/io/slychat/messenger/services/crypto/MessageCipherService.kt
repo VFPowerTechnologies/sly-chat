@@ -2,10 +2,8 @@ package io.slychat.messenger.services.crypto
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
-import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.prekeys.PreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyRetrievalRequest
 import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
@@ -50,10 +48,9 @@ data class MessageData(
 
 class MessageCipherService(
     private val authTokenManager: AuthTokenManager,
-    private val httpClientFactory: HttpClientFactory,
+    private val preKeyClient: PreKeyClient,
     //the store is only ever used in the work thread, so no locking is done
-    private val signalStore: SignalProtocolStore,
-    private val serverUrls: BuildConfig.ServerUrls
+    private val signalStore: SignalProtocolStore
 ) : Runnable {
     private var thread: Thread? = null
 
@@ -95,18 +92,39 @@ class MessageCipherService(
     }
 
     override fun run() {
-        loop@ while (true) {
-            val work = workQueue.take() ?: continue
+        processQueue(true)
+    }
 
-            when (work) {
-                is EncryptionWork -> handleEncryption(work)
-                is DecryptionWork -> handleDecryption(work)
-                is NoMoreWork -> break@loop
-                else -> {
-                    log.error("Unknown work type: {}", work)
-                }
+    //XXX used for testing only
+    internal fun processQueue(block: Boolean) {
+        while (true) {
+            val work = if (block) {
+                workQueue.take() ?: continue
+            }
+            else {
+                workQueue.poll()
+            }
+
+            if (work == null)
+                return
+
+            if (!processWork(work))
+                break
+        }
+    }
+
+    /** Returns true to continue, false to exit. */
+    private fun processWork(work: CipherWork): Boolean {
+        when (work) {
+            is EncryptionWork -> handleEncryption(work)
+            is DecryptionWork -> handleDecryption(work)
+            is NoMoreWork -> return false
+            else -> {
+                log.error("Unknown work type: {}", work)
             }
         }
+
+        return true
     }
 
     private fun handleEncryption(work: EncryptionWork) {
@@ -179,7 +197,7 @@ class MessageCipherService(
     private fun fetchPreKeyBundles(userId: UserId): List<PreKeyBundle> {
         val response = authTokenManager.map { userCredentials ->
             val request = PreKeyRetrievalRequest(userId, listOf())
-            PreKeyClient(serverUrls.API_SERVER, httpClientFactory.create()).retrieve(userCredentials, request)
+            preKeyClient.retrieve(userCredentials, request)
         }.get()
 
         if (!response.isSuccess)

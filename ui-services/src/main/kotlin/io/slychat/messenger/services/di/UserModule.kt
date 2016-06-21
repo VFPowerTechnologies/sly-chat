@@ -10,6 +10,7 @@ import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
 import io.slychat.messenger.core.http.api.contacts.ContactListAsyncClient
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
+import io.slychat.messenger.core.http.api.prekeys.PreKeyClient
 import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.persistence.MessagePersistenceManager
@@ -124,8 +125,10 @@ class UserModule(
         serverUrls: ServerUrls,
         signalProtocolStore: SignalProtocolStore,
         @SlyHttp httpClientFactory: HttpClientFactory
-    ): MessageCipherService =
-        MessageCipherService(authTokenManager, httpClientFactory, signalProtocolStore, serverUrls)
+    ): MessageCipherService {
+        val preKeyClient= PreKeyClient(serverUrls.API_SERVER, httpClientFactory.create())
+        return MessageCipherService(authTokenManager, preKeyClient, signalProtocolStore)
+    }
 
     @UserScope
     @Provides
