@@ -1,6 +1,5 @@
 package io.slychat.messenger.core.crypto.tls
 
-import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import java.net.InetAddress
 import java.net.Socket
 import javax.net.ssl.SSLContext
