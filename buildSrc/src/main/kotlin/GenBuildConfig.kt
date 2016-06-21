@@ -126,6 +126,10 @@ open class GenBuildConfig : DefaultTask() {
             return v ?: throw InvalidUserDataException("Missing setting $settingName in properties file")
         }
 
+        private fun isIpAddress(s: String): Boolean {
+            return s.matches("\\d+.\\d+.\\d+.\\d+".toRegex())
+        }
+
         private fun stringToInetSocketAddress(s: String): String {
             val parts = s.split(':', limit = 2)
             if (parts.size != 2)
@@ -134,7 +138,12 @@ open class GenBuildConfig : DefaultTask() {
             val host = parts[0]
             val port = parts[1]
 
-            return "InetSocketAddress.createUnresolved(\"$host\", $port)"
+            val constructor = if (isIpAddress(host))
+                "new InetSocketAddress"
+            else
+                "InetSocketAddress.createUnresolved"
+
+            return "$constructor(\"$host\", $port)"
         }
 
         /** Parses a sentry DSN. Returns null for malformed DSNs. */
