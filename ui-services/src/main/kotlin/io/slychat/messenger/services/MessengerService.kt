@@ -6,9 +6,12 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
+import io.slychat.messenger.core.relay.DeviceMismatch
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.core.relay.ServerReceivedMessage
+import io.slychat.messenger.core.relay.base.MessageContent
+import io.slychat.messenger.core.relay.base.SendMessageContent
 import io.slychat.messenger.services.crypto.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
@@ -176,9 +179,11 @@ class MessengerService(
 
             when (result) {
                 is EncryptionOk -> {
-                    //FIXME
-                    val encryptMessages = result.encryptedMessages
-                    val content = objectMapper.writeValueAsBytes(encryptMessages[0].payload)
+                    val messages = result.encryptedMessages.map { e ->
+                        val payload = objectMapper.writeValueAsBytes(e.payload)
+                        MessageContent(e.deviceId, e.registrationId, payload)
+                    }
+                    val content = SendMessageContent(messages)
                     //if we got disconnected while we were encrypting, just ignore the message as it'll just be encrypted again
                     //sendMessage'll ignore any message without a matching connectionTag
                     relayClientManager.sendMessage(result.connectionTag, userId, content, messageId)
@@ -314,6 +319,8 @@ class MessengerService(
                 handleReceivedMessage(event)
 
             is ServerReceivedMessage -> handleServerRecievedMessage(event)
+
+            is DeviceMismatch -> handleDeviceMismatch(event)
         }
     }
 
@@ -354,6 +361,10 @@ class MessengerService(
 
     private fun handleServerRecievedMessage(event: ServerReceivedMessage) {
         processMessageSendResult(MessageSendOk(event.to, event.messageId))
+    }
+
+    private fun handleDeviceMismatch(event: DeviceMismatch) {
+        //FIXME
     }
 
     private fun handleFailedDecryptionResults(userId: UserId, result: MessageListDecryptionResult) {

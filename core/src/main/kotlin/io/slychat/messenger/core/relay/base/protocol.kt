@@ -2,7 +2,6 @@
 @file:JvmName("RelayProtocol")
 package io.slychat.messenger.core.relay.base
 
-import io.slychat.messenger.core.ADDRESS_USERID_DEVICEID_DELIMITER
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.hexify
@@ -211,14 +210,14 @@ fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
     return RelayMessage(header, ByteArray(0))
 }
 
-fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, content: ByteArray, messageId: String): RelayMessage {
+fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, content: SendMessageContent, messageId: String): RelayMessage {
+    val content = writeSendMessageContent(content)
     val header = Header(
         PROTOCOL_VERSION_1,
         content.size,
         userCredentials.authToken.string,
         userCredentials.address.asString(),
-        //HACK HACK HACK
-        "${to.long}${ADDRESS_USERID_DEVICEID_DELIMITER}1",
+        "${to.long}",
         messageId,
         0,
         1,

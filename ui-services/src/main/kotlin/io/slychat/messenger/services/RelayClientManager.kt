@@ -3,6 +3,7 @@ package io.slychat.messenger.services
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.relay.*
+import io.slychat.messenger.core.relay.base.SendMessageContent
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Observer
@@ -119,7 +120,7 @@ class RelayClientManager(
         return relayClient ?: throw NoClientException()
     }
 
-    fun sendMessage(connectionTag: Int, to: UserId, content: ByteArray, messageId: String) {
+    fun sendMessage(connectionTag: Int, to: UserId, content: SendMessageContent, messageId: String) {
         val relayClient = getClientOrThrow()
 
         if (connectionTag != this.connectionTag) {
