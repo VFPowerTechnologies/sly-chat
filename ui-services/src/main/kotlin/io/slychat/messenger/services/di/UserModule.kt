@@ -18,6 +18,7 @@ import io.slychat.messenger.core.persistence.PreKeyPersistenceManager
 import io.slychat.messenger.core.relay.base.RelayConnector
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
+import io.slychat.messenger.services.auth.AuthTokenManagerImpl
 import io.slychat.messenger.services.auth.AuthenticationServiceTokenProvider
 import io.slychat.messenger.services.auth.TokenProvider
 import io.slychat.messenger.services.crypto.MessageCipherService
@@ -126,7 +127,7 @@ class UserModule(
         signalProtocolStore: SignalProtocolStore,
         @SlyHttp httpClientFactory: HttpClientFactory
     ): MessageCipherService {
-        val preKeyClient= HttpPreKeyClient(serverUrls.API_SERVER, httpClientFactory.create())
+        val preKeyClient = HttpPreKeyClient(serverUrls.API_SERVER, httpClientFactory.create())
         return MessageCipherService(authTokenManager, preKeyClient, signalProtocolStore)
     }
 
@@ -191,5 +192,5 @@ class UserModule(
         userLoginData: UserData,
         tokenProvider: TokenProvider
     ): AuthTokenManager =
-        AuthTokenManager(userLoginData.address, tokenProvider)
+        AuthTokenManagerImpl(userLoginData.address, tokenProvider)
 }
