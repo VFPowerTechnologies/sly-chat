@@ -181,7 +181,7 @@ class UserModule(
         authenticationService: AuthenticationService
     ): TokenProvider =
         AuthenticationServiceTokenProvider(
-            application,
+            application.installationData.registrationId,
             userLoginData,
             authenticationService
         )

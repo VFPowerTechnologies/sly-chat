@@ -1,7 +1,6 @@
 package io.slychat.messenger.services.auth
 
 import io.slychat.messenger.services.AuthenticationService
-import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.UserData
 import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.failUi
@@ -11,7 +10,7 @@ import rx.Observable
 import rx.subjects.PublishSubject
 
 class AuthenticationServiceTokenProvider(
-    private val application: SlyApplication,
+    private val registrationId: Int,
     private val userLoginData: UserData,
     private val authenticationService: AuthenticationService
 ) : TokenProvider {
@@ -21,10 +20,6 @@ class AuthenticationServiceTokenProvider(
     override val events: Observable<TokenEvent> = eventsSubject
 
     private var running = false
-
-    init {
-        application.networkAvailable.subscribe {  }
-    }
 
     override fun invalidateToken() {
         if (running)
@@ -36,7 +31,7 @@ class AuthenticationServiceTokenProvider(
 
         authenticationService.refreshAuthToken(
             userLoginData.address,
-            application.installationData.registrationId,
+            registrationId,
             userLoginData.keyVault.remotePasswordHash
         ) successUi { response ->
             log.info("Refreshed auth token")
