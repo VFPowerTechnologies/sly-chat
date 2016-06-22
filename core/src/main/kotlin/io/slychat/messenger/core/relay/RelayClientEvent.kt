@@ -21,4 +21,4 @@ data class ReceivedMessage(val from: SlyAddress, val content: ByteArray, val mes
 data class ServerReceivedMessage(val to: UserId, val messageId: String) : RelayClientEvent
 data class MessageSentToUser(val to: UserId, val messageId: String) : RelayClientEvent
 data class UserOffline(val to: UserId, val messageId: String) : RelayClientEvent
-data class DeviceMismatch(val to: UserId, val info: DeviceMismatchContent) : RelayClientEvent
+data class DeviceMismatch(val to: UserId, val messageId: String, val info: DeviceMismatchContent) : RelayClientEvent

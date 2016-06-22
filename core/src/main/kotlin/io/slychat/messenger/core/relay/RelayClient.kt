@@ -180,7 +180,7 @@ class RelayClient(
                     content.removed
                 )
 
-                emitEvent(DeviceMismatch(to.toUserId(), content))
+                emitEvent(DeviceMismatch(to.toUserId(), message.header.messageId, content))
             }
 
             else -> {
