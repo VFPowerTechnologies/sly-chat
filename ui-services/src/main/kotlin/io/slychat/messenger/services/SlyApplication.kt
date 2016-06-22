@@ -385,6 +385,7 @@ class SlyApplication {
 
     private fun shutdownUserComponents(userComponent: UserComponent) {
         userComponent.messengerService.shutdown()
+        userComponent.contactsService.shutdown()
         userComponent.sqlitePersistenceManager.shutdown()
     }
 

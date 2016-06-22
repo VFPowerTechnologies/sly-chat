@@ -16,6 +16,7 @@ import nl.komponents.kovenant.ui.promiseOnUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.Subscription
 import rx.subjects.PublishSubject
 import java.util.*
 
@@ -52,8 +53,10 @@ class ContactsService(
     private var currentRunningJob: Promise<Unit, Exception>? = null
     private var queuedJob: ContactJobDescription? = null
 
+    private val networkAvailableSubscription: Subscription
+
     init {
-        application.networkAvailable.subscribe { onNetworkStatusChange(it) }
+        networkAvailableSubscription = application.networkAvailable.subscribe { onNetworkStatusChange(it) }
     }
 
     private fun getDefaultRegionCode(): Promise<String, Exception> {
@@ -347,5 +350,9 @@ class ContactsService(
         job.body()
 
         processJob()
+    }
+
+    fun shutdown() {
+        networkAvailableSubscription.unsubscribe()
     }
 }
