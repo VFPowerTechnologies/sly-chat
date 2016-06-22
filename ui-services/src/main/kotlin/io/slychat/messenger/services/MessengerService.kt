@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Scheduler
 import rx.subjects.PublishSubject
+import rx.subscriptions.CompositeSubscription
 import java.util.*
 
 data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
@@ -70,23 +71,25 @@ class MessengerService(
     private val receivedMessageQueue = ArrayDeque<QueuedReceivedMessage>()
     private var currentReceivedMessage: QueuedReceivedMessage? = null
 
+    private val subscriptions = CompositeSubscription()
+
     init {
-        relayClientManager.events.subscribe { onRelayEvent(it) }
-        relayClientManager.onlineStatus.subscribe { onRelayConnect(it) }
+        subscriptions.add(relayClientManager.events.subscribe { onRelayEvent(it) })
+        subscriptions.add(relayClientManager.onlineStatus.subscribe { onRelayConnect(it) })
 
-        messageCipherService.encryptedMessages.observeOn(scheduler).subscribe {
+        subscriptions.add(messageCipherService.encryptedMessages.observeOn(scheduler).subscribe {
             processEncryptionResult(it)
-        }
+        })
 
-        messageCipherService.decryptedMessages.observeOn(scheduler).subscribe {
+        subscriptions.add(messageCipherService.decryptedMessages.observeOn(scheduler).subscribe {
             processDecryptionResult(it.userId, it.result)
-        }
+        })
 
-        messageCipherService.deviceUpdates.observeOn(scheduler).subscribe {
+        subscriptions.add(messageCipherService.deviceUpdates.observeOn(scheduler).subscribe {
             processDeviceUpdateResult(it)
-        }
+        })
 
-        application.userSessionAvailable.subscribe { isAvailable ->
+        subscriptions.add(application.userSessionAvailable.subscribe { isAvailable ->
             if (isAvailable) {
                 initializeReceiveQueue()
                 messageCipherService.start()
@@ -95,9 +98,13 @@ class MessengerService(
                 receivedMessageQueue.clear()
                 messageCipherService.shutdown()
             }
-        }
+        })
 
-        contactsService.contactEvents.subscribe { onContactEvent(it) }
+        subscriptions.add(contactsService.contactEvents.subscribe { onContactEvent(it) })
+    }
+
+    fun shutdown() {
+        subscriptions.clear()
     }
 
     private fun onContactEvent(event: ContactEvent) {

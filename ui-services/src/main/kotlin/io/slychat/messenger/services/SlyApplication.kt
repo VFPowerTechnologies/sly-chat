@@ -378,6 +378,16 @@ class SlyApplication {
         }
     }
 
+    private fun startUserComponents(userComponent: UserComponent) {
+        //dagger lazily initializes all components, so we need to force creation
+        userComponent.notifierService.init()
+    }
+
+    private fun shutdownUserComponents(userComponent: UserComponent) {
+        userComponent.messengerService.shutdown()
+        userComponent.sqlitePersistenceManager.shutdown()
+    }
+
     /** called after a successful user session has been created to finish initializing components. */
     private fun finalizeInit(userComponent: UserComponent, accountInfo: AccountInfo) {
         newTokenSyncSub = userComponent.authTokenManager.newToken.subscribe {
@@ -386,8 +396,7 @@ class SlyApplication {
 
         initializeUserSession(userComponent)
 
-        //dagger lazily initializes all components, so we need to force creation
-        userComponent.notifierService.init()
+        startUserComponents(userComponent)
 
         userSessionAvailableSubject.onNext(true)
 
@@ -565,7 +574,7 @@ class SlyApplication {
     }
 
     private fun deinitializeUserSession(userComponent: UserComponent) {
-        userComponent.sqlitePersistenceManager.shutdown()
+        shutdownUserComponents(userComponent)
         disconnectFromRelay()
     }
 
