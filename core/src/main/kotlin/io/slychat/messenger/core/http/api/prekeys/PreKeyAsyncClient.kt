@@ -6,7 +6,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
 class PreKeyAsyncClient(private val serverUrl: String, private val factory: HttpClientFactory) {
-    private fun newClient() = PreKeyClient(serverUrl, factory.create())
+    private fun newClient() = HttpPreKeyClient(serverUrl, factory.create())
 
     fun retrieve(userCredentials: UserCredentials, request: PreKeyRetrievalRequest): Promise<PreKeyRetrievalResponse, Exception> = task {
         newClient().retrieve(userCredentials, request)
