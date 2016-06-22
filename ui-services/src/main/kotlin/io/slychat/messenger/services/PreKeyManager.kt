@@ -15,6 +15,7 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import org.whispersystems.libsignal.state.PreKeyRecord
+import rx.Subscription
 
 //TODO right now this only regens new keys on online
 //should also check after processing a prekey from a received message
@@ -33,8 +34,10 @@ class PreKeyManager(
 
     private var isOnline = false
 
+    private val networkAvailableSubscription: Subscription
+
     init {
-        application.networkAvailable.subscribe { status ->
+        networkAvailableSubscription = application.networkAvailable.subscribe { status ->
             isOnline = status
             if (status && scheduledKeyCount > 0)
                 scheduleUpload(scheduledKeyCount)
@@ -127,5 +130,9 @@ class PreKeyManager(
                 }
             }
         }
+    }
+
+    fun shutdown() {
+        networkAvailableSubscription.unsubscribe()
     }
 }

@@ -10,6 +10,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.alwaysUi
 import org.slf4j.LoggerFactory
+import rx.Subscription
 
 class OfflineMessageManager(
     private val application: SlyApplication,
@@ -25,8 +26,10 @@ class OfflineMessageManager(
 
     private var isOnline = false
 
+    private val networkAvailableSubscription: Subscription
+
     init {
-        application.networkAvailable.subscribe { status ->
+        networkAvailableSubscription = application.networkAvailable.subscribe { status ->
             isOnline = status
             if (status && scheduled)
                 fetch()
@@ -65,5 +68,9 @@ class OfflineMessageManager(
         } alwaysUi {
             running = false
         }
+    }
+
+    fun shutdown() {
+        networkAvailableSubscription.unsubscribe()
     }
 }
