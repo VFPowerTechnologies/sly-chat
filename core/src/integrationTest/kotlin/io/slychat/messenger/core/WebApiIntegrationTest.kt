@@ -494,6 +494,29 @@ class WebApiIntegrationTest {
         }
     }
 
+    @Test
+    fun `prekey retrieval should return data only for asked devices`() {
+        val siteUser = injectNewSiteUser()
+        val username = siteUser.user.username
+
+        val requestingSiteUser = injectNamedSiteUser("b@a.com")
+        val requestingUsername = requestingSiteUser.user.username
+
+        val deviceIds = (0..2).map { devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE) }
+
+        val authToken = devClient.createAuthToken(requestingUsername)
+
+        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
+
+        val requestedDeviceIds = deviceIds.subList(0, deviceIds.size-2)
+        val request = PreKeyRetrievalRequest(siteUser.user.id, requestedDeviceIds)
+        val response = client.retrieve(requestingSiteUser.getUserCredentials(authToken), request)
+
+        assertTrue(response.isSuccess)
+
+        assertEquals(requestedDeviceIds, response.bundles.keys.toList().sorted(), "Received invalid devices")
+    }
+
     //TODO more elaborate tests
 
     @Test
