@@ -6,13 +6,8 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
-import io.slychat.messenger.core.relay.DeviceMismatch
-import io.slychat.messenger.core.relay.ReceivedMessage
-import io.slychat.messenger.core.relay.RelayClientEvent
-import io.slychat.messenger.core.relay.ServerReceivedMessage
+import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
-import io.slychat.messenger.core.relay.base.MessageContent
-import io.slychat.messenger.core.relay.base.SendMessageContent
 import io.slychat.messenger.services.crypto.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
@@ -197,10 +192,9 @@ class MessengerService(
             when (result) {
                 is EncryptionOk -> {
                     val messages = result.encryptedMessages.map { e ->
-                        val payload = objectMapper.writeValueAsBytes(e.payload)
-                        MessageContent(e.deviceId, e.registrationId, payload)
+                        RelayUserMessage(e.deviceId, e.registrationId, e.payload)
                     }
-                    val content = SendMessageContent(messages)
+                    val content = RelayMessageBundle(messages)
                     //if we got disconnected while we were encrypting, just ignore the message as it'll just be encrypted again
                     //sendMessage'll ignore any message without a matching connectionTag
                     relayClientManager.sendMessage(result.connectionTag, userId, content, messageId)
@@ -376,7 +370,7 @@ class MessengerService(
         //XXX this is kinda hacky...
         //the issue is that since offline messages are deserialized via jackson, using a byte array would require the
         //relay or web server to store them as base64; need to come back and fix this stuff
-        val pkg = Package(PackageId(event.from, randomUUID()), timestamp, String(event.content, Charsets.UTF_8))
+        val pkg = Package(PackageId(event.from, randomUUID()), timestamp, event.content)
         val packages = listOf(pkg)
 
         processPackages(packages) successUi {

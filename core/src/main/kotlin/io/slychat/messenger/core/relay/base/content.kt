@@ -6,12 +6,11 @@ import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.slychat.messenger.core.relay.RelayMessageBundle
 
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
 @JsonPropertyOrder("deviceId", "registrationId", "message")
-data class MessageContent(val deviceId: Int, val registrationId: Int, val message: ByteArray)
-
-data class SendMessageContent(val content: List<MessageContent>)
+data class MessageContent(val deviceId: Int, val registrationId: Int, val message: String)
 
 data class DeviceMismatchContent(
     @JsonProperty("stale")
@@ -28,8 +27,13 @@ fun readDeviceMismatchContent(content: ByteArray): DeviceMismatchContent {
     return objectMapper.readValue(content, DeviceMismatchContent::class.java)
 }
 
-fun writeSendMessageContent(content: SendMessageContent): ByteArray {
+fun writeSendMessageContent(messageBundle: RelayMessageBundle): ByteArray {
     val objectMapper = ObjectMapper()
 
-    return objectMapper.writeValueAsBytes(content.content)
+    val messages = messageBundle.messages.map {
+        val payload = objectMapper.writeValueAsString(it.message)
+        MessageContent(it.deviceId, it.registrationId, payload)
+    }
+
+    return objectMapper.writeValueAsBytes(messages)
 }

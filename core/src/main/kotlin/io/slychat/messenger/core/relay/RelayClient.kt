@@ -148,7 +148,9 @@ class RelayClient(
                     from
                 )
 
-                emitEvent(ReceivedMessage(SlyAddress.fromString(from)!!, message.content, messageId))
+                val content = String(message.content, Charsets.UTF_8)
+
+                emitEvent(ReceivedMessage(SlyAddress.fromString(from)!!, content, messageId))
             }
 
             SERVER_USER_OFFLINE -> {
@@ -242,8 +244,7 @@ class RelayClient(
         wasDisconnectRequested = true
     }
 
-    //TODO maybe have a diff type to hide the json-ness?
-    fun sendMessage(to: UserId, content: SendMessageContent, messageId: String) {
+    fun sendMessage(to: UserId, content: RelayMessageBundle, messageId: String) {
         log.info("Sending message <<{}>> to <<{}>>", messageId, to.long)
         val connection = getAuthConnectionOrThrow()
         connection.sendMessage(createSendMessageMessage(credentials, to, content, messageId))

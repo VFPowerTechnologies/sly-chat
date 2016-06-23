@@ -5,6 +5,7 @@ package io.slychat.messenger.core.relay.base
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.relay.RelayMessageBundle
 import io.slychat.messenger.core.relay.base.CommandCode.*
 import java.util.*
 
@@ -210,7 +211,7 @@ fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
     return RelayMessage(header, ByteArray(0))
 }
 
-fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, content: SendMessageContent, messageId: String): RelayMessage {
+fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, content: RelayMessageBundle, messageId: String): RelayMessage {
     val content = writeSendMessageContent(content)
     val header = Header(
         PROTOCOL_VERSION_1,
