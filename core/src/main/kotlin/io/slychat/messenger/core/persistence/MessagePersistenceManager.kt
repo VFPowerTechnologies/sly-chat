@@ -33,6 +33,8 @@ interface MessagePersistenceManager {
 
     fun removeFromQueue(packageId: PackageId): Promise<Unit, Exception>
 
+    fun removeFromQueue(packageIds: Collection<PackageId>): Promise<Unit, Exception>
+
     fun removeFromQueue(userId: UserId, messageIds: Collection<String>): Promise<Unit, Exception>
 
     fun removeFromQueue(userId: UserId): Promise<Unit, Exception>

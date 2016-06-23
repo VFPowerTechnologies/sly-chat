@@ -227,6 +227,15 @@ VALUES
 
     override fun removeFromQueue(packageId: PackageId): Promise<Unit, Exception> = removeFromQueue(packageId.address.id, listOf(packageId.messageId))
 
+    override fun removeFromQueue(packageIds: Collection<PackageId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        //TODO optimize
+        connection.withTransaction {
+            packageIds.forEach { packageId ->
+                removeFromQueueNoTransaction(connection, packageId.address.id, listOf(packageId.messageId))
+            }
+        }
+    }
+
     override fun removeFromQueue(userId: UserId, messageIds: Collection<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             removeFromQueueNoTransaction(connection, userId, messageIds)

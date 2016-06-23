@@ -356,12 +356,30 @@ class MessengerService(
         val sortedByTimestamp = grouped.mapValues { it.value.sortedBy { it.timestamp } }
 
         sortedByTimestamp.map { e ->
-            val encryptedMessages = e.value.map {
-                val payload = deserializeEncryptedPackagePayload(it.payload)
-                EncryptedMessageInfo(it.id.messageId, payload)
+            val encryptedMessages = ArrayList<EncryptedMessageInfo>()
+            val failures = ArrayList<PackageId>()
+
+            e.value.forEach { pkg ->
+                try {
+                    val payload = deserializeEncryptedPackagePayload(pkg.payload)
+                    encryptedMessages.add(EncryptedMessageInfo(pkg.id.messageId, payload))
+                }
+                catch (e: Exception) {
+                    log.warn("Unable to decrypt message <<{}>> from {}: {}", pkg.id.messageId, pkg.id.address.asString(), e.message, e)
+                    failures.add(pkg.id)
+                }
             }
-            receivedMessageQueue.add(QueuedReceivedMessage(e.key, encryptedMessages))
-            processReceivedMessageQueue()
+
+            if (failures.isNotEmpty()) {
+                messagePersistenceManager.removeFromQueue(failures).fail { e ->
+                    log.warn("Unable to remove failed deserialized packages from queue: {}", e.message, e)
+                }
+            }
+
+            if (encryptedMessages.isNotEmpty()) {
+                receivedMessageQueue.add(QueuedReceivedMessage(e.key, encryptedMessages))
+                processReceivedMessageQueue()
+            }
         }
     }
 
