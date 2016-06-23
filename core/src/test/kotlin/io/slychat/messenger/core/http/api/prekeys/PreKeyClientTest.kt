@@ -37,7 +37,7 @@ class PreKeyClientTest {
         val httpClient = mock<HttpClient>()
 
         whenever(httpClient.postJSON(any(), any(), any())).thenReturn(httpResponse)
-        val client = PreKeyClient("localhost", httpClient)
+        val client = HttpPreKeyClient("localhost", httpClient)
 
         val got = client.store(userCredentials, request)
 
@@ -52,7 +52,7 @@ class PreKeyClientTest {
 
         whenever(httpClient.postJSON(any(), any(), any())).thenReturn(httpResponse)
 
-        val client = PreKeyClient("localhost", httpClient)
+        val client = HttpPreKeyClient("localhost", httpClient)
 
         assertFailsWith(UnauthorizedException::class) { client.store(userCredentials, request) }
     }
@@ -72,7 +72,7 @@ class PreKeyClientTest {
 
         whenever(httpClient.get(any(), any())).thenReturn(httpResponse)
 
-        val client = PreKeyClient("localhost", httpClient)
+        val client = HttpPreKeyClient("localhost", httpClient)
 
         val got = client.retrieve(userCredentials, request)
 

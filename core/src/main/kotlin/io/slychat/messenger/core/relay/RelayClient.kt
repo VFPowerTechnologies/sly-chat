@@ -1,6 +1,5 @@
 package io.slychat.messenger.core.relay
 
-import io.slychat.messenger.core.ADDRESS_USERID_DEVICEID_DELIMITER
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
@@ -15,10 +14,8 @@ import rx.Scheduler
 import rx.subjects.PublishSubject
 import java.net.InetSocketAddress
 
-//HACK HACK HACK
 private fun String.toUserId(): UserId {
-    val parts = split(ADDRESS_USERID_DEVICEID_DELIMITER, limit = 2)
-    return UserId(parts[0].toLong())
+    return UserId(this.toLong())
 }
 
 /**
@@ -151,7 +148,9 @@ class RelayClient(
                     from
                 )
 
-                emitEvent(ReceivedMessage(SlyAddress.fromString(from)!!, message.content, messageId))
+                val content = readMessageContent(message.content)
+
+                emitEvent(ReceivedMessage(SlyAddress.fromString(from)!!, content, messageId))
             }
 
             SERVER_USER_OFFLINE -> {
@@ -169,6 +168,21 @@ class RelayClient(
 
             SERVER_PONG -> {
                 log.debug("PONG")
+            }
+
+            SERVER_DEVICE_MISMATCH -> {
+                val to = message.header.toUserId
+                val content = readDeviceMismatchContent(message.content)
+
+                log.info(
+                    "Device mismatch for user {}: stale={}, missing={}, removed={}",
+                    to,
+                    content.stale,
+                    content.missing,
+                    content.removed
+                )
+
+                emitEvent(DeviceMismatch(to.toUserId(), message.header.messageId, content))
             }
 
             else -> {
@@ -230,7 +244,7 @@ class RelayClient(
         wasDisconnectRequested = true
     }
 
-    fun sendMessage(to: UserId, content: ByteArray, messageId: String) {
+    fun sendMessage(to: UserId, content: RelayMessageBundle, messageId: String) {
         log.info("Sending message <<{}>> to <<{}>>", messageId, to.long)
         val connection = getAuthConnectionOrThrow()
         connection.sendMessage(createSendMessageMessage(credentials, to, content, messageId))

@@ -2,13 +2,12 @@ package io.slychat.messenger.services.crypto
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
-import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.prekeys.PreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyRetrievalRequest
 import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
+import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
 import org.slf4j.LoggerFactory
@@ -34,9 +33,15 @@ data class MessageListDecryptionResult(
     val failed: List<MessageDecryptionResult<DecryptionFailure>>
 )
 
+class DeviceUpdateResult(val exception: Exception?) {
+    val isSuccess: Boolean
+        get() = exception == null
+}
+
 private interface CipherWork
 private data class EncryptionWork(val userId: UserId, val message: ByteArray, val connectionTag: Int) : CipherWork
 private data class DecryptionWork(val address: SlyAddress, val encryptedMessages: List<EncryptedMessageInfo>) : CipherWork
+private data class UpdateDevices(val userId: UserId, val info: DeviceMismatchContent) : CipherWork
 private class NoMoreWork : CipherWork
 
 /** Represents a single message to a user. */
@@ -50,10 +55,9 @@ data class MessageData(
 
 class MessageCipherService(
     private val authTokenManager: AuthTokenManager,
-    private val httpClientFactory: HttpClientFactory,
+    private val preKeyClient: PreKeyClient,
     //the store is only ever used in the work thread, so no locking is done
-    private val signalStore: SignalProtocolStore,
-    private val serverUrls: BuildConfig.ServerUrls
+    private val signalStore: SignalProtocolStore
 ) : Runnable {
     private var thread: Thread? = null
 
@@ -65,6 +69,9 @@ class MessageCipherService(
 
     private val decryptionSubject = PublishSubject.create<DecryptionResult>()
     val decryptedMessages: Observable<DecryptionResult> = decryptionSubject
+
+    private val deviceUpdateSubject = PublishSubject.create<DeviceUpdateResult>()
+    val deviceUpdates: Observable<DeviceUpdateResult> = deviceUpdateSubject
 
     fun start() {
         if (thread != null)
@@ -94,19 +101,80 @@ class MessageCipherService(
         workQueue.add(DecryptionWork(address,  messages))
     }
 
-    override fun run() {
-        loop@ while (true) {
-            val work = workQueue.take() ?: continue
+    fun updateDevices(userId: UserId, info: DeviceMismatchContent) {
+        workQueue.add(UpdateDevices(userId, info))
+    }
 
-            when (work) {
-                is EncryptionWork -> handleEncryption(work)
-                is DecryptionWork -> handleDecryption(work)
-                is NoMoreWork -> break@loop
-                else -> {
-                    log.error("Unknown work type: {}", work)
-                }
+    override fun run() {
+        processQueue(true)
+    }
+
+    //XXX used for testing only
+    internal fun processQueue(block: Boolean) {
+        while (true) {
+            val work = if (block) {
+                workQueue.take() ?: continue
+            }
+            else {
+                workQueue.poll()
+            }
+
+            if (work == null)
+                return
+
+            if (!processWork(work))
+                break
+        }
+    }
+
+    /** Returns true to continue, false to exit. */
+    private fun processWork(work: CipherWork): Boolean {
+        when (work) {
+            is EncryptionWork -> handleEncryption(work)
+            is DecryptionWork -> handleDecryption(work)
+            is UpdateDevices -> handleDeviceUpdate(work)
+            is NoMoreWork -> return false
+            else -> {
+                log.error("Unknown work type: {}", work)
             }
         }
+
+        return true
+    }
+
+    private fun handleDeviceUpdate(work: UpdateDevices) {
+        val userId = work.userId
+
+        val info = work.info
+
+        val result = try {
+            val toRemove = HashSet(info.removed)
+            toRemove.addAll(info.stale)
+
+            toRemove.forEach { deviceId ->
+                val address = SlyAddress(userId, deviceId)
+                signalStore.deleteSession(address.toSignalAddress())
+            }
+
+            //remove any stale entries
+            info.stale.map { deviceId ->
+                val addr = SlyAddress(userId, deviceId)
+                signalStore.deleteSession(addr.toSignalAddress())
+            }
+
+            val toAdd = HashSet(info.missing)
+            toAdd.addAll(info.stale)
+
+            if (toAdd.isNotEmpty())
+                addNewBundles(userId, toAdd)
+
+            DeviceUpdateResult(null)
+        }
+        catch (e: Exception) {
+            DeviceUpdateResult(e)
+        }
+
+        deviceUpdateSubject.onNext(result)
     }
 
     private fun handleEncryption(work: EncryptionWork) {
@@ -176,10 +244,10 @@ class MessageCipherService(
         decryptionSubject.onNext(DecryptionResult(work.address.id, result))
     }
 
-    private fun fetchPreKeyBundles(userId: UserId): List<PreKeyBundle> {
+    private fun fetchPreKeyBundles(userId: UserId, deviceIds: Collection<Int>): List<PreKeyBundle> {
         val response = authTokenManager.map { userCredentials ->
-            val request = PreKeyRetrievalRequest(userId, listOf())
-            PreKeyClient(serverUrls.API_SERVER, httpClientFactory.create()).retrieve(userCredentials, request)
+            val request = PreKeyRetrievalRequest(userId, deviceIds.toList())
+            preKeyClient.retrieve(userCredentials, request)
         }.get()
 
         if (!response.isSuccess)
@@ -203,8 +271,23 @@ class MessageCipherService(
         }
     }
 
+    private fun processPreKeyBundles(userId: UserId, bundles: Collection<PreKeyBundle>): List<Pair<Int, SessionCipher>> {
+        return bundles.map { bundle ->
+            val address = SlyAddress(userId, bundle.deviceId).toSignalAddress()
+            val builder = SessionBuilder(signalStore, address)
+            //this can fail with an InvalidKeyException if the signed key signature doesn't match
+            builder.process(bundle)
+            bundle.deviceId to SessionCipher(signalStore, address)
+        }
+    }
+
+    /** Fetches and processes prekey bundles for the given user and device IDs. */
+    private fun addNewBundles(userId: UserId, deviceIds: Collection<Int>): List<Pair<Int, SessionCipher>> {
+        val bundles = fetchPreKeyBundles(userId, deviceIds)
+        return processPreKeyBundles(userId, bundles)
+    }
+
     private fun getSessionCiphers(userId: UserId): List<Pair<Int, SessionCipher>> {
-        //FIXME
         val devices = signalStore.getSubDeviceSessions(userId.long.toString())
 
         //check if we have any listed devices; if not, then fetch prekeys
@@ -216,15 +299,7 @@ class MessageCipherService(
             }
         }
         else {
-            val bundles = fetchPreKeyBundles(userId)
-
-            bundles.map { bundle ->
-                val address = SlyAddress(userId, bundle.deviceId).toSignalAddress()
-                val builder = SessionBuilder(signalStore, address)
-                //this can fail with an InvalidKeyException if the signed key signature doesn't match
-                builder.process(bundle)
-                bundle.deviceId to SessionCipher(signalStore, address)
-            }
+            addNewBundles(userId, emptyList())
         }
     }
 }

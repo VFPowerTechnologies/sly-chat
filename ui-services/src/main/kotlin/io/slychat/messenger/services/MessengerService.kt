@@ -6,9 +6,8 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
-import io.slychat.messenger.core.relay.ReceivedMessage
-import io.slychat.messenger.core.relay.RelayClientEvent
-import io.slychat.messenger.core.relay.ServerReceivedMessage
+import io.slychat.messenger.core.relay.*
+import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.crypto.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
@@ -39,7 +38,7 @@ interface MessageSendResult {
     val messageId: String
 }
 data class MessageSendOk(val to: UserId, override val messageId: String) : MessageSendResult
-//data class MessageSendDeviceMismatch() : MessageSendResult
+data class MessageSendDeviceMismatch(val to: UserId, override val messageId: String, val info: DeviceMismatchContent) : MessageSendResult
 //data class MessageSendUnknownFailure(val cause: Throwable) : MessageSendResult
 
 val List<Package>.users: Set<UserId>
@@ -58,8 +57,6 @@ class MessengerService(
     private val userLoginData: UserData
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
-
-    private val objectMapper = ObjectMapper()
 
     private val newMessagesSubject = PublishSubject.create<MessageBundle>()
     val newMessages: Observable<MessageBundle> = newMessagesSubject
@@ -83,6 +80,10 @@ class MessengerService(
 
         messageCipherService.decryptedMessages.observeOn(scheduler).subscribe {
             processDecryptionResult(it.userId, it.result)
+        }
+
+        messageCipherService.deviceUpdates.observeOn(scheduler).subscribe {
+            processDeviceUpdateResult(it)
         }
 
         application.userSessionAvailable.subscribe { isAvailable ->
@@ -160,6 +161,18 @@ class MessengerService(
         processSendMessageQueue()
     }
 
+    private fun processDeviceUpdateResult(result: DeviceUpdateResult) {
+        val e = result.exception
+        if (e != null) {
+            log.error("Unable to update devices: {}", e.message, e)
+            //FIXME ???
+        }
+
+        log.info("Device mismatch fixed")
+
+        retryCurrentSendMessage()
+    }
+
     private fun processEncryptionResult(result: EncryptionResult) {
         //this can occur if we get disconnected during the encryption process
         //the queue'll be reset on disconnect, so just do nothing
@@ -176,9 +189,10 @@ class MessengerService(
 
             when (result) {
                 is EncryptionOk -> {
-                    //FIXME
-                    val encryptMessages = result.encryptedMessages
-                    val content = objectMapper.writeValueAsBytes(encryptMessages[0].payload)
+                    val messages = result.encryptedMessages.map { e ->
+                        RelayUserMessage(e.deviceId, e.registrationId, e.payload)
+                    }
+                    val content = RelayMessageBundle(messages)
                     //if we got disconnected while we were encrypting, just ignore the message as it'll just be encrypted again
                     //sendMessage'll ignore any message without a matching connectionTag
                     relayClientManager.sendMessage(result.connectionTag, userId, content, messageId)
@@ -226,7 +240,10 @@ class MessengerService(
                     nextSendMessage()
                 }
 
-                //TODO on device mismatch, handle mismatch then process queue again
+                is MessageSendDeviceMismatch -> {
+                    log.info("Got device mismatch for user={}, messageId={}", result.to, result.messageId)
+                    messageCipherService.updateDevices(result.to, result.info)
+                }
 
                 //TODO failures
                 else -> throw RuntimeException("Unknown message send result: $result")
@@ -236,6 +253,11 @@ class MessengerService(
             log.error("ProcessMessageSendResult called but currentMessage was null")
             processSendMessageQueue()
         }
+    }
+
+    private fun retryCurrentSendMessage() {
+        currentSendMessage = null
+        processSendMessageQueue()
     }
 
     private fun nextSendMessage() {
@@ -252,8 +274,10 @@ class MessengerService(
         if (currentSendMessage != null)
             return
 
-        if (sendMessageQueue.isEmpty())
+        if (sendMessageQueue.isEmpty()) {
+            log.debug("no more messages")
             return
+        }
 
         val message = sendMessageQueue.first
 
@@ -314,6 +338,8 @@ class MessengerService(
                 handleReceivedMessage(event)
 
             is ServerReceivedMessage -> handleServerRecievedMessage(event)
+
+            is DeviceMismatch -> handleDeviceMismatch(event)
         }
     }
 
@@ -344,7 +370,7 @@ class MessengerService(
         //XXX this is kinda hacky...
         //the issue is that since offline messages are deserialized via jackson, using a byte array would require the
         //relay or web server to store them as base64; need to come back and fix this stuff
-        val pkg = Package(PackageId(event.from, randomUUID()), timestamp, String(event.content, Charsets.UTF_8))
+        val pkg = Package(PackageId(event.from, randomUUID()), timestamp, event.content)
         val packages = listOf(pkg)
 
         processPackages(packages) successUi {
@@ -354,6 +380,10 @@ class MessengerService(
 
     private fun handleServerRecievedMessage(event: ServerReceivedMessage) {
         processMessageSendResult(MessageSendOk(event.to, event.messageId))
+    }
+
+    private fun handleDeviceMismatch(event: DeviceMismatch) {
+        processMessageSendResult(MessageSendDeviceMismatch(event.to, event.messageId, event.info))
     }
 
     private fun handleFailedDecryptionResults(userId: UserId, result: MessageListDecryptionResult) {

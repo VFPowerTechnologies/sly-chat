@@ -119,7 +119,7 @@ class RelayClientManager(
         return relayClient ?: throw NoClientException()
     }
 
-    fun sendMessage(connectionTag: Int, to: UserId, content: ByteArray, messageId: String) {
+    fun sendMessage(connectionTag: Int, to: UserId, messageBundle: RelayMessageBundle, messageId: String) {
         val relayClient = getClientOrThrow()
 
         if (connectionTag != this.connectionTag) {
@@ -127,7 +127,7 @@ class RelayClientManager(
             return
         }
 
-        relayClient.sendMessage(to, content, messageId)
+        relayClient.sendMessage(to, messageBundle, messageId)
     }
 
     fun sendMessageReceivedAck(messageId: String) {

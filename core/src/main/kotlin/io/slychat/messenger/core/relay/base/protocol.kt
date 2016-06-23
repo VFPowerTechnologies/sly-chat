@@ -2,10 +2,10 @@
 @file:JvmName("RelayProtocol")
 package io.slychat.messenger.core.relay.base
 
-import io.slychat.messenger.core.ADDRESS_USERID_DEVICEID_DELIMITER
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.relay.RelayMessageBundle
 import io.slychat.messenger.core.relay.base.CommandCode.*
 import java.util.*
 
@@ -43,7 +43,8 @@ enum class CommandCode(val code: Int) {
     CLIENT_FILE_TRANSFER_CANCEL_OR_REJECT(15),
     CLIENT_PING(16),
     SERVER_PONG(17),
-    CLIENT_RECEIVED_MESSAGE(18);
+    CLIENT_RECEIVED_MESSAGE(18),
+    SERVER_DEVICE_MISMATCH(19);
 
     companion object {
         private val cachedValues = values()
@@ -210,14 +211,14 @@ fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
     return RelayMessage(header, ByteArray(0))
 }
 
-fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, content: ByteArray, messageId: String): RelayMessage {
+fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, content: RelayMessageBundle, messageId: String): RelayMessage {
+    val content = writeSendMessageContent(content)
     val header = Header(
         PROTOCOL_VERSION_1,
         content.size,
         userCredentials.authToken.string,
         userCredentials.address.asString(),
-        //HACK HACK HACK
-        "${to.long}${ADDRESS_USERID_DEVICEID_DELIMITER}1",
+        "${to.long}",
         messageId,
         0,
         1,

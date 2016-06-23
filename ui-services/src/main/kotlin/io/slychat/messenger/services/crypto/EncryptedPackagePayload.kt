@@ -38,3 +38,4 @@ fun deserializeEncryptedPackagePayload(content: String): EncryptedPackagePayload
 
     return upgradeEncryptedPackagePayload(encryptedMessage)
 }
+
