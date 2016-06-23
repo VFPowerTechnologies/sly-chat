@@ -15,7 +15,6 @@ class CRLValidatingTrustManagerTest {
         javaClass.getResourceAsStream("/pki/$name.pem")
 
     fun getCertificateChain(name: String): Collection<X509Certificate> {
-        println(name)
         @Suppress("UNCHECKED_CAST")
         return getPEMStream("$name.cert").use {
             certFactory.generateCertificates(it)
