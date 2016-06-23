@@ -275,7 +275,7 @@ class MessengerService(
             return
 
         if (sendMessageQueue.isEmpty()) {
-            log.debug("no more messages")
+            log.debug("No more messages")
             return
         }
 
