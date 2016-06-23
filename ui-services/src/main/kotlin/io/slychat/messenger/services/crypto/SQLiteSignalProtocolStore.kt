@@ -18,6 +18,7 @@ import org.whispersystems.libsignal.state.SignedPreKeyRecord
 
 class SQLiteSignalProtocolStore(
     private val userLoginData: UserData,
+    private val registrationId: Int,
     private val sqlitePersistenceManager: SQLitePersistenceManager,
     private val preKeyPersistenceManager: PreKeyPersistenceManager,
     private val contactsPersistenceManager: ContactsPersistenceManager
@@ -133,8 +134,7 @@ class SQLiteSignalProtocolStore(
         return contact.publicKey == identityKey.serialize().hexify()
     }
 
-    //TODO nfi what this is used for; always before saveIdentity, after getIdentityKeyPair
     override fun getLocalRegistrationId(): Int {
-        return 0
+        return registrationId
     }
 }

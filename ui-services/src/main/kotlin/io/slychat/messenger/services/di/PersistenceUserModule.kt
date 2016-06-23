@@ -1,5 +1,7 @@
 package io.slychat.messenger.services.di
 
+import dagger.Module
+import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
@@ -9,11 +11,10 @@ import io.slychat.messenger.core.persistence.sqlite.SQLiteContactsPersistenceMan
 import io.slychat.messenger.core.persistence.sqlite.SQLiteMessagePersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.SQLitePreKeyPersistenceManager
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.UserData
 import io.slychat.messenger.services.UserPaths
 import io.slychat.messenger.services.crypto.SQLiteSignalProtocolStore
-import dagger.Module
-import dagger.Provides
 import org.whispersystems.libsignal.state.SignalProtocolStore
 
 @Module
@@ -65,10 +66,17 @@ class PersistenceUserModule {
     @UserScope
     @Provides
     fun providesSignalProtocolStore(
+        slyApplication: SlyApplication,
         userLoginData: UserData,
         sqlitePersistenceManager: SQLitePersistenceManager,
         preKeyPersistenceManager: PreKeyPersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager
     ): SignalProtocolStore =
-        SQLiteSignalProtocolStore(userLoginData, sqlitePersistenceManager, preKeyPersistenceManager, contactsPersistenceManager)
+        SQLiteSignalProtocolStore(
+            userLoginData,
+            slyApplication.installationData.registrationId,
+            sqlitePersistenceManager,
+            preKeyPersistenceManager,
+            contactsPersistenceManager
+        )
 }
