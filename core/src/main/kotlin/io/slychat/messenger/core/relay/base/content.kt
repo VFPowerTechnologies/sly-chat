@@ -37,3 +37,7 @@ fun writeSendMessageContent(messageBundle: RelayMessageBundle): ByteArray {
 
     return objectMapper.writeValueAsBytes(messages)
 }
+
+fun readMessageContent(content: ByteArray): String {
+    return String(content, Charsets.UTF_8)
+}

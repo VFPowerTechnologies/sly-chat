@@ -148,7 +148,7 @@ class RelayClient(
                     from
                 )
 
-                val content = String(message.content, Charsets.UTF_8)
+                val content = readMessageContent(message.content)
 
                 emitEvent(ReceivedMessage(SlyAddress.fromString(from)!!, content, messageId))
             }
