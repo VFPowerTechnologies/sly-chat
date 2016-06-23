@@ -58,8 +58,6 @@ class MessengerService(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private val objectMapper = ObjectMapper()
-
     private val newMessagesSubject = PublishSubject.create<MessageBundle>()
     val newMessages: Observable<MessageBundle> = newMessagesSubject
 
@@ -276,8 +274,10 @@ class MessengerService(
         if (currentSendMessage != null)
             return
 
-        if (sendMessageQueue.isEmpty())
+        if (sendMessageQueue.isEmpty()) {
+            log.debug("no more messages")
             return
+        }
 
         val message = sendMessageQueue.first
 
