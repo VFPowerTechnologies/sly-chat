@@ -47,7 +47,6 @@ val List<Package>.users: Set<UserId>
 
 //all Observerables are run on the main thread
 class MessengerService(
-    private val application: SlyApplication,
     private val scheduler: Scheduler,
     private val contactsService: ContactsService,
     private val messagePersistenceManager: MessagePersistenceManager,
@@ -89,21 +88,15 @@ class MessengerService(
             processDeviceUpdateResult(it)
         })
 
-        subscriptions.add(application.userSessionAvailable.subscribe { isAvailable ->
-            if (isAvailable) {
-                initializeReceiveQueue()
-                messageCipherService.start()
-            }
-            else {
-                receivedMessageQueue.clear()
-                messageCipherService.shutdown()
-            }
-        })
-
         subscriptions.add(contactsService.contactEvents.subscribe { onContactEvent(it) })
     }
 
+    fun init() {
+        initializeReceiveQueue()
+    }
+
     fun shutdown() {
+        receivedMessageQueue.clear()
         subscriptions.clear()
     }
 

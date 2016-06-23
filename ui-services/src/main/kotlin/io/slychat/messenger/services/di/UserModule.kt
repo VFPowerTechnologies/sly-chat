@@ -81,7 +81,6 @@ class UserModule(
     @UserScope
     @Provides
     fun providesMessengerService(
-        application: SlyApplication,
         scheduler: Scheduler,
         contactsService: ContactsService,
         messagePersistenceManager: MessagePersistenceManager,
@@ -91,7 +90,6 @@ class UserModule(
         userLoginData: UserData
     ): MessengerService =
         MessengerService(
-            application,
             scheduler,
             contactsService,
             messagePersistenceManager,

@@ -381,9 +381,12 @@ class SlyApplication {
     private fun startUserComponents(userComponent: UserComponent) {
         //dagger lazily initializes all components, so we need to force creation
         userComponent.notifierService.init()
+        userComponent.messengerService.init()
+        userComponent.messageCipherService.start()
     }
 
     private fun shutdownUserComponents(userComponent: UserComponent) {
+        userComponent.messageCipherService.shutdown()
         userComponent.messengerService.shutdown()
         userComponent.contactsService.shutdown()
         userComponent.offlineMessageManager.shutdown()
