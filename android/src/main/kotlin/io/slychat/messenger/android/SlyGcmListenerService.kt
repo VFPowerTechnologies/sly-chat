@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.gcm.GcmListenerService
 import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.typeRef
 import org.slf4j.LoggerFactory
 
@@ -30,6 +29,15 @@ class SlyGcmListenerService : GcmListenerService() {
             return
         }
 
+        try {
+            handleMessage(data)
+        }
+        catch (e: Exception) {
+            log.error("Unable to deserialize GCM message: {}", e, e.message)
+        }
+    }
+
+    private fun handleMessage(data: Bundle) {
         //TODO version check and upgrade to newer versions
         val version = data.getString("version").toInt()
 
