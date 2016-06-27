@@ -99,7 +99,13 @@ class SQLiteMessagePersistenceManagerTest {
             persistenceManager.syncRunQuery { ConversationTable.create(it, contact) }
             //XXX this is used by SQLiteContactsPersistenceManager, so should probably find a way to share this code
             persistenceManager.syncRunQuery { connection ->
-                connection.prepare("INSERT INTO conversation_info (contact_id, unread_count, last_message) VALUES (?, 0, NULL)").use { stmt ->
+                connection.withPrepared("INSERT INTO contacts (id, email, name, is_pending, public_key) VALUES (?, ?, 'Name', 0, X'aa')") { stmt ->
+                    stmt.bind(1, contact.long)
+                    stmt.bind(2, "${contact.long}@a.com")
+                    stmt.step()
+                }
+
+                connection.withPrepared("INSERT INTO conversation_info (contact_id, unread_count, last_message) VALUES (?, 0, NULL)") { stmt ->
                     stmt.bind(1, contact.long)
                     stmt.step()
                 }
