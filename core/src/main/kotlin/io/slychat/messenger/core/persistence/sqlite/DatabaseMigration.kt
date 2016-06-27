@@ -31,16 +31,19 @@ abstract class DatabaseMigration(
     }
 
     protected fun createNewTables(connection: SQLiteConnection) {
-        for (tableName in newTables) {
-            val sql = javaClass.readResourceFileText("/schema/$tableName.sql")
-            log.debug("Creating table {}", tableName)
-            try {
-                connection.exec(sql)
-            }
-            catch (t: Throwable) {
-                log.error("Creation of table {} failed", tableName, t)
-                throw TableCreationFailedException(tableName, t)
-            }
+        for (tableName in newTables)
+            createTable(connection, tableName)
+    }
+
+    protected fun createTable(connection: SQLiteConnection, tableName: String) {
+        val sql = javaClass.readResourceFileText("/schema/$tableName.sql")
+        log.debug("Creating table {}", tableName)
+        try {
+            connection.exec(sql)
+        }
+        catch (t: Throwable) {
+            log.error("Creation of table {} failed", tableName, t)
+            throw TableCreationFailedException(tableName, t)
         }
     }
 
