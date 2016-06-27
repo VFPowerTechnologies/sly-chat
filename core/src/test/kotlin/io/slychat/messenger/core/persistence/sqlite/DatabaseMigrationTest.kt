@@ -81,6 +81,22 @@ class DatabaseMigrationTest {
         }
     }
 
+    fun assertTableNotExists(connection: SQLiteConnection, tableName: String) {
+        try {
+            connection.prepare("SELECT 1 FROM $tableName").use { stmt ->
+                stmt.step()
+            }
+            throw AssertionError("Table $tableName exists")
+        }
+        catch (e: SQLiteException) {
+            if (e.message?.contains("no such table") ?: false)
+                return
+            else
+                throw e
+        }
+
+    }
+
     fun check0To1(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         ConversationTable.getConversationTableNames(connection).forEach { tableName ->
             assertColDef(connection, tableName, "received_timestamp INTEGER NOT NULL")
@@ -134,6 +150,33 @@ class DatabaseMigrationTest {
     fun `migration 3 to 4`() {
         withTestDatabase(3, 4) { persistenceManager, connection ->
             check3To4(persistenceManager, connection)
+        }
+    }
+
+    fun check4To5(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        //check conversion + old table drop
+        assertTableNotExists(connection, "signal_sessions_old")
+
+        connection.withPrepared("SELECT count(1) FROM signal_sessions") { stmt ->
+            stmt.step()
+            val n = stmt.columnInt(0)
+            //make sure we discarded the old contact session
+            assertEquals(1, n, "Invalid number of rows")
+        }
+
+        connection.withPrepared("SELECT contact_id, device_id, session FROM signal_sessions") { stmt ->
+            stmt.foreach {
+                assertEquals(154, stmt.columnLong(0), "Invalid user id")
+                assertEquals(1, stmt.columnInt(1), "Invalid device id")
+                assertTrue(stmt.columnBlob(2).size != 0, "Empty session")
+            }
+        }
+    }
+
+    @Test
+    fun `migration 4 to 5`() {
+        withTestDatabase(4, 5) { persistenceManager, connection ->
+            check4To5(persistenceManager, connection)
         }
     }
 }
