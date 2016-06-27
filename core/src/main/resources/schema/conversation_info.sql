@@ -5,5 +5,5 @@ CREATE TABLE IF NOT EXISTS conversation_info (
     -- unix time, in milliseconds
     last_timestamp INTEGER,
 
-    FOREIGN KEY (contact_id) REFERENCES contacts (id)
+    FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE
 )

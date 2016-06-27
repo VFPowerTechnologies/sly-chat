@@ -45,7 +45,10 @@ inline fun <R> SQLiteConnection.withTransaction(body: (SQLiteConnection) -> R): 
 /**
  * @param binder Function that binds values of T to an SQLiteStatement
  */
-fun <T> SQLiteConnection.batchInsert(sql: String, items: Iterable<T>, binder: (SQLiteStatement, T) -> Unit) {
+fun <T> SQLiteConnection.batchInsert(sql: String, items: Collection<T>, binder: (SQLiteStatement, T) -> Unit) {
+    if (items.isEmpty())
+        return
+
     prepare(sql).use { stmt ->
         for (item in items) {
             binder(stmt, item)
@@ -55,7 +58,7 @@ fun <T> SQLiteConnection.batchInsert(sql: String, items: Iterable<T>, binder: (S
     }
 }
 
-fun <T> SQLiteConnection.batchInsertWithinTransaction(sql: String, items: Iterable<T>, binder: (SQLiteStatement, T) -> Unit) =
+fun <T> SQLiteConnection.batchInsertWithinTransaction(sql: String, items: Collection<T>, binder: (SQLiteStatement, T) -> Unit) =
     withTransaction { batchInsert(sql, items, binder) }
 
 /** Escapes the given string for use with the LIKE operator. */

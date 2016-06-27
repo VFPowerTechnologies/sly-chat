@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.crypto
 
+import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.hexify
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
@@ -7,6 +8,7 @@ import io.slychat.messenger.core.persistence.PreKeyPersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.map
 import io.slychat.messenger.core.persistence.sqlite.use
+import io.slychat.messenger.core.persistence.sqlite.withPrepared
 import io.slychat.messenger.services.UserData
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
@@ -23,22 +25,24 @@ class SQLiteSignalProtocolStore(
     private val preKeyPersistenceManager: PreKeyPersistenceManager,
     private val contactsPersistenceManager: ContactsPersistenceManager
 ) : SignalProtocolStore {
+    private fun bindSignalAddress(stmt: SQLiteStatement, address: SignalProtocolAddress, colN: Int = 1) {
+        stmt.bind(colN, address.name.toLong())
+        stmt.bind(colN+1, address.deviceId)
+    }
+
     override fun containsSession(address: SignalProtocolAddress): Boolean {
         return sqlitePersistenceManager.syncRunQuery { connection ->
-            connection.prepare("SELECT 1 FROM signal_sessions WHERE address=?").use { stmt ->
-                stmt.bind(1, signalAddressToString(address))
+            connection.prepare("SELECT 1 FROM signal_sessions WHERE contact_id=? AND device_id=?").use { stmt ->
+                bindSignalAddress(stmt, address)
                 stmt.step()
             }
         }
     }
 
-    private fun signalAddressToString(address: SignalProtocolAddress): String =
-        "${address.name}:${address.deviceId}"
-
     override fun deleteSession(address: SignalProtocolAddress) {
         sqlitePersistenceManager.syncRunQuery { connection ->
-            connection.prepare("DELETE FROM signal_sessions WHERE address=?").use { stmt ->
-                stmt.bind(1, signalAddressToString(address))
+            connection.prepare("DELETE FROM signal_sessions WHERE contact_id=? AND device_id=?").use { stmt ->
+                bindSignalAddress(stmt, address)
                 stmt.step()
             }
         }
@@ -47,9 +51,9 @@ class SQLiteSignalProtocolStore(
     //since we don't have the concept of a master device, we return all devices
     override fun getSubDeviceSessions(name: String): List<Int> {
         return sqlitePersistenceManager.syncRunQuery { connection ->
-            connection.prepare("SELECT address FROM signal_sessions WHERE address LIKE '$name:%'").use { stmt ->
+            connection.withPrepared("SELECT device_id FROM signal_sessions WHERE contact_id LIKE ?") { stmt ->
                 stmt.map {
-                    it.columnString(0).split(":")[1].toInt()
+                    stmt.columnInt(0)
                 }
             }
         }
@@ -63,8 +67,8 @@ class SQLiteSignalProtocolStore(
 
     //TODO version upgrade
     override fun loadSession(address: SignalProtocolAddress): SessionRecord? = sqlitePersistenceManager.syncRunQuery { connection ->
-        connection.prepare("SELECT session FROM signal_sessions WHERE address=?").use { stmt ->
-            stmt.bind(1, signalAddressToString(address))
+        connection.prepare("SELECT session FROM signal_sessions WHERE contact_id=? AND device_id=?").use { stmt ->
+            bindSignalAddress(stmt, address)
             if (!stmt.step())
                 SessionRecord()
             else {
@@ -76,9 +80,9 @@ class SQLiteSignalProtocolStore(
 
     override fun storeSession(address: SignalProtocolAddress, record: SessionRecord) {
         sqlitePersistenceManager.syncRunQuery { connection ->
-            connection.prepare("INSERT OR REPLACE INTO signal_sessions (address, session) VALUES (?, ?)").use { stmt ->
-                stmt.bind(1, signalAddressToString(address))
-                stmt.bind(2, record.serialize())
+            connection.prepare("INSERT OR REPLACE INTO signal_sessions (contact_id, device_id, session) VALUES (?, ?, ?)").use { stmt ->
+                bindSignalAddress(stmt, address)
+                stmt.bind(3, record.serialize())
                 stmt.step()
             }
         }

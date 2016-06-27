@@ -155,6 +155,8 @@ ON
 
     //never call when not inside a transition
     private fun removeContactNoTransaction(connection: SQLiteConnection, userId: UserId): Boolean {
+        ConversationTable.delete(connection, userId)
+
         connection.prepare("DELETE FROM contacts WHERE id=?").use { stmt ->
             stmt.bind(1, userId.long)
 
@@ -162,15 +164,6 @@ ON
         }
 
         val wasRemoved = connection.changes > 0
-
-        if (wasRemoved) {
-            connection.prepare("DELETE FROM conversation_info WHERE contact_id=?").use { stmt ->
-                stmt.bind(1, userId.long)
-                stmt.step()
-            }
-
-            ConversationTable.delete(connection, userId)
-        }
 
         return wasRemoved
     }

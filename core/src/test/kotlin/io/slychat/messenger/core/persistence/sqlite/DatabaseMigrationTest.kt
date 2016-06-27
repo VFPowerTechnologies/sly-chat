@@ -81,6 +81,22 @@ class DatabaseMigrationTest {
         }
     }
 
+    fun assertTableNotExists(connection: SQLiteConnection, tableName: String) {
+        try {
+            connection.prepare("SELECT 1 FROM $tableName").use { stmt ->
+                stmt.step()
+            }
+            throw AssertionError("Table $tableName exists")
+        }
+        catch (e: SQLiteException) {
+            if (e.message?.contains("no such table") ?: false)
+                return
+            else
+                throw e
+        }
+
+    }
+
     fun check0To1(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         ConversationTable.getConversationTableNames(connection).forEach { tableName ->
             assertColDef(connection, tableName, "received_timestamp INTEGER NOT NULL")
@@ -134,6 +150,60 @@ class DatabaseMigrationTest {
     fun `migration 3 to 4`() {
         withTestDatabase(3, 4) { persistenceManager, connection ->
             check3To4(persistenceManager, connection)
+        }
+    }
+
+    fun assertTableRowCount(connection: SQLiteConnection, tableName: String, rowCount: Int) {
+        connection.withPrepared("SELECT count(1) FROM $tableName") { stmt ->
+            stmt.step()
+            val n = stmt.columnInt(0)
+            //make sure we discarded the old contact session
+            assertEquals(rowCount, n, "Invalid number of rows")
+        }
+    }
+
+    fun check4To5(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        //check conversion + old table drop
+        assertTableNotExists(connection, "signal_sessions_old")
+
+        assertTableRowCount(connection, "signal_sessions", 1)
+
+        connection.withPrepared("SELECT contact_id, device_id, session FROM signal_sessions") { stmt ->
+            stmt.foreach {
+                assertEquals(154, stmt.columnLong(0), "Invalid user id")
+                assertEquals(1, stmt.columnInt(1), "Invalid device id")
+                assertTrue(stmt.columnBlob(2).size != 0, "Empty session")
+            }
+        }
+    }
+
+    @Test
+    fun `migration 4 to 5`() {
+        withTestDatabase(4, 5) { persistenceManager, connection ->
+            check4To5(persistenceManager, connection)
+        }
+    }
+
+    fun check5To6(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertTableRowCount(connection, "conversation_info", 1)
+        assertColDef(connection, "conversation_info", "FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE")
+
+        //TODO make this process generic somehow for future migrations
+
+        connection.withPrepared("SELECT contact_id, unread_count, last_message, last_timestamp FROM conversation_info") { stmt ->
+            stmt.step()
+
+            assertEquals(154, stmt.columnLong(0), "Invalid contact_id")
+            assertEquals(0, stmt.columnInt(1), "Invalid unread_count")
+            assertEquals("Test", stmt.columnString(2), "Invalid last_message")
+            assertEquals(1467047660422, stmt.columnLong(3), "Invalid last_timestamp")
+        }
+    }
+
+    @Test
+    fun `migration 5 to 6`() {
+        withTestDatabase(5, 6) { persistenceManager, connection ->
+            check5To6(persistenceManager, connection)
         }
     }
 }

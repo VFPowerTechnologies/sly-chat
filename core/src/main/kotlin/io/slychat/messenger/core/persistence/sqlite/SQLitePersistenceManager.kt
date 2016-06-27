@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 /** The latest database version number. */
-private val LATEST_DATABASE_VERSION = 4
+private val LATEST_DATABASE_VERSION = 6
 
 private data class InitializationResult(val initWasRequired: Boolean, val freshDatabase: Boolean)
 
@@ -96,6 +96,10 @@ class SQLitePersistenceManager(
                 connection.exec("""PRAGMA key = "x'${encryptionKey.hexify()}'"""")
             }.get()
         }
+
+        realRunQuery { connection ->
+            connection.exec("PRAGMA foreign_keys = ON")
+        }.get()
 
         initialized = true
         return InitializationResult(true, created)
