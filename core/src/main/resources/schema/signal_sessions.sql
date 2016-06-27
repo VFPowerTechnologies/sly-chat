@@ -4,5 +4,5 @@ CREATE TABLE IF NOT EXISTS signal_sessions(
     session BLOB NOT NULL,
 
     PRIMARY KEY (contact_id, device_id),
-    FOREIGN KEY (contact_id) REFERENCES contacts (id)
+    FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE
 )
