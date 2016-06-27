@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 /** The latest database version number. */
-private val LATEST_DATABASE_VERSION = 5
+private val LATEST_DATABASE_VERSION = 6
 
 private data class InitializationResult(val initWasRequired: Boolean, val freshDatabase: Boolean)
 
