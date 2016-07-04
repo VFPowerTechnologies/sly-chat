@@ -49,6 +49,7 @@ public class BuildConfig {
     public static final String VERSION = "$version";
 
     public static final boolean ENABLE_DATABASE_ENCRYPTION = $enableDatabaseEncryption;
+    public static final boolean ENABLE_CONFIG_ENCRYPTION = $enableConfigEncryption;
 
     public static final boolean TLS_DISABLE_CERTIFICATE_VERIFICATION = $disableCertificateVerification;
     public static final boolean TLS_DISABLE_HOSTNAME_VERIFICATION = $disableHostnameVerification;

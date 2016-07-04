@@ -247,6 +247,9 @@ open class GenBuildConfig : DefaultTask() {
         val enableDatabaseEncryption = findBoolForKey(settings, "enableDatabaseEncryption", debug)
         vc.put("enableDatabaseEncryption", enableDatabaseEncryption);
 
+        val enableConfigEncryption = findBoolForKey(settings, "enableConfigEncryption", debug)
+        vc.put("enableConfigEncryption", enableConfigEncryption)
+
         vc.put("uiServiceType", getEnumValue(settings, debug, "uiServiceType", listOf("DUMMY", "REAL"), null))
 
         vc.put("relayKeepAliveIntervalMs", findMsForKey(settings, "relayServer.keepAlive", debug))
