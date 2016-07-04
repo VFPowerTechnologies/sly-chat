@@ -336,7 +336,7 @@ class AndroidApp : Application() {
         }
 
         //it's possible we might receive a message targetting a diff account that was previously logged in
-        app.addOnInitListener { app ->
+        app.addOnAutoLoginListener { app ->
             //the app might not be finished logging in yet
             //if we have auto-login, this will at least be LOGGING_IN (since login is called before we get here)
 

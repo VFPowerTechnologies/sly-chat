@@ -46,8 +46,8 @@ class SlyApplication {
     var userComponent: UserComponent? = null
         private set
 
-    private var isInitialized = false
-    private val onInitListeners = ArrayList<(SlyApplication) -> Unit>()
+    private var isAutoLoginComplete = false
+    private val onAutoLoginListeners = ArrayList<(SlyApplication) -> Unit>()
 
     //the following observables never complete or error and are valid for the lifetime of the application
     //only changes in value are emitted from these
@@ -200,11 +200,11 @@ class SlyApplication {
                 login(autoLoginInfo.username, autoLoginInfo.password, false)
             else
                 emitLoginEvent(LoggedOut())
-            initializationComplete()
+            autoLoginComplete()
         } failUi { e ->
             log.error("Unable to read startup info: {}", e.message, e)
             emitLoginEvent(LoggedOut())
-            initializationComplete()
+            autoLoginComplete()
         }
     }
 
@@ -632,17 +632,17 @@ class SlyApplication {
         }
     }
 
-    private fun initializationComplete() {
-        isInitialized = true
-        onInitListeners.forEach { it(this) }
-        onInitListeners.clear()
+    private fun autoLoginComplete() {
+        isAutoLoginComplete = true
+        onAutoLoginListeners.forEach { it(this) }
+        onAutoLoginListeners.clear()
     }
 
-    /** Adds a function to be called once the app has finished initializing. */
-    fun addOnInitListener(body: (SlyApplication) -> Unit) {
-        if (isInitialized)
+    /** Adds a function to be called once the app has finished attempting to auto-login. */
+    fun addOnAutoLoginListener(body: (SlyApplication) -> Unit) {
+        if (isAutoLoginComplete)
             body(this)
         else
-            onInitListeners.add(body)
+            onAutoLoginListeners.add(body)
     }
 }
