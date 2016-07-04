@@ -21,6 +21,8 @@ import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.auth.AuthTokenManagerImpl
 import io.slychat.messenger.services.auth.AuthenticationServiceTokenProvider
 import io.slychat.messenger.services.auth.TokenProvider
+import io.slychat.messenger.services.config.JsonConfigBackend
+import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
@@ -113,9 +115,10 @@ class UserModule(
         messengerService: MessengerService,
         uiEventService: UIEventService,
         contactsPersistenceManager: ContactsPersistenceManager,
-        platformNotificationService: PlatformNotificationService
+        platformNotificationService: PlatformNotificationService,
+        userConfigService: UserConfigService
     ): NotifierService =
-        NotifierService(messengerService, uiEventService, contactsPersistenceManager, platformNotificationService)
+        NotifierService(messengerService, uiEventService, contactsPersistenceManager, platformNotificationService, userConfigService)
 
     @UserScope
     @Provides
@@ -191,4 +194,13 @@ class UserModule(
         tokenProvider: TokenProvider
     ): AuthTokenManager =
         AuthTokenManagerImpl(userLoginData.address, tokenProvider)
+
+    @UserScope
+    @Provides
+    fun providesConfigService(
+        userPaths: UserPaths
+    ): UserConfigService {
+        val backend = JsonConfigBackend(userPaths.configPath)
+        return UserConfigService(backend)
+    }
 }

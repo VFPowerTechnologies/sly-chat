@@ -22,8 +22,10 @@ abstract class JsonServiceBase<ConfigT : Any, out EditorT : JsonServiceBase.Edit
 
     fun init(): Promise<Unit, Exception> {
         return backend.read(configClass) mapUi { newConfig ->
-            if (newConfig != null)
+            if (newConfig != null) {
                 config = newConfig
+                emitChange("*")
+            }
         }
     }
 

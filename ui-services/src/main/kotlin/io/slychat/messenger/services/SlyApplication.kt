@@ -376,6 +376,7 @@ class SlyApplication {
     private fun backgroundInitialization(userComponent: UserComponent, authToken: AuthToken?, password: String, rememberMe: Boolean, accountInfo: AccountInfo): Promise<Unit, Exception> {
         val userPaths = userComponent.userPaths
         val persistenceManager = userComponent.sqlitePersistenceManager
+        val userConfigService = userComponent.configService
         val userLoginData = userComponent.userLoginData
         val keyVault = userLoginData.keyVault
         val userId = userLoginData.userId
@@ -403,6 +404,9 @@ class SlyApplication {
                 Promise.ofSuccess<Unit, Exception>(Unit)
         } bind {
             persistenceManager.initAsync()
+        } bind {
+            //FIXME this can be performed in parallel
+            userConfigService.init()
         }
     }
 
