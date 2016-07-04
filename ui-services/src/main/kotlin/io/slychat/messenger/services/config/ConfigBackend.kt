@@ -16,7 +16,6 @@ interface ConfigBackend {
 //TODO use a function that generates an Input/OutputStream? so we can use Cipher*Stream
 class JsonConfigBackend(private val path: File) : ConfigBackend {
     private val log = LoggerFactory.getLogger(javaClass)
-    private val objectMapper = ObjectMapper()
     private var pending: Any? = null
     private var isWriting = false
 
@@ -36,10 +35,12 @@ class JsonConfigBackend(private val path: File) : ConfigBackend {
 
         log.info("Writing config file {}", path)
         task {
+            val objectMapper = ObjectMapper()
             path.outputStream().use {
                 objectMapper.writeValue(it, o)
             }
         } successUi {
+            log.info("Successful wrote config file {}", path)
             writeComplete()
         } failUi { e ->
             log.error("Unable to write {}: {}", path, e.message, e)
@@ -58,10 +59,12 @@ class JsonConfigBackend(private val path: File) : ConfigBackend {
         return task {
             try {
                 path.inputStream().use {
+                    val objectMapper = ObjectMapper()
                     objectMapper.readValue(it, clazz)
                 }
             }
             catch (e: Exception) {
+                log.warn("Unable to load config file {}: {}", path, e.message)
                 null
             }
         }
