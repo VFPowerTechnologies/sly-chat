@@ -104,8 +104,6 @@ class DesktopApp : Application() {
 
         val appComponent = app.appComponent
         app.userSessionAvailable.subscribe {
-            if (it == true)
-                onUserSessionCreated()
         }
 
         //temp
@@ -144,7 +142,6 @@ class DesktopApp : Application() {
     }
 
     private fun onUserSessionCreated() {
-        app.userComponent!!.notifierService.init()
     }
 
     override fun stop() {
