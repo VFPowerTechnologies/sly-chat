@@ -18,6 +18,7 @@ if (typeof KEYTAP == "undefined") {
     window.platformService = new PlatformService();
     window.loadService = new LoadService();
     window.infoService = new InfoService();
+    window.configService = new ConfigService();
 
     //mouseheld event to trigger contact menu
     (function($) {

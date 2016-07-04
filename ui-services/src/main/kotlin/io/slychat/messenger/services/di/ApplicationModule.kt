@@ -7,12 +7,15 @@ import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.crypto.tls.CachingCRLFetcher
 import io.slychat.messenger.core.crypto.tls.JavaHttpCRLFetcher
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
+import io.slychat.messenger.core.div
 import io.slychat.messenger.core.http.HttpClientConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.JavaHttpClientFactory
 import io.slychat.messenger.services.AuthenticationService
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.UserPathsGenerator
+import io.slychat.messenger.services.config.AppConfigService
+import io.slychat.messenger.services.config.JsonConfigBackend
 import java.io.ByteArrayInputStream
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -68,5 +71,13 @@ class ApplicationModule(
     @ExternalHttp
     fun providesExternalHttpClientFactory(config: HttpClientConfig): HttpClientFactory {
         return JavaHttpClientFactory(config, null)
+    }
+
+    @Singleton
+    @Provides
+    fun providesAppConfigService(platformInfo: PlatformInfo): AppConfigService {
+        val appConfPath = platformInfo.appFileStorageDirectory / "app.conf"
+        val backend = JsonConfigBackend(appConfPath)
+        return AppConfigService(backend)
     }
 }

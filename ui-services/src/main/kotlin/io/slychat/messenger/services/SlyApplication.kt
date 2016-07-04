@@ -120,9 +120,7 @@ class SlyApplication {
             .observeOn(appComponent.rxScheduler)
             .subscribe { onPlatformContactsUpdated() }
 
-        //TODO
-        task {
-        } successUi {
+        appComponent.appConfigService.init() successUi {
             initializationComplete()
         }
     }
@@ -244,6 +242,8 @@ class SlyApplication {
             log.warn("Attempt to call login() while state was {}", loginState)
             return
         }
+
+        appComponent.appConfigService.withEditor { loginRememberMe = rememberMe }
 
         emitLoginEvent(LoggingIn())
 
