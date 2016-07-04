@@ -28,7 +28,7 @@ class NotifierService(
     }
 
     private fun withContactInfo(userId: UserId, body: (ContactInfo) -> Unit) {
-        contactsPersistenceManager.get(userId) map { contactInfo ->
+        contactsPersistenceManager.get(userId) mapUi { contactInfo ->
             if (contactInfo != null)
                 body(contactInfo)
             else
