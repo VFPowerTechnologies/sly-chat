@@ -266,6 +266,12 @@ class MessengerService(
         processSendMessageQueue()
     }
 
+    private fun nextReceiveMessage() {
+        currentReceivedMessage = null
+        receivedMessageQueue.pop()
+        processReceivedMessageQueue()
+    }
+
     private fun processSendMessageQueue() {
         if (!relayClientManager.isOnline)
             return
@@ -275,7 +281,7 @@ class MessengerService(
             return
 
         if (sendMessageQueue.isEmpty()) {
-            log.debug("No more messages")
+            log.debug("No more messages to send")
             return
         }
 
@@ -298,6 +304,10 @@ class MessengerService(
         handleFailedDecryptionResults(from, result)
 
         val messages = result.succeeded
+        if (messages.isEmpty()) {
+            nextReceiveMessage()
+            return
+        }
 
         val objectMapper = ObjectMapper()
         val messageStrings = messages.map {
@@ -309,10 +319,7 @@ class MessengerService(
             val bundle = MessageBundle(from, messageInfo)
             newMessagesSubject.onNext(bundle)
 
-            currentReceivedMessage = null
-            receivedMessageQueue.pop()
-
-            processReceivedMessageQueue()
+            nextReceiveMessage()
         } fail { e ->
             log.error("Unable to store decrypted messages: {}", e.message, e)
         }
@@ -322,8 +329,11 @@ class MessengerService(
         if (currentReceivedMessage != null)
             return
 
-        if (receivedMessageQueue.isEmpty())
+        if (receivedMessageQueue.isEmpty()) {
+            log.debug("No more received messages")
             return
+        }
+
 
         val message = receivedMessageQueue.first
 
