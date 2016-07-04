@@ -46,6 +46,9 @@ class SlyApplication {
     var userComponent: UserComponent? = null
         private set
 
+    private var isInitialized = false
+    private val onInitListeners = ArrayList<(SlyApplication) -> Unit>()
+
     private var isAutoLoginComplete = false
     private val onAutoLoginListeners = ArrayList<(SlyApplication) -> Unit>()
 
@@ -92,6 +95,7 @@ class SlyApplication {
         get() = field
 
 
+    /** Starts background initialization; use addOnInitListener to be notified when app has finished initializing. Once finalized, will trigger auto-login. */
     fun init(platformModule: PlatformModule) {
         appComponent = DaggerApplicationComponent.builder()
             .platformModule(platformModule)
@@ -115,6 +119,28 @@ class SlyApplication {
             .debounce(4000, TimeUnit.MILLISECONDS)
             .observeOn(appComponent.rxScheduler)
             .subscribe { onPlatformContactsUpdated() }
+
+        //TODO
+        task {
+        } successUi {
+            initializationComplete()
+        }
+    }
+
+    private fun initializationComplete() {
+        log.info("Initialization complete")
+        isInitialized = true
+        onInitListeners.forEach { it(this) }
+        onInitListeners.clear()
+
+        autoLogin()
+    }
+
+    fun addOnInitListener(listener: (SlyApplication) -> Unit) {
+        if (isInitialized)
+            listener(this)
+        else
+            onInitListeners.add(listener)
     }
 
     private fun onPlatformContactsUpdated() {
@@ -171,7 +197,7 @@ class SlyApplication {
      *
      * Must be called to initialize loginEvents, and thus the UI.
     */
-    fun autoLogin() {
+    private fun autoLogin() {
         if (loginState != LoginState.LOGGED_OUT) {
             log.warn("Attempt to call autoLogin() while state was {}", loginState)
             return
