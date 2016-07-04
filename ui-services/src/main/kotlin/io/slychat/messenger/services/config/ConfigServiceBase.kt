@@ -45,10 +45,10 @@ abstract class JsonServiceBase<ConfigT : Any, out EditorT : JsonServiceBase.Edit
             return
 
         val newConfig = editorInterface.config
-        if (newConfig != config)
+        if (newConfig != config) {
             config = newConfig
-
-        backend.update(config)
+            backend.update(newConfig)
+        }
 
         emitChange(modifiedKeys)
     }
