@@ -13,8 +13,10 @@ interface ConfigBackend {
     fun <T> read(clazz: Class<T>): Promise<T?, Exception>
 }
 
-//TODO use a function that generates an Input/OutputStream? so we can use Cipher*Stream
-class JsonConfigBackend(private val path: File) : ConfigBackend {
+class JsonConfigBackend(
+    private val path: File,
+    private val cipher: ConfigCipher
+) : ConfigBackend {
     private val log = LoggerFactory.getLogger(javaClass)
     private var pending: Any? = null
     private var isWriting = false
@@ -37,7 +39,8 @@ class JsonConfigBackend(private val path: File) : ConfigBackend {
         task {
             val objectMapper = ObjectMapper()
             path.outputStream().use {
-                objectMapper.writeValue(it, o)
+                val data = cipher.encrypt(objectMapper.writeValueAsBytes(o))
+                it.write(data)
             }
         } successUi {
             log.info("Successful wrote config file {}", path)
@@ -60,7 +63,8 @@ class JsonConfigBackend(private val path: File) : ConfigBackend {
             try {
                 path.inputStream().use {
                     val objectMapper = ObjectMapper()
-                    objectMapper.readValue(it, clazz)
+                    val data = cipher.decrypt(it.readBytes())
+                    objectMapper.readValue(data, clazz)
                 }
             }
             catch (e: Exception) {

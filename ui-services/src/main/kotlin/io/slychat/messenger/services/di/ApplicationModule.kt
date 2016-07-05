@@ -15,6 +15,7 @@ import io.slychat.messenger.services.AuthenticationService
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.UserPathsGenerator
 import io.slychat.messenger.services.config.AppConfigService
+import io.slychat.messenger.services.config.EmptyConfigCipher
 import io.slychat.messenger.services.config.JsonConfigBackend
 import java.io.ByteArrayInputStream
 import java.security.cert.CertificateFactory
@@ -77,7 +78,7 @@ class ApplicationModule(
     @Provides
     fun providesAppConfigService(platformInfo: PlatformInfo): AppConfigService {
         val appConfPath = platformInfo.appFileStorageDirectory / "app.conf"
-        val backend = JsonConfigBackend(appConfPath)
+        val backend = JsonConfigBackend(appConfPath, EmptyConfigCipher())
         return AppConfigService(backend)
     }
 }

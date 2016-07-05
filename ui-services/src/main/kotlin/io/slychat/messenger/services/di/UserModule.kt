@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.ServerUrls
+import io.slychat.messenger.core.crypto.EncryptionSpec
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
@@ -21,7 +22,9 @@ import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.auth.AuthTokenManagerImpl
 import io.slychat.messenger.services.auth.AuthenticationServiceTokenProvider
 import io.slychat.messenger.services.auth.TokenProvider
+import io.slychat.messenger.services.config.EmptyConfigCipher
 import io.slychat.messenger.services.config.JsonConfigBackend
+import io.slychat.messenger.services.config.SymConfigCipher
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.ui.UIEventService
@@ -198,9 +201,21 @@ class UserModule(
     @UserScope
     @Provides
     fun providesConfigService(
+        userLoginData: UserData,
         userPaths: UserPaths
     ): UserConfigService {
-        val backend = JsonConfigBackend(userPaths.configPath)
+        val cipher = if (BuildConfig.ENABLE_CONFIG_ENCRYPTION) {
+            val keyVault = userLoginData.keyVault
+            val key = keyVault.localDataEncryptionKey
+            val params = keyVault.localDataEncryptionParams
+            val spec = EncryptionSpec(key, params)
+            //can't use Cipher*Stream since we're using bouncycastle to properly support stuff
+            SymConfigCipher(spec)
+        }
+        else
+            EmptyConfigCipher()
+
+        val backend = JsonConfigBackend(userPaths.configPath, cipher)
         return UserConfigService(backend)
     }
 }
