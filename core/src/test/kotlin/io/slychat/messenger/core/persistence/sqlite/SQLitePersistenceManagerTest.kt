@@ -3,7 +3,7 @@ package io.slychat.messenger.core.persistence.sqlite
 import com.almworks.sqlite4java.SQLiteConstants
 import com.almworks.sqlite4java.SQLiteException
 import io.slychat.messenger.core.randomUUID
-import io.slychat.messenger.core.test.withTempFile
+import io.slychat.messenger.testutils.withTempFile
 import org.junit.BeforeClass
 import org.junit.Test
 import java.io.File

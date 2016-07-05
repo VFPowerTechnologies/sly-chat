@@ -43,4 +43,6 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:$versions.jackson"
     compile "com.google.dagger:dagger:$versions.dagger"
     compile "com.googlecode.libphonenumber:libphonenumber:$versions.libphonenumber"
+
+    testCompile project(':test-utils')
 }

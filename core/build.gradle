@@ -61,4 +61,6 @@ dependencies {
     compile "io.netty:netty-handler:$versions.netty"
     compile "io.netty:netty-resolver-dns:$versions.netty"
     compile "io.reactivex:rxjava:$versions.rxjava"
+
+    testCompile project(':test-utils')
 }

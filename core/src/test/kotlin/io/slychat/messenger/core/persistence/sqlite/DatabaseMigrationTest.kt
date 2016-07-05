@@ -2,7 +2,7 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteException
-import io.slychat.messenger.core.test.withTempFile
+import io.slychat.messenger.testutils.withTempFile
 import org.junit.BeforeClass
 import org.junit.Test
 import java.util.concurrent.atomic.AtomicReference

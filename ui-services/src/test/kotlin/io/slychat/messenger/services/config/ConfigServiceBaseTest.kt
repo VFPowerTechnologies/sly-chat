@@ -3,37 +3,19 @@ package io.slychat.messenger.services.config
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.verifyZeroInteractions
 import com.nhaarman.mockito_kotlin.whenever
-import nl.komponents.kovenant.Context
-import nl.komponents.kovenant.Kovenant
+import io.slychat.messenger.testutils.KovenantTestModeRule
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.testMode
-import org.junit.AfterClass
 import org.junit.Before
-import org.junit.BeforeClass
+import org.junit.ClassRule
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
 
 class ConfigServiceBaseTest {
     companion object {
-        var savedContext: Context? = null
-
-        @JvmStatic
-        @BeforeClass
-        fun beforeClass() {
-            savedContext = Kovenant.context
-            Kovenant.testMode()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun afterClass() {
-            val context = savedContext
-            if (context != null) {
-                Kovenant.context = context
-                savedContext = null
-            }
-        }
+        @JvmField
+        @ClassRule
+        val kovenentTestMode = KovenantTestModeRule()
     }
 
     data class TestConfig(val i: Int = 1, val j: Int = 2) {
