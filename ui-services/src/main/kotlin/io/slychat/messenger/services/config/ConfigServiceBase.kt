@@ -22,10 +22,8 @@ abstract class ConfigServiceBase<ConfigT : Any, out EditorT : ConfigServiceBase.
 
     fun init(): Promise<Unit, Exception> {
         return backend.read(configClass) mapUi { newConfig ->
-            if (newConfig != null) {
+            if (newConfig != null)
                 config = newConfig
-                emitChange("*")
-            }
         }
     }
 
