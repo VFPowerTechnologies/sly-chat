@@ -19,7 +19,8 @@ class NotifierService(
     private var log = LoggerFactory.getLogger(javaClass)
 
     /** If false, ignore all notifications. Still runs notification clear functions. */
-    private var enableNotificationDisplay = true
+    var enableNotificationDisplay = true
+        private set
 
     private var currentPage: PageType? = null
     private var currentlySelectedChatUser: UserId? = null
@@ -35,7 +36,6 @@ class NotifierService(
 
         userConfigService.updates.subscribe { keys ->
             keys.forEach {
-                println(it)
                 if (it == UserConfig.NOTIFICATIONS_ENABLED)
                     enableNotificationDisplay = userConfigService.notificationsEnabled
             }

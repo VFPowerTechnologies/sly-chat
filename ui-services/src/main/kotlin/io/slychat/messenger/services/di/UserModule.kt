@@ -94,7 +94,7 @@ class UserModule(
         messageCipherService: MessageCipherService,
         userLoginData: UserData
     ): MessengerService =
-        MessengerService(
+        MessengerServiceImpl(
             scheduler,
             contactsService,
             messagePersistenceManager,
