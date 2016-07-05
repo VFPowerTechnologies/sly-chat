@@ -243,8 +243,6 @@ class SlyApplication {
             return
         }
 
-        appComponent.appConfigService.withEditor { loginRememberMe = rememberMe }
-
         emitLoginEvent(LoggingIn())
 
         //if the unlock fails, we try remotely; this can occur if the password was changed remotely from another device
