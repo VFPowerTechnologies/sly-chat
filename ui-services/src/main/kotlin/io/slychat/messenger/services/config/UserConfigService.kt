@@ -23,7 +23,7 @@ data class UserConfig(
     }
 }
 
-class UserEditorInterface(override var config: UserConfig) : JsonServiceBase.EditorInterface<UserConfig> {
+class UserEditorInterface(override var config: UserConfig) : ConfigServiceBase.EditorInterface<UserConfig> {
     override val modifiedKeys = HashSet<String>()
 
     var notificationsEnabled: Boolean
@@ -51,7 +51,7 @@ class UserEditorInterface(override var config: UserConfig) : JsonServiceBase.Edi
 class UserConfigService(
     backend: JsonConfigBackend,
     override var config: UserConfig = UserConfig()
-) : JsonServiceBase<UserConfig, UserEditorInterface>(backend) {
+) : ConfigServiceBase<UserConfig, UserEditorInterface>(backend) {
     override fun makeEditor(): UserEditorInterface = UserEditorInterface(config)
 
     override val configClass: Class<UserConfig> = UserConfig::class.java

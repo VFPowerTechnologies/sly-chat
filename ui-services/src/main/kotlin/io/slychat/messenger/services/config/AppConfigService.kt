@@ -13,7 +13,7 @@ data class AppConfig(
     }
 }
 
-class AppEditorInterface(override var config: AppConfig) : JsonServiceBase.EditorInterface<AppConfig> {
+class AppEditorInterface(override var config: AppConfig) : ConfigServiceBase.EditorInterface<AppConfig> {
     override val modifiedKeys = HashSet<String>()
 
     var loginRememberMe: Boolean
@@ -27,7 +27,7 @@ class AppEditorInterface(override var config: AppConfig) : JsonServiceBase.Edito
 class AppConfigService(
     backend: JsonConfigBackend,
     override var config: AppConfig = AppConfig()
-) : JsonServiceBase<AppConfig, AppEditorInterface>(backend) {
+) : ConfigServiceBase<AppConfig, AppEditorInterface>(backend) {
     override fun makeEditor(): AppEditorInterface = AppEditorInterface(config)
 
     override val configClass: Class<AppConfig> = AppConfig::class.java

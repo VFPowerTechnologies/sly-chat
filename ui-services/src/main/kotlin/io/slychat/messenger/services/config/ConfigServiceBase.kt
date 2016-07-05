@@ -5,7 +5,7 @@ import nl.komponents.kovenant.Promise
 import rx.Observable
 import rx.subjects.PublishSubject
 
-abstract class JsonServiceBase<ConfigT : Any, out EditorT : JsonServiceBase.EditorInterface<ConfigT>>(
+abstract class ConfigServiceBase<ConfigT : Any, out EditorT : ConfigServiceBase.EditorInterface<ConfigT>>(
     protected val backend: JsonConfigBackend
 ) {
     interface EditorInterface<out ConfigT> {
