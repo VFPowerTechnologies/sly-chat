@@ -22,9 +22,9 @@ import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.auth.AuthTokenManagerImpl
 import io.slychat.messenger.services.auth.AuthenticationServiceTokenProvider
 import io.slychat.messenger.services.auth.TokenProvider
-import io.slychat.messenger.services.config.EmptyConfigCipher
+import io.slychat.messenger.services.config.CipherConfigStorageFilter
+import io.slychat.messenger.services.config.FileConfigStorage
 import io.slychat.messenger.services.config.JsonConfigBackend
-import io.slychat.messenger.services.config.SymConfigCipher
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.ui.UIEventService
@@ -204,18 +204,19 @@ class UserModule(
         userLoginData: UserData,
         userPaths: UserPaths
     ): UserConfigService {
-        val cipher = if (BuildConfig.ENABLE_CONFIG_ENCRYPTION) {
+        val fileStorage = FileConfigStorage(userPaths.configPath)
+        val storage = if (BuildConfig.ENABLE_CONFIG_ENCRYPTION) {
             val keyVault = userLoginData.keyVault
             val key = keyVault.localDataEncryptionKey
             val params = keyVault.localDataEncryptionParams
             val spec = EncryptionSpec(key, params)
             //can't use Cipher*Stream since we're using bouncycastle to properly support stuff
-            SymConfigCipher(spec)
+            CipherConfigStorageFilter(spec, fileStorage)
         }
         else
-            EmptyConfigCipher()
+            fileStorage
 
-        val backend = JsonConfigBackend(userPaths.configPath, cipher)
+        val backend = JsonConfigBackend("user-config", storage)
         return UserConfigService(backend)
     }
 }
