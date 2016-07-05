@@ -26,7 +26,7 @@ class UserPathsGenerator(platformInfo: PlatformInfo) {
             userAccountDir / ACCOUNT_INFO_FILENAME,
             userAccountDir / "session-data.json",
             userAccountDir / "db.sqlite3",
-            userAccountDir / "user.conf"
+            userAccountDir / "user-conf.json"
         )
     }
 }

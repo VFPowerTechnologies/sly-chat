@@ -77,7 +77,7 @@ class ApplicationModule(
     @Singleton
     @Provides
     fun providesAppConfigService(platformInfo: PlatformInfo): AppConfigService {
-        val appConfPath = platformInfo.appFileStorageDirectory / "app.conf"
+        val appConfPath = platformInfo.appFileStorageDirectory / "app-conf.json"
         val backend = JsonConfigBackend(appConfPath, EmptyConfigCipher())
         return AppConfigService(backend)
     }
