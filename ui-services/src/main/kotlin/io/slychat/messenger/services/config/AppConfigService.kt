@@ -25,7 +25,7 @@ class AppEditorInterface(override var config: AppConfig) : ConfigServiceBase.Edi
 }
 
 class AppConfigService(
-    backend: JsonConfigBackend,
+    backend: ConfigBackend,
     override var config: AppConfig = AppConfig()
 ) : ConfigServiceBase<AppConfig, AppEditorInterface>(backend) {
     override fun makeEditor(): AppEditorInterface = AppEditorInterface(config)

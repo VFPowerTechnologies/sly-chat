@@ -49,7 +49,7 @@ class UserEditorInterface(override var config: UserConfig) : ConfigServiceBase.E
 }
 
 class UserConfigService(
-    backend: JsonConfigBackend,
+    backend: ConfigBackend,
     override var config: UserConfig = UserConfig()
 ) : ConfigServiceBase<UserConfig, UserEditorInterface>(backend) {
     override fun makeEditor(): UserEditorInterface = UserEditorInterface(config)
