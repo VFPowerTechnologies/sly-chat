@@ -7,6 +7,7 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.io.FileNotFoundException
 
 interface ConfigBackend {
     fun update(o: Any)
@@ -66,6 +67,9 @@ class JsonConfigBackend(
                     val data = cipher.decrypt(it.readBytes())
                     objectMapper.readValue(data, clazz)
                 }
+            }
+            catch (e: FileNotFoundException) {
+                null
             }
             catch (e: Exception) {
                 log.warn("Unable to load config file {}: {}", path, e.message)
