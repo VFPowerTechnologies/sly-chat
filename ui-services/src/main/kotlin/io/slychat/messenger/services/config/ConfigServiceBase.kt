@@ -6,7 +6,7 @@ import rx.Observable
 import rx.subjects.PublishSubject
 
 abstract class ConfigServiceBase<ConfigT : Any, out EditorT : ConfigServiceBase.EditorInterface<ConfigT>>(
-    protected val backend: JsonConfigBackend
+    protected val backend: ConfigBackend
 ) {
     interface EditorInterface<out ConfigT> {
         val modifiedKeys: Set<String>
