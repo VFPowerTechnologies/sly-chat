@@ -5,7 +5,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.div
 import java.io.File
 
-class UserPathsGenerator(private val platformInfo: PlatformInfo) {
+class UserPathsGenerator(platformInfo: PlatformInfo) {
     companion object {
         val ACCOUNT_INFO_FILENAME = "account-info.json"
     }
@@ -25,7 +25,8 @@ class UserPathsGenerator(private val platformInfo: PlatformInfo) {
             userAccountDir / "keyvault.json",
             userAccountDir / ACCOUNT_INFO_FILENAME,
             userAccountDir / "session-data.json",
-            userAccountDir / "db.sqlite3"
+            userAccountDir / "db.sqlite3",
+            userAccountDir / "user-conf.json"
         )
     }
 }

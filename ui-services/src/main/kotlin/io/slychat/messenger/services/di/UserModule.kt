@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.ServerUrls
+import io.slychat.messenger.core.crypto.EncryptionSpec
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
@@ -21,6 +22,10 @@ import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.auth.AuthTokenManagerImpl
 import io.slychat.messenger.services.auth.AuthenticationServiceTokenProvider
 import io.slychat.messenger.services.auth.TokenProvider
+import io.slychat.messenger.services.config.CipherConfigStorageFilter
+import io.slychat.messenger.services.config.FileConfigStorage
+import io.slychat.messenger.services.config.JsonConfigBackend
+import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
@@ -89,7 +94,7 @@ class UserModule(
         messageCipherService: MessageCipherService,
         userLoginData: UserData
     ): MessengerService =
-        MessengerService(
+        MessengerServiceImpl(
             scheduler,
             contactsService,
             messagePersistenceManager,
@@ -113,9 +118,10 @@ class UserModule(
         messengerService: MessengerService,
         uiEventService: UIEventService,
         contactsPersistenceManager: ContactsPersistenceManager,
-        platformNotificationService: PlatformNotificationService
+        platformNotificationService: PlatformNotificationService,
+        userConfigService: UserConfigService
     ): NotifierService =
-        NotifierService(messengerService, uiEventService, contactsPersistenceManager, platformNotificationService)
+        NotifierService(messengerService, uiEventService, contactsPersistenceManager, platformNotificationService, userConfigService)
 
     @UserScope
     @Provides
@@ -191,4 +197,26 @@ class UserModule(
         tokenProvider: TokenProvider
     ): AuthTokenManager =
         AuthTokenManagerImpl(userLoginData.address, tokenProvider)
+
+    @UserScope
+    @Provides
+    fun providesConfigService(
+        userLoginData: UserData,
+        userPaths: UserPaths
+    ): UserConfigService {
+        val fileStorage = FileConfigStorage(userPaths.configPath)
+        val storage = if (BuildConfig.ENABLE_CONFIG_ENCRYPTION) {
+            val keyVault = userLoginData.keyVault
+            val key = keyVault.localDataEncryptionKey
+            val params = keyVault.localDataEncryptionParams
+            val spec = EncryptionSpec(key, params)
+            //can't use Cipher*Stream since we're using bouncycastle to properly support stuff
+            CipherConfigStorageFilter(spec, fileStorage)
+        }
+        else
+            fileStorage
+
+        val backend = JsonConfigBackend("user-config", storage)
+        return UserConfigService(backend)
+    }
 }

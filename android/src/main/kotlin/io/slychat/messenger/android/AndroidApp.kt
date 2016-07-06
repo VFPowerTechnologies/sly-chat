@@ -103,6 +103,7 @@ class AndroidApp : Application() {
     private var queuedLoadComplete = false
 
     private val loadCompleteSubject = BehaviorSubject.create<LoadError>()
+    /** Fires once both GCM services and SlyApplication have completed initialization, in that order. */
     val loadComplete: Observable<LoadError> = loadCompleteSubject.observeOn(AndroidSchedulers.mainThread())
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -201,16 +202,18 @@ class AndroidApp : Application() {
                 gcmInitComplete = true
                 log.debug("GCM init successful")
                 init()
-                app.autoLogin()
+                app.addOnInitListener {
+                    loadCompleteSubject.onNext(loadError)
+                }
             }
             else {
                 if (loadError.cause != null)
                     log.error("GCM init failure: {}: errorCode={}", loadError.cause.message, loadError.cause)
                 else
                     log.error("GCM init failure: {}: {}", loadError.type, loadError.errorCode)
-            }
 
-            loadCompleteSubject.onNext(loadError)
+                loadCompleteSubject.onNext(loadError)
+            }
         }
     }
 
@@ -336,7 +339,7 @@ class AndroidApp : Application() {
         }
 
         //it's possible we might receive a message targetting a diff account that was previously logged in
-        app.addOnInitListener { app ->
+        app.addOnAutoLoginListener { app ->
             //the app might not be finished logging in yet
             //if we have auto-login, this will at least be LOGGING_IN (since login is called before we get here)
 

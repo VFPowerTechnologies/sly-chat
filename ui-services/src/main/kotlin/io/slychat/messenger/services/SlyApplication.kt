@@ -49,6 +49,9 @@ class SlyApplication {
     private var isInitialized = false
     private val onInitListeners = ArrayList<(SlyApplication) -> Unit>()
 
+    private var isAutoLoginComplete = false
+    private val onAutoLoginListeners = ArrayList<(SlyApplication) -> Unit>()
+
     //the following observables never complete or error and are valid for the lifetime of the application
     //only changes in value are emitted from these
     private val networkAvailableSubject = BehaviorSubject.create(false)
@@ -92,6 +95,7 @@ class SlyApplication {
         get() = field
 
 
+    /** Starts background initialization; use addOnInitListener to be notified when app has finished initializing. Once finalized, will trigger auto-login. */
     fun init(platformModule: PlatformModule) {
         appComponent = DaggerApplicationComponent.builder()
             .platformModule(platformModule)
@@ -115,6 +119,26 @@ class SlyApplication {
             .debounce(4000, TimeUnit.MILLISECONDS)
             .observeOn(appComponent.rxScheduler)
             .subscribe { onPlatformContactsUpdated() }
+
+        appComponent.appConfigService.init() successUi {
+            initializationComplete()
+        }
+    }
+
+    private fun initializationComplete() {
+        log.info("Initialization complete")
+        isInitialized = true
+        onInitListeners.forEach { it(this) }
+        onInitListeners.clear()
+
+        autoLogin()
+    }
+
+    fun addOnInitListener(listener: (SlyApplication) -> Unit) {
+        if (isInitialized)
+            listener(this)
+        else
+            onInitListeners.add(listener)
     }
 
     private fun onPlatformContactsUpdated() {
@@ -171,7 +195,7 @@ class SlyApplication {
      *
      * Must be called to initialize loginEvents, and thus the UI.
     */
-    fun autoLogin() {
+    private fun autoLogin() {
         if (loginState != LoginState.LOGGED_OUT) {
             log.warn("Attempt to call autoLogin() while state was {}", loginState)
             return
@@ -200,11 +224,11 @@ class SlyApplication {
                 login(autoLoginInfo.username, autoLoginInfo.password, false)
             else
                 emitLoginEvent(LoggedOut())
-            initializationComplete()
+            autoLoginComplete()
         } failUi { e ->
             log.error("Unable to read startup info: {}", e.message, e)
             emitLoginEvent(LoggedOut())
-            initializationComplete()
+            autoLoginComplete()
         }
     }
 
@@ -350,6 +374,7 @@ class SlyApplication {
     private fun backgroundInitialization(userComponent: UserComponent, authToken: AuthToken?, password: String, rememberMe: Boolean, accountInfo: AccountInfo): Promise<Unit, Exception> {
         val userPaths = userComponent.userPaths
         val persistenceManager = userComponent.sqlitePersistenceManager
+        val userConfigService = userComponent.configService
         val userLoginData = userComponent.userLoginData
         val keyVault = userLoginData.keyVault
         val userId = userLoginData.userId
@@ -377,6 +402,9 @@ class SlyApplication {
                 Promise.ofSuccess<Unit, Exception>(Unit)
         } bind {
             persistenceManager.initAsync()
+        } bind {
+            //FIXME this can be performed in parallel
+            userConfigService.init()
         }
     }
 
@@ -632,17 +660,17 @@ class SlyApplication {
         }
     }
 
-    private fun initializationComplete() {
-        isInitialized = true
-        onInitListeners.forEach { it(this) }
-        onInitListeners.clear()
+    private fun autoLoginComplete() {
+        isAutoLoginComplete = true
+        onAutoLoginListeners.forEach { it(this) }
+        onAutoLoginListeners.clear()
     }
 
-    /** Adds a function to be called once the app has finished initializing. */
-    fun addOnInitListener(body: (SlyApplication) -> Unit) {
-        if (isInitialized)
+    /** Adds a function to be called once the app has finished attempting to auto-login. */
+    fun addOnAutoLoginListener(body: (SlyApplication) -> Unit) {
+        if (isAutoLoginComplete)
             body(this)
         else
-            onInitListeners.add(body)
+            onAutoLoginListeners.add(body)
     }
 }

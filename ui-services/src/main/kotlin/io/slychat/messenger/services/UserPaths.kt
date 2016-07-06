@@ -8,5 +8,6 @@ data class UserPaths(
     val keyVaultPath: File,
     val accountInfoPath: File,
     val sessionDataPath: File,
-    val databasePath: File
+    val databasePath: File,
+    val configPath: File
 )

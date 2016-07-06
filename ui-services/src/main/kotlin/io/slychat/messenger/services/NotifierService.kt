@@ -3,8 +3,9 @@ package io.slychat.messenger.services
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
+import io.slychat.messenger.services.config.UserConfig
+import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.ui.UIEventService
-import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 
 //user-scoped
@@ -12,9 +13,14 @@ class NotifierService(
     private val messengerService: MessengerService,
     private val uiEventService: UIEventService,
     private val contactsPersistenceManager: ContactsPersistenceManager,
-    private val platformNotificationService: PlatformNotificationService
+    private val platformNotificationService: PlatformNotificationService,
+    private val userConfigService: UserConfigService
 ) {
     private var log = LoggerFactory.getLogger(javaClass)
+
+    /** If false, ignore all notifications. Still runs notification clear functions. */
+    var enableNotificationDisplay = true
+        private set
 
     private var currentPage: PageType? = null
     private var currentlySelectedChatUser: UserId? = null
@@ -25,10 +31,19 @@ class NotifierService(
     fun init() {
         uiEventService.events.subscribe { onUiEvent(it) }
         messengerService.newMessages.subscribe { onNewMessages(it) }
+
+        enableNotificationDisplay = userConfigService.notificationsEnabled
+
+        userConfigService.updates.subscribe { keys ->
+            keys.forEach {
+                if (it == UserConfig.NOTIFICATIONS_ENABLED)
+                    enableNotificationDisplay = userConfigService.notificationsEnabled
+            }
+        }
     }
 
     private fun withContactInfo(userId: UserId, body: (ContactInfo) -> Unit) {
-        contactsPersistenceManager.get(userId) map { contactInfo ->
+        contactsPersistenceManager.get(userId) mapUi { contactInfo ->
             if (contactInfo != null)
                 body(contactInfo)
             else
@@ -39,6 +54,9 @@ class NotifierService(
     }
 
     private fun onNewMessages(messageBundle: MessageBundle) {
+        if (!enableNotificationDisplay)
+            return
+
         if (isUiVisible) {
             if (currentPage == PageType.CONTACTS)
                 return

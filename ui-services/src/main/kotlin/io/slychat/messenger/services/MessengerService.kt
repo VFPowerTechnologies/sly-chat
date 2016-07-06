@@ -45,8 +45,26 @@ data class MessageSendDeviceMismatch(val to: UserId, override val messageId: Str
 val List<Package>.users: Set<UserId>
     get() = mapTo(HashSet()) { it.userId }
 
+interface MessengerService {
+    fun init()
+    fun shutdown()
+
+    fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception>
+
+    val newMessages: Observable<MessageBundle>
+    val messageUpdates: Observable<MessageBundle>
+
+    /* UIMessengerService interface */
+    fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception>
+    fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception>
+    fun getConversations(): Promise<List<Conversation>, Exception>
+    fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>
+    fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception>
+    fun deleteAllMessages(userId: UserId): Promise<Unit, Exception>
+}
+
 //all Observerables are run on the main thread
-class MessengerService(
+class MessengerServiceImpl(
     private val scheduler: Scheduler,
     private val contactsService: ContactsService,
     private val messagePersistenceManager: MessagePersistenceManager,
@@ -55,14 +73,14 @@ class MessengerService(
     private val messageCipherService: MessageCipherService,
     //XXX this is only used to prevent self-sends
     private val userLoginData: UserData
-) {
+) : MessengerService {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val newMessagesSubject = PublishSubject.create<MessageBundle>()
-    val newMessages: Observable<MessageBundle> = newMessagesSubject
+    override val newMessages: Observable<MessageBundle> = newMessagesSubject
 
     private val messageUpdatesSubject = PublishSubject.create<MessageBundle>()
-    val messageUpdates: Observable<MessageBundle> = messageUpdatesSubject
+    override val messageUpdates: Observable<MessageBundle> = messageUpdatesSubject
 
     private val sendMessageQueue = ArrayDeque<QueuedSendMessage>()
     private var currentSendMessage: QueuedSendMessage? = null
@@ -91,11 +109,11 @@ class MessengerService(
         subscriptions.add(contactsService.contactEvents.subscribe { onContactEvent(it) })
     }
 
-    fun init() {
+    override fun init() {
         initializeReceiveQueue()
     }
 
-    fun shutdown() {
+    override fun shutdown() {
         receivedMessageQueue.clear()
         subscriptions.clear()
     }
@@ -266,6 +284,12 @@ class MessengerService(
         processSendMessageQueue()
     }
 
+    private fun nextReceiveMessage() {
+        currentReceivedMessage = null
+        receivedMessageQueue.pop()
+        processReceivedMessageQueue()
+    }
+
     private fun processSendMessageQueue() {
         if (!relayClientManager.isOnline)
             return
@@ -275,7 +299,7 @@ class MessengerService(
             return
 
         if (sendMessageQueue.isEmpty()) {
-            log.debug("No more messages")
+            log.debug("No more messages to send")
             return
         }
 
@@ -298,6 +322,10 @@ class MessengerService(
         handleFailedDecryptionResults(from, result)
 
         val messages = result.succeeded
+        if (messages.isEmpty()) {
+            nextReceiveMessage()
+            return
+        }
 
         val objectMapper = ObjectMapper()
         val messageStrings = messages.map {
@@ -309,10 +337,7 @@ class MessengerService(
             val bundle = MessageBundle(from, messageInfo)
             newMessagesSubject.onNext(bundle)
 
-            currentReceivedMessage = null
-            receivedMessageQueue.pop()
-
-            processReceivedMessageQueue()
+            nextReceiveMessage()
         } fail { e ->
             log.error("Unable to store decrypted messages: {}", e.message, e)
         }
@@ -322,8 +347,11 @@ class MessengerService(
         if (currentReceivedMessage != null)
             return
 
-        if (receivedMessageQueue.isEmpty())
+        if (receivedMessageQueue.isEmpty()) {
+            log.debug("No more received messages")
             return
+        }
+
 
         val message = receivedMessageQueue.first
 
@@ -418,7 +446,7 @@ class MessengerService(
 
     /* UIMessengerService interface */
 
-    fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception> {
+    override fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception> {
         val isSelfMessage = userId == userLoginData.userId
 
         //HACK
@@ -442,23 +470,23 @@ class MessengerService(
         }
     }
 
-    fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception> {
+    override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception> {
         return messagePersistenceManager.getLastMessages(userId, startingAt, count)
     }
 
-    fun getConversations(): Promise<List<Conversation>, Exception> {
+    override fun getConversations(): Promise<List<Conversation>, Exception> {
         return contactsPersistenceManager.getAllConversations()
     }
 
-    fun markConversationAsRead(userId: UserId): Promise<Unit, Exception> {
+    override fun markConversationAsRead(userId: UserId): Promise<Unit, Exception> {
         return contactsPersistenceManager.markConversationAsRead(userId)
     }
 
-    fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception> {
+    override fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception> {
         return messagePersistenceManager.deleteMessages(userId, messageIds)
     }
 
-    fun deleteAllMessages(userId: UserId): Promise<Unit, Exception> {
+    override fun deleteAllMessages(userId: UserId): Promise<Unit, Exception> {
         return messagePersistenceManager.deleteAllMessages(userId)
     }
 
@@ -503,7 +531,7 @@ class MessengerService(
 
     /* Other */
 
-    fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception> {
+    override fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception> {
         val d = deferred<Unit, Exception>()
 
         processPackages(offlineMessages) success {

@@ -13,11 +13,16 @@ import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.ui.createAppDirectories
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
+import javafx.animation.FadeTransition
 import javafx.application.Application
 import javafx.scene.Scene
+import javafx.scene.layout.StackPane
+import javafx.scene.paint.Color
+import javafx.scene.shape.Rectangle
 import javafx.scene.web.WebEngine
 import javafx.scene.web.WebView
 import javafx.stage.Stage
+import javafx.util.Duration
 import nl.komponents.kovenant.jfx.JFXDispatcher
 import nl.komponents.kovenant.ui.KovenantUi
 import org.slf4j.LoggerFactory
@@ -25,6 +30,9 @@ import rx.schedulers.JavaFxScheduler
 
 class DesktopApp : Application() {
     private val app: SlyApplication = SlyApplication()
+    private lateinit var stage: Stage
+    private lateinit var webView: WebView
+    private lateinit var stackPane: StackPane
 
     /** Enable the (hidden) debugger WebEngine feature */
     private fun enableDebugger(engine: WebEngine) {
@@ -61,20 +69,12 @@ class DesktopApp : Application() {
     }
 
     override fun start(primaryStage: Stage) {
+        stage = primaryStage
+
         KovenantUi.uiContext {
             dispatcher = JFXDispatcher.instance
         }
         javaClass.loadSQLiteLibraryFromResources()
-
-        val webView = WebView()
-
-        webView.isContextMenuEnabled = false
-
-        val engine = webView.engine
-
-        enableDebugger(engine)
-
-        val webEngineInterface = JFXWebEngineInterface(engine)
 
         val platformInfo = DesktopPlatformInfo()
         createAppDirectories(platformInfo)
@@ -95,7 +95,7 @@ class DesktopApp : Application() {
             DesktopPlatformContacts(),
             DesktopNotificationService(),
             DesktopUIPlatformService(hostServices),
-            DesktopUILoadService(),
+            DesktopUILoadService(this),
             JavaFxScheduler.getInstance()
         )
 
@@ -104,27 +104,44 @@ class DesktopApp : Application() {
 
         val appComponent = app.appComponent
         app.userSessionAvailable.subscribe {
-            if (it == true)
-                onUserSessionCreated()
         }
+
+        //temp
+        app.updateNetworkStatus(true)
+
+        stackPane = StackPane()
+
+        webView = WebView()
+        stackPane.children.add(webView)
+
+        webView.isContextMenuEnabled = false
+
+        val engine = webView.engine
+
+        enableDebugger(engine)
+
+        val webEngineInterface = JFXWebEngineInterface(engine)
 
         val dispatcher = Dispatcher(webEngineInterface)
 
         registerCoreServicesOnDispatcher(dispatcher, appComponent)
 
-        engine.load(javaClass.getResource("/ui/index.html").toExternalForm())
+        //TODO loading screen
+        val loadingScreen = Rectangle()
+        loadingScreen.fill = Color.BLACK
+        loadingScreen.heightProperty().bind(primaryStage.heightProperty())
+        loadingScreen.widthProperty().bind(primaryStage.widthProperty())
+        stackPane.children.add(loadingScreen)
 
-        primaryStage.scene = Scene(webView,  852.0, 480.0)
+        app.addOnInitListener {
+            engine.load(javaClass.getResource("/ui/index.html").toExternalForm())
+        }
+
+        primaryStage.scene = Scene(stackPane, 852.0, 480.0)
         primaryStage.show()
-
-        //temp
-        app.updateNetworkStatus(true)
-
-        app.autoLogin()
     }
 
     private fun onUserSessionCreated() {
-        app.userComponent!!.notifierService.init()
     }
 
     override fun stop() {
@@ -137,6 +154,19 @@ class DesktopApp : Application() {
         @JvmStatic
         fun main(args: Array<String>) {
             launch(DesktopApp::class.java, *args)
+        }
+    }
+
+    fun uiLoadComplete() {
+        val node = stackPane.children[1]
+        val fade = FadeTransition(Duration.millis(1000.0), node)
+        fade.fromValue = 1.0
+        fade.toValue = 0.0
+
+        fade.play()
+
+        fade.setOnFinished {
+            stackPane.children.remove(node)
         }
     }
 }

@@ -8,7 +8,7 @@ import io.slychat.messenger.core.persistence.MessageInfo
 import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.persistence.PackageId
 import io.slychat.messenger.core.randomUUID
-import io.slychat.messenger.core.test.withTimeAs
+import io.slychat.messenger.testutils.withTimeAs
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass

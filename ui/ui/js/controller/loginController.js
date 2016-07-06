@@ -37,6 +37,12 @@ LoginController.prototype = {
             KEYTAP.navigationController.loadPage("register.html");
         });
 
+        $(document).on("change", "#rememberMe", function (e) {
+            e.preventDefault();
+            var rememberMe = document.getElementById("rememberMe");
+            configService.setLoginRememberMe(rememberMe.checked);
+        });
+
         loginService.addLoginEventListener(this.onLoginEvent.bind(this));
     },
     /**

@@ -7,6 +7,7 @@ import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.services.AuthenticationService
 import io.slychat.messenger.services.PlatformContacts
 import io.slychat.messenger.services.UserPathsGenerator
+import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.ui.*
 import rx.Scheduler
 import javax.inject.Singleton
@@ -59,6 +60,8 @@ interface ApplicationComponent {
 
     val serverUrls: BuildConfig.ServerUrls
 
+    val appConfigService: AppConfigService
+
     @get:SlyHttp
     val slyHttpClientFactory: HttpClientFactory
 
@@ -66,4 +69,6 @@ interface ApplicationComponent {
     val externalHttpClientFactory: HttpClientFactory
 
     fun plus(userModule: UserModule): UserComponent
+
+    val configService: UIConfigService
 }
