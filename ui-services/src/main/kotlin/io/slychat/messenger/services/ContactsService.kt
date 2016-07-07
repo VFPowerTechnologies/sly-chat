@@ -176,7 +176,7 @@ class ContactsService(
         if (missing.isNotEmpty())
             contactEventsSubject.onNext(ContactEvent.InvalidContacts(missing))
 
-        val isPending = if (policy == ContactAddPolicy.AUTO) false else true
+        val isPending = policy != ContactAddPolicy.AUTO
 
         val contacts = response.contacts.map { it.toCore(isPending) }
 
