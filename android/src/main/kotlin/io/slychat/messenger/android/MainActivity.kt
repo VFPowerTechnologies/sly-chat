@@ -77,7 +77,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onNewIntent(intent: Intent) {
+        log.debug("onNewIntent")
         super.onNewIntent(intent)
+
+        this.intent = intent
+
+        //if the activity was destroyed but a notification caused to be recreated, then let init() handle setting the initial page
+        if (!isInitialized)
+            return
 
         val page = getInitialPage(intent) ?: return
 
@@ -89,6 +96,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        log.debug("onCreate")
         super.onCreate(savedInstanceState)
 
         //XXX make optional? enable by default and change on user login after reading config
@@ -229,11 +237,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle?) {
+        log.debug("onSaveInstanceState")
         super.onSaveInstanceState(outState)
         webView.saveState(outState)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
+        log.debug("onRestoreInstanceState")
         super.onRestoreInstanceState(savedInstanceState)
         webView.restoreState(savedInstanceState)
     }
@@ -248,7 +258,18 @@ class MainActivity : AppCompatActivity() {
         AndroidApp.get(this).currentActivity = null
     }
 
+    override fun onRestart() {
+        log.debug("onRestart")
+        super.onRestart()
+    }
+
+    override fun onStop() {
+        log.debug("onStop")
+        super.onStop()
+    }
+
     override fun onPause() {
+        log.debug("onPause")
         clearAppActivity()
         super.onPause()
 
@@ -260,11 +281,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        log.debug("onDestroy")
         clearAppActivity()
         super.onDestroy()
     }
 
     override fun onResume() {
+        log.debug("onResume")
         super.onResume()
         setAppActivity()
 
