@@ -4,7 +4,7 @@ import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.task
-import java.util.ArrayList
+import java.util.*
 
 class DummyUIRegistrationService() : UIRegistrationService {
     private val listeners = ArrayList<(String) -> Unit>()
@@ -34,14 +34,14 @@ class DummyUIRegistrationService() : UIRegistrationService {
     }
 
     override fun submitVerificationCode(username: String, code: String): Promise<UISmsVerificationStatus, Exception> {
-        return Promise.ofSuccess(UISmsVerificationStatus(true, null));
+        return Promise.ofSuccess(UISmsVerificationStatus(true, null))
     }
 
     override fun resendVerificationCode(username: String): Promise<UISmsVerificationStatus, Exception> {
-        return Promise.ofSuccess(UISmsVerificationStatus(true, null));
+        return Promise.ofSuccess(UISmsVerificationStatus(true, null))
     }
 
     override fun updatePhone(info: UIUpdatePhoneInfo): Promise<UIUpdatePhoneResult, Exception> {
-        return Promise.ofSuccess(UIUpdatePhoneResult(true, null));
+        return Promise.ofSuccess(UIUpdatePhoneResult(true, null))
     }
 }

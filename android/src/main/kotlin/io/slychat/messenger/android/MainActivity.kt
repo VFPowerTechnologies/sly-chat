@@ -351,7 +351,7 @@ class MainActivity : AppCompatActivity() {
                     ConsoleMessage.MessageLevel.TIP -> jsLog.info(msg)
                     ConsoleMessage.MessageLevel.WARNING -> jsLog.warn(msg)
                 }
-                return true;
+                return true
             }
         })
     }
