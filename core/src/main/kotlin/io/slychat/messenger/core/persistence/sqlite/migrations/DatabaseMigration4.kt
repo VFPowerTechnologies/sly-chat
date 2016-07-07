@@ -45,8 +45,11 @@ class DatabaseMigration4 : DatabaseMigration(4) {
                         else
                             throw e
                     }
-
-                    stmt.reset(true)
+                    finally {
+                        //need to reset if we skip over an error, else we get an out of sequence error when we try
+                        //and reuse the statement
+                        stmt.reset(true)
+                    }
                 }
             }
         }

@@ -166,9 +166,9 @@ class DatabaseMigrationTest {
         //check conversion + old table drop
         assertTableNotExists(connection, "signal_sessions_old")
 
-        assertTableRowCount(connection, "signal_sessions", 1)
+        assertTableRowCount(connection, "signal_sessions", 2)
 
-        connection.withPrepared("SELECT contact_id, device_id, session FROM signal_sessions") { stmt ->
+        connection.withPrepared("SELECT contact_id, device_id, session FROM signal_sessions WHERE contact_id=154") { stmt ->
             stmt.foreach {
                 assertEquals(154, stmt.columnLong(0), "Invalid user id")
                 assertEquals(1, stmt.columnInt(1), "Invalid device id")
