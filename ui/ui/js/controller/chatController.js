@@ -1,580 +1,145 @@
-var ChatController = function (model, contactController) {
-    this.model = model;
-    this.model.setController(this);
-    this.contactController = contactController;
-    this.currentMessagePosition = 0;
-    this.fetchingNumber = 100;
+var ChatController = function () {
+    this.chatCache = [];
     this.lastMessage = null;
-    this.messageMenu = this.createMessagesMenu();
-    this.selectedMessage = [];
-    this.selectMode = false;
 };
 
 ChatController.prototype = {
-    /**
-     * Init function on each contact page loads.
-     */
     init : function () {
-        var contact = this.contactController.getCurrentContact();
-        this.model.fetchMessage(this.currentMessagePosition, this.fetchingNumber, contact);
-        this.model.markConversationAsRead(contact);
+        this.addMessageUpdateListener();
+        this.addNewMessageListener();
+    },
 
-        this.selectedMessage = [];
-        this.selectMode = false;
+    fetchMessageFor : function (start, count, contact) {
+        messengerService.getLastMessagesFor(contact, start, count).then(function (messages) {
+            var organizedMessages = this.organizeMessages(messages);
+            this.storeCachedConversation(organizedMessages, contact);
+            this.displayMessage(organizedMessages, contact);
 
-        $("#newMessageSubmitBtn").click(function (){
-            $("#newMessageInput").focus();
-        });
-
-        $("#newMessageForm").submit(function () {
-            $("#newMessageInput").trigger("click");
-            this.submitNewMessage();
-            return false;
-        }.bind(this));
-
-        $('#newMessageInput').on("keypress", function(e) {
-            if  (e.keyCode === 13 && !e.ctrlKey) {
-                e.preventDefault();
-                $("#newMessageForm").submit();
-            }
+        }.bind(this)).catch(function (e) {
+            console.error("Unable to fetch messages: " + e);
         });
     },
-    /**
-     * Display all messages for the current contact.
-     *
-     * @param messages
-     * @param contact
-     */
-    displayMessage : function (messages, contact) {
-        var messageNode = $("#messages");
 
-        var fragment = $(document.createDocumentFragment());
+    submitNewMessage : function (contact, message) {
+        messengerService.sendMessageTo(contact, message).then(function (messageDetails) {
+            this.pushNewMessageInCache(contact.id, messageDetails);
+            $("#chat-content").append(this.createMessageNode(messageDetails, profileController.name));
+
+            var input = $("#newMessageInput");
+            input.val("");
+            input.click();
+            this.scrollTop();
+        }.bind(this)).catch(function (e) {
+            console.log(e);
+        });
+    },
+
+    displayMessage : function (messages, contact) {
         this.lastMessage = null;
+        var frag = $(document.createDocumentFragment());
         for(var k in messages) {
             if(messages.hasOwnProperty(k)) {
-                fragment.append(this.createMessageNode(messages[k], contact.name));
+                frag.append(this.createMessageNode(messages[k], contact));
             }
         }
-        messageNode.html(fragment);
+        
+        $("#chat-content").html(frag);
         this.scrollTop();
     },
-    /**
-     * Create all event relative to messages manipulation options.
-     * Ran only once on controller init.
-     */
-    createMessageNodeEvent : function () {
-        /**
-         * Click event for each message node.
-         */
-        $(document).on("click", "[id^='message_']", function (e) {
-            e.preventDefault();
-            if(KEYTAP.chatController.selectMode == true) {
-                if ($(this).hasClass("noclick")) {
-                    $(this).removeClass("noclick");
-                }
-                else {
-                    if ($(this).hasClass("message_selected")) {
-                        KEYTAP.chatController.deselectMessage($(this));
-                    }
-                    else {
-                        KEYTAP.chatController.selectMessage($(this));
-                    }
-                }
-            }
-            else {
-                $(this).find(".message-details").toggle();
-            }
-        });
 
-        /**
-         * Click event for copy message to clipboard button.
-         */
-        $(document).on("click", "#copyMessage", function (e) {
-            e.preventDefault();
-            if(this.selectedMessage.length == 1) {
-                var messageId = this.selectedMessage[0];
-                var messageText = this.model.cachedConversation[this.contactController.getCurrentContact().id][messageId].message;
-                if(typeof messageText !== "undefined" || messageText !== "" || messageText != null) {
-                    windowService.copyTextToClipboard(messageText).then(function () {
-                        this.messageMenu.close();
-                        $.notify({
-                            icon: "icon-pull-left fa fa-info-circle",
-                            message: "Message has been copied to clipboard"
-                        }, {
-                            type: "success",
-                            delay: 3000,
-                            allow_dismiss: false,
-                            offset: {
-                                y: 66,
-                                x: 20
-                            }
-                        });
-                    }.bind(this)).catch(function (e) {
-                        KEYTAP.exceptionController.displayDebugMessage(e);
-                        console.log("An error occured, could not copy message to clipboard.");
-                    })
-                }
-            }
-        }.bind(this));
+    createMessageNode : function (message, contact) {
+        var classes = "";
 
-        /**
-         * Click event for delete message button.
-         */
-        $(document).on("click", "#deleteMessage", function (e) {
-            e.preventDefault();
-            this.messageMenu.close();
-            this.createDeleteMessageConfirmDialog(false);
-        }.bind(this));
-
-        /**
-         * Click event for delete message confirmation.
-         */
-        $(document).on("click", "#confirmDeleteMessage", function (e) {
-            e.preventDefault();
-            if(this.selectedMessage.length >= 1) {
-                this.deleteMessage(this.contactController.getCurrentContact(), this.selectedMessage);
-            }
-            this.selectedMessage = [];
-            BootstrapDialog.closeAll();
-        }.bind(this));
-
-        /**
-         * Click event for cancel button.
-         */
-        $(document).on("click", "#cancelCloseModal", function (e) {
-            e.preventDefault();
-            this.selectedMessage = [];
-            this.selectMode = false;
-            $(".message_selected").each(function (index, item) {
-                this.deselectMessage($(item));
-            }.bind(this));
-            BootstrapDialog.closeAll();
-        }.bind(this));
-
-        /**
-         * Click event for delete multiple message button.
-         */
-        $(document).on("click", "#deleteMultipleMessage", function (e) {
-            e.preventDefault();
-            this.selectMode = true;
-            this.selectedMessage.forEach(function (id) {
-                this.selectMessage($("#message_" + id));
-            }.bind(this));
-            this.messageMenu.close();
-            $("#main").prepend(this.createMultipleDeleteMenu());
-        }.bind(this));
-
-        /**
-         * Click event for cancel multiple delete button.
-         */
-        $(document).on("click", "#cancelMultipleDeleteButton", function (e) {
-            e.preventDefault();
-            this.selectMode = false;
-            $(".message_selected").each(function (index, item) {
-                this.deselectMessage($(item));
-            }.bind(this));
-            $("#multipleDeleteMenu").remove();
-            this.selectedMessage = [];
-        }.bind(this));
-
-        /**
-         * Click event for multiple delete confirm button.
-         */
-        $(document).on("click", "#confirmMultipleDeleteButton", function (e) {
-            e.preventDefault();
-            var messagesSelected = $(".message_selected");
-            if(messagesSelected.length >= 1) {
-                this.selectedMessage = [];
-                messagesSelected.each(function (index, item) {
-                    this.selectedMessage.push($(item).attr("id").split("_")[1]);
-                }.bind(this));
-
-                $("#multipleDeleteMenu").remove();
-                this.createDeleteMessageConfirmDialog(true);
-            }
-        }.bind(this));
-
-        /**
-         * Click event for confirm delete whole conversation.
-         */
-        $(document).on("click", "[id^='confirmDeleteConversation_']", function (e) {
-            e.preventDefault();
-            BootstrapDialog.closeAll();
-            var id = $(this).attr("id").split("_")[1];
-            KEYTAP.chatController.deleteConversation(id);
-        });
-
-        /**
-         * Click event for delete contact button.
-         */
-        $(document).on("click", "[id^='deleteContact_']", function (e) {
-            e.preventDefault();
-            var id = $(this).attr("id").split("_")[1];
-            BootstrapDialog.closeAll();
-            KEYTAP.contactController.displayDeleteContactModal(id);
-        });
-
-        /**
-         * Click event for contact details button.
-         */
-        $(document).on("click", "[id^='contactDetails_']", function (e) {
-            e.preventDefault();
-            var id = $(this).attr("id").split("_")[1];
-            BootstrapDialog.closeAll();
-            KEYTAP.contactController.displayContactDetailsModal(id);
-        });
-
-        /**
-         * Click event for message detail button.
-         */
-        $(document).on("click", "#messageDetailsBtn", function (e) {
-            e.preventDefault();
-            if(this.selectedMessage.length == 1) {
-                var messageId = this.selectedMessage[0];
-                this.displayMessageDetails(messageId);
-            }
-        }.bind(this));
-    },
-    /**
-     * Select the element and add styling to the node.
-     *
-     * @param messageElement Jquery element.
-     */
-    selectMessage : function (messageElement) {
-        messageElement.addClass("message_selected");
-        messageElement.prepend("<div class='check'><i class='fa fa-check fa-3x'></i>");
-    },
-    /**
-     * Deselect message and remove selected style.
-     *
-     * @param messageElement Jquery element.
-     */
-    deselectMessage : function (messageElement) {
-        messageElement.removeClass("message_selected");
-        messageElement.children(".check").remove();
-    },
-    /**
-     * Create a context like menu for messages manipulation options.
-     *
-     * @returns {BootstrapDialog}
-     */
-    createMessagesMenu : function () {
-        var html = "<div class='contextLikeMenu' id='messageContextMenu'>" +
-            "<ul>" +
-                "<li><a id='messageDetailsBtn' href='#'>Message Details</a></li>" +
-                "<li role='separator' class='divider'></li>" +
-                "<li><a id='copyMessage' href='#'>Copy Message Text</a></li>" +
-                "<li role='separator' class='divider'></li>" +
-                "<li><a id='deleteMessage' href='#'>Delete Message</a></li>" +
-                "<li role='separator' class='divider'></li>" +
-                "<li><a id='deleteMultipleMessage' href='#'>Delete Multiple Messages</a></li>" +
-            "</ul>" +
-        "</div>";
-
-        return createContextLikeMenu(html, true);
-    },
-    /**
-     * Create a modal to confirm deletion of the message(s).
-     *
-     * @param multiple Bool multiple message delete.
-     */
-    createDeleteMessageConfirmDialog : function (multiple) {
-        var title = "";
-        if(multiple)
-            title = "Delete the selected messages?";
-        else
-            title = "Delete this message?";
-
-        var html = "<div class='contextLikeModalContent'>" +
-            "<h6 class='contextLikeModal-title'>" + title + "</h6>" +
-            "<p class='contextLikeModal-content'>Are you sure?<br> This action cannot be undone.</p>" +
-            "<div class='contextLikeModal-nav'>" +
-                "<button id='cancelCloseModal' class='btn btn-sm transparentBtn'>Cancel</button>" +
-                "<button id='confirmDeleteMessage' class='btn btn-sm transparentBtn'>Confirm</button>" +
-            "</div>" +
-        "</div>";
-
-
-        var modal = createContextLikeMenu(html, false);
-        modal.open();
-    },
-    /**
-     * Create a modal to confirm deletion of whole conversation.
-     *
-     * @param contact Contact
-     */
-    createDeleteWholeConversationDialog : function (contact) {
-        var html = "<div class='contextLikeModalContent'>" +
-            "<h6 class='contextLikeModal-title'>Delete Conversation?</h6>" +
-            "<p class='contextLikeModal-content'>Are you sure you want to delete your conversation with " + contact.name + "</p>" +
-            "<div class='contextLikeModal-nav'>" +
-                "<button id='cancelCloseModal' class='btn btn-sm transparentBtn'>Cancel</button>" +
-                "<button id='confirmDeleteConversation_" + contact.id + "' class='btn btn-sm transparentBtn'>Confirm</button>" +
-            "</div>" +
-        "</div>";
-
-        var modal = createContextLikeMenu(html, false);
-        modal.open();
-    },
-    /**
-     * Create top menu for multiple messages delete.
-     *
-     * @returns {string}
-     */
-    createMultipleDeleteMenu : function () {
-        return "<div id='multipleDeleteMenu'>" +
-            "<button id='cancelMultipleDeleteButton' class='btn btn-sm'>Cancel</button>" +
-            "<button id='confirmMultipleDeleteButton' class='btn btn-sm'>Delete</button>" +
-        "</div>";
-    },
-    /**
-     * Retrieve message details and display it in dialog.
-     *
-     * @param messageId String.
-     */
-    displayMessageDetails : function (messageId) {
-        var contact = this.contactController.getCurrentContact();
-        var message = this.model.getMessage(contact, messageId);
-
-        if(message != null) {
-            this.messageMenu.close();
-            var html = "<div class='detailsModalClose'><a href='#' onclick='BootstrapDialog.closeAll();'><i class='mdi mdi-arrow-left'></i></a></div>" +
-                "<div class='message-details'>" +
-                    this.buildMessageDetailsHtml(message, contact) +
-                "</div>";
-
-            var contactDetailsModal = new BootstrapDialog();
-
-            contactDetailsModal.setCssClass("fullPageDialog whiteModal noHeaderModal centerAlignDialog");
-            contactDetailsModal.setClosable(true);
-            contactDetailsModal.setMessage(html);
-            contactDetailsModal.open();
-        }
-    },
-    /**
-     * Build the message details dialog.
-     *
-     * @param message
-     * @param contact
-     * @returns {string}
-     */
-    buildMessageDetailsHtml : function (message, contact) {
-        var html = "";
-        var sentTime = new Date(message.timestamp).toLocaleString();
-        var receivedTime = new Date(message.receivedTimestamp).toLocaleString();
-        if(message.sent) {
-            html = "<h6>You sent this message</h6>" +
-                "<h6>To:</h6>" +
-                "<p>" + contact.name + "</p>" +
-                "<h6>Contact Public Key</h6>" +
-                "<div style='border: 1px solid #212121;'" +
-                    "<p style='max-width: 100%;'>" + formatPublicKey(contact.publicKey) + "</p>" +
-                "</div>" +
-                "<h6>Message Id</h6>" +
-                "<p>" + message.id + "</p>" +
-                "<h6>Sent Time:</h6>" +
-                "<p>" + sentTime + "</p>" +
-                "<h6>Encrypted: <i class='fa fa-check-square-o' style='color: green'></i></h6>";
-        }
+        if(this.lastMessage == null)
+            classes += " firstMessage";
         else {
-            html = "<h6>Contact Name:</h6>" +
-                "<p>" + contact.name + "</p>" +
-                "<h6>Contact Email:</h6>" +
-                "<p>" + contact.email + "</p>" +
-                "<h6>Contact Public Key:</h6>" +
-                "<div style='border: 1px solid #212121;'" +
-                "<p style='max-width: 100%;'>" + formatPublicKey(contact.publicKey) + "</p>" +
-                "</div>" +
-                "<h6>Message Id:</h6>" +
-                "<p>" + message.id + "</p>" +
-                "<h6>Message Sent Time:</h6>" +
-                "<p>" + sentTime + "</p>" +
-                "<h6>Message Received Time:</h6>" +
-                "<p>" + receivedTime + "</p>" +
-                "<h6>Encrypted: <i class='fa fa-check-square-o' style='color: green'></i></h6>";
+            if ((message.sent && this.lastMessage.sent) || (!message.sent && !this.lastMessage.sent))
+                classes += " followingMessage";
+            else
+                classes += " firstMessage";
         }
 
-        return html;
-    },
-    /**
-     * Create event to open messages links into a new window.
-     */
-    createChatLinkEvent : function () {
-        $(document).on("click", ".chatLink", function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            KEYTAP.navigationController.loadMessageLink(this.href);
-        });
-    },
-    /**
-     * Responsible to create each message node in chat.
-     *
-     * @param message Array of message details.
-     * @param contactName contact name.
-     * @returns {*|jQuery|HTMLElement}
-     */
-    createMessageNode : function (message, contactName) {
-        if(message.sent == true)
-            contactName = KEYTAP.profileController.getUserInfo().name;
 
-        var fromClass = "";
-
-        var node = $(document.createElement("li"));
-        node.attr("id", "message_" + message.id);
-
-        if(message.timestamp != null)
-            message.time = message.timestamp;
+        if (message.sent === true)
+            classes += " messageSent";
         else
-            message.time = null;
+            classes += " messageReceived";
 
-        if(this.lastMessage != null) {
-            if(this.lastMessage.sent == true && message.sent == true) {
-                if(message.time == null || this.lastMessage.time == null)
-                    fromClass = "message-right following-message";
-                else if(this.compareTime(this.lastMessage.time, message.time) == true)
-                    fromClass = "message-right following-message";
-                else {
-                    fromClass = "message-right first-message";
-                    node.append(createAvatar(contactName));
-                }
-            }
-            else if(this.lastMessage.sent == true && message.sent == false) {
-                fromClass = "message-left first-message";
-                node.append(createAvatar(contactName));
-            }
-            else if(this.lastMessage.sent == false && message.sent == true) {
-                fromClass = "message-right first-message";
-                node.append(createAvatar(contactName));
-            }
-            else if(this.lastMessage.sent == false && message.sent == false) {
-                if(this.compareTime(this.lastMessage.time, message.time) == true)
-                    fromClass = "message-left following-message";
-                else {
-                    fromClass = "message-left first-message";
-                    node.append(createAvatar(contactName));
-                }
-            }
-        }
-        else {
-            if(message.sent == true) {
-                fromClass = "message-right first-message";
-                node.append(createAvatar(contactName));
-            }
-            else {
-                fromClass = "message-left first-message";
-                node.append(createAvatar(contactName));
-            }
-        }
-
-        node.addClass(fromClass);
-
-        var messageDiv = $(document.createElement("div"));
-        messageDiv.addClass("message ");
-
-        messageDiv.append("<p>" + formatTextForHTML(createTextNode(message.message)) + "</p>");
-
-        var timespan = $(document.createElement("span"));
-        timespan.addClass("timespan");
-
+        var timespan = "";
         if(message.sent && message.receivedTimestamp == 0){
-            timespan.html("Delivering...");
+            timespan = "Delivering...";
         }
         else {
-            var newDate = new Date(message.timestamp).toISOString();
-            timespan.html("<time class='timeago' datetime='" + newDate + "'>" + $.timeago(newDate) + "</time>");
+            var time = new Date(message.timestamp).toISOString();
+            timespan = "<time class='timeago' datetime='" + time + "' title='" + $.timeago(time) + "'>" + $.timeago(time) + "</time>";
         }
-
-        var messageDetailsTime = $(document.createElement("p"));
-        messageDetailsTime.addClass("message-details");
-        messageDetailsTime.html("Received at " + new Date(message.timestamp).toLocaleString() + ".");
-
-        var messageDetailsSecure = $(document.createElement("p"));
-        messageDetailsSecure.addClass("message-details");
-        messageDetailsSecure.html("<i class='fa fa-lock' style='color: green; margin-right: 3px;'></i> This Message is secure.");
-
-        messageDiv.append(timespan);
-        messageDiv.prepend(messageDetailsTime);
-        messageDiv.append(messageDetailsSecure);
-        node.append(messageDiv);
 
         this.lastMessage = message;
 
-        //create the mouse hold event to open message menu
-        node.on("mouseheld", function (e) {
-            if(KEYTAP.chatController.selectMode == false) {
-                vibrate(50);
-                KEYTAP.chatController.selectedMessage = [$(this).attr("id").split("_")[1]];
-                KEYTAP.chatController.messageMenu.open();
-            }
-        });
+        var messageNode = $("<li id='message_" + message.id + "' class='" + classes + "'><div class='message'>" +
+            "<p>" + formatTextForHTML(createTextNode(message.message)) + "</p>" +
+            "<span class='timespan'>" + timespan + "</span>" +
+            "</div></li>");
 
-        return node;
+        messageNode.on('mouseheld', function () {
+            vibrate(50);
+            this.openMessageMenu(message);
+        }.bind(this));
+
+        return messageNode;
     },
-    /**
-     * Responsible for sending new message to the backend.
-     */
-    submitNewMessage : function () {
-        var message = $('#newMessageInput').val();
-        if(message != ""){
-            var currentContact = this.contactController.getCurrentContact();
 
-            messengerService.sendMessageTo(currentContact, message).then(function (messageDetails) {
-                this.model.pushNewMessage(currentContact.id, messageDetails);
-                var input = $('#newMessageInput');
-                input.val("");
-                $("#messages").append(this.createMessageNode(messageDetails, KEYTAP.profileController.getUserInfo().name));
-                this.scrollTop();
-                input.click();
-            }.bind(this)).catch(function (e) {
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                console.log(e);
-            });
+    storeCachedConversation : function (messages, contact) {
+        if(Object.size(this.chatCache) <= 5) {
+            this.chatCache[contact.id] = messages;
         }
     },
-    /**
-     * Check if the time difference between two timestamp is bigger than 5 min.
-     *
-     * @param t1
-     * @param t2
-     * @returns {boolean}
-     */
-    compareTime : function (t1, t2) {
-        if(t1 > t2)
-            return false;
-        else if(t2 - t1 > 300000)
-            return false;
-        else if(t2 - t1 < 300000)
-            return true;
 
-        return false;
+    organizeMessages : function (messages) {
+        messages.reverse();
+
+        var organizedMessages = [];
+        messages.forEach(function (message) {
+            organizedMessages[message.id] = message;
+        });
+
+        return organizedMessages;
     },
-    /**
-     * Add message update listener.
-     */
+
+    pushNewMessageInCache : function (contactId, message) {
+        if(contactId in this.chatCache)
+            this.chatCache[contactId][message.id] = message;
+    },
+
+    updateMessageCache : function (contactId, message) {
+        if (contactId in this.chatCache && message.id in this.chatCache[contactId])
+            this.chatCache[contactId][message.id] = message;
+    },
+
+    scrollTop : function () {
+        var offset = $("#chat-content").height();
+        $("[data-page='chat'] #chatPageContent").scrollTop(offset);
+    },
+
     addMessageUpdateListener : function () {
         messengerService.addMessageStatusUpdateListener(function (messageInfo) {
             messageInfo.messages.forEach(function (message) {
-                this.model.updateMessage(messageInfo.contact, message);
-                var messageDiv = $("#message_" + message.id);
-
-                if(messageDiv.length && message.sent == true){
-                    var newDate = new Date(message.timestamp).toISOString();
-                    messageDiv.find(".timespan").html("<time class='timeago' datetime='" + newDate + "'>" + $.timeago(newDate) + "</time>");
+                this.updateMessageCache(messageInfo.contact, message);
+                var messageBlock = $("#message_" + message.id);
+                if(messageBlock.length && message.sent == true){
+                    var time = new Date(message.timestamp).toISOString();
+                    messageBlock.find(".timespan").html("<time class='timeago' datetime='" + time + "' title='" + $.timeago(time) + "'>" + $.timeago(time) + "</time>");
                 }
             }.bind(this));
+
+            contactController.resetCachedConversation();
         }.bind(this));
     },
-    /**
-     * Add new message listener.
-     */
+
     addNewMessageListener : function () {
         messengerService.addNewMessageListener(this.handleNewMessageDisplay.bind(this));
     },
-    /**
-     * Handle new message display.
-     *
-     * @param messageInfo
-     */
+
     handleNewMessageDisplay : function(messageInfo) {
         if(messageInfo.messages.length <= 0)
             return;
@@ -583,168 +148,161 @@ ChatController.prototype = {
         var contactId = messageInfo.contact;
 
         messages.forEach(function (message) {
-            this.model.pushNewMessage(contactId, message);
+            this.pushNewMessageInCache(contactId, message);
         }.bind(this));
 
         //Get the contact that sent the message
-        var cachedContact = this.contactController.getContact(contactId);
+        var cachedContact = contactController.getContact(contactId);
         if(!cachedContact) {
             console.error("No cached contact for " + contactId);
             return;
         }
         var contactName = cachedContact.name;
 
+        contactController.updateRecentChatNode(cachedContact, messageInfo);
         this.updateChatPageNewMessage(messages, contactName, contactId);
-        this.updateContactPageNewMessage(contactId);
-        this.updateRecentChatNewMessage(messages, contactId);
 
         $(".timeago").timeago();
     },
-    /**
-     * Update the recent chat message if on contacts.html page.
-     *
-     * @param messages
-     * @param contactId
-     */
-    updateRecentChatNewMessage : function (messages, contactId) {
-        var recentContent = $("#recentChatList");
-        if(recentContent.length){
-            var recentBlock = $("#recent_" + contactId);
-            if(recentBlock.length) {
-                vibrate(100);
-                var contactDiv = recentBlock.find(".contact");
-                if (!recentBlock.hasClass("new-messages")) {
-                    recentBlock.addClass("new-messages");
-                    contactDiv.after("<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>");
-                }
 
-                var newDate = new Date(messages[messages.length - 1].timestamp).toISOString();
-                contactDiv.find(".recentTimestamp").html("<time class='timeago' datetime='" + newDate + "'>" + $.timeago(newDate) + "</time>");
-                contactDiv.find(".recentMessage").html(messages[messages.length - 1].message);
-            }
-        }
-    },
-    /**
-     * Update the contacts if on contacts.html page.
-     *
-     * @param contactId
-     */
-    updateContactPageNewMessage : function (contactId) {
-        var contactContent = $("#contactList");
-        if(contactContent.length){
-            vibrate(100);
-            var contactBlock = $("#contact_" + contactId);
-            if(contactBlock.length) {
-                if (!contactBlock.hasClass("new-messages")) {
-                    var contactDiv = contactBlock.find(".contact");
-                    contactBlock.addClass("new-messages");
-                    contactDiv.after("<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>");
-                }
-            }
-        }
-    },
-    /**
-     * Update the chat page with new messages.
-     * If the current page is chat.
-     *
-     * @param messages Array of message details.
-     * @param contactName String of contact name.
-     * @param contactId Contact id.
-     */
     updateChatPageNewMessage : function (messages, contactName, contactId) {
-        var currentPageId = $("#currentPageChatId");
-        if(currentPageId.length && currentPageId.html() == contactId){
-            var messageDiv = $("#messages");
+        var currentPageContactId = $("#contact-id");
+        if(currentPageContactId.length && currentPageContactId.html() == contactId){
+            var messageDiv = $("#chat-content");
 
             if(messageDiv.length){
+                var contact = contactController.getContact(contactId);
                 vibrate(100);
                 //for the common case
                 if(messages.length == 1) {
                     var message = messages[0];
-                    messageDiv.append(this.createMessageNode(message, contactName));
+                    messageDiv.append(this.createMessageNode(message, contact));
                 }
                 else {
                     var fragment = $(document.createDocumentFragment());
                     messages.forEach(function (message) {
-                        fragment.append(this.createMessageNode(message, contactName));
+                        fragment.append(this.createMessageNode(message, contact));
                     }, this);
                     messageDiv.append(fragment);
                 }
                 this.scrollTop();
-                this.model.markConversationAsRead(this.contactController.getCurrentContact());
+                this.markConversationAsRead(contact);
             }
         }
     },
-    /**
-     * Scroll the chat page to the last message.
-     */
-    scrollTop : function () {
-        var lastMessage = $("ul#messages li:last");
 
-        if(typeof lastMessage != "undefined" && typeof lastMessage.offset() != "undefined")
-            $("#content").scrollTop(lastMessage.offset().top + $(".chat").height());
+    markConversationAsRead : function (contact) {
+        messengerService.markConversationAsRead(contact).catch(function (e) {
+            console.log(e);
+        })
     },
-    /**
-     * Deletes the whole conversation.
-     *
-     * @param id contactId
-     */
-    deleteConversation : function (id) {
-        messengerService.deleteAllMessagesFor(KEYTAP.contactController.getContact(id)).then(function () {
-            this.clearCache();
-            BootstrapDialog.closeAll();
-            KEYTAP.navigationController.loadPage("contacts.html", false);
-            this.openNotification("The conversation has been deleted successfully.", "success");
+
+    openMessageMenu : function (message) {
+        var contact = contactController.getContact($('#contact-id').html());
+
+        var buttons = [
+            {
+                text: 'Message Info',
+                onClick: function () {
+                    this.showMessageInfo(message, contact);
+                }.bind(this)
+            },
+            {
+                text: 'Delete message',
+                onClick: function () {
+                    slychat.confirm("Are you sure you want to delete this message?", function () {
+                        // TODO update confirm style
+                        this.deleteMessage(message.id, contact);
+                    }.bind(this))
+                }.bind(this)
+            },
+            {
+                text: 'Copy Text',
+                onClick: function () {
+                    copyToClipboard(message.message);
+                }.bind(this)
+            },
+            {
+                text: 'Cancel',
+                color: 'red',
+                onClick: function () {
+                }
+            }
+        ];
+        slychat.actions(buttons);
+    },
+
+    deleteMessage : function (id, contact) {
+        var messageIds = [];
+        if(id.constructor !== Array)
+            messageIds.push(id);
+        else
+            messageIds = id;
+
+        messengerService.deleteMessagesFor(contact, messageIds).then(function () {
+            messageIds.forEach(function (id) {
+                $("#message_" + id).remove();
+            });
         }.bind(this)).catch(function (e) {
-            BootstrapDialog.closeAll();
-            KEYTAP.exceptionController.displayDebugMessage(e);
-            this.openNotification("The conversation could not be deleted.", "warning");
+            console.log("Could not delete messages for contact id " + contact.id);
+            // TODO handle errors
+        })
+    },
+
+    deleteConversation : function (contact) {
+        messengerService.deleteAllMessagesFor(contact).then(function () {
+            contactController.resetCachedConversation();
+        }.bind(this)).catch(function (e) {
+            // TODO handle errors
             console.log("couldn't delete the conversation ");
             console.log(e);
         }.bind(this));
     },
-    /**
-     * Deletes all the given messages from the given contact's conversation.
-     *
-     * @param contact Contact .
-     * @param messageIds Array of message IDs to delete.
-     */
-    deleteMessage : function (contact, messageIds) {
-        messengerService.deleteMessagesFor(contact, messageIds).then(function () {
-            this.clearCache();
-            KEYTAP.navigationController.loadPage("chat.html", false);
-            this.openNotification("The message(s) has been deleted successfully.", "success");
-        }.bind(this)).catch(function (e) {
-            KEYTAP.exceptionController.displayDebugMessage(e);
-            console.log("Could not delete messages for contact id " + contactId);
-            this.openNotification("The message(s) could not be deleted.", "warning");
-            console.log(e);
-        })
-    },
-    /**
-     * Open a new top notification.
-     *
-     * @param message String.
-     * @param type String.
-     */
-    openNotification : function (message, type) {
-        $.notify({
-            icon: "icon-pull-left fa fa-info-circle",
-            message: message
-        }, {
-            type: type,
-            delay: 2000,
-            allow_dismiss: false,
-            offset: {
-                y: 66,
-                x: 20
-            }
-        });
-    },
-    /**
-     * Clear the ui side message cache.
-     */
-    clearCache : function () {
-        this.model.clearCache();
+
+    showMessageInfo : function (message, contact) {
+        var contactDiv = "";
+        var receivedTime = "";
+
+        if (message.sent === true){
+            contactDiv = "<div class='message-info'>" +
+                    "<p class='message-info-title'>Sent To:</p>" +
+                    "<p class='message-info-details'>" + contact.name + "</p>" +
+                "</div>";
+        }
+        else {
+            contactDiv = "<div class='message-info'>" +
+                    "<p class='message-info-title'>Contact Name:</p>" +
+                    "<p class='message-info-details'>" + contact.name + "</p>" +
+                "</div>" +
+                "<div class='message-info'>" +
+                    "<p class='message-info-title'>Contact Email:</p>" +
+                    "<p class='message-info-details'>" + contact.email + "</p>" +
+                "</div>";
+
+            receivedTime = "<div class='message-info'>" +
+                "<p class='message-info-title'>Message Received Time:</p>" +
+                "<p class='message-info-details'>" + message.receivedTimestamp + "</p>" +
+                "</div>";
+        }
+
+        var content = contactDiv +
+            "<div class='message-info'>" +
+                "<p class='message-info-title'>Contact Public Key:</p>" +
+                "<p class='message-info-details'>" + formatPublicKey(contact.publicKey) + "</p>" +
+            "</div>" +
+            '<div class="message-info">' +
+                '<p class="message-info-title">Message id:</p>'+
+                '<p class="message-info-details">' + message.id + '</p>' +
+            '</div>'+
+            '<div class="message-info">' +
+                '<p class="message-info-title">Sent Time:</p>'+
+                '<p class="message-info-details">' + message.timestamp + '</p>' +
+            '</div>' +
+            receivedTime +
+            '<div class="message-info">' +
+                '<p class="message-info-title">Message is encrypted <i class="fa fa-check-square color-green"></i></p>' +
+            '</div>';
+
+        openInfoPopup(content);
     }
 };

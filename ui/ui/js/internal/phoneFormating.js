@@ -1,9 +1,6 @@
-$(document).ready(function () {
-    $.fn.intlTelInput.loadUtils("js/external-lib/utils.js");
-
-    window.telephonyService.getDevicePhoneNumber().then(function (maybePhoneNumber) {
+function updatePhoneWithIntl () {
+    telephonyService.getDevicePhoneNumber().then(function (maybePhoneNumber) {
         if (maybePhoneNumber !== null) {
-            $('label[for="phone"]').addClass("active");
             $("#phone").val(maybePhoneNumber);
         }
     });
@@ -21,14 +18,14 @@ $(document).ready(function () {
                 var data = getCountryData(country);
                 if(data != null) {
                     $("#countrySelect").val(data.iso2);
-                    KEYTAP.registrationController.setPhoneExt(data.dialCode);
+                    setPhoneExt(data.dialCode);
                 }
             }, 100);
         }
     }).catch(function (e) {
-        KEYTAP.exceptionController.displayDebugMessage(e);
+        console.log(e);
     });
-});
+}
 
 function getCountryData(iso2) {
     return $.fn.intlTelInput.getSpecifiedCountryData(iso2.toLowerCase());
@@ -51,4 +48,14 @@ function validatePhone(phone, iso2) {
         return intlTelInputUtils.isValidNumber(phone, iso2);
     else
         return false;
+}
+
+function setPhoneExt(dialCode) {
+    if(typeof dialCode != "undefined") {
+        var extension = $$("#phoneIntlExt");
+        $$("#phoneInputIcon").hide();
+
+        extension.html("+" + dialCode);
+        extension.show();
+    }
 }

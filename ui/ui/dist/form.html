@@ -1,0 +1,33 @@
+
+<!-- We don't need full layout here, because this page will be parsed with Ajax-->
+<!-- Top Navbar-->
+<div class="navbar">
+  <div class="navbar-inner">
+    <div class="left"><a href="#" class="back link"> <i class="icon icon-back"></i><span>Back</span></a></div>
+    <div class="center sliding">Form</div>
+    <div class="right">
+      <!-- Right link contains only icon - additional "icon-only" class--><a href="#" class="link icon-only open-panel"> <i class="icon icon-bars"></i></a>
+    </div>
+  </div>
+</div>
+<div class="pages">
+  <!-- Page, data-page contains page name-->
+  <div data-page="form" class="page">
+    <!-- Scrollable page content-->
+    <div class="page-content">
+      <div class="content-block-title">Form Example</div>
+      <div class="toolbar">
+        <div class="toolbar-inner">
+          <div class="form-content" style="width: inherit;">
+            <form id="newMessageForm" style="width: inherit;">
+              <div style="width: 100%; display: inline-block; min-height: 48px;">
+                <textarea placeholder='Type your secured message' id="newMessageInput" name="newMessageInput" autofocus></textarea>
+                <div id="contact-id" style="display: none;"></div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

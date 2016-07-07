@@ -1,65 +1,26 @@
-<!-- Page Container -->
-<div class="m-scene main-content" id="main" style="background-color: #eeeeee;">
-
-    <!-- Top Menu Bar -->
-    <div id="navBar" class="navbar-fixed-top scene_element scene_element--fadein">
-        <div class="navbar header-bar">
-            <div class="open-left nav-btn" id="nav-menu-back">
-                <a href="#" id="backBtn"><i class="mdi mdi-arrow-left"></i></a>
-            </div>
-            <div id='navBarMenu' class="open-right dropdown" style="width: 56px;">
-                <button class="dropDownBtn" type="button" id="dropdownMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true"><i class="fa fa-ellipsis-v"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu">
-                    <li><a id="editProfileBtn" href="#"><i class="mdi mdi-account"></i>Profile</a></li>
-                    <li role="separator" class="divider"></li>
-                    <li><a id='addContactBtn' href="#"><i class="mdi mdi-account-plus"></i>Add contact</a></li>
-                    <li role="separator" class="divider"></li>
-                    <li><a id="logoutBtn" href="#"><i class="mdi mdi-logout"></i>Logout</a></li>
-                </ul>
-            </div>
-            <div id="contactTabs" class="nav-btn" style="padding-left: 56px; padding-right: 56px; height: 56px;">
-                <ul class="tabs" style="background: transparent;">
-                    <li class="tab col s6" style="height: 56px; line-height: 56px;">
-                        <a href="#recentChatList" class="" style="color: #fff;">Chats</a>
-                    </li>
-                    <li class="tab col s6" style="height: 56px; line-height: 56px;">
-                        <a href="#contactList" style="color: #fff;">Contacts</a>
-                    </li>
-                    <div class="indicator"></div>
-                </ul>
-            </div>
-            <div id="networkStatus" class="center-align hidden">
-                <span style="width: auto; height: 20px; background: whitesmoke; padding-left: 10px; padding-right: 10px;">No connection available</span>
-            </div>
-            <div id="connectionStatus" class="center-align hidden">
-                <span style="width: auto; height: 20px; background: whitesmoke; padding-left: 10px; padding-right: 10px;">Disconnected</span>
+<!-- Top Navbar -->
+<div class="navbar">
+    <div class="navbar-inner">
+        <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
+        <div class="right">
+            <a href="#" class="link icon-only open-panel"> <i class="icon icon-bars"></i></a>
+        </div>
+    </div>
+</div>
+<div class="pages navbar-through toolbar-through">
+    <div data-page="contacts" class="page">
+        <div class="page-content row">
+            <div id='recentChatList' class="col-100 contact-list">
             </div>
         </div>
-    </div><!-- End of Top Menu Bar -->
-
-    <!-- Page Content -->
-    <div class="scene_element scene_element--fadeinleft snap-content main-content-body" id="content" style="background-color: #eeeeee; height: 100%; overflow-x: hidden; overflow-y: auto;">
-
-        <!-- Main Content -->
-        <div class="scene_element">
-            <div class="container">
-                <div class="row">
-                    <div id='contactList' class="col s12" style="padding: 0;">
-
-                    </div>
-                    <div id='recentChatList' class="col s12" style="padding: 0;">
-
-                    </div>
+        <div class="toolbar">
+            <div class="toolbar-inner">
+                <div class="left">
+                    <a id='openContactPopupBtn' href="#" data-popup=".popup-contact" class="link open-popup">
+                        <span>Contacts</span>
+                    </a>
                 </div>
             </div>
-        </div> <!-- End of Main Contents -->
-        <div id="blockui"></div>
-
-        <!-- Specific page javascript -->
-        <script src="js/internal/contacts.js"></script>
-
-
-    </div> <!-- End of Page Content -->
-
-</div> <!-- End of Page Container -->
+        </div>
+    </div>
+</div>

@@ -1,130 +1,26 @@
-<!-- Page Container -->
-<div class="m-scene toolbar-inside main-content" id="main">
+<!-- Top Navbar -->
+<div class="navbar">
+    <div class="navbar-inner">
+        <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
+        <div class="center sliding" style="color: #6d6d72">Profile</div>
+    </div>
+</div>
 
-    <!-- Top Menu Bar -->
-    <div id="navBar" class="navbar-fixed-top scene_element scene_element--fadeinright">
-        <div class="navbar header-bar" style="border-bottom: 1px solid black;">
-            <div class="open-left nav-btn" id="nav-menu-back">
-                <a href="#" id="backBtn"><i class="mdi mdi-arrow-left"></i></a>
+<div class="pages navbar-through toolbar-through">
+    <div data-page="profile" class="page">
+        <div class="page-content vertical-centered-content">
+            <div class="content-block-title">Name</div>
+            <div id="profileNameLink" class="content-block">
+                <div id='profileName' class='info-link'></div>
             </div>
-            <div id='navBarMenu' class="open-right dropdown" style="width: 56px;">
-                <button class="dropDownBtn" type="button" id="dropdownMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true"><i class="fa fa-ellipsis-v"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu">
-                    <li><a id='addContactBtn' href="#"><i class="mdi mdi-account-plus"></i>Add contact</a></li>
-                    <li role="separator" class="divider"></li>
-                    <li><a id="logoutBtn" href="#"><i class="mdi mdi-logout"></i>Logout</a></li>
-                </ul>
+            <div class="content-block-title">Phone</div>
+            <div id="profilePhoneLink" class="content-block">
+                <div id='profilePhone' class='info-link'></div>
             </div>
-            <span class="page-title">Profile</span>
-            <div id="networkStatus" class="center-align hidden">
-                <span style="width: auto; height: 20px; background: whitesmoke; padding-left: 10px; padding-right: 10px;">No connection available</span>
-            </div>
-            <div id="connectionStatus" class="center-align hidden">
-                <span style="width: auto; height: 20px; background: whitesmoke; padding-left: 10px; padding-right: 10px;">Disconnected</span>
+            <div class="content-block-title">Email</div>
+            <div id="profileEmailLink" class="content-block">
+                <div id='profileEmail' class='info-link'></div>
             </div>
         </div>
-    </div><!-- End of Top Menu Bar -->
-
-    <!-- Page Content -->
-
-    <div class="scene_element scene_element--fadeinright snap-content main-content-body container" id="content"  style="background-color: #eeeeee; padding: 0; height: 100%; overflow: auto;">
-
-        <!-- Main Content -->
-        <!--<div class="scene_element" style="height: inherit;">-->
-        <div class="row" style="height: inherit; margin: 0;">
-            <div class="col s12" style="height: inherit; padding: 0;">
-                <div class="container profileContainer" style="height: inherit; padding: 0;">
-                    <div id="topPortion" class="valign-wrapper row" style="background-color: #212121; height: 40%; width: 100%; margin: 0;">
-                        <div class="valign" style="width: 100%;">
-                            <div id="profileAvatar" class="col s12">
-                            </div>
-                            <div id="profileNameDisplay" class="col s12" style="text-align: center; margin-top: 10px; color: #fff;">
-                            </div>
-                            <div id="profileEmailDisplay" class="col s12" style="text-align: center; margin-top: 10px; color: #fff;">
-                            </div>
-                            <div class="col s12" style="text-align: center; margin-top: 10px; color:  #fff; text-decoration: underline;">
-                                <a href="#" id="profilePubKeyBtn">Public Key</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="contactTabs" class="nav-btn" style="background-color: #212121; height: 10%; width: 100%; margin: 0; padding: 0 5px 0 5px; border-top: 1px solid #eeeeee;">
-                        <ul class="tabs" style="background: transparent;">
-                            <li class="tab col s4">
-                                <a href="#updateEmailFormDiv" class="" style="color: #fff;">Email</a>
-                            </li>
-                            <li class="tab col s4">
-                                <a href="#updatePhoneFormDiv" style="color: #fff;">Phone</a>
-                            </li>
-                            <li class="tab col s4">
-                                <a href="#updateNameDiv" style="color: #fff;">Name</a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div id="updateEmailFormDiv" class="scene_element scene_element--fadeinright valign-wrapper row" style="overflow: auto; position: absolute; height: 50%; width: 100%; background-color: #eeeeee; margin: 0;">
-                        <div class="valign col s12">
-                            <ul class="formError" style="color: red;">
-                            </ul>
-                            <form id="updateEmailForm" style="margin-top: 5px;" novalidate>
-                                <div class="col s12 group-form">
-                                    <i class="mdi mdi-email"></i>
-                                    <input class="validate" id="profileEmail" type="email"  required placeholder="New Email">
-                                </div>
-                                <div class="col s12 group-form">
-                                    <button id="submitEmailUpdateBtn" type="submit" class="btn fullwidth secondary-color">Submit</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    <div id="updatePhoneFormDiv" class="scene_element scene_element--fadeinright valign-wrapper row" style="overflow: auto; position: absolute; height: 50%; display: none; width: 100%;  background-color: #eeeeee; margin: 0;">
-                        <div class="valign col s12">
-                            <ul class="formError" style="color: red;">
-                            </ul>
-                            <form id="updatePhoneForm" style="margin-top: 5px;" novalidate>
-
-                                <div class="col s12 group-form">
-                                    <i class="mdi mdi-map-marker"></i>
-                                    <select id="countrySelect">
-                                        <option selected disabled>Country</option>
-                                    </select>
-                                </div>
-
-                                <div class="col s12 group-form">
-                                    <span id="phoneIntlExt" class="hidden"></span><i id="phoneInputIcon" class="mdi mdi-phone"></i>
-                                    <input type="tel" required class="form-control" id="phone" placeholder="Phone Number">
-                                </div>
-
-                                <div class="col s12 group-form">
-                                    <button id="submitUpdatePhoneBtn" type="submit" class="btn fullwidth secondary-color">Submit</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    <div id="updateNameDiv" class="scene_element scene_element--fadeinright valign-wrapper row" style="overflow: auto; position: absolute; height: 50%; display: none; width: 100%;  background-color: #eeeeee; margin: 0;">
-                        <div class="valign col s12">
-                            <ul class="formError" style="color: red;">
-                            </ul>
-                            <form id="updateNameForm" style="margin-top: 5px;" novalidate>
-                                <div class="col s12 group-form">
-                                    <i class="mdi mdi-account-circle"></i>
-                                    <input class="validate" id="profileName" type="text" data-parsley-minlength="[4]" required data-parsley-pattern="^[a-zA-Z\s]+$" placeholder="Name">
-                                </div>
-
-                                <div class="col s12 group-form">
-                                    <button id="submitUpdateName" type="submit" class="btn fullwidth secondary-color">Submit</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!--</div> &lt;!&ndash; End of Main Contents &ndash;&gt;-->
-        <div id="blockui"></div>
-    </div> <!-- End of Page Content -->
-
-    <!-- Specific page javascript -->
-    <script src="js/internal/profile.js"></script>
-    <script src="js/internal/phoneFormating.js"></script>
-
-</div> <!-- End of Page Container -->
+    </div>
+</div>

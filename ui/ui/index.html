@@ -1,96 +1,128 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html>
 <head>
-    <title>
-        Keytapp - Home
-    </title>
-    <meta content="IE=edge" http-equiv="x-ua-compatible">
-    <meta content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" name="viewport">
-    <meta content="yes" name="apple-mobile-web-app-capable">
-    <meta content="yes" name="apple-touch-fullscreen">
-    <link href="css/font.css" rel="stylesheet" type="text/css">
-    <link href="css/bootstrap.css" media="all" rel="stylesheet" type="text/css">
-    <link href="css/materialdesignicons.min.css" media="all" rel="stylesheet" type="text/css">
-    <link href="css/font-awesome.min.css" media="all" rel="stylesheet" type="text/css">
-    <link href="css/keyframes.css" rel="stylesheet" type="text/css">
-    <link href="css/bootstrap-dialog.css" rel="stylesheet" type="text/css">
-    <link href="css/intlTelInput.css" rel="stylesheet" type="text/css">
-    <link href="css/materialize.min.css" rel="stylesheet" type="text/css">
-    <link href="css/style.css" rel="stylesheet" type="text/css">
-    <link href="css/internStyle.css" rel="stylesheet" type="text/css">
-    <link href="css/dialog.css" rel="stylesheet" type="text/css">
-    <script src="js/external-lib/jquery-2.2.0.min.js"></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>Sly Messenger</title>
+    <link rel="stylesheet" href="css/framework7.ios.min.css">
+    <link rel="stylesheet" href="css/framework7.ios.colors.min.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/slychat.css">
+
 </head>
-<body style="overflow: hidden; background-color: #eeeeee;">
-<div id="exceptionModal" class="modal">
-    <div style="border-bottom: 2px solid black;">
-        <h6>An Exception occurred</h6>
-    </div>
-    <div class="modalContent row" style="margin-top: 10px;">
-        <div style="float: left; margin-left: 5%;">
-            <p id="exceptionName" style="margin-bottom: 10px;"></p>
-            <span style="float: left;">stacktrace:</span>
-        </div>
-        <div style="text-align: center;">
-            <textarea rows="13" id="debugStacktrace" style="resize: none; width: 90%; height: 100%; line-height: 1; font-size: 12px;" readonly></textarea>
-        </div>
-    </div>
-    <div style="float: right; margin-right: 5%;">
-        <button id="exceptionModalClose" class="btn btn-info">OK</button>
+<body>
+<div class="statusbar-overlay"></div>
+<div class="panel-overlay"></div>
+<div class="panel panel-right panel-reveal">
+    <div class="list-block">
+        <ul>
+            <li>
+                <a id='profileBtn' href="#" class="item-link close-panel">
+                    <div class="item-content">
+                        <div class="item-media">
+                            <i class="fa fa-user"></i>
+                        </div>
+                        <div class="item-inner">
+                            <div class="item-title">Profile</div>
+                        </div>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a id="logoutBtn" href="#" class="item-link close-panel">
+                    <div class="item-content">
+                        <div class="item-media">
+                            <i class="fa fa-sign-out"></i>
+                        </div>
+                        <div class="item-inner">
+                            <div class="item-title">Logout</div>
+                        </div>
+                    </div>
+                </a>
+            </li>
+        </ul>
     </div>
 </div>
-<div class="m-scene toolbar-inside main-content" id="main"> <!-- Page Container -->
+<div class="views">
+    <div id="mainView" class="view view-main">
+        <!-- Top Navbar -->
+        <div class="navbar">
+            <div class="navbar-inner">
+            </div>
+        </div>
+        <div class="pages navbar-through toolbar-through">
+            <div data-page="index" class="page">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="popup-overlay"></div>
+<div class="popup popup-contact">
+    <div class="view" data-page>
+        <div class="navbar">
+            <div class="navbar-inner">
+                <a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a>
+                <div class="right">
+                    <a id="addNewContactGoBtn" href="#" class="link icon-only close-popup"> <i class="fa fa-plus-circle fa-2x"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="pages navbar-through toolbar-through">
+            <div data-page class="page">
+                <div class="page-content">
+                    <div class="content-block-title">Recent contacts</div>
+                    <div id="recentContactList" class="content-block recent-contact-list">
+                    </div>
+                    <div class="content-block-title">Contacts</div>
+                    <div class="content-block list-block">
+                        <ul id="contact-list">
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <!-- Specific page javascript -->
-    <script src="js/internal/index.js"></script>
+<script type="text/javascript" src="js/external-lib/framework7.js"></script>
+<script type="text/javascript" src="js/external-lib/jquery-2.2.0.min.js"></script>
+<script type="text/javascript" src="js/external-lib/intlTelInput.js"></script>
+<script type="text/javascript" src="js/external-lib/jquery.timeago.js"></script>
 
-</div> <!-- End of Page Container -->
-<script src="js/build-config.js"></script>
-<script src="js/dispatcher.js"></script>
-<script src="js/jvm-service/registration-service.js"></script>
-<script src="js/jvm-service/platform-info-service.js"></script>
-<script src="js/jvm-service/messenger-service.js"></script>
-<script src="js/jvm-service/login-service.js"></script>
-<script src="js/jvm-service/contacts-service.js"></script>
-<script src="js/jvm-service/history-service.js"></script>
-<script src="js/jvm-service/devel-service.js"></script>
-<script src="js/jvm-service/network-status-service.js"></script>
-<script src="js/jvm-service/state-service.js"></script>
-<script src="js/jvm-service/telephony-service.js"></script>
-<script src="js/jvm-service/window-service.js"></script>
-<script src="js/jvm-service/event-service.js"></script>
-<script src="js/jvm-service/account-modification-service.js"></script>
-<script src="js/jvm-service/platform-service.js"></script>
-<script src="js/jvm-service/load-service.js"></script>
-<script src="js/jvm-service/info-service.js"></script>
-<script src="js/jvm-service/config-service.js"></script>
-<script src="js/models/loginModel.js"></script>
-<script src="js/models/registrationModel.js"></script>
-<script src="js/models/contactModel.js"></script>
-<script src="js/models/chatModel.js"></script>
-<script src="js/models/profileModel.js"></script>
-<script src="js/models/recentChatModel.js"></script>
-<script src="js/controller/loginController.js"></script>
-<script src="js/controller/registrationController.js"></script>
-<script src="js/controller/contactController.js"></script>
-<script src="js/controller/chatController.js"></script>
-<script src="js/controller/navigationController.js"></script>
-<script src="js/controller/menuController.js"></script>
-<script src="js/controller/exceptionController.js"></script>
-<script src="js/controller/connectionController.js"></script>
-<script src="js/controller/profileController.js"></script>
-<script src="js/controller/recentChatController.js"></script>
-<script src="js/external-lib/bootstrap.min.js"></script>
-<script src="js/external-lib/materialize.min.js"></script>
-<script src="js/external-lib/jquery.smoothState.js"></script>
-<script src="js/external-lib/initial.js"></script>
-<script src="js/external-lib/parsley.min.js"></script>
-<script src="js/external-lib/bootstrap-dialog.js"></script>
-<script src="js/external-lib/intlTelInput.js"></script>
-<script src="js/external-lib/jquery.timeago.js"></script>
-<script src="js/external-lib/bootstrap-notify.min.js"></script>
-<script src="js/internal/text-helper.js"></script>
-<script src="js/internal/functions.js"></script>
+<script type="text/javascript" src="js/build-config.js"></script>
+<script type="text/javascript" src="js/dispatcher.js"></script>
+<script type="text/javascript" src="js/jvm-service/account-modification-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/contacts-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/devel-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/event-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/history-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/info-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/load-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/login-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/messenger-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/network-status-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/platform-info-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/platform-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/registration-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/state-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/telephony-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/window-service.js"></script>
+
+<script type="text/javascript" src="js/controller/NavigationController.js"></script>
+<script type="text/javascript" src="js/controller/LoginController.js"></script>
+<script type="text/javascript" src="js/controller/RegistrationController.js"></script>
+<script type="text/javascript" src="js/controller/ProfileController.js"></script>
+<script type="text/javascript" src="js/controller/ContactController.js"></script>
+<script type="text/javascript" src="js/controller/ChatController.js"></script>
+
+<script type="text/javascript" src="js/internal/phoneFormating.js"></script>
+<script type="text/javascript" src="js/internal/functions.js"></script>
+
+<script type="text/javascript" src="js/internal/slychat.js"></script>
+<script type="text/javascript" src="js/internal/pagesEventInit.js"></script>
+<script type="text/javascript" src="js/internal/form-validation.js"></script>
 
 </body>
 </html>

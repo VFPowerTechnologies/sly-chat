@@ -1,454 +1,476 @@
-var ContactController = function (model) {
-    this.model = model;
-    this.model.setController(this);
-    this.syncing = false;
-    this.notify = null;
+var ContactController = function () {
+    this.conversations = [];
+    this.recentContact = [];
+    this.recentChatNodes = [];
 };
 
-ContactController.prototype = {
-    /**
-     * Loads the contacts on each contacts.html page load.
-     */
+ContactController.prototype  = {
     init : function () {
-        this.model.fetchConversation();
+        this.fetchConversation();
     },
-    /**
-     * Add Contact page event.
-     * Run only once on Contact Controller init.
-     */
-    addContactPageEvent : function () {
-        /**
-         * Click event for delete contact cancel button.
-         */
-        $(document).on('click', "#deleteContactModalClose", function(e) {
-            e.preventDefault();
-            BootstrapDialog.closeAll();
+
+    resetCachedConversation : function () {
+        this.conversations = [];
+        this.fetchConversation();
+    },
+
+    fetchConversation : function () {
+        if (this.conversations.length <= 0) {
+            messengerService.getConversations().then(function (conversations) {
+                this.storeConversations(conversations);
+            }.bind(this)).catch(function (e) {
+                console.log(e);
+            });
+        }
+    },
+
+    fetchAndLoadChat : function (contactId) {
+        messengerService.getConversations().then(function (conversations) {
+            var forContact = this.orderByName(conversations);
+
+            forContact.forEach(function(conversation){
+                this.conversations[conversation.contact.id] = conversation;
+            }.bind(this));
+
+            this.loadChatPage(this.conversations[contactId].contact, false);
+
+            navigationController.hideSplashScreen();
+
+            this.storeConversations(conversations);
+        }.bind(this)).catch(function (e) {
+            console.log(e);
         });
-
-        /**
-         * Click event for delete contact button.
-         */
-        $(document).on("click", "[id^='deleteConfirm_']", function(e){
-            var buttonId = e.currentTarget.id;
-            var contactId = buttonId.split("_")[1];
-            this.deleteContact(contactId);
-            BootstrapDialog.closeAll();
-        }.bind(this));
     },
-    /**
-     * Display contact function.
-     *
-     * @param conversations
-     */
-    displayContacts : function (conversations) {
-        var contactList = $("#contactList");
-        var fragment = $(document.createDocumentFragment());
 
-        for (var id in conversations) {
-            if(conversations.hasOwnProperty(id)) {
-                fragment.append(this.createContactBlock(conversations[id].contact, conversations[id].status));
+    storeConversations : function (conversations) {
+        var forContact = this.orderByName(conversations);
+        this.recentContact = this.orderByRecentChat(conversations);
+        var forRecentContact = [];
+
+        this.createRecentChatList();
+
+        forContact.forEach(function(conversation){
+            this.conversations[conversation.contact.id] = conversation;
+        }.bind(this));
+
+        this.createContactList();
+
+        for(var i = 0; i < 4; i++) {
+            if(i in this.recentContact) {
+                forRecentContact.push(this.recentContact[i]);
             }
         }
 
-        contactList.html(fragment);
+        this.createRecentContactList(forRecentContact);
+
+        navigationController.hideSplashScreen();
     },
 
-    /**
-     * Add contact event listener.
-     */
+    createContactList : function () {
+        var frag = $(document.createDocumentFragment());
+        this.conversations.forEach(function (conversation) {
+            frag.append(this.createContactNode(conversation.contact));
+        }.bind(this));
+
+        $("#contact-list").html(frag);
+    },
+
+    createContactNode : function (contact) {
+        var contactBlock = $("<li class='contact-link close-popup'></li>");
+        var contactDetails = $("<div><p>" + contact.name + "</p><span>" + contact.email + "</span></div>");
+
+        contactBlock.append(contactDetails);
+
+        contactBlock.click(function (e) {
+            if (contactBlock.hasClass("noClick")) {
+                e.preventDefault();
+                e.stopPropagation();
+                contactBlock.removeClass("noClick");
+            }
+            else
+                this.loadChatPage(contact);
+        }.bind(this));
+
+        contactBlock.on("mouseheld", function () {
+            vibrate(50);
+            contactBlock.addClass("noClick");
+            this.openContactMenu(contact);
+        }.bind(this));
+
+        return contactBlock;
+    },
+
+    createRecentContactList : function (conversations) {
+        var frag = $(document.createDocumentFragment());
+        conversations.forEach(function (conversation) {
+            frag.append(this.createRecentContactNode(conversation))
+        }.bind(this));
+
+        $("#recentContactList").html(frag);
+    },
+
+    createRecentContactNode : function (conversation) {
+        var contact = conversation.contact;
+
+        var contactDiv = $("<div class='contact-link close-popup'><div class='avatar'>" +
+            contact.name.charAt(0).toUpperCase() + "</div>" +
+            "<div>" + contact.name + "</div></div>");
+
+        $(contactDiv).click(function () {
+            this.loadChatPage(contact);
+        }.bind(this));
+
+        return contactDiv;
+    },
+
+    createRecentChatList : function () {
+        this.recentChatNodes = [];
+        this.recentContact.forEach(function (conversation) {
+            this.recentChatNodes[conversation.contact.id] = this.createRecentChatNode(conversation);
+        }.bind(this));
+
+        this.insertRecentChat();
+    },
+
+    createRecentChatNode : function (conversation) {
+        var time = new Date(conversation.status.lastTimestamp).toISOString();
+        var recentDiv = $("<div class='item-link recent-contact-link row'>" +
+            "<div class='col-100'><span>" + conversation.contact.name + "</span></div>" +
+            "<div class='left'><span>" + this.formatLastMessage(conversation.status.lastMessage) + "</span></div>" +
+            "<div class='right'><span><small class='last-message-time'><time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time></small></span></div>" +
+            "</div>");
+
+        recentDiv.click(function () {
+            if(recentDiv.hasClass("noClick"))
+                recentDiv.removeClass("noClick");
+            else
+                this.loadChatPage(conversation.contact);
+        }.bind(this));
+
+        recentDiv.on('mouseheld', function (e) {
+            vibrate(50);
+            recentDiv.addClass("noClick");
+            this.openConversationMenu(conversation.contact);
+        }.bind(this));
+
+        return recentDiv;
+    },
+
+    updateRecentChatNode : function (contact, messageInfo) {
+        var message = messageInfo.messages[messageInfo.messages.length - 1];
+
+        if (contact.id in this.recentChatNodes) {
+            var time = new Date(message.receivedTimestamp).toISOString();
+            var node = this.recentChatNodes[contact.id];
+            node.find(".left").html(this.formatLastMessage(message.message));
+            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>")
+        }
+        else {
+            var conversation = {
+                contact: contact,
+                status: {
+                    lastTimestamp: message.receivedTimestamp,
+                    lastMessage: message.message
+                }
+            };
+
+            this.recentChatNodes[contact.id] = this.createRecentChatNode(conversation);
+        }
+
+        this.insertRecentChat();
+    },
+
+    formatLastMessage : function (message) {
+        if(message.length > 40)
+            return message.substring(0, 40) + "...";
+        else
+            return message;
+    },
+
     addContactEventListener : function () {
         contactService.addContactEventListener(function (ev) {
             switch(ev.type) {
                 case "ADD":
                 case 'REMOVE':
-                    if(window.location.href.indexOf("contacts.html") > -1) {
-                        this.model.resetContacts();
-                        KEYTAP.navigationController.loadPage("contacts.html", false);
-                    }
+                    this.resetCachedConversation();
                     break;
-
-
                 case "SYNC":
-                    this.syncing = ev.running;
-                    if(ev.running == true) {
-                        this.showContactSyncingNotification();
-                    }else{
-                        this.closeNotification();
-                        if(window.location.href.indexOf("contacts.html") > -1) {
-                            this.model.resetContacts();
-                            this.model.fetchConversation();
-                        }
+                    if (ev.running == true) {
+                        // sync is running
+                    }
+                    else {
+                        if (loginController.isLoggedIn())
+                            this.resetCachedConversation();
                     }
                     break;
             }
         }.bind(this));
     },
-    /**
-     * Opens contact sync notification.
-     */
-    showContactSyncingNotification : function () {
-        this.notify = $.notify({
-            icon: "icon-pull-left fa fa-info-circle",
-            message: " Contact List is syncing"
-        }, {
-            type: "warning",
-            delay: 0,
-            allow_dismiss: false,
-            allow_duplicates: false,
-            offset: {
-                y: 66,
-                x: 20
-            }
-        });
-    },
-    /**
-     * Close contact sync notification.
-     */
-    closeNotification : function () {
-        if(this.notify != null) {
-            this.notify.update("type", "success");
-            this.notify.update("message", "Sync is completed");
-            this.notify.update("icon", "fa fa-check-circle");
 
-            setTimeout(function () {
-                this.notify.close();
-            }.bind(this), 3000);
-        }
-    },
-    /**
-     * Create each contact node.
-     *
-     * @param contact
-     * @param status
-     * @returns {*|jQuery|HTMLElement}
-     */
-    createContactBlock : function (contact, status) {
-        var contactLinkClass = "contact-link ";
-        var newBadge = "";
+    newContactSearch : function () {
+        var form = $("#addContactForm");
+        //remove previous error
+        form.find(".error-block").html("");
 
-        if(status.unreadMessageCount > 0){
-            contactLinkClass += "new-messages";
-            newBadge = "<span class='pull-right label label-warning' style='line-height: 0.8'>" + "new" + "</span>";
-        }
+        var input = $$("#new-contact-username").val().replace(/\s+/g, '');
+        if (input === '')
+            return;
 
-        var contactBlockDiv = $("<div class='" + contactLinkClass + "' id='contact_" + contact.id + "'></div>");
-        var contactBlockHtml = "<div class='contact'>" + createAvatar(contact.name) + "<p style='display: inline-block;'>" +
-            contact.name + "</p>" +
-            "<p class='contact-email'>" + contact.email + "</p>" +
-            "</div>" + newBadge;
-        contactBlockDiv.html(contactBlockHtml);
+        slychat.showPreloader();
 
-        /**
-         * Click event for each contact block.
-         */
-        contactBlockDiv.click(function (e) {
-            e.preventDefault();
-            var id = $(this).attr("id").split("contact_")[1];
-            KEYTAP.contactController.setCurrentContact(id);
-            KEYTAP.navigationController.loadPage("chat.html", true);
-        });
-
-        /**
-         * Mouse held event for each contact block.
-         */
-        contactBlockDiv.on("mouseheld", function (e) {
-            e.preventDefault();
-            vibrate(50);
-            var contextMenu = KEYTAP.contactController.openContactContextLikeMenu(contact.id);
-            contextMenu.open();
-        });
-
-        return contactBlockDiv;
-    },
-    /**
-     * Opens the contact menu on contact node long press.
-     *
-     * @param contactId
-     * @returns {*}
-     */
-    openContactContextLikeMenu : function (contactId) {
-        var html = "<div class='contextLikeMenu'>" +
-            "<ul>" +
-                "<li><a id='contactDetails_" + contactId + "' href='#'>Contact Details</a></li>" +
-                "<li role='separator' class='divider'></li>" +
-                "<li><a id='deleteContact_" + contactId + "' href='#'>Delete Contact</a></li>" +
-            "</ul>" +
-        "</div>";
-
-        return createContextLikeMenu(html, true);
-    },
-    /**
-     * Opens the contact details dialog.
-     *
-     * @param id
-     */
-    displayContactDetailsModal : function (id) {
-        var contact = this.getContact(id);
-
-        var html = "<div class='detailsModalClose'><a href='#' onclick='BootstrapDialog.closeAll();'><i class='mdi mdi-arrow-left'></i></a></div>" +
-            "<div class='contact-details'>" +
-            "<h6>Name:</h6>" +
-            "<p>" + contact.name + "</p>" +
-            "<h6>Email:</h6>" +
-            "<p>" + contact.email + "</p>" +
-            "<h6>Public Key:</h6>" +
-            "<div style='border: 1px solid #212121;'" +
-                "<p style='max-width: 100%;'>" + formatPublicKey(contact.publicKey) + "</p>" +
-            "</div>" +
-            "</div>";
-
-        var contactDetailsModal = new BootstrapDialog();
-        contactDetailsModal.setCssClass("fullPageDialog whiteModal noHeaderModal centerAlignDialog");
-        contactDetailsModal.setClosable(true);
-        contactDetailsModal.setMessage(html);
-        contactDetailsModal.open();
-    },
-    /**
-     * Fetch contact information then load the contact page.
-     *
-     * @param id
-     * @param pushCurrentPage
-     */
-    loadContactPage : function (id, pushCurrentPage) {
-        this.model.fetchConversationForChat(id, pushCurrentPage);
-    },
-    /**
-     * Get the current selected contact.
-     *
-     * @returns {*}
-     */
-    getCurrentContact : function () {
-        return this.model.getCurrentContact();
-    },
-    /**
-     * Set the current contact.
-     *
-     * @param id
-     */
-    setCurrentContact : function (id) {
-        this.model.setCurrentContact(id);
-    },
-    /**
-     * Get the specified contact.
-     *
-     * @param id
-     * @returns {*}
-     */
-    getContact : function (id) {
-        return this.model.getContact(id);
-    },
-    /**
-     * Add new contact if valid.
-     */
-    addNewContact : function () {
-        var newContactBtn = $("#newContactBtn");
-        newContactBtn.prop("disabled", true);
-        if(validateForm("#addContactForm") == true && this.syncing == false){
-            var input = $("#username").val().replace(/\s+/g, '');
-            var phone = null;
-            var username = null;
-            if (validateEmail(input)){
-                username = input;
-            }
-            else{
-                phone = input;
-            }
-
-            contactService.fetchNewContactInfo(username, phone).then(function (response) {
-                if(response.successful == false){
-                    $("#error").append("<li>" + response.errorMessage + "</li>");
-                    $("#newContactBtn").prop("disabled", false);
-                }
-                else{
-                    this.createConfirmContactForm(response.contactDetails);
-                }
-            }.bind(this)).catch(function (e) {
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                console.error('Unable to add contact: ' + e.message);
-                $("#newContactBtn").prop("disabled", false);
-                $("#error").html("<li>" + e.message + "</li>");
-            });
+        var phone = null;
+        var username = null;
+        if (validateEmail(input)){
+            username = input;
         }
         else{
-            newContactBtn.prop("disabled", false);
+            phone = input;
         }
-    },
-    /**
-     * Update contact with the given information.
-     */
-    updateContact : function () {
-        if(validateForm("#updateContactForm") == true){
-            var contact = this.model.getCurrentContact();
-            contact.name = document.getElementById("name").value;
-            contact.phoneNumber = document.getElementById("phone").value;
-            contact.email = document.getElementById("email").value;
-            contact.publicKey = document.getElementById("publicKey").value;
 
-            contactService.updateContact(contact).then(function () {
-                this.model.resetContacts();
-                KEYTAP.navigationController.loadPage("contacts.html");
-            }.bind(this)).catch(function (e) {
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                console.error('Unable to add contact: ' + e.message);
-                $("#error").append("<li>" + e.message + "</li>");
+        contactService.fetchNewContactInfo(username, phone).then(function (response) {
+            slychat.hidePreloader();
+            if (response.successful == false) {
+                form.find(".error-block").html("<li>" + response.errorMessage +"</li>");
+            }
+            else {
+                this.createContactSearchResult(response.contactDetails);
+            }
+        }.bind(this)).catch(function (e) {
+            slychat.hidePreloader();
+            form.find(".error-block").html("<li>An error occurred</li>");
+            console.error('Unable to add contact: ' + e.message);
+            console.error(e);
+        });
+    },
+
+    createContactSearchResult : function (contact) {
+        var contactNode = this.createNewContactNode(contact);
+        $('#newContactSearchResult').append(contactNode);
+    },
+
+    createNewContactNode : function (contact) {
+        var button = null;
+        var successIcon = null;
+
+        var contactBlock = $("<li class='new-contact-link'></li>");
+        var avatar = $("<div class='avatar'>" + contact.name.charAt(0).toUpperCase() + "</div>");
+        var details = $("<div class='details'><p>" + contact.name + "</p><p>" + contact.email + "</p></div>");
+        var buttonDiv = $("<div class='pull-right color-green confirm-add-contact-hidden new-contact-button'></div>");
+
+        if(contact.id in this.conversations) {
+            button = $("<a class='button confirm-add-contact-btn icon-only color-green' style='display: none;'>Confirm</a>");
+            successIcon = $('<div class="contact-added-successfully" style="border: 1px solid #4CD964; border-radius: 50%; text-align: center; width: 35px; height: 35px;"><i class="fa fa-check" style="font-size: 25px;"></i></div>');
+        }
+        else {
+            button = $("<a class='button confirm-add-contact-btn icon-only color-green'>Confirm</a>");
+            successIcon = $('<div class="contact-added-successfully" style="display: none; border: 1px solid #4CD964; border-radius: 50%; text-align: center; width: 35px; height: 35px;"><i class="fa fa-check" style="font-size: 25px;"></i></div>');
+        }
+        var pubKey = $("<div class='confirm-add-contact-hidden pubkey'><div>" + formatPublicKey(contact.publicKey) + "</div></div>");
+
+        contactBlock.append(avatar);
+        contactBlock.append(details);
+        buttonDiv.append(successIcon);
+        buttonDiv.append(button);
+        contactBlock.append(buttonDiv);
+        contactBlock.append(pubKey);
+
+        $(contactBlock).click( function (e) {
+            var hiddenContent = $(this).find('.confirm-add-contact-hidden');
+            if(hiddenContent.css("display") === 'none')
+                hiddenContent.show();
+            else
+                hiddenContent.hide();
+        });
+
+        $(button).click(function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var data = {
+                id: contact.id,
+                name: contact.name,
+                email: contact.email,
+                phoneNumber: contact.phoneNumber,
+                publicKey: contact.publicKey
+            };
+
+            this.addContact(data, button, successIcon);
+        }.bind(this));
+
+        return contactBlock;
+    },
+
+    addContact : function (data, button, successIcon) {
+        var form = $("#addContactForm");
+        //remove previous error
+        form.find(".error-block").html("");
+
+        contactService.addNewContact(data).then(function (result){
+            button.hide();
+            successIcon.show();
+            this.resetCachedConversation();
+        }.bind(this)).catch(function (e) {
+            form.find(".error-block").html("<li>An error occurred</li>");
+            console.error('Unable to add contact: ' + e.message);
+        });
+    },
+
+    orderByName : function (conversations) {
+        conversations.sort(function(a, b) {
+            var emailA = a.contact.email.toLowerCase();
+            var emailB = b.contact.email.toLowerCase();
+
+            if(emailA < emailB)
+                return -1;
+            if(emailA > emailB)
+                return 1;
+
+            return 0;
+        });
+
+        return conversations;
+    },
+
+    orderByRecentChat : function (conversations) {
+        var actualConversation = [];
+
+        conversations.forEach(function (conversation) {
+            if(conversation.status.lastMessage != null)
+                actualConversation.push(conversation);
+        });
+
+        actualConversation.sort(function(a, b) {
+            var dateA = parseFormatedTimeString(a.status.lastTimestamp);
+            var dateB = parseFormatedTimeString(b.status.lastTimestamp);
+
+            if(dateA.getTime() > dateB.getTime())
+                return -1;
+            if(dateA.getTime() < dateB.getTime())
+                return 1;
+
+            return 0;
+        });
+
+        return actualConversation;
+    },
+
+    insertRecentChat : function () {
+        if(this.recentChatNodes.length > 0) {
+            var frag = $(document.createDocumentFragment());
+
+            this.recentChatNodes.forEach(function (element) {
+                frag.append(element);
             });
+
+            $("#recentChatList").html(frag);
+        }
+        else {
+            $("#recentChatList").html("<div>No recent chat</div>");
         }
     },
-    /**
-     * Create the new contact button event.
-     */
-    newContactEvent : function() {
-        $("#newContactBtn").click(function (e) {
-            e.preventDefault();
-            $("#error").html("");
-            this.addNewContact();
-        }.bind(this));
+
+    loadChatPage : function (contact, pushCurrenPage) {;
+        if (pushCurrenPage === undefined)
+            pushCurrenPage = true;
+
+        var options = {
+            url: "chat.html",
+            query: {
+                name: contact.name,
+                email: contact.email,
+                id: contact.id,
+                publicKey: contact.publicKey,
+                phoneNumber: contact.phoneNumber
+            }
+        };
+
+        navigationController.loadPage('chat.html', pushCurrenPage, options);
     },
-    /**
-     * Delete contact with the specified id.
-     *
-     * @param id
-     */
-    deleteContact : function (id) {
-        contactService.removeContact(this.model.getContact(id)).catch(function (e) {
+
+    getContact : function (id) {
+        if (id in this.conversations)
+            return this.conversations[id].contact;
+        else
+            return false;
+    },
+
+    deleteContact : function (contact) {
+        contactService.removeContact(contact).then(function () {
+            this.resetCachedConversation();
+        }.bind(this)).catch(function (e) {
+            // TODO handle errors
             console.log(e);
         })
     },
-    /**
-     * Get the conversation object from the model.
-     * @returns {*}
-     */
-    getConversations : function () {
-        return this.model.getConversations();
+
+    openConversationMenu : function (contact) {
+        var buttons = [
+            {
+                text: 'Contact Info',
+                onClick: function () {
+                    this.showContactInfo(contact);
+                }.bind(this)
+            },
+            {
+                text: 'Delete Conversation',
+                onClick: function () {
+                    slychat.confirm("Are you sure you want to delete this conversation?", function () {
+                        // TODO update confirm style
+                        chatController.deleteConversation(contact);
+                    })
+                }
+            },
+            {
+                text: 'Cancel',
+                color: 'red',
+                onClick: function () {
+                }
+            }
+        ];
+        slychat.actions(buttons);
     },
-    /**
-     * Create the confirm new contact form.
-     *
-     * @param contactDetails
-     */
-    createConfirmContactForm : function (contactDetails) {
-        var form = document.createElement("form");
-        form.id = "addContactForm";
-        form.method = "post";
 
-        var nameLabel = document.createElement("label");
-        nameLabel.for = "name";
-        nameLabel.innerHTML = "Name:";
-
-        var nameInput = document.createElement("INPUT");
-        nameInput.id = "name";
-        nameInput.type = "text";
-        nameInput.value = contactDetails.name;
-        nameInput.className = "center-align";
-        nameInput.readOnly = true;
-
-        var publicKeyLabel = document.createElement("label");
-        publicKeyLabel.for = "publicKey";
-        publicKeyLabel.innerHTML = "Public Key:";
-
-        var publicKeyInput = document.createElement("INPUT");
-        publicKeyInput.id = "publicKey";
-        publicKeyInput.type = "text";
-        publicKeyInput.value = contactDetails.publicKey;
-        publicKeyInput.className = "center-align";
-        publicKeyInput.readOnly = true;
-
-        var phoneInput = document.createElement("INPUT");
-        phoneInput.id = "phoneNumber";
-        phoneInput.type = "hidden";
-        phoneInput.value = contactDetails.phoneNumber;
-
-        var id = document.createElement("INPUT");
-        phoneInput.id = "user-id";
-        phoneInput.type = "hidden";
-        phoneInput.value = contactDetails.id;
-
-        var emailInput = document.createElement("INPUT");
-        emailInput.id = "email";
-        emailInput.type = "hidden";
-        emailInput.value = contactDetails.email;
-
-        var navbar = document.createElement("div");
-        navbar.className = "navbar-btn center-align";
-
-        var cancelBtn = document.createElement("button");
-        cancelBtn.className = "btn-sm transparentBtn";
-        cancelBtn.id = "cancelBtn";
-        cancelBtn.type = "submit";
-        cancelBtn.innerHTML = "Cancel";
-        cancelBtn.style.fontSize = "18px";
-        cancelBtn.style.color = "#eeeeee";
-
-        var confirmBtn = document.createElement("button");
-        confirmBtn.className = "btn-sm transparentBtn";
-        confirmBtn.id = "confirmBtn";
-        confirmBtn.type = "submit";
-        confirmBtn.innerHTML = "Confirm";
-        confirmBtn.style.fontSize = "18px";
-        confirmBtn.style.color = "#eeeeee";
-
-        form.appendChild(nameLabel);
-        form.appendChild(nameInput);
-        form.appendChild(publicKeyLabel);
-        form.appendChild(publicKeyInput);
-        form.appendChild(emailInput);
-        form.appendChild(phoneInput);
-
-        navbar.appendChild(cancelBtn);
-        navbar.appendChild(confirmBtn);
-
-        form.appendChild(navbar);
-
-        $("#addContactForm").remove();
-        document.getElementById("contactFormContainer").appendChild(form);
-
-        $("#confirmBtn").on("click", function (e) {
-            e.preventDefault();
-            contactService.addNewContact({
-                "id" : parseInt($("#user-id").val(), 10),
-                "name" : $("#name").val(),
-                "phoneNumber" : $("#phoneNumber").val(),
-                "email" : $("#email").val(),
-                "publicKey" : $("#publicKey").val()
-
-            }).then(function () {
-                this.model.resetContacts();
-                KEYTAP.navigationController.loadPage("contacts.html", false);
-            }.bind(this)).catch(function (e) {
-                $("#newContactBtn").prop("disabled", false);
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                console.error('Unable to add contact: ' + e.message);
-                $("#error").html("<li>" + e.message + "</li>");
-            });
-        }.bind(this));
-
-        $("#cancelBtn").on("click", function (e) {
-            e.preventDefault();
-            KEYTAP.navigationController.loadPage("addContact.html", false);
-        });
+    openContactMenu : function (contact) {
+        var buttons = [
+            {
+                text: 'Contact Info',
+                onClick: function () {
+                    this.showContactInfo(contact);
+                }.bind(this)
+            },
+            {
+                text: 'Delete Contact',
+                onClick: function () {
+                    slychat.confirm("Are you sure you want to delete this conversation?", function () {
+                        // TODO update confirm style
+                        this.deleteContact(contact);
+                    }.bind(this))
+                }.bind(this)
+            },
+            {
+                text: 'Cancel',
+                color: 'red',
+                onClick: function () {
+                }
+            }
+        ];
+        slychat.actions(buttons);
     },
-    /**
-     * Display the delete contact dialog.
-     *
-     * @param id
-     */
-    displayDeleteContactModal: function(id) {
-        var html = "<div class='contextLikeModalContent'>" +
-            "<h6 class='contextLikeModal-title'>Delete Contact?</h6>" +
-            "<p class='contextLikeModal-content'>Are you sure you want to delete " + this.getContact(id).email + "?</p>" +
-            "<div class='contextLikeModal-nav'>" +
-                "<button id='deleteContactModalClose' class='btn btn-sm transparentBtn'>Cancel</button>" +
-                "<button id='deleteConfirm_" + id + "' class='btn btn-sm transparentBtn'>Confirm</button>" +
+
+    showContactInfo : function (contact) {
+        var content = "<div class='contact-info'>" +
+                "<p class='contact-info-title'>Name:</p>" +
+                "<p class='contact-info-details'>" + contact.name + "</p>" +
             "</div>" +
-        "</div>";
+            "<div class='contact-info'>" +
+                "<p class='contact-info-title'>Email:</p>" +
+                "<p class='contact-info-details'>" + contact.email + "</p>" +
+            "</div>" +
+            "<div class='contact-info'>" +
+                "<p class='contact-info-title'>Public Key:</p>" +
+                "<p class='contact-info-details'>" + formatPublicKey(contact.publicKey) + "</p>" +
+            "</div>";
 
-        var modal = createContextLikeMenu(html, false);
-        modal.open();
-    },
-    /**
-     * Clear the cache from the model.
-     */
-    clearCache : function () {
-        this.model.clearCache();
+        openInfoPopup(content);
     }
 };
