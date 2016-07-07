@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
+import android.util.SparseArray
 import android.view.KeyEvent
 import android.view.WindowManager
 import android.view.animation.AlphaAnimation
@@ -55,7 +56,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
 
     private var nextPermRequestCode = 0
-    private val permRequestCodeToDeferred = HashMap<Int, Deferred<Boolean, Exception>>()
+    private val permRequestCodeToDeferred = SparseArray<Deferred<Boolean, Exception>>()
 
     /** Returns the initial page to launch after login, if any. Used when invoked via a notification intent. */
     private fun getInitialPage(intent: Intent): String? {
@@ -315,7 +316,7 @@ class MainActivity : AppCompatActivity() {
         nextPermRequestCode += 1
 
         val deferred = deferred<Boolean, Exception>()
-        permRequestCodeToDeferred[requestCode] = deferred
+        permRequestCodeToDeferred.put(requestCode, deferred)
 
         ActivityCompat.requestPermissions(this, arrayOf(permission), requestCode)
 
