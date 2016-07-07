@@ -16,7 +16,7 @@ class GcmAsyncClient(private val serverUrl: String, private val factory: HttpCli
         newClient().register(userCredentials, request)
     }
 
-    fun unregister(userCredentials: UserCredentials, request: UnregisterRequest): Promise<Unit, Exception> = task {
-        newClient().unregister(userCredentials, request)
+    fun unregister(userCredentials: UserCredentials): Promise<Unit, Exception> = task {
+        newClient().unregister(userCredentials)
     }
 }

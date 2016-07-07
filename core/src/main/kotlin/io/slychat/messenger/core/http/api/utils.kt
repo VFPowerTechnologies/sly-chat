@@ -57,11 +57,14 @@ private fun userCredentialsToHeaders(userCredentials: UserCredentials?): List<Pa
         listOf()
 }
 
-fun <R, T> apiPostRequest(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, request: R, typeReference: TypeReference<ApiResult<T>>): T {
+fun <R, T> apiPostRequest(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, request: R?, typeReference: TypeReference<ApiResult<T>>): T {
     val objectMapper = ObjectMapper()
-    val jsonRequest = objectMapper.writeValueAsBytes(request)
-
     val headers = userCredentialsToHeaders(userCredentials)
+
+    val jsonRequest = if (request != null)
+        objectMapper.writeValueAsBytes(request)
+    else
+        "{}".toByteArray()
 
     val resp = httpClient.postJSON(url, jsonRequest, headers)
     return valueFromApi(resp, typeReference)

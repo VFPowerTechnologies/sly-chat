@@ -983,4 +983,21 @@ class WebApiIntegrationTest {
 
         checkGCMTokenStatus(userA, false)
     }
+
+    @Test
+    fun `gcm unregister should unregister the current device token`() {
+        val user = injectNamedSiteUser("a@a.com").user
+        val token = "gcm"
+
+        val deviceId = devClient.addDevice(user.username, defaultRegistrationId, DeviceState.ACTIVE)
+
+        devClient.registerGcmToken(user.username, deviceId, token)
+
+        val authToken = devClient.createAuthToken(user.username)
+
+        val client = GcmClient(serverBaseUrl, JavaHttpClient())
+        client.unregister(user.getUserCredentials(authToken))
+
+        checkGCMTokenStatus(user, false)
+    }
 }

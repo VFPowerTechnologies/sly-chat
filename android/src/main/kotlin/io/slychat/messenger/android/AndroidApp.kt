@@ -24,7 +24,6 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.gcm.GcmAsyncClient
 import io.slychat.messenger.core.http.api.gcm.RegisterRequest
 import io.slychat.messenger.core.http.api.gcm.RegisterResponse
-import io.slychat.messenger.core.http.api.gcm.UnregisterRequest
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication
@@ -406,8 +405,7 @@ class AndroidApp : Application() {
                 deleteGCMToken()
 
                 userComponent.authTokenManager.bind { userCredentials ->
-                    val request = UnregisterRequest(app.installationData.installationId)
-                    gcmClient.unregister(userCredentials, request)
+                    gcmClient.unregister(userCredentials)
                 } fail { e ->
                     log.error("Unable to unregister GCM token with server: {}", e.message, e)
                 }

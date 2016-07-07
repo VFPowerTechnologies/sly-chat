@@ -19,9 +19,9 @@ class GcmClient(private val serverBaseUrl: String, private val httpClient: HttpC
         return apiPostRequest(httpClient, url, userCredentials, request, typeRef())
     }
 
-    fun unregister(userCredentials: UserCredentials, request: UnregisterRequest) {
+    fun unregister(userCredentials: UserCredentials) {
         val url = "$serverBaseUrl/v1/gcm/unregister"
-        apiPostRequest(httpClient, url, userCredentials, request, typeRef<ApiResult<EmptyResponse>>())
+        apiPostRequest(httpClient, url, userCredentials, null, typeRef<ApiResult<EmptyResponse>>())
     }
 }
 
