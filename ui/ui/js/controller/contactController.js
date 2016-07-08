@@ -2,6 +2,8 @@ var ContactController = function () {
     this.conversations = [];
     this.recentContact = [];
     this.recentChatNodes = [];
+    this.sync = false;
+    this.contactSyncNotification = null;
 };
 
 ContactController.prototype  = {
@@ -195,16 +197,45 @@ ContactController.prototype  = {
                     this.resetCachedConversation();
                     break;
                 case "SYNC":
-                    if (ev.running == true) {
-                        // sync is running
-                    }
-                    else {
-                        if (loginController.isLoggedIn())
-                            this.resetCachedConversation();
-                    }
+                    this.sync = ev.running;
+                    this.handleContactSyncNotification(ev.running);
                     break;
             }
         }.bind(this));
+    },
+
+    handleContactSyncNotification : function (running) {
+        if (running == true) {
+            if($(".contact-sync-notification").length <= 0) {
+                this.openNotification("Contact list is syncing");
+            }
+        }
+        else {
+            if(this.contactSyncNotification !== null) {
+                slychat.closeNotification(this.contactSyncNotification);
+                this.openNotification("Contact list sync complete", 3000);
+                this.contactSyncNotification = null;
+            }
+
+            if (loginController.isLoggedIn())
+                this.resetCachedConversation();
+        }
+    },
+
+    openNotification : function (message, hold) {
+        var options = {
+            custom: '<div class="item-content">' +
+            '<div class="item-text">' + message + '</div>' +
+            '</div>',
+            additionalClass: "contact-sync-notification",
+            closeOnClick: true
+        };
+
+        if(typeof hold !== "undefined") {
+            options.hold = hold;
+        }
+
+        this.contactSyncNotification = slychat.addNotification(options);
     },
 
     newContactSearch : function () {

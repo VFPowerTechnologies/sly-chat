@@ -41,6 +41,23 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     border-bottom: 1px solid red !important;
 }
 
+/* Notification */
+.contact-sync-notification {
+    height: 44px;
+    line-height: 44px;
+    margin-top: 0;
+}
+.contact-sync-notification .item-content {
+    padding: 0;
+}
+.contact-sync-notification .item-text {
+    width: 100%;
+    text-align: center;
+}
+.contact-sync-notification.completed .item-text {
+    /*color: green;*/
+}
+
 /** Contact page **/
 .contact-list a {
     color: #6d6d72;
