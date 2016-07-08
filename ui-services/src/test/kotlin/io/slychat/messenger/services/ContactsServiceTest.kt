@@ -15,6 +15,9 @@ import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import nl.komponents.kovenant.Promise
+import org.assertj.core.api.AbstractIterableAssert
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Condition
 import org.junit.ClassRule
 import org.junit.Test
 import org.mockito.stubbing.OngoingStubbing
@@ -29,6 +32,15 @@ fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(v: T) {
 
 fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(e: Exception) {
     this.thenReturn(Promise.ofFail(e))
+}
+
+fun <T> cond(description: String, predicate: (T) -> Boolean): Condition<T> = object : Condition<T>(description) {
+    override fun matches(value: T): Boolean = predicate(value)
+}
+
+fun <T> AbstractIterableAssert<*, *, T, *>.have(description: String, predicate: (T) -> Boolean): AbstractIterableAssert<*, *, T, *> {
+    this.have(cond(description, predicate))
+    return this
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -105,11 +117,9 @@ class ContactsServiceTest {
 
         val unadded = (1..4L).map { UserId(it) }
         val present = unadded.subList(1, unadded.size)
+        val newContactIds = present.subList(0, 2).toSet()
         val presentRemote = present.map { ApiContactInfo(it, "email", "name", "", "pubkey") }
-        //FIXME message level
-        val contactInfo = present.subList(0, 2).map {
-            ContactInfo(it, "email", "name", AllowedMessageLevel.ALL, false, "", "pubkey")
-        }.toSet()
+
         val response = FetchContactInfoByIdResponse(presentRemote)
 
         val testSubscriber = eventCollectorFor<ContactEvent.Added>(contactsService)
@@ -118,12 +128,21 @@ class ContactsServiceTest {
 
         whenever(contactClient.fetchContactInfoById(any(), any())).thenReturn(response)
 
-        whenever(contactsPersistenceManager.add(any<Collection<ContactInfo>>())).thenReturn(contactInfo)
+        whenever(contactsPersistenceManager.add(any<Collection<ContactInfo>>())).thenAnswer {
+            val a = it.arguments[0] as Collection<ContactInfo>
+            val r = a.filter { newContactIds.contains(it.id) }.toSet()
+            Promise.ofSuccess<Set<ContactInfo>, Exception>(r)
+        }
 
         contactsService.doProcessUnaddedContacts()
 
         assertEventEmitted(testSubscriber) { event ->
-            assertEquals(contactInfo, event.contacts, "Added contains the wrong users")
+            assertThat(event.contacts.map { it.id }).containsOnlyElementsOf(newContactIds)
+
+            event.contacts.forEach {
+                assertTrue(it.isPending, "isPending should be true for $it")
+                assertEquals(AllowedMessageLevel.GROUP_ONLY, it.allowedMessageLevel, "allowedMessageLevel should be GROUP_ONLY for $it")
+            }
         }
     }
 
@@ -178,4 +197,8 @@ class ContactsServiceTest {
 
         assertEquals(allowed, gotAllowed, "Invalid allowed list")
     }
+
+    //TODO test local contact sync message level/pending
+    //TODO test local contact remote lookup
+    //TODO test remote sync message level/pending
 }

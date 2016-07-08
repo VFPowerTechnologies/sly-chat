@@ -27,7 +27,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         stmt.bind(1, contactInfo.id.long)
         stmt.bind(2, contactInfo.email)
         stmt.bind(3, contactInfo.name)
-        stmt.bind(4, contactInfo.allowedMessagLevel.level)
+        stmt.bind(4, contactInfo.allowedMessageLevel.level)
         stmt.bind(5, contactInfo.isPending.toInt())
         stmt.bind(6, contactInfo.phoneNumber)
         stmt.bind(7, contactInfo.publicKey)

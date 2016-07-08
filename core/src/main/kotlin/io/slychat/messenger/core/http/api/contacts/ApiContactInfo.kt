@@ -17,7 +17,6 @@ data class ApiContactInfo(
     @JsonProperty("public-key")
     val publicKey: String
 ) {
-    fun toCore(isPending: Boolean): ContactInfo =
-        //FIXME
-        ContactInfo(id, email, name, AllowedMessageLevel.ALL, isPending, phoneNumber, publicKey)
+    fun toCore(isPending: Boolean, allowedMessageLevel: AllowedMessageLevel): ContactInfo =
+        ContactInfo(id, email, name, allowedMessageLevel, isPending, phoneNumber, publicKey)
 }

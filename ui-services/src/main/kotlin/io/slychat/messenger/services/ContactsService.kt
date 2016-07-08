@@ -3,10 +3,7 @@ package io.slychat.messenger.services
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.contacts.*
-import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
-import io.slychat.messenger.core.persistence.ContactInfo
-import io.slychat.messenger.core.persistence.ContactsPersistenceManager
-import io.slychat.messenger.core.persistence.RemoteContactUpdateType
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -26,10 +23,6 @@ enum class ContactAddPolicy {
     REJECT
 }
 
-data class ContactRequestResponse(
-    val responses: Map<ContactInfo, Boolean>
-)
-
 class ContactsService(
     private val authTokenManager: AuthTokenManager,
     networkAvailable: Observable<Boolean>,
@@ -38,9 +31,7 @@ class ContactsService(
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val userLoginData: UserData,
     private val accountInfoPersistenceManager: AccountInfoPersistenceManager,
-    private val platformContacts: PlatformContacts,
-    //update in regards to config changes?
-    private var contactAddPolicy: ContactAddPolicy = ContactAddPolicy.AUTO
+    private val platformContacts: PlatformContacts
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -91,7 +82,7 @@ class ContactsService(
                 } bind { foundContacts ->
                     log.debug("Found local contacts: {}", foundContacts)
 
-                    contactsPersistenceManager.add(foundContacts.contacts.map { it.toCore(false) }) map { Unit }
+                    contactsPersistenceManager.add(foundContacts.contacts.map { it.toCore(false, AllowedMessageLevel.ALL) }) map { Unit }
                 }
             }
         }
@@ -114,7 +105,7 @@ class ContactsService(
 
                     val request = FetchContactInfoByIdRequest(diff.newContacts.toList())
                     contactClient.fetchContactInfoById(userCredentials, request) bind { response ->
-                        val newContacts = response.contacts.map { it.toCore(false) }
+                        val newContacts = response.contacts.map { it.toCore(false, AllowedMessageLevel.ALL) }
                         contactsPersistenceManager.applyDiff(newContacts, diff.removedContacts.toList())
                     }
                 }
@@ -165,8 +156,7 @@ class ContactsService(
         }
     }
 
-    //we want to keep the policy we had when we started processing
-    private fun handleContactLookupResponse(policy: ContactAddPolicy, users: Set<UserId>, response: FetchContactInfoByIdResponse): Promise<Unit, Exception> {
+    private fun handleContactLookupResponse(users: Set<UserId>, response: FetchContactInfoByIdResponse): Promise<Unit, Exception> {
         val foundIds = response.contacts.mapTo(HashSet()) { it.id }
 
         val missing = HashSet(users)
@@ -176,16 +166,11 @@ class ContactsService(
         if (missing.isNotEmpty())
             contactEventsSubject.onNext(ContactEvent.InvalidContacts(missing))
 
-        val isPending = policy != ContactAddPolicy.AUTO
-
-        val contacts = response.contacts.map { it.toCore(isPending) }
+        val contacts = response.contacts.map { it.toCore(true, AllowedMessageLevel.GROUP_ONLY) }
 
         return contactsPersistenceManager.add(contacts) mapUi { newContacts ->
             if (newContacts.isNotEmpty()) {
-                val ev = if (policy == ContactAddPolicy.AUTO)
-                    ContactEvent.Added(newContacts)
-                else
-                    ContactEvent.Request(newContacts)
+                val ev = ContactEvent.Added(newContacts)
 
                 contactEventsSubject.onNext(ev)
             }
@@ -220,15 +205,11 @@ class ContactsService(
         if (users.isEmpty())
             return Promise.ofSuccess(Unit)
 
-        //ignore messages from people in the contact list
-        if (contactAddPolicy == ContactAddPolicy.REJECT)
-            return Promise.ofSuccess(Unit)
-
         return authTokenManager.bind { userCredentials ->
             val request = FetchContactInfoByIdRequest(users.toList())
             contactClient.fetchContactInfoById(userCredentials, request)
         } bindUi { response ->
-            handleContactLookupResponse(contactAddPolicy, users, response)
+            handleContactLookupResponse(users, response)
         } fail { e ->
             //the only recoverable error would be a network error; when the network is restored, this'll get called again
             log.error("Unable to fetch contact info: {}", e.message, e)
@@ -259,11 +240,6 @@ class ContactsService(
                 }
             }
         }
-    }
-
-    //TODO
-    fun processContactRequestResponse(response: ContactRequestResponse) {
-        log.debug("TODO: processContactRequestResponse")
     }
 
     /** Create and run a job with the given job description. */
