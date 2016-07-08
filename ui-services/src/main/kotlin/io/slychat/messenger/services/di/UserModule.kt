@@ -27,6 +27,7 @@ import io.slychat.messenger.services.config.FileConfigStorage
 import io.slychat.messenger.services.config.JsonConfigBackend
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.crypto.MessageCipherService
+import io.slychat.messenger.services.crypto.MessageCipherServiceImpl
 import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
 import rx.Scheduler
@@ -132,7 +133,7 @@ class UserModule(
         @SlyHttp httpClientFactory: HttpClientFactory
     ): MessageCipherService {
         val preKeyClient = HttpPreKeyClient(serverUrls.API_SERVER, httpClientFactory.create())
-        return MessageCipherService(authTokenManager, preKeyClient, signalProtocolStore)
+        return MessageCipherServiceImpl(authTokenManager, preKeyClient, signalProtocolStore)
     }
 
     @UserScope

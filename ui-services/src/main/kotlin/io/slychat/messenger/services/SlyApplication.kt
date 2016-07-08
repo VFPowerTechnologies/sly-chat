@@ -416,7 +416,7 @@ class SlyApplication {
     }
 
     private fun shutdownUserComponents(userComponent: UserComponent) {
-        userComponent.messageCipherService.shutdown()
+        userComponent.messageCipherService.shutdown(false)
         userComponent.messengerService.shutdown()
         userComponent.contactsService.shutdown()
         userComponent.offlineMessageManager.shutdown()

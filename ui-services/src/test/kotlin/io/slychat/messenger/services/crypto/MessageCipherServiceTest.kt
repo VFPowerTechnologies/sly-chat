@@ -138,9 +138,9 @@ class MessageCipherServiceTest {
         return client
     }
 
-    fun createCipherService(client: PreKeyClient, user: MockUser): MessageCipherService {
+    fun createCipherService(client: PreKeyClient, user: MockUser): MessageCipherServiceImpl {
         val authTokenManager = MockAuthTokenManager()
-        return MessageCipherService(authTokenManager, client, user.signalStore)
+        return MessageCipherServiceImpl(authTokenManager, client, user.signalStore)
     }
 
     fun assertSessionStatus(signalProtocolStore: SignalProtocolStore, target: MockUser, expectedDeviceIds: List<Int>, exists: Boolean) {
