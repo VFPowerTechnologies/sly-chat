@@ -173,7 +173,8 @@ $$(document).on('click', '.backBtn', function () {
     navigationController.goBack();
 });
 
-$$(document).on('click', '#logoutBtn', function () {
+$$(document).on('click', '#logoutBtn', function (e) {
+    e.preventDefault();
     loginController.logout();
 });
 

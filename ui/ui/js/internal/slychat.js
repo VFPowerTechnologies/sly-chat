@@ -22,6 +22,7 @@ window.registrationController = new RegistrationController();
 window.profileController = new ProfileController();
 window.contactController = new ContactController();
 window.chatController = new ChatController();
+window.connectionController = new ConnectionController();
 
 var firstLoad = true;
 
@@ -41,3 +42,4 @@ navigationController.init();
 loginController.init();
 chatController.init();
 contactController.addContactEventListener();
+connectionController.init();
