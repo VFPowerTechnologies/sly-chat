@@ -42,14 +42,15 @@ ProfileController.prototype = {
                 this.name = name;
                 $("#profileName").html(name);
                 slychat.closeModal();
+                this.openNotification("Your name has been updated", "custom-notification", 2000);
             }
             else {
-                // TODO handle errors
+                this.openNotification(result.errorMessage, "custom-notification fail", 2000);
             }
         }.bind(this)).catch(function (e){
             slychat.hidePreloader();
             console.log(e);
-            // TODO handle errors
+            this.openNotification("An error occurred", "custom-notification fail", 2000);
         });
     },
 
@@ -68,14 +69,15 @@ ProfileController.prototype = {
                 this.username = email;
                 $("#profileEmail").html(email);
                 slychat.closeModal();
+                this.openNotification("Your email has been updated", "custom-notification", 2000);
             }
             else {
-                // TODO handle errors
+                this.openNotification(result.errorMessage, "custom-notification fail", 2000);
             }
         }.bind(this)).catch(function (e){
             slychat.hidePreloader();
             console.log(e);
-            // TODO handle errors
+            this.openNotification("An error occurred", "custom-notification fail", 2000);
         });
     },
 
@@ -95,12 +97,12 @@ ProfileController.prototype = {
                     this.openSmsVerificationModal();
                 }
                 else {
-                    // TODO handle errors
+                    this.openNotification(result.errorMessage, "custom-notification fail", 2000);
                 }
             }.bind(this)).catch(function (e) {
                 slychat.hidePreloader();
                 console.log(e);
-                // TODO handle errors
+                this.openNotification("An error occurred", "custom-notification fail", 2000);
             });
         }
     },
@@ -119,13 +121,14 @@ ProfileController.prototype = {
                 this.requestedPhone = '';
                 $('#profilePhone').html(this.phone);
                 slychat.closeModal();
+                this.openNotification("Your phone number has been updated", "custom-notification", 2000);
             }
             else {
-                // TODO handle errors
+                this.openNotification(result.errorMessage, "custom-notification fail", 2000);
             }
         }.bind(this)).catch(function (e) {
             slychat.hidePreloader();
-            // TODO handle errors
+            this.openNotification("An error occurred", "custom-notification fail", 2000);
             console.log(e);
         });
     },
@@ -235,5 +238,18 @@ ProfileController.prototype = {
                 '</div>'
             );
         }
+    },
+
+    openNotification : function(message, classes, hold) {
+        var options = {
+            custom: '<div class="item-content">' +
+            '<div class="item-text">' + message + '</div>' +
+            '</div>',
+            additionalClass: classes,
+            hold: hold,
+            closeOnClick: true
+        };
+
+        slychat.addNotification(options);
     }
 };

@@ -42,20 +42,23 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 }
 
 /* Notification */
-.contact-sync-notification {
+.custom-notification {
     height: 44px;
     line-height: 44px;
     margin-top: 0;
 }
-.contact-sync-notification .item-content {
+.custom-notification .item-content {
     padding: 0;
 }
-.contact-sync-notification .item-text {
+.custom-notification .item-text {
     width: 100%;
     text-align: center;
 }
-.contact-sync-notification.completed .item-text {
-    /*color: green;*/
+.custom-notification.completed .item-text {
+    color: green;
+}
+.custom-notification.fail .item-text {
+    color: red;
 }
 
 /** Contact page **/

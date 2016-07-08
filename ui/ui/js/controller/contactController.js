@@ -227,7 +227,7 @@ ContactController.prototype  = {
             custom: '<div class="item-content">' +
             '<div class="item-text">' + message + '</div>' +
             '</div>',
-            additionalClass: "contact-sync-notification",
+            additionalClass: "custom-notification",
             closeOnClick: true
         };
 
