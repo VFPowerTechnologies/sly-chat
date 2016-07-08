@@ -139,7 +139,7 @@ ProfileController.prototype = {
                     '<div class="item-media"><i class="icon icon-form-name"></i></div>' +
                     '<div class="item-inner">' +
                         '<div class="item-input">' +
-                            '<input id="profileNameInput" type="text" placeholder="Name" required autocorrect="off"/>' +
+                            '<input id="profileNameInput" type="text" placeholder="Name" required autocorrect="off" value="' + this.name +'"/>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
@@ -153,7 +153,7 @@ ProfileController.prototype = {
                     '<div class="item-media"><i class="icon icon-form-email"></i></div>' +
                     '<div class="item-inner">' +
                         '<div class="item-input">' +
-                            '<input id="profileEmailInput" type="email" placeholder="E-Mail" required autocorrect="off" autocapitalize="off"/>' +
+                            '<input id="profileEmailInput" type="email" placeholder="E-Mail" required autocorrect="off" autocapitalize="off" value="' + this.username +'"/>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
