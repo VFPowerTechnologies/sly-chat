@@ -1,6 +1,17 @@
 // Login page init function
 slychat.onPageInit('login', function (page) {
     navigationController.hideSplashScreen();
+
+    configService.getLoginRememberMe().then(function (v) {
+        $$("#rememberMe").prop("checked", v);
+    }).catch(function (e) {
+        console.error("Unable to fetch app config: " + e.message);
+    });
+
+    $$("#rememberMe").on("change", function (e) {
+        configService.setLoginRememberMe($$(this).prop("checked"));
+    });
+
     $$('#submitLogin').on('click', function (e) {
         e.preventDefault();
         loginController.login();

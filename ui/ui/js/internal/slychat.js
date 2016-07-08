@@ -14,6 +14,7 @@ window.accountModifictationService = new AccountModificationService();
 window.platformService = new PlatformService();
 window.loadService = new LoadService();
 window.infoService = new InfoService();
+window.configService = new ConfigService();
 
 window.navigationController = new NavigationController();
 window.loginController = new LoginController();
