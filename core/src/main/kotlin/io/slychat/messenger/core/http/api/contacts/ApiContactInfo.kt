@@ -2,6 +2,7 @@ package io.slychat.messenger.core.http.api.contacts
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
 
 data class ApiContactInfo(
@@ -17,5 +18,6 @@ data class ApiContactInfo(
     val publicKey: String
 ) {
     fun toCore(isPending: Boolean): ContactInfo =
-        ContactInfo(id, email, name, isPending, phoneNumber, publicKey)
+        //FIXME
+        ContactInfo(id, email, name, AllowedMessageLevel.ALL, isPending, phoneNumber, publicKey)
 }

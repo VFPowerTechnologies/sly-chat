@@ -23,9 +23,9 @@ class SQLiteContactsPersistenceManagerTest {
     val contactId = UserId(1)
     val testMessage = "test message"
 
-    val contactA = ContactInfo(contactId, "a@a.com", "a", false, "000-0000", "pubkey")
-    val contactA2 = ContactInfo(UserId(2), "a2@a.com", "a2", false, "001-0000", "pubkey")
-    val contactC = ContactInfo(UserId(3), "c@c.com", "c", false, "222-2222", "pubkey")
+    val contactA = ContactInfo(contactId, "a@a.com", "a", AllowedMessageLevel.ALL, false, "000-0000", "pubkey")
+    val contactA2 = ContactInfo(UserId(2), "a2@a.com", "a2", AllowedMessageLevel.ALL, false, "001-0000", "pubkey")
+    val contactC = ContactInfo(UserId(3), "c@c.com", "c", AllowedMessageLevel.ALL, false, "222-2222", "pubkey")
     val contactList = arrayListOf(
         contactA,
         contactA2,
@@ -113,8 +113,8 @@ class SQLiteContactsPersistenceManagerTest {
     @Test
     fun `getAll should return all stored contacts`() {
         val contacts = arrayListOf(
-            ContactInfo(UserId(0), "a@a.com", "a", false, "000-0000", "pubkey"),
-            ContactInfo(UserId(1), "b@b.com", "b", false, "000-0000", "pubkey")
+            ContactInfo(UserId(0), "a@a.com", "a", AllowedMessageLevel.ALL, false, "000-0000", "pubkey"),
+            ContactInfo(UserId(1), "b@b.com", "b", AllowedMessageLevel.ALL, false, "000-0000", "pubkey")
         )
 
         for (contact in contacts)
@@ -338,9 +338,9 @@ class SQLiteContactsPersistenceManagerTest {
 
     @Test
     fun `getDiff should return a proper diff`() {
-        val userA = ContactInfo(UserId(0), "a@a.com", "a", false, "0", "pk")
-        val userB = ContactInfo(UserId(1), "b@a.com", "a", false, "0", "pk")
-        val userC = ContactInfo(UserId(2), "c@a.com", "a", false, "0", "pk")
+        val userA = ContactInfo(UserId(0), "a@a.com", "a", AllowedMessageLevel.ALL, false, "0", "pk")
+        val userB = ContactInfo(UserId(1), "b@a.com", "a", AllowedMessageLevel.ALL, false, "0", "pk")
+        val userC = ContactInfo(UserId(2), "c@a.com", "a", AllowedMessageLevel.ALL, false, "0", "pk")
 
         for (user in listOf(userA, userB))
             contactsPersistenceManager.add(user).get()
@@ -385,8 +385,8 @@ class SQLiteContactsPersistenceManagerTest {
 
     @Test
     fun `getPending should return only pending users`() {
-        val contactA = ContactInfo(UserId(1), "a@a.com", "a", true, null, "pk")
-        val contactB = ContactInfo(UserId(2), "b@a.com", "b", false, null, "pk")
+        val contactA = ContactInfo(UserId(1), "a@a.com", "a", AllowedMessageLevel.ALL, true, null, "pk")
+        val contactB = ContactInfo(UserId(2), "b@a.com", "b", AllowedMessageLevel.ALL, false, null, "pk")
         val contacts = listOf(contactA, contactB)
 
         contacts.forEach { contactsPersistenceManager.add(it).get() }
@@ -398,7 +398,7 @@ class SQLiteContactsPersistenceManagerTest {
 
     @Test
     fun `markAccepted should mark the given user as no longer pending`() {
-        val contactA = ContactInfo(UserId(1), "a@a.com", "a", true, null, "pk")
+        val contactA = ContactInfo(UserId(1), "a@a.com", "a", AllowedMessageLevel.ALL, true, null, "pk")
         contactsPersistenceManager.add(contactA).get()
 
         contactsPersistenceManager.markAccepted(setOf(contactA.id)).get()
