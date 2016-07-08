@@ -7,8 +7,8 @@ import io.slychat.messenger.core.BuildConfig.ServerUrls
 import io.slychat.messenger.core.crypto.EncryptionSpec
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
-import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
-import io.slychat.messenger.core.http.api.contacts.ContactListAsyncClient
+import io.slychat.messenger.core.http.api.contacts.ContactAsyncClientImpl
+import io.slychat.messenger.core.http.api.contacts.ContactListAsyncClientImpl
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClient
 import io.slychat.messenger.core.http.api.prekeys.HttpPreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
@@ -68,8 +68,8 @@ class UserModule(
         platformContacts: PlatformContacts
     ): ContactsService {
         val serverUrl = serverUrls.API_SERVER
-        val contactClient = ContactAsyncClient(serverUrl, httpClientFactory)
-        val contactListClient = ContactListAsyncClient(serverUrl, httpClientFactory)
+        val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
+        val contactListClient = ContactListAsyncClientImpl(serverUrl, httpClientFactory)
 
         return ContactsService(
             authTokenManager,
