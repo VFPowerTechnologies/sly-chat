@@ -71,6 +71,19 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         }
     }
 
+    override fun getBlockList(): Promise<Set<UserId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withPrepared("SELECT id FROM contacts WHERE allowed_message_level=${AllowedMessageLevel.BLOCKED.level}") { stmt ->
+            stmt.mapToSet { UserId(stmt.columnLong(0)) }
+        }
+    }
+
+    override fun filterBlocked(users: Collection<UserId>): Promise<Set<UserId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val ids = users.map { it.long }.joinToString(",")
+        connection.withPrepared("SELECT id FROM contacts WHERE allowed_message_level != ${AllowedMessageLevel.BLOCKED.level} AND id IN ($ids)") { stmt ->
+            stmt.mapToSet { UserId(stmt.columnLong(0)) }
+        }
+    }
+
     override fun getAllConversations(): Promise<List<Conversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val sql = """
 SELECT

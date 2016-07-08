@@ -35,6 +35,18 @@ class SQLiteContactsPersistenceManagerTest {
     lateinit var persistenceManager: SQLitePersistenceManager
     lateinit var contactsPersistenceManager: SQLiteContactsPersistenceManager
 
+    var dummyContactCounter = 0L
+    fun createDummyContact(
+        allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL,
+        isPending: Boolean = false
+    ): ContactInfo {
+        val v = dummyContactCounter
+        dummyContactCounter += 1
+        val id = UserId(v)
+
+        return ContactInfo(id, "$v@a.com", "$v", allowedMessageLevel, isPending, "$v", "$v")
+    }
+
     fun loadContactList() {
         for (contact in contactList)
             contactsPersistenceManager.add(contact).get()
@@ -472,5 +484,33 @@ class SQLiteContactsPersistenceManagerTest {
         val got = contactsPersistenceManager.getRemoteUpdates().get()
 
         assertEquals(listOf(update1), got, "Invalid remote updates")
+    }
+
+    @Test
+    fun `getBlockList should return only entries with BLOCKED message level`() {
+        val all = createDummyContact(AllowedMessageLevel.ALL)
+        val groupOnly = createDummyContact(AllowedMessageLevel.GROUP_ONLY)
+        val blocked = createDummyContact(AllowedMessageLevel.BLOCKED)
+        val contacts = listOf(all, groupOnly, blocked)
+
+        contacts.forEach { contactsPersistenceManager.add(it) }
+
+        val blockList = contactsPersistenceManager.getBlockList().get()
+
+        assertEquals(setOf(blocked.id), blockList, "Invalid block list")
+    }
+
+    @Test
+    fun `filterBlocked should return only users without BLOCKED message level`() {
+        val all = createDummyContact(AllowedMessageLevel.ALL)
+        val groupOnly = createDummyContact(AllowedMessageLevel.GROUP_ONLY)
+        val blocked = createDummyContact(AllowedMessageLevel.BLOCKED)
+        val contacts = listOf(all, groupOnly, blocked)
+
+        contacts.forEach { contactsPersistenceManager.add(it) }
+
+        val notBlocked = contactsPersistenceManager.filterBlocked(contacts.map { it.id }).get()
+
+        assertEquals(setOf(all.id, groupOnly.id), notBlocked, "Invalid filtered list")
     }
 }

@@ -12,6 +12,9 @@ interface ContactsPersistenceManager {
     fun exists(userId: UserId): Promise<Boolean, Exception>
     fun exists(users: Set<UserId>): Promise<Set<UserId>, Exception>
 
+    fun getBlockList(): Promise<Set<UserId>, Exception>
+    fun filterBlocked(users: Collection<UserId>): Promise<Set<UserId>, Exception>
+
     /** Get pending users. */
     fun getPending(): Promise<List<ContactInfo>, Exception>
 
