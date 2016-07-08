@@ -3,6 +3,7 @@ package io.slychat.messenger.services
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.persistence.MessageInfo
@@ -79,7 +80,7 @@ class NotifierServiceTest {
         val userId = UserId(1)
         val email = "email"
         val name = "name"
-        val contactInfo = ContactInfo(userId, email, name, false, "", "")
+        val contactInfo = ContactInfo(userId, email, name, AllowedMessageLevel.ALL, false, "", "")
         val contactDisplayInfo = ContactDisplayInfo(userId, email, name)
         whenever(contactsPersistenceManager.get(userId)).thenReturn(Promise.ofSuccess(contactInfo))
 
@@ -91,7 +92,7 @@ class NotifierServiceTest {
 
     fun setupContactInfo(id: Long): ContactInfo {
         val userId = UserId(id)
-        val contactInfo = ContactInfo(userId, "email", "name", false, "", "")
+        val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, false, "", "")
         whenever(contactsPersistenceManager.get(userId)).thenReturn(Promise.ofSuccess(contactInfo))
         return contactInfo
     }
