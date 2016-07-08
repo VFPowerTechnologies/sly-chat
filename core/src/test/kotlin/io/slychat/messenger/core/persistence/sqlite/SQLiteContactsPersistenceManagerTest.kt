@@ -513,4 +513,18 @@ class SQLiteContactsPersistenceManagerTest {
 
         assertEquals(setOf(all.id, groupOnly.id), notBlocked, "Invalid filtered list")
     }
+
+    @Test
+    fun `updateMessageLevel should update isPending and allowedMessageLevel`() {
+        val contact = createDummyContact(AllowedMessageLevel.GROUP_ONLY, true)
+
+        contactsPersistenceManager.add(contact)
+
+        contactsPersistenceManager.updateMessageLevel(contact.id, AllowedMessageLevel.ALL).get()
+
+        val updated = assertNotNull(contactsPersistenceManager.get(contact.id).get(), "No such user")
+
+        assertFalse(updated.isPending, "isPending not updated")
+        assertEquals(AllowedMessageLevel.ALL, updated.allowedMessageLevel, "allowedMessageLevel not updated")
+    }
 }

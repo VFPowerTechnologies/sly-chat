@@ -392,4 +392,16 @@ ON
             }
         }
     }
+
+    override fun updateMessageLevel(user: UserId, newMessageLevel: AllowedMessageLevel): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            connection.withPrepared("UPDATE contacts SET allowed_message_level=?, is_pending=0 WHERE id=?") { stmt ->
+                stmt.bind(1, newMessageLevel.level)
+                stmt.bind(2, user.long)
+                stmt.step()
+            }
+
+            Unit
+        }
+    }
 }

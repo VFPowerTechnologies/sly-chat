@@ -21,6 +21,9 @@ interface ContactsPersistenceManager {
     /** Mark the given users as not pending. */
     fun markAccepted(users: Set<UserId>): Promise<Unit, Exception>
 
+    /** Sets a new message level for the given user. Also sets isPending to false. */
+    fun updateMessageLevel(user: UserId, newMessageLevel: AllowedMessageLevel): Promise<Unit, Exception>
+
     /** Returns info for all available conversations. */
     fun getAllConversations(): Promise<List<Conversation>, Exception>
 
