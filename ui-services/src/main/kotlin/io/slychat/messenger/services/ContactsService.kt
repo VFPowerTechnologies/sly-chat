@@ -199,10 +199,7 @@ class ContactsService(
     fun allowMessagesFrom(users: Set<UserId>): Promise<Set<UserId>, Exception> {
         //avoid errors if the caller modifiers the set after giving it
         val usersCopy = HashSet(users)
-        return when (contactAddPolicy) {
-            ContactAddPolicy.REJECT -> contactsPersistenceManager.exists(usersCopy)
-            else -> Promise.ofSuccess(usersCopy)
-        }
+        return contactsPersistenceManager.filterBlocked(usersCopy)
     }
 
     //called from MessengerService

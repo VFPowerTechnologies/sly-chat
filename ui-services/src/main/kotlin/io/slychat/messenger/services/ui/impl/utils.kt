@@ -4,6 +4,7 @@ package io.slychat.messenger.services.ui.impl
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.generateNewKeyVault
 import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.MessageInfo
 import io.slychat.messenger.services.ui.UIContactDetails
@@ -30,5 +31,5 @@ fun Iterable<ContactInfo>.toUI(): List<UIContactDetails> =
 
 //FIXME
 fun UIContactDetails.toNative(): ContactInfo =
-    ContactInfo(id, email, name, false, phoneNumber, publicKey)
+    ContactInfo(id, email, name, AllowedMessageLevel.ALL, false, phoneNumber, publicKey)
 
