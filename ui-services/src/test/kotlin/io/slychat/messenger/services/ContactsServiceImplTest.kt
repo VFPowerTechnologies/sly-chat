@@ -44,7 +44,7 @@ fun <T> AbstractIterableAssert<*, *, T, *>.have(description: String, predicate: 
 }
 
 @Suppress("UNCHECKED_CAST")
-class ContactsServiceTest {
+class ContactsServiceImplTest {
     companion object {
         @JvmField
         @ClassRule
@@ -60,8 +60,8 @@ class ContactsServiceTest {
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val contactClient: ContactAsyncClient = mock()
 
-    fun createService(networkIsAvailable: Boolean = true): ContactsService {
-        return ContactsService(
+    fun createService(networkIsAvailable: Boolean = true): ContactsServiceImpl {
+        return ContactsServiceImpl(
             MockAuthTokenManager(),
             Observable.just(networkIsAvailable),
             contactClient,
@@ -74,7 +74,7 @@ class ContactsServiceTest {
 
     }
 
-    inline fun <reified T : Any> eventCollectorFor(contactsService: ContactsService): TestSubscriber<T> {
+    inline fun <reified T : Any> eventCollectorFor(contactsService: ContactsServiceImpl): TestSubscriber<T> {
         val testSubscriber = TestSubscriber<T>()
         contactsService.contactEvents.filter { it is T }.cast(T::class.java).subscribe(testSubscriber)
         return testSubscriber

@@ -71,7 +71,7 @@ class UserModule(
         val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
         val contactListClient = ContactListAsyncClientImpl(serverUrl, httpClientFactory)
 
-        return ContactsService(
+        return ContactsServiceImpl(
             authTokenManager,
             application.networkAvailable,
             contactClient,

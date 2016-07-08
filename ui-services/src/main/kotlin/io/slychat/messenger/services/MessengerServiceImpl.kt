@@ -47,7 +47,7 @@ val List<Package>.users: Set<UserId>
 
 //all Observerables are run on the main thread
 class MessengerServiceImpl(
-    private val scheduler: Scheduler,
+    scheduler: Scheduler,
     private val contactsService: ContactsService,
     private val messagePersistenceManager: MessagePersistenceManager,
     private val contactsPersistenceManager: ContactsPersistenceManager,
