@@ -53,7 +53,7 @@ class UserModule(
         scheduler: Scheduler,
         relayClientFactory: RelayClientFactory
     ): RelayClientManager =
-        RelayClientManager(scheduler, relayClientFactory)
+        RelayClientManagerImpl(scheduler, relayClientFactory)
 
     @UserScope
     @Provides
