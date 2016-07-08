@@ -32,7 +32,7 @@ data class ContactRequestResponse(
 
 class ContactsService(
     private val authTokenManager: AuthTokenManager,
-    private val application: SlyApplication,
+    networkAvailable: Observable<Boolean>,
     private val contactClient: ContactAsyncClient,
     private val contactListClient: ContactListAsyncClient,
     private val contactsPersistenceManager: ContactsPersistenceManager,
@@ -56,7 +56,7 @@ class ContactsService(
     private val networkAvailableSubscription: Subscription
 
     init {
-        networkAvailableSubscription = application.networkAvailable.subscribe { onNetworkStatusChange(it) }
+        networkAvailableSubscription = networkAvailable.subscribe { onNetworkStatusChange(it) }
     }
 
     private fun getDefaultRegionCode(): Promise<String, Exception> {
@@ -354,5 +354,14 @@ class ContactsService(
 
     fun shutdown() {
         networkAvailableSubscription.unsubscribe()
+    }
+
+    //FIXME return an Either<String, ApiContactInfo>
+    fun fetchRemoteContactInfo(email: String?, queryPhoneNumber: String?): Promise<FetchContactResponse, Exception> {
+        return authTokenManager.bind { userCredentials ->
+            val request = NewContactRequest(email, queryPhoneNumber)
+
+            contactClient.fetchNewContactInfo(userCredentials, request)
+        }
     }
 }

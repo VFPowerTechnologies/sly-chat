@@ -73,7 +73,7 @@ class UserModule(
 
         return ContactsService(
             authTokenManager,
-            application,
+            application.networkAvailable,
             contactClient,
             contactListClient,
             contactsPersistenceManager,
