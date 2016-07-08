@@ -49,12 +49,13 @@ class ContactsServiceTest {
         @JvmField
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
-    }
 
-    val testPassword = "test"
-    val testKeyVault = generateNewKeyVault(testPassword)
-    val testUserAddress = SlyAddress(UserId(1), 1)
-    val userLoginData = UserData(testUserAddress, testKeyVault)
+        val testPassword = "test"
+        val testKeyVault = generateNewKeyVault(testPassword)
+
+        val testUserAddress = SlyAddress(UserId(1), 1)
+        val userLoginData = UserData(testUserAddress, testKeyVault)
+    }
 
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val contactClient: ContactAsyncClient = mock()
