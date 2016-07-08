@@ -14,25 +14,17 @@ import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.thenReturn
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.AbstractIterableAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Condition
 import org.junit.ClassRule
 import org.junit.Test
-import org.mockito.stubbing.OngoingStubbing
 import rx.Observable
 import rx.observers.TestSubscriber
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-
-fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(v: T) {
-    this.thenReturn(Promise.ofSuccess(v))
-}
-
-fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(e: Exception) {
-    this.thenReturn(Promise.ofFail(e))
-}
 
 fun <T> cond(description: String, predicate: (T) -> Boolean): Condition<T> = object : Condition<T>(description) {
     override fun matches(value: T): Boolean = predicate(value)
