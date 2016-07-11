@@ -4,7 +4,7 @@ import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.randomUUID
 
 /**
- * Information about a conversation contact.
+ * Information about a conversation message.
  *
  * @param id Message id. Is a 128bit UUID string.
  * @param timestamp Unix time, in milliseconds.
