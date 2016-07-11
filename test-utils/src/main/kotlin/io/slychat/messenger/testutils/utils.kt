@@ -4,6 +4,7 @@ package io.slychat.messenger.testutils
 import nl.komponents.kovenant.Kovenant
 import nl.komponents.kovenant.Promise
 import org.joda.time.DateTimeUtils
+import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.OngoingStubbing
 import java.io.File
 
@@ -46,4 +47,16 @@ fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(v: T) {
 /** Convinence function for returning a failed promise. */
 fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(e: Exception) {
     this.thenReturn(Promise.ofFail(e))
+}
+
+fun <T> OngoingStubbing<Promise<T, Exception>>.thenAnswerSuccess(body: (InvocationOnMock) -> T) {
+    this.thenAnswer {
+        Promise.ofSuccess<T, Exception>(body(it))
+    }
+}
+
+fun <T> OngoingStubbing<Promise<T, Exception>>.thenAnswerFailure(body: (InvocationOnMock) -> Exception) {
+    this.thenAnswer {
+        Promise.ofFail<T, Exception>(body(it))
+    }
 }
