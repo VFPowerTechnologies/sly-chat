@@ -1,9 +1,11 @@
 package io.slychat.messenger.services
 
 import com.google.i18n.phonenumbers.PhoneNumberUtil
-import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.contacts.*
-import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
+import io.slychat.messenger.core.persistence.ContactsPersistenceManager
+import io.slychat.messenger.core.persistence.RemoteContactUpdateType
 import io.slychat.messenger.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -22,47 +24,8 @@ class ContactJobImpl(
 ) : ContactJob {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    val invalidContacts = HashSet<UserId>()
-    val newContacts = HashSet<ContactInfo>()
-
     private fun getDefaultRegionCode(): Promise<String, Exception> {
         return accountInfoPersistenceManager.retrieve() map { getAccountRegionCode(it!!) }
-    }
-
-    private fun handleContactLookupResponse(users: Set<UserId>, response: FetchContactInfoByIdResponse): Promise<Unit, Exception> {
-        val foundIds = response.contacts.mapTo(HashSet()) { it.id }
-
-        val missing = HashSet(users)
-        missing.removeAll(foundIds)
-
-        //XXX blacklist? at least temporarily or something
-        if (missing.isNotEmpty())
-            invalidContacts.addAll(missing)
-
-        val contacts = response.contacts.map { it.toCore(true, AllowedMessageLevel.GROUP_ONLY) }
-
-        return contactsPersistenceManager.add(contacts) mapUi { newContacts ->
-            this.newContacts.addAll(newContacts)
-            Unit
-        } fail { e ->
-            log.error("Unable to add new contacts: {}", e.message, e)
-        }
-    }
-
-    /** Process the given unadded users. */
-    private fun addPendingContacts(users: Set<UserId>): Promise<Unit, Exception> {
-        if (users.isEmpty())
-            return Promise.ofSuccess(Unit)
-
-        val request = FetchContactInfoByIdRequest(users.toList())
-        return authTokenManager.bind { userCredentials ->
-            contactClient.fetchContactInfoById(userCredentials, request) bindUi { response ->
-                handleContactLookupResponse(users, response)
-            } fail { e ->
-                //the only recoverable error would be a network error; when the network is restored, this'll get called again
-                log.error("Unable to fetch contact info: {}", e.message, e)
-            }
-        }
     }
 
     /** Attempts to find any registered users matching the user's local contacts. */
@@ -121,16 +84,6 @@ class ContactJobImpl(
                     }
                 }
             }
-        }
-    }
-
-    private fun processUnadded(): Promise<Unit, Exception> {
-        log.info("Processing unadded contacts")
-
-        return contactsPersistenceManager.getUnadded() bind { users ->
-            addPendingContacts(users)
-        } fail { e ->
-            log.error("Failed to fetch unadded users on startup: {}", e.message, e)
         }
     }
 
