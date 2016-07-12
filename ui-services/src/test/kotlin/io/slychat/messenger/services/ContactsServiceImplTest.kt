@@ -10,41 +10,55 @@ import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenReturn
-import org.assertj.core.api.AbstractIterableAssert
-import org.assertj.core.api.Condition
+import nl.komponents.kovenant.Promise
 import org.junit.ClassRule
 import org.junit.Test
+import rx.Observable
 import rx.observers.TestSubscriber
 import rx.subjects.PublishSubject
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-fun <T> cond(description: String, predicate: (T) -> Boolean): Condition<T> = object : Condition<T>(description) {
-    override fun matches(value: T): Boolean = predicate(value)
-}
-
-fun <T> AbstractIterableAssert<*, *, T, *>.have(description: String, predicate: (T) -> Boolean): AbstractIterableAssert<*, *, T, *> {
-    this.have(cond(description, predicate))
-    return this
-}
-
-@Suppress("UNCHECKED_CAST")
 class ContactsServiceImplTest {
     companion object {
         @JvmField
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
+
+        class MockContactJobRunner : ContactJobRunner {
+            val subject: PublishSubject<ContactJobInfo> = PublishSubject.create()
+
+            var immediate = true
+
+            //make some makeshift verification data
+            var runOperationCallCount = 0
+            var withCurrentJobCallCount = 0
+
+            override val running: Observable<ContactJobInfo> = subject
+
+            override fun withCurrentJob(body: ContactJobDescription.() -> Unit) {
+                withCurrentJobCallCount += 1
+            }
+
+            override fun shutdown() {
+            }
+
+            override fun runOperation(operation: () -> Promise<*, Exception>) {
+                runOperationCallCount += 1
+
+                if (immediate)
+                    operation()
+                else
+                    throw UnsupportedOperationException()
+            }
+        }
     }
 
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val contactClient: ContactAsyncClient = mock()
-    val contactJobRunner: ContactJobRunner = mock()
-
-    val contactJobRunning: PublishSubject<ContactJobInfo> = PublishSubject.create()
+    val contactJobRunner = MockContactJobRunner()
 
     fun createService(): ContactsServiceImpl {
-        whenever(contactJobRunner.running).thenReturn(contactJobRunning)
-
         return ContactsServiceImpl(
             MockAuthTokenManager(),
             contactClient,
@@ -68,6 +82,52 @@ class ContactsServiceImplTest {
 
         asserter(event)
     }
+
+    @Test
+    fun `adding a new contact should return true if the contact was added`() {
+        val contactsService = createService()
+
+        val contactInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, false, "", "pubkey")
+
+        whenever(contactsPersistenceManager.add(contactInfo)).thenReturn(true)
+
+        assertTrue(contactsService.addContact(contactInfo).get(), "Contact not seen as added")
+
+        assertEquals(1, contactJobRunner.runOperationCallCount, "Didn't go through ContactJobRunner")
+    }
+
+    @Test
+    fun `removing a new contact should return true if the contact was removed`() {
+        val contactsService = createService()
+
+        val userId = UserId(1)
+
+        val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, false, "", "pubkey")
+
+        whenever(contactsPersistenceManager.remove(userId)).thenReturn(true)
+
+        assertTrue(contactsService.removeContact(contactInfo).get(), "Contact not seen as removed")
+
+        assertEquals(1, contactJobRunner.runOperationCallCount, "Didn't go through ContactJobRunner")
+    }
+
+    @Test
+    fun `updating a contact should complete`() {
+        val contactsService = createService()
+
+        val userId = UserId(1)
+
+        val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, false, "", "pubkey")
+
+        whenever(contactsPersistenceManager.update(contactInfo)).thenReturn(Unit)
+
+        //should return
+        contactsService.updateContact(contactInfo).get()
+
+        assertEquals(1, contactJobRunner.runOperationCallCount, "Didn't go through ContactJobRunner")
+    }
+
+    //TODO remove/update event tests
 
     @Test
     fun `adding a new contact should emit an update event if the contact is new`() {
@@ -117,5 +177,23 @@ class ContactsServiceImplTest {
         val gotAllowed = contactsService.allowMessagesFrom(idSet).get()
 
         assertEquals(allowed, gotAllowed, "Invalid allowed list")
+    }
+
+    @Test
+    fun `doLocalSync should defer to ContactJobRunner`() {
+        val contactsService = createService()
+
+        contactsService.doLocalSync()
+
+        assertEquals(1, contactJobRunner.withCurrentJobCallCount, "ContactJobRunner not called")
+    }
+
+    @Test
+    fun `doRemoteSync should defer to ContactJobRunner`() {
+        val contactsService = createService()
+
+        contactsService.doRemoteSync()
+
+        assertEquals(1, contactJobRunner.withCurrentJobCallCount, "ContactJobRunner not called")
     }
 }

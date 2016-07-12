@@ -7,16 +7,15 @@ import io.slychat.messenger.core.http.api.contacts.NewContactRequest
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.auth.AuthTokenManager
+import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
 import java.util.*
 
-//handles contact-related operations
-//keeps operations in a pending state if a sync is running
-//once a sync has completed, runs all pending operations
 class ContactsServiceImpl(
     private val authTokenManager: AuthTokenManager,
     private val contactClient: ContactAsyncClient,
@@ -33,37 +32,66 @@ class ContactsServiceImpl(
         contactJobRunner.running.subscribe { onContactJobStatusUpdate(it) }
     }
 
+    private fun <V, E> wrap(deferred: Deferred<V, E>, promise: Promise<V, E>): Promise<V, E> {
+        return promise success { deferred.resolve(it) } fail { deferred.reject(it) }
+    }
+
     override fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
-        return contactsPersistenceManager.add(contactInfo) successUi { wasAdded ->
-            if (wasAdded) {
-                withCurrentJob { doUpdateRemoteContactList() }
-                contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
+        val d = deferred<Boolean, Exception>()
+
+        contactJobRunner.runOperation {
+            wrap(d, contactsPersistenceManager.add(contactInfo)) successUi { wasAdded ->
+                if (wasAdded) {
+                    withCurrentJob { doUpdateRemoteContactList() }
+                    contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
+                }
             }
         }
+
+        return d.promise
     }
 
     /** Remove the given contact from the contact list. */
     override fun removeContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
-        return contactsPersistenceManager.remove(contactInfo) successUi { wasRemoved ->
-            if (wasRemoved) {
-                withCurrentJob { doUpdateRemoteContactList() }
-                contactEventsSubject.onNext(ContactEvent.Removed(setOf(contactInfo)))
+        val d = deferred<Boolean, Exception>()
+
+        contactJobRunner.runOperation {
+            wrap(d, contactsPersistenceManager.remove(contactInfo.id)) successUi { wasRemoved ->
+                if (wasRemoved) {
+                    withCurrentJob { doUpdateRemoteContactList() }
+                    contactEventsSubject.onNext(ContactEvent.Removed(setOf(contactInfo)))
+                }
             }
         }
+
+        return d.promise
     }
 
     override fun updateContact(contactInfo: ContactInfo): Promise<Unit, Exception> {
-        return contactsPersistenceManager.update(contactInfo) successUi {
-            contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactInfo)))
+        val d = deferred<Unit, Exception>()
+
+        contactJobRunner.runOperation {
+            wrap(d, contactsPersistenceManager.update(contactInfo)) successUi {
+                contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactInfo)))
+            }
         }
+
+        return d.promise
     }
 
     /** Filter out users whose messages we should ignore. */
     //in the future, this will also check for blocked/deleted users
     override fun allowMessagesFrom(users: Set<UserId>): Promise<Set<UserId>, Exception> {
+        val d = deferred<Set<UserId>, Exception>()
+
         //avoid errors if the caller modifiers the set after giving it
         val usersCopy = HashSet(users)
-        return contactsPersistenceManager.filterBlocked(usersCopy)
+
+        contactJobRunner.runOperation {
+            wrap(d, contactsPersistenceManager.filterBlocked(usersCopy))
+        }
+
+        return d.promise
     }
 
     override fun doRemoteSync() {
@@ -102,9 +130,6 @@ class ContactsServiceImpl(
     /** Used to mark job components for execution. */
     private fun withCurrentJob(body: ContactJobDescription.() -> Unit) {
         contactJobRunner.withCurrentJob(body)
-
-        //if (!isPendingRunning && isNetworkAvailable)
-        //    contactJobRunner.nextJob()
     }
 
     override fun shutdown() {
