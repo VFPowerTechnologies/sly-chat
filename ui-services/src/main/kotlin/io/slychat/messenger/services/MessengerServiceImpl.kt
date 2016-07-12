@@ -50,8 +50,7 @@ class MessengerServiceImpl(
     private val relayClientManager: RelayClientManager,
     private val messageCipherService: MessageCipherService,
     private val messageReceiver: MessageReceiver,
-    //XXX this is only used to prevent self-sends
-    private val userLoginData: UserData
+    private val selfId: UserId
 ) : MessengerService {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -352,7 +351,7 @@ class MessengerServiceImpl(
     /* UIMessengerService interface */
 
     override fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception> {
-        val isSelfMessage = userId == userLoginData.userId
+        val isSelfMessage = userId == selfId
 
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.crypto.generateNewKeyVault
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
@@ -36,11 +35,7 @@ class MessengerServiceImplTest {
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
 
-        val testPassword = "test"
-        val testKeyVault = generateNewKeyVault(testPassword)
-
-        val testUserAddress = SlyAddress(UserId(1), 1)
-        val userLoginData = UserData(testUserAddress, testKeyVault)
+        val selfId = UserId(999)
     }
 
     val scheduler: Scheduler = Schedulers.immediate()
@@ -83,7 +78,7 @@ class MessengerServiceImplTest {
             relayClientManager,
             messageCipherService,
             messageReceiver,
-            userLoginData
+            selfId
         )
     }
 
@@ -257,7 +252,7 @@ class MessengerServiceImplTest {
     fun `it should persist a message when sendMessageTo is called for self`() {
         val messengerService = createService()
 
-        val to = userLoginData.userId
+        val to = selfId
 
         handleAddMessage(to)
 
