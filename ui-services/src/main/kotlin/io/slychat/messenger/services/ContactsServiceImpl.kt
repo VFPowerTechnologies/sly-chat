@@ -1,15 +1,15 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
-import io.slychat.messenger.core.http.api.contacts.FetchContactResponse
-import io.slychat.messenger.core.http.api.contacts.NewContactRequest
+import io.slychat.messenger.core.http.api.contacts.*
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
+import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -108,23 +108,65 @@ class ContactsServiceImpl(
             contactEventsSubject.onNext(ContactEvent.Sync(info.isRunning))
     }
 
-    //XXX doesn't work because this needs to be done as a job, else it can clash with offline/etc stuff
-    //we can't rely on events, since we could be waiting on a ui contact add
-    //we can't return the current job promise since we want the promise corresponding to the next job
-    override fun addMissingContacts(users: Set<UserId>): Promise<Unit, Exception> {
+    /** Process the given unadded users. */
+    private fun addNewContactData(users: Set<UserId>): Promise<Set<UserId>, Exception> {
+        if (users.isEmpty())
+            return Promise.ofSuccess(emptySet())
+
+        val request = FetchContactInfoByIdRequest(users.toList())
+
+        return authTokenManager.bind { userCredentials ->
+            contactClient.fetchContactInfoById(userCredentials, request) bindUi { response ->
+                handleContactLookupResponse(users, response)
+            } fail { e ->
+                //the only recoverable error would be a network error; when the network is restored, this'll get called again
+                log.error("Unable to fetch contact info: {}", e.message, e)
+            }
+        }
+    }
+
+    private fun handleContactLookupResponse(users: Set<UserId>, response: FetchContactInfoByIdResponse): Promise<Set<UserId>, Exception> {
+        val foundIds = response.contacts.mapTo(HashSet()) { it.id }
+
+        val missing = HashSet(users)
+        missing.removeAll(foundIds)
+
+        val invalidContacts = HashSet<UserId>()
+
+        //XXX blacklist? at least temporarily or something
+        if (missing.isNotEmpty())
+            invalidContacts.addAll(missing)
+
+        val contacts = response.contacts.map { it.toCore(true, AllowedMessageLevel.GROUP_ONLY) }
+
+        return contactsPersistenceManager.add(contacts) mapUi { newContacts ->
+            if (newContacts.isNotEmpty()) {
+                val ev = ContactEvent.Added(newContacts)
+                contactEventsSubject.onNext(ev)
+            }
+
+            invalidContacts
+        } fail { e ->
+            log.error("Unable to add new contacts: {}", e.message, e)
+        }
+    }
+
+    override fun addMissingContacts(users: Set<UserId>): Promise<Set<UserId>, Exception> {
         //defensive copy
         val missing = HashSet(users)
 
-        throw NotImplementedError()
-        /**
-        return contactsPersistenceManager.exists(users) bind { exists ->
-            missing.removeAll(exists)
+        val d = deferred<Set<UserId>, Exception>()
 
-            addPendingContacts(missing)
-        } successUi {
-            doRemoteSync()
+        contactJobRunner.runOperation {
+            wrap(d, contactsPersistenceManager.exists(users) bind { exists ->
+                missing.removeAll(exists)
+                addNewContactData(missing)
+            }) successUi {
+                doRemoteSync()
+            }
         }
-        **/
+
+        return d.promise
     }
 
     /** Used to mark job components for execution. */
