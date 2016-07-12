@@ -72,6 +72,9 @@ class UserModule(
         val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
         val contactListClient = ContactListAsyncClientImpl(serverUrl, httpClientFactory)
 
+        throw RuntimeException()
+
+        /*
         return ContactsServiceImpl(
             authTokenManager,
             application.networkAvailable,
@@ -82,6 +85,7 @@ class UserModule(
             accountInfoPersistenceManager,
             platformContacts
         )
+        */
     }
 
     @UserScope
@@ -94,7 +98,8 @@ class UserModule(
         relayClientManager: RelayClientManager,
         messageCipherService: MessageCipherService,
         userLoginData: UserData
-    ): MessengerService =
+    ): MessengerService = throw RuntimeException()
+    /*
         MessengerServiceImpl(
             scheduler,
             contactsService,
@@ -104,6 +109,7 @@ class UserModule(
             messageCipherService,
             userLoginData
         )
+        */
 
     @UserScope
     @Provides

@@ -1,7 +1,6 @@
 package io.slychat.messenger.services
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
@@ -10,7 +9,6 @@ import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.crypto.*
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
@@ -26,7 +24,6 @@ data class MessageBundle(val userId: UserId, val messages: List<MessageInfo>)
 data class EncryptedMessageInfo(val messageId: String, val payload: EncryptedPackagePayloadV0)
 
 data class QueuedSendMessage(val to: UserId, val messageInfo: MessageInfo, val connectionTag: Int)
-data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessages: List<EncryptedMessageInfo>)
 
 interface EncryptionResult
 data class EncryptionOk(val encryptedMessages: List<MessageData>, val connectionTag: Int) : EncryptionResult
@@ -42,8 +39,7 @@ data class MessageSendOk(val to: UserId, override val messageId: String) : Messa
 data class MessageSendDeviceMismatch(val to: UserId, override val messageId: String, val info: DeviceMismatchContent) : MessageSendResult
 //data class MessageSendUnknownFailure(val cause: Throwable) : MessageSendResult
 
-val List<Package>.users: Set<UserId>
-    get() = mapTo(HashSet()) { it.userId }
+private fun usersFromPackages(packages: List<Package>): Set<UserId> = packages.mapTo(HashSet()) { it.userId }
 
 //all Observerables are run on the main thread
 class MessengerServiceImpl(
@@ -53,22 +49,21 @@ class MessengerServiceImpl(
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val relayClientManager: RelayClientManager,
     private val messageCipherService: MessageCipherService,
+    private val messageReceiver: MessageReceiver,
     //XXX this is only used to prevent self-sends
     private val userLoginData: UserData
 ) : MessengerService {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private val newMessagesSubject = PublishSubject.create<MessageBundle>()
-    override val newMessages: Observable<MessageBundle> = newMessagesSubject
+    //private val newMessagesSubject = PublishSubject.create<MessageBundle>()
+    override val newMessages: Observable<MessageBundle>
+        get() = messageReceiver.newMessages
 
     private val messageUpdatesSubject = PublishSubject.create<MessageBundle>()
     override val messageUpdates: Observable<MessageBundle> = messageUpdatesSubject
 
     private val sendMessageQueue = ArrayDeque<QueuedSendMessage>()
     private var currentSendMessage: QueuedSendMessage? = null
-
-    private val receivedMessageQueue = ArrayDeque<QueuedReceivedMessage>()
-    private var currentReceivedMessage: QueuedReceivedMessage? = null
 
     private val subscriptions = CompositeSubscription()
 
@@ -80,57 +75,32 @@ class MessengerServiceImpl(
             processEncryptionResult(it)
         })
 
-        subscriptions.add(messageCipherService.decryptedMessages.observeOn(scheduler).subscribe {
-            processDecryptionResult(it.userId, it.result)
-        })
-
         subscriptions.add(messageCipherService.deviceUpdates.observeOn(scheduler).subscribe {
             processDeviceUpdateResult(it)
         })
 
+        //FIXME
         subscriptions.add(contactsService.contactEvents.subscribe { onContactEvent(it) })
     }
 
     override fun init() {
-        initializeReceiveQueue()
     }
 
     override fun shutdown() {
-        receivedMessageQueue.clear()
         subscriptions.clear()
     }
 
     private fun onContactEvent(event: ContactEvent) {
         when (event) {
-            is ContactEvent.Added -> {
-                val map = event.contacts.map { it.id }.toSet()
-                messagePersistenceManager.getQueuedPackages(map) successUi {
-                    addPackagesToReceivedQueue(it)
-                } fail { e ->
-                    log.error("Unable to fetch queued packages: {}", e.message, e)
-                }
-            }
-
+            //FIXME probably just handle in receiver
             is ContactEvent.InvalidContacts -> {
                 log.info("Messages for invalid user ids: {}", event.contacts.map { it.long }.joinToString(","))
                 messagePersistenceManager.removeFromQueue(event.contacts) fail { e ->
                     log.error("Unable to remove missing contacts: {}", e.message, e)
                 }
             }
-
-            //else do nothing; for requests the ui'll get something for it, and then call the ContactsService
         }
 
-    }
-
-    private fun initializeReceiveQueue() {
-        messagePersistenceManager.getQueuedPackages() bind { packages ->
-            contactsPersistenceManager.exists(packages.users) map { exists ->
-                packages.filter { it.userId in exists }
-            }
-        } successUi { packages ->
-            addPackagesToReceivedQueue(packages)
-        }
     }
 
     private fun onRelayConnect(connected: Boolean) {
@@ -266,12 +236,6 @@ class MessengerServiceImpl(
         processSendMessageQueue()
     }
 
-    private fun nextReceiveMessage() {
-        currentReceivedMessage = null
-        receivedMessageQueue.pop()
-        processReceivedMessageQueue()
-    }
-
     private fun processSendMessageQueue() {
         if (!relayClientManager.isOnline)
             return
@@ -293,53 +257,11 @@ class MessengerServiceImpl(
         }
         else {
             val messageInfo = message.messageInfo
-            val textMessage = SingleUserTextMessage(messageInfo.timestamp, messageInfo.message)
+            val textMessage = TextMessageWrapper(TextMessage(messageInfo.timestamp, messageInfo.message, null))
             val serialized = ObjectMapper().writeValueAsBytes(textMessage)
             messageCipherService.encrypt(message.to, serialized, message.connectionTag)
             currentSendMessage = message
         }
-    }
-
-    private fun processDecryptionResult(from: UserId, result: MessageListDecryptionResult) {
-        handleFailedDecryptionResults(from, result)
-
-        val messages = result.succeeded
-        if (messages.isEmpty()) {
-            nextReceiveMessage()
-            return
-        }
-
-        val objectMapper = ObjectMapper()
-        val messageStrings = messages.map {
-            val message = objectMapper.readValue(it.result, SingleUserTextMessage::class.java)
-            MessageInfo.newReceived(it.messageId, message.message, message.timestamp, currentTimestamp(), 0)
-        }
-
-        messagePersistenceManager.addMessages(from, messageStrings) mapUi { messageInfo ->
-            val bundle = MessageBundle(from, messageInfo)
-            newMessagesSubject.onNext(bundle)
-
-            nextReceiveMessage()
-        } fail { e ->
-            log.error("Unable to store decrypted messages: {}", e.message, e)
-        }
-    }
-
-    private fun processReceivedMessageQueue() {
-        if (currentReceivedMessage != null)
-            return
-
-        if (receivedMessageQueue.isEmpty()) {
-            log.debug("No more received messages")
-            return
-        }
-
-
-        val message = receivedMessageQueue.first
-
-        messageCipherService.decrypt(message.from, message.encryptedMessages)
-
-        currentReceivedMessage = message
     }
 
     private fun onRelayEvent(event: RelayClientEvent) {
@@ -357,39 +279,8 @@ class MessengerServiceImpl(
     private fun writeReceivedSelfMessage(from: UserId, decryptedMessage: String): Promise<Unit, Exception> {
         val messageInfo = MessageInfo.newReceived(decryptedMessage, currentTimestamp(), 0)
         return messagePersistenceManager.addMessage(from, messageInfo) mapUi { messageInfo ->
-            newMessagesSubject.onNext(MessageBundle(from, listOf(messageInfo)))
-        }
-    }
-
-    private fun addPackagesToReceivedQueue(packages: List<Package>) {
-        val grouped = packages.groupBy { it.id.address }
-        val sortedByTimestamp = grouped.mapValues { it.value.sortedBy { it.timestamp } }
-
-        sortedByTimestamp.map { e ->
-            val encryptedMessages = ArrayList<EncryptedMessageInfo>()
-            val failures = ArrayList<PackageId>()
-
-            e.value.forEach { pkg ->
-                try {
-                    val payload = deserializeEncryptedPackagePayload(pkg.payload)
-                    encryptedMessages.add(EncryptedMessageInfo(pkg.id.messageId, payload))
-                }
-                catch (e: Exception) {
-                    log.warn("Unable to decrypt message <<{}>> from {}: {}", pkg.id.messageId, pkg.id.address.asString(), e.message, e)
-                    failures.add(pkg.id)
-                }
-            }
-
-            if (failures.isNotEmpty()) {
-                messagePersistenceManager.removeFromQueue(failures).fail { e ->
-                    log.warn("Unable to remove failed deserialized packages from queue: {}", e.message, e)
-                }
-            }
-
-            if (encryptedMessages.isNotEmpty()) {
-                receivedMessageQueue.add(QueuedReceivedMessage(e.key, encryptedMessages))
-                processReceivedMessageQueue()
-            }
+            //FIXME
+            //newMessagesSubject.onNext(MessageBundle(from, listOf(messageInfo)))
         }
     }
 
@@ -414,15 +305,47 @@ class MessengerServiceImpl(
         processMessageSendResult(MessageSendDeviceMismatch(event.to, event.messageId, event.info))
     }
 
-    private fun handleFailedDecryptionResults(userId: UserId, result: MessageListDecryptionResult) {
-        if (result.failed.isEmpty())
-            return
+    /** Filter out packages which belong to blocked users, etc. */
+    private fun filterBlacklisted(packages: List<Package>): Promise<List<Package>, Exception> {
+        val users = usersFromPackages(packages)
 
-        log.warn("Unable to decrypt {} messages for {}", result.failed.size, userId)
-        result.failed.forEach { log.warn("Message decryption failure: {}", it.result.cause.message, it.result.cause) }
+        return contactsService.allowMessagesFrom(users) map { allowedUsers ->
+            val rejected = HashSet(users)
+            rejected.removeAll(allowedUsers)
+            if (rejected.isNotEmpty())
+                log.info("Reject messages from users: {}", rejected.map { it.long })
 
-        messagePersistenceManager.removeFromQueue(userId, result.failed.map { it.messageId }).fail { e ->
-            log.warn("Unable to remove failed decryption packages from queue: {}", e.message, e)
+            packages.filter { it.id.address.id in allowedUsers }
+        }
+    }
+
+    private fun fetchMissingContactInfo(packages: List<Package>): Promise<List<Package>, Exception> {
+        val users = HashSet<UserId>()
+        users.addAll(packages.map { it.id.address.id })
+
+        //TODO should probably blacklist invalid ids for a while; prevent using clients to ddos servers by
+        //sending them a bunch of invalid ids constantly
+        return contactsService.addMissingContacts(users) map { invalidIds ->
+            packages.filter { !invalidIds.contains(it.userId) }
+        } fail { e ->
+            log.error("Failed to add packages to queue: {}", e.message, e)
+        }
+    }
+
+    /** Filter out blocked users, fetch any missing contact info. */
+    private fun preprocessPackages(packages: List<Package>): Promise<List<Package>, Exception> {
+        return filterBlacklisted(packages) bind { filtered ->
+            fetchMissingContactInfo(filtered)
+        }
+    }
+
+    /** Drops blacklisted IDs, fetches missing contact data and passes results to MessageReceiverService. */
+    private fun processPackages(packages: List<Package>): Promise<Unit, Exception> {
+        //since when we receive stuff we're always online, it makes sense that we should handle the contact info fetch as well as part of this process
+        //by doing so, we keep the actual decryption free of network requirements
+        //XXX although we need it to add new group members anyways... just keep this here for now
+        return preprocessPackages(packages) bind { filtered ->
+            messageReceiver.processPackages(filtered)
         }
     }
 
@@ -472,56 +395,9 @@ class MessengerServiceImpl(
         return messagePersistenceManager.deleteAllMessages(userId)
     }
 
-    /** Filter out packages which belong to blocked users, etc. */
-    private fun filterPackages(packages: List<Package>): Promise<List<Package>, Exception> {
-        val users = packages.users
-        return contactsService.allowMessagesFrom(users) map { allowedUsers ->
-            val rejected = HashSet(users)
-            rejected.removeAll(allowedUsers)
-            if (rejected.isNotEmpty())
-                log.info("Reject messages from users: {}", rejected.map { it.long })
-
-            packages.filter { it.id.address.id in allowedUsers }
-        }
-    }
-
-    private fun processPackages(packages: List<Package>): Promise<Unit, Exception> {
-        return filterPackages(packages) bind { filtered ->
-            messagePersistenceManager.addToQueue(filtered) success {
-                val users = HashSet<UserId>()
-                users.addAll(packages.map { it.id.address.id })
-
-                contactsPersistenceManager.exists(users) successUi { exists ->
-                    val missing = HashSet(users)
-                    missing.removeAll(exists)
-
-                    if (missing.isNotEmpty())
-                        contactsService.doProcessUnaddedContacts()
-
-                    val toProcess = if (missing.isNotEmpty())
-                        packages.filter { exists.contains(it.id.address.id) }
-                    else
-                        packages
-
-                    addPackagesToReceivedQueue(toProcess)
-                } fail { e ->
-                    log.error("Failed to add packages to queue: {}", e.message, e)
-                }
-            }
-        }
-    }
-
     /* Other */
 
     override fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception> {
-        val d = deferred<Unit, Exception>()
-
-        processPackages(offlineMessages) success {
-            d.resolve(Unit)
-        } fail {
-            d.reject(it)
-        }
-
-        return d.promise
+        return processPackages(offlineMessages)
     }
 }

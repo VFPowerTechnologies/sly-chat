@@ -26,7 +26,6 @@ import org.junit.Test
 import rx.Scheduler
 import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -50,9 +49,9 @@ class MessengerServiceImplTest {
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val relayClientManager: RelayClientManager = mock()
     val messageCipherService: MessageCipherService = mock()
+    val messageReceiver: MessageReceiver = mock()
 
     val encryptedMessages: PublishSubject<EncryptionResult> = PublishSubject.create()
-    val decryptedMessages: PublishSubject<DecryptionResult> = PublishSubject.create()
     val deviceUpdates: PublishSubject<DeviceUpdateResult>?= PublishSubject.create()
 
     val contactEvents: PublishSubject<ContactEvent> = PublishSubject.create()
@@ -61,7 +60,6 @@ class MessengerServiceImplTest {
     val relayOnlineStatus: PublishSubject<Boolean> = PublishSubject.create()
 
     fun createService(relayOnlineStatus: Boolean = false): MessengerServiceImpl {
-        whenever(messageCipherService.decryptedMessages).thenReturn(decryptedMessages)
         whenever(messageCipherService.encryptedMessages).thenReturn(encryptedMessages)
         whenever(messageCipherService.deviceUpdates).thenReturn(deviceUpdates)
 
@@ -74,6 +72,8 @@ class MessengerServiceImplTest {
 
         //some useful defaults
         whenever(messagePersistenceManager.getUndeliveredMessages()).thenReturn(emptyMap())
+        whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
+        whenever(messageReceiver.processPackages(any())).thenReturn(Unit)
 
         return MessengerServiceImpl(
             scheduler,
@@ -82,6 +82,7 @@ class MessengerServiceImplTest {
             contactsPersistenceManager,
             relayClientManager,
             messageCipherService,
+            messageReceiver,
             userLoginData
         )
     }
@@ -115,8 +116,8 @@ class MessengerServiceImplTest {
     }
 
     fun getQueuedPackages(): Collection<Package> {
-        val argumentCaptor = argumentCaptor<Collection<Package>>()
-        verify(messagePersistenceManager).addToQueue(capture(argumentCaptor))
+        val argumentCaptor = argumentCaptor<List<Package>>()
+        verify(messageReceiver).processPackages(capture(argumentCaptor))
         return argumentCaptor.value
     }
 
@@ -131,7 +132,7 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `it should add all offline messages to the package queue`() {
+    fun `it should pass all offline messages to the receiver`() {
         val messengerService = createService()
 
         val sender = SlyAddress(UserId(1), 1)
@@ -144,10 +145,7 @@ class MessengerServiceImplTest {
 
         messengerService.addOfflineMessages(packages)
 
-        val queued = getQueuedPackages()
-        assertThat(queued)
-            .containsOnlyElementsOf(packages)
-            .`as`("Package list")
+        verify(messageReceiver).processPackages(packages)
     }
 
     @Test
@@ -188,7 +186,11 @@ class MessengerServiceImplTest {
 
         relayEvents.onNext(ev)
 
-        verify(messagePersistenceManager).addToQueue(argThat<Collection<Package>>({ this.isEmpty() }))
+        val queued = getQueuedPackages()
+
+        assertThat(queued)
+            .`as`("Package list")
+            .isEmpty()
     }
 
     @Test
@@ -201,16 +203,13 @@ class MessengerServiceImplTest {
 
         setAllowAllUsers()
 
-        whenever(messagePersistenceManager.addToQueue(anyCollection())).thenReturn(Unit)
-
         relayEvents.onNext(ev)
 
-        verify(messagePersistenceManager).addToQueue(capture<Collection<Package>> {
-            assertEquals(1, it.size, "Invalid number of packages")
-            val pkg = it.first()
+        val queued = getQueuedPackages()
 
-            assertEquals(sender, pkg.id.address, "Invalid address")
-        })
+        assertThat(queued)
+            .hasSize(1)
+            .`as`("Package list")
     }
 
     @Test
@@ -230,25 +229,6 @@ class MessengerServiceImplTest {
         relayEvents.onNext(ev)
 
         verify(relayClientManager).sendMessageReceivedAck(messageId)
-    }
-
-    @Test
-    fun `it should notify ContactsService when missing users are found`() {
-        val messengerService = createService()
-
-        val sender = SlyAddress(UserId(2), 1)
-        val messageId = randomUUID()
-        val ev = ReceivedMessage(sender, newMessagePayload("payload"), messageId)
-
-        setAllowAllUsers()
-
-        whenever(messagePersistenceManager.addToQueue(anyCollection())).thenReturn(Unit)
-
-        wheneverExists { Promise.ofSuccess(emptySet()) }
-
-        relayEvents.onNext(ev)
-
-        verify(contactsService).doProcessUnaddedContacts()
     }
 
     fun handleAddMessage(to: UserId) {
@@ -362,4 +342,14 @@ class MessengerServiceImplTest {
     }
 
     //TODO message send/receive tests
+
+    //TODO rejecting decryption results for invalid message ids
+
+    @Test
+    fun `it should drop group messages when not a member`() {
+
+    }
+
+    @Test
+    fun `it should drop group messages when sender is not a member`() {}
 }
