@@ -207,7 +207,7 @@ class SQLiteContactsPersistenceManagerTest {
     fun `remove should delete the contact and its conversation table`() {
         contactsPersistenceManager.add(contactA).get()
 
-        val wasRemoved = contactsPersistenceManager.remove(contactA).get()
+        val wasRemoved = contactsPersistenceManager.remove(contactA.id).get()
 
         assertTrue(wasRemoved, "wasRemoved is false")
 
@@ -219,7 +219,7 @@ class SQLiteContactsPersistenceManagerTest {
 
     @Test
     fun `remove should return false if no such contact existed`() {
-        val wasRemoved = contactsPersistenceManager.remove(contactA).get()
+        val wasRemoved = contactsPersistenceManager.remove(contactA.id).get()
 
         assertFalse(wasRemoved, "wasRemoved is true")
     }

@@ -252,9 +252,8 @@ ON
         }
     }
 
-    override fun remove(contactInfo: ContactInfo): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun remove(userId: UserId): Promise<Boolean, Exception>  = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
-            val userId = contactInfo.id
             val wasRemoved = removeContactNoTransaction(connection, userId)
             if (wasRemoved) {
                 val remoteUpdates = listOf(RemoteContactUpdate(userId, RemoteContactUpdateType.REMOVE))

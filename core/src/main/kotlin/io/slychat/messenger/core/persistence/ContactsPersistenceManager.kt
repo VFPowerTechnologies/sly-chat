@@ -41,7 +41,7 @@ interface ContactsPersistenceManager {
     /** Updates the given contact's info. */
     fun update(contactInfo: ContactInfo): Promise<Unit, Exception>
     /** Removes a contact and their associated conversation. */
-    fun remove(contactInfo: ContactInfo): Promise<Boolean, Exception>
+    fun remove(userId: UserId): Promise<Boolean, Exception>
 
     fun searchByPhoneNumber(phoneNumber: String): Promise<List<ContactInfo>, Exception>
     fun searchByName(name: String): Promise<List<ContactInfo>, Exception>
