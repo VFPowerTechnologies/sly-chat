@@ -1,28 +1,21 @@
 package io.slychat.messenger.services
 
-import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
-import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.crypto.generateNewKeyVault
-import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
 import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
-import io.slychat.messenger.core.http.api.contacts.FetchContactInfoByIdResponse
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenReturn
-import nl.komponents.kovenant.Promise
 import org.assertj.core.api.AbstractIterableAssert
-import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Condition
 import org.junit.ClassRule
 import org.junit.Test
-import rx.Observable
 import rx.observers.TestSubscriber
+import rx.subjects.PublishSubject
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -41,29 +34,23 @@ class ContactsServiceImplTest {
         @JvmField
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
-
-        val testPassword = "test"
-        val testKeyVault = generateNewKeyVault(testPassword)
-
-        val testUserAddress = SlyAddress(UserId(1), 1)
-        val userLoginData = UserData(testUserAddress, testKeyVault)
     }
 
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val contactClient: ContactAsyncClient = mock()
+    val contactJobRunner: ContactJobRunner = mock()
 
-    fun createService(networkIsAvailable: Boolean = true): ContactsServiceImpl {
+    val contactJobRunning: PublishSubject<ContactJobInfo> = PublishSubject.create()
+
+    fun createService(): ContactsServiceImpl {
+        whenever(contactJobRunner.running).thenReturn(contactJobRunning)
+
         return ContactsServiceImpl(
             MockAuthTokenManager(),
-            Observable.just(networkIsAvailable),
             contactClient,
-            mock(),
             contactsPersistenceManager,
-            userLoginData,
-            mock(),
-            mock()
+            contactJobRunner
         )
-
     }
 
     inline fun <reified T : Any> eventCollectorFor(contactsService: ContactsServiceImpl): TestSubscriber<T> {
@@ -80,63 +67,6 @@ class ContactsServiceImplTest {
         val event = events.first()
 
         asserter(event)
-    }
-
-    @Test
-    fun `it should emit an InvalidContacts event for contacts not returned by the server`() {
-        val contactsService = createService()
-
-        val unadded = (1..3L).map { UserId(it) }
-        val missing = setOf(unadded.first())
-        val present = unadded.subList(1, unadded.size).map { ApiContactInfo(it, "email", "name", "", "pubkey") }
-
-        whenever(contactsPersistenceManager.getUnadded()).thenReturn(unadded.toSet())
-
-        val response = FetchContactInfoByIdResponse(present)
-        whenever(contactClient.fetchContactInfoById(any(), any())).thenReturn(response)
-
-        val testSubscriber = eventCollectorFor<ContactEvent.InvalidContacts>(contactsService)
-
-        contactsService.doProcessUnaddedContacts()
-
-        assertEventEmitted(testSubscriber) { event ->
-            assertEquals(missing, event.contacts, "InvalidContacts contains the wrong users")
-        }
-    }
-
-    @Test
-    fun `when processing unadded, it should add and then emit the returned contacts via an Added event for contacts returned by the server`() {
-        val contactsService = createService()
-
-        val unadded = (1..4L).map { UserId(it) }
-        val present = unadded.subList(1, unadded.size)
-        val newContactIds = present.subList(0, 2).toSet()
-        val presentRemote = present.map { ApiContactInfo(it, "email", "name", "", "pubkey") }
-
-        val response = FetchContactInfoByIdResponse(presentRemote)
-
-        val testSubscriber = eventCollectorFor<ContactEvent.Added>(contactsService)
-
-        whenever(contactsPersistenceManager.getUnadded()).thenReturn(unadded.toSet())
-
-        whenever(contactClient.fetchContactInfoById(any(), any())).thenReturn(response)
-
-        whenever(contactsPersistenceManager.add(any<Collection<ContactInfo>>())).thenAnswer {
-            val a = it.arguments[0] as Collection<ContactInfo>
-            val r = a.filter { newContactIds.contains(it.id) }.toSet()
-            Promise.ofSuccess<Set<ContactInfo>, Exception>(r)
-        }
-
-        contactsService.doProcessUnaddedContacts()
-
-        assertEventEmitted(testSubscriber) { event ->
-            assertThat(event.contacts.map { it.id }).containsOnlyElementsOf(newContactIds)
-
-            event.contacts.forEach {
-                assertTrue(it.isPending, "isPending should be true for $it")
-                assertEquals(AllowedMessageLevel.GROUP_ONLY, it.allowedMessageLevel, "allowedMessageLevel should be GROUP_ONLY for $it")
-            }
-        }
     }
 
     @Test
@@ -174,8 +104,6 @@ class ContactsServiceImplTest {
         testSubscriber.assertNoValues()
     }
 
-    //TODO test remote contact list updates
-
     @Test
     fun `allowMessagesFrom should filter out blocked contacts`() {
         val contactsService = createService()
@@ -190,8 +118,4 @@ class ContactsServiceImplTest {
 
         assertEquals(allowed, gotAllowed, "Invalid allowed list")
     }
-
-    //TODO test local contact sync message level/pending
-    //TODO test local contact remote lookup
-    //TODO test remote sync message level/pending
 }
