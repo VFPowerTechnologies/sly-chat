@@ -21,6 +21,7 @@ import rx.Observable
 import rx.observers.TestSubscriber
 import rx.subjects.PublishSubject
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ContactsServiceImplTest {
@@ -30,7 +31,7 @@ class ContactsServiceImplTest {
         val kovenantTestMode = KovenantTestModeRule()
 
         class MockContactJobRunner : ContactJobRunner {
-            val subject: PublishSubject<ContactJobInfo> = PublishSubject.create()
+            val runningSubject: PublishSubject<ContactJobInfo> = PublishSubject.create()
 
             var immediate = true
 
@@ -38,7 +39,7 @@ class ContactsServiceImplTest {
             var runOperationCallCount = 0
             var withCurrentJobCallCount = 0
 
-            override val running: Observable<ContactJobInfo> = subject
+            override val running: Observable<ContactJobInfo> = runningSubject
 
             override fun withCurrentJob(body: ContactJobDescription.() -> Unit) {
                 withCurrentJobCallCount += 1
@@ -340,5 +341,33 @@ class ContactsServiceImplTest {
         )
 
         assertEquals(1, contactJobRunner.runOperationCallCount, "Didn't go through ContactJobRunner")
+    }
+
+    fun testSyncEvent(isRunning: Boolean) {
+        val contactsService = createService()
+
+        val info = ContactJobInfo(false, false, true, isRunning)
+
+        val testSubscriber = eventCollectorFor<ContactEvent.Sync>(contactsService)
+
+        contactJobRunner.runningSubject.onNext(info)
+
+        assertEventEmitted(testSubscriber) { ev ->
+            if (isRunning)
+                assertTrue(ev.isRunning, "Not a running event")
+            else
+                assertFalse(ev.isRunning, "Not a stopped event")
+        }
+
+    }
+
+    @Test
+    fun `it should fire a sync start event when a the job runner starts running a remote sync`() {
+        testSyncEvent(true)
+    }
+
+    @Test
+    fun `it should fire a sync stop event when a the job runner starts running a sync`() {
+        testSyncEvent(false)
     }
 }
