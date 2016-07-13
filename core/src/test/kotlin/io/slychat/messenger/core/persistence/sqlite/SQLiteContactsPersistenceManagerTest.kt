@@ -515,6 +515,15 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
+    fun `filterBlocked should not filter out unadded users`() {
+        val contactIds = setOf(UserId(1))
+
+        val notBlocked = contactsPersistenceManager.filterBlocked(contactIds).get()
+
+        assertEquals(contactIds, notBlocked, "Invalid filtered list")
+    }
+
+    @Test
     fun `updateMessageLevel should update isPending and allowedMessageLevel`() {
         val contact = createDummyContact(AllowedMessageLevel.GROUP_ONLY, true)
 
