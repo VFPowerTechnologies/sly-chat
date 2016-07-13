@@ -16,5 +16,6 @@ dependencies {
     compile "joda-time:joda-time:$versions.jodaTime"
 
     compile "junit:junit:$versions.junit"
+    compile "org.assertj:assertj-core:$versions.assertJ"
     compile "com.nhaarman:mockito-kotlin:$versions.mockitoKotlin"
 }

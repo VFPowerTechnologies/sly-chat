@@ -3,6 +3,7 @@ package io.slychat.messenger.testutils
 
 import nl.komponents.kovenant.Kovenant
 import nl.komponents.kovenant.Promise
+import org.assertj.core.api.Condition
 import org.joda.time.DateTimeUtils
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.OngoingStubbing
@@ -59,4 +60,8 @@ fun <T> OngoingStubbing<Promise<T, Exception>>.thenAnswerFailure(body: (Invocati
     this.thenAnswer {
         Promise.ofFail<T, Exception>(body(it))
     }
+}
+
+fun <T> cond(description: String, predicate: (T) -> Boolean): Condition<T> = object : Condition<T>(description) {
+    override fun matches(value: T): Boolean = predicate(value)
 }

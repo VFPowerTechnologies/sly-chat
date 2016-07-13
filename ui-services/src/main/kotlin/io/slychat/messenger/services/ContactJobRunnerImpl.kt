@@ -17,8 +17,8 @@ class ContactJobRunnerImpl(
     private var currentRunningJob: ContactJob? = null
     private var queuedJob: ContactJobDescription? = null
 
-    private val subject = PublishSubject.create<ContactJobInfo>()
-    override val running: Observable<ContactJobInfo> = subject
+    private val runningSubject = PublishSubject.create<ContactJobInfo>()
+    override val running: Observable<ContactJobInfo> = runningSubject
 
     private var isNetworkAvailable: Boolean = false
 
@@ -82,11 +82,21 @@ class ContactJobRunnerImpl(
         currentRunningJob = job
         this.queuedJob = null
 
+        val info = ContactJobInfo(
+            queuedJob.updateRemote,
+            queuedJob.localSync,
+            queuedJob.remoteSync,
+            true
+        )
+
+        runningSubject.onNext(info)
+
         p success {
             log.info("Contact job completed successfully")
         } fail { e ->
             log.error("Contact job failed: {}", e.message, e)
         } alwaysUi {
+            runningSubject.onNext(info.copy(isRunning = false))
             processNextPendingOperation()
         }
 
