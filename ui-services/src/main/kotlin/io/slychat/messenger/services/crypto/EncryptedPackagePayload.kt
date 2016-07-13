@@ -4,13 +4,35 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.databind.ObjectMapper
+import java.util.*
 
-data class EncryptedPackagePayloadV0(
+class EncryptedPackagePayloadV0(
     @JsonProperty("preKeyWhisper")
     val isPreKeyWhisper: Boolean,
     @JsonProperty("payload")
     val payload: ByteArray
-) : EncryptedPackagePayload
+) : EncryptedPackagePayload {
+    override fun hashCode(): Int {
+        var result = isPreKeyWhisper.hashCode()
+
+        result = 31 * result + Arrays.hashCode(payload)
+
+        return result
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != javaClass) return false
+
+        other as EncryptedPackagePayloadV0
+
+        return isPreKeyWhisper == other.isPreKeyWhisper && Arrays.equals(payload, other.payload)
+    }
+
+    override fun toString(): String {
+        return "EncryptedPackagePayloadV0(isPreKeyWhisper=$isPreKeyWhisper, payload=${Arrays.toString(payload)})"
+    }
+}
 
 //TODO make sealed once data classes can be sealable
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "version")
