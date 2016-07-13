@@ -26,7 +26,7 @@ class ContactJobRunnerImplTest {
         class MockJobFactory : ContactJobFactory {
             val jobs = ArrayList<ContactJob>()
             val deferreds = ArrayList<Deferred<Unit, Exception>>()
-            override fun build(): ContactJob {
+            override fun create(): ContactJob {
                 val job = mock<ContactJob>()
                 jobs.add(job)
 
@@ -49,7 +49,7 @@ class ContactJobRunnerImplTest {
     fun createRunner(isNetworkAvailable: Boolean = false): ContactJobRunnerImpl {
         networkStatus.onNext(isNetworkAvailable)
 
-        whenever(factory.build()).thenReturn(contactJob)
+        whenever(factory.create()).thenReturn(contactJob)
         whenever(contactJob.run(any())).thenReturn(jobDeferred.promise)
 
         return ContactJobRunnerImpl(

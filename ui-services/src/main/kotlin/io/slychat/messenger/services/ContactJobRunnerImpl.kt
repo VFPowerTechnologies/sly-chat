@@ -75,7 +75,7 @@ class ContactJobRunnerImpl(
 
         val queuedJob = this.queuedJob ?: return
 
-        val job = contactJobFactory.build()
+        val job = contactJobFactory.create()
 
         val p = job.run(queuedJob)
 

@@ -15,7 +15,7 @@ class ContactJobFactoryImpl(
     private val accountInfoPersistenceManager: AccountInfoPersistenceManager,
     private val platformContacts: PlatformContacts
 ) : ContactJobFactory {
-    override fun build(): ContactJob {
+    override fun create(): ContactJob {
         return ContactJobImpl(
             authTokenManager,
             contactClient,
