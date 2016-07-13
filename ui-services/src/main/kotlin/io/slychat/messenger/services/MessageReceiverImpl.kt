@@ -1,5 +1,6 @@
 package io.slychat.messenger.services
 
+import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
@@ -81,12 +82,27 @@ class MessageReceiverImpl(
 
         val objectMapper = ObjectMapper()
 
-        val deserialized = messages.map {
-            val m = objectMapper.readValue(it.result, SlyMessage::class.java)
-            SlyMessageWrapper(userId, it.messageId, m)
+        val failedDeserialization = ArrayList<String>()
+        val deserialized = ArrayList<SlyMessageWrapper>()
+
+        messages.forEach {
+            try {
+                val m = objectMapper.readValue(it.result, SlyMessage::class.java)
+                deserialized.add(SlyMessageWrapper(userId, it.messageId, m))
+            }
+            catch (e: JsonParseException) {
+                failedDeserialization.add(it.messageId)
+            }
         }
 
-        messageProcessorService.processMessages(deserialized)
+        if (deserialized.isNotEmpty())
+            messageProcessorService.processMessages(deserialized)
+
+        if (failedDeserialization.isNotEmpty()) {
+            messagePersistenceManager.removeFromQueue(userId, failedDeserialization) fail { e ->
+                log.error("Unable to remove packages from queue: {}", e.message, e)
+            }
+        }
     }
 
     private fun nextReceiveMessage() {
@@ -138,13 +154,9 @@ class MessageReceiverImpl(
         processReceivedMessageQueue()
     }
 
-    /** Called after packages have been saved to disk. */
-    private fun processNewPackages(packages: List<Package>) {
-    }
-
     override fun processPackages(packages: List<Package>): Promise<Unit, Exception> {
         return messagePersistenceManager.addToQueue(packages) success {
-            processNewPackages(packages)
+            addPackagesToReceivedQueue(packages)
         }
     }
 

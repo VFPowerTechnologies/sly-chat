@@ -13,8 +13,8 @@ import io.slychat.messenger.core.persistence.GroupId
 )
 interface SlyMessage
 
-data class GroupEventWrapper(val m: GroupEvent) : SlyMessage
-data class TextMessageWrapper(val m: TextMessage) : SlyMessage
+data class GroupEventWrapper(@JsonProperty("m") val m: GroupEvent) : SlyMessage
+data class TextMessageWrapper(@JsonProperty("m") val m: TextMessage) : SlyMessage
 
 data class TextMessage(
     @JsonProperty("timestamp")
@@ -22,7 +22,7 @@ data class TextMessage(
     @JsonProperty("message")
     val message: String,
     @JsonProperty("groupId")
-    val groupId: String?
+    val groupId: GroupId?
 )
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
