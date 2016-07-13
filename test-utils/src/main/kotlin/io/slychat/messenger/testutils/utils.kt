@@ -7,6 +7,8 @@ import org.assertj.core.api.Condition
 import org.joda.time.DateTimeUtils
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.OngoingStubbing
+import rx.Observable
+import rx.observers.TestSubscriber
 import java.io.File
 
 inline fun <R> withTempFile(suffix: String = "", body: (File) -> R): R {
@@ -64,4 +66,12 @@ fun <T> OngoingStubbing<Promise<T, Exception>>.thenAnswerFailure(body: (Invocati
 
 fun <T> cond(description: String, predicate: (T) -> Boolean): Condition<T> = object : Condition<T>(description) {
     override fun matches(value: T): Boolean = predicate(value)
+}
+
+fun <T> Observable<T>.testSubscriber(): TestSubscriber<T> {
+    val testSubscriber = TestSubscriber<T>()
+
+    this.subscribe(testSubscriber)
+
+    return testSubscriber
 }

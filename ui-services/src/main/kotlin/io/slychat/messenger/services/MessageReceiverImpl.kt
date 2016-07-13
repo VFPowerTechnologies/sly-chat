@@ -89,7 +89,7 @@ class MessageReceiverImpl(
         messages.forEach {
             try {
                 val m = objectMapper.readValue(it.result, SlyMessage::class.java)
-                deserialized.add(SlyMessageWrapper(userId, it.messageId, m))
+                deserialized.add(SlyMessageWrapper(it.messageId, m))
             }
             catch (e: JsonParseException) {
                 toRemove.add(it.messageId)
@@ -97,7 +97,7 @@ class MessageReceiverImpl(
         }
 
         if (deserialized.isNotEmpty()) {
-            messageProcessorService.processMessages(deserialized) successUi {
+            messageProcessorService.processMessages(userId, deserialized) successUi {
                 nextReceiveMessage()
             } failUi { e ->
                 log.error("Message processing failed: {}", e.message, e)

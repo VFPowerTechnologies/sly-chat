@@ -107,7 +107,7 @@ class MessageReceiverImplTest {
         whenever(messagePersistenceManager.removeFromQueue(any<Collection<PackageId>>())).thenReturn(Unit)
         whenever(messagePersistenceManager.removeFromQueue(any<UserId>(), any())).thenReturn(Unit)
         whenever(messagePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(Unit)
-        whenever(messageProcessService.processMessages(any())).thenReturn(Unit)
+        whenever(messageProcessService.processMessages(any(), any())).thenReturn(Unit)
 
 
         return MessageReceiverImpl(
@@ -199,10 +199,10 @@ class MessageReceiverImplTest {
         decryptionResults.onNext(result)
 
         val captor = argumentCaptor<List<SlyMessageWrapper>>()
-        verify(messageProcessService).processMessages(capture(captor))
+        verify(messageProcessService).processMessages(eq(from), capture(captor))
 
         assertThat(captor.value)
-            .containsOnly(SlyMessageWrapper(from, pkg.id.messageId, wrapped))
+            .containsOnly(SlyMessageWrapper(pkg.id.messageId, wrapped))
             .`as`("Deserialized messages")
     }
 
