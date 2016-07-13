@@ -11,6 +11,7 @@ import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageListDecryptionResult
 import io.slychat.messenger.services.crypto.deserializeEncryptedPackagePayload
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -82,7 +83,7 @@ class MessageReceiverImpl(
 
         val objectMapper = ObjectMapper()
 
-        val failedDeserialization = ArrayList<String>()
+        val toRemove = ArrayList<String>()
         val deserialized = ArrayList<SlyMessageWrapper>()
 
         messages.forEach {
@@ -91,15 +92,22 @@ class MessageReceiverImpl(
                 deserialized.add(SlyMessageWrapper(userId, it.messageId, m))
             }
             catch (e: JsonParseException) {
-                failedDeserialization.add(it.messageId)
+                toRemove.add(it.messageId)
             }
         }
 
-        if (deserialized.isNotEmpty())
-            messageProcessorService.processMessages(deserialized)
+        if (deserialized.isNotEmpty()) {
+            messageProcessorService.processMessages(deserialized) successUi {
+                nextReceiveMessage()
+            } failUi { e ->
+                log.error("Message processing failed: {}", e.message, e)
+                //FIXME not really sure what else I should do here
+                nextReceiveMessage()
+            }
+        }
 
-        if (failedDeserialization.isNotEmpty()) {
-            messagePersistenceManager.removeFromQueue(userId, failedDeserialization) fail { e ->
+        if (toRemove.isNotEmpty()) {
+            messagePersistenceManager.removeFromQueue(userId, toRemove) fail { e ->
                 log.error("Unable to remove packages from queue: {}", e.message, e)
             }
         }
@@ -155,7 +163,7 @@ class MessageReceiverImpl(
     }
 
     override fun processPackages(packages: List<Package>): Promise<Unit, Exception> {
-        return messagePersistenceManager.addToQueue(packages) success {
+        return messagePersistenceManager.addToQueue(packages) successUi {
             addPackagesToReceivedQueue(packages)
         }
     }

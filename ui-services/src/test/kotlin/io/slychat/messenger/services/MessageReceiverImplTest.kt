@@ -22,6 +22,8 @@ import org.junit.ClassRule
 import org.junit.Test
 import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
+import java.util.*
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class MessageReceiverImplTest {
@@ -30,6 +32,12 @@ class MessageReceiverImplTest {
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
     }
+
+    data class GeneratedTextMessages(
+        val packages: List<Package>,
+        val wrappers: List<TextMessageWrapper>,
+        val decryptedResults: List<MessageDecryptionResult<ByteArray>>
+    )
 
     class TestException : Exception("Test exc")
 
@@ -72,6 +80,26 @@ class MessageReceiverImplTest {
         return createPackage(from, m)
     }
 
+    fun generateMessages(from: UserId, vararg messages: String): GeneratedTextMessages {
+        val objectMapper = ObjectMapper()
+
+        val packages = ArrayList<Package>()
+        val wrappers = ArrayList<TextMessageWrapper>()
+        val results = ArrayList<MessageDecryptionResult<ByteArray>>()
+
+        messages.forEach {
+            val wrapped = createTextMessage(it)
+            val pkg = createPackage(from, wrapped.m)
+            val result = MessageDecryptionResult(pkg.id.messageId, objectMapper.writeValueAsBytes(wrapped))
+
+            wrappers.add(wrapped)
+            packages.add(pkg)
+            results.add(result)
+        }
+
+        return GeneratedTextMessages(packages, wrappers, results)
+    }
+
     fun createReceiver(): MessageReceiverImpl {
         val scheduler = Schedulers.immediate()
 
@@ -79,6 +107,8 @@ class MessageReceiverImplTest {
         whenever(messagePersistenceManager.removeFromQueue(any<Collection<PackageId>>())).thenReturn(Unit)
         whenever(messagePersistenceManager.removeFromQueue(any<UserId>(), any())).thenReturn(Unit)
         whenever(messagePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(Unit)
+        whenever(messageProcessService.processMessages(any())).thenReturn(Unit)
+
 
         return MessageReceiverImpl(
             scheduler,
@@ -150,7 +180,6 @@ class MessageReceiverImplTest {
             .haveExactly(1, cond("PackageId") { it == id })
     }
 
-    //TODO test deserialization failure handling for the decrypted results as well
     @Test
     fun `it should send the decrypted package to the message processor`() {
         val receiver = createReceiver()
@@ -199,5 +228,49 @@ class MessageReceiverImplTest {
         assertThat(captor.value)
             .containsOnly(pkg.id.messageId)
             .`as`("Removed packages")
+    }
+
+    @Test
+    fun `it should process the next queued message after the current message has been processed`() {
+        val receiver = createReceiver()
+
+        val from = UserId(1)
+        val generated = generateMessages(from, "1", "2")
+        val address = generated.packages[0].id.address
+
+        receiver.processPackages(generated.packages)
+
+        val succeeded = generated.decryptedResults.subList(0, 1)
+
+        val result = DecryptionResult(from, MessageListDecryptionResult(succeeded, emptyList()))
+        decryptionResults.onNext(result)
+
+        val captor = argumentCaptor<List<EncryptedMessageInfo>>()
+
+        verify(messageCipherService, times(2)).decrypt(eq(address), capture(captor))
+
+        val invocations = captor.allValues
+        assertEquals(2, invocations.size, "decrypt() not invoked twice")
+
+        val values = invocations[1]
+
+        assertThat(values)
+            .hasSize(1)
+            .`as`("Messages for decryption")
+
+        assertEquals(generated.packages[1].id.messageId, values[0].messageId, "Message IDs don't match")
+    }
+
+    //TODO tests for handling empty succeeded/failures results
+
+    @Test
+    fun `it should fetch all pending packages on initialization`() {
+        val receiver = createReceiver()
+
+        whenever(messagePersistenceManager.getQueuedPackages()).thenReturn(emptyList())
+
+        receiver.init()
+
+        verify(messagePersistenceManager).getQueuedPackages()
     }
 }

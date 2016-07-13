@@ -5,6 +5,7 @@ import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.GroupPersistenceManager
 import io.slychat.messenger.core.persistence.MessageInfo
 import io.slychat.messenger.core.persistence.MessagePersistenceManager
+import nl.komponents.kovenant.Promise
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
@@ -14,7 +15,7 @@ import java.util.*
 interface MessageProcessorService {
     val newMessages: Observable<MessageBundle>
 
-    fun processMessages(messages: List<SlyMessageWrapper>)
+    fun processMessages(messages: List<SlyMessageWrapper>): Promise<Unit, Exception>
 
     //TODO self-messages
     //maybe send a self-message via processMessages
@@ -49,7 +50,7 @@ class MessageProcessorServiceImpl(
     //maybe just use some rx operator to get around this? nfi
     //or maybe just listen for events and buffer them until this finalizes?
     //we can't move on until we've processed all these messages
-    override fun processMessages(messages: List<SlyMessageWrapper>) {
+    override fun processMessages(messages: List<SlyMessageWrapper>): Promise<Unit, Exception> {
         val textMessageInfo = ArrayList<MessageInfo>()
 
         messages.forEach {
@@ -81,5 +82,8 @@ class MessageProcessorServiceImpl(
             }
             */
         }
+
+        //TODO
+        return Promise.ofSuccess(Unit)
     }
 }
