@@ -27,23 +27,21 @@ class MessageProcessorServiceImpl(
     //maybe just use some rx operator to get around this? nfi
     //or maybe just listen for events and buffer them until this finalizes?
     //we can't move on until we've processed all these messages
-    override fun processMessages(userId: UserId, messages: List<SlyMessageWrapper>): Promise<Unit, Exception> {
+    override fun processMessage(userId: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception> {
         val textMessageInfo = ArrayList<MessageInfo>()
 
-        messages.forEach {
-            val m = it.message
+        val m = wrapper.message
 
-            when (m) {
-                is TextMessageWrapper -> {
-                    val message = m.m
-                    textMessageInfo.add(
-                        MessageInfo.newReceived(it.messageId, message.message, message.timestamp, currentTimestamp(), 0)
-                    )
-                }
+        when (m) {
+            is TextMessageWrapper -> {
+                val message = m.m
+                textMessageInfo.add(
+                    MessageInfo.newReceived(wrapper.messageId, message.message, message.timestamp, currentTimestamp(), 0)
+                )
+            }
 
-                else -> {
-                    log.error("Unhandled message type: {}", m.javaClass.name)
-                }
+            else -> {
+                log.error("Unhandled message type: {}", m.javaClass.name)
             }
         }
 

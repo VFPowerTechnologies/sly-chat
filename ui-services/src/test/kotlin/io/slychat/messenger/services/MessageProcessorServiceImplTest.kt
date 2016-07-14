@@ -51,7 +51,7 @@ class MessageProcessorServiceImplTest {
 
         val wrapper = SlyMessageWrapper(randomUUID(), TextMessageWrapper(m))
 
-        service.processMessages(UserId(1), listOf(wrapper)).get()
+        service.processMessage(UserId(1), wrapper).get()
 
         verify(messagePersistenceManager).addMessages(any(), any())
     }
@@ -68,7 +68,7 @@ class MessageProcessorServiceImplTest {
 
         val from = UserId(1)
 
-        service.processMessages(from, listOf(wrapper)).get()
+        service.processMessage(from, wrapper).get()
 
         val bundles = testSubscriber.onNextEvents
 

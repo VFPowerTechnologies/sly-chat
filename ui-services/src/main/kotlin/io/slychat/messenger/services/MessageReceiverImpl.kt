@@ -81,7 +81,7 @@ class MessageReceiverImpl(
             return
         }
         else {
-            messageProcessorService.processMessages(userId, listOf(m)) successUi {
+            messageProcessorService.processMessage(userId, m) successUi {
                 nextReceiveMessage()
             } failUi { e ->
                 log.error("Message processing failed: {}", e.message, e)
