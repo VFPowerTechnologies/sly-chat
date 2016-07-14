@@ -113,6 +113,8 @@ class ContactsServiceImpl(
         if (users.isEmpty())
             return Promise.ofSuccess(emptySet())
 
+        log.debug("Fetching missing contact info for {}", users.map { it.long })
+
         val request = FetchContactInfoByIdRequest(users.toList())
 
         return authTokenManager.bind { userCredentials ->
@@ -140,6 +142,8 @@ class ContactsServiceImpl(
         val contacts = response.contacts.map { it.toCore(true, AllowedMessageLevel.GROUP_ONLY) }
 
         return contactsPersistenceManager.add(contacts) mapUi { newContacts ->
+            log.debug("Added new contacts: {}", newContacts.map { it.id.long })
+
             if (newContacts.isNotEmpty()) {
                 val ev = ContactEvent.Added(newContacts)
                 contactEventsSubject.onNext(ev)

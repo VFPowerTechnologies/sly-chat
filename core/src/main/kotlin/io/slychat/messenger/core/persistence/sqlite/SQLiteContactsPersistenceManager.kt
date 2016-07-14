@@ -216,7 +216,7 @@ ON
     override fun add(contactInfo: ContactInfo): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             val added = addContactNoTransaction(connection, contactInfo)
-            if (added && !contactInfo.isPending) {
+            if (added) {
                 val remoteUpdates = listOf(RemoteContactUpdate(contactInfo.id, RemoteContactUpdateType.ADD))
                 addRemoteUpdateNoTransaction(connection, remoteUpdates)
             }
@@ -235,7 +235,6 @@ ON
             }
 
             val remoteUpdates = newContacts
-                .filter { !it.isPending }
                 .map { RemoteContactUpdate(it.id, RemoteContactUpdateType.ADD) }
             addRemoteUpdateNoTransaction(connection, remoteUpdates)
         }

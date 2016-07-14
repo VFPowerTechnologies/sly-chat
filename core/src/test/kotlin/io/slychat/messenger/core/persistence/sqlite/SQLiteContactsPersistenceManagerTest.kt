@@ -78,9 +78,7 @@ class SQLiteContactsPersistenceManagerTest {
     fun doesConvTableExist(userId: UserId): Boolean =
         persistenceManager.runQuery { ConversationTable.exists(it, userId) }.get()
 
-    @Test
-    fun `add should successfully add a contact, create a conversation table and add a corresponding remote update`() {
-        val contact = contactA
+    fun testContactAdd(contact: ContactInfo) {
         assertTrue(contactsPersistenceManager.add(contact).get())
         val got = contactsPersistenceManager.get(contact.id).get()
 
@@ -90,25 +88,32 @@ class SQLiteContactsPersistenceManagerTest {
 
         val update = RemoteContactUpdate(contactId, RemoteContactUpdateType.ADD)
         assertEquals(listOf(update), contactsPersistenceManager.getRemoteUpdates().get(), "Invalid remote update list")
+    }
 
+    @Test
+    fun `add should successfully add a contact, create a conversation table and add a corresponding remote update (pending=false)`() {
+        testContactAdd(contactA)
+    }
+
+    @Test
+    fun `add should successfully add a contact, create a conversation table and add a corresponding remote update (pending=true)`() {
+        testContactAdd(contactA.copy(isPending = true))
     }
 
     @Test
     fun `add should do nothing and return false if the contact already exists`() {
         val contact = contactA
         contactsPersistenceManager.add(contact).get()
-        for (i in 0..2) {
-            assertFalse(contactsPersistenceManager.add(contact).get(), "Contact not considered duplicate")
-            assertEquals(1, contactsPersistenceManager.getRemoteUpdates().get().size, "Invalid number of remote updates")
-        }
+
+        assertFalse(contactsPersistenceManager.add(contact).get(), "Contact not considered duplicate")
+        assertEquals(1, contactsPersistenceManager.getRemoteUpdates().get().size, "Invalid number of remote updates")
     }
 
-    @Test
-    fun `add(List) should return the list of new contacts added and add corresponding remote updates`() {
-        contactsPersistenceManager.add(contactA).get()
+    fun testAddContactMulti(existingContacts: Collection<ContactInfo>, newContacts: Collection<ContactInfo>) {
+        contactsPersistenceManager.add(existingContacts).get()
 
-        val newContacts = listOf(contactA2, contactC)
-        val allContacts = mutableListOf(contactA)
+        val allContacts = ArrayList<ContactInfo>()
+        allContacts.addAll(existingContacts)
         allContacts.addAll(newContacts)
 
         val added = contactsPersistenceManager.add(allContacts).get()
@@ -120,6 +125,17 @@ class SQLiteContactsPersistenceManagerTest {
         val updates = contactsPersistenceManager.getRemoteUpdates().get().sortedBy { it.userId.long }
 
         assertEquals(expectedUpdates, updates, "Invalid remote update list")
+
+    }
+
+    @Test
+    fun `add(List) should return the list of new contacts added and add corresponding remote updates (pending=false)`() {
+        testAddContactMulti(listOf(contactA), listOf(contactA2, contactC))
+    }
+
+    @Test
+    fun `add(List) should return the list of new contacts added and add corresponding remote updates (pending=true)`() {
+        testAddContactMulti(listOf(contactA), listOf(contactA2.copy(isPending = true), contactC.copy(isPending = true)))
     }
 
     @Test
