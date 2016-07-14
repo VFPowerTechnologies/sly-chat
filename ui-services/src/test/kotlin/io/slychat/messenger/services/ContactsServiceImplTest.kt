@@ -61,14 +61,14 @@ class ContactsServiceImplTest {
 
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val contactClient: ContactAsyncClient = mock()
-    val contactJobRunner = MockContactJobRunner()
+    val contactOperationManager = MockContactJobRunner()
 
     fun createService(): ContactsServiceImpl {
         return ContactsServiceImpl(
             MockAuthTokenManager(),
             contactClient,
             contactsPersistenceManager,
-            contactJobRunner
+            contactOperationManager
         )
     }
 
@@ -107,7 +107,7 @@ class ContactsServiceImplTest {
 
         assertTrue(contactsService.addContact(contactInfo).get(), "Contact not seen as added")
 
-        assertEquals(1, contactJobRunner.runOperationCallCount, "Didn't go through ContactJobRunner")
+        assertEquals(1, contactOperationManager.runOperationCallCount, "Didn't go through ContactJobRunner")
     }
 
     @Test
@@ -122,7 +122,7 @@ class ContactsServiceImplTest {
 
         assertTrue(contactsService.removeContact(contactInfo).get(), "Contact not seen as removed")
 
-        assertEquals(1, contactJobRunner.runOperationCallCount, "Didn't go through ContactJobRunner")
+        assertEquals(1, contactOperationManager.runOperationCallCount, "Didn't go through ContactJobRunner")
     }
 
     @Test
@@ -138,7 +138,7 @@ class ContactsServiceImplTest {
         //should return
         contactsService.updateContact(contactInfo).get()
 
-        assertEquals(1, contactJobRunner.runOperationCallCount, "Didn't go through ContactJobRunner")
+        assertEquals(1, contactOperationManager.runOperationCallCount, "Didn't go through ContactJobRunner")
     }
 
     //TODO remove/update event tests
@@ -199,7 +199,7 @@ class ContactsServiceImplTest {
 
         contactsService.doLocalSync()
 
-        assertEquals(1, contactJobRunner.withCurrentJobCallCount, "ContactJobRunner not called")
+        assertEquals(1, contactOperationManager.withCurrentJobCallCount, "ContactJobRunner not called")
     }
 
     @Test
@@ -208,7 +208,7 @@ class ContactsServiceImplTest {
 
         contactsService.doRemoteSync()
 
-        assertEquals(1, contactJobRunner.withCurrentJobCallCount, "ContactJobRunner not called")
+        assertEquals(1, contactOperationManager.withCurrentJobCallCount, "ContactJobRunner not called")
     }
 
     fun testAddMissingContacts(
@@ -340,7 +340,37 @@ class ContactsServiceImplTest {
             false
         )
 
-        assertEquals(1, contactJobRunner.runOperationCallCount, "Didn't go through ContactJobRunner")
+        assertEquals(1, contactOperationManager.runOperationCallCount, "Didn't go through ContactJobRunner")
+    }
+
+    @Test
+    fun `addMissingContacts should not cause a sync if no contacts are added`() {
+        val contactsService = createService()
+
+        testAddMissingContacts(
+            contactsService,
+            0..1L,
+            { it },
+            { it },
+            false
+        )
+
+        assertEquals(0, contactOperationManager.withCurrentJobCallCount, "Sync was run")
+    }
+
+    @Test
+    fun `addMissingContacts should cause a sync if contacts are added`() {
+        val contactsService = createService()
+
+        testAddMissingContacts(
+            contactsService,
+            0..1L,
+            { emptySet() },
+            { it },
+            true
+        )
+
+        assertEquals(1, contactOperationManager.withCurrentJobCallCount, "Sync was run")
     }
 
     fun testSyncEvent(isRunning: Boolean) {
@@ -350,7 +380,7 @@ class ContactsServiceImplTest {
 
         val testSubscriber = eventCollectorFor<ContactEvent.Sync>(contactsService)
 
-        contactJobRunner.runningSubject.onNext(info)
+        contactOperationManager.runningSubject.onNext(info)
 
         assertEventEmitted(testSubscriber) { ev ->
             if (isRunning)

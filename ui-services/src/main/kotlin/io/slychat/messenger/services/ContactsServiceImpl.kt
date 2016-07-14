@@ -22,6 +22,11 @@ class ContactsServiceImpl(
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val contactJobRunner: ContactOperationManager
 ) : ContactsService {
+    private class AddContactsResult(
+        val added: Boolean,
+        val invalidIds: Set<UserId>
+    )
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val contactEventsSubject = PublishSubject.create<ContactEvent>()
@@ -93,6 +98,10 @@ class ContactsServiceImpl(
         return d.promise
     }
 
+    private fun doUpdateRemoteContactList() {
+        withCurrentJob { doUpdateRemoteContactList() }
+    }
+
     override fun doRemoteSync() {
         withCurrentJob { doRemoteSync() }
     }
@@ -108,9 +117,9 @@ class ContactsServiceImpl(
     }
 
     /** Process the given unadded users. */
-    private fun addNewContactData(users: Set<UserId>): Promise<Set<UserId>, Exception> {
+    private fun addNewContactData(users: Set<UserId>): Promise<AddContactsResult, Exception> {
         if (users.isEmpty())
-            return Promise.ofSuccess(emptySet())
+            return Promise.ofSuccess(AddContactsResult(false, emptySet()))
 
         log.debug("Fetching missing contact info for {}", users.map { it.long })
 
@@ -126,7 +135,7 @@ class ContactsServiceImpl(
         }
     }
 
-    private fun handleContactLookupResponse(users: Set<UserId>, response: FetchContactInfoByIdResponse): Promise<Set<UserId>, Exception> {
+    private fun handleContactLookupResponse(users: Set<UserId>, response: FetchContactInfoByIdResponse): Promise<AddContactsResult, Exception> {
         val foundIds = response.contacts.mapTo(HashSet()) { it.id }
 
         val missing = HashSet(users)
@@ -143,12 +152,14 @@ class ContactsServiceImpl(
         return contactsPersistenceManager.add(contacts) mapUi { newContacts ->
             log.debug("Added new contacts: {}", newContacts.map { it.id.long })
 
-            if (newContacts.isNotEmpty()) {
+            val added = newContacts.isNotEmpty()
+
+            if (added) {
                 val ev = ContactEvent.Added(newContacts)
                 contactEventsSubject.onNext(ev)
             }
 
-            invalidContacts
+            AddContactsResult(added, invalidContacts)
         } fail { e ->
             log.error("Unable to add new contacts: {}", e.message, e)
         }
@@ -163,10 +174,13 @@ class ContactsServiceImpl(
         contactJobRunner.runOperation {
             wrap(d, contactsPersistenceManager.exists(users) bind { exists ->
                 missing.removeAll(exists)
-                addNewContactData(missing)
-            }) successUi {
-                doRemoteSync()
-            }
+                addNewContactData(missing) mapUi {
+                    if (it.added)
+                        doUpdateRemoteContactList()
+
+                    it.invalidIds
+                }
+            })
         }
 
         return d.promise
