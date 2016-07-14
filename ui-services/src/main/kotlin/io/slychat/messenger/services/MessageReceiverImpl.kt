@@ -19,24 +19,14 @@ import rx.Scheduler
 import rx.subscriptions.CompositeSubscription
 import java.util.*
 
-data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessages: List<EncryptedMessageInfo>)
-
-interface MessageReceiver {
-    val newMessages: Observable<MessageBundle>
-
-    /** Promise completes once the packages have been written to disk. */
-    fun processPackages(packages: List<Package>): Promise<Unit, Exception>
-
-    fun shutdown()
-    fun init()
-}
-
 class MessageReceiverImpl(
     scheduler: Scheduler,
     private val messageProcessorService: MessageProcessorService,
     private val messagePersistenceManager: MessagePersistenceManager,
     private val messageCipherService: MessageCipherService
 ) : MessageReceiver {
+    private data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessages: List<EncryptedMessageInfo>)
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val receivedMessageQueue = ArrayDeque<QueuedReceivedMessage>()
