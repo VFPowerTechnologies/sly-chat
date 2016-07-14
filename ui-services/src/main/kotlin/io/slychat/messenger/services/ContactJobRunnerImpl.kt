@@ -24,7 +24,10 @@ class ContactJobRunnerImpl(
 
     private val networkAvailableSubscription: Subscription
 
-    private var isPendingRunning = false
+    private var isOperationRunning = false
+    private val isJobRunning: Boolean
+        get() = currentRunningJob != null
+
     private var pendingOperations = ArrayDeque<() -> Promise<*, Exception>>()
 
     init {
@@ -34,7 +37,7 @@ class ContactJobRunnerImpl(
     private fun onNetworkStatusChange(isAvailable: Boolean) {
         isNetworkAvailable = isAvailable
 
-        processNextPendingOperation()
+        processNext()
     }
 
     override fun shutdown() {
@@ -43,7 +46,7 @@ class ContactJobRunnerImpl(
 
     override fun runOperation(operation: () -> Promise<*, Exception>) {
         pendingOperations.add(operation)
-        processNextPendingOperation()
+        processNext()
     }
 
     override fun withCurrentJob(body: ContactJobDescription.() -> Unit) {
@@ -58,8 +61,7 @@ class ContactJobRunnerImpl(
 
         job.body()
 
-        if (currentRunningJob == null && !isPendingRunning && isNetworkAvailable)
-            nextJob()
+        processNext()
     }
 
     /** Process the next queued job, if any. */
@@ -68,14 +70,16 @@ class ContactJobRunnerImpl(
         processJob()
     }
 
-    /** Process the next queued job if no job is currently running and the network is active. */
+    /** Process the next queued job if no job is currently running. */
     private fun processJob() {
-        if (currentRunningJob != null)
+        if (isJobRunning)
             return
 
         val queuedJob = this.queuedJob ?: return
 
         val job = contactJobFactory.create()
+
+        log.info("Beginning contact sync job")
 
         val p = job.run(queuedJob)
 
@@ -97,14 +101,15 @@ class ContactJobRunnerImpl(
             log.error("Contact job failed: {}", e.message, e)
         } alwaysUi {
             runningSubject.onNext(info.copy(isRunning = false))
-            processNextPendingOperation()
+            currentRunningJob = null
+            processNext()
         }
 
         return
     }
 
-    private fun processNextPendingOperation() {
-        if (isPendingRunning)
+    private fun processNext() {
+        if (isOperationRunning || isJobRunning)
             return
 
         if (pendingOperations.isEmpty()) {
@@ -114,13 +119,16 @@ class ContactJobRunnerImpl(
             return
         }
 
+        log.debug("Beginning operation")
+
         val operation = pendingOperations.pop()
 
-        isPendingRunning = true
+        isOperationRunning = true
 
         operation() alwaysUi {
-            isPendingRunning = false
-            processNextPendingOperation()
+            log.debug("Operation complete")
+            isOperationRunning = false
+            processNext()
         }
     }
 

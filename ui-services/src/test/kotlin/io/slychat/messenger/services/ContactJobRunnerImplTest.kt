@@ -141,6 +141,21 @@ class ContactJobRunnerImplTest {
     }
 
     @Test
+    fun `it should queue operations if a sync job is running`() {
+        val runner = createRunner(true)
+
+        doLocalSync(runner)
+
+        var wasRun = false
+        runner.runOperation {
+            wasRun = true
+            Promise.ofSuccess(Unit)
+        }
+
+        assertFalse(wasRun, "Operation wasn't queued")
+    }
+
+    @Test
     fun `it should not run a queued sync job if the network comes back online and an operation is pending`() {
         val runner = createRunner(false)
 
