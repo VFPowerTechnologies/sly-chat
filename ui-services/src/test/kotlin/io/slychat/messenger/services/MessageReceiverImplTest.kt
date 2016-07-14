@@ -5,10 +5,7 @@ import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
-import io.slychat.messenger.core.persistence.GroupId
-import io.slychat.messenger.core.persistence.MessagePersistenceManager
-import io.slychat.messenger.core.persistence.Package
-import io.slychat.messenger.core.persistence.PackageId
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
@@ -16,6 +13,7 @@ import io.slychat.messenger.services.crypto.MessageDecryptionResult
 import io.slychat.messenger.services.crypto.MessageListDecryptionResult
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.cond
+import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenReturn
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
@@ -41,7 +39,7 @@ class MessageReceiverImplTest {
 
     class TestException : Exception("Test exc")
 
-    val messageProcessService: MessageProcessorService = mock()
+    val messageProcessorService: MessageProcessorService = mock()
     val messagePersistenceManager: MessagePersistenceManager = mock()
     val messageCipherService: MessageCipherService = mock()
 
@@ -107,12 +105,12 @@ class MessageReceiverImplTest {
         whenever(messagePersistenceManager.removeFromQueue(any<Collection<PackageId>>())).thenReturn(Unit)
         whenever(messagePersistenceManager.removeFromQueue(any<UserId>(), any())).thenReturn(Unit)
         whenever(messagePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(Unit)
-        whenever(messageProcessService.processMessages(any(), any())).thenReturn(Unit)
+        whenever(messageProcessorService.processMessages(any(), any())).thenReturn(Unit)
 
 
         return MessageReceiverImpl(
             scheduler,
-            messageProcessService,
+            messageProcessorService,
             messagePersistenceManager,
             messageCipherService
         )
@@ -199,7 +197,7 @@ class MessageReceiverImplTest {
         decryptionResults.onNext(result)
 
         val captor = argumentCaptor<List<SlyMessageWrapper>>()
-        verify(messageProcessService).processMessages(eq(from), capture(captor))
+        verify(messageProcessorService).processMessages(eq(from), capture(captor))
 
         assertThat(captor.value)
             .containsOnly(SlyMessageWrapper(pkg.id.messageId, wrapped))
@@ -272,5 +270,27 @@ class MessageReceiverImplTest {
         receiver.init()
 
         verify(messagePersistenceManager).getQueuedPackages()
+    }
+
+    @Test
+    fun `it should proxy new messages from MessageProcessor`() {
+        val subject = PublishSubject.create<MessageBundle>()
+        whenever(messageProcessorService.newMessages).thenReturn(subject)
+
+        val receiver = createReceiver()
+
+        val testSubscriber = receiver.newMessages.testSubscriber()
+
+        val bundle = MessageBundle(UserId(1), listOf(
+            MessageInfo.newReceived("m", currentTimestamp())
+        ))
+
+        subject.onNext(bundle)
+
+        val bundles = testSubscriber.onNextEvents
+
+        assertThat(bundles)
+            .containsOnlyElementsOf(listOf(bundle))
+            .`as`("Received bundles")
     }
 }

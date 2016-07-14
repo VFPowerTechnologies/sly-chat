@@ -16,7 +16,6 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Scheduler
-import rx.subjects.PublishSubject
 import rx.subscriptions.CompositeSubscription
 import java.util.*
 
@@ -45,8 +44,8 @@ class MessageReceiverImpl(
 
     private val subscriptions = CompositeSubscription()
 
-    private val newMessagesSubject = PublishSubject.create<MessageBundle>()
-    override val newMessages: Observable<MessageBundle> = newMessagesSubject
+    override val newMessages: Observable<MessageBundle>
+        get() = messageProcessorService.newMessages
 
     init {
         subscriptions.add(messageCipherService.decryptedMessages.observeOn(scheduler).subscribe {
