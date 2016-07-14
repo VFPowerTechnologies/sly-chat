@@ -1,7 +1,5 @@
 package io.slychat.messenger.services.crypto
 
-import com.fasterxml.jackson.annotation.JsonFormat
-import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.prekeys.PreKeyClient
@@ -39,27 +37,19 @@ class DeviceUpdateResult(val exception: Exception?) {
         get() = exception == null
 }
 
-private interface CipherWork
-private class EncryptionWork(val userId: UserId, val message: ByteArray, val connectionTag: Int) : CipherWork
-private data class DecryptionWork(val address: SlyAddress, val encryptedMessages: EncryptedMessageInfo) : CipherWork
-private data class UpdateDevices(val userId: UserId, val info: DeviceMismatchContent) : CipherWork
-private class NoMoreWork : CipherWork
-
-/** Represents a single message to a user. */
-@JsonFormat(shape = JsonFormat.Shape.ARRAY)
-@JsonPropertyOrder("deviceId", "registrationId", "payload")
-data class MessageData(
-    val deviceId: Int,
-    val registrationId: Int,
-    val payload: EncryptedPackagePayloadV0
-)
-
 class MessageCipherServiceImpl(
     private val authTokenManager: AuthTokenManager,
     private val preKeyClient: PreKeyClient,
     //the store is only ever used in the work thread, so no locking is done
     private val signalStore: SignalProtocolStore
 ) : MessageCipherService, Runnable {
+    private sealed class CipherWork {
+        class Encryption(val userId: UserId, val message: ByteArray, val connectionTag: Int) : CipherWork()
+        class Decryption(val address: SlyAddress, val encryptedMessages: EncryptedMessageInfo) : CipherWork()
+        class UpdateDevices(val userId: UserId, val info: DeviceMismatchContent) : CipherWork()
+        class NoMoreWork : CipherWork()
+    }
+
     private var thread: Thread? = null
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -88,22 +78,22 @@ class MessageCipherServiceImpl(
     override fun shutdown(join: Boolean) {
         val th = thread ?: return
 
-        workQueue.add(NoMoreWork())
+        workQueue.add(CipherWork.NoMoreWork())
         if (join)
             th.join()
         thread = null
     }
 
     override fun encrypt(userId: UserId, message: ByteArray, connectionTag: Int) {
-        workQueue.add(EncryptionWork(userId, message, connectionTag))
+        workQueue.add(CipherWork.Encryption(userId, message, connectionTag))
     }
 
     override fun decrypt(address: SlyAddress, messages: EncryptedMessageInfo) {
-        workQueue.add(DecryptionWork(address,  messages))
+        workQueue.add(CipherWork.Decryption(address, messages))
     }
 
     override fun updateDevices(userId: UserId, info: DeviceMismatchContent) {
-        workQueue.add(UpdateDevices(userId, info))
+        workQueue.add(CipherWork.UpdateDevices(userId, info))
     }
 
     override fun run() {
@@ -131,10 +121,10 @@ class MessageCipherServiceImpl(
     /** Returns true to continue, false to exit. */
     private fun processWork(work: CipherWork): Boolean {
         when (work) {
-            is EncryptionWork -> handleEncryption(work)
-            is DecryptionWork -> handleDecryption(work)
-            is UpdateDevices -> handleDeviceUpdate(work)
-            is NoMoreWork -> return false
+            is CipherWork.Encryption -> handleEncryption(work)
+            is CipherWork.Decryption -> handleDecryption(work)
+            is CipherWork.UpdateDevices -> handleDeviceUpdate(work)
+            is CipherWork.NoMoreWork -> return false
             else -> {
                 log.error("Unknown work type: {}", work)
             }
@@ -143,7 +133,7 @@ class MessageCipherServiceImpl(
         return true
     }
 
-    private fun handleDeviceUpdate(work: UpdateDevices) {
+    private fun handleDeviceUpdate(work: CipherWork.UpdateDevices) {
         val userId = work.userId
 
         val info = work.info
@@ -178,7 +168,7 @@ class MessageCipherServiceImpl(
         deviceUpdateSubject.onNext(result)
     }
 
-    private fun handleEncryption(work: EncryptionWork) {
+    private fun handleEncryption(work: CipherWork.Encryption) {
         val userId = work.userId
         val message = work.message
         val result = try {
@@ -231,7 +221,7 @@ class MessageCipherServiceImpl(
         }
     }
 
-    private fun handleDecryption(work: DecryptionWork) {
+    private fun handleDecryption(work: CipherWork.Decryption) {
         val result = decryptMessageForUser(work.address, work.encryptedMessages)
         decryptionSubject.onNext(DecryptionResult(work.address.id, result))
     }
