@@ -30,7 +30,7 @@ data class EncryptionOk(val encryptedMessages: List<MessageData>, val connection
 data class EncryptionPreKeyFetchFailure(val cause: Throwable): EncryptionResult
 data class EncryptionUnknownFailure(val cause: Throwable): EncryptionResult
 
-data class DecryptionResult(val userId: UserId, val result: MessageListDecryptionResult)
+data class DecryptionResult(val userId: UserId, val result: MessageDecryptionResult)
 
 interface MessageSendResult {
     val messageId: String

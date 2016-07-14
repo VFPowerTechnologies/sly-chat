@@ -8,7 +8,7 @@ import io.slychat.messenger.core.persistence.MessagePersistenceManager
 import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.persistence.PackageId
 import io.slychat.messenger.services.crypto.MessageCipherService
-import io.slychat.messenger.services.crypto.MessageListDecryptionResult
+import io.slychat.messenger.services.crypto.MessageDecryptionResult
 import io.slychat.messenger.services.crypto.deserializeEncryptedPackagePayload
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.ui.failUi
@@ -25,7 +25,7 @@ class MessageReceiverImpl(
     private val messagePersistenceManager: MessagePersistenceManager,
     private val messageCipherService: MessageCipherService
 ) : MessageReceiver {
-    private data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessages: List<EncryptedMessageInfo>)
+    private data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessages: EncryptedMessageInfo)
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -49,44 +49,39 @@ class MessageReceiverImpl(
         }
     }
 
-    private fun handleFailedDecryptionResults(userId: UserId, result: MessageListDecryptionResult) {
-        if (result.failed.isEmpty())
-            return
+    private fun handleFailedDecryptionResult(userId: UserId, result: MessageDecryptionResult.Failure) {
+        log.warn("Unable to decrypt message for {}", userId)
+         log.warn("Message decryption failure: {}", result.cause.message, result.cause)
 
-        log.warn("Unable to decrypt {} messages for {}", result.failed.size, userId)
-        result.failed.forEach { log.warn("Message decryption failure: {}", it.result.cause.message, it.result.cause) }
-
-        messagePersistenceManager.removeFromQueue(userId, result.failed.map { it.messageId }) fail { e ->
+        messagePersistenceManager.removeFromQueue(userId, listOf(result.messageId)) fail { e ->
             log.warn("Unable to remove failed decryption packages from queue: {}", e.message, e)
         }
+
+        nextReceiveMessage()
     }
 
-    private fun processDecryptionResult(userId: UserId, result: MessageListDecryptionResult) {
-        handleFailedDecryptionResults(userId, result)
+    private fun handleSuccessfulDecryptionResult(userId: UserId, result: MessageDecryptionResult.Success) {
+        val objectMapper = ObjectMapper()
 
-        val messages = result.succeeded
-        if (messages.isEmpty()) {
+        val m = try {
+            val m = objectMapper.readValue(result.data, SlyMessage::class.java)
+            SlyMessageWrapper(result.messageId, m)
+        }
+        catch (e: JsonParseException) {
+            log.warn("Unable to deserialize message from {}: {}", userId, e.message, e)
+            null
+        }
+
+        if (m == null) {
+            messagePersistenceManager.removeFromQueue(userId, listOf(result.messageId)) fail { e ->
+                log.error("Unable to remove packages from queue: {}", e.message, e)
+            }
+
             nextReceiveMessage()
             return
         }
-
-        val objectMapper = ObjectMapper()
-
-        val toRemove = ArrayList<String>()
-        val deserialized = ArrayList<SlyMessageWrapper>()
-
-        messages.forEach {
-            try {
-                val m = objectMapper.readValue(it.result, SlyMessage::class.java)
-                deserialized.add(SlyMessageWrapper(it.messageId, m))
-            }
-            catch (e: JsonParseException) {
-                toRemove.add(it.messageId)
-            }
-        }
-
-        if (deserialized.isNotEmpty()) {
-            messageProcessorService.processMessages(userId, deserialized) successUi {
+        else {
+            messageProcessorService.processMessages(userId, listOf(m)) successUi {
                 nextReceiveMessage()
             } failUi { e ->
                 log.error("Message processing failed: {}", e.message, e)
@@ -94,11 +89,12 @@ class MessageReceiverImpl(
                 nextReceiveMessage()
             }
         }
+    }
 
-        if (toRemove.isNotEmpty()) {
-            messagePersistenceManager.removeFromQueue(userId, toRemove) fail { e ->
-                log.error("Unable to remove packages from queue: {}", e.message, e)
-            }
+    private fun processDecryptionResult(userId: UserId, result: MessageDecryptionResult) {
+        when (result) {
+            is MessageDecryptionResult.Failure -> handleFailedDecryptionResult(userId, result)
+            is MessageDecryptionResult.Success -> handleSuccessfulDecryptionResult(userId, result)
         }
     }
 
@@ -134,7 +130,7 @@ class MessageReceiverImpl(
             try {
                 val payload = deserializeEncryptedPackagePayload(pkg.payload)
                 val messageInfo = EncryptedMessageInfo(pkg.id.messageId, payload)
-                receivedMessageQueue.add(QueuedReceivedMessage(pkg.id.address, listOf(messageInfo)))
+                receivedMessageQueue.add(QueuedReceivedMessage(pkg.id.address, messageInfo))
             }
             catch (e: Exception) {
                 log.warn("Unable to decrypt message <<{}>> from {}: {}", pkg.id.messageId, pkg.id.address.asString(), e.message, e)

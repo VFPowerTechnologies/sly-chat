@@ -10,7 +10,6 @@ import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageDecryptionResult
-import io.slychat.messenger.services.crypto.MessageListDecryptionResult
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.cond
 import io.slychat.messenger.testutils.testSubscriber
@@ -34,7 +33,7 @@ class MessageReceiverImplTest {
     data class GeneratedTextMessages(
         val packages: List<Package>,
         val wrappers: List<TextMessageWrapper>,
-        val decryptedResults: List<MessageDecryptionResult<ByteArray>>
+        val decryptedResults: List<MessageDecryptionResult.Success>
     )
 
     class TestException : Exception("Test exc")
@@ -83,12 +82,12 @@ class MessageReceiverImplTest {
 
         val packages = ArrayList<Package>()
         val wrappers = ArrayList<TextMessageWrapper>()
-        val results = ArrayList<MessageDecryptionResult<ByteArray>>()
+        val results = ArrayList<MessageDecryptionResult.Success>()
 
         messages.forEach {
             val wrapped = createTextMessage(it)
             val pkg = createPackage(from, wrapped.m)
-            val result = MessageDecryptionResult(pkg.id.messageId, objectMapper.writeValueAsBytes(wrapped))
+            val result = MessageDecryptionResult.Success(pkg.id.messageId, objectMapper.writeValueAsBytes(wrapped))
 
             wrappers.add(wrapped)
             packages.add(pkg)
@@ -189,12 +188,9 @@ class MessageReceiverImplTest {
 
         receiver.processPackages(listOf(pkg))
 
-        val succeeded = listOf(
-            MessageDecryptionResult(pkg.id.messageId, objectMapper.writeValueAsBytes(wrapped))
-        )
+        val result = MessageDecryptionResult.Success(pkg.id.messageId, objectMapper.writeValueAsBytes(wrapped))
 
-        val result = DecryptionResult(from, MessageListDecryptionResult(succeeded, emptyList()))
-        decryptionResults.onNext(result)
+        decryptionResults.onNext(DecryptionResult(from, result))
 
         val captor = argumentCaptor<List<SlyMessageWrapper>>()
         verify(messageProcessorService).processMessages(eq(from), capture(captor))
@@ -213,12 +209,9 @@ class MessageReceiverImplTest {
 
         receiver.processPackages(listOf(pkg))
 
-        val succeeded = listOf(
-            MessageDecryptionResult(pkg.id.messageId, "invalid".toByteArray())
-        )
+        val result = MessageDecryptionResult.Success(pkg.id.messageId, "invalid".toByteArray())
 
-        val result = DecryptionResult(from, MessageListDecryptionResult(succeeded, emptyList()))
-        decryptionResults.onNext(result)
+        decryptionResults.onNext(DecryptionResult(from, result))
 
         val captor = argumentCaptor<Collection<String>>()
         verify(messagePersistenceManager).removeFromQueue(eq(from), capture(captor))
@@ -227,6 +220,8 @@ class MessageReceiverImplTest {
             .containsOnly(pkg.id.messageId)
             .`as`("Removed packages")
     }
+
+    //TODO test to make sure next message is processed after failed deserialization
 
     @Test
     fun `it should process the next queued message after the current message has been processed`() {
@@ -238,25 +233,20 @@ class MessageReceiverImplTest {
 
         receiver.processPackages(generated.packages)
 
-        val succeeded = generated.decryptedResults.subList(0, 1)
+        val result = generated.decryptedResults[0]
 
-        val result = DecryptionResult(from, MessageListDecryptionResult(succeeded, emptyList()))
-        decryptionResults.onNext(result)
+        decryptionResults.onNext(DecryptionResult(from, result))
 
-        val captor = argumentCaptor<List<EncryptedMessageInfo>>()
+        val captor = argumentCaptor<EncryptedMessageInfo>()
 
         verify(messageCipherService, times(2)).decrypt(eq(address), capture(captor))
 
         val invocations = captor.allValues
         assertEquals(2, invocations.size, "decrypt() not invoked twice")
 
-        val values = invocations[1]
+        val value = invocations[1]
 
-        assertThat(values)
-            .hasSize(1)
-            .`as`("Messages for decryption")
-
-        assertEquals(generated.packages[1].id.messageId, values[0].messageId, "Message IDs don't match")
+        assertEquals(generated.packages[1].id.messageId, value.messageId, "Message IDs don't match")
     }
 
     //TODO tests for handling empty succeeded/failures results

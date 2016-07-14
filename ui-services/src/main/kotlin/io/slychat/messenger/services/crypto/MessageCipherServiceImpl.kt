@@ -22,16 +22,17 @@ import rx.subjects.PublishSubject
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 
-data class MessageDecryptionResult<T>(
-    val messageId: String,
-    val result: T
-)
+sealed class MessageDecryptionResult {
+    class Success(
+        val messageId: String,
+        val data: ByteArray
+    ) : MessageDecryptionResult()
 
-data class DecryptionFailure(val cause: Throwable)
-data class MessageListDecryptionResult(
-    val succeeded: List<MessageDecryptionResult<ByteArray>>,
-    val failed: List<MessageDecryptionResult<DecryptionFailure>>
-)
+    class Failure(
+        val messageId: String,
+        val cause: Throwable
+    ) : MessageDecryptionResult()
+}
 
 class DeviceUpdateResult(val exception: Exception?) {
     val isSuccess: Boolean
@@ -39,8 +40,8 @@ class DeviceUpdateResult(val exception: Exception?) {
 }
 
 private interface CipherWork
-private data class EncryptionWork(val userId: UserId, val message: ByteArray, val connectionTag: Int) : CipherWork
-private data class DecryptionWork(val address: SlyAddress, val encryptedMessages: List<EncryptedMessageInfo>) : CipherWork
+private class EncryptionWork(val userId: UserId, val message: ByteArray, val connectionTag: Int) : CipherWork
+private data class DecryptionWork(val address: SlyAddress, val encryptedMessages: EncryptedMessageInfo) : CipherWork
 private data class UpdateDevices(val userId: UserId, val info: DeviceMismatchContent) : CipherWork
 private class NoMoreWork : CipherWork
 
@@ -97,7 +98,7 @@ class MessageCipherServiceImpl(
         workQueue.add(EncryptionWork(userId, message, connectionTag))
     }
 
-    override fun decrypt(address: SlyAddress, messages: List<EncryptedMessageInfo>) {
+    override fun decrypt(address: SlyAddress, messages: EncryptedMessageInfo) {
         workQueue.add(DecryptionWork(address,  messages))
     }
 
@@ -218,29 +219,20 @@ class MessageCipherServiceImpl(
         return messageData
     }
 
-    private fun decryptMessagesForUser(address: SlyAddress, encryptedMessages: List<EncryptedMessageInfo>): MessageListDecryptionResult {
-        val failed = ArrayList<MessageDecryptionResult<DecryptionFailure>>()
-        val succeeded = ArrayList<MessageDecryptionResult<ByteArray>>()
-
+    private fun decryptMessageForUser(address: SlyAddress, encryptedMessageInfo: EncryptedMessageInfo): MessageDecryptionResult {
         val sessionCipher = SessionCipher(signalStore, address.toSignalAddress())
 
-        encryptedMessages.forEach { encryptedMessageInfo ->
-            try {
-                val message = decryptEncryptedMessage(sessionCipher, encryptedMessageInfo.payload)
-                val result = MessageDecryptionResult(encryptedMessageInfo.messageId, message)
-                succeeded.add(result)
-            }
-            catch (e: Throwable) {
-                val result = MessageDecryptionResult(encryptedMessageInfo.messageId, DecryptionFailure(e))
-                failed.add(result)
-            }
+        return try {
+            val message = decryptEncryptedMessage(sessionCipher, encryptedMessageInfo.payload)
+            MessageDecryptionResult.Success(encryptedMessageInfo.messageId, message)
         }
-
-        return MessageListDecryptionResult(succeeded, failed)
+        catch (e: Throwable) {
+            MessageDecryptionResult.Failure(encryptedMessageInfo.messageId, e)
+        }
     }
 
     private fun handleDecryption(work: DecryptionWork) {
-        val result = decryptMessagesForUser(work.address, work.encryptedMessages)
+        val result = decryptMessageForUser(work.address, work.encryptedMessages)
         decryptionSubject.onNext(DecryptionResult(work.address.id, result))
     }
 

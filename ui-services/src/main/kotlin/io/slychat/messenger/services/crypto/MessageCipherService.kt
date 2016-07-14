@@ -16,6 +16,6 @@ interface MessageCipherService {
     fun start()
     fun shutdown(join: Boolean)
     fun encrypt(userId: UserId, message: ByteArray, connectionTag: Int)
-    fun decrypt(address: SlyAddress, messages: List<EncryptedMessageInfo>)
+    fun decrypt(address: SlyAddress, messages: EncryptedMessageInfo)
     fun updateDevices(userId: UserId, info: DeviceMismatchContent)
 }
