@@ -1,7 +1,7 @@
 package io.slychat.messenger.services
 
 /** Info for a running job. */
-data class ContactJobInfo(
+data class ContactSyncJobInfo(
     var updateRemote: Boolean,
     var localSync: Boolean,
     var remoteSync: Boolean,

@@ -20,7 +20,7 @@ class ContactsServiceImpl(
     private val authTokenManager: AuthTokenManager,
     private val contactClient: ContactAsyncClient,
     private val contactsPersistenceManager: ContactsPersistenceManager,
-    private val contactJobRunner: ContactJobRunner
+    private val contactJobRunner: ContactOperationManager
 ) : ContactsService {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -80,7 +80,6 @@ class ContactsServiceImpl(
     }
 
     /** Filter out users whose messages we should ignore. */
-    //in the future, this will also check for blocked/deleted users
     override fun allowMessagesFrom(users: Set<UserId>): Promise<Set<UserId>, Exception> {
         val d = deferred<Set<UserId>, Exception>()
 
@@ -102,7 +101,7 @@ class ContactsServiceImpl(
         withCurrentJob { doLocalSync() }
     }
 
-    private fun onContactJobStatusUpdate(info: ContactJobInfo) {
+    private fun onContactJobStatusUpdate(info: ContactSyncJobInfo) {
         //if remote sync is at all enabled, we want the entire process to lock down the contact list
         if (info.remoteSync)
             contactEventsSubject.onNext(ContactEvent.Sync(info.isRunning))
@@ -174,8 +173,8 @@ class ContactsServiceImpl(
     }
 
     /** Used to mark job components for execution. */
-    private fun withCurrentJob(body: ContactJobDescription.() -> Unit) {
-        contactJobRunner.withCurrentJob(body)
+    private fun withCurrentJob(body: ContactSyncJobDescription.() -> Unit) {
+        contactJobRunner.withCurrentSyncJob(body)
     }
 
     override fun shutdown() {

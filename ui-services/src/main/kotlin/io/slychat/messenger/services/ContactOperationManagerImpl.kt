@@ -8,24 +8,24 @@ import rx.Subscription
 import rx.subjects.PublishSubject
 import java.util.*
 
-class ContactJobRunnerImpl(
+class ContactOperationManagerImpl(
     networkAvailable: Observable<Boolean>,
-    private val contactJobFactory: ContactJobFactory
-) : ContactJobRunner {
+    private val contactSyncJobFactory: ContactSyncJobFactory
+) : ContactOperationManager {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private var currentRunningJob: ContactJob? = null
-    private var queuedJob: ContactJobDescription? = null
+    private var currentRunningJob: ContactSyncJob? = null
+    private var queuedSync: ContactSyncJobDescription? = null
 
-    private val runningSubject = PublishSubject.create<ContactJobInfo>()
-    override val running: Observable<ContactJobInfo> = runningSubject
+    private val runningSubject = PublishSubject.create<ContactSyncJobInfo>()
+    override val running: Observable<ContactSyncJobInfo> = runningSubject
 
     private var isNetworkAvailable: Boolean = false
 
     private val networkAvailableSubscription: Subscription
 
     private var isOperationRunning = false
-    private val isJobRunning: Boolean
+    private val isSyncRunning: Boolean
         get() = currentRunningJob != null
 
     private var pendingOperations = ArrayDeque<() -> Promise<*, Exception>>()
@@ -49,13 +49,13 @@ class ContactJobRunnerImpl(
         processNext()
     }
 
-    override fun withCurrentJob(body: ContactJobDescription.() -> Unit) {
-        val queuedJob = this.queuedJob
+    override fun withCurrentSyncJob(body: ContactSyncJobDescription.() -> Unit) {
+        val queuedJob = this.queuedSync
         val job = if (queuedJob != null)
             queuedJob
         else {
-            val desc = ContactJobDescription()
-            this.queuedJob = desc
+            val desc = ContactSyncJobDescription()
+            this.queuedSync = desc
             desc
         }
 
@@ -65,28 +65,28 @@ class ContactJobRunnerImpl(
     }
 
     /** Process the next queued job, if any. */
-    private fun nextJob() {
+    private fun nextSyncJob() {
         currentRunningJob = null
-        processJob()
+        processSyncJob()
     }
 
     /** Process the next queued job if no job is currently running. */
-    private fun processJob() {
-        if (isJobRunning)
+    private fun processSyncJob() {
+        if (isSyncRunning)
             return
 
-        val queuedJob = this.queuedJob ?: return
+        val queuedJob = this.queuedSync ?: return
 
-        val job = contactJobFactory.create()
+        val job = contactSyncJobFactory.create()
 
         log.info("Beginning contact sync job")
 
         val p = job.run(queuedJob)
 
         currentRunningJob = job
-        this.queuedJob = null
+        this.queuedSync = null
 
-        val info = ContactJobInfo(
+        val info = ContactSyncJobInfo(
             queuedJob.updateRemote,
             queuedJob.localSync,
             queuedJob.remoteSync,
@@ -109,12 +109,12 @@ class ContactJobRunnerImpl(
     }
 
     private fun processNext() {
-        if (isOperationRunning || isJobRunning)
+        if (isOperationRunning || isSyncRunning)
             return
 
         if (pendingOperations.isEmpty()) {
             if (isNetworkAvailable)
-                nextJob()
+                nextSyncJob()
 
             return
         }

@@ -17,17 +17,17 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ContactJobRunnerImplTest {
+class ContactOperationManagerImplTest {
     companion object {
         @JvmField
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
 
-        class MockJobFactory : ContactJobFactory {
-            val jobs = ArrayList<ContactJob>()
+        class MockSyncJobFactory : ContactSyncJobFactory {
+            val jobs = ArrayList<ContactSyncJob>()
             val deferreds = ArrayList<Deferred<Unit, Exception>>()
-            override fun create(): ContactJob {
-                val job = mock<ContactJob>()
+            override fun create(): ContactSyncJob {
+                val job = mock<ContactSyncJob>()
                 jobs.add(job)
 
                 val d = deferred<Unit, Exception>()
@@ -40,26 +40,26 @@ class ContactJobRunnerImplTest {
         }
     }
 
-    val factory: ContactJobFactory = mock()
-    val contactJob: ContactJob = mock()
+    val factory: ContactSyncJobFactory = mock()
+    val contactJob: ContactSyncJob = mock()
     val jobDeferred = deferred<Unit, Exception>()
 
     val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create()
 
-    fun createRunner(isNetworkAvailable: Boolean = false): ContactJobRunnerImpl {
+    fun createRunner(isNetworkAvailable: Boolean = false): ContactOperationManagerImpl {
         networkStatus.onNext(isNetworkAvailable)
 
         whenever(factory.create()).thenReturn(contactJob)
         whenever(contactJob.run(any())).thenReturn(jobDeferred.promise)
 
-        return ContactJobRunnerImpl(
+        return ContactOperationManagerImpl(
             networkStatus,
             factory
         )
     }
 
-    fun doLocalSync(runner: ContactJobRunnerImpl) {
-        runner.withCurrentJob { doLocalSync() }
+    fun doLocalSync(runner: ContactOperationManagerImpl) {
+        runner.withCurrentSyncJob { doLocalSync() }
     }
 
     @Test
@@ -215,9 +215,9 @@ class ContactJobRunnerImplTest {
 
     @Test
     fun `it should queue a sync job if one is already running`() {
-        val factory = MockJobFactory()
+        val factory = MockSyncJobFactory()
 
-        val runner = ContactJobRunnerImpl(
+        val runner = ContactOperationManagerImpl(
             Observable.just(true),
             factory
         )
@@ -231,9 +231,9 @@ class ContactJobRunnerImplTest {
 
     @Test
     fun `it should run a queued sync job after the current one is complete if no operations are pending`() {
-        val factory = MockJobFactory()
+        val factory = MockSyncJobFactory()
 
-        val runner = ContactJobRunnerImpl(
+        val runner = ContactOperationManagerImpl(
             Observable.just(true),
             factory
         )
@@ -251,7 +251,7 @@ class ContactJobRunnerImplTest {
     fun `it should emit a running event when a sync begins`() {
         val runner = createRunner(true)
 
-        val testSubscriber = TestSubscriber<ContactJobInfo>()
+        val testSubscriber = TestSubscriber<ContactSyncJobInfo>()
 
         runner.running.subscribe(testSubscriber)
 
@@ -266,13 +266,13 @@ class ContactJobRunnerImplTest {
 
     @Test
     fun `it should emit a a stopped event when a sync ends`() {
-        val factory = MockJobFactory()
-        val runner = ContactJobRunnerImpl(
+        val factory = MockSyncJobFactory()
+        val runner = ContactOperationManagerImpl(
             Observable.just(true),
             factory
         )
 
-        val testSubscriber = TestSubscriber<ContactJobInfo>()
+        val testSubscriber = TestSubscriber<ContactSyncJobInfo>()
 
         runner.running.subscribe(testSubscriber)
 

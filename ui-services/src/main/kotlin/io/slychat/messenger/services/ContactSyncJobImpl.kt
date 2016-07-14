@@ -13,7 +13,7 @@ import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import java.util.*
 
-class ContactJobImpl(
+class ContactSyncJobImpl(
     private val authTokenManager: AuthTokenManager,
     private val contactClient: ContactAsyncClient,
     private val contactListClient: ContactListAsyncClient,
@@ -21,7 +21,7 @@ class ContactJobImpl(
     private val userLoginData: UserData,
     private val accountInfoPersistenceManager: AccountInfoPersistenceManager,
     private val platformContacts: PlatformContacts
-) : ContactJob {
+) : ContactSyncJob {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private fun getDefaultRegionCode(): Promise<String, Exception> {
@@ -112,7 +112,7 @@ class ContactJobImpl(
         }
     }
 
-    override fun run(jobDescription: ContactJobDescription): Promise<Unit, Exception> {
+    override fun run(jobDescription: ContactSyncJobDescription): Promise<Unit, Exception> {
         val jobRunners = ArrayList<(Unit) -> Promise<Unit, Exception>>()
 
         if (jobDescription.localSync)

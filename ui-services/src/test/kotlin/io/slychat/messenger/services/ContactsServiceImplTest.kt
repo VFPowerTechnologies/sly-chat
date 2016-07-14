@@ -30,8 +30,8 @@ class ContactsServiceImplTest {
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
 
-        class MockContactJobRunner : ContactJobRunner {
-            val runningSubject: PublishSubject<ContactJobInfo> = PublishSubject.create()
+        class MockContactJobRunner : ContactOperationManager {
+            val runningSubject: PublishSubject<ContactSyncJobInfo> = PublishSubject.create()
 
             var immediate = true
 
@@ -39,9 +39,9 @@ class ContactsServiceImplTest {
             var runOperationCallCount = 0
             var withCurrentJobCallCount = 0
 
-            override val running: Observable<ContactJobInfo> = runningSubject
+            override val running: Observable<ContactSyncJobInfo> = runningSubject
 
-            override fun withCurrentJob(body: ContactJobDescription.() -> Unit) {
+            override fun withCurrentSyncJob(body: ContactSyncJobDescription.() -> Unit) {
                 withCurrentJobCallCount += 1
             }
 
@@ -346,7 +346,7 @@ class ContactsServiceImplTest {
     fun testSyncEvent(isRunning: Boolean) {
         val contactsService = createService()
 
-        val info = ContactJobInfo(false, false, true, isRunning)
+        val info = ContactSyncJobInfo(false, false, true, isRunning)
 
         val testSubscriber = eventCollectorFor<ContactEvent.Sync>(contactsService)
 

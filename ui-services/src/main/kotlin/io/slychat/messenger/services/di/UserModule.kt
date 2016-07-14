@@ -63,12 +63,12 @@ class UserModule(
         @SlyHttp httpClientFactory: HttpClientFactory,
         userLoginData: UserData,
         platformContacts: PlatformContacts
-    ): ContactJobFactory {
+    ): ContactSyncJobFactory {
         val serverUrl = serverUrls.API_SERVER
         val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
         val contactListClient = ContactListAsyncClientImpl(serverUrl, httpClientFactory)
 
-        return ContactJobFactoryImpl(
+        return ContactSyncJobFactoryImpl(
             authTokenManager,
             contactClient,
             contactListClient,
@@ -83,8 +83,8 @@ class UserModule(
     @Provides
     fun providesContactJobRunner(
         application: SlyApplication,
-        contactJobFactory: ContactJobFactory
-    ): ContactJobRunner = ContactJobRunnerImpl(
+        contactJobFactory: ContactSyncJobFactory
+    ): ContactOperationManager = ContactOperationManagerImpl(
         application.networkAvailable,
         contactJobFactory
     )
@@ -95,7 +95,7 @@ class UserModule(
         authTokenManager: AuthTokenManager,
         serverUrls: BuildConfig.ServerUrls,
         contactsPersistenceManager: ContactsPersistenceManager,
-        contactJobRunner: ContactJobRunner,
+        contactJobRunner: ContactOperationManager,
         @SlyHttp httpClientFactory: HttpClientFactory
     ): ContactsService {
         val serverUrl = serverUrls.API_SERVER

@@ -6,7 +6,7 @@ import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.auth.AuthTokenManager
 
-class ContactJobFactoryImpl(
+class ContactSyncJobFactoryImpl(
     private val authTokenManager: AuthTokenManager,
     private val contactClient: ContactAsyncClient,
     private val contactListClient: ContactListAsyncClient,
@@ -14,9 +14,9 @@ class ContactJobFactoryImpl(
     private val userLoginData: UserData,
     private val accountInfoPersistenceManager: AccountInfoPersistenceManager,
     private val platformContacts: PlatformContacts
-) : ContactJobFactory {
-    override fun create(): ContactJob {
-        return ContactJobImpl(
+) : ContactSyncJobFactory {
+    override fun create(): ContactSyncJob {
+        return ContactSyncJobImpl(
             authTokenManager,
             contactClient,
             contactListClient,
