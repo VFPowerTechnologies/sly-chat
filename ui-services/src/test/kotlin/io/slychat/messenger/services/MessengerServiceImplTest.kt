@@ -17,6 +17,7 @@ import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageData
 import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenReturn
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
@@ -335,6 +336,30 @@ class MessengerServiceImplTest {
 
         //TODO this also fires a message update event which we should check for
     }
+
+    @Test
+    fun `it should proxy new messages from MessageReceiver`() {
+        val subject = PublishSubject.create<MessageBundle>()
+        whenever(messageReceiver.newMessages).thenReturn(subject)
+
+        val messengerService = createService(true)
+
+        val testSubscriber = messengerService.newMessages.testSubscriber()
+
+        val bundle = MessageBundle(UserId(1), listOf(
+            MessageInfo.newReceived("m", currentTimestamp())
+        ))
+
+        subject.onNext(bundle)
+
+        val bundles = testSubscriber.onNextEvents
+
+        assertThat(bundles)
+            .containsOnlyElementsOf(listOf(bundle))
+            .`as`("Received bundles")
+    }
+
+    //TODO messageUpdates tests
 
     //TODO message send/receive tests
 

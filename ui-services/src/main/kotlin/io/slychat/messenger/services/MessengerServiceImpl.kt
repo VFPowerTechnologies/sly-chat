@@ -54,7 +54,6 @@ class MessengerServiceImpl(
 ) : MessengerService {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    //private val newMessagesSubject = PublishSubject.create<MessageBundle>()
     override val newMessages: Observable<MessageBundle>
         get() = messageReceiver.newMessages
 
