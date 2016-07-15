@@ -16,6 +16,7 @@ import org.junit.Ignore
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class MessageProcessorServiceImplTest {
     companion object {
@@ -32,6 +33,12 @@ class MessageProcessorServiceImplTest {
         whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswer {
             @Suppress("UNCHECKED_CAST")
             val a = it.arguments[1] as MessageInfo
+            Promise.ofSuccess<MessageInfo, Exception>(a)
+        }
+
+        whenever(groupPersistenceManager.addMessage(any(), any(), any())).thenAnswer {
+            @Suppress("UNCHECKED_CAST")
+            val a = it.arguments[2] as MessageInfo
             Promise.ofSuccess<MessageInfo, Exception>(a)
         }
 
@@ -93,6 +100,17 @@ class MessageProcessorServiceImplTest {
 
     fun randomGroupName(): String = randomUUID()
 
+    fun randomTextMessage(groupId: GroupId? = null): TextMessage =
+        TextMessage(currentTimestamp(), randomUUID(), groupId)
+
+    fun returnGroupInfo(groupInfo: GroupInfo?) {
+        if (groupInfo != null)
+            whenever(groupPersistenceManager.getGroupInfo(groupInfo.id)).thenReturn(groupInfo)
+        else
+            whenever(groupPersistenceManager.getGroupInfo(any())).thenReturnNull()
+    }
+
+    fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomUUID(), TextMessageWrapper(m))
     fun wrap(m: GroupEvent): SlyMessageWrapper = SlyMessageWrapper(randomUUID(), GroupEventWrapper(m))
 
     /* Group stuff */
@@ -363,14 +381,53 @@ class MessageProcessorServiceImplTest {
     }
 
     @Test
-    fun `it should store received group text messages to the proper group`() {}
+    fun `it should store received group text messages to the proper group`() {
+        val sender = UserId(1)
+
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+        val m = randomTextMessage(groupInfo.id)
+
+        val service = createService()
+
+        returnGroupInfo(groupInfo)
+
+        service.processMessage(sender, wrap(m)).get()
+
+        verify(groupPersistenceManager).addMessage(eq(groupInfo.id), eq(sender), capture { messageInfo ->
+            assertFalse(messageInfo.isSent, "Message marked as sent")
+            assertEquals(m.message, messageInfo.message, "Invalid message")
+        })
+    }
+
+    fun testDropGroupTextMessage(senderIsMember: Boolean, membershipLevel: GroupMembershipLevel) {
+        val sender = UserId(1)
+
+        val groupInfo = randomGroupInfo(false, membershipLevel)
+        val m = randomTextMessage(groupInfo.id)
+
+        val service = createService()
+
+        returnGroupInfo(groupInfo)
+
+        whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(senderIsMember)
+
+        service.processMessage(sender, wrap(m)).get()
+
+        verify(groupPersistenceManager, never()).addMessage(any(), any(), any())
+    }
 
     @Test
-    fun `it should ignore group text messages from non-members for joined groups`() {}
+    fun `it should ignore group text messages from non-members for joined groups`() {
+        testDropGroupTextMessage(false, GroupMembershipLevel.JOINED)
+    }
 
     @Test
-    fun `it should ignore group messages for parted groups`() {}
+    fun `it should ignore group text messages for parted groups`() {
+        testDropGroupTextMessage(true, GroupMembershipLevel.PARTED)
+    }
 
     @Test
-    fun `it should ignore group messages for blocked groups`() {}
+    fun `it should ignore group text messages for blocked groups`() {
+        testDropGroupTextMessage(true, GroupMembershipLevel.BLOCKED)
+    }
 }

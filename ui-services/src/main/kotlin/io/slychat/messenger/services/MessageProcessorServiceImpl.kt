@@ -45,11 +45,23 @@ class MessageProcessorServiceImpl(
     private fun handleTextMessage(sender: UserId, messageId: String, m: TextMessage): Promise<Unit, Exception> {
         val messageInfo = MessageInfo.newReceived(messageId, m.message, m.timestamp, currentTimestamp(), 0)
 
-        return messagePersistenceManager.addMessage(sender, messageInfo) mapUi { messageInfo ->
-            val bundle = MessageBundle(sender, listOf(messageInfo))
-            newMessagesSubject.onNext(bundle)
-        } fail { e ->
-            log.error("Unable to store decrypted messages: {}", e.message, e)
+        val groupId = m.groupId
+        return if (groupId == null) {
+            messagePersistenceManager.addMessage(sender, messageInfo) mapUi { messageInfo ->
+                val bundle = MessageBundle(sender, listOf(messageInfo))
+                newMessagesSubject.onNext(bundle)
+            }
+        }
+        else {
+            groupPersistenceManager.getGroupInfo(groupId) bind { groupInfo ->
+                runIfJoinedAndUserIsMember(groupInfo, sender) { addGroupMessage(groupId, sender, messageInfo) }
+            }
+        }
+    }
+
+    private fun addGroupMessage(groupId: GroupId, sender: UserId, messageInfo: MessageInfo): Promise<Unit, Exception> {
+        return groupPersistenceManager.addMessage(groupId, sender, messageInfo) mapUi { messageInfo ->
+            //TODO
         }
     }
 

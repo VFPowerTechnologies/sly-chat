@@ -75,10 +75,10 @@ interface GroupPersistenceManager {
     /** Create a new group with a set of possibly empty initial members. */
     fun createGroup(groupInfo: GroupInfo, initialMembers: Set<UserId>): Promise<Unit, Exception>
 
-    /** Join an existing group. */
+    /** Join a new group, or rejoin an existing group. */
     fun joinGroup(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception>
 
-    /** Join a joined group. If not a member, returns false, otherwise returns true. */
+    /** Part a joined group. If not a member, returns false, otherwise returns true. */
     fun partGroup(groupId: GroupId): Promise<Boolean, Exception>
 
     /** Returns blocked groups. */
