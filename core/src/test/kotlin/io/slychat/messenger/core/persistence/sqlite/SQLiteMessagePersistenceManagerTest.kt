@@ -99,7 +99,7 @@ class SQLiteMessagePersistenceManagerTest {
             persistenceManager.syncRunQuery { ConversationTable.create(it, contact) }
             //XXX this is used by SQLiteContactsPersistenceManager, so should probably find a way to share this code
             persistenceManager.syncRunQuery { connection ->
-                connection.withPrepared("INSERT INTO contacts (id, email, name, is_pending, public_key) VALUES (?, ?, 'Name', 0, X'aa')") { stmt ->
+                connection.withPrepared("INSERT INTO contacts (id, email, name, is_pending, public_key, allowed_message_level) VALUES (?, ?, 'Name', 0, X'aa', 1)") { stmt ->
                     stmt.bind(1, contact.long)
                     stmt.bind(2, "${contact.long}@a.com")
                     stmt.step()
@@ -164,6 +164,17 @@ class SQLiteMessagePersistenceManagerTest {
 
         val queued = messagePersistenceManager.getQueuedPackages(userId).get()
         assertTrue(queued.isEmpty(), "Queued packages not empty")
+    }
+
+    @Test
+    fun `addMessage should ignore messages with duplicate ids`() {
+        val userId = UserId(1)
+        createConvosFor(userId)
+
+        val messageInfo = MessageInfo.newReceived(randomUUID(), "message", currentTimestamp(), currentTimestamp(), 0)
+
+        messagePersistenceManager.addMessage(userId, messageInfo).get()
+        messagePersistenceManager.addMessage(userId, messageInfo).get()
     }
 
     @Test

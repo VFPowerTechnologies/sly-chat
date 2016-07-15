@@ -1,6 +1,8 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
+import com.almworks.sqlite4java.SQLiteConstants
+import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
@@ -26,10 +28,24 @@ VALUES
                            WHERE  timestamp = ?)+1)
 """
 
-        connection.prepare(sql).use { stmt ->
-            messageInfoToRow(messageInfo, stmt)
-            stmt.bind(8, messageInfo.timestamp)
-            stmt.step()
+        try {
+            connection.prepare(sql).use { stmt ->
+                messageInfoToRow(messageInfo, stmt)
+                stmt.bind(8, messageInfo.timestamp)
+                stmt.step()
+            }
+        }
+        catch (e: SQLiteException) {
+            val message = e.message
+
+            //ignores duplicates
+            if (message != null) {
+                if (e.baseErrorCode == SQLiteConstants.SQLITE_CONSTRAINT &&
+                    message.contains("UNIQUE constraint failed: conv_\\d\\.id]".toRegex()))
+                    return
+            }
+
+            throw e
         }
     }
 
