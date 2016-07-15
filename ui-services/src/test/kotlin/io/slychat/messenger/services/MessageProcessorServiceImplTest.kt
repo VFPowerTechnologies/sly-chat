@@ -86,6 +86,9 @@ class MessageProcessorServiceImplTest {
         assertEquals(bundle.userId, from, "Invalid user id")
     }
 
+    fun randomGroupInfo(isPending: Boolean, membershipLevel: GroupMembershipLevel): GroupInfo =
+        GroupInfo(randomGroupId(), randomGroupName(), isPending, membershipLevel)
+
     fun randomGroupId(): GroupId = GroupId(randomUUID())
 
     fun randomGroupName(): String = randomUUID()
@@ -220,13 +223,11 @@ class MessageProcessorServiceImplTest {
     fun `it should ignore group joins for parted groups`() {
         val sender = UserId(1)
         val newMember = UserId(2)
-        val groupId = randomGroupId()
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.PARTED)
 
-        val m = GroupJoin(groupId, newMember)
+        val m = GroupJoin(groupInfo.id, newMember)
 
         val service = createService()
-
-        val groupInfo = GroupInfo(m.id, randomGroupName(), false, GroupMembershipLevel.PARTED)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
@@ -238,13 +239,11 @@ class MessageProcessorServiceImplTest {
     @Test
     fun `it should ignore group parts for parted groups`() {
         val sender = UserId(1)
-        val groupId = randomGroupId()
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.PARTED)
 
-        val m = GroupPart(groupId)
+        val m = GroupPart(groupInfo.id)
 
         val service = createService()
-
-        val groupInfo = GroupInfo(m.id, randomGroupName(), false, GroupMembershipLevel.PARTED)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
@@ -257,56 +256,51 @@ class MessageProcessorServiceImplTest {
     fun `it should add a member when receiving a GroupJoin from a member for a joined group`() {
         val sender = UserId(1)
         val newMember = UserId(2)
-        val groupId = randomGroupId()
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
 
-        val m = GroupJoin(groupId, newMember)
+        val m = GroupJoin(groupInfo.id, newMember)
 
         val service = createService()
 
-        val groupInfo = GroupInfo(m.id, randomGroupName(), false, GroupMembershipLevel.JOINED)
-
-        whenever(groupPersistenceManager.isUserMemberOf(sender, groupId)).thenReturn(true)
+        whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(true)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
         service.processMessage(sender, wrap(m)).get()
 
-        verify(groupPersistenceManager).addMember(groupId, newMember)
+        verify(groupPersistenceManager).addMember(groupInfo.id, newMember)
     }
 
     @Test
     fun `it should remove a member when receiving a GroupPart from that user for a joined group`() {
         val sender = UserId(1)
-        val groupId = randomGroupId()
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
 
-        val m = GroupPart(groupId)
+        val m = GroupPart(groupInfo.id)
 
         val service = createService()
 
-        val groupInfo = GroupInfo(m.id, randomGroupName(), false, GroupMembershipLevel.JOINED)
-
-        whenever(groupPersistenceManager.isUserMemberOf(sender, groupId)).thenReturn(true)
+        whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(true)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
         service.processMessage(sender, wrap(m)).get()
 
-        verify(groupPersistenceManager).removeMember(groupId, sender)
+        verify(groupPersistenceManager).removeMember(groupInfo.id, sender)
     }
 
     @Test
     fun `it should ignore an add from a non-member user for a joined group`() {
         val sender = UserId(1)
-        val groupId = randomGroupId()
         val newMember = UserId(2)
 
-        val m = GroupJoin(groupId, newMember)
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+
+        val m = GroupJoin(groupInfo.id, newMember)
 
         val service = createService()
 
-        val groupInfo = GroupInfo(m.id, randomGroupName(), false, GroupMembershipLevel.JOINED)
-
-        whenever(groupPersistenceManager.isUserMemberOf(sender, groupId)).thenReturn(false)
+        whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(false)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
@@ -318,15 +312,13 @@ class MessageProcessorServiceImplTest {
     @Test
     fun `it should ignore a part from a non-member user for a joined group`() {
         val sender = UserId(1)
-        val groupId = randomGroupId()
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
 
-        val m = GroupPart(groupId)
+        val m = GroupPart(groupInfo.id)
 
         val service = createService()
 
-        val groupInfo = GroupInfo(m.id, randomGroupName(), false, GroupMembershipLevel.JOINED)
-
-        whenever(groupPersistenceManager.isUserMemberOf(sender, groupId)).thenReturn(false)
+        whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(false)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
@@ -338,14 +330,14 @@ class MessageProcessorServiceImplTest {
     @Test
     fun `it should ignore group joins for blocked groups`() {
         val sender = UserId(1)
-        val groupId = randomGroupId()
         val newMember = UserId(2)
+
+        val groupId = randomGroupId()
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.BLOCKED)
 
         val m = GroupJoin(groupId, newMember)
 
         val service = createService()
-
-        val groupInfo = GroupInfo(m.id, randomGroupName(), false, GroupMembershipLevel.BLOCKED)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
@@ -357,13 +349,11 @@ class MessageProcessorServiceImplTest {
     @Test
     fun `it should ignore group parts for blocked groups`() {
         val sender = UserId(1)
-        val groupId = randomGroupId()
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.BLOCKED)
 
-        val m = GroupPart(groupId)
+        val m = GroupPart(groupInfo.id)
 
         val service = createService()
-
-        val groupInfo = GroupInfo(m.id, randomGroupName(), false, GroupMembershipLevel.BLOCKED)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
@@ -373,11 +363,14 @@ class MessageProcessorServiceImplTest {
     }
 
     @Test
+    fun `it should store received group text messages to the proper group`() {}
+
+    @Test
+    fun `it should ignore group text messages from non-members for joined groups`() {}
+
+    @Test
     fun `it should ignore group messages for parted groups`() {}
 
     @Test
     fun `it should ignore group messages for blocked groups`() {}
-
-    @Test
-    fun `it should store received group text messages to the proper group`() {}
 }

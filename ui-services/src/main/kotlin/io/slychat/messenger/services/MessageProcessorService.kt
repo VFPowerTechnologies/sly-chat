@@ -8,7 +8,7 @@ import rx.Observable
 interface MessageProcessorService {
     val newMessages: Observable<MessageBundle>
 
-    fun processMessage(userId: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception>
+    fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception>
 
     //TODO self-messages
     //maybe send a self-message via processMessages

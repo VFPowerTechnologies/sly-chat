@@ -26,14 +26,14 @@ class MessageProcessorServiceImpl(
     //maybe just use some rx operator to get around this? nfi
     //or maybe just listen for events and buffer them until this finalizes?
     //we can't move on until we've processed all these messages
-    override fun processMessage(userId: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception> {
+    override fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception> {
         val m = wrapper.message
         val messageId = wrapper.messageId
 
         return when (m) {
-            is TextMessageWrapper -> handleTextMessage(userId, messageId, m.m)
+            is TextMessageWrapper -> handleTextMessage(sender, messageId, m.m)
 
-            is GroupEventWrapper -> handleGroupMessage(userId, messageId, m.m)
+            is GroupEventWrapper -> handleGroupMessage(sender, messageId, m.m)
 
             else -> {
                 log.error("Unhandled message type: {}", m.javaClass.name)
@@ -42,34 +42,47 @@ class MessageProcessorServiceImpl(
         }
     }
 
-    private fun handleTextMessage(userId: UserId, messageId: String, m: TextMessage): Promise<Unit, Exception> {
+    private fun handleTextMessage(sender: UserId, messageId: String, m: TextMessage): Promise<Unit, Exception> {
         val messageInfo = MessageInfo.newReceived(messageId, m.message, m.timestamp, currentTimestamp(), 0)
 
-        return messagePersistenceManager.addMessage(userId, messageInfo) mapUi { messageInfo ->
-            val bundle = MessageBundle(userId, listOf(messageInfo))
+        return messagePersistenceManager.addMessage(sender, messageInfo) mapUi { messageInfo ->
+            val bundle = MessageBundle(sender, listOf(messageInfo))
             newMessagesSubject.onNext(bundle)
         } fail { e ->
             log.error("Unable to store decrypted messages: {}", e.message, e)
         }
     }
 
-    private fun handleGroupMessage(userId: UserId, messageId: String, m: GroupEvent): Promise<Unit, Exception> {
+    private fun handleGroupMessage(sender: UserId, messageId: String, m: GroupEvent): Promise<Unit, Exception> {
         return groupPersistenceManager.getGroupInfo(m.id) bind { groupInfo ->
             when (m) {
                 is GroupInvitation -> handleGroupInvitation(groupInfo, m)
-                is GroupJoin -> runIfJoined(groupInfo) { checkGroupMembership(userId, m.id) { handleGroupJoin(m) } }
-                is GroupPart -> runIfJoined(groupInfo) { checkGroupMembership(userId, m.id) { handleGroupPart(m.id, userId) } }
+                is GroupJoin -> runIfJoinedAndUserIsMember(groupInfo, sender) { handleGroupJoin(m)  }
+                is GroupPart -> runIfJoinedAndUserIsMember(groupInfo, sender) { handleGroupPart(m.id, sender) }
                 else -> throw IllegalArgumentException("Invalid GroupEvent: ${m.javaClass.name}")
             }
         }
     }
 
-    //maybe merge with checkGroupMembership into runIfJoinedAndUserIsMember?
-    private inline fun runIfJoined(groupInfo: GroupInfo?, action: () -> Promise<Unit, Exception>) : Promise<Unit, Exception> {
+    /** Only runs the given action if we're joined to the group and the sender is a member of said group. */
+    private fun runIfJoinedAndUserIsMember(groupInfo: GroupInfo?, sender: UserId, action: () -> Promise<Unit, Exception>): Promise<Unit, Exception> {
         return if (groupInfo == null || groupInfo.membershipLevel != GroupMembershipLevel.JOINED)
             return Promise.ofSuccess(Unit)
         else
-            action()
+            checkGroupMembership(sender, groupInfo.id, action)
+
+    }
+
+    /** Only runs the given action if the user is a member of the given group. Otherwise, logs a warning. */
+    private fun checkGroupMembership(sender: UserId, id: GroupId, action: () -> Promise<Unit, Exception>): Promise<Unit, Exception> {
+        return groupPersistenceManager.isUserMemberOf(sender, id) bind { isMember ->
+            if (isMember)
+                action()
+            else {
+                log.warn("Received a group message for group <{}> from non-member <{}>, ignoring", id.string, sender.long)
+                Promise.ofSuccess(Unit)
+            }
+        }
     }
 
     private fun handleGroupJoin(m: GroupJoin): Promise<Unit, Exception> {
@@ -81,22 +94,10 @@ class MessageProcessorServiceImpl(
         }
     }
 
-    private fun handleGroupPart(groupId: GroupId, userId: UserId): Promise<Unit, Exception> {
-        return groupPersistenceManager.removeMember(groupId, userId) mapUi { wasRemoved ->
+    private fun handleGroupPart(groupId: GroupId, sender: UserId): Promise<Unit, Exception> {
+        return groupPersistenceManager.removeMember(groupId, sender) mapUi { wasRemoved ->
             if (wasRemoved)
-                log.info("User {} has left group {}", userId, groupId.string)
-        }
-    }
-
-    /** Only runs the given action if the user is a member of the given group. Otherwise, logs a warning. */
-    private fun checkGroupMembership(userId: UserId, id: GroupId, action: () -> Promise<Unit, Exception>): Promise<Unit, Exception> {
-        return groupPersistenceManager.isUserMemberOf(userId, id) bind { isMember ->
-            if (isMember)
-                action()
-            else {
-                log.warn("Received a group message for group <{}> from non-member <{}>, ignoring", id.string, userId.long)
-                Promise.ofSuccess(Unit)
-            }
+                log.info("User {} has left group {}", sender, groupId.string)
         }
     }
 
