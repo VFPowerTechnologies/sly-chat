@@ -134,4 +134,10 @@ class UIServicesModule {
     ): UIConfigService {
         return UIConfigServiceImpl(appConfigService)
     }
+
+    @Singleton
+    @Provides
+    fun providesUIGroupService(): UIGroupService {
+        return UIGroupServiceImpl()
+    }
 }

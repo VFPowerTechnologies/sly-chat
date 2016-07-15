@@ -68,7 +68,9 @@ interface ApplicationComponent {
     @get:ExternalHttp
     val externalHttpClientFactory: HttpClientFactory
 
-    fun plus(userModule: UserModule): UserComponent
-
     val configService: UIConfigService
+
+    val groupService: UIGroupService
+
+    fun plus(userModule: UserModule): UserComponent
 }
