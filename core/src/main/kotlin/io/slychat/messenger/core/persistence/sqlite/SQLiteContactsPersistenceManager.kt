@@ -353,13 +353,6 @@ ON
         }
     }
 
-    override fun getUnadded(): Promise<Set<UserId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val sql = "SELECT DISTINCT user_id FROM package_queue LEFT OUTER JOIN contacts ON user_id=contacts.id WHERE id IS null"
-        connection.withPrepared(sql) { stmt ->
-            stmt.mapToSet { UserId(stmt.columnLong(0)) }
-        }
-    }
-
     private fun addRemoteUpdateNoTransaction(connection: SQLiteConnection, remoteUpdates: Collection<RemoteContactUpdate>) {
         connection.batchInsert("INSERT OR REPLACE INTO remote_contact_updates (contact_id, type) VALUES (?, ?)", remoteUpdates) { stmt, item ->
             stmt.bind(1, item.userId.long)

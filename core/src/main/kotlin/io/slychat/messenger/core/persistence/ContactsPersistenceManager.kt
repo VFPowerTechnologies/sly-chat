@@ -55,9 +55,6 @@ interface ContactsPersistenceManager {
 
     fun applyDiff(newContacts: Collection<ContactInfo>, removedContacts: Collection<UserId>): Promise<Unit, Exception>
 
-    /** Contacts with pending messages but no available info. */
-    fun getUnadded(): Promise<Set<UserId>, Exception>
-
     fun addRemoteUpdate(remoteUpdates: Collection<RemoteContactUpdate>): Promise<Unit, Exception>
     fun getRemoteUpdates(): Promise<List<RemoteContactUpdate>, Exception>
     fun removeRemoteUpdates(remoteUpdates: Collection<RemoteContactUpdate>): Promise<Unit, Exception>
