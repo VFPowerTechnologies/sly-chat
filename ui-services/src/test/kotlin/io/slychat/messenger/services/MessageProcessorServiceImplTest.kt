@@ -12,7 +12,6 @@ import io.slychat.messenger.testutils.thenReturnNull
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
-import org.junit.Ignore
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
@@ -389,6 +388,33 @@ class MessageProcessorServiceImplTest {
             assertFalse(messageInfo.isSent, "Message marked as sent")
             assertEquals(m.message, messageInfo.message, "Invalid message")
         })
+    }
+
+    @Test
+    fun `it should emit a new message event when receiving a new group text message`() {
+        val sender = UserId(1)
+
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+        val m = randomTextMessage(groupInfo.id)
+
+        val service = createService()
+
+        returnGroupInfo(groupInfo)
+
+        val testSubscriber = service.newMessages.testSubscriber()
+
+        val wrapper = wrap(m)
+        service.processMessage(sender, wrapper).get()
+
+        val newMessages = testSubscriber.onNextEvents
+        assertEquals(1, newMessages.size, "Invalid number of new message events")
+
+        val bundle = newMessages[0]
+        assertEquals(1, bundle.messages.size, "Invalid number of messages in bundle")
+
+        val message = bundle.messages[0]
+        assertEquals(m.message, message.message, "Invalid message")
+        assertEquals(wrapper.messageId, message.id, "Invalid message id")
     }
 
     fun testDropGroupTextMessage(senderIsMember: Boolean, membershipLevel: GroupMembershipLevel) {

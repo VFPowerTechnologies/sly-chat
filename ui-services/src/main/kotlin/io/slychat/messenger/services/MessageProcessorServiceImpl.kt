@@ -55,7 +55,7 @@ class MessageProcessorServiceImpl(
 
     private fun addGroupMessage(groupId: GroupId, sender: UserId, messageInfo: MessageInfo): Promise<Unit, Exception> {
         return groupPersistenceManager.addMessage(groupId, sender, messageInfo) mapUi { messageInfo ->
-            //TODO
+            newMessagesSubject.onNext(MessageBundle(sender, listOf(messageInfo)))
         }
     }
 
