@@ -7,10 +7,12 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.MessagePersistenceManager
 import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.persistence.PackageId
+import io.slychat.messenger.core.persistence.PackageQueuePersistenceManager
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageDecryptionResult
 import io.slychat.messenger.services.crypto.deserializeEncryptedPackagePayload
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -23,6 +25,7 @@ class MessageReceiverImpl(
     scheduler: Scheduler,
     private val messageProcessorService: MessageProcessorService,
     private val messagePersistenceManager: MessagePersistenceManager,
+    private val packageQueuePersistenceManager: PackageQueuePersistenceManager,
     private val messageCipherService: MessageCipherService
 ) : MessageReceiver {
     private data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessages: EncryptedMessageInfo)
@@ -44,7 +47,7 @@ class MessageReceiverImpl(
     }
 
     private fun initializeReceiveQueue() {
-        messagePersistenceManager.getQueuedPackages() successUi { packages ->
+        packageQueuePersistenceManager.getQueuedPackages() successUi { packages ->
             addPackagesToReceivedQueue(packages)
         }
     }
@@ -53,7 +56,7 @@ class MessageReceiverImpl(
         log.warn("Unable to decrypt message for {}", userId)
          log.warn("Message decryption failure: {}", result.cause.message, result.cause)
 
-        messagePersistenceManager.removeFromQueue(userId, listOf(result.messageId)) fail { e ->
+        packageQueuePersistenceManager.removeFromQueue(userId, listOf(result.messageId)) fail { e ->
             log.warn("Unable to remove failed decryption packages from queue: {}", e.message, e)
         }
 
@@ -73,7 +76,7 @@ class MessageReceiverImpl(
         }
 
         if (m == null) {
-            messagePersistenceManager.removeFromQueue(userId, listOf(result.messageId)) fail { e ->
+            packageQueuePersistenceManager.removeFromQueue(userId, listOf(result.messageId)) fail { e ->
                 log.error("Unable to remove packages from queue: {}", e.message, e)
             }
 
@@ -81,8 +84,10 @@ class MessageReceiverImpl(
             return
         }
         else {
-            messageProcessorService.processMessage(userId, m) successUi {
-                nextReceiveMessage()
+            messageProcessorService.processMessage(userId, m) bind {
+                packageQueuePersistenceManager.removeFromQueue(userId, listOf(result.messageId)) successUi {
+                    nextReceiveMessage()
+                }
             } failUi { e ->
                 log.error("Message processing failed: {}", e.message, e)
                 //FIXME not really sure what else I should do here
@@ -139,7 +144,7 @@ class MessageReceiverImpl(
         }
 
         if (failures.isNotEmpty()) {
-            messagePersistenceManager.removeFromQueue(failures).fail { e ->
+            packageQueuePersistenceManager.removeFromQueue(failures).fail { e ->
                 log.warn("Unable to remove failed deserialized packages from queue: {}", e.message, e)
             }
         }
@@ -148,7 +153,7 @@ class MessageReceiverImpl(
     }
 
     override fun processPackages(packages: List<Package>): Promise<Unit, Exception> {
-        return messagePersistenceManager.addToQueue(packages) successUi {
+        return packageQueuePersistenceManager.addToQueue(packages) successUi {
             addPackagesToReceivedQueue(packages)
         }
     }

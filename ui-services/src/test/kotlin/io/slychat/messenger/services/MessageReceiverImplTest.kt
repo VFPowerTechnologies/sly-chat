@@ -39,6 +39,7 @@ class MessageReceiverImplTest {
     class TestException : Exception("Test exc")
 
     val messageProcessorService: MessageProcessorService = mock()
+    val packageQueuePersistenceManager: PackageQueuePersistenceManager = mock()
     val messagePersistenceManager: MessagePersistenceManager = mock()
     val messageCipherService: MessageCipherService = mock()
 
@@ -101,9 +102,9 @@ class MessageReceiverImplTest {
         val scheduler = Schedulers.immediate()
 
         whenever(messageCipherService.decryptedMessages).thenReturn(decryptionResults)
-        whenever(messagePersistenceManager.removeFromQueue(any<Collection<PackageId>>())).thenReturn(Unit)
-        whenever(messagePersistenceManager.removeFromQueue(any<UserId>(), any())).thenReturn(Unit)
-        whenever(messagePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(Unit)
+        whenever(packageQueuePersistenceManager.removeFromQueue(any<Collection<PackageId>>())).thenReturn(Unit)
+        whenever(packageQueuePersistenceManager.removeFromQueue(any<UserId>(), any())).thenReturn(Unit)
+        whenever(packageQueuePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(Unit)
         whenever(messageProcessorService.processMessage(any(), any())).thenReturn(Unit)
 
 
@@ -111,6 +112,7 @@ class MessageReceiverImplTest {
             scheduler,
             messageProcessorService,
             messagePersistenceManager,
+            packageQueuePersistenceManager,
             messageCipherService
         )
     }
@@ -123,7 +125,7 @@ class MessageReceiverImplTest {
             createPackage(UserId(1), "message")
         )
 
-        whenever(messagePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(Unit)
+        whenever(packageQueuePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(Unit)
 
         receiver.processPackages(packages).get()
     }
@@ -136,7 +138,7 @@ class MessageReceiverImplTest {
             createPackage(UserId(1), "message")
         )
 
-        whenever(messagePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(TestException())
+        whenever(packageQueuePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(TestException())
 
         assertFailsWith(TestException::class) {
             receiver.processPackages(packages).get()
@@ -169,7 +171,7 @@ class MessageReceiverImplTest {
         receiver.processPackages(listOf(pkg))
 
         val captor = argumentCaptor<Collection<PackageId>>()
-        verify(messagePersistenceManager).removeFromQueue(capture(captor))
+        verify(packageQueuePersistenceManager).removeFromQueue(capture(captor))
 
         assertThat(captor.value)
             .`as`("Discarded packages")
@@ -212,7 +214,7 @@ class MessageReceiverImplTest {
         decryptionResults.onNext(DecryptionResult(from, result))
 
         val captor = argumentCaptor<Collection<String>>()
-        verify(messagePersistenceManager).removeFromQueue(eq(from), capture(captor))
+        verify(packageQueuePersistenceManager).removeFromQueue(eq(from), capture(captor))
 
         assertThat(captor.value)
             .containsOnly(pkg.id.messageId)
@@ -247,17 +249,36 @@ class MessageReceiverImplTest {
         assertEquals(generated.packages[1].id.messageId, value.messageId, "Message IDs don't match")
     }
 
-    //TODO tests for handling empty succeeded/failures results
+    @Test
+    fun `it should remove the corresponding message package from the queue after processing`() {
+        val receiver = createReceiver()
+
+        val from = UserId(1)
+        val objectMapper = ObjectMapper()
+        val wrapped = createTextMessage("test")
+        val pkg = createPackage(from, wrapped.m)
+
+        receiver.processPackages(listOf(pkg))
+
+        val result = MessageDecryptionResult.Success(pkg.id.messageId, objectMapper.writeValueAsBytes(wrapped))
+
+        decryptionResults.onNext(DecryptionResult(from, result))
+
+        verify(packageQueuePersistenceManager).removeFromQueue(from, listOf(pkg.id.messageId))
+    }
+
+    //TODO not sure what to do on failure here... since certain things can fail due to network issues we can't outright
+    //delete packages on failure
 
     @Test
     fun `it should fetch all pending packages on initialization`() {
         val receiver = createReceiver()
 
-        whenever(messagePersistenceManager.getQueuedPackages()).thenReturn(emptyList())
+        whenever(packageQueuePersistenceManager.getQueuedPackages()).thenReturn(emptyList())
 
         receiver.init()
 
-        verify(messagePersistenceManager).getQueuedPackages()
+        verify(packageQueuePersistenceManager).getQueuedPackages()
     }
 
     @Test

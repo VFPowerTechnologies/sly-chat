@@ -89,16 +89,6 @@ class MessengerServiceImpl(
     }
 
     private fun onContactEvent(event: ContactEvent) {
-        when (event) {
-            //FIXME probably just handle in receiver
-            is ContactEvent.InvalidContacts -> {
-                log.info("Messages for invalid user ids: {}", event.contacts.map { it.long }.joinToString(","))
-                messagePersistenceManager.removeFromQueue(event.contacts) fail { e ->
-                    log.error("Unable to remove missing contacts: {}", e.message, e)
-                }
-            }
-        }
-
     }
 
     private fun onRelayConnect(connected: Boolean) {

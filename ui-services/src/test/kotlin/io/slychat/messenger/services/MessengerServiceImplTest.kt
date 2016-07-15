@@ -218,8 +218,6 @@ class MessengerServiceImplTest {
 
         setAllowAllUsers()
 
-        whenever(messagePersistenceManager.addToQueue(anyCollection())).thenReturn(Unit)
-
         wheneverExists { Promise.ofSuccess(it) }
 
         relayEvents.onNext(ev)

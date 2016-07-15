@@ -160,14 +160,6 @@ class MessageProcessorServiceImplTest {
         verify(groupPersistenceManager, never()).joinGroup(any(), any())
     }
 
-    //XXX maybe we should do this in message receiver instead? although we want this to be handled in a transaction somehow...
-    //or we could make every package message processing idempotent so it doesn't matter; inserting a dup message into a convo should just do nothing, etc
-    //not aware of any message types that can't be idempotent
-    //although this is not as "safe", it makes it a lot easier to handle package deletions in one spot and remove all the duplication from every message processing thing
-    @Ignore
-    @Test
-    fun `it should remove the associated package after processing the message`() {}
-
     @Test
     fun `it should filter out invalid user ids in group invitations`() {
         val owner = UserId(1)

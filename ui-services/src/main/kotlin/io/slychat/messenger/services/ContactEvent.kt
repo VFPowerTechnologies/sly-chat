@@ -1,6 +1,5 @@
 package io.slychat.messenger.services
 
-import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ContactInfo
 
 interface ContactEvent {
@@ -9,7 +8,5 @@ interface ContactEvent {
     class Removed(val contacts: Set<ContactInfo>) : ContactEvent
     class Updated(val contacts: Set<ContactInfo>) : ContactEvent
     class Request(val contacts: Set<ContactInfo>) : ContactEvent
-    //sent by contact lookup for invalid ids
-    class InvalidContacts(val contacts: Set<UserId>) : ContactEvent
     class Sync(val isRunning: Boolean) : ContactEvent
 }

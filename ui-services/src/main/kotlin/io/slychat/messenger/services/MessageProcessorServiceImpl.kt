@@ -20,12 +20,6 @@ class MessageProcessorServiceImpl(
     private val newMessagesSubject = PublishSubject.create<MessageBundle>()
     override val newMessages: Observable<MessageBundle> = newMessagesSubject
 
-    //XXX I think I'm just gonna do the less efficient route of processing each message at once... it'll simplify things
-    //since we need to process things like group events, sync self sent (this needs to be processed in the proper order as well), as well as normal text messages
-    //this is an issue for text messages though, since bundles work great for not setting off like 30 notifications in a row...
-    //maybe just use some rx operator to get around this? nfi
-    //or maybe just listen for events and buffer them until this finalizes?
-    //we can't move on until we've processed all these messages
     override fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception> {
         val m = wrapper.message
         val messageId = wrapper.messageId
@@ -119,13 +113,13 @@ class MessageProcessorServiceImpl(
         //XXX should we bother checking if the sender is a member of the group as well? seems pointless
 
         return if (groupInfo == null || groupInfo.membershipLevel == GroupMembershipLevel.PARTED) {
-                contactsService.addMissingContacts(m.members) bind { invalidIds ->
-                    members.removeAll(invalidIds)
-                    val info = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
-                    groupPersistenceManager.joinGroup(info, members)
-                }
+            contactsService.addMissingContacts(m.members) bind { invalidIds ->
+                members.removeAll(invalidIds)
+                val info = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
+                groupPersistenceManager.joinGroup(info, members)
             }
-            else
-                Promise.ofSuccess(Unit)
+        }
+        else
+            Promise.ofSuccess(Unit)
     }
 }
