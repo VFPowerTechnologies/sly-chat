@@ -58,11 +58,13 @@ class MessageProcessorServiceImpl(
             when (m) {
                 is GroupInvitation -> handleGroupInvitation(groupInfo, m)
                 is GroupJoin -> runIfJoined(groupInfo) { checkGroupMembership(userId, m.id) { handleGroupJoin(m) } }
+                is GroupPart -> runIfJoined(groupInfo) { checkGroupMembership(userId, m.id) { handleGroupPart(m.id, userId) } }
                 else -> throw IllegalArgumentException("Invalid GroupEvent: ${m.javaClass.name}")
             }
         }
     }
 
+    //maybe merge with checkGroupMembership into runIfJoinedAndUserIsMember?
     private inline fun runIfJoined(groupInfo: GroupInfo?, action: () -> Promise<Unit, Exception>) : Promise<Unit, Exception> {
         return if (groupInfo == null || groupInfo.membershipLevel != GroupMembershipLevel.JOINED)
             return Promise.ofSuccess(Unit)
@@ -73,9 +75,16 @@ class MessageProcessorServiceImpl(
     private fun handleGroupJoin(m: GroupJoin): Promise<Unit, Exception> {
         return groupPersistenceManager.addMember(m.id, m.joined) mapUi { wasAdded ->
             if (wasAdded)
-                log.info("User {} joined group {}", m.joined, m.id)
+                log.info("User {} joined group {}", m.joined, m.id.string)
 
             Unit
+        }
+    }
+
+    private fun handleGroupPart(groupId: GroupId, userId: UserId): Promise<Unit, Exception> {
+        return groupPersistenceManager.removeMember(groupId, userId) mapUi { wasRemoved ->
+            if (wasRemoved)
+                log.info("User {} has left group {}", userId, groupId.string)
         }
     }
 
@@ -85,7 +94,7 @@ class MessageProcessorServiceImpl(
             if (isMember)
                 action()
             else {
-                log.warn("Received a group message for group <{}> from non-member <{}>, ignoring", id, userId.long)
+                log.warn("Received a group message for group <{}> from non-member <{}>, ignoring", id.string, userId.long)
                 Promise.ofSuccess(Unit)
             }
         }

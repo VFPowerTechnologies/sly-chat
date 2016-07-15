@@ -38,6 +38,7 @@ class MessageProcessorServiceImplTest {
         whenever(groupPersistenceManager.joinGroup(any(), any())).thenReturn(Unit)
         whenever(groupPersistenceManager.getGroupInfo(any())).thenReturnNull()
         whenever(groupPersistenceManager.addMember(any(), any())).thenReturn(true)
+        whenever(groupPersistenceManager.removeMember(any(), any())).thenReturn(true)
         whenever(groupPersistenceManager.isUserMemberOf(any(), any())).thenReturn(true)
 
         return MessageProcessorServiceImpl(
@@ -192,7 +193,6 @@ class MessageProcessorServiceImplTest {
         verify(groupPersistenceManager, never()).joinGroup(any(), any())
     }
 
-    //XXX needs to add any missing contact info here as well
     @Test
     fun `it should not ignore invitations for parted groups which have not been blocked`() {
         val owner = UserId(1)
@@ -212,6 +212,8 @@ class MessageProcessorServiceImplTest {
         val newGroupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
 
         verify(groupPersistenceManager).joinGroup(newGroupInfo, m.members)
+
+        verify(contactsService).addMissingContacts(m.members)
     }
 
     @Test
@@ -293,22 +295,88 @@ class MessageProcessorServiceImplTest {
     }
 
     @Test
-    fun `it should ignore an add from a non-member user`() {}
+    fun `it should ignore an add from a non-member user for a joined group`() {
+        val sender = UserId(1)
+        val groupId = randomGroupId()
+        val newMember = UserId(2)
+
+        val m = GroupJoin(groupId, newMember)
+
+        val service = createService()
+
+        val groupInfo = GroupInfo(m.id, randomGroupName(), false, GroupMembershipLevel.JOINED)
+
+        whenever(groupPersistenceManager.isUserMemberOf(sender, groupId)).thenReturn(false)
+
+        whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
+
+        service.processMessage(sender, wrap(m)).get()
+
+        verify(groupPersistenceManager, never()).addMember(any(), any())
+    }
 
     @Test
-    fun `it should ignore a remove from a non-member user`() {}
+    fun `it should ignore a part from a non-member user for a joined group`() {
+        val sender = UserId(1)
+        val groupId = randomGroupId()
+
+        val m = GroupPart(groupId)
+
+        val service = createService()
+
+        val groupInfo = GroupInfo(m.id, randomGroupName(), false, GroupMembershipLevel.JOINED)
+
+        whenever(groupPersistenceManager.isUserMemberOf(sender, groupId)).thenReturn(false)
+
+        whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
+
+        service.processMessage(sender, wrap(m)).get()
+
+        verify(groupPersistenceManager, never()).removeMember(any(), any())
+    }
+
+    @Test
+    fun `it should ignore group joins for blocked groups`() {
+        val sender = UserId(1)
+        val groupId = randomGroupId()
+        val newMember = UserId(2)
+
+        val m = GroupJoin(groupId, newMember)
+
+        val service = createService()
+
+        val groupInfo = GroupInfo(m.id, randomGroupName(), false, GroupMembershipLevel.BLOCKED)
+
+        whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
+
+        service.processMessage(sender, wrap(m)).get()
+
+        verify(groupPersistenceManager, never()).addMember(any(), any())
+    }
+
+    @Test
+    fun `it should ignore group parts for blocked groups`() {
+        val sender = UserId(1)
+        val groupId = randomGroupId()
+
+        val m = GroupPart(groupId)
+
+        val service = createService()
+
+        val groupInfo = GroupInfo(m.id, randomGroupName(), false, GroupMembershipLevel.BLOCKED)
+
+        whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
+
+        service.processMessage(sender, wrap(m)).get()
+
+        verify(groupPersistenceManager, never()).removeMember(any(), any())
+    }
 
     @Test
     fun `it should ignore group messages for parted groups`() {}
 
     @Test
     fun `it should ignore group messages for blocked groups`() {}
-
-    @Test
-    fun `it should ignore group joins for blocked groups`() {}
-
-    @Test
-    fun `it should ignore group parts for blocked groups`() {}
 
     @Test
     fun `it should store received group text messages to the proper group`() {}
