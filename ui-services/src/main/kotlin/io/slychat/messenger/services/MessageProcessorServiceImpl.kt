@@ -20,6 +20,9 @@ class MessageProcessorServiceImpl(
     private val newMessagesSubject = PublishSubject.create<MessageBundle>()
     override val newMessages: Observable<MessageBundle> = newMessagesSubject
 
+    private val groupEventSubject = PublishSubject.create<GroupEvent>()
+    override val groupEvents: Observable<GroupEvent> = groupEventSubject
+
     override fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception> {
         val m = wrapper.message
         val messageId = wrapper.messageId
@@ -93,8 +96,10 @@ class MessageProcessorServiceImpl(
 
     private fun handleGroupJoin(m: GroupEventMessage.Join): Promise<Unit, Exception> {
         return groupPersistenceManager.addMember(m.id, m.joined) mapUi { wasAdded ->
-            if (wasAdded)
+            if (wasAdded) {
                 log.info("User {} joined group {}", m.joined, m.id.string)
+                groupEventSubject.onNext(GroupEvent.Joined(m.id, m.joined))
+            }
 
             Unit
         }
@@ -102,8 +107,10 @@ class MessageProcessorServiceImpl(
 
     private fun handleGroupPart(groupId: GroupId, sender: UserId): Promise<Unit, Exception> {
         return groupPersistenceManager.removeMember(groupId, sender) mapUi { wasRemoved ->
-            if (wasRemoved)
+            if (wasRemoved) {
                 log.info("User {} has left group {}", sender, groupId.string)
+                groupEventSubject.onNext(GroupEvent.Parted(groupId, sender))
+            }
         }
     }
 

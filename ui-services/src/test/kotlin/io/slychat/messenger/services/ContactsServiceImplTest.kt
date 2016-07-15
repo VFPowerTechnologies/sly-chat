@@ -72,30 +72,9 @@ class ContactsServiceImplTest {
         )
     }
 
-    inline fun <reified T : Any> eventCollectorFor(contactsService: ContactsServiceImpl): TestSubscriber<T> {
-        val testSubscriber = TestSubscriber<T>()
-        contactsService.contactEvents.filter { it is T }.cast(T::class.java).subscribe(testSubscriber)
-        return testSubscriber
+    inline fun <reified T : ContactEvent> contactEventCollectorFor(contactsService: ContactsServiceImpl): TestSubscriber<T> {
+        return contactsService.contactEvents.subclassFilterTestSubscriber()
     }
-
-    fun <T : ContactEvent> assertEventEmitted(testSubscriber: TestSubscriber<T>, asserter: (T) -> Unit) {
-        val events = testSubscriber.onNextEvents
-
-        assertTrue(events.isNotEmpty(), "No event emitted")
-
-        val event = events.first()
-
-        asserter(event)
-    }
-
-    fun <T : ContactEvent> assertNoEventsEmitted(testSubscriber: TestSubscriber<T>) {
-        val events = testSubscriber.onNextEvents
-
-        assertThat(events)
-            .`as`("Events")
-            .isEmpty()
-    }
-
 
     @Test
     fun `adding a new contact should return true if the contact was added`() {
@@ -151,7 +130,7 @@ class ContactsServiceImplTest {
 
         whenever(contactsPersistenceManager.add(contactInfo)).thenReturn(true)
 
-        val testSubscriber = eventCollectorFor<ContactEvent.Added>(contactsService)
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
 
         contactsService.addContact(contactInfo)
 
@@ -171,7 +150,7 @@ class ContactsServiceImplTest {
 
         whenever(contactsPersistenceManager.add(contactInfo)).thenReturn(false)
 
-        val testSubscriber = eventCollectorFor<ContactEvent.Added>(contactsService)
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
 
         contactsService.addContact(contactInfo)
 
@@ -249,7 +228,7 @@ class ContactsServiceImplTest {
     fun `addMissingContacts should fire an Added event when a contact is added`() {
         val contactsService = createService()
 
-        val testSubscriber = eventCollectorFor<ContactEvent.Added>(contactsService)
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
 
         val invalidIds = testAddMissingContacts(
             contactsService,
@@ -273,7 +252,7 @@ class ContactsServiceImplTest {
     fun `addMissingContacts should not fire an Added event when no contacts are added`() {
         val contactsService = createService()
 
-        val testSubscriber = eventCollectorFor<ContactEvent.Added>(contactsService)
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
 
         val invalidIds = testAddMissingContacts(
             contactsService,
@@ -311,7 +290,7 @@ class ContactsServiceImplTest {
     fun `addMissingContacts should do nothing if all contacts exist`() {
         val contactsService = createService()
 
-        val testSubscriber = eventCollectorFor<ContactEvent.Added>(contactsService)
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
 
         val invalidIds = testAddMissingContacts(
             contactsService,
@@ -378,7 +357,7 @@ class ContactsServiceImplTest {
 
         val info = ContactSyncJobInfo(false, false, true, isRunning)
 
-        val testSubscriber = eventCollectorFor<ContactEvent.Sync>(contactsService)
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Sync>(contactsService)
 
         contactOperationManager.runningSubject.onNext(info)
 

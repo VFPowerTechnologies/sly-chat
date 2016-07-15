@@ -13,6 +13,7 @@ import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
+import rx.observers.TestSubscriber
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -52,6 +53,10 @@ class MessageProcessorServiceImplTest {
             messagePersistenceManager,
             groupPersistenceManager
         )
+    }
+
+    inline fun <reified T : GroupEvent> groupEventCollectorFor(messageProcessorService: MessageProcessorServiceImpl): TestSubscriber<T> {
+        return messageProcessorService.groupEvents.subclassFilterTestSubscriber()
     }
 
     @Test
@@ -262,7 +267,7 @@ class MessageProcessorServiceImplTest {
     }
 
     @Test
-    fun `it should add a member when receiving a GroupJoin from a member for a joined group`() {
+    fun `it should add a member when receiving a new member join from a member for a joined group`() {
         val sender = UserId(1)
         val newMember = UserId(2)
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
@@ -281,7 +286,22 @@ class MessageProcessorServiceImplTest {
     }
 
     @Test
-    fun `it should remove a member when receiving a GroupPart from that user for a joined group`() {
+    fun `it should emit a Join event when receiving a group join`() {
+        val sender = UserId(1)
+        val newMember = UserId(2)
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+
+        val m = GroupEventMessage.Join(groupInfo.id, newMember)
+
+        val service = createService()
+
+        whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
+
+        service.processMessage(sender, wrap(m)).get()
+    }
+
+    @Test
+    fun `it should remove a member when receiving a group part from that user for a joined group`() {
         val sender = UserId(1)
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
 
@@ -369,6 +389,79 @@ class MessageProcessorServiceImplTest {
         service.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager, never()).removeMember(any(), any())
+    }
+
+    fun testJoinEvent(shouldEventBeEmitted: Boolean) {
+        val sender = UserId(1)
+        val newMember = UserId(2)
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+
+        val m = GroupEventMessage.Join(groupInfo.id, newMember)
+
+        val service = createService()
+
+        returnGroupInfo(groupInfo)
+
+        val testSubscriber = groupEventCollectorFor<GroupEvent.Joined>(service)
+
+        whenever(groupPersistenceManager.addMember(groupInfo.id, newMember)).thenReturn(shouldEventBeEmitted)
+
+        service.processMessage(sender, wrap(m)).get()
+
+        if (shouldEventBeEmitted) {
+            assertEventEmitted(testSubscriber) { event ->
+                assertEquals(groupInfo.id, event.id, "Invalid group id")
+                assertEquals(newMember, event.userId, "Invalid new member id")
+            }
+        }
+        else
+            assertNoEventsEmitted(testSubscriber)
+    }
+
+    @Test
+    fun `it should emit a new join event after adding a new member for an existing group`() {
+        testJoinEvent(true)
+    }
+
+    @Test
+    fun `it not should emit a new join event if a member already exists in a group`() {
+        testJoinEvent(false)
+    }
+
+    fun testPartEvent(shouldEventBeEmitted: Boolean) {
+        val sender = UserId(1)
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+
+        val m = GroupEventMessage.Part(groupInfo.id)
+
+        val service = createService()
+
+        returnGroupInfo(groupInfo)
+
+        whenever(groupPersistenceManager.removeMember(groupInfo.id, sender)).thenReturn(shouldEventBeEmitted)
+
+        val testSubscriber = groupEventCollectorFor<GroupEvent.Parted>(service)
+
+        service.processMessage(sender, wrap(m)).get()
+
+        if (shouldEventBeEmitted) {
+            assertEventEmitted(testSubscriber) { event ->
+                assertEquals(groupInfo.id, event.id, "Invalid group id")
+                assertEquals(sender, event.userId, "Invalid new member id")
+            }
+        }
+        else
+            assertNoEventsEmitted(testSubscriber)
+    }
+
+    @Test
+    fun `it should emit a new part event after removing a new member for an existing group`() {
+        testPartEvent(true)
+    }
+
+    @Test
+    fun `it should not emit a new part event when receiving a part if a member does not exist in a group`() {
+        testPartEvent(false)
     }
 
     @Test
