@@ -11,6 +11,10 @@ class SQLiteGroupPersistenceManager(
         throw NotImplementedError()
     }
 
+    override fun getGroupInfo(groupId: GroupId): Promise<GroupInfo?, Exception> {
+        throw NotImplementedError()
+    }
+
     override fun getGroupMembers(groupId: GroupId): Promise<Set<UserId>, Exception> {
         throw NotImplementedError()
     }
@@ -19,11 +23,11 @@ class SQLiteGroupPersistenceManager(
         throw NotImplementedError()
     }
 
-    override fun addMember(groupId: GroupId, userId: UserId): Promise<Unit, Exception> {
+    override fun addMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> {
         throw NotImplementedError()
     }
 
-    override fun removeMember(groupId: GroupId, userId: UserId): Promise<Unit, Exception> {
+    override fun removeMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> {
         throw NotImplementedError()
     }
 
@@ -35,11 +39,19 @@ class SQLiteGroupPersistenceManager(
         throw NotImplementedError()
     }
 
-    override fun joinGroup(groupInfo: GroupInfo): Promise<Unit, Exception> {
+    override fun joinGroup(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception> {
         throw NotImplementedError()
     }
 
     override fun partGroup(groupId: GroupId): Promise<Boolean, Exception> {
+        throw NotImplementedError()
+    }
+
+    override fun getBlockList(): Promise<List<GroupId>, Exception> {
+        throw NotImplementedError()
+    }
+
+    override fun isBlocked(groupId: GroupId): Promise<Boolean, Exception> {
         throw NotImplementedError()
     }
 

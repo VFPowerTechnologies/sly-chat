@@ -5,10 +5,30 @@ import nl.komponents.kovenant.Promise
 
 data class GroupId(val string: String)
 
+enum class GroupMembershipLevel(val level: Int) {
+    /** Discard all messages and invitations to this group. */
+    BLOCKED(0),
+    /** Discard all messages, but process invitations. */
+    PARTED(1),
+    /** Accept all messages. */
+    JOINED(2);
+
+    companion object {
+        fun fromInt(v: Int): GroupMembershipLevel = when (v) {
+            0 -> BLOCKED
+            1 -> PARTED
+            2 -> JOINED
+            else -> throw IllegalArgumentException("Invalid integer value for MembershipLevel: $v")
+        }
+    }
+}
+
 /** Group metadata. */
 data class GroupInfo(
     val id: GroupId,
-    val name: String
+    val name: String,
+    val isPending: Boolean,
+    val membershipLevel: GroupMembershipLevel
 )
 
 /** Information about a group conversation. Each group has exactly one conversation. */
@@ -34,17 +54,20 @@ interface GroupPersistenceManager {
     /** Returns the list of all currently joined groups. */
     fun getGroupList(): Promise<List<GroupInfo>, Exception>
 
+    /** Returns info on a specific group. */
+    fun getGroupInfo(groupId: GroupId): Promise<GroupInfo?, Exception>
+
     /** Returns the membership list of the given group. */
     fun getGroupMembers(groupId: GroupId): Promise<Set<UserId>, Exception>
 
     /** Returns all group conversations. */
     fun getAllGroupConversationInfo(): Promise<List<GroupConversationInfo>, Exception>
 
-    /** Add a member to the given group. The group entry must already exist. */
-    fun addMember(groupId: GroupId, userId: UserId): Promise<Unit, Exception>
+    /** Add a member to the given group. The group entry must already exist. If the user is already a member, does nothing and returns false. */
+    fun addMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception>
 
-    /** Remove a member from a group member list. */
-    fun removeMember(groupId: GroupId, userId: UserId): Promise<Unit, Exception>
+    /** Remove a member from a group member list. If the user is not a member, does nothing and returns false. */
+    fun removeMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception>
 
     /** Verifies if a given member is part of a joined group. */
     fun isUserMemberOf(userId: UserId, groupId: GroupId): Promise<Boolean, Exception>
@@ -53,10 +76,16 @@ interface GroupPersistenceManager {
     fun createGroup(groupInfo: GroupInfo, initialMembers: Set<UserId>): Promise<Unit, Exception>
 
     /** Join an existing group. */
-    fun joinGroup(groupInfo: GroupInfo): Promise<Unit, Exception>
+    fun joinGroup(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception>
 
     /** Join a joined group. If not a member, returns false, otherwise returns true. */
     fun partGroup(groupId: GroupId): Promise<Boolean, Exception>
+
+    /** Returns blocked groups. */
+    fun getBlockList(): Promise<List<GroupId>, Exception>
+
+    /** Whether or not a group is marked as blocked. */
+    fun isBlocked(groupId: GroupId): Promise<Boolean, Exception>
 
     /** Add a message from a user to the given group. If userId is null, is taken to be from yourself. */
     fun addMessage(groupId: GroupId, userId: UserId?, messageInfo: MessageInfo): Promise<MessageInfo, Exception>

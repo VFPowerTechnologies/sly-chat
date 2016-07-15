@@ -31,20 +31,24 @@ data class TextMessage(
     JsonSubTypes.Type(GroupPart::class, name = "p"),
     JsonSubTypes.Type(GroupInvitation::class, name = "i")
 )
-interface GroupEvent
+interface GroupEvent {
+    val id: GroupId
+}
 
+/** A user has joined the group. Sent from the user sending the GroupInvitation. Must be sent from a current member of the group. */
 data class GroupJoin(
-    val id: GroupId,
+    override val id: GroupId,
     val joined: UserId
 ) : GroupEvent
 
+/** Sender has left the group. */
 data class GroupPart(
-    val id: GroupId,
-    val parted: UserId
+    override val id: GroupId
 ) : GroupEvent
 
+/** Invitation to a new group. */
 data class GroupInvitation(
-    val id: GroupId,
+    override val id: GroupId,
     val name: String,
     val members: Set<UserId>
 ) : GroupEvent

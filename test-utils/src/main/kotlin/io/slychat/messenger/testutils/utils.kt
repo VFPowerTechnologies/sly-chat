@@ -47,6 +47,10 @@ fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(v: T) {
     this.thenReturn(Promise.ofSuccess(v))
 }
 
+fun <T> OngoingStubbing<Promise<T?, Exception>>.thenReturnNull() {
+    this.thenReturn(Promise.ofSuccess(null))
+}
+
 /** Convinence function for returning a failed promise. */
 fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(e: Exception) {
     this.thenReturn(Promise.ofFail(e))
