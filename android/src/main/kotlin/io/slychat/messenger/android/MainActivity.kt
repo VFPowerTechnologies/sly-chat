@@ -183,7 +183,7 @@ class MainActivity : AppCompatActivity() {
     private fun init(hadSavedBundle: Boolean) {
         val app = AndroidApp.get(this)
 
-        app.appComponent.stateService.initialPage = getInitialPage(intent)
+        app.appComponent.uiStateService.initialPage = getInitialPage(intent)
 
         loadCompleteSubscription?.unsubscribe()
         loadCompleteSubscription = null
