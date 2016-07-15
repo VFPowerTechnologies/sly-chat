@@ -27,7 +27,7 @@ class MessageProcessorServiceImpl(
         return when (m) {
             is TextMessageWrapper -> handleTextMessage(sender, messageId, m.m)
 
-            is GroupEventWrapper -> handleGroupMessage(sender, messageId, m.m)
+            is GroupEventMessageWrapper -> handleGroupMessage(sender, m.m)
 
             else -> {
                 log.error("Unhandled message type: {}", m.javaClass.name)
@@ -59,12 +59,12 @@ class MessageProcessorServiceImpl(
         }
     }
 
-    private fun handleGroupMessage(sender: UserId, messageId: String, m: GroupEvent): Promise<Unit, Exception> {
+    private fun handleGroupMessage(sender: UserId, m: GroupEventMessage): Promise<Unit, Exception> {
         return groupPersistenceManager.getGroupInfo(m.id) bind { groupInfo ->
             when (m) {
-                is GroupInvitation -> handleGroupInvitation(groupInfo, m)
-                is GroupJoin -> runIfJoinedAndUserIsMember(groupInfo, sender) { handleGroupJoin(m)  }
-                is GroupPart -> runIfJoinedAndUserIsMember(groupInfo, sender) { handleGroupPart(m.id, sender) }
+                is GroupEventMessage.Invitation -> handleGroupInvitation(groupInfo, m)
+                is GroupEventMessage.Join -> runIfJoinedAndUserIsMember(groupInfo, sender) { handleGroupJoin(m)  }
+                is GroupEventMessage.Part -> runIfJoinedAndUserIsMember(groupInfo, sender) { handleGroupPart(m.id, sender) }
                 else -> throw IllegalArgumentException("Invalid GroupEvent: ${m.javaClass.name}")
             }
         }
@@ -91,7 +91,7 @@ class MessageProcessorServiceImpl(
         }
     }
 
-    private fun handleGroupJoin(m: GroupJoin): Promise<Unit, Exception> {
+    private fun handleGroupJoin(m: GroupEventMessage.Join): Promise<Unit, Exception> {
         return groupPersistenceManager.addMember(m.id, m.joined) mapUi { wasAdded ->
             if (wasAdded)
                 log.info("User {} joined group {}", m.joined, m.id.string)
@@ -107,7 +107,7 @@ class MessageProcessorServiceImpl(
         }
     }
 
-    private fun handleGroupInvitation(groupInfo: GroupInfo?, m: GroupInvitation): Promise<Unit, Exception> {
+    private fun handleGroupInvitation(groupInfo: GroupInfo?, m: GroupEventMessage.Invitation): Promise<Unit, Exception> {
         val members = HashSet(m.members)
 
         //XXX should we bother checking if the sender is a member of the group as well? seems pointless

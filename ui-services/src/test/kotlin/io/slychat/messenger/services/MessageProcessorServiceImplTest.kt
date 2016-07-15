@@ -110,15 +110,15 @@ class MessageProcessorServiceImplTest {
     }
 
     fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomUUID(), TextMessageWrapper(m))
-    fun wrap(m: GroupEvent): SlyMessageWrapper = SlyMessageWrapper(randomUUID(), GroupEventWrapper(m))
+    fun wrap(m: GroupEventMessage): SlyMessageWrapper = SlyMessageWrapper(randomUUID(), GroupEventMessageWrapper(m))
 
     /* Group stuff */
 
-    fun generateInvite(): GroupInvitation {
+    fun generateInvite(): GroupEventMessage.Invitation {
         val groupId = randomGroupId()
         val members = (1..3L).mapTo(HashSet()) { UserId(it) }
 
-        return GroupInvitation(groupId, randomGroupName(), members)
+        return GroupEventMessage.Invitation(groupId, randomGroupName(), members)
     }
 
     @Test
@@ -234,7 +234,7 @@ class MessageProcessorServiceImplTest {
         val newMember = UserId(2)
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.PARTED)
 
-        val m = GroupJoin(groupInfo.id, newMember)
+        val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
         val service = createService()
 
@@ -250,7 +250,7 @@ class MessageProcessorServiceImplTest {
         val sender = UserId(1)
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.PARTED)
 
-        val m = GroupPart(groupInfo.id)
+        val m = GroupEventMessage.Part(groupInfo.id)
 
         val service = createService()
 
@@ -267,7 +267,7 @@ class MessageProcessorServiceImplTest {
         val newMember = UserId(2)
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
 
-        val m = GroupJoin(groupInfo.id, newMember)
+        val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
         val service = createService()
 
@@ -285,7 +285,7 @@ class MessageProcessorServiceImplTest {
         val sender = UserId(1)
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
 
-        val m = GroupPart(groupInfo.id)
+        val m = GroupEventMessage.Part(groupInfo.id)
 
         val service = createService()
 
@@ -305,7 +305,7 @@ class MessageProcessorServiceImplTest {
 
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
 
-        val m = GroupJoin(groupInfo.id, newMember)
+        val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
         val service = createService()
 
@@ -323,7 +323,7 @@ class MessageProcessorServiceImplTest {
         val sender = UserId(1)
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
 
-        val m = GroupPart(groupInfo.id)
+        val m = GroupEventMessage.Part(groupInfo.id)
 
         val service = createService()
 
@@ -344,7 +344,7 @@ class MessageProcessorServiceImplTest {
         val groupId = randomGroupId()
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.BLOCKED)
 
-        val m = GroupJoin(groupId, newMember)
+        val m = GroupEventMessage.Join(groupId, newMember)
 
         val service = createService()
 
@@ -360,7 +360,7 @@ class MessageProcessorServiceImplTest {
         val sender = UserId(1)
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.BLOCKED)
 
-        val m = GroupPart(groupInfo.id)
+        val m = GroupEventMessage.Part(groupInfo.id)
 
         val service = createService()
 
