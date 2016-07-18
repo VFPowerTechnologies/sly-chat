@@ -24,6 +24,9 @@ data class MessageMetadata(
     init {
         if (category == MessageCategory.TEXT_GROUP && groupId == null)
             throw IllegalArgumentException("groupId must be non-null when category is TEXT_GROUP")
+
+        else if (category == MessageCategory.TEXT_SINGLE && groupId != null)
+            throw IllegalArgumentException("groupId must be null when category is TEXT_SINGLE")
     }
 }
 

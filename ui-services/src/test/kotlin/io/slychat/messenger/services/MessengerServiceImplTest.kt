@@ -9,22 +9,18 @@ import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
-import io.slychat.messenger.core.relay.ServerReceivedMessage
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
-import io.slychat.messenger.services.crypto.MessageCipherService
-import io.slychat.messenger.services.crypto.MessageData
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenReturn
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Test
 import rx.subjects.PublishSubject
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
-@Suppress("UNUSED_VARIABLE")
 class MessengerServiceImplTest {
     companion object {
         @JvmField
@@ -38,26 +34,23 @@ class MessengerServiceImplTest {
     val messagePersistenceManager: MessagePersistenceManager = mock()
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val relayClientManager: RelayClientManager = mock()
-    val messageCipherService: MessageCipherService = mock()
     val messageSender: MessageSender = mock()
     val messageReceiver: MessageReceiver = mock()
-
-    val encryptedMessages: PublishSubject<EncryptionResult> = PublishSubject.create()
 
     val contactEvents: PublishSubject<ContactEvent> = PublishSubject.create()
 
     val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
-    val relayOnlineStatus: PublishSubject<Boolean> = PublishSubject.create()
 
-    fun createService(relayOnlineStatus: Boolean = false): MessengerServiceImpl {
-        whenever(messageCipherService.encryptedMessages).thenReturn(encryptedMessages)
+    val messageSent: PublishSubject<MessageMetadata> = PublishSubject.create()
+
+    fun createService(): MessengerServiceImpl {
+        whenever(messageSender.messageSent).thenReturn(messageSent)
 
         whenever(contactsService.contactEvents).thenReturn(contactEvents)
 
         whenever(relayClientManager.events).thenReturn(relayEvents)
-        whenever(relayClientManager.onlineStatus).thenReturn(this.relayOnlineStatus)
 
-        whenever(relayClientManager.isOnline).thenReturn(relayOnlineStatus)
+        whenever(messageSender.addToQueue(any(), any())).thenReturn(Unit)
 
         //some useful defaults
         whenever(messagePersistenceManager.getUndeliveredMessages()).thenReturn(emptyMap())
@@ -72,6 +65,17 @@ class MessengerServiceImplTest {
             messageSender,
             messageReceiver,
             selfId
+        )
+    }
+
+    fun randomMessage(): String = randomUUID()
+
+    fun randomTextSingleMetadata(): MessageMetadata {
+        return MessageMetadata(
+            randomUserId(),
+            null,
+            MessageCategory.TEXT_SINGLE,
+            randomMessageId()
         )
     }
 
@@ -161,7 +165,6 @@ class MessengerServiceImplTest {
             .`as`("Package list")
     }
 
-
     @Test
     fun `it should drop a relay package when ContactsService indicates a user is blocked`() {
         val messengerService = createService()
@@ -225,95 +228,11 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `it should persist a message when sendMessageTo is called for a different user`() {
-        val messengerService = createService()
-
-        val to = UserId(2)
-
-        handleAddMessage(to)
-
-        messengerService.sendMessageTo(to, "message")
-
-        verify(messagePersistenceManager).addMessage(eq(to), capture {
-            assertTrue(it.isSent, "Not mark as sent")
-        })
-    }
-
-    @Test
-    fun `it should persist a message when sendMessageTo is called for self`() {
-        val messengerService = createService()
-
-        val to = selfId
-
-        handleAddMessage(to)
-
-        messengerService.sendMessageTo(to, "message")
-
-        val captor = argumentCaptor<MessageInfo>()
-        verify(messagePersistenceManager, times(2)).addMessage(eq(to), capture(captor))
-
-        val values = captor.allValues
-
-        val sentMessage = values[0]
-        assertTrue(sentMessage.isSent, "Message not marked as sent")
-        assertTrue(sentMessage.isDelivered, "Message not marked as delivered")
-
-        val receivedMessage = values[1]
-        assertFalse(receivedMessage.isSent, "Message not marked as received")
-    }
-
-    @Test
-    fun `it should retrieve all undelivered messages when the relay comes online`() {
-        val messengerService = createService()
-
-        relayOnlineStatus.onNext(true)
-
-        verify(messagePersistenceManager).getUndeliveredMessages()
-    }
-
-    @Test
-    fun `it should mark a sent message as delievered when receiving a confirmation from the relay`() {
-        val messengerService = createService(true)
-
-        val to = UserId(2)
-
-        handleAddMessage(to)
-
-        val connectionTag = 3
-
-        whenever(relayClientManager.connectionTag).thenReturn(connectionTag)
-
-        val message = "message"
-        messengerService.sendMessageTo(to, message)
-
-        verify(messageCipherService).encrypt(eq(to), any(), any())
-        val data = MessageData(1, 1, EncryptedPackagePayloadV0(false, ByteArray(0)))
-        encryptedMessages.onNext(EncryptionOk(listOf(data), connectionTag))
-
-        val captor = argumentCaptor<String>()
-
-        verify(relayClientManager).sendMessage(any(), eq(to), any(), capture(captor))
-
-        val messageId = captor.value
-
-        val ev = ServerReceivedMessage(to, messageId)
-
-        val messageInfo = MessageInfo.newSent(messageId, message, currentTimestamp(), currentTimestamp(), 0)
-        whenever(messagePersistenceManager.markMessageAsDelivered(to, messageId)).thenReturn(messageInfo)
-
-        relayEvents.onNext(ev)
-
-        verify(messagePersistenceManager).markMessageAsDelivered(to, messageId)
-
-        //TODO this also fires a message update event which we should check for
-    }
-
-    @Test
     fun `it should proxy new messages from MessageReceiver`() {
         val subject = PublishSubject.create<MessageBundle>()
         whenever(messageReceiver.newMessages).thenReturn(subject)
 
-        val messengerService = createService(true)
+        val messengerService = createService()
 
         val testSubscriber = messengerService.newMessages.testSubscriber()
 
@@ -330,7 +249,42 @@ class MessengerServiceImplTest {
             .`as`("Received bundles")
     }
 
-    //TODO messageUpdates tests
+    @Test
+    fun `it should queue a single text message to be sent when sendMessageTo is called`() {
+        val messengerService = createService()
 
-    //TODO message send/receive tests
+        val recipient = randomUserId()
+
+        messengerService.sendMessageTo(recipient, randomMessage())
+
+        verify(messageSender).addToQueue(capture {
+            assertEquals(recipient, it.userId, "Invalid recipient")
+            assertEquals(MessageCategory.TEXT_SINGLE, it.category, "Invalid category")
+        }, any())
+    }
+
+    //also doubles as checking for mark as delivered
+    @Test
+    fun `it should emit a message updated event when receiving a message update for TEXT_SINGLE message`() {
+        val messageService = createService()
+
+        val update = randomTextSingleMetadata()
+        val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
+
+        whenever(messagePersistenceManager.markMessageAsDelivered(update.userId, update.messageId)).thenReturn(messageInfo)
+
+        val testSubscriber = messageService.messageUpdates.testSubscriber()
+
+        messageSent.onNext(update)
+
+        assertEventEmitted(testSubscriber) {
+            assertEquals(update.userId, it.userId, "Invalid user id")
+            assertThat(it.messages)
+                .containsOnly(messageInfo)
+        }
+    }
+
+    @Ignore
+    @Test
+    fun `it should emit a message updated event when receiving a message update for TEXT_GROUP message`() {}
 }

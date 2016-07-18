@@ -27,6 +27,13 @@ import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
+fun randomUserId(): UserId {
+    val l = 1 + Random().nextInt(1000-1) + 1
+    return UserId(l.toLong())
+}
+
+fun randomMessageId(): String = randomUUID()
+
 class MessageSenderImplTest {
     companion object {
         @JvmField
@@ -74,11 +81,6 @@ class MessageSenderImplTest {
             relayClientManager,
             messageQueuePersistenceManager
         )
-    }
-
-    fun randomUserId(): UserId {
-        val l = 1 + Random().nextInt(1000-1) + 1
-        return UserId(l.toLong())
     }
 
     fun randomQueuedMessage(): QueuedMessage {

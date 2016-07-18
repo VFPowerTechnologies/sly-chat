@@ -13,6 +13,7 @@ import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.subjects.PublishSubject
 import rx.subscriptions.CompositeSubscription
 import java.util.*
 
@@ -35,8 +36,8 @@ class MessengerServiceImpl(
     override val newMessages: Observable<MessageBundle>
         get() = messageReceiver.newMessages
 
-    override val messageUpdates: Observable<MessageBundle>
-        get() = throw NotImplementedError()
+    private val messageUpdatesSubject = PublishSubject.create<MessageBundle>()
+    override val messageUpdates: Observable<MessageBundle> = messageUpdatesSubject
 
     private val subscriptions = CompositeSubscription()
 
@@ -45,6 +46,8 @@ class MessengerServiceImpl(
         subscriptions.add(contactsService.contactEvents.subscribe { onContactEvent(it) })
 
         subscriptions.add(relayClientManager.events.subscribe { onRelayEvent(it) })
+
+        subscriptions.add(messageSender.messageSent.subscribe { onMessageSent(it) })
     }
 
     override fun init() {
@@ -52,6 +55,25 @@ class MessengerServiceImpl(
 
     override fun shutdown() {
         subscriptions.clear()
+    }
+
+    private fun onMessageSent(metadata: MessageMetadata) {
+        when (metadata.category) {
+            MessageCategory.TEXT_SINGLE -> processSingleUpdate(metadata)
+            MessageCategory.TEXT_GROUP -> processGroupUpdate(metadata)
+            MessageCategory.OTHER -> {}
+        }
+    }
+
+    private fun processSingleUpdate(metadata: MessageMetadata) {
+        messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId) successUi { messageInfo ->
+            val bundle = MessageBundle(metadata.userId, listOf(messageInfo))
+            messageUpdatesSubject.onNext(bundle)
+        }
+    }
+
+    private fun processGroupUpdate(metadata: MessageMetadata) {
+        throw NotImplementedError()
     }
 
     private fun onRelayEvent(event: RelayClientEvent) {
