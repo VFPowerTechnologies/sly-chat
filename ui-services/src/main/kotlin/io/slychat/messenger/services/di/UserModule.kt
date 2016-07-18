@@ -139,23 +139,36 @@ class UserModule(
 
     @UserScope
     @Provides
-    fun providesMessengerService(
+    fun providesMessageSender(
         scheduler: Scheduler,
+        relayClientManager: RelayClientManager,
+        messageCipherService: MessageCipherService,
+        messagePersistenceManager: MessagePersistenceManager
+    ): MessageSender =
+        MessageSenderImpl(
+            scheduler,
+            messageCipherService,
+            relayClientManager,
+            messagePersistenceManager
+        )
+
+    @UserScope
+    @Provides
+    fun providesMessengerService(
         contactsService: ContactsService,
         messagePersistenceManager: MessagePersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager,
         relayClientManager: RelayClientManager,
         messageReceiver: MessageReceiver,
-        messageCipherService: MessageCipherService,
+        messageSender: MessageSender,
         userLoginData: UserData
     ): MessengerService =
         MessengerServiceImpl(
-            scheduler,
             contactsService,
             messagePersistenceManager,
             contactsPersistenceManager,
             relayClientManager,
-            messageCipherService,
+            messageSender,
             messageReceiver,
             userLoginData.userId
         )

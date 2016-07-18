@@ -23,8 +23,6 @@ import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
-import rx.Scheduler
-import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -39,12 +37,12 @@ class MessengerServiceImplTest {
         val selfId = UserId(999)
     }
 
-    val scheduler: Scheduler = Schedulers.immediate()
     val contactsService: ContactsService = mock()
     val messagePersistenceManager: MessagePersistenceManager = mock()
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val relayClientManager: RelayClientManager = mock()
     val messageCipherService: MessageCipherService = mock()
+    val messageSender: MessageSender = mock()
     val messageReceiver: MessageReceiver = mock()
 
     val encryptedMessages: PublishSubject<EncryptionResult> = PublishSubject.create()
@@ -72,12 +70,11 @@ class MessengerServiceImplTest {
         whenever(messageReceiver.processPackages(any())).thenReturn(Unit)
 
         return MessengerServiceImpl(
-            scheduler,
             contactsService,
             messagePersistenceManager,
             contactsPersistenceManager,
             relayClientManager,
-            messageCipherService,
+            messageSender,
             messageReceiver,
             selfId
         )
