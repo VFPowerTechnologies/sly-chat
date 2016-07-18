@@ -25,3 +25,4 @@ interface PackageQueuePersistenceManager {
 
     fun getQueuedPackages(): Promise<List<Package>, Exception>
 }
+

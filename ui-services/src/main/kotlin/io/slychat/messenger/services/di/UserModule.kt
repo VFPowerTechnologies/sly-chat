@@ -143,13 +143,15 @@ class UserModule(
         scheduler: Scheduler,
         relayClientManager: RelayClientManager,
         messageCipherService: MessageCipherService,
-        messagePersistenceManager: MessagePersistenceManager
+        messagePersistenceManager: MessagePersistenceManager,
+        messageQueuePersistenceManager: MessageQueuePersistenceManager
     ): MessageSender =
         MessageSenderImpl(
             scheduler,
             messageCipherService,
             relayClientManager,
-            messagePersistenceManager
+            messagePersistenceManager,
+            messageQueuePersistenceManager
         )
 
     @UserScope

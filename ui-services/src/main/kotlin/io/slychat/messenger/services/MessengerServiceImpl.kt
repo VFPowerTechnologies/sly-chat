@@ -1,5 +1,6 @@
 package io.slychat.messenger.services
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
@@ -15,6 +16,9 @@ import rx.Observable
 import rx.subscriptions.CompositeSubscription
 import java.util.*
 
+//TODO need to call messagePersistenceManager.markMessageAsDelivered
+//this actually returns messageinfo for us, so maybe change it to return null if not found? that way we can just run
+//it for every message, and just ignore the value if it's not a text message
 class MessengerServiceImpl(
     private val contactsService: ContactsService,
     private val messagePersistenceManager: MessagePersistenceManager,
@@ -25,6 +29,8 @@ class MessengerServiceImpl(
     private val selfId: UserId
 ) : MessengerService {
     private val log = LoggerFactory.getLogger(javaClass)
+
+    private val objectMapper = ObjectMapper()
 
     override val newMessages: Observable<MessageBundle>
         get() = messageReceiver.newMessages
@@ -137,9 +143,11 @@ class MessengerServiceImpl(
         return if (!isSelfMessage) {
             val messageInfo = MessageInfo.newSent(message, 0)
             val m = TextMessage(messageInfo.timestamp, message, null)
-            val wrapper = SlyMessageWrapper(messageInfo.id, TextMessageWrapper(m))
+            val wrapper = TextMessageWrapper(m)
 
-            messageSender.addToQueue(userId, wrapper) bind {
+            val serialized = objectMapper.writeValueAsBytes(wrapper)
+
+            messageSender.addToQueue(userId, messageInfo.id, serialized) bind {
                 messagePersistenceManager.addMessage(userId, messageInfo)
             }
         }

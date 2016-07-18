@@ -43,6 +43,11 @@ class PersistenceUserModule {
 
     @UserScope
     @Provides
+    fun providesMessageQueuePersistenceManager(sqlitePersistenceManager: SQLitePersistenceManager): MessageQueuePersistenceManager =
+        MessageQueuePersistenceManagerImpl(sqlitePersistenceManager)
+
+    @UserScope
+    @Provides
     fun providesSQLitePersistenceManager(userPaths: UserPaths, userLoginData: UserData): SQLitePersistenceManager {
         val keyvault = userLoginData.keyVault
         val key = if (BuildConfig.ENABLE_DATABASE_ENCRYPTION)
