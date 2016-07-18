@@ -36,7 +36,7 @@ class MessengerServiceImpl(
         get() = messageReceiver.newMessages
 
     override val messageUpdates: Observable<MessageBundle>
-        get() = messageSender.messageUpdates
+        get() = throw NotImplementedError()
 
     private val subscriptions = CompositeSubscription()
 
@@ -147,7 +147,8 @@ class MessengerServiceImpl(
 
             val serialized = objectMapper.writeValueAsBytes(wrapper)
 
-            messageSender.addToQueue(userId, messageInfo.id, serialized) bind {
+            val metadata = MessageMetadata(userId, null, MessageCategory.TEXT_SINGLE, messageInfo.id)
+            messageSender.addToQueue(metadata, serialized) bind {
                 messagePersistenceManager.addMessage(userId, messageInfo)
             }
         }

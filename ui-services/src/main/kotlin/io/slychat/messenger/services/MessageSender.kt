@@ -1,6 +1,6 @@
 package io.slychat.messenger.services
 
-import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.MessageMetadata
 import nl.komponents.kovenant.Promise
 import rx.Observable
 
@@ -10,12 +10,9 @@ import rx.Observable
  * Not concerned with actual message contents, messages are represented as bytes to be encrypted and sent to the relay.
  */
 interface MessageSender {
-    //XXX maybe move this out to the MessengerService?
-    //probably is that we need to send out a MessageBundle to the ui with the proper message info for messages which are text messages
-    //I guess we can just do a db lookup or something? stupid but w/e
-    val messageUpdates: Observable<MessageBundle>
+    val messageSent: Observable<MessageMetadata>
 
-    fun addToQueue(userId: UserId, messageId: String, message: ByteArray): Promise<Unit, Exception>
+    fun addToQueue(metadata: MessageMetadata, message: ByteArray): Promise<Unit, Exception>
 
     fun init()
 

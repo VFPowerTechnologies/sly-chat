@@ -7,12 +7,9 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
-import io.slychat.messenger.core.relay.DeviceMismatch
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.core.relay.ServerReceivedMessage
-import io.slychat.messenger.core.relay.base.DeviceMismatchContent
-import io.slychat.messenger.services.crypto.DeviceUpdateResult
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageData
@@ -46,7 +43,6 @@ class MessengerServiceImplTest {
     val messageReceiver: MessageReceiver = mock()
 
     val encryptedMessages: PublishSubject<EncryptionResult> = PublishSubject.create()
-    val deviceUpdates: PublishSubject<DeviceUpdateResult>?= PublishSubject.create()
 
     val contactEvents: PublishSubject<ContactEvent> = PublishSubject.create()
 
@@ -55,7 +51,6 @@ class MessengerServiceImplTest {
 
     fun createService(relayOnlineStatus: Boolean = false): MessengerServiceImpl {
         whenever(messageCipherService.encryptedMessages).thenReturn(encryptedMessages)
-        whenever(messageCipherService.deviceUpdates).thenReturn(deviceUpdates)
 
         whenever(contactsService.contactEvents).thenReturn(contactEvents)
 
@@ -268,25 +263,6 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `it should call MessageCipherService to do a device refresh when receiving a DeviceMismatch from the relay`() {
-        val messengerService = createService()
-
-        val content = DeviceMismatchContent(listOf(1), listOf(2), listOf(3))
-        val to = UserId(2)
-        val ev = DeviceMismatch(to, randomUUID(), content)
-
-        setRelayOnlineStatus(true)
-
-        handleAddMessage(to)
-
-        messengerService.sendMessageTo(to, "message")
-
-        relayEvents.onNext(ev)
-
-        verify(messageCipherService).updateDevices(to, content)
-    }
-
-    @Test
     fun `it should retrieve all undelivered messages when the relay comes online`() {
         val messengerService = createService()
 
@@ -357,14 +333,4 @@ class MessengerServiceImplTest {
     //TODO messageUpdates tests
 
     //TODO message send/receive tests
-
-    //TODO rejecting decryption results for invalid message ids
-
-    @Test
-    fun `it should drop group messages when not a member`() {
-
-    }
-
-    @Test
-    fun `it should drop group messages when sender is not a member`() {}
 }

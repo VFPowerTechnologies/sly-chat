@@ -150,7 +150,6 @@ class UserModule(
             scheduler,
             messageCipherService,
             relayClientManager,
-            messagePersistenceManager,
             messageQueuePersistenceManager
         )
 

@@ -1,8 +1,7 @@
 package io.slychat.messenger.services
 
-import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
-import io.slychat.messenger.core.persistence.MessagePersistenceManager
+import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
 import io.slychat.messenger.core.persistence.QueuedMessage
 import io.slychat.messenger.core.relay.*
@@ -21,20 +20,18 @@ class MessageSenderImpl(
     scheduler: Scheduler,
     private val messageCipherService: MessageCipherService,
     private val relayClientManager: RelayClientManager,
-    private val messagePersistenceManager: MessagePersistenceManager,
     private val messageQueuePersistenceManager: MessageQueuePersistenceManager
 ) : MessageSender {
     private class QueuedSendMessage(
-        val to: UserId,
-        val messageId: String,
+        val metadata: MessageMetadata,
         val serialized: ByteArray,
         val connectionTag: Int
     )
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private val messageUpdatesSubject = PublishSubject.create<MessageBundle>()
-    override val messageUpdates: Observable<MessageBundle> = messageUpdatesSubject
+    private val messageSentSubject = PublishSubject.create<MessageMetadata>()
+    override val messageSent: Observable<MessageMetadata> = messageSentSubject
 
     private val sendMessageQueue = ArrayDeque<QueuedSendMessage>()
     private var currentSendMessage: QueuedSendMessage? = null
@@ -69,7 +66,7 @@ class MessageSenderImpl(
 
         messageQueuePersistenceManager.getUndelivered() successUi { undelivered ->
             undelivered.forEach { e ->
-                addToQueueReal(e.userId, e.messageId, e.serialized)
+                addToQueueReal(e.metadata, e.serialized)
             }
         }
     }
@@ -118,21 +115,22 @@ class MessageSenderImpl(
             nextSendMessage()
         }
         else {
-            messageCipherService.encrypt(message.to, message.serialized, message.connectionTag)
+            messageCipherService.encrypt(message.metadata.userId, message.serialized, message.connectionTag)
             currentSendMessage = message
         }
     }
 
-    private fun markMessageAsDelivered(to: UserId, messageId: String): Promise<Unit, Exception> {
-        //FIXME emit event
-        return messageQueuePersistenceManager.remove(to, messageId)
+    private fun markMessageAsDelivered(metadata: MessageMetadata): Promise<Unit, Exception> {
+        return messageQueuePersistenceManager.remove(metadata.userId, metadata.messageId) successUi {
+            messageSentSubject.onNext(metadata)
+        }
     }
 
     private fun processMessageSendResult(result: MessageSendResult) {
         val message = currentSendMessage
 
         if (message != null) {
-            val messageId = message.messageId
+            val messageId = message.metadata.messageId
 
             when (result) {
                 is MessageSendOk -> {
@@ -142,7 +140,7 @@ class MessageSenderImpl(
                         log.error("Message mismatch")
                     }
                     else {
-                        markMessageAsDelivered(result.to, messageId) fail { e ->
+                        markMessageAsDelivered(message.metadata) fail { e ->
                             log.error("Unable to write message to log: {}", e.message, e)
                         }
                     }
@@ -165,22 +163,26 @@ class MessageSenderImpl(
         }
     }
 
-    private fun addToQueueReal(userId: UserId, messageId: String, message: ByteArray) {
+    private fun addToQueueReal(metadata: MessageMetadata, message: ByteArray) {
         //once we're back online the queue'll get filled with all unsent messages
         if (!relayClientManager.isOnline)
             return
 
-        val queuedSendMessage = QueuedSendMessage(userId, messageId, message, relayClientManager.connectionTag)
+        val queuedSendMessage = QueuedSendMessage(metadata, message, relayClientManager.connectionTag)
+
         sendMessageQueue.add(queuedSendMessage)
         processSendMessageQueue()
         return
     }
 
-    override fun addToQueue(userId: UserId, messageId: String, message: ByteArray): Promise<Unit, Exception> {
-        val queuedMessage = QueuedMessage(userId, messageId, currentTimestamp(), message)
-
+    override fun addToQueue(metadata: MessageMetadata, message: ByteArray): Promise<Unit, Exception> {
+        val queuedMessage = QueuedMessage(
+            metadata,
+            currentTimestamp(),
+            message
+        )
         return messageQueuePersistenceManager.add(queuedMessage) mapUi {
-            addToQueueReal(userId, messageId, message)
+            addToQueueReal(metadata, message)
         }
     }
 
@@ -213,10 +215,10 @@ class MessageSenderImpl(
         val message = currentSendMessage
 
         if (message != null) {
-            val userId = message.to
+            val userId = message.metadata.userId
             //we don't check this against the current id as even during a disconnect the last message could also be
             //the first message to resend
-            val messageId = message.messageId
+            val messageId = message.metadata.messageId
 
             when (result) {
                 is EncryptionOk -> {
