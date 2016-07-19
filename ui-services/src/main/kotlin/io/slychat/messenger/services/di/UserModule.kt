@@ -9,7 +9,7 @@ import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.contacts.ContactAsyncClientImpl
 import io.slychat.messenger.core.http.api.contacts.ContactListAsyncClientImpl
-import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClient
+import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClientImpl
 import io.slychat.messenger.core.http.api.prekeys.HttpPreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
 import io.slychat.messenger.core.persistence.*
@@ -238,10 +238,10 @@ class UserModule(
         authTokenManager: AuthTokenManager
     ): OfflineMessageManager {
         val serverUrl = serverUrls.API_SERVER
-        val offlineMessagesClient = OfflineMessagesAsyncClient(serverUrl, httpClientFactory)
+        val offlineMessagesClient = OfflineMessagesAsyncClientImpl(serverUrl, httpClientFactory)
 
         return OfflineMessageManager(
-            application,
+            application.networkAvailable,
             offlineMessagesClient,
             messengerService,
             authTokenManager
