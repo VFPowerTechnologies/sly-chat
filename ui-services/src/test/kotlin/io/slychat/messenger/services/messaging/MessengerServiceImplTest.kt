@@ -2,11 +2,8 @@ package io.slychat.messenger.services.messaging
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.services.*
@@ -23,6 +20,7 @@ import org.junit.Test
 import rx.subjects.PublishSubject
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class MessengerServiceImplTest {
     companion object {
@@ -66,6 +64,8 @@ class MessengerServiceImplTest {
 
         whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
         whenever(messageReceiver.processPackages(any())).thenReturn(Unit)
+
+        whenever(groupPersistenceManager.partGroup(any())).thenReturn(true)
 
         return MessengerServiceImpl(
             contactsService,
@@ -400,5 +400,55 @@ class MessengerServiceImplTest {
         messengerService.deleteAllGroupMessages(groupId)
 
         verify(groupPersistenceManager).deleteAllMessages(groupId)
+    }
+
+    @Test
+    fun `leaveGroup should leave the given group`() {
+        val messengerService = createService()
+
+        val groupId = randomGroupId()
+
+        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(randomUserIds())
+
+        messengerService.leaveGroup(groupId).get()
+
+        verify(groupPersistenceManager).partGroup(groupId)
+    }
+
+    @Test
+    fun `leaveGroup should queue part messages to all members`() {
+        val messengerService = createService()
+
+        val groupId = randomGroupId()
+        val members = randomUserIds()
+
+        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(members)
+
+        messengerService.leaveGroup(groupId).get()
+
+        val objectMapper = ObjectMapper()
+
+        verify(messageSender).addToQueue(capture {
+            assertEquals(members, it.mapToSet { it.metadata.userId }, "Invalid users")
+            //cheating...
+            val messages = it.map { objectMapper.readValue(it.message, SlyMessage::class.java) }
+            messages.forEach {
+                it as GroupEventMessageWrapper
+                assertTrue(it.m is GroupEventMessage.Part, "Invalid message type")
+            }
+        })
+    }
+
+    @Test
+    fun `leaveGroup should not queue any messages when no members remain in the group`() {
+        val messengerService = createService()
+
+        val groupId = randomGroupId()
+
+        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(emptySet())
+
+        messengerService.leaveGroup(groupId).get()
+
+        verify(messageSender, never()).addToQueue(any())
     }
 }

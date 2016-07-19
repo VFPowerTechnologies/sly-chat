@@ -1,6 +1,7 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.testutils.testSubscriber
@@ -45,6 +46,8 @@ fun randomUserId(): UserId {
     return UserId(l.toLong())
 }
 
+fun randomUserIds(n: Int = 2): Set<UserId> = (1..n).mapToSet { randomUserId() }
+
 fun randomGroupId(): GroupId = GroupId(randomUUID())
 
 fun randomMessageId(): String = randomUUID()
@@ -57,4 +60,3 @@ fun randomTextGroupMetaData(groupId: GroupId? = null): MessageMetadata {
         randomMessageId()
     )
 }
-

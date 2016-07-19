@@ -3,10 +3,6 @@ package io.slychat.messenger.core.persistence
 import io.slychat.messenger.core.UserId
 import nl.komponents.kovenant.Promise
 
-data class GroupId(val string: String) {
-    override fun toString(): String = string
-}
-
 enum class GroupMembershipLevel(val level: Int) {
     /** Discard all messages and invitations to this group. */
     BLOCKED(0),

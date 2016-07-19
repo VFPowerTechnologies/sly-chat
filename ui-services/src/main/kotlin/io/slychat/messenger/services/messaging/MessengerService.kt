@@ -20,6 +20,9 @@ interface MessengerService {
     /* UIMessengerService interface */
     fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception>
     fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<MessageInfo, Exception>
+    fun createNewGroup(groupName: String, initialMembers: Set<UserId>): Promise<Unit, Exception>
+    fun inviteUsersToGroup(groupId: GroupId, newMembers: Set<UserId>): Promise<Unit, Exception>
+    fun leaveGroup(groupId: GroupId): Promise<Boolean, Exception>
     fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception>
     fun getConversations(): Promise<List<Conversation>, Exception>
     fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>

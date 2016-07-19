@@ -203,28 +203,48 @@ class MessengerServiceImpl(
         }
     }
 
-    override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<MessageInfo, Exception> {
+    private fun sendMessageToGroup(groupId: GroupId, message: SlyMessage, messageCategory: MessageCategory): Promise<Unit, Exception> {
         return groupPersistenceManager.getGroupMembers(groupId) bindUi { members ->
-            val p = if (members.isNotEmpty()) {
-                val m = TextMessage(currentTimestamp(), message, groupId)
-
-                val serialized = objectMapper.writeValueAsBytes(TextMessageWrapper(m))
+            if (members.isNotEmpty()) {
+                val serialized = objectMapper.writeValueAsBytes(message)
 
                 val messages = members.map {
-                    val metadata = MessageMetadata(it, groupId, MessageCategory.TEXT_GROUP, randomUUID())
+                    val metadata = MessageMetadata(it, groupId, messageCategory, randomUUID())
                     SenderMessageEntry(metadata, serialized)
                 }
+
                 messageSender.addToQueue(messages)
             }
             else
                 Promise.ofSuccess(Unit)
-
-            p bind {
-                val messageInfo = MessageInfo.newSent(message, 0)
-                groupPersistenceManager.addMessage(groupId, null, messageInfo)
-            }
         }
     }
+
+    override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<MessageInfo, Exception> {
+        val m = TextMessageWrapper(TextMessage(currentTimestamp(), message, groupId))
+
+        return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP) bind {
+            val messageInfo = MessageInfo.newSent(message, 0)
+            groupPersistenceManager.addMessage(groupId, null, messageInfo)
+        }
+    }
+
+    override fun createNewGroup(groupName: String, initialMembers: Set<UserId>): Promise<Unit, Exception> {
+        TODO()
+    }
+
+    override fun inviteUsersToGroup(groupId: GroupId, newMembers: Set<UserId>): Promise<Unit, Exception> {
+        TODO()
+    }
+
+    override fun leaveGroup(groupId: GroupId): Promise<Boolean, Exception> {
+        val message = GroupEventMessageWrapper(GroupEventMessage.Part(groupId))
+
+        return sendMessageToGroup(groupId, message, MessageCategory.OTHER) bind {
+            groupPersistenceManager.partGroup(groupId)
+        }
+    }
+
 
     override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception> {
         return messagePersistenceManager.getLastMessages(userId, startingAt, count)
