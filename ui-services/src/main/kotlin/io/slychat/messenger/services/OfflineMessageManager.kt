@@ -6,6 +6,7 @@ import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.persistence.PackageId
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.services.auth.AuthTokenManager
+import io.slychat.messenger.services.messaging.MessengerService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.alwaysUi

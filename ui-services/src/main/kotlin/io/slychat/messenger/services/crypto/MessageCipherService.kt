@@ -3,9 +3,9 @@ package io.slychat.messenger.services.crypto
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
-import io.slychat.messenger.services.DecryptionResult
-import io.slychat.messenger.services.EncryptedMessageInfo
-import io.slychat.messenger.services.EncryptionResult
+import io.slychat.messenger.services.messaging.DecryptionResult
+import io.slychat.messenger.services.messaging.EncryptedMessageInfo
+import io.slychat.messenger.services.messaging.EncryptionResult
 import rx.Observable
 
 interface MessageCipherService {

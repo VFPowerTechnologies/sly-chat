@@ -1,7 +1,7 @@
 package io.slychat.messenger.desktop
 
 import io.slychat.messenger.core.persistence.MessageInfo
-import io.slychat.messenger.services.ContactDisplayInfo
+import io.slychat.messenger.services.contacts.ContactDisplayInfo
 import io.slychat.messenger.services.PlatformNotificationService
 import org.slf4j.LoggerFactory
 

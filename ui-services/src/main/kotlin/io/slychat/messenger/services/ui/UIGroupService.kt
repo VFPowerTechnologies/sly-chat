@@ -2,7 +2,7 @@ package io.slychat.messenger.services.ui
 
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 import io.slychat.messenger.core.persistence.GroupId
-import io.slychat.messenger.services.GroupEvent
+import io.slychat.messenger.services.messaging.GroupEvent
 import nl.komponents.kovenant.Promise
 
 @JSToJavaGenerate("GroupService")

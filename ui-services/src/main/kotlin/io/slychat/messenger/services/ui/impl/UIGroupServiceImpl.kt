@@ -1,7 +1,7 @@
 package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.persistence.GroupId
-import io.slychat.messenger.services.GroupEvent
+import io.slychat.messenger.services.messaging.GroupEvent
 import io.slychat.messenger.services.ui.UIContactDetails
 import io.slychat.messenger.services.ui.UIGroupInfo
 import io.slychat.messenger.services.ui.UIGroupService

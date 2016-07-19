@@ -10,6 +10,10 @@ import io.slychat.messenger.core.persistence.MessageInfo
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
+import io.slychat.messenger.services.contacts.ContactDisplayInfo
+import io.slychat.messenger.services.contacts.toContactDisplayInfo
+import io.slychat.messenger.services.messaging.MessageBundle
+import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.UIEventService
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import nl.komponents.kovenant.Promise

@@ -1,7 +1,7 @@
 package io.slychat.messenger.services.ui.impl
 
-import io.slychat.messenger.services.MessageBundle
-import io.slychat.messenger.services.MessengerService
+import io.slychat.messenger.services.messaging.MessageBundle
+import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise

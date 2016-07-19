@@ -2,6 +2,8 @@ package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.*
+import io.slychat.messenger.services.contacts.ContactEvent
+import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.ui.UIContactDetails
 import io.slychat.messenger.services.ui.UIContactEvent

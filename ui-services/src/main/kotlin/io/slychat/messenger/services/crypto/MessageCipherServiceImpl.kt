@@ -8,6 +8,7 @@ import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
+import io.slychat.messenger.services.messaging.*
 import org.slf4j.LoggerFactory
 import org.whispersystems.libsignal.SessionBuilder
 import org.whispersystems.libsignal.SessionCipher
