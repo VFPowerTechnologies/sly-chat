@@ -23,6 +23,7 @@ import java.util.*
 class MessengerServiceImpl(
     private val contactsService: ContactsService,
     private val messagePersistenceManager: MessagePersistenceManager,
+    private val groupPersistenceManager: GroupPersistenceManager,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val relayClientManager: RelayClientManager,
     private val messageSender: MessageSender,
@@ -73,7 +74,13 @@ class MessengerServiceImpl(
     }
 
     private fun processGroupUpdate(metadata: MessageMetadata) {
-        throw NotImplementedError()
+        //can't be null due to constructor checks
+        val groupId = metadata.groupId!!
+
+        groupPersistenceManager.markMessageAsDelivered(groupId, metadata.messageId) successUi { messageInfo ->
+            val bundle = MessageBundle(metadata.userId, groupId, listOf(messageInfo))
+            messageUpdatesSubject.onNext(bundle)
+        }
     }
 
     private fun onRelayEvent(event: RelayClientEvent) {

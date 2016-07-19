@@ -16,10 +16,10 @@ import io.slychat.messenger.testutils.thenReturn
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
-import org.junit.Ignore
 import org.junit.Test
 import rx.subjects.PublishSubject
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class MessengerServiceImplTest {
     companion object {
@@ -27,11 +27,12 @@ class MessengerServiceImplTest {
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
 
-        val selfId = UserId(999)
+        val selfId = randomUserId()
     }
 
     val contactsService: ContactsService = mock()
     val messagePersistenceManager: MessagePersistenceManager = mock()
+    val groupPersistenceManager: GroupPersistenceManager = mock()
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val relayClientManager: RelayClientManager = mock()
     val messageSender: MessageSender = mock()
@@ -60,6 +61,7 @@ class MessengerServiceImplTest {
         return MessengerServiceImpl(
             contactsService,
             messagePersistenceManager,
+            groupPersistenceManager,
             contactsPersistenceManager,
             relayClientManager,
             messageSender,
@@ -75,6 +77,15 @@ class MessengerServiceImplTest {
             randomUserId(),
             null,
             MessageCategory.TEXT_SINGLE,
+            randomMessageId()
+        )
+    }
+
+    fun randomTextGroupMetaData(): MessageMetadata {
+        return MessageMetadata(
+            randomUserId(),
+            randomGroupId(),
+            MessageCategory.TEXT_GROUP,
             randomMessageId()
         )
     }
@@ -279,12 +290,30 @@ class MessengerServiceImplTest {
 
         assertEventEmitted(testSubscriber) {
             assertEquals(update.userId, it.userId, "Invalid user id")
+            assertNull(it.groupId, "groupId should be null")
             assertThat(it.messages)
                 .containsOnly(messageInfo)
         }
     }
 
-    @Ignore
     @Test
-    fun `it should emit a message updated event when receiving a message update for TEXT_GROUP message`() {}
+    fun `it should emit a message updated event when receiving a message update for TEXT_GROUP message`() {
+        val messageService = createService()
+
+        val update = randomTextGroupMetaData()
+        val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
+
+        whenever(groupPersistenceManager.markMessageAsDelivered(update.groupId!!, update.messageId)).thenReturn(messageInfo)
+
+        val testSubscriber = messageService.messageUpdates.testSubscriber()
+
+        messageSent.onNext(update)
+
+        assertEventEmitted(testSubscriber) {
+            assertEquals(update.userId, it.userId, "Invalid user id")
+            assertEquals(update.groupId, it.groupId, "Invalid group id")
+            assertThat(it.messages)
+                .containsOnly(messageInfo)
+        }
+    }
 }

@@ -3,10 +3,7 @@ package io.slychat.messenger.services
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
-import io.slychat.messenger.core.persistence.MessageCategory
-import io.slychat.messenger.core.persistence.MessageMetadata
-import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
-import io.slychat.messenger.core.persistence.QueuedMessage
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
@@ -31,6 +28,8 @@ fun randomUserId(): UserId {
     val l = 1 + Random().nextInt(1000-1) + 1
     return UserId(l.toLong())
 }
+
+fun randomGroupId(): GroupId = GroupId(randomUUID())
 
 fun randomMessageId(): String = randomUUID()
 

@@ -158,6 +158,7 @@ class UserModule(
     fun providesMessengerService(
         contactsService: ContactsService,
         messagePersistenceManager: MessagePersistenceManager,
+        groupPersistenceManager: GroupPersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager,
         relayClientManager: RelayClientManager,
         messageReceiver: MessageReceiver,
@@ -167,6 +168,7 @@ class UserModule(
         MessengerServiceImpl(
             contactsService,
             messagePersistenceManager,
+            groupPersistenceManager,
             contactsPersistenceManager,
             relayClientManager,
             messageSender,
