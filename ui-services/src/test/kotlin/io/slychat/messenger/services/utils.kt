@@ -1,9 +1,7 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.GroupId
-import io.slychat.messenger.core.persistence.GroupInfo
-import io.slychat.messenger.core.persistence.GroupMembershipLevel
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.testutils.testSubscriber
 import org.assertj.core.api.Assertions.assertThat
@@ -50,3 +48,13 @@ fun randomUserId(): UserId {
 fun randomGroupId(): GroupId = GroupId(randomUUID())
 
 fun randomMessageId(): String = randomUUID()
+
+fun randomTextGroupMetaData(groupId: GroupId? = null): MessageMetadata {
+    return MessageMetadata(
+        randomUserId(),
+        groupId ?: randomGroupId(),
+        MessageCategory.TEXT_GROUP,
+        randomMessageId()
+    )
+}
+

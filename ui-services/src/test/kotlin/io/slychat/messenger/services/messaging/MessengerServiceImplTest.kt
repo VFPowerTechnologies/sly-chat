@@ -90,15 +90,6 @@ class MessengerServiceImplTest {
         )
     }
 
-    fun randomTextGroupMetaData(): MessageMetadata {
-        return MessageMetadata(
-            randomUserId(),
-            randomGroupId(),
-            MessageCategory.TEXT_GROUP,
-            randomMessageId()
-        )
-    }
-
     fun wheneverAllowMessagesFrom(fn: (Set<UserId>) -> Promise<Set<UserId>, Exception>) {
         whenever(contactsService.allowMessagesFrom(anySet())).thenAnswer {
             @Suppress("UNCHECKED_CAST")
@@ -325,7 +316,7 @@ class MessengerServiceImplTest {
 
         messengerService.sendGroupMessageTo(groupId, "msg")
 
-        verify(messageSender).addToQueue(capture<Iterable<MessageEntry>> {
+        verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
             assertEquals(members, it.map { it.metadata.userId }.toSet(), "Member list is invalid")
         })
     }

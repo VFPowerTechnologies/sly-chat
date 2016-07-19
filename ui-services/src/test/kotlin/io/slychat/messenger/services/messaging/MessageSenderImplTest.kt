@@ -2,6 +2,7 @@ package io.slychat.messenger.services.messaging
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.persistence.MessageCategory
 import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
@@ -9,19 +10,16 @@ import io.slychat.messenger.core.persistence.QueuedMessage
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
-import io.slychat.messenger.services.RelayClientManager
-import io.slychat.messenger.services.assertEventEmitted
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.crypto.DeviceUpdateResult
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageData
-import io.slychat.messenger.services.randomUserId
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.TestException
 import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenReturn
 import org.junit.ClassRule
-import org.junit.Ignore
 import org.junit.Test
 import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
@@ -60,6 +58,7 @@ class MessageSenderImplTest {
     ): MessageSenderImpl {
         setRelayOnlineStatus(relayIsOnline)
 
+        whenever(messageQueuePersistenceManager.add(any<List<QueuedMessage>>())).thenReturn(Unit)
         whenever(messageQueuePersistenceManager.add(any<QueuedMessage>())).thenReturn(Unit)
         whenever(messageQueuePersistenceManager.remove(any(), any())).thenReturn(Unit)
         whenever(messageQueuePersistenceManager.getUndelivered()).thenReturn(initialQueuedMessages)
@@ -312,7 +311,7 @@ class MessageSenderImplTest {
     }
 
     @Test
-    fun `addQueue should propagate failures if writing to the send queue fails`() {
+    fun `addQueue(message) should propagate failures if writing to the send queue fails`() {
         val sender = createSender(true)
 
         val queued = randomQueuedMessage()
@@ -324,7 +323,26 @@ class MessageSenderImplTest {
         }
     }
 
-    @Ignore
     @Test
-    fun `addToQueue(list) should add all given messages to the queue`() {}
+    fun `addToQueue(messages) should add all given messages to the queue`() {
+        val sender = createSender(false)
+
+        val groupId = randomGroupId()
+
+        val messages = (0..1).map {
+            SenderMessageEntry(
+                randomTextGroupMetaData(groupId),
+                randomMessage()
+            )
+        }
+
+        val members = messages.mapToSet { it.metadata.userId }
+
+        sender.addToQueue(messages).get()
+
+        verify(messageQueuePersistenceManager).add(capture<Iterable<QueuedMessage>> {
+            val sentTo = it.mapToSet { it.metadata.userId }
+            assertEquals(members, sentTo, "Invalid users")
+        })
+    }
 }

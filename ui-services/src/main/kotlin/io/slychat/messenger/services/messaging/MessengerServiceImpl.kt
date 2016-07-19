@@ -212,7 +212,7 @@ class MessengerServiceImpl(
 
                 val messages = members.map {
                     val metadata = MessageMetadata(it, groupId, MessageCategory.TEXT_GROUP, randomUUID())
-                    MessageEntry(metadata, serialized)
+                    SenderMessageEntry(metadata, serialized)
                 }
                 messageSender.addToQueue(messages)
             }

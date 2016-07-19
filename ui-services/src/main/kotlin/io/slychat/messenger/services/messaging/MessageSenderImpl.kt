@@ -166,14 +166,24 @@ class MessageSenderImpl(
     }
 
     private fun addToQueueReal(metadata: MessageMetadata, message: ByteArray) {
+        addToQueueReal(listOf(
+            SenderMessageEntry(metadata, message)
+        ))
+    }
+
+    private fun addToQueueReal(messages: List<SenderMessageEntry>) {
         //once we're back online the queue'll get filled with all unsent messages
         if (!relayClientManager.isOnline)
             return
 
-        val queuedSendMessage = QueuedSendMessage(metadata, message, relayClientManager.connectionTag)
+        messages.forEach {
+            val queuedSendMessage = QueuedSendMessage(it.metadata, it.message, relayClientManager.connectionTag)
 
-        sendMessageQueue.add(queuedSendMessage)
+            sendMessageQueue.add(queuedSendMessage)
+        }
+
         processSendMessageQueue()
+
         return
     }
 
@@ -188,9 +198,19 @@ class MessageSenderImpl(
         }
     }
 
-    //FIXME
-    override fun addToQueue(messages: Iterable<MessageEntry>): Promise<Unit, Exception> {
-        throw NotImplementedError()
+    override fun addToQueue(messages: List<SenderMessageEntry>): Promise<Unit, Exception> {
+        val timestamp = currentTimestamp()
+        val queuedMessages = messages.map {
+            QueuedMessage(
+                it.metadata,
+                timestamp,
+                it.message
+            )
+        }
+
+        return messageQueuePersistenceManager.add(queuedMessages) mapUi {
+            addToQueueReal(messages)
+        }
     }
 
     private fun handleServerRecievedMessage(event: ServerReceivedMessage) {
