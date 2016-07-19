@@ -96,6 +96,14 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     overflow-x: auto;
     color: #38383a;
 }
+.recent-chat-name {
+    width: 70%;
+}
+.recent-chat-name span {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+}
 .recent-contact-link {
     margin: 0 15px 15px 15px;
     height: 50px;

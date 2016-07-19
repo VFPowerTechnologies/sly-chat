@@ -27,7 +27,14 @@ window.connectionController = new ConnectionController();
 var firstLoad = true;
 
 // Application initialization
-var slychat = new Framework7();
+var slychat = new Framework7({
+    cache: false,
+    swipeBackPage: false,
+    tapHold: true,
+    tapHoldDelay: 500,
+    swipePanel: 'right',
+    modalTitle: 'Sly'
+});
 
 var $$ = Dom7;
 $.fn.intlTelInput.loadUtils("js/external-lib/utils.js");
