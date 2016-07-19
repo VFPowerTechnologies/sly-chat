@@ -36,10 +36,12 @@ sealed class GroupEventMessage {
 
     /** A user has joined the group. Sent from the user sending the GroupInvitation. Must be sent from a current member of the group. */
     class Join(
+        @JsonProperty("id")
         override val id: GroupId,
+        @JsonProperty("joined")
         val joined: UserId
     ) : GroupEventMessage() {
-        override fun toString(): String{
+        override fun toString(): String {
             return "Join(id=$id, joined=$joined)"
         }
 
@@ -64,6 +66,7 @@ sealed class GroupEventMessage {
 
     /** Sender has left the group. */
     class Part(
+        @JsonProperty("id")
         override val id: GroupId
     ) : GroupEventMessage() {
         override fun toString(): String {
@@ -88,8 +91,11 @@ sealed class GroupEventMessage {
 
     /** Invitation to a new group. The sender is implicitly considered as a member and doesn't need to be included. */
     class Invitation(
+        @JsonProperty("id")
         override val id: GroupId,
+        @JsonProperty("name")
         val name: String,
+        @JsonProperty("members")
         val members: Set<UserId>
     ) : GroupEventMessage() {
         override fun toString(): String {
@@ -109,7 +115,7 @@ sealed class GroupEventMessage {
             return true
         }
 
-        override fun hashCode(): Int{
+        override fun hashCode(): Int {
             var result = id.hashCode()
             result = 31 * result + name.hashCode()
             result = 31 * result + members.hashCode()
