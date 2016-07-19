@@ -64,6 +64,8 @@ class QueuedMessage(
 }
 
 interface MessageQueuePersistenceManager {
+    fun add(queuedMessages: Iterable<QueuedMessage>): Promise<Unit, Exception>
+
     fun add(queuedMessage: QueuedMessage): Promise<Unit, Exception>
 
     fun remove(userId: UserId, messageId: String): Promise<Unit, Exception>

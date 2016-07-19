@@ -101,11 +101,6 @@ class MessageProcessorImplTest {
         assertEquals(bundle.userId, from, "Invalid user id")
     }
 
-    fun randomGroupInfo(isPending: Boolean, membershipLevel: GroupMembershipLevel): GroupInfo =
-        GroupInfo(randomGroupId(), randomGroupName(), isPending, membershipLevel)
-
-    fun randomGroupName(): String = randomUUID()
-
     fun randomTextMessage(groupId: GroupId? = null): TextMessage =
         TextMessage(currentTimestamp(), randomUUID(), groupId)
 

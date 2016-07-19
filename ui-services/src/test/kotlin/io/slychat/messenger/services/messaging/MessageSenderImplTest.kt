@@ -1,25 +1,27 @@
 package io.slychat.messenger.services.messaging
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
-import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.persistence.MessageCategory
+import io.slychat.messenger.core.persistence.MessageMetadata
+import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
+import io.slychat.messenger.core.persistence.QueuedMessage
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
-import io.slychat.messenger.services.messaging.EncryptionOk
-import io.slychat.messenger.services.messaging.MessageSenderImpl
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.crypto.DeviceUpdateResult
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageData
+import io.slychat.messenger.services.randomUserId
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.TestException
 import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenReturn
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Test
 import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
@@ -27,15 +29,6 @@ import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-
-fun randomUserId(): UserId {
-    val l = 1 + Random().nextInt(1000-1) + 1
-    return UserId(l.toLong())
-}
-
-fun randomGroupId(): GroupId = GroupId(randomUUID())
-
-fun randomMessageId(): String = randomUUID()
 
 class MessageSenderImplTest {
     companion object {
@@ -67,7 +60,7 @@ class MessageSenderImplTest {
     ): MessageSenderImpl {
         setRelayOnlineStatus(relayIsOnline)
 
-        whenever(messageQueuePersistenceManager.add(any())).thenReturn(Unit)
+        whenever(messageQueuePersistenceManager.add(any<QueuedMessage>())).thenReturn(Unit)
         whenever(messageQueuePersistenceManager.remove(any(), any())).thenReturn(Unit)
         whenever(messageQueuePersistenceManager.getUndelivered()).thenReturn(initialQueuedMessages)
 
@@ -136,7 +129,7 @@ class MessageSenderImplTest {
 
         sender.addToQueue(queued.metadata, queued.serialized).get()
 
-        verify(messageQueuePersistenceManager).add(capture {
+        verify(messageQueuePersistenceManager).add(capture<QueuedMessage> {
             assertEquals(queued.metadata.messageId, it.metadata.messageId, "Invalid message id")
             assertEquals(queued.metadata.userId, it.metadata.userId, "Invalid recipient")
         })
@@ -172,7 +165,7 @@ class MessageSenderImplTest {
         val second = randomQueuedMessage()
         sender.addToQueue(second.metadata, second.serialized).get()
 
-        verify(messageQueuePersistenceManager).add(capture {
+        verify(messageQueuePersistenceManager).add(capture<QueuedMessage> {
             assertEquals(second.metadata.messageId, it.metadata.messageId, "Invalid message id")
         })
 
@@ -324,10 +317,14 @@ class MessageSenderImplTest {
 
         val queued = randomQueuedMessage()
 
-        whenever(messageQueuePersistenceManager.add(any())).thenReturn(TestException())
+        whenever(messageQueuePersistenceManager.add(any<QueuedMessage>())).thenReturn(TestException())
 
         assertFailsWith(TestException::class) {
             sender.addToQueue(queued.metadata, queued.serialized).get()
         }
     }
+
+    @Ignore
+    @Test
+    fun `addToQueue(list) should add all given messages to the queue`() {}
 }

@@ -4,6 +4,8 @@ import io.slychat.messenger.core.persistence.MessageMetadata
 import nl.komponents.kovenant.Promise
 import rx.Observable
 
+class MessageEntry(val metadata: MessageMetadata, val message: ByteArray)
+
 /**
  * Handles queuing of messages to send to relay.
  *
@@ -13,6 +15,8 @@ interface MessageSender {
     val messageSent: Observable<MessageMetadata>
 
     fun addToQueue(metadata: MessageMetadata, message: ByteArray): Promise<Unit, Exception>
+
+    fun addToQueue(messages: Iterable<MessageEntry>): Promise<Unit, Exception>
 
     fun init()
 

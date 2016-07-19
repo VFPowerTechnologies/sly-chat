@@ -5,9 +5,10 @@ import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
 import io.slychat.messenger.core.persistence.QueuedMessage
 import io.slychat.messenger.core.relay.*
-import io.slychat.messenger.services.*
+import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.crypto.DeviceUpdateResult
 import io.slychat.messenger.services.crypto.MessageCipherService
+import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -185,6 +186,11 @@ class MessageSenderImpl(
         return messageQueuePersistenceManager.add(queuedMessage) mapUi {
             addToQueueReal(metadata, message)
         }
+    }
+
+    //FIXME
+    override fun addToQueue(messages: Iterable<MessageEntry>): Promise<Unit, Exception> {
+        throw NotImplementedError()
     }
 
     private fun handleServerRecievedMessage(event: ServerReceivedMessage) {

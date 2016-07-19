@@ -11,6 +11,10 @@ class MessageQueuePersistenceManagerImpl(
         throw NotImplementedError()
     }
 
+    override fun add(queuedMessages: Iterable<QueuedMessage>): Promise<Unit, Exception> {
+        throw NotImplementedError()
+    }
+
     override fun remove(userId: UserId, messageId: String): Promise<Unit, Exception> {
         throw NotImplementedError()
     }

@@ -10,7 +10,6 @@ import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.services.messaging.MessengerService
-import io.slychat.messenger.services.messaging.randomUserId
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.TestException
 import io.slychat.messenger.testutils.thenReturn

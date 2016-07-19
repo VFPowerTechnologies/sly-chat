@@ -8,6 +8,7 @@ import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.services.RelayClientManager
+import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.contacts.ContactEvent
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.mapUi
@@ -198,6 +199,29 @@ class MessengerServiceImpl(
                 messageInfo
             } successUi { messageInfo ->
                 writeReceivedSelfMessage(userId, messageInfo.message)
+            }
+        }
+    }
+
+    override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<MessageInfo, Exception> {
+        return groupPersistenceManager.getGroupMembers(groupId) bindUi { members ->
+            val p = if (members.isNotEmpty()) {
+                val m = TextMessage(currentTimestamp(), message, groupId)
+
+                val serialized = objectMapper.writeValueAsBytes(TextMessageWrapper(m))
+
+                val messages = members.map {
+                    val metadata = MessageMetadata(it, groupId, MessageCategory.TEXT_GROUP, randomUUID())
+                    MessageEntry(metadata, serialized)
+                }
+                messageSender.addToQueue(messages)
+            }
+            else
+                Promise.ofSuccess(Unit)
+
+            p bind {
+                val messageInfo = MessageInfo.newSent(message, 0)
+                groupPersistenceManager.addMessage(groupId, null, messageInfo)
             }
         }
     }

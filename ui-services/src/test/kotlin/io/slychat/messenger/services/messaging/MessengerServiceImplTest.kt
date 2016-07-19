@@ -54,6 +54,7 @@ class MessengerServiceImplTest {
 
         whenever(relayClientManager.events).thenReturn(relayEvents)
 
+        whenever(messageSender.addToQueue(any())).thenReturn(Unit)
         whenever(messageSender.addToQueue(any(), any())).thenReturn(Unit)
 
         //some useful defaults
@@ -273,14 +274,14 @@ class MessengerServiceImplTest {
     //also doubles as checking for mark as delivered
     @Test
     fun `it should emit a message updated event when receiving a message update for TEXT_SINGLE message`() {
-        val messageService = createService()
+        val messengerService = createService()
 
         val update = randomTextSingleMetadata()
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
 
         whenever(messagePersistenceManager.markMessageAsDelivered(update.userId, update.messageId)).thenReturn(messageInfo)
 
-        val testSubscriber = messageService.messageUpdates.testSubscriber()
+        val testSubscriber = messengerService.messageUpdates.testSubscriber()
 
         messageSent.onNext(update)
 
@@ -294,14 +295,14 @@ class MessengerServiceImplTest {
 
     @Test
     fun `it should emit a message updated event when receiving a message update for TEXT_GROUP message`() {
-        val messageService = createService()
+        val messengerService = createService()
 
         val update = randomTextGroupMetaData()
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
 
         whenever(groupPersistenceManager.markMessageAsDelivered(update.groupId!!, update.messageId)).thenReturn(messageInfo)
 
-        val testSubscriber = messageService.messageUpdates.testSubscriber()
+        val testSubscriber = messengerService.messageUpdates.testSubscriber()
 
         messageSent.onNext(update)
 
@@ -311,5 +312,57 @@ class MessengerServiceImplTest {
             assertThat(it.messages)
                 .containsOnly(messageInfo)
         }
+    }
+
+    @Test
+    fun `it should send the proper number of group messages when creating a group text message`() {
+        val groupId = randomGroupId()
+        val members = randomGroupMembers()
+
+        val messengerService = createService()
+
+        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(members)
+
+        messengerService.sendGroupMessageTo(groupId, "msg")
+
+        verify(messageSender).addToQueue(capture<Iterable<MessageEntry>> {
+            assertEquals(members, it.map { it.metadata.userId }.toSet(), "Member list is invalid")
+        })
+    }
+
+    @Test
+    fun `it should add to the message log but send nothing for groups with no more members`() {
+        val groupId = randomGroupId()
+
+        val messengerService = createService()
+
+        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(emptySet())
+
+        val message = "msg"
+        messengerService.sendGroupMessageTo(groupId, message)
+
+        verify(groupPersistenceManager).addMessage(eq(groupId), isNull(), capture {
+            assertEquals(message, it.message, "Message is invalid")
+        })
+
+        verify(messageSender, never()).addToQueue(any())
+    }
+
+    @Test
+    fun `it should store only one message to the log when creating a group text message`() {
+        val groupId = randomGroupId()
+        val members = randomGroupMembers()
+
+        val messengerService = createService()
+
+        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(members)
+
+        val message = "msg"
+
+        messengerService.sendGroupMessageTo(groupId, message)
+
+        verify(groupPersistenceManager).addMessage(eq(groupId), isNull(), capture {
+            assertEquals(message, it.message, "Text message doesn't match")
+        })
     }
 }
