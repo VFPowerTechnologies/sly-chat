@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.MessagePersistenceManager
 import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.persistence.PackageId
 import io.slychat.messenger.core.persistence.PackageQueuePersistenceManager
@@ -24,7 +23,6 @@ import java.util.*
 class MessageReceiverImpl(
     scheduler: Scheduler,
     private val messageProcessorService: MessageProcessorService,
-    private val messagePersistenceManager: MessagePersistenceManager,
     private val packageQueuePersistenceManager: PackageQueuePersistenceManager,
     private val messageCipherService: MessageCipherService
 ) : MessageReceiver {

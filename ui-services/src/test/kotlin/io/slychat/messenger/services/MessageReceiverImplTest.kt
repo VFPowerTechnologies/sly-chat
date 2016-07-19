@@ -40,7 +40,6 @@ class MessageReceiverImplTest {
 
     val messageProcessorService: MessageProcessorService = mock()
     val packageQueuePersistenceManager: PackageQueuePersistenceManager = mock()
-    val messagePersistenceManager: MessagePersistenceManager = mock()
     val messageCipherService: MessageCipherService = mock()
 
     val decryptionResults: PublishSubject<DecryptionResult> = PublishSubject.create()
@@ -111,7 +110,6 @@ class MessageReceiverImplTest {
         return MessageReceiverImpl(
             scheduler,
             messageProcessorService,
-            messagePersistenceManager,
             packageQueuePersistenceManager,
             messageCipherService
         )

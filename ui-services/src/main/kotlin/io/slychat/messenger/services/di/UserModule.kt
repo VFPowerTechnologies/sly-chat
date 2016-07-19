@@ -132,7 +132,6 @@ class UserModule(
     ): MessageReceiver = MessageReceiverImpl(
         scheduler,
         messageProcessorService,
-        messagePersistenceManager,
         packageQueuePersistenceManager,
         messageCipherService
     )
@@ -143,7 +142,6 @@ class UserModule(
         scheduler: Scheduler,
         relayClientManager: RelayClientManager,
         messageCipherService: MessageCipherService,
-        messagePersistenceManager: MessagePersistenceManager,
         messageQueuePersistenceManager: MessageQueuePersistenceManager
     ): MessageSender =
         MessageSenderImpl(
