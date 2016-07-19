@@ -99,7 +99,7 @@ interface GroupPersistenceManager {
     fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception>
 
     /** Clears a group log. */
-    fun deleteAllMessages(userId: UserId): Promise<Unit, Exception>
+    fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception>
 
     /** Marks the given group message as delivered. */
     fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<MessageInfo, Exception>

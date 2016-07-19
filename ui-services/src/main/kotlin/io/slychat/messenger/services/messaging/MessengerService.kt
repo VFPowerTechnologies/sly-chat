@@ -25,4 +25,6 @@ interface MessengerService {
     fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>
     fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception>
     fun deleteAllMessages(userId: UserId): Promise<Unit, Exception>
+    fun deleteGroupMessages(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception>
+    fun deleteAllGroupMessages(groupId: GroupId): Promise<Unit, Exception>
 }

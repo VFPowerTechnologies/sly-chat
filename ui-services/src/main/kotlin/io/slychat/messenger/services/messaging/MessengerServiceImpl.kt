@@ -246,6 +246,14 @@ class MessengerServiceImpl(
         return messagePersistenceManager.deleteAllMessages(userId)
     }
 
+    override fun deleteGroupMessages(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception> {
+        return groupPersistenceManager.deleteMessages(groupId, messageIds)
+    }
+
+    override fun deleteAllGroupMessages(groupId: GroupId): Promise<Unit, Exception> {
+        return groupPersistenceManager.deleteAllMessages(groupId)
+    }
+
     /* Other */
 
     override fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception> {

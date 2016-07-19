@@ -67,7 +67,7 @@ class SQLiteGroupPersistenceManager(
         throw NotImplementedError()
     }
 
-    override fun deleteAllMessages(userId: UserId): Promise<Unit, Exception> {
+    override fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception> {
         throw NotImplementedError()
     }
 
