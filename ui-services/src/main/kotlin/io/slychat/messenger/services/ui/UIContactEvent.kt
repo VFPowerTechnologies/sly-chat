@@ -23,10 +23,6 @@ interface UIContactEvent {
         override val type: UIContactEventType = UIContactEventType.UPDATE
     }
 
-    class Request(val contacts: List<UIContactDetails>) : UIContactEvent {
-        override val type = UIContactEventType.REQUEST
-    }
-
     class Sync(val isRunning: Boolean) : UIContactEvent {
         override val type = UIContactEventType.SYNC
     }

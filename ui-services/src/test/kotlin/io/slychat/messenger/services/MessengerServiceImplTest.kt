@@ -55,6 +55,11 @@ class MessengerServiceImplTest {
 
         //some useful defaults
         whenever(messagePersistenceManager.getUndeliveredMessages()).thenReturn(emptyMap())
+        whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswer {
+            val a = it.arguments[1] as MessageInfo
+            Promise.ofSuccess<MessageInfo, Exception>(a)
+        }
+
         whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
         whenever(messageReceiver.processPackages(any())).thenReturn(Unit)
 
@@ -126,12 +131,7 @@ class MessengerServiceImplTest {
 
     fun newMessagePayload(message: String): String {
         val objectMapper = ObjectMapper()
-        //FIXME
         return objectMapper.writeValueAsString(EncryptedPackagePayloadV0(false, message.toByteArray()))
-    }
-
-    fun setRelayOnlineStatus(isOnline: Boolean) {
-        whenever(relayClientManager.isOnline).thenReturn(isOnline)
     }
 
     @Test
@@ -229,13 +229,6 @@ class MessengerServiceImplTest {
         relayEvents.onNext(ev)
 
         verify(relayClientManager).sendMessageReceivedAck(messageId)
-    }
-
-    fun handleAddMessage(to: UserId) {
-        whenever(messagePersistenceManager.addMessage(eq(to), any())).thenAnswer {
-            val a = it.arguments[1] as MessageInfo
-            Promise.ofSuccess<MessageInfo, Exception>(a)
-        }
     }
 
     @Test

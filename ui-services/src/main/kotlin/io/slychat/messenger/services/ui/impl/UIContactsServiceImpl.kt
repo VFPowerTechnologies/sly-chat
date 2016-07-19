@@ -48,9 +48,6 @@ class UIContactsServiceImpl(
             is ContactEvent.Updated ->
                 UIContactEvent.Updated(event.contacts.toUI())
 
-            is ContactEvent.Request ->
-                UIContactEvent.Request(event.contacts.toUI())
-
             is ContactEvent.Sync -> {
                 isContactSyncActive = event.isRunning
                 UIContactEvent.Sync(event.isRunning)

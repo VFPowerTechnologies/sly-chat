@@ -17,9 +17,14 @@ import rx.subjects.PublishSubject
 import rx.subscriptions.CompositeSubscription
 import java.util.*
 
-//TODO need to call messagePersistenceManager.markMessageAsDelivered
-//this actually returns messageinfo for us, so maybe change it to return null if not found? that way we can just run
-//it for every message, and just ignore the value if it's not a text message
+/**
+ * Handles:
+ *
+ * Preprocessing received packages by filtering out blocked users for MessageReceiver.
+ *
+ * Creating and serializing the proper SlyMessage objects for MessageSender.
+ * Marking sent messages as delivered.
+ */
 class MessengerServiceImpl(
     private val contactsService: ContactsService,
     private val messagePersistenceManager: MessagePersistenceManager,
