@@ -23,7 +23,7 @@ class SQLiteGroupPersistenceManager(
         throw NotImplementedError()
     }
 
-    override fun addMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> {
+    override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception> {
         throw NotImplementedError()
     }
 

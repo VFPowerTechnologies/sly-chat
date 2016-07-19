@@ -3,8 +3,8 @@ package io.slychat.messenger.services.messaging
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.ContactsService
+import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import org.slf4j.LoggerFactory
@@ -97,12 +97,15 @@ class MessageProcessorImpl(
     }
 
     private fun handleGroupJoin(m: GroupEventMessage.Join): Promise<Unit, Exception> {
-        return contactsService.addMissingContacts(setOf(m.joined)) bind { invalidIds ->
-            if (m.joined !in invalidIds) {
-                groupPersistenceManager.addMember(m.id, m.joined) mapUi { wasAdded ->
-                    if (wasAdded) {
-                        log.info("User {} joined group {}", m.joined, m.id.string)
-                        groupEventSubject.onNext(GroupEvent.Joined(m.id, m.joined))
+        return contactsService.addMissingContacts(m.joined) bind { invalidIds ->
+            val remaining = HashSet(m.joined)
+            remaining.removeAll(invalidIds)
+
+            if (remaining.isNotEmpty()) {
+                groupPersistenceManager.addMembers(m.id, remaining) mapUi { wasAdded ->
+                    if (wasAdded.isNotEmpty()) {
+                        log.info("Users {} joined group {}", wasAdded, m.id.string)
+                        groupEventSubject.onNext(GroupEvent.Joined(m.id, wasAdded))
                     }
 
                     Unit

@@ -7,10 +7,7 @@ import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.ContactsService
-import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.testSubscriber
-import io.slychat.messenger.testutils.thenReturn
-import io.slychat.messenger.testutils.thenReturnNull
+import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
@@ -48,7 +45,7 @@ class MessageProcessorImplTest {
 
         whenever(groupPersistenceManager.joinGroup(any(), any())).thenReturn(Unit)
         whenever(groupPersistenceManager.getGroupInfo(any())).thenReturnNull()
-        whenever(groupPersistenceManager.addMember(any(), any())).thenReturn(true)
+        whenever(groupPersistenceManager.addMembers(any(), any())).thenAnswerWithArg(1)
         whenever(groupPersistenceManager.removeMember(any(), any())).thenReturn(true)
         whenever(groupPersistenceManager.isUserMemberOf(any(), any())).thenReturn(true)
 
@@ -264,7 +261,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(groupPersistenceManager, never()).addMember(any(), any())
+        verify(groupPersistenceManager, never()).addMembers(any(), any())
     }
 
     @Test
@@ -299,7 +296,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(groupPersistenceManager).addMember(groupInfo.id, newMember)
+        verify(groupPersistenceManager).addMembers(groupInfo.id, setOf(newMember))
     }
 
     @Test
@@ -352,7 +349,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(groupPersistenceManager, never()).addMember(any(), any())
+        verify(groupPersistenceManager, never()).addMembers(any(), any())
     }
 
     @Test
@@ -389,7 +386,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(groupPersistenceManager, never()).addMember(any(), any())
+        verify(groupPersistenceManager, never()).addMembers(any(), any())
     }
 
     @Test
@@ -420,7 +417,7 @@ class MessageProcessorImplTest {
 
         returnGroupInfo(groupInfo)
 
-        whenever(groupPersistenceManager.addMember(groupInfo.id, newMember)).thenReturn(true)
+        whenever(groupPersistenceManager.addMembers(groupInfo.id, setOf(newMember))).thenAnswerWithArg(1)
         whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
 
         processor.processMessage(sender, wrap(m)).get()
@@ -444,7 +441,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(groupPersistenceManager, never()).addMember(any(), any())
+        verify(groupPersistenceManager, never()).addMembers(any(), any())
     }
 
     fun testJoinEvent(shouldEventBeEmitted: Boolean) {
@@ -460,14 +457,18 @@ class MessageProcessorImplTest {
 
         val testSubscriber = groupEventCollectorFor<GroupEvent.Joined>(processor)
 
-        whenever(groupPersistenceManager.addMember(groupInfo.id, newMember)).thenReturn(shouldEventBeEmitted)
+        val ongoing = whenever(groupPersistenceManager.addMembers(groupInfo.id, setOf(newMember)))
+        if (shouldEventBeEmitted)
+            ongoing.thenAnswerWithArg(1)
+        else
+            ongoing.thenReturn(emptySet())
 
         processor.processMessage(sender, wrap(m)).get()
 
         if (shouldEventBeEmitted) {
             assertEventEmitted(testSubscriber) { event ->
                 assertEquals(groupInfo.id, event.id, "Invalid group id")
-                assertEquals(newMember, event.userId, "Invalid new member id")
+                assertEquals(setOf(newMember), event.users, "Invalid new member id")
             }
         }
         else

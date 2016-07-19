@@ -233,7 +233,12 @@ class MessengerServiceImpl(
         TODO()
     }
 
+    //1) get members
+    //2) send members Group.NewUser
+    //3) send new user Group.Invitation
+    //4) add new user to membership list
     override fun inviteUsersToGroup(groupId: GroupId, newMembers: Set<UserId>): Promise<Unit, Exception> {
+        //val m = GroupEventMessageWrapper(GroupEventMessage.Join())
         TODO()
     }
 

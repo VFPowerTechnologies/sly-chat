@@ -61,8 +61,8 @@ interface GroupPersistenceManager {
     /** Returns all group conversations. */
     fun getAllGroupConversationInfo(): Promise<List<GroupConversationInfo>, Exception>
 
-    /** Add a member to the given group. The group entry must already exist. If the user is already a member, does nothing and returns false. */
-    fun addMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception>
+    /** Add new members to the given group. The group entry must already exist. Returns the new set of members. */
+    fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception>
 
     /** Remove a member from a group member list. If the user is not a member, does nothing and returns false. */
     fun removeMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception>

@@ -68,6 +68,12 @@ fun <T> OngoingStubbing<Promise<T, Exception>>.thenAnswerFailure(body: (Invocati
     }
 }
 
+inline fun <reified T> OngoingStubbing<Promise<T, Exception>>.thenAnswerWithArg(n: Int) {
+    this.thenAnswerSuccess {
+        it.arguments[n] as T
+    }
+}
+
 fun <T> cond(description: String, predicate: (T) -> Boolean): Condition<T> = object : Condition<T>(description) {
     override fun matches(value: T): Boolean = predicate(value)
 }

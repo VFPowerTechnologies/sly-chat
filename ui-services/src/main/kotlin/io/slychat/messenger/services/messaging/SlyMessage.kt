@@ -39,8 +39,10 @@ sealed class GroupEventMessage {
         @JsonProperty("id")
         override val id: GroupId,
         @JsonProperty("joined")
-        val joined: UserId
+        val joined: Set<UserId>
     ) : GroupEventMessage() {
+        constructor(id: GroupId, joined: UserId) : this(id, setOf(joined))
+
         override fun toString(): String {
             return "Join(id=$id, joined=$joined)"
         }
