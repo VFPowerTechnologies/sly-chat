@@ -19,7 +19,7 @@ interface ContactsService {
     fun updateContact(contactInfo: ContactInfo): Promise<Unit, Exception>
     fun allowMessagesFrom(users: Set<UserId>): Promise<Set<UserId>, Exception>
 
-    /** Adds contact data for any missing user in the set. */
+    /** Adds contact data for any missing user in the set. Should do nothing for the empty set. */
     fun addMissingContacts(users: Set<UserId>): Promise<Set<UserId>, Exception>
 
     fun doRemoteSync()

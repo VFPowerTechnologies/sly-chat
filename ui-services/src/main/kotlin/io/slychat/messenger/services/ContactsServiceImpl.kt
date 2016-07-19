@@ -166,6 +166,9 @@ class ContactsServiceImpl(
     }
 
     override fun addMissingContacts(users: Set<UserId>): Promise<Set<UserId>, Exception> {
+        if (users.isEmpty())
+            return Promise.ofSuccess(emptySet())
+
         //defensive copy
         val missing = HashSet(users)
 

@@ -86,7 +86,7 @@ sealed class GroupEventMessage {
         }
     }
 
-    /** Invitation to a new group. */
+    /** Invitation to a new group. The sender is implicitly considered as a member and doesn't need to be included. */
     class Invitation(
         override val id: GroupId,
         val name: String,

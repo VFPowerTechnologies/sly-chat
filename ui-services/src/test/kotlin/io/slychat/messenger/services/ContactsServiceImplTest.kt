@@ -1,8 +1,6 @@
 package io.slychat.messenger.services
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.whenever
+import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
 import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
@@ -222,6 +220,15 @@ class ContactsServiceImplTest {
         whenever(contactClient.fetchContactInfoById(any(), any())).thenReturn(response)
 
         return contactsService.addMissingContacts(ids).get()
+    }
+
+    @Test
+    fun `addMissingContacts should do nothing when receiving an empty set`() {
+        val contactsService = createService()
+
+        contactsService.addMissingContacts(emptySet()).get()
+
+        verify(contactsPersistenceManager, never()).add(any<Collection<ContactInfo>>())
     }
 
     @Test

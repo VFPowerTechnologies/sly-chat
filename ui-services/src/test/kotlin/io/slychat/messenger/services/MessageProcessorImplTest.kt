@@ -128,9 +128,12 @@ class MessageProcessorImplTest {
 
     @Test
     fun `it should add group info and fetch member contact info when receiving a new group invitation for an unknown group`() {
-        val owner = randomUserId()
+        val sender = randomUserId()
 
         val m = generateInvite()
+
+        val fullMembers = HashSet(m.members)
+        fullMembers.add(sender)
 
         val processor = createProcessor()
 
@@ -138,18 +141,18 @@ class MessageProcessorImplTest {
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturnNull()
 
-        processor.processMessage(owner, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         val info = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
 
         verify(contactsService).addMissingContacts(m.members)
 
-        verify(groupPersistenceManager).joinGroup(info, m.members)
+        verify(groupPersistenceManager).joinGroup(info, fullMembers)
     }
 
     @Test
     fun `it should ignore duplicate invitations`() {
-        val owner = randomUserId()
+        val sender = randomUserId()
 
         val m = generateInvite()
 
@@ -159,14 +162,14 @@ class MessageProcessorImplTest {
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
-        processor.processMessage(owner, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager, never()).joinGroup(any(), any())
     }
 
     @Test
     fun `it should filter out invalid user ids in group invitations`() {
-        val owner = randomUserId()
+        val sender = randomUserId()
 
         val m = generateInvite()
 
@@ -176,24 +179,40 @@ class MessageProcessorImplTest {
 
         val invalidUser = m.members.first()
         val remaining = HashSet(m.members)
+        remaining.add(sender)
         remaining.remove(invalidUser)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturnNull()
 
         whenever(contactsService.addMissingContacts(anySet())).thenReturn(setOf(invalidUser))
 
-        process.processMessage(owner, wrap(m)).get()
+        process.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager).joinGroup(groupInfo, remaining)
     }
 
-    //XXX should we just auto-add the sender to the membership list? seems like it's better than sending the member list including yourself all the time?
     @Test
-    fun `it should not join groups if no members are present`() {}
+    fun `it should handle an empty members list invitation`() {
+        val sender = randomUserId()
+
+        val m = GroupEventMessage.Invitation(randomGroupId(), randomGroupName(), emptySet())
+
+        val process = createProcessor()
+
+        val groupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
+
+        whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturnNull()
+
+        process.processMessage(sender, wrap(m)).get()
+
+        verify(contactsService).addMissingContacts(emptySet())
+
+        verify(groupPersistenceManager).joinGroup(groupInfo, setOf(sender))
+    }
 
     @Test
     fun `it should ignore invitations for parted groups which have been blocked`() {
-        val owner = randomUserId()
+        val sender = randomUserId()
 
         val m = generateInvite()
 
@@ -205,16 +224,19 @@ class MessageProcessorImplTest {
 
         whenever(contactsService.addMissingContacts(anySet())).thenReturn(emptySet())
 
-        processor.processMessage(owner, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager, never()).joinGroup(any(), any())
     }
 
     @Test
     fun `it should not ignore invitations for parted groups which have not been blocked`() {
-        val owner = randomUserId()
+        val sender = randomUserId()
 
         val m = generateInvite()
+
+        val fullMembers = HashSet(m.members)
+        fullMembers.add(sender)
 
         val processor = createProcessor()
 
@@ -222,13 +244,11 @@ class MessageProcessorImplTest {
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
-        whenever(contactsService.addMissingContacts(anySet())).thenReturn(emptySet())
-
-        processor.processMessage(owner, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         val newGroupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
 
-        verify(groupPersistenceManager).joinGroup(newGroupInfo, m.members)
+        verify(groupPersistenceManager).joinGroup(newGroupInfo, fullMembers)
 
         verify(contactsService).addMissingContacts(m.members)
     }

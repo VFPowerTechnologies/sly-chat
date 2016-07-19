@@ -65,7 +65,7 @@ class MessageProcessorImpl(
     private fun handleGroupMessage(sender: UserId, m: GroupEventMessage): Promise<Unit, Exception> {
         return groupPersistenceManager.getGroupInfo(m.id) bind { groupInfo ->
             when (m) {
-                is GroupEventMessage.Invitation -> handleGroupInvitation(groupInfo, m)
+                is GroupEventMessage.Invitation -> handleGroupInvitation(sender, groupInfo, m)
                 is GroupEventMessage.Join -> runIfJoinedAndUserIsMember(groupInfo, sender) { handleGroupJoin(m)  }
                 is GroupEventMessage.Part -> runIfJoinedAndUserIsMember(groupInfo, sender) { handleGroupPart(m.id, sender) }
                 else -> throw IllegalArgumentException("Invalid GroupEvent: ${m.javaClass.name}")
@@ -122,12 +122,12 @@ class MessageProcessorImpl(
         }
     }
 
-    private fun handleGroupInvitation(groupInfo: GroupInfo?, m: GroupEventMessage.Invitation): Promise<Unit, Exception> {
+    private fun handleGroupInvitation(sender: UserId, groupInfo: GroupInfo?, m: GroupEventMessage.Invitation): Promise<Unit, Exception> {
         val members = HashSet(m.members)
-
-        //XXX should we bother checking if the sender is a member of the group as well? seems pointless
+        members.add(sender)
 
         return if (groupInfo == null || groupInfo.membershipLevel == GroupMembershipLevel.PARTED) {
+            //we already have the sender added, so we don't need to include them
             contactsService.addMissingContacts(m.members) bind { invalidIds ->
                 members.removeAll(invalidIds)
                 val info = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
