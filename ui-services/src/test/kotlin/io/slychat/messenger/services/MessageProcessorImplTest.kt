@@ -36,6 +36,8 @@ class MessageProcessorImplTest {
             Promise.ofSuccess<MessageInfo, Exception>(a)
         }
 
+        whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
+
         whenever(groupPersistenceManager.addMessage(any(), any(), any())).thenAnswer {
             @Suppress("UNCHECKED_CAST")
             val a = it.arguments[2] as MessageInfo
@@ -387,6 +389,45 @@ class MessageProcessorImplTest {
         processor.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager, never()).removeMember(any(), any())
+    }
+
+    @Test
+    fun `it should fetch remote contact info when receiving a group join`() {
+        val sender = UserId(1)
+        val newMember = UserId(2)
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+
+        val m = GroupEventMessage.Join(groupInfo.id, newMember)
+
+        val processor = createProcessor()
+
+        returnGroupInfo(groupInfo)
+
+        whenever(groupPersistenceManager.addMember(groupInfo.id, newMember)).thenReturn(true)
+        whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
+
+        processor.processMessage(sender, wrap(m)).get()
+
+        verify(contactsService).addMissingContacts(setOf(newMember))
+    }
+
+    @Test
+    fun `it should not add a member if the user id is invalid when receiving a group join`() {
+        val sender = UserId(1)
+        val newMember = UserId(2)
+        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+
+        val m = GroupEventMessage.Join(groupInfo.id, newMember)
+
+        val processor = createProcessor()
+
+        returnGroupInfo(groupInfo)
+
+        whenever(contactsService.addMissingContacts(any())).thenReturn(setOf(newMember))
+
+        processor.processMessage(sender, wrap(m)).get()
+
+        verify(groupPersistenceManager, never()).addMember(any(), any())
     }
 
     fun testJoinEvent(shouldEventBeEmitted: Boolean) {

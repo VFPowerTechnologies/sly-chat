@@ -95,13 +95,21 @@ class MessageProcessorImpl(
     }
 
     private fun handleGroupJoin(m: GroupEventMessage.Join): Promise<Unit, Exception> {
-        return groupPersistenceManager.addMember(m.id, m.joined) mapUi { wasAdded ->
-            if (wasAdded) {
-                log.info("User {} joined group {}", m.joined, m.id.string)
-                groupEventSubject.onNext(GroupEvent.Joined(m.id, m.joined))
-            }
+        return contactsService.addMissingContacts(setOf(m.joined)) bind { invalidIds ->
+            if (m.joined !in invalidIds) {
+                groupPersistenceManager.addMember(m.id, m.joined) mapUi { wasAdded ->
+                    if (wasAdded) {
+                        log.info("User {} joined group {}", m.joined, m.id.string)
+                        groupEventSubject.onNext(GroupEvent.Joined(m.id, m.joined))
+                    }
 
-            Unit
+                    Unit
+                }
+            }
+            else {
+                log.warn("Received a join for group {} but joining user id {} is invalid")
+                Promise.ofSuccess(Unit)
+            }
         }
     }
 
