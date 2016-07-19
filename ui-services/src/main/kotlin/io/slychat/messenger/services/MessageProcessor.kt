@@ -5,7 +5,7 @@ import nl.komponents.kovenant.Promise
 import rx.Observable
 
 /** Handles incoming messages. */
-interface MessageProcessorService {
+interface MessageProcessor {
     val newMessages: Observable<MessageBundle>
     val groupEvents: Observable<GroupEvent>
 

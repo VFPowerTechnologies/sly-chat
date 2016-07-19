@@ -38,7 +38,7 @@ class MessageReceiverImplTest {
 
     class TestException : Exception("Test exc")
 
-    val messageProcessorService: MessageProcessorService = mock()
+    val messageProcessor: MessageProcessor = mock()
     val packageQueuePersistenceManager: PackageQueuePersistenceManager = mock()
     val messageCipherService: MessageCipherService = mock()
 
@@ -104,12 +104,12 @@ class MessageReceiverImplTest {
         whenever(packageQueuePersistenceManager.removeFromQueue(any<Collection<PackageId>>())).thenReturn(Unit)
         whenever(packageQueuePersistenceManager.removeFromQueue(any<UserId>(), any())).thenReturn(Unit)
         whenever(packageQueuePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(Unit)
-        whenever(messageProcessorService.processMessage(any(), any())).thenReturn(Unit)
+        whenever(messageProcessor.processMessage(any(), any())).thenReturn(Unit)
 
 
         return MessageReceiverImpl(
             scheduler,
-            messageProcessorService,
+            messageProcessor,
             packageQueuePersistenceManager,
             messageCipherService
         )
@@ -193,7 +193,7 @@ class MessageReceiverImplTest {
         decryptionResults.onNext(DecryptionResult(from, result))
 
         val captor = argumentCaptor<SlyMessageWrapper>()
-        verify(messageProcessorService).processMessage(eq(from), capture(captor))
+        verify(messageProcessor).processMessage(eq(from), capture(captor))
 
         assertEquals(SlyMessageWrapper(pkg.id.messageId, wrapped), captor.value, "Deserialized message doesn't match")
     }
@@ -282,7 +282,7 @@ class MessageReceiverImplTest {
     @Test
     fun `it should proxy new messages from MessageProcessor`() {
         val subject = PublishSubject.create<MessageBundle>()
-        whenever(messageProcessorService.newMessages).thenReturn(subject)
+        whenever(messageProcessor.newMessages).thenReturn(subject)
 
         val receiver = createReceiver()
 

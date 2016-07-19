@@ -22,7 +22,7 @@ import java.util.*
 
 class MessageReceiverImpl(
     scheduler: Scheduler,
-    private val messageProcessorService: MessageProcessorService,
+    private val messageProcessor: MessageProcessor,
     private val packageQueuePersistenceManager: PackageQueuePersistenceManager,
     private val messageCipherService: MessageCipherService
 ) : MessageReceiver {
@@ -36,7 +36,7 @@ class MessageReceiverImpl(
     private val subscriptions = CompositeSubscription()
 
     override val newMessages: Observable<MessageBundle>
-        get() = messageProcessorService.newMessages
+        get() = messageProcessor.newMessages
 
     init {
         subscriptions.add(messageCipherService.decryptedMessages.observeOn(scheduler).subscribe {
@@ -82,7 +82,7 @@ class MessageReceiverImpl(
             return
         }
         else {
-            messageProcessorService.processMessage(userId, m) bind {
+            messageProcessor.processMessage(userId, m) bind {
                 packageQueuePersistenceManager.removeFromQueue(userId, listOf(result.messageId)) successUi {
                     nextReceiveMessage()
                 }

@@ -10,11 +10,11 @@ import rx.Observable
 import rx.subjects.PublishSubject
 import java.util.*
 
-class MessageProcessorServiceImpl(
+class MessageProcessorImpl(
     private val contactsService: ContactsService,
     private val messagePersistenceManager: MessagePersistenceManager,
     private val groupPersistenceManager: GroupPersistenceManager
-) : MessageProcessorService {
+) : MessageProcessor {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val newMessagesSubject = PublishSubject.create<MessageBundle>()

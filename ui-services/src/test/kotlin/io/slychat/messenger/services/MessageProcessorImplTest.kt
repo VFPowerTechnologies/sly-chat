@@ -18,7 +18,7 @@ import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
-class MessageProcessorServiceImplTest {
+class MessageProcessorImplTest {
     companion object {
         @JvmField
         @ClassRule
@@ -29,7 +29,7 @@ class MessageProcessorServiceImplTest {
     val messagePersistenceManager: MessagePersistenceManager = mock()
     val groupPersistenceManager: GroupPersistenceManager = mock()
 
-    fun createService(): MessageProcessorServiceImpl {
+    fun createProcessor(): MessageProcessorImpl {
         whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswer {
             @Suppress("UNCHECKED_CAST")
             val a = it.arguments[1] as MessageInfo
@@ -48,43 +48,43 @@ class MessageProcessorServiceImplTest {
         whenever(groupPersistenceManager.removeMember(any(), any())).thenReturn(true)
         whenever(groupPersistenceManager.isUserMemberOf(any(), any())).thenReturn(true)
 
-        return MessageProcessorServiceImpl(
+        return MessageProcessorImpl(
             contactsService,
             messagePersistenceManager,
             groupPersistenceManager
         )
     }
 
-    inline fun <reified T : GroupEvent> groupEventCollectorFor(messageProcessorService: MessageProcessorServiceImpl): TestSubscriber<T> {
+    inline fun <reified T : GroupEvent> groupEventCollectorFor(messageProcessorService: MessageProcessorImpl): TestSubscriber<T> {
         return messageProcessorService.groupEvents.subclassFilterTestSubscriber()
     }
 
     @Test
     fun `it should store newly received text messages`() {
-        val service = createService()
+        val processor = createProcessor()
 
         val m = TextMessage(currentTimestamp(), "m", null)
 
         val wrapper = SlyMessageWrapper(randomUUID(), TextMessageWrapper(m))
 
-        service.processMessage(UserId(1), wrapper).get()
+        processor.processMessage(UserId(1), wrapper).get()
 
         verify(messagePersistenceManager).addMessage(eq(UserId(1)), any())
     }
 
     @Test
     fun `it should emit new message events after storing new text messages`() {
-        val service = createService()
+        val processor = createProcessor()
 
         val m = TextMessage(currentTimestamp(), "m", null)
 
         val wrapper = SlyMessageWrapper(randomUUID(), TextMessageWrapper(m))
 
-        val testSubscriber = service.newMessages.testSubscriber()
+        val testSubscriber = processor.newMessages.testSubscriber()
 
         val from = UserId(1)
 
-        service.processMessage(from, wrapper).get()
+        processor.processMessage(from, wrapper).get()
 
         val bundles = testSubscriber.onNextEvents
 
@@ -99,8 +99,6 @@ class MessageProcessorServiceImplTest {
 
     fun randomGroupInfo(isPending: Boolean, membershipLevel: GroupMembershipLevel): GroupInfo =
         GroupInfo(randomGroupId(), randomGroupName(), isPending, membershipLevel)
-
-    fun randomGroupId(): GroupId = GroupId(randomUUID())
 
     fun randomGroupName(): String = randomUUID()
 
@@ -128,17 +126,17 @@ class MessageProcessorServiceImplTest {
 
     @Test
     fun `it should add group info and fetch member contact info when receiving a new group invitation for an unknown group`() {
-        val owner = UserId(1)
+        val owner = randomUserId()
 
         val m = generateInvite()
 
-        val service = createService()
+        val processor = createProcessor()
 
         whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturnNull()
 
-        service.processMessage(owner, wrap(m)).get()
+        processor.processMessage(owner, wrap(m)).get()
 
         val info = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
 
@@ -149,28 +147,28 @@ class MessageProcessorServiceImplTest {
 
     @Test
     fun `it should ignore duplicate invitations`() {
-        val owner = UserId(1)
+        val owner = randomUserId()
 
         val m = generateInvite()
 
-        val service = createService()
+        val processor = createProcessor()
 
         val groupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
-        service.processMessage(owner, wrap(m)).get()
+        processor.processMessage(owner, wrap(m)).get()
 
         verify(groupPersistenceManager, never()).joinGroup(any(), any())
     }
 
     @Test
     fun `it should filter out invalid user ids in group invitations`() {
-        val owner = UserId(1)
+        val owner = randomUserId()
 
         val m = generateInvite()
 
-        val service = createService()
+        val process = createProcessor()
 
         val groupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
 
@@ -182,7 +180,7 @@ class MessageProcessorServiceImplTest {
 
         whenever(contactsService.addMissingContacts(anySet())).thenReturn(setOf(invalidUser))
 
-        service.processMessage(owner, wrap(m)).get()
+        process.processMessage(owner, wrap(m)).get()
 
         verify(groupPersistenceManager).joinGroup(groupInfo, remaining)
     }
@@ -193,11 +191,11 @@ class MessageProcessorServiceImplTest {
 
     @Test
     fun `it should ignore invitations for parted groups which have been blocked`() {
-        val owner = UserId(1)
+        val owner = randomUserId()
 
         val m = generateInvite()
 
-        val service = createService()
+        val processor = createProcessor()
 
         val groupInfo = GroupInfo(m.id, m.name, false, GroupMembershipLevel.BLOCKED)
 
@@ -205,18 +203,18 @@ class MessageProcessorServiceImplTest {
 
         whenever(contactsService.addMissingContacts(anySet())).thenReturn(emptySet())
 
-        service.processMessage(owner, wrap(m)).get()
+        processor.processMessage(owner, wrap(m)).get()
 
         verify(groupPersistenceManager, never()).joinGroup(any(), any())
     }
 
     @Test
     fun `it should not ignore invitations for parted groups which have not been blocked`() {
-        val owner = UserId(1)
+        val owner = randomUserId()
 
         val m = generateInvite()
 
-        val service = createService()
+        val processor = createProcessor()
 
         val groupInfo = GroupInfo(m.id, m.name, false, GroupMembershipLevel.PARTED)
 
@@ -224,7 +222,7 @@ class MessageProcessorServiceImplTest {
 
         whenever(contactsService.addMissingContacts(anySet())).thenReturn(emptySet())
 
-        service.processMessage(owner, wrap(m)).get()
+        processor.processMessage(owner, wrap(m)).get()
 
         val newGroupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
 
@@ -241,27 +239,27 @@ class MessageProcessorServiceImplTest {
 
         val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
-        val service = createService()
+        val processor = createProcessor()
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
-        service.processMessage(sender, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager, never()).addMember(any(), any())
     }
 
     @Test
     fun `it should ignore group parts for parted groups`() {
-        val sender = UserId(1)
+        val sender = randomUserId()
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.PARTED)
 
         val m = GroupEventMessage.Part(groupInfo.id)
 
-        val service = createService()
+        val processor = createProcessor()
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
-        service.processMessage(sender, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager, never()).removeMember(any(), any())
     }
@@ -274,13 +272,13 @@ class MessageProcessorServiceImplTest {
 
         val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
-        val service = createService()
+        val processor = createProcessor()
 
         whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(true)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
-        service.processMessage(sender, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager).addMember(groupInfo.id, newMember)
     }
@@ -293,11 +291,11 @@ class MessageProcessorServiceImplTest {
 
         val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
-        val service = createService()
+        val processor = createProcessor()
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
-        service.processMessage(sender, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
     }
 
     @Test
@@ -307,13 +305,13 @@ class MessageProcessorServiceImplTest {
 
         val m = GroupEventMessage.Part(groupInfo.id)
 
-        val service = createService()
+        val processor = createProcessor()
 
         whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(true)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
-        service.processMessage(sender, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager).removeMember(groupInfo.id, sender)
     }
@@ -327,31 +325,31 @@ class MessageProcessorServiceImplTest {
 
         val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
-        val service = createService()
+        val processor = createProcessor()
 
         whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(false)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
-        service.processMessage(sender, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager, never()).addMember(any(), any())
     }
 
     @Test
     fun `it should ignore a part from a non-member user for a joined group`() {
-        val sender = UserId(1)
+        val sender = randomUserId()
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
 
         val m = GroupEventMessage.Part(groupInfo.id)
 
-        val service = createService()
+        val processor = createProcessor()
 
         whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(false)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
-        service.processMessage(sender, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager, never()).removeMember(any(), any())
     }
@@ -366,27 +364,27 @@ class MessageProcessorServiceImplTest {
 
         val m = GroupEventMessage.Join(groupId, newMember)
 
-        val service = createService()
+        val processor = createProcessor()
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
-        service.processMessage(sender, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager, never()).addMember(any(), any())
     }
 
     @Test
     fun `it should ignore group parts for blocked groups`() {
-        val sender = UserId(1)
+        val sender = randomUserId()
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.BLOCKED)
 
         val m = GroupEventMessage.Part(groupInfo.id)
 
-        val service = createService()
+        val processor = createProcessor()
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
-        service.processMessage(sender, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager, never()).removeMember(any(), any())
     }
@@ -398,15 +396,15 @@ class MessageProcessorServiceImplTest {
 
         val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
-        val service = createService()
+        val processor = createProcessor()
 
         returnGroupInfo(groupInfo)
 
-        val testSubscriber = groupEventCollectorFor<GroupEvent.Joined>(service)
+        val testSubscriber = groupEventCollectorFor<GroupEvent.Joined>(processor)
 
         whenever(groupPersistenceManager.addMember(groupInfo.id, newMember)).thenReturn(shouldEventBeEmitted)
 
-        service.processMessage(sender, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         if (shouldEventBeEmitted) {
             assertEventEmitted(testSubscriber) { event ->
@@ -429,20 +427,20 @@ class MessageProcessorServiceImplTest {
     }
 
     fun testPartEvent(shouldEventBeEmitted: Boolean) {
-        val sender = UserId(1)
+        val sender = randomUserId()
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
 
         val m = GroupEventMessage.Part(groupInfo.id)
 
-        val service = createService()
+        val processor = createProcessor()
 
         returnGroupInfo(groupInfo)
 
         whenever(groupPersistenceManager.removeMember(groupInfo.id, sender)).thenReturn(shouldEventBeEmitted)
 
-        val testSubscriber = groupEventCollectorFor<GroupEvent.Parted>(service)
+        val testSubscriber = groupEventCollectorFor<GroupEvent.Parted>(processor)
 
-        service.processMessage(sender, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         if (shouldEventBeEmitted) {
             assertEventEmitted(testSubscriber) { event ->
@@ -466,16 +464,16 @@ class MessageProcessorServiceImplTest {
 
     @Test
     fun `it should store received group text messages to the proper group`() {
-        val sender = UserId(1)
+        val sender = randomUserId()
 
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
         val m = randomTextMessage(groupInfo.id)
 
-        val service = createService()
+        val processor = createProcessor()
 
         returnGroupInfo(groupInfo)
 
-        service.processMessage(sender, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager).addMessage(eq(groupInfo.id), eq(sender), capture { messageInfo ->
             assertFalse(messageInfo.isSent, "Message marked as sent")
@@ -485,19 +483,19 @@ class MessageProcessorServiceImplTest {
 
     @Test
     fun `it should emit a new message event when receiving a new group text message`() {
-        val sender = UserId(1)
+        val sender = randomUserId()
 
         val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
         val m = randomTextMessage(groupInfo.id)
 
-        val service = createService()
+        val processor = createProcessor()
 
         returnGroupInfo(groupInfo)
 
-        val testSubscriber = service.newMessages.testSubscriber()
+        val testSubscriber = processor.newMessages.testSubscriber()
 
         val wrapper = wrap(m)
-        service.processMessage(sender, wrapper).get()
+        processor.processMessage(sender, wrapper).get()
 
         val newMessages = testSubscriber.onNextEvents
         assertEquals(1, newMessages.size, "Invalid number of new message events")
@@ -511,18 +509,18 @@ class MessageProcessorServiceImplTest {
     }
 
     fun testDropGroupTextMessage(senderIsMember: Boolean, membershipLevel: GroupMembershipLevel) {
-        val sender = UserId(1)
+        val sender = randomUserId()
 
         val groupInfo = randomGroupInfo(false, membershipLevel)
         val m = randomTextMessage(groupInfo.id)
 
-        val service = createService()
+        val processor = createProcessor()
 
         returnGroupInfo(groupInfo)
 
         whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(senderIsMember)
 
-        service.processMessage(sender, wrap(m)).get()
+        processor.processMessage(sender, wrap(m)).get()
 
         verify(groupPersistenceManager, never()).addMessage(any(), any(), any())
     }

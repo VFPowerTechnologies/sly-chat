@@ -111,11 +111,11 @@ class UserModule(
 
     @UserScope
     @Provides
-    fun providesMessageProcessorService(
+    fun providesMessageProcessor(
         contactsService: ContactsService,
         messagePersistenceManager: MessagePersistenceManager,
         groupPersistenceManager: GroupPersistenceManager
-    ): MessageProcessorService = MessageProcessorServiceImpl(
+    ): MessageProcessor = MessageProcessorImpl(
         contactsService,
         messagePersistenceManager,
         groupPersistenceManager
@@ -125,13 +125,12 @@ class UserModule(
     @Provides
     fun providesMessageReceiver(
         scheduler: Scheduler,
-        messageProcessorService: MessageProcessorService,
-        messagePersistenceManager: MessagePersistenceManager,
+        messageProcessor: MessageProcessor,
         packageQueuePersistenceManager: PackageQueuePersistenceManager,
         messageCipherService: MessageCipherService
     ): MessageReceiver = MessageReceiverImpl(
         scheduler,
-        messageProcessorService,
+        messageProcessor,
         packageQueuePersistenceManager,
         messageCipherService
     )
