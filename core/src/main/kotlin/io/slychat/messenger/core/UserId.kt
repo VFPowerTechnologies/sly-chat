@@ -13,4 +13,6 @@ class UserIdSerializer : JsonSerializer<UserId>() {
 
 /** Represents a user's ID. */
 @JsonSerialize(using = UserIdSerializer::class)
-data class UserId(val long: Long)
+data class UserId(val long: Long) {
+    override fun toString(): String = long.toString()
+}
