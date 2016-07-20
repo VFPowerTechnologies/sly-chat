@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS send_message_queue(
+CREATE TABLE IF NOT EXISTS send_message_queue (
     user_id INTEGER NOT NULL,
     -- TODO fk
     group_id STRING,
