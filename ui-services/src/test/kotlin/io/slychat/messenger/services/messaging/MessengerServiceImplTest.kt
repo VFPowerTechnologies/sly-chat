@@ -20,6 +20,7 @@ import org.junit.Test
 import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -483,7 +484,7 @@ class MessengerServiceImplTest {
     }
 
     /** Assert that the given group message type was sent to everyone in the given list, and that it satisifies certain conditions. */
-    inline fun <reified T> assertGroupMessagesSentTo(expectedRecipients: Set<UserId>, asserter: (T) -> Unit) {
+    inline fun <reified T> assertGroupMessagesSentTo(expectedRecipients: Set<UserId>, asserter: (UserId, T) -> Unit) {
         val captor = argumentCaptor<List<SenderMessageEntry>>()
         verify(messageSender, atLeastOnce()).addToQueue(capture(captor))
 
@@ -502,7 +503,7 @@ class MessengerServiceImplTest {
             val m = wrapper.m as? T
 
             if (m != null) {
-                asserter(m)
+                asserter(recipient, m)
 
                 assertTrue(recipient in sendTo, "Unexpected recipient")
                 sendTo[recipient] = true
@@ -544,8 +545,8 @@ class MessengerServiceImplTest {
 
             messengerService.inviteUsersToGroup(groupInfo.id, newMembers)
 
-            assertGroupMessagesSentTo<GroupEventMessage.Join>(members) {
-                assertEquals(newMembers, it.joined, "Joined member list is incorrect")
+            assertGroupMessagesSentTo<GroupEventMessage.Join>(members) { recipient, m ->
+                assertEquals(newMembers, m.joined, "Joined member list is incorrect")
             }
         }
     }
@@ -557,9 +558,9 @@ class MessengerServiceImplTest {
 
             messengerService.inviteUsersToGroup(groupInfo.id, newMembers)
 
-            assertGroupMessagesSentTo<GroupEventMessage.Invitation>(newMembers) {
-                assertEquals(groupInfo.name, it.name, "Invalid group name")
-                assertEquals(members, it.members, "Joined member list is incorrect")
+            assertGroupMessagesSentTo<GroupEventMessage.Invitation>(newMembers) { recipient, m ->
+                assertEquals(groupInfo.name, m.name, "Invalid group name")
+                assertEquals(members, m.members, "Joined member list is incorrect")
             }
         }
     }
@@ -576,8 +577,47 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `createNewGroup should sent invitations to each initial member`() {}
+    fun `createNewGroup should sent invitations to each initial member`() {
+        val groupName = randomGroupName()
+        val initialMembers = randomUserIds()
+
+        val messengerService = createService()
+
+        messengerService.createNewGroup(groupName, initialMembers)
+
+        assertGroupMessagesSentTo<GroupEventMessage.Invitation>(initialMembers) { recipient, m ->
+            val expectedMembers = HashSet(initialMembers)
+            expectedMembers.remove(recipient)
+
+            assertEquals(expectedMembers, m.members, "Invalid members list")
+            assertEquals(groupName, m.name, "Invalid group name")
+        }
+    }
 
     @Test
-    fun `createNewGroup should store the new group data`() {}
+    fun `createNewGroup should not sent invitations if given no initial members`() {
+        val groupName = randomGroupName()
+
+        val messengerService = createService()
+
+        messengerService.createNewGroup(groupName, emptySet())
+
+        assertNoGroupMessagesSent<GroupEventMessage.Invitation>()
+    }
+
+    @Test
+    fun `createNewGroup should store the new group data`() {
+        val groupName = randomGroupName()
+        val initialMembers = randomUserIds()
+
+        val messengerService = createService()
+
+        messengerService.createNewGroup(groupName, initialMembers)
+
+        verify(groupPersistenceManager).createGroup(capture {
+            assertEquals(groupName, it.name, "Invalid group name")
+            assertEquals(GroupMembershipLevel.JOINED, it.membershipLevel, "Invalid membership level")
+            assertFalse(it.isPending, "Created group should not be in pending state")
+        }, eq(initialMembers))
+    }
 }

@@ -235,7 +235,28 @@ class MessengerServiceImpl(
     }
 
     override fun createNewGroup(groupName: String, initialMembers: Set<UserId>): Promise<Unit, Exception> {
-        TODO()
+        val groupInfo = GroupInfo(
+            GroupId(randomUUID()),
+            groupName,
+            false,
+            GroupMembershipLevel.JOINED
+        )
+
+        val messages = initialMembers.map {
+            val members = HashSet(initialMembers)
+            members.remove(it)
+
+            val m = GroupEventMessageWrapper(GroupEventMessage.Invitation(groupInfo.id, groupInfo.name, members))
+            val serialized = objectMapper.writeValueAsBytes(m)
+
+            val metadata = MessageMetadata(it, groupInfo.id, MessageCategory.OTHER, randomUUID())
+
+            SenderMessageEntry(metadata, serialized)
+        }
+
+        return messageSender.addToQueue(messages) bind {
+            groupPersistenceManager.createGroup(groupInfo, initialMembers)
+        }
     }
 
     private fun sendJoinToMembers(groupId: GroupId, members: Set<UserId>, newMembers: Set<UserId>): Promise<Unit, Exception> {
