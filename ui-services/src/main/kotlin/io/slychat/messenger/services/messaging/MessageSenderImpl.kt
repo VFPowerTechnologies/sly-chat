@@ -199,6 +199,9 @@ class MessageSenderImpl(
     }
 
     override fun addToQueue(messages: List<SenderMessageEntry>): Promise<Unit, Exception> {
+        if (messages.isEmpty())
+            return Promise.ofSuccess(Unit)
+
         val timestamp = currentTimestamp()
         val queuedMessages = messages.map {
             QueuedMessage(

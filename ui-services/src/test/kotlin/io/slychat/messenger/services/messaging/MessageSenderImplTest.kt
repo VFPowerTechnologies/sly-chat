@@ -345,4 +345,13 @@ class MessageSenderImplTest {
             assertEquals(members, sentTo, "Invalid users")
         })
     }
+
+    @Test
+    fun `addToQueue(messages) should do nothing if given an empty message list`() {
+        val sender = createSender(false)
+
+        sender.addToQueue(emptyList()).get()
+
+        verify(messageQueuePersistenceManager, never()).add(anyCollection())
+    }
 }
