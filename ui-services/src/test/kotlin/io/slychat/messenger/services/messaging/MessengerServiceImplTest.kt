@@ -6,7 +6,8 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
-import io.slychat.messenger.services.*
+import io.slychat.messenger.services.RelayClientManager
+import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.contacts.ContactEvent
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
@@ -58,7 +59,6 @@ class MessengerServiceImplTest {
         whenever(messageSender.addToQueue(any(), any())).thenReturn(Unit)
 
         //some useful defaults
-        whenever(messagePersistenceManager.getUndeliveredMessages()).thenReturn(emptyMap())
         whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswer {
             val a = it.arguments[1] as MessageInfo
             Promise.ofSuccess<MessageInfo, Exception>(a)
