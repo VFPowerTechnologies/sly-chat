@@ -290,7 +290,7 @@ class MessengerServiceImplTest {
     fun `it should emit a message updated event when receiving a message update for TEXT_GROUP message`() {
         val messengerService = createService()
 
-        val update = randomTextGroupMetaData()
+        val update = randomTextGroupMetadata()
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
 
         whenever(groupPersistenceManager.markMessageAsDelivered(update.groupId!!, update.messageId)).thenReturn(messageInfo)

@@ -23,7 +23,7 @@ fun randomGroupId(): GroupId = GroupId(randomUUID())
 
 fun randomMessageId(): String = randomUUID()
 
-fun randomTextGroupMetaData(groupId: GroupId? = null): MessageMetadata {
+fun randomTextGroupMetadata(groupId: GroupId? = null): MessageMetadata {
     return MessageMetadata(
         randomUserId(),
         groupId ?: randomGroupId(),
@@ -32,19 +32,24 @@ fun randomTextGroupMetaData(groupId: GroupId? = null): MessageMetadata {
     )
 }
 
-fun randomSerializedMessage(): ByteArray = Random().nextInt().toString().toByteArray()
-
-fun randomQueuedMessage(): QueuedMessage {
+fun randomTextSingleMetadata(): MessageMetadata {
     val recipient = randomUserId()
     val messageId = randomUUID()
-    val serialized = randomSerializedMessage()
-
-    val metadata = MessageMetadata(
+    return MessageMetadata(
         recipient,
         null,
         MessageCategory.TEXT_SINGLE,
         messageId
     )
+
+}
+
+fun randomSerializedMessage(): ByteArray = Random().nextInt().toString().toByteArray()
+
+fun randomQueuedMessage(): QueuedMessage {
+    val serialized = randomSerializedMessage()
+
+    val metadata = randomTextSingleMetadata()
 
     val queued = QueuedMessage(
         metadata,
@@ -53,4 +58,8 @@ fun randomQueuedMessage(): QueuedMessage {
     )
 
     return queued
+}
+
+fun randomQueuedMessages(n: Int = 2): List<QueuedMessage> {
+    return (1..n).map { randomQueuedMessage() }
 }

@@ -57,7 +57,7 @@ class MessageSenderImplTest {
 
         whenever(messageQueuePersistenceManager.add(any<List<QueuedMessage>>())).thenReturn(Unit)
         whenever(messageQueuePersistenceManager.add(any<QueuedMessage>())).thenReturn(Unit)
-        whenever(messageQueuePersistenceManager.remove(any(), any())).thenReturn(Unit)
+        whenever(messageQueuePersistenceManager.remove(any(), any())).thenReturn(true)
         whenever(messageQueuePersistenceManager.getUndelivered()).thenReturn(initialQueuedMessages)
 
         whenever(relayClientManager.events).thenReturn(relayEvents)
@@ -305,7 +305,7 @@ class MessageSenderImplTest {
 
         val messages = (0..1).map {
             SenderMessageEntry(
-                randomTextGroupMetaData(groupId),
+                randomTextGroupMetadata(groupId),
                 randomSerializedMessage()
             )
         }
@@ -314,7 +314,7 @@ class MessageSenderImplTest {
 
         sender.addToQueue(messages).get()
 
-        verify(messageQueuePersistenceManager).add(capture<Iterable<QueuedMessage>> {
+        verify(messageQueuePersistenceManager).add(capture<Collection<QueuedMessage>> {
             val sentTo = it.mapToSet { it.metadata.userId }
             assertEquals(members, sentTo, "Invalid users")
         })

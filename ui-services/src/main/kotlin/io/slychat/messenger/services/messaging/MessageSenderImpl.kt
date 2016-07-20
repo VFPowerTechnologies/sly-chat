@@ -10,6 +10,7 @@ import io.slychat.messenger.services.crypto.DeviceUpdateResult
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -123,7 +124,7 @@ class MessageSenderImpl(
     }
 
     private fun markMessageAsDelivered(metadata: MessageMetadata): Promise<Unit, Exception> {
-        return messageQueuePersistenceManager.remove(metadata.userId, metadata.messageId) successUi {
+        return messageQueuePersistenceManager.remove(metadata.userId, metadata.messageId) map { Unit } successUi {
             messageSentSubject.onNext(metadata)
         }
     }
