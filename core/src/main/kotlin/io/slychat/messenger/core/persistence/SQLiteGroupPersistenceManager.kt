@@ -8,78 +8,86 @@ class SQLiteGroupPersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
 ) : GroupPersistenceManager {
     override fun getGroupList(): Promise<List<GroupInfo>, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun getGroupInfo(groupId: GroupId): Promise<GroupInfo?, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun getGroupMembers(groupId: GroupId): Promise<Set<UserId>, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun getAllGroupConversationInfo(): Promise<List<GroupConversationInfo>, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun removeMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun isUserMemberOf(userId: UserId, groupId: GroupId): Promise<Boolean, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun createGroup(groupInfo: GroupInfo, initialMembers: Set<UserId>): Promise<Unit, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun joinGroup(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun partGroup(groupId: GroupId): Promise<Boolean, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun getBlockList(): Promise<List<GroupId>, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
-    override fun isBlocked(groupId: GroupId): Promise<Boolean, Exception> {
-        throw NotImplementedError()
+    fun isBlocked(groupId: GroupId): Promise<Boolean, Exception> {
+        TODO()
+    }
+
+    override fun blockGroup(groupId: GroupId): Promise<Unit, Exception> {
+        TODO()
+    }
+
+    override fun unblockGroup(groupId: GroupId): Promise<Unit, Exception> {
+        TODO()
     }
 
     override fun addMessage(groupId: GroupId, userId: UserId?, messageInfo: MessageInfo): Promise<MessageInfo, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun addMessages(groupId: GroupId, userId: UserId?, messages: Collection<MessageInfo>): Promise<List<MessageInfo>, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<MessageInfo, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<GroupMessageInfo>, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 
     override fun getUndeliveredMessages(): Promise<Map<GroupId, List<GroupMessageInfo>>, Exception> {
-        throw NotImplementedError()
+        TODO()
     }
 }
