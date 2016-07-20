@@ -203,21 +203,26 @@ class MessengerServiceImpl(
         }
     }
 
-    private fun sendMessageToGroup(groupId: GroupId, message: SlyMessage, messageCategory: MessageCategory): Promise<Unit, Exception> {
+    /** Fetches group members for the given group and sends the given message to the MessageSender. */
+    private fun sendMessageToGroup(groupId: GroupId, message: SlyMessage, messageCategory: MessageCategory): Promise<Set<UserId>, Exception> {
         return groupPersistenceManager.getGroupMembers(groupId) bindUi { members ->
-            if (members.isNotEmpty()) {
-                val serialized = objectMapper.writeValueAsBytes(message)
-
-                val messages = members.map {
-                    val metadata = MessageMetadata(it, groupId, messageCategory, randomUUID())
-                    SenderMessageEntry(metadata, serialized)
-                }
-
-                messageSender.addToQueue(messages)
-            }
+            if (members.isNotEmpty())
+                sendMessageToMembers(groupId, members, message, messageCategory)
             else
-                Promise.ofSuccess(Unit)
+                Promise.ofSuccess(emptySet())
         }
+    }
+
+    /** Send the message to all given members via the MessageSender. */
+    private fun sendMessageToMembers(groupId: GroupId, members: Set<UserId>, message: SlyMessage, messageCategory: MessageCategory): Promise<Set<UserId>, Exception> {
+        val serialized = objectMapper.writeValueAsBytes(message)
+
+        val messages = members.map {
+            val metadata = MessageMetadata(it, groupId, messageCategory, randomUUID())
+            SenderMessageEntry(metadata, serialized)
+        }
+
+        return messageSender.addToQueue(messages) map { members }
     }
 
     override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<MessageInfo, Exception> {
@@ -233,13 +238,35 @@ class MessengerServiceImpl(
         TODO()
     }
 
-    //1) get members
-    //2) send members Group.NewUser
-    //3) send new user Group.Invitation
-    //4) add new user to membership list
+    private fun sendJoinToMembers(groupId: GroupId, members: Set<UserId>, newMembers: Set<UserId>): Promise<Unit, Exception> {
+        //join messages are idempotent so don't bother checking for dups here
+        val m = GroupEventMessageWrapper(GroupEventMessage.Join(groupId, newMembers))
+
+        return sendMessageToMembers(groupId, members, m, MessageCategory.OTHER) map { Unit }
+    }
+
+    private fun sendInvitationToNewMembers(groupInfo: GroupInfo, newMembers: Set<UserId>, members: Set<UserId>): Promise<Unit, Exception> {
+        val groupId = groupInfo.id
+        val invitation = GroupEventMessageWrapper(GroupEventMessage.Invitation(groupId, groupInfo.name, members))
+
+        return sendMessageToMembers(groupId, newMembers, invitation, MessageCategory.OTHER) bind {
+            groupPersistenceManager.addMembers(groupId, newMembers) map { Unit }
+        }
+    }
+
     override fun inviteUsersToGroup(groupId: GroupId, newMembers: Set<UserId>): Promise<Unit, Exception> {
-        //val m = GroupEventMessageWrapper(GroupEventMessage.Join())
-        TODO()
+        return groupPersistenceManager.getGroupInfo(groupId) bind { info ->
+            if (info == null)
+                throw IllegalStateException("Attempt to invite users to a non-existent group")
+
+            groupPersistenceManager.getGroupMembers(groupId) bindUi { members ->
+                sendJoinToMembers(groupId, members, newMembers) bindUi {
+                    sendInvitationToNewMembers(info, newMembers, members) bind {
+                        groupPersistenceManager.addMembers(groupId, members) map { Unit }
+                    }
+                }
+            }
+        }
     }
 
     override fun leaveGroup(groupId: GroupId): Promise<Boolean, Exception> {

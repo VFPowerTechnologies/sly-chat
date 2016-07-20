@@ -18,6 +18,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
 import rx.subjects.PublishSubject
+import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -415,6 +416,20 @@ class MessengerServiceImplTest {
         verify(groupPersistenceManager).partGroup(groupId)
     }
 
+    inline fun <reified T : SlyMessage> convertFromSerialized(messageEntry: SenderMessageEntry): T {
+        val objectMapper = ObjectMapper()
+        return objectMapper.readValue(messageEntry.message, T::class.java)
+    }
+
+    //cheating a little here
+    inline fun <reified T : SlyMessage> convertFromSerialized(messageEntries: List<SenderMessageEntry>): List<T> {
+        val objectMapper = ObjectMapper()
+
+        return messageEntries.map {
+            objectMapper.readValue(it.message, T::class.java)
+        }
+    }
+
     @Test
     fun `leaveGroup should queue part messages to all members`() {
         val messengerService = createService()
@@ -426,14 +441,10 @@ class MessengerServiceImplTest {
 
         messengerService.leaveGroup(groupId).get()
 
-        val objectMapper = ObjectMapper()
-
         verify(messageSender).addToQueue(capture {
             assertEquals(members, it.mapToSet { it.metadata.userId }, "Invalid users")
-            //cheating...
-            val messages = it.map { objectMapper.readValue(it.message, SlyMessage::class.java) }
+            val messages = convertFromSerialized<GroupEventMessageWrapper>(it)
             messages.forEach {
-                it as GroupEventMessageWrapper
                 assertTrue(it.m is GroupEventMessage.Part, "Invalid message type")
             }
         })
@@ -451,4 +462,122 @@ class MessengerServiceImplTest {
 
         verify(messageSender, never()).addToQueue(any())
     }
+
+    inline fun <reified T> assertNoGroupMessagesSent() {
+        val captor = argumentCaptor<List<SenderMessageEntry>>()
+        verify(messageSender, atLeast(0)).addToQueue(capture(captor))
+
+        val messages = captor.allValues.flatten()
+
+        if (messages.isEmpty())
+            return
+
+        messages.forEach {
+            val recipient = it.metadata.userId
+
+            val wrapper = convertFromSerialized<GroupEventMessageWrapper>(it)
+
+            if (wrapper.m is T)
+                throw AssertionError("Unexpected ${T::class.simpleName} message to $recipient")
+        }
+    }
+
+    /** Assert that the given group message type was sent to everyone in the given list, and that it satisifies certain conditions. */
+    inline fun <reified T> assertGroupMessagesSentTo(expectedRecipients: Set<UserId>, asserter: (T) -> Unit) {
+        val captor = argumentCaptor<List<SenderMessageEntry>>()
+        verify(messageSender, atLeastOnce()).addToQueue(capture(captor))
+
+        val messages = captor.allValues.flatten()
+
+        assertTrue(messages.isNotEmpty(), "No messages were sent")
+
+        val sendTo = HashMap<UserId, Boolean>()
+        sendTo.putAll(expectedRecipients.map { it to false })
+
+        messages.forEach {
+            val recipient = it.metadata.userId
+
+            val wrapper = convertFromSerialized<GroupEventMessageWrapper>(it)
+
+            val m = wrapper.m as? T
+
+            if (m != null) {
+                asserter(m)
+
+                assertTrue(recipient in sendTo, "Unexpected recipient")
+                sendTo[recipient] = true
+            }
+        }
+
+        val missing = HashSet(expectedRecipients)
+        missing.removeAll(sendTo.filterValues { it }.keys)
+
+        if (missing.isNotEmpty())
+            throw AssertionError("Missing recipients: $missing")
+    }
+
+    /** Runs the body with the proper setup for an existing group to be tested. */
+    fun withExistingGroup(noMembers: Boolean = false, body: (messengerService: MessengerServiceImpl, groupInfo: GroupInfo, members: Set<UserId>) -> Unit) {
+        val messengerService = createService()
+
+        val groupInfo = randomGroupInfo()
+        val groupId = groupInfo.id
+        val members = if (noMembers) emptySet() else randomUserIds()
+
+        whenever(groupPersistenceManager.getGroupInfo(groupId)).thenReturn(groupInfo)
+        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(members)
+
+        body(messengerService, groupInfo, members)
+    }
+
+    @Test
+    fun `inviteUsersToGroup should handle not having an existing members in the group`() {
+        withExistingGroup(true) { messengerService, groupInfo, members ->
+            assertNoGroupMessagesSent<GroupEventMessage.Join>()
+        }
+    }
+
+    @Test
+    fun `inviteUsersToGroup should send a join message to each current member`() {
+        withExistingGroup { messengerService, groupInfo, members ->
+            val newMembers = randomUserIds()
+
+            messengerService.inviteUsersToGroup(groupInfo.id, newMembers)
+
+            assertGroupMessagesSentTo<GroupEventMessage.Join>(members) {
+                assertEquals(newMembers, it.joined, "Joined member list is incorrect")
+            }
+        }
+    }
+
+    @Test
+    fun `inviteUsersToGroup should send an invitation message to each new member`() {
+        withExistingGroup { messengerService, groupInfo, members ->
+            val newMembers = randomUserIds()
+
+            messengerService.inviteUsersToGroup(groupInfo.id, newMembers)
+
+            assertGroupMessagesSentTo<GroupEventMessage.Invitation>(newMembers) {
+                assertEquals(groupInfo.name, it.name, "Invalid group name")
+                assertEquals(members, it.members, "Joined member list is incorrect")
+            }
+        }
+    }
+
+    @Test
+    fun `inviteUsersToGroup should add new members to the group member list`() {
+        withExistingGroup { messengerService, groupInfo, members ->
+            val newMembers = randomUserIds()
+
+            messengerService.inviteUsersToGroup(groupInfo.id, newMembers)
+
+            verify(groupPersistenceManager).addMembers(groupInfo.id, newMembers)
+        }
+    }
+
+    @Test
+    fun `createNewGroup should sent invitations to each initial member`() {}
+
+    @Test
+    fun `createNewGroup should store the new group data`() {}
 }
