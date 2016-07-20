@@ -25,10 +25,7 @@ interface GroupPersistenceManager {
     /** Verifies if a given member is part of a joined group. */
     fun isUserMemberOf(userId: UserId, groupId: GroupId): Promise<Boolean, Exception>
 
-    /** Create a new group with a set of possibly empty initial members. */
-    fun createGroup(groupInfo: GroupInfo, initialMembers: Set<UserId>): Promise<Unit, Exception>
-
-    /** Join a new group, or rejoin an existing group. */
+    /** Join a new group, or rejoin an existing group. Also used when creating a group yourself. */
     fun joinGroup(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception>
 
     /** Part a joined group. If not a member, returns false, otherwise returns true. */

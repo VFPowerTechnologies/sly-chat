@@ -255,7 +255,7 @@ class MessengerServiceImpl(
         }
 
         return messageSender.addToQueue(messages) bind {
-            groupPersistenceManager.createGroup(groupInfo, initialMembers)
+            groupPersistenceManager.joinGroup(groupInfo, initialMembers)
         }
     }
 

@@ -35,10 +35,6 @@ class SQLiteGroupPersistenceManager(
         TODO()
     }
 
-    override fun createGroup(groupInfo: GroupInfo, initialMembers: Set<UserId>): Promise<Unit, Exception> {
-        TODO()
-    }
-
     override fun joinGroup(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception> {
         TODO()
     }

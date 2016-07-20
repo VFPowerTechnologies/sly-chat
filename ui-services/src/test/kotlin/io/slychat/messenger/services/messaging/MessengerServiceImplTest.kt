@@ -614,7 +614,7 @@ class MessengerServiceImplTest {
 
         messengerService.createNewGroup(groupName, initialMembers)
 
-        verify(groupPersistenceManager).createGroup(capture {
+        verify(groupPersistenceManager).joinGroup(capture {
             assertEquals(groupName, it.name, "Invalid group name")
             assertEquals(GroupMembershipLevel.JOINED, it.membershipLevel, "Invalid membership level")
             assertFalse(it.isPending, "Created group should not be in pending state")
