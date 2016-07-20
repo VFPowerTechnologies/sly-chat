@@ -1,16 +1,13 @@
 package io.slychat.messenger.services.messaging
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.currentTimestamp
-import io.slychat.messenger.core.mapToSet
-import io.slychat.messenger.core.persistence.MessageCategory
-import io.slychat.messenger.core.persistence.MessageMetadata
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
 import io.slychat.messenger.core.persistence.QueuedMessage
-import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
-import io.slychat.messenger.services.*
+import io.slychat.messenger.services.RelayClientManager
+import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.crypto.DeviceUpdateResult
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
@@ -77,29 +74,6 @@ class MessageSenderImplTest {
             messageQueuePersistenceManager
         )
     }
-
-    fun randomQueuedMessage(): QueuedMessage {
-        val recipient = randomUserId()
-        val messageId = randomUUID()
-        val serialized = randomMessage()
-
-        val metadata = MessageMetadata(
-            recipient,
-            null,
-            MessageCategory.TEXT_SINGLE,
-            messageId
-        )
-
-        val queued = QueuedMessage(
-            metadata,
-            currentTimestamp(),
-            serialized
-        )
-
-        return queued
-    }
-
-    fun randomMessage(): ByteArray = Random().nextInt(100).toString().toByteArray()
 
     fun randomEncryptedPayload(): EncryptedPackagePayloadV0 =
         EncryptedPackagePayloadV0(true, ByteArray(0))
@@ -332,7 +306,7 @@ class MessageSenderImplTest {
         val messages = (0..1).map {
             SenderMessageEntry(
                 randomTextGroupMetaData(groupId),
-                randomMessage()
+                randomSerializedMessage()
             )
         }
 

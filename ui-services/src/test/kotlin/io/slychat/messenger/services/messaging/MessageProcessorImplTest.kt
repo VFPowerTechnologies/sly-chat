@@ -1,10 +1,8 @@
 package io.slychat.messenger.services.messaging
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.testutils.*

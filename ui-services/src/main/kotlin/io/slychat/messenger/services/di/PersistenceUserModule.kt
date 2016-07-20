@@ -44,7 +44,7 @@ class PersistenceUserModule {
     @UserScope
     @Provides
     fun providesMessageQueuePersistenceManager(sqlitePersistenceManager: SQLitePersistenceManager): MessageQueuePersistenceManager =
-        MessageQueuePersistenceManagerImpl(sqlitePersistenceManager)
+        SQLiteMessageQueuePersistenceManager(sqlitePersistenceManager)
 
     @UserScope
     @Provides
