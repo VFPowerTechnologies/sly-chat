@@ -17,7 +17,10 @@ class DatabaseMigrationInitial : DatabaseMigration(0, TABLE_NAMES) {
             "signal_sessions",
             "package_queue",
             "remote_contact_updates",
-            "send_message_queue"
+            "send_message_queue",
+            "groups",
+            "group_members",
+            "group_conversation_info"
         )
     }
 
