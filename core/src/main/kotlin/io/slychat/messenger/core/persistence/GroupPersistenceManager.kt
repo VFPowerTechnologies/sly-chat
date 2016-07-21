@@ -32,7 +32,7 @@ interface GroupPersistenceManager {
     fun partGroup(groupId: GroupId): Promise<Boolean, Exception>
 
     /** Returns blocked groups. */
-    fun getBlockList(): Promise<List<GroupId>, Exception>
+    fun getBlockList(): Promise<Set<GroupId>, Exception>
 
     /** Block the given group. */
     fun blockGroup(groupId: GroupId): Promise<Unit, Exception>

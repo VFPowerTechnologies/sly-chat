@@ -84,7 +84,7 @@ class SQLiteGroupPersistenceManager(
         }
         else {
             connection.withTransaction {
-                //rejoin
+                //rejoin (this should already be empty anyways from parting/blocking)
                 if (maybeInfo != null)
                     clearMemberList(connection, groupInfo.id)
 
@@ -144,6 +144,9 @@ class SQLiteGroupPersistenceManager(
         }
     }
 
+    private fun queryGroupInfoOrThrow(connection: SQLiteConnection, id: GroupId): GroupInfo =
+        queryGroupInfo(connection, id) ?: throw InvalidGroupException(id)
+
     private fun queryGroupInfo(connection: SQLiteConnection, id: GroupId): GroupInfo? {
         return connection.withPrepared("SELECT id, name, membership_level FROM groups WHERE id=?") { stmt ->
             stmt.bind(1, id)
@@ -164,24 +167,68 @@ class SQLiteGroupPersistenceManager(
         )
     }
 
-    override fun partGroup(groupId: GroupId): Promise<Boolean, Exception> {
-        TODO()
+    private fun updateMembershipLevel(connection: SQLiteConnection, groupId: GroupId, membershipLevel: GroupMembershipLevel) {
+        connection.withPrepared("UPDATE groups set membership_level=? WHERE id=?") { stmt ->
+            stmt.bind(1, groupMembershipLevelToInt(membershipLevel))
+            stmt.bind(2, groupId)
+            stmt.step()
+        }
     }
 
-    override fun getBlockList(): Promise<List<GroupId>, Exception> {
-        TODO()
+    override fun partGroup(groupId: GroupId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val groupInfo = queryGroupInfoOrThrow(connection, groupId)
+
+        when (groupInfo.membershipLevel) {
+            GroupMembershipLevel.PARTED -> false
+
+            GroupMembershipLevel.BLOCKED -> false
+
+            GroupMembershipLevel.JOINED -> {
+                connection.withTransaction {
+                    clearMemberList(connection, groupId)
+
+                    updateMembershipLevel(connection, groupId, GroupMembershipLevel.PARTED)
+                }
+
+                true
+            }
+        }
+    }
+
+    override fun getBlockList(): Promise<Set<GroupId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withPrepared("SELECT id FROM groups WHERE membership_level=?") { stmt ->
+            stmt.bind(1, groupMembershipLevelToInt(GroupMembershipLevel.BLOCKED))
+
+            stmt.mapToSet { GroupId(it.columnString(0)) }
+        }
     }
 
     fun isBlocked(groupId: GroupId): Promise<Boolean, Exception> {
         TODO()
     }
 
-    override fun blockGroup(groupId: GroupId): Promise<Unit, Exception> {
-        TODO()
+    override fun blockGroup(groupId: GroupId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val groupInfo = queryGroupInfoOrThrow(connection, groupId)
+
+        if (groupInfo.membershipLevel == GroupMembershipLevel.BLOCKED)
+            return@runQuery
+
+        connection.withTransaction {
+            clearMemberList(connection, groupId)
+            updateMembershipLevel(connection, groupId, GroupMembershipLevel.BLOCKED)
+        }
     }
 
-    override fun unblockGroup(groupId: GroupId): Promise<Unit, Exception> {
-        TODO()
+    override fun unblockGroup(groupId: GroupId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val groupInfo = queryGroupInfoOrThrow(connection, groupId)
+
+        when (groupInfo.membershipLevel) {
+            GroupMembershipLevel.JOINED -> {}
+            GroupMembershipLevel.PARTED -> {}
+            GroupMembershipLevel.BLOCKED -> {
+                updateMembershipLevel(connection, groupId, GroupMembershipLevel.PARTED)
+            }
+        }
     }
 
     override fun addMessage(groupId: GroupId, userId: UserId?, messageInfo: MessageInfo): Promise<MessageInfo, Exception> {

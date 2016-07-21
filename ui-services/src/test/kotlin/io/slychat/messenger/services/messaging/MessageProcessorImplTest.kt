@@ -249,7 +249,7 @@ class MessageProcessorImplTest {
     fun `it should ignore group joins for parted groups`() {
         val sender = UserId(1)
         val newMember = UserId(2)
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.PARTED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.PARTED)
 
         val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
@@ -265,7 +265,7 @@ class MessageProcessorImplTest {
     @Test
     fun `it should ignore group parts for parted groups`() {
         val sender = randomUserId()
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.PARTED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.PARTED)
 
         val m = GroupEventMessage.Part(groupInfo.id)
 
@@ -282,7 +282,7 @@ class MessageProcessorImplTest {
     fun `it should add a member when receiving a new member join from a member for a joined group`() {
         val sender = UserId(1)
         val newMember = UserId(2)
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 
         val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
@@ -301,7 +301,7 @@ class MessageProcessorImplTest {
     fun `it should emit a Join event when receiving a group join`() {
         val sender = UserId(1)
         val newMember = UserId(2)
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 
         val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
@@ -315,7 +315,7 @@ class MessageProcessorImplTest {
     @Test
     fun `it should remove a member when receiving a group part from that user for a joined group`() {
         val sender = UserId(1)
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 
         val m = GroupEventMessage.Part(groupInfo.id)
 
@@ -335,7 +335,7 @@ class MessageProcessorImplTest {
         val sender = UserId(1)
         val newMember = UserId(2)
 
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 
         val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
@@ -353,7 +353,7 @@ class MessageProcessorImplTest {
     @Test
     fun `it should ignore a part from a non-member user for a joined group`() {
         val sender = randomUserId()
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 
         val m = GroupEventMessage.Part(groupInfo.id)
 
@@ -374,7 +374,7 @@ class MessageProcessorImplTest {
         val newMember = UserId(2)
 
         val groupId = randomGroupId()
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.BLOCKED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.BLOCKED)
 
         val m = GroupEventMessage.Join(groupId, newMember)
 
@@ -390,7 +390,7 @@ class MessageProcessorImplTest {
     @Test
     fun `it should ignore group parts for blocked groups`() {
         val sender = randomUserId()
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.BLOCKED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.BLOCKED)
 
         val m = GroupEventMessage.Part(groupInfo.id)
 
@@ -407,7 +407,7 @@ class MessageProcessorImplTest {
     fun `it should fetch remote contact info when receiving a group join`() {
         val sender = UserId(1)
         val newMember = UserId(2)
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 
         val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
@@ -427,7 +427,7 @@ class MessageProcessorImplTest {
     fun `it should not add a member if the user id is invalid when receiving a group join`() {
         val sender = UserId(1)
         val newMember = UserId(2)
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 
         val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
@@ -445,7 +445,7 @@ class MessageProcessorImplTest {
     fun testJoinEvent(shouldEventBeEmitted: Boolean) {
         val sender = UserId(1)
         val newMember = UserId(2)
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 
         val m = GroupEventMessage.Join(groupInfo.id, newMember)
 
@@ -485,7 +485,7 @@ class MessageProcessorImplTest {
 
     fun testPartEvent(shouldEventBeEmitted: Boolean) {
         val sender = randomUserId()
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 
         val m = GroupEventMessage.Part(groupInfo.id)
 
@@ -523,7 +523,7 @@ class MessageProcessorImplTest {
     fun `it should store received group text messages to the proper group`() {
         val sender = randomUserId()
 
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
         val m = randomTextMessage(groupInfo.id)
 
         val processor = createProcessor()
@@ -542,7 +542,7 @@ class MessageProcessorImplTest {
     fun `it should emit a new message event when receiving a new group text message`() {
         val sender = randomUserId()
 
-        val groupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
         val m = randomTextMessage(groupInfo.id)
 
         val processor = createProcessor()
@@ -568,7 +568,7 @@ class MessageProcessorImplTest {
     fun testDropGroupTextMessage(senderIsMember: Boolean, membershipLevel: GroupMembershipLevel) {
         val sender = randomUserId()
 
-        val groupInfo = randomGroupInfo(false, membershipLevel)
+        val groupInfo = randomGroupInfo(membershipLevel)
         val m = randomTextMessage(groupInfo.id)
 
         val processor = createProcessor()

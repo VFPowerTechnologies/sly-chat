@@ -4,9 +4,9 @@ package io.slychat.messenger.core
 import io.slychat.messenger.core.persistence.*
 import java.util.*
 
-fun randomGroupInfo(): GroupInfo = randomGroupInfo(false, GroupMembershipLevel.JOINED)
-fun randomGroupInfo(isPending: Boolean, membershipLevel: GroupMembershipLevel): GroupInfo =
-    GroupInfo(randomGroupId(), randomGroupName(), isPending, membershipLevel)
+fun randomGroupInfo(): GroupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
+fun randomGroupInfo(membershipLevel: GroupMembershipLevel): GroupInfo =
+    GroupInfo(randomGroupId(), randomGroupName(), false, membershipLevel)
 
 fun randomGroupName(): String = randomUUID()
 
