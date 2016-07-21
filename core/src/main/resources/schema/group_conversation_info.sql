@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS group_conversation_info (
-    group_id TEXT NOT NULL,
+    group_id TEXT PRIMARY KEY,
     last_speaker_contact_id INTEGER,
     unread_count INTEGER NOT NULL,
     last_message TEXT,

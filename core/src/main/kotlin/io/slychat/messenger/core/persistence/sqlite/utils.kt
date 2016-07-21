@@ -33,6 +33,9 @@ fun SQLiteStatement.columnNullableInt(index: Int): Int? =
 fun SQLiteStatement.columnNullableLong(index: Int): Long? =
     if (columnNull(index)) null else columnLong(index)
 
+fun SQLiteStatement.columnBool(index: Int): Boolean =
+    columnInt(index) != 0
+
 fun SQLiteStatement.bind(index: Int, value: GroupId?) {
     bind(index, value?.string)
 }

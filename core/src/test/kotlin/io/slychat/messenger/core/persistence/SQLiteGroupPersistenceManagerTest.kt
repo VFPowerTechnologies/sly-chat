@@ -49,6 +49,21 @@ class SQLiteGroupPersistenceManagerTest {
         return (1..n).mapToSet { insertRandomContact() }
     }
 
+    fun insertRandomMessages(id: GroupId, members: Set<UserId>): List<String> {
+        val ids = ArrayList<String>()
+
+        members.forEach { member ->
+            (1..2).forEach {
+                val groupMessageInfo = randomReceivedGroupMessageInfo(member)
+                ids.add(groupMessageInfo.info.id)
+
+                groupPersistenceManager.addMessage(id, groupMessageInfo).get()
+            }
+        }
+
+        return ids
+    }
+
     fun withJoinedGroupFull(body: (GroupInfo, members: Set<UserId>) -> Unit) {
         val groupInfo = randomGroupInfo()
         val members = insertRandomContacts()
@@ -109,6 +124,13 @@ class SQLiteGroupPersistenceManagerTest {
 
     fun assertFailsWithInvalidGroup(body: () -> Unit) {
         assertFailsWith(InvalidGroupException::class, body)
+    }
+
+    fun assertValidConversationInfo(groupMessageInfo: GroupMessageInfo, conversationInfo: GroupConversationInfo, unreadCount: Int = 1) {
+        assertEquals(groupMessageInfo.speaker, conversationInfo.lastSpeaker, "Invalid speaker")
+        assertEquals(groupMessageInfo.info.message, conversationInfo.lastMessage, "Invalid last message")
+        assertEquals(groupMessageInfo.info.timestamp, conversationInfo.lastTimestamp, "Invalid last timestamp")
+        assertEquals(unreadCount, conversationInfo.unreadCount, "Invalid unread count")
     }
 
     @Test
@@ -333,7 +355,7 @@ class SQLiteGroupPersistenceManagerTest {
         assertConvTableExists(groupInfo.id)
     }
 
-    fun assertInitialConversationInfo(id: GroupId, groupPersistenceManager: SQLiteGroupPersistenceManager) {
+    fun assertInitialConversationInfo(id: GroupId) {
         val conversationInfo = assertNotNull(groupPersistenceManager.testGetGroupConversation(id), "Missing group conversation info")
 
         assertEquals(id, conversationInfo.groupId, "Invalid group id")
@@ -348,14 +370,19 @@ class SQLiteGroupPersistenceManagerTest {
 
         groupPersistenceManager.joinGroup(groupInfo, insertRandomContacts()).get()
 
-        assertInitialConversationInfo(groupInfo.id, groupPersistenceManager)
+        assertInitialConversationInfo(groupInfo.id)
     }
 
+    //FIXME (reset group_id to not be a pk to trigger this error)
+    @Ignore
     @Test
     fun `joinGroup should reset group conversation info for a previously parted group`() {
         withPartedGroupFull {
+            val member = insertRandomContact()
+            groupPersistenceManager.addMessage(it.id, randomReceivedGroupMessageInfo(member)).get()
+
             groupPersistenceManager.joinGroup(it.copy(membershipLevel = GroupMembershipLevel.JOINED), insertRandomContacts()).get()
-            assertInitialConversationInfo(it.id, groupPersistenceManager)
+            assertInitialConversationInfo(it.id)
         }
     }
 
@@ -549,13 +576,6 @@ class SQLiteGroupPersistenceManagerTest {
         }
     }
 
-    fun assertValidConversationInfo(groupMessageInfo: GroupMessageInfo, conversationInfo: GroupConversationInfo, unreadCount: Int = 1) {
-        assertEquals(groupMessageInfo.speaker, conversationInfo.lastSpeaker, "Invalid speaker")
-        assertEquals(groupMessageInfo.info.message, conversationInfo.lastMessage, "Invalid last message")
-        assertEquals(groupMessageInfo.info.timestamp, conversationInfo.lastTimestamp, "Invalid last timestamp")
-        assertEquals(unreadCount, conversationInfo.unreadCount, "Invalid unread count")
-    }
-
     @Test
     fun `addMessage should update the corresponding group conversation info for a received message`() {
         withJoinedGroup { groupId, members ->
@@ -582,6 +602,28 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
+    fun `addMessage should obey insertion order when encountering duplicate timestamps`() {
+        withJoinedGroup { groupId, members ->
+            val speaker = members.first()
+            val first = randomReceivedGroupMessageInfo(speaker)
+            val second = GroupMessageInfo(
+                speaker,
+                first.info.copy(id = randomMessageId())
+            )
+
+            groupPersistenceManager.addMessage(groupId, first).get()
+            groupPersistenceManager.addMessage(groupId, second).get()
+
+            val messages = groupPersistenceManager.testGetAllMessages(groupId)
+
+            assertThat(messages).apply {
+                `as`("Group messages")
+                containsExactly(first, second)
+            }
+        }
+    }
+
+    @Test
     fun `addMessage should throw InvalidGroupException if the group id is invalid`() {
         assertFailsWithInvalidGroup {
             groupPersistenceManager.addMessage(randomGroupId(), randomReceivedGroupMessageInfo(null)).get()
@@ -601,10 +643,42 @@ class SQLiteGroupPersistenceManagerTest {
     fun `deleteMessages should throw InvalidGroupException if the group id is invalid`() {}
 
     @Test
-    fun `deleteAllMessages should clear the entire group log`() {}
+    fun `deleteAllMessages should clear the entire group log`() {
+        withJoinedGroup { groupId, members ->
+            insertRandomMessages(groupId, members)
+
+            groupPersistenceManager.deleteAllMessages(groupId).get()
+
+            val messages = groupPersistenceManager.testGetAllMessages(groupId)
+
+            assertThat(messages).apply {
+                `as`("Group messages")
+                isEmpty()
+            }
+        }
+    }
 
     @Test
-    fun `deleteAllMessages should throw InvalidGroupException if the group id is invalid`() {}
+    fun `deleteAllMessages should update the corresponding group conversation info`() {
+        withJoinedGroup { groupId, members ->
+            insertRandomMessages(groupId, members)
+
+            groupPersistenceManager.deleteAllMessages(groupId).get()
+
+            assertInitialConversationInfo(groupId)
+        }
+    }
+
+    @Test
+    fun `deleteAllMessages should throw InvalidGroupException if the group id is invalid`() {
+        withJoinedGroup { groupId, members ->
+            insertRandomMessages(groupId, members)
+
+            groupPersistenceManager.deleteAllMessages(groupId).get()
+
+            assertInitialConversationInfo(groupId)
+        }
+    }
 
     @Test
     fun `markMessageAsDelivered should set the given message delivery status to delivered if the message exists`() {}

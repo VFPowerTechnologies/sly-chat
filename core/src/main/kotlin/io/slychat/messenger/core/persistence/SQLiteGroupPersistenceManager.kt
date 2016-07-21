@@ -89,14 +89,14 @@ class SQLiteGroupPersistenceManager(
                     clearMemberList(connection, groupInfo.id)
 
                 insertOrReplaceGroupInfo(connection, groupInfo)
-                insertOrReplaceGroupConversationInfo(connection, groupInfo.id)
+                insertOrReplaceNewGroupConversationInfo(connection, groupInfo.id)
                 createGroupConversationTable(connection, groupInfo.id)
                 insertGroupMembers(connection, groupInfo.id, members)
             }
         }
     }
 
-    private fun insertOrReplaceGroupConversationInfo(connection: SQLiteConnection, id: GroupId) {
+    private fun insertOrReplaceNewGroupConversationInfo(connection: SQLiteConnection, id: GroupId) {
         val sql =
 """
 INSERT OR REPLACE INTO group_conversation_info
@@ -189,6 +189,22 @@ VALUES
             stmt.columnInt(1),
             stmt.columnString(2),
             stmt.columnNullableLong(3)
+        )
+    }
+
+    private fun rowToGroupMessageInfo(stmt: SQLiteStatement): GroupMessageInfo {
+        val speaker = stmt.columnNullableLong(1)?.let { UserId(it) }
+        return GroupMessageInfo(
+            speaker,
+            MessageInfo(
+                stmt.columnString(0),
+                stmt.columnString(6),
+                stmt.columnLong(2),
+                stmt.columnLong(3),
+                speaker == null,
+                stmt.columnBool(5),
+                stmt.columnLong(4)
+            )
         )
     }
 
@@ -302,6 +318,7 @@ VALUES
 """
         connection.withPrepared(sql) { stmt ->
             groupMessageInfoToRow(groupMessageInfo, stmt)
+            stmt.bind(8, groupMessageInfo.info.timestamp)
             stmt.step()
         }
     }
@@ -325,8 +342,16 @@ VALUES
         TODO()
     }
 
-    override fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception> {
-        TODO()
+    override fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            val tableName = GroupConversationTable.getTablename(groupId)
+            connection.withPrepared("DELETE FROM $tableName") { stmt ->
+                stmt.step()
+                Unit
+            }
+
+            insertOrReplaceNewGroupConversationInfo(connection, groupId)
+        }
     }
 
     override fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<MessageInfo, Exception> {
@@ -345,7 +370,7 @@ VALUES
 
     internal fun testAddGroupInfo(groupInfo: GroupInfo): Unit = sqlitePersistenceManager.syncRunQuery { connection ->
         insertOrReplaceGroupInfo(connection, groupInfo)
-        insertOrReplaceGroupConversationInfo(connection, groupInfo.id)
+        insertOrReplaceNewGroupConversationInfo(connection, groupInfo.id)
         if (groupInfo.membershipLevel == GroupMembershipLevel.JOINED)
             createGroupConversationTable(connection, groupInfo.id)
     }
@@ -369,6 +394,28 @@ VALUES
                 rowToGroupConversationInfo(stmt, id)
             else
                 null
+        }
+    }
+
+    fun testGetAllMessages(groupId: GroupId): List<GroupMessageInfo> = sqlitePersistenceManager.syncRunQuery { connection ->
+        val tableName = GroupConversationTable.getTablename(groupId)
+        val sql =
+"""
+SELECT
+    id,
+    speaker_contact_id,
+    timestamp,
+    received_timestamp,
+    ttl,
+    is_delivered,
+    message
+FROM
+    $tableName
+ORDER BY
+    timestamp, n
+"""
+        connection.withPrepared(sql) { stmt ->
+            stmt.map { rowToGroupMessageInfo(it) }
         }
     }
 }
