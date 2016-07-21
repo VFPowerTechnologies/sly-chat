@@ -1,52 +1,66 @@
-<!-- Page Container -->
-<div class="m-scene toolbar-inside main-content" id="main">
-
-    <!-- Top Menu Bar -->
-    <div id="navBar" class="navbar-fixed-top scene_element scene_element--fadein">
-        <div class="navbar header-bar">
-            <span class="page-title">Login</span>
-            <div id="networkStatus" class="center-align hidden">
-                <span style="width: auto; height: 20px; background: whitesmoke; padding-left: 10px; padding-right: 10px;">No connection available</span>
-            </div>
-        </div>
-    </div><!-- End of Top Menu Bar -->
-
-    <!-- Page Content -->
-    <div class="scene_element scene_element--fadein snap-content main-content-body container" id="content" style="background: black; height: 100%; padding: 0;">
-
-        <!-- Main Content -->
-        <div class="valign-wrapper row form-wrapper">
-            <div class="valign col s12">
-                <div class="container">
-                    <ul id="login-error" style="color: red;">
-                    </ul>
-                    <form id="loginForm" method="post">
-
-                        <div class="col s12" style="padding-left: 0; padding-right: 0;">
-                            <i class="mdi mdi-account-circle" style="position: absolute; padding: 15px 12px; pointer-events: none; font-size: 19px;"></i>
-                            <input id="login" class="validate" type="text" placeholder="Phone number or Email" autocorrect="off" autocapitalize="off" required style="padding-left: 43px;">
-                        </div>
-
-                        <div class="col s12" style="padding-left: 0; padding-right: 0;">
-                            <i class="mdi mdi-lock" style="position: absolute; padding: 15px 12px; pointer-events: none; font-size: 19px;"></i>
-                            <input id="login-psw" class="validate" type="password" placeholder="Password"  required style="padding-left: 43px;">
-                        </div>
-
-                        <button id="submitLoginBtn" type="submit" class="waves-effect waves-light btn-large secondary-color fullwidth">Login</button>
-                        <div class="col s12" id="test1" style="padding: 0; margin-bottom: 5px;">
-                            <p>
-                                <input id="rememberMe" type="checkbox" checked> <label for="rememberMe">Remember Me</label>
-                            </p>
-                        </div>
-                        <span>Don't have an account? <a id="registrationGoBtn" style="color: #26a69a;" href="#">Sign Up</a></span>
-                    </form>
+<!-- Top Navbar -->
+<div class="navbar">
+  <div class="navbar-inner">
+  </div>
+</div>
+<div class="pages navbar-through toolbar-through">
+  <div data-page="login" class="page">
+    <div class="page-content vertical-centered-content">
+      <div  style="margin: 0 10px 0 10px;">
+        <form id="loginForm">
+          <div class="content-block-title">Login</div>
+          <div class="list-block">
+            <ul>
+              <li>
+                <div class="item-content">
+                  <div class="item-media"><i class="icon icon-form-name"></i></div>
+                  <div class="item-inner">
+                    <div class="item-input">
+                      <input id='login' type="text" name='username' placeholder="Phone or E-mail" autocorrect="off" autocapitalize="off" required/>
+                    </div>
+                  </div>
                 </div>
+              </li>
+              <li>
+                <div class="item-content">
+                  <div class="item-media"><i class="icon icon-form-password"></i></div>
+                  <div class="item-inner">
+                    <div class="item-input">
+                      <input id='login-psw' name='password' type="password" placeholder="Password" required/>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="list-block list-error-block">
+            <ul class="error-block"></ul>
+          </div>
+          <div class="list-block">
+            <ul>
+              <li>
+                <label class="label-checkbox item-content">
+                  <input id='rememberMe' type="checkbox" name="rememberMe" value="true" checked="checked">
+                  <div class="item-media"><i class="icon icon-form-checkbox"></i></div>
+                  <div class="item-inner">
+                    <div class="item-title">Remember Me</div>
+                  </div>
+                </label>
+              </li>
+            </ul>
+          </div>
+          <div class="content-block">
+            <div class="row">
+              <div class="col-100">
+                <input id="submitLogin" type="submit" value="Submit" class="button button-big button-fill color-green"/>
+              </div>
             </div>
-        </div> <!-- End of Main Contents -->
-        <div id="blockui"></div>
-    </div> <!-- End of Page Content -->
-
-    <!-- Specific page javascript -->
-    <script src="js/internal/login.js"></script>
-
-</div> <!-- End of Page Container -->
+          </div>
+        </form>
+        <div class="contacts-block">
+          <p>Don't have an account? <a id='registrationGoBtn' href="#">Sing Up</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

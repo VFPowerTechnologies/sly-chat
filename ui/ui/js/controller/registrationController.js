@@ -1,227 +1,158 @@
-var RegistrationController = function (model) {
-    this.model = model;
-    this.modal = this.createRegisterModal();
+var RegistrationController = function () {
+    this.registrationInfo = {
+        name : '',
+        email : '',
+        password : '',
+        phoneNumber : ''
+    }
 };
 
 RegistrationController.prototype = {
-    init : function () {
-        $(document).on("click", "#submitRegisterBtn", function(e){
-            e.preventDefault();
+    register : function () {
+        var form = $("#registrationForm");
+        var formValid = slychat.validateForm(form);
 
-            var phone = getFormatedPhoneNumber($("#phone").val(), $("#countrySelect").val());
+        if(!formValid)
+            return;
 
-            var submitRegisterBtn = $("#submitRegisterBtn");
+        var email = $$('#registration-email').val();
+        var name = $$('#registration-name').val();
+        var password = $$('#registration-password').val();
+        var phoneValue = $("#phone").val();
+        var selectedCountry = $("#countrySelect").val();
+        var phone = getFormatedPhoneNumber(phoneValue, selectedCountry);
 
-            submitRegisterBtn.prop("disabled", true);
+        this.setRegistrationInfo(name, email, phone, password);
 
-            this.model.setItems({
-                "name" : $("#name").val(),
-                "email" : $("#email").val(),
-                "phoneNumber" : phone,
-                "password" : $("#password").val()
-            });
+        var phoneValid = validatePhone(phoneValue, selectedCountry);
 
-            var formValid = this.model.validate();
-            var phoneValid = this.validatePhone();
-
-            if(formValid == true && phoneValid == true){
-                this.register();
-                this.modal.open();
-            }
-            else {
-                submitRegisterBtn.prop("disabled", false);
-            }
-        }.bind(this));
-
-        $(document).on("click", "#signInGoBtn", function (e) {
-            e.preventDefault();
-            KEYTAP.navigationController.goBack();
-        });
-
-        $(document).on("click", "#successLoginBtn", function (e) {
-            e.preventDefault();
-            this.modal.close();
-            KEYTAP.loginController.modal.open();
-            var info = this.model.getItems();
-            KEYTAP.loginController.setInfo(info.email, info.password);
-            KEYTAP.loginController.login(true);
-            this.model.setItems({});
-        }.bind(this));
-
-        $(document).on("click", "#submitVerificationCode", function (e) {
-            e.preventDefault();
-
-            var code = $("#smsCode").val();
-            registrationService.submitVerificationCode(this.model.getItems().email, code).then(function (result) {
-                if(result.successful == true) {
-                    this.modal = createStatusModal(this.createRegistrationSuccessContent());
-                    this.modal.open();
+        if(formValid === true && phoneValid === true) {
+            slychat.showPreloader();
+            registrationService.doRegistration(this.registrationInfo).then(function (result) {
+                slychat.hidePreloader();
+                if (result.successful == true) {
+                    var options = {
+                        url: 'smsVerification.html',
+                        query: {
+                            email: this.registrationInfo.email,
+                            password: this.registrationInfo.password
+                        }
+                    };
+                    navigationController.loadPage("smsVerification.html", true, options);
                 }
                 else {
-                    document.getElementById("verification-error").innerHTML = "<li>" + result.errorMessage + "</li>";
+                    form.find(".error-block").html("<li>" + result.errorMessage +"</li>");
+                    console.log(result);
                 }
             }.bind(this)).catch(function (e) {
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                document.getElementById("verification-error").innerHTML = "<li>Verification failed</li>";
-            });
-        }.bind(this));
+                slychat.hidePreloader();
+                form.find(".error-block").html("<li>An unexpected error occurred</li>");
+                console.log(e);
+            }.bind(this));
+        }
+    },
 
-        $(document).on("click", "#resendVerificationCode", function (e) {
-            e.preventDefault();
-            $("#resendVerificationCode").prop("disabled", true);
-            registrationService.resendVerificationCode(this.model.getItems().email).then(function (result) {
-                if(result.successful == true) {
-                    setTimeout(function(){
-                        $("#resendVerificationCode").prop("disabled", false);
-                    }, 20000);
+    setRegistrationInfo : function (name, email, phone, password) {
+        this.registrationInfo.name = name;
+        this.registrationInfo.email = email;
+        this.registrationInfo.phoneNumber = phone;
+        this.registrationInfo.password = password;
+    },
+
+    updatePhone : function () {
+        var form = $("#phoneUpdateForm");
+        var valid = slychat.validateForm(form);
+        if (!valid)
+            return;
+
+        var email = $("#hiddenEmail").val();
+        var password = $("#phone-update-password").val();
+        var phoneValue = $("#phone").val();
+        var selectedCountry = $("#countrySelect").val();
+        var phone = getFormatedPhoneNumber(phoneValue, selectedCountry);
+
+        var phoneValid = validatePhone(phoneValue, selectedCountry);
+
+        if (phoneValid) {
+            slychat.showPreloader();
+            registrationService.updatePhone({
+                "email": email,
+                "password": password,
+                "phoneNumber": phone
+            }).then(function (result) {
+                slychat.hidePreloader();
+                if (result.successful == true) {
+                    var options = {
+                        url: "smsVerification.html",
+                        query: {
+                            email: email,
+                            password: password
+                        }
+                    };
+                    navigationController.loadPage("smsVerification.html", false, options);
                 }
                 else {
-                    document.getElementById("verification-error").innerHTML = "<li>" + result.errorMessage + "</li>";
-                    $("#resendVerificationCode").prop("disabled", false);
+                    form.find(".error-block").html("<li>" + result.errorMessage +"</li>");
                 }
-            }).catch(function (e) {
-                document.getElementById("verification-error").innerHTML = "<li>An error occurred</li>";
-                KEYTAP.exceptionController.displayDebugMessage(e);
+            }.bind(this)).catch(function (e) {
+                slychat.hidePreloader();
+                form.find(".error-block").html("<li>An error occurred</li>");
+                console.log(e);
             });
-        }.bind(this));
+        }
+    },
 
-        $(document).on("click", "#updatePhoneNumberLink", function (e) {
-            e.preventDefault();
-            KEYTAP.navigationController.loadPage("updatePhone.html", false);
-        });
+    getRegistrationInfo : function () {
+        return this.registrationInfo;
+    },
 
-        $(document).on("click", "#updatePhoneSubmitBtn", function (e) {
-            e.preventDefault();
-            var updateBtn = $("#updatePhoneSubmitBtn");
+    submitVerificationCode : function () {
+        var form = $("#smsVerificationForm");
+        var formValid = slychat.validateForm(form);
+        if (!formValid)
+            return;
 
-            updateBtn.prop("disabled", true);
-            updateBtn.html("<i class='fa fa-spinner fa-spin'></i>");
+        var code = $$("#smsCode").val();
+        var email = $$('#hiddenEmail').val();
+        var password = $$('#hiddenPassword').val();
 
-            var validation = $("#updatePhoneForm").parsley({
-                errorClass: "invalid",
-                focus: 'none',
-                errorsWrapper: '<div class="pull-right parsley-errors-list" style="color: red;"></div>',
-                errorTemplate: '<p></p>'
-            });
-
-            var isValid = validation.validate();
-            var phoneValid = this.validatePhone();
-
-            if (isValid && phoneValid) {
-                var phoneVal = $("#phone").val();
-                var countryVal = $("#countrySelect").val();
-                var phone = getFormatedPhoneNumber(phoneVal, countryVal);
-
-                registrationService.updatePhone({
-                    "email": KEYTAP.loginController.model.getLogin(),
-                    "password": $("#phoneUpdatePassword").val(),
-                    "phoneNumber": phone
-                }).then(function (result) {
-                    if (result.successful == true) {
-                        KEYTAP.navigationController.loadPage("smsVerification.html");
-                    }
-                    else {
-                        updateBtn.prop("disabled", false);
-                        updateBtn.html("Submit");
-                        document.getElementById("verification-error").innerHTML = "<li>" + result.errorMessage + "</li>";
-                    }
-                }.bind(this)).catch(function (e) {
-                    updateBtn.prop("disabled", false);
-                    updateBtn.html("Submit");
-                    KEYTAP.exceptionController.displayDebugMessage(e);
-                    document.getElementById("verification-error").innerHTML = "<li>An error occured</li>";
-                });
+        slychat.showPreloader();
+        registrationService.submitVerificationCode(email, code).then(function (result) {
+            if(result.successful == true) {
+                loginService.login(email, password, true);
             }
             else {
-                updateBtn.prop("disabled", false);
-                updateBtn.html("Submit");
+                slychat.hidePreloader();
+                form.find(".error-block").html("<li>" + result.errorMessage +"</li>");
+                console.log(result.errorMessage);
             }
-        }.bind(this));
-
-        $(document).on("change", "#countrySelect", function(e) {
-            var ext = $("#countrySelect :selected").text().split("+")[1];
-            this.setPhoneExt(ext);
-            this.validatePhone();
-        }.bind(this));
-
-        $(document).on("change keyup", "#phone", function (e) {
-            if($(".invalidPhone").length)
-                this.validatePhone();
-        }.bind(this));
+        }.bind(this)).catch(function (e) {
+            slychat.hidePreloader();
+            form.find(".error-block").html("<li>Verification failed</li>");
+            console.log(e);
+        });
     },
-    register : function () {
-        registrationService.doRegistration(this.model.getItems()).then(function (result) {
+
+    resendVerificationCode : function () {
+        var email = $$('#hiddenEmail').val();
+
+        slychat.showPreloader();
+        $$("#resendVerificationCode").prop("disabled", true);
+        registrationService.resendVerificationCode(email).then(function (result) {
             if(result.successful == true) {
-                this.modal.close();
-                KEYTAP.navigationController.loadPage("smsVerification.html");
+                setTimeout(function(){
+                    $$("#resendVerificationCode").prop("disabled", false);
+                }, 20000);
+                slychat.hidePreloader();
             }
-            else{
-                this.modal.close();
-                this.displayRegistrationError(result);
-                $("#submitRegisterBtn").prop("disabled", false);
+            else {
+                console.log(result.errorMessage);
+                $("#resendVerificationCode").prop("disabled", false);
+                slychat.hidePreloader();
             }
-        }.bind(this)).catch(function(e) {
-            this.modal.close();
-            KEYTAP.exceptionController.displayDebugMessage(e);
-            document.getElementById("register-error").innerHTML = "<li>Registration failed</li>";
-            $("#submitRegisterBtn").prop("disabled", false);
-        }.bind(this));
-    },
-    displayRegistrationError : function (result) {
-        document.getElementById("register-error").innerHTML = "<li>" + result.errorMessage + "</li>";
-        console.log("displaying error");
-    },
-    createRegistrationSuccessContent : function () {
-        var username = this.model.getItems().name;
-        if(username == undefined)
-            username = "";
-        return "<div style='text-align: center;'> <h6 style='margin-bottom: 15px; color: whitesmoke;'>Registration Successful</h6> <p>Thank you <strong>" + username + "</p><p style='margin-bottom: 10px;'>Login to access your new account</p><button id='successLoginBtn' class='btn btn-success'>Login</button></div>";
-    },
-    validatePhone : function () {
-        var phoneInput = $("#phone");
-        var phoneValue = phoneInput.val();
-        var valid = validatePhone(phoneValue, $("#countrySelect").val());
-        var invalidDiv = $(".invalidPhone");
-
-        if(phoneValue == "")
-            invalidDiv.remove();
-
-        if(!valid) {
-            if(phoneValue != "") {
-                phoneInput.addClass("invalid");
-                if (!invalidDiv.length) {
-                    phoneInput.after("<div class='pull-right invalidPhone filled' style='color: red;'><p>Phone Number seems invalid.</p></div>");
-                }
-            }
-        }
-        else {
-            phoneInput.removeClass("invalid");
-            invalidDiv.remove();
-        }
-
-        return valid;
-    },
-    setPhoneExt : function (dialCode) {
-        if(typeof dialCode != "undefined") {
-            var extension = $("#phoneIntlExt");
-            $("#phoneInputIcon").hide();
-
-            extension.html("+" + dialCode);
-
-            var width = extension.outerWidth(true);
-
-            if (width + 24 > 43)
-                $("#phone").css("padding-left", width + "px");
-
-            extension.removeClass("hidden");
-        }
-    },
-    createRegisterModal : function () {
-        var html = "<div style='text-align: center;'> <h6 style='margin-bottom: 15px; color: whitesmoke;'>Registration in process</h6> <i class='fa fa-spinner fa-3x fa-spin'></i> <p id='registrationStatusUpdate' style='margin-top: 40px;'></p></div>";
-
-        return createStatusModal(html);
-    },
-    clearCache : function () {
-        this.model.clearCache();
-    },
+        }).catch(function (e) {
+            console.log(e);
+            slychat.hidePreloader();
+        });
+    }
 };

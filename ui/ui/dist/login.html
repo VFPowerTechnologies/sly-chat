@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>My App</title>
+    <!-- Path to Framework7 Library CSS-->
+    <link rel="stylesheet" href="css/framework7.ios.min.css">
+    <link rel="stylesheet" href="css/framework7.ios.colors.min.css">
+    <!-- Path to your custom app styles-->
+    <link rel="stylesheet" href="css/my-app.css">
+
+    <style>
+      img.bg {
+        /* Set rules to fill background */
+        min-height: 100%;
+        min-width: 1024px;
+
+        /* Set up proportionate scaling */
+        width: 100%;
+        height: auto;
+
+        /* Set up positioning */
+        position: fixed;
+        top: 0;
+        left: 0;
+      }
+
+      @media screen and (max-width: 1024px) { /* Specific to this particular image */
+        img.bg {
+          left: 50%;
+          margin-left: -512px;   /* 50% */
+        }
+      }
+
+      input[placeholder], [placeholder], *[placeholder] {
+        color: white !important;
+      }
+
+      ul {
+        background-color: transparent !important;
+        border: none;
+      }
+    </style>
+
+  </head>
+  <body>
+  <img src="img/main_900.jpg" class="bg">
+  <!--<body style="background-image: url('img/main_900.jpg'); -webkit-background-size: cover; -moz-background-size: cover; -o-background-size: cover; background-size: cover;">-->
+    <!-- Status bar overlay for fullscreen mode-->
+    <div class="statusbar-overlay"></div>
+    <!-- Panels overlay-->
+    <div class="panel-overlay"></div>
+    <!-- Right panel with cover effect-->
+    <div class="panel panel-right panel-reveal">
+      <div class="content-block">
+        <p>Menu goes here</p>
+      </div>
+    </div>
+    <!-- Views-->
+    <div class="views">
+      <!-- Your main view, should have "view-main" class-->
+      <div class="view view-main">
+        <!-- Top Navbar-->
+        <div class="navbar">
+          <div class="navbar-inner">
+            <!-- We have home navbar without left link-->
+            <div class="center sliding">Sly Chat</div>
+            <div class="right">
+              <a href="#" class="link icon-only open-panel"> <i class="icon icon-bars"></i></a>
+            </div>
+          </div>
+        </div>
+        <!-- Pages, because we need fixed-through navbar and toolbar, it has additional appropriate classes-->
+        <div class="pages navbar-through toolbar-through" style="background-color: transparent !important;">
+          <!-- Page, data-page contains page name-->
+          <div data-page="index" class="page" style="background-color: transparent !important;">
+            <!-- Scrollable page content-->
+            <div class="page-content" style="display: flex; flex-direction: column; justify-content: center;">
+              <div style="margin: 0 10px 0 10px;">
+                <div class="content-block-title">Login</div>
+                <div class="list-block">
+                  <ul>
+                    <li>
+                      <div class="item-content">
+                        <div class="item-media"><i class="icon icon-form-name"></i></div>
+                        <div class="item-inner">
+                          <div class="item-input">
+                            <input type="text" placeholder="Phone or E-mail"/>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                    <li>
+                      <div class="item-content">
+                        <div class="item-media"><i class="icon icon-form-password"></i></div>
+                        <div class="item-inner">
+                          <div class="item-input">
+                            <input type="password" placeholder="Password"/>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                <div class="list-block">
+                  <ul>
+                    <li>
+                      <label class="label-checkbox item-content">
+                        <input type="checkbox" name="rememberMe" value="true" checked="checked">
+                        <div class="item-media"><i class="icon icon-form-checkbox"></i></div>
+                        <div class="item-inner">
+                          <div class="item-title">Remember Me</div>
+                        </div>
+                      </label>
+                    </li>
+                  </ul>
+                </div>
+                <div class="content-block">
+                  <div class="row">
+                    <div class="col-100">
+                      <input type="submit" value="Submit" class="button button-big button-fill color-green"/>
+                    </div>
+                  </div>
+                </div>
+                <div class="contacts-block">
+                  <p>Don't have an account? <a href="register.html">Sign Up</a></p>
+                  <p>Don't have an account? <a href="updatePhone.html">Update Phone</a></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Path to Framework7 Library JS-->
+    <script type="text/javascript" src="js/framework7.min.js"></script>
+    <!-- Path to your app js-->
+    <script type="text/javascript" src="js/my-app.js"></script>
+  </body>
+</html>

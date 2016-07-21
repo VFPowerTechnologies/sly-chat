@@ -1,14 +1,16 @@
 var ConnectionController = function () {
-    this.networkAvailable = true;
     this.relayConnected = true;
-    this.connectionNotification = null;
+    this.networkAvailable = true;
+    this.notification = null;
+    this.allowRelayNotificationPage = [
+        "contacts",
+        "chat",
+        "addContact",
+        "profile"
+    ];
 };
 
 ConnectionController.prototype = {
-    /**
-     * Init function, create the listener for relay connection and network connection.
-     * Ran only once on connection controller initiation.
-     */
     init : function () {
         networkStatusService.addRelayStatusChangeListener(function (status) {
             this.relayConnected = status.online;
@@ -20,80 +22,50 @@ ConnectionController.prototype = {
             this.handleConnectionDisplay();
         }.bind(this));
     },
-    /**
-     * Handle connection notification display.
-     */
-    handleConnectionDisplay: function () {
-        var networkStatus = $("#networkStatus");
-        var connectionStatus = $("#connectionStatus");
 
-        if (this.networkAvailable == false) {
-            this.updateNotification("No network available", "danger");
-            $("#addContactBtn").prop("disabled", true);
+    handleConnectionDisplay : function () {
+        var currentPage = $$('#mainView').data('page');
+        if (this.networkAvailable == true && this.relayConnected == true) {
+            if (this.notification !== null) {
+                slychat.closeNotification(this.notification);
+                this.notification = null;
+            }
         }
-        else if (this.relayConnected == false) {
+        else {
             setTimeout(function () {
-                if(this.relayConnected == false && this.networkAvailable == true) {
-                    this.updateNotification("Waiting for connection...", "warning");
-                    $("#addContactBtn").prop("disabled", false);
+                if (this.networkAvailable !== true) {
+                    this.openConnectionNotification("No network access");
                 }
-            }.bind(this), 2000);
-        }
-        else {
-            this.closeNotification();
-            $("#addContactBtn").prop("disabled", false);
+                else if (this.relayConnected !== true) {
+                    if (this.notification === null) {
+                        if ($.inArray(currentPage, this.allowRelayNotificationPage) > -1)
+                            this.openConnectionNotification("Attempting to reconnect");
+                    }
+                    else {
+                        if ($.inArray(currentPage, this.allowRelayNotificationPage) > -1)
+                            this.openConnectionNotification("Attempting to reconnect");
+                        else
+                            slychat.closeNotification(this.notification);
+                    }
+                }
+            }.bind(this), 5000);
         }
     },
-    /**
-     * Opens or update the notification if it's already opened.
-     *
-     * @param message
-     * @param notificationClass
-     */
-    openNotification : function (message, notificationClass) {
-        var currentUrl = window.location.href;
-        var page = currentUrl.substring(currentUrl.lastIndexOf("/") + 1);
-        var notShowPageList = ["register.html", "login.html", "updatePhone.html", "smsVerification.html", "index.html"];
 
-        if(notShowPageList.indexOf(page) == -1) {
-            this.connectionNotification = $.notify({
-                icon: "icon-pull-left fa fa-info-circle",
-                message: message
-            }, {
-                type: notificationClass,
-                newest_on_top: true,
-                delay: 0,
-                allow_dismiss: false,
-                allow_duplicates: false,
-                offset: {
-                    y: 66,
-                    x: 20
-                }
-            });
-        }
-    },
-    /**
-     * Close the notification.
-     */
-    closeNotification : function () {
-        if(this.connectionNotification != null) {
-            this.connectionNotification.close();
-            this.connectionNotification = null;
-        }
-    },
-    /**
-     * Update the notification.
-     *
-     * @param message
-     * @param notificationClass
-     */
-    updateNotification : function (message, notificationClass) {
-        if(this.connectionNotification != null) {
-            this.connectionNotification.update("message", message);
-            this.connectionNotification.update("type", notificationClass);
+    openConnectionNotification : function (message, additionalClass) {
+        if (this.notification === null) {
+            var options = {
+                title: message,
+                additionalClass: 'connection-notification ' + additionalClass,
+                closeOnClick: false
+            };
+
+            this.notification = slychat.addNotification(options);
         }
         else {
-            this.openNotification(message, notificationClass);
+            $(this.notification).removeClass("no-network not-connected");
+            $(this.notification).addClass(additionalClass);
+            $(this.notification).find(".item-text").html(message);
         }
     }
 };

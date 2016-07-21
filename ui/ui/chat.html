@@ -1,72 +1,31 @@
-<!-- Page Container -->
-<div class="m-scene main-content" id="main" style="margin: 0; padding: 0 0 70px 0;  background-color: #eeeeee;">
-
-    <!-- Top Menu Bar -->
-    <div id="navBar" class="navbar-fixed-top scene_element scene_element--fadein">
-        <div class="navbar header-bar">
-            <div class="open-left nav-btn" id="nav-menu-back">
-                <a href="#" id="backBtn"><i class="mdi mdi-arrow-left"></i></a>
-            </div>
-            <div id='navBarMenu' class="open-right dropdown" style="width: 56px;">
-                <button class="dropDownBtn" type="button" id="dropdownMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true"><i class="fa fa-ellipsis-v"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu">
-                    <li><a id="editProfileBtn" href="#"><i class="mdi mdi-account"></i>Profile</a></li>
-                    <li role="separator" class="divider"></li>
-                    <li><a id='addContactBtn' href="#"><i class="mdi mdi-account-plus"></i>Add contact</a></li>
-                    <li role="separator" class="divider"></li>
-                    <li><a id='deleteWholeConversation' href="#"><i class="mdi mdi-close-circle"></i>Delete Conversation</a></li>
-                    <li role="separator" class="divider"></li>
-                    <li><a id="logoutBtn" href="#"><i class="mdi mdi-logout"></i>Logout</a></li>
-                </ul>
-            </div>
-            <div id="chat-page-title" class="page-title" style="margin-left: 56px; margin-right: 56px; height: 56px; overflow: hidden;"></div>
-            <div id="networkStatus" class="center-align hidden">
-                <span style="width: auto; height: 20px; background: whitesmoke; padding-left: 10px; padding-right: 10px;">No connection available</span>
-            </div>
-            <div id="connectionStatus" class="center-align hidden">
-                <span style="width: auto; height: 20px; background: whitesmoke; padding-left: 10px; padding-right: 10px;">Disconnected</span>
-            </div>
-        </div>
-    </div><!-- End of Top Menu Bar -->
-
-    <div class="scene_element scene_element--fadein navbar-fixed-bottom container bottom-chat-input">
-        <div class="navbar" style="margin-bottom: 0;">
-            <form id="newMessageForm" method="post">
-                <div id="chatInputContainer">
-                    <textarea placeholder="Type your secured message" id="newMessageInput" name="newMessageInput"></textarea>
-                </div>
-                <button class="btn" id="newMessageSubmitBtn"><i class="mdi mdi-send"></i></button>
-            </form>
-        </div>
+<!-- Top Navbar -->
+<div class="navbar">
+  <div class="navbar-inner">
+    <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
+    <div id='contact-name' class="center sliding" style="color: #6d6d72"></div>
+    <div class="right">
     </div>
-
-    <!-- Page Content -->
-    <div class="scene_element scene_element--fadein snap-content main-content-body" id="content" style="background-color: #eeeeee; height: 100%; overflow-x: hidden; overflow-y: auto;">
-
-        <!-- Main Content -->
-        <div class="scene_element" style="background-color: #eeeeee;">
-
-            <div class="container" style="padding: 20px 10px 0 10px;">
-                <div class="row" style="width: 100%; margin: 0 0 0 0;">
-                    <div class="col s12" style="padding: 0 0 0 0;">
-                        <div class="chat">
-                            <ul id="messages" style="margin-bottom: 0; padding-bottom: 62px;">
-
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+  </div>
+</div>
+<div class="pages navbar-through toolbar-through">
+  <div data-page="chat" class="page">
+    <div id="chatPageContent" class="page-content infinite-scroll-top row">
+      <div class="col-100 list-block">
+        <ul id='chat-content'>
+        </ul>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="toolbar-inner">
+        <div class="form-content" style="width: inherit;">
+          <form id="newMessageForm" style="width: inherit;">
+            <div id='newMessageInputDiv' style="width: 100%; display: inline-block; min-height: 48px;">
+              <textarea class='empty-textarea resizable' placeholder='Type your secured message' id="newMessageInput" name="newMessageInput"></textarea>
+              <div id="contact-id" style="display: none;"></div>
             </div>
-
-            <div id='currentPageChatId' class='hidden'></div>
-
-        </div> <!-- End of Main Contents -->
-        <div id="blockui"></div>
-
-        <!-- Specific page javascript -->
-        <script src="js/internal/chat.js"></script>
-
-    </div> <!-- End of Page Content -->
-
-</div> <!-- End of Page Container -->
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

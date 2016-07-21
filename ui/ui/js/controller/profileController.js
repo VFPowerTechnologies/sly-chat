@@ -1,260 +1,255 @@
-var ProfileController = function (model) {
-    this.model = model;
-    this.modal = this.createSmsVerificationModal();
+var ProfileController = function () {
+    this.username = '';
+    this.phoneNumber = '';
+    this.name = '';
+    this.publicKey = '';
+    this.requestedPhone = '';
 };
 
 ProfileController.prototype = {
-    init : function() {
-        var userInfo = this.getUserInfo();
-
-        $("#profileAvatar").html("<a id='takeProfilePictureBtn' href='#'>" + createAvatar(userInfo.name, "#fff", "#212121") + "</a>");
-
-        $("#profileNameDisplay").html(userInfo.name);
-
-        $("#profileEmailDisplay").html(userInfo.username);
-
-        $("#profilePubKeyBtn").click(function (e) {
-            e.preventDefault();
-            var pubKey = this.model.publicKey;
-            this.openPublicKeyInfoDialog(pubKey);
-        }.bind(this));
-
-        $("#submitEmailUpdateBtn").click(this.updateEmail.bind(this));
-        $("#submitUpdatePhoneBtn").click(this.requestPhoneUpdate.bind(this));
-        $("#submitUpdateName").click(this.updateName.bind(this));
+    setUserInfo : function (userInfo, publicKey) {
+        this.username = userInfo.email;
+        this.phoneNumber = userInfo['phone-number'];
+        this.name = userInfo.name;
+        this.publicKey = publicKey;
     },
-    getUserInfo: function () {
-        return {
-            "username" : this.model.username,
-            "phoneNumber" : this.model.phoneNumber,
-            "name" : this.model.name,
-            "publicKey" : this.model.publicKey
-        }
-    },
-    openPublicKeyInfoDialog : function (publicKey) {
-        var html = "<span id='pubkeyDialog'>" + formatPublicKey(publicKey) + "<br><small class='pull-right'>Click to copy to clipboard.</small></span>";
-        var pubKeyDialog = createContextLikeMenu(html, true);
-        pubKeyDialog.open();
 
-        $("#pubkeyDialog").click(function (e) {
-            e.preventDefault();
-            windowService.copyTextToClipboard(publicKey).then(function () {
-                BootstrapDialog.closeAll();
-                this.displayNotification("Public Key has been copied to clipboard", "success");
-            }.bind(this)).catch(function (e) {
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                console.log("An error occured while copying public key to clipboard");
-            });
-        }.bind(this));
+    resetProfileInfo : function () {
+        this.username = '';
+        this.phoneNumber = '';
+        this.name = '';
+        this.publicKey = '';
     },
-    setUserInfo: function (userInfo, publicKey) {
-        this.model.setUserInfo(userInfo.email, userInfo["phone-number"], userInfo.name, publicKey);
+
+    displayInfo : function () {
+        $("#profileEmail").html(this.username);
+        $("#profileName").html(this.name);
+        $("#profilePhone").html(this.phoneNumber);
     },
-    clearCache : function () {
-        this.model.setUserInfo('', '', '')
+
+    submitNameUpdate : function () {
+        var name = $('#profileNameInput').val();
+
+        if(name === '')
+            return;
+
+        slychat.showPreloader();
+
+        accountModifictationService.updateName(name).then(function (result) {
+            slychat.hidePreloader();
+            if (result.successful === true) {
+                $('#profileNameInput').val("");
+                this.name = name;
+                $("#profileName").html(name);
+                slychat.closeModal();
+                this.openNotification("Your name has been updated", "custom-notification", 2000);
+            }
+            else {
+                this.openNotification(result.errorMessage, "custom-notification fail", 2000);
+            }
+        }.bind(this)).catch(function (e){
+            slychat.hidePreloader();
+            console.log(e);
+            this.openNotification("An error occurred", "custom-notification fail", 2000);
+        });
     },
-    requestPhoneUpdate : function (e) {
-        e.preventDefault();
-        var formValid = validateForm("#updatePhoneForm");
-        var phoneValid = this.validatePhone();
-        var button = $("#submitUpdatePhoneBtn");
 
-        button.prop("disabled", true);
-        $("#updatePhoneFormDiv .formError").html("");
+    submitEmailUpdate : function () {
+        var email = $('#profileEmailInput').val();
 
-        if(formValid == true && phoneValid == true) {
-            var phone = getFormatedPhoneNumber($("#phone").val(), $("#countrySelect").val());
+        if(email === '')
+            return;
 
+        slychat.showPreloader();
+
+        accountModifictationService.updateEmail(email).then(function (result) {
+            slychat.hidePreloader();
+            if (result.successful === true) {
+                $('#profileEmailInput').val("");
+                this.username = email;
+                $("#profileEmail").html(email);
+                slychat.closeModal();
+                this.openNotification("Your email has been updated", "custom-notification", 2000);
+            }
+            else {
+                this.openNotification(result.errorMessage, "custom-notification fail", 2000);
+            }
+        }.bind(this)).catch(function (e){
+            slychat.hidePreloader();
+            console.log(e);
+            this.openNotification("An error occurred", "custom-notification fail", 2000);
+        });
+    },
+
+    requestPhoneUpdate : function () {
+        var phoneValue = $("#phone").val();
+        var selectedCountry = $("#countrySelect").val();
+        var phone = getFormatedPhoneNumber(phoneValue, selectedCountry);
+
+        var phoneValid = validatePhone(phoneValue, selectedCountry);
+        if (phoneValid) {
+            slychat.showPreloader();
+            this.requestedPhone = phone;
             accountModifictationService.requestPhoneUpdate(phone).then(function (result) {
+                slychat.hidePreloader();
                 if (result.successful === true) {
-                    button.prop("disabled", false);
+                    slychat.closeModal();
                     this.openSmsVerificationModal();
                 }
                 else {
-                    $("#updatePhoneFormDiv .formError").html("<li>" + result.errorMessage + "</li>");
-                    button.prop("disabled", false);
-                    this.displayNotification("Phone number update has failed", "danger");
+                    this.openNotification(result.errorMessage, "custom-notification fail", 2000);
                 }
             }.bind(this)).catch(function (e) {
-                $("#updatePhoneFormDiv .formError").html("<li>An error occured</li>");
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                button.prop("disabled", false);
-                this.displayNotification("Phone number update has failed", "danger");
+                slychat.hidePreloader();
+                console.log(e);
+                this.openNotification("An error occurred", "custom-notification fail", 2000);
             });
         }
-        else {
-            button.prop("disabled", false);
-        }
     },
-    updateEmail : function (e) {
-        e.preventDefault();
-        var button = $("#submitEmailUpdateBtn");
-        button.prop("disabled", true);
-        $("#updateEmailFormDiv .formError").html("");
-        if(validateForm("#updateEmailForm")) {
-            var email = $("#profileEmail").val();
 
-            accountModifictationService.updateEmail(email).then(function (result) {
-                if (result.successful === true) {
-                    $("#profileEmail").val("");
-                    this.model.setUsername(email);
-                    $("#profileEmailDisplay").html(email);
-                    button.prop("disabled", false);
-                    this.displayNotification("Your email has been updated", "success");
-                }
-                else {
-                    $("#updateEmailFormDiv .formError").html("<li>" + result.errorMessage + "</li>");
-                    button.prop("disabled", false);
-                    this.displayNotification("Email update has failed", "danger");
-                }
-            }.bind(this)).catch(function (e){
-                $("#updateEmailFormDiv .formError").html("<li>An error occured</li>");
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                button.prop("disabled", false);
-                this.displayNotification("Email update has failed", "danger");
-            });
-        }
-        else {
-            button.prop("disabled", false);
-        }
-    },
-    updateName : function (e) {
-        e.preventDefault();
-        var button = $("#submitUpdateName");
-        button.prop("disabled", true);
-        $("#updateNameDiv .formError").html("");
-        if(validateForm("#updateNameForm")) {
-            var name = $("#profileName").val();
+    submitSmsVerification : function () {
+        var code = $('smsCodeInput').val();
+        if (code === '')
+            return;
 
-            accountModifictationService.updateName(name).then(function (result) {
-                if (result.successful === true) {
-                    $("#profileName").val("");
-                    this.model.setName(name);
-                    $("#profileNameDisplay").html(name);
-                    button.prop("disabled", false);
-                    this.displayNotification("Your name has been updated", "success");
-                }
-                else {
-                    $("#updateNameDiv .formError").html("<li>" + result.errorMessage + "</li>");
-                    button.prop("disabled", false);
-                    this.displayNotification("Name update has failed", "danger");
-                }
-            }.bind(this)).catch(function (e){
-                $("#updateNameDiv .formError").html("<li>An error occured</li>");
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                button.prop("disabled", false);
-                this.displayNotification("Name update has failed", "danger");
-            });
-        }
-        else {
-            button.prop("disabled", false);
-        }
-    },
-    confirmPhone : function () {
-        var code = $("#smsCode").val();
-        if(code != null && code != '') {
-            accountModifictationService.confirmPhoneNumber(code).then(function (result) {
-                if (result.successful === true) {
-                    $("#phone").val("");
-                    this.model.setPhoneNumber(result.accountInfo['phone-number']);
-                    this.modal.close();
-                    this.displayNotification("Your phone number has been updated", "success");
-                }
-                else {
-                    $("#verification-error").html("<li>" + result.errorMessage + "</li>");
-                    this.displayNotification("Phone number update has failed", "danger");
-                }
-            }.bind(this)).catch(function (e) {
-                $("#verification-error").html("<li>An error occured</li>");
-                KEYTAP.exceptionController.displayDebugMessage(e);
-                this.displayNotification("Phone number update has failed", "danger");
-            })
-        }
-    },
-    createSmsVerificationModal: function () {
-        var html = '<div class="valign-wrapper row form-wrapper" style="background-color: #fff; padding: 10px; min-height: 100%;">' +
-            '<div class="valign col s12" style="padding: 0;">' +
-                '<div class="container" style="margin: 0; padding: 0;">' +
-                    '<ul id="verification-error" style="color: red;">' +
-                    '</ul>' +
-                    '<h6 style="text-align: center; color: #9e9e9e;">You should receive a sms verification code shortly</h6>' +
-                    '<form id="verificationForm" method="post">' +
-                        '<div class="group-form col s12">' +
-                            '<i class="mdi mdi-lock"></i>' +
-                            '<input id="smsCode" type="text" required autocapitalize="off" placeholder="Verification code" style="border: 1px solid #eeeeee; color: #212121;">' +
-                        '</div>' +
-                        '<input type="hidden" id="email">' +
-                    '</form>' +
-                    '<button class="waves-effect waves-light btn-lg" style="width: 40%; background-color: red; margin: 10px 5px 10px 5px; padding: 10px 8px;" onclick="BootstrapDialog.closeAll();">Cancel</button>' +
-                    '<button class="waves-effect waves-light btn-lg secondary-color" style="width: 40%; margin: 10px 5px 10px 5px; padding: 10px 8px;" onclick="KEYTAP.profileController.confirmPhone();">Confirm</button>' +
-                    '<div style="text-align: center">' +
-                        '<span>' +
-                            'Didn\'t receive your verification code? <br>' +
-                            '<a id="resendVerificationCode" class="secondary-color-text" href="#">Resend</a><br>' +
-                        '</span>' +
-                    '</div>' +
-                '</div>' +
-            '</div>' +
-        '</div>';
-
-        var modalContent = $(document.createElement("div"));
-        modalContent.addClass("valign-wrapper");
-        modalContent.addClass("row");
-
-        var container = $(document.createElement("div"));
-        container.addClass("valign");
-        container.html(html);
-
-        modalContent.append(container);
-
-        var htmlContent = $("<div>").append(html).html();
-
-        var bd = new BootstrapDialog();
-        bd.setCssClass("noHeaderModal centerAlignDialog whiteModal mediumModal");
-        bd.setClosable(false);
-        bd.setMessage(htmlContent);
-
-        return bd;
-    },
-    openSmsVerificationModal : function () {
-        this.modal.open();
-    },
-    displayNotification : function (message, type) {
-        var notify = $.notify({
-            icon: "icon-pull-left fa fa-info-circle",
-            message: message
-        }, {
-            type: type,
-            delay: 3000,
-            allow_dismiss: false,
-            offset: {
-                y: 66,
-                x: 20
+        slychat.showPreloader();
+        accountModifictationService.confirmPhoneNumber(code).then(function (result) {
+            slychat.hidePreloader();
+            if (result.successful === true) {
+                $('smsCodeInput').val('');
+                this.phone = this.requestedPhone;
+                this.requestedPhone = '';
+                $('#profilePhone').html(this.phone);
+                slychat.closeModal();
+                this.openNotification("Your phone number has been updated", "custom-notification", 2000);
             }
+            else {
+                this.openNotification(result.errorMessage, "custom-notification fail", 2000);
+            }
+        }.bind(this)).catch(function (e) {
+            slychat.hidePreloader();
+            this.openNotification("An error occurred", "custom-notification fail", 2000);
+            console.log(e);
         });
     },
-    validatePhone : function () {
-        var phoneInput = $("#phone");
-        var phoneValue = phoneInput.val();
-        var valid = validatePhone(phoneValue, $("#countrySelect").val());
-        var invalidDiv = $(".invalidPhone");
 
-        if(phoneValue == "")
-            invalidDiv.remove();
+    openNameUpdateForm : function () {
+        var formContent = '<li>' +
+                '<div class="item-content">' +
+                    '<div class="item-media"><i class="icon icon-form-name"></i></div>' +
+                    '<div class="item-inner">' +
+                        '<div class="item-input">' +
+                            '<input id="profileNameInput" type="text" placeholder="Name" required autocorrect="off" value="' + this.name +'"/>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</li>';
+        this.openUpdateModal(formContent, 'submitNameUpdate');
+    },
 
-        if(!valid) {
-            if(phoneValue != "") {
-                phoneInput.addClass("invalid");
-                if (!invalidDiv.length) {
-                    phoneInput.after("<div class='pull-right invalidPhone filled' style='color: red;'><p>Phone Number seems invalid.</p></div>");
-                }
-            }
-        }
+    openEmailUpdateForm : function () {
+        var formContent = '<li>' +
+                '<div class="item-content">' +
+                    '<div class="item-media"><i class="icon icon-form-email"></i></div>' +
+                    '<div class="item-inner">' +
+                        '<div class="item-input">' +
+                            '<input id="profileEmailInput" type="email" placeholder="E-Mail" required autocorrect="off" autocapitalize="off" value="' + this.username +'"/>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</li>';
+
+        this.openUpdateModal(formContent, 'submitEmailUpdate');
+    },
+
+    openPhoneUpdateForm : function () {
+        var formContent = '<li>' +
+                '<div class="item-content">' +
+                    '<div class="item-media"><i class="icon icon-form-email"></i></div>' +
+                    '<div class="item-inner">' +
+                        '<div class="item-input">' +
+                            '<select id="countrySelect" style="color: #aaaaaa;" required>' +
+                                '<option selected disabled>Country</option>' +
+                            '</select>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</li>' +
+            '<li>' +
+                '<div class="item-content">' +
+                    '<div class="item-media"><i id="phoneInputIcon" class="icon icon-form-tel"></i><span id="phoneIntlExt" style="display: none; text-align: center; min-width: 29px; height: 29px; line-height: 29px; color: #ffffff; background-color: #8e8e93; border-radius: 5px;"></span></div>' +
+                    '<div class="item-inner">' +
+                        '<div class="item-input">' +
+                            '<input id="phone" type="tel" placeholder="Phone Number" required/>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</li>';
+
+        this.openUpdateModal(formContent, 'requestPhoneUpdate');
+
+        updatePhoneWithIntl();
+
+        $$('#countrySelect').on("change", function(e) {
+            var ext = $("#countrySelect :selected").text().split("+")[1];
+            setPhoneExt(ext);
+            // TODO Validate Phone Input
+        });
+    },
+
+    openSmsVerificationModal : function () {
+        var formContent = '<li>' +
+                '<div class="item-content">' +
+                    '<div class="item-media"><i class="icon icon-form-email"></i></div>' +
+                    '<div class="item-inner">' +
+                        '<div class="item-input">' +
+                            '<input id="smsCodeInput" type="text" placeholder="Sms Code"/>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</li>';
+
+        this.openUpdateModal(formContent, 'submitSmsVerification');
+    },
+
+    openUpdateModal : function (formContent, method) {
+        if($(".profile-update-modal.modal-in").length > 0)
+            slychat.closeModal();
         else {
-            phoneInput.removeClass("invalid");
-            invalidDiv.remove();
+            slychat.pickerModal(
+                '<div class="picker-modal profile-update-modal">' +
+                    '<div class="picker-modal-inner">' +
+                        '<div class="content-block">' +
+                            '<div class="list-block">' +
+                                '<ul>' +
+                                    formContent +
+                                '</ul>' +
+                            '</div>' +
+                            '<div class="content-block">' +
+                                '<div class="row">' +
+                                    '<div class="col-100 button-container">' +
+                                        '<button class="button button-big color-red" onclick="slychat.closeModal()">Cancel</button>' +
+                                        '<button id="submitUpdateBtn" class="button button-big color-green" onclick="profileController.' + method + '()">Submit</button>' +
+                                    '</div>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>'
+            );
         }
+    },
 
-        return valid;
+    openNotification : function(message, classes, hold) {
+        var options = {
+            custom: '<div class="item-content">' +
+            '<div class="item-text">' + message + '</div>' +
+            '</div>',
+            additionalClass: classes,
+            hold: hold,
+            closeOnClick: true
+        };
+
+        slychat.addNotification(options);
     }
 };

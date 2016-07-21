@@ -1,60 +1,49 @@
-<!-- Page Container -->
-<div class="m-scene main-content" id="main">
-
-    <!-- Top Menu Bar -->
-    <div id="navBar" class="navbar-fixed-top scene_element scene_element--fadein">
-        <div class="navbar header-bar">
-            <div class="open-left nav-btn" id="nav-menu-back">
-                <a href="#" id="backBtn"><i class="mdi mdi-arrow-left"></i></a>
-            </div>
-            <div id='navBarMenu' class="open-right dropdown" style="width: 56px;">
-                <button class="dropDownBtn" type="button" id="dropdownMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true"><i class="fa fa-ellipsis-v"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu">
-                    <li><a id="editProfileBtn" href="#"><i class="mdi mdi-account"></i>Profile</a></li>
-                    <li role="separator" class="divider"></li>
-                    <li><a id="logoutBtn" href="#"><i class="mdi mdi-logout"></i>Logout</a></li>
-                </ul>
-            </div>
-            <span class="page-title">Add Contact</span>
-            <div id="networkStatus" class="center-align hidden">
-                <span style="width: auto; height: 20px; background: whitesmoke; padding-left: 10px; padding-right: 10px;">No connection available</span>
-            </div>
-            <div id="connectionStatus" class="center-align hidden">
-                <span style="width: auto; height: 20px; background: whitesmoke; padding-left: 10px; padding-right: 10px;">Disconnected</span>
-            </div>
+<!-- Top Navbar -->
+<div class="navbar">
+    <div class="navbar-inner">
+        <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
+        <div class="right">
         </div>
-    </div><!-- End of Top Menu Bar -->
-
-    <!-- Page Content -->
-    <div class="scene_element scene_element--fadein snap-content main-content-body" id="content" style="background: black; height: 100%;">
-
-        <!-- Main Content -->
-        <div class="valign-wrapper row form-wrapper">
-            <div class="valign col s12">
-                <div class="container" style="padding: 20px 0 20px 0">
-                    <div id="contactFormContainer">
-                        <ul id="error" style="color: red">
-
+    </div>
+</div>
+<div class="pages navbar-through toolbar-through">
+    <div data-page="addContact" class="page page-on-center">
+        <div class="page-content">
+            <div>
+                <form id="addContactForm">
+                    <div class="content-block-title">Add Contact</div>
+                    <div class="list-block">
+                        <ul>
+                            <li>
+                                <div class="item-content">
+                                    <div class="item-media"><i class="icon icon-form-name"></i></div>
+                                    <div class="item-inner">
+                                        <div class="item-input">
+                                            <input id="new-contact-username" type="text" placeholder="Phone or E-mail"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
                         </ul>
-                        <form id="addContactForm" method="post">
-                            <div class="group-form col s12">
-                                <i class="mdi mdi-account-circle prefix"></i>
-                                <input class="validate" id="username" type="text" required autocapitalize="off" placeholder="Email or Phone Number">
-                            </div>
-                            <div class="group-form col s12">
-                                <button id="newContactBtn" type="submit" class="waves-effect waves-light btn-large secondary-color fullwidth" style="border-radius: 5px;">Add Contact</button>
-                            </div>
-                        </form>
                     </div>
+                    <div class="list-block list-error-block">
+                        <ul class="error-block"></ul>
+                    </div>
+                    <div class="content-block">
+                        <div class="row">
+                            <div class="col-100">
+                                <input id='newContactSearchSubmit' type="submit" value="Submit" class="button button-big button-fill color-green"/>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div class="content-block-title">Search Results</div>
+                <div class="list-block">
+                    <ul id="newContactSearchResult">
+
+                    </ul>
                 </div>
             </div>
         </div>
-
-    </div> <!-- End of Main Contents -->
-    <div id="blockui"></div>
-
-    <!-- Specific page javascript -->
-    <script src="js/internal/addContact.js"></script>
-
-</div> <!-- End of Page Content -->
+    </div>
+</div>
