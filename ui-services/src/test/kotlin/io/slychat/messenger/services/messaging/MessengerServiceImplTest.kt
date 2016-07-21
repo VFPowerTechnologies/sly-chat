@@ -334,7 +334,7 @@ class MessengerServiceImplTest {
         val message = "msg"
         messengerService.sendGroupMessageTo(groupId, message)
 
-        verify(groupPersistenceManager).addMessage(eq(groupId), isNull(), capture {
+        verify(groupPersistenceManager).addMessage(eq(groupId), capture {
             assertEquals(message, it.message, "Message is invalid")
         })
 
@@ -354,7 +354,7 @@ class MessengerServiceImplTest {
 
         messengerService.sendGroupMessageTo(groupId, message)
 
-        verify(groupPersistenceManager).addMessage(eq(groupId), isNull(), capture {
+        verify(groupPersistenceManager).addMessage(eq(groupId), capture {
             assertEquals(message, it.message, "Text message doesn't match")
         })
     }

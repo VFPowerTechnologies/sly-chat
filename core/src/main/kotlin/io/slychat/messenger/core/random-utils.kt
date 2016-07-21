@@ -77,3 +77,19 @@ fun randomContactInfo(): ContactInfo {
         "pubkey"
     )
 }
+
+fun randomMessageText(): String {
+    //XXX kinda dumb...
+    val base = "random message".toMutableList()
+    Collections.shuffle(base)
+
+    return base.joinToString("")
+}
+
+fun randomReceivedMessageInfo(): MessageInfo {
+    return MessageInfo.newReceived(randomMessageText(), currentTimestamp())
+}
+
+fun randomReceivedGroupMessageInfo(speaker: UserId?): GroupMessageInfo {
+    return GroupMessageInfo(speaker, randomReceivedMessageInfo())
+}

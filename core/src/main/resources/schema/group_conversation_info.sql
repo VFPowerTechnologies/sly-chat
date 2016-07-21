@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS group_conversation_info (
     group_id TEXT NOT NULL,
     last_speaker_contact_id INTEGER,
-    unread_message_count INTEGER NOT NULL,
+    unread_count INTEGER NOT NULL,
     last_message TEXT,
     -- unix time, in milliseconds
     last_timestamp INTEGER,

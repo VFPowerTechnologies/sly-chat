@@ -44,6 +44,7 @@ class SQLiteGroupPersistenceManagerTest {
         return contactInfo.id
     }
 
+    /** Randomly generates and creates proper contact entries for users. Required for foreign key constraints. */
     fun insertRandomContacts(n: Int = 2): Set<UserId> {
         return (1..n).mapToSet { insertRandomContact() }
     }
@@ -324,6 +325,41 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
+    fun `joinGroup should create the group log`() {
+        val groupInfo = randomGroupInfo()
+
+        groupPersistenceManager.joinGroup(groupInfo, insertRandomContacts()).get()
+
+        assertConvTableExists(groupInfo.id)
+    }
+
+    fun assertInitialConversationInfo(id: GroupId, groupPersistenceManager: SQLiteGroupPersistenceManager) {
+        val conversationInfo = assertNotNull(groupPersistenceManager.testGetGroupConversation(id), "Missing group conversation info")
+
+        assertEquals(id, conversationInfo.groupId, "Invalid group id")
+        assertNull(conversationInfo.lastMessage, "Last message should be empty")
+        assertNull(conversationInfo.lastTimestamp, "Last timestamp should be empty")
+        assertEquals(0, conversationInfo.unreadCount, "Unread count should be 0")
+    }
+
+    @Test
+    fun `joinGroup should add an empty group conversation info entry`() {
+        val groupInfo = randomGroupInfo()
+
+        groupPersistenceManager.joinGroup(groupInfo, insertRandomContacts()).get()
+
+        assertInitialConversationInfo(groupInfo.id, groupPersistenceManager)
+    }
+
+    @Test
+    fun `joinGroup should reset group conversation info for a previously parted group`() {
+        withPartedGroupFull {
+            groupPersistenceManager.joinGroup(it.copy(membershipLevel = GroupMembershipLevel.JOINED), insertRandomContacts()).get()
+            assertInitialConversationInfo(it.id, groupPersistenceManager)
+        }
+    }
+
+    @Test
     fun `partGroup should set the group membership level to PARTED`() {
         withJoinedGroup { id, members ->
             val wasParted = groupPersistenceManager.partGroup(id).get()
@@ -493,19 +529,73 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `addMessage should log a message from another user`() {}
+    fun `addMessage should log a message from another user`() {
+        withJoinedGroup { groupId, members ->
+            val sender = members.first()
+            val groupMessageInfo = randomReceivedGroupMessageInfo(sender)
+            groupPersistenceManager.addMessage(groupId, groupMessageInfo).get()
+
+            assertTrue(groupPersistenceManager.testMessageExists(groupId, groupMessageInfo.info.id), "Message not inserted")
+        }
+    }
 
     @Test
-    fun `addMessage should log a message from yourself`() {}
+    fun `addMessage should log a message from yourself`() {
+        withJoinedGroup { groupId, members ->
+            val groupMessageInfo = randomReceivedGroupMessageInfo(null)
+            groupPersistenceManager.addMessage(groupId, groupMessageInfo).get()
+
+            assertTrue(groupPersistenceManager.testMessageExists(groupId, groupMessageInfo.info.id), "Message not inserted")
+        }
+    }
+
+    fun assertValidConversationInfo(groupMessageInfo: GroupMessageInfo, conversationInfo: GroupConversationInfo, unreadCount: Int = 1) {
+        assertEquals(groupMessageInfo.speaker, conversationInfo.lastSpeaker, "Invalid speaker")
+        assertEquals(groupMessageInfo.info.message, conversationInfo.lastMessage, "Invalid last message")
+        assertEquals(groupMessageInfo.info.timestamp, conversationInfo.lastTimestamp, "Invalid last timestamp")
+        assertEquals(unreadCount, conversationInfo.unreadCount, "Invalid unread count")
+    }
 
     @Test
-    fun `addMessage should throw InvalidGroupException if the group id is invalid`() {}
+    fun `addMessage should update the corresponding group conversation info for a received message`() {
+        withJoinedGroup { groupId, members ->
+            val sender = members.first()
+            val groupMessageInfo = randomReceivedGroupMessageInfo(sender)
+            groupPersistenceManager.addMessage(groupId, groupMessageInfo).get()
+
+            val conversationInfo = assertNotNull(groupPersistenceManager.testGetGroupConversation(groupId), "Missing conversation info")
+
+            assertValidConversationInfo(groupMessageInfo, conversationInfo)
+        }
+    }
+
+    @Test
+    fun `addMessage should update the corresponding group conversation info for a self message`() {
+        withJoinedGroup { groupId, members ->
+            val groupMessageInfo = randomReceivedGroupMessageInfo(null)
+            groupPersistenceManager.addMessage(groupId, groupMessageInfo).get()
+
+            val conversationInfo = assertNotNull(groupPersistenceManager.testGetGroupConversation(groupId), "Missing conversation info")
+
+            assertValidConversationInfo(groupMessageInfo, conversationInfo, 0)
+        }
+    }
+
+    @Test
+    fun `addMessage should throw InvalidGroupException if the group id is invalid`() {
+        assertFailsWithInvalidGroup {
+            groupPersistenceManager.addMessage(randomGroupId(), randomReceivedGroupMessageInfo(null)).get()
+        }
+    }
 
     @Test
     fun `deleteMessages should remove the given messages from the group log`() {}
 
     @Test
     fun `deleteMessages should do nothing if the given messages are not present in the group log`() {}
+
+    @Test
+    fun `deleteMessages should update the corresponding group conversation info`() {}
 
     @Test
     fun `deleteMessages should throw InvalidGroupException if the group id is invalid`() {}

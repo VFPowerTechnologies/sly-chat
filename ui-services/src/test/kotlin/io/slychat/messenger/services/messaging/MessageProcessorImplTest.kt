@@ -35,7 +35,7 @@ class MessageProcessorImplTest {
 
         whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
 
-        whenever(groupPersistenceManager.addMessage(any(), any(), any())).thenAnswer {
+        whenever(groupPersistenceManager.addMessage(any(), any())).thenAnswer {
             @Suppress("UNCHECKED_CAST")
             val a = it.arguments[2] as MessageInfo
             Promise.ofSuccess<MessageInfo, Exception>(a)
@@ -532,7 +532,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(groupPersistenceManager).addMessage(eq(groupInfo.id), eq(sender), capture { messageInfo ->
+        verify(groupPersistenceManager).addMessage(eq(groupInfo.id), capture { messageInfo ->
             assertFalse(messageInfo.isSent, "Message marked as sent")
             assertEquals(m.message, messageInfo.message, "Invalid message")
         })
@@ -579,7 +579,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(groupPersistenceManager, never()).addMessage(any(), any(), any())
+        verify(groupPersistenceManager, never()).addMessage(any(), any())
     }
 
     @Test

@@ -17,7 +17,7 @@ object GroupConversationTable {
         tableTemplate = javaClass.readResourceFileText("/schema/group_conversation.sql")
     }
 
-    fun getTablenameForContact(groupId: GroupId) =
+    fun getTablename(groupId: GroupId) =
         "group_conv_${groupId.string}"
 
     fun create(connection: SQLiteConnection, groupId: GroupId) {
@@ -31,7 +31,7 @@ object GroupConversationTable {
 
     fun exists(connection: SQLiteConnection, groupId: GroupId): Boolean {
         connection.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").use { stmt ->
-            stmt.bind(1, getTablenameForContact(groupId))
+            stmt.bind(1, getTablename(groupId))
             return stmt.step()
         }
     }
@@ -39,7 +39,7 @@ object GroupConversationTable {
     fun getGroupConversationTableNames(connection: SQLiteConnection): List<String> {
         return connection.prepare("SELECT id FROM groups").use { stmt ->
             stmt.map { it.columnString(0) }
-                .map { getTablenameForContact(GroupId(it)) }
+                .map { getTablename(GroupId(it)) }
         }
     }
 }

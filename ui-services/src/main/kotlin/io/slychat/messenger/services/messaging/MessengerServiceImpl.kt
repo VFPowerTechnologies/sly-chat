@@ -230,7 +230,7 @@ class MessengerServiceImpl(
 
         return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP) bind {
             val messageInfo = MessageInfo.newSent(message, 0)
-            groupPersistenceManager.addMessage(groupId, null, messageInfo)
+            groupPersistenceManager.addMessage(groupId, messageInfo)
         }
     }
 

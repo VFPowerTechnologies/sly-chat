@@ -27,12 +27,21 @@ inline fun <R> SQLiteStatement.use(body: (SQLiteStatement) -> R): R =
         this.dispose()
     }
 
-fun SQLiteStatement.bind(index: Int, value: GroupId) {
-    this.bind(index, value.string)
+fun SQLiteStatement.columnNullableInt(index: Int): Int? =
+    if (columnNull(index)) null else columnInt(index)
+
+fun SQLiteStatement.columnNullableLong(index: Int): Long? =
+    if (columnNull(index)) null else columnLong(index)
+
+fun SQLiteStatement.bind(index: Int, value: GroupId?) {
+    bind(index, value?.string)
 }
 
-fun SQLiteStatement.bind(index: Int, value: UserId) {
-    this.bind(index, value.long)
+fun SQLiteStatement.bind(index: Int, value: UserId?) {
+    if (value != null)
+        bind(index, value.long)
+    else
+        bindNull(index)
 }
 
 inline fun <R> SQLiteConnection.withPrepared(sql: String, body: (SQLiteStatement) -> R): R {

@@ -41,7 +41,7 @@ interface GroupPersistenceManager {
     fun unblockGroup(groupId: GroupId): Promise<Unit, Exception>
 
     /** Add a message from a user to the given group. If userId is null, is taken to be from yourself. */
-    fun addMessage(groupId: GroupId, userId: UserId?, messageInfo: MessageInfo): Promise<MessageInfo, Exception>
+    fun addMessage(groupId: GroupId, groupMessageInfo: GroupMessageInfo): Promise<GroupMessageInfo, Exception>
 
     /** Adds a list of messages from a single user to the given group. */
     fun addMessages(groupId: GroupId, userId: UserId?, messages: Collection<MessageInfo>): Promise<List<MessageInfo>, Exception>
