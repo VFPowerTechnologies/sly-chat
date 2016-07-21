@@ -32,7 +32,8 @@ var slychat = new Framework7({
     swipeBackPage: false,
     tapHold: true,
     tapHoldDelay: 500,
-    swipePanel: 'right',
+    swipePanelOnlyClose: true,
+    swipePanelNoFollow: true,
     modalTitle: 'Sly'
 });
 

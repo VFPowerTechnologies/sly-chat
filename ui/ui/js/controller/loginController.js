@@ -46,6 +46,8 @@ LoginController.prototype = {
         profileController.setUserInfo(accountInfo, publicKey);
         this.resetLoginInfo();
 
+        var noStateLoad = ["register.html", "login.html", "smsVerification.html", "updatePhone.html"];
+
         stateService.getInitialPage().then(function (initialPage) {
             if(initialPage === null) {
                 stateService.getState().then(function (state) {
@@ -55,7 +57,13 @@ LoginController.prototype = {
                     }
                     else {
                         if(state.currentPage.indexOf("chat.html") <= -1) {
-                            navigationController.loadPage(state.currentPage, false);
+                            if ($.inArray(state.currentPage, noStateLoad) > -1) {
+                                navigationController.loadPage('contacts.html');
+                                navigationController.clearHistory();
+                            }
+                            else {
+                                navigationController.loadPage(state.currentPage, false);
+                            }
                         }
                         else {
                             if (typeof state.currentContact != "undefined" && state.currentContact != null) {
@@ -89,7 +97,7 @@ LoginController.prototype = {
                         email: this.email
                     }
                 };
-                navigationController.loadPage("smsVerification.html", true, options);
+                navigationController.loadPage("smsVerification.html", false, options);
             }
             else {
                 this.resetLoginInfo();
