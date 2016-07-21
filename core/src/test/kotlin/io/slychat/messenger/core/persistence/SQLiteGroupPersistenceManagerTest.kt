@@ -1,11 +1,19 @@
 package io.slychat.messenger.core.persistence
 
+import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.mapToSet
+import io.slychat.messenger.core.persistence.sqlite.SQLiteContactsPersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
+import io.slychat.messenger.core.randomContactInfo
+import io.slychat.messenger.core.randomGroupInfo
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class SQLiteGroupPersistenceManagerTest {
     companion object {
@@ -17,18 +25,32 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     lateinit var persistenceManager: SQLitePersistenceManager
-    lateinit var groupPersistenceManager: GroupPersistenceManager
+    lateinit var groupPersistenceManager: SQLiteGroupPersistenceManager
+    lateinit var contactsPersistenceManager: SQLiteContactsPersistenceManager
 
     @Before
     fun before() {
         persistenceManager = SQLitePersistenceManager(null, null, null)
         persistenceManager.init()
         groupPersistenceManager = SQLiteGroupPersistenceManager(persistenceManager)
+        contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)
     }
 
     @After
     fun after() {
         persistenceManager.shutdown()
+    }
+
+    fun insertRandomContact(): UserId {
+        val contactInfo = randomContactInfo()
+
+        contactsPersistenceManager.add(contactInfo).get()
+
+        return contactInfo.id
+    }
+
+    fun insertRandomContacts(n: Int = 2): Set<UserId> {
+        return (1..n).mapToSet { insertRandomContact() }
     }
 
     @Test
@@ -77,19 +99,84 @@ class SQLiteGroupPersistenceManagerTest {
     fun `isUserMemberOf should throw InvalidGroupException if the group id is invalid`() {}
 
     @Test
-    fun `joinGroup should create a new group entry if no info for that group currently exists`() {}
+    fun `joinGroup should create a new group entry if no info for that group currently exists`() {
+        val groupInfo = randomGroupInfo()
+        val initialMembers = insertRandomContacts()
+
+        groupPersistenceManager.joinGroup(groupInfo, initialMembers).get()
+
+        val got = assertNotNull(groupPersistenceManager.getGroupInfo(groupInfo.id).get(), "Missing group info")
+
+        assertEquals(groupInfo, got, "Invalid group info")
+
+        val members = groupPersistenceManager.getGroupMembers(groupInfo.id).get()
+
+        assertThat(members).apply {
+            `as`("Initial group members")
+            containsOnlyElementsOf(initialMembers)
+        }
+    }
 
     @Test
-    fun `joinGroup should update the membership level to JOINED for a parted group`() {}
+    fun `joinGroup should update the membership level to JOINED for a parted group`() {
+        val groupInfo = randomGroupInfo()
+        val initialMembers = insertRandomContacts()
 
+        groupPersistenceManager.testAddGroupInfo(groupInfo.copy(membershipLevel = GroupMembershipLevel.PARTED))
+
+        groupPersistenceManager.joinGroup(groupInfo, initialMembers).get()
+
+        val got = assertNotNull(groupPersistenceManager.getGroupInfo(groupInfo.id).get(), "Missing group info")
+
+        assertEquals(groupInfo, got, "Invalid group info")
+    }
+
+    //TODO this should already be empty as part of the parting procedure, so dunno if this is worth testing?
     @Test
-    fun `joinGroup should do nothing for an already joined group`() {}
+    fun `joinGroup should overwrite the old member list for a parted group`() {
+        val groupInfo = randomGroupInfo()
+        val oldMembers = insertRandomContacts()
+        val initialMembers = insertRandomContacts()
+
+        groupPersistenceManager.testAddGroupInfo(groupInfo.copy(membershipLevel = GroupMembershipLevel.PARTED))
+        groupPersistenceManager.testAddGroupMembers(groupInfo.id, oldMembers)
+
+        groupPersistenceManager.joinGroup(groupInfo, initialMembers).get()
+
+        val members = groupPersistenceManager.getGroupMembers(groupInfo.id).get()
+
+        assertThat(members).apply {
+            `as`("Initial group members")
+            containsOnlyElementsOf(initialMembers)
+        }
+    }
+
+    //make sure member list isn't overwritten
+    @Test
+    fun `joinGroup should do nothing for an already joined group`() {
+        val groupInfo = randomGroupInfo()
+        val initialMembers = insertRandomContacts()
+        val dupMembers = insertRandomContacts()
+
+        groupPersistenceManager.joinGroup(groupInfo, initialMembers).get()
+        groupPersistenceManager.joinGroup(groupInfo, dupMembers).get()
+
+        val members = groupPersistenceManager.getGroupMembers(groupInfo.id).get()
+
+        assertThat(members).apply {
+            `as`("Initial group members")
+            containsOnlyElementsOf(initialMembers)
+        }
+    }
 
     @Test
     fun `partGroup should remove the group log`() {}
 
     @Test
     fun `partGroup should set the group membership level to PARTED`() {}
+
+    @Test
+    fun `partGroup should remove the member list for the affected group`() {}
 
     @Test
     fun `partGroup should do nothing for an already parted group`() {}

@@ -2,7 +2,9 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.*
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.loadSharedLibFromResource
+import io.slychat.messenger.core.persistence.GroupId
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -24,6 +26,14 @@ inline fun <R> SQLiteStatement.use(body: (SQLiteStatement) -> R): R =
         this.reset()
         this.dispose()
     }
+
+fun SQLiteStatement.bind(index: Int, value: GroupId) {
+    this.bind(index, value.string)
+}
+
+fun SQLiteStatement.bind(index: Int, value: UserId) {
+    this.bind(index, value.long)
+}
 
 inline fun <R> SQLiteConnection.withPrepared(sql: String, body: (SQLiteStatement) -> R): R {
     return this.prepare(sql).use { body(it) }

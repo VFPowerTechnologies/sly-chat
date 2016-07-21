@@ -63,3 +63,17 @@ fun randomQueuedMessage(): QueuedMessage {
 fun randomQueuedMessages(n: Int = 2): List<QueuedMessage> {
     return (1..n).map { randomQueuedMessage() }
 }
+
+fun randomContactInfo(): ContactInfo {
+    val userId = randomUserId()
+
+    return ContactInfo(
+        userId,
+        "$userId@domain.com",
+        userId.toString(),
+        AllowedMessageLevel.ALL,
+        false,
+        null,
+        "pubkey"
+    )
+}
