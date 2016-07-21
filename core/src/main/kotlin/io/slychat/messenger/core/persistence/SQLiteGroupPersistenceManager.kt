@@ -1,10 +1,12 @@
 package io.slychat.messenger.core.persistence
 
 import com.almworks.sqlite4java.SQLiteConnection
+import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.sqlite.*
 import nl.komponents.kovenant.Promise
+import java.util.*
 
 class SQLiteGroupPersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
@@ -40,16 +42,35 @@ class SQLiteGroupPersistenceManager(
         TODO()
     }
 
-    override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception> {
-        TODO()
+    override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val currentMembers = queryGroupMembers(connection, groupId)
+
+        val newMembers = HashSet(users)
+        newMembers.removeAll(currentMembers)
+
+        insertGroupMembers(connection, groupId, newMembers)
+
+        newMembers
     }
 
-    override fun removeMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> {
-        TODO()
+    override fun removeMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withPrepared("DELETE FROM group_members WHERE group_id=? AND contact_id=?") { stmt ->
+            stmt.bind(1, groupId)
+            stmt.bind(2, userId)
+
+            stmt.step()
+
+        }
+
+        connection.changes > 0
     }
 
-    override fun isUserMemberOf(userId: UserId, groupId: GroupId): Promise<Boolean, Exception> {
-        TODO()
+    override fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withPrepared("SELECT 1 FROM group_members WHERE group_id=? AND contact_id=?") { stmt ->
+            stmt.bind(1, groupId)
+            stmt.bind(2, userId)
+            stmt.step()
+        }
     }
 
     override fun joinGroup(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -75,9 +96,23 @@ class SQLiteGroupPersistenceManager(
     }
 
     private fun insertGroupMembers(connection: SQLiteConnection, id: GroupId, members: Set<UserId>) {
-        connection.batchInsert("INSERT INTO group_members (group_id, contact_id) VALUES (?, ?)", members) { stmt, member ->
-            stmt.bind(1, id)
-            stmt.bind(2, member)
+        try {
+            connection.batchInsert("INSERT INTO group_members (group_id, contact_id) VALUES (?, ?)", members) { stmt, member ->
+                stmt.bind(1, id)
+                stmt.bind(2, member)
+            }
+        }
+        catch (e: SQLiteException) {
+            //XXX
+            //since we have two fks in here, this is either a missing group, or a missing contact
+            //sadly, sqlite doesn't report which fk causes the issue, and there's no way to name fks
+            //so we just assume the group is missing here, since that would be the more common case in normal operations
+            val isFkError = e.message?.let { "FOREIGN KEY constraint failed" in it } ?: false
+
+            if (isFkError)
+                throw InvalidGroupException(id)
+            else
+                throw e
         }
     }
 

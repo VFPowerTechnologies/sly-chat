@@ -86,7 +86,7 @@ class MessageProcessorImpl(
 
     /** Only runs the given action if the user is a member of the given group. Otherwise, logs a warning. */
     private fun checkGroupMembership(sender: UserId, id: GroupId, action: () -> Promise<Unit, Exception>): Promise<Unit, Exception> {
-        return groupPersistenceManager.isUserMemberOf(sender, id) bind { isMember ->
+        return groupPersistenceManager.isUserMemberOf(id, sender) bind { isMember ->
             if (isMember)
                 action()
             else {

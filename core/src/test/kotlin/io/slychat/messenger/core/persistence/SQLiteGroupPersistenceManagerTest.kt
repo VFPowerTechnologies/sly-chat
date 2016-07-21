@@ -1,19 +1,13 @@
 package io.slychat.messenger.core.persistence
 
-import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.mapToSet
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.sqlite.SQLiteContactsPersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
-import io.slychat.messenger.core.randomContactInfo
-import io.slychat.messenger.core.randomGroupInfo
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.After
-import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import org.junit.*
+import java.util.*
+import kotlin.test.*
 
 class SQLiteGroupPersistenceManagerTest {
     companion object {
@@ -53,17 +47,60 @@ class SQLiteGroupPersistenceManagerTest {
         return (1..n).mapToSet { insertRandomContact() }
     }
 
-    @Test
-    fun `getGroupMembers should return all members for the given group`() {}
+    fun withJoinedGroup(body: (GroupInfo, members: Set<UserId>) -> Unit) {
+        val groupInfo = randomGroupInfo()
+        val members = insertRandomContacts()
+
+        groupPersistenceManager.testAddGroupInfo(groupInfo)
+        groupPersistenceManager.testAddGroupMembers(groupInfo.id, members)
+
+        body(groupInfo, members)
+    }
+
+    fun withEmptyJoinedGroup(body: (GroupInfo) -> Unit) {
+        val groupInfo = randomGroupInfo()
+
+        groupPersistenceManager.testAddGroupInfo(groupInfo)
+
+        body(groupInfo)
+    }
 
     @Test
-    fun `getGroupMembers should throw InvalidGroupException if the group id is invalid`() {}
+    fun `getGroupMembers should return all members for the given group`() {
+        withJoinedGroup { groupInfo, members ->
+            val got = groupPersistenceManager.getGroupMembers(groupInfo.id).get()
+
+            assertThat(got).apply {
+                `as`("Group members")
+                containsOnlyElementsOf(members)
+            }
+        }
+    }
+
+    //TODO
+    //maybe change this to just return an empty set; else we'd need to do a group table lookup each time to verify that
+    //the group exists, which probably isn't worth it
+    @Ignore
+    @Test
+    fun `getGroupMembers should throw InvalidGroupException if the group id is invalid`() {
+        assertFailsWith(InvalidGroupException::class) {
+            groupPersistenceManager.getGroupMembers(randomGroupId())
+        }
+    }
 
     @Test
-    fun `getGroupInfo should return info for an existing group`() {}
+    fun `getGroupInfo should return info for an existing group`() {
+        withEmptyJoinedGroup { groupInfo ->
+            val got = groupPersistenceManager.getGroupInfo(groupInfo.id).get()
+
+            assertEquals(groupInfo, got, "Invalid group info")
+        }
+    }
 
     @Test
-    fun `getGroupInfo should return null for a non-existent group`() {}
+    fun `getGroupInfo should return null for a non-existent group`() {
+        assertNull(groupPersistenceManager.getGroupInfo(randomGroupId()).get(), "Got data for nonexistent group")
+    }
 
     @Test
     fun `getAllGroupConversations should return info only for joined groups`() {}
@@ -72,29 +109,101 @@ class SQLiteGroupPersistenceManagerTest {
     fun `getAllGroupConversations should throw InvalidGroupException if the group id is invalid`() {}
 
     @Test
-    fun `addMembers should add and return new members to an existing group`() {}
+    fun `addMembers should add and return new members to an existing group`() {
+        withJoinedGroup { groupInfo, members ->
+            groupPersistenceManager.addMembers(groupInfo.id, members).get()
+
+            val got = groupPersistenceManager.getGroupMembers(groupInfo.id).get()
+
+            assertThat(got).apply {
+                `as`("Group members")
+                containsOnlyElementsOf(members)
+            }
+        }
+    }
 
     @Test
-    fun `addMembers should only return new members when certain members already exist`() {}
+    fun `addMembers should only return new members when certain members already exist`() {
+        withJoinedGroup { groupInfo, members ->
+            val newMembers = insertRandomContacts()
+
+            val toAdd = HashSet(members)
+            toAdd.addAll(newMembers)
+
+            val got = groupPersistenceManager.addMembers(groupInfo.id, toAdd).get()
+
+            assertThat(got).apply {
+                `as`("New group members")
+                containsOnlyElementsOf(newMembers)
+            }
+        }
+    }
 
     @Test
-    fun `addMembers should throw InvalidGroupException if the group id is invalid`() {}
+    fun `addMembers should throw InvalidGroupException if the group id is invalid`() {
+        assertFailsWith(InvalidGroupException::class) {
+            groupPersistenceManager.addMembers(randomGroupId(), insertRandomContacts()).get()
+        }
+    }
 
     @Test
-    fun `removeMember should return true and remove the given member if present in an existing group`() {}
+    fun `removeMember should return true and remove the given member if present in an existing group`() {
+        withJoinedGroup { groupInfo, members ->
+            val memberList = members.toList()
+            val toRemove = memberList.first()
+            val remaining = memberList.subList(1, memberList.size)
+
+            val wasRemoved = groupPersistenceManager.removeMember(groupInfo.id, toRemove).get()
+
+            assertTrue(wasRemoved, "Existing user not removed")
+
+            val currentMembers = groupPersistenceManager.getGroupMembers(groupInfo.id).get()
+
+            assertThat(currentMembers).apply {
+                `as`("Remaining members")
+                containsOnlyElementsOf(remaining)
+            }
+        }
+    }
 
     @Test
-    fun `removeMember should return false and do nothing if the given member is not present in an existing group`() {}
+    fun `removeMember should return false and do nothing if the given member is not present in an existing group`() {
+        withEmptyJoinedGroup { groupInfo ->
+            val wasRemoved = groupPersistenceManager.removeMember(groupInfo.id, randomUserId()).get()
 
+            assertFalse(wasRemoved, "Nonexistent user marked as removed")
+        }
+    }
+
+    //TODO again, would need to check if group table exists
+    @Ignore
     @Test
     fun `removeMember should throw InvalidGroupException if the group id is invalid`() {}
 
     @Test
-    fun `isUserMemberOf should return true if the user is part of an existing group`() {}
+    fun `isUserMemberOf should return true if the user is part of an existing group`() {
+        withJoinedGroup { groupInfo, members ->
+            members.forEach { member ->
+                assertTrue(
+                    groupPersistenceManager.isUserMemberOf(groupInfo.id, member).get(),
+                    "User $member is member but not recognized"
+                )
+            }
+        }
+    }
 
     @Test
-    fun `isUserMemberOf should return false if the user is not part of an existing group`() {}
+    fun `isUserMemberOf should return false if the user is not part of an existing group`() {
+        withEmptyJoinedGroup { groupInfo ->
+            assertFalse(
+                groupPersistenceManager.isUserMemberOf(groupInfo.id, randomUserId()).get(),
+                "Recognized invalid user as a group member"
+            )
+        }
+    }
 
+    //TODO
+    @Ignore
     @Test
     fun `isUserMemberOf should throw InvalidGroupException if the group id is invalid`() {}
 

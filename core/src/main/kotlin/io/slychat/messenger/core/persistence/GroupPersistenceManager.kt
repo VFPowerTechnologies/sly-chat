@@ -23,7 +23,7 @@ interface GroupPersistenceManager {
     fun removeMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception>
 
     /** Verifies if a given member is part of a joined group. */
-    fun isUserMemberOf(userId: UserId, groupId: GroupId): Promise<Boolean, Exception>
+    fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception>
 
     /** Join a new group, or rejoin an existing group. Also used when creating a group yourself. */
     fun joinGroup(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception>

@@ -288,7 +288,7 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(true)
+        whenever(groupPersistenceManager.isUserMemberOf(groupInfo.id, sender)).thenReturn(true)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
@@ -321,7 +321,7 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(true)
+        whenever(groupPersistenceManager.isUserMemberOf(groupInfo.id, sender)).thenReturn(true)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
@@ -341,7 +341,7 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(false)
+        whenever(groupPersistenceManager.isUserMemberOf(groupInfo.id, sender)).thenReturn(false)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
@@ -359,7 +359,7 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(false)
+        whenever(groupPersistenceManager.isUserMemberOf(groupInfo.id, sender)).thenReturn(false)
 
         whenever(groupPersistenceManager.getGroupInfo(m.id)).thenReturn(groupInfo)
 
@@ -575,7 +575,7 @@ class MessageProcessorImplTest {
 
         returnGroupInfo(groupInfo)
 
-        whenever(groupPersistenceManager.isUserMemberOf(sender, groupInfo.id)).thenReturn(senderIsMember)
+        whenever(groupPersistenceManager.isUserMemberOf(groupInfo.id, sender)).thenReturn(senderIsMember)
 
         processor.processMessage(sender, wrap(m)).get()
 
