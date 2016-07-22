@@ -49,19 +49,23 @@ class SQLiteGroupPersistenceManagerTest {
         return (1..n).mapToSet { insertRandomContact() }
     }
 
-    fun insertRandomMessages(id: GroupId, members: Set<UserId>): List<String> {
-        val ids = ArrayList<String>()
+    fun insertRandomMessagesFull(id: GroupId, members: Set<UserId>): List<GroupMessageInfo> {
+        val info = ArrayList<GroupMessageInfo>()
 
         members.forEach { member ->
             (1..2).forEach {
                 val groupMessageInfo = randomReceivedGroupMessageInfo(member)
-                ids.add(groupMessageInfo.info.id)
+                info.add(groupMessageInfo)
 
                 groupPersistenceManager.addMessage(id, groupMessageInfo).get()
             }
         }
 
-        return ids
+        return info
+    }
+
+    fun insertRandomMessages(id: GroupId, members: Set<UserId>): List<String> {
+        return insertRandomMessagesFull(id, members).map { it.info.id }
     }
 
     fun withJoinedGroupFull(body: (GroupInfo, members: Set<UserId>) -> Unit) {
@@ -356,7 +360,7 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     fun assertInitialConversationInfo(id: GroupId) {
-        val conversationInfo = assertNotNull(groupPersistenceManager.testGetGroupConversation(id), "Missing group conversation info")
+        val conversationInfo = assertNotNull(groupPersistenceManager.testGetGroupConversationInfo(id), "Missing group conversation info")
 
         assertEquals(id, conversationInfo.groupId, "Invalid group id")
         assertNull(conversationInfo.lastMessage, "Last message should be empty")
@@ -583,7 +587,7 @@ class SQLiteGroupPersistenceManagerTest {
             val groupMessageInfo = randomReceivedGroupMessageInfo(sender)
             groupPersistenceManager.addMessage(groupId, groupMessageInfo).get()
 
-            val conversationInfo = assertNotNull(groupPersistenceManager.testGetGroupConversation(groupId), "Missing conversation info")
+            val conversationInfo = assertNotNull(groupPersistenceManager.testGetGroupConversationInfo(groupId), "Missing conversation info")
 
             assertValidConversationInfo(groupMessageInfo, conversationInfo)
         }
@@ -595,7 +599,7 @@ class SQLiteGroupPersistenceManagerTest {
             val groupMessageInfo = randomReceivedGroupMessageInfo(null)
             groupPersistenceManager.addMessage(groupId, groupMessageInfo).get()
 
-            val conversationInfo = assertNotNull(groupPersistenceManager.testGetGroupConversation(groupId), "Missing conversation info")
+            val conversationInfo = assertNotNull(groupPersistenceManager.testGetGroupConversationInfo(groupId), "Missing conversation info")
 
             assertValidConversationInfo(groupMessageInfo, conversationInfo, 0)
         }
@@ -631,16 +635,82 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `deleteMessages should remove the given messages from the group log`() {}
+    fun `deleteMessages should remove the given messages from the group log`() {
+        withJoinedGroup { groupId, members ->
+            val ids = insertRandomMessages(groupId, members)
+
+            val toRemove = ids.subList(0, 2)
+            val remaining = ids.subList(2, ids.size)
+
+            groupPersistenceManager.deleteMessages(groupId, toRemove).get()
+
+            val messages = groupPersistenceManager.testGetAllMessages(groupId)
+
+            assertThat(messages.map { it.info.id }).apply {
+                `as`("Group messages")
+
+                containsOnlyElementsOf(remaining)
+            }
+        }
+    }
 
     @Test
-    fun `deleteMessages should do nothing if the given messages are not present in the group log`() {}
+    fun `deleteMessages should do nothing if the given messages are not present in the group log`() {
+        withJoinedGroup { groupId, members ->
+            val ids = insertRandomMessages(groupId, members)
+
+            groupPersistenceManager.deleteMessages(groupId, listOf(randomMessageId(), randomMessageId())).get()
+
+            val messages = groupPersistenceManager.testGetAllMessages(groupId)
+
+            assertThat(messages.map { it.info.id }).apply {
+                `as`("Group messages")
+
+                containsOnlyElementsOf(ids)
+            }
+        }
+    }
 
     @Test
-    fun `deleteMessages should update the corresponding group conversation info`() {}
+    fun `deleteMessages should update the corresponding group conversation info when some messages remain`() {
+        withJoinedGroup { groupId, members ->
+            val info = insertRandomMessagesFull(groupId, members)
+            val ids = info.map { it.info.id }
+
+            val toRemove = ids.subList(0, 2)
+            val remaining = ids.subList(2, ids.size)
+
+            groupPersistenceManager.deleteMessages(groupId, toRemove).get()
+
+            //should contain the last inserted message
+            val convoInfo = assertNotNull(groupPersistenceManager.testGetGroupConversationInfo(groupId), "Missing group conversation info")
+
+            val lastMessageInfo = info.last()
+
+            assertEquals(lastMessageInfo.speaker, convoInfo.lastSpeaker, "Invalid last speaker")
+            assertEquals(lastMessageInfo.info.timestamp, convoInfo.lastTimestamp, "Invalid last time timestamp")
+            assertEquals(lastMessageInfo.info.message, convoInfo.lastMessage, "Invalid last message")
+        }
+    }
 
     @Test
-    fun `deleteMessages should throw InvalidGroupException if the group id is invalid`() {}
+    fun `deleteMessages should update the corresponding group conversation info when no messages remain`() {
+        withJoinedGroup { groupId, members ->
+            val ids = insertRandomMessages(groupId, members)
+
+            groupPersistenceManager.deleteMessages(groupId, ids).get()
+
+            assertInitialConversationInfo(groupId)
+        }
+    }
+
+    @Test
+    fun `deleteMessages should throw InvalidGroupException if the group id is invalid`() {
+        assertFailsWithInvalidGroup {
+            //XXX this won't actually fail for an empty list
+            groupPersistenceManager.deleteMessages(randomGroupId(), listOf(randomMessageId()))
+        }
+    }
 
     @Test
     fun `deleteAllMessages should clear the entire group log`() {

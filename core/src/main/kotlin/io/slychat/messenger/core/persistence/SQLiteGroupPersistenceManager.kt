@@ -338,8 +338,56 @@ VALUES
         TODO()
     }
 
-    override fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception> {
-        TODO()
+    override fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        if (messageIds.isNotEmpty()) {
+            val tableName = GroupConversationTable.getTablename(groupId)
+
+            connection.withTransaction {
+                connection.prepare("DELETE FROM $tableName WHERE id IN (${getPlaceholders(messageIds.size)})").use { stmt ->
+                    messageIds.forEachIndexed { i, messageId ->
+                        stmt.bind(i + 1, messageId)
+                    }
+
+                    stmt.step()
+                }
+            }
+
+            val lastMessage = getLastConvoMessage(connection, groupId)
+            if (lastMessage == null)
+                insertOrReplaceNewGroupConversationInfo(connection, groupId)
+            else {
+                val info = lastMessage.info
+                updateConversationInfo(connection, groupId, lastMessage.speaker, info.message, info.timestamp, 0)
+            }
+        }
+    }
+
+    private fun getLastConvoMessage(connection: SQLiteConnection, groupId: GroupId): GroupMessageInfo? {
+        val tableName = GroupConversationTable.getTablename(groupId)
+
+        val sql =
+"""
+SELECT
+    id,
+    speaker_contact_id,
+    timestamp,
+    received_timestamp,
+    ttl,
+    is_delivered,
+    message
+FROM
+    $tableName
+ORDER BY
+    timestamp DESC, n DESC
+LIMIT
+    1
+"""
+        return connection.withPrepared(sql) { stmt ->
+            if (!stmt.step())
+                null
+            else
+                rowToGroupMessageInfo(stmt)
+        }
     }
 
     override fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -386,7 +434,7 @@ VALUES
         }
     }
 
-    internal fun testGetGroupConversation(id: GroupId): GroupConversationInfo? = sqlitePersistenceManager.syncRunQuery { connection ->
+    internal fun testGetGroupConversationInfo(id: GroupId): GroupConversationInfo? = sqlitePersistenceManager.syncRunQuery { connection ->
         connection.withPrepared("SELECT last_speaker_contact_id, unread_count, last_message, last_timestamp FROM group_conversation_info WHERE group_id=?") { stmt ->
             stmt.bind(1, id)
 
