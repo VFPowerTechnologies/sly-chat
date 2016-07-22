@@ -7,6 +7,7 @@ import org.junit.BeforeClass
 import org.junit.Test
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DatabaseMigrationTest {
@@ -55,16 +56,24 @@ class DatabaseMigrationTest {
         }
     }
 
-    //XXX really low tech, but works
-    fun assertColDef(connection: SQLiteConnection, tableName: String, colDef: String) {
-        val sql = connection.prepare("""SELECT sql FROM sqlite_master WHERE type="table" and name=?""").use { stmt ->
+    fun getTableDef(connection: SQLiteConnection, tableName: String): String {
+        return connection.prepare("""SELECT sql FROM sqlite_master WHERE type="table" and name=?""").use { stmt ->
             stmt.bind(1, tableName)
             if (!stmt.step())
                 throw RuntimeException("Missing table: $tableName")
-            stmt.columnString(0)
+            stmt.columnString(0).toLowerCase()
         }
+    }
 
-        assertTrue(sql.contains(colDef, true), "Missing column def: $colDef")
+    //XXX really low tech, but works
+    fun assertColDef(connection: SQLiteConnection, tableName: String, colDef: String) {
+        val sql = getTableDef(connection, tableName)
+        assertTrue(sql.contains(colDef.toLowerCase(), true), "Missing column def: $colDef")
+    }
+
+    fun assertNoColDef(connection: SQLiteConnection, tableName: String, colDef: String) {
+        val sql = getTableDef(connection, tableName)
+        assertFalse(sql.contains(colDef.toLowerCase(), true), "Found column def: $colDef")
     }
 
     fun assertTableExists(connection: SQLiteConnection, tableName: String) {
@@ -95,6 +104,15 @@ class DatabaseMigrationTest {
                 throw e
         }
 
+    }
+
+    fun assertTableRowCount(connection: SQLiteConnection, tableName: String, rowCount: Int) {
+        connection.withPrepared("SELECT count(1) FROM $tableName") { stmt ->
+            stmt.step()
+            val n = stmt.columnInt(0)
+            //make sure we discarded the old contact session
+            assertEquals(rowCount, n, "Invalid number of rows")
+        }
     }
 
     fun check0To1(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
@@ -153,15 +171,6 @@ class DatabaseMigrationTest {
         }
     }
 
-    fun assertTableRowCount(connection: SQLiteConnection, tableName: String, rowCount: Int) {
-        connection.withPrepared("SELECT count(1) FROM $tableName") { stmt ->
-            stmt.step()
-            val n = stmt.columnInt(0)
-            //make sure we discarded the old contact session
-            assertEquals(rowCount, n, "Invalid number of rows")
-        }
-    }
-
     fun check4To5(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         //check conversion + old table drop
         assertTableNotExists(connection, "signal_sessions_old")
@@ -204,6 +213,32 @@ class DatabaseMigrationTest {
     fun `migration 5 to 6`() {
         withTestDatabase(5, 6) { persistenceManager, connection ->
             check5To6(persistenceManager, connection)
+        }
+    }
+
+    /*
+     *  +contacts.allow_message_level
+     *  -contacts.is_pending
+     *
+     *  +send_message_queue
+     *  +groups
+     *  +group_members
+     *  +group_conversation_info
+     */
+    private fun check6To7(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertColDef(connection, "contacts", "allowed_message_level INTEGER NOT NULL")
+        assertNoColDef(connection, "contacts", "is_pending INTEGER NOT NULL")
+
+        assertTableExists(connection, "send_message_queue")
+        assertTableExists(connection, "groups")
+        assertTableExists(connection, "group_members")
+        assertTableExists(connection, "group_conversation_info")
+    }
+
+    @Test
+    fun `migration 6 to 7`() {
+        withTestDatabase(6, 7) { persistenceManager, connection ->
+            check6To7(persistenceManager, connection)
         }
     }
 }
