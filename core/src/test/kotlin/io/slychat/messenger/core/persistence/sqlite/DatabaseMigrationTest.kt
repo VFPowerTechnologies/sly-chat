@@ -7,7 +7,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.BeforeClass
 import org.junit.Test
 import java.util.*
-import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -34,23 +33,14 @@ class DatabaseMigrationTest {
             try {
                 persistenceManager.init(to)
                 assertEquals(to, persistenceManager.currentDatabaseVersionSync(), "Invalid database version after init")
-                val atomic = AtomicReference<Throwable>()
-                persistenceManager.syncRunQuery { connection ->
-                    //kovenant is hardcoded to use Exception as its error type for task/etc
-                    //so everything else I wrote does this as well
-                    //however AssertionError is an Error
-                    //so this is a nasty hack for now
-                    try {
+                try {
+                    persistenceManager.syncRunQuery { connection ->
                         body(persistenceManager, connection)
                     }
-                    catch (t: Throwable) {
-                        atomic.set(t)
-                    }
                 }
-
-                val maybeException = atomic.get()
-                if (maybeException != null)
-                    throw maybeException
+                catch (e: SQLitePersistenceManagerErrorException) {
+                    throw e.cause!!
+                }
             }
             finally {
                 persistenceManager.shutdown()
