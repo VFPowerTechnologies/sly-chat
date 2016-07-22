@@ -232,6 +232,11 @@ class DatabaseMigrationTest {
         assertNoColDef(connection, "contacts", "is_pending INTEGER NOT NULL")
         assertColDef(connection, "contacts", "public_key TEXT NOT NULL")
 
+        //this is just to make sure the migration ran with foreign_keys=off; if it didn't this'll have contacts_old
+        //as the referenced table name
+        val def = getTableDef(connection, "conversation_info")
+        assertTrue("references contacts (id)" in def, "Migration ran with foreign_keys=on")
+
         assertTableExists(connection, "send_message_queue")
         assertTableExists(connection, "groups")
         assertTableExists(connection, "group_members")

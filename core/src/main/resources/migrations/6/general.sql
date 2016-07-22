@@ -2,8 +2,6 @@
 -- -contacts.is_pending
 -- contacts.public_key[BLOB -> STRING]
 
-PRAGMA foreign_keys = OFF;
-
 ALTER TABLE contacts RENAME TO contacts_old;
 
 CREATE TABLE IF NOT EXISTS contacts (
@@ -26,8 +24,6 @@ FROM
 ;
 
 DROP TABLE contacts_old;
-
-PRAGMA foreign_keys = ON;
 
 --  +send_message_queue
 --  +groups
