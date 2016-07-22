@@ -6,7 +6,6 @@ import io.slychat.messenger.core.http.api.prekeys.PreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyRetrievalRequest
 import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
-import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.messaging.*
 import org.slf4j.LoggerFactory
@@ -243,7 +242,7 @@ class MessageCipherServiceImpl(
 
             for ((deviceId, bundle) in response.bundles) {
                 if (bundle == null) {
-                    log.error("No key data available for {}:{}", userId.long, deviceId)
+                    log.warn("No key data available for {}:{}", userId.long, deviceId)
                     continue
                 }
 
