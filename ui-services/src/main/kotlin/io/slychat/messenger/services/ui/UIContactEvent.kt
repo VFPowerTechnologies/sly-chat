@@ -8,22 +8,22 @@ enum class UIContactEventType {
     SYNC
 }
 
-interface UIContactEvent {
-    val type: UIContactEventType
+sealed class UIContactEvent {
+    abstract val type: UIContactEventType
 
-    class Added(val contacts: List<UIContactDetails>) : UIContactEvent {
+    class Added(val contacts: List<UIContactDetails>) : UIContactEvent() {
         override val type = UIContactEventType.ADD
     }
 
-    class Removed(val contacts: List<UIContactDetails>) : UIContactEvent {
+    class Removed(val contacts: List<UIContactDetails>) : UIContactEvent() {
         override val type: UIContactEventType = UIContactEventType.REMOVE
     }
 
-    class Updated(val contacts: List<UIContactDetails>) : UIContactEvent {
+    class Updated(val contacts: List<UIContactDetails>) : UIContactEvent() {
         override val type: UIContactEventType = UIContactEventType.UPDATE
     }
 
-    class Sync(val isRunning: Boolean) : UIContactEvent {
+    class Sync(val isRunning: Boolean) : UIContactEvent() {
         override val type = UIContactEventType.SYNC
     }
 }
