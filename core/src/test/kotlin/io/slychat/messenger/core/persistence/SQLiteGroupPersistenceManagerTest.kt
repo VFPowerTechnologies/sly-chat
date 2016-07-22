@@ -82,8 +82,8 @@ class SQLiteGroupPersistenceManagerTest {
         val groupInfo = randomGroupInfo()
         val members = insertRandomContacts()
 
-        groupPersistenceManager.testAddGroupInfo(groupInfo)
-        groupPersistenceManager.testAddGroupMembers(groupInfo.id, members)
+        groupPersistenceManager.testAddInfo(groupInfo)
+        groupPersistenceManager.testAddMembers(groupInfo.id, members)
 
         body(groupInfo, members)
     }
@@ -95,7 +95,7 @@ class SQLiteGroupPersistenceManagerTest {
     fun withPartedGroupFull(body: (GroupInfo) -> Unit) {
         val groupInfo = randomGroupInfo(GroupMembershipLevel.PARTED)
 
-        groupPersistenceManager.testAddGroupInfo(groupInfo)
+        groupPersistenceManager.testAddInfo(groupInfo)
 
         body(groupInfo)
     }
@@ -107,7 +107,7 @@ class SQLiteGroupPersistenceManagerTest {
     fun withBlockedGroupFull(body: (GroupInfo) -> Unit) {
         val groupInfo = randomGroupInfo(GroupMembershipLevel.BLOCKED)
 
-        groupPersistenceManager.testAddGroupInfo(groupInfo)
+        groupPersistenceManager.testAddInfo(groupInfo)
 
         body(groupInfo)
     }
@@ -119,7 +119,7 @@ class SQLiteGroupPersistenceManagerTest {
     fun withEmptyJoinedGroup(body: (GroupInfo) -> Unit) {
         val groupInfo = randomGroupInfo()
 
-        groupPersistenceManager.testAddGroupInfo(groupInfo)
+        groupPersistenceManager.testAddInfo(groupInfo)
 
         body(groupInfo)
     }
@@ -148,9 +148,9 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `getGroupMembers should return all members for the given group`() {
+    fun `getMembers should return all members for the given group`() {
         withJoinedGroup { id, members ->
-            val got = groupPersistenceManager.getGroupMembers(id).get()
+            val got = groupPersistenceManager.getMembers(id).get()
 
             assertThat(got).apply {
                 `as`("Group members")
@@ -160,58 +160,58 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `getGroupMembers should throw InvalidGroupException if the group id is invalid`() {
+    fun `getMembers should throw InvalidGroupException if the group id is invalid`() {
         assertFailsWith(InvalidGroupException::class) {
-            groupPersistenceManager.getGroupMembers(randomGroupId()).get()
+            groupPersistenceManager.getMembers(randomGroupId()).get()
         }
     }
 
     @Test
-    fun `getGroupInfo should return info for an existing group`() {
+    fun `getInfo should return info for an existing group`() {
         withEmptyJoinedGroup { groupInfo ->
-            val got = groupPersistenceManager.getGroupInfo(groupInfo.id).get()
+            val got = groupPersistenceManager.getInfo(groupInfo.id).get()
 
             assertEquals(groupInfo, got, "Invalid group info")
         }
     }
 
     @Test
-    fun `getGroupInfo should return null for a non-existent group`() {
-        assertNull(groupPersistenceManager.getGroupInfo(randomGroupId()).get(), "Got data for nonexistent group")
+    fun `getInfo should return null for a non-existent group`() {
+        assertNull(groupPersistenceManager.getInfo(randomGroupId()).get(), "Got data for nonexistent group")
     }
 
     @Test
-    fun `getGroupConversationInfo should return info for a joined group`() {
+    fun `getConversationInfo should return info for a joined group`() {
         withJoinedGroup { groupId, members ->
-            assertNotNull(groupPersistenceManager.getGroupConversationInfo(groupId).get(), "No returned conversation info")
+            assertNotNull(groupPersistenceManager.getConversationInfo(groupId).get(), "No returned conversation info")
         }
     }
 
     @Test
-    fun `getGroupConversationInfo should return null for a parted group`() {
+    fun `getConversationInfo should return null for a parted group`() {
         withPartedGroup {
-            assertNull(groupPersistenceManager.getGroupConversationInfo(it).get(), "Returned conversation info for a parted group")
+            assertNull(groupPersistenceManager.getConversationInfo(it).get(), "Returned conversation info for a parted group")
         }
     }
 
     @Test
-    fun `getGroupConversationInfo should return info for a blocked group`() {
+    fun `getConversationInfo should return info for a blocked group`() {
         withBlockedGroup {
-            assertNull(groupPersistenceManager.getGroupConversationInfo(it).get(), "Returned conversation info for a blocked group")
+            assertNull(groupPersistenceManager.getConversationInfo(it).get(), "Returned conversation info for a blocked group")
         }
     }
 
     @Test
-    fun `getGroupConversationInfo should throw InvalidGroupException for a nonexistent group`() {
-        assertFailsWithInvalidGroup { groupPersistenceManager.getGroupConversationInfo(randomGroupId()).get() }
+    fun `getConversationInfo should throw InvalidGroupException for a nonexistent group`() {
+        assertFailsWithInvalidGroup { groupPersistenceManager.getConversationInfo(randomGroupId()).get() }
     }
 
     @Test
-    fun `getAllGroupConversations should return info only for joined groups`() {
+    fun `getAllConversations should return info only for joined groups`() {
         withJoinedGroup { joinedId, members ->
             withPartedGroup {
                 withBlockedGroup {
-                    val info = groupPersistenceManager.getAllGroupConversationInfo().get()
+                    val info = groupPersistenceManager.getAllConversationInfo().get()
                     assertThat(info.map { it.groupId }).apply {
                         `as`("Group conversation info")
                         containsOnly(joinedId)
@@ -222,8 +222,8 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `getAllGroupConversations should return nothing if no groups are available`() {
-        assertTrue(groupPersistenceManager.getAllGroupConversationInfo().get().isEmpty(), "Group list not empty")
+    fun `getAllConversations should return nothing if no groups are available`() {
+        assertTrue(groupPersistenceManager.getAllConversationInfo().get().isEmpty(), "Group list not empty")
     }
 
     @Test
@@ -231,7 +231,7 @@ class SQLiteGroupPersistenceManagerTest {
         withJoinedGroup { id, members ->
             groupPersistenceManager.addMembers(id, members).get()
 
-            val got = groupPersistenceManager.getGroupMembers(id).get()
+            val got = groupPersistenceManager.getMembers(id).get()
 
             assertThat(got).apply {
                 `as`("Group members")
@@ -275,7 +275,7 @@ class SQLiteGroupPersistenceManagerTest {
 
             assertTrue(wasRemoved, "Existing user not removed")
 
-            val currentMembers = groupPersistenceManager.getGroupMembers(id).get()
+            val currentMembers = groupPersistenceManager.getMembers(id).get()
 
             assertThat(currentMembers).apply {
                 `as`("Remaining members")
@@ -330,17 +330,17 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `joinGroup should create a new group entry if no info for that group currently exists`() {
+    fun `join should create a new group entry if no info for that group currently exists`() {
         val groupInfo = randomGroupInfo()
         val initialMembers = insertRandomContacts()
 
-        groupPersistenceManager.joinGroup(groupInfo, initialMembers).get()
+        groupPersistenceManager.join(groupInfo, initialMembers).get()
 
-        val got = assertNotNull(groupPersistenceManager.getGroupInfo(groupInfo.id).get(), "Missing group info")
+        val got = assertNotNull(groupPersistenceManager.getInfo(groupInfo.id).get(), "Missing group info")
 
         assertEquals(groupInfo, got, "Invalid group info")
 
-        val members = groupPersistenceManager.getGroupMembers(groupInfo.id).get()
+        val members = groupPersistenceManager.getMembers(groupInfo.id).get()
 
         assertThat(members).apply {
             `as`("Initial group members")
@@ -349,32 +349,32 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `joinGroup should update the membership level to JOINED for a parted group`() {
+    fun `join should update the membership level to JOINED for a parted group`() {
         val groupInfo = randomGroupInfo()
         val initialMembers = insertRandomContacts()
 
-        groupPersistenceManager.testAddGroupInfo(groupInfo.copy(membershipLevel = GroupMembershipLevel.PARTED))
+        groupPersistenceManager.testAddInfo(groupInfo.copy(membershipLevel = GroupMembershipLevel.PARTED))
 
-        groupPersistenceManager.joinGroup(groupInfo, initialMembers).get()
+        groupPersistenceManager.join(groupInfo, initialMembers).get()
 
-        val got = assertNotNull(groupPersistenceManager.getGroupInfo(groupInfo.id).get(), "Missing group info")
+        val got = assertNotNull(groupPersistenceManager.getInfo(groupInfo.id).get(), "Missing group info")
 
         assertEquals(groupInfo, got, "Invalid group info")
     }
 
     //XXX this should already be empty as part of the parting procedure, so dunno if this is worth testing?
     @Test
-    fun `joinGroup should overwrite the old member list for a parted group`() {
+    fun `join should overwrite the old member list for a parted group`() {
         val groupInfo = randomGroupInfo()
         val oldMembers = insertRandomContacts()
         val initialMembers = insertRandomContacts()
 
-        groupPersistenceManager.testAddGroupInfo(groupInfo.copy(membershipLevel = GroupMembershipLevel.PARTED))
-        groupPersistenceManager.testAddGroupMembers(groupInfo.id, oldMembers)
+        groupPersistenceManager.testAddInfo(groupInfo.copy(membershipLevel = GroupMembershipLevel.PARTED))
+        groupPersistenceManager.testAddMembers(groupInfo.id, oldMembers)
 
-        groupPersistenceManager.joinGroup(groupInfo, initialMembers).get()
+        groupPersistenceManager.join(groupInfo, initialMembers).get()
 
-        val members = groupPersistenceManager.getGroupMembers(groupInfo.id).get()
+        val members = groupPersistenceManager.getMembers(groupInfo.id).get()
 
         assertThat(members).apply {
             `as`("Initial group members")
@@ -384,15 +384,15 @@ class SQLiteGroupPersistenceManagerTest {
 
     //make sure member list isn't overwritten
     @Test
-    fun `joinGroup should do nothing for an already joined group`() {
+    fun `join should do nothing for an already joined group`() {
         val groupInfo = randomGroupInfo()
         val initialMembers = insertRandomContacts()
         val dupMembers = insertRandomContacts()
 
-        groupPersistenceManager.joinGroup(groupInfo, initialMembers).get()
-        groupPersistenceManager.joinGroup(groupInfo, dupMembers).get()
+        groupPersistenceManager.join(groupInfo, initialMembers).get()
+        groupPersistenceManager.join(groupInfo, dupMembers).get()
 
-        val members = groupPersistenceManager.getGroupMembers(groupInfo.id).get()
+        val members = groupPersistenceManager.getMembers(groupInfo.id).get()
 
         assertThat(members).apply {
             `as`("Initial group members")
@@ -401,16 +401,16 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `joinGroup should create the group log`() {
+    fun `join should create the group log`() {
         val groupInfo = randomGroupInfo()
 
-        groupPersistenceManager.joinGroup(groupInfo, insertRandomContacts()).get()
+        groupPersistenceManager.join(groupInfo, insertRandomContacts()).get()
 
         assertConvTableExists(groupInfo.id)
     }
 
     fun assertInitialConversationInfo(id: GroupId) {
-        val conversationInfo = assertNotNull(groupPersistenceManager.testGetGroupConversationInfo(id), "Missing group conversation info")
+        val conversationInfo = assertNotNull(groupPersistenceManager.testGetConversationInfo(id), "Missing group conversation info")
 
         assertEquals(id, conversationInfo.groupId, "Invalid group id")
         assertNull(conversationInfo.lastMessage, "Last message should be empty")
@@ -419,16 +419,16 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `joinGroup should add an empty group conversation info entry`() {
+    fun `join should add an empty group conversation info entry`() {
         val groupInfo = randomGroupInfo()
 
-        groupPersistenceManager.joinGroup(groupInfo, insertRandomContacts()).get()
+        groupPersistenceManager.join(groupInfo, insertRandomContacts()).get()
 
         assertInitialConversationInfo(groupInfo.id)
     }
 
     @Test
-    fun `joinGroup should reset group conversation info for a previously parted group`() {
+    fun `join should reset group conversation info for a previously parted group`() {
         withPartedGroupFull {
             val member = insertRandomContact()
             val convoInfo = GroupConversationInfo(
@@ -440,45 +440,45 @@ class SQLiteGroupPersistenceManagerTest {
             )
             groupPersistenceManager.testSetConversationInfo(convoInfo)
 
-            groupPersistenceManager.joinGroup(it.copy(membershipLevel = GroupMembershipLevel.JOINED), insertRandomContacts()).get()
+            groupPersistenceManager.join(it.copy(membershipLevel = GroupMembershipLevel.JOINED), insertRandomContacts()).get()
             assertInitialConversationInfo(it.id)
         }
     }
 
     @Test
-    fun `partGroup should set the group membership level to PARTED`() {
+    fun `part should set the group membership level to PARTED`() {
         withJoinedGroup { id, members ->
-            val wasParted = groupPersistenceManager.partGroup(id).get()
+            val wasParted = groupPersistenceManager.part(id).get()
             assertTrue(wasParted, "Joined group not parted")
 
-            val newInfo = assertNotNull(groupPersistenceManager.getGroupInfo(id).get())
+            val newInfo = assertNotNull(groupPersistenceManager.getInfo(id).get())
 
             assertEquals(GroupMembershipLevel.PARTED, newInfo.membershipLevel, "Membership level not updated")
         }
     }
 
     @Test
-    fun `partGroup should do nothing for an already parted group`() {
+    fun `part should do nothing for an already parted group`() {
         withPartedGroup {
-            val wasParted = groupPersistenceManager.partGroup(it).get()
+            val wasParted = groupPersistenceManager.part(it).get()
             assertFalse(wasParted, "Parted group was parted")
         }
     }
 
     @Test
-    fun `partGroup should do nothing for a blocked group`() {
+    fun `part should do nothing for a blocked group`() {
         withBlockedGroup {
-            val wasParted = groupPersistenceManager.partGroup(it).get()
+            val wasParted = groupPersistenceManager.part(it).get()
             assertFalse(wasParted, "Parted group was parted")
         }
     }
 
     @Test
-    fun `partGroup should remove the member list for the affected group`() {
+    fun `part should remove the member list for the affected group`() {
         withJoinedGroup { id, members ->
-            groupPersistenceManager.partGroup(id).get()
+            groupPersistenceManager.part(id).get()
 
-            assertThat(groupPersistenceManager.getGroupMembers(id).get()).apply {
+            assertThat(groupPersistenceManager.getMembers(id).get()).apply {
                 `as`("Group members")
                 isEmpty()
             }
@@ -486,56 +486,56 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `partGroup should remove the group log`() {
+    fun `part should remove the group log`() {
         withJoinedGroup { id, members ->
-            groupPersistenceManager.partGroup(id).get()
+            groupPersistenceManager.part(id).get()
 
             assertConvTableNotExists(id)
         }
     }
 
     @Test
-    fun `partGroup should throw InvalidGroupException if the group id is invalid`() {
+    fun `part should throw InvalidGroupException if the group id is invalid`() {
         assertFailsWithInvalidGroup {
-            groupPersistenceManager.partGroup(randomGroupId()).get()
+            groupPersistenceManager.part(randomGroupId()).get()
         }
     }
 
     @Test
-    fun `blockGroup should set the group membership level to BLOCKED for a joined group`() {
+    fun `block should set the group membership level to BLOCKED for a joined group`() {
         withJoinedGroup { id, members ->
-            groupPersistenceManager.blockGroup(id).get()
+            groupPersistenceManager.block(id).get()
 
-            val newInfo = assertNotNull(groupPersistenceManager.getGroupInfo(id).get())
+            val newInfo = assertNotNull(groupPersistenceManager.getInfo(id).get())
 
             assertEquals(GroupMembershipLevel.BLOCKED, newInfo.membershipLevel, "Group not marked as blocked")
         }
     }
 
     @Test
-    fun `blockGroup should set the group membership level to BLOCKED for a parted group`() {
+    fun `block should set the group membership level to BLOCKED for a parted group`() {
         withPartedGroup {
-            groupPersistenceManager.blockGroup(it).get()
+            groupPersistenceManager.block(it).get()
 
-            val newInfo = assertNotNull(groupPersistenceManager.getGroupInfo(it).get())
+            val newInfo = assertNotNull(groupPersistenceManager.getInfo(it).get())
 
             assertEquals(GroupMembershipLevel.BLOCKED, newInfo.membershipLevel, "Group not marked as blocked")
         }
     }
 
     @Test
-    fun `blockGroup should do nothing for an already blocked group`() {
+    fun `block should do nothing for an already blocked group`() {
         withBlockedGroup {
-            groupPersistenceManager.blockGroup(it).get()
+            groupPersistenceManager.block(it).get()
         }
     }
 
     @Test
-    fun `blockGroup should remove the memberlist for the affected group`() {
+    fun `block should remove the memberlist for the affected group`() {
         withJoinedGroup { groupId, members ->
-            groupPersistenceManager.blockGroup(groupId).get()
+            groupPersistenceManager.block(groupId).get()
 
-            assertThat(groupPersistenceManager.getGroupMembers(groupId).get()).apply {
+            assertThat(groupPersistenceManager.getMembers(groupId).get()).apply {
                 `as`("Group members")
                 isEmpty()
             }
@@ -543,48 +543,48 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `blockGroup should remove the group log`() {
+    fun `block should remove the group log`() {
         withJoinedGroup { groupId, members ->
-            groupPersistenceManager.blockGroup(groupId).get()
+            groupPersistenceManager.block(groupId).get()
 
             assertConvTableNotExists(groupId)
         }
     }
 
     @Test
-    fun `blockGroup should throw InvalidGroupException if the group id is invalid`() {
+    fun `block should throw InvalidGroupException if the group id is invalid`() {
         assertFailsWithInvalidGroup {
-            groupPersistenceManager.blockGroup(randomGroupId()).get()
+            groupPersistenceManager.block(randomGroupId()).get()
         }
     }
 
     fun testUnblock(groupId: GroupId, expectedMembershipLevel: GroupMembershipLevel, errorMessage: String) {
-        groupPersistenceManager.unblockGroup(groupId).get()
+        groupPersistenceManager.unblock(groupId).get()
 
-        val newInfo = assertNotNull(groupPersistenceManager.getGroupInfo(groupId).get(), "Missing group")
+        val newInfo = assertNotNull(groupPersistenceManager.getInfo(groupId).get(), "Missing group")
 
         assertEquals(expectedMembershipLevel, newInfo.membershipLevel, errorMessage)
     }
 
     @Test
-    fun `unblockGroup should set the group membership level to PARTED for a blocked group`() {
+    fun `unblock should set the group membership level to PARTED for a blocked group`() {
         withBlockedGroup { testUnblock(it, GroupMembershipLevel.PARTED, "Membership should be PARTED") }
     }
 
     @Test
-    fun `unblockGroup should do nothing for a joined group`() {
+    fun `unblock should do nothing for a joined group`() {
         withJoinedGroup { groupId, members -> testUnblock(groupId, GroupMembershipLevel.JOINED, "Membership was modified") }
     }
 
     @Test
-    fun `unblockGroup should do nothing for a parted group`() {
+    fun `unblock should do nothing for a parted group`() {
         withPartedGroup { testUnblock(it, GroupMembershipLevel.PARTED, "Membership was modified") }
     }
 
     @Test
-    fun `unblockGroup should throw InvalidGroupException if the group id is invalid`() {
+    fun `unblock should throw InvalidGroupException if the group id is invalid`() {
         assertFailsWithInvalidGroup {
-            groupPersistenceManager.unblockGroup(randomGroupId()).get()
+            groupPersistenceManager.unblock(randomGroupId()).get()
         }
     }
 
@@ -642,7 +642,7 @@ class SQLiteGroupPersistenceManagerTest {
             val groupMessageInfo = randomReceivedGroupMessageInfo(sender)
             groupPersistenceManager.addMessage(groupId, groupMessageInfo).get()
 
-            val conversationInfo = assertNotNull(groupPersistenceManager.testGetGroupConversationInfo(groupId), "Missing conversation info")
+            val conversationInfo = assertNotNull(groupPersistenceManager.testGetConversationInfo(groupId), "Missing conversation info")
 
             assertValidConversationInfo(groupMessageInfo, conversationInfo)
         }
@@ -654,7 +654,7 @@ class SQLiteGroupPersistenceManagerTest {
             val groupMessageInfo = randomReceivedGroupMessageInfo(null)
             groupPersistenceManager.addMessage(groupId, groupMessageInfo).get()
 
-            val conversationInfo = assertNotNull(groupPersistenceManager.testGetGroupConversationInfo(groupId), "Missing conversation info")
+            val conversationInfo = assertNotNull(groupPersistenceManager.testGetConversationInfo(groupId), "Missing conversation info")
 
             assertValidConversationInfo(groupMessageInfo, conversationInfo, 0)
         }
@@ -738,7 +738,7 @@ class SQLiteGroupPersistenceManagerTest {
             groupPersistenceManager.deleteMessages(groupId, toRemove).get()
 
             //should contain the last inserted message
-            val convoInfo = assertNotNull(groupPersistenceManager.testGetGroupConversationInfo(groupId), "Missing group conversation info")
+            val convoInfo = assertNotNull(groupPersistenceManager.testGetConversationInfo(groupId), "Missing group conversation info")
 
             val lastMessageInfo = info.last()
 

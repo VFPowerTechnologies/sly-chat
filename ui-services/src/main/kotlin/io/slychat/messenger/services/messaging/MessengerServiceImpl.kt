@@ -205,7 +205,7 @@ class MessengerServiceImpl(
 
     /** Fetches group members for the given group and sends the given message to the MessageSender. */
     private fun sendMessageToGroup(groupId: GroupId, message: SlyMessage, messageCategory: MessageCategory): Promise<Set<UserId>, Exception> {
-        return groupPersistenceManager.getGroupMembers(groupId) bindUi { members ->
+        return groupPersistenceManager.getMembers(groupId) bindUi { members ->
             if (members.isNotEmpty())
                 sendMessageToMembers(groupId, members, message, messageCategory)
             else
@@ -256,7 +256,7 @@ class MessengerServiceImpl(
         }
 
         return messageSender.addToQueue(messages) bind {
-            groupPersistenceManager.joinGroup(groupInfo, initialMembers)
+            groupPersistenceManager.join(groupInfo, initialMembers)
         }
     }
 
@@ -277,11 +277,11 @@ class MessengerServiceImpl(
     }
 
     override fun inviteUsersToGroup(groupId: GroupId, newMembers: Set<UserId>): Promise<Unit, Exception> {
-        return groupPersistenceManager.getGroupInfo(groupId) bind { info ->
+        return groupPersistenceManager.getInfo(groupId) bind { info ->
             if (info == null)
                 throw IllegalStateException("Attempt to invite users to a non-existent group")
 
-            groupPersistenceManager.getGroupMembers(groupId) bindUi { members ->
+            groupPersistenceManager.getMembers(groupId) bindUi { members ->
                 sendJoinToMembers(groupId, members, newMembers) bindUi {
                     sendInvitationToNewMembers(info, newMembers, members) bind {
                         groupPersistenceManager.addMembers(groupId, members) map { Unit }
@@ -295,7 +295,7 @@ class MessengerServiceImpl(
         val message = GroupEventMessageWrapper(GroupEventMessage.Part(groupId))
 
         return sendMessageToGroup(groupId, message, MessageCategory.OTHER) bind {
-            groupPersistenceManager.partGroup(groupId)
+            groupPersistenceManager.part(groupId)
         }
     }
 

@@ -5,19 +5,19 @@ import nl.komponents.kovenant.Promise
 
 interface GroupPersistenceManager {
     /** Returns the list of all currently joined groups. Does not include blocked or parted groups. */
-    fun getGroupList(): Promise<List<GroupInfo>, Exception>
+    fun getList(): Promise<List<GroupInfo>, Exception>
 
     /** Returns info on a specific group. */
-    fun getGroupInfo(groupId: GroupId): Promise<GroupInfo?, Exception>
+    fun getInfo(groupId: GroupId): Promise<GroupInfo?, Exception>
 
     /** Returns the membership list of the given group. If the group doesn't exist, an InvalidGroupException is thrown. */
-    fun getGroupMembers(groupId: GroupId): Promise<Set<UserId>, Exception>
+    fun getMembers(groupId: GroupId): Promise<Set<UserId>, Exception>
 
     /** Return conversation info for the specified group. */
-    fun getGroupConversationInfo(groupId: GroupId): Promise<GroupConversationInfo?, Exception>
+    fun getConversationInfo(groupId: GroupId): Promise<GroupConversationInfo?, Exception>
 
     /** Returns all group conversations. */
-    fun getAllGroupConversationInfo(): Promise<List<GroupConversationInfo>, Exception>
+    fun getAllConversationInfo(): Promise<List<GroupConversationInfo>, Exception>
 
     /** Add new members to the given group. The group entry must already exist. Returns the new set of members. */
     fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception>
@@ -29,19 +29,19 @@ interface GroupPersistenceManager {
     fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception>
 
     /** Join a new group, or rejoin an existing group. Also used when creating a group yourself. */
-    fun joinGroup(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception>
+    fun join(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception>
 
     /** Part a joined group. If not a member, returns false, otherwise returns true. */
-    fun partGroup(groupId: GroupId): Promise<Boolean, Exception>
+    fun part(groupId: GroupId): Promise<Boolean, Exception>
 
     /** Returns blocked groups. */
     fun getBlockList(): Promise<Set<GroupId>, Exception>
 
     /** Block the given group. */
-    fun blockGroup(groupId: GroupId): Promise<Unit, Exception>
+    fun block(groupId: GroupId): Promise<Unit, Exception>
 
     /** Unblock the given group. */
-    fun unblockGroup(groupId: GroupId): Promise<Unit, Exception>
+    fun unblock(groupId: GroupId): Promise<Unit, Exception>
 
     /** Add a message from a user to the given group. If userId is null, is taken to be from yourself. */
     fun addMessage(groupId: GroupId, groupMessageInfo: GroupMessageInfo): Promise<GroupMessageInfo, Exception>

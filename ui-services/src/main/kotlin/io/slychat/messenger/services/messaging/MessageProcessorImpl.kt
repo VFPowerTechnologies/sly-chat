@@ -52,7 +52,7 @@ class MessageProcessorImpl(
             }
         }
         else {
-            groupPersistenceManager.getGroupInfo(groupId) bind { groupInfo ->
+            groupPersistenceManager.getInfo(groupId) bind { groupInfo ->
                 runIfJoinedAndUserIsMember(groupInfo, sender) { addGroupMessage(groupId, sender, messageInfo) }
             }
         }
@@ -66,7 +66,7 @@ class MessageProcessorImpl(
     }
 
     private fun handleGroupMessage(sender: UserId, m: GroupEventMessage): Promise<Unit, Exception> {
-        return groupPersistenceManager.getGroupInfo(m.id) bind { groupInfo ->
+        return groupPersistenceManager.getInfo(m.id) bind { groupInfo ->
             when (m) {
                 is GroupEventMessage.Invitation -> handleGroupInvitation(sender, groupInfo, m)
                 is GroupEventMessage.Join -> runIfJoinedAndUserIsMember(groupInfo, sender) { handleGroupJoin(m)  }
@@ -137,7 +137,7 @@ class MessageProcessorImpl(
             contactsService.addMissingContacts(m.members) bind { invalidIds ->
                 members.removeAll(invalidIds)
                 val info = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
-                groupPersistenceManager.joinGroup(info, members)
+                groupPersistenceManager.join(info, members)
             }
         }
         else

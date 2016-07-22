@@ -67,7 +67,7 @@ class MessengerServiceImplTest {
         whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
         whenever(messageReceiver.processPackages(any())).thenReturn(Unit)
 
-        whenever(groupPersistenceManager.partGroup(any())).thenReturn(true)
+        whenever(groupPersistenceManager.part(any())).thenReturn(true)
 
         return MessengerServiceImpl(
             contactsService,
@@ -315,7 +315,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(members)
+        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(members)
 
         messengerService.sendGroupMessageTo(groupId, "msg")
 
@@ -330,7 +330,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(emptySet())
+        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(emptySet())
 
         val message = "msg"
         messengerService.sendGroupMessageTo(groupId, message)
@@ -349,7 +349,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(members)
+        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(members)
 
         val message = "msg"
 
@@ -411,11 +411,11 @@ class MessengerServiceImplTest {
 
         val groupId = randomGroupId()
 
-        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(randomUserIds())
+        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(randomUserIds())
 
         messengerService.leaveGroup(groupId).get()
 
-        verify(groupPersistenceManager).partGroup(groupId)
+        verify(groupPersistenceManager).part(groupId)
     }
 
     inline fun <reified T : SlyMessage> convertFromSerialized(messageEntry: SenderMessageEntry): T {
@@ -439,7 +439,7 @@ class MessengerServiceImplTest {
         val groupId = randomGroupId()
         val members = randomUserIds()
 
-        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(members)
+        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(members)
 
         messengerService.leaveGroup(groupId).get()
 
@@ -458,7 +458,7 @@ class MessengerServiceImplTest {
 
         val groupId = randomGroupId()
 
-        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(emptySet())
+        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(emptySet())
 
         messengerService.leaveGroup(groupId).get()
 
@@ -526,8 +526,8 @@ class MessengerServiceImplTest {
         val groupId = groupInfo.id
         val members = if (noMembers) emptySet() else randomUserIds()
 
-        whenever(groupPersistenceManager.getGroupInfo(groupId)).thenReturn(groupInfo)
-        whenever(groupPersistenceManager.getGroupMembers(groupId)).thenReturn(members)
+        whenever(groupPersistenceManager.getInfo(groupId)).thenReturn(groupInfo)
+        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(members)
 
         body(messengerService, groupInfo, members)
     }
@@ -615,7 +615,7 @@ class MessengerServiceImplTest {
 
         messengerService.createNewGroup(groupName, initialMembers)
 
-        verify(groupPersistenceManager).joinGroup(capture {
+        verify(groupPersistenceManager).join(capture {
             assertEquals(groupName, it.name, "Invalid group name")
             assertEquals(GroupMembershipLevel.JOINED, it.membershipLevel, "Invalid membership level")
             assertFalse(it.isPending, "Created group should not be in pending state")

@@ -208,7 +208,7 @@ class DatabaseMigrationTest {
         }
     }
 
-    data class Contact7(
+    private data class ContactV7(
         val id: Long,
         val email: String,
         val name: String,
@@ -239,14 +239,14 @@ class DatabaseMigrationTest {
 
         connection.withPrepared("SELECT id, email, name, allowed_message_level, phone_number, public_key FROM contacts ORDER BY id") { stmt ->
             val expected = listOf(
-                Contact7(153, "d@a.com", "Desktop", 2, "15145555555", "05427fbf4460492480d82e42f8dba6d381edeef340646150944b377dc581b4e31d"),
-                Contact7(154, "e@a.com", "Eeee", 2, "15145555554", "054fe37c651f261bd541f4df980b4aaee467ccd6c5cb1b8a7d898cf86c91acc56b")
+                ContactV7(153, "d@a.com", "Desktop", 2, "15145555555", "05427fbf4460492480d82e42f8dba6d381edeef340646150944b377dc581b4e31d"),
+                ContactV7(154, "e@a.com", "Eeee", 2, "15145555554", "054fe37c651f261bd541f4df980b4aaee467ccd6c5cb1b8a7d898cf86c91acc56b")
             )
 
-            val found = ArrayList<Contact7>()
+            val found = ArrayList<ContactV7>()
 
             while (stmt.step()) {
-                found.add(Contact7(
+                found.add(ContactV7(
                     stmt.columnLong(0),
                     stmt.columnString(1),
                     stmt.columnString(2),
