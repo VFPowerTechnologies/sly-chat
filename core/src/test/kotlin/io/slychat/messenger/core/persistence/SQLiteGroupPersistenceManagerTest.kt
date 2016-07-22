@@ -833,6 +833,31 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
+    fun `markConversationAsRead should reset the unread count`() {
+        withJoinedGroup { groupId, members ->
+            val convoInfo = GroupConversationInfo(
+                groupId,
+                members.first(),
+                1,
+                randomMessageText(),
+                currentTimestamp()
+            )
+            groupPersistenceManager.testSetConversationInfo(convoInfo)
+
+            groupPersistenceManager.markConversationAsRead(groupId).get()
+
+            val got = assertNotNull(groupPersistenceManager.testGetConversationInfo(groupId), "Missing conversation info")
+
+            assertEquals(0, got.unreadCount, "Unread count not reset")
+        }
+    }
+
+    @Test
+    fun `markConversationAsRead should throw InvalidGroupException for a non-existent group`() {
+        assertFailsWithInvalidGroup { groupPersistenceManager.markConversationAsRead(randomGroupId()).get() }
+    }
+
+    @Test
     fun `getLastMessages should return the asked for message range`() {
         withJoinedGroup { groupId, members ->
             val ids = insertRandomMessages(groupId, members)

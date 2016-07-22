@@ -55,6 +55,9 @@ interface GroupPersistenceManager {
     /** Marks the given group message as delivered. */
     fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<GroupMessageInfo, Exception>
 
+    /** Resets unread message count for the given contact's conversation. */
+    fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception>
+
     /** Returns the last range of messages from a group. */
     fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<GroupMessageInfo>, Exception>
 

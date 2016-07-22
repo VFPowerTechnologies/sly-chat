@@ -30,6 +30,10 @@ class GroupServiceImpl(
         TODO()
     }
 
+    override fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception> {
+        return groupPersistenceManager.markConversationAsRead(groupId)
+    }
+
     override fun createNewGroup(name: String, initialMembers: Set<UserId>): Promise<Unit, Exception> {
         TODO()
     }

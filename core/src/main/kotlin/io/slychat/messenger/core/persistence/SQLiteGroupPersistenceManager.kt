@@ -508,6 +508,17 @@ LIMIT
         getGroupMessageInfo(connection, groupId, messageId) ?: throw InvalidGroupMessageException(groupId, messageId)
     }
 
+    override fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        throwIfGroupIsInvalid(connection, groupId)
+
+        connection.withPrepared("UPDATE group_conversation_info set unread_count=0 WHERE group_id=?") { stmt ->
+            stmt.bind(1, groupId)
+            stmt.step()
+        }
+
+        Unit
+    }
+
     private fun getGroupMessageInfo(connection: SQLiteConnection, groupId: GroupId, messageId: String): GroupMessageInfo? {
         val tableName = GroupConversationTable.getTablename(groupId)
         val sql =
@@ -578,8 +589,8 @@ OFFSET
             groupConversationInfo.lastSpeaker,
             groupConversationInfo.lastMessage,
             groupConversationInfo.lastTimestamp,
-            0
-            )
+            groupConversationInfo.unreadCount
+        )
     }
 
     internal fun testAddInfo(groupInfo: GroupInfo): Unit = sqlitePersistenceManager.syncRunQuery { connection ->
