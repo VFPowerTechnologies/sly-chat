@@ -7,6 +7,7 @@ import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
+import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
@@ -137,7 +138,9 @@ class MessageProcessorImpl(
             contactsService.addMissingContacts(m.members) bind { invalidIds ->
                 members.removeAll(invalidIds)
                 val info = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
-                groupPersistenceManager.join(info, members)
+                groupPersistenceManager.join(info, members) successUi {
+                    groupEventSubject.onNext(GroupEvent.NewGroup(m.id, members))
+                }
             }
         }
         else

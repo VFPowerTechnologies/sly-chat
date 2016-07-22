@@ -91,7 +91,7 @@ sealed class GroupEventMessage {
         }
     }
 
-    /** Invitation to a new group. The sender is implicitly considered as a member and doesn't need to be included. */
+    /** Invitation to a new group. The sender is implicitly considered as a member and thus is not included in the member list. */
     class Invitation(
         @JsonProperty("id")
         override val id: GroupId,

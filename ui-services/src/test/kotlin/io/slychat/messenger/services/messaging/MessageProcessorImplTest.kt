@@ -131,10 +131,6 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
-
-        whenever(groupPersistenceManager.getInfo(m.id)).thenReturnNull()
-
         processor.processMessage(sender, wrap(m)).get()
 
         val info = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
@@ -142,6 +138,52 @@ class MessageProcessorImplTest {
         verify(contactsService).addMissingContacts(m.members)
 
         verify(groupPersistenceManager).join(info, fullMembers)
+    }
+
+    @Test
+    fun `it should emit a NewGroup event upon processing a new invitation (all valid users)`() {
+        val sender = randomUserId()
+
+        val m = generateInvite()
+
+        val fullMembers = HashSet(m.members)
+        fullMembers.add(sender)
+
+        val processor = createProcessor()
+
+        val testSubscriber = groupEventCollectorFor<GroupEvent.NewGroup>(processor)
+
+        processor.processMessage(sender, wrap(m)).get()
+
+        assertEventEmitted(testSubscriber) { ev ->
+            assertEquals(m.id, ev.id, "Invalid id")
+            assertEquals(fullMembers, ev.members, "Invalid member list")
+        }
+    }
+
+    @Test
+    fun `it should emit a NewGroup event upon processing a new invitation (some invalid users)`() {
+        val sender = randomUserId()
+
+        val m = generateInvite()
+
+        val invalidUser = m.members.first()
+        val remaining = HashSet(m.members)
+        remaining.add(sender)
+        remaining.remove(invalidUser)
+
+        val processor = createProcessor()
+
+        val testSubscriber = groupEventCollectorFor<GroupEvent.NewGroup>(processor)
+
+        whenever(contactsService.addMissingContacts(anySet())).thenReturn(setOf(invalidUser))
+
+        processor.processMessage(sender, wrap(m)).get()
+
+        assertEventEmitted(testSubscriber) { ev ->
+            assertEquals(m.id, ev.id, "Invalid id")
+            assertEquals(remaining, ev.members, "Invalid member list")
+        }
     }
 
     @Test
