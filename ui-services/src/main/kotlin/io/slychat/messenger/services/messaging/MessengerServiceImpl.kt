@@ -88,7 +88,7 @@ class MessengerServiceImpl(
         val groupId = metadata.groupId!!
 
         groupPersistenceManager.markMessageAsDelivered(groupId, metadata.messageId) successUi { messageInfo ->
-            val bundle = MessageBundle(metadata.userId, groupId, listOf(messageInfo))
+            val bundle = MessageBundle(metadata.userId, groupId, listOf(messageInfo.info))
             messageUpdatesSubject.onNext(bundle)
         }
     }
@@ -225,12 +225,13 @@ class MessengerServiceImpl(
         return messageSender.addToQueue(messages) map { members }
     }
 
-    override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<MessageInfo, Exception> {
+    override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<GroupMessageInfo, Exception> {
         val m = TextMessageWrapper(TextMessage(currentTimestamp(), message, groupId))
 
         return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP) bind {
             val messageInfo = MessageInfo.newSent(message, 0)
-            groupPersistenceManager.addMessage(groupId, messageInfo)
+            val groupMessageInfo = GroupMessageInfo(null, messageInfo)
+            groupPersistenceManager.addMessage(groupId, groupMessageInfo)
         }
     }
 

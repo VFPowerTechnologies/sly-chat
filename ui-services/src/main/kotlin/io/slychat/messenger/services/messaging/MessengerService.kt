@@ -1,10 +1,7 @@
 package io.slychat.messenger.services.messaging
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.Conversation
-import io.slychat.messenger.core.persistence.GroupId
-import io.slychat.messenger.core.persistence.MessageInfo
-import io.slychat.messenger.core.persistence.Package
+import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
 import rx.Observable
 
@@ -19,7 +16,7 @@ interface MessengerService {
 
     /* UIMessengerService interface */
     fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception>
-    fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<MessageInfo, Exception>
+    fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<GroupMessageInfo, Exception>
     fun createNewGroup(groupName: String, initialMembers: Set<UserId>): Promise<Unit, Exception>
     fun inviteUsersToGroup(groupId: GroupId, newMembers: Set<UserId>): Promise<Unit, Exception>
     fun leaveGroup(groupId: GroupId): Promise<Boolean, Exception>

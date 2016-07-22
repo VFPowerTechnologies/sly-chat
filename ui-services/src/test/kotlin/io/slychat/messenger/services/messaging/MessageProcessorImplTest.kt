@@ -3,8 +3,10 @@ package io.slychat.messenger.services.messaging
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.services.*
+import io.slychat.messenger.services.assertEventEmitted
+import io.slychat.messenger.services.assertNoEventsEmitted
 import io.slychat.messenger.services.contacts.ContactsService
+import io.slychat.messenger.services.subclassFilterTestSubscriber
 import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
@@ -37,8 +39,8 @@ class MessageProcessorImplTest {
 
         whenever(groupPersistenceManager.addMessage(any(), any())).thenAnswer {
             @Suppress("UNCHECKED_CAST")
-            val a = it.arguments[2] as MessageInfo
-            Promise.ofSuccess<MessageInfo, Exception>(a)
+            val a = it.arguments[1] as GroupMessageInfo
+            Promise.ofSuccess<GroupMessageInfo, Exception>(a)
         }
 
         whenever(groupPersistenceManager.joinGroup(any(), any())).thenReturn(Unit)
@@ -532,7 +534,8 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(groupPersistenceManager).addMessage(eq(groupInfo.id), capture { messageInfo ->
+        verify(groupPersistenceManager).addMessage(eq(groupInfo.id), capture { groupMessageInfo ->
+            val messageInfo = groupMessageInfo.info
             assertFalse(messageInfo.isSent, "Message marked as sent")
             assertEquals(m.message, messageInfo.message, "Invalid message")
         })

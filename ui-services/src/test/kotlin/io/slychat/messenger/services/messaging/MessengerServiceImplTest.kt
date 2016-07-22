@@ -293,7 +293,8 @@ class MessengerServiceImplTest {
         val update = randomTextGroupMetadata()
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
 
-        whenever(groupPersistenceManager.markMessageAsDelivered(update.groupId!!, update.messageId)).thenReturn(messageInfo)
+        whenever(groupPersistenceManager.markMessageAsDelivered(update.groupId!!, update.messageId))
+            .thenReturn(GroupMessageInfo(update.userId, messageInfo))
 
         val testSubscriber = messengerService.messageUpdates.testSubscriber()
 
@@ -335,7 +336,7 @@ class MessengerServiceImplTest {
         messengerService.sendGroupMessageTo(groupId, message)
 
         verify(groupPersistenceManager).addMessage(eq(groupId), capture {
-            assertEquals(message, it.message, "Message is invalid")
+            assertEquals(message, it.info.message, "Message is invalid")
         })
 
         verify(messageSender, never()).addToQueue(any())
@@ -355,7 +356,7 @@ class MessengerServiceImplTest {
         messengerService.sendGroupMessageTo(groupId, message)
 
         verify(groupPersistenceManager).addMessage(eq(groupId), capture {
-            assertEquals(message, it.message, "Text message doesn't match")
+            assertEquals(message, it.info.message, "Text message doesn't match")
         })
     }
     @Test
