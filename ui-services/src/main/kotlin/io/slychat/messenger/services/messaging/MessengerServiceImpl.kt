@@ -291,7 +291,7 @@ class MessengerServiceImpl(
         }
     }
 
-    override fun leaveGroup(groupId: GroupId): Promise<Boolean, Exception> {
+    override fun partGroup(groupId: GroupId): Promise<Boolean, Exception> {
         val message = GroupEventMessageWrapper(GroupEventMessage.Part(groupId))
 
         return sendMessageToGroup(groupId, message, MessageCategory.OTHER) bind {

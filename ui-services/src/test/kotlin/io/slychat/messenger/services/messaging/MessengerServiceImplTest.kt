@@ -406,14 +406,14 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `leaveGroup should leave the given group`() {
+    fun `partGroup should part the given group`() {
         val messengerService = createService()
 
         val groupId = randomGroupId()
 
         whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(randomUserIds())
 
-        messengerService.leaveGroup(groupId).get()
+        messengerService.partGroup(groupId).get()
 
         verify(groupPersistenceManager).part(groupId)
     }
@@ -433,7 +433,7 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `leaveGroup should queue part messages to all members`() {
+    fun `partGroup should queue part messages to all members`() {
         val messengerService = createService()
 
         val groupId = randomGroupId()
@@ -441,7 +441,7 @@ class MessengerServiceImplTest {
 
         whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(members)
 
-        messengerService.leaveGroup(groupId).get()
+        messengerService.partGroup(groupId).get()
 
         verify(messageSender).addToQueue(capture {
             assertEquals(members, it.mapToSet { it.metadata.userId }, "Invalid users")
@@ -453,14 +453,14 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `leaveGroup should not queue any messages when no members remain in the group`() {
+    fun `partGroup should not queue any messages when no members remain in the group`() {
         val messengerService = createService()
 
         val groupId = randomGroupId()
 
         whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(emptySet())
 
-        messengerService.leaveGroup(groupId).get()
+        messengerService.partGroup(groupId).get()
 
         verify(messageSender, never()).addToQueue(any())
     }
