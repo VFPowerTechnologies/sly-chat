@@ -64,27 +64,38 @@ class SQLiteGroupPersistenceManager(
         }
     }
 
-    override fun getAllConversationInfo(): Promise<List<GroupConversationInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun getAllConversations(): Promise<List<GroupConversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val sql =
 """
 SELECT
-    last_speaker_contact_id,
-    unread_count,
-    last_message,
-    last_timestamp,
-    group_id
+    c.last_speaker_contact_id,
+    c.unread_count,
+    c.last_message,
+    c.last_timestamp,
+    g.id,
+    g.name,
+    g.membership_level
 FROM
     group_conversation_info
+AS
+    c
 JOIN
     groups
+AS
+    g
 ON
-    group_conversation_info.group_id=groups.id
+    c.group_id=g.id
 WHERE
-    groups.membership_level=?
+    g.membership_level=?
 """
         connection.withPrepared(sql) { stmt ->
             stmt.bind(1, groupMembershipLevelToInt(GroupMembershipLevel.JOINED))
-            stmt.map { rowToGroupConversationInfo(it, GroupId(stmt.columnString(4))) }
+            stmt.map {
+                val groupInfo = rowToGroupInfo(stmt, 4)
+                val convoInfo = rowToGroupConversationInfo(it, groupInfo.id)
+
+                GroupConversation(groupInfo, convoInfo)
+            }
         }
     }
 
@@ -233,12 +244,12 @@ VALUES
         }
     }
 
-    private fun rowToGroupInfo(stmt: SQLiteStatement): GroupInfo? {
+    private fun rowToGroupInfo(stmt: SQLiteStatement, startIndex: Int = 0): GroupInfo {
         return GroupInfo(
-            GroupId(stmt.columnString(0)),
-            stmt.columnString(1),
+            GroupId(stmt.columnString(startIndex)),
+            stmt.columnString(startIndex+1),
             false,
-            intToGroupMembershipLevel(stmt.columnInt(2))
+            intToGroupMembershipLevel(stmt.columnInt(startIndex+2))
         )
     }
 

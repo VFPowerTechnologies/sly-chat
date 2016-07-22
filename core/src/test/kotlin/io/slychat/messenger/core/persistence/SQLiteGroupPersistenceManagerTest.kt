@@ -207,12 +207,12 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `getAllConversations should return info only for joined groups`() {
+    fun `getAllConversationInfo should return info only for joined groups`() {
         withJoinedGroup { joinedId, members ->
             withPartedGroup {
                 withBlockedGroup {
-                    val info = groupPersistenceManager.getAllConversationInfo().get()
-                    assertThat(info.map { it.groupId }).apply {
+                    val info = groupPersistenceManager.getAllConversations().get()
+                    assertThat(info.map { it.group.id }).apply {
                         `as`("Group conversation info")
                         containsOnly(joinedId)
                     }
@@ -223,7 +223,7 @@ class SQLiteGroupPersistenceManagerTest {
 
     @Test
     fun `getAllConversations should return nothing if no groups are available`() {
-        assertTrue(groupPersistenceManager.getAllConversationInfo().get().isEmpty(), "Group list not empty")
+        assertTrue(groupPersistenceManager.getAllConversations().get().isEmpty(), "Group list not empty")
     }
 
     @Test

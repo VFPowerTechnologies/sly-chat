@@ -16,8 +16,8 @@ interface GroupPersistenceManager {
     /** Return conversation info for the specified group. */
     fun getConversationInfo(groupId: GroupId): Promise<GroupConversationInfo?, Exception>
 
-    /** Returns all group conversations. */
-    fun getAllConversationInfo(): Promise<List<GroupConversationInfo>, Exception>
+    /** Returns group data + group conversation info. */
+    fun getAllConversations(): Promise<List<GroupConversation>, Exception>
 
     /** Add new members to the given group. The group entry must already exist. Returns the new set of members. */
     fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception>

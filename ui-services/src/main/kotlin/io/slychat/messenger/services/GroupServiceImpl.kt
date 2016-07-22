@@ -1,7 +1,7 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.GroupConversationInfo
+import io.slychat.messenger.core.persistence.GroupConversation
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.GroupInfo
 import io.slychat.messenger.core.persistence.GroupPersistenceManager
@@ -22,8 +22,8 @@ class GroupServiceImpl(
         return groupPersistenceManager.getList()
     }
 
-    override fun getGroupConversations(): Promise<List<GroupConversationInfo>, Exception> {
-        return groupPersistenceManager.getAllConversationInfo()
+    override fun getGroupConversations(): Promise<List<GroupConversation>, Exception> {
+        return groupPersistenceManager.getAllConversations()
     }
 
     override fun inviteUsers(groupId: GroupId, contact: Set<UserId>): Promise<Unit, Exception> {
