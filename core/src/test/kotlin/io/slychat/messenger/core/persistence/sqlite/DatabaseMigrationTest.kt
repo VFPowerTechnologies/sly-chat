@@ -3,8 +3,10 @@ package io.slychat.messenger.core.persistence.sqlite
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteException
 import io.slychat.messenger.testutils.withTempFile
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.BeforeClass
 import org.junit.Test
+import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -216,9 +218,19 @@ class DatabaseMigrationTest {
         }
     }
 
+    data class Contact7(
+        val id: Long,
+        val email: String,
+        val name: String,
+        val allowedMessageLevel: Int,
+        val phoneNumber: String?,
+        val publicKey: String
+    )
+
     /*
      *  +contacts.allow_message_level
      *  -contacts.is_pending
+     *  contacts.public_key[BLOB -> STRING]
      *
      *  +send_message_queue
      *  +groups
@@ -228,11 +240,37 @@ class DatabaseMigrationTest {
     private fun check6To7(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         assertColDef(connection, "contacts", "allowed_message_level INTEGER NOT NULL")
         assertNoColDef(connection, "contacts", "is_pending INTEGER NOT NULL")
+        assertColDef(connection, "contacts", "public_key TEXT NOT NULL")
 
         assertTableExists(connection, "send_message_queue")
         assertTableExists(connection, "groups")
         assertTableExists(connection, "group_members")
         assertTableExists(connection, "group_conversation_info")
+
+        connection.withPrepared("SELECT id, email, name, allowed_message_level, phone_number, public_key FROM contacts ORDER BY id") { stmt ->
+            val expected = listOf(
+                Contact7(153, "d@a.com", "Desktop", 2, "15145555555", "05427fbf4460492480d82e42f8dba6d381edeef340646150944b377dc581b4e31d"),
+                Contact7(154, "e@a.com", "Eeee", 2, "15145555554", "054fe37c651f261bd541f4df980b4aaee467ccd6c5cb1b8a7d898cf86c91acc56b")
+            )
+
+            val found = ArrayList<Contact7>()
+
+            while (stmt.step()) {
+                found.add(Contact7(
+                    stmt.columnLong(0),
+                    stmt.columnString(1),
+                    stmt.columnString(2),
+                    stmt.columnInt(3),
+                    stmt.columnString(4),
+                    stmt.columnString(5)
+                ))
+            }
+
+            assertThat(found).apply {
+                `as`("Contacts")
+                containsAll(expected)
+            }
+        }
     }
 
     @Test

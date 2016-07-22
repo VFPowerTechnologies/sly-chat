@@ -8,5 +8,5 @@ CREATE TABLE IF NOT EXISTS contacts (
     -- 2: all
     allowed_message_level INTEGER NOT NULL,
     phone_number TEXT,
-    public_key BLOB NOT NULL
+    public_key TEXT NOT NULL
 )

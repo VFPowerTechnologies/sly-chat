@@ -1,5 +1,6 @@
 -- +contacts.allowed_message_level
 -- -contacts.is_pending
+-- contacts.public_key[BLOB -> STRING]
 
 PRAGMA foreign_keys = OFF;
 
@@ -11,7 +12,7 @@ CREATE TABLE IF NOT EXISTS contacts (
     name TEXT NOT NULL,
     allowed_message_level INTEGER NOT NULL,
     phone_number TEXT,
-    public_key BLOB NOT NULL
+    public_key TEXT NOT NULL
 );
 
 INSERT INTO
