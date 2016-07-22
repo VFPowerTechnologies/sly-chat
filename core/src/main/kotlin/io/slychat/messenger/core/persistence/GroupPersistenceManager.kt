@@ -43,9 +43,6 @@ interface GroupPersistenceManager {
     /** Add a message from a user to the given group. If userId is null, is taken to be from yourself. */
     fun addMessage(groupId: GroupId, groupMessageInfo: GroupMessageInfo): Promise<GroupMessageInfo, Exception>
 
-    /** Adds a list of messages from a single user to the given group. */
-    fun addMessages(groupId: GroupId, userId: UserId?, messages: Collection<MessageInfo>): Promise<List<MessageInfo>, Exception>
-
     /** Removes a set of messages from the group log. */
     fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception>
 
@@ -53,7 +50,7 @@ interface GroupPersistenceManager {
     fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception>
 
     /** Marks the given group message as delivered. */
-    fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<MessageInfo, Exception>
+    fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<GroupMessageInfo, Exception>
 
     /** Returns the last range of messages from a group. */
     fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<GroupMessageInfo>, Exception>

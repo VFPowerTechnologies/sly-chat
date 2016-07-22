@@ -90,6 +90,14 @@ fun randomReceivedMessageInfo(): MessageInfo {
     return MessageInfo.newReceived(randomMessageText(), currentTimestamp())
 }
 
+fun randomSentMessageInfo(): MessageInfo {
+    return MessageInfo.newSent(randomMessageText(), 0)
+}
+
 fun randomReceivedGroupMessageInfo(speaker: UserId?): GroupMessageInfo {
     return GroupMessageInfo(speaker, randomReceivedMessageInfo())
+}
+
+fun randomSentGroupMessageInfo(): GroupMessageInfo {
+    return GroupMessageInfo(null, randomSentMessageInfo())
 }

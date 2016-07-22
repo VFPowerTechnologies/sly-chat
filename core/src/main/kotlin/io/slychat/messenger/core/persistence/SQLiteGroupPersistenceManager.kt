@@ -4,6 +4,7 @@ import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.sqlite.*
 import nl.komponents.kovenant.Promise
 import java.util.*
@@ -272,14 +273,16 @@ VALUES
         }
     }
 
+    private fun isMissingGroupConvTableError(e: SQLiteException): Boolean =
+        e.message?.let { "no such table: group_conv_" in it } ?: false
+
     override fun addMessage(groupId: GroupId, groupMessageInfo: GroupMessageInfo): Promise<GroupMessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             try {
                 insertMessage(connection, groupId, groupMessageInfo)
             }
             catch (e: SQLiteException) {
-                val noSuchTable = e.message?.let { "no such table: group_conv_" in it } ?: false
-                if (noSuchTable)
+                if (isMissingGroupConvTableError(e))
                     throw InvalidGroupException(groupId)
                 else
                     throw e
@@ -332,10 +335,6 @@ VALUES
         stmt.bind(5, messageInfo.ttl)
         stmt.bind(6, messageInfo.isDelivered.toInt())
         stmt.bind(7, messageInfo.message)
-    }
-
-    override fun addMessages(groupId: GroupId, userId: UserId?, messages: Collection<MessageInfo>): Promise<List<MessageInfo>, Exception> {
-        TODO()
     }
 
     override fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -402,8 +401,54 @@ LIMIT
         }
     }
 
-    override fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<MessageInfo, Exception> {
-        TODO()
+    override fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<GroupMessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val tableName = GroupConversationTable.getTablename(groupId)
+        val sql = "UPDATE $tableName SET is_delivered=1, received_timestamp=? WHERE id=?"
+
+        try {
+            connection.withPrepared(sql) { stmt ->
+                stmt.bind(1, currentTimestamp())
+                stmt.bind(2, messageId)
+                stmt.step()
+            }
+        }
+        catch (e: SQLiteException) {
+            if (isMissingGroupConvTableError(e))
+                throw InvalidGroupException(groupId)
+            else
+                throw e
+        }
+
+        if (connection.changes <= 0)
+            throw InvalidGroupMessageException(groupId, messageId)
+
+        getGroupMessageInfo(connection, groupId, messageId) ?: throw InvalidGroupMessageException(groupId, messageId)
+    }
+
+    private fun getGroupMessageInfo(connection: SQLiteConnection, groupId: GroupId, messageId: String): GroupMessageInfo? {
+        val tableName = GroupConversationTable.getTablename(groupId)
+        val sql =
+            """
+SELECT
+    id,
+    speaker_contact_id,
+    timestamp,
+    received_timestamp,
+    ttl,
+    is_delivered,
+    message
+FROM
+    $tableName
+WHERE
+    id=?
+"""
+        return connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, messageId)
+            if (stmt.step())
+                rowToGroupMessageInfo(stmt)
+            else
+                null
+        }
     }
 
     override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<GroupMessageInfo>, Exception> {
@@ -465,5 +510,9 @@ ORDER BY
         connection.withPrepared(sql) { stmt ->
             stmt.map { rowToGroupMessageInfo(it) }
         }
+    }
+
+    fun testGetMessageInfo(groupId: GroupId, messageId: String): GroupMessageInfo? = sqlitePersistenceManager.syncRunQuery { connection ->
+        getGroupMessageInfo(connection, groupId,  messageId)
     }
 }

@@ -64,6 +64,13 @@ class SQLiteGroupPersistenceManagerTest {
         return info
     }
 
+    fun insertRandomSentMessage(id: GroupId): String {
+        val groupMessageInfo = randomSentGroupMessageInfo()
+        groupPersistenceManager.addMessage(id, groupMessageInfo).get()
+
+        return groupMessageInfo.info.id
+    }
+
     fun insertRandomMessages(id: GroupId, members: Set<UserId>): List<String> {
         return insertRandomMessagesFull(id, members).map { it.info.id }
     }
@@ -751,14 +758,31 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `markMessageAsDelivered should set the given message delivery status to delivered if the message exists`() {}
+    fun `markMessageAsDelivered should set the given message delivery status to delivered if the message exists`() {
+        withJoinedGroup { groupId, members ->
+            val id = insertRandomSentMessage(groupId)
 
-    //I guess?
-    @Test
-    fun `markMessageAsDelivered should do nothing if the given message if the message does not exist`() {}
+            groupPersistenceManager.markMessageAsDelivered(groupId, id).get()
+
+            val groupMessageInfo = assertNotNull(groupPersistenceManager.testGetMessageInfo(groupId, id), "Missing message")
+            assertTrue(groupMessageInfo.info.isDelivered, "Not marked as delivered")
+            assertTrue(groupMessageInfo.info.receivedTimestamp != 0L, "Received timestamp not updated")
+        }
+    }
 
     @Test
-    fun `markMessageAsDelivered should throw InvalidGroupException if the group id is invalid`() {}
+    fun `markMessageAsDelivered should throw InvalidGroupMessageException if the given message if the message does not exist`() {
+        withJoinedGroup { groupId, members ->
+            assertFailsWith(InvalidGroupMessageException::class) {
+                groupPersistenceManager.markMessageAsDelivered(groupId, randomMessageId()).get()
+            }
+        }
+    }
+
+    @Test
+    fun `markMessageAsDelivered should throw InvalidGroupException if the group id is invalid`() {
+        assertFailsWithInvalidGroup { groupPersistenceManager.markMessageAsDelivered(randomGroupId(), randomMessageId()).get() }
+    }
 
     @Test
     fun `getLastMessages should return the asked for message range`() {}
