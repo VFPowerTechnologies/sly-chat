@@ -36,6 +36,7 @@ class SQLiteGroupPersistenceManager(
     }
 
     override fun getGroupMembers(groupId: GroupId): Promise<Set<UserId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        throwIfGroupIsInvalid(connection, groupId)
         queryGroupMembers(connection, groupId)
     }
 
@@ -55,6 +56,8 @@ class SQLiteGroupPersistenceManager(
     }
 
     override fun removeMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        throwIfGroupIsInvalid(connection, groupId)
+
         connection.withPrepared("DELETE FROM group_members WHERE group_id=? AND contact_id=?") { stmt ->
             stmt.bind(1, groupId)
             stmt.bind(2, userId)
@@ -66,7 +69,24 @@ class SQLiteGroupPersistenceManager(
         connection.changes > 0
     }
 
+    private fun throwIfGroupIsInvalid(connection: SQLiteConnection, groupId: GroupId) {
+        val tableName = GroupConversationTable.getTablename(groupId)
+        try {
+            connection.withPrepared("SELECT 1 FROM $tableName") { stmt ->
+                stmt.step()
+            }
+        }
+        catch (e: SQLiteException) {
+            if (isMissingGroupConvTableError(e))
+                throw InvalidGroupException(groupId)
+            else
+                throw e
+        }
+    }
+
     override fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        throwIfGroupIsInvalid(connection, groupId)
+
         connection.withPrepared("SELECT 1 FROM group_members WHERE group_id=? AND contact_id=?") { stmt ->
             stmt.bind(1, groupId)
             stmt.bind(2, userId)
@@ -296,13 +316,16 @@ VALUES
         groupMessageInfo
     }
 
-    private fun updateConversationInfo(connection: SQLiteConnection, groupId: GroupId, speaker: UserId?, lastMessage: String, lastTimestamp: Long, unreadIncrement: Int) {
+    private fun updateConversationInfo(connection: SQLiteConnection, groupId: GroupId, speaker: UserId?, lastMessage: String?, lastTimestamp: Long?, unreadIncrement: Int) {
         val unreadCountFragment = if (speaker != null) "unread_count=unread_count+$unreadIncrement," else ""
 
         connection.withPrepared("UPDATE group_conversation_info SET $unreadCountFragment last_speaker_contact_id=?, last_message=?, last_timestamp=? WHERE group_id=?") { stmt ->
             stmt.bind(1, speaker)
             stmt.bind(2, lastMessage)
-            stmt.bind(3, lastTimestamp)
+            if (lastTimestamp != null)
+                stmt.bind(3, lastTimestamp)
+            else
+                stmt.bindNull(3)
             stmt.bind(4, groupId)
             stmt.step()
         }
@@ -490,6 +513,17 @@ OFFSET
     }
 
     /* The following should only be used within tests to insert dummy data for testing purposes. */
+
+    internal fun testSetConversationInfo(groupConversationInfo: GroupConversationInfo) = sqlitePersistenceManager.syncRunQuery {
+        updateConversationInfo(
+            it,
+            groupConversationInfo.groupId,
+            groupConversationInfo.lastSpeaker,
+            groupConversationInfo.lastMessage,
+            groupConversationInfo.lastTimestamp,
+            0
+            )
+    }
 
     internal fun testAddGroupInfo(groupInfo: GroupInfo): Unit = sqlitePersistenceManager.syncRunQuery { connection ->
         insertOrReplaceGroupInfo(connection, groupInfo)

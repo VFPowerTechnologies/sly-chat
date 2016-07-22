@@ -6,7 +6,10 @@ import io.slychat.messenger.core.persistence.sqlite.SQLiteContactsPersistenceMan
 import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.*
+import org.junit.After
+import org.junit.Before
+import org.junit.BeforeClass
+import org.junit.Test
 import java.util.*
 import kotlin.test.*
 
@@ -156,14 +159,10 @@ class SQLiteGroupPersistenceManagerTest {
         }
     }
 
-    //TODO
-    //maybe change this to just return an empty set; else we'd need to do a group table lookup each time to verify that
-    //the group exists, which probably isn't worth it
-    @Ignore
     @Test
     fun `getGroupMembers should throw InvalidGroupException if the group id is invalid`() {
         assertFailsWith(InvalidGroupException::class) {
-            groupPersistenceManager.getGroupMembers(randomGroupId())
+            groupPersistenceManager.getGroupMembers(randomGroupId()).get()
         }
     }
 
@@ -254,10 +253,10 @@ class SQLiteGroupPersistenceManagerTest {
         }
     }
 
-    //TODO again, would need to check if group table exists
-    @Ignore
     @Test
-    fun `removeMember should throw InvalidGroupException if the group id is invalid`() {}
+    fun `removeMember should throw InvalidGroupException if the group id is invalid`() {
+        assertFailsWithInvalidGroup { groupPersistenceManager.removeMember(randomGroupId(), randomUserId()).get() }
+    }
 
     @Test
     fun `isUserMemberOf should return true if the user is part of an existing group`() {
@@ -281,10 +280,14 @@ class SQLiteGroupPersistenceManagerTest {
         }
     }
 
-    //TODO
-    @Ignore
     @Test
-    fun `isUserMemberOf should throw InvalidGroupException if the group id is invalid`() {}
+    fun `isUserMemberOf should throw InvalidGroupException if the group id is invalid`() {
+        withJoinedGroup { groupId, members ->
+            assertFailsWithInvalidGroup {
+                groupPersistenceManager.isUserMemberOf(randomGroupId(), members.first()).get()
+            }
+        }
+    }
 
     @Test
     fun `joinGroup should create a new group entry if no info for that group currently exists`() {
@@ -384,13 +387,18 @@ class SQLiteGroupPersistenceManagerTest {
         assertInitialConversationInfo(groupInfo.id)
     }
 
-    //FIXME (reset group_id to not be a pk to trigger this error)
-    @Ignore
     @Test
     fun `joinGroup should reset group conversation info for a previously parted group`() {
         withPartedGroupFull {
             val member = insertRandomContact()
-            groupPersistenceManager.addMessage(it.id, randomReceivedGroupMessageInfo(member)).get()
+            val convoInfo = GroupConversationInfo(
+                it.id,
+                member,
+                1,
+                randomMessageText(),
+                currentTimestamp()
+            )
+            groupPersistenceManager.testSetConversationInfo(convoInfo)
 
             groupPersistenceManager.joinGroup(it.copy(membershipLevel = GroupMembershipLevel.JOINED), insertRandomContacts()).get()
             assertInitialConversationInfo(it.id)
