@@ -251,26 +251,6 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `it should proxy group events from MessageReceiver`() {
-        val messengerService = createService()
-        val subject = PublishSubject.create<GroupEvent>()
-
-        whenever(messageReceiver.groupEvents).thenReturn(subject)
-
-        val testSubscriber = messengerService.groupEvents.testSubscriber()
-
-        val ev = GroupEvent.Joined(randomGroupId(), randomUserIds())
-        subject.onNext(ev)
-
-        val events = testSubscriber.onNextEvents
-
-        assertThat(events).apply {
-            `as`("Received group events")
-            containsOnly(ev)
-        }
-    }
-
-    @Test
     fun `it should queue a single text message to be sent when sendMessageTo is called`() {
         val messengerService = createService()
 

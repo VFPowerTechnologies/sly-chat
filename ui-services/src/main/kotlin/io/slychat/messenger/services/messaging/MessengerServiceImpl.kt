@@ -47,9 +47,6 @@ class MessengerServiceImpl(
     override val newMessages: Observable<MessageBundle>
         get() = messageReceiver.newMessages
 
-    override val groupEvents: Observable<GroupEvent>
-        get() = messageReceiver.groupEvents
-
     private val messageUpdatesSubject = PublishSubject.create<MessageBundle>()
     override val messageUpdates: Observable<MessageBundle> = messageUpdatesSubject
 

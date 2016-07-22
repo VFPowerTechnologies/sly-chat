@@ -13,7 +13,6 @@ interface MessengerService {
 
     val newMessages: Observable<MessageBundle>
     val messageUpdates: Observable<MessageBundle>
-    val groupEvents: Observable<GroupEvent>
 
     /* UIMessengerService interface */
     fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception>

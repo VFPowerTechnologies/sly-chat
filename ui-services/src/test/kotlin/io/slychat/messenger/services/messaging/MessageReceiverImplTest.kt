@@ -2,8 +2,11 @@ package io.slychat.messenger.services.messaging
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.*
+import io.slychat.messenger.core.SlyAddress
+import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageDecryptionResult
@@ -296,25 +299,5 @@ class MessageReceiverImplTest {
         assertThat(bundles)
             .containsOnlyElementsOf(listOf(bundle))
             .`as`("Received bundles")
-    }
-
-    @Test
-    fun `it should proxy group events from MessageProcessor`() {
-        val subject = PublishSubject.create<GroupEvent>()
-        whenever(messageProcessor.groupEvents).thenReturn(subject)
-
-        val receiver = createReceiver()
-
-        val testSubscriber = receiver.groupEvents.testSubscriber()
-
-        val ev = GroupEvent.Joined(randomGroupId(), randomUserIds())
-        subject.onNext(ev)
-
-        val events = testSubscriber.onNextEvents
-
-        assertThat(events).apply {
-            `as`("Received group events")
-            containsOnly(ev)
-        }
     }
 }

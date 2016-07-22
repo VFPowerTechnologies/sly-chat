@@ -38,9 +38,6 @@ class MessageReceiverImpl(
     override val newMessages: Observable<MessageBundle>
         get() = messageProcessor.newMessages
 
-    override val groupEvents: Observable<GroupEvent>
-        get() = messageProcessor.groupEvents
-
     init {
         subscriptions.add(messageCipherService.decryptedMessages.observeOn(scheduler).subscribe {
             processDecryptionResult(it.userId, it.result)
