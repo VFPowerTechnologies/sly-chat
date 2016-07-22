@@ -451,8 +451,38 @@ WHERE
         }
     }
 
-    override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<GroupMessageInfo>, Exception> {
-        TODO()
+    override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<GroupMessageInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val tableName = GroupConversationTable.getTablename(groupId)
+        val sql =
+"""
+SELECT
+    id,
+    speaker_contact_id,
+    timestamp,
+    received_timestamp,
+    ttl,
+    is_delivered,
+    message
+FROM
+    $tableName
+ORDER BY
+    timestamp DESC, n DESC
+LIMIT
+    $count
+OFFSET
+    $startingAt
+"""
+        try {
+            connection.withPrepared(sql) { stmt ->
+                stmt.map { rowToGroupMessageInfo(it) }
+            }
+        }
+        catch (e: SQLiteException) {
+            if (isMissingGroupConvTableError(e))
+                throw InvalidGroupException(groupId)
+            else
+                throw e
+        }
     }
 
     override fun getUndeliveredMessages(): Promise<Map<GroupId, List<GroupMessageInfo>>, Exception> {

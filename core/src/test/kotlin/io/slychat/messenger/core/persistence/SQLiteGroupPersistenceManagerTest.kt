@@ -785,11 +785,34 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `getLastMessages should return the asked for message range`() {}
+    fun `getLastMessages should return the asked for message range`() {
+        withJoinedGroup { groupId, members ->
+            val ids = insertRandomMessages(groupId, members)
+
+            val lastMessageIds = groupPersistenceManager.getLastMessages(groupId, 0, 2).get().map { it.info.id }
+            val expectedIds = ids.subList(ids.size-2, ids.size).reversed()
+
+            assertThat(lastMessageIds).apply {
+                `as`("Last messages")
+                containsExactlyElementsOf(expectedIds)
+            }
+        }
+    }
 
     @Test
-    fun `getLastMessages should return nothing if the range does not exist`() {}
+    fun `getLastMessages should return nothing if the range does not exist`() {
+        withJoinedGroup { groupId, members ->
+            val lastMessages = groupPersistenceManager.getLastMessages(groupId, 0, 100).get()
+
+            assertThat(lastMessages).apply {
+                `as`("Last messages")
+                isEmpty()
+            }
+        }
+    }
 
     @Test
-    fun `getLastMessages should throw InvalidGroupException if the group id is invalid`() {}
+    fun `getLastMessages should throw InvalidGroupException if the group id is invalid`() {
+        assertFailsWithInvalidGroup { groupPersistenceManager.getLastMessages(randomGroupId(), 0, 100).get() }
+    }
 }
