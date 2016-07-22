@@ -7,9 +7,6 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.persistence.PackageId
 import io.slychat.messenger.core.persistence.PackageQueuePersistenceManager
-import io.slychat.messenger.services.messaging.EncryptedMessageInfo
-import io.slychat.messenger.services.messaging.SlyMessage
-import io.slychat.messenger.services.messaging.SlyMessageWrapper
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageDecryptionResult
 import io.slychat.messenger.services.crypto.deserializeEncryptedPackagePayload
@@ -40,6 +37,9 @@ class MessageReceiverImpl(
 
     override val newMessages: Observable<MessageBundle>
         get() = messageProcessor.newMessages
+
+    override val groupEvents: Observable<GroupEvent>
+        get() = messageProcessor.groupEvents
 
     init {
         subscriptions.add(messageCipherService.decryptedMessages.observeOn(scheduler).subscribe {
