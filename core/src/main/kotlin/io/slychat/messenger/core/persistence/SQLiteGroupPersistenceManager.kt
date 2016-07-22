@@ -114,18 +114,13 @@ WHERE
     }
 
     private fun throwIfGroupIsInvalid(connection: SQLiteConnection, groupId: GroupId) {
-        val tableName = GroupConversationTable.getTablename(groupId)
-        try {
-            connection.withPrepared("SELECT 1 FROM $tableName") { stmt ->
-                stmt.step()
-            }
+        val exists = connection.withPrepared("SELECT 1 FROM groups WHERE id=?") { stmt ->
+            stmt.bind(1, groupId)
+            stmt.step()
         }
-        catch (e: SQLiteException) {
-            if (isMissingGroupConvTableError(e))
-                throw InvalidGroupException(groupId)
-            else
-                throw e
-        }
+
+        if (!exists)
+            throw InvalidGroupException(groupId)
     }
 
     override fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -294,6 +289,7 @@ VALUES
                     clearMemberList(connection, groupId)
 
                     updateMembershipLevel(connection, groupId, GroupMembershipLevel.PARTED)
+                    GroupConversationTable.delete(connection, groupId)
                 }
 
                 true
@@ -322,6 +318,7 @@ VALUES
         connection.withTransaction {
             clearMemberList(connection, groupId)
             updateMembershipLevel(connection, groupId, GroupMembershipLevel.BLOCKED)
+            GroupConversationTable.delete(connection, groupId)
         }
     }
 
@@ -404,11 +401,19 @@ VALUES
         stmt.bind(7, messageInfo.message)
     }
 
+    /** Throws InvalidGroupException if group_conv table was missing, else rethrows the given exception. */
+    private fun handleInvalidGroupException(e: SQLiteException, groupId: GroupId): Nothing {
+        if (isMissingGroupConvTableError(e))
+            throw InvalidGroupException(groupId)
+        else
+            throw e
+    }
+
     override fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         if (messageIds.isNotEmpty()) {
             val tableName = GroupConversationTable.getTablename(groupId)
 
-            connection.withTransaction {
+            try {
                 connection.prepare("DELETE FROM $tableName WHERE id IN (${getPlaceholders(messageIds.size)})").use { stmt ->
                     messageIds.forEachIndexed { i, messageId ->
                         stmt.bind(i + 1, messageId)
@@ -416,6 +421,9 @@ VALUES
 
                     stmt.step()
                 }
+            }
+            catch (e: SQLiteException) {
+                handleInvalidGroupException(e, groupId)
             }
 
             val lastMessage = getLastConvoMessage(connection, groupId)
@@ -480,10 +488,7 @@ LIMIT
             }
         }
         catch (e: SQLiteException) {
-            if (isMissingGroupConvTableError(e))
-                throw InvalidGroupException(groupId)
-            else
-                throw e
+            handleInvalidGroupException(e, groupId)
         }
 
         if (connection.changes <= 0)
@@ -545,10 +550,7 @@ OFFSET
             }
         }
         catch (e: SQLiteException) {
-            if (isMissingGroupConvTableError(e))
-                throw InvalidGroupException(groupId)
-            else
-                throw e
+            handleInvalidGroupException(e, groupId)
         }
     }
 

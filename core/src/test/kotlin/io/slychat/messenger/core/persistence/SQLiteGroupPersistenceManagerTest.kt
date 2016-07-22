@@ -132,7 +132,7 @@ class SQLiteGroupPersistenceManagerTest {
 
     fun assertConvTableNotExists(groupId: GroupId) {
         persistenceManager.syncRunQuery {
-            assertFalse(GroupConversationTable.exists(it, groupId), "Group conversation table doesn't exist")
+            assertFalse(GroupConversationTable.exists(it, groupId), "Group conversation table exists")
         }
     }
 
@@ -558,27 +558,27 @@ class SQLiteGroupPersistenceManagerTest {
         }
     }
 
-    fun testUnblock(groupId: GroupId, errorMessage: String) {
+    fun testUnblock(groupId: GroupId, expectedMembershipLevel: GroupMembershipLevel, errorMessage: String) {
         groupPersistenceManager.unblockGroup(groupId).get()
 
         val newInfo = assertNotNull(groupPersistenceManager.getGroupInfo(groupId).get(), "Missing group")
 
-        assertEquals(GroupMembershipLevel.PARTED, newInfo.membershipLevel, errorMessage)
+        assertEquals(expectedMembershipLevel, newInfo.membershipLevel, errorMessage)
     }
 
     @Test
     fun `unblockGroup should set the group membership level to PARTED for a blocked group`() {
-        withBlockedGroup { testUnblock(it, "Membership should be PARTED") }
+        withBlockedGroup { testUnblock(it, GroupMembershipLevel.PARTED, "Membership should be PARTED") }
     }
 
     @Test
     fun `unblockGroup should do nothing for a joined group`() {
-        withJoinedGroup { groupId, members -> testUnblock(groupId, "Membership was modified") }
+        withJoinedGroup { groupId, members -> testUnblock(groupId, GroupMembershipLevel.JOINED, "Membership was modified") }
     }
 
     @Test
     fun `unblockGroup should do nothing for a parted group`() {
-        withPartedGroup { testUnblock(it, "Membership was modified") }
+        withPartedGroup { testUnblock(it, GroupMembershipLevel.PARTED, "Membership was modified") }
     }
 
     @Test
@@ -763,7 +763,7 @@ class SQLiteGroupPersistenceManagerTest {
     fun `deleteMessages should throw InvalidGroupException if the group id is invalid`() {
         assertFailsWithInvalidGroup {
             //XXX this won't actually fail for an empty list
-            groupPersistenceManager.deleteMessages(randomGroupId(), listOf(randomMessageId()))
+            groupPersistenceManager.deleteMessages(randomGroupId(), listOf(randomMessageId())).get()
         }
     }
 
