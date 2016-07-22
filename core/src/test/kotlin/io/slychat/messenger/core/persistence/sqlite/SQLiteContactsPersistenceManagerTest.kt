@@ -36,14 +36,13 @@ class SQLiteContactsPersistenceManagerTest {
 
     var dummyContactCounter = 0L
     fun createDummyContact(
-        allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL,
-        isPending: Boolean = false
+        allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL
     ): ContactInfo {
         val v = dummyContactCounter
         dummyContactCounter += 1
         val id = UserId(v)
 
-        return ContactInfo(id, "$v@a.com", "$v", allowedMessageLevel, isPending, "$v", "$v")
+        return ContactInfo(id, "$v@a.com", "$v", allowedMessageLevel, false, "$v", "$v")
     }
 
     fun loadContactList() {
@@ -95,11 +94,6 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `add should successfully add a contact, create a conversation table and add a corresponding remote update (pending=true)`() {
-        testContactAdd(contactA.copy(isPending = true))
-    }
-
-    @Test
     fun `add should do nothing and return false if the contact already exists`() {
         val contact = contactA
         contactsPersistenceManager.add(contact).get()
@@ -130,11 +124,6 @@ class SQLiteContactsPersistenceManagerTest {
     @Test
     fun `add(List) should return the list of new contacts added and add corresponding remote updates (pending=false)`() {
         testAddContactMulti(listOf(contactA), listOf(contactA2, contactC))
-    }
-
-    @Test
-    fun `add(List) should return the list of new contacts added and add corresponding remote updates (pending=true)`() {
-        testAddContactMulti(listOf(contactA), listOf(contactA2.copy(isPending = true), contactC.copy(isPending = true)))
     }
 
     @Test
@@ -411,31 +400,6 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `getPending should return only pending users`() {
-        val contactA = ContactInfo(UserId(1), "a@a.com", "a", AllowedMessageLevel.ALL, true, null, "pk")
-        val contactB = ContactInfo(UserId(2), "b@a.com", "b", AllowedMessageLevel.ALL, false, null, "pk")
-        val contacts = listOf(contactA, contactB)
-
-        contacts.forEach { contactsPersistenceManager.add(it).get() }
-
-        val pending = contactsPersistenceManager.getPending().get()
-
-        assertEquals(listOf(contactA), pending, "Invalid pending contacts")
-    }
-
-    @Test
-    fun `markAccepted should mark the given user as no longer pending`() {
-        val contactA = ContactInfo(UserId(1), "a@a.com", "a", AllowedMessageLevel.ALL, true, null, "pk")
-        contactsPersistenceManager.add(contactA).get()
-
-        contactsPersistenceManager.markAccepted(setOf(contactA.id)).get()
-
-        val updated = assertNotNull(contactsPersistenceManager.get(contactA.id).get(), "Missing user")
-
-        assertFalse(updated.isPending, "Pending state not updated")
-    }
-
-    @Test
     fun `addRemoteUpdates should register added updates`() {
         val remoteUpdates = listOf(
             RemoteContactUpdate(UserId(1), RemoteContactUpdateType.ADD),
@@ -514,8 +478,8 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `updateMessageLevel should update isPending and allowedMessageLevel`() {
-        val contact = createDummyContact(AllowedMessageLevel.GROUP_ONLY, true)
+    fun `updateMessageLevel should update allowedMessageLevel`() {
+        val contact = createDummyContact(AllowedMessageLevel.GROUP_ONLY)
 
         contactsPersistenceManager.add(contact)
 
@@ -523,7 +487,6 @@ class SQLiteContactsPersistenceManagerTest {
 
         val updated = assertNotNull(contactsPersistenceManager.get(contact.id).get(), "No such user")
 
-        assertFalse(updated.isPending, "isPending not updated")
         assertEquals(AllowedMessageLevel.ALL, updated.allowedMessageLevel, "allowedMessageLevel not updated")
     }
 }

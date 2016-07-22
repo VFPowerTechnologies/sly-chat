@@ -15,12 +15,6 @@ interface ContactsPersistenceManager {
     fun getBlockList(): Promise<Set<UserId>, Exception>
     fun filterBlocked(users: Collection<UserId>): Promise<Set<UserId>, Exception>
 
-    /** Get pending users. */
-    fun getPending(): Promise<List<ContactInfo>, Exception>
-
-    /** Mark the given users as not pending. */
-    fun markAccepted(users: Set<UserId>): Promise<Unit, Exception>
-
     /** Sets a new message level for the given user. Also sets isPending to false. */
     fun updateMessageLevel(user: UserId, newMessageLevel: AllowedMessageLevel): Promise<Unit, Exception>
 
