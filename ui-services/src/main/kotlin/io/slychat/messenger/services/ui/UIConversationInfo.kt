@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
  * @property unreadMessageCount Number of unread messages for this conversation.
  * @property lastMessage Last received Message
  */
-data class UIConversationStatus(
+data class UIConversationInfo(
     @JsonProperty("isOnline") val isOnline: Boolean,
     @JsonProperty("unreadMessageCount") val unreadMessageCount: Int,
     @JsonProperty("lastMessage") val lastMessage: String?,

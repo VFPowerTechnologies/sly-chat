@@ -87,7 +87,7 @@ class UIMessengerServiceImpl(
             convos.map {
                 val contact = it.contact
                 val info = it.info
-                UIConversation(contact.toUI(), UIConversationStatus(true, info.unreadMessageCount, info.lastMessage, info.lastTimestamp))
+                UIConversation(contact.toUI(), UIConversationInfo(true, info.unreadMessageCount, info.lastMessage, info.lastTimestamp))
             }
         }
     }

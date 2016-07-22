@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.mapToSet
+import io.slychat.messenger.core.persistence.GroupConversation
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.SlyApplication
@@ -59,10 +60,16 @@ class UIGroupServiceImpl(
         }
     }
 
-    //FIXME
+    private fun GroupConversation.toUi(): UIGroupConversation {
+        val groupInfo = UIGroupInfo(group.id, group.name)
+        val convoInfo = UIGroupConversationInfo(info.lastSpeaker,info.unreadCount, info.lastMessage, info.lastTimestamp)
+
+        return UIGroupConversation(groupInfo, convoInfo)
+    }
+
     override fun getGroupConversations(): Promise<List<UIGroupConversation>, Exception> {
         return getGroupServiceManagerOrThrow().getGroupConversations() map {
-            it.map { UIGroupConversation(it.groupId) }
+            it.map { it.toUi() }
         }
     }
 

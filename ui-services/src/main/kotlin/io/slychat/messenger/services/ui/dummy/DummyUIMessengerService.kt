@@ -26,14 +26,14 @@ class DummyUIMessengerService(private val contactsService: UIContactsService) : 
     private val messageStatusUpdateListeners = ArrayList<(UIMessageInfo) -> Unit>()
     private val conversationInfoUpdateListeners = ArrayList<(UIConversation) -> Unit>()
 
-    private val conversations = HashMap<UIContactDetails, UIConversationStatus>()
+    private val conversations = HashMap<UIContactDetails, UIConversationInfo>()
     private val messages = HashMap<UserId, MutableList<UIMessage>>()
 
-    private fun getConversationFor(contact: UIContactDetails): UIConversationStatus = synchronized(this) {
+    private fun getConversationFor(contact: UIContactDetails): UIConversationInfo = synchronized(this) {
         val maybeConvo = conversations[contact]
         if (maybeConvo != null)
             return maybeConvo
-        val convo = UIConversationStatus(false, 0, null, null)
+        val convo = UIConversationInfo(false, 0, null, null)
         conversations[contact] = convo
         return convo
     }
