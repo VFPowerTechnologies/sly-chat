@@ -13,6 +13,9 @@ interface GroupPersistenceManager {
     /** Returns the membership list of the given group. If the group doesn't exist, an InvalidGroupException is thrown. */
     fun getGroupMembers(groupId: GroupId): Promise<Set<UserId>, Exception>
 
+    /** Return conversation info for the specified group. */
+    fun getGroupConversationInfo(groupId: GroupId): Promise<GroupConversationInfo?, Exception>
+
     /** Returns all group conversations. */
     fun getAllGroupConversationInfo(): Promise<List<GroupConversationInfo>, Exception>
 

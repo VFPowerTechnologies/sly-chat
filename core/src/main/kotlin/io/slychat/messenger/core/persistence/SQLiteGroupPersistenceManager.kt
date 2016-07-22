@@ -40,8 +40,52 @@ class SQLiteGroupPersistenceManager(
         queryGroupMembers(connection, groupId)
     }
 
-    override fun getAllGroupConversationInfo(): Promise<List<GroupConversationInfo>, Exception> {
-        TODO()
+    private fun queryGroupConversationInfo(connection: SQLiteConnection, groupId: GroupId): GroupConversationInfo? {
+        return connection.withPrepared("SELECT last_speaker_contact_id, unread_count, last_message, last_timestamp FROM group_conversation_info WHERE group_id=?") { stmt ->
+            stmt.bind(1, groupId)
+
+            if (stmt.step())
+                rowToGroupConversationInfo(stmt, groupId)
+            else
+                null
+        }
+    }
+
+    override fun getGroupConversationInfo(groupId: GroupId): Promise<GroupConversationInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val info = queryGroupInfo(connection, groupId)
+        if (info == null)
+            throw InvalidGroupException(groupId)
+        else {
+            when (info.membershipLevel) {
+                GroupMembershipLevel.BLOCKED -> null
+                GroupMembershipLevel.PARTED -> null
+                GroupMembershipLevel.JOINED -> queryGroupConversationInfo(connection, groupId)
+            }
+        }
+    }
+
+    override fun getAllGroupConversationInfo(): Promise<List<GroupConversationInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val sql =
+"""
+SELECT
+    last_speaker_contact_id,
+    unread_count,
+    last_message,
+    last_timestamp,
+    group_id
+FROM
+    group_conversation_info
+JOIN
+    groups
+ON
+    group_conversation_info.group_id=groups.id
+WHERE
+    groups.membership_level=?
+"""
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, groupMembershipLevelToInt(GroupMembershipLevel.JOINED))
+            stmt.map { rowToGroupConversationInfo(it, GroupId(stmt.columnString(4))) }
+        }
     }
 
     override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -544,14 +588,7 @@ OFFSET
     }
 
     internal fun testGetGroupConversationInfo(id: GroupId): GroupConversationInfo? = sqlitePersistenceManager.syncRunQuery { connection ->
-        connection.withPrepared("SELECT last_speaker_contact_id, unread_count, last_message, last_timestamp FROM group_conversation_info WHERE group_id=?") { stmt ->
-            stmt.bind(1, id)
-
-            if (stmt.step())
-                rowToGroupConversationInfo(stmt, id)
-            else
-                null
-        }
+        queryGroupConversationInfo(connection, id)
     }
 
     fun testGetAllMessages(groupId: GroupId): List<GroupMessageInfo> = sqlitePersistenceManager.syncRunQuery { connection ->
