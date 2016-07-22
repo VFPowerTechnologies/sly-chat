@@ -10,15 +10,15 @@ sealed class GroupEvent {
         }
     }
 
-    class Joined(val id: GroupId, val users: Set<UserId>) : GroupEvent() {
+    class Joined(val id: GroupId, val newMembers: Set<UserId>) : GroupEvent() {
         override fun toString(): String {
-            return "Joined(id=$id, users=$users)"
+            return "Joined(id=$id, newMembers=$newMembers)"
         }
     }
 
-    class Parted(val id: GroupId, val userId: UserId) : GroupEvent() {
+    class Parted(val id: GroupId, val member: UserId) : GroupEvent() {
         override fun toString(): String {
-            return "Parted(id=$id, userId=$userId)"
+            return "Parted(id=$id, member=$member)"
         }
     }
 }

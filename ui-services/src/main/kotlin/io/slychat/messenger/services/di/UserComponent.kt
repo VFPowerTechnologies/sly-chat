@@ -32,6 +32,8 @@ interface UserComponent {
 
     val messengerService: MessengerService
 
+    val groupService: GroupService
+
     val messageCipherService: MessageCipherService
 
     val notifierService: NotifierService

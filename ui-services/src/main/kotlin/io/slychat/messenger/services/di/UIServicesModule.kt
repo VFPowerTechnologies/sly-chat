@@ -137,7 +137,9 @@ class UIServicesModule {
 
     @Singleton
     @Provides
-    fun providesUIGroupService(): UIGroupService {
-        return UIGroupServiceImpl()
+    fun providesUIGroupService(
+        app: SlyApplication
+    ): UIGroupService {
+        return UIGroupServiceImpl(app)
     }
 }

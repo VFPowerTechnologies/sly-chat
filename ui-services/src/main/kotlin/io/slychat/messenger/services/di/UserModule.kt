@@ -290,4 +290,15 @@ class UserModule(
         val backend = JsonConfigBackend("user-config", storage)
         return UserConfigService(backend)
     }
+
+    @UserScope
+    @Provides
+    fun providesGroupService(
+        groupPersistenceManager: GroupPersistenceManager,
+        messageProcessor: MessageProcessor
+    ): GroupService =
+        GroupServiceImpl(
+            groupPersistenceManager,
+            messageProcessor
+        )
 }

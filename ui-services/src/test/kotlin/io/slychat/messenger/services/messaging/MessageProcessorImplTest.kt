@@ -510,7 +510,7 @@ class MessageProcessorImplTest {
         if (shouldEventBeEmitted) {
             assertEventEmitted(testSubscriber) { event ->
                 assertEquals(groupInfo.id, event.id, "Invalid group id")
-                assertEquals(setOf(newMember), event.users, "Invalid new member id")
+                assertEquals(setOf(newMember), event.newMembers, "Invalid new member id")
             }
         }
         else
@@ -546,7 +546,7 @@ class MessageProcessorImplTest {
         if (shouldEventBeEmitted) {
             assertEventEmitted(testSubscriber) { event ->
                 assertEquals(groupInfo.id, event.id, "Invalid group id")
-                assertEquals(sender, event.userId, "Invalid new member id")
+                assertEquals(sender, event.member, "Invalid new member id")
             }
         }
         else
