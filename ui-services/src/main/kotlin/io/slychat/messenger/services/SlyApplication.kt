@@ -60,8 +60,8 @@ class SlyApplication {
     private val relayAvailableSubject = BehaviorSubject.create(false)
     val relayAvailable: Observable<Boolean> = relayAvailableSubject
 
-    private val userSessionAvailableSubject = BehaviorSubject.create(false)
-    val userSessionAvailable: Observable<Boolean> = userSessionAvailableSubject
+    private val userSessionAvailableSubject = BehaviorSubject.create(null as UserComponent?)
+    val userSessionAvailable: Observable<UserComponent?> = userSessionAvailableSubject
 
     private var newTokenSyncSub: Subscription? = null
 
@@ -416,7 +416,7 @@ class SlyApplication {
     }
 
     private fun shutdownUserComponents(userComponent: UserComponent) {
-        userComponent.messageCipherService.shutdown()
+        userComponent.messageCipherService.shutdown(false)
         userComponent.messengerService.shutdown()
         userComponent.contactsService.shutdown()
         userComponent.offlineMessageManager.shutdown()
@@ -434,7 +434,7 @@ class SlyApplication {
 
         startUserComponents(userComponent)
 
-        userSessionAvailableSubject.onNext(true)
+        userSessionAvailableSubject.onNext(userComponent)
 
         userComponent.contactsService.doRemoteSync()
         //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
@@ -631,7 +631,7 @@ class SlyApplication {
         }
 
         //notify listeners before tearing down session
-        userSessionAvailableSubject.onNext(false)
+        userSessionAvailableSubject.onNext(null)
 
         //TODO shutdown stuff; probably should return a promise
         deinitializeUserSession(userComponent)

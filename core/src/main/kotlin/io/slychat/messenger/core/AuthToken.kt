@@ -12,4 +12,6 @@ class AuthTokenSerializer : JsonSerializer<AuthToken>() {
 }
 
 @JsonSerialize(using = AuthTokenSerializer::class)
-data class AuthToken(val string: String)
+data class AuthToken(val string: String) {
+    override fun toString(): String = "AuthToken($string)"
+}

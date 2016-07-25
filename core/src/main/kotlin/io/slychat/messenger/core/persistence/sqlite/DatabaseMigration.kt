@@ -2,6 +2,7 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
 import io.slychat.messenger.core.readResourceFileText
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -9,7 +10,7 @@ abstract class DatabaseMigration(
     val version: Int,
     val newTables: List<String> = ArrayList()
 ) {
-    protected val log = LoggerFactory.getLogger(javaClass)
+    protected val log: Logger = LoggerFactory.getLogger(javaClass)
 
     /**
      * Override to modify the default migration procedure.

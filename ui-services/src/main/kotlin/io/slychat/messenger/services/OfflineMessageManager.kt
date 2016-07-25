@@ -6,14 +6,16 @@ import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.persistence.PackageId
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.services.auth.AuthTokenManager
+import io.slychat.messenger.services.messaging.MessengerService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.alwaysUi
 import org.slf4j.LoggerFactory
+import rx.Observable
 import rx.Subscription
 
 class OfflineMessageManager(
-    private val application: SlyApplication,
+    networkAvailable: Observable<Boolean>,
     private val offlineMessagesClient: OfflineMessagesAsyncClient,
     private val messengerService: MessengerService,
     private val authTokenManager: AuthTokenManager
@@ -29,7 +31,7 @@ class OfflineMessageManager(
     private val networkAvailableSubscription: Subscription
 
     init {
-        networkAvailableSubscription = application.networkAvailable.subscribe { status ->
+        networkAvailableSubscription = networkAvailable.subscribe { status ->
             isOnline = status
             if (status && scheduled)
                 fetch()

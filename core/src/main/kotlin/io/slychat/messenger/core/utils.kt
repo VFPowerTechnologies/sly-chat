@@ -116,3 +116,7 @@ fun base64encode(bytes: ByteArray): String {
 
     return builder.toString() + "=".repeat(padCount)
 }
+
+inline fun <T, R> Iterable<T>.mapToSet(transform: (T) -> R): Set<R> {
+    return mapTo(HashSet<R>(), transform)
+}

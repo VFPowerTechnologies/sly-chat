@@ -18,25 +18,25 @@ import javax.inject.Singleton
 interface ApplicationComponent {
     val platformInfo: PlatformInfo
 
-    val platformInfoService: UIPlatformInfoService
+    val uiPlatformInfoService: UIPlatformInfoService
 
-    val registrationService: UIRegistrationService
+    val uiRegistrationService: UIRegistrationService
 
-    val loginService: UILoginService
+    val uiLoginService: UILoginService
 
-    val contactsService: UIContactsService
+    val uiContactsService: UIContactsService
 
-    val messengerService: UIMessengerService
+    val uiMessengerService: UIMessengerService
 
-    val historyService: UIHistoryService
+    val uiHistoryService: UIHistoryService
 
-    val develService: UIDevelService
+    val uiDevelService: UIDevelService
 
     val uiNetworkStatusService: UINetworkStatusService
 
-    val stateService: UIStateService
+    val uiStateService: UIStateService
 
-    val eventService: UIEventService
+    val uiEventService: UIEventService
 
     val userPathsGenerator: UserPathsGenerator
 
@@ -44,17 +44,17 @@ interface ApplicationComponent {
 
     val authenticationService: AuthenticationService
 
-    val telephonyService: UITelephonyService
+    val uiTelephonyService: UITelephonyService
 
-    val windowService: UIWindowService
+    val uiWindowService: UIWindowService
 
-    val loadService: UILoadService
+    val uiLoadService: UILoadService
 
-    val infoService: UIInfoService
+    val uiInfoService: UIInfoService
 
-    var accountModificationService: UIAccountModificationService
+    val uiAccountModificationService: UIAccountModificationService
 
-    val platformService: UIPlatformService
+    val uiPlatformService: UIPlatformService
 
     val platformContacts: PlatformContacts
 
@@ -68,7 +68,9 @@ interface ApplicationComponent {
     @get:ExternalHttp
     val externalHttpClientFactory: HttpClientFactory
 
-    fun plus(userModule: UserModule): UserComponent
+    val uiConfigService: UIConfigService
 
-    val configService: UIConfigService
+    val uiGroupService: UIGroupService
+
+    fun plus(userModule: UserModule): UserComponent
 }

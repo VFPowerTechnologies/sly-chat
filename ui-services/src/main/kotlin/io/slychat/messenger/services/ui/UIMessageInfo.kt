@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui
 
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.GroupId
 
 /**
  * A message and its associated contact.
@@ -9,5 +10,6 @@ import io.slychat.messenger.core.UserId
  */
 data class UIMessageInfo(
     val contact: UserId,
+    val groupId: GroupId?,
     val messages: List<UIMessage>
 )

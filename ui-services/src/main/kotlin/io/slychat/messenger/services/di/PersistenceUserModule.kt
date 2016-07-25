@@ -7,10 +7,7 @@ import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonKeyVaultPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
-import io.slychat.messenger.core.persistence.sqlite.SQLiteContactsPersistenceManager
-import io.slychat.messenger.core.persistence.sqlite.SQLiteMessagePersistenceManager
-import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
-import io.slychat.messenger.core.persistence.sqlite.SQLitePreKeyPersistenceManager
+import io.slychat.messenger.core.persistence.sqlite.*
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.UserData
 import io.slychat.messenger.services.UserPaths
@@ -33,6 +30,21 @@ class PersistenceUserModule {
     @Provides
     fun providesContactsPersistenceManager(sqlitePersistenceManager: SQLitePersistenceManager): ContactsPersistenceManager =
         SQLiteContactsPersistenceManager(sqlitePersistenceManager)
+
+    @UserScope
+    @Provides
+    fun providersGroupPersistenceManager(sqlitePersistenceManager: SQLitePersistenceManager): GroupPersistenceManager =
+        SQLiteGroupPersistenceManager(sqlitePersistenceManager)
+
+    @UserScope
+    @Provides
+    fun providersPackageQueuePersistenceManager(sqlitePersistenceManager: SQLitePersistenceManager): PackageQueuePersistenceManager =
+        SQLitePackageQueuePersistenceManager(sqlitePersistenceManager)
+
+    @UserScope
+    @Provides
+    fun providesMessageQueuePersistenceManager(sqlitePersistenceManager: SQLitePersistenceManager): MessageQueuePersistenceManager =
+        SQLiteMessageQueuePersistenceManager(sqlitePersistenceManager)
 
     @UserScope
     @Provides

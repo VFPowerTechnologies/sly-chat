@@ -7,15 +7,12 @@ import io.slychat.messenger.core.BuildConfig.ServerUrls
 import io.slychat.messenger.core.crypto.EncryptionSpec
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
-import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
-import io.slychat.messenger.core.http.api.contacts.ContactListAsyncClient
-import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClient
+import io.slychat.messenger.core.http.api.contacts.ContactAsyncClientImpl
+import io.slychat.messenger.core.http.api.contacts.ContactListAsyncClientImpl
+import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClientImpl
 import io.slychat.messenger.core.http.api.prekeys.HttpPreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
-import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
-import io.slychat.messenger.core.persistence.ContactsPersistenceManager
-import io.slychat.messenger.core.persistence.MessagePersistenceManager
-import io.slychat.messenger.core.persistence.PreKeyPersistenceManager
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.base.RelayConnector
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
@@ -26,7 +23,10 @@ import io.slychat.messenger.services.config.CipherConfigStorageFilter
 import io.slychat.messenger.services.config.FileConfigStorage
 import io.slychat.messenger.services.config.JsonConfigBackend
 import io.slychat.messenger.services.config.UserConfigService
+import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.crypto.MessageCipherService
+import io.slychat.messenger.services.crypto.MessageCipherServiceImpl
+import io.slychat.messenger.services.messaging.*
 import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
 import rx.Scheduler
@@ -53,27 +53,25 @@ class UserModule(
         scheduler: Scheduler,
         relayClientFactory: RelayClientFactory
     ): RelayClientManager =
-        RelayClientManager(scheduler, relayClientFactory)
+        RelayClientManagerImpl(scheduler, relayClientFactory)
 
     @UserScope
     @Provides
-    fun providesContactsService(
+    fun providesContactJobFactory(
         authTokenManager: AuthTokenManager,
         serverUrls: BuildConfig.ServerUrls,
-        application: SlyApplication,
         contactsPersistenceManager: ContactsPersistenceManager,
-        userLoginData: UserData,
         accountInfoPersistenceManager: AccountInfoPersistenceManager,
         @SlyHttp httpClientFactory: HttpClientFactory,
+        userLoginData: UserData,
         platformContacts: PlatformContacts
-    ): ContactsService {
+    ): ContactSyncJobFactory {
         val serverUrl = serverUrls.API_SERVER
-        val contactClient = ContactAsyncClient(serverUrl, httpClientFactory)
-        val contactListClient = ContactListAsyncClient(serverUrl, httpClientFactory)
+        val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
+        val contactListClient = ContactListAsyncClientImpl(serverUrl, httpClientFactory)
 
-        return ContactsService(
+        return ContactSyncJobFactoryImpl(
             authTokenManager,
-            application,
             contactClient,
             contactListClient,
             contactsPersistenceManager,
@@ -85,23 +83,96 @@ class UserModule(
 
     @UserScope
     @Provides
-    fun providesMessengerService(
-        scheduler: Scheduler,
+    fun providesContactJobRunner(
+        application: SlyApplication,
+        contactJobFactory: ContactSyncJobFactory
+    ): ContactOperationManager = ContactOperationManagerImpl(
+        application.networkAvailable,
+        contactJobFactory
+    )
+
+    @UserScope
+    @Provides
+    fun providesContactsService(
+        authTokenManager: AuthTokenManager,
+        serverUrls: BuildConfig.ServerUrls,
+        contactsPersistenceManager: ContactsPersistenceManager,
+        contactJobRunner: ContactOperationManager,
+        @SlyHttp httpClientFactory: HttpClientFactory
+    ): ContactsService {
+        val serverUrl = serverUrls.API_SERVER
+        val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
+
+        return ContactsServiceImpl(
+            authTokenManager,
+            contactClient,
+            contactsPersistenceManager,
+            contactJobRunner
+        )
+    }
+
+    @UserScope
+    @Provides
+    fun providesMessageProcessor(
         contactsService: ContactsService,
         messagePersistenceManager: MessagePersistenceManager,
-        contactsPersistenceManager: ContactsPersistenceManager,
+        groupPersistenceManager: GroupPersistenceManager
+    ): MessageProcessor = MessageProcessorImpl(
+        contactsService,
+        messagePersistenceManager,
+        groupPersistenceManager
+    )
+
+    @UserScope
+    @Provides
+    fun providesMessageReceiver(
+        scheduler: Scheduler,
+        messageProcessor: MessageProcessor,
+        packageQueuePersistenceManager: PackageQueuePersistenceManager,
+        messageCipherService: MessageCipherService
+    ): MessageReceiver = MessageReceiverImpl(
+        scheduler,
+        messageProcessor,
+        packageQueuePersistenceManager,
+        messageCipherService
+    )
+
+    @UserScope
+    @Provides
+    fun providesMessageSender(
+        scheduler: Scheduler,
         relayClientManager: RelayClientManager,
         messageCipherService: MessageCipherService,
+        messageQueuePersistenceManager: MessageQueuePersistenceManager
+    ): MessageSender =
+        MessageSenderImpl(
+            scheduler,
+            messageCipherService,
+            relayClientManager,
+            messageQueuePersistenceManager
+        )
+
+    @UserScope
+    @Provides
+    fun providesMessengerService(
+        contactsService: ContactsService,
+        messagePersistenceManager: MessagePersistenceManager,
+        groupPersistenceManager: GroupPersistenceManager,
+        contactsPersistenceManager: ContactsPersistenceManager,
+        relayClientManager: RelayClientManager,
+        messageReceiver: MessageReceiver,
+        messageSender: MessageSender,
         userLoginData: UserData
     ): MessengerService =
         MessengerServiceImpl(
-            scheduler,
             contactsService,
             messagePersistenceManager,
+            groupPersistenceManager,
             contactsPersistenceManager,
             relayClientManager,
-            messageCipherService,
-            userLoginData
+            messageSender,
+            messageReceiver,
+            userLoginData.userId
         )
 
     @UserScope
@@ -132,7 +203,7 @@ class UserModule(
         @SlyHttp httpClientFactory: HttpClientFactory
     ): MessageCipherService {
         val preKeyClient = HttpPreKeyClient(serverUrls.API_SERVER, httpClientFactory.create())
-        return MessageCipherService(authTokenManager, preKeyClient, signalProtocolStore)
+        return MessageCipherServiceImpl(authTokenManager, preKeyClient, signalProtocolStore)
     }
 
     @UserScope
@@ -167,10 +238,10 @@ class UserModule(
         authTokenManager: AuthTokenManager
     ): OfflineMessageManager {
         val serverUrl = serverUrls.API_SERVER
-        val offlineMessagesClient = OfflineMessagesAsyncClient(serverUrl, httpClientFactory)
+        val offlineMessagesClient = OfflineMessagesAsyncClientImpl(serverUrl, httpClientFactory)
 
         return OfflineMessageManager(
-            application,
+            application.networkAvailable,
             offlineMessagesClient,
             messengerService,
             authTokenManager
@@ -219,4 +290,15 @@ class UserModule(
         val backend = JsonConfigBackend("user-config", storage)
         return UserConfigService(backend)
     }
+
+    @UserScope
+    @Provides
+    fun providesGroupService(
+        groupPersistenceManager: GroupPersistenceManager,
+        messageProcessor: MessageProcessor
+    ): GroupService =
+        GroupServiceImpl(
+            groupPersistenceManager,
+            messageProcessor
+        )
 }

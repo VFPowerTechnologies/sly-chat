@@ -11,7 +11,7 @@ import android.net.Uri
 import android.text.SpannableString
 import android.text.style.StyleSpan
 import io.slychat.messenger.core.persistence.MessageInfo
-import io.slychat.messenger.services.ContactDisplayInfo
+import io.slychat.messenger.services.contacts.ContactDisplayInfo
 import io.slychat.messenger.services.PlatformNotificationService
 import java.util.*
 

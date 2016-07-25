@@ -1,22 +1,25 @@
 package io.slychat.messenger.services.ui.impl
 
-import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
-import io.slychat.messenger.core.http.api.contacts.NewContactRequest
+import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
-import io.slychat.messenger.services.*
+import io.slychat.messenger.services.contacts.ContactEvent
+import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.formatPhoneNumber
+import io.slychat.messenger.services.getAccountRegionCode
+import io.slychat.messenger.services.parsePhoneNumber
 import io.slychat.messenger.services.ui.UIContactDetails
 import io.slychat.messenger.services.ui.UIContactEvent
 import io.slychat.messenger.services.ui.UIContactsService
 import io.slychat.messenger.services.ui.UINewContactResult
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
+import rx.Observable
 import rx.Subscription
 import java.util.*
 
 class UIContactsServiceImpl(
-    private val app: SlyApplication,
-    private val contactClient: ContactAsyncClient
+    userSessionAvailable: Observable<UserComponent?>
 ) : UIContactsService {
 
     private var contactEventSub: Subscription? = null
@@ -24,20 +27,32 @@ class UIContactsServiceImpl(
 
     private var isContactSyncActive = false
 
+    private var accountInfoPersistenceManager: AccountInfoPersistenceManager? = null
+    private var contactsService: ContactsService? = null
+    private var contactsPersistenceManager: ContactsPersistenceManager? = null
+
     init {
-        app.userSessionAvailable.subscribe { isAvailable ->
-            if (!isAvailable) {
+        userSessionAvailable.subscribe {
+            if (it == null) {
                 contactEventSub?.unsubscribe()
                 contactEventSub = null
+
+                contactsService = null
+                contactsPersistenceManager = null
+                accountInfoPersistenceManager = null
             }
             else {
-                contactEventSub = getContactsServiceOrThrow().contactEvents.subscribe { onContactEvent(it) }
+                contactsService = it.contactsService
+                contactsPersistenceManager = it.contactsPersistenceManager
+                accountInfoPersistenceManager = it.accountInfoPersistenceManager
+
+                contactEventSub = it.contactsService.contactEvents.subscribe { onContactEvent(it) }
             }
         }
     }
 
     private fun getContactsServiceOrThrow(): ContactsService {
-        return app.userComponent?.contactsService ?: throw IllegalStateException("Not logged in")
+        return contactsService ?: throw IllegalStateException("Not logged in")
     }
 
     private fun onContactEvent(event: ContactEvent) {
@@ -51,9 +66,6 @@ class UIContactsServiceImpl(
             is ContactEvent.Updated ->
                 UIContactEvent.Updated(event.contacts.toUI())
 
-            is ContactEvent.Request ->
-                UIContactEvent.Request(event.contacts.toUI())
-
             is ContactEvent.Sync -> {
                 isContactSyncActive = event.isRunning
                 UIContactEvent.Sync(event.isRunning)
@@ -66,8 +78,8 @@ class UIContactsServiceImpl(
             contactEventListeners.forEach { it(ev) }
     }
 
-    private fun getUserComponentOrThrow(): UserComponent {
-        return app.userComponent ?: throw IllegalStateException("Not logged in")
+    private fun getAccountInfoPersistenceManagerOrThrow(): AccountInfoPersistenceManager {
+        return accountInfoPersistenceManager ?: error("Not logged in")
     }
 
     override fun addContactEventListener(listener: (UIContactEvent) -> Unit) {
@@ -78,7 +90,7 @@ class UIContactsServiceImpl(
     }
 
     private fun getContactsPersistenceManagerOrThrow(): ContactsPersistenceManager =
-        app.userComponent?.contactsPersistenceManager ?: error("No UserComponent available")
+        contactsPersistenceManager ?: error("Not logged in")
 
     override fun updateContact(newContactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
         val contactsService = getContactsServiceOrThrow()
@@ -120,32 +132,27 @@ class UIContactsServiceImpl(
                 return Promise.ofSuccess(UINewContactResult(false, "Not a valid phone number", null))
         }
 
-        val userComponent = getUserComponentOrThrow()
+        val accountInfoPersistenceManager = getAccountInfoPersistenceManagerOrThrow()
 
-        return userComponent.authTokenManager.bind { userCredentials ->
-            val queryPhoneNumber = if (phoneNumber != null) {
-                val accountInfo = userComponent.accountInfoPersistenceManager.retrieveSync()!!
-                val defaultRegionCode = getAccountRegionCode(accountInfo)
-                val p = parsePhoneNumber(phoneNumber, defaultRegionCode)
-                if (p != null) formatPhoneNumber(p) else null
-            }
-            else
-                null
+        val queryPhoneNumber = if (phoneNumber != null) {
+            val accountInfo = accountInfoPersistenceManager.retrieveSync()!!
+            val defaultRegionCode = getAccountRegionCode(accountInfo)
+            val p = parsePhoneNumber(phoneNumber, defaultRegionCode)
+            if (p != null) formatPhoneNumber(p) else null
+        }
+        else
+            null
 
-            if (phoneNumber != null && queryPhoneNumber == null)
-                Promise.ofSuccess(UINewContactResult(false, "Not a valid phone number", null))
-            else {
-                val request = NewContactRequest(email, queryPhoneNumber)
+        if (phoneNumber != null && queryPhoneNumber == null)
+            return Promise.ofSuccess(UINewContactResult(false, "Not a valid phone number", null))
 
-                contactClient.fetchNewContactInfo(userCredentials, request) map { response ->
-                    if (response.errorMessage != null) {
-                        UINewContactResult(false, response.errorMessage, null)
-                    } else {
-                        val contactInfo = response.contactInfo!!
-                        UINewContactResult(true, null, contactInfo.toUI())
-                    }
+        return getContactsServiceOrThrow().fetchRemoteContactInfo(email, queryPhoneNumber) map { response ->
+                if (response.errorMessage != null) {
+                    UINewContactResult(false, response.errorMessage, null)
+                } else {
+                    val contactInfo = response.contactInfo!!
+                    UINewContactResult(true, null, contactInfo.toUI())
                 }
             }
-        }
     }
 }

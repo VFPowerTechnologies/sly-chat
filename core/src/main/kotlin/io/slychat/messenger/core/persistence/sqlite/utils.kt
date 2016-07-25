@@ -2,7 +2,9 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.*
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.loadSharedLibFromResource
+import io.slychat.messenger.core.persistence.GroupId
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -24,6 +26,26 @@ inline fun <R> SQLiteStatement.use(body: (SQLiteStatement) -> R): R =
         this.reset()
         this.dispose()
     }
+
+fun SQLiteStatement.columnNullableInt(index: Int): Int? =
+    if (columnNull(index)) null else columnInt(index)
+
+fun SQLiteStatement.columnNullableLong(index: Int): Long? =
+    if (columnNull(index)) null else columnLong(index)
+
+fun SQLiteStatement.columnBool(index: Int): Boolean =
+    columnInt(index) != 0
+
+fun SQLiteStatement.bind(index: Int, value: GroupId?) {
+    bind(index, value?.string)
+}
+
+fun SQLiteStatement.bind(index: Int, value: UserId?) {
+    if (value != null)
+        bind(index, value.long)
+    else
+        bindNull(index)
+}
 
 inline fun <R> SQLiteConnection.withPrepared(sql: String, body: (SQLiteStatement) -> R): R {
     return this.prepare(sql).use { body(it) }

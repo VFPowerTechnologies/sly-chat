@@ -12,11 +12,11 @@ interface ContactsPersistenceManager {
     fun exists(userId: UserId): Promise<Boolean, Exception>
     fun exists(users: Set<UserId>): Promise<Set<UserId>, Exception>
 
-    /** Get pending users. */
-    fun getPending(): Promise<List<ContactInfo>, Exception>
+    fun getBlockList(): Promise<Set<UserId>, Exception>
+    fun filterBlocked(users: Collection<UserId>): Promise<Set<UserId>, Exception>
 
-    /** Mark the given users as not pending. */
-    fun markAccepted(users: Set<UserId>): Promise<Unit, Exception>
+    /** Sets a new message level for the given user. Also sets isPending to false. */
+    fun updateMessageLevel(user: UserId, newMessageLevel: AllowedMessageLevel): Promise<Unit, Exception>
 
     /** Returns info for all available conversations. */
     fun getAllConversations(): Promise<List<Conversation>, Exception>
@@ -35,7 +35,7 @@ interface ContactsPersistenceManager {
     /** Updates the given contact's info. */
     fun update(contactInfo: ContactInfo): Promise<Unit, Exception>
     /** Removes a contact and their associated conversation. */
-    fun remove(contactInfo: ContactInfo): Promise<Boolean, Exception>
+    fun remove(userId: UserId): Promise<Boolean, Exception>
 
     fun searchByPhoneNumber(phoneNumber: String): Promise<List<ContactInfo>, Exception>
     fun searchByName(name: String): Promise<List<ContactInfo>, Exception>
@@ -48,9 +48,6 @@ interface ContactsPersistenceManager {
     fun getDiff(ids: Collection<UserId>): Promise<ContactListDiff, Exception>
 
     fun applyDiff(newContacts: Collection<ContactInfo>, removedContacts: Collection<UserId>): Promise<Unit, Exception>
-
-    /** Contacts with pending messages but no available info. */
-    fun getUnadded(): Promise<Set<UserId>, Exception>
 
     fun addRemoteUpdate(remoteUpdates: Collection<RemoteContactUpdate>): Promise<Unit, Exception>
     fun getRemoteUpdates(): Promise<List<RemoteContactUpdate>, Exception>

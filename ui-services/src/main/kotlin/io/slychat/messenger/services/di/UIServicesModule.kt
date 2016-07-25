@@ -8,7 +8,6 @@ import io.slychat.messenger.core.BuildConfig.UIServiceType
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.accountupdate.AccountUpdateAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
-import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
 import io.slychat.messenger.core.http.api.infoservice.InfoServiceAsyncClient
 import io.slychat.messenger.core.http.api.registration.RegistrationAsyncClient
 import io.slychat.messenger.services.PlatformTelephonyService
@@ -56,17 +55,11 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun provideContactsService(
-        serverUrls: BuildConfig.ServerUrls,
-        @SlyHttp httpClientFactory: HttpClientFactory,
         app: SlyApplication
     ): UIContactsService = getImplementation(
         UIServiceComponent.CONTACTS,
         { DummyUIContactsService() },
-        {
-            val serverUrl = serverUrls.API_SERVER
-            val contactClient = ContactAsyncClient(serverUrl, httpClientFactory)
-            UIContactsServiceImpl(app, contactClient)
-        }
+        { UIContactsServiceImpl(app.userSessionAvailable) }
     )
 
     @Singleton
@@ -77,7 +70,7 @@ class UIServicesModule {
     ): UIMessengerService = getImplementation(
         UIServiceComponent.MESSENGER,
         { DummyUIMessengerService(contactsService) },
-        { UIMessengerServiceImpl(app) }
+        { UIMessengerServiceImpl(app.userSessionAvailable) }
     )
 
     @Singleton
@@ -96,7 +89,7 @@ class UIServicesModule {
     fun provideNetworkStatusService(app: SlyApplication): UINetworkStatusService = getImplementation(
         UIServiceComponent.NETWORK_STATUS,
         { DummyUINetworkStatusService() },
-        { UINetworkStatusServiceImpl(app) }
+        { UINetworkStatusServiceImpl(app.networkAvailable, app.relayAvailable) }
     )
 
     @Singleton
@@ -140,5 +133,13 @@ class UIServicesModule {
        appConfigService: AppConfigService
     ): UIConfigService {
         return UIConfigServiceImpl(appConfigService)
+    }
+
+    @Singleton
+    @Provides
+    fun providesUIGroupService(
+        app: SlyApplication
+    ): UIGroupService {
+        return UIGroupServiceImpl(app.userSessionAvailable)
     }
 }

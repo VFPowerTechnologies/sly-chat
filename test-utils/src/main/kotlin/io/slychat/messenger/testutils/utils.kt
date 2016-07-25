@@ -2,7 +2,13 @@
 package io.slychat.messenger.testutils
 
 import nl.komponents.kovenant.Kovenant
+import nl.komponents.kovenant.Promise
+import org.assertj.core.api.Condition
 import org.joda.time.DateTimeUtils
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.OngoingStubbing
+import rx.Observable
+import rx.observers.TestSubscriber
 import java.io.File
 
 inline fun <R> withTempFile(suffix: String = "", body: (File) -> R): R {
@@ -34,4 +40,48 @@ fun <R> withKovenantThreadedContext(body: () -> R): R {
     finally {
         Kovenant.context = savedContext
     }
+}
+
+/** Convinence function for returning a successful promise. */
+fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(v: T) {
+    this.thenReturn(Promise.ofSuccess(v))
+}
+
+fun <T> OngoingStubbing<Promise<T?, Exception>>.thenReturnNull() {
+    this.thenReturn(Promise.ofSuccess(null))
+}
+
+/** Convinence function for returning a failed promise. */
+fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(e: Exception) {
+    this.thenReturn(Promise.ofFail(e))
+}
+
+fun <T> OngoingStubbing<Promise<T, Exception>>.thenAnswerSuccess(body: (InvocationOnMock) -> T) {
+    this.thenAnswer {
+        Promise.ofSuccess<T, Exception>(body(it))
+    }
+}
+
+fun <T> OngoingStubbing<Promise<T, Exception>>.thenAnswerFailure(body: (InvocationOnMock) -> Exception) {
+    this.thenAnswer {
+        Promise.ofFail<T, Exception>(body(it))
+    }
+}
+
+inline fun <reified T> OngoingStubbing<Promise<T, Exception>>.thenAnswerWithArg(n: Int) {
+    this.thenAnswerSuccess {
+        it.arguments[n] as T
+    }
+}
+
+fun <T> cond(description: String, predicate: (T) -> Boolean): Condition<T> = object : Condition<T>(description) {
+    override fun matches(value: T): Boolean = predicate(value)
+}
+
+fun <T> Observable<T>.testSubscriber(): TestSubscriber<T> {
+    val testSubscriber = TestSubscriber<T>()
+
+    this.subscribe(testSubscriber)
+
+    return testSubscriber
 }

@@ -6,7 +6,9 @@ import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.config.UserConfigService
+import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
+import io.slychat.messenger.services.messaging.MessengerService
 
 /** Scoped to a user's login session. */
 @UserScope
@@ -29,6 +31,8 @@ interface UserComponent {
     val contactsService: ContactsService
 
     val messengerService: MessengerService
+
+    val groupService: GroupService
 
     val messageCipherService: MessageCipherService
 

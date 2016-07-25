@@ -1,18 +1,19 @@
 package io.slychat.messenger.services.ui.impl
 
-import io.slychat.messenger.services.MessageBundle
-import io.slychat.messenger.services.MessengerService
-import io.slychat.messenger.services.SlyApplication
+import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.messaging.MessageBundle
+import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
+import rx.Observable
 import rx.Subscription
 import java.util.*
 
 /** This exists for the lifetime of the application. It wraps MessengerService, which exists for the lifetime of the user session. */
 class UIMessengerServiceImpl(
-    private val app: SlyApplication
+    userSessionAvailable: Observable<UserComponent?>
 ) : UIMessengerService {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -22,15 +23,20 @@ class UIMessengerServiceImpl(
     private var newMessageSub: Subscription? = null
     private var messageStatusUpdateSub: Subscription? = null
 
+    private var messengerService: MessengerService? = null
+
     init {
-        app.userSessionAvailable.subscribe { onUserSessionAvailabilityChanged(it) }
+        userSessionAvailable.subscribe { onUserSessionAvailabilityChanged(it) }
     }
 
-    private fun onUserSessionAvailabilityChanged(isAvailable: Boolean) {
-        if (isAvailable) {
-            val messengerService = getMessengerServiceOrThrow()
+    private fun onUserSessionAvailabilityChanged(userComponent: UserComponent?) {
+        if (userComponent != null) {
+            val messengerService = userComponent.messengerService
+
             newMessageSub = messengerService.newMessages.subscribe { onNewMessages(it) }
             messageStatusUpdateSub = messengerService.messageUpdates.subscribe { onMessageStatusUpdate(it) }
+
+            this.messengerService = userComponent.messengerService
         }
         else {
             newMessageSub?.unsubscribe()
@@ -38,22 +44,24 @@ class UIMessengerServiceImpl(
 
             messageStatusUpdateSub?.unsubscribe()
             messageStatusUpdateSub = null
+
+            messengerService = null
         }
     }
 
     private fun getMessengerServiceOrThrow(): MessengerService {
-        return app.userComponent?.messengerService ?: error("No user session has been established")
+        return messengerService ?: error("No user session has been established")
     }
 
     /** First we add to the log, then we display it to the user. */
     private fun onNewMessages(messageBundle: MessageBundle) {
         val messages = messageBundle.messages.map { it.toUI() }
-        notifyNewMessageListeners(UIMessageInfo(messageBundle.userId, messages))
+        notifyNewMessageListeners(UIMessageInfo(messageBundle.userId, messageBundle.groupId, messages))
     }
 
     private fun onMessageStatusUpdate(messageBundle: MessageBundle) {
         val messages = messageBundle.messages.map { it.toUI() }
-        notifyMessageStatusUpdateListeners(UIMessageInfo(messageBundle.userId, messages))
+        notifyMessageStatusUpdateListeners(UIMessageInfo(messageBundle.userId, messageBundle.groupId, messages))
     }
 
     /* Interface methods. */
@@ -87,7 +95,7 @@ class UIMessengerServiceImpl(
             convos.map {
                 val contact = it.contact
                 val info = it.info
-                UIConversation(contact.toUI(), UIConversationStatus(true, info.unreadMessageCount, info.lastMessage, info.lastTimestamp))
+                UIConversation(contact.toUI(), UIConversationInfo(true, info.unreadMessageCount, info.lastMessage, info.lastTimestamp))
             }
         }
     }

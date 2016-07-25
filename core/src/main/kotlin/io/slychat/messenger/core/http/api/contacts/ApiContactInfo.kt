@@ -2,6 +2,7 @@ package io.slychat.messenger.core.http.api.contacts
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
 
 data class ApiContactInfo(
@@ -16,6 +17,6 @@ data class ApiContactInfo(
     @JsonProperty("public-key")
     val publicKey: String
 ) {
-    fun toCore(isPending: Boolean): ContactInfo =
-        ContactInfo(id, email, name, isPending, phoneNumber, publicKey)
+    fun toCore(isPending: Boolean, allowedMessageLevel: AllowedMessageLevel): ContactInfo =
+        ContactInfo(id, email, name, allowedMessageLevel, isPending, phoneNumber, publicKey)
 }

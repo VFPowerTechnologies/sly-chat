@@ -1,12 +1,15 @@
 package io.slychat.messenger.services.ui.impl
 
-import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.ui.UINetworkStatus
 import io.slychat.messenger.services.ui.UINetworkStatusService
 import io.slychat.messenger.services.ui.UIRelayStatus
+import rx.Observable
 import java.util.*
 
-class UINetworkStatusServiceImpl(private val application: SlyApplication) : UINetworkStatusService {
+class UINetworkStatusServiceImpl(
+    networkAvailable: Observable<Boolean>,
+    relayAvailable: Observable<Boolean>
+) : UINetworkStatusService {
     private val networkStatusListeners = ArrayList<(UINetworkStatus) -> Unit>()
     private val relayStatusListeners = ArrayList<(UIRelayStatus) -> Unit>()
 
@@ -15,8 +18,8 @@ class UINetworkStatusServiceImpl(private val application: SlyApplication) : UINe
     private var isRelayAvailable = false
 
     init {
-        application.networkAvailable.subscribe { updateNetworkStatus(it) }
-        application.relayAvailable.subscribe { updateRelayStatus(it) }
+        networkAvailable.subscribe { updateNetworkStatus(it) }
+        relayAvailable.subscribe { updateRelayStatus(it) }
     }
 
     private fun getCurrentNetworkStatus(): UINetworkStatus =

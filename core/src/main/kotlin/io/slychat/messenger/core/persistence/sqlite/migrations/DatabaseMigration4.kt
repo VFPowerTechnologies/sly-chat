@@ -1,14 +1,22 @@
 package io.slychat.messenger.core.persistence.sqlite.migrations
 
 import com.almworks.sqlite4java.SQLiteConnection
-import com.almworks.sqlite4java.SQLiteException
 import io.slychat.messenger.core.SlyAddress
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.sqlite.DatabaseMigration
+import io.slychat.messenger.core.persistence.sqlite.bind
 import io.slychat.messenger.core.persistence.sqlite.withPrepared
 import java.util.*
 
 @Suppress("unused")
 class DatabaseMigration4 : DatabaseMigration(4) {
+    private fun isContactPresent(connection: SQLiteConnection, userId: UserId): Boolean {
+        return connection.withPrepared("SELECT 1 FROM contacts WHERE id=?") { stmt ->
+            stmt.bind(1, userId)
+            stmt.step()
+        }
+    }
+
     override fun apply(connection: SQLiteConnection) {
         super.apply(connection)
 
@@ -27,29 +35,19 @@ class DatabaseMigration4 : DatabaseMigration(4) {
             sessions
         }
 
-        if (sessions.isNotEmpty()) {
+        //foreigns are disabled during migrations
+        val sessionsKeep = sessions.filter { isContactPresent(connection, it.first.id) }
+
+        if (sessionsKeep.isNotEmpty()) {
             connection.withPrepared("INSERT INTO signal_sessions (contact_id, device_id, session) VALUES (?, ?, ?)") { stmt ->
-                for (p in sessions) {
+                for (p in sessionsKeep) {
                     val (slyAddress, session) = p
                     stmt.bind(1, slyAddress.id.long)
                     stmt.bind(2, slyAddress.deviceId)
                     stmt.bind(3, session)
 
-                    try {
-                        stmt.step()
-                    }
-                    catch (e: SQLiteException) {
-                        //session for a previously removed contact
-                        if (e.message?.contains("FOREIGN KEY constraint failed") ?: false)
-                            continue
-                        else
-                            throw e
-                    }
-                    finally {
-                        //need to reset if we skip over an error, else we get an out of sequence error when we try
-                        //and reuse the statement
-                        stmt.reset(true)
-                    }
+                    stmt.step()
+                    stmt.reset(true)
                 }
             }
         }

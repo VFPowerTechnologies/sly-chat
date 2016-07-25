@@ -13,9 +13,10 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 /** The latest database version number. */
-private val LATEST_DATABASE_VERSION = 6
+private val LATEST_DATABASE_VERSION = 7
 
-private data class InitializationResult(val initWasRequired: Boolean, val freshDatabase: Boolean)
+/** Just used to wrap Errors thrown when running SQLite jobs. */
+class SQLitePersistenceManagerErrorException(e: Error) : RuntimeException("Uncaught Error in job", e)
 
 //localDataEncryptionParams don't work too well... they contain an IV, which wouldn't be reused
 //for the db, we also can't control cipher params anyways
@@ -31,6 +32,8 @@ class SQLitePersistenceManager(
     private val localDataEncryptionKey: ByteArray?,
     private val localDataEncryptionParams: CipherParams?
 ) : PersistenceManager {
+    private data class InitializationResult(val initWasRequired: Boolean, val freshDatabase: Boolean)
+
     private lateinit var sqliteQueue: SQLiteQueue
     private var initialized = false
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -67,6 +70,10 @@ class SQLitePersistenceManager(
     fun currentDatabaseVersion(): Promise<Int, Exception> = runQuery { getCurrentDatabaseVersion(it) }
     fun currentDatabaseVersionSync(): Int = currentDatabaseVersion().get()
 
+    private fun enableForeignKeys(connection: SQLiteConnection) {
+        connection.exec("PRAGMA foreign_keys = ON")
+    }
+
     /**
      * Initialize the worker queue.
      *
@@ -97,10 +104,6 @@ class SQLitePersistenceManager(
             }.get()
         }
 
-        realRunQuery { connection ->
-            connection.exec("PRAGMA foreign_keys = ON")
-        }.get()
-
         initialized = true
         return InitializationResult(true, created)
     }
@@ -121,6 +124,11 @@ class SQLitePersistenceManager(
             else {
                 initializeDatabase(connection)
             }
+
+            //we need to init this after any migrations, as the pragma can't be modified within a transaction, and with
+            //fks on any referenced tables will be updated to point to the old renamed table, which makes it so we can't
+            //recreate tables referenced in a fk relationship without rebuilding every referencing table
+            enableForeignKeys(connection)
         }
     }
 
@@ -191,6 +199,9 @@ class SQLitePersistenceManager(
                 }
                 catch (e: Exception) {
                     deferred.reject(e)
+                }
+                catch (e: Error) {
+                    deferred.reject(SQLitePersistenceManagerErrorException(e))
                 }
 
                 return Unit

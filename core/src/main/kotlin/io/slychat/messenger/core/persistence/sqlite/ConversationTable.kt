@@ -5,9 +5,11 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.readResourceFileText
 
 /**
- * Utility object for creating and deleting conversation tables.
+ * Utility object for creating and deleting contact conversation tables.
  *
  * This should will do (minor) disk io on initialization for caching the table template.
+ *
+ * Since this is accessed only within the db thread pool, this isn't an issue.
  */
 object ConversationTable {
     private val tableTemplate: String

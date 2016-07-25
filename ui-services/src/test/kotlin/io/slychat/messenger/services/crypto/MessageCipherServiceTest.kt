@@ -4,17 +4,13 @@ import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
-import io.slychat.messenger.core.AuthToken
 import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.generateNewKeyVault
 import io.slychat.messenger.core.crypto.generatePrekeys
 import io.slychat.messenger.core.http.api.prekeys.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
-import io.slychat.messenger.services.auth.AuthTokenManager
-import nl.komponents.kovenant.Promise
 import org.junit.Test
 import org.whispersystems.libsignal.SessionBuilder
 import org.whispersystems.libsignal.SessionCipher
@@ -23,7 +19,6 @@ import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SignalProtocolStore
 import org.whispersystems.libsignal.state.impl.InMemorySignalProtocolStore
 import org.whispersystems.libsignal.util.KeyHelper
-import rx.Observable
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -123,37 +118,6 @@ class MockUser(id: Long, val initialDeviceCount: Int = 1) {
     }
 }
 
-/** Just runs the given functions with dummy credentials. */
-class MockAuthTokenManager : AuthTokenManager {
-    private val dummyCreds = UserCredentials(SlyAddress(UserId(0), 0), AuthToken("dummy"))
-
-    private inline fun <T> tryPromise(body: (UserCredentials) -> T): Promise<T, Exception> = try {
-        Promise.ofSuccess(body(dummyCreds))
-    }
-    catch (e: Exception) {
-        Promise.ofFail(e)
-    }
-
-    override val newToken: Observable<AuthToken?>
-        get() = throw UnsupportedOperationException()
-
-    override fun setToken(authToken: AuthToken) {
-        throw UnsupportedOperationException()
-    }
-
-    override fun invalidateToken() {
-        throw UnsupportedOperationException()
-    }
-
-    override fun <T> bind(what: (UserCredentials) -> Promise<T, Exception>): Promise<T, Exception> = what(dummyCreds)
-
-    override fun <T> bindUi(what: (UserCredentials) -> Promise<T, Exception>): Promise<T, Exception> = what(dummyCreds)
-
-    override fun <T> map(what: (UserCredentials) -> T): Promise<T, Exception> = tryPromise(what)
-
-    override fun <T> mapUi(what: (UserCredentials) -> T): Promise<T, Exception> = tryPromise(what)
-}
-
 fun <T> flatten(vararg lists: List<T>): List<T> {
     val r = ArrayList<T>()
 
@@ -174,9 +138,9 @@ class MessageCipherServiceTest {
         return client
     }
 
-    fun createCipherService(client: PreKeyClient, user: MockUser): MessageCipherService {
+    fun createCipherService(client: PreKeyClient, user: MockUser): MessageCipherServiceImpl {
         val authTokenManager = MockAuthTokenManager()
-        return MessageCipherService(authTokenManager, client, user.signalStore)
+        return MessageCipherServiceImpl(authTokenManager, client, user.signalStore)
     }
 
     fun assertSessionStatus(signalProtocolStore: SignalProtocolStore, target: MockUser, expectedDeviceIds: List<Int>, exists: Boolean) {

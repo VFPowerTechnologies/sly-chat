@@ -3,10 +3,12 @@ package io.slychat.messenger.core.persistence.sqlite
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteException
 import io.slychat.messenger.testutils.withTempFile
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.BeforeClass
 import org.junit.Test
-import java.util.concurrent.atomic.AtomicReference
+import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DatabaseMigrationTest {
@@ -31,23 +33,14 @@ class DatabaseMigrationTest {
             try {
                 persistenceManager.init(to)
                 assertEquals(to, persistenceManager.currentDatabaseVersionSync(), "Invalid database version after init")
-                val atomic = AtomicReference<Throwable>()
-                persistenceManager.syncRunQuery { connection ->
-                    //kovenant is hardcoded to use Exception as its error type for task/etc
-                    //so everything else I wrote does this as well
-                    //however AssertionError is an Error
-                    //so this is a nasty hack for now
-                    try {
+                try {
+                    persistenceManager.syncRunQuery { connection ->
                         body(persistenceManager, connection)
                     }
-                    catch (t: Throwable) {
-                        atomic.set(t)
-                    }
                 }
-
-                val maybeException = atomic.get()
-                if (maybeException != null)
-                    throw maybeException
+                catch (e: SQLitePersistenceManagerErrorException) {
+                    throw e.cause!!
+                }
             }
             finally {
                 persistenceManager.shutdown()
@@ -55,16 +48,24 @@ class DatabaseMigrationTest {
         }
     }
 
-    //XXX really low tech, but works
-    fun assertColDef(connection: SQLiteConnection, tableName: String, colDef: String) {
-        val sql = connection.prepare("""SELECT sql FROM sqlite_master WHERE type="table" and name=?""").use { stmt ->
+    fun getTableDef(connection: SQLiteConnection, tableName: String): String {
+        return connection.prepare("""SELECT sql FROM sqlite_master WHERE type="table" and name=?""").use { stmt ->
             stmt.bind(1, tableName)
             if (!stmt.step())
                 throw RuntimeException("Missing table: $tableName")
-            stmt.columnString(0)
+            stmt.columnString(0).toLowerCase()
         }
+    }
 
-        assertTrue(sql.contains(colDef, true), "Missing column def: $colDef")
+    //XXX really low tech, but works
+    fun assertColDef(connection: SQLiteConnection, tableName: String, colDef: String) {
+        val sql = getTableDef(connection, tableName)
+        assertTrue(sql.contains(colDef.toLowerCase(), true), "Missing column def: $colDef")
+    }
+
+    fun assertNoColDef(connection: SQLiteConnection, tableName: String, colDef: String) {
+        val sql = getTableDef(connection, tableName)
+        assertFalse(sql.contains(colDef.toLowerCase(), true), "Found column def: $colDef")
     }
 
     fun assertTableExists(connection: SQLiteConnection, tableName: String) {
@@ -95,6 +96,15 @@ class DatabaseMigrationTest {
                 throw e
         }
 
+    }
+
+    fun assertTableRowCount(connection: SQLiteConnection, tableName: String, rowCount: Int) {
+        connection.withPrepared("SELECT count(1) FROM $tableName") { stmt ->
+            stmt.step()
+            val n = stmt.columnInt(0)
+            //make sure we discarded the old contact session
+            assertEquals(rowCount, n, "Invalid number of rows")
+        }
     }
 
     fun check0To1(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
@@ -153,15 +163,6 @@ class DatabaseMigrationTest {
         }
     }
 
-    fun assertTableRowCount(connection: SQLiteConnection, tableName: String, rowCount: Int) {
-        connection.withPrepared("SELECT count(1) FROM $tableName") { stmt ->
-            stmt.step()
-            val n = stmt.columnInt(0)
-            //make sure we discarded the old contact session
-            assertEquals(rowCount, n, "Invalid number of rows")
-        }
-    }
-
     fun check4To5(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         //check conversion + old table drop
         assertTableNotExists(connection, "signal_sessions_old")
@@ -204,6 +205,73 @@ class DatabaseMigrationTest {
     fun `migration 5 to 6`() {
         withTestDatabase(5, 6) { persistenceManager, connection ->
             check5To6(persistenceManager, connection)
+        }
+    }
+
+    private data class ContactV7(
+        val id: Long,
+        val email: String,
+        val name: String,
+        val allowedMessageLevel: Int,
+        val phoneNumber: String?,
+        val publicKey: String
+    )
+
+    /*
+     *  +contacts.allow_message_level
+     *  -contacts.is_pending
+     *  contacts.public_key[BLOB -> STRING]
+     *
+     *  +send_message_queue
+     *  +groups
+     *  +group_members
+     *  +group_conversation_info
+     */
+    private fun check6To7(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertColDef(connection, "contacts", "allowed_message_level INTEGER NOT NULL")
+        assertNoColDef(connection, "contacts", "is_pending INTEGER NOT NULL")
+        assertColDef(connection, "contacts", "public_key TEXT NOT NULL")
+
+        //this is just to make sure the migration ran with foreign_keys=off; if it didn't this'll have contacts_old
+        //as the referenced table name
+        val def = getTableDef(connection, "conversation_info")
+        assertTrue("references contacts (id)" in def, "Migration ran with foreign_keys=on")
+
+        assertTableExists(connection, "send_message_queue")
+        assertTableExists(connection, "groups")
+        assertTableExists(connection, "group_members")
+        assertTableExists(connection, "group_conversation_info")
+
+        connection.withPrepared("SELECT id, email, name, allowed_message_level, phone_number, public_key FROM contacts ORDER BY id") { stmt ->
+            val expected = listOf(
+                ContactV7(153, "d@a.com", "Desktop", 2, "15145555555", "05427fbf4460492480d82e42f8dba6d381edeef340646150944b377dc581b4e31d"),
+                ContactV7(154, "e@a.com", "Eeee", 2, "15145555554", "054fe37c651f261bd541f4df980b4aaee467ccd6c5cb1b8a7d898cf86c91acc56b")
+            )
+
+            val found = ArrayList<ContactV7>()
+
+            while (stmt.step()) {
+                found.add(ContactV7(
+                    stmt.columnLong(0),
+                    stmt.columnString(1),
+                    stmt.columnString(2),
+                    stmt.columnInt(3),
+                    stmt.columnString(4),
+                    stmt.columnString(5)
+                ))
+            }
+
+            assertThat(found).apply {
+                `as`("Contacts")
+                containsAll(expected)
+            }
+        }
+    }
+
+    @Test
+    fun `migration 6 to 7`() {
+        withTestDatabase(6, 7) { persistenceManager, connection ->
+            check6To7(persistenceManager, connection)
         }
     }
 }
