@@ -82,8 +82,8 @@ class SQLiteGroupPersistenceManagerTest {
         val groupInfo = randomGroupInfo()
         val members = insertRandomContacts()
 
-        groupPersistenceManager.testAddInfo(groupInfo)
-        groupPersistenceManager.testAddMembers(groupInfo.id, members)
+        groupPersistenceManager.internalAddInfo(groupInfo)
+        groupPersistenceManager.internalAddMembers(groupInfo.id, members)
 
         body(groupInfo, members)
     }
@@ -95,19 +95,19 @@ class SQLiteGroupPersistenceManagerTest {
     fun withPartedGroupFull(body: (GroupInfo) -> Unit) {
         val groupInfo = randomGroupInfo(GroupMembershipLevel.PARTED)
 
-        groupPersistenceManager.testAddInfo(groupInfo)
+        groupPersistenceManager.internalAddInfo(groupInfo)
 
         body(groupInfo)
     }
 
-    fun withPartedGroup(body: (GroupId) -> Unit) = withPartedGroupFull({
+    fun withPartedGroup(body: (GroupId) -> Unit) = withPartedGroupFull {
         body(it.id)
-    })
+    }
 
     fun withBlockedGroupFull(body: (GroupInfo) -> Unit) {
         val groupInfo = randomGroupInfo(GroupMembershipLevel.BLOCKED)
 
-        groupPersistenceManager.testAddInfo(groupInfo)
+        groupPersistenceManager.internalAddInfo(groupInfo)
 
         body(groupInfo)
     }
@@ -119,7 +119,7 @@ class SQLiteGroupPersistenceManagerTest {
     fun withEmptyJoinedGroup(body: (GroupInfo) -> Unit) {
         val groupInfo = randomGroupInfo()
 
-        groupPersistenceManager.testAddInfo(groupInfo)
+        groupPersistenceManager.internalAddInfo(groupInfo)
 
         body(groupInfo)
     }
@@ -383,7 +383,7 @@ class SQLiteGroupPersistenceManagerTest {
         val groupInfo = randomGroupInfo()
         val initialMembers = insertRandomContacts()
 
-        groupPersistenceManager.testAddInfo(groupInfo.copy(membershipLevel = GroupMembershipLevel.PARTED))
+        groupPersistenceManager.internalAddInfo(groupInfo.copy(membershipLevel = GroupMembershipLevel.PARTED))
 
         groupPersistenceManager.join(groupInfo, initialMembers).get()
 
@@ -399,8 +399,8 @@ class SQLiteGroupPersistenceManagerTest {
         val oldMembers = insertRandomContacts()
         val initialMembers = insertRandomContacts()
 
-        groupPersistenceManager.testAddInfo(groupInfo.copy(membershipLevel = GroupMembershipLevel.PARTED))
-        groupPersistenceManager.testAddMembers(groupInfo.id, oldMembers)
+        groupPersistenceManager.internalAddInfo(groupInfo.copy(membershipLevel = GroupMembershipLevel.PARTED))
+        groupPersistenceManager.internalAddMembers(groupInfo.id, oldMembers)
 
         groupPersistenceManager.join(groupInfo, initialMembers).get()
 
@@ -440,7 +440,7 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     fun assertInitialConversationInfo(id: GroupId) {
-        val conversationInfo = assertNotNull(groupPersistenceManager.testGetConversationInfo(id), "Missing group conversation info")
+        val conversationInfo = assertNotNull(groupPersistenceManager.internalGetConversationInfo(id), "Missing group conversation info")
 
         assertEquals(id, conversationInfo.groupId, "Invalid group id")
         assertNull(conversationInfo.lastMessage, "Last message should be empty")
@@ -458,18 +458,8 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
-    fun `join should reset group conversation info for a previously parted group`() {
+    fun `join should create group conversation info for a previously parted group`() {
         withPartedGroupFull {
-            val member = insertRandomContact()
-            val convoInfo = GroupConversationInfo(
-                it.id,
-                member,
-                1,
-                randomMessageText(),
-                currentTimestamp()
-            )
-            groupPersistenceManager.testSetConversationInfo(convoInfo)
-
             groupPersistenceManager.join(it.copy(membershipLevel = GroupMembershipLevel.JOINED), insertRandomContacts()).get()
             assertInitialConversationInfo(it.id)
         }
@@ -484,6 +474,15 @@ class SQLiteGroupPersistenceManagerTest {
             val newInfo = assertNotNull(groupPersistenceManager.getInfo(id).get())
 
             assertEquals(GroupMembershipLevel.PARTED, newInfo.membershipLevel, "Membership level not updated")
+        }
+    }
+
+    @Test
+    fun `part should remove conversation info for the parted group`() {
+        withJoinedGroup { groupId, members ->
+            groupPersistenceManager.part(groupId).get()
+
+            assertNull(groupPersistenceManager.getConversationInfo(groupId).get(), "Conversation info not removed")
         }
     }
 
@@ -539,6 +538,15 @@ class SQLiteGroupPersistenceManagerTest {
             val newInfo = assertNotNull(groupPersistenceManager.getInfo(id).get())
 
             assertEquals(GroupMembershipLevel.BLOCKED, newInfo.membershipLevel, "Group not marked as blocked")
+        }
+    }
+
+    @Test
+    fun `block should remove conversation info for a joined group`() {
+        withJoinedGroup { groupId, members ->
+            groupPersistenceManager.block(groupId).get()
+
+            assertNull(groupPersistenceManager.getConversationInfo(groupId).get(), "Conversation info not removed")
         }
     }
 
@@ -651,7 +659,7 @@ class SQLiteGroupPersistenceManagerTest {
             val groupMessageInfo = randomReceivedGroupMessageInfo(sender)
             groupPersistenceManager.addMessage(groupId, groupMessageInfo).get()
 
-            assertTrue(groupPersistenceManager.testMessageExists(groupId, groupMessageInfo.info.id), "Message not inserted")
+            assertTrue(groupPersistenceManager.internalMessageExists(groupId, groupMessageInfo.info.id), "Message not inserted")
         }
     }
 
@@ -661,7 +669,7 @@ class SQLiteGroupPersistenceManagerTest {
             val groupMessageInfo = randomReceivedGroupMessageInfo(null)
             groupPersistenceManager.addMessage(groupId, groupMessageInfo).get()
 
-            assertTrue(groupPersistenceManager.testMessageExists(groupId, groupMessageInfo.info.id), "Message not inserted")
+            assertTrue(groupPersistenceManager.internalMessageExists(groupId, groupMessageInfo.info.id), "Message not inserted")
         }
     }
 
@@ -672,7 +680,7 @@ class SQLiteGroupPersistenceManagerTest {
             val groupMessageInfo = randomReceivedGroupMessageInfo(sender)
             groupPersistenceManager.addMessage(groupId, groupMessageInfo).get()
 
-            val conversationInfo = assertNotNull(groupPersistenceManager.testGetConversationInfo(groupId), "Missing conversation info")
+            val conversationInfo = assertNotNull(groupPersistenceManager.internalGetConversationInfo(groupId), "Missing conversation info")
 
             assertValidConversationInfo(groupMessageInfo, conversationInfo)
         }
@@ -684,7 +692,7 @@ class SQLiteGroupPersistenceManagerTest {
             val groupMessageInfo = randomReceivedGroupMessageInfo(null)
             groupPersistenceManager.addMessage(groupId, groupMessageInfo).get()
 
-            val conversationInfo = assertNotNull(groupPersistenceManager.testGetConversationInfo(groupId), "Missing conversation info")
+            val conversationInfo = assertNotNull(groupPersistenceManager.internalGetConversationInfo(groupId), "Missing conversation info")
 
             assertValidConversationInfo(groupMessageInfo, conversationInfo, 0)
         }
@@ -703,7 +711,7 @@ class SQLiteGroupPersistenceManagerTest {
             groupPersistenceManager.addMessage(groupId, first).get()
             groupPersistenceManager.addMessage(groupId, second).get()
 
-            val messages = groupPersistenceManager.testGetAllMessages(groupId)
+            val messages = groupPersistenceManager.internalGetAllMessages(groupId)
 
             assertThat(messages).apply {
                 `as`("Group messages")
@@ -729,7 +737,7 @@ class SQLiteGroupPersistenceManagerTest {
 
             groupPersistenceManager.deleteMessages(groupId, toRemove).get()
 
-            val messages = groupPersistenceManager.testGetAllMessages(groupId)
+            val messages = groupPersistenceManager.internalGetAllMessages(groupId)
 
             assertThat(messages.map { it.info.id }).apply {
                 `as`("Group messages")
@@ -746,7 +754,7 @@ class SQLiteGroupPersistenceManagerTest {
 
             groupPersistenceManager.deleteMessages(groupId, listOf(randomMessageId(), randomMessageId())).get()
 
-            val messages = groupPersistenceManager.testGetAllMessages(groupId)
+            val messages = groupPersistenceManager.internalGetAllMessages(groupId)
 
             assertThat(messages.map { it.info.id }).apply {
                 `as`("Group messages")
@@ -768,7 +776,7 @@ class SQLiteGroupPersistenceManagerTest {
             groupPersistenceManager.deleteMessages(groupId, toRemove).get()
 
             //should contain the last inserted message
-            val convoInfo = assertNotNull(groupPersistenceManager.testGetConversationInfo(groupId), "Missing group conversation info")
+            val convoInfo = assertNotNull(groupPersistenceManager.internalGetConversationInfo(groupId), "Missing group conversation info")
 
             val lastMessageInfo = info.last()
 
@@ -804,7 +812,7 @@ class SQLiteGroupPersistenceManagerTest {
 
             groupPersistenceManager.deleteAllMessages(groupId).get()
 
-            val messages = groupPersistenceManager.testGetAllMessages(groupId)
+            val messages = groupPersistenceManager.internalGetAllMessages(groupId)
 
             assertThat(messages).apply {
                 `as`("Group messages")
@@ -842,7 +850,7 @@ class SQLiteGroupPersistenceManagerTest {
 
             groupPersistenceManager.markMessageAsDelivered(groupId, id).get()
 
-            val groupMessageInfo = assertNotNull(groupPersistenceManager.testGetMessageInfo(groupId, id), "Missing message")
+            val groupMessageInfo = assertNotNull(groupPersistenceManager.internalGetMessageInfo(groupId, id), "Missing message")
             assertTrue(groupMessageInfo.info.isDelivered, "Not marked as delivered")
             assertTrue(groupMessageInfo.info.receivedTimestamp != 0L, "Received timestamp not updated")
         }
@@ -872,11 +880,11 @@ class SQLiteGroupPersistenceManagerTest {
                 randomMessageText(),
                 currentTimestamp()
             )
-            groupPersistenceManager.testSetConversationInfo(convoInfo)
+            groupPersistenceManager.internalSetConversationInfo(convoInfo)
 
             groupPersistenceManager.markConversationAsRead(groupId).get()
 
-            val got = assertNotNull(groupPersistenceManager.testGetConversationInfo(groupId), "Missing conversation info")
+            val got = assertNotNull(groupPersistenceManager.internalGetConversationInfo(groupId), "Missing conversation info")
 
             assertEquals(0, got.unreadCount, "Unread count not reset")
         }
