@@ -17,6 +17,6 @@ data class ApiContactInfo(
     @JsonProperty("public-key")
     val publicKey: String
 ) {
-    fun toCore(isPending: Boolean, allowedMessageLevel: AllowedMessageLevel): ContactInfo =
-        ContactInfo(id, email, name, allowedMessageLevel, isPending, phoneNumber, publicKey)
+    fun toCore(allowedMessageLevel: AllowedMessageLevel): ContactInfo =
+        ContactInfo(id, email, name, allowedMessageLevel, false, phoneNumber, publicKey)
 }

@@ -149,7 +149,7 @@ class ContactsServiceImpl(
         if (missing.isNotEmpty())
             invalidContacts.addAll(missing)
 
-        val contacts = response.contacts.map { it.toCore(true, AllowedMessageLevel.GROUP_ONLY) }
+        val contacts = response.contacts.map { it.toCore(AllowedMessageLevel.GROUP_ONLY) }
 
         return contactsPersistenceManager.add(contacts) mapUi { newContacts ->
             log.debug("Added new contacts: {}", newContacts.map { it.id.long })

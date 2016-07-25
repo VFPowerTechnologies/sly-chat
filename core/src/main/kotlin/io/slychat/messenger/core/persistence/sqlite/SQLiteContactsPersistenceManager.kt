@@ -335,11 +335,8 @@ ON
         ContactListDiff(addedEmails, removedEmails)
     }
 
-    override fun applyDiff(newContacts: Collection<ContactInfo>, removedContacts: Collection<UserId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withTransaction {
-            newContacts.forEach { addContactNoTransaction(connection, it) }
-            removedContacts.forEach { removeContactNoTransaction(connection, it) }
-        }
+    override fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<RemoteContactUpdate>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        TODO()
     }
 
     override fun findMissing(platformContacts: List<PlatformContact>): Promise<List<PlatformContact>, Exception> = sqlitePersistenceManager.runQuery { connection ->

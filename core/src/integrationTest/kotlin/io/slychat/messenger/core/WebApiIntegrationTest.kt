@@ -669,7 +669,6 @@ class WebApiIntegrationTest {
         val authToken = devClient.createAuthToken(username)
 
         val encryptedContacts = encryptRemoteContactEntries(siteUser.keyVault, listOf(contactUser.user.id))
-        val request = AddContactsRequest(encryptedContacts)
 
         val client = ContactListClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
         client.addContacts(siteUser.getUserCredentials(authToken), request)
@@ -686,7 +685,6 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(userA.user.username)
         val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(userB.user.id))
-        val request = AddContactsRequest(aContacts)
 
         val client = ContactListClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
         val userCredentials = userA.getUserCredentials(authToken)
@@ -732,7 +730,6 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(userA.user.username)
 
-        val request = RemoveContactsRequest(listOf(aContacts[0].hash))
         client.removeContacts(userA.getUserCredentials(authToken), request)
 
         val contacts = devClient.getContactList(userA.user.username)
@@ -755,7 +752,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(userA.user.username)
 
-        val request = updateRequestFromContactInfo(userA.keyVault, listOf(userB.user.id), listOf(userC.user.id))
+        val request = updateRequestFromRemoteContactUpdates(userA.keyVault, listOf(userB.user.id), listOf(userC.user.id))
 
         client.updateContacts(userA.getUserCredentials(authToken), request)
 

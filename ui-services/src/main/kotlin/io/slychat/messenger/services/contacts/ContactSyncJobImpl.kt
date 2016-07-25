@@ -2,10 +2,11 @@ package io.slychat.messenger.services.contacts
 
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import io.slychat.messenger.core.http.api.contacts.*
+import io.slychat.messenger.core.mapToMap
+import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
-import io.slychat.messenger.core.persistence.RemoteContactUpdateType
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Promise
@@ -57,7 +58,7 @@ class ContactSyncJobImpl(
                 } bind { foundContacts ->
                     log.debug("Found local contacts: {}", foundContacts)
 
-                    contactsPersistenceManager.add(foundContacts.contacts.map { it.toCore(false, AllowedMessageLevel.ALL) }) map { Unit }
+                    contactsPersistenceManager.add(foundContacts.contacts.map { it.toCore(AllowedMessageLevel.ALL) }) map { Unit }
                 }
             }
         }
@@ -73,15 +74,28 @@ class ContactSyncJobImpl(
 
         return authTokenManager.bind { userCredentials ->
             contactListClient.getContacts(userCredentials) bind { response ->
-                val emails = decryptRemoteContactEntries(keyVault, response.contacts)
-                contactsPersistenceManager.getDiff(emails) bind { diff ->
-                    log.debug("New contacts: {}", diff.newContacts)
-                    log.debug("Removed contacts: {}", diff.removedContacts)
+                val updates = decryptRemoteContactEntries(keyVault, response.contacts)
 
-                    val request = FetchContactInfoByIdRequest(diff.newContacts.toList())
+                val messageLevelByUserId = updates.mapToMap {
+                    it.userId to it.allowedMessageLevel
+                }
+
+                //XXX need diff for new contacts (ContactInfo), and updateMessageLevel (Pair<UserId, AllowedMessageLevel>, so just reuse RemoteContactUpdate?)
+                val all = updates.mapToSet { it.userId }
+
+                contactsPersistenceManager.exists(all) bind { exists ->
+                    val missing = HashSet(all)
+                    missing.removeAll(exists)
+
+                    log.debug("Already exists: {}", exists)
+                    log.debug("Need to fetch remote info for: {}", missing)
+
+                    val updateExists = updates.filter { it.userId in exists }
+
+                    val request = FetchContactInfoByIdRequest(missing.toList())
                     contactClient.fetchContactInfoById(userCredentials, request) bind { response ->
-                        val newContacts = response.contacts.map { it.toCore(false, AllowedMessageLevel.ALL) }
-                        contactsPersistenceManager.applyDiff(newContacts, diff.removedContacts.toList())
+                        val newContacts = response.contacts.map { it.toCore(messageLevelByUserId[it.id]!!) }
+                        contactsPersistenceManager.applyDiff(newContacts, updateExists)
                     }
                 }
             }
@@ -93,18 +107,15 @@ class ContactSyncJobImpl(
 
         return authTokenManager.bind { userCredentials ->
             contactsPersistenceManager.getRemoteUpdates() bind { updates ->
-                val adds = updates.filter { it.type == RemoteContactUpdateType.ADD }.map { it.userId }
-                val removes = updates.filter { it.type == RemoteContactUpdateType.REMOVE }.map { it.userId }
-
-                if (adds.isEmpty() && removes.isEmpty()) {
-                    log.info("No new contacts")
+                if (updates.isEmpty()) {
+                    log.info("No contact updates")
                     Promise.ofSuccess(Unit)
                 } else {
-                    log.info("Remote update: add={}; remove={}", adds.map { it.long }, removes.map { it.long })
+                    log.info("Remote update: ", updates)
 
                     val keyVault = userLoginData.keyVault
 
-                    val request = updateRequestFromContactInfo(keyVault, adds, removes)
+                    val request = updateRequestFromRemoteContactUpdates(keyVault, updates)
                     contactListClient.updateContacts(userCredentials, request) bind {
                         contactsPersistenceManager.removeRemoteUpdates(updates)
                     }

@@ -120,3 +120,14 @@ fun base64encode(bytes: ByteArray): String {
 inline fun <T, R> Iterable<T>.mapToSet(transform: (T) -> R): Set<R> {
     return mapTo(HashSet<R>(), transform)
 }
+
+inline fun <T, K, V> Iterable<T>.mapToMap(transform: (T) -> Pair<K, V>): Map<K, V> {
+    val m = HashMap<K, V>()
+
+    forEach {
+        val pair = transform(it)
+        m.put(pair.first, pair.second)
+    }
+
+    return m
+}

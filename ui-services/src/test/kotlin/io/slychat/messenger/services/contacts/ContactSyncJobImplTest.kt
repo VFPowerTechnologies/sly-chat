@@ -1,0 +1,112 @@
+package io.slychat.messenger.services.contacts
+
+import com.nhaarman.mockito_kotlin.*
+import io.slychat.messenger.core.SlyAddress
+import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.crypto.generateNewKeyVault
+import io.slychat.messenger.core.http.api.contacts.*
+import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.randomUserId
+import io.slychat.messenger.core.randomUserIds
+import io.slychat.messenger.services.PlatformContacts
+import io.slychat.messenger.services.UserData
+import io.slychat.messenger.services.crypto.MockAuthTokenManager
+import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.thenAnswerSuccess
+import io.slychat.messenger.testutils.thenReturn
+import org.assertj.core.api.Assertions
+import org.junit.ClassRule
+import org.junit.Test
+
+class ContactSyncJobImplTest {
+    companion object {
+        @JvmField
+        @ClassRule
+        val kovenantTestMode = KovenantTestModeRule()
+
+        val keyVault = generateNewKeyVault("test")
+    }
+
+    val contactAsyncClient: ContactAsyncClient = mock()
+    val contactListAsyncClient: ContactListAsyncClient = mock()
+    val contactsPersistenceManager: ContactsPersistenceManager = mock()
+    val userLoginData = UserData(SlyAddress(randomUserId(), 1), keyVault)
+    val accountInfoPersistenceManager: AccountInfoPersistenceManager = mock()
+    val platformContacts: PlatformContacts = mock()
+
+    fun newJob(): ContactSyncJobImpl {
+        whenever(accountInfoPersistenceManager.retrieve()).thenReturn(
+            AccountInfo(userLoginData.userId, "name", "email", "15555555555", 1)
+        )
+
+        whenever(platformContacts.fetchContacts()).thenReturn(emptyList())
+
+        whenever(contactsPersistenceManager.findMissing(any())).thenReturn(listOf())
+        whenever(contactsPersistenceManager.add(any<Collection<ContactInfo>>())).thenReturn(emptySet())
+        whenever(contactsPersistenceManager.getRemoteUpdates()).thenReturn(emptyList())
+        whenever(contactsPersistenceManager.applyDiff(any(), any())).thenReturn(Unit)
+        whenever(contactsPersistenceManager.exists(anySet())).thenAnswerSuccess {
+            val a = it.arguments[0]
+            @Suppress("UNCHECKED_CAST")
+            (a as Set<UserId>)
+        }
+
+        whenever(contactAsyncClient.findLocalContacts(any(), any())).thenReturn(FindLocalContactsResponse(emptyList()))
+        whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenReturn(FetchContactInfoByIdResponse(emptyList()))
+
+        whenever(contactListAsyncClient.getContacts(any())).thenReturn(GetContactsResponse(emptyList()))
+
+        return ContactSyncJobImpl(
+            MockAuthTokenManager(),
+            contactAsyncClient,
+            contactListAsyncClient,
+            contactsPersistenceManager,
+            userLoginData,
+            accountInfoPersistenceManager,
+            platformContacts
+        )
+    }
+
+    @Test
+    fun `a remote sync should fetch any missing contact info`() {
+        val syncJob = newJob()
+
+        val missing = randomUserIds()
+        val remoteEntries = encryptRemoteContactEntries(keyVault, missing.map { RemoteContactUpdate(it, AllowedMessageLevel.ALL) })
+
+        whenever(contactListAsyncClient.getContacts(any())).thenReturn(GetContactsResponse(remoteEntries))
+        whenever(contactsPersistenceManager.exists(missing)).thenReturn(emptySet())
+
+        val description = ContactSyncJobDescription()
+        description.doRemoteSync()
+
+        syncJob.run(description).get()
+
+        verify(contactAsyncClient).fetchContactInfoById(any(), capture {
+            Assertions.assertThat(it.ids).apply {
+                `as`("Missing ids should be looked up")
+                containsOnlyElementsOf(missing)
+            }
+        })
+    }
+
+    @Test
+    fun `a remote sync should add missing contacts with the proper message levels`() {
+        TODO()
+    }
+
+    @Test
+    fun `a remote sync should update existing contacts with the proper message level`() {
+        TODO()
+    }
+
+    @Test
+    fun `a local sync should not issue a remote request if no missing platform contacts are found`() {
+        TODO()
+    }
+
+    @Test
+    fun `a remote sync should not issue a remote request if no contacts need to be added`() {
+        TODO()
+    }
+}

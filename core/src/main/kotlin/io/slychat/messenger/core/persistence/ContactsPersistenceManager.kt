@@ -17,6 +17,8 @@ interface ContactsPersistenceManager {
     fun getAll(): Promise<List<ContactInfo>, Exception>
 
     fun exists(userId: UserId): Promise<Boolean, Exception>
+
+    /** Returns a list of contacts for which we already have data for. */
     fun exists(users: Set<UserId>): Promise<Set<UserId>, Exception>
 
     fun getBlockList(): Promise<Set<UserId>, Exception>
@@ -63,7 +65,7 @@ interface ContactsPersistenceManager {
     /** Diff the current contact list with the given remote one. */
     fun getDiff(ids: Collection<UserId>): Promise<ContactListDiff, Exception>
 
-    fun applyDiff(newContacts: Collection<ContactInfo>, removedContacts: Collection<UserId>): Promise<Unit, Exception>
+    fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<RemoteContactUpdate>): Promise<Unit, Exception>
 
     fun getRemoteUpdates(): Promise<List<RemoteContactUpdate>, Exception>
     fun removeRemoteUpdates(remoteUpdates: Collection<RemoteContactUpdate>): Promise<Unit, Exception>
