@@ -28,6 +28,7 @@ var firstLoad = true;
 
 // Application initialization
 var slychat = new Framework7({
+    material: true,
     cache: false,
     swipeBackPage: false,
     tapHold: true,

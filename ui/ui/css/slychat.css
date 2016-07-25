@@ -26,6 +26,9 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .vertical-centered-content .content-block {
     margin: 5px 0 15px 0;
 }
+.top-navbar {
+    box-shadow: 0 5px 10px #c5c4c4;
+}
 
 /* Form style */
 .list-error-block {
@@ -92,13 +95,15 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 }
 #recentChatList {
     padding-top: 10px;
-    margin: 0 10px;
     height: 100%;
     overflow-x: auto;
     color: #38383a;
 }
 .recent-chat-name {
+    font-size: 16px;
+    font-weight: 600;
     width: 70%;
+    color: #4e4e4e;
 }
 .recent-chat-name span {
     display: block;
@@ -106,15 +111,21 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     overflow: hidden;
 }
 .recent-contact-link {
-    margin: 0 15px 15px 15px;
+    padding: 10px 10px;
+    border-bottom: 1px solid #eeeeee;
     height: 50px;
+    color: #b9b9b9;
+    font-weight: 600;
 }
-.recent-contact-link .left, .recent-contact-link .right {
-    color: #888787;
-    margin-top: -15px;
+.recent-contact-link.new time {
+    color: red;
 }
 .recent-contact-link .left {
+    font-size: 12px;
     width: 70%;
+}
+.recent-contact-link .right {
+    font-size: 16px;
 }
 .recent-contact-link .left span {
     width: 100%;
@@ -132,6 +143,15 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 }
 #contact-list .contact-link {
     margin-bottom: 15px;
+}
+.new-message-badge {
+    width: 25px;
+    height: 25px;
+    background-color: red;
+    color: #fff;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 25px;
 }
 
 /** Chat Page **/
@@ -292,17 +312,17 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 /**
 temp stuff
 **/
-.panel {
-    background: #7a9dbb;
-}
-.panel .list-block .item-title {
-    color: #fafafa;
-}
-.panel .list-block i {
-    color: #fafafa;
-    font-size: 25px;
-    font-weight: 100;
-}
+/*.panel {*/
+    /*background: #7a9dbb;*/
+/*}*/
+/*.panel .list-block .item-title {*/
+    /*color: #fafafa;*/
+/*}*/
+/*.panel .list-block i {*/
+    /*color: #fafafa;*/
+    /*font-size: 25px;*/
+    /*font-weight: 100;*/
+/*}*/
 .new-contact-link p {
     margin: 0;
 }
