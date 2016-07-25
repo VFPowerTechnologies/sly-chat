@@ -84,7 +84,6 @@ slychat.onPageInit('addContact', function (page) {
 // Contact page init function
 slychat.onPageBeforeInit('contacts', function (page) {
     contactController.init();
-    contactController.insertRecentChat();
 });
 
 // Sms Verification page init function
@@ -187,3 +186,14 @@ $$(document).on('click', '.chatLink', function (e) {
     e.stopPropagation();
     navigationController.loadMessageLink($$(this).data('href'));
 });
+
+// TODO Implement left contact menu in chat page for easy switching between contact
+// var mc = new Hammer(document.getElementById('mainView'));
+// mc.on("swipeleft swiperight", function (e) {
+//     if(navigationController.getCurrentPage() == "chat.html") {
+//         if (e.type == "swiperight")
+//             console.log(e.type + " gesture detected");
+//         else if (e.type == "swipeleft")
+//             console.log(e.type + " gesture detected");
+//     }
+// });

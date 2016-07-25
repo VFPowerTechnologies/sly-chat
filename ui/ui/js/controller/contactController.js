@@ -1,7 +1,5 @@
 var ContactController = function () {
     this.conversations = [];
-    this.recentContact = [];
-    this.recentChatNodes = [];
     this.sync = false;
     this.contactSyncNotification = null;
 };
@@ -17,20 +15,16 @@ ContactController.prototype  = {
     },
 
     fetchConversation : function () {
-        if (this.conversations.length <= 0) {
-            messengerService.getConversations().then(function (conversations) {
-                this.storeConversations(conversations);
-            }.bind(this)).catch(function (e) {
-                console.log(e);
-            });
-        }
+        messengerService.getConversations().then(function (conversations) {
+            this.storeConversations(conversations);
+        }.bind(this)).catch(function (e) {
+            console.log(e);
+        });
     },
 
     fetchAndLoadChat : function (contactId) {
         messengerService.getConversations().then(function (conversations) {
-            var forContact = this.orderByName(conversations);
-
-            forContact.forEach(function(conversation){
+            conversations.forEach(function(conversation){
                 this.conversations[conversation.contact.id] = conversation;
             }.bind(this));
 
@@ -45,36 +39,35 @@ ContactController.prototype  = {
     },
 
     storeConversations : function (conversations) {
-        var forContact = this.orderByName(conversations);
-        this.recentContact = this.orderByRecentChat(conversations);
-        var forRecentContact = [];
-
-        this.createRecentChatList();
-
-        forContact.forEach(function(conversation){
+        conversations.forEach(function(conversation){
             this.conversations[conversation.contact.id] = conversation;
         }.bind(this));
 
+        this.createRecentChatList();
         this.createContactList();
-
-        for(var i = 0; i < 4; i++) {
-            if(i in this.recentContact) {
-                forRecentContact.push(this.recentContact[i]);
-            }
-        }
-
-        this.createRecentContactList(forRecentContact);
+        this.createRecentContactList();
 
         navigationController.hideSplashScreen();
     },
 
     createContactList : function () {
-        var frag = $(document.createDocumentFragment());
-        this.conversations.forEach(function (conversation) {
-            frag.append(this.createContactNode(conversation.contact));
-        }.bind(this));
+        var convo = [];
+        this.conversations.forEach(function(conversation) {
+            convo.push(conversation);
+        });
+        convo = this.orderByName(convo);
 
-        $("#contact-list").html(frag);
+        var frag = $(document.createDocumentFragment());
+        if (convo.length > 0) {
+            convo.forEach(function (conversation) {
+                frag.append(this.createContactNode(conversation.contact));
+            }.bind(this));
+
+            $("#contact-list").html(frag);
+        }
+        else {
+            $("#contact-list").html("Add a contact to start using the app");
+        }
     },
 
     createContactNode : function (contact) {
@@ -95,11 +88,15 @@ ContactController.prototype  = {
         return contactBlock;
     },
 
-    createRecentContactList : function (conversations) {
+    createRecentContactList : function () {
         var frag = $(document.createDocumentFragment());
-        conversations.forEach(function (conversation) {
-            frag.append(this.createRecentContactNode(conversation))
-        }.bind(this));
+        var conversations = this.orderByRecentChat(this.conversations);
+
+        for(var i = 0; i < 4; i++) {
+            if(i in conversations) {
+                frag.append(this.createRecentContactNode(conversations[i]))
+            }
+        }
 
         $("#recentContactList").html(frag);
     },
@@ -119,20 +116,33 @@ ContactController.prototype  = {
     },
 
     createRecentChatList : function () {
-        this.recentChatNodes = [];
-        this.recentContact.forEach(function (conversation) {
-            this.recentChatNodes[conversation.contact.id] = this.createRecentChatNode(conversation);
-        }.bind(this));
-
-        this.insertRecentChat();
+        var frag =  $(document.createDocumentFragment());
+        var conversations = this.orderByRecentChat(this.conversations);
+        if(conversations.length > 0) {
+            conversations.forEach(function (conversation) {
+                frag.append(this.createRecentChatNode(conversation));
+            }.bind(this));
+            $("#recentChatList").html(frag);
+        }
+        else {
+            $("#recentChatList").html("<div>No recent chat</div>");
+        }
     },
 
     createRecentChatNode : function (conversation) {
+        var newClass = "";
+        var newBadge = "";
+        if (conversation.status.unreadMessageCount > 0) {
+            newClass = "new";
+            newBadge = '<div class="right new-message-badge">' + conversation.status.unreadMessageCount + '</div>';
+        }
+
         var time = new Date(conversation.status.lastTimestamp).toISOString();
-        var recentDiv = $("<div class='item-link recent-contact-link row'>" +
-            "<div class='col-100 recent-chat-name'><span>" + conversation.contact.name + "</span></div>" +
-            "<div class='left'><span>" + this.formatLastMessage(conversation.status.lastMessage) + "</span></div>" +
+        var recentDiv = $("<div id='recentChat_" + conversation.contact.id + "' class='item-link recent-contact-link row " + newClass + "'>" +
+            "<div class='recent-chat-name'><span>" + conversation.contact.name + "</span></div>" +
             "<div class='right'><span><small class='last-message-time'><time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time></small></span></div>" +
+            "<div class='left'>" + this.formatLastMessage(conversation.status.lastMessage) + "</div>" +
+            newBadge +
             "</div>");
 
         recentDiv.click(function () {
@@ -150,9 +160,19 @@ ContactController.prototype  = {
     updateRecentChatNode : function (contact, messageInfo) {
         var message = messageInfo.messages[messageInfo.messages.length - 1];
 
-        if (contact.id in this.recentChatNodes) {
+        var node = $("#recentChat_" + contact.id);
+
+        if (node.length > 0) {
             var time = new Date(message.receivedTimestamp).toISOString();
-            var node = this.recentChatNodes[contact.id];
+            node.addClass("new");
+            var badge = node.find(".new-message-badge");
+            if(badge.length <= 0) {
+                node.append('<div class="right new-message-badge">1</div>');
+            }
+            else {
+                var newAmount = badge.html();
+                badge.html(parseInt(newAmount) + 1);
+            }
             node.find(".left").html(this.formatLastMessage(message.message));
             node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>")
         }
@@ -161,14 +181,13 @@ ContactController.prototype  = {
                 contact: contact,
                 status: {
                     lastTimestamp: message.receivedTimestamp,
-                    lastMessage: message.message
+                    lastMessage: message.message,
+                    unreadMessageCount: 1
                 }
             };
 
-            this.recentChatNodes[contact.id] = this.createRecentChatNode(conversation);
+            $("#recentChatList").prepend(this.createRecentChatNode(conversation));
         }
-
-        this.insertRecentChat();
     },
 
     formatLastMessage : function (message) {
@@ -335,8 +354,8 @@ ContactController.prototype  = {
         });
     },
 
-    orderByName : function (conversations) {
-        conversations.sort(function(a, b) {
+    orderByName : function (convo) {
+        convo.sort(function(a, b) {
             var emailA = a.contact.email.toLowerCase();
             var emailB = b.contact.email.toLowerCase();
 
@@ -348,7 +367,7 @@ ContactController.prototype  = {
             return 0;
         });
 
-        return conversations;
+        return convo;
     },
 
     orderByRecentChat : function (conversations) {
@@ -360,33 +379,20 @@ ContactController.prototype  = {
         });
 
         actualConversation.sort(function(a, b) {
-            var dateA = parseFormatedTimeString(a.status.lastTimestamp);
-            var dateB = parseFormatedTimeString(b.status.lastTimestamp);
+            var dateA = a.status.lastTimestamp;
+            var dateB = b.status.lastTimestamp;
 
-            if(dateA.getTime() > dateB.getTime())
+            if(dateA > dateB) {
                 return -1;
-            if(dateA.getTime() < dateB.getTime())
+            }
+            if(dateA < dateB) {
                 return 1;
+            }
 
             return 0;
         });
 
         return actualConversation;
-    },
-
-    insertRecentChat : function () {
-        if(this.recentChatNodes.length > 0) {
-            var frag = $(document.createDocumentFragment());
-
-            this.recentChatNodes.forEach(function (element) {
-                frag.append(element);
-            });
-
-            $("#recentChatList").html(frag);
-        }
-        else {
-            $("#recentChatList").html("<div>No recent chat</div>");
-        }
     },
 
     loadChatPage : function (contact, pushCurrenPage) {;
@@ -408,7 +414,7 @@ ContactController.prototype  = {
     },
 
     getContact : function (id) {
-        if (id in this.conversations)
+        if(id in this.conversations)
             return this.conversations[id].contact;
         else
             return false;

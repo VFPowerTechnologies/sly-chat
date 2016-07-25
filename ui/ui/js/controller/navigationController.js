@@ -14,7 +14,6 @@ NavigationController.prototype = {
     },
 
     goTo : function (page) {
-        console.log("goto: " + page);
         if(page == "contacts") {
             historyService.clear().then(function () {
                 this.loadPage("contacts.html", false);

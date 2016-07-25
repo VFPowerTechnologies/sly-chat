@@ -167,7 +167,7 @@ ChatController.prototype = {
 
     updateChatPageNewMessage : function (messages, contactName, contactId) {
         var currentPageContactId = $("#contact-id");
-        if(currentPageContactId.length && currentPageContactId.html() == contactId){
+        if(navigationController.getCurrentPage() == "chat.html" && currentPageContactId.length && currentPageContactId.html() == contactId){
             var messageDiv = $("#chat-content");
 
             if(messageDiv.length){
