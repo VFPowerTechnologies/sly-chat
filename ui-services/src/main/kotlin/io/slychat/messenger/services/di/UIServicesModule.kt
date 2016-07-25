@@ -59,7 +59,7 @@ class UIServicesModule {
     ): UIContactsService = getImplementation(
         UIServiceComponent.CONTACTS,
         { DummyUIContactsService() },
-        { UIContactsServiceImpl(app) }
+        { UIContactsServiceImpl(app.userSessionAvailable) }
     )
 
     @Singleton
@@ -70,7 +70,7 @@ class UIServicesModule {
     ): UIMessengerService = getImplementation(
         UIServiceComponent.MESSENGER,
         { DummyUIMessengerService(contactsService) },
-        { UIMessengerServiceImpl(app) }
+        { UIMessengerServiceImpl(app.userSessionAvailable) }
     )
 
     @Singleton
@@ -89,7 +89,7 @@ class UIServicesModule {
     fun provideNetworkStatusService(app: SlyApplication): UINetworkStatusService = getImplementation(
         UIServiceComponent.NETWORK_STATUS,
         { DummyUINetworkStatusService() },
-        { UINetworkStatusServiceImpl(app) }
+        { UINetworkStatusServiceImpl(app.networkAvailable, app.relayAvailable) }
     )
 
     @Singleton
@@ -140,6 +140,6 @@ class UIServicesModule {
     fun providesUIGroupService(
         app: SlyApplication
     ): UIGroupService {
-        return UIGroupServiceImpl(app)
+        return UIGroupServiceImpl(app.userSessionAvailable)
     }
 }

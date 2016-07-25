@@ -4,34 +4,38 @@ import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.persistence.GroupConversation
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.services.GroupService
-import io.slychat.messenger.services.SlyApplication
+import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.messaging.GroupEvent
 import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
+import rx.Observable
 import rx.Subscription
 import java.util.*
 
 class UIGroupServiceImpl(
-    val app: SlyApplication
+    userSessionAvailable: Observable<UserComponent?>
 ) : UIGroupService {
     private val groupEventListeners = ArrayList<(UIGroupEvent) -> Unit>()
 
     private var groupEventsSub: Subscription? = null
 
     private var groupService: GroupService? = null
+    private var messengerService: MessengerService? = null
 
     init {
-        app.userSessionAvailable.subscribe {
+        userSessionAvailable.subscribe {
             if (it == null) {
                 groupEventsSub?.unsubscribe()
                 groupEventsSub = null
 
                 groupService = null
+                messengerService = null
             }
             else {
                 groupService = it.groupService
+                messengerService = it.messengerService
 
                 groupEventsSub = it.groupService.groupEvents.subscribe { onGroupEvent(it) }
             }
@@ -49,7 +53,7 @@ class UIGroupServiceImpl(
     }
 
     private fun getMessengerServiceOrThrow(): MessengerService {
-        return app.userComponent?.messengerService ?: throw IllegalStateException("No user session")
+        return messengerService ?: throw IllegalStateException("No user session")
     }
 
     private fun getGroupServiceOrThrow(): GroupService {

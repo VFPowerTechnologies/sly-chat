@@ -1,6 +1,5 @@
 package io.slychat.messenger.services.ui.impl
 
-import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.services.messaging.MessengerService
@@ -8,12 +7,13 @@ import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
+import rx.Observable
 import rx.Subscription
 import java.util.*
 
 /** This exists for the lifetime of the application. It wraps MessengerService, which exists for the lifetime of the user session. */
 class UIMessengerServiceImpl(
-    private val app: SlyApplication
+    userSessionAvailable: Observable<UserComponent?>
 ) : UIMessengerService {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -26,7 +26,7 @@ class UIMessengerServiceImpl(
     private var messengerService: MessengerService? = null
 
     init {
-        app.userSessionAvailable.subscribe { onUserSessionAvailabilityChanged(it) }
+        userSessionAvailable.subscribe { onUserSessionAvailabilityChanged(it) }
     }
 
     private fun onUserSessionAvailabilityChanged(userComponent: UserComponent?) {

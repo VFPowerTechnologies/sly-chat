@@ -1,7 +1,7 @@
 package io.slychat.messenger.services.ui.impl
 
+import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
-import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.contacts.ContactEvent
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.di.UserComponent
@@ -14,11 +14,12 @@ import io.slychat.messenger.services.ui.UIContactsService
 import io.slychat.messenger.services.ui.UINewContactResult
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
+import rx.Observable
 import rx.Subscription
 import java.util.*
 
 class UIContactsServiceImpl(
-    private val app: SlyApplication
+    userSessionAvailable: Observable<UserComponent?>
 ) : UIContactsService {
 
     private var contactEventSub: Subscription? = null
@@ -26,18 +27,24 @@ class UIContactsServiceImpl(
 
     private var isContactSyncActive = false
 
+    private var accountInfoPersistenceManager: AccountInfoPersistenceManager? = null
     private var contactsService: ContactsService? = null
+    private var contactsPersistenceManager: ContactsPersistenceManager? = null
 
     init {
-        app.userSessionAvailable.subscribe {
+        userSessionAvailable.subscribe {
             if (it == null) {
                 contactEventSub?.unsubscribe()
                 contactEventSub = null
 
                 contactsService = null
+                contactsPersistenceManager = null
+                accountInfoPersistenceManager = null
             }
             else {
                 contactsService = it.contactsService
+                contactsPersistenceManager = it.contactsPersistenceManager
+                accountInfoPersistenceManager = it.accountInfoPersistenceManager
 
                 contactEventSub = it.contactsService.contactEvents.subscribe { onContactEvent(it) }
             }
@@ -71,8 +78,8 @@ class UIContactsServiceImpl(
             contactEventListeners.forEach { it(ev) }
     }
 
-    private fun getUserComponentOrThrow(): UserComponent {
-        return app.userComponent ?: throw IllegalStateException("Not logged in")
+    private fun getAccountInfoPersistenceManagerOrThrow(): AccountInfoPersistenceManager {
+        return accountInfoPersistenceManager ?: error("Not logged in")
     }
 
     override fun addContactEventListener(listener: (UIContactEvent) -> Unit) {
@@ -83,7 +90,7 @@ class UIContactsServiceImpl(
     }
 
     private fun getContactsPersistenceManagerOrThrow(): ContactsPersistenceManager =
-        app.userComponent?.contactsPersistenceManager ?: error("No UserComponent available")
+        contactsPersistenceManager ?: error("Not logged in")
 
     override fun updateContact(newContactDetails: UIContactDetails): Promise<UIContactDetails, Exception> {
         val contactsService = getContactsServiceOrThrow()
@@ -125,10 +132,10 @@ class UIContactsServiceImpl(
                 return Promise.ofSuccess(UINewContactResult(false, "Not a valid phone number", null))
         }
 
-        val userComponent = getUserComponentOrThrow()
+        val accountInfoPersistenceManager = getAccountInfoPersistenceManagerOrThrow()
 
         val queryPhoneNumber = if (phoneNumber != null) {
-            val accountInfo = userComponent.accountInfoPersistenceManager.retrieveSync()!!
+            val accountInfo = accountInfoPersistenceManager.retrieveSync()!!
             val defaultRegionCode = getAccountRegionCode(accountInfo)
             val p = parsePhoneNumber(phoneNumber, defaultRegionCode)
             if (p != null) formatPhoneNumber(p) else null
