@@ -1,8 +1,8 @@
 package io.slychat.messenger.services.ui.impl
 
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.services.messaging.MessengerService
-import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
@@ -48,12 +48,12 @@ class UIMessengerServiceImpl(
     /** First we add to the log, then we display it to the user. */
     private fun onNewMessages(messageBundle: MessageBundle) {
         val messages = messageBundle.messages.map { it.toUI() }
-        notifyNewMessageListeners(UIMessageInfo(messageBundle.userId, messages))
+        notifyNewMessageListeners(UIMessageInfo(messageBundle.userId, messageBundle.groupId, messages))
     }
 
     private fun onMessageStatusUpdate(messageBundle: MessageBundle) {
         val messages = messageBundle.messages.map { it.toUI() }
-        notifyMessageStatusUpdateListeners(UIMessageInfo(messageBundle.userId, messages))
+        notifyMessageStatusUpdateListeners(UIMessageInfo(messageBundle.userId, messageBundle.groupId, messages))
     }
 
     /* Interface methods. */
