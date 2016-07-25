@@ -35,10 +35,14 @@ interface ContactsPersistenceManager {
     fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>
 
     /**
-     * Adds a new contact and conversation for a contact. Returns true if contact was not already present.
+     * Adds a new contact with the given message level.
+     *
+     * If the contact was not previously present, then true is returned.
      *
      * If a contact was previously present but had a lower message level, then true is returned as well as
      * upgrading the message level.
+     *
+     * If the given message level is ALL, then conversation log and info are created for the user.
      */
     fun add(contactInfo: ContactInfo): Promise<Boolean, Exception>
 
