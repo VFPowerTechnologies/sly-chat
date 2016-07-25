@@ -20,14 +20,20 @@ class UIGroupServiceImpl(
 
     private var groupEventsSub: Subscription? = null
 
+    private var groupService: GroupService? = null
+
     init {
-        app.userSessionAvailable.subscribe { isAvailable ->
-            if (!isAvailable) {
+        app.userSessionAvailable.subscribe {
+            if (it == null) {
                 groupEventsSub?.unsubscribe()
                 groupEventsSub = null
+
+                groupService = null
             }
             else {
-                groupEventsSub = getGroupServiceManagerOrThrow().groupEvents.subscribe { onGroupEvent(it) }
+                groupService = it.groupService
+
+                groupEventsSub = it.groupService.groupEvents.subscribe { onGroupEvent(it) }
             }
         }
     }
@@ -46,8 +52,8 @@ class UIGroupServiceImpl(
         return app.userComponent?.messengerService ?: throw IllegalStateException("No user session")
     }
 
-    private fun getGroupServiceManagerOrThrow(): GroupService {
-        return app.userComponent?.groupService ?: throw IllegalStateException("No user session")
+    private fun getGroupServiceOrThrow(): GroupService {
+        return groupService ?: throw IllegalStateException("No user session")
     }
 
     override fun addGroupEventListener(listener: (UIGroupEvent) -> Unit) {
@@ -55,7 +61,7 @@ class UIGroupServiceImpl(
     }
 
     override fun getGroups(): Promise<List<UIGroupInfo>, Exception> {
-        return getGroupServiceManagerOrThrow().getGroups() map {
+        return getGroupServiceOrThrow().getGroups() map {
             it.map { UIGroupInfo(it.id, it.name) }
         }
     }
@@ -68,13 +74,13 @@ class UIGroupServiceImpl(
     }
 
     override fun getGroupConversations(): Promise<List<UIGroupConversation>, Exception> {
-        return getGroupServiceManagerOrThrow().getGroupConversations() map {
+        return getGroupServiceOrThrow().getGroupConversations() map {
             it.map { it.toUi() }
         }
     }
 
     override fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception> {
-        return getGroupServiceManagerOrThrow().markConversationAsRead(groupId)
+        return getGroupServiceOrThrow().markConversationAsRead(groupId)
     }
 
     override fun inviteUsers(groupId: GroupId, contacts: List<UIContactDetails>): Promise<Unit, Exception> {
@@ -93,14 +99,14 @@ class UIGroupServiceImpl(
     }
 
     override fun block(groupId: GroupId): Promise<Unit, Exception> {
-        return getGroupServiceManagerOrThrow().block(groupId)
+        return getGroupServiceOrThrow().block(groupId)
     }
 
     override fun unblock(groupId: GroupId): Promise<Unit, Exception> {
-        return getGroupServiceManagerOrThrow().unblock(groupId)
+        return getGroupServiceOrThrow().unblock(groupId)
     }
 
     override fun getBlockList(): Promise<Set<GroupId>, Exception> {
-        return getGroupServiceManagerOrThrow().getBlockList()
+        return getGroupServiceOrThrow().getBlockList()
     }
 }

@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.services.SlyApplication
+import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.*
@@ -22,15 +23,20 @@ class UIMessengerServiceImpl(
     private var newMessageSub: Subscription? = null
     private var messageStatusUpdateSub: Subscription? = null
 
+    private var messengerService: MessengerService? = null
+
     init {
         app.userSessionAvailable.subscribe { onUserSessionAvailabilityChanged(it) }
     }
 
-    private fun onUserSessionAvailabilityChanged(isAvailable: Boolean) {
-        if (isAvailable) {
-            val messengerService = getMessengerServiceOrThrow()
+    private fun onUserSessionAvailabilityChanged(userComponent: UserComponent?) {
+        if (userComponent != null) {
+            val messengerService = userComponent.messengerService
+
             newMessageSub = messengerService.newMessages.subscribe { onNewMessages(it) }
             messageStatusUpdateSub = messengerService.messageUpdates.subscribe { onMessageStatusUpdate(it) }
+
+            this.messengerService = userComponent.messengerService
         }
         else {
             newMessageSub?.unsubscribe()
@@ -38,11 +44,13 @@ class UIMessengerServiceImpl(
 
             messageStatusUpdateSub?.unsubscribe()
             messageStatusUpdateSub = null
+
+            messengerService = null
         }
     }
 
     private fun getMessengerServiceOrThrow(): MessengerService {
-        return app.userComponent?.messengerService ?: error("No user session has been established")
+        return messengerService ?: error("No user session has been established")
     }
 
     /** First we add to the log, then we display it to the user. */

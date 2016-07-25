@@ -181,7 +181,7 @@ class AndroidApp : Application() {
         registerReceiver(networkReceiver, filter)
 
         app.userSessionAvailable.subscribe {
-            if (it == true)
+            if (it != null)
                 onUserSessionCreated()
             else
                 onUserSessionDestroyed()

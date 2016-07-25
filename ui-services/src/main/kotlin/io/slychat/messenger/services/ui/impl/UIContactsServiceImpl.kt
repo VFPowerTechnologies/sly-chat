@@ -1,10 +1,13 @@
 package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
-import io.slychat.messenger.services.*
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.contacts.ContactEvent
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.formatPhoneNumber
+import io.slychat.messenger.services.getAccountRegionCode
+import io.slychat.messenger.services.parsePhoneNumber
 import io.slychat.messenger.services.ui.UIContactDetails
 import io.slychat.messenger.services.ui.UIContactEvent
 import io.slychat.messenger.services.ui.UIContactsService
@@ -23,20 +26,26 @@ class UIContactsServiceImpl(
 
     private var isContactSyncActive = false
 
+    private var contactsService: ContactsService? = null
+
     init {
-        app.userSessionAvailable.subscribe { isAvailable ->
-            if (!isAvailable) {
+        app.userSessionAvailable.subscribe {
+            if (it == null) {
                 contactEventSub?.unsubscribe()
                 contactEventSub = null
+
+                contactsService = null
             }
             else {
-                contactEventSub = getContactsServiceOrThrow().contactEvents.subscribe { onContactEvent(it) }
+                contactsService = it.contactsService
+
+                contactEventSub = it.contactsService.contactEvents.subscribe { onContactEvent(it) }
             }
         }
     }
 
     private fun getContactsServiceOrThrow(): ContactsService {
-        return app.userComponent?.contactsService ?: throw IllegalStateException("Not logged in")
+        return contactsService ?: throw IllegalStateException("Not logged in")
     }
 
     private fun onContactEvent(event: ContactEvent) {
