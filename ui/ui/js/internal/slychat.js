@@ -24,22 +24,43 @@ window.contactController = new ContactController();
 window.chatController = new ChatController();
 window.connectionController = new ConnectionController();
 
+var isAndroid = Framework7.prototype.device.android === true;
+var isIos = Framework7.prototype.device.ios === true;
+
+Template7.global = {
+    android: isAndroid,
+    ios: isIos
+};
+
 var firstLoad = true;
 
 // Application initialization
 var slychat = new Framework7({
-    material: true,
+    material: isAndroid,
     cache: false,
     swipeBackPage: false,
     tapHold: true,
     tapHoldDelay: 500,
     swipePanelOnlyClose: true,
     swipePanelNoFollow: true,
-    modalTitle: 'Sly'
+    modalTitle: 'Sly',
+    template7Pages: true
 });
+
+if(isAndroid)
+    $("body").addClass("theme-deeporange");
+else
+    $("body").addClass("theme-orange");
 
 var $$ = Dom7;
 $.fn.intlTelInput.loadUtils("js/external-lib/utils.js");
+
+if (isAndroid) {
+    // Change class
+    $$('.view.navbar-through').removeClass('navbar-through').addClass('navbar-fixed');
+    // And move Navbar into Page
+    $$('#mainView .navbar').prependTo('#mainView .page');
+}
 
 // Add view
 var mainView = slychat.addView('.view-main', {

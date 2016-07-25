@@ -1,5 +1,19 @@
+{{#unless @global.android}}
+<!-- Top Navbar -->
+<div class="navbar top-navbar">
+    <div class="navbar-inner">
+        <div class="left"><img style="height: 40px; width: 40px; margin-right: 10px;" src="img/sly_logo.png"> Sly Messenger </div>
+        <div class="right">
+            <a href="#" class="link icon-only open-panel"> <i class="icon icon-bars"></i></a>
+        </div>
+    </div>
+</div>
+{{/unless}}
+
 <div class="pages">
     <div data-page="contacts" class="page">
+
+        {{#if @global.android}}
         <!-- Top Navbar -->
         <div class="navbar top-navbar">
             <div class="navbar-inner">
@@ -9,11 +23,20 @@
                 </div>
             </div>
         </div>
+        {{/if}}
+
         <div class="page-content row">
             <div id='recentChatList' class="col-100 contact-list">
             </div>
         </div>
 
+        {{#if @global.android}}
         <a href="#" id="openContactPopupBtn" data-popup=".popup-contact" class="floating-button open-popup"><i class="fa fa-users fa-2x"></i></a>
+        {{/if}}
+        {{#unless @global.android}}
+        <div class="toolbar">
+            <div class="toolbar-inner"><a href="#" id="openContactPopupBtn" data-popup=".popup-contact" class="link open-popup">Contact</a></div>
+        </div>
+        {{/unless}}
     </div>
 </div>

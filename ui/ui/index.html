@@ -6,13 +6,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <title>Sly Messenger</title>
-    <link rel="stylesheet" href="css/framework7.material.min.css">
-    <link rel="stylesheet" href="css/framework7.material.colors.min.css">
     <link rel="stylesheet" href="css/font-awesome.min.css">
-    <link rel="stylesheet" href="css/slychat.css">
 
 </head>
-<body class="theme-deeporange">
+<body>
 <div class="statusbar-overlay"></div>
 <div class="panel-overlay"></div>
 <div class="panel panel-right panel-reveal">
@@ -46,7 +43,11 @@
     </div>
 </div>
 <div class="views">
-    <div id="mainView" class="view view-main navbar-fixed">
+    <div id="mainView" class="view view-main navbar-through">
+        <div class="navbar">
+            <div class="navbar-inner">
+            </div>
+        </div>
         <div class="pages toolbar-through">
             <div data-page="index" class="page">
             </div>
@@ -85,6 +86,25 @@
 </div>
 
 <script type="text/javascript" src="js/external-lib/framework7.js"></script>
+<script>
+    (function () {
+        if (Framework7.prototype.device.android) {
+            Dom7('head').append(
+                    '<link rel="stylesheet" href="css/framework7.material.min.css">' +
+                    '<link rel="stylesheet" href="css/framework7.material.colors.min.css">' +
+                    '<link rel="stylesheet" href="css/slychat.material.css">'
+            );
+        }
+        else {
+            Dom7('head').append(
+                    '<link rel="stylesheet" href="css/framework7.ios.min.css">' +
+                    '<link rel="stylesheet" href="css/framework7.ios.colors.min.css">' +
+                    '<link rel="stylesheet" href="css/slychat.ios.css">'
+            );
+        }
+    })();
+</script>
+
 <script type="text/javascript" src="js/external-lib/jquery-2.2.0.min.js"></script>
 <script type="text/javascript" src="js/external-lib/intlTelInput.js"></script>
 <script type="text/javascript" src="js/external-lib/jquery.timeago.js"></script>

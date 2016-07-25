@@ -1,5 +1,17 @@
+{{#unless @global.android}}
+<div class="navbar">
+    <div class="navbar-inner">
+        <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
+        <div class="right">
+        </div>
+    </div>
+</div>
+{{/unless}}
+
 <div class="pages">
     <div data-page="addContact" class="page page-on-center">
+
+        {{#if @global.android}}
         <div class="navbar">
             <div class="navbar-inner">
                 <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
@@ -7,6 +19,8 @@
                 </div>
             </div>
         </div>
+        {{/if}}
+
         <div class="page-content">
             <div>
                 <form id="addContactForm">
