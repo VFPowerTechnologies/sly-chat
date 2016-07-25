@@ -5,6 +5,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUserId
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
@@ -60,12 +61,17 @@ class SQLiteContactsPersistenceManagerTest {
             contactsPersistenceManager.add(contact).get()
     }
 
-    fun setConversationInfo(userId: UserId, unreadCount: Int, lastMessage: String?) {
-        persistenceManager.runQuery { connection ->
-            connection.prepare("UPDATE conversation_info SET unread_count=?, last_message=? WHERE contact_id=?").use { stmt ->
+    //XXX this is nasty, since it crosses the contacts/messenger border
+    fun setConversationInfo(userId: UserId, unreadCount: Int, lastMessage: String?, lastTimestamp: Long?) {
+        persistenceManager.syncRunQuery { connection ->
+            connection.withPrepared("UPDATE conversation_info SET unread_count=?, last_message=?, last_timestamp=? WHERE contact_id=?") { stmt ->
                 stmt.bind(1, unreadCount)
                 stmt.bind(2, lastMessage)
-                stmt.bind(3, userId.long)
+                if (lastTimestamp != null)
+                    stmt.bind(3, lastTimestamp)
+                else
+                    stmt.bindNull(3)
+                stmt.bind(4, userId)
                 stmt.step()
             }
         }
@@ -139,6 +145,34 @@ class SQLiteContactsPersistenceManagerTest {
         val newContact = contact.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
 
         testContactAdd(newContact, true)
+    }
+
+    @Test
+    fun `add should create a conversation info row for a new contact if the message level is ALL`() {
+        val contact = insertDummyContact(AllowedMessageLevel.ALL)
+
+        contactsPersistenceManager.add(contact).get()
+
+        assertNotNull(contactsPersistenceManager.getConversationInfo(contact.id).get(), "Conversation info not created")
+    }
+
+    @Test
+    fun `add should not create a conversation info row for a new contact if the message level is GROUP_ONLY`() {
+        val contact = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
+
+        contactsPersistenceManager.add(contact).get()
+
+        assertNull(contactsPersistenceManager.getConversationInfo(contact.id).get(), "Conversation info was created")
+    }
+
+    @Test
+    fun `add should create a conversation info row for an existing contact if the new message level is ALL`() {
+        val contact = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
+        val newContact = contact.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
+
+        contactsPersistenceManager.add(newContact).get()
+
+        assertNotNull(contactsPersistenceManager.getConversationInfo(newContact.id).get(), "Conversation info not created")
     }
 
     fun testAddContactMulti(existingContacts: Collection<ContactInfo>, newContacts: Collection<ContactInfo>) {
@@ -269,17 +303,12 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `remove should reset the conversation info for an existing user`() {
+    fun `remove should remove the conversation info for an existing user`() {
         val contact = insertDummyContact(AllowedMessageLevel.ALL)
-
-        contactsPersistenceManager.setConversationInfo(contact.id, ConversationInfo(contact.id, 1, "last message", currentTimestamp()))
 
         contactsPersistenceManager.remove(contact.id).get()
 
-        val convoInfo = assertNotNull(contactsPersistenceManager.getConversationInfo(contact.id).get(), "Missing conversation info")
-        val initialConvoInfo = ConversationInfo(contact.id, 0, null, null)
-
-        assertEquals(initialConvoInfo, convoInfo, "Conversation info not reset")
+        assertNull(contactsPersistenceManager.getConversationInfo(contact.id).get(), "Conversation info not removed")
     }
 
     @Test
@@ -295,7 +324,7 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `getAllConversations should return all available conversations`() {
+    fun `getAllConversations should return conversations for ALL users`() {
         loadContactList()
 
         val got = contactsPersistenceManager.getAllConversations().get()
@@ -303,11 +332,33 @@ class SQLiteContactsPersistenceManagerTest {
         assertEquals(3, got.size)
     }
 
+    fun testNoConversations() {
+        val got = contactsPersistenceManager.getAllConversations().get()
+        assertThat(got).apply {
+            `as`("Conversations")
+            isEmpty()
+        }
+    }
+
+    @Test
+    fun `getAllConversations should ignore GROUP_ONLY users`() {
+        insertDummyContact(AllowedMessageLevel.GROUP_ONLY).id
+
+        testNoConversations()
+    }
+
+    @Test
+    fun `getAllConversations should ignore BLOCKED users`() {
+        insertDummyContact(AllowedMessageLevel.BLOCKED).id
+
+        testNoConversations()
+    }
+
     @Test
     fun `getAllConversations should return a last message field if messages are available`() {
         loadContactList()
 
-        setConversationInfo(contactId, 2, testMessage)
+        setConversationInfo(contactId, 2, testMessage, currentTimestamp())
 
         val convos = contactsPersistenceManager.getAllConversations().get()
 
@@ -329,31 +380,29 @@ class SQLiteContactsPersistenceManagerTest {
     fun `getConversation should include unread message counts in a conversation`() {
         loadContactList()
 
-        val before = contactsPersistenceManager.getConversationInfo(contactA.id).get()
+        val before = assertNotNull(contactsPersistenceManager.getConversationInfo(contactA.id).get(), "Missing conversation info")
         assertEquals(0, before.unreadMessageCount)
 
-        setConversationInfo(contactId, 1, testMessage)
+        setConversationInfo(contactId, 1, testMessage, currentTimestamp())
 
-        val after = contactsPersistenceManager.getConversationInfo(contactA.id).get()
+        val after = assertNotNull(contactsPersistenceManager.getConversationInfo(contactA.id).get(), "Missing conversation info")
         assertEquals(1, after.unreadMessageCount)
     }
 
     @Test
-    fun `getConversation should throw InvalidConversationException if the given conversation doesn't exist`() {
-        assertFailsWith(InvalidConversationException::class) {
-            contactsPersistenceManager.getConversationInfo(contactA.id).get()
-        }
+    fun `getConversation should return null if the given conversation doesn't exist`() {
+        assertNull(contactsPersistenceManager.getConversationInfo(contactA.id).get())
     }
 
     @Test
     fun `markConversationAsRead should mark all unread messages as read`() {
         loadContactList()
 
-        setConversationInfo(contactId, 2, testMessage)
+        setConversationInfo(contactId, 2, testMessage, currentTimestamp())
 
         contactsPersistenceManager.markConversationAsRead(contactA.id).get()
 
-        val got = contactsPersistenceManager.getConversationInfo(contactA.id).get()
+        val got = assertNotNull(contactsPersistenceManager.getConversationInfo(contactA.id).get(), "Missing conversation info")
         assertEquals(0, got.unreadMessageCount)
     }
 
@@ -562,6 +611,15 @@ class SQLiteContactsPersistenceManagerTest {
         contactsPersistenceManager.block(contact.id).get()
 
         assertFalse(doesConvTableExist(contact.id), "Conversation table not removed")
+    }
+
+    @Test
+    fun `block should remove the conversation info for an existing user`() {
+        val contact = insertDummyContact(AllowedMessageLevel.ALL)
+
+        contactsPersistenceManager.block(contact.id).get()
+
+        assertNull(contactsPersistenceManager.getConversationInfo(contact.id).get(), "Conversation info not removed")
     }
 
     @Test

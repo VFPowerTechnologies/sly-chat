@@ -1,7 +1,6 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
-import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.core.UserId
@@ -107,8 +106,10 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
     override fun block(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val exists = updateMessageLevel(connection, userId, AllowedMessageLevel.BLOCKED)
-        if (exists)
+        if (exists) {
             ConversationTable.delete(connection, userId)
+            deleteConversationInfo(connection, userId)
+        }
     }
 
     override fun unblock(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -129,7 +130,7 @@ ON
     contacts.id=conversation_info.contact_id
         """
 
-        connection.prepare(sql).use { stmt ->
+        connection.withPrepared(sql) { stmt ->
             stmt.map { stmt ->
                 val contact = contactInfoFromRow(stmt)
                 val lastTimestamp = stmt.columnNullableLong(8)
@@ -139,30 +140,23 @@ ON
         }
     }
 
-    private fun queryConversationInfo(connection: SQLiteConnection, userId: UserId): ConversationInfo {
+    private fun queryConversationInfo(connection: SQLiteConnection, userId: UserId): ConversationInfo? {
         return connection.prepare("SELECT unread_count, last_message, last_timestamp FROM conversation_info WHERE contact_id=?").use { stmt ->
             stmt.bind(1, userId.long)
-            if (!stmt.step())
-                throw InvalidConversationException(userId)
-
-            val unreadCount = stmt.columnInt(0)
-            val lastMessage = stmt.columnString(1)
-            val lastTimestamp = if (!stmt.columnNull(2)) stmt.columnLong(2) else null
-            ConversationInfo(userId, unreadCount, lastMessage, lastTimestamp)
+            if (stmt.step()) {
+                val unreadCount = stmt.columnInt(0)
+                val lastMessage = stmt.columnString(1)
+                val lastTimestamp = if (!stmt.columnNull(2)) stmt.columnLong(2) else null
+                ConversationInfo(userId, unreadCount, lastMessage, lastTimestamp)
+            }
+            else
+                null
         }
     }
 
 
-    override fun getConversationInfo(userId: UserId): Promise<ConversationInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        try {
-            queryConversationInfo(connection, userId)
-        }
-        catch (e: SQLiteException) {
-            if (isInvalidTableException(e))
-                throw InvalidConversationException(userId)
-            else
-                throw e
-        }
+    override fun getConversationInfo(userId: UserId): Promise<ConversationInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        queryConversationInfo(connection, userId)
     }
 
     override fun markConversationAsRead(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -170,6 +164,7 @@ ON
             stmt.bind(1, userId.long)
             stmt.step()
         }
+
         if (connection.changes <= 0)
             throw InvalidConversationException(userId)
 
@@ -213,14 +208,21 @@ ON
         if (wasRemoved) {
             ConversationTable.delete(connection, userId)
 
-            resetConversationInfo(connection, userId)
+            deleteConversationInfo(connection, userId)
         }
 
         return wasRemoved
     }
 
-    private fun resetConversationInfo(connection: SQLiteConnection, userId: UserId) {
-        connection.withPrepared("INSERT OR REPLACE INTO conversation_info (contact_id, unread_count, last_message) VALUES (?, 0, NULL)") { stmt ->
+    private fun deleteConversationInfo(connection: SQLiteConnection, userId: UserId) {
+        connection.withPrepared("DELETE FROM conversation_info WHERE contact_id=?") { stmt ->
+            stmt.bind(1, userId)
+            stmt.step()
+        }
+    }
+
+    private fun insertConversationInfo(connection: SQLiteConnection, userId: UserId) {
+        connection.withPrepared("INSERT INTO conversation_info (contact_id, unread_count, last_message) VALUES (?, 0, NULL)") { stmt ->
             stmt.bind(1, userId)
             stmt.step()
         }
@@ -235,17 +237,19 @@ ON
                 stmt.step()
             }
 
-            resetConversationInfo(connection, contactInfo.id)
-
-            if (contactInfo.allowedMessageLevel == AllowedMessageLevel.ALL)
+            if (contactInfo.allowedMessageLevel == AllowedMessageLevel.ALL) {
                 ConversationTable.create(connection, contactInfo.id)
+                insertConversationInfo(connection, contactInfo.id)
+            }
 
             true
         }
         else {
             return if (currentInfo.allowedMessageLevel != contactInfo.allowedMessageLevel) {
-                if (contactInfo.allowedMessageLevel == AllowedMessageLevel.ALL)
+                if (contactInfo.allowedMessageLevel == AllowedMessageLevel.ALL) {
                     ConversationTable.create(connection, contactInfo.id)
+                    insertConversationInfo(connection, contactInfo.id)
+                }
 
                 updateMessageLevel(connection, contactInfo.id, contactInfo.allowedMessageLevel)
             }
@@ -296,7 +300,7 @@ ON
         }
     }
 
-    override fun remove(userId: UserId): Promise<Boolean, Exception>  = sqlitePersistenceManager.runQuery { connection ->
+    override fun remove(userId: UserId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             val wasRemoved = removeContactNoTransaction(connection, userId)
             if (wasRemoved) {
@@ -419,20 +423,5 @@ ON
         }
 
         return connection.changes > 0
-    }
-
-    /* Use only within tests */
-    //XXX this is nasty, since it crosses the contacts/messenger border
-    internal fun setConversationInfo(userId: UserId, conversationInfo: ConversationInfo) = sqlitePersistenceManager.syncRunQuery {
-        it.withPrepared("UPDATE conversation_info SET unread_count=?, last_message=?, last_timestamp=? WHERE contact_id=?") { stmt ->
-            stmt.bind(1, conversationInfo.unreadMessageCount)
-            stmt.bind(2, conversationInfo.lastMessage)
-            if (conversationInfo.lastTimestamp != null)
-                stmt.bind(3, conversationInfo.lastTimestamp)
-            else
-                stmt.bindNull(3)
-            stmt.bind(4, userId)
-            stmt.step()
-        }
     }
 }
