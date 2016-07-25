@@ -65,7 +65,6 @@ interface ContactsPersistenceManager {
 
     fun applyDiff(newContacts: Collection<ContactInfo>, removedContacts: Collection<UserId>): Promise<Unit, Exception>
 
-    fun addRemoteUpdate(remoteUpdates: Collection<RemoteContactUpdate>): Promise<Unit, Exception>
     fun getRemoteUpdates(): Promise<List<RemoteContactUpdate>, Exception>
     fun removeRemoteUpdates(remoteUpdates: Collection<RemoteContactUpdate>): Promise<Unit, Exception>
 }

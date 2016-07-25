@@ -109,6 +109,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         if (exists) {
             ConversationTable.delete(connection, userId)
             deleteConversationInfo(connection, userId)
+            addRemoteUpdateNoTransaction(connection, listOf(RemoteContactUpdate(userId, AllowedMessageLevel.BLOCKED)))
         }
     }
 
@@ -264,7 +265,7 @@ ON
         connection.withTransaction {
             val added = addContactNoTransaction(connection, contactInfo)
             if (added) {
-                val remoteUpdates = listOf(RemoteContactUpdate(contactInfo.id, RemoteContactUpdateType.ADD))
+                val remoteUpdates = listOf(RemoteContactUpdate(contactInfo.id, contactInfo.allowedMessageLevel))
                 addRemoteUpdateNoTransaction(connection, remoteUpdates)
             }
 
@@ -282,7 +283,7 @@ ON
             }
 
             val remoteUpdates = newContacts
-                .map { RemoteContactUpdate(it.id, RemoteContactUpdateType.ADD) }
+                .map { RemoteContactUpdate(it.id, it.allowedMessageLevel) }
             addRemoteUpdateNoTransaction(connection, remoteUpdates)
         }
 
@@ -306,7 +307,7 @@ ON
         connection.withTransaction {
             val wasRemoved = removeContactNoTransaction(connection, userId)
             if (wasRemoved) {
-                val remoteUpdates = listOf(RemoteContactUpdate(userId, RemoteContactUpdateType.REMOVE))
+                val remoteUpdates = listOf(RemoteContactUpdate(userId, AllowedMessageLevel.GROUP_ONLY))
                 addRemoteUpdateNoTransaction(connection, remoteUpdates)
             }
 
@@ -383,23 +384,17 @@ ON
     }
 
     private fun addRemoteUpdateNoTransaction(connection: SQLiteConnection, remoteUpdates: Collection<RemoteContactUpdate>) {
-        connection.batchInsert("INSERT OR REPLACE INTO remote_contact_updates (contact_id, type) VALUES (?, ?)", remoteUpdates) { stmt, item ->
+        connection.batchInsert("INSERT OR REPLACE INTO remote_contact_updates (contact_id, allowed_message_level) VALUES (?, ?)", remoteUpdates) { stmt, item ->
             stmt.bind(1, item.userId.long)
-            stmt.bind(2, item.type.toString())
-        }
-    }
-
-    override fun addRemoteUpdate(remoteUpdates: Collection<RemoteContactUpdate>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withTransaction {
-            addRemoteUpdateNoTransaction(connection, remoteUpdates)
+            stmt.bind(2, allowedMessageLevelToInt(item.allowedMessageLevel))
         }
     }
 
     override fun getRemoteUpdates(): Promise<List<RemoteContactUpdate>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withPrepared("SELECT contact_id, type FROM remote_contact_updates") { stmt ->
+        connection.withPrepared("SELECT contact_id, allowed_message_level FROM remote_contact_updates") { stmt ->
             stmt.map {
                 val userId = UserId(stmt.columnLong(0))
-                val type = RemoteContactUpdateType.valueOf(stmt.columnString(1))
+                val type = intToAllowedMessageLevel(stmt.columnInt(1))
                 RemoteContactUpdate(userId, type)
             }
         }
