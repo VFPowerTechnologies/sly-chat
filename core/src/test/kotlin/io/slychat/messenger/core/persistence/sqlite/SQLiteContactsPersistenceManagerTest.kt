@@ -370,10 +370,24 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `getConversation should return a conversation if it exists`() {
-        loadContactList()
+    fun `getConversation should return a conversation for an ALL contact`() {
+        val id = insertDummyContact(AllowedMessageLevel.ALL).id
 
-        contactsPersistenceManager.getConversationInfo(contactA.id).get()
+        assertNotNull(contactsPersistenceManager.getConversationInfo(id).get(), "Missing conversation info")
+    }
+
+    @Test
+    fun `getConversation should return nothing for a GROUP_ONLY contact`() {
+        val id = insertDummyContact(AllowedMessageLevel.GROUP_ONLY).id
+
+        assertNull(contactsPersistenceManager.getConversationInfo(id).get(), "Conversation info should not exist")
+    }
+
+    @Test
+    fun `getConversation should return nothing for a BLOCKED contact`() {
+        val id = insertDummyContact(AllowedMessageLevel.BLOCKED).id
+
+        assertNull(contactsPersistenceManager.getConversationInfo(id).get(), "Conversation info should not exist")
     }
 
     @Test
