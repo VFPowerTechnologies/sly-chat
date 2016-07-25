@@ -14,9 +14,11 @@ import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenAnswerSuccess
 import io.slychat.messenger.testutils.thenReturn
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
+import kotlin.test.assertEquals
 
 class ContactSyncJobImplTest {
     companion object {
@@ -34,7 +36,8 @@ class ContactSyncJobImplTest {
     val accountInfoPersistenceManager: AccountInfoPersistenceManager = mock()
     val platformContacts: PlatformContacts = mock()
 
-    fun newJob(): ContactSyncJobImpl {
+    @Before
+    fun before() {
         whenever(accountInfoPersistenceManager.retrieve()).thenReturn(
             AccountInfo(userLoginData.userId, "name", "email", "15555555555", 1)
         )
@@ -55,7 +58,9 @@ class ContactSyncJobImplTest {
         whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenReturn(FetchContactInfoByIdResponse(emptyList()))
 
         whenever(contactListAsyncClient.getContacts(any())).thenReturn(GetContactsResponse(emptyList()))
+    }
 
+    fun newJob(): ContactSyncJobImpl {
         return ContactSyncJobImpl(
             MockAuthTokenManager(),
             contactAsyncClient,
@@ -67,23 +72,27 @@ class ContactSyncJobImplTest {
         )
     }
 
-    @Test
-    fun `a remote sync should fetch any missing contact info`() {
+    fun runRemoteSync() {
         val syncJob = newJob()
 
+        val description = ContactSyncJobDescription()
+        description.doRemoteSync()
+
+        syncJob.run(description).get()
+    }
+
+    @Test
+    fun `a remote sync should fetch any missing contact info`() {
         val missing = randomUserIds()
         val remoteEntries = encryptRemoteContactEntries(keyVault, missing.map { RemoteContactUpdate(it, AllowedMessageLevel.ALL) })
 
         whenever(contactListAsyncClient.getContacts(any())).thenReturn(GetContactsResponse(remoteEntries))
         whenever(contactsPersistenceManager.exists(missing)).thenReturn(emptySet())
 
-        val description = ContactSyncJobDescription()
-        description.doRemoteSync()
-
-        syncJob.run(description).get()
+        runRemoteSync()
 
         verify(contactAsyncClient).fetchContactInfoById(any(), capture {
-            Assertions.assertThat(it.ids).apply {
+            assertThat(it.ids).apply {
                 `as`("Missing ids should be looked up")
                 containsOnlyElementsOf(missing)
             }
@@ -92,12 +101,49 @@ class ContactSyncJobImplTest {
 
     @Test
     fun `a remote sync should add missing contacts with the proper message levels`() {
-        TODO()
+        val missing = randomUserIds(3)
+        val messageLevels = missing.zip(listOf(
+            AllowedMessageLevel.ALL,
+            AllowedMessageLevel.BLOCKED,
+            AllowedMessageLevel.GROUP_ONLY
+        )).toMap()
+
+        val apiContacts = missing.map { ApiContactInfo(it, "$it@a.com", it.toString(), it.toString(), it.toString()) }
+        val remoteEntries = encryptRemoteContactEntries(keyVault, missing.map { RemoteContactUpdate(it, messageLevels[it]!!) })
+
+        whenever(contactListAsyncClient.getContacts(any())).thenReturn(GetContactsResponse(remoteEntries))
+        whenever(contactsPersistenceManager.exists(missing)).thenReturn(emptySet())
+        whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenReturn(FetchContactInfoByIdResponse(apiContacts))
+
+        runRemoteSync()
+
+        verify(contactsPersistenceManager).applyDiff(capture {
+            assertEquals(missing.size, it.size, "New contacts size doesn't match")
+
+            it.forEach {
+                assertEquals(messageLevels[it.id]!!, it.allowedMessageLevel, "Invalid message level")
+            }
+        }, any())
     }
 
     @Test
     fun `a remote sync should update existing contacts with the proper message level`() {
-        TODO()
+        val present = randomUserIds(3)
+        val messageLevels = listOf(AllowedMessageLevel.ALL, AllowedMessageLevel.GROUP_ONLY, AllowedMessageLevel.BLOCKED)
+        val remoteUpdates = present.zip(messageLevels).map { RemoteContactUpdate(it.first, it.second) }
+        val remoteEntries = encryptRemoteContactEntries(keyVault, remoteUpdates)
+
+        whenever(contactListAsyncClient.getContacts(any())).thenReturn(GetContactsResponse(remoteEntries))
+        whenever(contactsPersistenceManager.exists(present)).thenReturn(present)
+
+        runRemoteSync()
+
+        verify(contactsPersistenceManager).applyDiff(any(), capture {
+            assertThat(it).apply {
+                `as`("Existing contacts should have their message levels updated")
+                containsOnlyElementsOf(remoteUpdates)
+            }
+        })
     }
 
     @Test
@@ -107,6 +153,8 @@ class ContactSyncJobImplTest {
 
     @Test
     fun `a remote sync should not issue a remote request if no contacts need to be added`() {
-        TODO()
+        runRemoteSync()
+
+        verify(contactAsyncClient, never()).fetchContactInfoById(any(), any())
     }
 }

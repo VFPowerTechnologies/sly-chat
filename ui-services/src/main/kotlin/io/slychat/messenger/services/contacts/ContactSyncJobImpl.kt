@@ -80,7 +80,6 @@ class ContactSyncJobImpl(
                     it.userId to it.allowedMessageLevel
                 }
 
-                //XXX need diff for new contacts (ContactInfo), and updateMessageLevel (Pair<UserId, AllowedMessageLevel>, so just reuse RemoteContactUpdate?)
                 val all = updates.mapToSet { it.userId }
 
                 contactsPersistenceManager.exists(all) bind { exists ->
@@ -92,11 +91,16 @@ class ContactSyncJobImpl(
 
                     val updateExists = updates.filter { it.userId in exists }
 
-                    val request = FetchContactInfoByIdRequest(missing.toList())
-                    contactClient.fetchContactInfoById(userCredentials, request) bind { response ->
-                        val newContacts = response.contacts.map { it.toCore(messageLevelByUserId[it.id]!!) }
-                        contactsPersistenceManager.applyDiff(newContacts, updateExists)
+                    val p = if (missing.isNotEmpty()) {
+                        val request = FetchContactInfoByIdRequest(missing.toList())
+                        contactClient.fetchContactInfoById(userCredentials, request) map { response ->
+                            response.contacts.map { it.toCore(messageLevelByUserId[it.id]!!) }
+                        }
                     }
+                    else
+                        Promise.ofSuccess(emptyList())
+
+                    p bind { contactsPersistenceManager.applyDiff(it, updateExists) }
                 }
             }
         }
