@@ -1,7 +1,6 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
-import com.almworks.sqlite4java.SQLiteConstants
 import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.PlatformContact
@@ -45,14 +44,18 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         stmt.bind(6, contactInfo.publicKey)
     }
 
-    override fun get(userId: UserId): Promise<ContactInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("SELECT id, email, name, allowed_message_level, phone_number, public_key FROM contacts WHERE id=?").use { stmt ->
+    private fun queryContactInfo(connection: SQLiteConnection, userId: UserId): ContactInfo? {
+        return connection.prepare("SELECT id, email, name, allowed_message_level, phone_number, public_key FROM contacts WHERE id=?").use { stmt ->
             stmt.bind(1, userId.long)
             if (!stmt.step())
                 null
             else
                 contactInfoFromRow(stmt)
         }
+    }
+
+    override fun get(userId: UserId): Promise<ContactInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        queryContactInfo(connection, userId)
     }
 
     override fun getAll(): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -197,45 +200,58 @@ ON
         searchByLikeField(it, "name", name)
     }
 
-    //never call when not inside a transition
     private fun removeContactNoTransaction(connection: SQLiteConnection, userId: UserId): Boolean {
-        ConversationTable.delete(connection, userId)
-
-        connection.prepare("DELETE FROM contacts WHERE id=?").use { stmt ->
-            stmt.bind(1, userId.long)
+        connection.prepare("UPDATE contacts set allowed_message_level=? WHERE id=?").use { stmt ->
+            stmt.bind(1, allowedMessageLevelToInt(AllowedMessageLevel.GROUP_ONLY))
+            stmt.bind(2, userId)
 
             stmt.step()
         }
 
         val wasRemoved = connection.changes > 0
 
+        if (wasRemoved) {
+            ConversationTable.delete(connection, userId)
+
+            resetConversationInfo(connection, userId)
+        }
+
         return wasRemoved
     }
 
-    //never call when not inside a transition
-    //is here for bulk addition within a single transaction when syncing up the contacts list
+    private fun resetConversationInfo(connection: SQLiteConnection, userId: UserId) {
+        connection.withPrepared("INSERT OR REPLACE INTO conversation_info (contact_id, unread_count, last_message) VALUES (?, 0, NULL)") { stmt ->
+            stmt.bind(1, userId)
+            stmt.step()
+        }
+    }
+
     private fun addContactNoTransaction(connection: SQLiteConnection, contactInfo: ContactInfo): Boolean {
-        try {
+        val currentInfo = queryContactInfo(connection, contactInfo.id)
+
+        return if (currentInfo == null) {
             connection.prepare("INSERT INTO contacts (id, email, name, allowed_message_level, phone_number, public_key) VALUES (?, ?, ?, ?, ?, ?)").use { stmt ->
                 contactInfoToRow(contactInfo, stmt)
                 stmt.step()
             }
 
-            connection.prepare("INSERT INTO conversation_info (contact_id, unread_count, last_message) VALUES (?, 0, NULL)").use { stmt ->
-                stmt.bind(1, contactInfo.id.long)
-                stmt.step()
+            resetConversationInfo(connection, contactInfo.id)
+
+            if (contactInfo.allowedMessageLevel == AllowedMessageLevel.ALL)
+                ConversationTable.create(connection, contactInfo.id)
+
+            true
+        }
+        else {
+            return if (currentInfo.allowedMessageLevel != contactInfo.allowedMessageLevel) {
+                if (contactInfo.allowedMessageLevel == AllowedMessageLevel.ALL)
+                    ConversationTable.create(connection, contactInfo.id)
+
+                updateMessageLevel(connection, contactInfo.id, contactInfo.allowedMessageLevel)
             }
-
-            ConversationTable.create(connection, contactInfo.id)
+            else
+                false
         }
-        catch (e: SQLiteException) {
-            if (e.baseErrorCode == SQLiteConstants.SQLITE_CONSTRAINT)
-                return false
-
-            throw e
-        }
-
-        return true
     }
 
     override fun add(contactInfo: ContactInfo): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -396,14 +412,27 @@ ON
     }
 
     private fun updateMessageLevel(connection: SQLiteConnection, user: UserId, newMessageLevel: AllowedMessageLevel): Boolean {
-        connection.withTransaction {
-            connection.withPrepared("UPDATE contacts SET allowed_message_level=? WHERE id=?") { stmt ->
-                stmt.bind(1, allowedMessageLevelToInt(newMessageLevel))
-                stmt.bind(2, user.long)
-                stmt.step()
-            }
+        connection.withPrepared("UPDATE contacts SET allowed_message_level=? WHERE id=?") { stmt ->
+            stmt.bind(1, allowedMessageLevelToInt(newMessageLevel))
+            stmt.bind(2, user.long)
+            stmt.step()
         }
 
         return connection.changes > 0
+    }
+
+    /* Use only within tests */
+    //XXX this is nasty, since it crosses the contacts/messenger border
+    internal fun setConversationInfo(userId: UserId, conversationInfo: ConversationInfo) = sqlitePersistenceManager.syncRunQuery {
+        it.withPrepared("UPDATE conversation_info SET unread_count=?, last_message=?, last_timestamp=? WHERE contact_id=?") { stmt ->
+            stmt.bind(1, conversationInfo.unreadMessageCount)
+            stmt.bind(2, conversationInfo.lastMessage)
+            if (conversationInfo.lastTimestamp != null)
+                stmt.bind(3, conversationInfo.lastTimestamp)
+            else
+                stmt.bindNull(3)
+            stmt.bind(4, userId)
+            stmt.step()
+        }
     }
 }

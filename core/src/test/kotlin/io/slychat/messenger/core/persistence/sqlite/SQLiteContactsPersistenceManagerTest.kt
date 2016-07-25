@@ -2,6 +2,7 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUserId
 import org.junit.After
@@ -85,30 +86,59 @@ class SQLiteContactsPersistenceManagerTest {
     fun doesConvTableExist(userId: UserId): Boolean =
         persistenceManager.runQuery { ConversationTable.exists(it, userId) }.get()
 
-    fun testContactAdd(contact: ContactInfo) {
+    fun testContactAdd(contact: ContactInfo, shouldConvTableBeCreated: Boolean) {
         assertTrue(contactsPersistenceManager.add(contact).get())
-        val got = contactsPersistenceManager.get(contact.id).get()
+        val got = assertNotNull(contactsPersistenceManager.get(contact.id).get(), "User not added")
 
-        assertNotNull(got)
-        assertEquals(contact, got)
-        assertTrue(doesConvTableExist(contact.id), "Conversation table is missing")
+        assertEquals(contact, got, "Stored info doesn't match initial info")
 
-        val update = RemoteContactUpdate(contactId, RemoteContactUpdateType.ADD)
+        val doesConvTableExist = doesConvTableExist(contact.id)
+        if (shouldConvTableBeCreated)
+            assertTrue(doesConvTableExist, "Conversation table is missing")
+        else
+            assertFalse(doesConvTableExist, "Conversation table was created")
+
+        val update = RemoteContactUpdate(contact.id, RemoteContactUpdateType.ADD)
         assertEquals(listOf(update), contactsPersistenceManager.getRemoteUpdates().get(), "Invalid remote update list")
     }
 
     @Test
-    fun `add should successfully add a contact, create a conversation table and add a corresponding remote update`() {
-        testContactAdd(contactA)
+    fun `add should successfully add a contact, create a conversation table and add a corresponding remote update for an ALL user`() {
+        testContactAdd(createDummyContact(AllowedMessageLevel.ALL), true)
     }
 
     @Test
-    fun `add should do nothing and return false if the contact already exists`() {
+    fun `add should successfully add a contact, and add a corresponding remote update for a GROUP_ONLY user`() {
+        testContactAdd(createDummyContact(AllowedMessageLevel.GROUP_ONLY), false)
+    }
+
+    @Test
+    fun `add should do nothing and return false if the contact already exists and the message level is the same`() {
         val contact = contactA
         contactsPersistenceManager.add(contact).get()
 
         assertFalse(contactsPersistenceManager.add(contact).get(), "Contact not considered duplicate")
         assertEquals(1, contactsPersistenceManager.getRemoteUpdates().get().size, "Invalid number of remote updates")
+    }
+
+    @Test
+    fun `add should update the message level for an existing user`() {
+        val contact = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
+        val newContact = contact.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
+
+        assertTrue(contactsPersistenceManager.add(newContact).get(), "No update")
+
+        val info = assertNotNull(contactsPersistenceManager.get(newContact.id).get(), "Missing user")
+
+        assertEquals(newContact, info, "Invalid contact info")
+    }
+
+    @Test
+    fun `add should create a conversation table for an existing user if the new message level is ALL`() {
+        val contact = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
+        val newContact = contact.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
+
+        testContactAdd(newContact, true)
     }
 
     fun testAddContactMulti(existingContacts: Collection<ContactInfo>, newContacts: Collection<ContactInfo>) {
@@ -217,22 +247,44 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `remove should delete the contact and its conversation table`() {
+    fun `remove should set the contact message level to GROUP_ONLY for an existing user`() {
         contactsPersistenceManager.add(contactA).get()
 
         val wasRemoved = contactsPersistenceManager.remove(contactA.id).get()
 
         assertTrue(wasRemoved, "wasRemoved is false")
 
-        val got = contactsPersistenceManager.get(contactA.id).get()
+        val got = assertNotNull(contactsPersistenceManager.get(contactA.id).get(), "Missing user info")
 
-        assertNull(got)
+        assertEquals(AllowedMessageLevel.GROUP_ONLY, got.allowedMessageLevel, "Invalid message level")
+    }
+
+    @Test
+    fun `remove should remove the convo log for an existing user`() {
+        contactsPersistenceManager.add(contactA).get()
+
+        contactsPersistenceManager.remove(contactA.id).get()
+
         assertFalse(doesConvTableExist(contactA.id))
     }
 
     @Test
+    fun `remove should reset the conversation info for an existing user`() {
+        val contact = insertDummyContact(AllowedMessageLevel.ALL)
+
+        contactsPersistenceManager.setConversationInfo(contact.id, ConversationInfo(contact.id, 1, "last message", currentTimestamp()))
+
+        contactsPersistenceManager.remove(contact.id).get()
+
+        val convoInfo = assertNotNull(contactsPersistenceManager.getConversationInfo(contact.id).get(), "Missing conversation info")
+        val initialConvoInfo = ConversationInfo(contact.id, 0, null, null)
+
+        assertEquals(initialConvoInfo, convoInfo, "Conversation info not reset")
+    }
+
+    @Test
     fun `remove should return false if no such contact existed`() {
-        val wasRemoved = contactsPersistenceManager.remove(contactA.id).get()
+        val wasRemoved = contactsPersistenceManager.remove(randomUserId()).get()
 
         assertFalse(wasRemoved, "wasRemoved is true")
     }

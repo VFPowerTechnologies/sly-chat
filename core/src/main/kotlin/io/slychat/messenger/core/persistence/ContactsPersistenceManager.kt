@@ -8,7 +8,9 @@ import nl.komponents.kovenant.Promise
  * Manages contacts.
  *
  * Once a contact entry has been created for a user, it's never removed. If a user "removes" the contact or blocks them,
- * it just updates their associated message level in consequence.
+ * it just updates their associated message level.
+ *
+ * Removing or blocking a contact resets the associated conversation info, as well as deletes any associated conversation table.
  */
 interface ContactsPersistenceManager {
     fun get(userId: UserId): Promise<ContactInfo?, Exception>
@@ -32,7 +34,12 @@ interface ContactsPersistenceManager {
     /** Resets unread message count for the given contact's conversation. */
     fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>
 
-    /** Adds a new contact and conversation for a contact. Returns true if contact was not already present. */
+    /**
+     * Adds a new contact and conversation for a contact. Returns true if contact was not already present.
+     *
+     * If a contact was previously present but had a lower message level, then true is returned as well as
+     * upgrading the message level.
+     */
     fun add(contactInfo: ContactInfo): Promise<Boolean, Exception>
 
     /** Adds all the given contacts and returns the list of contacts were not previously present. */
