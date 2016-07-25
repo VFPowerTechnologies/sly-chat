@@ -8,14 +8,6 @@ import nl.komponents.kovenant.task
 class ContactListAsyncClientImpl(private val serverUrl: String, private val factory: HttpClientFactory) : ContactListAsyncClient {
     private fun newClient() = ContactListClient(serverUrl, factory.create())
 
-    override fun addContacts(userCredentials: UserCredentials, request: AddContactsRequest): Promise<Unit, Exception> = task {
-        newClient().addContacts(userCredentials, request)
-    }
-
-    override fun removeContacts(userCredentials: UserCredentials, request: RemoveContactsRequest): Promise<Unit, Exception> = task {
-        newClient().removeContacts(userCredentials, request)
-    }
-
     override fun getContacts(userCredentials: UserCredentials): Promise<GetContactsResponse, Exception> = task {
         newClient().getContacts(userCredentials)
     }
