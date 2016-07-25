@@ -3,6 +3,11 @@ package io.slychat.messenger.core.persistence
 import io.slychat.messenger.core.UserId
 import nl.komponents.kovenant.Promise
 
+/**
+ * Manages groups.
+ *
+ * Only groups in JOINED state have member lists, conversation info and a conversation log.
+ */
 interface GroupPersistenceManager {
     /** Returns the list of all currently joined groups. Does not include blocked or parted groups. */
     fun getList(): Promise<List<GroupInfo>, Exception>
