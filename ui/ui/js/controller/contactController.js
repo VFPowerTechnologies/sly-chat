@@ -77,11 +77,15 @@ ContactController.prototype  = {
         contactBlock.append(contactDetails);
 
         contactBlock.click(function (e) {
-            this.loadChatPage(contact);
+            // if(contactBlock.hasClass("noClick"))
+            //     contactBlock.removeClass("noClick");
+            // else
+                this.loadChatPage(contact);
         }.bind(this));
 
-        $$(contactBlock).on("taphold", function () {
+        contactBlock.on("mouseheld", function () {
             vibrate(50);
+            // contactBlock.addClass("noClick");
             this.openContactMenu(contact);
         }.bind(this));
 
@@ -146,11 +150,15 @@ ContactController.prototype  = {
             "</div>");
 
         recentDiv.click(function () {
-            this.loadChatPage(conversation.contact);
+            // if(recentDiv.hasClass("noClick"))
+            //     recentDiv.removeClass("noClick");
+            // else
+                this.loadChatPage(conversation.contact);
         }.bind(this));
 
-        $$(recentDiv).on("taphold", function () {
+        recentDiv.on("mouseheld", function () {
             vibrate(50);
+            // recentDiv.addClass("noClick");
             this.openConversationMenu(conversation.contact);
         }.bind(this));
 

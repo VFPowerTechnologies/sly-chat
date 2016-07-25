@@ -2,6 +2,9 @@
 html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     -webkit-user-select: none;
 }
+.navbar {
+    width: 100%;
+}
 .navbar:after, .toolbar:before {
     display: none;
 }
@@ -89,6 +92,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     width: 24%;
     vertical-align: top;
     display: inline-block;
+    cursor: pointer;
 }
 #contact-list {
     margin: 0 10px;
@@ -116,6 +120,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     height: 50px;
     color: #b9b9b9;
     font-weight: 600;
+    cursor: pointer;
 }
 .recent-contact-link.new time {
     color: red;
@@ -143,6 +148,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 }
 #contact-list .contact-link {
     margin-bottom: 15px;
+    cursor: pointer;
 }
 .new-message-badge {
     width: 25px;
@@ -161,6 +167,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     min-width: 100px;
     min-height: 56px;
     width: 100%;
+    cursor: pointer;
 }
 #chat-content li.followingMessage {
     margin-top: -15px;

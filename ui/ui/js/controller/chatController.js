@@ -81,7 +81,7 @@ ChatController.prototype = {
             "<span class='timespan'>" + timespan + "</span>" +
             "</div></li>");
 
-        $$(messageNode).on("taphold", function () {
+        messageNode.on("mouseheld", function () {
             vibrate(50);
             this.openMessageMenu(message);
         }.bind(this));
