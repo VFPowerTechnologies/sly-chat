@@ -102,6 +102,17 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         filtered
     }
 
+    override fun block(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val exists = updateMessageLevel(connection, userId, AllowedMessageLevel.BLOCKED)
+        if (exists)
+            ConversationTable.delete(connection, userId)
+    }
+
+    override fun unblock(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        updateMessageLevel(connection, userId, AllowedMessageLevel.GROUP_ONLY)
+        Unit
+    }
+
     override fun getAllConversations(): Promise<List<Conversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val sql = """
 SELECT
@@ -384,15 +395,15 @@ ON
         }
     }
 
-    override fun updateMessageLevel(user: UserId, newMessageLevel: AllowedMessageLevel): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    private fun updateMessageLevel(connection: SQLiteConnection, user: UserId, newMessageLevel: AllowedMessageLevel): Boolean {
         connection.withTransaction {
             connection.withPrepared("UPDATE contacts SET allowed_message_level=? WHERE id=?") { stmt ->
                 stmt.bind(1, allowedMessageLevelToInt(newMessageLevel))
                 stmt.bind(2, user.long)
                 stmt.step()
             }
-
-            Unit
         }
+
+        return connection.changes > 0
     }
 }

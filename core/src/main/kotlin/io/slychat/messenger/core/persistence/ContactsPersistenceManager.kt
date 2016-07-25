@@ -4,7 +4,12 @@ import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.core.UserId
 import nl.komponents.kovenant.Promise
 
-/** Manages contacts. */
+/**
+ * Manages contacts.
+ *
+ * Once a contact entry has been created for a user, it's never removed. If a user "removes" the contact or blocks them,
+ * it just updates their associated message level in consequence.
+ */
 interface ContactsPersistenceManager {
     fun get(userId: UserId): Promise<ContactInfo?, Exception>
     fun getAll(): Promise<List<ContactInfo>, Exception>
@@ -15,8 +20,8 @@ interface ContactsPersistenceManager {
     fun getBlockList(): Promise<Set<UserId>, Exception>
     fun filterBlocked(users: Collection<UserId>): Promise<Set<UserId>, Exception>
 
-    /** Sets a new message level for the given user. Also sets isPending to false. */
-    fun updateMessageLevel(user: UserId, newMessageLevel: AllowedMessageLevel): Promise<Unit, Exception>
+    fun block(userId: UserId): Promise<Unit, Exception>
+    fun unblock(userId: UserId): Promise<Unit, Exception>
 
     /** Returns info for all available conversations. */
     fun getAllConversations(): Promise<List<Conversation>, Exception>
@@ -34,7 +39,7 @@ interface ContactsPersistenceManager {
     fun add(contacts: Collection<ContactInfo>): Promise<Set<ContactInfo>, Exception>
     /** Updates the given contact's info. */
     fun update(contactInfo: ContactInfo): Promise<Unit, Exception>
-    /** Removes a contact and their associated conversation. */
+    /** Sets a contact's message level to group-only, and removes their associated conversation. */
     fun remove(userId: UserId): Promise<Boolean, Exception>
 
     fun searchByPhoneNumber(phoneNumber: String): Promise<List<ContactInfo>, Exception>

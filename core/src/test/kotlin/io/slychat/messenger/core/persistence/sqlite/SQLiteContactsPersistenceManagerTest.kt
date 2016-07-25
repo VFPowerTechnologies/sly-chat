@@ -3,6 +3,7 @@ package io.slychat.messenger.core.persistence.sqlite
 import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.randomUserId
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
@@ -43,6 +44,14 @@ class SQLiteContactsPersistenceManagerTest {
         val id = UserId(v)
 
         return ContactInfo(id, "$v@a.com", "$v", allowedMessageLevel, false, "$v", "$v")
+    }
+
+    fun insertDummyContact(
+        allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL
+    ): ContactInfo {
+        val info = createDummyContact(allowedMessageLevel)
+        contactsPersistenceManager.add(info).get()
+        return info
     }
 
     fun loadContactList() {
@@ -89,7 +98,7 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `add should successfully add a contact, create a conversation table and add a corresponding remote update (pending=false)`() {
+    fun `add should successfully add a contact, create a conversation table and add a corresponding remote update`() {
         testContactAdd(contactA)
     }
 
@@ -477,16 +486,61 @@ class SQLiteContactsPersistenceManagerTest {
         assertEquals(contactIds, notBlocked, "Invalid filtered list")
     }
 
+    fun testBlock(contact: ContactInfo) {
+        contactsPersistenceManager.add(contact).get()
+
+        contactsPersistenceManager.block(contact.id).get()
+
+        val info = assertNotNull(contactsPersistenceManager.get(contact.id).get(), "Missing contact")
+
+        assertEquals(AllowedMessageLevel.BLOCKED, info.allowedMessageLevel, "Invalid message level")
+    }
+
     @Test
-    fun `updateMessageLevel should update allowedMessageLevel`() {
-        val contact = createDummyContact(AllowedMessageLevel.GROUP_ONLY)
+    fun `block should update the given user allowedMessageLevel to BLOCKED for an ALL user`() {
+        testBlock(createDummyContact(AllowedMessageLevel.ALL))
+    }
 
-        contactsPersistenceManager.add(contact)
+    @Test
+    fun `block should remove a conversation table for an ALL user`() {
+        val contact = createDummyContact(AllowedMessageLevel.ALL)
 
-        contactsPersistenceManager.updateMessageLevel(contact.id, AllowedMessageLevel.ALL).get()
+        contactsPersistenceManager.add(contact).get()
 
-        val updated = assertNotNull(contactsPersistenceManager.get(contact.id).get(), "No such user")
+        contactsPersistenceManager.block(contact.id).get()
 
-        assertEquals(AllowedMessageLevel.ALL, updated.allowedMessageLevel, "allowedMessageLevel not updated")
+        assertFalse(doesConvTableExist(contact.id), "Conversation table not removed")
+    }
+
+    @Test
+    fun `block should update the given user allowedMessageLevel to BLOCKED for a GROUP_ONLY user`() {
+        testBlock(createDummyContact(AllowedMessageLevel.GROUP_ONLY))
+    }
+
+    @Test
+    fun `block should do nothing for an already blocked user`() {
+        testBlock(createDummyContact(AllowedMessageLevel.GROUP_ONLY))
+    }
+
+
+    @Test
+    fun `block should do nothing for a non-existent user`() {
+        contactsPersistenceManager.block(randomUserId()).get()
+    }
+
+    @Test
+    fun `unblock should update the given user allowedMessageLevel to GROUP_ONLY for an existing blocked user`() {
+        val userId = insertDummyContact(AllowedMessageLevel.BLOCKED).id
+
+        contactsPersistenceManager.unblock(userId).get()
+
+        val info = assertNotNull(contactsPersistenceManager.get(userId).get(), "Missing user")
+
+        assertEquals(AllowedMessageLevel.GROUP_ONLY, info.allowedMessageLevel, "Invalid message level")
+    }
+
+    @Test
+    fun `unblock should do nothing for a non-existent user`() {
+        contactsPersistenceManager.unblock(randomUserId()).get()
     }
 }
