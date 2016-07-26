@@ -15,8 +15,6 @@ import org.junit.Test
 import java.util.*
 import kotlin.test.*
 
-private data class LastConversationInfo(val unreadCount: Int, val lastMessage: String?, val lastTimestamp: Long?)
-
 class SQLiteMessagePersistenceManagerTest {
     companion object {
         @JvmStatic
@@ -25,6 +23,8 @@ class SQLiteMessagePersistenceManagerTest {
             SQLitePreKeyPersistenceManager::class.java.loadSQLiteLibraryFromResources()
         }
     }
+
+    private data class LastConversationInfo(val unreadCount: Int, val lastMessage: String?, val lastTimestamp: Long?)
 
     val contact = UserId(0)
     val testMessage = "test message"
@@ -178,6 +178,17 @@ class SQLiteMessagePersistenceManagerTest {
 
         assertEquals(messageInfo.timestamp, lastConversationInfo.lastTimestamp, "Timestamp wasn't updated")
         assertEquals(messageInfo.message, lastConversationInfo.lastMessage, "Message wasn't updated")
+    }
+
+    @Test
+    fun `addMessage should throw InvalidMessageLevelException for a missing user table`() {
+        val contactInfo = randomContactInfo(AllowedMessageLevel.GROUP_ONLY)
+        contactsPersistenceManager.add(contactInfo).get()
+
+        val messageInfo = MessageInfo.newReceived("message", 0)
+        assertFailsWith(InvalidMessageLevelException::class) {
+            messagePersistenceManager.addMessage(contactInfo.id, messageInfo).get()
+        }
     }
 
     @Test
