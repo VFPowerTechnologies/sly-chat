@@ -440,6 +440,8 @@ ON
 
         if (currentInfo.allowedMessageLevel == AllowedMessageLevel.ALL)
             removeConversationData(connection, userId)
+        else if (newMessageLevel == AllowedMessageLevel.ALL)
+            addConversationData(connection, userId)
 
         val remoteUpdates = listOf(RemoteContactUpdate(userId, newMessageLevel))
         addRemoteUpdateNoTransaction(connection, remoteUpdates)

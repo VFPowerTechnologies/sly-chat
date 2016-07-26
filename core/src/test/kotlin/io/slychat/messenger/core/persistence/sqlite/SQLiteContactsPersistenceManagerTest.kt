@@ -762,6 +762,17 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
+    fun `allowAll should create conversation data`() {
+        val userId = insertDummyContact(AllowedMessageLevel.GROUP_ONLY).id
+        clearRemoteUpdates()
+
+        contactsPersistenceManager.allowAll(userId).get()
+
+        assertConversationInfoExists(userId)
+        assertConvTableExists(userId)
+    }
+
+    @Test
     fun `when multiple updates to the same contact are performed, keep only the last operation remote update`() {
         val userId = insertDummyContact(AllowedMessageLevel.ALL).id
         contactsPersistenceManager.remove(userId).get()
@@ -808,6 +819,17 @@ class SQLiteContactsPersistenceManagerTest {
         }
     }
 
+    @Test
+    fun `applyDiff should create conversation info and log for contacts moved to ALL message level`() {
+        val contactInfo = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
+        val update = RemoteContactUpdate(contactInfo.id, AllowedMessageLevel.ALL)
+
+        contactsPersistenceManager.applyDiff(emptyList(), listOf(update)).get()
+
+        assertConvTableExists(contactInfo.id)
+        assertConversationInfoExists(contactInfo.id)
+    }
+
     fun testApplyDiffNewContactNoConvo(allowedMessageLevel: AllowedMessageLevel) {
         val newContacts = randomContactInfoList(allowedMessageLevel)
 
@@ -822,11 +844,6 @@ class SQLiteContactsPersistenceManagerTest {
     @Test
     fun `applyDiff should not create conversation info or log for new contacts with GROUP_ONLY message level`() {
         testApplyDiffNewContactNoConvo(AllowedMessageLevel.GROUP_ONLY)
-    }
-
-    @Test
-    fun `applyDiff should create conversation info and log for contacts moved to ALL message level`() {
-        testApplyDiffNewContactNoConvo(AllowedMessageLevel.BLOCKED)
     }
 
     fun testApplyDiffUpdatesNoConvo(allowedMessageLevel: AllowedMessageLevel) {
