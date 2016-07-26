@@ -1,6 +1,8 @@
 package io.slychat.messenger.services.contacts
 
 import com.google.i18n.phonenumbers.PhoneNumberUtil
+import io.slychat.messenger.core.PlatformContact
+import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.mapToMap
 import io.slychat.messenger.core.mapToSet
@@ -30,35 +32,48 @@ class ContactSyncJobImpl(
         return accountInfoPersistenceManager.retrieve() map { getAccountRegionCode(it!!) }
     }
 
-    /** Attempts to find any registered users matching the user's local contacts. */
+    private fun getPlatformContacts(defaultRegion: String): Promise<List<PlatformContact>, Exception> {
+        return platformContacts.fetchContacts() map { contacts ->
+            val phoneNumberUtil = PhoneNumberUtil.getInstance()
+
+            val updated = contacts.map { contact ->
+                val phoneNumbers = contact.phoneNumbers
+                    .map { parsePhoneNumber(it, defaultRegion) }
+                    .filter { it != null }
+                    .map { phoneNumberUtil.format(it, PhoneNumberUtil.PhoneNumberFormat.E164).substring(1) }
+                contact.copy(phoneNumbers = phoneNumbers)
+            }
+
+            log.debug("Platform contacts: {}", updated)
+
+            updated
+        }
+    }
+
+    private fun queryAndAddNewContacts(userCredentials: UserCredentials, missingContacts: List<PlatformContact>): Promise<Unit, Exception> {
+        return if (missingContacts.isNotEmpty()) {
+            contactClient.findLocalContacts(userCredentials, FindLocalContactsRequest(missingContacts)) bind { foundContacts ->
+                log.debug("Found local contacts: {}", foundContacts)
+
+                contactsPersistenceManager.add(foundContacts.contacts.map { it.toCore(AllowedMessageLevel.ALL) }) map { Unit }
+            }
+        }
+        else
+            Promise.ofSuccess(Unit)
+
+    }
+
+    /** Attempts to find any registered users matching the user's platform contacts. */
     private fun syncLocalContacts(): Promise<Unit, Exception> {
         log.info("Beginning local contact sync")
 
         return getDefaultRegionCode() bind { defaultRegion ->
             authTokenManager.bind { userCredentials ->
-                platformContacts.fetchContacts() map { contacts ->
-                    val phoneNumberUtil = PhoneNumberUtil.getInstance()
-
-                    val updated = contacts.map { contact ->
-                        val phoneNumbers = contact.phoneNumbers
-                            .map { parsePhoneNumber(it, defaultRegion) }
-                            .filter { it != null }
-                            .map { phoneNumberUtil.format(it, PhoneNumberUtil.PhoneNumberFormat.E164).substring(1) }
-                        contact.copy(phoneNumbers = phoneNumbers)
+                getPlatformContacts(defaultRegion) bind { contacts ->
+                    contactsPersistenceManager.findMissing(contacts) bind { missingContacts ->
+                        log.debug("Missing local contacts:", missingContacts)
+                        queryAndAddNewContacts(userCredentials, missingContacts)
                     }
-
-                    log.debug("Platform contacts: {}", updated)
-
-                    updated
-                } bind { contacts ->
-                    contactsPersistenceManager.findMissing(contacts)
-                } bind { missingContacts ->
-                    log.debug("Missing local contacts:", missingContacts)
-                    contactClient.findLocalContacts(userCredentials, FindLocalContactsRequest(missingContacts))
-                } bind { foundContacts ->
-                    log.debug("Found local contacts: {}", foundContacts)
-
-                    contactsPersistenceManager.add(foundContacts.contacts.map { it.toCore(AllowedMessageLevel.ALL) }) map { Unit }
                 }
             }
         }

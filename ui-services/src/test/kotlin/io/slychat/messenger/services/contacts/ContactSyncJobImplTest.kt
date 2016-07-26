@@ -1,13 +1,10 @@
 package io.slychat.messenger.services.contacts
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateNewKeyVault
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.randomUserId
-import io.slychat.messenger.core.randomUserIds
 import io.slychat.messenger.services.PlatformContacts
 import io.slychat.messenger.services.UserData
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
@@ -72,13 +69,26 @@ class ContactSyncJobImplTest {
         )
     }
 
-    fun runRemoteSync() {
+    fun runJobWithDescription(body: ContactSyncJobDescription.() -> Unit) {
         val syncJob = newJob()
 
         val description = ContactSyncJobDescription()
-        description.doRemoteSync()
+        description.body()
 
         syncJob.run(description).get()
+
+    }
+
+    fun runUpdateRemote() {
+        runJobWithDescription { doUpdateRemoteContactList() }
+    }
+
+    fun runLocalSync() {
+        runJobWithDescription { doLocalSync() }
+    }
+
+    fun runRemoteSync() {
+        runJobWithDescription { doRemoteSync() }
     }
 
     @Test
@@ -147,14 +157,80 @@ class ContactSyncJobImplTest {
     }
 
     @Test
-    fun `a local sync should not issue a remote request if no missing platform contacts are found`() {
-        TODO()
+    fun `an update remote sync should not issue a remote request if no missing platform contacts are found`() {
+        runUpdateRemote()
+
+        verify(contactListAsyncClient, never()).updateContacts(any(), any())
     }
 
     @Test
     fun `a remote sync should not issue a remote request if no contacts need to be added`() {
+        whenever(contactsPersistenceManager.getRemoteUpdates()).thenReturn(emptyList())
+
         runRemoteSync()
 
         verify(contactAsyncClient, never()).fetchContactInfoById(any(), any())
+    }
+
+    @Test
+    fun `a local sync should not issue a remote request if no platform contacts are found`() {
+        whenever(platformContacts.fetchContacts()).thenReturn(emptyList())
+
+        runLocalSync()
+
+        verify(contactAsyncClient, never()).findLocalContacts(any(), any())
+    }
+
+    @Test
+    fun `a local sync should not issue a remote request if no missing local contacts are found`() {
+        val platformContact = PlatformContact("name", listOf("a@a.com"), listOf("15555555555"))
+        whenever(platformContacts.fetchContacts()).thenReturn(listOf(platformContact))
+        whenever(contactsPersistenceManager.findMissing(anyList())).thenReturn(emptyList())
+
+        runLocalSync()
+
+        verify(contactAsyncClient, never()).findLocalContacts(any(), any())
+    }
+
+    @Test
+    fun `a local sync should query for new contacts using missing local platform contact data`() {
+        val platformContact = PlatformContact("name", listOf("a@a.com"), listOf("15555555555"))
+        val missingContacts = listOf(platformContact)
+
+        whenever(platformContacts.fetchContacts()).thenReturn(missingContacts)
+        whenever(contactsPersistenceManager.findMissing(anyList())).thenReturn(missingContacts)
+
+        runLocalSync()
+
+        verify(contactAsyncClient).findLocalContacts(any(), eq(FindLocalContactsRequest(missingContacts)))
+    }
+
+    @Test
+    fun `a local sync should add local contacts with remote accounts to the contact list with ALL message level`() {
+        val userId = randomUserId()
+        val email = "a@a.com"
+        val name = "name"
+        val phoneNumber = "15555555555"
+        val publicKey = "pubkey"
+        val platformContact = PlatformContact(name, listOf(email), listOf(phoneNumber))
+
+        val missingContacts = listOf(platformContact)
+        val apiContacts =  listOf(
+            ApiContactInfo(userId, email, name, phoneNumber, publicKey)
+        )
+        val contactInfo = ContactInfo(userId, email, name, AllowedMessageLevel.ALL, false, phoneNumber, publicKey)
+
+        whenever(platformContacts.fetchContacts()).thenReturn(missingContacts)
+        whenever(contactsPersistenceManager.findMissing(anyList())).thenReturn(missingContacts)
+        whenever(contactAsyncClient.findLocalContacts(any(), any())).thenReturn(FindLocalContactsResponse(apiContacts))
+
+        runLocalSync()
+
+        verify(contactsPersistenceManager).add(capture<Collection<ContactInfo>> {
+            assertThat(it).apply {
+                `as`("Contacts should be added")
+                containsOnly(contactInfo)
+            }
+        })
     }
 }
