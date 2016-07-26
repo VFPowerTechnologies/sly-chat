@@ -6,7 +6,7 @@ import java.util.*
 
 fun randomGroupInfo(): GroupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 fun randomGroupInfo(membershipLevel: GroupMembershipLevel): GroupInfo =
-    GroupInfo(randomGroupId(), randomGroupName(), false, membershipLevel)
+    GroupInfo(randomGroupId(), randomGroupName(), membershipLevel)
 
 fun randomGroupName(): String = randomUUID()
 

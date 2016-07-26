@@ -239,7 +239,6 @@ class MessengerServiceImpl(
         val groupInfo = GroupInfo(
             GroupId(randomUUID()),
             groupName,
-            false,
             GroupMembershipLevel.JOINED
         )
 

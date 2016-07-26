@@ -253,7 +253,6 @@ VALUES
         return GroupInfo(
             GroupId(stmt.columnString(startIndex)),
             stmt.columnString(startIndex+1),
-            false,
             intToGroupMembershipLevel(stmt.columnInt(startIndex+2))
         )
     }

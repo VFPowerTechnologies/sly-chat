@@ -23,7 +23,6 @@ import org.junit.Test
 import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -622,7 +621,6 @@ class MessengerServiceImplTest {
         verify(groupPersistenceManager).join(capture {
             assertEquals(groupName, it.name, "Invalid group name")
             assertEquals(GroupMembershipLevel.JOINED, it.membershipLevel, "Invalid membership level")
-            assertFalse(it.isPending, "Created group should not be in pending state")
         }, eq(initialMembers))
     }
 

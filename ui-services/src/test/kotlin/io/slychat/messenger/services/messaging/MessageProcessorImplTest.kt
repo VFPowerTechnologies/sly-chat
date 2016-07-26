@@ -155,7 +155,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        val info = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
+        val info = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
 
         verify(contactsService).addMissingContacts(m.members)
 
@@ -216,7 +216,7 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        val groupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
+        val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
 
         whenever(groupPersistenceManager.getInfo(m.id)).thenReturn(groupInfo)
 
@@ -233,7 +233,7 @@ class MessageProcessorImplTest {
 
         val process = createProcessor()
 
-        val groupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
+        val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
 
         val invalidUser = m.members.first()
         val remaining = HashSet(m.members)
@@ -257,7 +257,7 @@ class MessageProcessorImplTest {
 
         val process = createProcessor()
 
-        val groupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
+        val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
 
         whenever(groupPersistenceManager.getInfo(m.id)).thenReturnNull()
 
@@ -276,7 +276,7 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        val groupInfo = GroupInfo(m.id, m.name, false, GroupMembershipLevel.BLOCKED)
+        val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.BLOCKED)
 
         whenever(groupPersistenceManager.getInfo(m.id)).thenReturn(groupInfo)
 
@@ -298,13 +298,13 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        val groupInfo = GroupInfo(m.id, m.name, false, GroupMembershipLevel.PARTED)
+        val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.PARTED)
 
         whenever(groupPersistenceManager.getInfo(m.id)).thenReturn(groupInfo)
 
         processor.processMessage(sender, wrap(m)).get()
 
-        val newGroupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
+        val newGroupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
 
         verify(groupPersistenceManager).join(newGroupInfo, fullMembers)
 

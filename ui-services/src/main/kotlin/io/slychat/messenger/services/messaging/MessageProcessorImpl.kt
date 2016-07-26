@@ -150,7 +150,7 @@ class MessageProcessorImpl(
             //we already have the sender added, so we don't need to include them
             contactsService.addMissingContacts(m.members) bind { invalidIds ->
                 members.removeAll(invalidIds)
-                val info = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
+                val info = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
                 groupPersistenceManager.join(info, members) successUi {
                     groupEventSubject.onNext(GroupEvent.NewGroup(m.id, members))
                 }
