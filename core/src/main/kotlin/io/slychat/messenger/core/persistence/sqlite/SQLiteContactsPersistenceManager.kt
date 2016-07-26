@@ -6,10 +6,13 @@ import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
+import org.slf4j.LoggerFactory
 import java.util.*
 
 /** A contact is made up of an entry in the contacts table and an associated conv_ table containing their message log. */
 class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQLitePersistenceManager) : ContactsPersistenceManager {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private fun allowedMessageLevelToInt(allowedMessageLevel: AllowedMessageLevel): Int = when (allowedMessageLevel) {
         AllowedMessageLevel.BLOCKED -> 0
         AllowedMessageLevel.GROUP_ONLY -> 1
@@ -104,17 +107,17 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         filtered
     }
 
+    private fun removeConversationData(connection: SQLiteConnection, userId: UserId) {
+        ConversationTable.delete(connection, userId)
+        deleteConversationInfo(connection, userId)
+    }
+
     override fun block(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val exists = updateMessageLevel(connection, userId, AllowedMessageLevel.BLOCKED)
-        if (exists) {
-            ConversationTable.delete(connection, userId)
-            deleteConversationInfo(connection, userId)
-            addRemoteUpdateNoTransaction(connection, listOf(RemoteContactUpdate(userId, AllowedMessageLevel.BLOCKED)))
-        }
+        updateContactMessageLevel(connection, userId, AllowedMessageLevel.BLOCKED)
     }
 
     override fun unblock(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        updateMessageLevel(connection, userId, AllowedMessageLevel.GROUP_ONLY)
+        updateContactMessageLevel(connection, userId, AllowedMessageLevel.GROUP_ONLY)
         Unit
     }
 
@@ -273,6 +276,11 @@ ON
         }
     }
 
+    private fun createRemoteUpdates(connection: SQLiteConnection, contactInfo: Collection<ContactInfo>) {
+        val remoteUpdates = contactInfo.map { RemoteContactUpdate(it.id, it.allowedMessageLevel) }
+        addRemoteUpdateNoTransaction(connection, remoteUpdates)
+    }
+
     override fun add(contacts: Collection<ContactInfo>): Promise<Set<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val newContacts = HashSet<ContactInfo>()
 
@@ -282,9 +290,7 @@ ON
                     newContacts.add(it)
             }
 
-            val remoteUpdates = newContacts
-                .map { RemoteContactUpdate(it.id, it.allowedMessageLevel) }
-            addRemoteUpdateNoTransaction(connection, remoteUpdates)
+            createRemoteUpdates(connection, newContacts)
         }
 
         newContacts
@@ -336,7 +342,13 @@ ON
     }
 
     override fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<RemoteContactUpdate>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        TODO()
+        connection.withTransaction {
+            newContacts.forEach { addContactNoTransaction(connection, it) }
+            createRemoteUpdates(connection, newContacts)
+            updated.forEach {
+                updateContactMessageLevel(connection, it.userId, it.allowedMessageLevel)
+            }
+        }
     }
 
     override fun findMissing(platformContacts: List<PlatformContact>): Promise<List<PlatformContact>, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -407,6 +419,26 @@ ON
                 }
             }
         }
+    }
+
+    /** Updates message level for an existing contact. Handles deletion of conversation data and creation of remote update. */
+    private fun updateContactMessageLevel(connection: SQLiteConnection, userId: UserId, newMessageLevel: AllowedMessageLevel) {
+        val currentInfo = queryContactInfo(connection, userId)
+        if (currentInfo == null) {
+            log.warn("Attempt to update message level for a non-existent user: {}", userId)
+            return
+        }
+
+        if (currentInfo.allowedMessageLevel == newMessageLevel)
+            return
+
+        updateMessageLevel(connection, userId, newMessageLevel)
+
+        if (currentInfo.allowedMessageLevel == AllowedMessageLevel.ALL)
+            removeConversationData(connection, userId)
+
+        val remoteUpdates = listOf(RemoteContactUpdate(userId, newMessageLevel))
+        addRemoteUpdateNoTransaction(connection, remoteUpdates)
     }
 
     private fun updateMessageLevel(connection: SQLiteConnection, user: UserId, newMessageLevel: AllowedMessageLevel): Boolean {

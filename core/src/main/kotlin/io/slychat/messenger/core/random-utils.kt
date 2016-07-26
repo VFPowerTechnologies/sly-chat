@@ -64,18 +64,22 @@ fun randomQueuedMessages(n: Int = 2): List<QueuedMessage> {
     return (1..n).map { randomQueuedMessage() }
 }
 
-fun randomContactInfo(): ContactInfo {
+fun randomContactInfo(allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL): ContactInfo {
     val userId = randomUserId()
 
     return ContactInfo(
         userId,
         "$userId@domain.com",
         userId.toString(),
-        AllowedMessageLevel.ALL,
+        allowedMessageLevel,
         false,
         null,
         "pubkey"
     )
+}
+
+fun randomContactInfoList(allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL, n: Int = 2): List<ContactInfo> {
+    return (1..n).map { randomContactInfo(allowedMessageLevel) }
 }
 
 fun randomMessageText(): String {
