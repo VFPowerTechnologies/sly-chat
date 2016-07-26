@@ -100,6 +100,23 @@ class ContactsServiceImpl(
         return d.promise
     }
 
+    override fun allowAll(userId: UserId): Promise<Unit, Exception> {
+        val d = deferred<Unit, Exception>()
+
+        contactJobRunner.runOperation {
+            wrap(d, contactsPersistenceManager.allowAll(userId)) successUi {
+                withCurrentJob { doUpdateRemoteContactList() }
+
+                contactsPersistenceManager.get(userId) mapUi {
+                    if (it != null)
+                        contactEventsSubject.onNext(ContactEvent.Updated(setOf(it)))
+                }
+            }
+        }
+
+        return d.promise
+    }
+
     private fun doUpdateRemoteContactList() {
         withCurrentJob { doUpdateRemoteContactList() }
     }

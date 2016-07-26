@@ -8,6 +8,8 @@ import io.slychat.messenger.core.http.api.contacts.FetchContactInfoByIdResponse
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
+import io.slychat.messenger.core.randomContactInfo
+import io.slychat.messenger.core.randomUserId
 import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.assertNoEventsEmitted
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
@@ -388,5 +390,52 @@ class ContactsServiceImplTest {
     @Test
     fun `it should fire a sync stop event when a the job runner starts running a sync`() {
         testSyncEvent(false)
+    }
+
+    @Test
+    fun `allowAll should update the message level for the given user`() {
+        val userId = randomUserId()
+
+        whenever(contactsPersistenceManager.get(userId)).thenReturn(randomContactInfo().copy(id = userId))
+        whenever(contactsPersistenceManager.allowAll(userId)).thenReturn(Unit)
+
+        val contactsService = createService()
+
+        contactsService.allowAll(userId).get()
+
+        verify(contactsPersistenceManager).allowAll(userId)
+    }
+
+    @Test
+    fun `allowAll should trigger a remote update`() {
+        val userId = randomUserId()
+        whenever(contactsPersistenceManager.allowAll(any())).thenReturn(Unit)
+        whenever(contactsPersistenceManager.get(userId)).thenReturn(randomContactInfo().copy(id = userId))
+
+        val contactsService = createService()
+
+        contactsService.allowAll(userId).get()
+
+        assertTrue(contactOperationManager.withCurrentJobCallCount == 1, "Remote sync not triggered")
+    }
+
+    @Test
+    fun `allowAll should fire a contact updated event`() {
+        val userId = randomUserId()
+        whenever(contactsPersistenceManager.allowAll(any())).thenReturn(Unit)
+        whenever(contactsPersistenceManager.get(userId)).thenReturn(randomContactInfo().copy(id = userId))
+
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Updated>(contactsService)
+
+        contactsService.allowAll(userId).get()
+
+        assertEventEmitted(testSubscriber) { ev ->
+            assertEquals(1, ev.contacts.size, "Invalid number of updated contacts")
+            val c = ev.contacts.first()
+
+            assertEquals(AllowedMessageLevel.ALL, c.allowedMessageLevel, "Invalid message level")
+        }
     }
 }
