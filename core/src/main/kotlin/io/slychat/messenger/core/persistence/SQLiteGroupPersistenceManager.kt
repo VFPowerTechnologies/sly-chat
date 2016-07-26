@@ -58,13 +58,8 @@ class SQLiteGroupPersistenceManager(
         val info = queryGroupInfo(connection, groupId)
         if (info == null)
             throw InvalidGroupException(groupId)
-        else {
-            when (info.membershipLevel) {
-                GroupMembershipLevel.BLOCKED -> null
-                GroupMembershipLevel.PARTED -> null
-                GroupMembershipLevel.JOINED -> queryGroupConversationInfo(connection, groupId)
-            }
-        }
+        else
+            queryGroupConversationInfo(connection, groupId)
     }
 
     override fun getAllConversations(): Promise<List<GroupConversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -170,6 +165,13 @@ WHERE
         }
     }
 
+    private fun deleteGroupConversationInfo(connection: SQLiteConnection, id: GroupId) {
+        connection.withPrepared("DELETE FROM group_conversation_info WHERE group_id=?") { stmt ->
+            stmt.bind(1, id)
+            stmt.step()
+        }
+    }
+
     private fun insertOrReplaceNewGroupConversationInfo(connection: SQLiteConnection, id: GroupId) {
         val sql =
 """
@@ -251,7 +253,6 @@ VALUES
         return GroupInfo(
             GroupId(stmt.columnString(startIndex)),
             stmt.columnString(startIndex+1),
-            false,
             intToGroupMembershipLevel(stmt.columnInt(startIndex+2))
         )
     }
@@ -304,6 +305,7 @@ VALUES
 
                     updateMembershipLevel(connection, groupId, GroupMembershipLevel.PARTED)
                     GroupConversationTable.delete(connection, groupId)
+                    deleteGroupConversationInfo(connection, groupId)
                 }
 
                 true
@@ -332,6 +334,7 @@ VALUES
         connection.withTransaction {
             clearMemberList(connection, groupId)
             updateMembershipLevel(connection, groupId, GroupMembershipLevel.BLOCKED)
+            deleteGroupConversationInfo(connection, groupId)
             GroupConversationTable.delete(connection, groupId)
         }
     }
@@ -585,7 +588,7 @@ OFFSET
 
     /* The following should only be used within tests to insert dummy data for testing purposes. */
 
-    internal fun testSetConversationInfo(groupConversationInfo: GroupConversationInfo) = sqlitePersistenceManager.syncRunQuery {
+    internal fun internalSetConversationInfo(groupConversationInfo: GroupConversationInfo) = sqlitePersistenceManager.syncRunQuery {
         updateConversationInfo(
             it,
             groupConversationInfo.groupId,
@@ -596,29 +599,30 @@ OFFSET
         )
     }
 
-    internal fun testAddInfo(groupInfo: GroupInfo): Unit = sqlitePersistenceManager.syncRunQuery { connection ->
+    internal fun internalAddInfo(groupInfo: GroupInfo): Unit = sqlitePersistenceManager.syncRunQuery { connection ->
         insertOrReplaceGroupInfo(connection, groupInfo)
-        insertOrReplaceNewGroupConversationInfo(connection, groupInfo.id)
-        if (groupInfo.membershipLevel == GroupMembershipLevel.JOINED)
+        if (groupInfo.membershipLevel == GroupMembershipLevel.JOINED) {
+            insertOrReplaceNewGroupConversationInfo(connection, groupInfo.id)
             createGroupConversationTable(connection, groupInfo.id)
+        }
     }
 
-    internal fun testAddMembers(id: GroupId, members: Set<UserId>): Unit = sqlitePersistenceManager.syncRunQuery { connection ->
+    internal fun internalAddMembers(id: GroupId, members: Set<UserId>): Unit = sqlitePersistenceManager.syncRunQuery { connection ->
         insertGroupMembers(connection, id, members)
     }
 
-    internal fun testMessageExists(id: GroupId, messageId: String): Boolean = sqlitePersistenceManager.syncRunQuery { connection ->
+    internal fun internalMessageExists(id: GroupId, messageId: String): Boolean = sqlitePersistenceManager.syncRunQuery { connection ->
         connection.withPrepared("SELECT 1 FROM ${GroupConversationTable.getTablename(id)} WHERE id=?") { stmt ->
             stmt.bind(1, messageId)
             stmt.step()
         }
     }
 
-    internal fun testGetConversationInfo(id: GroupId): GroupConversationInfo? = sqlitePersistenceManager.syncRunQuery { connection ->
+    internal fun internalGetConversationInfo(id: GroupId): GroupConversationInfo? = sqlitePersistenceManager.syncRunQuery { connection ->
         queryGroupConversationInfo(connection, id)
     }
 
-    fun testGetAllMessages(groupId: GroupId): List<GroupMessageInfo> = sqlitePersistenceManager.syncRunQuery { connection ->
+    fun internalGetAllMessages(groupId: GroupId): List<GroupMessageInfo> = sqlitePersistenceManager.syncRunQuery { connection ->
         val tableName = GroupConversationTable.getTablename(groupId)
         val sql =
 """
@@ -640,7 +644,7 @@ ORDER BY
         }
     }
 
-    fun testGetMessageInfo(groupId: GroupId, messageId: String): GroupMessageInfo? = sqlitePersistenceManager.syncRunQuery { connection ->
+    fun internalGetMessageInfo(groupId: GroupId, messageId: String): GroupMessageInfo? = sqlitePersistenceManager.syncRunQuery { connection ->
         getGroupMessageInfo(connection, groupId,  messageId)
     }
 }

@@ -87,7 +87,7 @@ class ContactsServiceImpl(
     }
 
     /** Filter out users whose messages we should ignore. */
-    override fun allowMessagesFrom(users: Set<UserId>): Promise<Set<UserId>, Exception> {
+    override fun filterBlocked(users: Set<UserId>): Promise<Set<UserId>, Exception> {
         val d = deferred<Set<UserId>, Exception>()
 
         //avoid errors if the caller modifiers the set after giving it
@@ -95,6 +95,23 @@ class ContactsServiceImpl(
 
         contactJobRunner.runOperation {
             wrap(d, contactsPersistenceManager.filterBlocked(usersCopy))
+        }
+
+        return d.promise
+    }
+
+    override fun allowAll(userId: UserId): Promise<Unit, Exception> {
+        val d = deferred<Unit, Exception>()
+
+        contactJobRunner.runOperation {
+            wrap(d, contactsPersistenceManager.allowAll(userId)) successUi {
+                withCurrentJob { doUpdateRemoteContactList() }
+
+                contactsPersistenceManager.get(userId) mapUi {
+                    if (it != null)
+                        contactEventsSubject.onNext(ContactEvent.Updated(setOf(it)))
+                }
+            }
         }
 
         return d.promise
@@ -109,7 +126,7 @@ class ContactsServiceImpl(
     }
 
     override fun doLocalSync() {
-        withCurrentJob { doLocalSync() }
+        withCurrentJob { doPlatformContactSync() }
     }
 
     private fun onContactJobStatusUpdate(info: ContactSyncJobInfo) {
@@ -149,7 +166,7 @@ class ContactsServiceImpl(
         if (missing.isNotEmpty())
             invalidContacts.addAll(missing)
 
-        val contacts = response.contacts.map { it.toCore(true, AllowedMessageLevel.GROUP_ONLY) }
+        val contacts = response.contacts.map { it.toCore(AllowedMessageLevel.GROUP_ONLY) }
 
         return contactsPersistenceManager.add(contacts) mapUi { newContacts ->
             log.debug("Added new contacts: {}", newContacts.map { it.id.long })

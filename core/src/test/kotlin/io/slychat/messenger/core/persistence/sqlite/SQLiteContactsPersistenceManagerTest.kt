@@ -1,8 +1,8 @@
 package io.slychat.messenger.core.persistence.sqlite
 
-import io.slychat.messenger.core.PlatformContact
-import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
@@ -22,9 +22,9 @@ class SQLiteContactsPersistenceManagerTest {
     val contactId = UserId(1)
     val testMessage = "test message"
 
-    val contactA = ContactInfo(contactId, "a@a.com", "a", AllowedMessageLevel.ALL, false, "000-0000", "pubkey")
-    val contactA2 = ContactInfo(UserId(2), "a2@a.com", "a2", AllowedMessageLevel.ALL, false, "001-0000", "pubkey")
-    val contactC = ContactInfo(UserId(3), "c@c.com", "c", AllowedMessageLevel.ALL, false, "222-2222", "pubkey")
+    val contactA = ContactInfo(contactId, "a@a.com", "a", AllowedMessageLevel.ALL, "000-0000", "pubkey")
+    val contactA2 = ContactInfo(UserId(2), "a2@a.com", "a2", AllowedMessageLevel.ALL, "001-0000", "pubkey")
+    val contactC = ContactInfo(UserId(3), "c@c.com", "c", AllowedMessageLevel.ALL, "222-2222", "pubkey")
     val contactList = arrayListOf(
         contactA,
         contactA2,
@@ -42,7 +42,15 @@ class SQLiteContactsPersistenceManagerTest {
         dummyContactCounter += 1
         val id = UserId(v)
 
-        return ContactInfo(id, "$v@a.com", "$v", allowedMessageLevel, false, "$v", "$v")
+        return ContactInfo(id, "$v@a.com", "$v", allowedMessageLevel, "$v", "$v")
+    }
+
+    fun insertDummyContact(
+        allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL
+    ): ContactInfo {
+        val info = createDummyContact(allowedMessageLevel)
+        contactsPersistenceManager.add(info).get()
+        return info
     }
 
     fun loadContactList() {
@@ -50,12 +58,17 @@ class SQLiteContactsPersistenceManagerTest {
             contactsPersistenceManager.add(contact).get()
     }
 
-    fun setConversationInfo(userId: UserId, unreadCount: Int, lastMessage: String?) {
-        persistenceManager.runQuery { connection ->
-            connection.prepare("UPDATE conversation_info SET unread_count=?, last_message=? WHERE contact_id=?").use { stmt ->
+    //XXX this is nasty, since it crosses the contacts/messenger border
+    fun setConversationInfo(userId: UserId, unreadCount: Int, lastMessage: String?, lastTimestamp: Long?) {
+        persistenceManager.syncRunQuery { connection ->
+            connection.withPrepared("UPDATE conversation_info SET unread_count=?, last_message=?, last_timestamp=? WHERE contact_id=?") { stmt ->
                 stmt.bind(1, unreadCount)
                 stmt.bind(2, lastMessage)
-                stmt.bind(3, userId.long)
+                if (lastTimestamp != null)
+                    stmt.bind(3, lastTimestamp)
+                else
+                    stmt.bindNull(3)
+                stmt.bind(4, userId)
                 stmt.step()
             }
         }
@@ -76,30 +89,141 @@ class SQLiteContactsPersistenceManagerTest {
     fun doesConvTableExist(userId: UserId): Boolean =
         persistenceManager.runQuery { ConversationTable.exists(it, userId) }.get()
 
-    fun testContactAdd(contact: ContactInfo) {
+    fun assertConvTableExists(userId: UserId) {
+        assertTrue(doesConvTableExist(userId), "Missing conversation table for $userId")
+    }
+
+    fun assertConvTableNotExists(userId: UserId, message: String = "Conversation table for $userId exists") {
+        assertFalse(doesConvTableExist(userId), message)
+    }
+
+    fun fetchContactInfo(userId: UserId): ContactInfo {
+        return assertNotNull(contactsPersistenceManager.get(userId).get(), "Missing user: $userId")
+    }
+
+    fun fetchConversationInfo(userId: UserId): ConversationInfo {
+        return assertNotNull(contactsPersistenceManager.getConversationInfo(userId).get(), "Conversation info missing")
+    }
+
+    fun clearRemoteUpdates() {
+        contactsPersistenceManager.removeRemoteUpdates(contactsPersistenceManager.getRemoteUpdates().get()).get()
+    }
+
+    fun assertConversationInfoExists(userId: UserId) {
+        assertNotNull(contactsPersistenceManager.getConversationInfo(userId).get(), "Conversation info missing for $userId")
+    }
+
+    fun assertConversationInfoNotExists(userId: UserId) {
+        assertNull(contactsPersistenceManager.getConversationInfo(userId).get(), "Conversation info for $userId is present")
+    }
+
+    fun testContactAdd(contact: ContactInfo, shouldConvTableBeCreated: Boolean) {
         assertTrue(contactsPersistenceManager.add(contact).get())
-        val got = contactsPersistenceManager.get(contact.id).get()
+        val got = assertNotNull(contactsPersistenceManager.get(contact.id).get(), "User not added")
 
-        assertNotNull(got)
-        assertEquals(contact, got)
-        assertTrue(doesConvTableExist(contact.id), "Conversation table is missing")
+        assertEquals(contact, got, "Stored info doesn't match initial info")
 
-        val update = RemoteContactUpdate(contactId, RemoteContactUpdateType.ADD)
+        val doesConvTableExist = doesConvTableExist(contact.id)
+        if (shouldConvTableBeCreated)
+            assertTrue(doesConvTableExist, "Conversation table is missing")
+        else
+            assertFalse(doesConvTableExist, "Conversation table was created")
+
+        val update = RemoteContactUpdate(contact.id, contact.allowedMessageLevel)
         assertEquals(listOf(update), contactsPersistenceManager.getRemoteUpdates().get(), "Invalid remote update list")
     }
 
     @Test
-    fun `add should successfully add a contact, create a conversation table and add a corresponding remote update (pending=false)`() {
-        testContactAdd(contactA)
+    fun `add should successfully add a contact, create a conversation table and add a corresponding remote update for an ALL user`() {
+        testContactAdd(createDummyContact(AllowedMessageLevel.ALL), true)
     }
 
     @Test
-    fun `add should do nothing and return false if the contact already exists`() {
+    fun `add should successfully add a contact, and add a corresponding remote update for a GROUP_ONLY user`() {
+        testContactAdd(createDummyContact(AllowedMessageLevel.GROUP_ONLY), false)
+    }
+
+    @Test
+    fun `add should do nothing and return false if the contact already exists and the message level is the same`() {
         val contact = contactA
         contactsPersistenceManager.add(contact).get()
 
         assertFalse(contactsPersistenceManager.add(contact).get(), "Contact not considered duplicate")
         assertEquals(1, contactsPersistenceManager.getRemoteUpdates().get().size, "Invalid number of remote updates")
+    }
+
+    @Test
+    fun `add should update the message level for an existing user`() {
+        val contact = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
+        val newContact = contact.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
+
+        assertTrue(contactsPersistenceManager.add(newContact).get(), "No update")
+
+        val info = assertNotNull(contactsPersistenceManager.get(newContact.id).get(), "Missing user")
+
+        assertEquals(newContact, info, "Invalid contact info")
+    }
+
+    @Test
+    fun `add should create a remote update if the message level of an existing user is modified`() {
+        val contact = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
+        clearRemoteUpdates()
+
+        contactsPersistenceManager.add(contact.copy(allowedMessageLevel = AllowedMessageLevel.ALL)).get()
+
+        assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
+            `as`("Should create a remote update for an modified user")
+            containsOnly(RemoteContactUpdate(contact.id, AllowedMessageLevel.ALL))
+        }
+    }
+
+    @Test
+    fun `add should not create a remote update if the message level of an existing user is not modified`() {
+        val contact = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
+        clearRemoteUpdates()
+
+        contactsPersistenceManager.add(contact).get()
+
+        assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
+            `as`("Should not create a remote update for an unmodified user")
+            isEmpty()
+        }
+    }
+
+    @Test
+    fun `add should create a conversation table for an existing user if the new message level is ALL`() {
+        val contact = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
+        val newContact = contact.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
+
+        testContactAdd(newContact, true)
+    }
+
+    @Test
+    fun `add should create a conversation info row for a new contact if the message level is ALL`() {
+        val contact = insertDummyContact(AllowedMessageLevel.ALL)
+
+        contactsPersistenceManager.add(contact).get()
+
+        assertNotNull(contactsPersistenceManager.getConversationInfo(contact.id).get(), "Conversation info not created")
+    }
+
+    @Test
+    fun `add should not create a conversation info row for a new contact if the message level is GROUP_ONLY`() {
+        val contact = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
+
+        contactsPersistenceManager.add(contact).get()
+
+        assertNull(contactsPersistenceManager.getConversationInfo(contact.id).get(), "Conversation info was created")
+    }
+
+    @Test
+    fun `add should create a conversation info row for an existing contact if the new message level is ALL`() {
+        val contact = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
+        val newContact = contact.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
+
+        contactsPersistenceManager.add(newContact).get()
+
+        assertNotNull(contactsPersistenceManager.getConversationInfo(newContact.id).get(), "Conversation info not created")
     }
 
     fun testAddContactMulti(existingContacts: Collection<ContactInfo>, newContacts: Collection<ContactInfo>) {
@@ -113,7 +237,7 @@ class SQLiteContactsPersistenceManagerTest {
 
         assertEquals(newContacts.toSet(), added, "Invalid added contacts")
 
-        val expectedUpdates = allContacts.map { RemoteContactUpdate(it.id, RemoteContactUpdateType.ADD) }.sortedBy { it.userId.long }
+        val expectedUpdates = allContacts.map { RemoteContactUpdate(it.id, it.allowedMessageLevel) }.sortedBy { it.userId.long }
 
         val updates = contactsPersistenceManager.getRemoteUpdates().get().sortedBy { it.userId.long }
 
@@ -129,8 +253,8 @@ class SQLiteContactsPersistenceManagerTest {
     @Test
     fun `getAll should return all stored contacts`() {
         val contacts = arrayListOf(
-            ContactInfo(UserId(0), "a@a.com", "a", AllowedMessageLevel.ALL, false, "000-0000", "pubkey"),
-            ContactInfo(UserId(1), "b@b.com", "b", AllowedMessageLevel.ALL, false, "000-0000", "pubkey")
+            ContactInfo(UserId(0), "a@a.com", "a", AllowedMessageLevel.ALL, "000-0000", "pubkey"),
+            ContactInfo(UserId(1), "b@b.com", "b", AllowedMessageLevel.ALL, "000-0000", "pubkey")
         )
 
         for (contact in contacts)
@@ -208,22 +332,51 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `remove should delete the contact and its conversation table`() {
+    fun `remove should set the contact message level to GROUP_ONLY for an existing user`() {
         contactsPersistenceManager.add(contactA).get()
 
         val wasRemoved = contactsPersistenceManager.remove(contactA.id).get()
 
         assertTrue(wasRemoved, "wasRemoved is false")
 
-        val got = contactsPersistenceManager.get(contactA.id).get()
+        val got = assertNotNull(contactsPersistenceManager.get(contactA.id).get(), "Missing user info")
 
-        assertNull(got)
-        assertFalse(doesConvTableExist(contactA.id))
+        assertEquals(AllowedMessageLevel.GROUP_ONLY, got.allowedMessageLevel, "Invalid message level")
+    }
+
+    @Test
+    fun `remove should create a corresponding remote update`() {
+        val contact = insertDummyContact()
+
+        contactsPersistenceManager.remove(contact.id).get()
+
+        assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
+            `as`("Remote updates should contain a GROUP_ONLY entry")
+            containsOnly(RemoteContactUpdate(contact.id, AllowedMessageLevel.GROUP_ONLY))
+        }
+    }
+
+    @Test
+    fun `remove should remove the convo log for an existing user`() {
+        contactsPersistenceManager.add(contactA).get()
+
+        contactsPersistenceManager.remove(contactA.id).get()
+
+        assertConvTableNotExists(contactA.id)
+    }
+
+    @Test
+    fun `remove should remove the conversation info for an existing user`() {
+        val contact = insertDummyContact(AllowedMessageLevel.ALL)
+
+        contactsPersistenceManager.remove(contact.id).get()
+
+        assertNull(contactsPersistenceManager.getConversationInfo(contact.id).get(), "Conversation info not removed")
     }
 
     @Test
     fun `remove should return false if no such contact existed`() {
-        val wasRemoved = contactsPersistenceManager.remove(contactA.id).get()
+        val wasRemoved = contactsPersistenceManager.remove(randomUserId()).get()
 
         assertFalse(wasRemoved, "wasRemoved is true")
     }
@@ -234,7 +387,7 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `getAllConversations should return all available conversations`() {
+    fun `getAllConversations should return conversations for ALL users`() {
         loadContactList()
 
         val got = contactsPersistenceManager.getAllConversations().get()
@@ -242,11 +395,33 @@ class SQLiteContactsPersistenceManagerTest {
         assertEquals(3, got.size)
     }
 
+    fun testNoConversations() {
+        val got = contactsPersistenceManager.getAllConversations().get()
+        assertThat(got).apply {
+            `as`("There should be no conversations")
+            isEmpty()
+        }
+    }
+
+    @Test
+    fun `getAllConversations should ignore GROUP_ONLY users`() {
+        insertDummyContact(AllowedMessageLevel.GROUP_ONLY).id
+
+        testNoConversations()
+    }
+
+    @Test
+    fun `getAllConversations should ignore BLOCKED users`() {
+        insertDummyContact(AllowedMessageLevel.BLOCKED).id
+
+        testNoConversations()
+    }
+
     @Test
     fun `getAllConversations should return a last message field if messages are available`() {
         loadContactList()
 
-        setConversationInfo(contactId, 2, testMessage)
+        setConversationInfo(contactId, 2, testMessage, currentTimestamp())
 
         val convos = contactsPersistenceManager.getAllConversations().get()
 
@@ -258,41 +433,53 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `getConversation should return a conversation if it exists`() {
-        loadContactList()
+    fun `getConversation should return a conversation for an ALL contact`() {
+        val id = insertDummyContact(AllowedMessageLevel.ALL).id
 
-        contactsPersistenceManager.getConversationInfo(contactA.id).get()
+        assertNotNull(contactsPersistenceManager.getConversationInfo(id).get(), "Missing conversation info")
+    }
+
+    @Test
+    fun `getConversation should return nothing for a GROUP_ONLY contact`() {
+        val id = insertDummyContact(AllowedMessageLevel.GROUP_ONLY).id
+
+        assertNull(contactsPersistenceManager.getConversationInfo(id).get(), "Conversation info should not exist")
+    }
+
+    @Test
+    fun `getConversation should return nothing for a BLOCKED contact`() {
+        val id = insertDummyContact(AllowedMessageLevel.BLOCKED).id
+
+        assertNull(contactsPersistenceManager.getConversationInfo(id).get(), "Conversation info should not exist")
     }
 
     @Test
     fun `getConversation should include unread message counts in a conversation`() {
         loadContactList()
 
-        val before = contactsPersistenceManager.getConversationInfo(contactA.id).get()
+        val before = assertNotNull(contactsPersistenceManager.getConversationInfo(contactA.id).get(), "Missing conversation info")
         assertEquals(0, before.unreadMessageCount)
 
-        setConversationInfo(contactId, 1, testMessage)
+        setConversationInfo(contactId, 1, testMessage, currentTimestamp())
 
-        val after = contactsPersistenceManager.getConversationInfo(contactA.id).get()
+        val after = assertNotNull(contactsPersistenceManager.getConversationInfo(contactA.id).get(), "Missing conversation info")
         assertEquals(1, after.unreadMessageCount)
     }
 
     @Test
-    fun `getConversation should throw InvalidConversationException if the given conversation doesn't exist`() {
-        assertFailsWith(InvalidConversationException::class) {
-            contactsPersistenceManager.getConversationInfo(contactA.id).get()
-        }
+    fun `getConversation should return null if the given conversation doesn't exist`() {
+        assertNull(contactsPersistenceManager.getConversationInfo(contactA.id).get())
     }
 
     @Test
     fun `markConversationAsRead should mark all unread messages as read`() {
         loadContactList()
 
-        setConversationInfo(contactId, 2, testMessage)
+        setConversationInfo(contactId, 2, testMessage, currentTimestamp())
 
         contactsPersistenceManager.markConversationAsRead(contactA.id).get()
 
-        val got = contactsPersistenceManager.getConversationInfo(contactA.id).get()
+        val got = assertNotNull(contactsPersistenceManager.getConversationInfo(contactA.id).get(), "Missing conversation info")
         assertEquals(0, got.unreadMessageCount)
     }
 
@@ -353,24 +540,6 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `getDiff should return a proper diff`() {
-        val userA = ContactInfo(UserId(0), "a@a.com", "a", AllowedMessageLevel.ALL, false, "0", "pk")
-        val userB = ContactInfo(UserId(1), "b@a.com", "a", AllowedMessageLevel.ALL, false, "0", "pk")
-        val userC = ContactInfo(UserId(2), "c@a.com", "a", AllowedMessageLevel.ALL, false, "0", "pk")
-
-        for (user in listOf(userA, userB))
-            contactsPersistenceManager.add(user).get()
-
-        val remoteContacts = listOf(userA.id, userC.id)
-
-        val diff = contactsPersistenceManager.getDiff(remoteContacts).get()
-
-        val expected = ContactListDiff(setOf(userC.id), setOf(userB.id))
-
-        assertEquals(expected, diff)
-    }
-
-    @Test
     fun `exists(UserId) should return true if a user exists`() {
         contactsPersistenceManager.add(contactA).get()
 
@@ -400,44 +569,25 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `addRemoteUpdates should register added updates`() {
-        val remoteUpdates = listOf(
-            RemoteContactUpdate(UserId(1), RemoteContactUpdateType.ADD),
-            RemoteContactUpdate(UserId(2), RemoteContactUpdateType.REMOVE)
-        )
-        contactsPersistenceManager.addRemoteUpdate(remoteUpdates).get()
+    fun `removeRemoteUpdates should remove only the given updates`() {
+        insertDummyContact(AllowedMessageLevel.ALL)
+        insertDummyContact(AllowedMessageLevel.ALL)
+
+        val pendingUpdates = contactsPersistenceManager.getRemoteUpdates().get()
+
+        assertEquals(2, pendingUpdates.size, "Invalid number of pending updates")
+
+        val toRemove = pendingUpdates.subList(0, 1)
+        val remaining = pendingUpdates.subList(1, 2)
+
+        contactsPersistenceManager.removeRemoteUpdates(toRemove).get()
 
         val got = contactsPersistenceManager.getRemoteUpdates().get()
 
-        assertEquals(remoteUpdates, got, "Invalid remote updates")
-    }
-
-    @Test
-    fun `addRemoteUpdates should overwrite an existing records`() {
-        val userId = UserId(1)
-        val update1 = RemoteContactUpdate(userId, RemoteContactUpdateType.ADD)
-        val update2 = RemoteContactUpdate(userId, RemoteContactUpdateType.REMOVE)
-
-        contactsPersistenceManager.addRemoteUpdate(listOf(update1)).get()
-        contactsPersistenceManager.addRemoteUpdate(listOf(update2)).get()
-
-        val got = contactsPersistenceManager.getRemoteUpdates().get()
-
-        assertEquals(listOf(update2), got, "Invalid remote updates")
-    }
-
-    @Test
-    fun `remoteRemoteUpdates should remove only the given updates`() {
-        val update1 = RemoteContactUpdate(UserId(1), RemoteContactUpdateType.ADD)
-        val update2 = RemoteContactUpdate(UserId(2), RemoteContactUpdateType.ADD)
-
-        contactsPersistenceManager.addRemoteUpdate(listOf(update1, update2)).get()
-
-        contactsPersistenceManager.removeRemoteUpdates(listOf(update2)).get()
-
-        val got = contactsPersistenceManager.getRemoteUpdates().get()
-
-        assertEquals(listOf(update1), got, "Invalid remote updates")
+        assertThat(got).apply {
+            `as`("Remote update not removed")
+            containsOnlyElementsOf(remaining)
+        }
     }
 
     @Test
@@ -477,16 +627,262 @@ class SQLiteContactsPersistenceManagerTest {
         assertEquals(contactIds, notBlocked, "Invalid filtered list")
     }
 
+    fun testBlock(contact: ContactInfo) {
+        contactsPersistenceManager.add(contact).get()
+
+        contactsPersistenceManager.block(contact.id).get()
+
+        val info = assertNotNull(contactsPersistenceManager.get(contact.id).get(), "Missing contact")
+
+        assertEquals(AllowedMessageLevel.BLOCKED, info.allowedMessageLevel, "Invalid message level")
+    }
+
     @Test
-    fun `updateMessageLevel should update allowedMessageLevel`() {
-        val contact = createDummyContact(AllowedMessageLevel.GROUP_ONLY)
+    fun `block should update the given user allowedMessageLevel to BLOCKED for an ALL user`() {
+        testBlock(createDummyContact(AllowedMessageLevel.ALL))
+    }
 
-        contactsPersistenceManager.add(contact)
+    @Test
+    fun `block should create a corresponding remote update`() {
+        val contact = insertDummyContact()
 
-        contactsPersistenceManager.updateMessageLevel(contact.id, AllowedMessageLevel.ALL).get()
+        contactsPersistenceManager.block(contact.id).get()
 
-        val updated = assertNotNull(contactsPersistenceManager.get(contact.id).get(), "No such user")
+        assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
+            `as`("Remote updates should contain a BLOCKED entry")
+            containsOnly(RemoteContactUpdate(contact.id, AllowedMessageLevel.BLOCKED))
+        }
+    }
 
-        assertEquals(AllowedMessageLevel.ALL, updated.allowedMessageLevel, "allowedMessageLevel not updated")
+    @Test
+    fun `block should remove a conversation table for an ALL user`() {
+        val contact = createDummyContact(AllowedMessageLevel.ALL)
+
+        contactsPersistenceManager.add(contact).get()
+
+        contactsPersistenceManager.block(contact.id).get()
+
+        assertConvTableNotExists(contact.id, "Conversation table not removed")
+    }
+
+    @Test
+    fun `block should remove the conversation info for an existing user`() {
+        val contact = insertDummyContact(AllowedMessageLevel.ALL)
+
+        contactsPersistenceManager.block(contact.id).get()
+
+        assertNull(contactsPersistenceManager.getConversationInfo(contact.id).get(), "Conversation info not removed")
+    }
+
+    @Test
+    fun `block should update the given user allowedMessageLevel to BLOCKED for a GROUP_ONLY user`() {
+        testBlock(createDummyContact(AllowedMessageLevel.GROUP_ONLY))
+    }
+
+    @Test
+    fun `block should do nothing for an already blocked user`() {
+        testBlock(createDummyContact(AllowedMessageLevel.GROUP_ONLY))
+    }
+
+
+    @Test
+    fun `block should do nothing for a non-existent user`() {
+        contactsPersistenceManager.block(randomUserId()).get()
+    }
+
+    @Test
+    fun `unblock should update the given user allowedMessageLevel to GROUP_ONLY for an existing blocked user`() {
+        val userId = insertDummyContact(AllowedMessageLevel.BLOCKED).id
+
+        contactsPersistenceManager.unblock(userId).get()
+
+        val info = assertNotNull(contactsPersistenceManager.get(userId).get(), "Missing user")
+
+        assertEquals(AllowedMessageLevel.GROUP_ONLY, info.allowedMessageLevel, "Invalid message level")
+    }
+
+    @Test
+    fun `unblock should do nothing for a non-existent user`() {
+        contactsPersistenceManager.unblock(randomUserId()).get()
+    }
+
+    @Test
+    fun `unblock should create a remote update when unblocking a user`() {
+        val userId = insertDummyContact(AllowedMessageLevel.BLOCKED).id
+        clearRemoteUpdates()
+
+        contactsPersistenceManager.unblock(userId).get()
+
+        assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
+            `as`("unblock should create a remote update")
+            containsOnly(RemoteContactUpdate(userId, AllowedMessageLevel.GROUP_ONLY))
+        }
+    }
+
+    @Test
+    fun `allowAll should set the allowed message level to ALL`() {
+        val userId = insertDummyContact(AllowedMessageLevel.GROUP_ONLY).id
+
+        contactsPersistenceManager.allowAll(userId).get()
+
+        val newLevel = fetchContactInfo(userId).allowedMessageLevel
+
+        assertEquals(AllowedMessageLevel.ALL, newLevel, "Message level not updated")
+    }
+
+    @Test
+    fun `allowAll should create a remote update`() {
+        val userId = insertDummyContact(AllowedMessageLevel.GROUP_ONLY).id
+        clearRemoteUpdates()
+
+        contactsPersistenceManager.allowAll(userId).get()
+
+        assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
+            `as`("allowAll should create a remote update")
+            containsOnly(RemoteContactUpdate(userId, AllowedMessageLevel.ALL))
+        }
+    }
+
+    @Test
+    fun `allowAll should create conversation data`() {
+        val userId = insertDummyContact(AllowedMessageLevel.GROUP_ONLY).id
+        clearRemoteUpdates()
+
+        contactsPersistenceManager.allowAll(userId).get()
+
+        assertConversationInfoExists(userId)
+        assertConvTableExists(userId)
+    }
+
+    @Test
+    fun `when multiple updates to the same contact are performed, keep only the last operation remote update`() {
+        val userId = insertDummyContact(AllowedMessageLevel.ALL).id
+        contactsPersistenceManager.remove(userId).get()
+        contactsPersistenceManager.block(userId).get()
+
+        assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
+            `as`("Remote update should only contain the final BLOCKED entry")
+            containsOnly(RemoteContactUpdate(userId, AllowedMessageLevel.BLOCKED))
+        }
+    }
+
+    @Test
+    fun `applyDiff should add all given new contacts`() {
+        val newContacts = randomContactInfoList()
+
+        contactsPersistenceManager.applyDiff(newContacts, emptyList()).get()
+
+        newContacts.forEach {
+            assertNotNull(contactsPersistenceManager.get(it.id), "Missing user")
+        }
+    }
+
+    @Test
+    fun `applyDiff should update message levels for existing contacts`() {
+        val userId = insertDummyContact(AllowedMessageLevel.ALL).id
+        val updatedMessageLevel = AllowedMessageLevel.GROUP_ONLY
+
+        contactsPersistenceManager.applyDiff(emptyList(), listOf(RemoteContactUpdate(userId, updatedMessageLevel))).get()
+
+        val contactInfo = fetchContactInfo(userId)
+
+        assertEquals(updatedMessageLevel, contactInfo.allowedMessageLevel, "Message level not updated")
+    }
+
+    @Test
+    fun `applyDiff should create conversation info and log for new contacts with ALL message level`() {
+        val newContacts = randomContactInfoList()
+
+        contactsPersistenceManager.applyDiff(newContacts, emptyList()).get()
+
+        newContacts.forEach {
+            assertConvTableExists(it.id)
+            assertConversationInfoExists(it.id)
+        }
+    }
+
+    @Test
+    fun `applyDiff should create conversation info and log for contacts moved to ALL message level`() {
+        val contactInfo = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
+        val update = RemoteContactUpdate(contactInfo.id, AllowedMessageLevel.ALL)
+
+        contactsPersistenceManager.applyDiff(emptyList(), listOf(update)).get()
+
+        assertConvTableExists(contactInfo.id)
+        assertConversationInfoExists(contactInfo.id)
+    }
+
+    fun testApplyDiffNewContactNoConvo(allowedMessageLevel: AllowedMessageLevel) {
+        val newContacts = randomContactInfoList(allowedMessageLevel)
+
+        contactsPersistenceManager.applyDiff(newContacts, emptyList()).get()
+
+        newContacts.forEach {
+            assertConvTableNotExists(it.id)
+            assertConversationInfoNotExists(it.id)
+        }
+    }
+
+    @Test
+    fun `applyDiff should not create conversation info or log for new contacts with GROUP_ONLY message level`() {
+        testApplyDiffNewContactNoConvo(AllowedMessageLevel.GROUP_ONLY)
+    }
+
+    fun testApplyDiffUpdatesNoConvo(allowedMessageLevel: AllowedMessageLevel) {
+        val contactInfo = insertDummyContact()
+        val update = RemoteContactUpdate(contactInfo.id, allowedMessageLevel)
+
+        contactsPersistenceManager.applyDiff(emptyList(), listOf(update)).get()
+
+        assertConvTableNotExists(contactInfo.id)
+        assertConversationInfoNotExists(contactInfo.id)
+    }
+
+    @Test
+    fun `applyDiff should remove convo info and log for contacts moved from ALL to GROUP_ONLY`() {
+        testApplyDiffUpdatesNoConvo(AllowedMessageLevel.GROUP_ONLY)
+    }
+
+    @Test
+    fun `applyDiff should remove convo info and log for contacts moved from ALL to BLOCKED`() {
+        testApplyDiffUpdatesNoConvo(AllowedMessageLevel.BLOCKED)
+    }
+
+    @Test
+    fun `applyDiff should create remote updates for new contacts`() {
+        val newContacts = randomContactInfoList()
+
+        contactsPersistenceManager.applyDiff(newContacts, emptyList()).get()
+
+        assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
+            `as`("Remote updates should be created for new users")
+            containsOnlyElementsOf(newContacts.map { RemoteContactUpdate(it.id, it.allowedMessageLevel) })
+        }
+    }
+
+    @Test
+    fun `applyDiff should create remote updates for updated contacts`() {
+        val userId = insertDummyContact(AllowedMessageLevel.ALL).id
+        val updatedMessageLevel = AllowedMessageLevel.GROUP_ONLY
+
+        val remoteContactUpdate = RemoteContactUpdate(userId, updatedMessageLevel)
+        contactsPersistenceManager.applyDiff(emptyList(), listOf(remoteContactUpdate)).get()
+
+        assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
+            `as`("Remote updates should be created for updated users")
+            containsOnly(remoteContactUpdate)
+        }
+    }
+
+    @Test
+    fun `get(ids) should return all requested users`() {
+        val one = insertDummyContact()
+        val two = insertDummyContact()
+
+        val got = contactsPersistenceManager.get(listOf(one.id, two.id)).get()
+        assertThat(got).apply {
+            `as`("getAll should return all requested users")
+            containsOnly(one, two)
+        }
     }
 }

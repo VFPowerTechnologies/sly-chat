@@ -132,7 +132,7 @@ class MessengerServiceImpl(
     private fun filterBlacklisted(packages: List<Package>): Promise<List<Package>, Exception> {
         val users = usersFromPackages(packages)
 
-        return contactsService.allowMessagesFrom(users) map { allowedUsers ->
+        return contactsService.filterBlocked(users) map { allowedUsers ->
             val rejected = HashSet(users)
             rejected.removeAll(allowedUsers)
             if (rejected.isNotEmpty())
@@ -239,7 +239,6 @@ class MessengerServiceImpl(
         val groupInfo = GroupInfo(
             GroupId(randomUUID()),
             groupName,
-            false,
             GroupMembershipLevel.JOINED
         )
 

@@ -3,7 +3,9 @@ package io.slychat.messenger.core.persistence.sqlite
 import com.almworks.sqlite4java.SQLiteException
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.MessageInfo
+import io.slychat.messenger.core.randomContactInfo
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.testutils.withTimeAs
 import org.junit.After
@@ -11,12 +13,7 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import java.util.*
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
-
-private data class LastConversationInfo(val unreadCount: Int, val lastMessage: String?, val lastTimestamp: Long?)
+import kotlin.test.*
 
 class SQLiteMessagePersistenceManagerTest {
     companion object {
@@ -26,6 +23,8 @@ class SQLiteMessagePersistenceManagerTest {
             SQLitePreKeyPersistenceManager::class.java.loadSQLiteLibraryFromResources()
         }
     }
+
+    private data class LastConversationInfo(val unreadCount: Int, val lastMessage: String?, val lastTimestamp: Long?)
 
     val contact = UserId(0)
     val testMessage = "test message"
@@ -161,7 +160,7 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
-    fun `addSentMessage should add a valid received message`() {
+    fun `addMessage should add a valid received message`() {
         createConvosFor(contact)
 
         val messageInfo = addMessage(contact, false, testMessage, 0)
@@ -170,7 +169,7 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
-    fun `addMessageInfo should update conversation info`() {
+    fun `addMessage should update conversation info`() {
         createConvosFor(contact)
 
         val messageInfo = MessageInfo.newSent("message", 0)
@@ -179,6 +178,17 @@ class SQLiteMessagePersistenceManagerTest {
 
         assertEquals(messageInfo.timestamp, lastConversationInfo.lastTimestamp, "Timestamp wasn't updated")
         assertEquals(messageInfo.message, lastConversationInfo.lastMessage, "Message wasn't updated")
+    }
+
+    @Test
+    fun `addMessage should throw InvalidMessageLevelException for a missing user table`() {
+        val contactInfo = randomContactInfo(AllowedMessageLevel.GROUP_ONLY)
+        contactsPersistenceManager.add(contactInfo).get()
+
+        val messageInfo = MessageInfo.newReceived("message", 0)
+        assertFailsWith(InvalidMessageLevelException::class) {
+            messagePersistenceManager.addMessage(contactInfo.id, messageInfo).get()
+        }
     }
 
     @Test

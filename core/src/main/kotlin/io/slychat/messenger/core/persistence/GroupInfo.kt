@@ -4,6 +4,5 @@ package io.slychat.messenger.core.persistence
 data class GroupInfo(
     val id: GroupId,
     val name: String,
-    val isPending: Boolean,
     val membershipLevel: GroupMembershipLevel
 )

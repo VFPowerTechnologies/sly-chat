@@ -3,6 +3,7 @@ package io.slychat.messenger.services.messaging
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
 import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.assertNoEventsEmitted
 import io.slychat.messenger.services.contacts.ContactsService
@@ -98,6 +99,27 @@ class MessageProcessorImplTest {
         assertEquals(bundle.userId, from, "Invalid user id")
     }
 
+    @Test
+    fun `it should handle InvalidMessageLevelException by calling ContactsService and retrying afterwards`() {
+        val processor = createProcessor()
+
+        val m = randomTextMessage()
+
+        val wrapper = SlyMessageWrapper(randomUUID(), TextMessageWrapper(m))
+
+        val from = randomUserId()
+
+        whenever(contactsService.allowAll(from)).thenReturn(Unit)
+        whenever(messagePersistenceManager.addMessage(any(), any()))
+            .thenReturn(InvalidMessageLevelException(from))
+            .thenReturn(randomReceivedMessageInfo())
+
+        processor.processMessage(from, wrapper).get()
+
+        verify(contactsService).allowAll(from)
+        verify(messagePersistenceManager, times(2)).addMessage(any(), any())
+    }
+
     fun randomTextMessage(groupId: GroupId? = null): TextMessage =
         TextMessage(currentTimestamp(), randomUUID(), groupId)
 
@@ -133,7 +155,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        val info = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
+        val info = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
 
         verify(contactsService).addMissingContacts(m.members)
 
@@ -194,7 +216,7 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        val groupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
+        val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
 
         whenever(groupPersistenceManager.getInfo(m.id)).thenReturn(groupInfo)
 
@@ -211,7 +233,7 @@ class MessageProcessorImplTest {
 
         val process = createProcessor()
 
-        val groupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
+        val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
 
         val invalidUser = m.members.first()
         val remaining = HashSet(m.members)
@@ -235,7 +257,7 @@ class MessageProcessorImplTest {
 
         val process = createProcessor()
 
-        val groupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
+        val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
 
         whenever(groupPersistenceManager.getInfo(m.id)).thenReturnNull()
 
@@ -254,7 +276,7 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        val groupInfo = GroupInfo(m.id, m.name, false, GroupMembershipLevel.BLOCKED)
+        val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.BLOCKED)
 
         whenever(groupPersistenceManager.getInfo(m.id)).thenReturn(groupInfo)
 
@@ -276,13 +298,13 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        val groupInfo = GroupInfo(m.id, m.name, false, GroupMembershipLevel.PARTED)
+        val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.PARTED)
 
         whenever(groupPersistenceManager.getInfo(m.id)).thenReturn(groupInfo)
 
         processor.processMessage(sender, wrap(m)).get()
 
-        val newGroupInfo = GroupInfo(m.id, m.name, true, GroupMembershipLevel.JOINED)
+        val newGroupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
 
         verify(groupPersistenceManager).join(newGroupInfo, fullMembers)
 

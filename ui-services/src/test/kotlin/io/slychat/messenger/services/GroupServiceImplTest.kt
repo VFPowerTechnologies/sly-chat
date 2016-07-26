@@ -2,6 +2,7 @@ package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
+import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.persistence.GroupPersistenceManager
 import io.slychat.messenger.core.randomGroupId
 import io.slychat.messenger.core.randomUserIds
@@ -15,8 +16,9 @@ import rx.subjects.PublishSubject
 class GroupServiceImplTest {
     val groupPersistenceManager: GroupPersistenceManager = mock()
     val messageProcessor: MessageProcessor = mock()
+    val contactPersistenceManager: ContactsPersistenceManager = mock()
 
-    val groupService = GroupServiceImpl(groupPersistenceManager, messageProcessor)
+    val groupService = GroupServiceImpl(groupPersistenceManager, contactPersistenceManager, messageProcessor)
 
     @Test
     fun `it should proxy group events from MessageProcessor`() {

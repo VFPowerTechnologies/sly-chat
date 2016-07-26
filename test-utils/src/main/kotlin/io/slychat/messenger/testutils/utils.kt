@@ -43,17 +43,17 @@ fun <R> withKovenantThreadedContext(body: () -> R): R {
 }
 
 /** Convinence function for returning a successful promise. */
-fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(v: T) {
-    this.thenReturn(Promise.ofSuccess(v))
+fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(v: T): OngoingStubbing<Promise<T, Exception>> {
+    return this.thenReturn(Promise.ofSuccess(v))
 }
 
-fun <T> OngoingStubbing<Promise<T?, Exception>>.thenReturnNull() {
-    this.thenReturn(Promise.ofSuccess(null))
+fun <T> OngoingStubbing<Promise<T?, Exception>>.thenReturnNull(): OngoingStubbing<Promise<T?, Exception>> {
+    return this.thenReturn(Promise.ofSuccess(null))
 }
 
 /** Convinence function for returning a failed promise. */
-fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(e: Exception) {
-    this.thenReturn(Promise.ofFail(e))
+fun <T> OngoingStubbing<Promise<T, Exception>>.thenReturn(e: Exception): OngoingStubbing<Promise<T, Exception>> {
+    return this.thenReturn(Promise.ofFail(e))
 }
 
 fun <T> OngoingStubbing<Promise<T, Exception>>.thenAnswerSuccess(body: (InvocationOnMock) -> T) {

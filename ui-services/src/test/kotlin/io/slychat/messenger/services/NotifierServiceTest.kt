@@ -84,7 +84,7 @@ class NotifierServiceTest {
         val userId = UserId(1)
         val email = "email"
         val name = "name"
-        val contactInfo = ContactInfo(userId, email, name, AllowedMessageLevel.ALL, false, "", "")
+        val contactInfo = ContactInfo(userId, email, name, AllowedMessageLevel.ALL, "", "")
         val contactDisplayInfo = ContactDisplayInfo(userId, email, name)
         whenever(contactsPersistenceManager.get(userId)).thenReturn(Promise.ofSuccess(contactInfo))
 
@@ -96,7 +96,7 @@ class NotifierServiceTest {
 
     fun setupContactInfo(id: Long): ContactInfo {
         val userId = UserId(id)
-        val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, false, "", "")
+        val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, "", "")
         whenever(contactsPersistenceManager.get(userId)).thenReturn(Promise.ofSuccess(contactInfo))
         return contactInfo
     }

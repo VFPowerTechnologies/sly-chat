@@ -274,4 +274,32 @@ class DatabaseMigrationTest {
             check6To7(persistenceManager, connection)
         }
     }
+
+    @Test
+    fun `migration 7 to 8`() {
+        withTestDatabase(7, 8) { persistenceManager, connection ->
+            check7to8(persistenceManager, connection)
+        }
+    }
+
+    private data class RemoteContactUpdateV7(val userId: Long, val allowedMessageLevel: Int)
+
+    private fun check7to8(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertColDef(connection, "remote_contact_updates",  "allowed_message_level INTEGER NOT NULL")
+        assertNoColDef(connection, "remote_contact_updates", "type TEXT NOT NULL")
+
+        val remoteUpdates = connection.withPrepared("SELECT contact_id, allowed_message_level FROM remote_contact_updates") { stmt ->
+            stmt.map { RemoteContactUpdateV7(stmt.columnLong(0), stmt.columnInt(1)) }
+        }
+
+        val expected = listOf(
+            RemoteContactUpdateV7(153, 2),
+            RemoteContactUpdateV7(157, 1)
+        )
+
+        assertThat(remoteUpdates).apply {
+            `as`("Pending remote updates should be updated")
+            containsOnlyElementsOf(expected)
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.GroupConversation
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.GroupInfo
@@ -21,6 +22,8 @@ interface GroupService {
     fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception>
 
     fun createNewGroup(name: String, initialMembers: Set<UserId>): Promise<Unit, Exception>
+
+    fun getMembers(groupId: GroupId): Promise<List<ContactInfo>, Exception>
 
     fun part(groupId: GroupId): Promise<Boolean, Exception>
 

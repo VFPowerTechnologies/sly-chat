@@ -6,7 +6,7 @@ import java.util.*
 
 fun randomGroupInfo(): GroupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 fun randomGroupInfo(membershipLevel: GroupMembershipLevel): GroupInfo =
-    GroupInfo(randomGroupId(), randomGroupName(), false, membershipLevel)
+    GroupInfo(randomGroupId(), randomGroupName(), membershipLevel)
 
 fun randomGroupName(): String = randomUUID()
 
@@ -64,18 +64,21 @@ fun randomQueuedMessages(n: Int = 2): List<QueuedMessage> {
     return (1..n).map { randomQueuedMessage() }
 }
 
-fun randomContactInfo(): ContactInfo {
+fun randomContactInfo(allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL): ContactInfo {
     val userId = randomUserId()
 
     return ContactInfo(
         userId,
         "$userId@domain.com",
         userId.toString(),
-        AllowedMessageLevel.ALL,
-        false,
+        allowedMessageLevel,
         null,
         "pubkey"
     )
+}
+
+fun randomContactInfoList(allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL, n: Int = 2): List<ContactInfo> {
+    return (1..n).map { randomContactInfo(allowedMessageLevel) }
 }
 
 fun randomMessageText(): String {

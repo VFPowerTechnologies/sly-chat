@@ -70,8 +70,20 @@ VALUES
         return messageInfo
     }
 
+    private fun isMissingConvTableError(e: SQLiteException): Boolean =
+        e.message?.let { "no such table: conv_" in it } ?: false
+
     override fun addMessage(userId: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        addMessageReal(connection, userId, messageInfo)
+        try {
+            addMessageReal(connection, userId, messageInfo)
+        }
+        catch (e: SQLiteException) {
+            if (isMissingConvTableError(e))
+                throw InvalidMessageLevelException(userId)
+            else
+                throw e
+        }
+
         messageInfo
     }
 
