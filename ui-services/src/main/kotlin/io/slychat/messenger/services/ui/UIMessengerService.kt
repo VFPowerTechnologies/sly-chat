@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui
 
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
+import io.slychat.messenger.core.persistence.GroupId
 import nl.komponents.kovenant.Promise
 
 /** Responsible for all message-related functionality between contacts. */
@@ -8,6 +9,8 @@ import nl.komponents.kovenant.Promise
 interface UIMessengerService {
     /** Attempt to send a message to a contact. */
     fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception>
+
+    fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<UIMessage, Exception>
 
     /** Listener for new incoming messages. Each list will contain messages only from a single contact. */
     fun addNewMessageListener(listener: (UIMessageInfo) -> Unit)

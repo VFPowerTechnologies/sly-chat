@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.ui.impl
 
+import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.services.messaging.MessengerService
@@ -69,6 +70,12 @@ class UIMessengerServiceImpl(
     override fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception> {
         return getMessengerServiceOrThrow().sendMessageTo(contact.id, message) map { messageInfo ->
             messageInfo.toUI()
+        }
+    }
+
+    override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<UIMessage, Exception> {
+        return getMessengerServiceOrThrow().sendGroupMessageTo(groupId, message) map {
+            it.info.toUI()
         }
     }
 

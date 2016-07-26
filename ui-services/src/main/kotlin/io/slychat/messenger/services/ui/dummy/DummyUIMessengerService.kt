@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui.dummy
 
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
@@ -73,6 +74,10 @@ class DummyUIMessengerService(private val contactsService: UIContactsService) : 
             notifyMessageStatusUpdateListeners(contact.id, withTimestamp)
         }, 1000)
         return Promise.ofSuccess(newMessage)
+    }
+
+    override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<UIMessage, Exception> {
+        TODO()
     }
 
     override fun addNewMessageListener(listener: (UIMessageInfo) -> Unit) {
