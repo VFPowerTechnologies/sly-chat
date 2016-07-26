@@ -18,6 +18,8 @@ interface UIGroupService {
 
     fun createNewGroup(name: String, initialMembers: List<UIContactDetails>): Promise<Unit, Exception>
 
+    fun getMembers(groupId: GroupId): Promise<List<UIContactDetails>, Exception>
+
     fun part(groupId: GroupId): Promise<Boolean, Exception>
 
     fun block(groupId: GroupId): Promise<Unit, Exception>
