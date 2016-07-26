@@ -873,4 +873,16 @@ class SQLiteContactsPersistenceManagerTest {
             containsOnly(remoteContactUpdate)
         }
     }
+
+    @Test
+    fun `get(ids) should return all requested users`() {
+        val one = insertDummyContact()
+        val two = insertDummyContact()
+
+        val got = contactsPersistenceManager.get(listOf(one.id, two.id)).get()
+        assertThat(got).apply {
+            `as`("getAll should return all requested users")
+            containsOnly(one, two)
+        }
+    }
 }

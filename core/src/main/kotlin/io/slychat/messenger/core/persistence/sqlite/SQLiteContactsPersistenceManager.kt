@@ -59,6 +59,13 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         queryContactInfo(connection, userId)
     }
 
+    override fun get(ids: Collection<UserId>): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withPrepared("SELECT id, email, name, allowed_message_level, phone_number, public_key FROM contacts WHERE id IN (${getPlaceholders(ids.size)})") { stmt ->
+            ids.forEachIndexed { i, userId -> stmt.bind(i+1, userId) }
+            stmt.map { contactInfoFromRow(stmt) }
+        }
+    }
+
     override fun getAll(): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.prepare("SELECT id, email, name, allowed_message_level, phone_number, public_key FROM contacts").use { stmt ->
             val r = ArrayList<ContactInfo>()
