@@ -121,6 +121,10 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         Unit
     }
 
+    override fun allowAll(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        updateContactMessageLevel(connection, userId, AllowedMessageLevel.ALL)
+    }
+
     override fun getAllConversations(): Promise<List<Conversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val sql = """
 SELECT

@@ -27,6 +27,8 @@ interface ContactsPersistenceManager {
     fun block(userId: UserId): Promise<Unit, Exception>
     fun unblock(userId: UserId): Promise<Unit, Exception>
 
+    fun allowAll(userId: UserId): Promise<Unit, Exception>
+
     /** Returns info for all available conversations. */
     fun getAllConversations(): Promise<List<Conversation>, Exception>
 

@@ -738,6 +738,30 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
+    fun `allowAll should set the allowed message level to ALL`() {
+        val userId = insertDummyContact(AllowedMessageLevel.GROUP_ONLY).id
+
+        contactsPersistenceManager.allowAll(userId).get()
+
+        val newLevel = fetchContactInfo(userId).allowedMessageLevel
+
+        assertEquals(AllowedMessageLevel.ALL, newLevel, "Message level not updated")
+    }
+
+    @Test
+    fun `allowAll should create a remote update`() {
+        val userId = insertDummyContact(AllowedMessageLevel.GROUP_ONLY).id
+        clearRemoteUpdates()
+
+        contactsPersistenceManager.allowAll(userId).get()
+
+        assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
+            `as`("allowAll should create a remote update")
+            containsOnly(RemoteContactUpdate(userId, AllowedMessageLevel.ALL))
+        }
+    }
+
+    @Test
     fun `when multiple updates to the same contact are performed, keep only the last operation remote update`() {
         val userId = insertDummyContact(AllowedMessageLevel.ALL).id
         contactsPersistenceManager.remove(userId).get()
