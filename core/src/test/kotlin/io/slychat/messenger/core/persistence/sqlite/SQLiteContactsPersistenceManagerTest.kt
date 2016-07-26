@@ -540,24 +540,6 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `getDiff should return a proper diff`() {
-        val userA = ContactInfo(UserId(0), "a@a.com", "a", AllowedMessageLevel.ALL, "0", "pk")
-        val userB = ContactInfo(UserId(1), "b@a.com", "a", AllowedMessageLevel.ALL, "0", "pk")
-        val userC = ContactInfo(UserId(2), "c@a.com", "a", AllowedMessageLevel.ALL, "0", "pk")
-
-        for (user in listOf(userA, userB))
-            contactsPersistenceManager.add(user).get()
-
-        val remoteContacts = listOf(userA.id, userC.id)
-
-        val diff = contactsPersistenceManager.getDiff(remoteContacts).get()
-
-        val expected = ContactListDiff(setOf(userC.id), setOf(userB.id))
-
-        assertEquals(expected, diff)
-    }
-
-    @Test
     fun `exists(UserId) should return true if a user exists`() {
         contactsPersistenceManager.add(contactA).get()
 

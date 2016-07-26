@@ -324,26 +324,6 @@ ON
         }
     }
 
-    override fun getDiff(ids: Collection<UserId>): Promise<ContactListDiff, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val remoteIds = ids.toSet()
-
-        val localIds = connection.prepare("SELECT id FROM contacts").use { stmt ->
-            val r = HashSet<UserId>()
-            while (stmt.step()) {
-                r.add(UserId(stmt.columnLong(0)))
-            }
-            r
-        }
-
-        val removedEmails = HashSet(localIds)
-        removedEmails.removeAll(remoteIds)
-
-        val addedEmails = HashSet(remoteIds)
-        addedEmails.removeAll(localIds)
-
-        ContactListDiff(addedEmails, removedEmails)
-    }
-
     override fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<RemoteContactUpdate>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             newContacts.forEach { addContactNoTransaction(connection, it) }

@@ -64,9 +64,6 @@ interface ContactsPersistenceManager {
     /** Find which platform contacts aren't currently in the contacts list. */
     fun findMissing(platformContacts: List<PlatformContact>): Promise<List<PlatformContact>, Exception>
 
-    /** Diff the current contact list with the given remote one. */
-    fun getDiff(ids: Collection<UserId>): Promise<ContactListDiff, Exception>
-
     fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<RemoteContactUpdate>): Promise<Unit, Exception>
 
     fun getRemoteUpdates(): Promise<List<RemoteContactUpdate>, Exception>
