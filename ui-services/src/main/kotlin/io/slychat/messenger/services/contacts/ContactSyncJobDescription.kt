@@ -5,20 +5,20 @@ class ContactSyncJobDescription {
     var updateRemote: Boolean = false
         private set
 
-    var localSync: Boolean = false
+    var platformContactSync: Boolean = false
         private set
 
     var remoteSync: Boolean = false
         private set
 
-    fun doLocalSync(): ContactSyncJobDescription {
-        localSync = true
+    fun doPlatformContactSync(): ContactSyncJobDescription {
+        platformContactSync = true
         updateRemote = true
         return this
     }
 
     fun doRemoteSync(): ContactSyncJobDescription {
-        localSync = true
+        platformContactSync = true
         updateRemote = true
         remoteSync = true
         return this

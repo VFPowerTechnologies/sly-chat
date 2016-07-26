@@ -88,7 +88,7 @@ class ContactOperationManagerImpl(
 
         val info = ContactSyncJobInfo(
             queuedJob.updateRemote,
-            queuedJob.localSync,
+            queuedJob.platformContactSync,
             queuedJob.remoteSync,
             true
         )

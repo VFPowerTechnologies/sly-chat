@@ -63,7 +63,7 @@ class ContactOperationManagerImplTest {
     }
 
     fun doLocalSync(runner: ContactOperationManagerImpl) {
-        runner.withCurrentSyncJob { doLocalSync() }
+        runner.withCurrentSyncJob { doPlatformContactSync() }
     }
 
     @Test

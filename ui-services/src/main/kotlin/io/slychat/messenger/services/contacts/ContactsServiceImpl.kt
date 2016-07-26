@@ -109,7 +109,7 @@ class ContactsServiceImpl(
     }
 
     override fun doLocalSync() {
-        withCurrentJob { doLocalSync() }
+        withCurrentJob { doPlatformContactSync() }
     }
 
     private fun onContactJobStatusUpdate(info: ContactSyncJobInfo) {

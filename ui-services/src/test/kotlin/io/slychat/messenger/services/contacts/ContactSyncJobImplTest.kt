@@ -83,8 +83,8 @@ class ContactSyncJobImplTest {
         runJobWithDescription { doUpdateRemoteContactList() }
     }
 
-    fun runLocalSync() {
-        runJobWithDescription { doLocalSync() }
+    fun runPlatformContactSync() {
+        runJobWithDescription { doPlatformContactSync() }
     }
 
     fun runRemoteSync() {
@@ -173,40 +173,40 @@ class ContactSyncJobImplTest {
     }
 
     @Test
-    fun `a local sync should not issue a remote request if no platform contacts are found`() {
+    fun `a platform contact sync should not issue a remote request if no platform contacts are found`() {
         whenever(platformContacts.fetchContacts()).thenReturn(emptyList())
 
-        runLocalSync()
+        runPlatformContactSync()
 
         verify(contactAsyncClient, never()).findLocalContacts(any(), any())
     }
 
     @Test
-    fun `a local sync should not issue a remote request if no missing local contacts are found`() {
+    fun `a platform contact sync should not issue a remote request if no missing local contacts are found`() {
         val platformContact = PlatformContact("name", listOf("a@a.com"), listOf("15555555555"))
         whenever(platformContacts.fetchContacts()).thenReturn(listOf(platformContact))
         whenever(contactsPersistenceManager.findMissing(anyList())).thenReturn(emptyList())
 
-        runLocalSync()
+        runPlatformContactSync()
 
         verify(contactAsyncClient, never()).findLocalContacts(any(), any())
     }
 
     @Test
-    fun `a local sync should query for new contacts using missing local platform contact data`() {
+    fun `a platform contact sync should query for new contacts using missing local platform contact data`() {
         val platformContact = PlatformContact("name", listOf("a@a.com"), listOf("15555555555"))
         val missingContacts = listOf(platformContact)
 
         whenever(platformContacts.fetchContacts()).thenReturn(missingContacts)
         whenever(contactsPersistenceManager.findMissing(anyList())).thenReturn(missingContacts)
 
-        runLocalSync()
+        runPlatformContactSync()
 
         verify(contactAsyncClient).findLocalContacts(any(), eq(FindLocalContactsRequest(missingContacts)))
     }
 
     @Test
-    fun `a local sync should add local contacts with remote accounts to the contact list with ALL message level`() {
+    fun `a platform contact sync should add local contacts with remote accounts to the contact list with ALL message level`() {
         val userId = randomUserId()
         val email = "a@a.com"
         val name = "name"
@@ -224,7 +224,7 @@ class ContactSyncJobImplTest {
         whenever(contactsPersistenceManager.findMissing(anyList())).thenReturn(missingContacts)
         whenever(contactAsyncClient.findLocalContacts(any(), any())).thenReturn(FindLocalContactsResponse(apiContacts))
 
-        runLocalSync()
+        runPlatformContactSync()
 
         verify(contactsPersistenceManager).add(capture<Collection<ContactInfo>> {
             assertThat(it).apply {

@@ -53,7 +53,7 @@ class ContactSyncJobImpl(
     private fun queryAndAddNewContacts(userCredentials: UserCredentials, missingContacts: List<PlatformContact>): Promise<Unit, Exception> {
         return if (missingContacts.isNotEmpty()) {
             contactClient.findLocalContacts(userCredentials, FindLocalContactsRequest(missingContacts)) bind { foundContacts ->
-                log.debug("Found local contacts: {}", foundContacts)
+                log.debug("Found platform contacts: {}", foundContacts)
 
                 contactsPersistenceManager.add(foundContacts.contacts.map { it.toCore(AllowedMessageLevel.ALL) }) map { Unit }
             }
@@ -64,14 +64,14 @@ class ContactSyncJobImpl(
     }
 
     /** Attempts to find any registered users matching the user's platform contacts. */
-    private fun syncLocalContacts(): Promise<Unit, Exception> {
-        log.info("Beginning local contact sync")
+    private fun syncPlatformContacts(): Promise<Unit, Exception> {
+        log.info("Beginning platform contact sync")
 
         return getDefaultRegionCode() bind { defaultRegion ->
             authTokenManager.bind { userCredentials ->
                 getPlatformContacts(defaultRegion) bind { contacts ->
                     contactsPersistenceManager.findMissing(contacts) bind { missingContacts ->
-                        log.debug("Missing local contacts:", missingContacts)
+                        log.debug("Missing platform contacts:", missingContacts)
                         queryAndAddNewContacts(userCredentials, missingContacts)
                     }
                 }
@@ -146,8 +146,8 @@ class ContactSyncJobImpl(
     override fun run(jobDescription: ContactSyncJobDescription): Promise<Unit, Exception> {
         val jobRunners = ArrayList<(Unit) -> Promise<Unit, Exception>>()
 
-        if (jobDescription.localSync)
-            jobRunners.add { syncLocalContacts() }
+        if (jobDescription.platformContactSync)
+            jobRunners.add { syncPlatformContacts() }
 
         if (jobDescription.updateRemote)
             jobRunners.add { updateRemoteContactList() }
