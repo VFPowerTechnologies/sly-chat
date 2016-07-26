@@ -255,8 +255,8 @@ class MessengerServiceImpl(
             SenderMessageEntry(metadata, serialized)
         }
 
-        return messageSender.addToQueue(messages) bind {
-            groupPersistenceManager.join(groupInfo, initialMembers)
+        return groupPersistenceManager.join(groupInfo, initialMembers) bind {
+            messageSender.addToQueue(messages)
         }
     }
 

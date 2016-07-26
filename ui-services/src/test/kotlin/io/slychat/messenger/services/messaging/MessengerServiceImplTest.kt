@@ -613,12 +613,30 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        messengerService.createNewGroup(groupName, initialMembers)
+        messengerService.createNewGroup(groupName, initialMembers).get()
 
         verify(groupPersistenceManager).join(capture {
             assertEquals(groupName, it.name, "Invalid group name")
             assertEquals(GroupMembershipLevel.JOINED, it.membershipLevel, "Invalid membership level")
             assertFalse(it.isPending, "Created group should not be in pending state")
         }, eq(initialMembers))
+    }
+
+    //since send queue has a fk for group ids
+    @Test
+    fun `createNewGroup should create group data before storing messages`() {
+        val groupName = randomGroupName()
+        val initialMembers = randomUserIds()
+
+        val messengerService = createService()
+
+        whenever(groupPersistenceManager.join(any(), any())).thenReturn(Unit)
+
+        messengerService.createNewGroup(groupName, initialMembers).get()
+
+        val order = inOrder(groupPersistenceManager, messageSender)
+
+        order.verify(groupPersistenceManager).join(any(), any())
+        order.verify(messageSender).addToQueue(anyList())
     }
 }
