@@ -295,10 +295,12 @@ class UserModule(
     @Provides
     fun providesGroupService(
         groupPersistenceManager: GroupPersistenceManager,
+        contactsPersistenceManager: ContactsPersistenceManager,
         messageProcessor: MessageProcessor
     ): GroupService =
         GroupServiceImpl(
             groupPersistenceManager,
+            contactsPersistenceManager,
             messageProcessor
         )
 }

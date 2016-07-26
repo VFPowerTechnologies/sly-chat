@@ -1,18 +1,17 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.GroupConversation
-import io.slychat.messenger.core.persistence.GroupId
-import io.slychat.messenger.core.persistence.GroupInfo
-import io.slychat.messenger.core.persistence.GroupPersistenceManager
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.messaging.GroupEvent
 import io.slychat.messenger.services.messaging.MessageProcessor
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.bind
 import rx.Observable
 
 //TODO should move the group message generation to here; in a hurry now so do it later
 class GroupServiceImpl(
     private val groupPersistenceManager: GroupPersistenceManager,
+    private val contactsPersistenceManager: ContactsPersistenceManager,
     private val messageProcessor: MessageProcessor
 ) : GroupService {
     override val groupEvents: Observable<GroupEvent>
@@ -36,6 +35,12 @@ class GroupServiceImpl(
 
     override fun createNewGroup(name: String, initialMembers: Set<UserId>): Promise<Unit, Exception> {
         TODO()
+    }
+
+    override fun getMembers(groupId: GroupId): Promise<List<ContactInfo>, Exception> {
+        return groupPersistenceManager.getMembers(groupId) bind {
+            contactsPersistenceManager.get(it)
+        }
     }
 
     override fun part(groupId: GroupId): Promise<Boolean, Exception> {
