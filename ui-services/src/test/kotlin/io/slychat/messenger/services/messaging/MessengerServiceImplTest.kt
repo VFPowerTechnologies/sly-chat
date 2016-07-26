@@ -13,9 +13,11 @@ import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.testSubscriber
+import io.slychat.messenger.testutils.thenAnswerWithArg
 import io.slychat.messenger.testutils.thenReturn
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import rx.subjects.PublishSubject
@@ -48,7 +50,8 @@ class MessengerServiceImplTest {
 
     val messageSent: PublishSubject<MessageMetadata> = PublishSubject.create()
 
-    fun createService(): MessengerServiceImpl {
+    @Before
+    fun before() {
         whenever(messageSender.messageSent).thenReturn(messageSent)
 
         whenever(contactsService.contactEvents).thenReturn(contactEvents)
@@ -59,16 +62,17 @@ class MessengerServiceImplTest {
         whenever(messageSender.addToQueue(any(), any())).thenReturn(Unit)
 
         //some useful defaults
-        whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswer {
-            val a = it.arguments[1] as MessageInfo
-            Promise.ofSuccess<MessageInfo, Exception>(a)
-        }
+        whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswerWithArg(1)
 
         whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
         whenever(messageReceiver.processPackages(any())).thenReturn(Unit)
 
+        whenever(groupPersistenceManager.addMembers(any(), any())).thenAnswerWithArg(1)
+        whenever(groupPersistenceManager.join(any(), any())).thenReturn(Unit)
         whenever(groupPersistenceManager.part(any())).thenReturn(true)
+    }
 
+    fun createService(): MessengerServiceImpl {
         return MessengerServiceImpl(
             contactsService,
             messagePersistenceManager,
@@ -544,7 +548,7 @@ class MessengerServiceImplTest {
         withExistingGroup { messengerService, groupInfo, members ->
             val newMembers = randomUserIds()
 
-            messengerService.inviteUsersToGroup(groupInfo.id, newMembers)
+            messengerService.inviteUsersToGroup(groupInfo.id, newMembers).get()
 
             assertGroupMessagesSentTo<GroupEventMessage.Join>(members) { recipient, m ->
                 assertEquals(newMembers, m.joined, "Joined member list is incorrect")
@@ -557,7 +561,7 @@ class MessengerServiceImplTest {
         withExistingGroup { messengerService, groupInfo, members ->
             val newMembers = randomUserIds()
 
-            messengerService.inviteUsersToGroup(groupInfo.id, newMembers)
+            messengerService.inviteUsersToGroup(groupInfo.id, newMembers).get()
 
             assertGroupMessagesSentTo<GroupEventMessage.Invitation>(newMembers) { recipient, m ->
                 assertEquals(groupInfo.name, m.name, "Invalid group name")
@@ -571,7 +575,7 @@ class MessengerServiceImplTest {
         withExistingGroup { messengerService, groupInfo, members ->
             val newMembers = randomUserIds()
 
-            messengerService.inviteUsersToGroup(groupInfo.id, newMembers)
+            messengerService.inviteUsersToGroup(groupInfo.id, newMembers).get()
 
             verify(groupPersistenceManager).addMembers(groupInfo.id, newMembers)
         }
@@ -584,7 +588,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        messengerService.createNewGroup(groupName, initialMembers)
+        messengerService.createNewGroup(groupName, initialMembers).get()
 
         assertGroupMessagesSentTo<GroupEventMessage.Invitation>(initialMembers) { recipient, m ->
             val expectedMembers = HashSet(initialMembers)
@@ -601,7 +605,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        messengerService.createNewGroup(groupName, emptySet())
+        messengerService.createNewGroup(groupName, emptySet()).get()
 
         assertNoGroupMessagesSent<GroupEventMessage.Invitation>()
     }
@@ -629,8 +633,6 @@ class MessengerServiceImplTest {
         val initialMembers = randomUserIds()
 
         val messengerService = createService()
-
-        whenever(groupPersistenceManager.join(any(), any())).thenReturn(Unit)
 
         messengerService.createNewGroup(groupName, initialMembers).get()
 
