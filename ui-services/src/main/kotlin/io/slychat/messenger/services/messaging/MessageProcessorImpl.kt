@@ -3,6 +3,9 @@ package io.slychat.messenger.services.messaging
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
+import io.slychat.messenger.services.bindRecoverForUi
+import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
@@ -42,12 +45,22 @@ class MessageProcessorImpl(
         }
     }
 
+    private fun storeMessage(sender: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception> {
+        return messagePersistenceManager.addMessage(sender, messageInfo) bindRecoverForUi { e: InvalidMessageLevelException ->
+            log.debug("User doesn't have appropriate message level, upgrading ")
+
+            contactsService.allowAll(sender) bindUi {
+                messagePersistenceManager.addMessage(sender, messageInfo)
+            }
+        }
+    }
+
     private fun handleTextMessage(sender: UserId, messageId: String, m: TextMessage): Promise<Unit, Exception> {
         val messageInfo = MessageInfo.newReceived(messageId, m.message, m.timestamp, currentTimestamp(), 0)
 
         val groupId = m.groupId
         return if (groupId == null) {
-            messagePersistenceManager.addMessage(sender, messageInfo) mapUi { messageInfo ->
+            storeMessage(sender, messageInfo) mapUi { messageInfo ->
                 val bundle = MessageBundle(sender, listOf(messageInfo))
                 newMessagesSubject.onNext(bundle)
             }

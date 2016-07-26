@@ -31,6 +31,13 @@ infix inline fun <reified E : Exception, V> Promise<V, Exception>.recoverFor(cro
         else throw e
     }
 
+/** Recover from a given exception. */
+infix inline fun <reified E : Exception, V> Promise<V, Exception>.bindRecoverFor(crossinline body: (E) -> Promise<V, Exception>): Promise<V, Exception> =
+    recoverWith { e ->
+        if (e is E) body(e)
+        else throw e
+    }
+
 
 infix fun <V, V2> Promise<V, Exception>.recoverWith(body: (Exception) -> Promise<V2, Exception>): Promise<V2, Exception> {
     val d = deferred<V2, Exception>()

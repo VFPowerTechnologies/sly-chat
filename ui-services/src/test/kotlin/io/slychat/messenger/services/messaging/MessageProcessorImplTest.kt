@@ -3,6 +3,7 @@ package io.slychat.messenger.services.messaging
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
 import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.assertNoEventsEmitted
 import io.slychat.messenger.services.contacts.ContactsService
@@ -96,6 +97,27 @@ class MessageProcessorImplTest {
         val bundle = bundles[0]
 
         assertEquals(bundle.userId, from, "Invalid user id")
+    }
+
+    @Test
+    fun `it should handle InvalidMessageLevelException by calling ContactsService and retrying afterwards`() {
+        val processor = createProcessor()
+
+        val m = randomTextMessage()
+
+        val wrapper = SlyMessageWrapper(randomUUID(), TextMessageWrapper(m))
+
+        val from = randomUserId()
+
+        whenever(contactsService.allowAll(from)).thenReturn(Unit)
+        whenever(messagePersistenceManager.addMessage(any(), any()))
+            .thenReturn(InvalidMessageLevelException(from))
+            .thenReturn(randomReceivedMessageInfo())
+
+        processor.processMessage(from, wrapper).get()
+
+        verify(contactsService).allowAll(from)
+        verify(messagePersistenceManager, times(2)).addMessage(any(), any())
     }
 
     fun randomTextMessage(groupId: GroupId? = null): TextMessage =
