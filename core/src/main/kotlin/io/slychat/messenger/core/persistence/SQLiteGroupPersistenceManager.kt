@@ -27,8 +27,11 @@ class SQLiteGroupPersistenceManager(
             else -> throw IllegalArgumentException("Invalid integer value for MembershipLevel: $i")
         }
 
-    override fun getList(): Promise<List<GroupInfo>, Exception> {
-        TODO()
+    override fun getList(): Promise<List<GroupInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withPrepared("SELECT id, name, membership_level FROM groups WHERE membership_level=?") { stmt ->
+            stmt.bind(1, groupMembershipLevelToInt(GroupMembershipLevel.JOINED))
+            stmt.map { rowToGroupInfo(stmt) }
+        }
     }
 
     override fun getInfo(groupId: GroupId): Promise<GroupInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->

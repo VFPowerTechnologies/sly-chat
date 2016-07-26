@@ -148,6 +148,36 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
+    fun `getList should return the list of all currently joined groups`() {
+        withJoinedGroupFull { groupInfo, members ->
+            assertThat(groupPersistenceManager.getList().get()).apply {
+                `as`("Should return joined groups")
+                containsOnly(groupInfo)
+            }
+        }
+    }
+
+    @Test
+    fun `getList should ignore parted groups`() {
+        withPartedGroup {
+            assertThat(groupPersistenceManager.getList().get()).apply {
+                `as`("Should ignore parted groups")
+                isEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun `getList should ignore blocked groups`() {
+        withBlockedGroup {
+            assertThat(groupPersistenceManager.getList().get()).apply {
+                `as`("Should ignore blocked groups")
+                isEmpty()
+            }
+        }
+    }
+
+    @Test
     fun `getMembers should return all members for the given group`() {
         withJoinedGroup { id, members ->
             val got = groupPersistenceManager.getMembers(id).get()
