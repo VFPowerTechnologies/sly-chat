@@ -3,7 +3,9 @@ package io.slychat.messenger.core.persistence.sqlite
 import com.almworks.sqlite4java.SQLiteException
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.MessageInfo
+import io.slychat.messenger.core.randomContactInfo
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.testutils.withTimeAs
 import org.junit.After
@@ -11,10 +13,7 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import java.util.*
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 private data class LastConversationInfo(val unreadCount: Int, val lastMessage: String?, val lastTimestamp: Long?)
 
@@ -161,7 +160,7 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
-    fun `addSentMessage should add a valid received message`() {
+    fun `addMessage should add a valid received message`() {
         createConvosFor(contact)
 
         val messageInfo = addMessage(contact, false, testMessage, 0)
@@ -170,7 +169,7 @@ class SQLiteMessagePersistenceManagerTest {
     }
 
     @Test
-    fun `addMessageInfo should update conversation info`() {
+    fun `addMessage should update conversation info`() {
         createConvosFor(contact)
 
         val messageInfo = MessageInfo.newSent("message", 0)
