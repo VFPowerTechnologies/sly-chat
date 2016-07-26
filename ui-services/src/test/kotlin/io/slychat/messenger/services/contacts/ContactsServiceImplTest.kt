@@ -159,7 +159,7 @@ class ContactsServiceImplTest {
     }
 
     @Test
-    fun `allowMessagesFrom should filter out blocked contacts`() {
+    fun `filterBlocked should filter out blocked contacts`() {
         val contactsService = createService()
 
         val ids = (1..3L).map { UserId(it) }
@@ -168,7 +168,7 @@ class ContactsServiceImplTest {
 
         whenever(contactsPersistenceManager.filterBlocked(idSet)).thenReturn(allowed)
 
-        val gotAllowed = contactsService.allowMessagesFrom(idSet).get()
+        val gotAllowed = contactsService.filterBlocked(idSet).get()
 
         assertEquals(allowed, gotAllowed, "Invalid allowed list")
     }

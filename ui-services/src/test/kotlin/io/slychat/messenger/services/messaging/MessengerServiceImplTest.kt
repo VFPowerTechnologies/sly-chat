@@ -97,7 +97,7 @@ class MessengerServiceImplTest {
     }
 
     fun wheneverAllowMessagesFrom(fn: (Set<UserId>) -> Promise<Set<UserId>, Exception>) {
-        whenever(contactsService.allowMessagesFrom(anySet())).thenAnswer {
+        whenever(contactsService.filterBlocked(anySet())).thenAnswer {
             @Suppress("UNCHECKED_CAST")
             val a = it.arguments[0] as Set<UserId>
             fn(a)

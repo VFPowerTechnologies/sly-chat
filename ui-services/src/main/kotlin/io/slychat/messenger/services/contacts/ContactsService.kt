@@ -17,7 +17,7 @@ interface ContactsService {
     /** Remove the given contact from the contact list. */
     fun removeContact(contactInfo: ContactInfo): Promise<Boolean, Exception>
     fun updateContact(contactInfo: ContactInfo): Promise<Unit, Exception>
-    fun allowMessagesFrom(users: Set<UserId>): Promise<Set<UserId>, Exception>
+    fun filterBlocked(users: Set<UserId>): Promise<Set<UserId>, Exception>
 
     /** Adds contact data for any missing user in the set. Should do nothing for the empty set. */
     fun addMissingContacts(users: Set<UserId>): Promise<Set<UserId>, Exception>

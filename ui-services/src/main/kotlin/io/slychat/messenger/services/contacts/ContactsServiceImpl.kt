@@ -87,7 +87,7 @@ class ContactsServiceImpl(
     }
 
     /** Filter out users whose messages we should ignore. */
-    override fun allowMessagesFrom(users: Set<UserId>): Promise<Set<UserId>, Exception> {
+    override fun filterBlocked(users: Set<UserId>): Promise<Set<UserId>, Exception> {
         val d = deferred<Set<UserId>, Exception>()
 
         //avoid errors if the caller modifiers the set after giving it
