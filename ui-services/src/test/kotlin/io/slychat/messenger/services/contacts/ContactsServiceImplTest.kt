@@ -83,7 +83,7 @@ class ContactsServiceImplTest {
     fun `adding a new contact should return true if the contact was added`() {
         val contactsService = createService()
 
-        val contactInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, false, "", "pubkey")
+        val contactInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
 
         whenever(contactsPersistenceManager.add(contactInfo)).thenReturn(true)
 
@@ -98,7 +98,7 @@ class ContactsServiceImplTest {
 
         val userId = UserId(1)
 
-        val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, false, "", "pubkey")
+        val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
 
         whenever(contactsPersistenceManager.remove(userId)).thenReturn(true)
 
@@ -113,7 +113,7 @@ class ContactsServiceImplTest {
 
         val userId = UserId(1)
 
-        val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, false, "", "pubkey")
+        val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
 
         whenever(contactsPersistenceManager.update(contactInfo)).thenReturn(Unit)
 
@@ -129,7 +129,7 @@ class ContactsServiceImplTest {
     fun `adding a new contact should emit an update event if the contact is new`() {
         val contactsService = createService()
 
-        val contactInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, false, "", "pubkey")
+        val contactInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
 
         whenever(contactsPersistenceManager.add(contactInfo)).thenReturn(true)
 
@@ -149,7 +149,7 @@ class ContactsServiceImplTest {
     fun `adding a new contact should not emit an update event if the contact is already added`() {
         val contactsService = createService()
 
-        val contactInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, false, "", "pubkey")
+        val contactInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
 
         whenever(contactsPersistenceManager.add(contactInfo)).thenReturn(false)
 

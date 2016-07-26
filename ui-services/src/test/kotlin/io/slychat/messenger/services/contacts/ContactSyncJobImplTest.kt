@@ -218,7 +218,7 @@ class ContactSyncJobImplTest {
         val apiContacts =  listOf(
             ApiContactInfo(userId, email, name, phoneNumber, publicKey)
         )
-        val contactInfo = ContactInfo(userId, email, name, AllowedMessageLevel.ALL, false, phoneNumber, publicKey)
+        val contactInfo = ContactInfo(userId, email, name, AllowedMessageLevel.ALL, phoneNumber, publicKey)
 
         whenever(platformContacts.fetchContacts()).thenReturn(missingContacts)
         whenever(contactsPersistenceManager.findMissing(anyList())).thenReturn(missingContacts)

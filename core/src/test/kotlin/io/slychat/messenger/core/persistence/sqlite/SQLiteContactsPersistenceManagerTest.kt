@@ -22,9 +22,9 @@ class SQLiteContactsPersistenceManagerTest {
     val contactId = UserId(1)
     val testMessage = "test message"
 
-    val contactA = ContactInfo(contactId, "a@a.com", "a", AllowedMessageLevel.ALL, false, "000-0000", "pubkey")
-    val contactA2 = ContactInfo(UserId(2), "a2@a.com", "a2", AllowedMessageLevel.ALL, false, "001-0000", "pubkey")
-    val contactC = ContactInfo(UserId(3), "c@c.com", "c", AllowedMessageLevel.ALL, false, "222-2222", "pubkey")
+    val contactA = ContactInfo(contactId, "a@a.com", "a", AllowedMessageLevel.ALL, "000-0000", "pubkey")
+    val contactA2 = ContactInfo(UserId(2), "a2@a.com", "a2", AllowedMessageLevel.ALL, "001-0000", "pubkey")
+    val contactC = ContactInfo(UserId(3), "c@c.com", "c", AllowedMessageLevel.ALL, "222-2222", "pubkey")
     val contactList = arrayListOf(
         contactA,
         contactA2,
@@ -42,7 +42,7 @@ class SQLiteContactsPersistenceManagerTest {
         dummyContactCounter += 1
         val id = UserId(v)
 
-        return ContactInfo(id, "$v@a.com", "$v", allowedMessageLevel, false, "$v", "$v")
+        return ContactInfo(id, "$v@a.com", "$v", allowedMessageLevel, "$v", "$v")
     }
 
     fun insertDummyContact(
@@ -253,8 +253,8 @@ class SQLiteContactsPersistenceManagerTest {
     @Test
     fun `getAll should return all stored contacts`() {
         val contacts = arrayListOf(
-            ContactInfo(UserId(0), "a@a.com", "a", AllowedMessageLevel.ALL, false, "000-0000", "pubkey"),
-            ContactInfo(UserId(1), "b@b.com", "b", AllowedMessageLevel.ALL, false, "000-0000", "pubkey")
+            ContactInfo(UserId(0), "a@a.com", "a", AllowedMessageLevel.ALL, "000-0000", "pubkey"),
+            ContactInfo(UserId(1), "b@b.com", "b", AllowedMessageLevel.ALL, "000-0000", "pubkey")
         )
 
         for (contact in contacts)
@@ -541,9 +541,9 @@ class SQLiteContactsPersistenceManagerTest {
 
     @Test
     fun `getDiff should return a proper diff`() {
-        val userA = ContactInfo(UserId(0), "a@a.com", "a", AllowedMessageLevel.ALL, false, "0", "pk")
-        val userB = ContactInfo(UserId(1), "b@a.com", "a", AllowedMessageLevel.ALL, false, "0", "pk")
-        val userC = ContactInfo(UserId(2), "c@a.com", "a", AllowedMessageLevel.ALL, false, "0", "pk")
+        val userA = ContactInfo(UserId(0), "a@a.com", "a", AllowedMessageLevel.ALL, "0", "pk")
+        val userB = ContactInfo(UserId(1), "b@a.com", "a", AllowedMessageLevel.ALL, "0", "pk")
+        val userC = ContactInfo(UserId(2), "c@a.com", "a", AllowedMessageLevel.ALL, "0", "pk")
 
         for (user in listOf(userA, userB))
             contactsPersistenceManager.add(user).get()

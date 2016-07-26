@@ -32,7 +32,6 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
             stmt.columnString(1),
             stmt.columnString(2),
             intToAllowedMessageLevel(stmt.columnInt(3)),
-            false,
             stmt.columnString(4),
             stmt.columnString(5)
         )

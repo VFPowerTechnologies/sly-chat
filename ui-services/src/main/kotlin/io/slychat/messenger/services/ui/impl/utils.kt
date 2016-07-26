@@ -31,5 +31,5 @@ fun Iterable<ContactInfo>.toUI(): List<UIContactDetails> =
 
 //FIXME
 fun UIContactDetails.toNative(): ContactInfo =
-    ContactInfo(id, email, name, AllowedMessageLevel.ALL, false, phoneNumber, publicKey)
+    ContactInfo(id, email, name, AllowedMessageLevel.ALL, phoneNumber, publicKey)
 
