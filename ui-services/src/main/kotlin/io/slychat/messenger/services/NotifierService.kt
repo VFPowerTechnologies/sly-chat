@@ -4,8 +4,9 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
-import io.slychat.messenger.services.contacts.ContactDisplayInfo
-import io.slychat.messenger.services.contacts.toContactDisplayInfo
+import io.slychat.messenger.services.contacts.NotificationConversationInfo
+import io.slychat.messenger.services.contacts.NotificationKey
+import io.slychat.messenger.services.contacts.NotificationMessageInfo
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.UIEventService
@@ -61,19 +62,34 @@ class NotifierService(
         }
     }
 
-    private fun withDisplayInfo(messageBundle: MessageBundle, body: (ContactDisplayInfo) -> Unit) {
+    private fun withMessageNotificationInfo(messageBundle: MessageBundle, body: (NotificationConversationInfo, NotificationMessageInfo) -> Unit) {
         withGroupInfo(messageBundle.groupId) { groupInfo ->
             withContactInfo(messageBundle.userId) { contactInfo ->
-                val info = ContactDisplayInfo(
-                    contactInfo.id,
-                    contactInfo.name,
-                    groupInfo?.id,
+                val key = if (groupInfo == null)
+                    NotificationKey.idToKey(messageBundle.userId)
+                else
+                    NotificationKey.idToKey(groupInfo.id)
+
+                val info = NotificationConversationInfo(
+                    key,
                     groupInfo?.name
                 )
 
-                body(info)
+                val notificationMessageInfo = getMessageInfo(contactInfo, messageBundle)
+
+                body(info, notificationMessageInfo)
             }
         }
+    }
+
+    private fun getMessageInfo(speakerInfo: ContactInfo, messageBundle: MessageBundle): NotificationMessageInfo {
+        val last = messageBundle.messages.last()
+
+        return NotificationMessageInfo(
+            speakerInfo.name,
+            last.message,
+            last.timestamp
+        )
     }
 
     private fun withGroupInfo(groupId: GroupId?, body: (GroupInfo?) -> Unit) {
@@ -115,10 +131,8 @@ class NotifierService(
                 return
         }
 
-        val lastMessage = messageBundle.messages.last()
-
-        withDisplayInfo(messageBundle) { contactDisplayInfo ->
-            platformNotificationService.addNewMessageNotification(contactDisplayInfo, lastMessage, messageBundle.messages.size)
+        withMessageNotificationInfo(messageBundle) { conversationInfo, messageInfo ->
+            platformNotificationService.addNewMessageNotification(conversationInfo, messageInfo, messageBundle.messages.size)
         }
     }
 
@@ -133,7 +147,8 @@ class NotifierService(
                         val userId = UserId(event.extra.toLong())
                         currentlySelectedChatUser = userId
                         withContactInfo(userId) { contactInfo ->
-                            platformNotificationService.clearMessageNotificationsForUser(contactInfo.toContactDisplayInfo())
+                            val info = NotificationConversationInfo.from(contactInfo)
+                            platformNotificationService.clearMessageNotificationsFor(info)
                         }
                     }
 

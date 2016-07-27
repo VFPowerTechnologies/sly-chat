@@ -5,8 +5,8 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
-import io.slychat.messenger.services.contacts.ContactDisplayInfo
-import io.slychat.messenger.services.contacts.toContactDisplayInfo
+import io.slychat.messenger.services.contacts.NotificationConversationInfo
+import io.slychat.messenger.services.contacts.NotificationMessageInfo
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.UIEventService
@@ -80,13 +80,13 @@ class NotifierServiceTest {
         val email = "email"
         val name = "name"
         val contactInfo = ContactInfo(userId, email, name, AllowedMessageLevel.ALL, "", "")
-        val contactDisplayInfo = ContactDisplayInfo(userId, name, null, null)
+        val conversationInfo = NotificationConversationInfo.from(contactInfo)
         whenever(contactsPersistenceManager.get(userId)).thenReturn(Promise.ofSuccess(contactInfo))
 
         val pageChangeEvent = PageChangeEvent(PageType.CONVO, userId.long.toString())
         uiEventSubject.onNext(pageChangeEvent)
 
-        verify(platformNotificationsService, times(1)).clearMessageNotificationsForUser(contactDisplayInfo)
+        verify(platformNotificationsService, times(1)).clearMessageNotificationsFor(conversationInfo)
     }
 
     fun setupContactInfo(id: Long): ContactInfo {
@@ -105,14 +105,20 @@ class NotifierServiceTest {
 
         val messageBundle = MessageBundle(contactInfo.id, messages)
 
-        val contactDisplayInfo = contactInfo.toContactDisplayInfo()
+        val conversationInfo = NotificationConversationInfo.from(contactInfo)
         val lastMessage = messageBundle.messages.last()
         val messageCount = messageBundle.messages.size
+
+        val messageInfo = NotificationMessageInfo(
+            contactInfo.name,
+            lastMessage.message,
+            lastMessage.timestamp
+        )
 
         newMessagesSubject.onNext(messageBundle)
 
         if (shouldShow)
-            verify(platformNotificationsService).addNewMessageNotification(contactDisplayInfo, lastMessage, messageCount)
+            verify(platformNotificationsService).addNewMessageNotification(conversationInfo, messageInfo, messageCount)
         else
             verify(platformNotificationsService, never()).addNewMessageNotification(any(), any(), any())
     }
@@ -181,7 +187,7 @@ class NotifierServiceTest {
         assertFalse(notifierService.enableNotificationDisplay, "Config change not reflected")
     }
 
-    fun testGroupMessageBundle(body: (ContactInfo, GroupInfo, MessageInfo) -> Unit) {
+    fun testGroupMessageBundle(body: (ContactInfo, GroupInfo, NotificationMessageInfo) -> Unit) {
         val notifierService = initNotifierService()
 
         val groupInfo = randomGroupInfo()
@@ -202,7 +208,13 @@ class NotifierServiceTest {
 
         newMessagesSubject.onNext(bundle)
 
-        body(contactInfo, groupInfo, messageInfo)
+        val notificationMessageInfo = NotificationMessageInfo(
+            contactInfo.name,
+            messageInfo.message,
+            messageInfo.timestamp
+        )
+
+        body(contactInfo, groupInfo, notificationMessageInfo)
     }
 
     @Test
@@ -216,9 +228,9 @@ class NotifierServiceTest {
     @Test
     fun `it should send ContactDisplayInfo with group info when a groupId is specified in the MessageBundle`() {
         testGroupMessageBundle { contactInfo, groupInfo, messageInfo ->
-            val contactDisplayInfo = ContactDisplayInfo(contactInfo.id, contactInfo.name, groupInfo.id, groupInfo.name)
+            val conversationInfo = NotificationConversationInfo.from(groupInfo)
 
-            verify(platformNotificationsService).addNewMessageNotification(contactDisplayInfo, messageInfo, 1)
+            verify(platformNotificationsService).addNewMessageNotification(conversationInfo, messageInfo, 1)
         }
     }
 
@@ -250,12 +262,12 @@ class NotifierServiceTest {
         val contactInfo = randomContactInfo()
         val groupInfo = randomGroupInfo()
 
-        val contactDisplayInfo = ContactDisplayInfo(contactInfo.id, contactInfo.name, groupInfo.id, groupInfo.name)
+        val conversationInfo = NotificationConversationInfo.from(groupInfo)
 
         val pageChangeEvent = PageChangeEvent(PageType.GROUP, groupInfo.id.string)
         uiEventSubject.onNext(pageChangeEvent)
 
-        verify(platformNotificationsService, times(1)).clearMessageNotificationsForUser(contactDisplayInfo)
+        verify(platformNotificationsService, times(1)).clearMessageNotificationsFor(conversationInfo)
     }
 }
 
