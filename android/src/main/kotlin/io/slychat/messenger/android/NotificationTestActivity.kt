@@ -8,8 +8,9 @@ import android.widget.Spinner
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.GroupId
-import io.slychat.messenger.core.persistence.MessageInfo
-import io.slychat.messenger.services.contacts.ContactDisplayInfo
+import io.slychat.messenger.services.contacts.NotificationConversationInfo
+import io.slychat.messenger.services.contacts.NotificationKey
+import io.slychat.messenger.services.contacts.NotificationMessageInfo
 import java.util.*
 
 class NotificationTestActivity : AppCompatActivity() {
@@ -43,20 +44,29 @@ class NotificationTestActivity : AppCompatActivity() {
 
     private var messageCounter = 0
 
-    private fun getCurrentDisplayInfo(): ContactDisplayInfo {
+    private fun getCurrentConversationInfo(): NotificationConversationInfo {
         val userPos = userSpinner.selectedItemPosition
-        val userName = userSpinner.selectedItem as String
 
         val groupPos = groupSpinner.selectedItemPosition
-        val (groupId, groupName) = if (groupPos == 0) null to null else GroupId(groupPos.toString()) to dummyGroups[groupPos-1]
-
-        return ContactDisplayInfo(UserId(userPos.toLong()), userName, groupId, groupName)
+        return if (groupPos != 0) {
+            val groupName = dummyGroups[groupPos-1]
+            val id = GroupId(groupPos.toString())
+            val key = NotificationKey.idToKey(id)
+            NotificationConversationInfo(key, groupName)
+        }
+        else {
+            val userId = UserId(userPos.toLong())
+            val key = NotificationKey.idToKey(userId)
+            NotificationConversationInfo(key, null)
+        }
     }
 
-    private fun getNextMessageInfo(): MessageInfo {
+    private fun getNextMessageInfo(): NotificationMessageInfo {
+        val userName = userSpinner.selectedItem as String
         val v = messageCounter
         ++messageCounter
-        return MessageInfo.newReceived("Message $v", currentTimestamp())
+
+        return NotificationMessageInfo(userName, "Message $v", currentTimestamp())
     }
 
     //[low, high]
@@ -64,7 +74,7 @@ class NotificationTestActivity : AppCompatActivity() {
         return low + Math.abs(Random().nextInt()) % (high - low + 1)
     }
 
-    private fun randomUsers(): List<ContactDisplayInfo> {
+    private fun randomUsers(): List<NotificationConversationInfo> {
         val nUsers = randomInt(1, dummyUsers.size)
 
         val randomized = (0..dummyUsers.size-1).toMutableList()
@@ -73,7 +83,9 @@ class NotificationTestActivity : AppCompatActivity() {
         return (0..nUsers-1).map {
             val pos = randomized[it]
 
-            ContactDisplayInfo(UserId(pos.toLong()), dummyUsers[pos], null, null)
+            val id = UserId(pos.toLong())
+            val key = NotificationKey.idToKey(id)
+            NotificationConversationInfo(key, null)
         }
     }
 
@@ -98,15 +110,15 @@ class NotificationTestActivity : AppCompatActivity() {
 
         val triggerBtn = findViewById(R.id.triggerNotificationBtn) as Button
         triggerBtn.setOnClickListener {
-            val displayInfo = getCurrentDisplayInfo()
+            val displayInfo = getCurrentConversationInfo()
             val messageInfo = getNextMessageInfo()
             notificationService.addNewMessageNotification(displayInfo, messageInfo, 1)
         }
 
         val clearCurrentBtn = findViewById(R.id.clearCurrentBtn)
         clearCurrentBtn.setOnClickListener {
-            val displayInfo = getCurrentDisplayInfo()
-            notificationService.clearMessageNotificationsForUser(displayInfo)
+            val conversationInfo = getCurrentConversationInfo()
+            notificationService.clearMessageNotificationsFor(conversationInfo)
         }
 
         val clearAllBtn = findViewById(R.id.clearAllBtn) as Button

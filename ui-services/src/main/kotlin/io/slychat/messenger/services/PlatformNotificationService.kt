@@ -4,7 +4,7 @@ import io.slychat.messenger.services.contacts.NotificationConversationInfo
 import io.slychat.messenger.services.contacts.NotificationMessageInfo
 
 interface PlatformNotificationService {
-    fun addNewMessageNotification(notificationConversationInfo: NotificationConversationInfo, lastMessageInfo: NotificationMessageInfo, unreadCount: Int)
+    fun addNewMessageNotification(notificationConversationInfo: NotificationConversationInfo, lastMessageInfo: NotificationMessageInfo, messageCount: Int)
     fun clearMessageNotificationsFor(notificationConversationInfo: NotificationConversationInfo)
     fun clearAllMessageNotifications()
 }
