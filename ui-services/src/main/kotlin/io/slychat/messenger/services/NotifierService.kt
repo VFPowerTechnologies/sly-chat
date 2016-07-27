@@ -139,6 +139,8 @@ class NotifierService(
 
                     PageType.CONTACTS ->
                         platformNotificationService.clearAllMessageNotifications()
+
+                    PageType.GROUP -> TODO()
                 }
             }
         }

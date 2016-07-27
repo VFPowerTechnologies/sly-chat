@@ -73,7 +73,7 @@ class NotifierServiceTest {
     }
 
     @Test
-    fun `it should clear only notifications for the user when a convo is visited`() {
+    fun `it should clear only notifications for the focused user when a convo is visited`() {
         val notifierService = initNotifierService()
 
         val userId = UserId(1)
@@ -241,6 +241,21 @@ class NotifierServiceTest {
         newMessagesSubject.onNext(bundle)
 
         verify(groupPersistenceManager, never()).getInfo(any())
+    }
+
+    @Test
+    fun `it should clear only notifications for the focused group when a group is visited`() {
+        val notifierService = initNotifierService()
+
+        val contactInfo = randomContactInfo()
+        val groupInfo = randomGroupInfo()
+
+        val contactDisplayInfo = ContactDisplayInfo(contactInfo.id, contactInfo.name, groupInfo.id, groupInfo.name)
+
+        val pageChangeEvent = PageChangeEvent(PageType.GROUP, groupInfo.id.string)
+        uiEventSubject.onNext(pageChangeEvent)
+
+        verify(platformNotificationsService, times(1)).clearMessageNotificationsForUser(contactDisplayInfo)
     }
 }
 
