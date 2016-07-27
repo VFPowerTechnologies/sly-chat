@@ -85,7 +85,7 @@ class NotifierServiceTest {
         val email = "email"
         val name = "name"
         val contactInfo = ContactInfo(userId, email, name, AllowedMessageLevel.ALL, "", "")
-        val contactDisplayInfo = ContactDisplayInfo(userId, email, name)
+        val contactDisplayInfo = ContactDisplayInfo(userId, name)
         whenever(contactsPersistenceManager.get(userId)).thenReturn(Promise.ofSuccess(contactInfo))
 
         val pageChangeEvent = PageChangeEvent(PageType.CONVO, userId.long.toString())
