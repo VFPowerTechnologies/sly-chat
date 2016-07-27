@@ -13,6 +13,7 @@ import io.slychat.messenger.services.contacts.NotificationKey
 import io.slychat.messenger.services.contacts.NotificationMessageInfo
 import java.util.*
 
+/** Used to test notification display for various configurations. */
 class NotificationTestActivity : AppCompatActivity() {
     companion object {
         val dummyUsers = listOf(
@@ -61,12 +62,17 @@ class NotificationTestActivity : AppCompatActivity() {
         }
     }
 
-    private fun getNextMessageInfo(): NotificationMessageInfo {
-        val userName = userSpinner.selectedItem as String
+    private fun getNextMessageText(): String {
         val v = messageCounter
         ++messageCounter
 
-        return NotificationMessageInfo(userName, "Message $v", currentTimestamp())
+        return "Message $v"
+    }
+
+    private fun getNextMessageInfo(): NotificationMessageInfo {
+        val userName = userSpinner.selectedItem as String
+
+        return NotificationMessageInfo(userName, getNextMessageText(), currentTimestamp())
     }
 
     //[low, high]
@@ -131,6 +137,19 @@ class NotificationTestActivity : AppCompatActivity() {
         multipleUsersBtn.setOnClickListener {
             randomUsers().forEach {
                 notificationService.addNewMessageNotification(it, getNextMessageInfo(), 1)
+            }
+        }
+
+        val summaryBtn = findViewById(R.id.summaryBtn) as Button
+        summaryBtn.setOnClickListener {
+            (0..AndroidNotificationService.MAX_NOTIFICATION_LINES).forEach {
+                val userName = dummyUsers[it]
+                val key = NotificationKey.idToKey(UserId(it.toLong()))
+                val convoInfo = NotificationConversationInfo(key, null)
+
+                val messageInfo = NotificationMessageInfo(userName, getNextMessageText(), currentTimestamp())
+
+                notificationService.addNewMessageNotification(convoInfo, messageInfo, 1)
             }
         }
     }

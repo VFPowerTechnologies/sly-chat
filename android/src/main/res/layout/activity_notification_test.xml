@@ -34,7 +34,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true" android:layout_alignParentStart="true"
-            android:gravity="center_horizontal">
+            android:gravity="center_horizontal" android:id="@+id/linearLayout">
         <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -52,10 +52,30 @@
                 android:id="@+id/clearAllBtn" android:layout_alignTop="@+id/clearCurrentBtn"
                 android:layout_toEndOf="@+id/clearCurrentBtn"/>
     </LinearLayout>
-    <Button
-            android:layout_width="wrap_content"
+    <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Multiple Users"
-            android:id="@+id/multipleUsersBtn" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true"
-            android:layout_marginBottom="65dp"/>
+            android:layout_below="@+id/linearLayout" android:layout_alignParentStart="true"
+            android:gravity="center_vertical">
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:text="Presets"
+                android:id="@+id/textView2" android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="15dp"/>
+        <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Multiple Users"
+                android:id="@+id/multipleUsersBtn"
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true" android:layout_gravity="center_horizontal"/>
+        <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Summary"
+                android:id="@+id/summaryBtn" android:layout_gravity="center_horizontal"/>
+    </LinearLayout>
 </RelativeLayout>
