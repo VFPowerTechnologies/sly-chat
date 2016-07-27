@@ -11,7 +11,21 @@ import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.UIEventService
 import org.slf4j.LoggerFactory
 
-//user-scoped
+/**
+ * Listens for new message events and dispatches notification display info to the underlying platform implementation.
+ *
+ * Uses UI events to decide when to dispatch notifications, as well as when to clear notifications.
+ *
+ * Notification display info is only dispatched when certain UI conditions are met.
+ *
+ * 1) If the current page is recent chats, no notifications are dispatched.
+ * 2) If the current focused page is the sender's page, no notifications are dispatched.
+ *
+ * Notifications are cleared when:
+ *
+ * 1) If the current navigated to page is recent chats, all notifications are cleared.
+ * 2) If the current navigated to page is a user's page, all notifications for that user are cleared.
+ */
 class NotifierService(
     private val messengerService: MessengerService,
     private val uiEventService: UIEventService,
