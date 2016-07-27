@@ -421,20 +421,6 @@ class MessengerServiceImplTest {
         verify(groupPersistenceManager).part(groupId)
     }
 
-    inline fun <reified T : SlyMessage> convertFromSerialized(messageEntry: SenderMessageEntry): T {
-        val objectMapper = ObjectMapper()
-        return objectMapper.readValue(messageEntry.message, T::class.java)
-    }
-
-    //cheating a little here
-    inline fun <reified T : SlyMessage> convertFromSerialized(messageEntries: List<SenderMessageEntry>): List<T> {
-        val objectMapper = ObjectMapper()
-
-        return messageEntries.map {
-            objectMapper.readValue(it.message, T::class.java)
-        }
-    }
-
     @Test
     fun `partGroup should queue part messages to all members`() {
         val messengerService = createService()
@@ -448,7 +434,7 @@ class MessengerServiceImplTest {
 
         verify(messageSender).addToQueue(capture {
             assertEquals(members, it.mapToSet { it.metadata.userId }, "Invalid users")
-            val messages = convertFromSerialized<GroupEventMessageWrapper>(it)
+            val messages = convertMessageFromSerialized<GroupEventMessageWrapper>(it)
             messages.forEach {
                 assertTrue(it.m is GroupEventMessage.Part, "Invalid message type")
             }
@@ -480,7 +466,7 @@ class MessengerServiceImplTest {
         messages.forEach {
             val recipient = it.metadata.userId
 
-            val wrapper = convertFromSerialized<GroupEventMessageWrapper>(it)
+            val wrapper = convertMessageFromSerialized<GroupEventMessageWrapper>(it)
 
             if (wrapper.m is T)
                 throw AssertionError("Unexpected ${T::class.simpleName} message to $recipient")
@@ -502,7 +488,7 @@ class MessengerServiceImplTest {
         messages.forEach {
             val recipient = it.metadata.userId
 
-            val wrapper = convertFromSerialized<GroupEventMessageWrapper>(it)
+            val wrapper = convertMessageFromSerialized<GroupEventMessageWrapper>(it)
 
             val m = wrapper.m as? T
 
