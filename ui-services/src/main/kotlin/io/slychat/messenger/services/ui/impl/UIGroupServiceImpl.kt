@@ -107,7 +107,7 @@ class UIGroupServiceImpl(
     }
 
     override fun block(groupId: GroupId): Promise<Unit, Exception> {
-        return getGroupServiceOrThrow().block(groupId)
+        return getMessengerServiceOrThrow().blockGroup(groupId)
     }
 
     override fun unblock(groupId: GroupId): Promise<Unit, Exception> {

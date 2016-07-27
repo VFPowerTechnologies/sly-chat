@@ -290,14 +290,23 @@ class MessengerServiceImpl(
         }
     }
 
-    override fun partGroup(groupId: GroupId): Promise<Boolean, Exception> {
+    private fun sendPartMessagesTo(groupId: GroupId): Promise<Set<UserId>, Exception> {
         val message = GroupEventMessageWrapper(GroupEventMessage.Part(groupId))
 
-        return sendMessageToGroup(groupId, message, MessageCategory.OTHER) bind {
+        return sendMessageToGroup(groupId, message, MessageCategory.OTHER)
+    }
+
+    override fun partGroup(groupId: GroupId): Promise<Boolean, Exception> {
+        return sendPartMessagesTo(groupId) bind {
             groupPersistenceManager.part(groupId)
         }
     }
 
+    override fun blockGroup(groupId: GroupId): Promise<Unit, Exception> {
+        return sendPartMessagesTo(groupId) bind {
+            groupPersistenceManager.block(groupId)
+        }
+    }
 
     override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception> {
         return messagePersistenceManager.getLastMessages(userId, startingAt, count)

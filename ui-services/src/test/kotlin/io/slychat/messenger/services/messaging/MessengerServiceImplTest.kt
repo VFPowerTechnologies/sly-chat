@@ -69,6 +69,8 @@ class MessengerServiceImplTest {
         whenever(groupPersistenceManager.addMembers(any(), any())).thenAnswerWithArg(1)
         whenever(groupPersistenceManager.join(any(), any())).thenReturn(Unit)
         whenever(groupPersistenceManager.part(any())).thenReturn(true)
+        whenever(groupPersistenceManager.block(any())).thenReturn(Unit)
+        whenever(groupPersistenceManager.getMembers(any())).thenReturn(emptySet())
     }
 
     fun createService(): MessengerServiceImpl {
@@ -421,6 +423,16 @@ class MessengerServiceImplTest {
         verify(groupPersistenceManager).part(groupId)
     }
 
+    fun assertPartMessagesSent(members: Set<UserId>) {
+        verify(messageSender).addToQueue(capture {
+            assertEquals(members, it.mapToSet { it.metadata.userId }, "Invalid users")
+            val messages = convertMessageFromSerialized<GroupEventMessageWrapper>(it)
+            messages.forEach {
+                assertTrue(it.m is GroupEventMessage.Part, "Invalid message type")
+            }
+        })
+    }
+
     @Test
     fun `partGroup should queue part messages to all members`() {
         val messengerService = createService()
@@ -432,13 +444,7 @@ class MessengerServiceImplTest {
 
         messengerService.partGroup(groupId).get()
 
-        verify(messageSender).addToQueue(capture {
-            assertEquals(members, it.mapToSet { it.metadata.userId }, "Invalid users")
-            val messages = convertMessageFromSerialized<GroupEventMessageWrapper>(it)
-            messages.forEach {
-                assertTrue(it.m is GroupEventMessage.Part, "Invalid message type")
-            }
-        })
+        assertPartMessagesSent(members)
     }
 
     @Test
@@ -450,6 +456,44 @@ class MessengerServiceImplTest {
         whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(emptySet())
 
         messengerService.partGroup(groupId).get()
+
+        verify(messageSender, never()).addToQueue(any())
+    }
+
+    @Test
+    fun `blockGroup should add the group to the block list`() {
+        val messengerService = createService()
+
+        val groupId = randomGroupId()
+
+        messengerService.blockGroup(groupId).get()
+
+        verify(groupPersistenceManager).block(groupId)
+    }
+
+    @Test
+    fun `blockGroup should queue part messages to all members`() {
+        val messengerService = createService()
+
+        val groupId = randomGroupId()
+        val members = randomUserIds()
+
+        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(members)
+
+        messengerService.blockGroup(groupId).get()
+
+        assertPartMessagesSent(members)
+    }
+
+    @Test
+    fun `blockGroup should not queue messages when no members remain in the group`() {
+        val messengerService = createService()
+
+        val groupId = randomGroupId()
+
+        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(emptySet())
+
+        messengerService.blockGroup(groupId).get()
 
         verify(messageSender, never()).addToQueue(any())
     }
