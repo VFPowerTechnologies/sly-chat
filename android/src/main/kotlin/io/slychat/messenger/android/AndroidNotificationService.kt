@@ -181,7 +181,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
         if (isSingleUser) {
             val conversationInfo = newMessagesNotification.contents.keys.first()
-            intent.putExtra(MainActivity.EXTRA_USERID, conversationInfo.key)
+            intent.putExtra(MainActivity.EXTRA_CONVO_KEY, conversationInfo.key)
         }
 
         return getPendingIntentForActivity(intent)
