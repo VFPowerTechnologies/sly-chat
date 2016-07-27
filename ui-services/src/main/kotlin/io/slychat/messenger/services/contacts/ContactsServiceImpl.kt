@@ -22,7 +22,7 @@ class ContactsServiceImpl(
     private val authTokenManager: AuthTokenManager,
     private val contactClient: ContactAsyncClient,
     private val contactsPersistenceManager: ContactsPersistenceManager,
-    private val contactJobRunner: ContactOperationManager
+    private val contactOperationManager: ContactOperationManager
 ) : ContactsService {
     private class AddContactsResult(
         val added: Boolean,
@@ -36,7 +36,7 @@ class ContactsServiceImpl(
     override val contactEvents: Observable<ContactEvent> = contactEventsSubject
 
     init {
-        contactJobRunner.running.subscribe { onContactJobStatusUpdate(it) }
+        contactOperationManager.running.subscribe { onContactJobStatusUpdate(it) }
     }
 
     private fun <V, E> wrap(deferred: Deferred<V, E>, promise: Promise<V, E>): Promise<V, E> {
@@ -46,7 +46,7 @@ class ContactsServiceImpl(
     override fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
         val d = deferred<Boolean, Exception>()
 
-        contactJobRunner.runOperation {
+        contactOperationManager.runOperation {
             wrap(d, contactsPersistenceManager.add(contactInfo)) successUi { wasAdded ->
                 if (wasAdded) {
                     withCurrentJob { doUpdateRemoteContactList() }
@@ -62,7 +62,7 @@ class ContactsServiceImpl(
     override fun removeContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
         val d = deferred<Boolean, Exception>()
 
-        contactJobRunner.runOperation {
+        contactOperationManager.runOperation {
             wrap(d, contactsPersistenceManager.remove(contactInfo.id)) successUi { wasRemoved ->
                 if (wasRemoved) {
                     withCurrentJob { doUpdateRemoteContactList() }
@@ -77,7 +77,7 @@ class ContactsServiceImpl(
     override fun updateContact(contactInfo: ContactInfo): Promise<Unit, Exception> {
         val d = deferred<Unit, Exception>()
 
-        contactJobRunner.runOperation {
+        contactOperationManager.runOperation {
             wrap(d, contactsPersistenceManager.update(contactInfo)) successUi {
                 contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactInfo)))
             }
@@ -93,7 +93,7 @@ class ContactsServiceImpl(
         //avoid errors if the caller modifiers the set after giving it
         val usersCopy = HashSet(users)
 
-        contactJobRunner.runOperation {
+        contactOperationManager.runOperation {
             wrap(d, contactsPersistenceManager.filterBlocked(usersCopy))
         }
 
@@ -103,7 +103,7 @@ class ContactsServiceImpl(
     override fun allowAll(userId: UserId): Promise<Unit, Exception> {
         val d = deferred<Unit, Exception>()
 
-        contactJobRunner.runOperation {
+        contactOperationManager.runOperation {
             wrap(d, contactsPersistenceManager.allowAll(userId)) successUi {
                 withCurrentJob { doUpdateRemoteContactList() }
 
@@ -193,7 +193,7 @@ class ContactsServiceImpl(
 
         val d = deferred<Set<UserId>, Exception>()
 
-        contactJobRunner.runOperation {
+        contactOperationManager.runOperation {
             wrap(d, contactsPersistenceManager.exists(users) bind { exists ->
                 missing.removeAll(exists)
                 addNewContactData(missing) mapUi {
@@ -210,7 +210,7 @@ class ContactsServiceImpl(
 
     /** Used to mark job components for execution. */
     private fun withCurrentJob(body: ContactSyncJobDescription.() -> Unit) {
-        contactJobRunner.withCurrentSyncJob(body)
+        contactOperationManager.withCurrentSyncJob(body)
     }
 
     override fun shutdown() {
