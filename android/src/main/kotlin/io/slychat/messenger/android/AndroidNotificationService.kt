@@ -10,68 +10,22 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.text.SpannableString
 import android.text.style.StyleSpan
-import io.slychat.messenger.core.persistence.MessageInfo
-import io.slychat.messenger.services.contacts.ContactDisplayInfo
 import io.slychat.messenger.services.PlatformNotificationService
+import io.slychat.messenger.services.contacts.NotificationConversationInfo
+import io.slychat.messenger.services.contacts.NotificationMessageInfo
 import java.util.*
 
-interface InboxStyleAdapter {
-    val userCount: Int
-
-    fun getEntryName(i: Int): String
-    fun getEntryInfoLine(i: Int): String
-    fun getEntryUnreadCount(i: Int): Int
-}
-
-class OfflineMessageInfoInboxStyleAdapter(private val info: List<OfflineMessageInfo>) : InboxStyleAdapter {
-    override val userCount: Int = info.size
-
-    override fun getEntryName(i: Int): String {
-        return info[i].name
-    }
-
-    override fun getEntryInfoLine(i: Int): String {
-        val userInfo = info[i]
-        return if (userInfo.pendingCount == 1)
-            "1 new message"
-        else
-            "${userInfo.pendingCount} new messages"
-
-    }
-
-    override fun getEntryUnreadCount(i: Int): Int {
-        return info[i].pendingCount
-    }
-}
-
-class NewMessageNotificationInboxStyleAdapter(private val newMessagesNotification: NewMessagesNotification) : InboxStyleAdapter {
-    override val userCount: Int = newMessagesNotification.userCount()
-
-    private val entries = newMessagesNotification.contents.toList()
-
-    override fun getEntryName(i: Int): String {
-        return entries[i].first.name
-    }
-
-    override fun getEntryInfoLine(i: Int): String {
-        val info = entries[i].second
-        return if (info.unreadCount == 1) info.lastMessage else "${info.unreadCount} messages"
-    }
-
-    override fun getEntryUnreadCount(i: Int): Int {
-        return entries[i].second.unreadCount
-    }
-}
-
+/** The latest available message for a conversation. */
 data class NewMessageData(
-    val name: String,
+    val speakerName: String,
     val lastMessage: String,
     val lastMessageTimestamp: Long,
     val unreadCount: Int
 )
 
+/** Current state of the new messages notification. */
 class NewMessagesNotification {
-    val contents = HashMap<ContactDisplayInfo, NewMessageData>()
+    val contents = HashMap<NotificationConversationInfo, NewMessageData>()
 
     fun hasNewMessages(): Boolean = contents.isNotEmpty()
     fun userCount(): Int = contents.size
@@ -81,20 +35,20 @@ class NewMessagesNotification {
     }
 
     /** Increases the unread count by the amount given in newMessageData. */
-    fun updateUser(contact: ContactDisplayInfo, newMessageData: NewMessageData) {
-        val current = contents[contact]
+    fun update(conversationInfo: NotificationConversationInfo, newMessageData: NewMessageData) {
+        val current = contents[conversationInfo]
         val newValue = if (current != null) {
             val newUnreadCount = current.unreadCount + newMessageData.unreadCount
-            NewMessageData(current.name, newMessageData.lastMessage, newMessageData.lastMessageTimestamp, newUnreadCount)
+            NewMessageData(current.speakerName, newMessageData.lastMessage, newMessageData.lastMessageTimestamp, newUnreadCount)
         }
         else
             newMessageData
 
-        contents[contact] = newValue
+        contents[conversationInfo] = newValue
     }
 
-    fun clearUser(contact: ContactDisplayInfo) {
-        contents.remove(contact)
+    fun clear(conversationInfo: NotificationConversationInfo) {
+        contents.remove(conversationInfo)
     }
 }
 
@@ -104,14 +58,13 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         //api docs say 5, but 19+ allow up to 7
         val MAX_NOTIFICATION_LINES = 7
     }
-
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     private val newMessagesNotification = NewMessagesNotification()
 
     /* PlatformNotificationService methods */
-    override fun clearMessageNotificationsForUser(contact: ContactDisplayInfo) {
-        newMessagesNotification.clearUser(contact)
+    override fun clearMessageNotificationsFor(notificationConversationInfo: NotificationConversationInfo) {
+        newMessagesNotification.clear(notificationConversationInfo)
         updateNewMessagesNotification()
     }
 
@@ -120,9 +73,9 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         updateNewMessagesNotification()
     }
 
-    override fun addNewMessageNotification(contact: ContactDisplayInfo, lastMessageInfo: MessageInfo, messageCount: Int) {
-        val newMessageData = NewMessageData(contact.name, lastMessageInfo.message, lastMessageInfo.timestamp, messageCount)
-        newMessagesNotification.updateUser(contact, newMessageData)
+    override fun addNewMessageNotification(notificationConversationInfo: NotificationConversationInfo, lastMessageInfo: NotificationMessageInfo, messageCount: Int) {
+        val newMessageData = NewMessageData(lastMessageInfo.speakerName, lastMessageInfo.message, lastMessageInfo.timestamp, messageCount)
+        newMessagesNotification.update(notificationConversationInfo, newMessageData)
         updateNewMessagesNotification()
     }
 
@@ -182,7 +135,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
                 "$count new messages"
         }
         else {
-            val users = notification.contents.values.map { it.name }
+            val users = notification.contents.values.map { it.speakerName }
             users.joinToString(", ")
         }
     }
@@ -191,7 +144,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         val notification = newMessagesNotification
 
         return if (notification.userCount() == 1) {
-            notification.contents.entries.first().key.name
+            notification.contents.entries.first().value.speakerName
         }
         else {
             val totalUnreadCount = newMessagesNotification.contents.values.fold(0) { acc, v -> acc + v.unreadCount }
@@ -227,8 +180,8 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         intent.putExtra(MainActivity.EXTRA_PENDING_MESSAGES_TYPE, typeExtra)
 
         if (isSingleUser) {
-            val username = newMessagesNotification.contents.keys.first()
-            intent.putExtra(MainActivity.EXTRA_USERID, username.id.long.toString())
+            val conversationInfo = newMessagesNotification.contents.keys.first()
+            intent.putExtra(MainActivity.EXTRA_CONVO_KEY, conversationInfo.key)
         }
 
         return getPendingIntentForActivity(intent)

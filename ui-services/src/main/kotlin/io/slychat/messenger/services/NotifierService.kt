@@ -1,21 +1,37 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.ContactInfo
-import io.slychat.messenger.core.persistence.ContactsPersistenceManager
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
-import io.slychat.messenger.services.contacts.toContactDisplayInfo
+import io.slychat.messenger.services.contacts.NotificationConversationInfo
+import io.slychat.messenger.services.contacts.NotificationKey
+import io.slychat.messenger.services.contacts.NotificationMessageInfo
 import io.slychat.messenger.services.messaging.MessageBundle
-import io.slychat.messenger.services.messaging.MessengerService
-import io.slychat.messenger.services.ui.UIEventService
+import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
+import rx.Observable
 
-//user-scoped
+/**
+ * Listens for new message events and dispatches notification display info to the underlying platform implementation.
+ *
+ * Uses UI events to decide when to dispatch notifications, as well as when to clear notifications.
+ *
+ * Notification display info is only dispatched when certain UI conditions are met.
+ *
+ * 1) If the current page is recent chats, no notifications are dispatched.
+ * 2) If the current focused page is the sender's page, no notifications are dispatched.
+ *
+ * Notifications are cleared when:
+ *
+ * 1) If the current navigated to page is recent chats, all notifications are cleared.
+ * 2) If the current navigated to page is a user's page, all notifications for that user are cleared.
+ */
 class NotifierService(
-    private val messengerService: MessengerService,
-    private val uiEventService: UIEventService,
+    newMessages: Observable<MessageBundle>,
+    uiEvents: Observable<UIEvent>,
     private val contactsPersistenceManager: ContactsPersistenceManager,
+    private val groupPersistenceManager: GroupPersistenceManager,
     private val platformNotificationService: PlatformNotificationService,
     private val userConfigService: UserConfigService
 ) {
@@ -31,10 +47,12 @@ class NotifierService(
     /** Should be called by UI implementations to reflect the visibility state of the UI window. */
     var isUiVisible: Boolean = false
 
-    fun init() {
-        uiEventService.events.subscribe { onUiEvent(it) }
-        messengerService.newMessages.subscribe { onNewMessages(it) }
+    init {
+        uiEvents.subscribe { onUiEvent(it) }
+        newMessages.subscribe { onNewMessages(it) }
+    }
 
+    fun init() {
         enableNotificationDisplay = userConfigService.notificationsEnabled
 
         userConfigService.updates.subscribe { keys ->
@@ -45,12 +63,61 @@ class NotifierService(
         }
     }
 
+    private fun withMessageNotificationInfo(messageBundle: MessageBundle, body: (NotificationConversationInfo, NotificationMessageInfo) -> Unit) {
+        withMaybeGroupInfo(messageBundle.groupId) { groupInfo ->
+            withContactInfo(messageBundle.userId) { contactInfo ->
+                val key = if (groupInfo == null)
+                    NotificationKey.idToKey(messageBundle.userId)
+                else
+                    NotificationKey.idToKey(groupInfo.id)
+
+                val info = NotificationConversationInfo(
+                    key,
+                    groupInfo?.name
+                )
+
+                val notificationMessageInfo = getMessageInfo(contactInfo, messageBundle)
+
+                body(info, notificationMessageInfo)
+            }
+        }
+    }
+
+    private fun getMessageInfo(speakerInfo: ContactInfo, messageBundle: MessageBundle): NotificationMessageInfo {
+        val last = messageBundle.messages.last()
+
+        return NotificationMessageInfo(
+            speakerInfo.name,
+            last.message,
+            last.timestamp
+        )
+    }
+
+    private fun withGroupInfo(groupId: GroupId, body: (GroupInfo) -> Unit) {
+        groupPersistenceManager.getInfo(groupId) successUi {
+            if (it != null)
+                body(it)
+            else
+                log.warn("Received a MessageBundle for group {}, but unable to find info", groupId)
+        } fail { e ->
+            log.error("Failure fetching group info: {}", e.message, e)
+        }
+    }
+
+    private fun withMaybeGroupInfo(groupId: GroupId?, body: (GroupInfo?) -> Unit) {
+        if (groupId != null)
+            withGroupInfo(groupId, body)
+        else
+            body(null)
+
+    }
+
     private fun withContactInfo(userId: UserId, body: (ContactInfo) -> Unit) {
-        contactsPersistenceManager.get(userId) mapUi { contactInfo ->
+        contactsPersistenceManager.get(userId) successUi { contactInfo ->
             if (contactInfo != null)
                 body(contactInfo)
             else
-                log.warn("Received a MessageBundle for user $userId, but unable to find info in contacts list")
+                log.warn("Received a MessageBundle for user {}, but unable to find info in contacts list", userId)
         } fail { e ->
             log.error("Failure fetching contact info: {}", e.message, e)
         }
@@ -69,10 +136,8 @@ class NotifierService(
                 return
         }
 
-        val lastMessage = messageBundle.messages.last()
-
-        withContactInfo(messageBundle.userId) { contactInfo ->
-            platformNotificationService.addNewMessageNotification(contactInfo.toContactDisplayInfo(), lastMessage, messageBundle.messages.size)
+        withMessageNotificationInfo(messageBundle) { conversationInfo, messageInfo ->
+            platformNotificationService.addNewMessageNotification(conversationInfo, messageInfo, messageBundle.messages.size)
         }
     }
 
@@ -87,12 +152,21 @@ class NotifierService(
                         val userId = UserId(event.extra.toLong())
                         currentlySelectedChatUser = userId
                         withContactInfo(userId) { contactInfo ->
-                            platformNotificationService.clearMessageNotificationsForUser(contactInfo.toContactDisplayInfo())
+                            val info = NotificationConversationInfo.from(contactInfo)
+                            platformNotificationService.clearMessageNotificationsFor(info)
                         }
                     }
 
                     PageType.CONTACTS ->
                         platformNotificationService.clearAllMessageNotifications()
+
+                    PageType.GROUP -> {
+                        val groupId = GroupId(event.extra)
+                        withGroupInfo(groupId) { groupInfo ->
+                            val info = NotificationConversationInfo.from(groupInfo)
+                            platformNotificationService.clearMessageNotificationsFor(info)
+                        }
+                    }
                 }
             }
         }

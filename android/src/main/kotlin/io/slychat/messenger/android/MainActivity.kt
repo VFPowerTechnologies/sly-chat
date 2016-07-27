@@ -21,6 +21,7 @@ import com.google.android.gms.common.GoogleApiAvailability
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.services.contacts.NotificationKey
 import io.slychat.messenger.services.ui.js.NavigationService
 import io.slychat.messenger.services.ui.js.javatojs.NavigationServiceToJSProxy
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
@@ -33,13 +34,13 @@ import java.util.*
 
 class MainActivity : AppCompatActivity() {
     companion object {
-        val ACTION_VIEW_MESSAGES = "com.vfpowertech.keytap.android.action.VIEW_MESSAGES"
+        val ACTION_VIEW_MESSAGES = "io.slychat.messenger.android.action.VIEW_MESSAGES"
 
         val EXTRA_PENDING_MESSAGES_TYPE = "pendingMessagesType"
         val EXTRA_PENDING_MESSAGES_TYPE_SINGLE = "single"
         val EXTRA_PENDING_MESSAGES_TYPE_MULTI = "multi"
 
-        val EXTRA_USERID = "username"
+        val EXTRA_CONVO_KEY = "conversationKey"
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -63,14 +64,20 @@ class MainActivity : AppCompatActivity() {
         if (intent.action != ACTION_VIEW_MESSAGES)
             return null
 
-        val messagesType = intent.getStringExtra(EXTRA_PENDING_MESSAGES_TYPE)
+        val messagesType = intent.getStringExtra(EXTRA_PENDING_MESSAGES_TYPE) ?: return null
+
         val page = when (messagesType) {
-            null -> return null
             EXTRA_PENDING_MESSAGES_TYPE_SINGLE -> {
-                val username = intent.getStringExtra(EXTRA_USERID) ?: throw RuntimeException("Missing EXTRA_USERNAME")
-                "user/$username"
+                val conversationKey = intent.getStringExtra(EXTRA_CONVO_KEY) ?: throw RuntimeException("Missing EXTRA_CONVO_KEY")
+                val notificationKey = NotificationKey.keyToId(conversationKey)
+                when (notificationKey) {
+                    is NotificationKey.User -> "user/${notificationKey.userId}"
+                    is NotificationKey.Group -> "group/${notificationKey.groupId}"
+                }
             }
+
             EXTRA_PENDING_MESSAGES_TYPE_MULTI -> "contacts"
+
             else -> throw RuntimeException("Unexpected value for EXTRA_PENDING_MESSAGES_TYPE: $messagesType")
         }
 
@@ -183,7 +190,10 @@ class MainActivity : AppCompatActivity() {
     private fun init(hadSavedBundle: Boolean) {
         val app = AndroidApp.get(this)
 
-        app.appComponent.uiStateService.initialPage = getInitialPage(intent)
+        val initialPage = getInitialPage(intent)
+        app.appComponent.uiStateService.initialPage = initialPage
+
+        log.debug("UI initial page: {}", initialPage)
 
         loadCompleteSubscription?.unsubscribe()
         loadCompleteSubscription = null
