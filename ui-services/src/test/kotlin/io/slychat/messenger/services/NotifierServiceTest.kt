@@ -262,11 +262,14 @@ class NotifierServiceTest {
         val contactInfo = randomContactInfo()
         val groupInfo = randomGroupInfo()
 
-        val conversationInfo = NotificationConversationInfo.from(groupInfo)
+        whenever(contactsPersistenceManager.get(contactInfo.id)).thenReturn(contactInfo)
+        whenever(groupPersistenceManager.getInfo(any())).thenReturn(groupInfo)
+
 
         val pageChangeEvent = PageChangeEvent(PageType.GROUP, groupInfo.id.string)
         uiEventSubject.onNext(pageChangeEvent)
 
+        val conversationInfo = NotificationConversationInfo.from(groupInfo)
         verify(platformNotificationsService, times(1)).clearMessageNotificationsFor(conversationInfo)
     }
 }

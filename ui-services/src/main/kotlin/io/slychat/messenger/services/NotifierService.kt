@@ -63,7 +63,7 @@ class NotifierService(
     }
 
     private fun withMessageNotificationInfo(messageBundle: MessageBundle, body: (NotificationConversationInfo, NotificationMessageInfo) -> Unit) {
-        withGroupInfo(messageBundle.groupId) { groupInfo ->
+        withMaybeGroupInfo(messageBundle.groupId) { groupInfo ->
             withContactInfo(messageBundle.userId) { contactInfo ->
                 val key = if (groupInfo == null)
                     NotificationKey.idToKey(messageBundle.userId)
@@ -92,16 +92,20 @@ class NotifierService(
         )
     }
 
-    private fun withGroupInfo(groupId: GroupId?, body: (GroupInfo?) -> Unit) {
+    private fun withGroupInfo(groupId: GroupId, body: (GroupInfo) -> Unit) {
+        groupPersistenceManager.getInfo(groupId) successUi {
+            if (it != null)
+                body(it)
+            else
+                log.warn("Received a MessageBundle for group {}, but unable to find info", groupId)
+        } fail { e ->
+            log.error("Failure fetching group info: {}", e.message, e)
+        }
+    }
+
+    private fun withMaybeGroupInfo(groupId: GroupId?, body: (GroupInfo?) -> Unit) {
         if (groupId != null)
-            groupPersistenceManager.getInfo(groupId) successUi {
-                if (it != null)
-                    body(it)
-                else
-                    log.warn("Received a MessageBundle for group {}, but unable to find info", groupId)
-            } fail { e ->
-                log.error("Failure fetching group info: {}", e.message, e)
-            }
+            withGroupInfo(groupId, body)
         else
             body(null)
 
@@ -155,7 +159,13 @@ class NotifierService(
                     PageType.CONTACTS ->
                         platformNotificationService.clearAllMessageNotifications()
 
-                    PageType.GROUP -> TODO()
+                    PageType.GROUP -> {
+                        val groupId = GroupId(event.extra)
+                        withGroupInfo(groupId) { groupInfo ->
+                            val info = NotificationConversationInfo.from(groupInfo)
+                            platformNotificationService.clearMessageNotificationsFor(info)
+                        }
+                    }
                 }
             }
         }
