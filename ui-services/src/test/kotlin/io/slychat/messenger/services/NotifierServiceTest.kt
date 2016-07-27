@@ -8,8 +8,6 @@ import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.contacts.NotificationConversationInfo
 import io.slychat.messenger.services.contacts.NotificationMessageInfo
 import io.slychat.messenger.services.messaging.MessageBundle
-import io.slychat.messenger.services.messaging.MessengerService
-import io.slychat.messenger.services.ui.UIEventService
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenReturn
 import io.slychat.messenger.testutils.thenReturnNull
@@ -28,8 +26,6 @@ class NotifierServiceTest {
         val kovenantTestMode = KovenantTestModeRule()
     }
 
-    val uiEventService: UIEventService = mock()
-    val messengerService: MessengerService = mock()
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val groupPersistenceManager: GroupPersistenceManager = mock()
     val platformNotificationsService: PlatformNotificationService = mock()
@@ -40,8 +36,6 @@ class NotifierServiceTest {
 
     @Before
     fun before() {
-        whenever(messengerService.newMessages).thenReturn(newMessagesSubject)
-        whenever(uiEventService.events).thenReturn(uiEventSubject)
         whenever(groupPersistenceManager.getInfo(any())).thenReturnNull()
     }
 
@@ -49,8 +43,8 @@ class NotifierServiceTest {
         userConfigService = UserConfigService(mock(), config = config)
 
         val notifierService = NotifierService(
-            messengerService,
-            uiEventService,
+            newMessagesSubject,
+            uiEventSubject,
             contactsPersistenceManager,
             groupPersistenceManager,
             platformNotificationsService,

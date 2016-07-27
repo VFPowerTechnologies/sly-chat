@@ -194,8 +194,8 @@ class UserModule(
         userConfigService: UserConfigService
     ): NotifierService =
         NotifierService(
-            messengerService,
-            uiEventService,
+            messengerService.newMessages,
+            uiEventService.events,
             contactsPersistenceManager,
             groupPersistenceManager,
             platformNotificationService,

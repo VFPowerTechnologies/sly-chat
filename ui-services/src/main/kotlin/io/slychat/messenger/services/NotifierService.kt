@@ -8,10 +8,9 @@ import io.slychat.messenger.services.contacts.NotificationConversationInfo
 import io.slychat.messenger.services.contacts.NotificationKey
 import io.slychat.messenger.services.contacts.NotificationMessageInfo
 import io.slychat.messenger.services.messaging.MessageBundle
-import io.slychat.messenger.services.messaging.MessengerService
-import io.slychat.messenger.services.ui.UIEventService
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
+import rx.Observable
 
 /**
  * Listens for new message events and dispatches notification display info to the underlying platform implementation.
@@ -29,8 +28,8 @@ import org.slf4j.LoggerFactory
  * 2) If the current navigated to page is a user's page, all notifications for that user are cleared.
  */
 class NotifierService(
-    private val messengerService: MessengerService,
-    private val uiEventService: UIEventService,
+    newMessages: Observable<MessageBundle>,
+    uiEvents: Observable<UIEvent>,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val groupPersistenceManager: GroupPersistenceManager,
     private val platformNotificationService: PlatformNotificationService,
@@ -48,10 +47,12 @@ class NotifierService(
     /** Should be called by UI implementations to reflect the visibility state of the UI window. */
     var isUiVisible: Boolean = false
 
-    fun init() {
-        uiEventService.events.subscribe { onUiEvent(it) }
-        messengerService.newMessages.subscribe { onNewMessages(it) }
+    init {
+        uiEvents.subscribe { onUiEvent(it) }
+        newMessages.subscribe { onNewMessages(it) }
+    }
 
+    fun init() {
         enableNotificationDisplay = userConfigService.notificationsEnabled
 
         userConfigService.updates.subscribe { keys ->
