@@ -58,4 +58,16 @@ class GroupServiceImpl(
     override fun getBlockList(): Promise<Set<GroupId>, Exception> {
         return groupPersistenceManager.getBlockList()
     }
+
+    override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<GroupMessageInfo>, Exception> {
+        return groupPersistenceManager.getLastMessages(groupId, startingAt, count)
+    }
+
+    override fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception> {
+        return groupPersistenceManager.deleteAllMessages(groupId)
+    }
+
+    override fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception> {
+        return groupPersistenceManager.deleteMessages(groupId, messageIds)
+    }
 }

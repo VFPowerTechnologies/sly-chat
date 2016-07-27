@@ -117,4 +117,16 @@ class UIGroupServiceImpl(
     override fun getBlockList(): Promise<Set<GroupId>, Exception> {
         return getGroupServiceOrThrow().getBlockList()
     }
+
+    override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
+        return getGroupServiceOrThrow().getLastMessages(groupId, startingAt, count) map { it.map { it.info.toUI() } }
+    }
+
+    override fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception> {
+        return getGroupServiceOrThrow().deleteAllMessages(groupId)
+    }
+
+    override fun deleteMessagesFor(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception> {
+        return getGroupServiceOrThrow().deleteMessages(groupId, messageIds)
+    }
 }

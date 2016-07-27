@@ -1,10 +1,7 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.ContactInfo
-import io.slychat.messenger.core.persistence.GroupConversation
-import io.slychat.messenger.core.persistence.GroupId
-import io.slychat.messenger.core.persistence.GroupInfo
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.messaging.GroupEvent
 import nl.komponents.kovenant.Promise
 import rx.Observable
@@ -32,4 +29,10 @@ interface GroupService {
     fun unblock(groupId: GroupId): Promise<Unit, Exception>
 
     fun getBlockList(): Promise<Set<GroupId>, Exception>
+
+    fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<GroupMessageInfo>, Exception>
+
+    fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception>
+
+    fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception>
 }
