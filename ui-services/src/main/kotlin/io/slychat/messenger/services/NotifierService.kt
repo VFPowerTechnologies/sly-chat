@@ -1,14 +1,15 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.ContactInfo
-import io.slychat.messenger.core.persistence.ContactsPersistenceManager
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
+import io.slychat.messenger.services.contacts.ContactDisplayInfo
 import io.slychat.messenger.services.contacts.toContactDisplayInfo
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.UIEventService
+import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
 /**
@@ -30,6 +31,7 @@ class NotifierService(
     private val messengerService: MessengerService,
     private val uiEventService: UIEventService,
     private val contactsPersistenceManager: ContactsPersistenceManager,
+    private val groupPersistenceManager: GroupPersistenceManager,
     private val platformNotificationService: PlatformNotificationService,
     private val userConfigService: UserConfigService
 ) {
@@ -59,12 +61,42 @@ class NotifierService(
         }
     }
 
+    private fun withDisplayInfo(messageBundle: MessageBundle, body: (ContactDisplayInfo) -> Unit) {
+        withGroupInfo(messageBundle.groupId) { groupInfo ->
+            withContactInfo(messageBundle.userId) { contactInfo ->
+                val info = ContactDisplayInfo(
+                    contactInfo.id,
+                    contactInfo.name,
+                    groupInfo?.id,
+                    groupInfo?.name
+                )
+
+                body(info)
+            }
+        }
+    }
+
+    private fun withGroupInfo(groupId: GroupId?, body: (GroupInfo?) -> Unit) {
+        if (groupId != null)
+            groupPersistenceManager.getInfo(groupId) successUi {
+                if (it != null)
+                    body(it)
+                else
+                    log.warn("Received a MessageBundle for group {}, but unable to find info", groupId)
+            } fail { e ->
+                log.error("Failure fetching group info: {}", e.message, e)
+            }
+        else
+            body(null)
+
+    }
+
     private fun withContactInfo(userId: UserId, body: (ContactInfo) -> Unit) {
-        contactsPersistenceManager.get(userId) mapUi { contactInfo ->
+        contactsPersistenceManager.get(userId) successUi { contactInfo ->
             if (contactInfo != null)
                 body(contactInfo)
             else
-                log.warn("Received a MessageBundle for user $userId, but unable to find info in contacts list")
+                log.warn("Received a MessageBundle for user {}, but unable to find info in contacts list", userId)
         } fail { e ->
             log.error("Failure fetching contact info: {}", e.message, e)
         }
@@ -85,8 +117,8 @@ class NotifierService(
 
         val lastMessage = messageBundle.messages.last()
 
-        withContactInfo(messageBundle.userId) { contactInfo ->
-            platformNotificationService.addNewMessageNotification(contactInfo.toContactDisplayInfo(), lastMessage, messageBundle.messages.size)
+        withDisplayInfo(messageBundle) { contactDisplayInfo ->
+            platformNotificationService.addNewMessageNotification(contactDisplayInfo, lastMessage, messageBundle.messages.size)
         }
     }
 

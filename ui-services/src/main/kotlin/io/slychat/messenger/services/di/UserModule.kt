@@ -189,10 +189,18 @@ class UserModule(
         messengerService: MessengerService,
         uiEventService: UIEventService,
         contactsPersistenceManager: ContactsPersistenceManager,
+        groupPersistenceManager: GroupPersistenceManager,
         platformNotificationService: PlatformNotificationService,
         userConfigService: UserConfigService
     ): NotifierService =
-        NotifierService(messengerService, uiEventService, contactsPersistenceManager, platformNotificationService, userConfigService)
+        NotifierService(
+            messengerService,
+            uiEventService,
+            contactsPersistenceManager,
+            groupPersistenceManager,
+            platformNotificationService,
+            userConfigService
+        )
 
     @UserScope
     @Provides

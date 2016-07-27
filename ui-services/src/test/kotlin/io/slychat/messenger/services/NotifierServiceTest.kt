@@ -1,13 +1,8 @@
 package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.currentTimestamp
-import io.slychat.messenger.core.persistence.AllowedMessageLevel
-import io.slychat.messenger.core.persistence.ContactInfo
-import io.slychat.messenger.core.persistence.ContactsPersistenceManager
-import io.slychat.messenger.core.persistence.MessageInfo
-import io.slychat.messenger.core.randomUUID
+import io.slychat.messenger.core.*
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.contacts.ContactDisplayInfo
@@ -16,6 +11,8 @@ import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.UIEventService
 import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.thenReturn
+import io.slychat.messenger.testutils.thenReturnNull
 import nl.komponents.kovenant.Promise
 import org.junit.Before
 import org.junit.ClassRule
@@ -31,10 +28,11 @@ class NotifierServiceTest {
         val kovenantTestMode = KovenantTestModeRule()
     }
 
-    lateinit var uiEventService: UIEventService
-    lateinit var messengerService: MessengerService
-    lateinit var contactsPersistenceManager: ContactsPersistenceManager
-    lateinit var platformNotificationsService: PlatformNotificationService
+    val uiEventService: UIEventService = mock()
+    val messengerService: MessengerService = mock()
+    val contactsPersistenceManager: ContactsPersistenceManager = mock()
+    val groupPersistenceManager: GroupPersistenceManager = mock()
+    val platformNotificationsService: PlatformNotificationService = mock()
     lateinit var userConfigService: UserConfigService
 
     val newMessagesSubject: PublishSubject<MessageBundle> = PublishSubject.create()
@@ -42,22 +40,19 @@ class NotifierServiceTest {
 
     @Before
     fun before() {
-        uiEventService = mock<UIEventService>()
-        messengerService = mock<MessengerService>()
-        contactsPersistenceManager = mock<ContactsPersistenceManager>()
-        platformNotificationsService = mock<PlatformNotificationService>()
-
         whenever(messengerService.newMessages).thenReturn(newMessagesSubject)
         whenever(uiEventService.events).thenReturn(uiEventSubject)
+        whenever(groupPersistenceManager.getInfo(any())).thenReturnNull()
     }
 
-    fun initNotifierService(config: UserConfig = UserConfig()): NotifierService {
+    fun initNotifierService(config: UserConfig = UserConfig(notificationsEnabled = true)): NotifierService {
         userConfigService = UserConfigService(mock(), config = config)
 
         val notifierService = NotifierService(
             messengerService,
             uiEventService,
             contactsPersistenceManager,
+            groupPersistenceManager,
             platformNotificationsService,
             userConfigService
         )
@@ -85,7 +80,7 @@ class NotifierServiceTest {
         val email = "email"
         val name = "name"
         val contactInfo = ContactInfo(userId, email, name, AllowedMessageLevel.ALL, "", "")
-        val contactDisplayInfo = ContactDisplayInfo(userId, name)
+        val contactDisplayInfo = ContactDisplayInfo(userId, name, null, null)
         whenever(contactsPersistenceManager.get(userId)).thenReturn(Promise.ofSuccess(contactInfo))
 
         val pageChangeEvent = PageChangeEvent(PageType.CONVO, userId.long.toString())
@@ -124,7 +119,7 @@ class NotifierServiceTest {
 
     @Test
     fun `it should show notifications when notifications are enabled and the ui is not visible`() {
-        val notifierService = initNotifierService(UserConfig(notificationsEnabled = true))
+        val notifierService = initNotifierService()
 
         notifierService.isUiVisible = false
 
@@ -142,7 +137,7 @@ class NotifierServiceTest {
 
     @Test
     fun `it should not show notifications for the currently open user page`() {
-        val notifierService = initNotifierService(UserConfig(notificationsEnabled = true))
+        val notifierService = initNotifierService()
 
         notifierService.isUiVisible = true
 
@@ -155,7 +150,7 @@ class NotifierServiceTest {
 
     @Test
     fun `it should show notifications for an unfocused user`() {
-        val notifierService = initNotifierService(UserConfig(notificationsEnabled = true))
+        val notifierService = initNotifierService()
 
         notifierService.isUiVisible = true
 
@@ -168,7 +163,7 @@ class NotifierServiceTest {
 
     @Test
     fun `it should not show notifications when the contact page page is focused`() {
-        val notifierService = initNotifierService(UserConfig(notificationsEnabled = true))
+        val notifierService = initNotifierService()
 
         notifierService.isUiVisible = true
 
@@ -179,11 +174,73 @@ class NotifierServiceTest {
 
     @Test
     fun `it should update notifications enabled when receiving config update events`() {
-        val notifierService = initNotifierService(UserConfig(notificationsEnabled = true))
+        val notifierService = initNotifierService()
 
         userConfigService.withEditor { notificationsEnabled = false }
 
         assertFalse(notifierService.enableNotificationDisplay, "Config change not reflected")
+    }
+
+    fun testGroupMessageBundle(body: (ContactInfo, GroupInfo, MessageInfo) -> Unit) {
+        val notifierService = initNotifierService()
+
+        val groupInfo = randomGroupInfo()
+        val groupId = groupInfo.id
+
+        val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
+        val userId = contactInfo.id
+
+        val messageInfo = randomReceivedMessageInfo()
+        val bundle = MessageBundle(
+            userId,
+            groupId,
+            listOf(messageInfo)
+        )
+
+        whenever(contactsPersistenceManager.get(userId)).thenReturn(contactInfo)
+        whenever(groupPersistenceManager.getInfo(groupId)).thenReturn(groupInfo)
+
+        newMessagesSubject.onNext(bundle)
+
+        body(contactInfo, groupInfo, messageInfo)
+    }
+
+    @Test
+    fun `it should fetch group info when a groupId is specified in the MessageBundle`() {
+        testGroupMessageBundle { contactInfo, groupInfo, messageInfo ->
+            verify(groupPersistenceManager).getInfo(groupInfo.id)
+
+        }
+    }
+
+    @Test
+    fun `it should send ContactDisplayInfo with group info when a groupId is specified in the MessageBundle`() {
+        testGroupMessageBundle { contactInfo, groupInfo, messageInfo ->
+            val contactDisplayInfo = ContactDisplayInfo(contactInfo.id, contactInfo.name, groupInfo.id, groupInfo.name)
+
+            verify(platformNotificationsService).addNewMessageNotification(contactDisplayInfo, messageInfo, 1)
+        }
+    }
+
+    @Test
+    fun `it should not fetch group info when no groupId is specified in the MessageBundle`() {
+        val notifierService = initNotifierService()
+
+        val userId = randomUserId()
+        val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
+
+        val bundle = MessageBundle(
+            userId,
+            null,
+            listOf(randomReceivedMessageInfo())
+        )
+
+        whenever(contactsPersistenceManager.get(userId)).thenReturn(contactInfo)
+        whenever(groupPersistenceManager.getInfo(any())).thenReturnNull()
+
+        newMessagesSubject.onNext(bundle)
+
+        verify(groupPersistenceManager, never()).getInfo(any())
     }
 }
 
