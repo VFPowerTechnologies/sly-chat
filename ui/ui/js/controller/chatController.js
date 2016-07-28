@@ -48,12 +48,22 @@ ChatController.prototype = {
         }
     },
 
-    displayMessage : function (messages, contact) {
+    displayMessage : function (messages, contact, isGroup) {
         this.lastMessage = null;
         var frag = $(document.createDocumentFragment());
-        for(var k in messages) {
-            if(messages.hasOwnProperty(k)) {
-                frag.append(this.createMessageNode(messages[k], contact));
+
+        if (isGroup === true) {
+            for(var g in messages) {
+                if (messages.hasOwnProperty(g)) {
+                    frag.append(this.createGroupMessageNode(messages[g]));
+                }
+            }
+        }
+        else {
+            for (var s in messages) {
+                if (messages.hasOwnProperty(s)) {
+                    frag.append(this.createMessageNode(messages[s], contact));
+                }
             }
         }
         
@@ -103,6 +113,56 @@ ChatController.prototype = {
         return messageNode;
     },
 
+    createGroupMessageNode : function (message) {
+        var classes = "";
+
+        if(this.lastMessage == null)
+            classes += " firstMessage";
+        else {
+            if ((message.info.sent && this.lastMessage.info.sent) || (!message.info.sent && !this.lastMessage.info.sent))
+                classes += " followingMessage";
+            else
+                classes += " firstMessage";
+        }
+
+
+        if (message.info.sent === true)
+            classes += " messageSent";
+        else
+            classes += " messageReceived";
+
+        var timespan = "";
+        if(message.info.sent && message.info.receivedTimestamp == 0){
+            timespan = "Delivering...";
+        }
+        else {
+            var time = new Date(message.info.timestamp).toISOString();
+            timespan = "<time class='timeago' datetime='" + time + "' title='" + $.timeago(time) + "'>" + $.timeago(time) + "</time>";
+        }
+
+        this.lastMessage = message;
+
+        var contactName = "";
+        if(message.speaker !== null) {
+            var contact = contactController.getContact(message.speaker);
+            if(contact !== false)
+                contactName = "<p style='font-size: 10px; color: #9e9e9e;'>" + contact.name + "</p>";
+        }
+
+        var messageNode = $("<li id='message_" + message.info.id + "' class='" + classes + "'><div class='message'>" +
+            contactName +
+            "<p>" + formatTextForHTML(createTextNode(message.info.message)) + "</p>" +
+            "<span class='timespan'>" + timespan + "</span>" +
+            "</div></li>");
+
+        messageNode.on("mouseheld", function () {
+            vibrate(50);
+            this.openMessageMenu(message);
+        }.bind(this));
+
+        return messageNode;
+    },
+
     storeCachedConversation : function (messages, contact) {
         if(Object.size(this.chatCache) <= 5) {
             this.chatCache[contact.id] = messages;
@@ -115,6 +175,17 @@ ChatController.prototype = {
         var organizedMessages = [];
         messages.forEach(function (message) {
             organizedMessages[message.id] = message;
+        });
+
+        return organizedMessages;
+    },
+
+    organizeGroupMessages : function (messages) {
+        messages.reverse();
+
+        var organizedMessages = [];
+        messages.forEach(function (message) {
+            organizedMessages[message.info.id] = message;
         });
 
         return organizedMessages;
@@ -161,10 +232,6 @@ ChatController.prototype = {
         var messages = messageInfo.messages;
         var contactId = messageInfo.contact;
 
-        messages.forEach(function (message) {
-            this.pushNewMessageInCache(contactId, message);
-        }.bind(this));
-
         //Get the contact that sent the message
         var cachedContact = contactController.getContact(contactId);
         if(!cachedContact) {
@@ -173,7 +240,17 @@ ChatController.prototype = {
         }
         var contactName = cachedContact.name;
 
-        contactController.updateRecentChatNode(cachedContact, messageInfo);
+        if (messageInfo.groupId === null) {
+            messages.forEach(function (message) {
+                this.pushNewMessageInCache(contactId, message);
+            }.bind(this));
+
+            contactController.updateRecentChatNode(cachedContact, messageInfo);
+        }
+        else {
+            contactController.updateRecentGroupChatNode(cachedContact, messageInfo);
+        }
+
         this.updateChatPageNewMessage(messages, contactName, contactId);
 
         $(".timeago").timeago();

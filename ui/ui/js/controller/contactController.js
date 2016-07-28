@@ -41,7 +41,6 @@ ContactController.prototype  = {
         groupController.createGroupList(conversations);
     },
 
-
     fetchAndLoadChat : function (contactId) {
         messengerService.getConversations().then(function (conversations) {
             conversations.forEach(function(conversation){
@@ -121,7 +120,7 @@ ContactController.prototype  = {
         for(var i = 0; i < 4; i++) {
             if(i in conversations) {
                 if (conversations[i].type == 'single')
-                frag.append(this.createRecentContactNode(conversations[i].conversation))
+                    frag.append(this.createRecentContactNode(conversations[i].conversation))
             }
         }
 
@@ -196,8 +195,14 @@ ContactController.prototype  = {
         }
 
         var time = new Date(conversation.info.lastTimestamp).toISOString();
+        var contactName = "You";
+        if (conversation.info.lastSpeaker !== null) {
+            var contact = this.getContact(conversation.info.lastSpeaker);
+            contactName = contact.name;
+        }
+
         var recentDiv = $("<div id='recentChat_" + conversation.group.id + "' class='item-link recent-contact-link row " + newClass + "'>" +
-            "<div class='recent-chat-name'><span>" + conversation.group.name + " (group)</span></div>" +
+            "<div class='recent-chat-name'><span><span class='group-contact-name' style='display: inline;'>" + contactName + "</span> (" + conversation.group.name + ")</span></div>" +
             "<div class='right'><span><small class='last-message-time'><time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time></small></span></div>" +
             "<div class='left'>" + this.formatLastMessage(conversation.info.lastMessage) + "</div>" +
             newBadge +
@@ -245,6 +250,42 @@ ContactController.prototype  = {
             };
 
             $("#recentChatList").prepend(this.createSingleRecentChatNode(conversation));
+        }
+    },
+
+    updateRecentGroupChatNode : function (contact, messageInfo) {
+        var message = messageInfo.messages[messageInfo.messages.length - 1];
+
+        var node = $("#recentChat_" + messageInfo.groupId);
+
+        if (node.length > 0) {
+            var time = new Date(message.receivedTimestamp).toISOString();
+            node.addClass("new");
+            var badge = node.find(".new-message-badge");
+            if(badge.length <= 0) {
+                node.append('<div class="right new-message-badge">1</div>');
+            }
+            else {
+                var newAmount = badge.html();
+                badge.html(parseInt(newAmount) + 1);
+            }
+            node.find(".group-contact-name").html(contact.name);
+            node.find(".left").html(this.formatLastMessage(message.message));
+            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>")
+        }
+        else {
+            var conversation = {
+                contact: contact,
+                group: groupController.getGroup(messageInfo.groupId),
+                info: {
+                    lastSpeaker: messageInfo.contact,
+                    lastTimestamp: message.receivedTimestamp,
+                    lastMessage: message.message,
+                    unreadMessageCount: 1
+                }
+            };
+
+            $("#recentChatList").prepend(this.createGroupRecentChatNode(conversation));
         }
     },
 

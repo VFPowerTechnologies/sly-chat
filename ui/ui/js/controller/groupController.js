@@ -7,9 +7,17 @@ GroupController.prototype = {
 
     },
 
+    getGroup : function (id) {
+        if (id in this.groups)
+            return this.groups[id].group;
+        else
+            return false;
+    },
+
     fetchGroupMessage : function (start, count, id) {
-        groupService.getLastMessages(id, start, count).then(function (result) {
-            console.log(result);
+        groupService.getLastMessages(id, start, count).then(function (messagesInfo) {
+            var organizedMessages = chatController.organizeGroupMessages(messagesInfo);
+            chatController.displayMessage(organizedMessages, id, true);
         }).catch(function (e) {
             exceptionController.handleError(e);
         });
