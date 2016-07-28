@@ -1,6 +1,8 @@
 package io.slychat.messenger.services.contacts
 
+import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.ui.alwaysUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -12,6 +14,18 @@ class ContactOperationManagerImpl(
     networkAvailable: Observable<Boolean>,
     private val contactSyncJobFactory: ContactSyncJobFactory
 ) : ContactOperationManager {
+    private class PendingOperation<out T>(
+        private val operation: () -> Promise<T, Exception>
+    ) {
+        private val d: Deferred<T, Exception> = deferred()
+
+        fun run(): Promise<T, Exception> {
+            return operation() success { d.resolve(it) } fail { d.reject(it) }
+        }
+
+        val promise: Promise<T, Exception> = d.promise
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     private var currentRunningJob: ContactSyncJob? = null
@@ -28,7 +42,7 @@ class ContactOperationManagerImpl(
     private val isSyncRunning: Boolean
         get() = currentRunningJob != null
 
-    private var pendingOperations = ArrayDeque<() -> Promise<*, Exception>>()
+    private var pendingOperations = ArrayDeque<PendingOperation<*>>()
 
     init {
         networkAvailableSubscription = networkAvailable.subscribe { onNetworkStatusChange(it) }
@@ -44,9 +58,12 @@ class ContactOperationManagerImpl(
         networkAvailableSubscription.unsubscribe()
     }
 
-    override fun runOperation(operation: () -> Promise<*, Exception>) {
-        pendingOperations.add(operation)
+    override fun <T> runOperation(operation: () -> Promise<T, Exception>): Promise<T, Exception> {
+        val pendingOperation = PendingOperation(operation)
+        pendingOperations.add(pendingOperation)
         processNext()
+
+        return pendingOperation.promise
     }
 
     override fun withCurrentSyncJob(body: ContactSyncJobDescription.() -> Unit) {
@@ -125,7 +142,7 @@ class ContactOperationManagerImpl(
 
         isOperationRunning = true
 
-        operation() alwaysUi {
+        operation.run() alwaysUi {
             log.debug("Operation complete")
             isOperationRunning = false
             processNext()

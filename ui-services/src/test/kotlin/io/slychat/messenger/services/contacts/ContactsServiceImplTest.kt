@@ -51,11 +51,12 @@ class ContactsServiceImplTest {
             override fun shutdown() {
             }
 
-            override fun runOperation(operation: () -> Promise<*, Exception>) {
+            override fun <T> runOperation(operation: () -> Promise<T, Exception>): Promise<T, Exception> {
                 runOperationCallCount += 1
 
-                if (immediate)
+                return if (immediate) {
                     operation()
+                }
                 else
                     throw UnsupportedOperationException()
             }

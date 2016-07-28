@@ -1,11 +1,8 @@
 package io.slychat.messenger.services.contacts
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.services.contacts.ContactOperationManagerImpl
-import io.slychat.messenger.services.contacts.ContactSyncJob
-import io.slychat.messenger.services.contacts.ContactSyncJobFactory
-import io.slychat.messenger.services.contacts.ContactSyncJobInfo
 import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.TestException
 import io.slychat.messenger.testutils.cond
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
@@ -18,6 +15,7 @@ import rx.observers.TestSubscriber
 import rx.subjects.BehaviorSubject
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -66,6 +64,8 @@ class ContactOperationManagerImplTest {
         runner.withCurrentSyncJob { doPlatformContactSync() }
     }
 
+    fun successUnit(): Promise<Unit, Exception> = Promise.ofSuccess(Unit)
+
     @Test
     fun `it should run a sync job if no pending operations are running and the network is available`() {
         val runner = createRunner(true)
@@ -91,7 +91,7 @@ class ContactOperationManagerImplTest {
         var wasRun = false
         runner.runOperation {
             wasRun = true
-            Promise.ofSuccess(Unit)
+            successUnit()
         }
 
         assertTrue(wasRun, "Operation was not run")
@@ -108,7 +108,7 @@ class ContactOperationManagerImplTest {
         var wasRun = false
         runner.runOperation {
             wasRun = true
-            Promise.ofSuccess(Unit)
+            successUnit()
         }
 
         assertTrue(wasRun, "Operation was not run")
@@ -138,7 +138,7 @@ class ContactOperationManagerImplTest {
         var wasRun = false
         runner.runOperation {
             wasRun = true
-            Promise.ofSuccess(Unit)
+            successUnit()
         }
 
         assertFalse(wasRun, "Operation wasn't queued")
@@ -153,7 +153,7 @@ class ContactOperationManagerImplTest {
         var wasRun = false
         runner.runOperation {
             wasRun = true
-            Promise.ofSuccess(Unit)
+            successUnit()
         }
 
         assertFalse(wasRun, "Operation wasn't queued")
@@ -183,7 +183,7 @@ class ContactOperationManagerImplTest {
         var wasRun = false
         runner.runOperation {
             wasRun = true
-            Promise.ofSuccess(Unit)
+            successUnit()
         }
 
         d.reject(RuntimeException("test error"))
@@ -289,5 +289,42 @@ class ContactOperationManagerImplTest {
         assertThat(events)
             .haveExactly(1, cond("!isRunning") { !it.isRunning })
             .`as`("Running events")
+    }
+
+    @Test(timeout = 300)
+    fun `the promise returned by addOperation should be resolved with the value returned by the operation`() {
+        val runner = ContactOperationManagerImpl(
+            Observable.just(true),
+            mock()
+        )
+
+        val d = deferred<Int, Exception>()
+        val p = runner.runOperation {
+            d.promise
+        }
+
+        val v = 5
+        d.resolve(v)
+
+        assertEquals(p.get(), v, "Invalid value")
+    }
+
+    @Test(timeout = 300)
+    fun `the promise returned by addOperation should be rejected with the exception thrown by the operation`() {
+        val runner = ContactOperationManagerImpl(
+            Observable.just(true),
+            mock()
+        )
+
+        val d = deferred<Int, Exception>()
+        val p = runner.runOperation {
+            d.promise
+        }
+
+        d.reject(TestException())
+
+        assertFailsWith(TestException::class) {
+            p.get()
+        }
     }
 }

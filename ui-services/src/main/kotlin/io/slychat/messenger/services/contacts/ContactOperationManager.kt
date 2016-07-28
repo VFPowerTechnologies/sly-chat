@@ -22,5 +22,5 @@ interface ContactOperationManager {
     fun shutdown()
 
     /** Queues an operation to be run. */
-    fun runOperation(operation: () -> Promise<*, Exception>)
+    fun <T> runOperation(operation: () -> Promise<T, Exception>): Promise<T, Exception>
 }
