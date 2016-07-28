@@ -48,9 +48,9 @@ ContactController.prototype  = {
             groupController.groups[conversation.group.id] = conversation;
             if(conversation.info.lastMessage != null)
                 this.recentGroupChat.push(conversation);
-        }.bind(this));
 
-        groupController.createGroupList(conversations);
+            groupController.createGroupList(conversations);
+        }.bind(this));
     },
 
     fetchAndLoadChat : function (contactId) {

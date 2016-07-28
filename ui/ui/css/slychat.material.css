@@ -154,9 +154,20 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     line-height: 25px;
 }
 .group-node {
-    border: 1px solid orange;
-    height: 100px;
+    height: 121px;
+    text-align: center;
+    margin-bottom: 10px;
 }
+.group-details {
+    height: 70px;
+    border-bottom: 1px solid #EEEEEE;
+}
+.group-members {
+    height: 40px;
+    font-size: 10px;
+    overflow: hidden;
+}
+
 
 /** Chat Page **/
 #chat-content li {

@@ -61,16 +61,47 @@ GroupController.prototype = {
         }
 
         $("#groupList").html(frag);
+
+        groups.forEach(function (group) {
+            groupService.getMembers(group.group.id).then(function (members) {
+                groupController.groups[group.group.id].members = members;
+                this.createGroupNodeMembers(group.group.id, members);
+            }.bind(this)).catch(function (e) {
+                exceptionController.handleError(e);
+            });
+        }.bind(this));
     },
 
     createGroupNode : function (group) {
-        var node = $("<div class='group-node col-50 close-popup'><span style='text-align: center;'>" + group.group.name + "</span></div>");
+        var node = $("<div id='groupNode_" + group.group.id + "' class='group-node col-50 close-popup'>" +
+                "<div class='group-details'>" +
+                    "<div class='avatar'>" + group.group.name.substring(0, 3) + "</div>" +
+                    "<span style='text-align: center;'>" + group.group.name + "</span>" +
+                "</div>" +
+                "<div class='group-members'>" +
+                "</div>" +
+            "</div>");
 
         node.click(function (e) {
             contactController.loadChatPage(group.group, true, true);
         });
 
         return node;
+    },
+
+    createGroupNodeMembers : function (groupId, members) {
+        var node = $("#groupNode_" + groupId);
+        if (node.length > 0) {
+            var groupMembers = "";
+            members.forEach(function (member) {
+                groupMembers += member.name + ", ";
+            });
+
+            if(groupMembers.length > 0)
+                groupMembers = groupMembers.substring(0, groupMembers.length - 2);
+
+            node.find(".group-members").html("<span>" + groupMembers + "</span>");
+        }
     },
 
     addGroupEventListener : function () {
