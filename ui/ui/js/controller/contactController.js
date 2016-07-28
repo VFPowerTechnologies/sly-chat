@@ -4,16 +4,29 @@ var ContactController = function () {
     this.contactSyncNotification = null;
     this.recentGroupChat = [];
     this.recentChat = [];
+    this.contacts = [];
 };
 
 ContactController.prototype  = {
     init : function () {
         this.fetchConversation();
+        this.fetchAllContacts();
     },
 
     resetCachedConversation : function () {
         this.conversations = [];
         this.fetchConversation();
+    },
+
+    fetchAllContacts : function () {
+        contactService.getContacts().then(function (contacts) {
+            console.log(contacts);
+            contacts.forEach(function (contact) {
+                this.contacts[contact.id] = contact;
+            }.bind(this));
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        })
     },
 
     fetchConversation : function () {
@@ -195,11 +208,14 @@ ContactController.prototype  = {
         }
 
         var time = new Date(conversation.info.lastTimestamp).toISOString();
-        var contactName = "You";
+        var contactName = "";
         if (conversation.info.lastSpeaker !== null) {
             var contact = this.getContact(conversation.info.lastSpeaker);
-            contactName = contact.name;
+            if(contact !== false)
+                contactName = contact.name;
         }
+        else
+            contactName = "You";
 
         var recentDiv = $("<div id='recentChat_" + conversation.group.id + "' class='item-link recent-contact-link row " + newClass + "'>" +
             "<div class='recent-chat-name'><span><span class='group-contact-name' style='display: inline;'>" + contactName + "</span> (" + conversation.group.name + ")</span></div>" +
@@ -551,8 +567,8 @@ ContactController.prototype  = {
     },
 
     getContact : function (id) {
-        if(id in this.conversations)
-            return this.conversations[id].contact;
+        if(id in this.contacts)
+            return this.contacts[id];
         else
             return false;
     },
