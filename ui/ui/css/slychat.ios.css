@@ -162,6 +162,11 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     text-align: center;
     line-height: 25px;
 }
+.group-node {
+    border: 1px solid orange;
+    height: 100px;
+}
+
 
 /** Chat Page **/
 #chat-content li {

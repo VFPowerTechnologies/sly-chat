@@ -21,17 +21,31 @@ ChatController.prototype = {
     },
 
     submitNewMessage : function (contact, message) {
-        messengerService.sendMessageTo(contact, message).then(function (messageDetails) {
-            this.pushNewMessageInCache(contact.id, messageDetails);
-            $("#chat-content").append(this.createMessageNode(messageDetails, profileController.name));
+        if (contact.email === undefined) {
+            messengerService.sendGroupMessageTo(contact.id, message).then(function (messageDetails) {
+                $("#chat-content").append(this.createMessageNode(messageDetails, profileController.name));
 
-            var input = $("#newMessageInput");
-            input.val("");
-            input.click();
-            this.scrollTop();
-        }.bind(this)).catch(function (e) {
-            console.log(e);
-        });
+                var input = $("#newMessageInput");
+                input.val("");
+                input.click();
+                this.scrollTop();
+            }.bind(this)).catch(function (e) {
+                exceptionController.handleError(e);
+            })
+        }
+        else {
+            messengerService.sendMessageTo(contact, message).then(function (messageDetails) {
+                this.pushNewMessageInCache(contact.id, messageDetails);
+                $("#chat-content").append(this.createMessageNode(messageDetails, profileController.name));
+
+                var input = $("#newMessageInput");
+                input.val("");
+                input.click();
+                this.scrollTop();
+            }.bind(this)).catch(function (e) {
+                console.log(e);
+            });
+        }
     },
 
     displayMessage : function (messages, contact) {
@@ -193,8 +207,8 @@ ChatController.prototype = {
 
     markConversationAsRead : function (contact) {
         messengerService.markConversationAsRead(contact).catch(function (e) {
-            console.log(e);
-        })
+            exceptionController.handleError(e);
+        });
     },
 
     openMessageMenu : function (message) {

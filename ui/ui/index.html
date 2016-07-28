@@ -55,7 +55,7 @@
     </div>
 </div>
 <div class="popup-overlay"></div>
-<div class="popup popup-contact">
+<div id='contactPopup' class="popup popup-contact">
     <div class="view navbar-fixed" data-page>
         <div class="pages">
             <div data-page class="page">
@@ -63,7 +63,6 @@
                     <div class="navbar-inner">
                         <div class="left">
                             <a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a>
-                            Contacts
                         </div>
                         <div class="right">
                             <a id="addNewContactGoBtn" href="#" class="link icon-only close-popup"> <i class="icon icon-plus"></i></a>
@@ -71,13 +70,33 @@
                     </div>
                 </div>
                 <div class="page-content">
-                    <div class="content-block-title">Recent contacts</div>
-                    <div id="recentContactList" class="content-block recent-contact-list">
+                    <div class="tabs-swipeable-wrap">
+                        <div class="tabs">
+                            <div class="tab active" id="contact-tab">
+                                <div class="content-block-title">Recent contacts</div>
+                                <div id="recentContactList" class="content-block recent-contact-list"></div>
+                                <div class="content-block-title">Contacts</div>
+                                <div class="content-block list-block">
+                                    <ul id="contact-list">
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="tab" id="group-tab">
+                                <div class="content-block-title">Groups</div>
+                                <div class="content-block">
+                                    <a href="#" class="button button-fill create-group-button close-popup" style="width: 50%; margin: 0 auto;">Create Group</a>
+                                    <div class="content-block">
+                                        <div id="groupList" class="row"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="content-block-title">Contacts</div>
-                    <div class="content-block list-block">
-                        <ul id="contact-list">
-                        </ul>
+                </div>
+                <div class="toolbar toolbar-bottom tabbar" style="color:  #fff; line-height: 48px;">
+                    <div class="toolbar-inner">
+                        <a href="#contact-tab" class="tab-link active">Contacts</a>
+                        <a href="#group-tab" class="tab-link">Groups</a>
                     </div>
                 </div>
             </div>
@@ -130,6 +149,7 @@
 <script type="text/javascript" src="js/jvm-service/telephony-service.js"></script>
 <script type="text/javascript" src="js/jvm-service/window-service.js"></script>
 <script type="text/javascript" src="js/jvm-service/config-service.js"></script>
+<script type="text/javascript" src="js/jvm-service/group-service.js"></script>
 
 <script type="text/javascript" src="js/controller/navigationController.js"></script>
 <script type="text/javascript" src="js/controller/loginController.js"></script>
@@ -138,6 +158,8 @@
 <script type="text/javascript" src="js/controller/contactController.js"></script>
 <script type="text/javascript" src="js/controller/chatController.js"></script>
 <script type="text/javascript" src="js/controller/connectionController.js"></script>
+<script type="text/javascript" src="js/controller/groupController.js"></script>
+<script type="text/javascript" src="js/controller/exceptionController.js"></script>
 
 <script type="text/javascript" src="js/internal/phoneFormating.js"></script>
 <script type="text/javascript" src="js/internal/functions.js"></script>

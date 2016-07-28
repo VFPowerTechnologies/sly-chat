@@ -2,6 +2,8 @@ var ContactController = function () {
     this.conversations = [];
     this.sync = false;
     this.contactSyncNotification = null;
+    this.recentGroupChat = [];
+    this.recentChat = [];
 };
 
 ContactController.prototype  = {
@@ -16,11 +18,29 @@ ContactController.prototype  = {
 
     fetchConversation : function () {
         messengerService.getConversations().then(function (conversations) {
-            this.storeConversations(conversations);
+            groupService.getGroupConversations().then(function (groupConversations) {
+                this.storeGroupsConversations(groupConversations);
+                this.storeConversations(conversations);
+            }.bind(this)).catch(function (e) {
+                exceptionController.handleError(e);
+            });
         }.bind(this)).catch(function (e) {
             console.log(e);
         });
     },
+
+    storeGroupsConversations : function (conversations) {
+        this.recentGroupChat = [];
+        groupController.groups = [];
+        conversations.forEach(function (conversation) {
+            groupController.groups[conversation.group.id] = conversation;
+            if(conversation.info.lastMessage != null)
+                this.recentGroupChat.push(conversation);
+        }.bind(this));
+
+        groupController.createGroupList(conversations);
+    },
+
 
     fetchAndLoadChat : function (contactId) {
         messengerService.getConversations().then(function (conversations) {
@@ -39,13 +59,16 @@ ContactController.prototype  = {
     },
 
     storeConversations : function (conversations) {
+        this.conversations = [];
         conversations.forEach(function(conversation){
             this.conversations[conversation.contact.id] = conversation;
         }.bind(this));
 
-        this.createRecentChatList();
+        var jointedRecentChat = this.createJointedRecentChat();
+
+        this.createRecentChatList(jointedRecentChat);
         this.createContactList();
-        this.createRecentContactList();
+        this.createRecentContactList(jointedRecentChat);
 
         navigationController.hideSplashScreen();
     },
@@ -92,13 +115,13 @@ ContactController.prototype  = {
         return contactBlock;
     },
 
-    createRecentContactList : function () {
+    createRecentContactList : function (conversations) {
         var frag = $(document.createDocumentFragment());
-        var conversations = this.orderByRecentChat(this.conversations);
 
         for(var i = 0; i < 4; i++) {
             if(i in conversations) {
-                frag.append(this.createRecentContactNode(conversations[i]))
+                if (conversations[i].type == 'single')
+                frag.append(this.createRecentContactNode(conversations[i].conversation))
             }
         }
 
@@ -119,12 +142,15 @@ ContactController.prototype  = {
         return contactDiv;
     },
 
-    createRecentChatList : function () {
+    createRecentChatList : function (jointedRecentChat) {
         var frag =  $(document.createDocumentFragment());
-        var conversations = this.orderByRecentChat(this.conversations);
-        if(conversations.length > 0) {
-            conversations.forEach(function (conversation) {
-                frag.append(this.createRecentChatNode(conversation));
+
+        if(jointedRecentChat.length > 0) {
+            jointedRecentChat.forEach(function (conversation) {
+                if(conversation.type == 'single')
+                    frag.append(this.createSingleRecentChatNode(conversation.conversation));
+                else
+                    frag.append(this.createGroupRecentChatNode(conversation.conversation));
             }.bind(this));
             $("#recentChatList").html(frag);
         }
@@ -133,7 +159,7 @@ ContactController.prototype  = {
         }
     },
 
-    createRecentChatNode : function (conversation) {
+    createSingleRecentChatNode : function (conversation) {
         var newClass = "";
         var newBadge = "";
         if (conversation.status.unreadMessageCount > 0) {
@@ -150,17 +176,41 @@ ContactController.prototype  = {
             "</div>");
 
         recentDiv.click(function () {
-            // if(recentDiv.hasClass("noClick"))
-            //     recentDiv.removeClass("noClick");
-            // else
                 this.loadChatPage(conversation.contact);
         }.bind(this));
 
         recentDiv.on("mouseheld", function () {
             vibrate(50);
-            // recentDiv.addClass("noClick");
             this.openConversationMenu(conversation.contact);
         }.bind(this));
+
+        return recentDiv;
+    },
+
+    createGroupRecentChatNode : function (conversation) {
+        var newClass = "";
+        var newBadge = "";
+        if (conversation.info.unreadMessageCount > 0) {
+            newClass = "new";
+            newBadge = '<div class="right new-message-badge">' + conversation.info.unreadMessageCount + '</div>';
+        }
+
+        var time = new Date(conversation.info.lastTimestamp).toISOString();
+        var recentDiv = $("<div id='recentChat_" + conversation.group.id + "' class='item-link recent-contact-link row " + newClass + "'>" +
+            "<div class='recent-chat-name'><span>" + conversation.group.name + " (group)</span></div>" +
+            "<div class='right'><span><small class='last-message-time'><time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time></small></span></div>" +
+            "<div class='left'>" + this.formatLastMessage(conversation.info.lastMessage) + "</div>" +
+            newBadge +
+            "</div>");
+
+        recentDiv.click(function () {
+            contactController.loadChatPage(conversation.group, true, true);
+        }.bind(this));
+
+        // recentDiv.on("mouseheld", function () {
+        //     vibrate(50);
+        //     this.openConversationMenu(conversation.contact);
+        // }.bind(this));
 
         return recentDiv;
     },
@@ -194,8 +244,35 @@ ContactController.prototype  = {
                 }
             };
 
-            $("#recentChatList").prepend(this.createRecentChatNode(conversation));
+            $("#recentChatList").prepend(this.createSingleRecentChatNode(conversation));
         }
+    },
+
+    createJointedRecentChat : function () {
+        var jointed = [];
+        this.recentChat = [];
+        var actualConversation = this.getActualConversation(this.conversations);
+        actualConversation.forEach(function (conversation) {
+            this.recentChat.push(conversation);
+        }.bind(this));
+
+        this.recentChat.forEach(function (conversation) {
+            jointed.push({
+                type: "single",
+                lastTimestamp: conversation.status.lastTimestamp,
+                conversation: conversation
+            });
+        });
+
+        this.recentGroupChat.forEach(function (conversation) {
+            jointed.push({
+                type: 'group',
+                lastTimestamp: conversation.info.lastTimestamp,
+                conversation: conversation
+            })
+        });
+
+        return this.orderByRecentChat(jointed);
     },
 
     formatLastMessage : function (message) {
@@ -378,7 +455,7 @@ ContactController.prototype  = {
         return convo;
     },
 
-    orderByRecentChat : function (conversations) {
+    getActualConversation : function (conversations) {
         var actualConversation = [];
 
         conversations.forEach(function (conversation) {
@@ -386,9 +463,13 @@ ContactController.prototype  = {
                 actualConversation.push(conversation);
         });
 
-        actualConversation.sort(function(a, b) {
-            var dateA = a.status.lastTimestamp;
-            var dateB = b.status.lastTimestamp;
+        return actualConversation;
+    },
+
+    orderByRecentChat : function (actualConversations) {
+        actualConversations.sort(function(a, b) {
+            var dateA = a.lastTimestamp;
+            var dateB = b.lastTimestamp;
 
             if(dateA > dateB) {
                 return -1;
@@ -400,23 +481,30 @@ ContactController.prototype  = {
             return 0;
         });
 
-        return actualConversation;
+        return actualConversations;
     },
 
-    loadChatPage : function (contact, pushCurrenPage) {;
+    loadChatPage : function (contact, pushCurrenPage, group) {
         if (pushCurrenPage === undefined)
             pushCurrenPage = true;
 
+        if (group === undefined)
+            group = false;
+
         var options = {
             url: "chat.html",
+            group: group,
             query: {
                 name: contact.name,
-                email: contact.email,
-                id: contact.id,
-                publicKey: contact.publicKey,
-                phoneNumber: contact.phoneNumber
+                id: contact.id
             }
         };
+
+        if (group === false) {
+            options.query.email = contact.email;
+            options.query.publicKey = contact.publicKey;
+            options.query.phoneNumber = contact.phoneNumber;
+        }
 
         navigationController.loadPage('chat.html', pushCurrenPage, options);
     },

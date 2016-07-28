@@ -2,14 +2,8 @@
 html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     -webkit-user-select: none;
 }
-.navbar {
-    width: 100%;
-}
 .navbar:after, .toolbar:before {
     display: none;
-}
-.navbar, .toolbar {
-    background-color: #efeff4;
 }
 .navbar .backBtn {
     margin-left: 10px;
