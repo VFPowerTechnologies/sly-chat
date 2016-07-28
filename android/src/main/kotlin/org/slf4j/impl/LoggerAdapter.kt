@@ -28,7 +28,7 @@ class LoggerAdapter(
     }
 
     override fun warn(format: String, vararg arguments: Any?) {
-        formatAndLog(Log.WARN, format, arguments)
+        formatAndLog(Log.WARN, format, *arguments)
     }
 
     override fun warn(format: String, arg1: Any?, arg2: Any?) {
@@ -52,7 +52,7 @@ class LoggerAdapter(
     }
 
     override fun info(format: String, vararg arguments: Any?) {
-        formatAndLog(Log.INFO, format, arguments)
+        formatAndLog(Log.INFO, format, *arguments)
     }
 
     override fun info(msg: String, t: Throwable) {
@@ -72,7 +72,7 @@ class LoggerAdapter(
     }
 
     override fun error(format: String, vararg arguments: Any?) {
-        formatAndLog(Log.ERROR, format, arguments)
+        formatAndLog(Log.ERROR, format, *arguments)
     }
 
     override fun error(msg: String, t: Throwable) {
@@ -92,7 +92,7 @@ class LoggerAdapter(
     }
 
     override fun debug(format: String, vararg arguments: Any?) {
-        formatAndLog(Log.DEBUG, format, arguments)
+        formatAndLog(Log.DEBUG, format, *arguments)
     }
 
     override fun debug(msg: String, t: Throwable) {
@@ -112,7 +112,7 @@ class LoggerAdapter(
     }
 
     override fun trace(format: String, vararg arguments: Any?) {
-        formatAndLog(Log.VERBOSE, format, arguments)
+        formatAndLog(Log.VERBOSE, format, *arguments)
     }
 
     override fun trace(msg: String, t: Throwable) {
