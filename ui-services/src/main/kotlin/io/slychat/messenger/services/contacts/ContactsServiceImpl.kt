@@ -8,9 +8,7 @@ import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.mapUi
-import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -39,82 +37,58 @@ class ContactsServiceImpl(
         contactOperationManager.running.subscribe { onContactJobStatusUpdate(it) }
     }
 
-    private fun <V, E> wrap(deferred: Deferred<V, E>, promise: Promise<V, E>): Promise<V, E> {
-        return promise success { deferred.resolve(it) } fail { deferred.reject(it) }
-    }
-
     override fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
-        val d = deferred<Boolean, Exception>()
-
-        contactOperationManager.runOperation {
-            wrap(d, contactsPersistenceManager.add(contactInfo)) successUi { wasAdded ->
-                if (wasAdded) {
-                    withCurrentJob { doUpdateRemoteContactList() }
-                    contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
-                }
+        return contactOperationManager.runOperation {
+            contactsPersistenceManager.add(contactInfo)
+        } successUi { wasAdded ->
+            if (wasAdded) {
+                withCurrentJob { doUpdateRemoteContactList() }
+                contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
             }
         }
-
-        return d.promise
     }
 
     /** Remove the given contact from the contact list. */
     override fun removeContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
-        val d = deferred<Boolean, Exception>()
-
-        contactOperationManager.runOperation {
-            wrap(d, contactsPersistenceManager.remove(contactInfo.id)) successUi { wasRemoved ->
-                if (wasRemoved) {
-                    withCurrentJob { doUpdateRemoteContactList() }
-                    contactEventsSubject.onNext(ContactEvent.Removed(setOf(contactInfo)))
-                }
+        return contactOperationManager.runOperation {
+            contactsPersistenceManager.remove(contactInfo.id)
+        } successUi { wasRemoved ->
+            if (wasRemoved) {
+                withCurrentJob { doUpdateRemoteContactList() }
+                contactEventsSubject.onNext(ContactEvent.Removed(setOf(contactInfo)))
             }
         }
-
-        return d.promise
     }
 
     override fun updateContact(contactInfo: ContactInfo): Promise<Unit, Exception> {
-        val d = deferred<Unit, Exception>()
-
-        contactOperationManager.runOperation {
-            wrap(d, contactsPersistenceManager.update(contactInfo)) successUi {
-                contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactInfo)))
-            }
+        return contactOperationManager.runOperation {
+            contactsPersistenceManager.update(contactInfo)
+        } successUi {
+            contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactInfo)))
         }
-
-        return d.promise
     }
 
     /** Filter out users whose messages we should ignore. */
     override fun filterBlocked(users: Set<UserId>): Promise<Set<UserId>, Exception> {
-        val d = deferred<Set<UserId>, Exception>()
-
         //avoid errors if the caller modifiers the set after giving it
         val usersCopy = HashSet(users)
 
-        contactOperationManager.runOperation {
-            wrap(d, contactsPersistenceManager.filterBlocked(usersCopy))
+        return contactOperationManager.runOperation {
+            contactsPersistenceManager.filterBlocked(usersCopy)
         }
-
-        return d.promise
     }
 
     override fun allowAll(userId: UserId): Promise<Unit, Exception> {
-        val d = deferred<Unit, Exception>()
+        return contactOperationManager.runOperation {
+            contactsPersistenceManager.allowAll(userId)
+        } successUi {
+            withCurrentJob { doUpdateRemoteContactList() }
 
-        contactOperationManager.runOperation {
-            wrap(d, contactsPersistenceManager.allowAll(userId)) successUi {
-                withCurrentJob { doUpdateRemoteContactList() }
-
-                contactsPersistenceManager.get(userId) mapUi {
-                    if (it != null)
-                        contactEventsSubject.onNext(ContactEvent.Updated(setOf(it)))
-                }
+            contactsPersistenceManager.get(userId) mapUi {
+                if (it != null)
+                    contactEventsSubject.onNext(ContactEvent.Updated(setOf(it)))
             }
         }
-
-        return d.promise
     }
 
     private fun doUpdateRemoteContactList() {
@@ -191,10 +165,8 @@ class ContactsServiceImpl(
         //defensive copy
         val missing = HashSet(users)
 
-        val d = deferred<Set<UserId>, Exception>()
-
-        contactOperationManager.runOperation {
-            wrap(d, contactsPersistenceManager.exists(users) bind { exists ->
+        return contactOperationManager.runOperation {
+            contactsPersistenceManager.exists(users) bind { exists ->
                 missing.removeAll(exists)
                 addNewContactData(missing) mapUi {
                     if (it.added)
@@ -202,10 +174,8 @@ class ContactsServiceImpl(
 
                     it.invalidIds
                 }
-            })
+            }
         }
-
-        return d.promise
     }
 
     /** Used to mark job components for execution. */
