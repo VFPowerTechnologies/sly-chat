@@ -10,10 +10,10 @@ import rx.Subscription
 import rx.subjects.PublishSubject
 import java.util.*
 
-class ContactOperationManagerImpl(
+class AddressBookOperationManagerImpl(
     networkAvailable: Observable<Boolean>,
     private val contactSyncJobFactory: ContactSyncJobFactory
-) : ContactOperationManager {
+) : AddressBookOperationManager {
     private class PendingOperation<out T>(
         private val operation: () -> Promise<T, Exception>
     ) {

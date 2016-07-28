@@ -19,7 +19,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ContactOperationManagerImplTest {
+class AddressBookOperationManagerImplTest {
     companion object {
         @JvmField
         @ClassRule
@@ -48,19 +48,19 @@ class ContactOperationManagerImplTest {
 
     val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create()
 
-    fun createRunner(isNetworkAvailable: Boolean = false): ContactOperationManagerImpl {
+    fun createRunner(isNetworkAvailable: Boolean = false): AddressBookOperationManagerImpl {
         networkStatus.onNext(isNetworkAvailable)
 
         whenever(factory.create()).thenReturn(contactJob)
         whenever(contactJob.run(any())).thenReturn(jobDeferred.promise)
 
-        return ContactOperationManagerImpl(
+        return AddressBookOperationManagerImpl(
             networkStatus,
             factory
         )
     }
 
-    fun doLocalSync(runner: ContactOperationManagerImpl) {
+    fun doLocalSync(runner: AddressBookOperationManagerImpl) {
         runner.withCurrentSyncJob { doPlatformContactSync() }
     }
 
@@ -221,7 +221,7 @@ class ContactOperationManagerImplTest {
     fun `it should queue a sync job if one is already running`() {
         val factory = MockSyncJobFactory()
 
-        val runner = ContactOperationManagerImpl(
+        val runner = AddressBookOperationManagerImpl(
             Observable.just(true),
             factory
         )
@@ -237,7 +237,7 @@ class ContactOperationManagerImplTest {
     fun `it should run a queued sync job after the current one is complete if no operations are pending`() {
         val factory = MockSyncJobFactory()
 
-        val runner = ContactOperationManagerImpl(
+        val runner = AddressBookOperationManagerImpl(
             Observable.just(true),
             factory
         )
@@ -271,7 +271,7 @@ class ContactOperationManagerImplTest {
     @Test
     fun `it should emit a a stopped event when a sync ends`() {
         val factory = MockSyncJobFactory()
-        val runner = ContactOperationManagerImpl(
+        val runner = AddressBookOperationManagerImpl(
             Observable.just(true),
             factory
         )
@@ -293,7 +293,7 @@ class ContactOperationManagerImplTest {
 
     @Test(timeout = 300)
     fun `the promise returned by addOperation should be resolved with the value returned by the operation`() {
-        val runner = ContactOperationManagerImpl(
+        val runner = AddressBookOperationManagerImpl(
             Observable.just(true),
             mock()
         )
@@ -311,7 +311,7 @@ class ContactOperationManagerImplTest {
 
     @Test(timeout = 300)
     fun `the promise returned by addOperation should be rejected with the exception thrown by the operation`() {
-        val runner = ContactOperationManagerImpl(
+        val runner = AddressBookOperationManagerImpl(
             Observable.just(true),
             mock()
         )

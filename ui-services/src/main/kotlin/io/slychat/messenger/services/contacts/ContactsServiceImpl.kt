@@ -20,7 +20,7 @@ class ContactsServiceImpl(
     private val authTokenManager: AuthTokenManager,
     private val contactClient: ContactAsyncClient,
     private val contactsPersistenceManager: ContactsPersistenceManager,
-    private val contactOperationManager: ContactOperationManager
+    private val addressBookOperationManager: AddressBookOperationManager
 ) : ContactsService {
     private class AddContactsResult(
         val added: Boolean,
@@ -34,11 +34,11 @@ class ContactsServiceImpl(
     override val contactEvents: Observable<ContactEvent> = contactEventsSubject
 
     init {
-        contactOperationManager.running.subscribe { onContactSyncStatusUpdate(it) }
+        addressBookOperationManager.running.subscribe { onContactSyncStatusUpdate(it) }
     }
 
     override fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
-        return contactOperationManager.runOperation {
+        return addressBookOperationManager.runOperation {
             contactsPersistenceManager.add(contactInfo)
         } successUi { wasAdded ->
             if (wasAdded) {
@@ -50,7 +50,7 @@ class ContactsServiceImpl(
 
     /** Remove the given contact from the contact list. */
     override fun removeContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
-        return contactOperationManager.runOperation {
+        return addressBookOperationManager.runOperation {
             contactsPersistenceManager.remove(contactInfo.id)
         } successUi { wasRemoved ->
             if (wasRemoved) {
@@ -61,7 +61,7 @@ class ContactsServiceImpl(
     }
 
     override fun updateContact(contactInfo: ContactInfo): Promise<Unit, Exception> {
-        return contactOperationManager.runOperation {
+        return addressBookOperationManager.runOperation {
             contactsPersistenceManager.update(contactInfo)
         } successUi {
             contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactInfo)))
@@ -73,13 +73,13 @@ class ContactsServiceImpl(
         //avoid errors if the caller modifiers the set after giving it
         val usersCopy = HashSet(users)
 
-        return contactOperationManager.runOperation {
+        return addressBookOperationManager.runOperation {
             contactsPersistenceManager.filterBlocked(usersCopy)
         }
     }
 
     override fun allowAll(userId: UserId): Promise<Unit, Exception> {
-        return contactOperationManager.runOperation {
+        return addressBookOperationManager.runOperation {
             contactsPersistenceManager.allowAll(userId)
         } successUi {
             withCurrentJob { doUpdateRemoteContactList() }
@@ -165,7 +165,7 @@ class ContactsServiceImpl(
         //defensive copy
         val missing = HashSet(users)
 
-        return contactOperationManager.runOperation {
+        return addressBookOperationManager.runOperation {
             contactsPersistenceManager.exists(users) bind { exists ->
                 missing.removeAll(exists)
                 addNewContactData(missing) mapUi {
@@ -180,7 +180,7 @@ class ContactsServiceImpl(
 
     /** Used to mark job components for execution. */
     private fun withCurrentJob(body: ContactSyncJobDescription.() -> Unit) {
-        contactOperationManager.withCurrentSyncJob(body)
+        addressBookOperationManager.withCurrentSyncJob(body)
     }
 
     override fun shutdown() {

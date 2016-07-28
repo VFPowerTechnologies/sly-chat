@@ -83,10 +83,10 @@ class UserModule(
 
     @UserScope
     @Provides
-    fun providesContactJobRunner(
+    fun providesAddressBookOperationManager(
         application: SlyApplication,
         contactJobFactory: ContactSyncJobFactory
-    ): ContactOperationManager = ContactOperationManagerImpl(
+    ): AddressBookOperationManager = AddressBookOperationManagerImpl(
         application.networkAvailable,
         contactJobFactory
     )
@@ -97,7 +97,7 @@ class UserModule(
         authTokenManager: AuthTokenManager,
         serverUrls: BuildConfig.ServerUrls,
         contactsPersistenceManager: ContactsPersistenceManager,
-        contactJobRunner: ContactOperationManager,
+        addressBookOperationManager: AddressBookOperationManager,
         @SlyHttp httpClientFactory: HttpClientFactory
     ): ContactsService {
         val serverUrl = serverUrls.API_SERVER
@@ -107,7 +107,7 @@ class UserModule(
             authTokenManager,
             contactClient,
             contactsPersistenceManager,
-            contactJobRunner
+            addressBookOperationManager
         )
     }
 

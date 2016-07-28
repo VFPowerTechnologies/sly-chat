@@ -15,7 +15,7 @@ import rx.Observable
  *
  * Pending operations all have precedence over pending sync jobs.
  */
-interface ContactOperationManager {
+interface AddressBookOperationManager {
     /** Fires once with isRunning = true on sync start, isRunning = false on sync completion (regardless of outcome). */
     val running: Observable<ContactSyncJobInfo>
 

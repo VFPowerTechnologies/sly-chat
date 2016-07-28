@@ -33,7 +33,7 @@ class ContactsServiceImplTest {
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
 
-        class MockContactJobRunner : ContactOperationManager {
+        class MockAddressBookOperationManager : AddressBookOperationManager {
             val runningSubject: PublishSubject<ContactSyncJobInfo> = PublishSubject.create()
 
             var immediate = true
@@ -65,14 +65,14 @@ class ContactsServiceImplTest {
 
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val contactClient: ContactAsyncClient = mock()
-    val contactOperationManager = MockContactJobRunner()
+    val addressBookOperationManager = MockAddressBookOperationManager()
 
     fun createService(): ContactsServiceImpl {
         return ContactsServiceImpl(
             MockAuthTokenManager(),
             contactClient,
             contactsPersistenceManager,
-            contactOperationManager
+            addressBookOperationManager
         )
     }
 
@@ -90,7 +90,7 @@ class ContactsServiceImplTest {
 
         assertTrue(contactsService.addContact(contactInfo).get(), "Contact not seen as added")
 
-        assertEquals(1, contactOperationManager.runOperationCallCount, "Didn't go through ContactJobRunner")
+        assertEquals(1, addressBookOperationManager.runOperationCallCount, "Didn't go through AddressBookOperationManager")
     }
 
     @Test
@@ -105,7 +105,7 @@ class ContactsServiceImplTest {
 
         assertTrue(contactsService.removeContact(contactInfo).get(), "Contact not seen as removed")
 
-        assertEquals(1, contactOperationManager.runOperationCallCount, "Didn't go through ContactJobRunner")
+        assertEquals(1, addressBookOperationManager.runOperationCallCount, "Didn't go through AddressBookOperationManager")
     }
 
     @Test
@@ -121,7 +121,7 @@ class ContactsServiceImplTest {
         //should return
         contactsService.updateContact(contactInfo).get()
 
-        assertEquals(1, contactOperationManager.runOperationCallCount, "Didn't go through ContactJobRunner")
+        assertEquals(1, addressBookOperationManager.runOperationCallCount, "Didn't go through AddressBookOperationManager")
     }
 
     //TODO remove/update event tests
@@ -177,21 +177,21 @@ class ContactsServiceImplTest {
     }
 
     @Test
-    fun `doLocalSync should defer to ContactJobRunner`() {
+    fun `doLocalSync should defer to AddressBookOperationManager`() {
         val contactsService = createService()
 
         contactsService.doLocalSync()
 
-        assertEquals(1, contactOperationManager.withCurrentJobCallCount, "ContactJobRunner not called")
+        assertEquals(1, addressBookOperationManager.withCurrentJobCallCount, "AddressBookOperationManager not called")
     }
 
     @Test
-    fun `doRemoteSync should defer to ContactJobRunner`() {
+    fun `doRemoteSync should defer to AddressBookOperationManager`() {
         val contactsService = createService()
 
         contactsService.doRemoteSync()
 
-        assertEquals(1, contactOperationManager.withCurrentJobCallCount, "ContactJobRunner not called")
+        assertEquals(1, addressBookOperationManager.withCurrentJobCallCount, "AddressBookOperationManager not called")
     }
 
     fun testAddMissingContacts(
@@ -321,7 +321,7 @@ class ContactsServiceImplTest {
     }
 
     @Test
-    fun `addMissingContacts should go through ContactJobRunner`() {
+    fun `addMissingContacts should go through AddressBookOperationManager`() {
         val contactsService = createService()
 
         testAddMissingContacts(
@@ -332,7 +332,7 @@ class ContactsServiceImplTest {
             false
         )
 
-        assertEquals(1, contactOperationManager.runOperationCallCount, "Didn't go through ContactJobRunner")
+        assertEquals(1, addressBookOperationManager.runOperationCallCount, "Didn't go through AddressBookOperationManager")
     }
 
     @Test
@@ -347,7 +347,7 @@ class ContactsServiceImplTest {
             false
         )
 
-        assertEquals(0, contactOperationManager.withCurrentJobCallCount, "Sync was run")
+        assertEquals(0, addressBookOperationManager.withCurrentJobCallCount, "Sync was run")
     }
 
     @Test
@@ -362,7 +362,7 @@ class ContactsServiceImplTest {
             true
         )
 
-        assertEquals(1, contactOperationManager.withCurrentJobCallCount, "Sync was run")
+        assertEquals(1, addressBookOperationManager.withCurrentJobCallCount, "Sync was run")
     }
 
     fun testSyncEvent(isRunning: Boolean) {
@@ -372,7 +372,7 @@ class ContactsServiceImplTest {
 
         val testSubscriber = contactEventCollectorFor<ContactEvent.Sync>(contactsService)
 
-        contactOperationManager.runningSubject.onNext(info)
+        addressBookOperationManager.runningSubject.onNext(info)
 
         assertEventEmitted(testSubscriber) { ev ->
             if (isRunning)
@@ -417,7 +417,7 @@ class ContactsServiceImplTest {
 
         contactsService.allowAll(userId).get()
 
-        assertTrue(contactOperationManager.withCurrentJobCallCount == 1, "Remote sync not triggered")
+        assertTrue(addressBookOperationManager.withCurrentJobCallCount == 1, "Remote sync not triggered")
     }
 
     @Test
