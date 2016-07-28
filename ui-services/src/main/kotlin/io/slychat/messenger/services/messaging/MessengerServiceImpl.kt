@@ -80,6 +80,8 @@ class MessengerServiceImpl(
         messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId) successUi { messageInfo ->
             val bundle = MessageBundle(metadata.userId, listOf(messageInfo))
             messageUpdatesSubject.onNext(bundle)
+        } fail { e ->
+            log.error("Unable to mark convo message <<{}>> to {} as delivered: {}", metadata.messageId, metadata.userId, e.message, e)
         }
     }
 
@@ -90,6 +92,8 @@ class MessengerServiceImpl(
         groupPersistenceManager.markMessageAsDelivered(groupId, metadata.messageId) successUi { messageInfo ->
             val bundle = MessageBundle(metadata.userId, groupId, listOf(messageInfo.info))
             messageUpdatesSubject.onNext(bundle)
+        } fail { e ->
+            log.error("Unable to mark group message <<{}/{}>> as delivered: {}", groupId, metadata.messageId, e.message, e)
         }
     }
 
