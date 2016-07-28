@@ -11,7 +11,7 @@ interface GroupService {
 
     fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception>
 
-    fun removeMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception>
+    fun removeMember(groupId: GroupId, userId: UserId): Promise<Unit, Exception>
 
     fun getMembers(groupId: GroupId): Promise<Set<UserId>, Exception>
 

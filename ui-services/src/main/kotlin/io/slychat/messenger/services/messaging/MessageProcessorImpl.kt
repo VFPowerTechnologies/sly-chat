@@ -11,7 +11,7 @@ import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
-import nl.komponents.kovenant.ui.successUi
+import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
@@ -26,9 +26,6 @@ class MessageProcessorImpl(
 
     private val newMessagesSubject = PublishSubject.create<MessageBundle>()
     override val newMessages: Observable<MessageBundle> = newMessagesSubject
-
-    private val groupEventSubject = PublishSubject.create<GroupEvent>()
-    override val groupEvents: Observable<GroupEvent> = groupEventSubject
 
     override fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception> {
         val m = wrapper.message
@@ -118,14 +115,7 @@ class MessageProcessorImpl(
             remaining.removeAll(invalidIds)
 
             if (remaining.isNotEmpty()) {
-                groupService.addMembers(m.id, remaining) mapUi { wasAdded ->
-                    if (wasAdded.isNotEmpty()) {
-                        log.info("Users {} joined group {}", wasAdded, m.id.string)
-                        groupEventSubject.onNext(GroupEvent.Joined(m.id, wasAdded))
-                    }
-
-                    Unit
-                }
+                groupService.addMembers(m.id, remaining) map { Unit }
             }
             else {
                 log.warn("Received a join for group {} but joining user id {} is invalid")
@@ -135,12 +125,7 @@ class MessageProcessorImpl(
     }
 
     private fun handleGroupPart(groupId: GroupId, sender: UserId): Promise<Unit, Exception> {
-        return groupService.removeMember(groupId, sender) mapUi { wasRemoved ->
-            if (wasRemoved) {
-                log.info("User {} has left group {}", sender, groupId.string)
-                groupEventSubject.onNext(GroupEvent.Parted(groupId, sender))
-            }
-        }
+        return groupService.removeMember(groupId, sender)
     }
 
     private fun handleGroupInvitation(sender: UserId, groupInfo: GroupInfo?, m: GroupEventMessage.Invitation): Promise<Unit, Exception> {
@@ -152,9 +137,7 @@ class MessageProcessorImpl(
             contactsService.addMissingContacts(m.members) bind { invalidIds ->
                 members.removeAll(invalidIds)
                 val info = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
-                groupService.join(info, members) successUi {
-                    groupEventSubject.onNext(GroupEvent.NewGroup(m.id, members))
-                }
+                groupService.join(info, members)
             }
         }
         else

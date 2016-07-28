@@ -3,19 +3,22 @@ package io.slychat.messenger.services
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.messaging.GroupEvent
-import io.slychat.messenger.services.messaging.MessageProcessor
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
+import nl.komponents.kovenant.ui.successUi
+import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.subjects.PublishSubject
 
 //TODO should move the group message generation to here; in a hurry now so do it later
 class GroupServiceImpl(
     private val groupPersistenceManager: GroupPersistenceManager,
-    private val contactsPersistenceManager: ContactsPersistenceManager,
-    private val messageProcessor: MessageProcessor
+    private val contactsPersistenceManager: ContactsPersistenceManager
 ) : GroupService {
-    override val groupEvents: Observable<GroupEvent>
-        get() = messageProcessor.groupEvents
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    private val groupEventSubject = PublishSubject.create<GroupEvent>()
+    override val groupEvents: Observable<GroupEvent> = groupEventSubject
 
     override fun getGroups(): Promise<List<GroupInfo>, Exception> {
         return groupPersistenceManager.getList()
@@ -64,7 +67,10 @@ class GroupServiceImpl(
     }
 
     override fun join(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception> {
-        return groupPersistenceManager.join(groupInfo, members)
+        return groupPersistenceManager.join(groupInfo, members) successUi {
+            log.info("Joined new group {} with members={}", groupInfo.id, members)
+            groupEventSubject.onNext(GroupEvent.NewGroup(groupInfo.id, members))
+        }
     }
 
     override fun part(groupId: GroupId): Promise<Boolean, Exception> {
@@ -96,10 +102,22 @@ class GroupServiceImpl(
     }
 
     override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception> {
-        return groupPersistenceManager.addMembers(groupId, users)
+        return groupPersistenceManager.addMembers(groupId, users) mapUi { wasAdded ->
+            if (wasAdded.isNotEmpty()) {
+                log.info("Users {} joined group {}", wasAdded, groupId)
+                groupEventSubject.onNext(GroupEvent.Joined(groupId, wasAdded))
+            }
+
+            wasAdded
+        }
     }
 
-    override fun removeMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> {
-        return groupPersistenceManager.removeMember(groupId, userId)
+    override fun removeMember(groupId: GroupId, userId: UserId): Promise<Unit, Exception> {
+        return groupPersistenceManager.removeMember(groupId, userId) mapUi { wasRemoved ->
+            if (wasRemoved) {
+                log.info("User {} has left group {}", userId, groupId.string)
+                groupEventSubject.onNext(GroupEvent.Parted(groupId, userId))
+            }
+        }
     }
 }

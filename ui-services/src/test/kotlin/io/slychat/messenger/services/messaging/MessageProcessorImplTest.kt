@@ -5,16 +5,12 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
 import io.slychat.messenger.services.GroupService
-import io.slychat.messenger.services.assertEventEmitted
-import io.slychat.messenger.services.assertNoEventsEmitted
 import io.slychat.messenger.services.contacts.ContactsService
-import io.slychat.messenger.services.subclassFilterTestSubscriber
 import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
-import rx.observers.TestSubscriber
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -48,7 +44,7 @@ class MessageProcessorImplTest {
         whenever(groupService.join(any(), any())).thenReturn(Unit)
         whenever(groupService.getInfo(any())).thenReturnNull()
         whenever(groupService.addMembers(any(), any())).thenAnswerWithArg(1)
-        whenever(groupService.removeMember(any(), any())).thenReturn(true)
+        whenever(groupService.removeMember(any(), any())).thenReturn(Unit)
         whenever(groupService.isUserMemberOf(any(), any())).thenReturn(true)
 
         return MessageProcessorImpl(
@@ -56,10 +52,6 @@ class MessageProcessorImplTest {
             messagePersistenceManager,
             groupService
         )
-    }
-
-    inline fun <reified T : GroupEvent> groupEventCollectorFor(messageProcessorService: MessageProcessorImpl): TestSubscriber<T> {
-        return messageProcessorService.groupEvents.subclassFilterTestSubscriber()
     }
 
     @Test
@@ -161,52 +153,6 @@ class MessageProcessorImplTest {
         verify(contactsService).addMissingContacts(m.members)
 
         verify(groupService).join(info, fullMembers)
-    }
-
-    @Test
-    fun `it should emit a NewGroup event upon processing a new invitation (all valid users)`() {
-        val sender = randomUserId()
-
-        val m = generateInvite()
-
-        val fullMembers = HashSet(m.members)
-        fullMembers.add(sender)
-
-        val processor = createProcessor()
-
-        val testSubscriber = groupEventCollectorFor<GroupEvent.NewGroup>(processor)
-
-        processor.processMessage(sender, wrap(m)).get()
-
-        assertEventEmitted(testSubscriber) { ev ->
-            assertEquals(m.id, ev.id, "Invalid id")
-            assertEquals(fullMembers, ev.members, "Invalid member list")
-        }
-    }
-
-    @Test
-    fun `it should emit a NewGroup event upon processing a new invitation (some invalid users)`() {
-        val sender = randomUserId()
-
-        val m = generateInvite()
-
-        val invalidUser = m.members.first()
-        val remaining = HashSet(m.members)
-        remaining.add(sender)
-        remaining.remove(invalidUser)
-
-        val processor = createProcessor()
-
-        val testSubscriber = groupEventCollectorFor<GroupEvent.NewGroup>(processor)
-
-        whenever(contactsService.addMissingContacts(anySet())).thenReturn(setOf(invalidUser))
-
-        processor.processMessage(sender, wrap(m)).get()
-
-        assertEventEmitted(testSubscriber) { ev ->
-            assertEquals(m.id, ev.id, "Invalid id")
-            assertEquals(remaining, ev.members, "Invalid member list")
-        }
     }
 
     @Test
@@ -507,83 +453,6 @@ class MessageProcessorImplTest {
         processor.processMessage(sender, wrap(m)).get()
 
         verify(groupService, never()).addMembers(any(), any())
-    }
-
-    fun testJoinEvent(shouldEventBeEmitted: Boolean) {
-        val sender = UserId(1)
-        val newMember = UserId(2)
-        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
-
-        val m = GroupEventMessage.Join(groupInfo.id, newMember)
-
-        val processor = createProcessor()
-
-        returnGroupInfo(groupInfo)
-
-        val testSubscriber = groupEventCollectorFor<GroupEvent.Joined>(processor)
-
-        val ongoing = whenever(groupService.addMembers(groupInfo.id, setOf(newMember)))
-        if (shouldEventBeEmitted)
-            ongoing.thenAnswerWithArg(1)
-        else
-            ongoing.thenReturn(emptySet())
-
-        processor.processMessage(sender, wrap(m)).get()
-
-        if (shouldEventBeEmitted) {
-            assertEventEmitted(testSubscriber) { event ->
-                assertEquals(groupInfo.id, event.id, "Invalid group id")
-                assertEquals(setOf(newMember), event.newMembers, "Invalid new member id")
-            }
-        }
-        else
-            assertNoEventsEmitted(testSubscriber)
-    }
-
-    @Test
-    fun `it should emit a new join event after adding a new member for an existing group`() {
-        testJoinEvent(true)
-    }
-
-    @Test
-    fun `it not should emit a new join event if a member already exists in a group`() {
-        testJoinEvent(false)
-    }
-
-    fun testPartEvent(shouldEventBeEmitted: Boolean) {
-        val sender = randomUserId()
-        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
-
-        val m = GroupEventMessage.Part(groupInfo.id)
-
-        val processor = createProcessor()
-
-        returnGroupInfo(groupInfo)
-
-        whenever(groupService.removeMember(groupInfo.id, sender)).thenReturn(shouldEventBeEmitted)
-
-        val testSubscriber = groupEventCollectorFor<GroupEvent.Parted>(processor)
-
-        processor.processMessage(sender, wrap(m)).get()
-
-        if (shouldEventBeEmitted) {
-            assertEventEmitted(testSubscriber) { event ->
-                assertEquals(groupInfo.id, event.id, "Invalid group id")
-                assertEquals(sender, event.member, "Invalid new member id")
-            }
-        }
-        else
-            assertNoEventsEmitted(testSubscriber)
-    }
-
-    @Test
-    fun `it should emit a new part event after removing a new member for an existing group`() {
-        testPartEvent(true)
-    }
-
-    @Test
-    fun `it should not emit a new part event when receiving a part if a member does not exist in a group`() {
-        testPartEvent(false)
     }
 
     @Test
