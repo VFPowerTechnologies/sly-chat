@@ -28,7 +28,7 @@ interface UIGroupService {
 
     fun getBlockList(): Promise<Set<GroupId>, Exception>
 
-    fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception>
+    fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<UIGroupMessage>, Exception>
 
     fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception>
 

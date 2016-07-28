@@ -21,3 +21,4 @@ data class UIMessage(
     val receivedTimestamp: Long,
     val message: String
 )
+
