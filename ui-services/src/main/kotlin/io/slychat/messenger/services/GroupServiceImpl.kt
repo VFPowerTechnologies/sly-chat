@@ -21,8 +21,24 @@ class GroupServiceImpl(
         return groupPersistenceManager.getList()
     }
 
+    override fun getMembers(groupId: GroupId): Promise<Set<UserId>, Exception> {
+        return groupPersistenceManager.getMembers(groupId)
+    }
+
     override fun getGroupConversations(): Promise<List<GroupConversation>, Exception> {
         return groupPersistenceManager.getAllConversations()
+    }
+
+    override fun getInfo(groupId: GroupId): Promise<GroupInfo?, Exception> {
+        return groupPersistenceManager.getInfo(groupId)
+    }
+
+    override fun addMessage(groupId: GroupId, groupMessageInfo: GroupMessageInfo): Promise<GroupMessageInfo, Exception> {
+        return groupPersistenceManager.addMessage(groupId, groupMessageInfo)
+    }
+
+    override fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> {
+        return groupPersistenceManager.isUserMemberOf(groupId, userId)
     }
 
     override fun inviteUsers(groupId: GroupId, contact: Set<UserId>): Promise<Unit, Exception> {
@@ -37,10 +53,14 @@ class GroupServiceImpl(
         TODO()
     }
 
-    override fun getMembers(groupId: GroupId): Promise<List<ContactInfo>, Exception> {
+    override fun getMembersWithInfo(groupId: GroupId): Promise<List<ContactInfo>, Exception> {
         return groupPersistenceManager.getMembers(groupId) bind {
             contactsPersistenceManager.get(it)
         }
+    }
+
+    override fun join(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception> {
+        return groupPersistenceManager.join(groupInfo, members)
     }
 
     override fun part(groupId: GroupId): Promise<Boolean, Exception> {
@@ -69,5 +89,13 @@ class GroupServiceImpl(
 
     override fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception> {
         return groupPersistenceManager.deleteMessages(groupId, messageIds)
+    }
+
+    override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception> {
+        return groupPersistenceManager.addMembers(groupId, users)
+    }
+
+    override fun removeMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> {
+        return groupPersistenceManager.removeMember(groupId, userId)
     }
 }

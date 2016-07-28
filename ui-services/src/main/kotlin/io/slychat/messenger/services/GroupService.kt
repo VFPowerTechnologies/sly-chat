@@ -9,6 +9,22 @@ import rx.Observable
 interface GroupService {
     val groupEvents: Observable<GroupEvent>
 
+    fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception>
+
+    fun removeMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception>
+
+    fun getMembers(groupId: GroupId): Promise<Set<UserId>, Exception>
+
+    fun getInfo(groupId: GroupId): Promise<GroupInfo?, Exception>
+
+    fun addMessage(groupId: GroupId, groupMessageInfo: GroupMessageInfo): Promise<GroupMessageInfo, Exception>
+
+    fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception>
+
+    fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception>
+
+    fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception>
+
     /* UIGroupService interface */
     fun getGroups(): Promise<List<GroupInfo>, Exception>
 
@@ -20,7 +36,9 @@ interface GroupService {
 
     fun createNewGroup(name: String, initialMembers: Set<UserId>): Promise<Unit, Exception>
 
-    fun getMembers(groupId: GroupId): Promise<List<ContactInfo>, Exception>
+    fun getMembersWithInfo(groupId: GroupId): Promise<List<ContactInfo>, Exception>
+
+    fun join(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception>
 
     fun part(groupId: GroupId): Promise<Boolean, Exception>
 
@@ -31,8 +49,4 @@ interface GroupService {
     fun getBlockList(): Promise<Set<GroupId>, Exception>
 
     fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<GroupMessageInfo>, Exception>
-
-    fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception>
-
-    fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception>
 }

@@ -4,6 +4,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
+import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.bindRecoverForUi
 import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.contacts.ContactsService
@@ -19,7 +20,7 @@ import java.util.*
 class MessageProcessorImpl(
     private val contactsService: ContactsService,
     private val messagePersistenceManager: MessagePersistenceManager,
-    private val groupPersistenceManager: GroupPersistenceManager
+    private val groupService: GroupService
 ) : MessageProcessor {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -66,7 +67,7 @@ class MessageProcessorImpl(
             }
         }
         else {
-            groupPersistenceManager.getInfo(groupId) bind { groupInfo ->
+            groupService.getInfo(groupId) bind { groupInfo ->
                 runIfJoinedAndUserIsMember(groupInfo, sender) { addGroupMessage(groupId, sender, messageInfo) }
             }
         }
@@ -74,13 +75,13 @@ class MessageProcessorImpl(
 
     private fun addGroupMessage(groupId: GroupId, sender: UserId, messageInfo: MessageInfo): Promise<Unit, Exception> {
         val groupMessageInfo = GroupMessageInfo(sender, messageInfo)
-        return groupPersistenceManager.addMessage(groupId, groupMessageInfo) mapUi {
+        return groupService.addMessage(groupId, groupMessageInfo) mapUi {
             newMessagesSubject.onNext(MessageBundle(sender, groupId, listOf(messageInfo)))
         }
     }
 
     private fun handleGroupMessage(sender: UserId, m: GroupEventMessage): Promise<Unit, Exception> {
-        return groupPersistenceManager.getInfo(m.id) bind { groupInfo ->
+        return groupService.getInfo(m.id) bind { groupInfo ->
             when (m) {
                 is GroupEventMessage.Invitation -> handleGroupInvitation(sender, groupInfo, m)
                 is GroupEventMessage.Join -> runIfJoinedAndUserIsMember(groupInfo, sender) { handleGroupJoin(m)  }
@@ -101,7 +102,7 @@ class MessageProcessorImpl(
 
     /** Only runs the given action if the user is a member of the given group. Otherwise, logs a warning. */
     private fun checkGroupMembership(sender: UserId, id: GroupId, action: () -> Promise<Unit, Exception>): Promise<Unit, Exception> {
-        return groupPersistenceManager.isUserMemberOf(id, sender) bind { isMember ->
+        return groupService.isUserMemberOf(id, sender) bind { isMember ->
             if (isMember)
                 action()
             else {
@@ -117,7 +118,7 @@ class MessageProcessorImpl(
             remaining.removeAll(invalidIds)
 
             if (remaining.isNotEmpty()) {
-                groupPersistenceManager.addMembers(m.id, remaining) mapUi { wasAdded ->
+                groupService.addMembers(m.id, remaining) mapUi { wasAdded ->
                     if (wasAdded.isNotEmpty()) {
                         log.info("Users {} joined group {}", wasAdded, m.id.string)
                         groupEventSubject.onNext(GroupEvent.Joined(m.id, wasAdded))
@@ -134,7 +135,7 @@ class MessageProcessorImpl(
     }
 
     private fun handleGroupPart(groupId: GroupId, sender: UserId): Promise<Unit, Exception> {
-        return groupPersistenceManager.removeMember(groupId, sender) mapUi { wasRemoved ->
+        return groupService.removeMember(groupId, sender) mapUi { wasRemoved ->
             if (wasRemoved) {
                 log.info("User {} has left group {}", sender, groupId.string)
                 groupEventSubject.onNext(GroupEvent.Parted(groupId, sender))
@@ -151,7 +152,7 @@ class MessageProcessorImpl(
             contactsService.addMissingContacts(m.members) bind { invalidIds ->
                 members.removeAll(invalidIds)
                 val info = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
-                groupPersistenceManager.join(info, members) successUi {
+                groupService.join(info, members) successUi {
                     groupEventSubject.onNext(GroupEvent.NewGroup(m.id, members))
                 }
             }

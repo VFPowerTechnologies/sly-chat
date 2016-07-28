@@ -99,7 +99,7 @@ class UIGroupServiceImpl(
     }
 
     override fun getMembers(groupId: GroupId): Promise<List<UIContactDetails>, Exception> {
-        return getGroupServiceOrThrow().getMembers(groupId) map { it.toUI() }
+        return getGroupServiceOrThrow().getMembersWithInfo(groupId) map { it.toUI() }
     }
 
     override fun part(groupId: GroupId): Promise<Boolean, Exception> {

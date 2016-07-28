@@ -116,11 +116,11 @@ class UserModule(
     fun providesMessageProcessor(
         contactsService: ContactsService,
         messagePersistenceManager: MessagePersistenceManager,
-        groupPersistenceManager: GroupPersistenceManager
+        groupService: GroupService
     ): MessageProcessor = MessageProcessorImpl(
         contactsService,
         messagePersistenceManager,
-        groupPersistenceManager
+        groupService
     )
 
     @UserScope
