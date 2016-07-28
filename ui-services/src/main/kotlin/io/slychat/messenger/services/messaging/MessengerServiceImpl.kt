@@ -69,6 +69,8 @@ class MessengerServiceImpl(
     }
 
     private fun onMessageSent(metadata: MessageMetadata) {
+        log.debug("Processing sent message {} (category: {})", metadata.messageId, metadata.category)
+
         when (metadata.category) {
             MessageCategory.TEXT_SINGLE -> processSingleUpdate(metadata)
             MessageCategory.TEXT_GROUP -> processGroupUpdate(metadata)
@@ -77,6 +79,8 @@ class MessengerServiceImpl(
     }
 
     private fun processSingleUpdate(metadata: MessageMetadata) {
+        log.debug("Processing sent convo message {} to {}", metadata.messageId, metadata.userId)
+
         messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId) successUi { messageInfo ->
             val bundle = MessageBundle(metadata.userId, listOf(messageInfo))
             messageUpdatesSubject.onNext(bundle)
@@ -88,6 +92,8 @@ class MessengerServiceImpl(
     private fun processGroupUpdate(metadata: MessageMetadata) {
         //can't be null due to constructor checks
         val groupId = metadata.groupId!!
+
+        log.debug("Processing sent group message <<{}/{}>>", groupId, metadata.messageId)
 
         groupPersistenceManager.markMessageAsDelivered(groupId, metadata.messageId) successUi { messageInfo ->
             val bundle = MessageBundle(metadata.userId, groupId, listOf(messageInfo.info))
