@@ -34,7 +34,7 @@ class ContactsServiceImpl(
     override val contactEvents: Observable<ContactEvent> = contactEventsSubject
 
     init {
-        contactOperationManager.running.subscribe { onContactJobStatusUpdate(it) }
+        contactOperationManager.running.subscribe { onContactSyncStatusUpdate(it) }
     }
 
     override fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
@@ -103,7 +103,7 @@ class ContactsServiceImpl(
         withCurrentJob { doPlatformContactSync() }
     }
 
-    private fun onContactJobStatusUpdate(info: ContactSyncJobInfo) {
+    private fun onContactSyncStatusUpdate(info: ContactSyncJobInfo) {
         //if remote sync is at all enabled, we want the entire process to lock down the contact list
         if (info.remoteSync)
             contactEventsSubject.onNext(ContactEvent.Sync(info.isRunning))
