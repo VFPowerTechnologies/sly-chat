@@ -248,19 +248,25 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .info-popup {
     background-color: #efeff4;
 }
-.message-info, .contact-info {
+.message-info, .contact-info, .group-info {
     margin-left: 10px;
 }
-.message-info-title, .contact-info-title {
+.message-info-title, .contact-info-title, .group-info-title {
     font-size: 16px;
     text-decoration: underline;
     margin-bottom: 0;
     color: #4c4646;
 }
-.message-info-details, .contact-info-details {
+.message-info-details, .contact-info-details, .group-info-details {
     margin-top: 2px;
     margin-left: 10px;
     word-wrap: break-word;
+}
+.group-info .member {
+    margin-bottom: 5px;
+}
+.group-info .members span {
+    display: block;
 }
 @keyframes blink-empty {
     50% {border-left: 1px solid #333;}

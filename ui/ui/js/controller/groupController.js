@@ -153,5 +153,46 @@ GroupController.prototype = {
         }).catch(function (e) {
             exceptionController.handleError(e);
         });
+    },
+
+    deleteAllMessages : function (groupId) {
+        groupService.deleteAllMessages(groupId).then(function (result) {
+            slychat.addNotification({
+                title: "Group conversation has been deleted",
+                hold: 3000
+            });
+            mainView.router.refreshPage();
+        }).catch(function (e) {
+            exceptionController.handleError(e);
+        })
+    },
+
+    showGroupInfo : function (groupId) {
+        var group = this.groups[groupId].group;
+        var members = this.groups[groupId].members;
+        var memberList = "";
+
+        members.forEach(function (member) {
+            console.log(member);
+            memberList += "<div class='member'>" +
+                "<span>" + member.name + "</span>" +
+                "<span>" + member.email + "</span>" +
+                "</div>";
+        });
+
+        var content = "<div class='group-info'>" +
+            "<p class='group-info-title'>Group Name:</p>" +
+            "<p class='group-info-details'>" + group.name + "</p>" +
+            "</div>" +
+            "<div class='group-info'>" +
+            "<p class='group-info-title'>Group Id:</p>" +
+            "<p class='group-info-details'>" + group.id + "</p>" +
+            "</div>" +
+            '<div class="group-info">' +
+            '<p class="group-info-title">Members:</p>'+
+            '<div class="group-info-details"><div class="members">' + memberList + '</div></div>' +
+            '</div>';
+
+        openInfoPopup(content);
     }
 };

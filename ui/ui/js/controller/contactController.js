@@ -227,10 +227,10 @@ ContactController.prototype  = {
             contactController.loadChatPage(conversation.group, true, true);
         }.bind(this));
 
-        // recentDiv.on("mouseheld", function () {
-        //     vibrate(50);
-        //     this.openConversationMenu(conversation.contact);
-        // }.bind(this));
+        recentDiv.on("mouseheld", function () {
+            vibrate(50);
+            this.openGroupConversationMenu(conversation.group.id);
+        }.bind(this));
 
         return recentDiv;
     },
@@ -595,6 +595,33 @@ ContactController.prototype  = {
                     slychat.confirm("Are you sure you want to delete this conversation?", function () {
                         // TODO update confirm style
                         chatController.deleteConversation(contact);
+                    })
+                }
+            },
+            {
+                text: 'Cancel',
+                color: 'red',
+                onClick: function () {
+                }
+            }
+        ];
+        slychat.actions(buttons);
+    },
+
+    openGroupConversationMenu : function (groupId) {
+        var buttons = [
+            {
+                text: 'Group Info',
+                onClick: function () {
+                    groupController.showGroupInfo(groupId);
+                }.bind(this)
+            },
+            {
+                text: 'Delete Group Messages',
+                onClick: function () {
+                    slychat.confirm("Are you sure you want to delete all messages in this group?", function () {
+                        // TODO update confirm style
+                        groupController.deleteAllMessages(groupId);
                     })
                 }
             },
