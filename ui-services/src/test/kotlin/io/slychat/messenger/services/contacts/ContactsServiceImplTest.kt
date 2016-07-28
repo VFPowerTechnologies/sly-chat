@@ -20,9 +20,7 @@ import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
-import rx.Observable
 import rx.observers.TestSubscriber
-import rx.subjects.PublishSubject
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -32,35 +30,6 @@ class ContactsServiceImplTest {
         @JvmField
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
-
-        class MockAddressBookOperationManager : AddressBookOperationManager {
-            val runningSubject: PublishSubject<ContactSyncJobInfo> = PublishSubject.create()
-
-            var immediate = true
-
-            //make some makeshift verification data
-            var runOperationCallCount = 0
-            var withCurrentJobCallCount = 0
-
-            override val running: Observable<ContactSyncJobInfo> = runningSubject
-
-            override fun withCurrentSyncJob(body: ContactSyncJobDescription.() -> Unit) {
-                withCurrentJobCallCount += 1
-            }
-
-            override fun shutdown() {
-            }
-
-            override fun <T> runOperation(operation: () -> Promise<T, Exception>): Promise<T, Exception> {
-                runOperationCallCount += 1
-
-                return if (immediate) {
-                    operation()
-                }
-                else
-                    throw UnsupportedOperationException()
-            }
-        }
     }
 
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
@@ -123,8 +92,6 @@ class ContactsServiceImplTest {
 
         assertEquals(1, addressBookOperationManager.runOperationCallCount, "Didn't go through AddressBookOperationManager")
     }
-
-    //TODO remove/update event tests
 
     @Test
     fun `adding a new contact should emit an update event if the contact is new`() {

@@ -2,6 +2,7 @@ package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.services.contacts.AddressBookOperationManager
 import io.slychat.messenger.services.messaging.GroupEvent
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -13,7 +14,8 @@ import rx.subjects.PublishSubject
 //TODO should move the group message generation to here; in a hurry now so do it later
 class GroupServiceImpl(
     private val groupPersistenceManager: GroupPersistenceManager,
-    private val contactsPersistenceManager: ContactsPersistenceManager
+    private val contactsPersistenceManager: ContactsPersistenceManager,
+    private val addressBookOperationManager: AddressBookOperationManager
 ) : GroupService {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -67,22 +69,30 @@ class GroupServiceImpl(
     }
 
     override fun join(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception> {
-        return groupPersistenceManager.join(groupInfo, members) successUi {
-            log.info("Joined new group {} with members={}", groupInfo.id, members)
-            groupEventSubject.onNext(GroupEvent.NewGroup(groupInfo.id, members))
+        return addressBookOperationManager.runOperation {
+            groupPersistenceManager.join(groupInfo, members) successUi {
+                log.info("Joined new group {} with members={}", groupInfo.id, members)
+                groupEventSubject.onNext(GroupEvent.NewGroup(groupInfo.id, members))
+            }
         }
     }
 
     override fun part(groupId: GroupId): Promise<Boolean, Exception> {
-        return groupPersistenceManager.part(groupId)
+        return addressBookOperationManager.runOperation {
+            groupPersistenceManager.part(groupId)
+        }
     }
 
     override fun block(groupId: GroupId): Promise<Unit, Exception> {
-        return groupPersistenceManager.block(groupId)
+        return addressBookOperationManager.runOperation {
+            groupPersistenceManager.block(groupId)
+        }
     }
 
     override fun unblock(groupId: GroupId): Promise<Unit, Exception> {
-        return groupPersistenceManager.unblock(groupId)
+        return addressBookOperationManager.runOperation {
+            groupPersistenceManager.unblock(groupId)
+        }
     }
 
     override fun getBlockList(): Promise<Set<GroupId>, Exception> {
@@ -102,21 +112,25 @@ class GroupServiceImpl(
     }
 
     override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception> {
-        return groupPersistenceManager.addMembers(groupId, users) mapUi { wasAdded ->
-            if (wasAdded.isNotEmpty()) {
-                log.info("Users {} joined group {}", wasAdded, groupId)
-                groupEventSubject.onNext(GroupEvent.Joined(groupId, wasAdded))
-            }
+        return addressBookOperationManager.runOperation {
+            groupPersistenceManager.addMembers(groupId, users) mapUi { wasAdded ->
+                if (wasAdded.isNotEmpty()) {
+                    log.info("Users {} joined group {}", wasAdded, groupId)
+                    groupEventSubject.onNext(GroupEvent.Joined(groupId, wasAdded))
+                }
 
-            wasAdded
+                wasAdded
+            }
         }
     }
 
     override fun removeMember(groupId: GroupId, userId: UserId): Promise<Unit, Exception> {
-        return groupPersistenceManager.removeMember(groupId, userId) mapUi { wasRemoved ->
-            if (wasRemoved) {
-                log.info("User {} has left group {}", userId, groupId.string)
-                groupEventSubject.onNext(GroupEvent.Parted(groupId, userId))
+        return addressBookOperationManager.runOperation {
+            groupPersistenceManager.removeMember(groupId, userId) mapUi { wasRemoved ->
+                if (wasRemoved) {
+                    log.info("User {} has left group {}", userId, groupId.string)
+                    groupEventSubject.onNext(GroupEvent.Parted(groupId, userId))
+                }
             }
         }
     }

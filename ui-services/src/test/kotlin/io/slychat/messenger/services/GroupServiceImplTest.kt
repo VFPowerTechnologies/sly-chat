@@ -6,9 +6,11 @@ import com.nhaarman.mockito_kotlin.whenever
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.persistence.GroupMembershipLevel
 import io.slychat.messenger.core.persistence.GroupPersistenceManager
+import io.slychat.messenger.core.randomGroupId
 import io.slychat.messenger.core.randomGroupInfo
 import io.slychat.messenger.core.randomUserId
 import io.slychat.messenger.core.randomUserIds
+import io.slychat.messenger.services.contacts.MockAddressBookOperationManager
 import io.slychat.messenger.services.messaging.GroupEvent
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenAnswerWithArg
@@ -18,6 +20,7 @@ import org.junit.ClassRule
 import org.junit.Test
 import rx.observers.TestSubscriber
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class GroupServiceImplTest {
     companion object {
@@ -28,14 +31,22 @@ class GroupServiceImplTest {
 
     val groupPersistenceManager: GroupPersistenceManager = mock()
     val contactPersistenceManager: ContactsPersistenceManager = mock()
+    val addressBookOperationManager = MockAddressBookOperationManager()
 
-    val groupService = GroupServiceImpl(groupPersistenceManager, contactPersistenceManager)
+    val groupService = GroupServiceImpl(groupPersistenceManager, contactPersistenceManager, addressBookOperationManager)
 
     @Before
     fun before() {
         whenever(groupPersistenceManager.removeMember(any(), any())).thenReturn(true)
         whenever(groupPersistenceManager.addMembers(any(), any())).thenAnswerWithArg(1)
         whenever(groupPersistenceManager.join(any(), any())).thenReturn(Unit)
+        whenever(groupPersistenceManager.part(any())).thenReturn(true)
+        whenever(groupPersistenceManager.block(any())).thenReturn(Unit)
+        whenever(groupPersistenceManager.unblock(any())).thenReturn(Unit)
+    }
+
+    fun assertOperationManagerUsed() {
+        assertTrue(addressBookOperationManager.runOperationCallCount == 1, "Didn't go through AddressBookOperationManager")
     }
 
     inline fun <reified T : GroupEvent> groupEventCollectorFor(): TestSubscriber<T> {
@@ -115,5 +126,41 @@ class GroupServiceImplTest {
     fun `it not should emit a Parted event when removing a non-existent member`() {
         whenever(groupPersistenceManager.removeMember(any(), any())).thenReturn(false)
         testPartEvent(false)
+    }
+
+    @Test
+    fun `joining a group should go through AddressBookOperationManager`() {
+        groupService.join(randomGroupInfo(), randomUserIds()).get()
+        assertOperationManagerUsed()
+    }
+
+    @Test
+    fun `parting a group should go through AddressBookOperationManager`() {
+        groupService.part(randomGroupId()).get()
+        assertOperationManagerUsed()
+    }
+
+    @Test
+    fun `adding members should go through AddressBookOperationManager`() {
+        groupService.addMembers(randomGroupId(), randomUserIds()).get()
+        assertOperationManagerUsed()
+    }
+
+    @Test
+    fun `removing a member should go through AddressBookOperationManager`() {
+        groupService.removeMember(randomGroupId(), randomUserId()).get()
+        assertOperationManagerUsed()
+    }
+
+    @Test
+    fun `blocking a group should go through AddressBookOperationManager`() {
+        groupService.block(randomGroupId()).get()
+        assertOperationManagerUsed()
+    }
+
+    @Test
+    fun `unblocking a group should go through AddressBookOperationManager`() {
+        groupService.unblock(randomGroupId()).get()
+        assertOperationManagerUsed()
     }
 }

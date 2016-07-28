@@ -303,10 +303,12 @@ class UserModule(
     @Provides
     fun providesGroupService(
         groupPersistenceManager: GroupPersistenceManager,
-        contactsPersistenceManager: ContactsPersistenceManager
+        contactsPersistenceManager: ContactsPersistenceManager,
+        addressBookOperationManager: AddressBookOperationManager
     ): GroupService =
         GroupServiceImpl(
             groupPersistenceManager,
-            contactsPersistenceManager
+            contactsPersistenceManager,
+            addressBookOperationManager
         )
 }
