@@ -20,7 +20,6 @@ ContactController.prototype  = {
 
     fetchAllContacts : function () {
         contactService.getContacts().then(function (contacts) {
-            console.log(contacts);
             contacts.forEach(function (contact) {
                 this.contacts[contact.id] = contact;
             }.bind(this));

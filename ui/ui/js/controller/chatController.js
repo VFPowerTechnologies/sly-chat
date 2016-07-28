@@ -246,12 +246,12 @@ ChatController.prototype = {
             }.bind(this));
 
             contactController.updateRecentChatNode(cachedContact, messageInfo);
+            this.updateChatPageNewMessage(messages, contactName, contactId);
         }
         else {
             contactController.updateRecentGroupChatNode(cachedContact, messageInfo);
+            this.updateGroupChatPageNewMessage(messageInfo, contactName);
         }
-
-        this.updateChatPageNewMessage(messages, contactName, contactId);
 
         $(".timeago").timeago();
     },
@@ -278,6 +278,40 @@ ChatController.prototype = {
                 }
                 this.scrollTop();
                 this.markConversationAsRead(contact);
+            }
+        }
+    },
+
+    updateGroupChatPageNewMessage : function (messagesInfo, contactName) {
+        var messages = messagesInfo.messages;
+        var currentPageContactId = $("#contact-id");
+        if(navigationController.getCurrentPage() == "chat.html" && currentPageContactId.length && currentPageContactId.html() == messagesInfo.groupId){
+            var messageDiv = $("#chat-content");
+
+            if(messageDiv.length){
+                var contact = contactController.getContact(messagesInfo.contact);
+                vibrate(100);
+                //for the common case
+                if(messages.length == 1) {
+                    var messageInfo = {
+                        info: messages[0],
+                        speaker: messagesInfo.contact
+                    };
+                    messageDiv.append(this.createGroupMessageNode(messageInfo, contact));
+                }
+                else {
+                    var fragment = $(document.createDocumentFragment());
+                    messages.forEach(function (message) {
+                        var messageInfo = {
+                            info: message,
+                            speaker: messagesInfo.contact
+                        };
+                        fragment.append(this.createGroupMessageNode(messageInfo, contact));
+                    }, this);
+                    messageDiv.append(fragment);
+                }
+                this.scrollTop();
+                groupController.markGroupConversationAsRead(messagesInfo.groupId);
             }
         }
     },
