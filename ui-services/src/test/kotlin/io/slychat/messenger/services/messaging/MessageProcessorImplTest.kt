@@ -626,6 +626,7 @@ class MessageProcessorImplTest {
 
         val bundle = newMessages[0]
         assertEquals(1, bundle.messages.size, "Invalid number of messages in bundle")
+        assertEquals(groupInfo.id, bundle.groupId, "Invalid group id")
 
         val message = bundle.messages[0]
         assertEquals(m.message, message.message, "Invalid message")

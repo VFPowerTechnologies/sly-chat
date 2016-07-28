@@ -82,7 +82,7 @@ class MessengerServiceImpl(
         log.debug("Processing sent convo message {} to {}", metadata.messageId, metadata.userId)
 
         messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId) successUi { messageInfo ->
-            val bundle = MessageBundle(metadata.userId, listOf(messageInfo))
+            val bundle = MessageBundle(metadata.userId, null, listOf(messageInfo))
             messageUpdatesSubject.onNext(bundle)
         } fail { e ->
             log.error("Unable to mark convo message <<{}>> to {} as delivered: {}", metadata.messageId, metadata.userId, e.message, e)

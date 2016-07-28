@@ -288,7 +288,7 @@ class MessageReceiverImplTest {
 
         val testSubscriber = receiver.newMessages.testSubscriber()
 
-        val bundle = MessageBundle(UserId(1), listOf(
+        val bundle = MessageBundle(UserId(1), null, listOf(
             MessageInfo.newReceived("m", currentTimestamp())
         ))
 

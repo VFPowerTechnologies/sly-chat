@@ -61,7 +61,7 @@ class MessageProcessorImpl(
         val groupId = m.groupId
         return if (groupId == null) {
             storeMessage(sender, messageInfo) mapUi { messageInfo ->
-                val bundle = MessageBundle(sender, listOf(messageInfo))
+                val bundle = MessageBundle(sender, null, listOf(messageInfo))
                 newMessagesSubject.onNext(bundle)
             }
         }
@@ -75,7 +75,7 @@ class MessageProcessorImpl(
     private fun addGroupMessage(groupId: GroupId, sender: UserId, messageInfo: MessageInfo): Promise<Unit, Exception> {
         val groupMessageInfo = GroupMessageInfo(sender, messageInfo)
         return groupPersistenceManager.addMessage(groupId, groupMessageInfo) mapUi {
-            newMessagesSubject.onNext(MessageBundle(sender, listOf(messageInfo)))
+            newMessagesSubject.onNext(MessageBundle(sender, groupId, listOf(messageInfo)))
         }
     }
 

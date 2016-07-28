@@ -97,7 +97,7 @@ class NotifierServiceTest {
             MessageInfo(randomUUID(), it.toString(), currentTimestamp(), currentTimestamp(), false, true, 0)
         }
 
-        val messageBundle = MessageBundle(contactInfo.id, messages)
+        val messageBundle = MessageBundle(contactInfo.id, null, messages)
 
         val conversationInfo = NotificationConversationInfo.from(contactInfo)
         val lastMessage = messageBundle.messages.last()

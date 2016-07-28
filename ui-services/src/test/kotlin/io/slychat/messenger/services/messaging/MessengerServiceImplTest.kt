@@ -242,7 +242,7 @@ class MessengerServiceImplTest {
 
         val testSubscriber = messengerService.newMessages.testSubscriber()
 
-        val bundle = MessageBundle(UserId(1), listOf(
+        val bundle = MessageBundle(UserId(1), null, listOf(
             MessageInfo.newReceived("m", currentTimestamp())
         ))
 

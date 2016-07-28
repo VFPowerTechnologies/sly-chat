@@ -8,6 +8,4 @@ data class MessageBundle(
     val userId: UserId,
     val groupId: GroupId?,
     val messages: List<MessageInfo>
-) {
-    constructor(userId: UserId, messages: List<MessageInfo>) : this(userId, null, messages)
-}
+)
