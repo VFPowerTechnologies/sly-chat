@@ -7,6 +7,18 @@ GroupController.prototype = {
 
     },
 
+    resetGroups : function () {
+        this.groups = [];
+        groupService.getGroupConversations().then(function (conversations) {
+            conversations.forEach(function (conversation) {
+                this.groups[conversation.group.id] = conversation;
+                groupController.createGroupList(conversations);
+            }.bind(this));
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        });
+    },
+
     getGroup : function (id) {
         if (id in this.groups)
             return this.groups[id].group;
@@ -106,8 +118,10 @@ GroupController.prototype = {
 
     addGroupEventListener : function () {
         groupService.addGroupEventListener(function (event) {
-            console.log(event);
-        });
+            if (event.type == "NEW") {
+                this.resetGroups();
+            }
+        }.bind(this));
     },
 
     createGroup : function () {
