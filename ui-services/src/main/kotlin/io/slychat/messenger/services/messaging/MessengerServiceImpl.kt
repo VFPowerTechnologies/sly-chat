@@ -214,21 +214,21 @@ class MessengerServiceImpl(
     }
 
     /** Fetches group members for the given group and sends the given message to the MessageSender. */
-    private fun sendMessageToGroup(groupId: GroupId, message: SlyMessage, messageCategory: MessageCategory): Promise<Set<UserId>, Exception> {
+    private fun sendMessageToGroup(groupId: GroupId, message: SlyMessage, messageCategory: MessageCategory, messageId: String? = null): Promise<Set<UserId>, Exception> {
         return groupPersistenceManager.getMembers(groupId) bindUi { members ->
             if (members.isNotEmpty())
-                sendMessageToMembers(groupId, members, message, messageCategory)
+                sendMessageToMembers(groupId, members, message, messageCategory, messageId)
             else
                 Promise.ofSuccess(emptySet())
         }
     }
 
     /** Send the message to all given members via the MessageSender. */
-    private fun sendMessageToMembers(groupId: GroupId, members: Set<UserId>, message: SlyMessage, messageCategory: MessageCategory): Promise<Set<UserId>, Exception> {
+    private fun sendMessageToMembers(groupId: GroupId, members: Set<UserId>, message: SlyMessage, messageCategory: MessageCategory, messageId: String? = null): Promise<Set<UserId>, Exception> {
         val serialized = objectMapper.writeValueAsBytes(message)
 
         val messages = members.map {
-            val metadata = MessageMetadata(it, groupId, messageCategory, randomUUID())
+            val metadata = MessageMetadata(it, groupId, messageCategory, messageId ?: randomUUID())
             SenderMessageEntry(metadata, serialized)
         }
 
@@ -238,8 +238,10 @@ class MessengerServiceImpl(
     override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<GroupMessageInfo, Exception> {
         val m = TextMessageWrapper(TextMessage(currentTimestamp(), message, groupId))
 
-        return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP) bind {
-            val messageInfo = MessageInfo.newSent(message, 0)
+        val messageId = randomUUID()
+
+        return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bind {
+            val messageInfo = MessageInfo.newSent(message, 0).copy(id = messageId)
             val groupMessageInfo = GroupMessageInfo(null, messageInfo)
             groupPersistenceManager.addMessage(groupId, groupMessageInfo)
         }

@@ -364,6 +364,30 @@ class MessengerServiceImplTest {
             assertEquals(message, it.info.message, "Text message doesn't match")
         })
     }
+
+    @Test
+    fun `it should send a group message with the same id as the message id in the database`() {
+        val groupId = randomGroupId()
+        val members = randomGroupMembers()
+
+        val messengerService = createService()
+
+        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(members)
+
+        val message = "msg"
+
+        messengerService.sendGroupMessageTo(groupId, message)
+
+        var sentMessageId: String? = null
+        verify(messageSender).addToQueue(capture {
+            sentMessageId = it.first().metadata.messageId
+        })
+
+        verify(groupPersistenceManager).addMessage(eq(groupId), capture {
+            assertEquals(sentMessageId!!, it.info.id, "Message IDs don't match")
+        })
+    }
+
     @Test
     fun `deleteMessages should proxy the call to MessagePersistenceManager`() {
         val messengerService = createService()
