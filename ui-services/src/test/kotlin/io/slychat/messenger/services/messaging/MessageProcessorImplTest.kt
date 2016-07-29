@@ -6,7 +6,10 @@ import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
 import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.contacts.ContactsService
-import io.slychat.messenger.testutils.*
+import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.testSubscriber
+import io.slychat.messenger.testutils.thenReturn
+import io.slychat.messenger.testutils.thenReturnNull
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
@@ -43,7 +46,7 @@ class MessageProcessorImplTest {
 
         whenever(groupService.join(any(), any())).thenReturn(Unit)
         whenever(groupService.getInfo(any())).thenReturnNull()
-        whenever(groupService.addMembers(any(), any())).thenAnswerWithArg(1)
+        whenever(groupService.addMembers(any(), any())).thenReturn(Unit)
         whenever(groupService.removeMember(any(), any())).thenReturn(Unit)
         whenever(groupService.isUserMemberOf(any(), any())).thenReturn(true)
 
@@ -428,7 +431,7 @@ class MessageProcessorImplTest {
 
         returnGroupInfo(groupInfo)
 
-        whenever(groupService.addMembers(groupInfo.id, setOf(newMember))).thenAnswerWithArg(1)
+        whenever(groupService.addMembers(groupInfo.id, setOf(newMember))).thenReturn(Unit)
         whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
 
         processor.processMessage(sender, wrap(m)).get()

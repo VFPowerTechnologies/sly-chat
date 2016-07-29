@@ -111,15 +111,13 @@ class GroupServiceImpl(
         return groupPersistenceManager.deleteMessages(groupId, messageIds)
     }
 
-    override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception> {
+    override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
             groupPersistenceManager.addMembers(groupId, users) mapUi { wasAdded ->
                 if (wasAdded.isNotEmpty()) {
                     log.info("Users {} joined group {}", wasAdded, groupId)
                     groupEventSubject.onNext(GroupEvent.Joined(groupId, wasAdded))
                 }
-
-                wasAdded
             }
         }
     }

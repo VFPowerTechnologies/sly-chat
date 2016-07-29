@@ -11,7 +11,6 @@ import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
-import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
@@ -115,7 +114,7 @@ class MessageProcessorImpl(
             remaining.removeAll(invalidIds)
 
             if (remaining.isNotEmpty()) {
-                groupService.addMembers(m.id, remaining) map { Unit }
+                groupService.addMembers(m.id, remaining)
             }
             else {
                 log.warn("Received a join for group {} but joining user id {} is invalid")

@@ -286,7 +286,7 @@ class MessengerServiceImpl(
         val invitation = GroupEventMessageWrapper(GroupEventMessage.Invitation(groupId, groupInfo.name, members))
 
         return sendMessageToMembers(groupId, newMembers, invitation, MessageCategory.OTHER) bind {
-            groupService.addMembers(groupId, newMembers) map { Unit }
+            groupService.addMembers(groupId, newMembers)
         }
     }
 
@@ -298,7 +298,7 @@ class MessengerServiceImpl(
             groupService.getMembers(groupId) bindUi { members ->
                 sendJoinToMembers(groupId, members, newMembers) bindUi {
                     sendInvitationToNewMembers(info, newMembers, members) bind {
-                        groupService.addMembers(groupId, members) map { Unit }
+                        groupService.addMembers(groupId, members)
                     }
                 }
             }

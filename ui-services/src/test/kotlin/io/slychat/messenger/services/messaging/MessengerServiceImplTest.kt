@@ -67,7 +67,7 @@ class MessengerServiceImplTest {
         whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
         whenever(messageReceiver.processPackages(any())).thenReturn(Unit)
 
-        whenever(groupService.addMembers(any(), any())).thenAnswerWithArg(1)
+        whenever(groupService.addMembers(any(), any())).thenReturn(Unit)
         whenever(groupService.join(any(), any())).thenReturn(Unit)
         whenever(groupService.part(any())).thenReturn(true)
         whenever(groupService.block(any())).thenReturn(Unit)

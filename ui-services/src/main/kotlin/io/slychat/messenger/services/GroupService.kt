@@ -9,7 +9,7 @@ import rx.Observable
 interface GroupService {
     val groupEvents: Observable<GroupEvent>
 
-    fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception>
+    fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Unit, Exception>
 
     fun removeMember(groupId: GroupId, userId: UserId): Promise<Unit, Exception>
 
