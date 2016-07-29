@@ -278,7 +278,7 @@ ON
         connection.withTransaction {
             val added = addContactNoTransaction(connection, contactInfo)
             if (added) {
-                val remoteUpdates = listOf(RemoteContactUpdate(contactInfo.id, contactInfo.allowedMessageLevel))
+                val remoteUpdates = listOf(AddressBookUpdate.Contact(contactInfo.id, contactInfo.allowedMessageLevel))
                 addRemoteUpdateNoTransaction(connection, remoteUpdates)
             }
 
@@ -287,7 +287,7 @@ ON
     }
 
     private fun createRemoteUpdates(connection: SQLiteConnection, contactInfo: Collection<ContactInfo>) {
-        val remoteUpdates = contactInfo.map { RemoteContactUpdate(it.id, it.allowedMessageLevel) }
+        val remoteUpdates = contactInfo.map { AddressBookUpdate.Contact(it.id, it.allowedMessageLevel) }
         addRemoteUpdateNoTransaction(connection, remoteUpdates)
     }
 
@@ -323,7 +323,7 @@ ON
         connection.withTransaction {
             val wasRemoved = removeContactNoTransaction(connection, userId)
             if (wasRemoved) {
-                val remoteUpdates = listOf(RemoteContactUpdate(userId, AllowedMessageLevel.GROUP_ONLY))
+                val remoteUpdates = listOf(AddressBookUpdate.Contact(userId, AllowedMessageLevel.GROUP_ONLY))
                 addRemoteUpdateNoTransaction(connection, remoteUpdates)
             }
 
@@ -382,7 +382,7 @@ ON
         missing
     }
 
-    private fun addRemoteUpdateNoTransaction(connection: SQLiteConnection, remoteUpdates: Collection<RemoteContactUpdate>) {
+    private fun addRemoteUpdateNoTransaction(connection: SQLiteConnection, remoteUpdates: Collection<AddressBookUpdate.Contact>) {
         connection.batchInsert("INSERT OR REPLACE INTO remote_contact_updates (contact_id, allowed_message_level) VALUES (?, ?)", remoteUpdates) { stmt, item ->
             stmt.bind(1, item.userId.long)
             stmt.bind(2, allowedMessageLevelToInt(item.allowedMessageLevel))
@@ -429,7 +429,7 @@ ON
         else if (newMessageLevel == AllowedMessageLevel.ALL)
             addConversationData(connection, userId)
 
-        val remoteUpdates = listOf(RemoteContactUpdate(userId, newMessageLevel))
+        val remoteUpdates = listOf(AddressBookUpdate.Contact(userId, newMessageLevel))
         addRemoteUpdateNoTransaction(connection, remoteUpdates)
     }
 

@@ -94,7 +94,7 @@ class ContactSyncJobImplTest {
     @Test
     fun `a remote sync should fetch any missing contact info`() {
         val missing = randomUserIds()
-        val remoteEntries = encryptRemoteAddressBookEntries(keyVault, missing.map { RemoteContactUpdate(it, AllowedMessageLevel.ALL) })
+        val remoteEntries = encryptRemoteAddressBookEntries(keyVault, missing.map { AddressBookUpdate.Contact(it, AllowedMessageLevel.ALL) })
 
         whenever(addressBookAsyncClient.getContacts(any())).thenReturn(GetAddressBookResponse(remoteEntries))
         whenever(contactsPersistenceManager.exists(missing)).thenReturn(emptySet())
@@ -119,7 +119,7 @@ class ContactSyncJobImplTest {
         )).toMap()
 
         val apiContacts = missing.map { ApiContactInfo(it, "$it@a.com", it.toString(), it.toString(), it.toString()) }
-        val remoteEntries = encryptRemoteAddressBookEntries(keyVault, missing.map { RemoteContactUpdate(it, messageLevels[it]!!) })
+        val remoteEntries = encryptRemoteAddressBookEntries(keyVault, missing.map { AddressBookUpdate.Contact(it, messageLevels[it]!!) })
 
         whenever(addressBookAsyncClient.getContacts(any())).thenReturn(GetAddressBookResponse(remoteEntries))
         whenever(contactsPersistenceManager.exists(missing)).thenReturn(emptySet())
@@ -140,7 +140,7 @@ class ContactSyncJobImplTest {
     fun `a remote sync should update existing contacts with the proper message level`() {
         val present = randomUserIds(3)
         val messageLevels = listOf(AllowedMessageLevel.ALL, AllowedMessageLevel.GROUP_ONLY, AllowedMessageLevel.BLOCKED)
-        val remoteUpdates = present.zip(messageLevels).map { RemoteContactUpdate(it.first, it.second) }
+        val remoteUpdates = present.zip(messageLevels).map { AddressBookUpdate.Contact(it.first, it.second) }
         val remoteEntries = encryptRemoteAddressBookEntries(keyVault, remoteUpdates)
 
         whenever(addressBookAsyncClient.getContacts(any())).thenReturn(GetAddressBookResponse(remoteEntries))
