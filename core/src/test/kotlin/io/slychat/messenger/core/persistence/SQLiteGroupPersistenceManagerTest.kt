@@ -926,4 +926,185 @@ class SQLiteGroupPersistenceManagerTest {
     fun `getLastMessages should throw InvalidGroupException if the group id is invalid`() {
         assertFailsWithInvalidGroup { groupPersistenceManager.getLastMessages(randomGroupId(), 0, 100).get() }
     }
+
+    fun assertRemoteUpdates(update: AddressBookUpdate.Group) {
+        assertThat(groupPersistenceManager.getRemoteUpdates().get()).apply {
+            `as`("Remote updates should not be empty")
+            containsOnly(update)
+        }
+    }
+
+    fun assertNoRemoteUpdates() {
+        assertThat(groupPersistenceManager.getRemoteUpdates().get()).apply {
+            `as`("Remote updates should be empty")
+            isEmpty()
+        }
+    }
+
+    fun updatefromGroupInfo(groupInfo: GroupInfo, members: Set<UserId>): AddressBookUpdate.Group =
+        AddressBookUpdate.Group(groupInfo.id, groupInfo.name, members, groupInfo.membershipLevel)
+
+    fun updatefromGroupInfo(groupInfo: GroupInfo, membershipLevel: GroupMembershipLevel): AddressBookUpdate.Group =
+        AddressBookUpdate.Group(groupInfo.id, groupInfo.name, emptySet(), membershipLevel)
+
+
+    @Test
+    fun `join should create a remote update when joining a new group`() {
+        val groupInfo = randomGroupInfo()
+        val initialMembers = insertRandomContacts()
+
+        val update = updatefromGroupInfo(groupInfo, initialMembers)
+
+        groupPersistenceManager.join(groupInfo, initialMembers).get()
+
+        assertRemoteUpdates(update)
+    }
+
+    @Test
+    fun `join should create a remote update when rejoining an existing group`() {
+        withPartedGroupFull {
+            val members = insertRandomContacts()
+
+            val groupInfo = it.copy(membershipLevel = GroupMembershipLevel.JOINED)
+
+            val update = updatefromGroupInfo(groupInfo, members)
+
+            groupPersistenceManager.join(groupInfo, members).get()
+
+            assertRemoteUpdates(update)
+        }
+    }
+
+    @Test
+    fun `join should not create a remote update when joining an already joined group`() {
+        withJoinedGroupFull { groupInfo, members ->
+            groupPersistenceManager.join(groupInfo, members).get()
+
+            assertNoRemoteUpdates()
+        }
+    }
+
+    @Test
+    fun `part should create a remote update when parting a joined group`() {
+        withJoinedGroupFull { groupInfo, members ->
+            groupPersistenceManager.part(groupInfo.id).get()
+
+            val update = updatefromGroupInfo(groupInfo, GroupMembershipLevel.PARTED)
+
+            assertRemoteUpdates(update)
+        }
+    }
+
+    @Test
+    fun `part should not create a remote update when parting an already parted group`() {
+        withPartedGroup { groupId ->
+            groupPersistenceManager.part(groupId).get()
+
+            assertNoRemoteUpdates()
+        }
+    }
+
+    @Test
+    fun `block should create a remote update when blocking an unblocked user`() {
+        withJoinedGroupFull { groupInfo, members ->
+            groupPersistenceManager.block(groupInfo.id).get()
+
+            val update = updatefromGroupInfo(groupInfo, GroupMembershipLevel.BLOCKED)
+
+            assertRemoteUpdates(update)
+        }
+    }
+
+    @Test
+    fun `block should not create a remote update for an already blocked group`() {
+        withBlockedGroup {
+            groupPersistenceManager.block(it).get()
+
+            assertNoRemoteUpdates()
+        }
+    }
+
+    @Test
+    fun `unblock should create a remote update when unblocking a blocked group`() {
+        withBlockedGroupFull {
+            groupPersistenceManager.unblock(it.id).get()
+
+            val update = updatefromGroupInfo(it, GroupMembershipLevel.PARTED)
+
+            assertRemoteUpdates(update)
+        }
+    }
+
+    @Test
+    fun `unblock should not create a remote update for a unblocked group`() {
+        withPartedGroup {
+            groupPersistenceManager.unblock(it).get()
+
+            assertNoRemoteUpdates()
+        }
+    }
+
+    @Test
+    fun `addMembers should create a remote update when new members are added`() {
+        withJoinedGroupFull { groupInfo, initialMembers ->
+            val newMembers = insertRandomContacts()
+            val allMembers = HashSet(initialMembers)
+            allMembers.addAll(newMembers)
+
+            groupPersistenceManager.addMembers(groupInfo.id, newMembers).get()
+
+            val update = updatefromGroupInfo(groupInfo, allMembers)
+
+            assertRemoteUpdates(update)
+        }
+    }
+
+    @Test
+    fun `addMembers should not create a remote update when no new members are added`() {
+        withJoinedGroup { groupId, members ->
+            groupPersistenceManager.addMembers(groupId, members).get()
+
+            assertNoRemoteUpdates()
+        }
+    }
+
+    @Test
+    fun `removeMember should create a remote update when an existing member is removed`() {
+        withJoinedGroupFull { groupInfo, members ->
+            val userId = members.first()
+
+            groupPersistenceManager.removeMember(groupInfo.id, userId).get()
+
+            val currentMembers = HashSet(members)
+            currentMembers.remove(userId)
+
+            val update = updatefromGroupInfo(groupInfo, currentMembers)
+
+            assertRemoteUpdates(update)
+        }
+    }
+
+    @Test
+    fun `removeMember should not create a remote update for a non-existent member`() {
+        withJoinedGroup { groupId, set ->
+            groupPersistenceManager.removeMember(groupId, randomUserId()).get()
+
+            assertNoRemoteUpdates()
+        }
+    }
+
+    @Test
+    fun `removeRemoteUpdates should remove the given remote updates`() {
+        withBlockedGroup { blockedId ->
+            withPartedGroup { partedId ->
+                val remoteUpdates = setOf(blockedId, partedId)
+
+                groupPersistenceManager.internalAddRemoteUpdates(remoteUpdates)
+
+                groupPersistenceManager.removeRemoteUpdates(remoteUpdates).get()
+
+                assertNoRemoteUpdates()
+            }
+        }
+    }
 }

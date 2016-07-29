@@ -103,7 +103,10 @@ WHERE
         val newMembers = HashSet(users)
         newMembers.removeAll(currentMembers)
 
-        insertGroupMembers(connection, groupId, newMembers)
+        if (newMembers.isNotEmpty()) {
+            insertGroupMembers(connection, groupId, newMembers)
+            insertOrReplaceRemoteUpdate(connection, groupId)
+        }
 
         newMembers
     }
@@ -119,7 +122,12 @@ WHERE
 
         }
 
-        connection.changes > 0
+        val wasRemoved = connection.changes > 0
+
+        if (wasRemoved)
+            insertOrReplaceRemoteUpdate(connection, groupId)
+
+        wasRemoved
     }
 
     private fun throwIfGroupIsInvalid(connection: SQLiteConnection, groupId: GroupId) {
@@ -145,7 +153,8 @@ WHERE
     override fun join(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         require(groupInfo.membershipLevel == GroupMembershipLevel.JOINED) { "Invalid membershipLevel: ${groupInfo.membershipLevel}"}
 
-        val maybeInfo = queryGroupInfo(connection, groupInfo.id)
+        val groupId = groupInfo.id
+        val maybeInfo = queryGroupInfo(connection, groupId)
 
         //do nothing if we're already joined
         if (maybeInfo != null && maybeInfo.membershipLevel == GroupMembershipLevel.JOINED) {
@@ -155,12 +164,14 @@ WHERE
             connection.withTransaction {
                 //rejoin (this should already be empty anyways from parting/blocking)
                 if (maybeInfo != null)
-                    clearMemberList(connection, groupInfo.id)
+                    clearMemberList(connection, groupId)
 
                 insertOrReplaceGroupInfo(connection, groupInfo)
-                insertOrReplaceNewGroupConversationInfo(connection, groupInfo.id)
-                createGroupConversationTable(connection, groupInfo.id)
-                insertGroupMembers(connection, groupInfo.id, members)
+                insertOrReplaceNewGroupConversationInfo(connection, groupId)
+                createGroupConversationTable(connection, groupId)
+                insertGroupMembers(connection, groupId, members)
+
+                insertOrReplaceRemoteUpdate(connection, groupId)
             }
         }
     }
@@ -306,6 +317,7 @@ VALUES
                     updateMembershipLevel(connection, groupId, GroupMembershipLevel.PARTED)
                     GroupConversationTable.delete(connection, groupId)
                     deleteGroupConversationInfo(connection, groupId)
+                    insertOrReplaceRemoteUpdate(connection, groupId)
                 }
 
                 true
@@ -336,6 +348,7 @@ VALUES
             updateMembershipLevel(connection, groupId, GroupMembershipLevel.BLOCKED)
             deleteGroupConversationInfo(connection, groupId)
             GroupConversationTable.delete(connection, groupId)
+            insertOrReplaceRemoteUpdate(connection, groupId)
         }
     }
 
@@ -347,6 +360,7 @@ VALUES
             GroupMembershipLevel.PARTED -> {}
             GroupMembershipLevel.BLOCKED -> {
                 updateMembershipLevel(connection, groupId, GroupMembershipLevel.PARTED)
+                insertOrReplaceRemoteUpdate(connection, groupId)
             }
         }
     }
@@ -586,6 +600,52 @@ OFFSET
         TODO()
     }
 
+    private fun insertOrReplaceRemoteUpdate(connection: SQLiteConnection, groupId: GroupId) {
+        connection.withPrepared("INSERT OR REPLACE INTO remote_group_updates (group_id) VALUES (?)") { stmt ->
+            stmt.bind(1, groupId)
+            stmt.step()
+        }
+    }
+
+    override fun applyDiff(newGroups: Collection<GroupInfo>, updated: Collection<AddressBookUpdate.Group>): Promise<Unit, Exception> {
+        TODO()
+    }
+
+    override fun getRemoteUpdates(): Promise<List<AddressBookUpdate.Group>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val sql = """
+SELECT
+    g.id,
+    g.name,
+    g.membership_level
+FROM
+    remote_group_updates AS r
+JOIN
+    groups AS g
+ON
+    r.group_id = g.id
+"""
+        val groups = connection.withPrepared(sql) { stmt ->
+            stmt.map { rowToGroupInfo(stmt) }
+        }
+
+        groups.map {
+            val members = queryGroupMembers(connection, it.id)
+            AddressBookUpdate.Group(it.id, it.name,  members, it.membershipLevel)
+        }
+    }
+
+    override fun removeRemoteUpdates(remoteUpdates: Collection<GroupId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            connection.withPrepared("DELETE FROM remote_group_updates WHERE group_id=?") { stmt ->
+                remoteUpdates.forEach {
+                    stmt.bind(1, it)
+                    stmt.step()
+                    stmt.reset()
+                }
+            }
+        }
+    }
+
     /* The following should only be used within tests to insert dummy data for testing purposes. */
 
     internal fun internalSetConversationInfo(groupConversationInfo: GroupConversationInfo) = sqlitePersistenceManager.syncRunQuery {
@@ -622,7 +682,7 @@ OFFSET
         queryGroupConversationInfo(connection, id)
     }
 
-    fun internalGetAllMessages(groupId: GroupId): List<GroupMessageInfo> = sqlitePersistenceManager.syncRunQuery { connection ->
+    internal fun internalGetAllMessages(groupId: GroupId): List<GroupMessageInfo> = sqlitePersistenceManager.syncRunQuery { connection ->
         val tableName = GroupConversationTable.getTablename(groupId)
         val sql =
 """
@@ -644,7 +704,17 @@ ORDER BY
         }
     }
 
-    fun internalGetMessageInfo(groupId: GroupId, messageId: String): GroupMessageInfo? = sqlitePersistenceManager.syncRunQuery { connection ->
+    internal fun internalGetMessageInfo(groupId: GroupId, messageId: String): GroupMessageInfo? = sqlitePersistenceManager.syncRunQuery { connection ->
         getGroupMessageInfo(connection, groupId,  messageId)
+    }
+
+    internal fun internalAddRemoteUpdates(groups: Set<GroupId>) = sqlitePersistenceManager.syncRunQuery {
+        it.batchInsert("INSERT INTO remote_group_updates (group_id) VALUES (?)", groups) { stmt, item ->
+            stmt.bind(1, item)
+        }
+    }
+
+    internal fun internalClearRemoteUpdates() = sqlitePersistenceManager.syncRunQuery {
+        it.withPrepared("DELETE FROM remote_group_updates") { it.step() }
     }
 }
