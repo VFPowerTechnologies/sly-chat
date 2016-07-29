@@ -97,18 +97,23 @@ WHERE
         }
     }
 
-    override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val currentMembers = queryGroupMembers(connection, groupId)
+    override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception> {
+        return if (users.isNotEmpty())
+            sqlitePersistenceManager.runQuery { connection ->
+                val currentMembers = queryGroupMembers(connection, groupId)
 
-        val newMembers = HashSet(users)
-        newMembers.removeAll(currentMembers)
+                val newMembers = HashSet(users)
+                newMembers.removeAll(currentMembers)
 
-        if (newMembers.isNotEmpty()) {
-            insertGroupMembers(connection, groupId, newMembers)
-            insertOrReplaceRemoteUpdate(connection, groupId)
-        }
+                if (newMembers.isNotEmpty()) {
+                    insertGroupMembers(connection, groupId, newMembers)
+                    insertOrReplaceRemoteUpdate(connection, groupId)
+                }
 
-        newMembers
+                newMembers
+            }
+        else
+            Promise.ofSuccess(emptySet())
     }
 
     override fun removeMember(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -634,16 +639,21 @@ ON
         }
     }
 
-    override fun removeRemoteUpdates(remoteUpdates: Collection<GroupId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withTransaction {
-            connection.withPrepared("DELETE FROM remote_group_updates WHERE group_id=?") { stmt ->
-                remoteUpdates.forEach {
-                    stmt.bind(1, it)
-                    stmt.step()
-                    stmt.reset()
+    override fun removeRemoteUpdates(remoteUpdates: Collection<GroupId>): Promise<Unit, Exception> {
+        return if (remoteUpdates.isNotEmpty())
+            sqlitePersistenceManager.runQuery { connection ->
+                connection.withTransaction {
+                    connection.withPrepared("DELETE FROM remote_group_updates WHERE group_id=?") { stmt ->
+                        remoteUpdates.forEach {
+                            stmt.bind(1, it)
+                            stmt.step()
+                            stmt.reset()
+                        }
+                    }
                 }
             }
-        }
+        else
+            Promise.ofSuccess(Unit)
     }
 
     /* The following should only be used within tests to insert dummy data for testing purposes. */

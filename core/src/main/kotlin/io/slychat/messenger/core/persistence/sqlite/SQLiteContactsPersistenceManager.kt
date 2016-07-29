@@ -291,19 +291,24 @@ ON
         addRemoteUpdateNoTransaction(connection, remoteUpdates)
     }
 
-    override fun add(contacts: Collection<ContactInfo>): Promise<Set<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val newContacts = HashSet<ContactInfo>()
+    override fun add(contacts: Collection<ContactInfo>): Promise<Set<ContactInfo>, Exception> {
+        return if (contacts.isNotEmpty())
+            sqlitePersistenceManager.runQuery { connection ->
+                val newContacts = HashSet<ContactInfo>()
 
-        connection.withTransaction {
-            contacts.forEach {
-                if (addContactNoTransaction(connection, it))
-                    newContacts.add(it)
+                connection.withTransaction {
+                    contacts.forEach {
+                        if (addContactNoTransaction(connection, it))
+                            newContacts.add(it)
+                    }
+
+                    createRemoteUpdates(connection, newContacts)
+                }
+
+                newContacts
             }
-
-            createRemoteUpdates(connection, newContacts)
-        }
-
-        newContacts
+        else
+            Promise.ofSuccess(emptySet())
     }
 
     override fun update(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -331,54 +336,64 @@ ON
         }
     }
 
-    override fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<AddressBookUpdate.Contact>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withTransaction {
-            newContacts.forEach { addContactNoTransaction(connection, it) }
-            updated.forEach {
-                updateContactMessageLevel(connection, it.userId, it.allowedMessageLevel)
+    override fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<AddressBookUpdate.Contact>): Promise<Unit, Exception> {
+        return if (newContacts.isNotEmpty() || updated.isNotEmpty())
+            sqlitePersistenceManager.runQuery { connection ->
+                connection.withTransaction {
+                    newContacts.forEach { addContactNoTransaction(connection, it) }
+                    updated.forEach {
+                        updateContactMessageLevel(connection, it.userId, it.allowedMessageLevel)
+                    }
+                }
             }
-        }
+        else
+            Promise.ofSuccess(Unit)
     }
 
-    override fun findMissing(platformContacts: List<PlatformContact>): Promise<List<PlatformContact>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val missing = ArrayList<PlatformContact>()
+    override fun findMissing(platformContacts: List<PlatformContact>): Promise<List<PlatformContact>, Exception> {
+        return if (platformContacts.isNotEmpty())
+            sqlitePersistenceManager.runQuery { connection ->
+                val missing = ArrayList<PlatformContact>()
 
-        for (contact in platformContacts) {
-            val emails = contact.emails
-            val phoneNumbers = contact.phoneNumbers
+                for (contact in platformContacts) {
+                    val emails = contact.emails
+                    val phoneNumbers = contact.phoneNumbers
 
-            val selection = ArrayList<String>()
+                    val selection = ArrayList<String>()
 
-            if (emails.isNotEmpty())
-                selection.add("email IN (${getPlaceholders(emails.size)})")
+                    if (emails.isNotEmpty())
+                        selection.add("email IN (${getPlaceholders(emails.size)})")
 
-            if (phoneNumbers.isNotEmpty())
-                selection.add("phone_number IN (${getPlaceholders(phoneNumbers.size)})")
+                    if (phoneNumbers.isNotEmpty())
+                        selection.add("phone_number IN (${getPlaceholders(phoneNumbers.size)})")
 
-            if (selection.isEmpty())
-                continue
+                    if (selection.isEmpty())
+                        continue
 
-            val sql = "SELECT 1 FROM contacts WHERE " + selection.joinToString(" OR ") + " LIMIT 1"
+                    val sql = "SELECT 1 FROM contacts WHERE " + selection.joinToString(" OR ") + " LIMIT 1"
 
-            connection.prepare(sql).use { stmt ->
-                var i = 1
+                    connection.prepare(sql).use { stmt ->
+                        var i = 1
 
-                for (email in emails) {
-                    stmt.bind(i, email)
-                    i += 1
+                        for (email in emails) {
+                            stmt.bind(i, email)
+                            i += 1
+                        }
+
+                        for (phoneNumber in phoneNumbers) {
+                            stmt.bind(i, phoneNumber)
+                            i += 1
+                        }
+
+                        if (!stmt.step())
+                            missing.add(contact)
+                    }
                 }
 
-                for (phoneNumber in phoneNumbers) {
-                    stmt.bind(i, phoneNumber)
-                    i += 1
-                }
-
-                if (!stmt.step())
-                    missing.add(contact)
+                missing
             }
-        }
-
-        missing
+        else
+            Promise.ofSuccess(emptyList())
     }
 
     private fun addRemoteUpdateNoTransaction(connection: SQLiteConnection, remoteUpdates: Collection<AddressBookUpdate.Contact>) {
@@ -398,16 +413,21 @@ ON
         }
     }
 
-    override fun removeRemoteUpdates(remoteUpdates: Collection<UserId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withTransaction {
-            connection.withPrepared("DELETE FROM remote_contact_updates WHERE contact_id=?") { stmt ->
-                remoteUpdates.forEach { item ->
-                    stmt.bind(1, item)
-                    stmt.step()
-                    stmt.reset()
+    override fun removeRemoteUpdates(remoteUpdates: Collection<UserId>): Promise<Unit, Exception> {
+        return if (remoteUpdates.isNotEmpty())
+            sqlitePersistenceManager.runQuery { connection ->
+                connection.withTransaction {
+                    connection.withPrepared("DELETE FROM remote_contact_updates WHERE contact_id=?") { stmt ->
+                        remoteUpdates.forEach { item ->
+                            stmt.bind(1, item)
+                            stmt.step()
+                            stmt.reset()
+                        }
+                    }
                 }
             }
-        }
+        else
+            Promise.ofSuccess(Unit)
     }
 
     /** Updates message level for an existing contact. Handles deletion of conversation data and creation of remote update. */
