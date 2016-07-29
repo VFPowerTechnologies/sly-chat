@@ -149,15 +149,22 @@ GroupController.prototype = {
             return;
         }
 
-        groupService.createNewGroup(name, contacts).then(function () {
-            // go to the new group chat page.
-            // just going back for now.
-            navigationController.goBack();
-            slychat.addNotification({
-                title: "Group has been created",
-                hold: 3000
+        groupService.createNewGroup(name, contacts).then(function (groupId) {
+            groupService.getGroupConversations().then(function (conversations) {
+                conversations.forEach(function (conversation) {
+                    this.groups[conversation.group.id] = conversation;
+                }.bind(this));
+
+                contactController.loadChatPage(this.groups[groupId].group, false, true);
+
+                slychat.addNotification({
+                    title: "Group has been created",
+                    hold: 3000
+                });
+            }.bind(this)).catch(function (e) {
+                exceptionController.handleError(e);
             });
-        }).catch(function (e) {
+        }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         });
     },
