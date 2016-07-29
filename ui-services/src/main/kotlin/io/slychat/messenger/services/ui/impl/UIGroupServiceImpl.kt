@@ -92,7 +92,7 @@ class UIGroupServiceImpl(
         return getMessengerServiceOrThrow().inviteUsersToGroup(groupId, ids)
     }
 
-    override fun createNewGroup(name: String, initialMembers: List<UIContactDetails>): Promise<Unit, Exception> {
+    override fun createNewGroup(name: String, initialMembers: List<UIContactDetails>): Promise<GroupId, Exception> {
         val ids = initialMembers.mapToSet { it.id }
 
         return getMessengerServiceOrThrow().createNewGroup(name, ids)

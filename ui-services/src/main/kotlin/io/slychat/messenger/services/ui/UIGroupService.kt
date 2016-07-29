@@ -16,7 +16,7 @@ interface UIGroupService {
 
     fun inviteUsers(groupId: GroupId, contacts: List<UIContactDetails>): Promise<Unit, Exception>
 
-    fun createNewGroup(name: String, initialMembers: List<UIContactDetails>): Promise<Unit, Exception>
+    fun createNewGroup(name: String, initialMembers: List<UIContactDetails>): Promise<GroupId, Exception>
 
     fun getMembers(groupId: GroupId): Promise<List<UIContactDetails>, Exception>
 

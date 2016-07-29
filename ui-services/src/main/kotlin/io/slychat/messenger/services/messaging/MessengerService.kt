@@ -17,7 +17,7 @@ interface MessengerService {
     /* UIMessengerService interface */
     fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception>
     fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<GroupMessageInfo, Exception>
-    fun createNewGroup(groupName: String, initialMembers: Set<UserId>): Promise<Unit, Exception>
+    fun createNewGroup(groupName: String, initialMembers: Set<UserId>): Promise<GroupId, Exception>
     fun inviteUsersToGroup(groupId: GroupId, newMembers: Set<UserId>): Promise<Unit, Exception>
     fun partGroup(groupId: GroupId): Promise<Boolean, Exception>
     fun blockGroup(groupId: GroupId): Promise<Unit, Exception>

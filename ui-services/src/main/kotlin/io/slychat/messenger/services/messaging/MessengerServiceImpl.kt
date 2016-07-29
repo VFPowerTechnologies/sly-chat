@@ -247,9 +247,11 @@ class MessengerServiceImpl(
         }
     }
 
-    override fun createNewGroup(groupName: String, initialMembers: Set<UserId>): Promise<Unit, Exception> {
+    override fun createNewGroup(groupName: String, initialMembers: Set<UserId>): Promise<GroupId, Exception> {
+        val groupId = GroupId(randomUUID())
+
         val groupInfo = GroupInfo(
-            GroupId(randomUUID()),
+            groupId,
             groupName,
             GroupMembershipLevel.JOINED
         )
@@ -266,8 +268,8 @@ class MessengerServiceImpl(
             SenderMessageEntry(metadata, serialized)
         }
 
-        return groupPersistenceManager.join(groupInfo, initialMembers) bind {
-            messageSender.addToQueue(messages)
+        return groupPersistenceManager.join(groupInfo, initialMembers) bindUi {
+            messageSender.addToQueue(messages) map { groupId }
         }
     }
 
