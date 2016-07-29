@@ -26,6 +26,13 @@ GroupController.prototype = {
             return false;
     },
 
+    getGroupMembers : function (id) {
+        if (id in this.groups)
+            return this.groups[id].members;
+        else
+            return false;
+    },
+
     fetchGroupMessage : function (start, count, id) {
         groupService.getLastMessages(id, start, count).then(function (messagesInfo) {
             var organizedMessages = chatController.organizeGroupMessages(messagesInfo);
@@ -155,6 +162,20 @@ GroupController.prototype = {
         });
     },
 
+    deleteMessages : function (groupId, messageIds) {
+        groupService.deleteMessagesFor(groupId, messageIds).then(function (result) {
+            slychat.addNotification({
+                title: "Messages have been deleted",
+                hold: 3000
+            });
+            messageIds.forEach(function (id) {
+                $("#message_" + id).remove();
+            });
+        }).catch(function (e) {
+            exceptionController.handleError(e);
+        })
+    },
+
     deleteAllMessages : function (groupId) {
         groupService.deleteAllMessages(groupId).then(function (result) {
             slychat.addNotification({
@@ -173,7 +194,6 @@ GroupController.prototype = {
         var memberList = "";
 
         members.forEach(function (member) {
-            console.log(member);
             memberList += "<div class='member'>" +
                 "<span>" + member.name + "</span>" +
                 "<span>" + member.email + "</span>" +

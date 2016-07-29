@@ -55,7 +55,7 @@ ChatController.prototype = {
         if (isGroup === true) {
             for(var g in messages) {
                 if (messages.hasOwnProperty(g)) {
-                    frag.append(this.createGroupMessageNode(messages[g]));
+                    frag.append(this.createGroupMessageNode(messages[g], contact));
                 }
             }
         }
@@ -113,7 +113,7 @@ ChatController.prototype = {
         return messageNode;
     },
 
-    createGroupMessageNode : function (message) {
+    createGroupMessageNode : function (message, group) {
         var classes = "";
 
         if(this.lastMessage == null)
@@ -157,7 +157,7 @@ ChatController.prototype = {
 
         messageNode.on("mouseheld", function () {
             vibrate(50);
-            this.openMessageMenu(message);
+            this.openGroupMessageMenu(message, group);
         }.bind(this));
 
         return messageNode;
@@ -357,6 +357,40 @@ ChatController.prototype = {
         slychat.actions(buttons);
     },
 
+    openGroupMessageMenu : function (message, groupId) {
+        var contact = contactController.getContact($('#contact-id').html());
+
+        var buttons = [
+            {
+                text: 'Message Info',
+                onClick: function () {
+                    this.showGroupMessageInfo(message, groupId);
+                }.bind(this)
+            },
+            {
+                text: 'Delete message',
+                onClick: function () {
+                    slychat.confirm("Are you sure you want to delete this message?", function () {
+                        groupController.deleteMessages(groupId, [message.info.id]);
+                    }.bind(this))
+                }.bind(this)
+            },
+            {
+                text: 'Copy Text',
+                onClick: function () {
+                    copyToClipboard(message.info.message);
+                }.bind(this)
+            },
+            {
+                text: 'Cancel',
+                color: 'red',
+                onClick: function () {
+                }
+            }
+        ];
+        slychat.actions(buttons);
+    },
+
     deleteMessage : function (id, contact) {
         var messageIds = [];
         if(id.constructor !== Array)
@@ -426,6 +460,81 @@ ChatController.prototype = {
             receivedTime +
             '<div class="message-info">' +
                 '<p class="message-info-title">Message is encrypted <i class="fa fa-check-square color-green"></i></p>' +
+            '</div>';
+
+        openInfoPopup(content);
+    },
+
+    showGroupMessageInfo : function (message, groupId) {
+        var contactDiv = "";
+        var receivedTime = "";
+        var groupName = "";
+        var group = groupController.getGroup(groupId);
+        var members = groupController.getGroupMembers(groupId);
+
+        var memberList = "";
+
+        members.forEach(function (member) {
+            memberList += "<div class='member'>" +
+                "<span>" + member.name + "</span>" +
+                "<span>" + member.email + "</span>" +
+                "</div>";
+        });
+
+        if (message.speaker === null){
+            contactDiv = "<div class='message-info'>" +
+                "<p class='message-info-title'>Sent To Group:</p>" +
+                "<p class='message-info-details'>" + group.name + "</p>" +
+                "</div>";
+        }
+        else {
+            var contact = contactController.getContact(message.speaker);
+
+            contactDiv = "<div class='message-info'>" +
+                "<p class='message-info-title'>Contact Name:</p>" +
+                "<p class='message-info-details'>" + contact.name + "</p>" +
+                "</div>" +
+                "<div class='message-info'>" +
+                "<p class='message-info-title'>Contact Email:</p>" +
+                "<p class='message-info-details'>" + contact.email + "</p>" +
+                "</div>" +
+                "<div class='message-info'>" +
+                "<p class='message-info-title'>Contact Public Key:</p>" +
+                "<p class='message-info-details'>" + formatPublicKey(contact.publicKey) + "</p>" +
+                "</div>";
+
+            receivedTime = "<div class='message-info'>" +
+                "<p class='message-info-title'>Message Received Time:</p>" +
+                "<p class='message-info-details'>" + message.info.receivedTimestamp + "</p>" +
+                "</div>";
+
+            groupName = "<div class='message-info'>" +
+                "<p class='message-info-title'>Group Name:</p>" +
+                "<p class='message-info-details'>" + group.name + "</p>" +
+                "</div>";
+        }
+
+        var content = contactDiv +
+            '<div class="message-info">' +
+            '<p class="message-info-title">Message id:</p>'+
+            '<p class="message-info-details">' + message.info.id + '</p>' +
+            '</div>'+
+            '<div class="message-info">' +
+            '<p class="message-info-title">Sent Time:</p>'+
+            '<p class="message-info-details">' + message.info.timestamp + '</p>' +
+            '</div>' +
+            receivedTime +
+            '<div class="message-info">' +
+            '<p class="message-info-title">Message is encrypted <i class="fa fa-check-square color-green"></i></p>' +
+            '</div>' +
+            "<div class='group-info'>" +
+            "<p class='group-info-title'>Group Id:</p>" +
+            "<p class='group-info-details'>" + group.id + "</p>" +
+            "</div>" +
+            groupName +
+            '<div class="group-info">' +
+            '<p class="group-info-title">Group Members:</p>'+
+            '<div class="group-info-details"><div class="members">' + memberList + '</div></div>' +
             '</div>';
 
         openInfoPopup(content);
