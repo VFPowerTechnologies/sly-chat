@@ -51,6 +51,9 @@ NavigationController.prototype = {
         else if ($$('.picker-modal.modal-in').length > 0) {
             slychat.closeModal();
         }
+        else if ($$(".actions-modal.modal-in").length > 0 ) {
+            slychat.closeModal();
+        }
         else {
             historyService.pop().then(function (url) {
                 if (url == "") {
@@ -119,7 +122,10 @@ NavigationController.prototype = {
             page = "CONTACTS"
         }
         else if(/chat.html$/.test(url)) {
-            page = "CONVO";
+            if(options.group === true)
+                page = "GROUP";
+            else
+                page = "CONVO";
             extra = currentContatctId;
         }
 
@@ -150,7 +156,8 @@ NavigationController.prototype = {
             register: 'register.html',
             smsVerification: 'smsVerification.html',
             updatePhone: 'updatePhone.html',
-            profile: 'profile.html'
+            profile: 'profile.html',
+            createGroup: 'createGroup.html'
         };
         var page = $$('#mainView').data('page');
 
@@ -162,5 +169,37 @@ NavigationController.prototype = {
             window.loadService.loadComplete();
             firstLoad = false;
         }
+    },
+
+
+    openMenu : function () {
+        var buttons = [
+            {
+                text: 'Profile',
+                onClick: function () {
+                    navigationController.loadPage('profile.html', true);
+                }
+            },
+            {
+                text: 'Logout',
+                onClick: function () {
+                    loginController.logout();
+                }
+            },
+            {
+                text: 'Create Group',
+                onClick: function () {
+                    navigationController.loadPage('createGroup.html', true);
+                }
+            },
+            {
+                text: 'Cancel',
+                color: 'red',
+                onClick: function () {
+                }
+            }
+        ];
+        slychat.actions(buttons);
     }
+
 };

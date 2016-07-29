@@ -15,6 +15,7 @@ window.platformService = new PlatformService();
 window.loadService = new LoadService();
 window.infoService = new InfoService();
 window.configService = new ConfigService();
+window.groupService = new GroupService();
 
 window.navigationController = new NavigationController();
 window.loginController = new LoginController();
@@ -23,6 +24,8 @@ window.profileController = new ProfileController();
 window.contactController = new ContactController();
 window.chatController = new ChatController();
 window.connectionController = new ConnectionController();
+window.groupController = new GroupController();
+window.exceptionController = new ExceptionController();
 
 var isAndroid = Framework7.prototype.device.android === true;
 var isIos = Framework7.prototype.device.ios === true;
@@ -73,3 +76,4 @@ loginController.init();
 chatController.init();
 contactController.addContactEventListener();
 connectionController.init();
+groupController.addGroupEventListener();

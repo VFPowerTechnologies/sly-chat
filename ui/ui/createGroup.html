@@ -1,0 +1,50 @@
+{{#unless @global.android}}
+<div class="navbar">
+    <div class="navbar-inner">
+        <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
+        <div class="right">
+        </div>
+    </div>
+</div>
+{{/unless}}
+
+<div class="pages">
+    <div data-page="createGroup" class="page page-on-center">
+
+        {{#if @global.android}}
+        <div class="navbar">
+            <div class="navbar-inner">
+                <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a>
+                New Group
+                </div>
+                <div class="right">
+                </div>
+            </div>
+        </div>
+        {{/if}}
+
+        <div class="page-content">
+            <div class="content-block">
+                <div class="list-block">
+                    <ul>
+                        <li>
+                            <div class="item-content">
+                                <div class="item-inner">
+                                    <div class="item-input">
+                                        <input id='newGroupName' type="text" placeholder="Group Name" style="border-bottom: 1px solid #eeeeee;">
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <a id='createNewGroupBtn' href="#" class="button button-big button-raised button-fill">Create</a>
+                <div class="content-block-title">Contacts</div>
+                <div class="list-block">
+                    <ul id="newGroupContactList">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

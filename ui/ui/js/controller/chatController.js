@@ -21,25 +21,49 @@ ChatController.prototype = {
     },
 
     submitNewMessage : function (contact, message) {
-        messengerService.sendMessageTo(contact, message).then(function (messageDetails) {
-            this.pushNewMessageInCache(contact.id, messageDetails);
-            $("#chat-content").append(this.createMessageNode(messageDetails, profileController.name));
+        if (contact.email === undefined) {
+            messengerService.sendGroupMessageTo(contact.id, message).then(function (messageDetails) {
+                $("#chat-content").append(this.createMessageNode(messageDetails, profileController.name));
 
-            var input = $("#newMessageInput");
-            input.val("");
-            input.click();
-            this.scrollTop();
-        }.bind(this)).catch(function (e) {
-            console.log(e);
-        });
+                var input = $("#newMessageInput");
+                input.val("");
+                input.click();
+                this.scrollTop();
+            }.bind(this)).catch(function (e) {
+                exceptionController.handleError(e);
+            })
+        }
+        else {
+            messengerService.sendMessageTo(contact, message).then(function (messageDetails) {
+                this.pushNewMessageInCache(contact.id, messageDetails);
+                $("#chat-content").append(this.createMessageNode(messageDetails, profileController.name));
+
+                var input = $("#newMessageInput");
+                input.val("");
+                input.click();
+                this.scrollTop();
+            }.bind(this)).catch(function (e) {
+                console.log(e);
+            });
+        }
     },
 
-    displayMessage : function (messages, contact) {
+    displayMessage : function (messages, contact, isGroup) {
         this.lastMessage = null;
         var frag = $(document.createDocumentFragment());
-        for(var k in messages) {
-            if(messages.hasOwnProperty(k)) {
-                frag.append(this.createMessageNode(messages[k], contact));
+
+        if (isGroup === true) {
+            for(var g in messages) {
+                if (messages.hasOwnProperty(g)) {
+                    frag.append(this.createGroupMessageNode(messages[g], contact));
+                }
+            }
+        }
+        else {
+            for (var s in messages) {
+                if (messages.hasOwnProperty(s)) {
+                    frag.append(this.createMessageNode(messages[s], contact));
+                }
             }
         }
         
@@ -89,6 +113,56 @@ ChatController.prototype = {
         return messageNode;
     },
 
+    createGroupMessageNode : function (message, group) {
+        var classes = "";
+
+        if(this.lastMessage == null)
+            classes += " firstMessage";
+        else {
+            if ((message.info.sent && this.lastMessage.info.sent) || (!message.info.sent && !this.lastMessage.info.sent))
+                classes += " followingMessage";
+            else
+                classes += " firstMessage";
+        }
+
+
+        if (message.info.sent === true)
+            classes += " messageSent";
+        else
+            classes += " messageReceived";
+
+        var timespan = "";
+        if(message.info.sent && message.info.receivedTimestamp == 0){
+            timespan = "Delivering...";
+        }
+        else {
+            var time = new Date(message.info.timestamp).toISOString();
+            timespan = "<time class='timeago' datetime='" + time + "' title='" + $.timeago(time) + "'>" + $.timeago(time) + "</time>";
+        }
+
+        this.lastMessage = message;
+
+        var contactName = "";
+        if(message.speaker !== null) {
+            var contact = contactController.getContact(message.speaker);
+            if(contact !== false)
+                contactName = "<p style='font-size: 10px; color: #9e9e9e;'>" + contact.name + "</p>";
+        }
+
+        var messageNode = $("<li id='message_" + message.info.id + "' class='" + classes + "'><div class='message'>" +
+            contactName +
+            "<p>" + formatTextForHTML(createTextNode(message.info.message)) + "</p>" +
+            "<span class='timespan'>" + timespan + "</span>" +
+            "</div></li>");
+
+        messageNode.on("mouseheld", function () {
+            vibrate(50);
+            this.openGroupMessageMenu(message, group);
+        }.bind(this));
+
+        return messageNode;
+    },
+
     storeCachedConversation : function (messages, contact) {
         if(Object.size(this.chatCache) <= 5) {
             this.chatCache[contact.id] = messages;
@@ -101,6 +175,17 @@ ChatController.prototype = {
         var organizedMessages = [];
         messages.forEach(function (message) {
             organizedMessages[message.id] = message;
+        });
+
+        return organizedMessages;
+    },
+
+    organizeGroupMessages : function (messages) {
+        messages.reverse();
+
+        var organizedMessages = [];
+        messages.forEach(function (message) {
+            organizedMessages[message.info.id] = message;
         });
 
         return organizedMessages;
@@ -147,10 +232,6 @@ ChatController.prototype = {
         var messages = messageInfo.messages;
         var contactId = messageInfo.contact;
 
-        messages.forEach(function (message) {
-            this.pushNewMessageInCache(contactId, message);
-        }.bind(this));
-
         //Get the contact that sent the message
         var cachedContact = contactController.getContact(contactId);
         if(!cachedContact) {
@@ -159,8 +240,18 @@ ChatController.prototype = {
         }
         var contactName = cachedContact.name;
 
-        contactController.updateRecentChatNode(cachedContact, messageInfo);
-        this.updateChatPageNewMessage(messages, contactName, contactId);
+        if (messageInfo.groupId === null) {
+            messages.forEach(function (message) {
+                this.pushNewMessageInCache(contactId, message);
+            }.bind(this));
+
+            contactController.updateRecentChatNode(cachedContact, messageInfo);
+            this.updateChatPageNewMessage(messages, contactName, contactId);
+        }
+        else {
+            contactController.updateRecentGroupChatNode(cachedContact, messageInfo);
+            this.updateGroupChatPageNewMessage(messageInfo, contactName);
+        }
 
         $(".timeago").timeago();
     },
@@ -191,10 +282,44 @@ ChatController.prototype = {
         }
     },
 
+    updateGroupChatPageNewMessage : function (messagesInfo, contactName) {
+        var messages = messagesInfo.messages;
+        var currentPageContactId = $("#contact-id");
+        if(navigationController.getCurrentPage() == "chat.html" && currentPageContactId.length && currentPageContactId.html() == messagesInfo.groupId){
+            var messageDiv = $("#chat-content");
+
+            if(messageDiv.length){
+                var contact = contactController.getContact(messagesInfo.contact);
+                vibrate(100);
+                //for the common case
+                if(messages.length == 1) {
+                    var messageInfo = {
+                        info: messages[0],
+                        speaker: messagesInfo.contact
+                    };
+                    messageDiv.append(this.createGroupMessageNode(messageInfo, contact));
+                }
+                else {
+                    var fragment = $(document.createDocumentFragment());
+                    messages.forEach(function (message) {
+                        var messageInfo = {
+                            info: message,
+                            speaker: messagesInfo.contact
+                        };
+                        fragment.append(this.createGroupMessageNode(messageInfo, contact));
+                    }, this);
+                    messageDiv.append(fragment);
+                }
+                this.scrollTop();
+                groupController.markGroupConversationAsRead(messagesInfo.groupId);
+            }
+        }
+    },
+
     markConversationAsRead : function (contact) {
         messengerService.markConversationAsRead(contact).catch(function (e) {
-            console.log(e);
-        })
+            exceptionController.handleError(e);
+        });
     },
 
     openMessageMenu : function (message) {
@@ -220,6 +345,40 @@ ChatController.prototype = {
                 text: 'Copy Text',
                 onClick: function () {
                     copyToClipboard(message.message);
+                }.bind(this)
+            },
+            {
+                text: 'Cancel',
+                color: 'red',
+                onClick: function () {
+                }
+            }
+        ];
+        slychat.actions(buttons);
+    },
+
+    openGroupMessageMenu : function (message, groupId) {
+        var contact = contactController.getContact($('#contact-id').html());
+
+        var buttons = [
+            {
+                text: 'Message Info',
+                onClick: function () {
+                    this.showGroupMessageInfo(message, groupId);
+                }.bind(this)
+            },
+            {
+                text: 'Delete message',
+                onClick: function () {
+                    slychat.confirm("Are you sure you want to delete this message?", function () {
+                        groupController.deleteMessages(groupId, [message.info.id]);
+                    }.bind(this))
+                }.bind(this)
+            },
+            {
+                text: 'Copy Text',
+                onClick: function () {
+                    copyToClipboard(message.info.message);
                 }.bind(this)
             },
             {
@@ -301,6 +460,81 @@ ChatController.prototype = {
             receivedTime +
             '<div class="message-info">' +
                 '<p class="message-info-title">Message is encrypted <i class="fa fa-check-square color-green"></i></p>' +
+            '</div>';
+
+        openInfoPopup(content);
+    },
+
+    showGroupMessageInfo : function (message, groupId) {
+        var contactDiv = "";
+        var receivedTime = "";
+        var groupName = "";
+        var group = groupController.getGroup(groupId);
+        var members = groupController.getGroupMembers(groupId);
+
+        var memberList = "";
+
+        members.forEach(function (member) {
+            memberList += "<div class='member'>" +
+                "<span>" + member.name + "</span>" +
+                "<span>" + member.email + "</span>" +
+                "</div>";
+        });
+
+        if (message.speaker === null){
+            contactDiv = "<div class='message-info'>" +
+                "<p class='message-info-title'>Sent To Group:</p>" +
+                "<p class='message-info-details'>" + group.name + "</p>" +
+                "</div>";
+        }
+        else {
+            var contact = contactController.getContact(message.speaker);
+
+            contactDiv = "<div class='message-info'>" +
+                "<p class='message-info-title'>Contact Name:</p>" +
+                "<p class='message-info-details'>" + contact.name + "</p>" +
+                "</div>" +
+                "<div class='message-info'>" +
+                "<p class='message-info-title'>Contact Email:</p>" +
+                "<p class='message-info-details'>" + contact.email + "</p>" +
+                "</div>" +
+                "<div class='message-info'>" +
+                "<p class='message-info-title'>Contact Public Key:</p>" +
+                "<p class='message-info-details'>" + formatPublicKey(contact.publicKey) + "</p>" +
+                "</div>";
+
+            receivedTime = "<div class='message-info'>" +
+                "<p class='message-info-title'>Message Received Time:</p>" +
+                "<p class='message-info-details'>" + message.info.receivedTimestamp + "</p>" +
+                "</div>";
+
+            groupName = "<div class='message-info'>" +
+                "<p class='message-info-title'>Group Name:</p>" +
+                "<p class='message-info-details'>" + group.name + "</p>" +
+                "</div>";
+        }
+
+        var content = contactDiv +
+            '<div class="message-info">' +
+            '<p class="message-info-title">Message id:</p>'+
+            '<p class="message-info-details">' + message.info.id + '</p>' +
+            '</div>'+
+            '<div class="message-info">' +
+            '<p class="message-info-title">Sent Time:</p>'+
+            '<p class="message-info-details">' + message.info.timestamp + '</p>' +
+            '</div>' +
+            receivedTime +
+            '<div class="message-info">' +
+            '<p class="message-info-title">Message is encrypted <i class="fa fa-check-square color-green"></i></p>' +
+            '</div>' +
+            "<div class='group-info'>" +
+            "<p class='group-info-title'>Group Id:</p>" +
+            "<p class='group-info-details'>" + group.id + "</p>" +
+            "</div>" +
+            groupName +
+            '<div class="group-info">' +
+            '<p class="group-info-title">Group Members:</p>'+
+            '<div class="group-info-details"><div class="members">' + memberList + '</div></div>' +
             '</div>';
 
         openInfoPopup(content);

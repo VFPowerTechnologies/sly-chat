@@ -39,8 +39,14 @@ slychat.onPageInit('register', function (page) {
 
 // Chat page init function
 slychat.onPageInit('chat', function (page) {
-    chatController.fetchMessageFor(0, 100, page.query);
-    chatController.markConversationAsRead(contactController.getContact(page.query.id));
+    if (page.query.email !== undefined) {
+        chatController.fetchMessageFor(0, 100, page.query);
+        chatController.markConversationAsRead(contactController.getContact(page.query.id));
+    }
+    else {
+        groupController.fetchGroupMessage(0, 100, page.query.id);
+        groupController.markGroupConversationAsRead(page.query.id);
+    }
 
     $$('#contact-name').html(page.query.name);
     $$('#contact-id').html(page.query.id);
@@ -147,6 +153,14 @@ slychat.onPageInit('profile', function (page) {
     });
 });
 
+slychat.onPageInit('createGroup', function (page) {
+    groupController.insertContactList();
+
+    $("#createNewGroupBtn").click(function (e) {
+        e.preventDefault();
+        groupController.createGroup();
+    })
+});
 
 // Contact popup event
 $$('#addNewContactGoBtn').on('click', function (e) {
@@ -185,6 +199,16 @@ $$(document).on('click', '.chatLink', function (e) {
     e.preventDefault();
     e.stopPropagation();
     navigationController.loadMessageLink($$(this).data('href'));
+});
+
+$$(document).on('click', '.open-action-menu', function (e) {
+    e.preventDefault();
+    navigationController.openMenu();
+});
+
+$$(document).on('click', '.create-group-button', function (e) {
+    e.preventDefault();
+    navigationController.loadPage('createGroup.html', true);
 });
 
 // TODO Implement left contact menu in chat page for easy switching between contact

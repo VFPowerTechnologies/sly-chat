@@ -47,7 +47,7 @@ function copyToClipboard (message) {
 
 function openInfoPopup (content) {
     var navbar = '' +
-        '<div class="navbar">' +
+        '<div class="navbar top-navbar">' +
             '<div class="navbar-inner">' +
                 '<a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a>' +
             '</div>' +
@@ -55,10 +55,10 @@ function openInfoPopup (content) {
 
     var popupHTML = '' +
         '<div class="popup info-popup">' +
-            '<div class="view" data-page>' +
-                navbar +
-                '<div class="pages navbar-through">' +
+            '<div class="view navbar-fixed" data-page>' +
+                '<div class="pages">' +
                     '<div data-page class="page">' +
+                        navbar +
                         '<div class="page-content">'+
                             '<div class="content-block">' +
                                 content +
