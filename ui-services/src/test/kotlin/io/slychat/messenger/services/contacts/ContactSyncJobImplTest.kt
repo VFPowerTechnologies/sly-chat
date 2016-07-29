@@ -27,7 +27,7 @@ class ContactSyncJobImplTest {
     }
 
     val contactAsyncClient: ContactAsyncClient = mock()
-    val contactListAsyncClient: ContactListAsyncClient = mock()
+    val addressBookAsyncClient: AddressBookAsyncClient = mock()
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val userLoginData = UserData(SlyAddress(randomUserId(), 1), keyVault)
     val accountInfoPersistenceManager: AccountInfoPersistenceManager = mock()
@@ -54,14 +54,14 @@ class ContactSyncJobImplTest {
         whenever(contactAsyncClient.findLocalContacts(any(), any())).thenReturn(FindLocalContactsResponse(emptyList()))
         whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenReturn(FetchContactInfoByIdResponse(emptyList()))
 
-        whenever(contactListAsyncClient.getContacts(any())).thenReturn(GetContactsResponse(emptyList()))
+        whenever(addressBookAsyncClient.getContacts(any())).thenReturn(GetAddressBookResponse(emptyList()))
     }
 
     fun newJob(): ContactSyncJobImpl {
         return ContactSyncJobImpl(
             MockAuthTokenManager(),
             contactAsyncClient,
-            contactListAsyncClient,
+            addressBookAsyncClient,
             contactsPersistenceManager,
             userLoginData,
             accountInfoPersistenceManager,
@@ -96,7 +96,7 @@ class ContactSyncJobImplTest {
         val missing = randomUserIds()
         val remoteEntries = encryptRemoteContactEntries(keyVault, missing.map { RemoteContactUpdate(it, AllowedMessageLevel.ALL) })
 
-        whenever(contactListAsyncClient.getContacts(any())).thenReturn(GetContactsResponse(remoteEntries))
+        whenever(addressBookAsyncClient.getContacts(any())).thenReturn(GetAddressBookResponse(remoteEntries))
         whenever(contactsPersistenceManager.exists(missing)).thenReturn(emptySet())
 
         runRemoteSync()
@@ -121,7 +121,7 @@ class ContactSyncJobImplTest {
         val apiContacts = missing.map { ApiContactInfo(it, "$it@a.com", it.toString(), it.toString(), it.toString()) }
         val remoteEntries = encryptRemoteContactEntries(keyVault, missing.map { RemoteContactUpdate(it, messageLevels[it]!!) })
 
-        whenever(contactListAsyncClient.getContacts(any())).thenReturn(GetContactsResponse(remoteEntries))
+        whenever(addressBookAsyncClient.getContacts(any())).thenReturn(GetAddressBookResponse(remoteEntries))
         whenever(contactsPersistenceManager.exists(missing)).thenReturn(emptySet())
         whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenReturn(FetchContactInfoByIdResponse(apiContacts))
 
@@ -143,7 +143,7 @@ class ContactSyncJobImplTest {
         val remoteUpdates = present.zip(messageLevels).map { RemoteContactUpdate(it.first, it.second) }
         val remoteEntries = encryptRemoteContactEntries(keyVault, remoteUpdates)
 
-        whenever(contactListAsyncClient.getContacts(any())).thenReturn(GetContactsResponse(remoteEntries))
+        whenever(addressBookAsyncClient.getContacts(any())).thenReturn(GetAddressBookResponse(remoteEntries))
         whenever(contactsPersistenceManager.exists(present)).thenReturn(present)
 
         runRemoteSync()
@@ -160,7 +160,7 @@ class ContactSyncJobImplTest {
     fun `an update remote sync should not issue a remote request if no missing platform contacts are found`() {
         runUpdateRemote()
 
-        verify(contactListAsyncClient, never()).updateContacts(any(), any())
+        verify(addressBookAsyncClient, never()).updateContacts(any(), any())
     }
 
     @Test

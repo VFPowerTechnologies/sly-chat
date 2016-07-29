@@ -8,15 +8,15 @@ import io.slychat.messenger.core.http.api.apiGetRequest
 import io.slychat.messenger.core.http.api.apiPostRequest
 import io.slychat.messenger.core.typeRef
 
-class ContactListClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
-    fun getContacts(userCredentials: UserCredentials): GetContactsResponse {
-        val url = "$serverBaseUrl/v1/contact-list"
+class AddressBookClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
+    fun get(userCredentials: UserCredentials): GetAddressBookResponse {
+        val url = "$serverBaseUrl/v1/addressbook"
 
         return apiGetRequest(httpClient, url, userCredentials, listOf(), typeRef())
     }
 
-    fun updateContacts(userCredentials: UserCredentials, request: UpdateContactsRequest): Unit {
-        val url = "$serverBaseUrl/v1/contact-list"
+    fun update(userCredentials: UserCredentials, request: UpdateAddressBookRequest): Unit {
+        val url = "$serverBaseUrl/v1/addressbook"
 
         apiPostRequest(httpClient, url, userCredentials, request, typeRef<ApiResult<EmptyResponse>>())
     }

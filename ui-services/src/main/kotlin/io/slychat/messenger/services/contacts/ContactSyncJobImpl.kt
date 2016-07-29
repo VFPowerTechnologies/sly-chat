@@ -20,7 +20,7 @@ import java.util.*
 class ContactSyncJobImpl(
     private val authTokenManager: AuthTokenManager,
     private val contactClient: ContactAsyncClient,
-    private val contactListClient: ContactListAsyncClient,
+    private val addressBookClient: AddressBookAsyncClient,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val userLoginData: UserData,
     private val accountInfoPersistenceManager: AccountInfoPersistenceManager,
@@ -88,8 +88,8 @@ class ContactSyncJobImpl(
         val contactsPersistenceManager = contactsPersistenceManager
 
         return authTokenManager.bind { userCredentials ->
-            contactListClient.getContacts(userCredentials) bind { response ->
-                val updates = decryptRemoteContactEntries(keyVault, response.contacts)
+            addressBookClient.getContacts(userCredentials) bind { response ->
+                val updates = decryptRemoteContactEntries(keyVault, response.entries)
 
                 val messageLevelByUserId = updates.mapToMap {
                     it.userId to it.allowedMessageLevel
@@ -135,7 +135,7 @@ class ContactSyncJobImpl(
                     val keyVault = userLoginData.keyVault
 
                     val request = updateRequestFromRemoteContactUpdates(keyVault, updates)
-                    contactListClient.updateContacts(userCredentials, request) bind {
+                    addressBookClient.updateContacts(userCredentials, request) bind {
                         contactsPersistenceManager.removeRemoteUpdates(updates)
                     }
                 }

@@ -52,8 +52,8 @@ fun decryptRemoteContactEntries(keyVault: KeyVault, entries: List<RemoteContactE
     }
 }
 
-fun updateRequestFromRemoteContactUpdates(keyVault: KeyVault, remoteContactUpdates: List<RemoteContactUpdate>): UpdateContactsRequest {
+fun updateRequestFromRemoteContactUpdates(keyVault: KeyVault, remoteContactUpdates: List<RemoteContactUpdate>): UpdateAddressBookRequest {
     val updates = encryptRemoteContactEntries(keyVault, remoteContactUpdates)
 
-    return UpdateContactsRequest(updates)
+    return UpdateAddressBookRequest(updates)
 }

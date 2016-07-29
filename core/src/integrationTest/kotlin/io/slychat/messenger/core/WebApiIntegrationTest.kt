@@ -676,12 +676,12 @@ class WebApiIntegrationTest {
         devClient.addContacts(userA.user.username, aContacts)
         devClient.addContacts(userB.user.username, bContacts)
 
-        val client = ContactListClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = AddressBookClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
 
         val authToken = devClient.createAuthToken(userA.user.username)
-        val response = client.getContacts(userA.getUserCredentials(authToken))
+        val response = client.get(userA.getUserCredentials(authToken))
 
-        assertContactListEquals(aContacts, response.contacts)
+        assertContactListEquals(aContacts, response.entries)
     }
 
     @Test
@@ -695,7 +695,7 @@ class WebApiIntegrationTest {
 
         devClient.addContacts(userA.user.username, contactList.subList(0, contactList.size))
 
-        val client = ContactListClient(serverBaseUrl, JavaHttpClient())
+        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
 
         val authToken = devClient.createAuthToken(userA.user.username)
 
@@ -704,10 +704,10 @@ class WebApiIntegrationTest {
             RemoteContactUpdate(userC.user.id, AllowedMessageLevel.BLOCKED)
         )
         val updated = encryptRemoteContactEntries(userA.keyVault, updates)
-        val request = UpdateContactsRequest(updated)
+        val request = UpdateAddressBookRequest(updated)
 
         println(updated)
-        client.updateContacts(userA.getUserCredentials(authToken), request)
+        client.update(userA.getUserCredentials(authToken), request)
 
         val contacts = devClient.getContactList(userA.user.username)
 
@@ -728,9 +728,9 @@ class WebApiIntegrationTest {
         val authToken = devClient.createAuthToken(userA.user.username)
         val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(RemoteContactUpdate(userB.user.id, AllowedMessageLevel.ALL)))
 
-        val client = ContactListClient(serverBaseUrl, JavaHttpClient())
+        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
         val userCredentials = userA.getUserCredentials(authToken)
-        client.updateContacts(userCredentials, UpdateContactsRequest(aContacts))
+        client.update(userCredentials, UpdateAddressBookRequest(aContacts))
 
         val contacts = devClient.getContactList(userA.user.username)
 
