@@ -126,7 +126,7 @@ class ContactSyncJobImpl(
         val keyVault = userLoginData.keyVault
 
         return authTokenManager.bind { userCredentials ->
-            addressBookClient.getContacts(userCredentials) bind { response ->
+            addressBookClient.get(userCredentials) bind { response ->
                 val allUpdates = decryptRemoteAddressBookEntries(keyVault, response.entries)
 
                 val contactUpdates = ArrayList<AddressBookUpdate.Contact>()
@@ -161,7 +161,7 @@ class ContactSyncJobImpl(
                     val keyVault = userLoginData.keyVault
 
                     val request = updateRequestFromRemoteContactUpdates(keyVault, updates)
-                    addressBookClient.updateContacts(userCredentials, request) bind {
+                    addressBookClient.update(userCredentials, request) bind {
                         contactsPersistenceManager.removeRemoteUpdates(updates)
                     }
                 }
