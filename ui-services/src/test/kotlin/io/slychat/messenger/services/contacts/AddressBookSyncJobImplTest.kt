@@ -17,7 +17,7 @@ import org.junit.ClassRule
 import org.junit.Test
 import kotlin.test.assertEquals
 
-class ContactSyncJobImplTest {
+class AddressBookSyncJobImplTest {
     companion object {
         @JvmField
         @ClassRule
@@ -64,8 +64,8 @@ class ContactSyncJobImplTest {
         whenever(addressBookAsyncClient.get(any())).thenReturn(GetAddressBookResponse(emptyList()))
     }
 
-    fun newJob(): ContactSyncJobImpl {
-        return ContactSyncJobImpl(
+    fun newJob(): AddressBookSyncJobImpl {
+        return AddressBookSyncJobImpl(
             MockAuthTokenManager(),
             contactAsyncClient,
             addressBookAsyncClient,
@@ -77,10 +77,10 @@ class ContactSyncJobImplTest {
         )
     }
 
-    fun runJobWithDescription(body: ContactSyncJobDescription.() -> Unit) {
+    fun runJobWithDescription(body: AddressBookSyncJobDescription.() -> Unit) {
         val syncJob = newJob()
 
-        val description = ContactSyncJobDescription()
+        val description = AddressBookSyncJobDescription()
         description.body()
 
         syncJob.run(description).get()

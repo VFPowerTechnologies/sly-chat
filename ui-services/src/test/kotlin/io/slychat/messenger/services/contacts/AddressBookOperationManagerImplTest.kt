@@ -25,11 +25,11 @@ class AddressBookOperationManagerImplTest {
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
 
-        class MockSyncJobFactory : ContactSyncJobFactory {
-            val jobs = ArrayList<ContactSyncJob>()
+        class MockSyncJobFactory : AddressBookSyncJobFactory {
+            val jobs = ArrayList<AddressBookSyncJob>()
             val deferreds = ArrayList<Deferred<Unit, Exception>>()
-            override fun create(): ContactSyncJob {
-                val job = mock<ContactSyncJob>()
+            override fun create(): AddressBookSyncJob {
+                val job = mock<AddressBookSyncJob>()
                 jobs.add(job)
 
                 val d = deferred<Unit, Exception>()
@@ -42,8 +42,8 @@ class AddressBookOperationManagerImplTest {
         }
     }
 
-    val factory: ContactSyncJobFactory = mock()
-    val contactJob: ContactSyncJob = mock()
+    val factory: AddressBookSyncJobFactory = mock()
+    val addressBookJob: AddressBookSyncJob = mock()
     val jobDeferred = deferred<Unit, Exception>()
 
     val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create()
@@ -51,8 +51,8 @@ class AddressBookOperationManagerImplTest {
     fun createRunner(isNetworkAvailable: Boolean = false): AddressBookOperationManagerImpl {
         networkStatus.onNext(isNetworkAvailable)
 
-        whenever(factory.create()).thenReturn(contactJob)
-        whenever(contactJob.run(any())).thenReturn(jobDeferred.promise)
+        whenever(factory.create()).thenReturn(addressBookJob)
+        whenever(addressBookJob.run(any())).thenReturn(jobDeferred.promise)
 
         return AddressBookOperationManagerImpl(
             networkStatus,
@@ -72,7 +72,7 @@ class AddressBookOperationManagerImplTest {
 
         doLocalSync(runner)
 
-        verify(contactJob).run(any())
+        verify(addressBookJob).run(any())
     }
 
     @Test
@@ -81,7 +81,7 @@ class AddressBookOperationManagerImplTest {
 
         doLocalSync(runner)
 
-        verify(contactJob, never()).run(any())
+        verify(addressBookJob, never()).run(any())
     }
 
     @Test
@@ -125,7 +125,7 @@ class AddressBookOperationManagerImplTest {
 
         d.resolve(Unit)
 
-        verify(contactJob).run(any())
+        verify(addressBookJob).run(any())
     }
 
     @Test
@@ -170,7 +170,7 @@ class AddressBookOperationManagerImplTest {
 
         networkStatus.onNext(true)
 
-        verify(contactJob, never()).run(any())
+        verify(addressBookJob, never()).run(any())
     }
 
     @Test
@@ -199,7 +199,7 @@ class AddressBookOperationManagerImplTest {
 
         networkStatus.onNext(true)
 
-        verify(contactJob).run(any())
+        verify(addressBookJob).run(any())
     }
 
     //operation -> sync job
@@ -214,7 +214,7 @@ class AddressBookOperationManagerImplTest {
 
         d.resolve(Unit)
 
-        verify(contactJob, never()).run(any())
+        verify(addressBookJob, never()).run(any())
     }
 
     @Test
@@ -255,7 +255,7 @@ class AddressBookOperationManagerImplTest {
     fun `it should emit a running event when a sync begins`() {
         val runner = createRunner(true)
 
-        val testSubscriber = TestSubscriber<ContactSyncJobInfo>()
+        val testSubscriber = TestSubscriber<AddressBookSyncJobInfo>()
 
         runner.running.subscribe(testSubscriber)
 
@@ -276,7 +276,7 @@ class AddressBookOperationManagerImplTest {
             factory
         )
 
-        val testSubscriber = TestSubscriber<ContactSyncJobInfo>()
+        val testSubscriber = TestSubscriber<AddressBookSyncJobInfo>()
 
         runner.running.subscribe(testSubscriber)
 

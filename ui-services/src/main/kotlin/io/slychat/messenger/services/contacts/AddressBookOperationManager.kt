@@ -17,9 +17,9 @@ import rx.Observable
  */
 interface AddressBookOperationManager {
     /** Fires once with isRunning = true on sync start, isRunning = false on sync completion (regardless of outcome). */
-    val running: Observable<ContactSyncJobInfo>
+    val running: Observable<AddressBookSyncJobInfo>
 
-    fun withCurrentSyncJob(body: ContactSyncJobDescription.() -> Unit)
+    fun withCurrentSyncJob(body: AddressBookSyncJobDescription.() -> Unit)
 
     fun shutdown()
 

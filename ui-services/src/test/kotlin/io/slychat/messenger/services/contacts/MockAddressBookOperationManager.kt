@@ -5,7 +5,7 @@ import rx.Observable
 import rx.subjects.PublishSubject
 
 class MockAddressBookOperationManager : AddressBookOperationManager {
-    val runningSubject: PublishSubject<ContactSyncJobInfo> = PublishSubject.create()
+    val runningSubject: PublishSubject<AddressBookSyncJobInfo> = PublishSubject.create()
 
     var immediate = true
 
@@ -13,9 +13,9 @@ class MockAddressBookOperationManager : AddressBookOperationManager {
     var runOperationCallCount = 0
     var withCurrentJobCallCount = 0
 
-    override val running: Observable<ContactSyncJobInfo> = runningSubject
+    override val running: Observable<AddressBookSyncJobInfo> = runningSubject
 
-    override fun withCurrentSyncJob(body: ContactSyncJobDescription.() -> Unit) {
+    override fun withCurrentSyncJob(body: AddressBookSyncJobDescription.() -> Unit) {
         withCurrentJobCallCount += 1
     }
 

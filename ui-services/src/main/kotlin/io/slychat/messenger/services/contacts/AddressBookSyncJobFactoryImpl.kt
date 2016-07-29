@@ -9,7 +9,7 @@ import io.slychat.messenger.services.PlatformContacts
 import io.slychat.messenger.services.UserData
 import io.slychat.messenger.services.auth.AuthTokenManager
 
-class ContactSyncJobFactoryImpl(
+class AddressBookSyncJobFactoryImpl(
     private val authTokenManager: AuthTokenManager,
     private val contactClient: ContactAsyncClient,
     private val addressBookClient: AddressBookAsyncClient,
@@ -18,9 +18,9 @@ class ContactSyncJobFactoryImpl(
     private val userLoginData: UserData,
     private val accountInfoPersistenceManager: AccountInfoPersistenceManager,
     private val platformContacts: PlatformContacts
-) : ContactSyncJobFactory {
-    override fun create(): ContactSyncJob {
-        return ContactSyncJobImpl(
+) : AddressBookSyncJobFactory {
+    override fun create(): AddressBookSyncJob {
+        return AddressBookSyncJobImpl(
             authTokenManager,
             contactClient,
             addressBookClient,

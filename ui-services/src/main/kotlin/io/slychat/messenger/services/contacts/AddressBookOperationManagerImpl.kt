@@ -12,7 +12,7 @@ import java.util.*
 
 class AddressBookOperationManagerImpl(
     networkAvailable: Observable<Boolean>,
-    private val contactSyncJobFactory: ContactSyncJobFactory
+    private val addressBookSyncJobFactory: AddressBookSyncJobFactory
 ) : AddressBookOperationManager {
     private class PendingOperation<out T>(
         private val operation: () -> Promise<T, Exception>
@@ -28,11 +28,11 @@ class AddressBookOperationManagerImpl(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private var currentRunningJob: ContactSyncJob? = null
-    private var queuedSync: ContactSyncJobDescription? = null
+    private var currentRunningJob: AddressBookSyncJob? = null
+    private var queuedSync: AddressBookSyncJobDescription? = null
 
-    private val runningSubject = PublishSubject.create<ContactSyncJobInfo>()
-    override val running: Observable<ContactSyncJobInfo> = runningSubject
+    private val runningSubject = PublishSubject.create<AddressBookSyncJobInfo>()
+    override val running: Observable<AddressBookSyncJobInfo> = runningSubject
 
     private var isNetworkAvailable: Boolean = false
 
@@ -66,12 +66,12 @@ class AddressBookOperationManagerImpl(
         return pendingOperation.promise
     }
 
-    override fun withCurrentSyncJob(body: ContactSyncJobDescription.() -> Unit) {
+    override fun withCurrentSyncJob(body: AddressBookSyncJobDescription.() -> Unit) {
         val queuedJob = this.queuedSync
         val job = if (queuedJob != null)
             queuedJob
         else {
-            val desc = ContactSyncJobDescription()
+            val desc = AddressBookSyncJobDescription()
             this.queuedSync = desc
             desc
         }
@@ -94,7 +94,7 @@ class AddressBookOperationManagerImpl(
 
         val queuedJob = this.queuedSync ?: return
 
-        val job = contactSyncJobFactory.create()
+        val job = addressBookSyncJobFactory.create()
 
         log.info("Beginning contact sync job")
 
@@ -103,7 +103,7 @@ class AddressBookOperationManagerImpl(
         currentRunningJob = job
         this.queuedSync = null
 
-        val info = ContactSyncJobInfo(
+        val info = AddressBookSyncJobInfo(
             queuedJob.updateRemote,
             queuedJob.platformContactSync,
             queuedJob.remoteSync,

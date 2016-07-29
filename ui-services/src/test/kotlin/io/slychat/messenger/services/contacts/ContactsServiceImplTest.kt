@@ -344,7 +344,7 @@ class ContactsServiceImplTest {
     fun testSyncEvent(isRunning: Boolean) {
         val contactsService = createService()
 
-        val info = ContactSyncJobInfo(false, false, true, isRunning)
+        val info = AddressBookSyncJobInfo(false, false, true, isRunning)
 
         val testSubscriber = contactEventCollectorFor<ContactEvent.Sync>(contactsService)
 

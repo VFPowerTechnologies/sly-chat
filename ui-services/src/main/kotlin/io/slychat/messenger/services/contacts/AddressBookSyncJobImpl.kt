@@ -15,7 +15,7 @@ import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import java.util.*
 
-class ContactSyncJobImpl(
+class AddressBookSyncJobImpl(
     private val authTokenManager: AuthTokenManager,
     private val contactClient: ContactAsyncClient,
     private val addressBookClient: AddressBookAsyncClient,
@@ -24,7 +24,7 @@ class ContactSyncJobImpl(
     private val userLoginData: UserData,
     private val accountInfoPersistenceManager: AccountInfoPersistenceManager,
     private val platformContacts: PlatformContacts
-) : ContactSyncJob {
+) : AddressBookSyncJob {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private fun getDefaultRegionCode(): Promise<String, Exception> {
@@ -147,19 +147,6 @@ class ContactSyncJobImpl(
         }
     }
 
-    private fun getAddressBookUpdates(): Promise<List<AddressBookUpdate>, Exception> {
-        return contactsPersistenceManager.getRemoteUpdates() bind { contactUpdates ->
-            groupPersistenceManager.getRemoteUpdates() map { groupUpdates ->
-                val allUpdates = ArrayList<AddressBookUpdate>()
-
-                allUpdates.addAll(contactUpdates)
-                allUpdates.addAll(groupUpdates)
-
-                allUpdates
-            }
-        }
-    }
-
     private fun processAddressBookUpdates(
         userCredentials: UserCredentials,
         contactUpdates: Collection<AddressBookUpdate.Contact>,
@@ -200,7 +187,7 @@ class ContactSyncJobImpl(
         }
     }
 
-    override fun run(jobDescription: ContactSyncJobDescription): Promise<Unit, Exception> {
+    override fun run(jobDescription: AddressBookSyncJobDescription): Promise<Unit, Exception> {
         val jobRunners = ArrayList<(Unit) -> Promise<Unit, Exception>>()
 
         if (jobDescription.platformContactSync)

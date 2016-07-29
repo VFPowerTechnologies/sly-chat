@@ -103,7 +103,7 @@ class ContactsServiceImpl(
         withCurrentJob { doPlatformContactSync() }
     }
 
-    private fun onContactSyncStatusUpdate(info: ContactSyncJobInfo) {
+    private fun onContactSyncStatusUpdate(info: AddressBookSyncJobInfo) {
         //if remote sync is at all enabled, we want the entire process to lock down the contact list
         if (info.remoteSync)
             contactEventsSubject.onNext(ContactEvent.Sync(info.isRunning))
@@ -179,7 +179,7 @@ class ContactsServiceImpl(
     }
 
     /** Used to mark job components for execution. */
-    private fun withCurrentJob(body: ContactSyncJobDescription.() -> Unit) {
+    private fun withCurrentJob(body: AddressBookSyncJobDescription.() -> Unit) {
         addressBookOperationManager.withCurrentSyncJob(body)
     }
 
