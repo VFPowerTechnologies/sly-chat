@@ -89,7 +89,7 @@ class ContactSyncJobImpl(
 
         return authTokenManager.bind { userCredentials ->
             addressBookClient.getContacts(userCredentials) bind { response ->
-                val updates = decryptRemoteContactEntries(keyVault, response.entries)
+                val updates = decryptRemoteAddressBookEntries(keyVault, response.entries)
 
                 val messageLevelByUserId = updates.mapToMap {
                     it.userId to it.allowedMessageLevel

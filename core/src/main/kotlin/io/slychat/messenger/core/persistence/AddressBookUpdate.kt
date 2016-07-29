@@ -1,5 +1,6 @@
 package io.slychat.messenger.core.persistence
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.slychat.messenger.core.UserId
@@ -16,9 +17,13 @@ import io.slychat.messenger.core.UserId
 )
 sealed class AddressBookUpdate {
     class Group(
+        @JsonProperty("groupId")
         val groupId: GroupId,
+        @JsonProperty("name")
         val name: String,
+        @JsonProperty("members")
         val members: Set<UserId>,
+        @JsonProperty("membershipLevel")
         val membershipLevel: GroupMembershipLevel
     ) : AddressBookUpdate() {
         override fun equals(other: Any?): Boolean {
@@ -49,7 +54,9 @@ sealed class AddressBookUpdate {
     }
 
     class Contact(
+        @JsonProperty("userId")
         val userId: UserId,
+        @JsonProperty("allowedMessageLevel")
         val allowedMessageLevel: AllowedMessageLevel
     ) : AddressBookUpdate() {
         override fun equals(other: Any?): Boolean {

@@ -331,7 +331,7 @@ ON
         }
     }
 
-    override fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<RemoteContactUpdate>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<AddressBookUpdate.Contact>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             newContacts.forEach { addContactNoTransaction(connection, it) }
             createRemoteUpdates(connection, newContacts)
@@ -389,17 +389,17 @@ ON
         }
     }
 
-    override fun getRemoteUpdates(): Promise<List<RemoteContactUpdate>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun getRemoteUpdates(): Promise<List<AddressBookUpdate.Contact>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withPrepared("SELECT contact_id, allowed_message_level FROM remote_contact_updates") { stmt ->
             stmt.map {
                 val userId = UserId(stmt.columnLong(0))
                 val type = intToAllowedMessageLevel(stmt.columnInt(1))
-                RemoteContactUpdate(userId, type)
+                AddressBookUpdate.Contact(userId, type)
             }
         }
     }
 
-    override fun removeRemoteUpdates(remoteUpdates: Collection<RemoteContactUpdate>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun removeRemoteUpdates(remoteUpdates: Collection<AddressBookUpdate.Contact>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             connection.withPrepared("DELETE FROM remote_contact_updates WHERE contact_id=?") { stmt ->
                 remoteUpdates.forEach { item ->

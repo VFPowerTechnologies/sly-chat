@@ -130,7 +130,7 @@ class WebApiIntegrationTest {
             val userB = newSiteUser(RegistrationInfo("b@a.com", "B", "000-000-0000"), password)
 
             val update = RemoteContactUpdate(userB.user.id, AllowedMessageLevel.ALL)
-            val contactsA = encryptRemoteContactEntries(userA.keyVault, listOf(update))
+            val contactsA = encryptRemoteAddressBookEntries(userA.keyVault, listOf(update))
             devClient.addContacts(username, contactsA)
 
             val contacts = devClient.getContactList(username)
@@ -670,8 +670,8 @@ class WebApiIntegrationTest {
         val userB = injectNamedSiteUser("b@a.com")
         val userC = injectNamedSiteUser("c@a.com")
 
-        val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(RemoteContactUpdate(userB.user.id, AllowedMessageLevel.ALL)))
-        val bContacts = encryptRemoteContactEntries(userA.keyVault, listOf(RemoteContactUpdate(userC.user.id, AllowedMessageLevel.ALL)))
+        val aContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(RemoteContactUpdate(userB.user.id, AllowedMessageLevel.ALL)))
+        val bContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(RemoteContactUpdate(userC.user.id, AllowedMessageLevel.ALL)))
 
         devClient.addContacts(userA.user.username, aContacts)
         devClient.addContacts(userB.user.username, bContacts)
@@ -691,7 +691,7 @@ class WebApiIntegrationTest {
         val userC = injectNamedSiteUser("c@a.com")
         val userD = injectNamedSiteUser("d@a.com")
 
-        val contactList = encryptRemoteContactEntries(userA.keyVault, listOf(userB, userC, userD).map { RemoteContactUpdate(it.user.id, AllowedMessageLevel.ALL) })
+        val contactList = encryptRemoteAddressBookEntries(userA.keyVault, listOf(userB, userC, userD).map { RemoteContactUpdate(it.user.id, AllowedMessageLevel.ALL) })
 
         devClient.addContacts(userA.user.username, contactList.subList(0, contactList.size))
 
@@ -703,7 +703,7 @@ class WebApiIntegrationTest {
             RemoteContactUpdate(userB.user.id, AllowedMessageLevel.GROUP_ONLY),
             RemoteContactUpdate(userC.user.id, AllowedMessageLevel.BLOCKED)
         )
-        val updated = encryptRemoteContactEntries(userA.keyVault, updates)
+        val updated = encryptRemoteAddressBookEntries(userA.keyVault, updates)
         val request = UpdateAddressBookRequest(updated)
 
         println(updated)
@@ -726,7 +726,7 @@ class WebApiIntegrationTest {
         val userB = injectNamedSiteUser("b@a.com")
 
         val authToken = devClient.createAuthToken(userA.user.username)
-        val aContacts = encryptRemoteContactEntries(userA.keyVault, listOf(RemoteContactUpdate(userB.user.id, AllowedMessageLevel.ALL)))
+        val aContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(RemoteContactUpdate(userB.user.id, AllowedMessageLevel.ALL)))
 
         val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
         val userCredentials = userA.getUserCredentials(authToken)
