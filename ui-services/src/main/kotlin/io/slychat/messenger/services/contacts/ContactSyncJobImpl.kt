@@ -147,23 +147,54 @@ class ContactSyncJobImpl(
         }
     }
 
+    private fun getAddressBookUpdates(): Promise<List<AddressBookUpdate>, Exception> {
+        return contactsPersistenceManager.getRemoteUpdates() bind { contactUpdates ->
+            groupPersistenceManager.getRemoteUpdates() map { groupUpdates ->
+                val allUpdates = ArrayList<AddressBookUpdate>()
+
+                allUpdates.addAll(contactUpdates)
+                allUpdates.addAll(groupUpdates)
+
+                allUpdates
+            }
+        }
+    }
+
+    private fun processAddressBookUpdates(
+        userCredentials: UserCredentials,
+        contactUpdates: Collection<AddressBookUpdate.Contact>,
+        groupUpdates: Collection<AddressBookUpdate.Group>
+    ): Promise<Unit, Exception> {
+        val allUpdates = ArrayList<AddressBookUpdate>()
+
+        allUpdates.addAll(contactUpdates)
+        allUpdates.addAll(groupUpdates)
+
+        return if (allUpdates.isEmpty()) {
+            log.info("No pending updates")
+            Promise.ofSuccess(Unit)
+        }
+        else {
+            log.info("Remote updates: {}", allUpdates)
+
+            val keyVault = userLoginData.keyVault
+
+            val request = updateRequestFromAddressBookUpdates(keyVault, allUpdates)
+            addressBookClient.update(userCredentials, request) bind {
+                contactsPersistenceManager.removeRemoteUpdates(contactUpdates) bind {
+                    groupPersistenceManager.removeRemoteUpdates(groupUpdates.map { it.groupId })
+                }
+            }
+        }
+    }
+
     private fun updateRemoteContactList(): Promise<Unit, Exception> {
         log.info("Beginning remote contact list update")
 
         return authTokenManager.bind { userCredentials ->
-            contactsPersistenceManager.getRemoteUpdates() bind { updates ->
-                if (updates.isEmpty()) {
-                    log.info("No contact updates")
-                    Promise.ofSuccess(Unit)
-                } else {
-                    log.info("Remote update: ", updates)
-
-                    val keyVault = userLoginData.keyVault
-
-                    val request = updateRequestFromRemoteContactUpdates(keyVault, updates)
-                    addressBookClient.update(userCredentials, request) bind {
-                        contactsPersistenceManager.removeRemoteUpdates(updates)
-                    }
+            contactsPersistenceManager.getRemoteUpdates() bind { contactUpdates ->
+                groupPersistenceManager.getRemoteUpdates() bind { groupUpdates ->
+                    processAddressBookUpdates(userCredentials, contactUpdates, groupUpdates)
                 }
             }
         }

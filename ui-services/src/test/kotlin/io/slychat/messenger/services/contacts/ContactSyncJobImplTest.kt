@@ -45,6 +45,7 @@ class ContactSyncJobImplTest {
         whenever(contactsPersistenceManager.findMissing(any())).thenReturn(listOf())
         whenever(contactsPersistenceManager.add(any<Collection<ContactInfo>>())).thenReturn(emptySet())
         whenever(contactsPersistenceManager.getRemoteUpdates()).thenReturn(emptyList())
+        whenever(contactsPersistenceManager.removeRemoteUpdates(any())).thenReturn(Unit)
         whenever(contactsPersistenceManager.applyDiff(any(), any())).thenReturn(Unit)
         whenever(contactsPersistenceManager.exists(anySet())).thenAnswerSuccess {
             val a = it.arguments[0]
@@ -53,11 +54,13 @@ class ContactSyncJobImplTest {
         }
 
         whenever(groupPersistenceManager.applyDiff(any())).thenReturn(Unit)
+        whenever(groupPersistenceManager.getRemoteUpdates()).thenReturn(emptyList())
+        whenever(groupPersistenceManager.removeRemoteUpdates(any())).thenReturn(Unit)
 
         whenever(contactAsyncClient.findLocalContacts(any(), any())).thenReturn(FindLocalContactsResponse(emptyList()))
         whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenReturn(FetchContactInfoByIdResponse(emptyList()))
 
-
+        whenever(addressBookAsyncClient.update(any(), any())).thenReturn(Unit)
         whenever(addressBookAsyncClient.get(any())).thenReturn(GetAddressBookResponse(emptyList()))
     }
 
@@ -227,6 +230,64 @@ class ContactSyncJobImplTest {
         runUpdateRemote()
 
         verify(addressBookAsyncClient, never()).update(any(), any())
+    }
+
+    @Test
+    fun `an update remote sync should send group updates`() {
+        val groupInfo = randomGroupInfo()
+
+        val updates = listOf(
+            AddressBookUpdate.Group(groupInfo.id, groupInfo.name, emptySet(), groupInfo.membershipLevel)
+        )
+
+        whenever(groupPersistenceManager.getRemoteUpdates()).thenReturn(updates)
+
+        runUpdateRemote()
+
+        val request = updateRequestFromAddressBookUpdates(keyVault, updates)
+        verify(addressBookAsyncClient).update(any(), eq(request))
+    }
+
+    @Test
+    fun `an update remote sync should send contact updates`() {
+        val updates = listOf(
+            AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
+        )
+
+        whenever(contactsPersistenceManager.getRemoteUpdates()).thenReturn(updates)
+
+        runUpdateRemote()
+
+        val request = updateRequestFromAddressBookUpdates(keyVault, updates)
+        verify(addressBookAsyncClient).update(any(), eq(request))
+    }
+
+    @Test
+    fun `an update remote sync should delete group updates after a successful update`() {
+        val groupInfo = randomGroupInfo()
+
+        val updates = listOf(
+            AddressBookUpdate.Group(groupInfo.id, groupInfo.name, emptySet(), groupInfo.membershipLevel)
+        )
+
+        whenever(groupPersistenceManager.getRemoteUpdates()).thenReturn(updates)
+
+        runUpdateRemote()
+
+        verify(groupPersistenceManager).removeRemoteUpdates(updates.map { it.groupId })
+    }
+
+    @Test
+    fun `an update remote sync should delete contact updates after a successful update`() {
+        val updates = listOf(
+            AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
+        )
+
+        whenever(contactsPersistenceManager.getRemoteUpdates()).thenReturn(updates)
+
+        runUpdateRemote()
+
+        verify(contactsPersistenceManager).removeRemoteUpdates(updates)
     }
 
     @Test
