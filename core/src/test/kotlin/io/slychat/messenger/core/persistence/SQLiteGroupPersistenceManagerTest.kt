@@ -1107,4 +1107,9 @@ class SQLiteGroupPersistenceManagerTest {
             }
         }
     }
+
+    @Test
+    fun `applyDiff`() {
+
+    }
 }

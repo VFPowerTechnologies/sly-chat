@@ -7,6 +7,7 @@ import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.mapToMap
 import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
+import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.*
@@ -89,7 +90,11 @@ class ContactSyncJobImpl(
 
         return authTokenManager.bind { userCredentials ->
             addressBookClient.getContacts(userCredentials) bind { response ->
-                val updates = decryptRemoteAddressBookEntries(keyVault, response.entries)
+                val allUpdates = decryptRemoteAddressBookEntries(keyVault, response.entries)
+
+                //FIXME
+                @Suppress("UNCHECKED_CAST")
+                val updates = allUpdates.filter { it is AddressBookUpdate.Contact } as List<AddressBookUpdate.Contact>
 
                 val messageLevelByUserId = updates.mapToMap {
                     it.userId to it.allowedMessageLevel
