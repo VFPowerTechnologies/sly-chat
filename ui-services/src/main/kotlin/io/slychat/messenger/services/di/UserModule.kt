@@ -7,8 +7,8 @@ import io.slychat.messenger.core.BuildConfig.ServerUrls
 import io.slychat.messenger.core.crypto.EncryptionSpec
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
-import io.slychat.messenger.core.http.api.contacts.ContactAsyncClientImpl
 import io.slychat.messenger.core.http.api.contacts.AddressBookAsyncClientImpl
+import io.slychat.messenger.core.http.api.contacts.ContactAsyncClientImpl
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClientImpl
 import io.slychat.messenger.core.http.api.prekeys.HttpPreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
@@ -61,6 +61,7 @@ class UserModule(
         authTokenManager: AuthTokenManager,
         serverUrls: BuildConfig.ServerUrls,
         contactsPersistenceManager: ContactsPersistenceManager,
+        groupPersistenceManager: GroupPersistenceManager,
         accountInfoPersistenceManager: AccountInfoPersistenceManager,
         @SlyHttp httpClientFactory: HttpClientFactory,
         userLoginData: UserData,
@@ -75,6 +76,7 @@ class UserModule(
             contactClient,
             contactListClient,
             contactsPersistenceManager,
+            groupPersistenceManager,
             userLoginData,
             accountInfoPersistenceManager,
             platformContacts

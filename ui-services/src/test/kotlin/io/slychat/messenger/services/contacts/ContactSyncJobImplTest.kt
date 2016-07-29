@@ -29,6 +29,7 @@ class ContactSyncJobImplTest {
     val contactAsyncClient: ContactAsyncClient = mock()
     val addressBookAsyncClient: AddressBookAsyncClient = mock()
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
+    val groupPersistenceManager:  GroupPersistenceManager = mock()
     val userLoginData = UserData(SlyAddress(randomUserId(), 1), keyVault)
     val accountInfoPersistenceManager: AccountInfoPersistenceManager = mock()
     val platformContacts: PlatformContacts = mock()
@@ -51,8 +52,11 @@ class ContactSyncJobImplTest {
             (a as Set<UserId>)
         }
 
+        whenever(groupPersistenceManager.applyDiff(any())).thenReturn(Unit)
+
         whenever(contactAsyncClient.findLocalContacts(any(), any())).thenReturn(FindLocalContactsResponse(emptyList()))
         whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenReturn(FetchContactInfoByIdResponse(emptyList()))
+
 
         whenever(addressBookAsyncClient.getContacts(any())).thenReturn(GetAddressBookResponse(emptyList()))
     }
@@ -63,6 +67,7 @@ class ContactSyncJobImplTest {
             contactAsyncClient,
             addressBookAsyncClient,
             contactsPersistenceManager,
+            groupPersistenceManager,
             userLoginData,
             accountInfoPersistenceManager,
             platformContacts
@@ -154,6 +159,67 @@ class ContactSyncJobImplTest {
                 containsOnlyElementsOf(remoteUpdates)
             }
         })
+    }
+
+    @Test
+    fun `a remote sync not should add contacts if none are present`() {
+        val remoteEntries = encryptRemoteAddressBookEntries(keyVault, emptyList())
+
+        whenever(addressBookAsyncClient.getContacts(any())).thenReturn(GetAddressBookResponse(remoteEntries))
+
+        runRemoteSync()
+
+        verify(contactsPersistenceManager, never()).applyDiff(any(), any())
+    }
+
+    @Test
+    fun `a remote sync should add contacts before groups`() {
+        val groupInfo = randomGroupInfo()
+
+        val userId = randomUserId()
+        val apiContacts = listOf(ApiContactInfo(userId, "$userId@a.com", userId.toString(), userId.toString(), userId.toString()))
+        val remoteUpdates = listOf(
+            AddressBookUpdate.Group(groupInfo.id, groupInfo.name, emptySet(), GroupMembershipLevel.JOINED),
+            AddressBookUpdate.Contact(userId, AllowedMessageLevel.ALL)
+        )
+
+        val remoteEntries = encryptRemoteAddressBookEntries(keyVault, remoteUpdates)
+
+        whenever(addressBookAsyncClient.getContacts(any())).thenReturn(GetAddressBookResponse(remoteEntries))
+        whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenReturn(FetchContactInfoByIdResponse(apiContacts))
+
+        runRemoteSync()
+
+        val order = inOrder(contactsPersistenceManager, groupPersistenceManager)
+        order.verify(contactsPersistenceManager).applyDiff(any(), any())
+        order.verify(groupPersistenceManager).applyDiff(any())
+    }
+
+    @Test
+    fun `a remote sync should add missing groups`() {
+        val groupInfo = randomGroupInfo()
+
+        val remoteUpdates = listOf(
+            AddressBookUpdate.Group(groupInfo.id, groupInfo.name, emptySet(), GroupMembershipLevel.JOINED)
+        )
+        val remoteEntries = encryptRemoteAddressBookEntries(keyVault, remoteUpdates)
+
+        whenever(addressBookAsyncClient.getContacts(any())).thenReturn(GetAddressBookResponse(remoteEntries))
+
+        runRemoteSync()
+
+        verify(groupPersistenceManager).applyDiff(remoteUpdates)
+    }
+
+    @Test
+    fun `a remote sync not should add groups if none are present`() {
+        val remoteEntries = encryptRemoteAddressBookEntries(keyVault, emptyList())
+
+        whenever(addressBookAsyncClient.getContacts(any())).thenReturn(GetAddressBookResponse(remoteEntries))
+
+        runRemoteSync()
+
+        verify(groupPersistenceManager, never()).applyDiff(any())
     }
 
     @Test

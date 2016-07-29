@@ -6,10 +6,7 @@ import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.mapToMap
 import io.slychat.messenger.core.mapToSet
-import io.slychat.messenger.core.persistence.AccountInfoPersistenceManager
-import io.slychat.messenger.core.persistence.AddressBookUpdate
-import io.slychat.messenger.core.persistence.AllowedMessageLevel
-import io.slychat.messenger.core.persistence.ContactsPersistenceManager
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Promise
@@ -23,6 +20,7 @@ class ContactSyncJobImpl(
     private val contactClient: ContactAsyncClient,
     private val addressBookClient: AddressBookAsyncClient,
     private val contactsPersistenceManager: ContactsPersistenceManager,
+    private val groupPersistenceManager: GroupPersistenceManager,
     private val userLoginData: UserData,
     private val accountInfoPersistenceManager: AccountInfoPersistenceManager,
     private val platformContacts: PlatformContacts
@@ -80,47 +78,70 @@ class ContactSyncJobImpl(
         }
     }
 
+    private fun updateContacts(userCredentials: UserCredentials, updates: Collection<AddressBookUpdate.Contact>): Promise<Unit, Exception> {
+        if (updates.isEmpty())
+            return Promise.ofSuccess(Unit)
+
+        val messageLevelByUserId = updates.mapToMap {
+            it.userId to it.allowedMessageLevel
+        }
+
+        val all = updates.mapToSet { it.userId }
+
+        return contactsPersistenceManager.exists(all) bind { exists ->
+            val missing = HashSet(all)
+            missing.removeAll(exists)
+
+            log.debug("Already exists: {}", exists)
+            log.debug("Need to fetch remote info for: {}", missing)
+
+            val updateExists = updates.filter { it.userId in exists }
+
+            val p = if (missing.isNotEmpty()) {
+                val request = FetchContactInfoByIdRequest(missing.toList())
+                contactClient.fetchContactInfoById(userCredentials, request) map { response ->
+                    response.contacts.map { it.toCore(messageLevelByUserId[it.id]!!) }
+                }
+            }
+            else
+                Promise.ofSuccess(emptyList())
+
+            p bind { contactsPersistenceManager.applyDiff(it, updateExists) }
+        }
+    }
+
+    private fun updateGroups(updates: Collection<AddressBookUpdate.Group>): Promise<Unit, Exception> {
+        return if (updates.isNotEmpty()) {
+            log.debug("Updating groups: {}", updates.map { it.groupId })
+            groupPersistenceManager.applyDiff(updates)
+        }
+        else
+            Promise.ofSuccess(Unit)
+    }
+
     /** Syncs the local contact list with the remote contact list. */
     private fun syncRemoteContactsList(): Promise<Unit, Exception> {
         log.debug("Beginning remote contact list sync")
 
         val keyVault = userLoginData.keyVault
 
-        val contactsPersistenceManager = contactsPersistenceManager
-
         return authTokenManager.bind { userCredentials ->
             addressBookClient.getContacts(userCredentials) bind { response ->
                 val allUpdates = decryptRemoteAddressBookEntries(keyVault, response.entries)
 
-                //FIXME
-                @Suppress("UNCHECKED_CAST")
-                val updates = allUpdates.filter { it is AddressBookUpdate.Contact } as List<AddressBookUpdate.Contact>
+                val contactUpdates = ArrayList<AddressBookUpdate.Contact>()
+                val groupUpdates = ArrayList<AddressBookUpdate.Group>()
 
-                val messageLevelByUserId = updates.mapToMap {
-                    it.userId to it.allowedMessageLevel
+                allUpdates.forEach {
+                    when (it) {
+                        is AddressBookUpdate.Contact -> contactUpdates.add(it)
+                        is AddressBookUpdate.Group -> groupUpdates.add(it)
+                    }
                 }
 
-                val all = updates.mapToSet { it.userId }
-
-                contactsPersistenceManager.exists(all) bind { exists ->
-                    val missing = HashSet(all)
-                    missing.removeAll(exists)
-
-                    log.debug("Already exists: {}", exists)
-                    log.debug("Need to fetch remote info for: {}", missing)
-
-                    val updateExists = updates.filter { it.userId in exists }
-
-                    val p = if (missing.isNotEmpty()) {
-                        val request = FetchContactInfoByIdRequest(missing.toList())
-                        contactClient.fetchContactInfoById(userCredentials, request) map { response ->
-                            response.contacts.map { it.toCore(messageLevelByUserId[it.id]!!) }
-                        }
-                    }
-                    else
-                        Promise.ofSuccess(emptyList())
-
-                    p bind { contactsPersistenceManager.applyDiff(it, updateExists) }
+                //order is important
+                updateContacts(userCredentials, contactUpdates) bind {
+                    updateGroups(groupUpdates)
                 }
             }
         }

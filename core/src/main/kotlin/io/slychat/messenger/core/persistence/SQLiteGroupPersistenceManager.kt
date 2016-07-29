@@ -607,7 +607,7 @@ OFFSET
         }
     }
 
-    override fun applyDiff(newGroups: Collection<GroupInfo>, updated: Collection<AddressBookUpdate.Group>): Promise<Unit, Exception> {
+    override fun applyDiff(updates: Collection<AddressBookUpdate.Group>): Promise<Unit, Exception> {
         TODO()
     }
 

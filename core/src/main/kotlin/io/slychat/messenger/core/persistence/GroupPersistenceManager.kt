@@ -69,7 +69,7 @@ interface GroupPersistenceManager {
     /** Returns all undelivered messages for a given group. */
     fun getUndeliveredMessages(): Promise<Map<GroupId, List<GroupMessageInfo>>, Exception>
 
-    fun applyDiff(newGroups: Collection<GroupInfo>, updated: Collection<AddressBookUpdate.Group>): Promise<Unit, Exception>
+    fun applyDiff(updates: Collection<AddressBookUpdate.Group>): Promise<Unit, Exception>
 
     fun getRemoteUpdates(): Promise<List<AddressBookUpdate.Group>, Exception>
     fun removeRemoteUpdates(remoteUpdates: Collection<GroupId>): Promise<Unit, Exception>
