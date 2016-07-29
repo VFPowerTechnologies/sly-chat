@@ -57,13 +57,15 @@
 <div class="popup-overlay"></div>
 <div id='contactPopup' class="popup popup-contact">
     <div class="view navbar-fixed" data-page>
-        <div class="pages">
+        <div class="pages toolbar-trough">
             <div data-page class="page">
                 <div class="navbar top-navbar">
                     <div class="navbar-inner">
                         <div class="left">
                             <a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a>
                             Address Book
+                        </div>
+                        <div class="right">
                         </div>
                     </div>
                 </div>
@@ -113,11 +115,18 @@
                     '<link rel="stylesheet" href="css/slychat.material.css">'
             );
         }
-        else {
+        else if (Framework7.prototype.device.ios) {
             Dom7('head').append(
                     '<link rel="stylesheet" href="css/framework7.ios.min.css">' +
                     '<link rel="stylesheet" href="css/framework7.ios.colors.min.css">' +
                     '<link rel="stylesheet" href="css/slychat.ios.css">'
+            );
+        }
+        else {
+            Dom7('head').append(
+                    '<link rel="stylesheet" href="css/framework7.material.min.css">' +
+                    '<link rel="stylesheet" href="css/framework7.material.colors.min.css">' +
+                    '<link rel="stylesheet" href="css/slychat.desktop.css">'
             );
         }
     })();

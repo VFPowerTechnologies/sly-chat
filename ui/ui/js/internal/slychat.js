@@ -27,7 +27,7 @@ window.connectionController = new ConnectionController();
 window.groupController = new GroupController();
 window.exceptionController = new ExceptionController();
 
-var isAndroid = Framework7.prototype.device.android === true;
+var isAndroid = Framework7.prototype.device.ios === false;
 var isIos = Framework7.prototype.device.ios === true;
 
 Template7.global = {
@@ -39,7 +39,7 @@ var firstLoad = true;
 
 // Application initialization
 var slychat = new Framework7({
-    material: isAndroid,
+    material: !isIos,
     cache: false,
     swipeBackPage: false,
     tapHold: true,
@@ -50,7 +50,7 @@ var slychat = new Framework7({
     template7Pages: true
 });
 
-if(isAndroid)
+if(!isIos)
     $("body").addClass("theme-deeporange");
 else
     $("body").addClass("theme-orange");
@@ -58,7 +58,7 @@ else
 var $$ = Dom7;
 $.fn.intlTelInput.loadUtils("js/external-lib/utils.js");
 
-if (isAndroid) {
+if (!isIos) {
     // Change class
     $$('.view.navbar-through').removeClass('navbar-through').addClass('navbar-fixed');
     // And move Navbar into Page
