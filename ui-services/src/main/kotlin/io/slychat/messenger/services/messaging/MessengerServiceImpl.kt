@@ -241,7 +241,7 @@ class MessengerServiceImpl(
 
         val messageId = randomUUID()
 
-        return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bind {
+        return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bindUi {
             val messageInfo = MessageInfo.newSent(message, 0).copy(id = messageId)
             val groupMessageInfo = GroupMessageInfo(null, messageInfo)
             groupService.addMessage(groupId, groupMessageInfo)
@@ -269,8 +269,8 @@ class MessengerServiceImpl(
             SenderMessageEntry(metadata, serialized)
         }
 
-        return groupService.join(groupInfo, initialMembers) bind {
-            messageSender.addToQueue(messages) map { groupId }
+        return groupService.join(groupInfo, initialMembers) bindUi {
+            messageSender.addToQueue(messages)
         }
     }
 
@@ -285,19 +285,19 @@ class MessengerServiceImpl(
         val groupId = groupInfo.id
         val invitation = GroupEventMessageWrapper(GroupEventMessage.Invitation(groupId, groupInfo.name, members))
 
-        return sendMessageToMembers(groupId, newMembers, invitation, MessageCategory.OTHER) bind {
+        return sendMessageToMembers(groupId, newMembers, invitation, MessageCategory.OTHER) bindUi {
             groupService.addMembers(groupId, newMembers)
         }
     }
 
     override fun inviteUsersToGroup(groupId: GroupId, newMembers: Set<UserId>): Promise<Unit, Exception> {
-        return groupService.getInfo(groupId) bind { info ->
+        return groupService.getInfo(groupId) bindUi { info ->
             if (info == null)
                 throw IllegalStateException("Attempt to invite users to a non-existent group")
 
             groupService.getMembers(groupId) bindUi { members ->
                 sendJoinToMembers(groupId, members, newMembers) bindUi {
-                    sendInvitationToNewMembers(info, newMembers, members) bind {
+                    sendInvitationToNewMembers(info, newMembers, members) bindUi {
                         groupService.addMembers(groupId, members)
                     }
                 }
@@ -312,13 +312,13 @@ class MessengerServiceImpl(
     }
 
     override fun partGroup(groupId: GroupId): Promise<Boolean, Exception> {
-        return sendPartMessagesTo(groupId) bind {
+        return sendPartMessagesTo(groupId) bindUi {
             groupService.part(groupId)
         }
     }
 
     override fun blockGroup(groupId: GroupId): Promise<Unit, Exception> {
-        return sendPartMessagesTo(groupId) bind {
+        return sendPartMessagesTo(groupId) bindUi {
             groupService.block(groupId)
         }
     }
