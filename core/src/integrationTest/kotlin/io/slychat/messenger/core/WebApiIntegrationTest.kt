@@ -15,9 +15,10 @@ import io.slychat.messenger.core.http.api.registration.RegistrationClient
 import io.slychat.messenger.core.http.api.registration.RegistrationInfo
 import io.slychat.messenger.core.http.api.registration.registrationRequestFromKeyVault
 import io.slychat.messenger.core.http.get
+import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
-import io.slychat.messenger.core.persistence.RemoteContactUpdate
+import io.slychat.messenger.core.persistence.RemoteAddressBookEntry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assume
 import org.junit.Before
@@ -129,14 +130,14 @@ class WebApiIntegrationTest {
             //contacts list
             val userB = newSiteUser(RegistrationInfo("b@a.com", "B", "000-000-0000"), password)
 
-            val update = RemoteContactUpdate(userB.user.id, AllowedMessageLevel.ALL)
+            val update = AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)
             val contactsA = encryptRemoteAddressBookEntries(userA.keyVault, listOf(update))
-            devClient.addContacts(username, contactsA)
+            devClient.addAddressBookEntries(username, contactsA)
 
-            val contacts = devClient.getContactList(username)
+            val contacts = devClient.getAddressBook(username)
 
             if (contacts != contactsA)
-                throw DevServerInsaneException("Contacts functionality failed")
+                throw DevServerInsaneException("Address book functionality failed")
 
             //devices
             val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
@@ -657,7 +658,7 @@ class WebApiIntegrationTest {
         assertEquals(contactDetails, receivedContactInfo.toCore(AllowedMessageLevel.ALL))
     }
 
-    fun assertContactListEquals(expected: List<RemoteContactEntry>, actual: List<RemoteContactEntry>, message: String? = null) {
+    fun assertAddressBookEquals(expected: List<RemoteAddressBookEntry>, actual: List<RemoteAddressBookEntry>, message: String? = null) {
         assertThat(actual).apply {
             `as`("Contact list should match")
             containsOnlyElementsOf(expected)
@@ -670,18 +671,18 @@ class WebApiIntegrationTest {
         val userB = injectNamedSiteUser("b@a.com")
         val userC = injectNamedSiteUser("c@a.com")
 
-        val aContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(RemoteContactUpdate(userB.user.id, AllowedMessageLevel.ALL)))
-        val bContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(RemoteContactUpdate(userC.user.id, AllowedMessageLevel.ALL)))
+        val aContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)))
+        val bContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(AddressBookUpdate.Contact(userC.user.id, AllowedMessageLevel.ALL)))
 
-        devClient.addContacts(userA.user.username, aContacts)
-        devClient.addContacts(userB.user.username, bContacts)
+        devClient.addAddressBookEntries(userA.user.username, aContacts)
+        devClient.addAddressBookEntries(userB.user.username, bContacts)
 
         val client = AddressBookClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
 
         val authToken = devClient.createAuthToken(userA.user.username)
         val response = client.get(userA.getUserCredentials(authToken))
 
-        assertContactListEquals(aContacts, response.entries)
+        assertAddressBookEquals(aContacts, response.entries)
     }
 
     @Test
@@ -691,17 +692,17 @@ class WebApiIntegrationTest {
         val userC = injectNamedSiteUser("c@a.com")
         val userD = injectNamedSiteUser("d@a.com")
 
-        val contactList = encryptRemoteAddressBookEntries(userA.keyVault, listOf(userB, userC, userD).map { RemoteContactUpdate(it.user.id, AllowedMessageLevel.ALL) })
+        val contactList = encryptRemoteAddressBookEntries(userA.keyVault, listOf(userB, userC, userD).map { AddressBookUpdate.Contact(it.user.id, AllowedMessageLevel.ALL) })
 
-        devClient.addContacts(userA.user.username, contactList.subList(0, contactList.size))
+        devClient.addAddressBookEntries(userA.user.username, contactList.subList(0, contactList.size))
 
         val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
 
         val authToken = devClient.createAuthToken(userA.user.username)
 
         val updates = listOf(
-            RemoteContactUpdate(userB.user.id, AllowedMessageLevel.GROUP_ONLY),
-            RemoteContactUpdate(userC.user.id, AllowedMessageLevel.BLOCKED)
+            AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.GROUP_ONLY),
+            AddressBookUpdate.Contact(userC.user.id, AllowedMessageLevel.BLOCKED)
         )
         val updated = encryptRemoteAddressBookEntries(userA.keyVault, updates)
         val request = UpdateAddressBookRequest(updated)
@@ -709,7 +710,7 @@ class WebApiIntegrationTest {
         println(updated)
         client.update(userA.getUserCredentials(authToken), request)
 
-        val contacts = devClient.getContactList(userA.user.username)
+        val addressBook = devClient.getAddressBook(userA.user.username)
 
         val expected = listOf(
             updated[0],
@@ -717,7 +718,7 @@ class WebApiIntegrationTest {
             contactList[2]
         )
 
-        assertContactListEquals(expected, contacts, "Local and remote contact lists don't match")
+        assertAddressBookEquals(expected, addressBook, "Local and remote address books don't match")
     }
 
     @Test
@@ -726,15 +727,15 @@ class WebApiIntegrationTest {
         val userB = injectNamedSiteUser("b@a.com")
 
         val authToken = devClient.createAuthToken(userA.user.username)
-        val aContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(RemoteContactUpdate(userB.user.id, AllowedMessageLevel.ALL)))
+        val aContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)))
 
         val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
         val userCredentials = userA.getUserCredentials(authToken)
         client.update(userCredentials, UpdateAddressBookRequest(aContacts))
 
-        val contacts = devClient.getContactList(userA.user.username)
+        val contacts = devClient.getAddressBook(userA.user.username)
 
-        assertContactListEquals(aContacts, contacts)
+        assertAddressBookEquals(aContacts, contacts)
     }
 
     @Test
@@ -863,7 +864,7 @@ class WebApiIntegrationTest {
         val newEmail = "b@b.com"
 
         val request = UpdateEmailRequest(newEmail)
-        val response = client.updateEmail(userA.getUserCredentials(authToken), request);
+        val response = client.updateEmail(userA.getUserCredentials(authToken), request)
 
         assertFalse(response.isSuccess);
     }
