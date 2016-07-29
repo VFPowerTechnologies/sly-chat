@@ -181,7 +181,7 @@ class ContactSyncJobImpl(
 
             val request = updateRequestFromAddressBookUpdates(keyVault, allUpdates)
             addressBookClient.update(userCredentials, request) bind {
-                contactsPersistenceManager.removeRemoteUpdates(contactUpdates) bind {
+                contactsPersistenceManager.removeRemoteUpdates(contactUpdates.map { it.userId }) bind {
                     groupPersistenceManager.removeRemoteUpdates(groupUpdates.map { it.groupId })
                 }
             }

@@ -106,7 +106,7 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     fun clearRemoteUpdates() {
-        contactsPersistenceManager.removeRemoteUpdates(contactsPersistenceManager.getRemoteUpdates().get()).get()
+        contactsPersistenceManager.removeRemoteUpdates(contactsPersistenceManager.getRemoteUpdates().get().map { it.userId }).get()
     }
 
     fun assertConversationInfoExists(userId: UserId) {
@@ -580,7 +580,7 @@ class SQLiteContactsPersistenceManagerTest {
         val toRemove = pendingUpdates.subList(0, 1)
         val remaining = pendingUpdates.subList(1, 2)
 
-        contactsPersistenceManager.removeRemoteUpdates(toRemove).get()
+        contactsPersistenceManager.removeRemoteUpdates(toRemove.map { it.userId }).get()
 
         val got = contactsPersistenceManager.getRemoteUpdates().get()
 

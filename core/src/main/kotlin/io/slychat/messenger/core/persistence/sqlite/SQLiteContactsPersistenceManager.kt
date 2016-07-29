@@ -398,11 +398,11 @@ ON
         }
     }
 
-    override fun removeRemoteUpdates(remoteUpdates: Collection<AddressBookUpdate.Contact>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun removeRemoteUpdates(remoteUpdates: Collection<UserId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             connection.withPrepared("DELETE FROM remote_contact_updates WHERE contact_id=?") { stmt ->
                 remoteUpdates.forEach { item ->
-                    stmt.bind(1, item.userId.long)
+                    stmt.bind(1, item)
                     stmt.step()
                     stmt.reset()
                 }

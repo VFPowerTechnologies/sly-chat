@@ -287,7 +287,7 @@ class ContactSyncJobImplTest {
 
         runUpdateRemote()
 
-        verify(contactsPersistenceManager).removeRemoteUpdates(updates)
+        verify(contactsPersistenceManager).removeRemoteUpdates(updates.map { it.userId })
     }
 
     @Test
