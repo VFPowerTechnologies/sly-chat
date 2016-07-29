@@ -849,14 +849,14 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `applyDiff should create remote updates for new contacts`() {
+    fun `applyDiff should not create remote updates for new contacts`() {
         val newContacts = randomContactInfoList()
 
         contactsPersistenceManager.applyDiff(newContacts, emptyList()).get()
 
         assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
-            `as`("Remote updates should be created for new users")
-            containsOnlyElementsOf(newContacts.map { AddressBookUpdate.Contact(it.id, it.allowedMessageLevel) })
+            `as`("Remote updates should not be created for new users")
+            isEmpty()
         }
     }
 

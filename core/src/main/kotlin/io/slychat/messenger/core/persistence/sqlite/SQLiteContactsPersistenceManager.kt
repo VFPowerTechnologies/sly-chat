@@ -334,7 +334,6 @@ ON
     override fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<AddressBookUpdate.Contact>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             newContacts.forEach { addContactNoTransaction(connection, it) }
-            createRemoteUpdates(connection, newContacts)
             updated.forEach {
                 updateContactMessageLevel(connection, it.userId, it.allowedMessageLevel)
             }
