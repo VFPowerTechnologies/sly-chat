@@ -167,7 +167,9 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     font-size: 10px;
     overflow: hidden;
 }
-
+#contactPopup .floating-button {
+    top: 5px;
+}
 
 /** Chat Page **/
 #chat-content li {
