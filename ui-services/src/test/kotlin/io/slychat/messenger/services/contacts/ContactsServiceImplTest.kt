@@ -45,6 +45,15 @@ class ContactsServiceImplTest {
         )
     }
 
+    fun assertOperationManagerUsed() {
+        assertTrue(addressBookOperationManager.runOperationCallCount == 1, "Didn't go through AddressBookOperationManager")
+    }
+
+    fun assertOperationManagerCalledForSync() {
+        assertEquals(1, addressBookOperationManager.withCurrentJobCallCount, "AddressBookOperationManager not called for sync")
+
+    }
+
     inline fun <reified T : ContactEvent> contactEventCollectorFor(contactsService: ContactsServiceImpl): TestSubscriber<T> {
         return contactsService.contactEvents.subclassFilterTestSubscriber()
     }
@@ -59,7 +68,7 @@ class ContactsServiceImplTest {
 
         assertTrue(contactsService.addContact(contactInfo).get(), "Contact not seen as added")
 
-        assertEquals(1, addressBookOperationManager.runOperationCallCount, "Didn't go through AddressBookOperationManager")
+        assertOperationManagerUsed()
     }
 
     @Test
@@ -74,7 +83,7 @@ class ContactsServiceImplTest {
 
         assertTrue(contactsService.removeContact(contactInfo).get(), "Contact not seen as removed")
 
-        assertEquals(1, addressBookOperationManager.runOperationCallCount, "Didn't go through AddressBookOperationManager")
+        assertOperationManagerUsed()
     }
 
     @Test
@@ -90,7 +99,7 @@ class ContactsServiceImplTest {
         //should return
         contactsService.updateContact(contactInfo).get()
 
-        assertEquals(1, addressBookOperationManager.runOperationCallCount, "Didn't go through AddressBookOperationManager")
+        assertOperationManagerUsed()
     }
 
     @Test
@@ -149,7 +158,7 @@ class ContactsServiceImplTest {
 
         contactsService.doLocalSync()
 
-        assertEquals(1, addressBookOperationManager.withCurrentJobCallCount, "AddressBookOperationManager not called")
+        assertOperationManagerCalledForSync()
     }
 
     @Test
@@ -158,7 +167,7 @@ class ContactsServiceImplTest {
 
         contactsService.doRemoteSync()
 
-        assertEquals(1, addressBookOperationManager.withCurrentJobCallCount, "AddressBookOperationManager not called")
+        assertOperationManagerCalledForSync()
     }
 
     fun testAddMissingContacts(
@@ -299,7 +308,7 @@ class ContactsServiceImplTest {
             false
         )
 
-        assertEquals(1, addressBookOperationManager.runOperationCallCount, "Didn't go through AddressBookOperationManager")
+        assertOperationManagerUsed()
     }
 
     @Test
@@ -329,7 +338,7 @@ class ContactsServiceImplTest {
             true
         )
 
-        assertEquals(1, addressBookOperationManager.withCurrentJobCallCount, "Sync was run")
+        assertOperationManagerCalledForSync()
     }
 
     fun testSyncEvent(isRunning: Boolean) {
