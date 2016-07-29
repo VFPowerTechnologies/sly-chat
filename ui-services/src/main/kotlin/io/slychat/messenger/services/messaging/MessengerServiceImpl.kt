@@ -270,7 +270,7 @@ class MessengerServiceImpl(
         }
 
         return groupService.join(groupInfo, initialMembers) bindUi {
-            messageSender.addToQueue(messages)
+            messageSender.addToQueue(messages) map { groupId }
         }
     }
 
