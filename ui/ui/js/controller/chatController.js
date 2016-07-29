@@ -1,5 +1,4 @@
 var ChatController = function () {
-    this.chatCache = [];
     this.lastMessage = null;
 };
 
@@ -12,7 +11,6 @@ ChatController.prototype = {
     fetchMessageFor : function (start, count, contact) {
         messengerService.getLastMessagesFor(contact, start, count).then(function (messages) {
             var organizedMessages = this.organizeMessages(messages);
-            this.storeCachedConversation(organizedMessages, contact);
             this.displayMessage(organizedMessages, contact);
 
         }.bind(this)).catch(function (e) {
@@ -35,7 +33,6 @@ ChatController.prototype = {
         }
         else {
             messengerService.sendMessageTo(contact, message).then(function (messageDetails) {
-                this.pushNewMessageInCache(contact.id, messageDetails);
                 $("#chat-content").append(this.createMessageNode(messageDetails, profileController.name));
 
                 var input = $("#newMessageInput");
@@ -163,12 +160,6 @@ ChatController.prototype = {
         return messageNode;
     },
 
-    storeCachedConversation : function (messages, contact) {
-        if(Object.size(this.chatCache) <= 5) {
-            this.chatCache[contact.id] = messages;
-        }
-    },
-
     organizeMessages : function (messages) {
         messages.reverse();
 
@@ -191,16 +182,6 @@ ChatController.prototype = {
         return organizedMessages;
     },
 
-    pushNewMessageInCache : function (contactId, message) {
-        if(contactId in this.chatCache)
-            this.chatCache[contactId][message.id] = message;
-    },
-
-    updateMessageCache : function (contactId, message) {
-        if (contactId in this.chatCache && message.id in this.chatCache[contactId])
-            this.chatCache[contactId][message.id] = message;
-    },
-
     scrollTop : function () {
         var offset = $("#chat-content").height();
         $("[data-page='chat'] #chatPageContent").scrollTop(offset);
@@ -209,7 +190,6 @@ ChatController.prototype = {
     addMessageUpdateListener : function () {
         messengerService.addMessageStatusUpdateListener(function (messageInfo) {
             messageInfo.messages.forEach(function (message) {
-                this.updateMessageCache(messageInfo.contact, message);
                 var messageBlock = $("#message_" + message.id);
                 if(messageBlock.length && message.sent == true){
                     var time = new Date(message.timestamp).toISOString();
@@ -241,10 +221,6 @@ ChatController.prototype = {
         var contactName = cachedContact.name;
 
         if (messageInfo.groupId === null) {
-            messages.forEach(function (message) {
-                this.pushNewMessageInCache(contactId, message);
-            }.bind(this));
-
             contactController.updateRecentChatNode(cachedContact, messageInfo);
             this.updateChatPageNewMessage(messages, contactName, contactId);
         }
