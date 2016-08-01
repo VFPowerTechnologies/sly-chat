@@ -12,24 +12,22 @@ import java.util.*
 class SQLiteGroupPersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
 ) : GroupPersistenceManager {
-    private fun groupMembershipLevelToInt(membershipLevel: GroupMembershipLevel): Int =
-        when (membershipLevel) {
-            GroupMembershipLevel.BLOCKED -> 0
-            GroupMembershipLevel.PARTED -> 1
-            GroupMembershipLevel.JOINED -> 2
-        }
+    private fun GroupMembershipLevel.toInt(): Int = when (this) {
+        GroupMembershipLevel.BLOCKED -> 0
+        GroupMembershipLevel.PARTED -> 1
+        GroupMembershipLevel.JOINED -> 2
+    }
 
-    private fun intToGroupMembershipLevel(i: Int): GroupMembershipLevel =
-        when (i) {
-            0 -> GroupMembershipLevel.BLOCKED
-            1 -> GroupMembershipLevel.PARTED
-            2 -> GroupMembershipLevel.JOINED
-            else -> throw IllegalArgumentException("Invalid integer value for MembershipLevel: $i")
-        }
+    private fun Int.toGroupMembershipLevel(): GroupMembershipLevel = when (this) {
+        0 -> GroupMembershipLevel.BLOCKED
+        1 -> GroupMembershipLevel.PARTED
+        2 -> GroupMembershipLevel.JOINED
+        else -> throw IllegalArgumentException("Invalid integer value for MembershipLevel: $this")
+    }
 
     override fun getList(): Promise<List<GroupInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withPrepared("SELECT id, name, membership_level FROM groups WHERE membership_level=?") { stmt ->
-            stmt.bind(1, groupMembershipLevelToInt(GroupMembershipLevel.JOINED))
+            stmt.bind(1, GroupMembershipLevel.JOINED.toInt())
             stmt.map { rowToGroupInfo(stmt) }
         }
     }
@@ -87,7 +85,7 @@ WHERE
     g.membership_level=?
 """
         connection.withPrepared(sql) { stmt ->
-            stmt.bind(1, groupMembershipLevelToInt(GroupMembershipLevel.JOINED))
+            stmt.bind(1, GroupMembershipLevel.JOINED.toInt())
             stmt.map {
                 val groupInfo = rowToGroupInfo(stmt, 4)
                 val convoInfo = rowToGroupConversationInfo(it, groupInfo.id)
@@ -228,7 +226,7 @@ VALUES
         connection.withPrepared("INSERT OR REPLACE INTO groups (id, name, membership_level) VALUES (?, ?, ?)") { stmt ->
             stmt.bind(1, groupInfo.id)
             stmt.bind(2, groupInfo.name)
-            stmt.bind(3, groupMembershipLevelToInt(groupInfo.membershipLevel))
+            stmt.bind(3, groupInfo.membershipLevel.toInt())
             stmt.step()
         }
     }
@@ -266,7 +264,7 @@ VALUES
         return GroupInfo(
             GroupId(stmt.columnString(startIndex)),
             stmt.columnString(startIndex+1),
-            intToGroupMembershipLevel(stmt.columnInt(startIndex+2))
+            stmt.columnInt(startIndex+2).toGroupMembershipLevel()
         )
     }
 
@@ -298,7 +296,7 @@ VALUES
 
     private fun updateMembershipLevel(connection: SQLiteConnection, groupId: GroupId, membershipLevel: GroupMembershipLevel) {
         connection.withPrepared("UPDATE groups set membership_level=? WHERE id=?") { stmt ->
-            stmt.bind(1, groupMembershipLevelToInt(membershipLevel))
+            stmt.bind(1, membershipLevel.toInt())
             stmt.bind(2, groupId)
             stmt.step()
         }
@@ -405,7 +403,7 @@ VALUES
 
     override fun getBlockList(): Promise<Set<GroupId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withPrepared("SELECT id FROM groups WHERE membership_level=?") { stmt ->
-            stmt.bind(1, groupMembershipLevelToInt(GroupMembershipLevel.BLOCKED))
+            stmt.bind(1, GroupMembershipLevel.BLOCKED.toInt())
 
             stmt.mapToSet { GroupId(it.columnString(0)) }
         }

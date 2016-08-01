@@ -13,17 +13,17 @@ import java.util.*
 class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQLitePersistenceManager) : ContactsPersistenceManager {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private fun allowedMessageLevelToInt(allowedMessageLevel: AllowedMessageLevel): Int = when (allowedMessageLevel) {
+    private fun AllowedMessageLevel.toInt(): Int = when (this) {
         AllowedMessageLevel.BLOCKED -> 0
         AllowedMessageLevel.GROUP_ONLY -> 1
         AllowedMessageLevel.ALL -> 2
     }
 
-    private fun intToAllowedMessageLevel(v: Int): AllowedMessageLevel = when (v) {
+    private fun Int.toAllowedMessageLevel(): AllowedMessageLevel = when (this) {
         0 -> AllowedMessageLevel.BLOCKED
         1 -> AllowedMessageLevel.GROUP_ONLY
         2 -> AllowedMessageLevel.ALL
-        else -> throw IllegalArgumentException("Invalid integer value for AllowedMessageLevel: $v")
+        else -> throw IllegalArgumentException("Invalid integer value for AllowedMessageLevel: $this")
     }
 
     private fun contactInfoFromRow(stmt: SQLiteStatement) =
@@ -31,7 +31,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
             UserId(stmt.columnLong(0)),
             stmt.columnString(1),
             stmt.columnString(2),
-            intToAllowedMessageLevel(stmt.columnInt(3)),
+            stmt.columnInt(3).toAllowedMessageLevel(),
             stmt.columnString(4),
             stmt.columnString(5)
         )
@@ -40,7 +40,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         stmt.bind(1, contactInfo.id.long)
         stmt.bind(2, contactInfo.email)
         stmt.bind(3, contactInfo.name)
-        stmt.bind(4, allowedMessageLevelToInt(contactInfo.allowedMessageLevel))
+        stmt.bind(4, contactInfo.allowedMessageLevel.toInt())
         stmt.bind(5, contactInfo.phoneNumber)
         stmt.bind(6, contactInfo.publicKey)
     }
@@ -95,7 +95,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     }
 
     override fun getBlockList(): Promise<Set<UserId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val allowedMessageLevel = allowedMessageLevelToInt(AllowedMessageLevel.BLOCKED)
+        val allowedMessageLevel = AllowedMessageLevel.BLOCKED.toInt()
         connection.withPrepared("SELECT id FROM contacts WHERE allowed_message_level=$allowedMessageLevel") { stmt ->
             stmt.mapToSet { UserId(stmt.columnLong(0)) }
         }
@@ -103,7 +103,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
     override fun filterBlocked(users: Collection<UserId>): Promise<Set<UserId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val ids = users.map { it.long }.joinToString(",")
-        val allowedMessageLevel = allowedMessageLevelToInt(AllowedMessageLevel.BLOCKED)
+        val allowedMessageLevel = AllowedMessageLevel.BLOCKED.toInt()
         val blocked = connection.withPrepared("SELECT id FROM contacts WHERE allowed_message_level == $allowedMessageLevel AND id IN ($ids)") { stmt ->
             stmt.mapToSet { UserId(stmt.columnLong(0)) }
         }
@@ -211,7 +211,7 @@ ON
 
     private fun removeContactNoTransaction(connection: SQLiteConnection, userId: UserId): Boolean {
         connection.prepare("UPDATE contacts set allowed_message_level=? WHERE id=?").use { stmt ->
-            stmt.bind(1, allowedMessageLevelToInt(AllowedMessageLevel.GROUP_ONLY))
+            stmt.bind(1, AllowedMessageLevel.GROUP_ONLY.toInt())
             stmt.bind(2, userId)
 
             stmt.step()
@@ -417,7 +417,7 @@ ON
         connection.withPrepared(sql) { stmt ->
             stmt.map {
                 val userId = UserId(stmt.columnLong(0))
-                val type = intToAllowedMessageLevel(stmt.columnInt(1))
+                val type = stmt.columnInt(1).toAllowedMessageLevel()
                 AddressBookUpdate.Contact(userId, type)
             }
         }
@@ -464,7 +464,7 @@ ON
 
     private fun updateMessageLevel(connection: SQLiteConnection, user: UserId, newMessageLevel: AllowedMessageLevel): Boolean {
         connection.withPrepared("UPDATE contacts SET allowed_message_level=? WHERE id=?") { stmt ->
-            stmt.bind(1, allowedMessageLevelToInt(newMessageLevel))
+            stmt.bind(1, newMessageLevel.toInt())
             stmt.bind(2, user.long)
             stmt.step()
         }
