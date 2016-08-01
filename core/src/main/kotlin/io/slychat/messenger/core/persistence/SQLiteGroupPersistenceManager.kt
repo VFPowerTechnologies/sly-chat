@@ -344,30 +344,34 @@ VALUES
         TODO()
     }
 
-    override fun block(groupId: GroupId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun block(groupId: GroupId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val groupInfo = queryGroupInfoOrThrow(connection, groupId)
 
         if (groupInfo.membershipLevel == GroupMembershipLevel.BLOCKED)
-            return@runQuery
+            false
+        else {
+            connection.withTransaction {
+                clearMemberList(connection, groupId)
+                updateMembershipLevel(connection, groupId, GroupMembershipLevel.BLOCKED)
+                deleteGroupConversationInfo(connection, groupId)
+                GroupConversationTable.delete(connection, groupId)
+                insertOrReplaceRemoteUpdate(connection, groupId)
+            }
 
-        connection.withTransaction {
-            clearMemberList(connection, groupId)
-            updateMembershipLevel(connection, groupId, GroupMembershipLevel.BLOCKED)
-            deleteGroupConversationInfo(connection, groupId)
-            GroupConversationTable.delete(connection, groupId)
-            insertOrReplaceRemoteUpdate(connection, groupId)
+            true
         }
     }
 
-    override fun unblock(groupId: GroupId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun unblock(groupId: GroupId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val groupInfo = queryGroupInfoOrThrow(connection, groupId)
 
         when (groupInfo.membershipLevel) {
-            GroupMembershipLevel.JOINED -> {}
-            GroupMembershipLevel.PARTED -> {}
+            GroupMembershipLevel.JOINED -> false
+            GroupMembershipLevel.PARTED -> false
             GroupMembershipLevel.BLOCKED -> {
                 updateMembershipLevel(connection, groupId, GroupMembershipLevel.PARTED)
                 insertOrReplaceRemoteUpdate(connection, groupId)
+                true
             }
         }
     }

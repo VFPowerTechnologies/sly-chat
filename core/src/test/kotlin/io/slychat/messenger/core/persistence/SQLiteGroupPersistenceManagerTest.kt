@@ -562,7 +562,7 @@ class SQLiteGroupPersistenceManagerTest {
     @Test
     fun `block should set the group membership level to BLOCKED for a parted group`() {
         withPartedGroup {
-            groupPersistenceManager.block(it).get()
+            assertTrue(groupPersistenceManager.block(it).get(), "Should return true when blocking a group")
 
             val newInfo = assertNotNull(groupPersistenceManager.getInfo(it).get())
 
@@ -573,7 +573,7 @@ class SQLiteGroupPersistenceManagerTest {
     @Test
     fun `block should do nothing for an already blocked group`() {
         withBlockedGroup {
-            groupPersistenceManager.block(it).get()
+            assertFalse(groupPersistenceManager.block(it).get(), "Should return false for an already blocked group")
         }
     }
 
@@ -605,8 +605,13 @@ class SQLiteGroupPersistenceManagerTest {
         }
     }
 
-    fun testUnblock(groupId: GroupId, expectedMembershipLevel: GroupMembershipLevel, errorMessage: String) {
-        groupPersistenceManager.unblock(groupId).get()
+    fun testUnblock(groupId: GroupId, expectedWasUnblocked: Boolean, expectedMembershipLevel: GroupMembershipLevel, errorMessage: String) {
+        val wasUnblocked = groupPersistenceManager.unblock(groupId).get()
+
+        if (expectedWasUnblocked)
+            assertTrue(wasUnblocked, "Should return true when unblocking a group")
+        else
+            assertFalse(wasUnblocked, "Should return false when a group is already unblocked")
 
         val newInfo = assertNotNull(groupPersistenceManager.getInfo(groupId).get(), "Missing group")
 
@@ -615,17 +620,17 @@ class SQLiteGroupPersistenceManagerTest {
 
     @Test
     fun `unblock should set the group membership level to PARTED for a blocked group`() {
-        withBlockedGroup { testUnblock(it, GroupMembershipLevel.PARTED, "Membership should be PARTED") }
+        withBlockedGroup { testUnblock(it, true, GroupMembershipLevel.PARTED, "Membership should be PARTED") }
     }
 
     @Test
     fun `unblock should do nothing for a joined group`() {
-        withJoinedGroup { groupId, members -> testUnblock(groupId, GroupMembershipLevel.JOINED, "Membership was modified") }
+        withJoinedGroup { groupId, members -> testUnblock(groupId, false, GroupMembershipLevel.JOINED, "Membership was modified") }
     }
 
     @Test
     fun `unblock should do nothing for a parted group`() {
-        withPartedGroup { testUnblock(it, GroupMembershipLevel.PARTED, "Membership was modified") }
+        withPartedGroup { testUnblock(it, false, GroupMembershipLevel.PARTED, "Membership was modified") }
     }
 
     @Test
