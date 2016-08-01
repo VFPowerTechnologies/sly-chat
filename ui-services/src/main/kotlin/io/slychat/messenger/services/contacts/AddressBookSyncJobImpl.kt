@@ -121,7 +121,7 @@ class AddressBookSyncJobImpl(
 
     /** Syncs the local contact list with the remote contact list. */
     private fun syncRemoteContactsList(): Promise<Unit, Exception> {
-        log.debug("Beginning remote contact list sync")
+        log.debug("Beginning remote address book sync")
 
         val keyVault = userLoginData.keyVault
 
@@ -176,7 +176,7 @@ class AddressBookSyncJobImpl(
     }
 
     private fun updateRemoteContactList(): Promise<Unit, Exception> {
-        log.info("Beginning remote contact list update")
+        log.info("Beginning remote address book update")
 
         return authTokenManager.bind { userCredentials ->
             contactsPersistenceManager.getRemoteUpdates() bind { contactUpdates ->
