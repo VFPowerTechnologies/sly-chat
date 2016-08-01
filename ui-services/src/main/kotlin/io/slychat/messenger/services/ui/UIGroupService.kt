@@ -33,4 +33,6 @@ interface UIGroupService {
     fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception>
 
     fun deleteMessagesFor(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception>
+
+    fun getInfo(groupId: GroupId): Promise<UIGroupInfo?, Exception>
 }

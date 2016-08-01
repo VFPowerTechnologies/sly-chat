@@ -5,6 +5,7 @@ import io.slychat.messenger.core.persistence.GroupConversation
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.mapUi
 import io.slychat.messenger.services.messaging.GroupEvent
 import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.*
@@ -130,5 +131,11 @@ class UIGroupServiceImpl(
 
     override fun deleteMessagesFor(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception> {
         return getGroupServiceOrThrow().deleteMessages(groupId, messageIds)
+    }
+
+    override fun getInfo(groupId: GroupId): Promise<UIGroupInfo?, Exception> {
+        return getGroupServiceOrThrow().getInfo(groupId) mapUi { maybeGroupInfo ->
+            maybeGroupInfo?.let { UIGroupInfo(it.id, it.name) }
+        }
     }
 }

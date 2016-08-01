@@ -683,22 +683,23 @@ OFFSET
     }
 
     private fun applyDiff(connection: SQLiteConnection, update: AddressBookUpdate.Group) {
-        val maybeInfo = queryGroupInfo(connection, update.groupId)
+        val groupId = update.groupId
+        val maybeInfo = queryGroupInfo(connection, groupId)
 
         //new group, create it
         if (maybeInfo == null) {
-            val newGroupInfo = GroupInfo(update.groupId, update.name, update.membershipLevel)
+            val newGroupInfo = GroupInfo(groupId, update.name, update.membershipLevel)
             insertOrReplaceGroupInfo(connection, newGroupInfo)
 
             if (update.membershipLevel == GroupMembershipLevel.JOINED)
-                createConversationData(connection, update.groupId)
+                createConversationData(connection, groupId)
         }
         //existing group, transition
         else
-            doGroupTransition(connection, update.groupId, maybeInfo.membershipLevel, update.membershipLevel)
+            doGroupTransition(connection, groupId, maybeInfo.membershipLevel, update.membershipLevel)
 
         if (update.members.isNotEmpty())
-            setGroupMembersTo(connection, update.groupId, update.members)
+            setGroupMembersTo(connection, groupId, update.members)
     }
 
     override fun applyDiff(updates: Collection<AddressBookUpdate.Group>): Promise<Unit, Exception> {
