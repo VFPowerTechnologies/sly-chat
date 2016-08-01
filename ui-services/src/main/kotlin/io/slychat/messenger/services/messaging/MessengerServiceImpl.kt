@@ -7,6 +7,7 @@ import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
+import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.contacts.ContactEvent
@@ -33,7 +34,7 @@ import java.util.*
 class MessengerServiceImpl(
     private val contactsService: ContactsService,
     private val messagePersistenceManager: MessagePersistenceManager,
-    private val groupPersistenceManager: GroupPersistenceManager,
+    private val groupService: GroupService,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val relayClientManager: RelayClientManager,
     private val messageSender: MessageSender,
@@ -95,7 +96,7 @@ class MessengerServiceImpl(
 
         log.debug("Processing sent group message <<{}/{}>>", groupId, metadata.messageId)
 
-        groupPersistenceManager.markMessageAsDelivered(groupId, metadata.messageId) successUi { messageInfo ->
+        groupService.markMessageAsDelivered(groupId, metadata.messageId) successUi { messageInfo ->
             val bundle = MessageBundle(metadata.userId, groupId, listOf(messageInfo.info))
             messageUpdatesSubject.onNext(bundle)
         } fail { e ->
@@ -215,7 +216,7 @@ class MessengerServiceImpl(
 
     /** Fetches group members for the given group and sends the given message to the MessageSender. */
     private fun sendMessageToGroup(groupId: GroupId, message: SlyMessage, messageCategory: MessageCategory, messageId: String? = null): Promise<Set<UserId>, Exception> {
-        return groupPersistenceManager.getMembers(groupId) bindUi { members ->
+        return groupService.getMembers(groupId) bindUi { members ->
             if (members.isNotEmpty())
                 sendMessageToMembers(groupId, members, message, messageCategory, messageId)
             else
@@ -240,10 +241,10 @@ class MessengerServiceImpl(
 
         val messageId = randomUUID()
 
-        return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bind {
+        return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bindUi {
             val messageInfo = MessageInfo.newSent(message, 0).copy(id = messageId)
             val groupMessageInfo = GroupMessageInfo(null, messageInfo)
-            groupPersistenceManager.addMessage(groupId, groupMessageInfo)
+            groupService.addMessage(groupId, groupMessageInfo)
         }
     }
 
@@ -268,7 +269,7 @@ class MessengerServiceImpl(
             SenderMessageEntry(metadata, serialized)
         }
 
-        return groupPersistenceManager.join(groupInfo, initialMembers) bindUi {
+        return groupService.join(groupInfo, initialMembers) bindUi {
             messageSender.addToQueue(messages) map { groupId }
         }
     }
@@ -284,20 +285,20 @@ class MessengerServiceImpl(
         val groupId = groupInfo.id
         val invitation = GroupEventMessageWrapper(GroupEventMessage.Invitation(groupId, groupInfo.name, members))
 
-        return sendMessageToMembers(groupId, newMembers, invitation, MessageCategory.OTHER) bind {
-            groupPersistenceManager.addMembers(groupId, newMembers) map { Unit }
+        return sendMessageToMembers(groupId, newMembers, invitation, MessageCategory.OTHER) bindUi {
+            groupService.addMembers(groupId, newMembers)
         }
     }
 
     override fun inviteUsersToGroup(groupId: GroupId, newMembers: Set<UserId>): Promise<Unit, Exception> {
-        return groupPersistenceManager.getInfo(groupId) bind { info ->
+        return groupService.getInfo(groupId) bindUi { info ->
             if (info == null)
                 throw IllegalStateException("Attempt to invite users to a non-existent group")
 
-            groupPersistenceManager.getMembers(groupId) bindUi { members ->
+            groupService.getMembers(groupId) bindUi { members ->
                 sendJoinToMembers(groupId, members, newMembers) bindUi {
-                    sendInvitationToNewMembers(info, newMembers, members) bind {
-                        groupPersistenceManager.addMembers(groupId, members) map { Unit }
+                    sendInvitationToNewMembers(info, newMembers, members) bindUi {
+                        groupService.addMembers(groupId, members)
                     }
                 }
             }
@@ -311,14 +312,14 @@ class MessengerServiceImpl(
     }
 
     override fun partGroup(groupId: GroupId): Promise<Boolean, Exception> {
-        return sendPartMessagesTo(groupId) bind {
-            groupPersistenceManager.part(groupId)
+        return sendPartMessagesTo(groupId) bindUi {
+            groupService.part(groupId)
         }
     }
 
     override fun blockGroup(groupId: GroupId): Promise<Unit, Exception> {
-        return sendPartMessagesTo(groupId) bind {
-            groupPersistenceManager.block(groupId)
+        return sendPartMessagesTo(groupId) bindUi {
+            groupService.block(groupId)
         }
     }
 
@@ -343,11 +344,11 @@ class MessengerServiceImpl(
     }
 
     override fun deleteGroupMessages(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception> {
-        return groupPersistenceManager.deleteMessages(groupId, messageIds)
+        return groupService.deleteMessages(groupId, messageIds)
     }
 
     override fun deleteAllGroupMessages(groupId: GroupId): Promise<Unit, Exception> {
-        return groupPersistenceManager.deleteAllMessages(groupId)
+        return groupService.deleteAllMessages(groupId)
     }
 
     /* Other */

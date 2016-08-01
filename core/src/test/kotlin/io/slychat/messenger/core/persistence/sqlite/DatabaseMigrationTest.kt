@@ -302,4 +302,25 @@ class DatabaseMigrationTest {
             containsOnlyElementsOf(expected)
         }
     }
+
+    @Test
+    fun `migration 8 to 9`() {
+        withTestDatabase(8, 9) { persistenceManager, connection ->
+            check8to9(persistenceManager, connection)
+        }
+    }
+
+    private fun check8to9(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertNoColDef(connection, "remote_contact_updates", "allowed_message_level INTEGER NOT NULL")
+        assertTableExists(connection, "remote_group_updates")
+
+        val contactUpdates = connection.withPrepared("SELECT contact_id FROM remote_contact_updates") { stmt ->
+            stmt.mapToSet { it.columnLong(0) }
+        }
+
+        assertThat(contactUpdates).apply {
+            `as`("Should contain the upgraded row")
+            containsOnly(153L)
+        }
+    }
 }

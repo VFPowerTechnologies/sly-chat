@@ -33,8 +33,8 @@ interface GroupPersistenceManager {
     /** Verifies if a given member is part of a joined group. */
     fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception>
 
-    /** Join a new group, or rejoin an existing group. Also used when creating a group yourself. */
-    fun join(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception>
+    /** Join a new group, or rejoin an existing group. Also used when creating a group yourself. Returns true if group was joined, false if group was already joined. */
+    fun join(groupInfo: GroupInfo, members: Set<UserId>): Promise<Boolean, Exception>
 
     /** Part a joined group. If not a member, returns false, otherwise returns true. */
     fun part(groupId: GroupId): Promise<Boolean, Exception>
@@ -43,10 +43,10 @@ interface GroupPersistenceManager {
     fun getBlockList(): Promise<Set<GroupId>, Exception>
 
     /** Block the given group. */
-    fun block(groupId: GroupId): Promise<Unit, Exception>
+    fun block(groupId: GroupId): Promise<Boolean, Exception>
 
     /** Unblock the given group. */
-    fun unblock(groupId: GroupId): Promise<Unit, Exception>
+    fun unblock(groupId: GroupId): Promise<Boolean, Exception>
 
     /** Add a message from a user to the given group. If userId is null, is taken to be from yourself. */
     fun addMessage(groupId: GroupId, groupMessageInfo: GroupMessageInfo): Promise<GroupMessageInfo, Exception>
@@ -68,4 +68,9 @@ interface GroupPersistenceManager {
 
     /** Returns all undelivered messages for a given group. */
     fun getUndeliveredMessages(): Promise<Map<GroupId, List<GroupMessageInfo>>, Exception>
+
+    fun applyDiff(updates: Collection<AddressBookUpdate.Group>): Promise<Unit, Exception>
+
+    fun getRemoteUpdates(): Promise<List<AddressBookUpdate.Group>, Exception>
+    fun removeRemoteUpdates(remoteUpdates: Collection<GroupId>): Promise<Unit, Exception>
 }

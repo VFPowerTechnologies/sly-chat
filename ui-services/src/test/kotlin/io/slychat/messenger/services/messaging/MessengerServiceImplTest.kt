@@ -6,6 +6,7 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
+import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.contacts.ContactEvent
@@ -37,7 +38,7 @@ class MessengerServiceImplTest {
 
     val contactsService: ContactsService = mock()
     val messagePersistenceManager: MessagePersistenceManager = mock()
-    val groupPersistenceManager: GroupPersistenceManager = mock()
+    val groupService: GroupService = mock()
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val relayClientManager: RelayClientManager = mock()
     val messageSender: MessageSender = mock()
@@ -66,18 +67,18 @@ class MessengerServiceImplTest {
         whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
         whenever(messageReceiver.processPackages(any())).thenReturn(Unit)
 
-        whenever(groupPersistenceManager.addMembers(any(), any())).thenAnswerWithArg(1)
-        whenever(groupPersistenceManager.join(any(), any())).thenReturn(Unit)
-        whenever(groupPersistenceManager.part(any())).thenReturn(true)
-        whenever(groupPersistenceManager.block(any())).thenReturn(Unit)
-        whenever(groupPersistenceManager.getMembers(any())).thenReturn(emptySet())
+        whenever(groupService.addMembers(any(), any())).thenReturn(Unit)
+        whenever(groupService.join(any(), any())).thenReturn(Unit)
+        whenever(groupService.part(any())).thenReturn(true)
+        whenever(groupService.block(any())).thenReturn(Unit)
+        whenever(groupService.getMembers(any())).thenReturn(emptySet())
     }
 
     fun createService(): MessengerServiceImpl {
         return MessengerServiceImpl(
             contactsService,
             messagePersistenceManager,
-            groupPersistenceManager,
+            groupService,
             contactsPersistenceManager,
             relayClientManager,
             messageSender,
@@ -298,7 +299,7 @@ class MessengerServiceImplTest {
         val update = randomTextGroupMetadata()
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
 
-        whenever(groupPersistenceManager.markMessageAsDelivered(update.groupId!!, update.messageId))
+        whenever(groupService.markMessageAsDelivered(update.groupId!!, update.messageId))
             .thenReturn(GroupMessageInfo(update.userId, messageInfo))
 
         val testSubscriber = messengerService.messageUpdates.testSubscriber()
@@ -320,7 +321,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(members)
+        whenever(groupService.getMembers(groupId)).thenReturn(members)
 
         messengerService.sendGroupMessageTo(groupId, "msg")
 
@@ -335,12 +336,12 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(emptySet())
+        whenever(groupService.getMembers(groupId)).thenReturn(emptySet())
 
         val message = "msg"
         messengerService.sendGroupMessageTo(groupId, message)
 
-        verify(groupPersistenceManager).addMessage(eq(groupId), capture {
+        verify(groupService).addMessage(eq(groupId), capture {
             assertEquals(message, it.info.message, "Message is invalid")
         })
 
@@ -354,13 +355,13 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(members)
+        whenever(groupService.getMembers(groupId)).thenReturn(members)
 
         val message = "msg"
 
         messengerService.sendGroupMessageTo(groupId, message)
 
-        verify(groupPersistenceManager).addMessage(eq(groupId), capture {
+        verify(groupService).addMessage(eq(groupId), capture {
             assertEquals(message, it.info.message, "Text message doesn't match")
         })
     }
@@ -372,7 +373,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(members)
+        whenever(groupService.getMembers(groupId)).thenReturn(members)
 
         val message = "msg"
 
@@ -383,7 +384,7 @@ class MessengerServiceImplTest {
             sentMessageId = it.first().metadata.messageId
         })
 
-        verify(groupPersistenceManager).addMessage(eq(groupId), capture {
+        verify(groupService).addMessage(eq(groupId), capture {
             assertEquals(sentMessageId!!, it.info.id, "Message IDs don't match")
         })
     }
@@ -420,7 +421,7 @@ class MessengerServiceImplTest {
 
         messengerService.deleteGroupMessages(groupId, ids)
 
-        verify(groupPersistenceManager).deleteMessages(groupId, ids)
+        verify(groupService).deleteMessages(groupId, ids)
     }
 
     @Test
@@ -431,7 +432,7 @@ class MessengerServiceImplTest {
 
         messengerService.deleteAllGroupMessages(groupId)
 
-        verify(groupPersistenceManager).deleteAllMessages(groupId)
+        verify(groupService).deleteAllMessages(groupId)
     }
 
     @Test
@@ -440,11 +441,11 @@ class MessengerServiceImplTest {
 
         val groupId = randomGroupId()
 
-        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(randomUserIds())
+        whenever(groupService.getMembers(groupId)).thenReturn(randomUserIds())
 
         messengerService.partGroup(groupId).get()
 
-        verify(groupPersistenceManager).part(groupId)
+        verify(groupService).part(groupId)
     }
 
     fun assertPartMessagesSent(members: Set<UserId>) {
@@ -464,7 +465,7 @@ class MessengerServiceImplTest {
         val groupId = randomGroupId()
         val members = randomUserIds()
 
-        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(members)
+        whenever(groupService.getMembers(groupId)).thenReturn(members)
 
         messengerService.partGroup(groupId).get()
 
@@ -477,7 +478,7 @@ class MessengerServiceImplTest {
 
         val groupId = randomGroupId()
 
-        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(emptySet())
+        whenever(groupService.getMembers(groupId)).thenReturn(emptySet())
 
         messengerService.partGroup(groupId).get()
 
@@ -492,7 +493,7 @@ class MessengerServiceImplTest {
 
         messengerService.blockGroup(groupId).get()
 
-        verify(groupPersistenceManager).block(groupId)
+        verify(groupService).block(groupId)
     }
 
     @Test
@@ -502,7 +503,7 @@ class MessengerServiceImplTest {
         val groupId = randomGroupId()
         val members = randomUserIds()
 
-        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(members)
+        whenever(groupService.getMembers(groupId)).thenReturn(members)
 
         messengerService.blockGroup(groupId).get()
 
@@ -515,7 +516,7 @@ class MessengerServiceImplTest {
 
         val groupId = randomGroupId()
 
-        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(emptySet())
+        whenever(groupService.getMembers(groupId)).thenReturn(emptySet())
 
         messengerService.blockGroup(groupId).get()
 
@@ -583,8 +584,8 @@ class MessengerServiceImplTest {
         val groupId = groupInfo.id
         val members = if (noMembers) emptySet() else randomUserIds()
 
-        whenever(groupPersistenceManager.getInfo(groupId)).thenReturn(groupInfo)
-        whenever(groupPersistenceManager.getMembers(groupId)).thenReturn(members)
+        whenever(groupService.getInfo(groupId)).thenReturn(groupInfo)
+        whenever(groupService.getMembers(groupId)).thenReturn(members)
 
         body(messengerService, groupInfo, members)
     }
@@ -630,7 +631,7 @@ class MessengerServiceImplTest {
 
             messengerService.inviteUsersToGroup(groupInfo.id, newMembers).get()
 
-            verify(groupPersistenceManager).addMembers(groupInfo.id, newMembers)
+            verify(groupService).addMembers(groupInfo.id, newMembers)
         }
     }
 
@@ -672,7 +673,7 @@ class MessengerServiceImplTest {
 
         messengerService.createNewGroup(groupName, initialMembers).get()
 
-        verify(groupPersistenceManager).join(capture {
+        verify(groupService).join(capture {
             assertEquals(groupName, it.name, "Invalid group name")
             assertEquals(GroupMembershipLevel.JOINED, it.membershipLevel, "Invalid membership level")
         }, eq(initialMembers))
@@ -688,9 +689,9 @@ class MessengerServiceImplTest {
 
         messengerService.createNewGroup(groupName, initialMembers).get()
 
-        val order = inOrder(groupPersistenceManager, messageSender)
+        val order = inOrder(groupService, messageSender)
 
-        order.verify(groupPersistenceManager).join(any(), any())
+        order.verify(groupService).join(any(), any())
         order.verify(messageSender).addToQueue(anyList())
     }
 }

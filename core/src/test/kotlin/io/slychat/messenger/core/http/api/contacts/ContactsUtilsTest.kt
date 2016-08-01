@@ -1,9 +1,13 @@
 package io.slychat.messenger.core.http.api.contacts
 
 import io.slychat.messenger.core.crypto.generateNewKeyVault
+import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
-import io.slychat.messenger.core.persistence.RemoteContactUpdate
+import io.slychat.messenger.core.persistence.GroupMembershipLevel
+import io.slychat.messenger.core.randomGroupId
+import io.slychat.messenger.core.randomGroupName
 import io.slychat.messenger.core.randomUserId
+import io.slychat.messenger.core.randomUserIds
 import org.junit.Test
 import kotlin.test.assertEquals
 
@@ -16,12 +20,13 @@ class ContactsUtilsTest {
     @Test
     fun `decryptRemoteContactEntries should be able to decrypt the output of encryptRemoteContactEntries`() {
         val updates = listOf(
-            RemoteContactUpdate(randomUserId(), AllowedMessageLevel.ALL)
+            AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL),
+            AddressBookUpdate.Group(randomGroupId(), randomGroupName(), randomUserIds(), GroupMembershipLevel.JOINED)
         )
 
-        val encrypted = encryptRemoteContactEntries(keyVault, updates)
+        val encrypted = encryptRemoteAddressBookEntries(keyVault, updates)
 
-        val decrypted = decryptRemoteContactEntries(keyVault, encrypted)
+        val decrypted = decryptRemoteAddressBookEntries(keyVault, encrypted)
 
         assertEquals(updates, decrypted, "Updates don't match")
     }

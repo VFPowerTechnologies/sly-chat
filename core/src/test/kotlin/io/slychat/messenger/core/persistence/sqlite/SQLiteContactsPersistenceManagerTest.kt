@@ -106,7 +106,7 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     fun clearRemoteUpdates() {
-        contactsPersistenceManager.removeRemoteUpdates(contactsPersistenceManager.getRemoteUpdates().get()).get()
+        contactsPersistenceManager.removeRemoteUpdates(contactsPersistenceManager.getRemoteUpdates().get().map { it.userId }).get()
     }
 
     fun assertConversationInfoExists(userId: UserId) {
@@ -129,7 +129,7 @@ class SQLiteContactsPersistenceManagerTest {
         else
             assertFalse(doesConvTableExist, "Conversation table was created")
 
-        val update = RemoteContactUpdate(contact.id, contact.allowedMessageLevel)
+        val update = AddressBookUpdate.Contact(contact.id, contact.allowedMessageLevel)
         assertEquals(listOf(update), contactsPersistenceManager.getRemoteUpdates().get(), "Invalid remote update list")
     }
 
@@ -173,7 +173,7 @@ class SQLiteContactsPersistenceManagerTest {
 
         assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
             `as`("Should create a remote update for an modified user")
-            containsOnly(RemoteContactUpdate(contact.id, AllowedMessageLevel.ALL))
+            containsOnly(AddressBookUpdate.Contact(contact.id, AllowedMessageLevel.ALL))
         }
     }
 
@@ -237,7 +237,7 @@ class SQLiteContactsPersistenceManagerTest {
 
         assertEquals(newContacts.toSet(), added, "Invalid added contacts")
 
-        val expectedUpdates = allContacts.map { RemoteContactUpdate(it.id, it.allowedMessageLevel) }.sortedBy { it.userId.long }
+        val expectedUpdates = allContacts.map { AddressBookUpdate.Contact(it.id, it.allowedMessageLevel) }.sortedBy { it.userId.long }
 
         val updates = contactsPersistenceManager.getRemoteUpdates().get().sortedBy { it.userId.long }
 
@@ -352,7 +352,7 @@ class SQLiteContactsPersistenceManagerTest {
 
         assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
             `as`("Remote updates should contain a GROUP_ONLY entry")
-            containsOnly(RemoteContactUpdate(contact.id, AllowedMessageLevel.GROUP_ONLY))
+            containsOnly(AddressBookUpdate.Contact(contact.id, AllowedMessageLevel.GROUP_ONLY))
         }
     }
 
@@ -580,7 +580,7 @@ class SQLiteContactsPersistenceManagerTest {
         val toRemove = pendingUpdates.subList(0, 1)
         val remaining = pendingUpdates.subList(1, 2)
 
-        contactsPersistenceManager.removeRemoteUpdates(toRemove).get()
+        contactsPersistenceManager.removeRemoteUpdates(toRemove.map { it.userId }).get()
 
         val got = contactsPersistenceManager.getRemoteUpdates().get()
 
@@ -650,7 +650,7 @@ class SQLiteContactsPersistenceManagerTest {
 
         assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
             `as`("Remote updates should contain a BLOCKED entry")
-            containsOnly(RemoteContactUpdate(contact.id, AllowedMessageLevel.BLOCKED))
+            containsOnly(AddressBookUpdate.Contact(contact.id, AllowedMessageLevel.BLOCKED))
         }
     }
 
@@ -715,7 +715,7 @@ class SQLiteContactsPersistenceManagerTest {
 
         assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
             `as`("unblock should create a remote update")
-            containsOnly(RemoteContactUpdate(userId, AllowedMessageLevel.GROUP_ONLY))
+            containsOnly(AddressBookUpdate.Contact(userId, AllowedMessageLevel.GROUP_ONLY))
         }
     }
 
@@ -739,7 +739,7 @@ class SQLiteContactsPersistenceManagerTest {
 
         assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
             `as`("allowAll should create a remote update")
-            containsOnly(RemoteContactUpdate(userId, AllowedMessageLevel.ALL))
+            containsOnly(AddressBookUpdate.Contact(userId, AllowedMessageLevel.ALL))
         }
     }
 
@@ -762,7 +762,7 @@ class SQLiteContactsPersistenceManagerTest {
 
         assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
             `as`("Remote update should only contain the final BLOCKED entry")
-            containsOnly(RemoteContactUpdate(userId, AllowedMessageLevel.BLOCKED))
+            containsOnly(AddressBookUpdate.Contact(userId, AllowedMessageLevel.BLOCKED))
         }
     }
 
@@ -782,7 +782,7 @@ class SQLiteContactsPersistenceManagerTest {
         val userId = insertDummyContact(AllowedMessageLevel.ALL).id
         val updatedMessageLevel = AllowedMessageLevel.GROUP_ONLY
 
-        contactsPersistenceManager.applyDiff(emptyList(), listOf(RemoteContactUpdate(userId, updatedMessageLevel))).get()
+        contactsPersistenceManager.applyDiff(emptyList(), listOf(AddressBookUpdate.Contact(userId, updatedMessageLevel))).get()
 
         val contactInfo = fetchContactInfo(userId)
 
@@ -804,7 +804,7 @@ class SQLiteContactsPersistenceManagerTest {
     @Test
     fun `applyDiff should create conversation info and log for contacts moved to ALL message level`() {
         val contactInfo = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
-        val update = RemoteContactUpdate(contactInfo.id, AllowedMessageLevel.ALL)
+        val update = AddressBookUpdate.Contact(contactInfo.id, AllowedMessageLevel.ALL)
 
         contactsPersistenceManager.applyDiff(emptyList(), listOf(update)).get()
 
@@ -830,7 +830,7 @@ class SQLiteContactsPersistenceManagerTest {
 
     fun testApplyDiffUpdatesNoConvo(allowedMessageLevel: AllowedMessageLevel) {
         val contactInfo = insertDummyContact()
-        val update = RemoteContactUpdate(contactInfo.id, allowedMessageLevel)
+        val update = AddressBookUpdate.Contact(contactInfo.id, allowedMessageLevel)
 
         contactsPersistenceManager.applyDiff(emptyList(), listOf(update)).get()
 
@@ -849,14 +849,14 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `applyDiff should create remote updates for new contacts`() {
+    fun `applyDiff should not create remote updates for new contacts`() {
         val newContacts = randomContactInfoList()
 
         contactsPersistenceManager.applyDiff(newContacts, emptyList()).get()
 
         assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {
-            `as`("Remote updates should be created for new users")
-            containsOnlyElementsOf(newContacts.map { RemoteContactUpdate(it.id, it.allowedMessageLevel) })
+            `as`("Remote updates should not be created for new users")
+            isEmpty()
         }
     }
 
@@ -865,7 +865,7 @@ class SQLiteContactsPersistenceManagerTest {
         val userId = insertDummyContact(AllowedMessageLevel.ALL).id
         val updatedMessageLevel = AllowedMessageLevel.GROUP_ONLY
 
-        val remoteContactUpdate = RemoteContactUpdate(userId, updatedMessageLevel)
+        val remoteContactUpdate = AddressBookUpdate.Contact(userId, updatedMessageLevel)
         contactsPersistenceManager.applyDiff(emptyList(), listOf(remoteContactUpdate)).get()
 
         assertThat(contactsPersistenceManager.getRemoteUpdates().get()).apply {

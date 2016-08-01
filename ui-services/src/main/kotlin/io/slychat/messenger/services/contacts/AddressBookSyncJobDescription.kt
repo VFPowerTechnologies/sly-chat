@@ -1,7 +1,7 @@
 package io.slychat.messenger.services.contacts
 
 /** A description encapsulating a contact sync job and its dependencies on other contact jobs. */
-class ContactSyncJobDescription {
+class AddressBookSyncJobDescription {
     var updateRemote: Boolean = false
         private set
 
@@ -11,20 +11,20 @@ class ContactSyncJobDescription {
     var remoteSync: Boolean = false
         private set
 
-    fun doPlatformContactSync(): ContactSyncJobDescription {
+    fun doPlatformContactSync(): AddressBookSyncJobDescription {
         platformContactSync = true
         updateRemote = true
         return this
     }
 
-    fun doRemoteSync(): ContactSyncJobDescription {
+    fun doRemoteSync(): AddressBookSyncJobDescription {
         platformContactSync = true
         updateRemote = true
         remoteSync = true
         return this
     }
 
-    fun doUpdateRemoteContactList(): ContactSyncJobDescription {
+    fun doUpdateRemoteContactList(): AddressBookSyncJobDescription {
         //while not strictly necessary, might as well
         updateRemote = true
         return this

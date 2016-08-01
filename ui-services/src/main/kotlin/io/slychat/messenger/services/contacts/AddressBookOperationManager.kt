@@ -4,7 +4,7 @@ import nl.komponents.kovenant.Promise
 import rx.Observable
 
 /**
- * Manages running contact operations and remote sync jobs.
+ * Manages running contact and group operations, as well as remote sync jobs.
  *
  * Operations will be queued if a sync is running, and syncs will be queued if operations are running.
  *
@@ -12,15 +12,17 @@ import rx.Observable
  * will update the queued sync job.
  *
  * Sync jobs won't be run if the network is offline, but operations don't have this restriction.
+ *
+ * Pending operations all have precedence over pending sync jobs.
  */
-interface ContactOperationManager {
-    /** Fires once with isRunning = true on job start, isRunning = false on job completion (regardless of outcome). */
-    val running: Observable<ContactSyncJobInfo>
+interface AddressBookOperationManager {
+    /** Fires once with isRunning = true on sync start, isRunning = false on sync completion (regardless of outcome). */
+    val running: Observable<AddressBookSyncJobInfo>
 
-    fun withCurrentSyncJob(body: ContactSyncJobDescription.() -> Unit)
+    fun withCurrentSyncJob(body: AddressBookSyncJobDescription.() -> Unit)
 
     fun shutdown()
 
     /** Queues an operation to be run. */
-    fun runOperation(operation: () -> Promise<*, Exception>)
+    fun <T> runOperation(operation: () -> Promise<T, Exception>): Promise<T, Exception>
 }

@@ -1,11 +1,8 @@
 package io.slychat.messenger.services.contacts
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.services.contacts.ContactOperationManagerImpl
-import io.slychat.messenger.services.contacts.ContactSyncJob
-import io.slychat.messenger.services.contacts.ContactSyncJobFactory
-import io.slychat.messenger.services.contacts.ContactSyncJobInfo
 import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.TestException
 import io.slychat.messenger.testutils.cond
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
@@ -18,20 +15,21 @@ import rx.observers.TestSubscriber
 import rx.subjects.BehaviorSubject
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ContactOperationManagerImplTest {
+class AddressBookOperationManagerImplTest {
     companion object {
         @JvmField
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
 
-        class MockSyncJobFactory : ContactSyncJobFactory {
-            val jobs = ArrayList<ContactSyncJob>()
+        class MockSyncJobFactory : AddressBookSyncJobFactory {
+            val jobs = ArrayList<AddressBookSyncJob>()
             val deferreds = ArrayList<Deferred<Unit, Exception>>()
-            override fun create(): ContactSyncJob {
-                val job = mock<ContactSyncJob>()
+            override fun create(): AddressBookSyncJob {
+                val job = mock<AddressBookSyncJob>()
                 jobs.add(job)
 
                 val d = deferred<Unit, Exception>()
@@ -44,27 +42,29 @@ class ContactOperationManagerImplTest {
         }
     }
 
-    val factory: ContactSyncJobFactory = mock()
-    val contactJob: ContactSyncJob = mock()
+    val factory: AddressBookSyncJobFactory = mock()
+    val addressBookJob: AddressBookSyncJob = mock()
     val jobDeferred = deferred<Unit, Exception>()
 
     val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create()
 
-    fun createRunner(isNetworkAvailable: Boolean = false): ContactOperationManagerImpl {
+    fun createRunner(isNetworkAvailable: Boolean = false): AddressBookOperationManagerImpl {
         networkStatus.onNext(isNetworkAvailable)
 
-        whenever(factory.create()).thenReturn(contactJob)
-        whenever(contactJob.run(any())).thenReturn(jobDeferred.promise)
+        whenever(factory.create()).thenReturn(addressBookJob)
+        whenever(addressBookJob.run(any())).thenReturn(jobDeferred.promise)
 
-        return ContactOperationManagerImpl(
+        return AddressBookOperationManagerImpl(
             networkStatus,
             factory
         )
     }
 
-    fun doLocalSync(runner: ContactOperationManagerImpl) {
+    fun doLocalSync(runner: AddressBookOperationManagerImpl) {
         runner.withCurrentSyncJob { doPlatformContactSync() }
     }
+
+    fun successUnit(): Promise<Unit, Exception> = Promise.ofSuccess(Unit)
 
     @Test
     fun `it should run a sync job if no pending operations are running and the network is available`() {
@@ -72,7 +72,7 @@ class ContactOperationManagerImplTest {
 
         doLocalSync(runner)
 
-        verify(contactJob).run(any())
+        verify(addressBookJob).run(any())
     }
 
     @Test
@@ -81,7 +81,7 @@ class ContactOperationManagerImplTest {
 
         doLocalSync(runner)
 
-        verify(contactJob, never()).run(any())
+        verify(addressBookJob, never()).run(any())
     }
 
     @Test
@@ -91,7 +91,7 @@ class ContactOperationManagerImplTest {
         var wasRun = false
         runner.runOperation {
             wasRun = true
-            Promise.ofSuccess(Unit)
+            successUnit()
         }
 
         assertTrue(wasRun, "Operation was not run")
@@ -108,7 +108,7 @@ class ContactOperationManagerImplTest {
         var wasRun = false
         runner.runOperation {
             wasRun = true
-            Promise.ofSuccess(Unit)
+            successUnit()
         }
 
         assertTrue(wasRun, "Operation was not run")
@@ -125,7 +125,7 @@ class ContactOperationManagerImplTest {
 
         d.resolve(Unit)
 
-        verify(contactJob).run(any())
+        verify(addressBookJob).run(any())
     }
 
     @Test
@@ -138,7 +138,7 @@ class ContactOperationManagerImplTest {
         var wasRun = false
         runner.runOperation {
             wasRun = true
-            Promise.ofSuccess(Unit)
+            successUnit()
         }
 
         assertFalse(wasRun, "Operation wasn't queued")
@@ -153,7 +153,7 @@ class ContactOperationManagerImplTest {
         var wasRun = false
         runner.runOperation {
             wasRun = true
-            Promise.ofSuccess(Unit)
+            successUnit()
         }
 
         assertFalse(wasRun, "Operation wasn't queued")
@@ -170,7 +170,7 @@ class ContactOperationManagerImplTest {
 
         networkStatus.onNext(true)
 
-        verify(contactJob, never()).run(any())
+        verify(addressBookJob, never()).run(any())
     }
 
     @Test
@@ -183,7 +183,7 @@ class ContactOperationManagerImplTest {
         var wasRun = false
         runner.runOperation {
             wasRun = true
-            Promise.ofSuccess(Unit)
+            successUnit()
         }
 
         d.reject(RuntimeException("test error"))
@@ -199,7 +199,7 @@ class ContactOperationManagerImplTest {
 
         networkStatus.onNext(true)
 
-        verify(contactJob).run(any())
+        verify(addressBookJob).run(any())
     }
 
     //operation -> sync job
@@ -214,14 +214,14 @@ class ContactOperationManagerImplTest {
 
         d.resolve(Unit)
 
-        verify(contactJob, never()).run(any())
+        verify(addressBookJob, never()).run(any())
     }
 
     @Test
     fun `it should queue a sync job if one is already running`() {
         val factory = MockSyncJobFactory()
 
-        val runner = ContactOperationManagerImpl(
+        val runner = AddressBookOperationManagerImpl(
             Observable.just(true),
             factory
         )
@@ -237,7 +237,7 @@ class ContactOperationManagerImplTest {
     fun `it should run a queued sync job after the current one is complete if no operations are pending`() {
         val factory = MockSyncJobFactory()
 
-        val runner = ContactOperationManagerImpl(
+        val runner = AddressBookOperationManagerImpl(
             Observable.just(true),
             factory
         )
@@ -255,7 +255,7 @@ class ContactOperationManagerImplTest {
     fun `it should emit a running event when a sync begins`() {
         val runner = createRunner(true)
 
-        val testSubscriber = TestSubscriber<ContactSyncJobInfo>()
+        val testSubscriber = TestSubscriber<AddressBookSyncJobInfo>()
 
         runner.running.subscribe(testSubscriber)
 
@@ -271,12 +271,12 @@ class ContactOperationManagerImplTest {
     @Test
     fun `it should emit a a stopped event when a sync ends`() {
         val factory = MockSyncJobFactory()
-        val runner = ContactOperationManagerImpl(
+        val runner = AddressBookOperationManagerImpl(
             Observable.just(true),
             factory
         )
 
-        val testSubscriber = TestSubscriber<ContactSyncJobInfo>()
+        val testSubscriber = TestSubscriber<AddressBookSyncJobInfo>()
 
         runner.running.subscribe(testSubscriber)
 
@@ -289,5 +289,42 @@ class ContactOperationManagerImplTest {
         assertThat(events)
             .haveExactly(1, cond("!isRunning") { !it.isRunning })
             .`as`("Running events")
+    }
+
+    @Test(timeout = 300)
+    fun `the promise returned by addOperation should be resolved with the value returned by the operation`() {
+        val runner = AddressBookOperationManagerImpl(
+            Observable.just(true),
+            mock()
+        )
+
+        val d = deferred<Int, Exception>()
+        val p = runner.runOperation {
+            d.promise
+        }
+
+        val v = 5
+        d.resolve(v)
+
+        assertEquals(p.get(), v, "Invalid value")
+    }
+
+    @Test(timeout = 300)
+    fun `the promise returned by addOperation should be rejected with the exception thrown by the operation`() {
+        val runner = AddressBookOperationManagerImpl(
+            Observable.just(true),
+            mock()
+        )
+
+        val d = deferred<Int, Exception>()
+        val p = runner.runOperation {
+            d.promise
+        }
+
+        d.reject(TestException())
+
+        assertFailsWith(TestException::class) {
+            p.get()
+        }
     }
 }

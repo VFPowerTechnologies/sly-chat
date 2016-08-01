@@ -1,6 +1,8 @@
 package io.slychat.messenger.services.contacts
 
+import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.ui.alwaysUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -8,17 +10,29 @@ import rx.Subscription
 import rx.subjects.PublishSubject
 import java.util.*
 
-class ContactOperationManagerImpl(
+class AddressBookOperationManagerImpl(
     networkAvailable: Observable<Boolean>,
-    private val contactSyncJobFactory: ContactSyncJobFactory
-) : ContactOperationManager {
+    private val addressBookSyncJobFactory: AddressBookSyncJobFactory
+) : AddressBookOperationManager {
+    private class PendingOperation<out T>(
+        private val operation: () -> Promise<T, Exception>
+    ) {
+        private val d: Deferred<T, Exception> = deferred()
+
+        fun run(): Promise<T, Exception> {
+            return operation() success { d.resolve(it) } fail { d.reject(it) }
+        }
+
+        val promise: Promise<T, Exception> = d.promise
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private var currentRunningJob: ContactSyncJob? = null
-    private var queuedSync: ContactSyncJobDescription? = null
+    private var currentRunningJob: AddressBookSyncJob? = null
+    private var queuedSync: AddressBookSyncJobDescription? = null
 
-    private val runningSubject = PublishSubject.create<ContactSyncJobInfo>()
-    override val running: Observable<ContactSyncJobInfo> = runningSubject
+    private val runningSubject = PublishSubject.create<AddressBookSyncJobInfo>()
+    override val running: Observable<AddressBookSyncJobInfo> = runningSubject
 
     private var isNetworkAvailable: Boolean = false
 
@@ -28,7 +42,7 @@ class ContactOperationManagerImpl(
     private val isSyncRunning: Boolean
         get() = currentRunningJob != null
 
-    private var pendingOperations = ArrayDeque<() -> Promise<*, Exception>>()
+    private var pendingOperations = ArrayDeque<PendingOperation<*>>()
 
     init {
         networkAvailableSubscription = networkAvailable.subscribe { onNetworkStatusChange(it) }
@@ -44,17 +58,20 @@ class ContactOperationManagerImpl(
         networkAvailableSubscription.unsubscribe()
     }
 
-    override fun runOperation(operation: () -> Promise<*, Exception>) {
-        pendingOperations.add(operation)
+    override fun <T> runOperation(operation: () -> Promise<T, Exception>): Promise<T, Exception> {
+        val pendingOperation = PendingOperation(operation)
+        pendingOperations.add(pendingOperation)
         processNext()
+
+        return pendingOperation.promise
     }
 
-    override fun withCurrentSyncJob(body: ContactSyncJobDescription.() -> Unit) {
+    override fun withCurrentSyncJob(body: AddressBookSyncJobDescription.() -> Unit) {
         val queuedJob = this.queuedSync
         val job = if (queuedJob != null)
             queuedJob
         else {
-            val desc = ContactSyncJobDescription()
+            val desc = AddressBookSyncJobDescription()
             this.queuedSync = desc
             desc
         }
@@ -77,7 +94,7 @@ class ContactOperationManagerImpl(
 
         val queuedJob = this.queuedSync ?: return
 
-        val job = contactSyncJobFactory.create()
+        val job = addressBookSyncJobFactory.create()
 
         log.info("Beginning contact sync job")
 
@@ -86,7 +103,7 @@ class ContactOperationManagerImpl(
         currentRunningJob = job
         this.queuedSync = null
 
-        val info = ContactSyncJobInfo(
+        val info = AddressBookSyncJobInfo(
             queuedJob.updateRemote,
             queuedJob.platformContactSync,
             queuedJob.remoteSync,
@@ -125,7 +142,7 @@ class ContactOperationManagerImpl(
 
         isOperationRunning = true
 
-        operation() alwaysUi {
+        operation.run() alwaysUi {
             log.debug("Operation complete")
             isOperationRunning = false
             processNext()

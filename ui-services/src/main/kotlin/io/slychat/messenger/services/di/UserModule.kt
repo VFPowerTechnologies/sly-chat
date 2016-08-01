@@ -7,8 +7,8 @@ import io.slychat.messenger.core.BuildConfig.ServerUrls
 import io.slychat.messenger.core.crypto.EncryptionSpec
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
+import io.slychat.messenger.core.http.api.contacts.AddressBookAsyncClientImpl
 import io.slychat.messenger.core.http.api.contacts.ContactAsyncClientImpl
-import io.slychat.messenger.core.http.api.contacts.ContactListAsyncClientImpl
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClientImpl
 import io.slychat.messenger.core.http.api.prekeys.HttpPreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
@@ -61,20 +61,22 @@ class UserModule(
         authTokenManager: AuthTokenManager,
         serverUrls: BuildConfig.ServerUrls,
         contactsPersistenceManager: ContactsPersistenceManager,
+        groupPersistenceManager: GroupPersistenceManager,
         accountInfoPersistenceManager: AccountInfoPersistenceManager,
         @SlyHttp httpClientFactory: HttpClientFactory,
         userLoginData: UserData,
         platformContacts: PlatformContacts
-    ): ContactSyncJobFactory {
+    ): AddressBookSyncJobFactory {
         val serverUrl = serverUrls.API_SERVER
         val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
-        val contactListClient = ContactListAsyncClientImpl(serverUrl, httpClientFactory)
+        val contactListClient = AddressBookAsyncClientImpl(serverUrl, httpClientFactory)
 
-        return ContactSyncJobFactoryImpl(
+        return AddressBookSyncJobFactoryImpl(
             authTokenManager,
             contactClient,
             contactListClient,
             contactsPersistenceManager,
+            groupPersistenceManager,
             userLoginData,
             accountInfoPersistenceManager,
             platformContacts
@@ -83,12 +85,12 @@ class UserModule(
 
     @UserScope
     @Provides
-    fun providesContactJobRunner(
+    fun providesAddressBookOperationManager(
         application: SlyApplication,
-        contactJobFactory: ContactSyncJobFactory
-    ): ContactOperationManager = ContactOperationManagerImpl(
+        addressBookJobFactory: AddressBookSyncJobFactory
+    ): AddressBookOperationManager = AddressBookOperationManagerImpl(
         application.networkAvailable,
-        contactJobFactory
+        addressBookJobFactory
     )
 
     @UserScope
@@ -97,7 +99,7 @@ class UserModule(
         authTokenManager: AuthTokenManager,
         serverUrls: BuildConfig.ServerUrls,
         contactsPersistenceManager: ContactsPersistenceManager,
-        contactJobRunner: ContactOperationManager,
+        addressBookOperationManager: AddressBookOperationManager,
         @SlyHttp httpClientFactory: HttpClientFactory
     ): ContactsService {
         val serverUrl = serverUrls.API_SERVER
@@ -107,7 +109,7 @@ class UserModule(
             authTokenManager,
             contactClient,
             contactsPersistenceManager,
-            contactJobRunner
+            addressBookOperationManager
         )
     }
 
@@ -116,11 +118,11 @@ class UserModule(
     fun providesMessageProcessor(
         contactsService: ContactsService,
         messagePersistenceManager: MessagePersistenceManager,
-        groupPersistenceManager: GroupPersistenceManager
+        groupService: GroupService
     ): MessageProcessor = MessageProcessorImpl(
         contactsService,
         messagePersistenceManager,
-        groupPersistenceManager
+        groupService
     )
 
     @UserScope
@@ -157,7 +159,7 @@ class UserModule(
     fun providesMessengerService(
         contactsService: ContactsService,
         messagePersistenceManager: MessagePersistenceManager,
-        groupPersistenceManager: GroupPersistenceManager,
+        groupService: GroupService,
         contactsPersistenceManager: ContactsPersistenceManager,
         relayClientManager: RelayClientManager,
         messageReceiver: MessageReceiver,
@@ -167,7 +169,7 @@ class UserModule(
         MessengerServiceImpl(
             contactsService,
             messagePersistenceManager,
-            groupPersistenceManager,
+            groupService,
             contactsPersistenceManager,
             relayClientManager,
             messageSender,
@@ -304,11 +306,11 @@ class UserModule(
     fun providesGroupService(
         groupPersistenceManager: GroupPersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager,
-        messageProcessor: MessageProcessor
+        addressBookOperationManager: AddressBookOperationManager
     ): GroupService =
         GroupServiceImpl(
             groupPersistenceManager,
             contactsPersistenceManager,
-            messageProcessor
+            addressBookOperationManager
         )
 }

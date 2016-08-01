@@ -9,13 +9,13 @@ import io.slychat.messenger.core.crypto.SerializedKeyVault
 import io.slychat.messenger.core.crypto.hexify
 import io.slychat.messenger.core.http.HttpClient
 import io.slychat.messenger.core.http.HttpResponse
-import io.slychat.messenger.core.http.api.contacts.RemoteContactEntry
 import io.slychat.messenger.core.http.get
 import io.slychat.messenger.core.http.postJSON
+import io.slychat.messenger.core.persistence.RemoteAddressBookEntry
 
-data class SiteContactList(
-    @JsonProperty("contacts")
-    val contacts: List<RemoteContactEntry>
+data class SiteAddressBook(
+    @JsonProperty("entries")
+    val entries: List<RemoteAddressBookEntry>
 )
 
 data class UserGcmTokenInfo(
@@ -173,16 +173,16 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         postRequestNoResponse(request, "/dev/prekeys/last-resort/$username/$deviceId")
     }
 
-    fun getContactList(username: String): List<RemoteContactEntry> {
-        return getRequest("/dev/contact-list/$username", SiteContactList::class.java).contacts
+    fun getAddressBook(username: String): List<RemoteAddressBookEntry> {
+        return getRequest("/dev/address-book/$username", SiteAddressBook::class.java).entries
     }
 
-    fun addContacts(username: String, contacts: List<RemoteContactEntry>) {
+    fun addAddressBookEntries(username: String, entries: List<RemoteAddressBookEntry>) {
         val request = mapOf(
-            "contacts" to contacts
+            "entries" to entries
         )
 
-        postRequestNoResponse(request, "/dev/contact-list/$username")
+        postRequestNoResponse(request, "/dev/address-book/$username")
     }
 
     fun registerGcmToken(username: String, deviceId: Int, token: String) {
