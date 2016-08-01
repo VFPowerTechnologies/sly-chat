@@ -90,6 +90,7 @@ slychat.onPageInit('addContact', function (page) {
 // Contact page init function
 slychat.onPageBeforeInit('contacts', function (page) {
     contactController.init();
+    groupController.init();
 });
 
 // Sms Verification page init function

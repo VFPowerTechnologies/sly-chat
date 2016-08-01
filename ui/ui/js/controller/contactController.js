@@ -2,8 +2,6 @@ var ContactController = function () {
     this.conversations = [];
     this.sync = false;
     this.contactSyncNotification = null;
-    this.recentGroupChat = [];
-    this.recentChat = [];
     this.contacts = [];
 };
 
@@ -30,27 +28,37 @@ ContactController.prototype  = {
 
     fetchConversation : function () {
         messengerService.getConversations().then(function (conversations) {
-            groupService.getGroupConversations().then(function (groupConversations) {
-                this.storeGroupsConversations(groupConversations);
-                this.storeConversations(conversations);
-            }.bind(this)).catch(function (e) {
-                exceptionController.handleError(e);
-            });
+            this.conversations = [];
+            conversations.forEach(function(conversation){
+                this.conversations[conversation.contact.id] = conversation;
+            }.bind(this));
+
+            var groupDetails = groupController.getGroupDetails();
+            if (groupDetails === false) {
+                groupService.getGroupConversations().then(function (groupConversations) {
+                    this.createContactHtml(groupConversations, conversations);
+                }.bind(this)).catch(function (e) {
+                    exceptionController.handleError(e);
+                });
+            }
+            else {
+                this.createContactHtml(groupDetails, conversations);
+            }
         }.bind(this)).catch(function (e) {
-            console.log(e);
+            exceptionController.handleError(e);
         });
     },
 
-    storeGroupsConversations : function (conversations) {
-        this.recentGroupChat = [];
-        groupController.groups = [];
-        conversations.forEach(function (conversation) {
-            groupController.groups[conversation.group.id] = conversation;
-            if(conversation.info.lastMessage != null)
-                this.recentGroupChat.push(conversation);
+    getActualGroupConversations : function (groupDetails) {
+        var actualGroupConvo = [];
+        for(var k in groupDetails) {
+            if (groupDetails.hasOwnProperty(k)) {
+                if (groupDetails[k].info.lastMessage != null)
+                    actualGroupConvo.push(groupDetails[k]);
+            }
+        }
 
-            groupController.createGroupList(conversations);
-        }.bind(this));
+        return actualGroupConvo;
     },
 
     fetchAndLoadChat : function (contactId) {
@@ -62,20 +70,16 @@ ContactController.prototype  = {
             this.loadChatPage(this.conversations[contactId].contact, false);
 
             navigationController.hideSplashScreen();
-
-            this.storeConversations(conversations);
+            this.fetchConversation();
         }.bind(this)).catch(function (e) {
-            console.log(e);
+            exceptionController.handleError(e);
         });
     },
 
-    storeConversations : function (conversations) {
-        this.conversations = [];
-        conversations.forEach(function(conversation){
-            this.conversations[conversation.contact.id] = conversation;
-        }.bind(this));
-
-        var jointedRecentChat = this.createJointedRecentChat();
+    createContactHtml : function (groupConversations, conversations) {
+        var realGroupConvo = this.getActualGroupConversations(groupConversations);
+        var realConvo = this.getActualConversation(conversations);
+        var jointedRecentChat = this.createJointedRecentChat(realConvo, realGroupConvo);
 
         this.createRecentChatList(jointedRecentChat);
         this.createContactList();
@@ -216,6 +220,7 @@ ContactController.prototype  = {
         else
             contactName = "You";
 
+
         var recentDiv = $("<div id='recentChat_" + conversation.group.id + "' class='item-link recent-contact-link row " + newClass + "'>" +
             "<div class='recent-chat-name'><span><span class='group-contact-name' style='display: inline;'>" + contactName + "</span> (" + conversation.group.name + ")</span></div>" +
             "<div class='right'><span><small class='last-message-time'><time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time></small></span></div>" +
@@ -252,7 +257,9 @@ ContactController.prototype  = {
                 badge.html(parseInt(newAmount) + 1);
             }
             node.find(".left").html(this.formatLastMessage(message.message));
-            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>")
+            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
+
+            $("#recentChatList").prepend(node);
         }
         else {
             var conversation = {
@@ -286,7 +293,9 @@ ContactController.prototype  = {
             }
             node.find(".group-contact-name").html(contact.name);
             node.find(".left").html(this.formatLastMessage(message.message));
-            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>")
+            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
+
+            $("#recentChatList").prepend(node);
         }
         else {
             var conversation = {
@@ -304,15 +313,10 @@ ContactController.prototype  = {
         }
     },
 
-    createJointedRecentChat : function () {
+    createJointedRecentChat : function (convo, groupConvo) {
         var jointed = [];
-        this.recentChat = [];
-        var actualConversation = this.getActualConversation(this.conversations);
-        actualConversation.forEach(function (conversation) {
-            this.recentChat.push(conversation);
-        }.bind(this));
 
-        this.recentChat.forEach(function (conversation) {
+        convo.forEach(function (conversation) {
             jointed.push({
                 type: "single",
                 lastTimestamp: conversation.status.lastTimestamp,
@@ -320,7 +324,7 @@ ContactController.prototype  = {
             });
         });
 
-        this.recentGroupChat.forEach(function (conversation) {
+        groupConvo.forEach(function (conversation) {
             jointed.push({
                 type: 'group',
                 lastTimestamp: conversation.info.lastTimestamp,

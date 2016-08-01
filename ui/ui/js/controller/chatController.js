@@ -21,12 +21,17 @@ ChatController.prototype = {
     submitNewMessage : function (contact, message) {
         if (contact.email === undefined) {
             messengerService.sendGroupMessageTo(contact.id, message).then(function (messageDetails) {
-                $("#chat-content").append(this.createMessageNode(messageDetails, profileController.name));
+                var groupMessageDetails = {
+                    info: messageDetails,
+                    speaker: null
+                };
+                $("#chat-content").append(this.createGroupMessageNode(groupMessageDetails, profileController.name));
 
                 var input = $("#newMessageInput");
                 input.val("");
                 input.click();
                 this.scrollTop();
+                groupController.updateConversationWithNewMessage(contact.id, messageDetails);
             }.bind(this)).catch(function (e) {
                 exceptionController.handleError(e);
             })
@@ -227,6 +232,7 @@ ChatController.prototype = {
         else {
             contactController.updateRecentGroupChatNode(cachedContact, messageInfo);
             this.updateGroupChatPageNewMessage(messageInfo, contactName);
+            groupController.updateConversationWithNewMessage(messageInfo.groupId, messageInfo);
         }
 
         $(".timeago").timeago();

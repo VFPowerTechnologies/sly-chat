@@ -1,34 +1,130 @@
 var GroupController = function () {
     this.groups = [];
+    this.groupDetailsCache = [];
+
+    /*
+        this.groupDetailsCache = [
+            groupId: {
+                group: {
+                    name:  'groupName',
+                    id: 'groupId'
+                },
+                info: {
+                    lastSpeaker: 'userId',
+                    unreadMessageCount: 0,
+                    lastMessage: 'Hey!',
+                    lastTimestamp: timestamp
+                },
+                members: [
+                    {
+                        id: 'user id',
+                        name: 'user name',
+                        email: 'user email',
+                        phoneNumber: 'user phoneNumber',
+                        publicKey: 'user publicKey'
+                    }
+                ]
+            }
+        ]
+     */
 };
 
 GroupController.prototype = {
     init : function () {
-
+        this.fetchGroupDetails();
     },
 
-    resetGroups : function () {
-        this.groups = [];
-        groupService.getGroupConversations().then(function (conversations) {
-            conversations.forEach(function (conversation) {
-                this.groups[conversation.group.id] = conversation;
-                groupController.createGroupList(conversations);
+    fetchGroupDetails : function () {
+        if (Object.size(this.groupDetailsCache) <= 0) {
+            //Fetch all group and conversation details
+            groupService.getGroupConversations().then(function (groupConversations) {
+                groupConversations.forEach(function (conversation) {
+                    var id = conversation.group.id;
+                    this.groupDetailsCache[id] = conversation;
+
+                    // Fetch each group members
+                    groupService.getMembers(id).then(function (members) {
+                        this.groupDetailsCache[id].members = members;
+                        this.createGroupNodeMembers(id, members);
+                    }.bind(this)).catch(function (e) {
+                        exceptionController.handleError(e);
+                    });
+
+                }.bind(this));
+
+                // Create group list
+                this.createGroupList();
+            }.bind(this)).catch(function (e) {
+                exceptionController.handleError(e);
+            });
+        }
+    },
+
+    fetchAndLoadGroupChat : function (groupId) {
+        groupService.getGroupConversations().then(function (groupConversations) {
+            groupConversations.forEach(function (conversation) {
+                var id = conversation.group.id;
+                this.groupDetailsCache[id] = conversation;
+
+                // Fetch each group members
+                groupService.getMembers(id).then(function (members) {
+                    this.groupDetailsCache[id].members = members;
+                    this.createGroupNodeMembers(id, members);
+                }.bind(this)).catch(function (e) {
+                    exceptionController.handleError(e);
+                });
             }.bind(this));
+
+            contactController.loadChatPage(this.groupDetailsCache[groupId].group, false, true);
+            navigationController.hideSplashScreen();
+            contactController.init();
+
+            this.createGroupList();
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         });
     },
 
+    getGroupDetails: function () {
+        if (Object.size(this.groupDetailsCache) <= 0)
+            return false;
+        else
+            return this.groupDetailsCache;
+    },
+
+    createGroupList : function () {
+        var frag = $(document.createDocumentFragment());
+        if(Object.size(this.groupDetailsCache) > 0) {
+            for(var g in this.groupDetailsCache) {
+                if (this.groupDetailsCache.hasOwnProperty(g)) {
+                    frag.append(this.createGroupNode(this.groupDetailsCache[g]));
+                }
+            }
+        }
+        else {
+            frag.append("No groups yet");
+        }
+
+        $("#groupList").html(frag);
+    },
+
+    getGroupConversations : function () {
+        if (Object.size(this.groupDetailsCache) <= 0)
+            return false;
+        else
+            return this.groupDetailsCache;
+    },
+
     getGroup : function (id) {
-        if (id in this.groups)
-            return this.groups[id].group;
+        if (id in this.groupDetailsCache)
+            return this.groupDetailsCache[id].group;
         else
             return false;
     },
 
     getGroupMembers : function (id) {
-        if (id in this.groups)
-            return this.groups[id].members;
+        if (id in this.groupDetailsCache)
+            return this.groupDetailsCache[id].members;
         else
             return false;
     },
@@ -43,7 +139,9 @@ GroupController.prototype = {
     },
 
     markGroupConversationAsRead : function (id) {
-        groupService.markConversationAsRead(id).catch(function (e) {
+        groupService.markConversationAsRead(id).then(function () {
+            this.groupDetailsCache[id].info.unreadMessageCount = 0;
+        }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         })
     },
@@ -65,30 +163,6 @@ GroupController.prototype = {
             "<div class='item-media'><i class='icon icon-form-checkbox'></i></div> " +
             "<div class='item-inner'><div class='item-title'>" + contact.name + "</div></div>" +
             "</label></li>");
-    },
-
-    createGroupList : function (groups) {
-        var frag = $(document.createDocumentFragment());
-
-        if (groups.length > 0) {
-            groups.forEach(function (group) {
-                frag.append(this.createGroupNode(group));
-            }.bind(this));
-        }
-        else {
-            frag.append("No groups yet");
-        }
-
-        $("#groupList").html(frag);
-
-        groups.forEach(function (group) {
-            groupService.getMembers(group.group.id).then(function (members) {
-                groupController.groups[group.group.id].members = members;
-                this.createGroupNodeMembers(group.group.id, members);
-            }.bind(this)).catch(function (e) {
-                exceptionController.handleError(e);
-            });
-        }.bind(this));
     },
 
     createGroupNode : function (group) {
@@ -126,7 +200,8 @@ GroupController.prototype = {
     addGroupEventListener : function () {
         groupService.addGroupEventListener(function (event) {
             if (event.type == "NEW") {
-                this.resetGroups();
+                console.log(event);
+                // to be updated
             }
         }.bind(this));
     },
@@ -189,15 +264,23 @@ GroupController.prototype = {
                 title: "Group conversation has been deleted",
                 hold: 3000
             });
+
+            this.groupDetailsCache[groupId].info = {
+                lastSpeaker: null,
+                lastMessage: null,
+                unreadMessageCount: 0,
+                lastTimestamp: null
+            };
+
             mainView.router.refreshPage();
-        }).catch(function (e) {
+        }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         })
     },
 
     showGroupInfo : function (groupId) {
-        var group = this.groups[groupId].group;
-        var members = this.groups[groupId].members;
+        var group = this.groupDetailsCache[groupId].group;
+        var members = this.groupDetailsCache[groupId].members;
         var memberList = "";
 
         members.forEach(function (member) {
@@ -221,5 +304,25 @@ GroupController.prototype = {
             '</div>';
 
         openInfoPopup(content);
+    },
+
+    updateConversationWithNewMessage : function (groupId, messageInfo) {
+        if (messageInfo.sent === true) {
+            this.groupDetailsCache[groupId].info = {
+                lastSpeaker: null,
+                unreadMessageCount: 0,
+                lastMessage: messageInfo.message,
+                lastTimestamp: messageInfo.timestamp
+            };
+        }
+        else {
+            var messages = messageInfo.messages;
+            this.groupDetailsCache[groupId].info = {
+                lastSpeaker: messageInfo.contact,
+                unreadMessageCount: this.groupDetailsCache[groupId].info.unreadMessageCount + messages.length,
+                lastMessage: messages[messages.length - 1].message,
+                lastTimestamp: messages[messages.length - 1].timestamp
+            };
+        }
     }
 };

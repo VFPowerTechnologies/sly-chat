@@ -37,6 +37,23 @@ NavigationController.prototype = {
                     contactController.fetchAndLoadChat(id);
             });
         }
+        else if (/^group\//.test(page)) {
+            var groupId = page.split("/", 2)[1];
+
+            historyService.replace(['contacts.html']).then(function () {
+                if($$('.popup.modal-in').length > 0) {
+                    $$('.popup.modal-in').find('.close-popup-btn').trigger('click');
+                }
+                else if ($$('.picker-modal.modal-in').length > 0) {
+                    slychat.closeModal();
+                }
+                var group = groupController.getGroup(groupId);
+                if (group !== false)
+                    contactController.loadChatPage(group, false, true);
+                else
+                    groupController.fetchAndLoadGroupChat(groupId);
+            });
+        }
         else {
             console.error("Unknown page: " + page);
         }
@@ -63,7 +80,7 @@ NavigationController.prototype = {
                     this.load(url);
                 }
             }.bind(this)).catch(function (e) {
-                console.log(e);
+                exceptionController.handleError(e);
             });
         }
     },
@@ -83,21 +100,20 @@ NavigationController.prototype = {
 
         if (currentPage !== "index.html") {
             historyService.push(currentPage).catch(function (e) {
-                console.log(e);
+                exceptionController.handleError(e);
             });
         }
     },
 
     clearHistory : function () {
         historyService.clear().catch(function (e){
-            console.log("Could not clear history : " + e);
+            exceptionController.handleError(e);
         });
     },
 
     loadMessageLink : function (url) {
         platformService.openURL(url).catch(function (e) {
-            console.log("An error occured while opening link ");
-            console.log(e);
+            exceptionController.handleError(e);
         });
     },
 
@@ -112,7 +128,7 @@ NavigationController.prototype = {
         };
 
         stateService.setState(currentState).catch(function (e) {
-            console.log(e);
+            exceptionController.handleError(e);
         });
 
         var page;
@@ -170,7 +186,6 @@ NavigationController.prototype = {
             firstLoad = false;
         }
     },
-
 
     openMenu : function () {
         var buttons = [
