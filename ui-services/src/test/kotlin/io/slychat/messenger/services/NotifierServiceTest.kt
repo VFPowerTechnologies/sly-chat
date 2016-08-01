@@ -90,7 +90,7 @@ class NotifierServiceTest {
         return contactInfo
     }
 
-    fun testNotificationDisplay(shouldShow: Boolean) {
+    fun testConvoNotificationDisplay(shouldShow: Boolean) {
         val contactInfo = setupContactInfo(1)
 
         val messages = (0..1).map {
@@ -123,7 +123,7 @@ class NotifierServiceTest {
 
         notifierService.isUiVisible = false
 
-        testNotificationDisplay(true)
+        testConvoNotificationDisplay(true)
     }
 
     @Test
@@ -132,7 +132,7 @@ class NotifierServiceTest {
 
         notifierService.isUiVisible = false
 
-        testNotificationDisplay(false)
+        testConvoNotificationDisplay(false)
     }
 
     @Test
@@ -145,7 +145,7 @@ class NotifierServiceTest {
 
         uiEventSubject.onNext(PageChangeEvent(PageType.CONVO, "1"))
 
-        testNotificationDisplay(false)
+        testConvoNotificationDisplay(false)
     }
 
     @Test
@@ -158,7 +158,7 @@ class NotifierServiceTest {
 
         uiEventSubject.onNext(PageChangeEvent(PageType.CONVO, "2"))
 
-        testNotificationDisplay(true)
+        testConvoNotificationDisplay(true)
     }
 
     @Test
@@ -169,7 +169,7 @@ class NotifierServiceTest {
 
         uiEventSubject.onNext(PageChangeEvent(PageType.CONTACTS, ""))
 
-        testNotificationDisplay(false)
+        testConvoNotificationDisplay(false)
     }
 
     @Test
@@ -259,12 +259,37 @@ class NotifierServiceTest {
         whenever(contactsPersistenceManager.get(contactInfo.id)).thenReturn(contactInfo)
         whenever(groupPersistenceManager.getInfo(any())).thenReturn(groupInfo)
 
-
         val pageChangeEvent = PageChangeEvent(PageType.GROUP, groupInfo.id.string)
         uiEventSubject.onNext(pageChangeEvent)
 
         val conversationInfo = NotificationConversationInfo.from(groupInfo)
         verify(platformNotificationsService, times(1)).clearMessageNotificationsFor(conversationInfo)
+    }
+
+    @Test
+    fun `it should not display notifications directed at the currently focused group`() {
+        val notifierService = initNotifierService()
+
+        notifierService.isUiVisible = true
+
+        val contactInfo = randomContactInfo()
+        val groupInfo = randomGroupInfo()
+
+        whenever(contactsPersistenceManager.get(contactInfo.id)).thenReturn(contactInfo)
+        whenever(groupPersistenceManager.getInfo(any())).thenReturn(groupInfo)
+
+        val pageChangeEvent = PageChangeEvent(PageType.GROUP, groupInfo.id.string)
+        uiEventSubject.onNext(pageChangeEvent)
+
+        val bundle = MessageBundle(
+            contactInfo.id,
+            groupInfo.id,
+            listOf(randomReceivedMessageInfo())
+        )
+
+        newMessagesSubject.onNext(bundle)
+
+        verify(platformNotificationsService, never()).addNewMessageNotification(any(), any(), any())
     }
 }
 
