@@ -172,8 +172,7 @@ WHERE
                     clearMemberList(connection, groupId)
 
                 insertOrReplaceGroupInfo(connection, groupInfo)
-                insertOrReplaceNewGroupConversationInfo(connection, groupId)
-                createGroupConversationTable(connection, groupId)
+                createConversationData(connection, groupInfo.id)
                 insertGroupMembers(connection, groupId, members)
 
                 insertOrReplaceRemoteUpdate(connection, groupId)
@@ -223,10 +222,6 @@ VALUES
             else
                 throw e
         }
-    }
-
-    private fun createGroupConversationTable(connection: SQLiteConnection, id: GroupId) {
-        GroupConversationTable.create(connection, id)
     }
 
     private fun insertOrReplaceGroupInfo(connection: SQLiteConnection, groupInfo: GroupInfo) {
@@ -309,6 +304,86 @@ VALUES
         }
     }
 
+    private fun createConversationData(connection: SQLiteConnection, groupId: GroupId) {
+        insertOrReplaceNewGroupConversationInfo(connection, groupId)
+        GroupConversationTable.create(connection, groupId)
+    }
+
+    private fun deleteConversationData(connection: SQLiteConnection, groupId: GroupId) {
+        GroupConversationTable.delete(connection, groupId)
+        deleteGroupConversationInfo(connection, groupId)
+    }
+
+    //parted -> joined
+    private fun doJoinGroup(connection: SQLiteConnection, groupId: GroupId) {
+        updateMembershipLevel(connection, groupId, GroupMembershipLevel.JOINED)
+        createConversationData(connection, groupId)
+    }
+
+    //joined -> parted
+    private fun doPartGroup(connection: SQLiteConnection, groupId: GroupId) {
+        clearMemberList(connection, groupId)
+
+        updateMembershipLevel(connection, groupId, GroupMembershipLevel.PARTED)
+        deleteConversationData(connection, groupId)
+    }
+
+    //joined -> blocked
+    private fun doBlockGroup(connection: SQLiteConnection, groupId: GroupId) {
+        clearMemberList(connection, groupId)
+        updateMembershipLevel(connection, groupId, GroupMembershipLevel.BLOCKED)
+        deleteConversationData(connection, groupId)
+    }
+
+    //blocked -> parted
+    private fun doUnblockGroup(connection: SQLiteConnection, groupId: GroupId) {
+        updateMembershipLevel(connection, groupId, GroupMembershipLevel.PARTED)
+    }
+
+    //clear the member list and set it to the given group
+    private fun setGroupMembersTo(connection: SQLiteConnection, groupId: GroupId, members: Set<UserId>) {
+        clearMemberList(connection, groupId)
+        insertGroupMembers(connection, groupId, members)
+    }
+
+    //used by applyDiff
+    private fun doGroupTransition(connection: SQLiteConnection, groupId: GroupId, oldMembershipLevel: GroupMembershipLevel, newMembershipLevel: GroupMembershipLevel) {
+        if (oldMembershipLevel == newMembershipLevel)
+            return
+
+        when (oldMembershipLevel) {
+            GroupMembershipLevel.JOINED -> when (newMembershipLevel) {
+                GroupMembershipLevel.PARTED ->
+                    doPartGroup(connection, groupId)
+
+                GroupMembershipLevel.BLOCKED ->
+                    doBlockGroup(connection, groupId)
+
+                GroupMembershipLevel.JOINED -> error("Can't happen")
+            }
+
+            GroupMembershipLevel.PARTED -> when (newMembershipLevel) {
+                GroupMembershipLevel.JOINED ->
+                    doJoinGroup(connection, groupId)
+
+                GroupMembershipLevel.BLOCKED ->
+                    doBlockGroup(connection, groupId)
+
+                GroupMembershipLevel.PARTED -> error("Can't happen")
+            }
+
+            GroupMembershipLevel.BLOCKED -> when (newMembershipLevel) {
+                GroupMembershipLevel.JOINED ->
+                    doJoinGroup(connection, groupId)
+
+                GroupMembershipLevel.PARTED ->
+                    doPartGroup(connection, groupId)
+
+                GroupMembershipLevel.BLOCKED -> error("Can't happen")
+            }
+        }
+    }
+
     override fun part(groupId: GroupId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val groupInfo = queryGroupInfoOrThrow(connection, groupId)
 
@@ -319,11 +394,7 @@ VALUES
 
             GroupMembershipLevel.JOINED -> {
                 connection.withTransaction {
-                    clearMemberList(connection, groupId)
-
-                    updateMembershipLevel(connection, groupId, GroupMembershipLevel.PARTED)
-                    GroupConversationTable.delete(connection, groupId)
-                    deleteGroupConversationInfo(connection, groupId)
+                    doPartGroup(connection, groupId)
                     insertOrReplaceRemoteUpdate(connection, groupId)
                 }
 
@@ -340,10 +411,6 @@ VALUES
         }
     }
 
-    fun isBlocked(groupId: GroupId): Promise<Boolean, Exception> {
-        TODO()
-    }
-
     override fun block(groupId: GroupId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val groupInfo = queryGroupInfoOrThrow(connection, groupId)
 
@@ -351,10 +418,7 @@ VALUES
             false
         else {
             connection.withTransaction {
-                clearMemberList(connection, groupId)
-                updateMembershipLevel(connection, groupId, GroupMembershipLevel.BLOCKED)
-                deleteGroupConversationInfo(connection, groupId)
-                GroupConversationTable.delete(connection, groupId)
+                doBlockGroup(connection, groupId)
                 insertOrReplaceRemoteUpdate(connection, groupId)
             }
 
@@ -369,8 +433,10 @@ VALUES
             GroupMembershipLevel.JOINED -> false
             GroupMembershipLevel.PARTED -> false
             GroupMembershipLevel.BLOCKED -> {
-                updateMembershipLevel(connection, groupId, GroupMembershipLevel.PARTED)
-                insertOrReplaceRemoteUpdate(connection, groupId)
+                connection.withTransaction {
+                    doUnblockGroup(connection, groupId)
+                    insertOrReplaceRemoteUpdate(connection, groupId)
+                }
                 true
             }
         }
@@ -618,8 +684,35 @@ OFFSET
         }
     }
 
+    private fun applyDiff(connection: SQLiteConnection, update: AddressBookUpdate.Group) {
+        val maybeInfo = queryGroupInfo(connection, update.groupId)
+
+        //new group, create it
+        if (maybeInfo == null) {
+            val newGroupInfo = GroupInfo(update.groupId, update.name, update.membershipLevel)
+            insertOrReplaceGroupInfo(connection, newGroupInfo)
+
+            if (update.membershipLevel == GroupMembershipLevel.JOINED)
+                createConversationData(connection, update.groupId)
+        }
+        //existing group, transition
+        else
+            doGroupTransition(connection, update.groupId, maybeInfo.membershipLevel, update.membershipLevel)
+
+        if (update.members.isNotEmpty())
+            setGroupMembersTo(connection, update.groupId, update.members)
+    }
+
     override fun applyDiff(updates: Collection<AddressBookUpdate.Group>): Promise<Unit, Exception> {
-        TODO()
+        return if (updates.isEmpty())
+            Promise.ofSuccess(Unit)
+        else sqlitePersistenceManager.runQuery { connection ->
+            connection.withTransaction {
+                updates.forEach { update ->
+                    applyDiff(connection, update)
+                }
+            }
+        }
     }
 
     override fun getRemoteUpdates(): Promise<List<AddressBookUpdate.Group>, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -676,15 +769,19 @@ ON
     }
 
     internal fun internalAddInfo(groupInfo: GroupInfo): Unit = sqlitePersistenceManager.syncRunQuery { connection ->
-        insertOrReplaceGroupInfo(connection, groupInfo)
-        if (groupInfo.membershipLevel == GroupMembershipLevel.JOINED) {
-            insertOrReplaceNewGroupConversationInfo(connection, groupInfo.id)
-            createGroupConversationTable(connection, groupInfo.id)
+        connection.withTransaction {
+            insertOrReplaceGroupInfo(connection, groupInfo)
+            if (groupInfo.membershipLevel == GroupMembershipLevel.JOINED) {
+                createConversationData(connection, groupInfo.id)
+            }
         }
     }
 
-    internal fun internalAddMembers(id: GroupId, members: Set<UserId>): Unit = sqlitePersistenceManager.syncRunQuery { connection ->
-        insertGroupMembers(connection, id, members)
+    internal fun internalAddMembers(id: GroupId, members: Set<UserId>): Unit {
+        if (members.isNotEmpty())
+            sqlitePersistenceManager.syncRunQuery { connection ->
+                insertGroupMembers(connection, id, members)
+            }
     }
 
     internal fun internalMessageExists(id: GroupId, messageId: String): Boolean = sqlitePersistenceManager.syncRunQuery { connection ->

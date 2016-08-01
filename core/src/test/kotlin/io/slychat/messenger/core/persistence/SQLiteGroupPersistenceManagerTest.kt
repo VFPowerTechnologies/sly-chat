@@ -124,6 +124,11 @@ class SQLiteGroupPersistenceManagerTest {
         body(groupInfo)
     }
 
+    fun assertGroupInfo(groupId: GroupId, body: (GroupInfo) -> Unit) {
+        val got = assertNotNull(groupPersistenceManager.getInfo(groupId).get(), "Missing group info")
+        body(got)
+    }
+
     fun assertConvTableExists(groupId: GroupId) {
         persistenceManager.syncRunQuery {
             assertTrue(GroupConversationTable.exists(it, groupId), "Group conversation table doesn't exist")
@@ -437,6 +442,12 @@ class SQLiteGroupPersistenceManagerTest {
         groupPersistenceManager.join(groupInfo, insertRandomContacts()).get()
 
         assertConvTableExists(groupInfo.id)
+    }
+
+    fun assertConversationInfo(id: GroupId, groupConversationInfo: GroupConversationInfo) {
+        val conversationInfo = assertNotNull(groupPersistenceManager.internalGetConversationInfo(id), "Missing group conversation info")
+
+        assertEquals(groupConversationInfo, conversationInfo, "Invalid conversation info")
     }
 
     fun assertInitialConversationInfo(id: GroupId) {
@@ -1121,8 +1132,180 @@ class SQLiteGroupPersistenceManagerTest {
         }
     }
 
-    @Test
-    fun `applyDiff`() {
+    fun assertMembers(groupId: GroupId, expectedMembers: Set<UserId>) {
+        val members = groupPersistenceManager.getMembers(groupId).get()
+        assertThat(members).apply {
+            `as`("Should contain the given members")
+            containsOnlyElementsOf(expectedMembers)
+        }
+    }
 
+    fun assertNoMembers(groupId: GroupId) {
+        val members = groupPersistenceManager.getMembers(groupId).get()
+        assertThat(members).apply {
+            `as`("Should contain no members")
+            isEmpty()
+        }
+    }
+
+    //I tried to make this test as clear as possible to avoid errors, as testing every transition manually is too tedious
+    //and error prone
+    fun testApplyDiff(previousLevel: GroupMembershipLevel?, newLevel: GroupMembershipLevel) {
+        val groupId = randomGroupId()
+        val groupName = randomGroupName()
+
+        val members = if (newLevel == GroupMembershipLevel.JOINED)
+            insertRandomContacts()
+        else
+            emptySet()
+
+        val updates = listOf(
+            AddressBookUpdate.Group(groupId, groupName, members, newLevel)
+        )
+
+        //insert previous group data
+        if (previousLevel != null) {
+            val previousMembers = if (previousLevel == GroupMembershipLevel.JOINED)
+                insertRandomContacts()
+            else
+                emptySet()
+
+            val info = GroupInfo(groupId, groupName, previousLevel)
+            groupPersistenceManager.internalAddInfo(info)
+            groupPersistenceManager.internalAddMembers(groupId, previousMembers)
+        }
+
+        //if we're testing against a joined group, we don't want the conversation info to be reset during the sync
+        val convoInfo = if (previousLevel == GroupMembershipLevel.JOINED) {
+            val lastSpeaker = insertRandomContact()
+            val ci = GroupConversationInfo(groupId, lastSpeaker, 1, randomMessageText(), currentTimestamp())
+
+            groupPersistenceManager.internalSetConversationInfo(ci)
+
+            ci
+        }
+        else
+            GroupConversationInfo(groupId, null, 0, null, null)
+
+        groupPersistenceManager.applyDiff(updates).get()
+
+        when (newLevel) {
+            GroupMembershipLevel.JOINED -> {
+                assertConvTableExists(groupId)
+                assertConversationInfo(groupId, convoInfo)
+                assertMembers(groupId, members)
+            }
+
+            GroupMembershipLevel.PARTED -> {
+                assertConvTableNotExists(groupId)
+                assertNoMembers(groupId)
+            }
+
+            GroupMembershipLevel.BLOCKED -> {
+                assertConvTableNotExists(groupId)
+                assertNoMembers(groupId)
+            }
+        }
+
+        val updatedInfo = GroupInfo(groupId, groupName, newLevel)
+        assertGroupInfo(groupId) { assertEquals(updatedInfo, it, "Invalid group info") }
+
+        assertNoRemoteUpdates()
+    }
+
+    @Test
+    fun `applyDiff should add new JOINED groups`() {
+        testApplyDiff(
+            null,
+            GroupMembershipLevel.JOINED
+        )
+    }
+
+    @Test
+    fun `applyDiff should add new PARTED groups`() {
+        testApplyDiff(
+            null,
+            GroupMembershipLevel.PARTED
+        )
+    }
+
+    @Test
+    fun `applyDiff should add new BLOCKED groups`() {
+        testApplyDiff(
+            null,
+            GroupMembershipLevel.BLOCKED
+        )
+    }
+
+    @Test
+    fun `applyDiff should update JOINED to PARTED groups`() {
+        testApplyDiff(
+            GroupMembershipLevel.JOINED,
+            GroupMembershipLevel.PARTED
+        )
+    }
+
+    @Test
+    fun `applyDiff should update JOINED to BLOCKED groups`() {
+        testApplyDiff(
+            GroupMembershipLevel.JOINED,
+            GroupMembershipLevel.BLOCKED
+        )
+    }
+
+    @Test
+    fun `applyDiff should update members and not touch conversation info for JOINED to JOINED`() {
+        testApplyDiff(
+            GroupMembershipLevel.JOINED,
+            GroupMembershipLevel.JOINED
+        )
+    }
+
+    @Test
+    fun `applyDiff should update existing PARTED to JOINED groups`() {
+        testApplyDiff(
+            GroupMembershipLevel.PARTED,
+            GroupMembershipLevel.JOINED
+        )
+    }
+
+    @Test
+    fun `applyDiff should update existing PARTED to BLOCKED groups`() {
+        testApplyDiff(
+            GroupMembershipLevel.PARTED,
+            GroupMembershipLevel.BLOCKED
+        )
+    }
+
+    @Test
+    fun `applyDiff should do nothing for PARTED to PARTED groups`() {
+        testApplyDiff(
+            GroupMembershipLevel.PARTED,
+            GroupMembershipLevel.PARTED
+        )
+    }
+
+    @Test
+    fun `applyDiff should update existing BLOCKED TO PARTED groups`() {
+        testApplyDiff(
+            GroupMembershipLevel.BLOCKED,
+            GroupMembershipLevel.PARTED
+        )
+    }
+
+    @Test
+    fun `applyDiff should update existing BLOCKED TO JOINED groups`() {
+        testApplyDiff(
+            GroupMembershipLevel.BLOCKED,
+            GroupMembershipLevel.JOINED
+        )
+    }
+
+    @Test
+    fun `applyDiff should do nothing for BLOCKED to BLOCKED groups`() {
+        testApplyDiff(
+            GroupMembershipLevel.BLOCKED,
+            GroupMembershipLevel.BLOCKED
+        )
     }
 }
