@@ -50,16 +50,8 @@ class GroupServiceImpl(
         return groupPersistenceManager.isUserMemberOf(groupId, userId)
     }
 
-    override fun inviteUsers(groupId: GroupId, contact: Set<UserId>): Promise<Unit, Exception> {
-        TODO()
-    }
-
     override fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception> {
         return groupPersistenceManager.markConversationAsRead(groupId)
-    }
-
-    override fun createNewGroup(name: String, initialMembers: Set<UserId>): Promise<Unit, Exception> {
-        TODO()
     }
 
     override fun getMembersWithInfo(groupId: GroupId): Promise<List<ContactInfo>, Exception> {
@@ -70,28 +62,55 @@ class GroupServiceImpl(
 
     override fun join(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
-            groupPersistenceManager.join(groupInfo, members) successUi {
-                log.info("Joined new group {} with members={}", groupInfo.id, members)
-                groupEventSubject.onNext(GroupEvent.NewGroup(groupInfo.id, members))
+            groupPersistenceManager.join(groupInfo, members) mapUi { wasJoined ->
+                if (wasJoined) {
+                    log.info("Joined new group {} with members={}", groupInfo.id, members)
+                    groupEventSubject.onNext(GroupEvent.NewGroup(groupInfo.id, members))
+                    triggerRemoteSync()
+                }
+                else
+                    log.info("Group {} was already joined", groupInfo.id)
             }
         }
     }
 
     override fun part(groupId: GroupId): Promise<Boolean, Exception> {
         return addressBookOperationManager.runOperation {
-            groupPersistenceManager.part(groupId)
+            groupPersistenceManager.part(groupId) successUi { wasParted ->
+                if (wasParted) {
+                    log.info("Parted group {}", groupId)
+                    triggerRemoteSync()
+                }
+                else
+                    log.info("Group {} was already parted", groupId)
+            }
         }
     }
 
     override fun block(groupId: GroupId): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
-            groupPersistenceManager.block(groupId)
+            groupPersistenceManager.block(groupId) mapUi { wasBlocked ->
+                if (wasBlocked) {
+                    log.info("Group {} was blocked", groupId)
+                    triggerRemoteSync()
+                }
+                else
+                    log.info("Group {} was already blocked", groupId)
+
+            }
         }
     }
 
     override fun unblock(groupId: GroupId): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
-            groupPersistenceManager.unblock(groupId)
+            groupPersistenceManager.unblock(groupId) mapUi { wasUnblocked ->
+                if (wasUnblocked) {
+                    log.info("Group {} was unblocked", groupId)
+                    triggerRemoteSync()
+                }
+                else
+                    log.info("Group {} was already unblocked")
+            }
         }
     }
 
@@ -111,12 +130,17 @@ class GroupServiceImpl(
         return groupPersistenceManager.deleteMessages(groupId, messageIds)
     }
 
+    private fun triggerRemoteSync() {
+        addressBookOperationManager.withCurrentSyncJob { doRemoteSync() }
+    }
+
     override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
             groupPersistenceManager.addMembers(groupId, users) mapUi { wasAdded ->
                 if (wasAdded.isNotEmpty()) {
                     log.info("Users {} joined group {}", wasAdded, groupId)
                     groupEventSubject.onNext(GroupEvent.Joined(groupId, wasAdded))
+                    triggerRemoteSync()
                 }
             }
         }
@@ -128,6 +152,7 @@ class GroupServiceImpl(
                 if (wasRemoved) {
                     log.info("User {} has left group {}", userId, groupId.string)
                     groupEventSubject.onNext(GroupEvent.Parted(groupId, userId))
+                    triggerRemoteSync()
                 }
             }
         }

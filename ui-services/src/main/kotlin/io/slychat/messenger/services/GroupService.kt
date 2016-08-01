@@ -32,11 +32,7 @@ interface GroupService {
 
     fun getGroupConversations(): Promise<List<GroupConversation>, Exception>
 
-    fun inviteUsers(groupId: GroupId, contact: Set<UserId>): Promise<Unit, Exception>
-
     fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception>
-
-    fun createNewGroup(name: String, initialMembers: Set<UserId>): Promise<Unit, Exception>
 
     fun getMembersWithInfo(groupId: GroupId): Promise<List<ContactInfo>, Exception>
 

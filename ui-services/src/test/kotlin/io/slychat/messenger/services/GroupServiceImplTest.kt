@@ -39,10 +39,10 @@ class GroupServiceImplTest {
     fun before() {
         whenever(groupPersistenceManager.removeMember(any(), any())).thenReturn(true)
         whenever(groupPersistenceManager.addMembers(any(), any())).thenAnswerWithArg(1)
-        whenever(groupPersistenceManager.join(any(), any())).thenReturn(Unit)
+        whenever(groupPersistenceManager.join(any(), any())).thenReturn(true)
         whenever(groupPersistenceManager.part(any())).thenReturn(true)
-        whenever(groupPersistenceManager.block(any())).thenReturn(Unit)
-        whenever(groupPersistenceManager.unblock(any())).thenReturn(Unit)
+        whenever(groupPersistenceManager.block(any())).thenReturn(true)
+        whenever(groupPersistenceManager.unblock(any())).thenReturn(true)
     }
 
     fun assertOperationManagerUsed() {
@@ -162,5 +162,152 @@ class GroupServiceImplTest {
     fun `unblocking a group should go through AddressBookOperationManager`() {
         groupService.unblock(randomGroupId()).get()
         assertOperationManagerUsed()
+    }
+
+    fun testAddMembersRemoteUpdate(wasAdded: Boolean) {
+
+        val groupId = randomGroupId()
+        val users = randomUserIds()
+
+        if (wasAdded)
+            whenever(groupPersistenceManager.addMembers(groupId,  users)).thenAnswerWithArg(1)
+        else
+            whenever(groupPersistenceManager.addMembers(groupId,  users)).thenReturn(emptySet())
+
+        groupService.addMembers(groupId, users).get()
+
+        if (wasAdded)
+            addressBookOperationManager.assertRemoteUpdateTriggered()
+        else
+            addressBookOperationManager.assertRemoteUpdateNotTriggered()
+    }
+
+    @Test
+    fun `addMembers should trigger a remote update if new members were added`() {
+        testAddMembersRemoteUpdate(true)
+    }
+
+    @Test
+    fun `addMembers should not trigger a remote update if no new members were added`() {
+        testAddMembersRemoteUpdate(false)
+    }
+
+    fun testRemoveMemberRemoteUpdate(wasRemoved: Boolean) {
+        val groupId = randomGroupId()
+        val user = randomUserId()
+
+        whenever(groupPersistenceManager.removeMember(groupId, user)).thenReturn(wasRemoved)
+
+        groupService.removeMember(groupId, user).get()
+
+        if (wasRemoved)
+            addressBookOperationManager.assertRemoteUpdateTriggered()
+        else
+            addressBookOperationManager.assertRemoteUpdateNotTriggered()
+
+    }
+
+    @Test
+    fun `removeMember should trigger a remote update if a user was removed`() {
+        testRemoveMemberRemoteUpdate(true)
+    }
+
+    @Test
+    fun `removeMember should not trigger a remote update if a user was not removed`() {
+        testRemoveMemberRemoteUpdate(false)
+    }
+
+    fun testJoinRemoteUpdate(wasJoined: Boolean) {
+        val groupInfo = randomGroupInfo()
+        val invited = randomUserIds()
+
+        whenever(groupPersistenceManager.join(groupInfo, invited)).thenReturn(wasJoined)
+
+        groupService.join(groupInfo, invited).get()
+
+        if (wasJoined)
+            addressBookOperationManager.assertRemoteUpdateTriggered()
+        else
+            addressBookOperationManager.assertRemoteUpdateNotTriggered()
+
+    }
+
+    @Test
+    fun `join should trigger a remote update if the group was joined`() {
+        testJoinRemoteUpdate(true)
+    }
+
+    @Test
+    fun `join should not trigger a remote update if the group was already joined`() {
+        testJoinRemoteUpdate(false)
+    }
+
+    fun testPartRemoteUpdate(wasParted: Boolean) {
+        val groupId = randomGroupId()
+
+        whenever(groupPersistenceManager.part(groupId)).thenReturn(wasParted)
+
+        groupService.part(groupId).get()
+
+        if (wasParted)
+            addressBookOperationManager.assertRemoteUpdateTriggered()
+        else
+            addressBookOperationManager.assertRemoteUpdateNotTriggered()
+    }
+
+    @Test
+    fun `part should trigger a remote update if a group was parted`() {
+        testPartRemoteUpdate(true)
+    }
+
+    @Test
+    fun `part should not trigger a remote update if the group was already parted`() {
+        testPartRemoteUpdate(false)
+    }
+
+    fun testBlockRemoteUpdate(wasBlocked: Boolean) {
+        val groupId = randomGroupId()
+
+        whenever(groupPersistenceManager.block(groupId)).thenReturn(wasBlocked)
+
+        groupService.block(groupId).get()
+
+        if (wasBlocked)
+            addressBookOperationManager.assertRemoteUpdateTriggered()
+        else
+            addressBookOperationManager.assertRemoteUpdateNotTriggered()
+    }
+
+    @Test
+    fun `block should trigger a remote update if a user was blocked`() {
+        testBlockRemoteUpdate(true)
+    }
+
+    @Test
+    fun `block should not trigger a remote update if a user was already blocked`() {
+        testBlockRemoteUpdate(false)
+    }
+
+    fun testUnblockRemoteUpdate(wasUnblocked: Boolean) {
+        val groupId = randomGroupId()
+
+        whenever(groupPersistenceManager.unblock(groupId)).thenReturn(wasUnblocked)
+
+        groupService.unblock(groupId).get()
+
+        if (wasUnblocked)
+            addressBookOperationManager.assertRemoteUpdateTriggered()
+        else
+            addressBookOperationManager.assertRemoteUpdateNotTriggered()
+    }
+
+    @Test
+    fun `unblock should trigger a remote update if a user was unblocked`() {
+        testUnblockRemoteUpdate(true)
+    }
+
+    @Test
+    fun `unblock should not trigger a remote update if a user was not blocked`() {
+        testUnblockRemoteUpdate(false)
     }
 }
