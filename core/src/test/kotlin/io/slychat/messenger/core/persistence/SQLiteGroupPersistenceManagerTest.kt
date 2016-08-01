@@ -364,7 +364,7 @@ class SQLiteGroupPersistenceManagerTest {
         val groupInfo = randomGroupInfo()
         val initialMembers = insertRandomContacts()
 
-        groupPersistenceManager.join(groupInfo, initialMembers).get()
+        assertTrue(groupPersistenceManager.join(groupInfo, initialMembers).get())
 
         val got = assertNotNull(groupPersistenceManager.getInfo(groupInfo.id).get(), "Missing group info")
 
@@ -385,7 +385,7 @@ class SQLiteGroupPersistenceManagerTest {
 
         groupPersistenceManager.internalAddInfo(groupInfo.copy(membershipLevel = GroupMembershipLevel.PARTED))
 
-        groupPersistenceManager.join(groupInfo, initialMembers).get()
+        assertJoined(groupPersistenceManager.join(groupInfo, initialMembers).get())
 
         val got = assertNotNull(groupPersistenceManager.getInfo(groupInfo.id).get(), "Missing group info")
 
@@ -419,8 +419,8 @@ class SQLiteGroupPersistenceManagerTest {
         val initialMembers = insertRandomContacts()
         val dupMembers = insertRandomContacts()
 
-        groupPersistenceManager.join(groupInfo, initialMembers).get()
-        groupPersistenceManager.join(groupInfo, dupMembers).get()
+        assertJoined(groupPersistenceManager.join(groupInfo, initialMembers).get())
+        assertNotJoined(groupPersistenceManager.join(groupInfo, dupMembers).get())
 
         val members = groupPersistenceManager.getMembers(groupInfo.id).get()
 
@@ -448,11 +448,19 @@ class SQLiteGroupPersistenceManagerTest {
         assertEquals(0, conversationInfo.unreadCount, "Unread count should be 0")
     }
 
+    fun assertJoined(v: Boolean) {
+        assertTrue(v, "Should return true for joined groups")
+    }
+
+    fun assertNotJoined(v: Boolean) {
+        assertFalse(v, "Should return false when a group is already joined")
+    }
+
     @Test
     fun `join should add an empty group conversation info entry`() {
         val groupInfo = randomGroupInfo()
 
-        groupPersistenceManager.join(groupInfo, insertRandomContacts()).get()
+        assertJoined(groupPersistenceManager.join(groupInfo, insertRandomContacts()).get())
 
         assertInitialConversationInfo(groupInfo.id)
     }
@@ -460,7 +468,8 @@ class SQLiteGroupPersistenceManagerTest {
     @Test
     fun `join should create group conversation info for a previously parted group`() {
         withPartedGroupFull {
-            groupPersistenceManager.join(it.copy(membershipLevel = GroupMembershipLevel.JOINED), insertRandomContacts()).get()
+            val groupInfo = it.copy(membershipLevel = GroupMembershipLevel.JOINED)
+            assertJoined(groupPersistenceManager.join(groupInfo, insertRandomContacts()).get())
             assertInitialConversationInfo(it.id)
         }
     }
@@ -771,7 +780,6 @@ class SQLiteGroupPersistenceManagerTest {
             val ids = info.map { it.info.id }
 
             val toRemove = ids.subList(0, 2)
-            val remaining = ids.subList(2, ids.size)
 
             groupPersistenceManager.deleteMessages(groupId, toRemove).get()
 

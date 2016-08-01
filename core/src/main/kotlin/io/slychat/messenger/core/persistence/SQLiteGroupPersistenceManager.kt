@@ -155,7 +155,7 @@ WHERE
         }
     }
 
-    override fun join(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun join(groupInfo: GroupInfo, members: Set<UserId>): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
         require(groupInfo.membershipLevel == GroupMembershipLevel.JOINED) { "Invalid membershipLevel: ${groupInfo.membershipLevel}"}
 
         val groupId = groupInfo.id
@@ -163,7 +163,7 @@ WHERE
 
         //do nothing if we're already joined
         if (maybeInfo != null && maybeInfo.membershipLevel == GroupMembershipLevel.JOINED) {
-            return@runQuery
+            false
         }
         else {
             connection.withTransaction {
@@ -178,6 +178,8 @@ WHERE
 
                 insertOrReplaceRemoteUpdate(connection, groupId)
             }
+
+            true
         }
     }
 
