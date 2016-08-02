@@ -32,7 +32,7 @@ fun getSharedLibFileName(base: String): String {
     return when {
         os == "Linux" -> "lib$base.so"
         os.startsWith("Windows") -> "$base.dll"
-    //TODO osx
+        os == "Mac OS X" -> "lib$base.dylib"
         else -> throw UnsupportedOperationException("Unsupported OS: $os")
     }
 }

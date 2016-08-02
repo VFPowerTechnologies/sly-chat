@@ -1,6 +1,7 @@
 package io.slychat.messenger.desktop
 
 import io.slychat.messenger.core.PlatformInfo
+import io.slychat.messenger.core.div
 import java.io.File
 
 fun getUserHome(): File =
@@ -17,7 +18,10 @@ fun getUserConfigDir(appName: String): File {
         os.startsWith("Windows") ->
             File(System.getenv("LOCALAPPDATA"), appName)
 
-        //TODO OSX, *BSD?
+        os == "Mac OS X" ->
+            home / "Library" / "Preferences" / appName
+
+        //TODO *BSD?
 
         else ->
             throw RuntimeException("Unsupported OS: $os")
