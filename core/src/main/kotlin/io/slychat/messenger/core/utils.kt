@@ -46,9 +46,11 @@ fun Class<*>.loadSharedLibFromResource(base: String) {
     if (inputStream == null)
         throw UnsatisfiedLinkError("Unable to find shared library $platformName")
 
-    val path = File.createTempFile("sqlitetest", "")
+    //.dll suffix is required for loading on windows, else a UnsatisfiedLinkError("Can't find dependent libraries") is thrown
+    val suffix = if (System.getProperty("os.name").startsWith("Windows")) ".dll" else ""
+
+    val path = File.createTempFile("sqlitetest", suffix)
     path.deleteOnExit()
-    //according to the JNA src code, ext .dll is required for loading on windows
     inputStream.use { sharedLibStream ->
         FileOutputStream(path).use {
             val buffer = ByteArray(4096)
