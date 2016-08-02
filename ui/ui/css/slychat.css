@@ -155,6 +155,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     height: 121px;
     text-align: center;
     margin-bottom: 10px;
+    cursor: pointer;
 }
 .group-details {
     height: 70px;
@@ -276,6 +277,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .new-contact-link {
     min-height: 45px;
     font-size: 14px;
+    cursor: pointer;
 }
 .new-contact-link p {
     margin: 0;
@@ -318,6 +320,9 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 }
 
 /* Profile Page */
+.profile-info-link {
+    cursor: pointer;
+}
 .info-link {
     margin: 0 15px;
     display: inline-block;

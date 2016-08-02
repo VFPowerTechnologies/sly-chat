@@ -139,7 +139,7 @@ ProfileController.prototype = {
                     '<div class="item-media"><i class="icon icon-form-name"></i></div>' +
                     '<div class="item-inner">' +
                         '<div class="item-input">' +
-                            '<input id="profileNameInput" type="text" placeholder="Name" required autocorrect="off" value="' + this.name +'"/>' +
+                            '<input id="profileNameInput" type="text" placeholder="Name" required autocorrect="off" value="' + this.name +'" style="border-bottom: 1px solid #808080;"/>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
@@ -153,7 +153,7 @@ ProfileController.prototype = {
                     '<div class="item-media"><i class="icon icon-form-email"></i></div>' +
                     '<div class="item-inner">' +
                         '<div class="item-input">' +
-                            '<input id="profileEmailInput" type="email" placeholder="E-Mail" required autocorrect="off" autocapitalize="off" value="' + this.username +'"/>' +
+                            '<input id="profileEmailInput" type="email" placeholder="E-Mail" style="border-bottom: 1px solid #808080;" required autocorrect="off" autocapitalize="off" value="' + this.username +'"/>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
@@ -203,7 +203,7 @@ ProfileController.prototype = {
                     '<div class="item-media"><i class="icon icon-form-email"></i></div>' +
                     '<div class="item-inner">' +
                         '<div class="item-input">' +
-                            '<input id="smsCodeInput" type="text" placeholder="Sms Code"/>' +
+                            '<input id="smsCodeInput" type="text" style="border-bottom: 1px solid #808080;" placeholder="Sms Code"/>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
@@ -228,8 +228,8 @@ ProfileController.prototype = {
                             '<div class="content-block">' +
                                 '<div class="row">' +
                                     '<div class="col-100 button-container">' +
-                                        '<button class="button button-big color-red" onclick="slychat.closeModal()">Cancel</button>' +
-                                        '<button id="submitUpdateBtn" class="button button-big color-green" onclick="profileController.' + method + '()">Submit</button>' +
+                                        '<button class="button button-big button-fill color-red" onclick="slychat.closeModal()">Cancel</button>' +
+                                        '<button id="submitUpdateBtn" class="button button-big button-fill" onclick="profileController.' + method + '()">Submit</button>' +
                                     '</div>' +
                                 '</div>' +
                             '</div>' +

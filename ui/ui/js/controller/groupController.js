@@ -179,6 +179,11 @@ GroupController.prototype = {
             contactController.loadChatPage(group.group, true, true);
         });
 
+        node.on("mouseheld", function () {
+            vibrate(50);
+            contactController.openGroupConversationMenu(group.group.id);
+        }.bind(this));
+
         return node;
     },
 
