@@ -62,6 +62,8 @@ class GroupServiceImpl(
 
     override fun join(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
+            log.debug("Joining group: {}", groupInfo.id)
+
             groupPersistenceManager.join(groupInfo, members) mapUi { wasJoined ->
                 if (wasJoined) {
                     log.info("Joined new group {} with members={}", groupInfo.id, members)
@@ -76,6 +78,8 @@ class GroupServiceImpl(
 
     override fun part(groupId: GroupId): Promise<Boolean, Exception> {
         return addressBookOperationManager.runOperation {
+            log.debug("Parting group: {}", groupId)
+
             groupPersistenceManager.part(groupId) successUi { wasParted ->
                 if (wasParted) {
                     log.info("Parted group {}", groupId)
@@ -89,6 +93,8 @@ class GroupServiceImpl(
 
     override fun block(groupId: GroupId): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
+            log.debug("Blocking group: {}", groupId)
+
             groupPersistenceManager.block(groupId) mapUi { wasBlocked ->
                 if (wasBlocked) {
                     log.info("Group {} was blocked", groupId)
@@ -103,6 +109,8 @@ class GroupServiceImpl(
 
     override fun unblock(groupId: GroupId): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
+            log.debug("Unblocking group: {}", groupId)
+
             groupPersistenceManager.unblock(groupId) mapUi { wasUnblocked ->
                 if (wasUnblocked) {
                     log.info("Group {} was unblocked", groupId)
@@ -136,6 +144,8 @@ class GroupServiceImpl(
 
     override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
+            log.debug("Adding new members {} for group: {}", users, groupId)
+
             groupPersistenceManager.addMembers(groupId, users) mapUi { wasAdded ->
                 if (wasAdded.isNotEmpty()) {
                     log.info("Users {} joined group {}", wasAdded, groupId)
@@ -148,6 +158,8 @@ class GroupServiceImpl(
 
     override fun removeMember(groupId: GroupId, userId: UserId): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
+            log.debug("Removing {} from group: {}", userId, groupId)
+
             groupPersistenceManager.removeMember(groupId, userId) mapUi { wasRemoved ->
                 if (wasRemoved) {
                     log.info("User {} has left group {}", userId, groupId.string)

@@ -39,6 +39,7 @@ class ContactsServiceImpl(
 
     override fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
         return addressBookOperationManager.runOperation {
+            log.debug("Adding new contact: {}", contactInfo.id)
             contactsPersistenceManager.add(contactInfo)
         } successUi { wasAdded ->
             if (wasAdded) {
@@ -51,7 +52,9 @@ class ContactsServiceImpl(
     /** Remove the given contact from the contact list. */
     override fun removeContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
         return addressBookOperationManager.runOperation {
-            contactsPersistenceManager.remove(contactInfo.id)
+            val id = contactInfo.id
+            log.debug("Removing contact: {}", id)
+            contactsPersistenceManager.remove(id)
         } successUi { wasRemoved ->
             if (wasRemoved) {
                 withCurrentJob { doUpdateRemoteContactList() }
@@ -62,6 +65,7 @@ class ContactsServiceImpl(
 
     override fun updateContact(contactInfo: ContactInfo): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
+            log.debug("Updating contact: {}", contactInfo.id)
             contactsPersistenceManager.update(contactInfo)
         } successUi {
             contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactInfo)))
@@ -74,12 +78,14 @@ class ContactsServiceImpl(
         val usersCopy = HashSet(users)
 
         return addressBookOperationManager.runOperation {
+            log.debug("Filtering out blocked users from: {}", users)
             contactsPersistenceManager.filterBlocked(usersCopy)
         }
     }
 
     override fun allowAll(userId: UserId): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
+            log.debug("Setting allowedMessageLevel=ALL for: {}", userId)
             contactsPersistenceManager.allowAll(userId)
         } successUi {
             withCurrentJob { doUpdateRemoteContactList() }
@@ -166,6 +172,7 @@ class ContactsServiceImpl(
         val missing = HashSet(users)
 
         return addressBookOperationManager.runOperation {
+            log.debug("Adding missing contacts: {}", users)
             contactsPersistenceManager.exists(users) bind { exists ->
                 missing.removeAll(exists)
                 addNewContactData(missing) mapUi {
