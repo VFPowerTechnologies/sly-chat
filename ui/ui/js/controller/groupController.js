@@ -205,10 +205,40 @@ GroupController.prototype = {
     addGroupEventListener : function () {
         groupService.addGroupEventListener(function (event) {
             if (event.type == "NEW") {
-                console.log(event);
-                // to be updated
+                this.newGroupCreatedEvent(event);
             }
         }.bind(this));
+    },
+
+    newGroupCreatedEvent : function (event) {
+        if(this.groupDetailsCache[event.groupId] === undefined) {
+            groupService.getInfo(event.groupId).then(function (info) {
+                if (info !== null) {
+                    groupService.getMembers(event.groupId).then(function (members) {
+                        var groupDetails = {
+                            group: info,
+                            members: members,
+                            info: {
+                                lastSpeaker: null,
+                                unreadMessageCount: 0,
+                                lastMessage: null,
+                                lastTimestamp: null
+                            }
+                        };
+                        this.groupDetailsCache[event.groupId] = groupDetails;
+
+                        var groupNode = this.createGroupNode(groupDetails);
+
+                        $("#groupList").append(groupNode);
+                        this.createGroupNodeMembers(event.groupId, members);
+                    }.bind(this)).catch(function (e) {
+                        exceptionController.handleError(e);
+                    });
+                }
+            }.bind(this)).catch(function (e) {
+                exceptionController.handleError(e);
+            });
+        }
     },
 
     createGroup : function () {
