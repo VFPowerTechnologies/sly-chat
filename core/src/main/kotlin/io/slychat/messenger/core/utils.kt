@@ -4,7 +4,6 @@ package io.slychat.messenger.core
 import com.fasterxml.jackson.core.type.TypeReference
 import org.joda.time.DateTime
 import java.io.File
-import java.io.FileOutputStream
 import java.util.*
 
 /**
@@ -40,22 +39,19 @@ fun getSharedLibFileName(base: String): String {
 //this is in core to simplify testing; should only be used by the desktop port
 /** Attempts to unpack and load a shared library from resources. Do not use on android. */
 fun Class<*>.loadSharedLibFromResource(base: String) {
-    val platformName = getSharedLibFileName(base)
-
-    val inputStream = getResourceAsStream("/$platformName")
-    if (inputStream == null)
-        throw UnsatisfiedLinkError("Unable to find shared library $platformName")
+    val libName = getSharedLibFileName(base)
 
     //.dll suffix is required for loading on windows, else a UnsatisfiedLinkError("Can't find dependent libraries") is thrown
     val suffix = if (System.getProperty("os.name").startsWith("Windows")) ".dll" else ""
 
     val path = File.createTempFile("sqlitetest", suffix)
     path.deleteOnExit()
+
+    val inputStream = getResourceAsStream("/$libName") ?: throw UnsatisfiedLinkError("Unable to find shared library $libName")
+
     inputStream.use { sharedLibStream ->
-        FileOutputStream(path).use {
-            val buffer = ByteArray(4096)
-            while (sharedLibStream.read(buffer) > 0)
-                it.write(buffer)
+        path.outputStream().use {
+            inputStream.copyTo(it)
         }
     }
 
