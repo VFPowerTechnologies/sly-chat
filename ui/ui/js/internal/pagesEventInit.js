@@ -164,8 +164,14 @@ slychat.onPageInit('createGroup', function (page) {
 });
 
 // Contact popup event
-$$('#addNewContactGoBtn').on('click', function (e) {
-    navigationController.loadPage('addContact.html', true);
+$("#contactPopupNewBtn").on("click", function (e) {
+    e.preventDefault();
+    if ($("#contact-tab").hasClass("active")) {
+        navigationController.loadPage('addContact.html', true);
+    }
+    else {
+        navigationController.loadPage('createGroup.html', true);
+    }
 });
 
 $$(document).on("input", ".invalid-required", function(e) {
@@ -210,6 +216,26 @@ $$(document).on('click', '.open-action-menu', function (e) {
 $$(document).on('click', '.create-group-button', function (e) {
     e.preventDefault();
     navigationController.loadPage('createGroup.html', true);
+});
+
+$$(document).on('click', '#submitInviteContactButton', function (e) {
+    e.preventDefault();
+    var contacts = [];
+    $("#inviteContactList").find(".new-group-contact:checked").each(function (index, contact) {
+        contacts.push(contactController.getContact($(contact).val()));
+    });
+
+    if(contacts.length <= 0) {
+        return;
+    }
+
+    var groupId = $("#inviteContactGroupId").val();
+
+    if (groupId === undefined || groupId === null) {
+        return;
+    }
+
+    groupController.inviteUsersToGroup(groupId, contacts);
 });
 
 // TODO Implement left contact menu in chat page for easy switching between contact

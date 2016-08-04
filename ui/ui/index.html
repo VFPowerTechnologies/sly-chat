@@ -57,7 +57,7 @@
 <div class="popup-overlay"></div>
 <div id='contactPopup' class="popup popup-contact">
     <div class="view navbar-fixed" data-page>
-        <div class="pages toolbar-trough">
+        <div class="pages">
             <div data-page class="page">
                 <div class="navbar top-navbar">
                     <div class="navbar-inner">
@@ -69,10 +69,11 @@
                         </div>
                     </div>
                 </div>
-                <div class="page-content">
+                <div class="page-content" style="padding-bottom: 48px;">
                     <div class="tabs-swipeable-wrap">
+                        <a href="#" id="contactPopupNewBtn" class="floating-button close-popup">new</a>
                         <div class="tabs">
-                            <div class="tab active" id="contact-tab">
+                            <div class="tab active" id="contact-tab" style="overflow: auto;">
                                 <div class="content-block-title">Recent contacts</div>
                                 <div id="recentContactList" class="content-block recent-contact-list"></div>
                                 <div class="content-block-title">Contacts</div>
@@ -80,16 +81,14 @@
                                     <ul id="contact-list">
                                     </ul>
                                 </div>
-                                <a href="#" id="addNewContactGoBtn" class="floating-button close-popup">new</a>
                             </div>
-                            <div class="tab" id="group-tab">
+                            <div class="tab" id="group-tab" style="overflow: auto;">
                                 <div class="content-block-title">Groups</div>
                                 <div class="content-block">
                                     <div class="content-block">
                                         <div id="groupList" class="row"></div>
                                     </div>
                                 </div>
-                                <a href="#" class="floating-button create-group-button close-popup">new</a>
                             </div>
                         </div>
                     </div>
