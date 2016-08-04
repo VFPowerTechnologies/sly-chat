@@ -29,7 +29,7 @@ LoginController.prototype = {
 
     onLogout : function () {
         this.resetLoginInfo();
-        profileController.resetProfileInfo();
+        this.resetUiOnLogout();
         navigationController.loadPage("login.html", false);
         navigationController.clearHistory();
     },
@@ -142,5 +142,18 @@ LoginController.prototype = {
     resetLoginInfo : function () {
         this.email = '';
         this.password = '';
+    },
+
+    resetUiOnLogout : function () {
+        groupController.clearCache();
+        contactController.clearCache();
+        connectionController.clearCache();
+        chatController.clearCache();
+        profileController.resetProfileInfo();
+        registrationController.clearCache();
+
+        $("#contact-list").html("");
+        $("#recentContactList").html("");
+        $("#groupList").html("");
     }
 };

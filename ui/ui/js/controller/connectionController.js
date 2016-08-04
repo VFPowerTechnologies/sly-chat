@@ -68,5 +68,11 @@ ConnectionController.prototype = {
             $(this.notification).addClass(additionalClass);
             $(this.notification).find(".item-text").html(message);
         }
+    },
+
+    clearCache : function () {
+        this.relayConnected = true;
+        this.networkAvailable = true;
+        this.notification = null;
     }
 };

@@ -154,5 +154,14 @@ RegistrationController.prototype = {
             console.log(e);
             slychat.hidePreloader();
         });
+    },
+
+    clearCache : function () {
+        this.registrationInfo = {
+            name : '',
+            email : '',
+            password : '',
+            phoneNumber : ''
+        };
     }
 };
