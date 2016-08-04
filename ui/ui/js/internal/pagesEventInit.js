@@ -35,6 +35,10 @@ slychat.onPageInit('register', function (page) {
         e.preventDefault();
         registrationController.register();
     });
+
+    $$("#loginGoBtn").on('click', function (e) {
+        navigationController.loadPage('login.html', true);
+    });
 });
 
 // Chat page init function
