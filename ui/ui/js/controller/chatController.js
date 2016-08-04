@@ -220,7 +220,7 @@ ChatController.prototype = {
         //Get the contact that sent the message
         var cachedContact = contactController.getContact(contactId);
         if(!cachedContact) {
-            console.error("No cached contact for " + contactId);
+            console.log("No cached contact for " + contactId);
             return;
         }
         var contactName = cachedContact.name;
@@ -246,18 +246,13 @@ ChatController.prototype = {
             if(messageDiv.length){
                 var contact = contactController.getContact(contactId);
                 vibrate(100);
-                //for the common case
-                if(messages.length == 1) {
-                    var message = messages[0];
-                    messageDiv.append(this.createMessageNode(message, contact));
-                }
-                else {
-                    var fragment = $(document.createDocumentFragment());
-                    messages.forEach(function (message) {
-                        fragment.append(this.createMessageNode(message, contact));
-                    }, this);
-                    messageDiv.append(fragment);
-                }
+
+                var fragment = $(document.createDocumentFragment());
+                messages.forEach(function (message) {
+                    fragment.append(this.createMessageNode(message, contact));
+                }, this);
+
+                messageDiv.append(fragment);
                 this.scrollTop();
                 this.markConversationAsRead(contact);
             }
@@ -273,25 +268,18 @@ ChatController.prototype = {
             if(messageDiv.length){
                 var contact = contactController.getContact(messagesInfo.contact);
                 vibrate(100);
-                //for the common case
-                if(messages.length == 1) {
+                var fragment = $(document.createDocumentFragment());
+
+                messages.forEach(function (message) {
                     var messageInfo = {
-                        info: messages[0],
+                        info: message,
                         speaker: messagesInfo.contact
                     };
-                    messageDiv.append(this.createGroupMessageNode(messageInfo, contact));
-                }
-                else {
-                    var fragment = $(document.createDocumentFragment());
-                    messages.forEach(function (message) {
-                        var messageInfo = {
-                            info: message,
-                            speaker: messagesInfo.contact
-                        };
-                        fragment.append(this.createGroupMessageNode(messageInfo, contact));
-                    }, this);
-                    messageDiv.append(fragment);
-                }
+                    fragment.append(this.createGroupMessageNode(messageInfo, contact));
+                }, this);
+
+                messageDiv.append(fragment);
+
                 this.scrollTop();
                 groupController.markGroupConversationAsRead(messagesInfo.groupId);
             }
@@ -520,5 +508,9 @@ ChatController.prototype = {
             '</div>';
 
         openInfoPopup(content);
+    },
+
+    clearCache : function () {
+        this.lastMessage = null;
     }
 };

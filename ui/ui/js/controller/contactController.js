@@ -13,7 +13,9 @@ ContactController.prototype  = {
 
     resetCachedConversation : function () {
         this.conversations = [];
+        this.contacts = [];
         this.fetchConversation();
+        this.fetchAllContacts();
     },
 
     fetchAllContacts : function () {
@@ -23,7 +25,7 @@ ContactController.prototype  = {
             }.bind(this));
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
-        })
+        });
     },
 
     fetchConversation : function () {
@@ -170,7 +172,7 @@ ContactController.prototype  = {
             $("#recentChatList").html(frag);
         }
         else {
-            $("#recentChatList").html("<div>No recent chat</div>");
+            $("#recentChatList").html("No recent chat");
         }
     },
 
@@ -245,6 +247,8 @@ ContactController.prototype  = {
 
         var node = $("#recentChat_" + contact.id);
 
+        var recentChatList = $("#recentChatList");
+
         if (node.length > 0) {
             var time = new Date(message.receivedTimestamp).toISOString();
             node.addClass("new");
@@ -259,7 +263,7 @@ ContactController.prototype  = {
             node.find(".left").html(this.formatLastMessage(message.message));
             node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
 
-            $("#recentChatList").prepend(node);
+            recentChatList.prepend(node);
         }
         else {
             var conversation = {
@@ -271,7 +275,10 @@ ContactController.prototype  = {
                 }
             };
 
-            $("#recentChatList").prepend(this.createSingleRecentChatNode(conversation));
+            if (recentChatList.html() === "No recent chat")
+                recentChatList.html("");
+
+            recentChatList.prepend(this.createSingleRecentChatNode(conversation));
         }
     },
 
@@ -279,6 +286,8 @@ ContactController.prototype  = {
         var message = messageInfo.messages[messageInfo.messages.length - 1];
 
         var node = $("#recentChat_" + messageInfo.groupId);
+
+        var recentChatList = $("#recentChatList");
 
         if (node.length > 0) {
             var time = new Date(message.receivedTimestamp).toISOString();
@@ -295,7 +304,7 @@ ContactController.prototype  = {
             node.find(".left").html(this.formatLastMessage(message.message));
             node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
 
-            $("#recentChatList").prepend(node);
+            recentChatList.prepend(node);
         }
         else {
             var conversation = {
@@ -309,7 +318,10 @@ ContactController.prototype  = {
                 }
             };
 
-            $("#recentChatList").prepend(this.createGroupRecentChatNode(conversation));
+            if (recentChatList.html() === "No recent chat")
+                recentChatList.html("");
+
+            recentChatList.prepend(this.createGroupRecentChatNode(conversation));
         }
     },
 
@@ -347,6 +359,7 @@ ContactController.prototype  = {
             switch(ev.type) {
                 case "ADD":
                 case 'REMOVE':
+                    console.log(ev);
                     this.resetCachedConversation();
                     break;
                 case "SYNC":
@@ -621,10 +634,15 @@ ContactController.prototype  = {
                 }.bind(this)
             },
             {
+                text: "Invite Contacts",
+                onClick: function () {
+                    groupController.openInviteUsersModal(groupId);
+                }
+            },
+            {
                 text: 'Delete Group Messages',
                 onClick: function () {
                     slychat.confirm("Are you sure you want to delete all messages in this group?", function () {
-                        // TODO update confirm style
                         groupController.deleteAllMessages(groupId);
                     })
                 }
@@ -681,5 +699,12 @@ ContactController.prototype  = {
             "</div>";
 
         openInfoPopup(content);
+    },
+
+    clearCache : function () {
+        this.conversations = [];
+        this.sync = false;
+        this.contactSyncNotification = null;
+        this.contacts = [];
     }
 };

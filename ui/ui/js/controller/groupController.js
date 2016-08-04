@@ -85,6 +85,51 @@ GroupController.prototype = {
         });
     },
 
+    fetchGroup : function (groupId) {
+        groupService.getInfo(groupId).then(function (info) {
+            if (info !== null) {
+                groupService.getMembers(groupId).then(function (members) {
+                    var groupDetails = {
+                        group: info,
+                        members: members,
+                        info: {
+                            lastSpeaker: null,
+                            unreadMessageCount: 0,
+                            lastMessage: null,
+                            lastTimestamp: null
+                        }
+                    };
+                    this.groupDetailsCache[groupId] = groupDetails;
+
+                    if ($("#groupNode_" + groupId).length <= 0) {
+                        var groupNode = this.createGroupNode(groupDetails);
+                        if($("#groupList").html() == "No groups yet") {
+                            $("#groupList").html(groupNode);
+                        }
+                        else {
+                            $("#groupList").append(groupNode);
+                        }
+                    }
+
+                    this.createGroupNodeMembers(groupId, members);
+                }.bind(this)).catch(function (e) {
+                    exceptionController.handleError(e);
+                });
+            }
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        });
+    },
+
+    fetchMembers : function (groupId) {
+        groupService.getMembers(groupId).then(function (members) {
+            console.log("fetching member");
+            this.groupDetailsCache[groupId].members = members;
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        })
+    },
+
     getGroupDetails: function () {
         if (Object.size(this.groupDetailsCache) <= 0)
             return false;
@@ -181,7 +226,7 @@ GroupController.prototype = {
 
         node.on("mouseheld", function () {
             vibrate(50);
-            contactController.openGroupConversationMenu(group.group.id);
+            this.openGroupNodeMenu(group.group.id);
         }.bind(this));
 
         return node;
@@ -204,40 +249,40 @@ GroupController.prototype = {
 
     addGroupEventListener : function () {
         groupService.addGroupEventListener(function (event) {
-            if (event.type == "NEW") {
-                this.newGroupCreatedEvent(event);
+            switch(event.type) {
+                case "NEW":
+                    this.newGroupCreatedEvent(event);
+                    break;
+
+                case "PARTED":
+                    if(this.groupDetailsCache[event.groupId] !== undefined) {
+                        groupService.getMembers(event.groupId).then(function (members) {
+                            this.groupDetailsCache[event.groupId].members = members;
+                            this.createGroupNodeMembers(event.groupId, members);
+                        }.bind(this)).catch(function (e) {
+                            exceptionController.handleError(e);
+                        });
+                    }
+                    break;
+
+                case "JOINED":
+                    if(this.groupDetailsCache[event.groupId] !== undefined) {
+                        groupService.getMembers(event.groupId).then(function (members) {
+                            this.groupDetailsCache[event.groupId].members = members;
+                            this.createGroupNodeMembers(event.groupId, members);
+                        }.bind(this)).catch(function (e) {
+                            exceptionController.handleError(e);
+                        });
+                    }
+                    break;
             }
+
         }.bind(this));
     },
 
     newGroupCreatedEvent : function (event) {
         if(this.groupDetailsCache[event.groupId] === undefined) {
-            groupService.getInfo(event.groupId).then(function (info) {
-                if (info !== null) {
-                    groupService.getMembers(event.groupId).then(function (members) {
-                        var groupDetails = {
-                            group: info,
-                            members: members,
-                            info: {
-                                lastSpeaker: null,
-                                unreadMessageCount: 0,
-                                lastMessage: null,
-                                lastTimestamp: null
-                            }
-                        };
-                        this.groupDetailsCache[event.groupId] = groupDetails;
-
-                        var groupNode = this.createGroupNode(groupDetails);
-
-                        $("#groupList").append(groupNode);
-                        this.createGroupNodeMembers(event.groupId, members);
-                    }.bind(this)).catch(function (e) {
-                        exceptionController.handleError(e);
-                    });
-                }
-            }.bind(this)).catch(function (e) {
-                exceptionController.handleError(e);
-            });
+            this.fetchGroup(event.groupId);
         }
     },
 
@@ -251,7 +296,7 @@ GroupController.prototype = {
 
         var contacts = [];
         $(".new-group-contact:checked").each(function (index, contact) {
-            contacts.push(contactController.getContact($(contact).val()))
+            contacts.push(contactController.getContact($(contact).val()));
         });
 
         if(contacts.length <= 0) {
@@ -277,6 +322,74 @@ GroupController.prototype = {
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         });
+    },
+
+    openInviteUsersModal : function (groupId) {
+        var contactList = "";
+
+        var members = [];
+
+        this.getGroupMembers(groupId).forEach(function (member) {
+            members[member.id] = member;
+        });
+
+        var conversations = contactController.conversations;
+        conversations.forEach(function (conversation) {
+            var contact = conversation.contact;
+            if(!(contact.id in members)) {
+                contactList += "<li><label class='label-checkbox item-content'>" +
+                    "<input class='new-group-contact' type='checkbox' name='" + contact.name + "' value='" + contact.id + "'>" +
+                    "<div class='item-media'><i class='icon icon-form-checkbox'></i></div> " +
+                    "<div class='item-inner'><div class='item-title'>" + contact.name + "</div></div>" +
+                    "</label></li>";
+            }
+        });
+
+
+        var content = "<div><a id='submitInviteContactButton' href='#' class='button button-big button-raised button-fill'>Invite</a>" +
+            "<div class='list-block'>" +
+            "<div class='content-block-title'>Contacts:</div>" +
+            "<ul id='inviteContactList'>" + contactList + "</ul>" +
+            "<input id='inviteContactGroupId' type='hidden' value='" + groupId + "'>" +
+            "</div>";
+
+        var navbar = '' +
+            '<div class="navbar top-navbar">' +
+            '<div class="navbar-inner">' +
+            '<a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a> Invite Contacts' +
+            '</div>' +
+            '</div>';
+
+        var popupHTML = '' +
+            '<div class="popup info-popup">' +
+            '<div class="view navbar-fixed" data-page>' +
+            '<div class="pages">' +
+            '<div data-page class="page">' +
+            navbar +
+            '<div class="page-content">'+
+            '<div class="content-block">' +
+            content +
+            '</div>' +
+            '</div>' +
+            '</div>' +
+            '</div>' +
+            '</div>' +
+            '</div>';
+
+        slychat.popup(popupHTML);
+    },
+
+    inviteUsersToGroup : function (groupId, userIds) {
+        groupService.inviteUsers(groupId, userIds).then(function () {
+            slychat.closeModal();
+            slychat.addNotification({
+                title: "Contacts have been invited",
+                hold: 3000
+            });
+            this.fetchMembers(groupId);
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        })
     },
 
     deleteMessages : function (groupId, messageIds) {
@@ -311,6 +424,96 @@ GroupController.prototype = {
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         })
+    },
+
+    deleteGroupFromCache : function (groupId) {
+        delete this.groupDetailsCache[groupId];
+        $("#groupNode_" + groupId).remove();
+        $("recentChat_" + conversation.group.id).remove();
+    },
+
+    leaveGroup : function (groupId) {
+        groupService.part(groupId).then(function (success) {
+            if(success === true) {
+                slychat.addNotification({
+                    title: "You left the group successfully",
+                    hold: 3000
+                });
+                this.deleteGroupFromCache(groupId);
+            }
+            else {
+                slychat.addNotification({
+                    title: "Could not leave the group",
+                    hold: 3000
+                });
+            }
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        });
+    },
+
+    blockGroup : function (groupId) {
+        groupService.block(groupId).then(function () {
+            this.deleteGroupFromCache(groupId);
+            slychat.addNotification({
+                title: "Group has been blocked successfully",
+                hold: 3000
+            });
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        });
+    },
+
+    unblockGroup : function (groupId) {
+        groupService.unblock(groupId).then(function () {
+            this.fetchGroup(groupId);
+            slychat.addNotification({
+                title: "Group has been unblocked successfully",
+                hold: 3000
+            });
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        });
+    },
+
+    openGroupNodeMenu : function (groupId) {
+        var buttons = [
+            {
+                text: 'Group Info',
+                onClick: function () {
+                    groupController.showGroupInfo(groupId);
+                }.bind(this)
+            },
+            {
+                text: "Invite Contacts",
+                onClick: function () {
+                    this.openInviteUsersModal(groupId);
+                }.bind(this)
+            },
+            {
+                text: 'Leave Group',
+                onClick: function () {
+                    slychat.confirm("Are you sure you want to leave the group?", function () {
+                        this.leaveGroup(groupId);
+                    }.bind(this));
+                }.bind(this)
+            },
+            {
+                text: 'Block Group',
+                onClick: function () {
+                    slychat.confirm("Are you sure you want to block this group? </br> You won't receive any more messages.", function () {
+                        this.blockGroup(groupId);
+                    }.bind(this));
+                }.bind(this)
+            },
+            {
+                text: 'Cancel',
+                color: 'red',
+                onClick: function () {
+                }
+            }
+        ];
+        slychat.actions(buttons);
     },
 
     showGroupInfo : function (groupId) {
@@ -359,5 +562,10 @@ GroupController.prototype = {
                 lastTimestamp: messages[messages.length - 1].timestamp
             };
         }
+    },
+
+    clearCache : function () {
+        this.groups = [];
+        this.groupDetailsCache = [];
     }
 };
