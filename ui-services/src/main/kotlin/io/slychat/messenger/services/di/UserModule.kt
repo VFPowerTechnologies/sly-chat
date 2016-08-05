@@ -196,16 +196,21 @@ class UserModule(
         contactsPersistenceManager: ContactsPersistenceManager,
         groupPersistenceManager: GroupPersistenceManager,
         platformNotificationService: PlatformNotificationService,
-        userConfigService: UserConfigService
-    ): NotifierService =
-        NotifierService(
-            messengerService.newMessages,
+        userConfigService: UserConfigService,
+        scheduler: Scheduler
+    ): NotifierService {
+        val buffered = messengerService.newMessages.buffer(500, TimeUnit.MILLISECONDS, scheduler)
+        val bufferedMessages = NotifierService.flattenMessageBundles(buffered)
+
+        return NotifierService(
+            bufferedMessages,
             uiEventService.events,
             contactsPersistenceManager,
             groupPersistenceManager,
             platformNotificationService,
             userConfigService
         )
+    }
 
     @UserScope
     @Provides
