@@ -545,8 +545,9 @@ GroupController.prototype = {
     },
 
     updateConversationWithNewMessage : function (groupId, messageInfo) {
+        var lastMessageInfo;
         if (messageInfo.sent === true) {
-            this.groupDetailsCache[groupId].info = {
+            lastMessageInfo = {
                 lastSpeaker: null,
                 unreadMessageCount: 0,
                 lastMessage: messageInfo.message,
@@ -555,12 +556,26 @@ GroupController.prototype = {
         }
         else {
             var messages = messageInfo.messages;
-            this.groupDetailsCache[groupId].info = {
+            lastMessageInfo = {
                 lastSpeaker: messageInfo.contact,
                 unreadMessageCount: this.groupDetailsCache[groupId].info.unreadMessageCount + messages.length,
                 lastMessage: messages[messages.length - 1].message,
                 lastTimestamp: messages[messages.length - 1].timestamp
             };
+        }
+
+        if (this.groupDetailsCache[groupId] !== undefined) {
+            this.groupDetailsCache[groupId].info = lastMessageInfo;
+        }
+        else {
+            groupService.getInfo(groupId).then(function (info) {
+                this.groupDetailsCache[groupId] = {
+                    group: info,
+                    info: lastMessageInfo
+                }
+            }.bind(this)).catch(function (e) {
+                exceptionController.handleError(e);
+            });
         }
     },
 
