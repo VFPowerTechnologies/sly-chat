@@ -105,7 +105,7 @@ project(':ui-services') {
     apply plugin: 'idea'
 
     //hack to give IDE access to generated files
-    if (!System.getProperty('os.name').toLowerCase().startsWith('windows')) {
+    if (!System.getProperty('os.name').toLowerCase(Locale.ROOT).startsWith('windows')) {
         Path linkLocation = new File("$projectDir/generated").toPath()
         Path linkTarget = new File("$buildDir/generated/source/kapt/main").toPath()
         if (!Files.exists(linkLocation, LinkOption.NOFOLLOW_LINKS)) {

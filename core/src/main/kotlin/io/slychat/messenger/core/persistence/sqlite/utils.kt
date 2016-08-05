@@ -2,7 +2,9 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.*
+import io.slychat.messenger.core.Os
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.loadSharedLibFromResource
 import io.slychat.messenger.core.persistence.GroupId
 import org.slf4j.LoggerFactory
@@ -133,17 +135,12 @@ private fun getArch(os: String): String {
 }
 
 private fun getOS(): String {
-    val os = System.getProperty("os.name").toLowerCase()
-    return when {
-        os.startsWith("mac") || os.startsWith("darwin") || os.startsWith("os x") -> "osx"
-        os.startsWith("windows") -> "win32"
-        else -> {
-            val runtimeName = System.getProperty("java.runtime.name")?.toLowerCase()
-            if (runtimeName?.contains("android") == true)
-                "android"
-            else
-                "linux"
-        }
+    return when (currentOs.type) {
+        Os.Type.OSX -> "osx"
+        Os.Type.WINDOWS -> "win32"
+        Os.Type.ANDROID -> "android"
+        Os.Type.LINUX -> "linux"
+        else -> throw RuntimeException("")
     }
 }
 
