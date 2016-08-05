@@ -30,6 +30,7 @@ import io.slychat.messenger.services.messaging.*
 import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
 import rx.Scheduler
+import java.util.concurrent.TimeUnit
 
 @Module
 class UserModule(
@@ -87,10 +88,12 @@ class UserModule(
     @Provides
     fun providesAddressBookOperationManager(
         application: SlyApplication,
-        addressBookJobFactory: AddressBookSyncJobFactory
+        addressBookJobFactory: AddressBookSyncJobFactory,
+        scheduler: Scheduler
     ): AddressBookOperationManager = AddressBookOperationManagerImpl(
         application.networkAvailable,
-        addressBookJobFactory
+        addressBookJobFactory,
+        DebounceScheduler(30, TimeUnit.SECONDS, scheduler)
     )
 
     @UserScope

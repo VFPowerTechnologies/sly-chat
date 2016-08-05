@@ -10,9 +10,14 @@ import rx.Subscription
 import rx.subjects.PublishSubject
 import java.util.*
 
+/**
+ * Whenever an address book sync is requested, the SyncScheduler is notified.
+ * Address book syncs are only actually performed once the SyncScheduler emits an event.
+ */
 class AddressBookOperationManagerImpl(
     networkAvailable: Observable<Boolean>,
-    private val addressBookSyncJobFactory: AddressBookSyncJobFactory
+    private val addressBookSyncJobFactory: AddressBookSyncJobFactory,
+    private val syncScheduler: SyncScheduler
 ) : AddressBookOperationManager {
     private class PendingOperation<out T>(
         private val operation: () -> Promise<T, Exception>
@@ -42,10 +47,20 @@ class AddressBookOperationManagerImpl(
     private val isSyncRunning: Boolean
         get() = currentRunningJob != null
 
+    //if we've notified the scheduler
+    private var wasSyncScheduleEventReceived = false
+
     private var pendingOperations = ArrayDeque<PendingOperation<*>>()
 
     init {
         networkAvailableSubscription = networkAvailable.subscribe { onNetworkStatusChange(it) }
+
+        syncScheduler.scheduledEvent.subscribe { onSyncScheduledEvent() }
+    }
+
+    private fun onSyncScheduledEvent() {
+        wasSyncScheduleEventReceived = true
+        processNext()
     }
 
     private fun onNetworkStatusChange(isAvailable: Boolean) {
@@ -81,6 +96,10 @@ class AddressBookOperationManagerImpl(
         processNext()
     }
 
+    private fun scheduleSync() {
+        syncScheduler.schedule()
+    }
+
     /** Process the next queued job, if any. */
     private fun nextSyncJob() {
         currentRunningJob = null
@@ -93,6 +112,13 @@ class AddressBookOperationManagerImpl(
             return
 
         val queuedJob = this.queuedSync ?: return
+
+        if (!wasSyncScheduleEventReceived) {
+            scheduleSync()
+            return
+        }
+
+        wasSyncScheduleEventReceived = false
 
         val job = addressBookSyncJobFactory.create()
 
