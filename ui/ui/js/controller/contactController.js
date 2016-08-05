@@ -76,6 +76,41 @@ ContactController.prototype  = {
         });
     },
 
+    addNewContactToCache : function (contact) {
+        if (this.contacts[contact.id] === undefined)
+            this.contacts[contact.id] = contact;
+
+        if (this.conversations[contact.id] === undefined) {
+            this.conversations[contact.id] = {
+                contact: contact,
+                status: {
+                    isOnline: true,
+                    unreadMessageCount: 0,
+                    lastMessage: null,
+                    lastTimestamp: null
+                }
+            };
+        }
+
+        var conversations = [];
+        this.conversations.forEach(function (conversation) {
+            conversations.push(conversation);
+        });
+
+        var groupDetails = groupController.getGroupDetails();
+        if (groupDetails !== false)
+            this.createContactHtml(groupDetails, conversations);
+    },
+
+    removeContactFromCache : function (contact) {
+        delete this.contacts[contact.id];
+        delete this.conversations[contact.id];
+
+        $("#contact-list").find("#contactLink_" + contact.id).remove();
+        $("#recentContactList").find("#recentContactLink_" + contact.id).remove();
+        $("#recentChatList").find("#recentChat_" + contact.id).remove();
+    },
+
     getActualGroupConversations : function (groupDetails) {
         var actualGroupConvo = [];
         for(var k in groupDetails) {
@@ -139,7 +174,7 @@ ContactController.prototype  = {
     },
 
     createContactNode : function (contact) {
-        var contactBlock = $("<li class='contact-link close-popup'></li>");
+        var contactBlock = $("<li id='contactLink_" + contact.id + "' class='contact-link close-popup'></li>");
         var contactDetails = $("<div><p>" + contact.name + "</p><span>" + contact.email + "</span></div>");
 
         contactBlock.append(contactDetails);
@@ -176,7 +211,7 @@ ContactController.prototype  = {
     createRecentContactNode : function (conversation) {
         var contact = conversation.contact;
 
-        var contactDiv = $("<div class='contact-link close-popup'><div class='avatar'>" +
+        var contactDiv = $("<div id='recentContactLink_" + contact.id + "' class='contact-link close-popup'><div class='avatar'>" +
             contact.name.charAt(0).toUpperCase() + "</div>" +
             "<div>" + contact.name + "</div></div>");
 
@@ -390,9 +425,14 @@ ContactController.prototype  = {
         contactService.addContactEventListener(function (ev) {
             switch(ev.type) {
                 case "ADD":
+                    ev.contacts.forEach(function (contact) {
+                        this.addNewContactToCache(contact);
+                    }.bind(this));
+                    break;
                 case 'REMOVE':
-                    console.log(ev);
-                    this.resetCachedConversation();
+                    ev.contacts.forEach(function (contact) {
+                        this.removeContactFromCache(contact);
+                    }.bind(this));
                     break;
                 case "SYNC":
                     this.sync = ev.running;
@@ -536,7 +576,7 @@ ContactController.prototype  = {
         //remove previous error
         form.find(".error-block").html("");
 
-        contactService.addNewContact(data).then(function (result){
+        contactService.addNewContact(data).then(function (contact){
             button.hide();
             successIcon.show();
             hiddenContent.hide();
@@ -546,7 +586,8 @@ ContactController.prototype  = {
                 hold: 3000
             });
 
-            this.resetCachedConversation();
+            this.addNewContactToCache(contact);
+            this.loadChatPage(contact, false);
         }.bind(this)).catch(function (e) {
             form.find(".error-block").html("<li>An error occurred</li>");
             console.error('Unable to add contact: ' + e.message);
@@ -632,7 +673,7 @@ ContactController.prototype  = {
 
     deleteContact : function (contact) {
         contactService.removeContact(contact).then(function () {
-            this.resetCachedConversation();
+            this.removeContactFromCache(contact);
             slychat.addNotification({
                 title: "Contact has been deleted",
                 hold: 3000

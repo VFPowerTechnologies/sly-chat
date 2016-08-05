@@ -202,6 +202,12 @@ NavigationController.prototype = {
                 }
             },
             {
+                text: 'Add Contact',
+                onClick: function () {
+                    navigationController.loadPage("addContact.html", true);
+                }
+            },
+            {
                 text: 'Create Group',
                 onClick: function () {
                     navigationController.loadPage('createGroup.html', true);
