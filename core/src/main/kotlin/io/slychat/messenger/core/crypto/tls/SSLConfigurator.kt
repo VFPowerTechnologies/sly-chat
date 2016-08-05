@@ -34,14 +34,7 @@ class SSLConfigurator(
 
     fun configure(sslSettingsAdapter: SSLSettingsAdapter) {
         sslSettingsAdapter.setEnabledProtocols(arrayOf("TLSv1.2"))
-        //currently only the openjdk8 (not oracle or apple's) JRE and Google's GSM provider supports AES256+SHA284,
-        //so we fall back to AES128+SHA256 for osx/windows if it's not supported
-        try {
-            sslSettingsAdapter.setEnabledCipherSuites(arrayOf("TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"))
-        }
-        catch (e: IllegalArgumentException) {
-            sslSettingsAdapter.setEnabledCipherSuites(arrayOf("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"))
-        }
+        sslSettingsAdapter.setEnabledCipherSuites(arrayOf("TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"))
     }
 
     fun configure(connection: HttpsURLConnection) {
