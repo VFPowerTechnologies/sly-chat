@@ -27,12 +27,11 @@ fun Class<*>.readResourceFileText(path: String): String =
 
 /** Get the expected platform file name for a shared library. */
 fun getSharedLibFileName(base: String): String {
-    val os = System.getProperty("os.name")
-    return when {
-        os == "Linux" -> "lib$base.so"
-        os.startsWith("Windows") -> "$base.dll"
-        os == "Mac OS X" -> "lib$base.dylib"
-        else -> throw UnsupportedOperationException("Unsupported OS: $os")
+    return when (currentOs.type) {
+        Os.Type.LINUX -> "lib$base.so"
+        Os.Type.WINDOWS -> "$base.dll"
+        Os.Type.OSX -> "lib$base.dylib"
+        else -> throw UnsupportedOsException(currentOs)
     }
 }
 
@@ -42,7 +41,7 @@ fun Class<*>.loadSharedLibFromResource(base: String) {
     val libName = getSharedLibFileName(base)
 
     //.dll suffix is required for loading on windows, else a UnsatisfiedLinkError("Can't find dependent libraries") is thrown
-    val suffix = if (System.getProperty("os.name").startsWith("Windows")) ".dll" else ""
+    val suffix = if (currentOs.type == Os.Type.WINDOWS) ".dll" else ""
 
     val path = File.createTempFile("sqlitetest", suffix)
     path.deleteOnExit()
@@ -129,3 +128,59 @@ inline fun <T, K, V> Iterable<T>.mapToMap(transform: (T) -> Pair<K, V>): Map<K, 
 
     return m
 }
+
+/** Attempts to return the current Android version. Uses reflection to access android.os.Build.VERSION.RELEASE. */
+private fun getAndroidVersion(): String? {
+    return try {
+        //android.os.Build(class).VERSION(static class).RELEASE(static string)
+        //we could technically use android.os.Build$VERSION, but afaik the $ naming is convention and not standard so
+        //I'd rather not rely on it
+        val buildClass = Class.forName("android.os.Build")
+        val versionClass = buildClass.declaredClasses.filter { it.simpleName == "VERSION" }.firstOrNull()
+        if (versionClass == null)
+            "unknown"
+        else {
+            val releaseField = versionClass.getField("RELEASE")
+            releaseField.get(null) as String
+        }
+    }
+    catch (e: ClassNotFoundException) {
+        null
+    }
+}
+
+/**
+ * Used to determine OS info from Java's os.name and os.version system properties. Currently only tested on the following JREs: Oracle, OpenJDK, Android
+ *
+ * Runtime name is required for detecting Android, as os.name simply returns Linux
+ */
+fun osFromProperties(osName: String, osVersion: String): Os {
+    return when {
+        osName == "Linux" -> {
+            //no property actually contains the android version, and os.version is just the linux version
+            //so we just use reflection for testing
+            val androidVersion = getAndroidVersion()
+            if (androidVersion != null)
+                Os(Os.Type.ANDROID, androidVersion)
+            else
+                Os(Os.Type.LINUX, osVersion)
+        }
+
+        osName.startsWith("Windows") -> {
+            //osVersion for windows returns values like 6.0 (vista), 6.1 (7), 6.2 (8), etc
+            //it's nicer for display/error reporting to just use the user facing version instead
+            //os.name is always "Windows <version>" on the tested runtimes
+            val parts = osName.split(" ", limit = 2)
+            Os(Os.Type.WINDOWS, parts[1])
+        }
+
+        osName == "Mac OS X" -> Os(Os.Type.OSX, osVersion)
+
+        else -> Os(Os.Type.UNKNOWN, osVersion)
+    }
+}
+
+val currentOs: Os = osFromProperties(
+    System.getProperty("os.name"),
+    System.getProperty("os.version")
+)

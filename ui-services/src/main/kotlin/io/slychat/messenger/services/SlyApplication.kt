@@ -1,11 +1,8 @@
 package io.slychat.messenger.services
 
 import com.fasterxml.jackson.core.JsonParseException
-import io.slychat.messenger.core.AuthToken
-import io.slychat.messenger.core.BuildConfig
-import io.slychat.messenger.core.SlyAddress
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.KeyVault
-import io.slychat.messenger.core.div
 import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.InstallationData
 import io.slychat.messenger.core.persistence.SessionData
@@ -97,6 +94,8 @@ class SlyApplication {
 
     /** Starts background initialization; use addOnInitListener to be notified when app has finished initializing. Once finalized, will trigger auto-login. */
     fun init(platformModule: PlatformModule) {
+        log.info("Operating System: {} {}", currentOs.name, currentOs.version)
+
         appComponent = DaggerApplicationComponent.builder()
             .platformModule(platformModule)
             .applicationModule(ApplicationModule(this))

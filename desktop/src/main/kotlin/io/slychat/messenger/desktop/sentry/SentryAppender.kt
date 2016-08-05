@@ -3,6 +3,7 @@ package io.slychat.messenger.desktop.sentry
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.AppenderBase
+import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.sentry.LoggerLevel
 import io.slychat.messenger.core.sentry.SentryEventBuilder
 import io.slychat.messenger.core.sentry.extractCulprit
@@ -48,7 +49,7 @@ class SentryAppender : AppenderBase<ILoggingEvent>() {
         if (eventObject.argumentArray != null)
             builder.withMessageInterface(eventObject.message, eventObject.argumentArray.map { it?.toString() ?: "null" })
 
-        builder.withOs(System.getProperty("os.name"), System.getProperty("os.version"))
+        builder.withOs(currentOs.name, currentOs.version)
 
         try {
             Sentry.submit(builder)
