@@ -75,7 +75,7 @@ LoginController.prototype = {
                         }
                     }
                 }).catch(function (e) {
-                    console.log(e);
+                    exceptionController.handleError(e);
                 });
             }
             else
@@ -103,14 +103,12 @@ LoginController.prototype = {
                 this.resetLoginInfo();
                 $("#login-psw").val("");
                 $("#loginForm").find(".error-block").html("<li>" + errorMessage +"</li>");
-                console.log(errorMessage);
             }
         }
         else {
             this.resetLoginInfo();
             $("#loginForm").find(".error-block").html("<li>An unexpected error occurred</li>");
-            console.log("An unexpected error occured: ");
-            console.log(e);
+            exceptionController.handleError(e);
         }
     },
 
@@ -131,6 +129,8 @@ LoginController.prototype = {
         this.password = password;
 
         slychat.showPreloader();
+
+        firstLoad = true;
 
         loginService.login(username, password, rememberMe);
     },

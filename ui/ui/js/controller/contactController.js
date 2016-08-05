@@ -112,6 +112,9 @@ ContactController.prototype  = {
         this.createContactList();
         this.createRecentContactList(jointedRecentChat);
 
+        if (firstLoad === true && jointedRecentChat.length <= 0) {
+            slychat.popup('#contactPopup');
+        }
         navigationController.hideSplashScreen();
     },
 
@@ -197,8 +200,12 @@ ContactController.prototype  = {
             $("#recentChatList").html(frag);
         }
         else {
-            $("#recentChatList").html("No recent chat");
+            $("#recentChatList").html(this.emptyRecentChatHtml());
         }
+    },
+
+    emptyRecentChatHtml : function () {
+        return "<div style='text-align: center'>No recent chats</div>";
     },
 
     createSingleRecentChatNode : function (conversation) {
@@ -300,7 +307,7 @@ ContactController.prototype  = {
                 }
             };
 
-            if (recentChatList.html() === "No recent chat")
+            if (recentChatList.find(".recent-contact-link").length <= 0)
                 recentChatList.html("");
 
             recentChatList.prepend(this.createSingleRecentChatNode(conversation));
@@ -343,7 +350,7 @@ ContactController.prototype  = {
                 }
             };
 
-            if (recentChatList.html() === "No recent chat")
+            if (recentChatList.find(".recent-contact-link").length <= 0)
                 recentChatList.html("");
 
             recentChatList.prepend(this.createGroupRecentChatNode(conversation));
@@ -648,7 +655,6 @@ ContactController.prototype  = {
                 text: 'Delete Conversation',
                 onClick: function () {
                     slychat.confirm("Are you sure you want to delete this conversation?", function () {
-                        // TODO update confirm style
                         chatController.deleteConversation(contact);
                     })
                 }

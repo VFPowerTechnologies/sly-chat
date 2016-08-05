@@ -139,7 +139,7 @@ ProfileController.prototype = {
                     '<div class="item-media"><i class="icon icon-form-name"></i></div>' +
                     '<div class="item-inner">' +
                         '<div class="item-input">' +
-                            '<input id="profileNameInput" type="text" placeholder="Name" required autocorrect="off" value="' + this.name +'" style="border-bottom: 1px solid #808080;"/>' +
+                            '<input id="profileNameInput" type="text" placeholder="Name" required autocorrect="off" value="' + this.name +'" style="border-bottom: 1px solid #eeeeee;"/>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
@@ -153,7 +153,7 @@ ProfileController.prototype = {
                     '<div class="item-media"><i class="icon icon-form-email"></i></div>' +
                     '<div class="item-inner">' +
                         '<div class="item-input">' +
-                            '<input id="profileEmailInput" type="email" placeholder="E-Mail" style="border-bottom: 1px solid #808080;" required autocorrect="off" autocapitalize="off" value="' + this.username +'"/>' +
+                            '<input id="profileEmailInput" type="email" placeholder="E-Mail" style="border-bottom: 1px solid #eeeeee;" required autocorrect="off" autocapitalize="off" value="' + this.username +'"/>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
@@ -203,7 +203,7 @@ ProfileController.prototype = {
                     '<div class="item-media"><i class="icon icon-form-email"></i></div>' +
                     '<div class="item-inner">' +
                         '<div class="item-input">' +
-                            '<input id="smsCodeInput" type="text" style="border-bottom: 1px solid #808080;" placeholder="Sms Code"/>' +
+                            '<input id="smsCodeInput" type="text" style="border-bottom: 1px solid #eeeeee;" placeholder="Sms Code"/>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +

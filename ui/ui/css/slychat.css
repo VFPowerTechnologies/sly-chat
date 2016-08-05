@@ -193,7 +193,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     float: right;
 }
 #chat-content li.messageReceived .message {
-    background-color: #fff;
+    background-color: #f1efef ;
     float: left;
 }
 #chat-content .message p {
@@ -328,6 +328,11 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .info-link {
     margin: 0 15px;
     display: inline-block;
+    text-decoration: underline;
+    color: #0000ff;
+}
+.profile-update-modal {
+    border-top: 1px solid #eeeeee;
 }
 .profile-update-modal .button-container {
     text-align: center;

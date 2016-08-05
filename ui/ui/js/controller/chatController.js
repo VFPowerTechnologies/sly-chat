@@ -382,9 +382,7 @@ ChatController.prototype = {
         messengerService.deleteAllMessagesFor(contact).then(function () {
             contactController.resetCachedConversation();
         }.bind(this)).catch(function (e) {
-            // TODO handle errors
-            console.log("couldn't delete the conversation ");
-            console.log(e);
+            exceptionController.handleError(e);
         }.bind(this));
     },
 
