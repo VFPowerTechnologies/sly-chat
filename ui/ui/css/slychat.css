@@ -23,7 +23,9 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .vertical-centered-content .content-block {
     margin: 5px 0 15px 0;
 }
-
+.notifications {
+    z-index: 11001;
+}
 
 /* Form style */
 .list-error-block {

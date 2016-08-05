@@ -211,7 +211,7 @@ GroupController.prototype = {
     },
 
     createGroupNode : function (group) {
-        var node = $("<div id='groupNode_" + group.group.id + "' class='group-node col-50 close-popup'>" +
+        var node = $("<div id='groupNode_" + group.group.id + "' class='group-node col-50 tablet-25 close-popup'>" +
                 "<div class='group-details'>" +
                     "<div class='avatar'>" + group.group.name.substring(0, 3) + "</div>" +
                     "<span style='text-align: center;'>" + group.group.name + "</span>" +

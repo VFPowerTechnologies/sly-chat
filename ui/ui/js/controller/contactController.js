@@ -483,6 +483,8 @@ ContactController.prototype  = {
             e.preventDefault();
             e.stopPropagation();
 
+            var hiddenContent = contactBlock.find('.confirm-add-contact-hidden');
+
             var data = {
                 id: contact.id,
                 name: contact.name,
@@ -491,13 +493,13 @@ ContactController.prototype  = {
                 publicKey: contact.publicKey
             };
 
-            this.addContact(data, button, successIcon);
+            this.addContact(data, button, successIcon, hiddenContent);
         }.bind(this));
 
         return contactBlock;
     },
 
-    addContact : function (data, button, successIcon) {
+    addContact : function (data, button, successIcon, hiddenContent) {
         var form = $("#addContactForm");
         //remove previous error
         form.find(".error-block").html("");
@@ -505,6 +507,13 @@ ContactController.prototype  = {
         contactService.addNewContact(data).then(function (result){
             button.hide();
             successIcon.show();
+            hiddenContent.hide();
+
+            slychat.addNotification({
+                title: "Contact has been added",
+                hold: 3000
+            });
+
             this.resetCachedConversation();
         }.bind(this)).catch(function (e) {
             form.find(".error-block").html("<li>An error occurred</li>");
@@ -592,6 +601,10 @@ ContactController.prototype  = {
     deleteContact : function (contact) {
         contactService.removeContact(contact).then(function () {
             this.resetCachedConversation();
+            slychat.addNotification({
+                title: "Contact has been deleted",
+                hold: 3000
+            });
         }.bind(this)).catch(function (e) {
             // TODO handle errors
             console.log(e);
