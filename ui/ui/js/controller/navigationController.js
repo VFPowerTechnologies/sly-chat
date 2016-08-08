@@ -146,7 +146,7 @@ NavigationController.prototype = {
         }
 
         if(page !== undefined) {
-            eventService.dispatchEvent({
+            this.dispatchEvent({
                 "eventType": "PageChange",
                 "page": page,
                 "extra": extra
@@ -160,6 +160,10 @@ NavigationController.prototype = {
         }
 
         mainView.router.load(options);
+    },
+
+    dispatchEvent : function (event) {
+        eventService.dispatchEvent(event);
     },
 
     getCurrentPage : function () {

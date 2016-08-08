@@ -242,6 +242,16 @@ $$(document).on('click', '#submitInviteContactButton', function (e) {
     groupController.inviteUsersToGroup(groupId, contacts);
 });
 
+$$(document).on('open', '.popup-contact', function() {
+    var event = {
+        "eventType": "PageChange",
+        "page": "ADDRESS_BOOK",
+        "extra": null
+    };
+    navigationController.dispatchEvent(event);
+});
+
+
 // TODO Implement left contact menu in chat page for easy switching between contact
 // var mc = new Hammer(document.getElementById('mainView'));
 // mc.on("swipeleft swiperight", function (e) {
