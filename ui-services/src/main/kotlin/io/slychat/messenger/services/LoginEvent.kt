@@ -9,31 +9,31 @@ enum class LoginState {
     LOGIN_FAILED
 }
 
-interface LoginEvent {
-    val state: LoginState
-}
+sealed class LoginEvent {
+    abstract val state: LoginState
 
-class LoggedOut : LoginEvent {
-    override val state: LoginState
-        get() = LoginState.LOGGED_OUT
-}
-
-class LoggingIn : LoginEvent {
-    override val state: LoginState
-        get() = LoginState.LOGGING_IN
-}
-
-class LoggedIn(val accountInfo: AccountInfo, val publicKey: String) : LoginEvent {
-    override val state: LoginState
-        get() = LoginState.LOGGED_IN
-}
-
-class LoginFailed(val errorMessage: String?, val exception: Exception?) : LoginEvent {
-    init {
-        require(errorMessage != null || exception != null) { "Must specify one of errorMessage or exception" }
-        require(errorMessage == null || exception == null) { "Cannot specify both an error message and an exception" }
+    class LoggedOut : LoginEvent() {
+        override val state: LoginState
+            get() = LoginState.LOGGED_OUT
     }
 
-    override val state: LoginState
-        get() = LoginState.LOGIN_FAILED
+    class LoggingIn : LoginEvent() {
+        override val state: LoginState
+            get() = LoginState.LOGGING_IN
+    }
+
+    class LoggedIn(val accountInfo: AccountInfo, val publicKey: String) : LoginEvent() {
+        override val state: LoginState
+            get() = LoginState.LOGGED_IN
+    }
+
+    class LoginFailed(val errorMessage: String?, val exception: Exception?) : LoginEvent() {
+        init {
+            require(errorMessage != null || exception != null) { "Must specify one of errorMessage or exception" }
+            require(errorMessage == null || exception == null) { "Cannot specify both an error message and an exception" }
+        }
+
+        override val state: LoginState
+            get() = LoginState.LOGIN_FAILED
+    }
 }

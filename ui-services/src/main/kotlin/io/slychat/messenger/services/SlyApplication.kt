@@ -14,6 +14,7 @@ import io.slychat.messenger.core.persistence.json.JsonStartupInfoPersistenceMana
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
 import io.slychat.messenger.services.di.*
+import io.slychat.messenger.services.LoginEvent.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
