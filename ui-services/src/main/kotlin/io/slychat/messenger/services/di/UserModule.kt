@@ -199,7 +199,14 @@ class UserModule(
         userConfigService: UserConfigService,
         scheduler: Scheduler
     ): NotifierService {
-        val buffered = messengerService.newMessages.buffer(500, TimeUnit.MILLISECONDS, scheduler)
+        //even if this a hot observable, it's not yet emitting so we can just connect using share() instead of
+        //manually using the ConnectedObservable
+        val shared = messengerService.newMessages.share()
+
+        //we use debouncing to trigger a buffer flush
+        val closingSelector = shared.debounce(400, TimeUnit.MILLISECONDS, scheduler)
+        val buffered = shared.buffer(closingSelector)
+
         val bufferedMessages = NotifierService.flattenMessageBundles(buffered)
 
         return NotifierService(
