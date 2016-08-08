@@ -85,7 +85,6 @@ class RelayClientManagerImpl(
                 override fun onError(e: Throwable) {
                     this@RelayClientManagerImpl.onClientError(e)
                 }
-
             })
 
         relayClient = client

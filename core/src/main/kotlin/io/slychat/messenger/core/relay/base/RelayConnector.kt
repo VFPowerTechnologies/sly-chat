@@ -15,6 +15,8 @@ interface RelayConnector {
      *
      * When either the server is disconnected, or ServerConnection.disconnect is called, onNext will receive
      * a RelayConnectionLost message, followed by onComplete.
+     *
+     * Returned observable operates on an arbitrary thread.
      */
     fun connect(address: InetSocketAddress, sslConfigurator: SSLConfigurator): Observable<RelayConnectionEvent>
 }
