@@ -74,6 +74,7 @@ class RelayClientManagerImpl(
                     when (event) {
                         //we only mark the relay connection as usable once authentication has completed
                         is AuthenticationSuccessful -> setOnlineStatus(true)
+                        is AuthenticationFailure -> setOnlineStatus(false)
                         is ConnectionLost -> setOnlineStatus(false)
                         is ConnectionFailure -> relayClient = null
                     }

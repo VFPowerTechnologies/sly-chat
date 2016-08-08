@@ -4,6 +4,10 @@ package io.slychat.messenger.core
 import io.slychat.messenger.core.persistence.*
 import java.util.*
 
+//[min, max]
+private fun randomInt(min: Int, max: Int): Int =
+    min + Random().nextInt((max - min) + 1)
+
 fun randomGroupInfo(): GroupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 fun randomGroupInfo(membershipLevel: GroupMembershipLevel): GroupInfo =
     GroupInfo(randomGroupId(), randomGroupName(), membershipLevel)
@@ -12,16 +16,24 @@ fun randomGroupName(): String = randomUUID()
 
 fun randomGroupMembers(n: Int = 2): Set<UserId> = (1..n).mapTo(HashSet()) { randomUserId() }
 
-fun randomUserId(): UserId {
-    val l = 1 + Random().nextInt(10000-1) + 1
-    return UserId(l.toLong())
-}
+fun randomUserId(): UserId =
+    UserId(randomInt(1, 10000).toLong())
+
+fun randomSlyAddress(): SlyAddress =
+    SlyAddress(randomUserId(), randomDeviceId())
+
+fun randomDeviceId(): Int =
+    randomInt(1, 50)
 
 fun randomUserIds(n: Int = 2): Set<UserId> = (1..n).mapToSet { randomUserId() }
 
 fun randomGroupId(): GroupId = GroupId(randomUUID())
 
 fun randomMessageId(): String = randomUUID()
+
+fun randomAuthToken(): AuthToken = AuthToken(randomUUID())
+
+fun randomUserCredentials(): UserCredentials = UserCredentials(randomSlyAddress(), randomAuthToken())
 
 fun randomTextGroupMetadata(groupId: GroupId? = null): MessageMetadata {
     return MessageMetadata(

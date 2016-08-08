@@ -46,7 +46,7 @@ class UserModule(
         serverUrls: ServerUrls,
         sslConfigurator: SSLConfigurator
     ): RelayClientFactory =
-        RelayClientFactory(scheduler, relayConnector, serverUrls, sslConfigurator)
+        RelayClientFactoryImpl(scheduler, relayConnector, serverUrls, sslConfigurator)
 
     @UserScope
     @Provides
