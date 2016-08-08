@@ -177,6 +177,8 @@ class NotifierService(
                 currentlySelectedChatUser = null
                 currentlySelectedGroup = null
 
+                log.debug("UI page changed to: {}", event)
+
                 when (event.page) {
                     PageType.CONVO -> {
                         val userId = UserId(event.extra.toLong())

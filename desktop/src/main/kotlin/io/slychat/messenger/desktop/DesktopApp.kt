@@ -118,6 +118,8 @@ class DesktopApp : Application() {
 
         val appComponent = app.appComponent
         app.userSessionAvailable.subscribe {
+            if (it != null)
+                it.notifierService.isUiVisible = true
         }
 
         //temp
