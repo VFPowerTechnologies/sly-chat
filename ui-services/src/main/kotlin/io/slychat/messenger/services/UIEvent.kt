@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 )
 interface UIEvent
 
-enum class PageType { CONVO, CONTACTS, GROUP }
+enum class PageType { CONVO, CONTACTS, GROUP, ADDRESS_BOOK }
 data class PageChangeEvent(
     @JsonProperty("page")
     val page: PageType,
