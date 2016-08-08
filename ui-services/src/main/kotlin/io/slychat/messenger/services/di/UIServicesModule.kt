@@ -14,7 +14,7 @@ import io.slychat.messenger.services.PlatformTelephonyService
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.ui.*
-import io.slychat.messenger.services.ui.dummy.*
+import io.slychat.messenger.services.ui.dummy.UIDevelServiceImpl
 import io.slychat.messenger.services.ui.impl.*
 import javax.inject.Singleton
 
@@ -26,6 +26,10 @@ class UIServicesModule {
             UIServiceType.REAL -> real()
         }
 
+    private fun noDummyAvailable(serviceName: String): Nothing {
+        error("No dummy available for $serviceName")
+    }
+
     @Singleton
     @Provides
     fun provideRegistrationService(
@@ -33,7 +37,7 @@ class UIServicesModule {
         @SlyHttp httpClientFactory: HttpClientFactory
     ): UIRegistrationService = getImplementation(
         UIServiceComponent.REGISTRATION,
-        { DummyUIRegistrationService() },
+        { noDummyAvailable("UIRegistrationService") },
         {
             val serverUrl = serverUrls.API_SERVER
             val registrationClient = RegistrationAsyncClient(serverUrl, httpClientFactory)
@@ -48,7 +52,7 @@ class UIServicesModule {
         app: SlyApplication
     ): UILoginService = getImplementation(
         UIServiceComponent.LOGIN,
-        { DummyUILoginService() },
+        { noDummyAvailable("UILoginService") },
         { UILoginServiceImpl(app) }
     )
 
@@ -58,18 +62,17 @@ class UIServicesModule {
         app: SlyApplication
     ): UIContactsService = getImplementation(
         UIServiceComponent.CONTACTS,
-        { DummyUIContactsService() },
+        { noDummyAvailable("UIContactsService") },
         { UIContactsServiceImpl(app.userSessionAvailable) }
     )
 
     @Singleton
     @Provides
     fun provideMessengerService(
-        app: SlyApplication,
-        contactsService: UIContactsService
+        app: SlyApplication
     ): UIMessengerService = getImplementation(
         UIServiceComponent.MESSENGER,
-        { DummyUIMessengerService(contactsService) },
+        { noDummyAvailable("UIMessengerService") },
         { UIMessengerServiceImpl(app.userSessionAvailable) }
     )
 
@@ -79,16 +82,14 @@ class UIServicesModule {
 
     @Singleton
     @Provides
-    fun provideDevelService(messengerService: UIMessengerService): UIDevelService =
-        UIDevelServiceImpl(
-            messengerService as? DummyUIMessengerService
-        )
+    fun provideDevelService(): UIDevelService =
+        UIDevelServiceImpl()
 
     @Singleton
     @Provides
     fun provideNetworkStatusService(app: SlyApplication): UINetworkStatusService = getImplementation(
         UIServiceComponent.NETWORK_STATUS,
-        { DummyUINetworkStatusService() },
+        { noDummyAvailable("UINetworkStatusService") },
         { UINetworkStatusServiceImpl(app.networkAvailable, app.relayAvailable) }
     )
 

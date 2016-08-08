@@ -7,8 +7,4 @@ import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
  */
 @JSToJavaGenerate("DevelService")
 interface UIDevelService {
-    /**
-     * Mimics receiving a message from a contact.
-     */
-    fun receiveFakeMessage(contact: UIContactDetails, message: String)
 }
