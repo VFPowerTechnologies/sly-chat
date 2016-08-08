@@ -348,6 +348,8 @@ class SlyApplication {
 
         connectToRelay()
 
+        forceAddressBookSync()
+
         fetchOfflineMessages()
     }
 
@@ -423,6 +425,11 @@ class SlyApplication {
         userComponent.sqlitePersistenceManager.shutdown()
     }
 
+    //should come up with something better...
+    private fun forceAddressBookSync() {
+        userComponent?.apply { addressBookOperationManager.withCurrentSyncJobNoScheduler { doRemoteSync() } }
+    }
+
     /** called after a successful user session has been created to finish initializing components. */
     private fun finalizeInit(userComponent: UserComponent, accountInfo: AccountInfo) {
         newTokenSyncSub = userComponent.authTokenManager.newToken.subscribe {
@@ -435,7 +442,8 @@ class SlyApplication {
 
         userSessionAvailableSubject.onNext(userComponent)
 
-        userComponent.contactsService.doRemoteSync()
+        forceAddressBookSync()
+
         //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
         fetchOfflineMessages()
 

@@ -24,6 +24,10 @@ class MockAddressBookOperationManager : AddressBookOperationManager {
         currentSyncJobDescription.body()
     }
 
+    override fun withCurrentSyncJobNoScheduler(body: AddressBookSyncJobDescription.() -> Unit) {
+        withCurrentSyncJob(body)
+    }
+
     override fun shutdown() {
     }
 

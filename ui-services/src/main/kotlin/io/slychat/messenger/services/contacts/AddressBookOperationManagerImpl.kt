@@ -96,6 +96,11 @@ class AddressBookOperationManagerImpl(
         processNext()
     }
 
+    override fun withCurrentSyncJobNoScheduler(body: AddressBookSyncJobDescription.() -> Unit) {
+        wasSyncScheduleEventReceived = true
+        withCurrentSyncJob(body)
+    }
+
     private fun scheduleSync() {
         syncScheduler.schedule()
     }

@@ -393,4 +393,14 @@ class AddressBookOperationManagerImplTest {
 
         verify(addressBookJob).run(any())
     }
+
+    @Test
+    fun `withCurrentSyncJobNoScheduler should bypass the scheduler`() {
+        val scheduler = MockSyncScheduler()
+        val runner = createRunner(true, syncScheduler = scheduler)
+
+        runner.withCurrentSyncJobNoScheduler { doRemoteSync() }
+
+        verify(addressBookJob).run(any())
+    }
 }

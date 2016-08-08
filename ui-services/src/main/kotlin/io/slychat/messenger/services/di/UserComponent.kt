@@ -6,6 +6,7 @@ import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.config.UserConfigService
+import io.slychat.messenger.services.contacts.AddressBookOperationManager
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.messaging.MessengerService
@@ -51,4 +52,6 @@ interface UserComponent {
     val authTokenManager: AuthTokenManager
 
     val configService: UserConfigService
+
+    val addressBookOperationManager: AddressBookOperationManager
 }
