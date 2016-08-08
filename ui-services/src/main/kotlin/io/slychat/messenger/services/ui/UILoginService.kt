@@ -1,12 +1,12 @@
 package io.slychat.messenger.services.ui
 
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
-import io.slychat.messenger.services.LoginEvent
+import io.slychat.messenger.services.ui.impl.UILoginEvent
 
 /** Responsible for authentication */
 @JSToJavaGenerate("LoginService")
 interface UILoginService {
-    fun addLoginEventListener(listener: (LoginEvent) -> Unit)
+    fun addLoginEventListener(listener: (UILoginEvent) -> Unit)
     fun login(emailOrPhoneNumber: String, password: String, rememberMe: Boolean)
     fun logout()
 }
