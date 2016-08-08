@@ -11,6 +11,7 @@ import io.slychat.messenger.services.messaging.MessageBundle
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
+import java.util.*
 
 /**
  * Listens for new message events and dispatches notification display info to the underlying platform implementation.
@@ -35,6 +36,30 @@ class NotifierService(
     private val platformNotificationService: PlatformNotificationService,
     private val userConfigService: UserConfigService
 ) {
+    companion object {
+        /** Groups and flatten a list of message bundles. */
+        fun flattenMessageBundles(observable: Observable<List<MessageBundle>>): Observable<MessageBundle> {
+            return observable
+                .map { bufferedBundles ->
+                    val grouped = HashMap<Pair<UserId, GroupId?>, MessageBundle>()
+
+                    bufferedBundles.forEach {
+                        val key = it.userId to it.groupId
+                        val existing = grouped[key]
+
+                        grouped[key] = if (existing == null)
+                            it
+                        else
+                            existing.copy(messages = existing.messages + it.messages)
+
+                    }
+
+                    grouped.values
+                }
+                .flatMapIterable { it }
+        }
+    }
+
     private var log = LoggerFactory.getLogger(javaClass)
 
     /** If false, ignore all notifications. Still runs notification clear functions. */

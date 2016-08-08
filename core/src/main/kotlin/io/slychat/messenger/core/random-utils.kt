@@ -93,6 +93,10 @@ fun randomReceivedMessageInfo(): MessageInfo {
     return MessageInfo.newReceived(randomMessageText(), currentTimestamp())
 }
 
+fun randomReceivedMessageInfoList(n: Int = 2): List<MessageInfo> {
+    return (1..n).map { MessageInfo.newReceived(randomMessageText(), currentTimestamp()) }
+}
+
 fun randomSentMessageInfo(): MessageInfo {
     return MessageInfo.newSent(randomMessageText(), 0)
 }

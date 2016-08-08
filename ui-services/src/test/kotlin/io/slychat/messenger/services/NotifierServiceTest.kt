@@ -9,12 +9,15 @@ import io.slychat.messenger.services.contacts.NotificationConversationInfo
 import io.slychat.messenger.services.contacts.NotificationMessageInfo
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.cond
 import io.slychat.messenger.testutils.thenReturn
 import io.slychat.messenger.testutils.thenReturnNull
 import nl.komponents.kovenant.Promise
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
+import rx.Observable
 import rx.subjects.PublishSubject
 import kotlin.test.assertFalse
 
@@ -290,6 +293,107 @@ class NotifierServiceTest {
         newMessagesSubject.onNext(bundle)
 
         verify(platformNotificationsService, never()).addNewMessageNotification(any(), any(), any())
+    }
+
+    fun randomMessageBundle(userId: UserId? = null, nMessages: Int = 2, groupId: GroupId? = null): MessageBundle {
+        val user = userId ?: randomUserId()
+        return MessageBundle(user, groupId, randomReceivedMessageInfoList(nMessages))
+    }
+
+    fun getMessageIdsFromBundle(messageBundle: MessageBundle): List<String> = messageBundle.messages.map { it.id }
+
+    fun flattenBundles(bundles: List<MessageBundle>): List<MessageBundle> {
+        val flattened = NotifierService.flattenMessageBundles(Observable.just(bundles))
+
+        return flattened.toList().toBlocking().single()
+    }
+
+    @Test
+    fun `flattenMessageBundles should group user MessageBundles together`() {
+        val user1 = randomUserId()
+        val user2 = randomUserId()
+
+        val bundles = listOf(
+            randomMessageBundle(user1, 1),
+            randomMessageBundle(user1, 1),
+            randomMessageBundle(user2, 1),
+            randomMessageBundle(user2, 1)
+        )
+
+        val output = flattenBundles(bundles)
+
+        assertThat(output).apply {
+            `as`("Messages should be grouped")
+            hasSize(2)
+            have(cond("Message count") { it.messages.size == 2 })
+        }
+
+        val users = output.mapToSet { it.userId }
+        assertThat(users).apply {
+            `as`("Grouped users")
+            containsOnly(user1, user2)
+        }
+    }
+
+    @Test
+    fun `flattenMessageBundles should preserve the message order`() {
+        val userId = randomUserId()
+
+        val bundles = listOf(
+            randomMessageBundle(userId, 1),
+            randomMessageBundle(userId, 1),
+            randomMessageBundle(userId, 1),
+            randomMessageBundle(userId, 1)
+        )
+
+        val order = bundles.map { it.messages.first().id }
+
+        val output = flattenBundles(bundles)
+
+        assertThat(output).apply {
+            `as`("Messages should be grouped")
+            hasSize(1)
+        }
+
+        val bundle = output.first()
+
+        val got = bundle.messages.map { it.id }
+
+        assertThat(got).apply {
+            `as`("Messages should be in order")
+            hasSize(4)
+            containsExactlyElementsOf(order)
+        }
+    }
+
+    @Test
+    fun `flattenMessageBundles should group user and group bundles separately`() {
+        val userId = randomUserId()
+        val groupId = randomGroupId()
+
+        val bundles = listOf(
+            randomMessageBundle(userId, 1),
+            randomMessageBundle(userId, 1, groupId)
+        )
+
+        val output = flattenBundles(bundles)
+
+        assertThat(output).apply {
+            `as`("Messages should be grouped by (userId, groupId)")
+            hasSize(2)
+        }
+
+        val expected = setOf(
+            userId to null,
+            userId to groupId
+        )
+
+        val grouped = output.mapToSet { it.userId to it.groupId }
+
+        assertThat(grouped).apply {
+            `as`("Messages should be grouped by (userId, groupId)")
+            hasSameElementsAs(expected)
+        }
     }
 }
 
