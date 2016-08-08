@@ -9,7 +9,8 @@ import rx.Observable
  * Operations will be queued if a sync is running, and syncs will be queued if operations are running.
  *
  * If a sync is currently running, another sync may be queued withCurrentSyncJob. Subsequent calls to this function
- * will update the queued sync job.
+ * will update the queued sync job. The sync job will be run sometime in the future. If the job must be run as soon as
+ * possible (eg: for initial sync), then withCurrentSynbJobNoScheduler may be used.
  *
  * Sync jobs won't be run if the network is offline, but operations don't have this restriction.
  *
@@ -20,6 +21,9 @@ interface AddressBookOperationManager {
     val running: Observable<AddressBookSyncJobInfo>
 
     fun withCurrentSyncJob(body: AddressBookSyncJobDescription.() -> Unit)
+
+    /** Runs the given job as soon as possible. Used on startup for initial sync. */
+    fun withCurrentSyncJobNoScheduler(body: AddressBookSyncJobDescription.() -> Unit)
 
     fun shutdown()
 

@@ -119,8 +119,8 @@ class AddressBookSyncJobImpl(
             Promise.ofSuccess(Unit)
     }
 
-    /** Syncs the local contact list with the remote contact list. */
-    private fun syncRemoteContactsList(): Promise<Unit, Exception> {
+    /** Syncs the local address book with the remote address book. */
+    private fun syncRemoteAddressBook(): Promise<Unit, Exception> {
         log.debug("Beginning remote address book sync")
 
         val keyVault = userLoginData.keyVault
@@ -175,7 +175,7 @@ class AddressBookSyncJobImpl(
         }
     }
 
-    private fun updateRemoteContactList(): Promise<Unit, Exception> {
+    private fun updateRemoteAddressBook(): Promise<Unit, Exception> {
         log.info("Beginning remote address book update")
 
         return authTokenManager.bind { userCredentials ->
@@ -194,12 +194,10 @@ class AddressBookSyncJobImpl(
             jobRunners.add { syncPlatformContacts() }
 
         if (jobDescription.updateRemote)
-            jobRunners.add { updateRemoteContactList() }
+            jobRunners.add { updateRemoteAddressBook() }
 
         if (jobDescription.remoteSync)
-            jobRunners.add {
-                syncRemoteContactsList()
-            }
+            jobRunners.add { syncRemoteAddressBook() }
 
         return jobRunners.fold(Promise.ofSuccess(Unit)) { z, v ->
             z bindUi v

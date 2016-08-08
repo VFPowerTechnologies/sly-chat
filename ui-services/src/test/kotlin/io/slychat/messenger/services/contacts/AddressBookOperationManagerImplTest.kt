@@ -8,11 +8,13 @@ import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import rx.Observable
 import rx.observers.TestSubscriber
 import rx.subjects.BehaviorSubject
+import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -40,6 +42,22 @@ class AddressBookOperationManagerImplTest {
                 return job
             }
         }
+
+        class MockSyncScheduler : SyncScheduler {
+            private val scheduledEventSubject: PublishSubject<Unit> = PublishSubject.create()
+
+            override val scheduledEvent: Observable<Unit> = scheduledEventSubject
+
+            var wasScheduled = false
+
+            override fun schedule() {
+                wasScheduled = true
+            }
+
+            fun emitEvent() {
+                scheduledEventSubject.onNext(Unit)
+            }
+        }
     }
 
     val factory: AddressBookSyncJobFactory = mock()
@@ -48,15 +66,23 @@ class AddressBookOperationManagerImplTest {
 
     val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create()
 
-    fun createRunner(isNetworkAvailable: Boolean = false): AddressBookOperationManagerImpl {
-        networkStatus.onNext(isNetworkAvailable)
-
+    @Before
+    fun before() {
         whenever(factory.create()).thenReturn(addressBookJob)
         whenever(addressBookJob.run(any())).thenReturn(jobDeferred.promise)
+    }
+
+    fun createRunner(
+        isNetworkAvailable: Boolean = false,
+        jobFactory: AddressBookSyncJobFactory = factory,
+        syncScheduler: SyncScheduler = ImmediateSyncScheduler()
+    ): AddressBookOperationManagerImpl {
+        networkStatus.onNext(isNetworkAvailable)
 
         return AddressBookOperationManagerImpl(
             networkStatus,
-            factory
+            jobFactory,
+            syncScheduler
         )
     }
 
@@ -221,10 +247,7 @@ class AddressBookOperationManagerImplTest {
     fun `it should queue a sync job if one is already running`() {
         val factory = MockSyncJobFactory()
 
-        val runner = AddressBookOperationManagerImpl(
-            Observable.just(true),
-            factory
-        )
+        val runner = createRunner(true, factory)
 
         doLocalSync(runner)
         doLocalSync(runner)
@@ -237,10 +260,7 @@ class AddressBookOperationManagerImplTest {
     fun `it should run a queued sync job after the current one is complete if no operations are pending`() {
         val factory = MockSyncJobFactory()
 
-        val runner = AddressBookOperationManagerImpl(
-            Observable.just(true),
-            factory
-        )
+        val runner = createRunner(true, factory)
 
         doLocalSync(runner)
         doLocalSync(runner)
@@ -271,10 +291,8 @@ class AddressBookOperationManagerImplTest {
     @Test
     fun `it should emit a a stopped event when a sync ends`() {
         val factory = MockSyncJobFactory()
-        val runner = AddressBookOperationManagerImpl(
-            Observable.just(true),
-            factory
-        )
+
+        val runner = createRunner(true, factory)
 
         val testSubscriber = TestSubscriber<AddressBookSyncJobInfo>()
 
@@ -293,10 +311,7 @@ class AddressBookOperationManagerImplTest {
 
     @Test(timeout = 300)
     fun `the promise returned by addOperation should be resolved with the value returned by the operation`() {
-        val runner = AddressBookOperationManagerImpl(
-            Observable.just(true),
-            mock()
-        )
+        val runner = createRunner(true)
 
         val d = deferred<Int, Exception>()
         val p = runner.runOperation {
@@ -311,10 +326,7 @@ class AddressBookOperationManagerImplTest {
 
     @Test(timeout = 300)
     fun `the promise returned by addOperation should be rejected with the exception thrown by the operation`() {
-        val runner = AddressBookOperationManagerImpl(
-            Observable.just(true),
-            mock()
-        )
+        val runner = createRunner(true)
 
         val d = deferred<Int, Exception>()
         val p = runner.runOperation {
@@ -326,5 +338,69 @@ class AddressBookOperationManagerImplTest {
         assertFailsWith(TestException::class) {
             p.get()
         }
+    }
+
+    @Test
+    fun `it should not run a sync job until the SyncScheduler emits an event`() {
+        val scheduler = MockSyncScheduler()
+        val runner = createRunner(true, syncScheduler = scheduler)
+
+        doLocalSync(runner)
+        doLocalSync(runner)
+
+        verify(addressBookJob, never()).run(any())
+
+        scheduler.emitEvent()
+
+        verify(addressBookJob).run(any())
+    }
+
+    @Test
+    fun `it should run operations after scheduling a sync so long as no schedule event has occured`() {
+        val scheduler = MockSyncScheduler()
+        val runner = createRunner(true, syncScheduler = scheduler)
+
+        doLocalSync(runner)
+
+        val d = deferred<Int, Exception>()
+        var wasRun = false
+        runner.runOperation {
+            wasRun = true
+            d.promise
+        }
+
+        assertTrue(wasRun, "Operation not run")
+    }
+
+    //this feels pretty redundant, but the other test doesn't actually test the syncscheduler
+    @Test
+    fun `it should start a schedule sync once an operation completes`() {
+        val scheduler = MockSyncScheduler()
+        val runner = createRunner(true, syncScheduler = scheduler)
+
+        doLocalSync(runner)
+
+        val d = deferred<Unit, Exception>()
+        runner.runOperation {
+            d.promise
+        }
+
+        scheduler.emitEvent()
+
+        verify(addressBookJob, never()).run(any())
+
+        d.resolve(Unit)
+
+        verify(addressBookJob).run(any())
+    }
+
+    @Test
+    fun `withCurrentSyncJobNoScheduler should bypass the scheduler`() {
+        val scheduler = MockSyncScheduler()
+        val runner = createRunner(true, syncScheduler = scheduler)
+
+        runner.withCurrentSyncJobNoScheduler { doRemoteSync() }
+
+        verify(addressBookJob).run(any())
     }
 }
