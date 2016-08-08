@@ -246,7 +246,7 @@ $$(document).on('open', '.popup-contact', function() {
     var event = {
         "eventType": "PageChange",
         "page": "ADDRESS_BOOK",
-        "extra": null
+        "extra": ""
     };
     navigationController.dispatchEvent(event);
 });
