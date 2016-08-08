@@ -93,7 +93,7 @@ class UserModule(
     ): AddressBookOperationManager = AddressBookOperationManagerImpl(
         application.networkAvailable,
         addressBookJobFactory,
-        DebounceScheduler(30, TimeUnit.SECONDS, scheduler)
+        DebounceScheduler(5, TimeUnit.SECONDS, scheduler)
     )
 
     @UserScope
