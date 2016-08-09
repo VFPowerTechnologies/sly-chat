@@ -4,6 +4,7 @@ import io.slychat.messenger.services.PlatformNotificationService
 import io.slychat.messenger.services.contacts.NotificationConversationInfo
 import io.slychat.messenger.services.contacts.NotificationMessageInfo
 import org.slf4j.LoggerFactory
+import org.controlsfx.control.Notifications
 
 class DesktopNotificationService : PlatformNotificationService {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -24,5 +25,15 @@ class DesktopNotificationService : PlatformNotificationService {
             lastMessageInfo.message,
             messageCount
         )
+
+        openNotification("Sly Chat", "You have a new message from ${lastMessageInfo.speakerName}")
+    }
+
+    private fun openNotification(title: String, text: String) {
+        Notifications.create()
+                .darkStyle()
+                .title(title)
+                .text(text)
+                .show()
     }
 }

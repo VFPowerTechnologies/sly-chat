@@ -25,6 +25,8 @@ dependencies {
     compile "io.reactivex:rxjavafx:$versions.rxjavafx"
 
     compile "ch.qos.logback:logback-classic:$versions.logbackClassic"
+
+    compile "org.controlsfx:controlsfx:$versions.controlsFx"
 }
 
 jfx {

@@ -32,6 +32,7 @@ buildscript {
             androidBuildTools: '23.0.3',
             androidCompileSdk: 23,
             jsbridge: '0.2.0-SNAPSHOT',
+            controlsFx: '8.40.11',
         ]
     }
 

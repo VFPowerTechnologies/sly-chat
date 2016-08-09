@@ -116,10 +116,16 @@ class DesktopApp : Application() {
         app.init(platformModule)
         app.isInBackground = false
 
+        stage.iconifiedProperty().addListener { o, oldV, newV ->
+            app.userComponent?.apply {
+                notifierService.isUiVisible = !newV
+            }
+        }
+
         val appComponent = app.appComponent
         app.userSessionAvailable.subscribe {
             if (it != null)
-                it.notifierService.isUiVisible = true
+                it.notifierService.isUiVisible = !stage.isIconified
         }
 
         //temp
