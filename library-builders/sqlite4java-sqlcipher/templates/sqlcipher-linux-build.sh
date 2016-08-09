@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eu
 
 PREFIX="{{prefix}}"
 INC_DIRS="-I$PREFIX/include "
