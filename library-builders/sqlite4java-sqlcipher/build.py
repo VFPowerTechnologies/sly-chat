@@ -18,7 +18,7 @@ from utils import (make_dirs, write_to_file, get_staticlib_name_for_arch,
 
 DOWNLOAD_URLS = {
     #https://www.openssl.org/source/
-    'openssl': 'https://www.openssl.org/source/openssl-1.0.2g.tar.gz',
+    'openssl': 'https://www.openssl.org/source/openssl-1.0.2h.tar.gz',
     'sqlcipher': 'https://github.com/sqlcipher/sqlcipher/archive/v3.4.0.tar.gz',
     'sqlite4java': 'https://bitbucket.org/almworks/sqlite4java/get/fa4bb0fe7319a5f1afe008284146ac83e027de60.tar.gz',
 }
@@ -26,7 +26,7 @@ DOWNLOAD_URLS = {
 
 #SHA256 hashes
 DOWNLOAD_HASHES = {
-    'openssl': 'b784b1b3907ce39abf4098702dade6365522a253ad1552e267a9a0e89594aa33',
+    'openssl': '1d4007e53aad94a5b2002fe045ee7bb0b3d98f1a47f8b2bc851dcd1c74332919',
     'sqlcipher': '99b702ecf796de02bf7b7b35de4ceef145f0d62b4467a86707c2d59beea243d0',
     'sqlite4java': '24accb1c7abd9549bb28f85b35d519c87406a1dabc832772f85f6c787584f7d2',
 }

@@ -17,6 +17,7 @@ def get_tasks():
 
     return tasks
 
+
 def main():
     tasks = get_tasks()
     if len(sys.argv) < 3:
