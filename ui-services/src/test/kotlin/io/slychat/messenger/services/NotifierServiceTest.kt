@@ -18,6 +18,7 @@ import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import rx.Observable
+import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import kotlin.test.assertFalse
 
@@ -36,18 +37,22 @@ class NotifierServiceTest {
 
     val newMessagesSubject: PublishSubject<MessageBundle> = PublishSubject.create()
     val uiEventSubject: PublishSubject<UIEvent> = PublishSubject.create()
+    val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create()
 
     @Before
     fun before() {
         whenever(groupPersistenceManager.getInfo(any())).thenReturnNull()
     }
 
-    fun initNotifierService(config: UserConfig = UserConfig(notificationsEnabled = true)): NotifierService {
+    fun initNotifierService(isUiVisible: Boolean = false, config: UserConfig = UserConfig(notificationsEnabled = true)): NotifierService {
         userConfigService = UserConfigService(mock(), config = config)
+
+        uiVisibility.onNext(true)
 
         val notifierService = NotifierService(
             newMessagesSubject,
             uiEventSubject,
+            uiVisibility,
             contactsPersistenceManager,
             groupPersistenceManager,
             platformNotificationsService,
@@ -122,27 +127,21 @@ class NotifierServiceTest {
 
     @Test
     fun `it should show notifications when notifications are enabled and the ui is not visible`() {
-        val notifierService = initNotifierService()
-
-        notifierService.isUiVisible = false
+        val notifierService = initNotifierService(isUiVisible = false)
 
         testConvoNotificationDisplay(true)
     }
 
     @Test
     fun `it should not show notifications when notifications are disabled and the ui is not visible`() {
-        val notifierService = initNotifierService(UserConfig(notificationsEnabled = false))
-
-        notifierService.isUiVisible = false
+        val notifierService = initNotifierService(isUiVisible = false, config = UserConfig(notificationsEnabled = false))
 
         testConvoNotificationDisplay(false)
     }
 
     @Test
     fun `it should not show notifications for the currently open user page`() {
-        val notifierService = initNotifierService()
-
-        notifierService.isUiVisible = true
+        val notifierService = initNotifierService(isUiVisible = true)
 
         setupContactInfo(1)
 
@@ -153,9 +152,7 @@ class NotifierServiceTest {
 
     @Test
     fun `it should show notifications for an unfocused user`() {
-        val notifierService = initNotifierService()
-
-        notifierService.isUiVisible = true
+        val notifierService = initNotifierService(isUiVisible = true)
 
         setupContactInfo(2)
 
@@ -166,9 +163,7 @@ class NotifierServiceTest {
 
     @Test
     fun `it should not show notifications when the contact page page is focused`() {
-        val notifierService = initNotifierService()
-
-        notifierService.isUiVisible = true
+        val notifierService = initNotifierService(isUiVisible = true)
 
         uiEventSubject.onNext(PageChangeEvent(PageType.CONTACTS, ""))
 
@@ -271,9 +266,7 @@ class NotifierServiceTest {
 
     @Test
     fun `it should not display notifications directed at the currently focused group`() {
-        val notifierService = initNotifierService()
-
-        notifierService.isUiVisible = true
+        val notifierService = initNotifierService(isUiVisible = true)
 
         val contactInfo = randomContactInfo()
         val groupInfo = randomGroupInfo()

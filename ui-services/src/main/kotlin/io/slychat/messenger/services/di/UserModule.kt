@@ -29,6 +29,7 @@ import io.slychat.messenger.services.crypto.MessageCipherServiceImpl
 import io.slychat.messenger.services.messaging.*
 import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
+import rx.Observable
 import rx.Scheduler
 import java.util.concurrent.TimeUnit
 
@@ -197,6 +198,7 @@ class UserModule(
         groupPersistenceManager: GroupPersistenceManager,
         platformNotificationService: PlatformNotificationService,
         userConfigService: UserConfigService,
+        @UIVisibility uiVisibility: Observable<Boolean>,
         scheduler: Scheduler
     ): NotifierService {
         //even if this a hot observable, it's not yet emitting so we can just connect using share() instead of
@@ -212,6 +214,7 @@ class UserModule(
         return NotifierService(
             bufferedMessages,
             uiEventService.events,
+            uiVisibility,
             contactsPersistenceManager,
             groupPersistenceManager,
             platformNotificationService,
