@@ -13,7 +13,8 @@ from tasks import Task
 from utils import (make_dirs, write_to_file, get_staticlib_name_for_arch,
                    unpack_source, get_template, arch_to_setenv_info,
                    arch_is_android, get_android_configure_host_type,
-                   apply_patch, get_android_abis, get_sha256_checksum)
+                   apply_patch, get_android_abis, get_sha256_checksum,
+                   get_platform_from_arch)
 
 
 DOWNLOAD_URLS = {
@@ -31,9 +32,11 @@ DOWNLOAD_HASHES = {
     'sqlite4java': '24accb1c7abd9549bb28f85b35d519c87406a1dabc832772f85f6c787584f7d2',
 }
 
+
 ARCH_LINUX = 'linux-x86_64'
 ARCH_OSX = 'osx-x86_64'
 ARCH_WINDOWS = 'win32-x64'
+
 
 class CreateWorkDirsTask(Task):
     "Creates the top-level work directories."
@@ -149,18 +152,11 @@ class BuildOpenSSLTask(BuildTask):
         super().__init__('build-openssl', 'openssl', 'crypto')
         self.add_dependency('download-openssl')
 
-    def _get_template_filename_for_arch(self, arch):
-        if arch == ARCH_LINUX:
-            return 'openssl-linux-build.sh'
-        elif arch == ARCH_OSX:
-            return 'openssl-osx-build.sh'
-        elif arch == ARCH_WINDOWS:
-            return 'openssl-windows-build.sh'
-        else:
-            raise ValueError('Unknown arch: ' + arch)
+    def _get_template_filename(self, arch):
+        return 'openssl-%s-build.sh' % get_platform_from_arch(arch)
 
     def _get_template(self, arch, prefix_dir):
-        template = get_template(self._get_template_filename_for_arch(arch))
+        template = get_template(self._get_template_filename(arch))
         context = {
             'prefix': prefix_dir,
             'configure-options': self._configure_options,
@@ -222,23 +218,32 @@ class BuildSQLCipher(BuildTask):
         }
         return template.substitute(**context)
 
+    def _get_template_filename_for_arch(self, arch):
+        return 'sqlcipher-%s-build.sh' % get_platform_from_arch(arch)
 
-    def _get_linux_template(self, prefix_dir):
-        template = get_template('sqlcipher-linux-build.sh')
+    def _get_template(self, arch, prefix_dir):
+        template = get_template(self._get_template_filename_for_arch(arch))
         context = {
             'prefix': prefix_dir,
         }
         return template.substitute(**context)
 
+    def _apply_windows_patch(self, build_dir):
+        print('Applying windows patch')
+        apply_patch(build_dir, 'sqlcipher-win32', {})
+
     def do_build(self, task_context, arch, prefix_dir, build_dir):
         if arch_is_android(arch):
             template = self._get_android_template(task_context, prefix_dir, arch)
         else:
-            template = self._get_linux_template(prefix_dir)
+            template = self._get_template(arch, prefix_dir)
 
-        #need to copy more recent config.sub/guess scripts
-        #FIXME find libtool dir or pass in as setting
-        libtool_dir = '/usr/share/libtool/build-aux'
+        if arch == ARCH_WINDOWS:
+            self._apply_windows_patch(build_dir)
+            subprocess.check_call(['autoreconf'], cwd=build_dir)
+
+        #need to copy more recent config.sub/guess scripts (for android)
+        libtool_dir = join(task_context['libtool-home'], 'build-aux')
         for ext in ['sub', 'guess']:
             shutil.copy(join(libtool_dir, 'config.' + ext), build_dir)
 

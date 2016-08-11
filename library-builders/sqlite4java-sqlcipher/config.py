@@ -47,6 +47,7 @@ def process_config_file(config):
         'android-ndk-home',
         'android-sdk-home',
         'groovy-home',
+        'libtool-home',
         'archs',
     ]
 

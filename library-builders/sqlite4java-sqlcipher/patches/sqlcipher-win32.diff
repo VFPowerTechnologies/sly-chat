@@ -1,0 +1,12 @@
+diff --git a/configure.ac b/configure.ac
+index 9a1fe1a..d705c57 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -326,6 +326,7 @@ else
+   CFLAGS="$CFLAGS -DSQLITE_OS_UNIX=1"
+ fi
+ 
++BUILD_EXEEXT=""
+ AC_SUBST(BUILD_EXEEXT)
+ AC_SUBST(SQLITE_OS_UNIX)
+ AC_SUBST(SQLITE_OS_WIN)

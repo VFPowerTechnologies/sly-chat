@@ -12,6 +12,12 @@ TEMPLATE_DIR = abspath(join(dirname(__file__), 'templates'))
 PATCH_DIR = abspath(join(dirname(__file__), 'patches'))
 
 
+def get_platform_from_arch(arch):
+    "Given platform-arch, returns platform"
+
+    return arch.split('-', 1)[0]
+
+
 def get_sha256_checksum(path):
     hasher = hashlib.sha256()
     with open(path, 'rb') as fd:
@@ -117,6 +123,7 @@ def unhoist_directory(path):
     If the given directory contains only a single directory, move all the
     subdirectory's content to the parent directory and remove it.
     """
+
     children = list_files(path)
     if len(children) != 1:
         return
