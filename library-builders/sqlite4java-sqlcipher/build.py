@@ -31,6 +31,9 @@ DOWNLOAD_HASHES = {
     'sqlite4java': '24accb1c7abd9549bb28f85b35d519c87406a1dabc832772f85f6c787584f7d2',
 }
 
+ARCH_LINUX = 'linux-x86_64'
+ARCH_OSX = 'osx-x86_64'
+ARCH_WINDOWS = 'win32-x64'
 
 class CreateWorkDirsTask(Task):
     "Creates the top-level work directories."
@@ -139,14 +142,28 @@ class BuildTask(Task):
 
 
 class BuildOpenSSLTask(BuildTask):
+    #CAST causes some text relocations to be generated so we need to disable it
+    _configure_options = 'no-ssl2 no-ssl3 no-cast no-comp no-dso no-hw no-engine no-shared'
+
     def __init__(self):
         super().__init__('build-openssl', 'openssl', 'crypto')
         self.add_dependency('download-openssl')
 
-    def _get_linux_template(self, prefix_dir):
-        template = get_template('openssl-linux-build.sh')
+    def _get_template_filename_for_arch(self, arch):
+        if arch == ARCH_LINUX:
+            return 'openssl-linux-build.sh'
+        elif arch == ARCH_OSX:
+            return 'openssl-osx-build.sh'
+        elif arch == ARCH_WINDOWS:
+            return 'openssl-windows-build.sh'
+        else:
+            raise ValueError('Unknown arch: ' + arch)
+
+    def _get_template(self, arch, prefix_dir):
+        template = get_template(self._get_template_filename_for_arch(arch))
         context = {
             'prefix': prefix_dir,
+            'configure-options': self._configure_options,
         }
         return template.substitute(**context)
 
@@ -177,7 +194,7 @@ class BuildOpenSSLTask(BuildTask):
             self._write_setenv_android(build_dir, arch)
             template = self._get_android_template(task_context, prefix_dir, arch)
         else:
-            template = self._get_linux_template(prefix_dir)
+            template = self._get_template(arch, prefix_dir)
 
         self.run_build_script(build_dir, template)
 
