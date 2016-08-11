@@ -2,7 +2,7 @@
 #requires: patch, gant, bash
 #TODO task help
 #TODO improve logging
-#unsupported archs: android-x86_64, android-arm64-v8a (the openssl setenv script needs to be modified to support this)
+#unsupported platforms: android-x86_64, android-arm64-v8a (the openssl setenv script needs to be modified to support this)
 import subprocess
 import shutil
 from urllib import request
@@ -10,11 +10,11 @@ from os import environ, unlink
 from os.path import exists, join
 
 from tasks import Task
-from utils import (make_dirs, write_to_file, get_staticlib_name_for_arch,
+from utils import (make_dirs, write_to_file, get_staticlib_name_for_platform,
                    unpack_source, get_template, arch_to_setenv_info,
-                   arch_is_android, get_android_configure_host_type,
+                   platform_is_android, get_android_configure_host_type,
                    apply_patch, get_android_abis, get_sha256_checksum,
-                   get_platform_from_arch)
+                   get_os_from_platform)
 
 
 DOWNLOAD_URLS = {
@@ -33,9 +33,9 @@ DOWNLOAD_HASHES = {
 }
 
 
-ARCH_LINUX = 'linux-x86_64'
-ARCH_OSX = 'osx-x86_64'
-ARCH_WINDOWS = 'win32-x64'
+PLATFORM_LINUX = 'linux-x86_64'
+PLATFORM_OSX = 'osx-x86_64'
+PLATFORM_WINDOWS = 'win32-x64'
 
 
 class CreateWorkDirsTask(Task):
@@ -53,18 +53,18 @@ class CreateWorkDirsTask(Task):
             make_dirs(dir)
 
 
-class CreateArchDirsTask(Task):
-    "Creates subdirectories for each build arch."
+class CreatePlatformDirsTask(Task):
+    "Creates subdirectories for each build platform."
 
     def __init__(self):
-        super().__init__('create-arch-dirs', 'Create build and prefix subdirectories for each arch')
+        super().__init__('create-platform-dirs', 'Create build and prefix subdirectories for each platform')
 
         self.add_dependency('create-work-dirs')
 
     def run(self, task_context):
         for root in [task_context['root-prefix-path'], task_context['root-build-path']]:
-            for arch in task_context['archs']:
-                path = join(root, arch)
+            for platform in task_context['platforms']:
+                path = join(root, platform)
                 print('Creating directory %s' % path)
                 make_dirs(path)
 
@@ -101,16 +101,16 @@ class DownloadTask(Task):
 
 
 class BuildTask(Task):
-    "Generic per-arch build Task base."
+    "Generic per-platform build Task base."
 
     def __init__(self, task_name, build_item_name, lib_name):
         super().__init__(task_name, 'Build ' + build_item_name)
         self.build_item_name = build_item_name
         self.lib_name = lib_name
 
-        self.add_dependency('create-arch-dirs')
+        self.add_dependency('create-platform-dirs')
 
-    def do_build(self, text_context, arch, prefix_dir, build_dir):
+    def do_build(self, text_context, platform, prefix_dir, build_dir):
         raise NotImplementedError()
 
     def run_build_script(self, build_dir, template):
@@ -125,19 +125,19 @@ class BuildTask(Task):
     def run(self, task_context):
         src_path = join(task_context['root-src-path'], '%s.tar.gz' % self.build_item_name)
 
-        for arch in task_context['archs']:
-            prefix_dir = join(task_context['root-prefix-path'], arch)
+        for platform in task_context['platforms']:
+            prefix_dir = join(task_context['root-prefix-path'], platform)
 
-            lib_path = join(prefix_dir, 'lib', get_staticlib_name_for_arch(arch, self.lib_name))
+            lib_path = join(prefix_dir, 'lib', get_staticlib_name_for_platform(platform, self.lib_name))
             if exists(lib_path):
                 print('%s lib present, skipping build' % self.lib_name)
                 continue
 
-            print('Building for ' + arch)
-            build_dir = join(task_context['root-build-path'], arch, self.build_item_name)
+            print('Building for ' + platform)
+            build_dir = join(task_context['root-build-path'], platform, self.build_item_name)
             unpack_source(src_path, build_dir)
 
-            self.do_build(task_context, arch, prefix_dir, build_dir)
+            self.do_build(task_context, platform, prefix_dir, build_dir)
 
             print('Verifying build output')
             if not exists(lib_path):
@@ -152,18 +152,18 @@ class BuildOpenSSLTask(BuildTask):
         super().__init__('build-openssl', 'openssl', 'crypto')
         self.add_dependency('download-openssl')
 
-    def _get_template_filename(self, arch):
-        return 'openssl-%s-build.sh' % get_platform_from_arch(arch)
+    def _get_template_filename(self, platform):
+        return 'openssl-%s-build.sh' % get_os_from_platform(platform)
 
-    def _get_template(self, arch, prefix_dir):
-        template = get_template(self._get_template_filename(arch))
+    def _get_template(self, platform, prefix_dir):
+        template = get_template(self._get_template_filename(platform))
         context = {
             'prefix': prefix_dir,
             'configure-options': self._configure_options,
         }
         return template.substitute(**context)
 
-    def _get_android_template(self, task_context, prefix_dir, arch):
+    def _get_android_template(self, task_context, prefix_dir, platform):
         template = get_template('openssl-android-build.sh')
         context = {
             'prefix': prefix_dir,
@@ -172,25 +172,25 @@ class BuildOpenSSLTask(BuildTask):
         }
         return template.substitute(**context)
 
-    def _write_setenv_android(self, build_dir, arch):
+    def _write_setenv_android(self, build_dir, platform):
         template = get_template('setenv-android.sh')
-        aarch, eabi = arch_to_setenv_info(arch)
+        aarch, eabi = arch_to_setenv_info(platform)
         context = {
             #see NDK_HOME/toolchains/
             #x86-4.9, arm-linux-androideabi-4.6, etc
             'eabi': eabi,
             #x86 or arm (nothing else supported by script)
-            'arch': aarch,
+            'platform': aarch,
             'api': '19',
         }
         write_to_file(join(build_dir, 'setenv-android.sh'), template.substitute(**context))
 
-    def do_build(self, task_context, arch, prefix_dir, build_dir):
-        if arch_is_android(arch):
-            self._write_setenv_android(build_dir, arch)
-            template = self._get_android_template(task_context, prefix_dir, arch)
+    def do_build(self, task_context, platform, prefix_dir, build_dir):
+        if platform_is_android(platform):
+            self._write_setenv_android(build_dir, platform)
+            template = self._get_android_template(task_context, prefix_dir, platform)
         else:
-            template = self._get_template(arch, prefix_dir)
+            template = self._get_template(platform, prefix_dir)
 
         self.run_build_script(build_dir, template)
 
@@ -201,28 +201,28 @@ class BuildSQLCipher(BuildTask):
         self.add_dependency('build-openssl')
         self.add_dependency('download-sqlcipher')
 
-    def _get_android_template(self, task_context, prefix_dir, arch):
+    def _get_android_template(self, task_context, prefix_dir, platform):
         template = get_template('sqlcipher-android-build.sh')
-        aarch, eabi = arch_to_setenv_info(arch)
+        aarch, eabi = arch_to_setenv_info(platform)
         context = {
             'prefix': prefix_dir,
             'ndk-home': task_context['android-ndk-home'],
             'api': '19',
             'eabi': eabi,
-            'host': get_android_configure_host_type(arch),
+            'host': get_android_configure_host_type(platform),
             #arm/mips/x86
-            'arch': aarch,
+            'platform': aarch,
             #FIXME
-            #this is the building system's arch
-            'host-arch': 'linux-x86_64',
+            #this is the building system's platform
+            'host-platform': 'linux-x86_64',
         }
         return template.substitute(**context)
 
-    def _get_template_filename_for_arch(self, arch):
-        return 'sqlcipher-%s-build.sh' % get_platform_from_arch(arch)
+    def _get_template_filename_for(self, platform):
+        return 'sqlcipher-%s-build.sh' % get_os_from_platform(platform)
 
-    def _get_template(self, arch, prefix_dir):
-        template = get_template(self._get_template_filename_for_arch(arch))
+    def _get_template(self, platform, prefix_dir):
+        template = get_template(self._get_template_filename_for_arch(platform))
         context = {
             'prefix': prefix_dir,
         }
@@ -232,13 +232,13 @@ class BuildSQLCipher(BuildTask):
         print('Applying windows patch')
         apply_patch(build_dir, 'sqlcipher-win32', {})
 
-    def do_build(self, task_context, arch, prefix_dir, build_dir):
-        if arch_is_android(arch):
-            template = self._get_android_template(task_context, prefix_dir, arch)
+    def do_build(self, task_context, platform, prefix_dir, build_dir):
+        if platform_is_android(platform):
+            template = self._get_android_template(task_context, prefix_dir, platform)
         else:
-            template = self._get_template(arch, prefix_dir)
+            template = self._get_template(platform, prefix_dir)
 
-        if arch == ARCH_WINDOWS:
+        if platform == PLATFORM_WINDOWS:
             self._apply_windows_patch(build_dir)
             subprocess.check_call(['autoreconf'], cwd=build_dir)
 
@@ -275,12 +275,12 @@ class BuildSQLite4JavaTask(Task):
 
     #TODO this code is a mess right now
     def run(self, task_context):
-        build_linux_x86_64 = 'linux-x86_64' in task_context['archs']
+        build_linux_x86_64 = 'linux-x86_64' in task_context['platforms']
 
-        android_abis = get_android_abis(task_context['archs'])
+        android_abis = get_android_abis(task_context['platforms'])
 
         src_path = join(task_context['root-src-path'], 'sqlite4java.tar.gz')
-        #we can build for every arch using the same src setup
+        #we can build for every platform using the same src setup
         build_dir = join(task_context['root-build-path'], 'sqlite4java')
         unpack_source(src_path, build_dir)
 

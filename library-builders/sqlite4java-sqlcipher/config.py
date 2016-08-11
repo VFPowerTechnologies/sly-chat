@@ -48,7 +48,7 @@ def process_config_file(config):
         'android-sdk-home',
         'groovy-home',
         'libtool-home',
-        'archs',
+        'platforms',
     ]
 
     r = {}
@@ -58,7 +58,7 @@ def process_config_file(config):
         except KeyError:
             raise ConfigError('Missing key: ' + key)
 
-    r['archs'] = [a.strip() for a in config['archs'].split(',')]
+    r['platforms'] = [a.strip() for a in config['platforms'].split(',')]
 
     root_path = r['root']
 

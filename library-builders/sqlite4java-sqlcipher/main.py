@@ -2,14 +2,14 @@ import sys
 
 from tasks import Tasks
 from config import read_context_from_config
-from build import (CreateArchDirsTask, CreateWorkDirsTask, BuildOpenSSLTask,
+from build import (CreatePlatformDirsTask, CreateWorkDirsTask, BuildOpenSSLTask,
                    BuildSQLCipher, BuildSQLite4JavaTask, add_download_tasks)
 
 
 def get_tasks():
     tasks = Tasks()
     tasks.add(CreateWorkDirsTask())
-    tasks.add(CreateArchDirsTask())
+    tasks.add(CreatePlatformDirsTask())
     add_download_tasks(tasks)
     tasks.add(BuildOpenSSLTask())
     tasks.add(BuildSQLCipher())

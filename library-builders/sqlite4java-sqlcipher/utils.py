@@ -12,10 +12,10 @@ TEMPLATE_DIR = abspath(join(dirname(__file__), 'templates'))
 PATCH_DIR = abspath(join(dirname(__file__), 'patches'))
 
 
-def get_platform_from_arch(arch):
-    "Given platform-arch, returns platform"
+def get_os_from_platform(platform):
+    "Given os-platform, returns os"
 
-    return arch.split('-', 1)[0]
+    return platform.split('-', 1)[0]
 
 
 def get_sha256_checksum(path):
@@ -51,20 +51,20 @@ def apply_patch(cwd, patch_name, context):
         raise RuntimeError('Failed to apply patch %s' % patch_name)
 
 
-def get_android_configure_host_type(arch):
+def get_android_configure_host_type(platform):
     "Used for ./configure --host=..."
 
     return {
         'android-x86': 'i686-linux-android',
         'android-armeabi-v7a': 'arm-linux-androideabi',
-    }[arch]
+    }[platform]
 
 
-def arch_to_setenv_info(arch):
-    "Returns (arch, abi-compiler-prefix)"
+def arch_to_setenv_info(platform):
+    "Returns (platform, abi-compiler-prefix)"
 
-    cpu = arch.split('-', 1)[1]
-    #platforms/arch-* (arm/mips/x86)
+    cpu = platform.split('-', 1)[1]
+    #platforms/platform-* (arm/mips/x86)
     android_arch = {
         'x86': 'x86',
         'armeabi-v7a': 'arm',
@@ -79,16 +79,16 @@ def arch_to_setenv_info(arch):
 
 
 #TODO
-def get_staticlib_name_for_arch(arch, lib):
+def get_staticlib_name_for_platform(platform, lib):
     return 'lib%s.a' % lib
 
 
-def arch_is_android(arch):
-    return arch.startswith('android-')
+def platform_is_android(platform):
+    return platform.startswith('android-')
 
 
-def get_android_abis(archs):
-    return [abi.split('-', 1)[1] for abi in archs if arch_is_android(abi)]
+def get_android_abis(platforms):
+    return [abi.split('-', 1)[1] for abi in platforms if platform_is_android(abi)]
 
 
 def get_template(name):
