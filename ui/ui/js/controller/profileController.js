@@ -242,10 +242,7 @@ ProfileController.prototype = {
 
     openNotification : function(message, classes, hold) {
         var options = {
-            custom: '<div class="item-content">' +
-            '<div class="item-text">' + message + '</div>' +
-            '</div>',
-            additionalClass: classes,
+            title: message,
             hold: hold,
             closeOnClick: true
         };

@@ -24,7 +24,8 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     margin: 5px 0 15px 0;
 }
 .notifications {
-    z-index: 11001;
+    overflow: hidden;
+    z-index: 12001;
 }
 
 /* Form style */
