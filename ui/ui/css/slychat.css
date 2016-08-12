@@ -170,6 +170,9 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 }
 
 /** Chat Page **/
+#chat-content {
+    margin-bottom: 10px;
+}
 #chat-content li {
     position: relative;
     display: inline-block;
