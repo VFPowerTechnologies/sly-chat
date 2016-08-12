@@ -1,17 +1,15 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.div
 import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
-import java.io.File
 
 //FIXME externalize JsonAccountInfoPersistenceManager
 class FileSystemLocalAccountDirectory(
-    private val accountsDir: File
+    private val userPathsGenerator: UserPathsGenerator
 ) : LocalAccountDirectory {
     override fun findAccountFor(emailOrPhoneNumber: String): AccountInfo? {
-        val accountsDir = accountsDir
+        val accountsDir = userPathsGenerator.accountsDir
 
         if (!accountsDir.exists())
             return null
@@ -28,7 +26,7 @@ class FileSystemLocalAccountDirectory(
                 continue
             }
 
-            val accountInfoFile = accountDir / UserPathsGenerator.ACCOUNT_INFO_FILENAME
+            val accountInfoFile = userPathsGenerator.getAccountInfoPath(accountDir)
             val accountInfo = JsonAccountInfoPersistenceManager(accountInfoFile).retrieveSync() ?: continue
 
             if (emailOrPhoneNumber == accountInfo.phoneNumber ||
@@ -40,7 +38,7 @@ class FileSystemLocalAccountDirectory(
     }
 
     override fun findAccountFor(userId: UserId): AccountInfo? {
-        val accountInfoFile = accountsDir / userId.toString() / UserPathsGenerator.ACCOUNT_INFO_FILENAME
+        val accountInfoFile = userPathsGenerator.getAccountInfoPath(userId)
         return JsonAccountInfoPersistenceManager(accountInfoFile).retrieveSync()
     }
 }

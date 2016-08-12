@@ -31,7 +31,7 @@ class ApplicationModule(
     fun providesLocalAccountDirectory(
         userPathsGenerator: UserPathsGenerator
     ): LocalAccountDirectory {
-        return FileSystemLocalAccountDirectory(userPathsGenerator.accountsDir)
+        return FileSystemLocalAccountDirectory(userPathsGenerator)
     }
 
     @Singleton
