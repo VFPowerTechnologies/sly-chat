@@ -7,7 +7,7 @@ import io.slychat.messenger.core.BuildConfig.UIServiceComponent
 import io.slychat.messenger.core.BuildConfig.UIServiceType
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.accountupdate.AccountUpdateAsyncClient
-import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
+import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
 import io.slychat.messenger.core.http.api.infoservice.InfoServiceAsyncClient
 import io.slychat.messenger.core.http.api.registration.RegistrationAsyncClient
 import io.slychat.messenger.services.PlatformTelephonyService
@@ -41,7 +41,7 @@ class UIServicesModule {
         {
             val serverUrl = serverUrls.API_SERVER
             val registrationClient = RegistrationAsyncClient(serverUrl, httpClientFactory)
-            val loginClient = AuthenticationAsyncClient(serverUrl, httpClientFactory)
+            val loginClient = AuthenticationAsyncClientImpl(serverUrl, httpClientFactory)
             UIRegistrationServiceImpl(registrationClient, loginClient)
         }
     )

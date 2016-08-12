@@ -5,6 +5,7 @@ import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.div
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
+import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
 import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
 import io.slychat.messenger.core.persistence.AccountInfo
@@ -34,7 +35,7 @@ class AuthenticationService(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private val loginClient = AuthenticationAsyncClient(serverUrl, httpClientFactory)
+    private val loginClient = AuthenticationAsyncClientImpl(serverUrl, httpClientFactory)
 
     fun refreshAuthToken(address: SlyAddress, registrationId: Int, remotePasswordHash: ByteArray): Promise<AuthTokenRefreshResult, Exception> {
         val deviceId = address.deviceId
