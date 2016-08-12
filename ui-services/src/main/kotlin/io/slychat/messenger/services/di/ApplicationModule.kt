@@ -11,6 +11,7 @@ import io.slychat.messenger.core.div
 import io.slychat.messenger.core.http.HttpClientConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.JavaHttpClientFactory
+import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
 import io.slychat.messenger.services.AuthenticationService
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.UserPathsGenerator
@@ -34,8 +35,11 @@ class ApplicationModule(
         serverUrls: BuildConfig.ServerUrls,
         userPathsGenerator: UserPathsGenerator,
         @SlyHttp httpClientFactory: HttpClientFactory
-    ): AuthenticationService =
-        AuthenticationService(serverUrls.API_SERVER, httpClientFactory, userPathsGenerator)
+    ): AuthenticationService {
+        val serverUrl = serverUrls.API_SERVER
+        val loginClient = AuthenticationAsyncClientImpl(serverUrl, httpClientFactory)
+        return AuthenticationService(serverUrls.API_SERVER, httpClientFactory, userPathsGenerator, loginClient)
+    }
 
     @Singleton
     @Provides

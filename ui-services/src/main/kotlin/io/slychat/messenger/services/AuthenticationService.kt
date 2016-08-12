@@ -23,7 +23,8 @@ import java.io.FileNotFoundException
 class AuthenticationService(
     private val serverUrl: String,
     private val httpClientFactory: HttpClientFactory,
-    private val userPathsGenerator: UserPathsGenerator
+    private val userPathsGenerator: UserPathsGenerator,
+    private val loginClient: AuthenticationAsyncClient
 ) {
     companion object {
         private sealed class LocalAuthOutcome {
@@ -34,8 +35,6 @@ class AuthenticationService(
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
-
-    private val loginClient = AuthenticationAsyncClientImpl(serverUrl, httpClientFactory)
 
     fun refreshAuthToken(address: SlyAddress, registrationId: Int, remotePasswordHash: ByteArray): Promise<AuthTokenRefreshResult, Exception> {
         val deviceId = address.deviceId
