@@ -2,13 +2,10 @@ package io.slychat.messenger.services
 
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.*
-import io.slychat.messenger.core.div
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
-import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
 import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
-import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonKeyVaultPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
@@ -24,7 +21,8 @@ class AuthenticationService(
     private val serverUrl: String,
     private val httpClientFactory: HttpClientFactory,
     private val userPathsGenerator: UserPathsGenerator,
-    private val loginClient: AuthenticationAsyncClient
+    private val loginClient: AuthenticationAsyncClient,
+    private val localAccountDirectory: LocalAccountDirectory
 ) {
     companion object {
         private sealed class LocalAuthOutcome {
@@ -62,35 +60,6 @@ class AuthenticationService(
         }
     }
 
-    private fun findAccountFor(emailOrPhoneNumber: String): AccountInfo? {
-        val accountsDir = userPathsGenerator.accountsDir
-
-        if (!accountsDir.exists())
-            return null
-
-        for (accountDir in accountsDir.listFiles()) {
-            if (!accountDir.isDirectory)
-                continue
-
-            //ignore non-numeric dirs
-            try {
-                 accountDir.name.toLong()
-            }
-            catch (e: NumberFormatException) {
-                continue
-            }
-
-            val accountInfoFile = accountDir / UserPathsGenerator.ACCOUNT_INFO_FILENAME
-            val accountInfo = JsonAccountInfoPersistenceManager(accountInfoFile).retrieveSync() ?: continue
-
-            if (emailOrPhoneNumber == accountInfo.phoneNumber ||
-                emailOrPhoneNumber == accountInfo.email)
-                return accountInfo
-        }
-
-        return null
-    }
-
     private fun remoteAuth(emailOrPhoneNumber: String, password: String, registrationId: Int, deviceId: Int): AuthResult {
         val loginClient = AuthenticationClient(serverUrl, httpClientFactory.create())
 
@@ -116,7 +85,7 @@ class AuthenticationService(
     }
 
     private fun localAuth(emailOrPhoneNumber: String, password: String): LocalAuthOutcome {
-        val accountInfo = findAccountFor(emailOrPhoneNumber) ?: return LocalAuthOutcome.NoLocalData()
+        val accountInfo = localAccountDirectory.findAccountFor(emailOrPhoneNumber) ?: return LocalAuthOutcome.NoLocalData()
 
         val paths = userPathsGenerator.getPaths(accountInfo.id)
 

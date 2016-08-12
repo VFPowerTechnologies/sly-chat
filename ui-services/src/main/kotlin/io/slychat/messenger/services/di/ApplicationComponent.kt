@@ -5,6 +5,7 @@ import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.services.AuthenticationService
+import io.slychat.messenger.services.LocalAccountDirectory
 import io.slychat.messenger.services.PlatformContacts
 import io.slychat.messenger.services.UserPathsGenerator
 import io.slychat.messenger.services.config.AppConfigService
@@ -71,6 +72,8 @@ interface ApplicationComponent {
     val uiConfigService: UIConfigService
 
     val uiGroupService: UIGroupService
+
+    val localAccountDirectory: LocalAccountDirectory
 
     fun plus(userModule: UserModule): UserComponent
 }

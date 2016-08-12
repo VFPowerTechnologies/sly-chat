@@ -206,11 +206,12 @@ class SlyApplication {
         val path = userPathsGenerator.startupInfoPath
         val startupInfoPersistenceManager = JsonStartupInfoPersistenceManager(path)
 
+        val localAccountDirectory = appComponent.localAccountDirectory
+
         //XXX this is kinda inefficient, since we already have the userid, then we fetch the email to pass to the normal login functions
         startupInfoPersistenceManager.retrieve() map { startupInfo ->
             if (startupInfo != null) {
-                val accountInfoPath = userPathsGenerator.getAccountInfoPath(startupInfo.lastLoggedInAccount)
-                val accountInfo = JsonAccountInfoPersistenceManager(accountInfoPath).retrieveSync()
+                val accountInfo = localAccountDirectory.findAccountFor(startupInfo.lastLoggedInAccount)
                 if (accountInfo != null)
                     AutoLoginInfo(accountInfo.email, startupInfo.savedAccountPassword)
                 else
