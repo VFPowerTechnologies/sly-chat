@@ -65,7 +65,7 @@ class UserModule(
         serverUrls: BuildConfig.ServerUrls,
         contactsPersistenceManager: ContactsPersistenceManager,
         groupPersistenceManager: GroupPersistenceManager,
-        accountInfoPersistenceManager: AccountInfoPersistenceManager,
+        accountInfoManager: AccountInfoManager,
         @SlyHttp httpClientFactory: HttpClientFactory,
         userLoginData: UserData,
         platformContacts: PlatformContacts
@@ -81,7 +81,7 @@ class UserModule(
             contactsPersistenceManager,
             groupPersistenceManager,
             userLoginData,
-            accountInfoPersistenceManager,
+            accountInfoManager.accountInfo,
             platformContacts
         )
     }
