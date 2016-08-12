@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eu
 
 API_VERSION={{api}}
 #arm/mips/x86
