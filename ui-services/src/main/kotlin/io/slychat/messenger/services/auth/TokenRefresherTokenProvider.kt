@@ -1,8 +1,7 @@
 package io.slychat.messenger.services.auth
 
 import io.slychat.messenger.services.AuthApiResponseException
-import io.slychat.messenger.services.AuthenticationService
-import io.slychat.messenger.services.UserData
+import io.slychat.messenger.services.TokenRefresher
 import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -10,10 +9,8 @@ import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
 
-class AuthenticationServiceTokenProvider(
-    private val registrationId: Int,
-    private val userLoginData: UserData,
-    private val authenticationService: AuthenticationService
+class TokenRefresherTokenProvider(
+    private val tokenRefresher: TokenRefresher
 ) : TokenProvider {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -30,11 +27,7 @@ class AuthenticationServiceTokenProvider(
 
         eventsSubject.onNext(TokenEvent.Expired())
 
-        authenticationService.refreshAuthToken(
-            userLoginData.address,
-            registrationId,
-            userLoginData.keyVault.remotePasswordHash
-        ) successUi { response ->
+        tokenRefresher.refreshAuthToken() successUi { response ->
             log.info("Refreshed auth token")
             eventsSubject.onNext(TokenEvent.New(response.authToken))
         } failUi { e ->

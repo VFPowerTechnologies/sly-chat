@@ -1,17 +1,12 @@
 package io.slychat.messenger.services
 
-import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.http.HttpClientFactory
-import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
-import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonKeyVaultPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.functional.bind
-import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.task
 import org.slf4j.LoggerFactory
 import java.io.FileNotFoundException
@@ -21,7 +16,6 @@ class AuthenticationService(
     private val serverUrl: String,
     private val httpClientFactory: HttpClientFactory,
     private val userPathsGenerator: UserPathsGenerator,
-    private val loginClient: AuthenticationAsyncClient,
     private val localAccountDirectory: LocalAccountDirectory
 ) {
     companion object {
@@ -33,32 +27,6 @@ class AuthenticationService(
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
-
-    fun refreshAuthToken(address: SlyAddress, registrationId: Int, remotePasswordHash: ByteArray): Promise<AuthTokenRefreshResult, Exception> {
-        val deviceId = address.deviceId
-
-        val path = userPathsGenerator.getAccountInfoPath(address.id)
-
-        return JsonAccountInfoPersistenceManager(path).retrieve() bind { accountInfo ->
-            val username = accountInfo!!.email
-
-            loginClient.getParams(username) map { resp ->
-                if (resp.errorMessage != null)
-                    throw AuthApiResponseException(resp.errorMessage)
-
-                //TODO make sure hash params still match
-                resp.params!!.csrfToken
-            } bind { csrfToken ->
-                val request = AuthenticationRequest(username, remotePasswordHash.hexify(), csrfToken, registrationId, deviceId)
-                loginClient.auth(request)
-            } map { resp ->
-                if (resp.errorMessage != null)
-                    throw AuthApiResponseException(resp.errorMessage)
-
-                AuthTokenRefreshResult(resp.data!!.authToken)
-            }
-        }
-    }
 
     private fun remoteAuth(emailOrPhoneNumber: String, password: String, registrationId: Int, deviceId: Int): AuthResult {
         val loginClient = AuthenticationClient(serverUrl, httpClientFactory.create())

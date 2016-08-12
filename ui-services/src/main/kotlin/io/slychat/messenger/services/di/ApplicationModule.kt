@@ -11,7 +11,6 @@ import io.slychat.messenger.core.div
 import io.slychat.messenger.core.http.HttpClientConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.JavaHttpClientFactory
-import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.FileConfigStorage
@@ -43,13 +42,10 @@ class ApplicationModule(
         @SlyHttp httpClientFactory: HttpClientFactory,
         localAccountDirectory: LocalAccountDirectory
     ): AuthenticationService {
-        val serverUrl = serverUrls.API_SERVER
-        val loginClient = AuthenticationAsyncClientImpl(serverUrl, httpClientFactory)
         return AuthenticationService(
             serverUrls.API_SERVER,
             httpClientFactory,
             userPathsGenerator,
-            loginClient,
             localAccountDirectory
         )
     }
