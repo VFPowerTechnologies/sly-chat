@@ -54,4 +54,6 @@ interface UserComponent {
     val configService: UserConfigService
 
     val addressBookOperationManager: AddressBookOperationManager
+
+    val accountInfoManager: AccountInfoManager
 }

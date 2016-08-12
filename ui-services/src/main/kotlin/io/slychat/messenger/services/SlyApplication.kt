@@ -7,14 +7,13 @@ import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.InstallationData
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.StartupInfo
-import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonStartupInfoPersistenceManager
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
-import io.slychat.messenger.services.di.*
 import io.slychat.messenger.services.LoginEvent.*
+import io.slychat.messenger.services.di.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
@@ -253,7 +252,7 @@ class SlyApplication {
             val accountInfo = response.accountInfo
             val address = SlyAddress(accountInfo.id, accountInfo.deviceId)
             val userLoginData = UserData(address, keyVault)
-            val userComponent = createUserSession(userLoginData)
+            val userComponent = createUserSession(userLoginData, accountInfo)
 
             val authTokenManager = userComponent.authTokenManager
             if (response.authToken != null)
@@ -355,13 +354,13 @@ class SlyApplication {
         fetchOfflineMessages()
     }
 
-    fun createUserSession(userLoginData: UserData): UserComponent {
+    fun createUserSession(userLoginData: UserData, accountInfo: AccountInfo): UserComponent {
         if (userComponent != null)
             error("UserComponent already loaded")
 
         log.info("Creating user session")
 
-        val userComponent = appComponent.plus(UserModule(userLoginData))
+        val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo))
         this.userComponent = userComponent
 
         Sentry.setUserAddress(userComponent.userLoginData.address)

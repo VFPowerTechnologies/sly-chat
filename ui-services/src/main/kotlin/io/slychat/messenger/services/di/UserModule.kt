@@ -36,8 +36,9 @@ import java.util.concurrent.TimeUnit
 @Module
 class UserModule(
     @get:UserScope
-    @get:Provides
-    val providesUserLoginData: UserData
+    @get:Provides val providesUserLoginData: UserData,
+    //only used during construction of AccountInfoManager; never use this directly
+    private val accountInfo: AccountInfo
 ) {
     @UserScope
     @Provides
@@ -331,4 +332,12 @@ class UserModule(
             contactsPersistenceManager,
             addressBookOperationManager
         )
+
+    @UserScope
+    @Provides
+    fun providesAccountInfoManager(
+        accountInfoPersistenceManager: AccountInfoPersistenceManager
+    ): AccountInfoManager {
+        return AccountInfoManagerImpl(accountInfo, accountInfoPersistenceManager)
+    }
 }
