@@ -10,11 +10,11 @@ from os import environ, unlink
 from os.path import exists, join
 
 from tasks import Task
-from utils import (make_dirs, write_to_file, get_staticlib_name_for_platform,
+from utils import (make_dirs, write_to_file, get_static_lib_name_for_platform,
                    unpack_source, get_template, arch_to_setenv_info,
                    platform_is_android, get_android_configure_host_type,
-                   apply_patch, get_android_abis, get_sha256_checksum,
-                   get_os_from_platform)
+                   apply_patch, get_sha256_checksum, get_os_from_platform,
+                   get_dynamic_lib_name_for_platform)
 
 
 DOWNLOAD_URLS = {
@@ -128,7 +128,7 @@ class BuildTask(Task):
         for platform in task_context['platforms']:
             prefix_dir = join(task_context['root-prefix-path'], platform)
 
-            lib_path = join(prefix_dir, 'lib', get_staticlib_name_for_platform(platform, self.lib_name))
+            lib_path = join(prefix_dir, 'lib', get_static_lib_name_for_platform(platform, self.lib_name))
             if exists(lib_path):
                 print('%s lib present, skipping build' % self.lib_name)
                 continue
@@ -141,7 +141,7 @@ class BuildTask(Task):
 
             print('Verifying build output')
             if not exists(lib_path):
-                raise RuntimeError('OpenSSL build failed, unable to find lib at %s' % lib_path)
+                raise RuntimeError('%s build failed, unable to find lib at %s' % (self.build_item_name, lib_path))
 
 
 class BuildOpenSSLTask(BuildTask):
@@ -180,7 +180,7 @@ class BuildOpenSSLTask(BuildTask):
             #x86-4.9, arm-linux-androideabi-4.6, etc
             'eabi': eabi,
             #x86 or arm (nothing else supported by script)
-            'platform': aarch,
+            'arch': aarch,
             'api': '19',
         }
         write_to_file(join(build_dir, 'setenv-android.sh'), template.substitute(**context))
@@ -211,18 +211,18 @@ class BuildSQLCipher(BuildTask):
             'eabi': eabi,
             'host': get_android_configure_host_type(platform),
             #arm/mips/x86
-            'platform': aarch,
+            'arch': aarch,
             #FIXME
             #this is the building system's platform
-            'host-platform': 'linux-x86_64',
+            'host-arch': 'linux-x86_64',
         }
         return template.substitute(**context)
 
-    def _get_template_filename_for(self, platform):
+    def _get_template_filename(self, platform):
         return 'sqlcipher-%s-build.sh' % get_os_from_platform(platform)
 
     def _get_template(self, platform, prefix_dir):
-        template = get_template(self._get_template_filename_for_arch(platform))
+        template = get_template(self._get_template_filename(platform))
         context = {
             'prefix': prefix_dir,
         }
@@ -251,33 +251,68 @@ class BuildSQLCipher(BuildTask):
 
 
 class BuildSQLite4JavaTask(Task):
+    """
+    We add two new gant targets: sqlcipher-android and sqlcipher-desktop.
+
+    The desktop version uses build-<os>.properties files for values of cc, etc.
+
+    Currently we only support a single architecture for each platform.
+    """
+
     def __init__(self):
         super().__init__('build-sqlite4java', 'Build sqlite4java')
 
         self.add_dependency('build-sqlcipher')
         self.add_dependency('download-sqlite4java')
 
-    def _apply_linux_patch(self, task_context, prefix_dir, build_dir):
-        prefix_dir = join(task_context['root-prefix-path'], 'linux-x86_64')
-        print('Applying linux patch')
-        patch_context = {
-            'prefix': prefix_dir,
-        }
-        apply_patch(build_dir, 'sqlite4java-linux', patch_context)
+    def _apply_patch(self, android_abis, root_prefix_dir, build_dir, desktop_platforms):
+        print('Applying patch')
 
-    def _apply_android_patch(self, android_abis, root_prefix_dir, build_dir):
-        print('Applying android patch')
+        platforms = ', '.join('"%s"' % p for p in desktop_platforms)
+
         patch_context = {
             'root_prefix': root_prefix_dir,
             'abi_list': ' '.join(android_abis),
+            'platforms': platforms
         }
-        apply_patch(build_dir, 'sqlite4java-android', patch_context)
 
-    #TODO this code is a mess right now
+        apply_patch(build_dir, 'sqlite4java', patch_context)
+
+    def _copy_build_templates(self, build_dir, task_context, desktop_platforms):
+        for platform in desktop_platforms:
+            prefix_dir = join(task_context['root-prefix-path'], platform)
+
+            template = get_template('sqlite4java-build-%s.properties' % platform)
+
+            context = {
+                'prefix': prefix_dir,
+                'jdk-home': task_context['%s-jdk-home' % get_os_from_platform(platform)],
+            }
+
+            path = join(build_dir, 'ant', 'build-%s.properties' % platform)
+            write_to_file(path, template.substitute(**context))
+
     def run(self, task_context):
-        build_linux_x86_64 = 'linux-x86_64' in task_context['platforms']
+        desktop_platforms = []
+        android_abis = []
 
-        android_abis = get_android_abis(task_context['platforms'])
+        for platform in task_context['platforms']:
+            if platform_is_android(platform):
+                #we just want the abi arch, so strip off the android- prefix
+                abi = platform.split('-', 1)[1]
+
+                so_path = join(task_context['root-android-output-path'], abi, 'libsqlite4java-android.so')
+                if not exists(so_path):
+                    android_abis.append(abi)
+                else:
+                    print('%s already present, not building' % abi)
+            else:
+                lib_name = get_dynamic_lib_name_for_platform(platform, 'sqlite4java')
+                so_path = join(task_context['root-output-path'], lib_name)
+                if not exists(so_path):
+                    desktop_platforms.append(platform)
+                else:
+                    print('%s already present, not building' % platform)
 
         src_path = join(task_context['root-src-path'], 'sqlite4java.tar.gz')
         #we can build for every platform using the same src setup
@@ -286,37 +321,25 @@ class BuildSQLite4JavaTask(Task):
 
         gant_targets = []
 
-        if build_linux_x86_64:
-            so_path = join(task_context['root-output-path'], 'libsqlite4java-linux-amd64.so')
-            if not exists(so_path):
-                prefix_dir = join(task_context['root-prefix-path'], 'linux-x86_64')
-                self._apply_linux_patch(task_context, prefix_dir, build_dir)
-                gant_targets.append('lib.link')
-            else:
-                print('linux-x86_64 already present, not building')
-                build_linux_x86_64 = False
+        if len(desktop_platforms) > 0:
+            gant_targets.append('sqlcipher-desktop')
+            self._copy_build_templates(build_dir, task_context, desktop_platforms)
 
         if len(android_abis) > 0:
-            new_abis = []
-            for abi in android_abis:
-                so_path = join(task_context['root-android-output-path'], abi, 'libsqlite4java-android.so')
-                if not exists(so_path):
-                    new_abis.append(abi)
-                else:
-                    print('%s already present, not building' % abi)
-
-            android_abis = new_abis
-            if len(android_abis) > 0:
-                self._apply_android_patch(android_abis, task_context['root-prefix-path'], build_dir)
-                gant_targets.append('sqlcipher-android')
+            gant_targets.append('sqlcipher-android')
 
         if len(gant_targets) <= 0:
             print('Nothing to build')
             return
 
+        self._apply_patch(
+            android_abis,
+            task_context['root-prefix-path'],
+            build_dir,
+            desktop_platforms)
+
         argv = [
-            #FIXME
-            '/home/kevin/apps/gant/bin/gant',
+            join(task_context['gant-home'], 'bin/gant'),
             '-Dndk.home=' + task_context['android-ndk-home'],
         ]
 
@@ -336,10 +359,13 @@ class BuildSQLite4JavaTask(Task):
             print('Moving %s -> %s' % (abi_dir, output_path))
             shutil.move(abi_dir, output_path)
 
-        if build_linux_x86_64:
-            #output is in BUILD_DIR/build/lib.release.linux-amd64/libsqlite4java-linux-amd64.so
-            so_path = join(build_dir, 'build', 'lib.release.linux-amd64', 'libsqlite4java-linux-amd64.so')
-            shutil.move(so_path, task_context['root-output-path'])
+        for platform in desktop_platforms:
+            #output is in BUILD_DIR/build/lib.release.<platform>/<lib-name>
+            lib_name = get_dynamic_lib_name_for_platform(platform, 'sqlite4java')
+            so_path = join(build_dir, 'build', 'lib.release.%s' % platform, lib_name)
+            output_path = task_context['root-output-path']
+            print('Moving %s -> %s' % (so_path, output_path))
+            shutil.move(so_path, output_path)
 
 
 def create_download_task(key):

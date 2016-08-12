@@ -78,17 +78,25 @@ def arch_to_setenv_info(platform):
     return android_arch, android_eabi
 
 
-#TODO
-def get_staticlib_name_for_platform(platform, lib):
+def get_static_lib_name_for_platform(platform, lib):
     return 'lib%s.a' % lib
+
+
+def get_dynamic_lib_name_for_platform(platform, lib):
+    os = get_os_from_platform(platform)
+
+    if os == 'linux':
+        return 'lib%s.so' % lib
+    elif os == 'osx':
+        return 'lib%s.dylib' % lib
+    elif os == 'win32':
+        return '%s.dll' % lib
+    else:
+        raise ValueError('Unsupported os: ' + platform)
 
 
 def platform_is_android(platform):
     return platform.startswith('android-')
-
-
-def get_android_abis(platforms):
-    return [abi.split('-', 1)[1] for abi in platforms if platform_is_android(abi)]
 
 
 def get_template(name):

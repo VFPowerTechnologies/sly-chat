@@ -49,6 +49,10 @@ def process_config_file(config):
         'groovy-home',
         'libtool-home',
         'platforms',
+        'linux-jdk-home',
+        'osx-jdk-home',
+        'win32-jdk-home',
+        'gant-home',
     ]
 
     r = {}
