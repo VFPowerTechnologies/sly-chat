@@ -659,7 +659,7 @@ class SlyApplication {
         val userComponent = this.userComponent ?: error("No user session")
 
         //TODO combine?
-        userComponent.accountInfoPersistenceManager.store(accountInfo) fail { e ->
+        userComponent.accountInfoManager.update(accountInfo) fail { e ->
             log.error("Unable to store account info: {}", e.message, e)
         }
 

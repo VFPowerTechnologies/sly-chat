@@ -25,8 +25,6 @@ interface UserComponent {
 
     val sessionDataPersistenceManager : SessionDataPersistenceManager
 
-    val accountInfoPersistenceManager: AccountInfoPersistenceManager
-
     val preKeyPersistenceManager: PreKeyPersistenceManager
 
     val contactsService: ContactsService
