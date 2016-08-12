@@ -1,3 +1,12 @@
 #contactPopup .floating-button {
     top: 5px;
 }
+
+#chatPageContent {
+    top: 56px;
+    padding: 0;
+    height: calc(100% - 56px);
+}
+.bottom-chat-toolbar {
+    width: calc(100% - 15px);
+}

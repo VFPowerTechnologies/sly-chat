@@ -445,14 +445,23 @@ ContactController.prototype  = {
     handleContactSyncNotification : function (running) {
         if (running == true) {
             if($(".contact-sync-notification").length <= 0) {
-                this.openNotification("Contact list is syncing");
+                this.contactSyncNotification = slychat.addNotification({
+                    title: "Contact list is syncing",
+                    closeOnClick: true
+                });
             }
         }
         else {
             if(this.contactSyncNotification !== null) {
                 slychat.closeNotification(this.contactSyncNotification);
-                this.openNotification("Contact list sync complete", 3000);
                 this.contactSyncNotification = null;
+                setTimeout(function () {
+                    slychat.addNotification({
+                        title: "Contact list sync complete",
+                        closeOnClick: true,
+                        hold: 3000
+                    });
+                }.bind(this), 1000);
             }
 
             if (loginController.isLoggedIn())
@@ -462,10 +471,7 @@ ContactController.prototype  = {
 
     openNotification : function (message, hold) {
         var options = {
-            custom: '<div class="item-content">' +
-            '<div class="item-text">' + message + '</div>' +
-            '</div>',
-            additionalClass: "custom-notification",
+            title: message,
             closeOnClick: true
         };
 
