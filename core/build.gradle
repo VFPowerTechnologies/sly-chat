@@ -10,6 +10,8 @@ buildscript {
 
 apply plugin: 'kotlin'
 
+sourceSets.test.resources.srcDirs += "$rootProject.projectDir/desktop-libraries"
+
 sourceCompatibility = JavaVersion.VERSION_1_7
 
 test {
