@@ -25,7 +25,7 @@ class JsonSessionDataPersistenceManager(
         retrieveSync()
     }
 
-    fun retrieveSync(): SessionData {
+    override fun retrieveSync(): SessionData {
         val bytes = path.inputStream().use {
             it.readBytes()
         }

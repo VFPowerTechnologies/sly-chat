@@ -4,8 +4,6 @@ import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
-import io.slychat.messenger.core.persistence.json.JsonKeyVaultPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 import org.slf4j.LoggerFactory
@@ -15,7 +13,6 @@ import java.io.FileNotFoundException
 class AuthenticationService(
     private val serverUrl: String,
     private val httpClientFactory: HttpClientFactory,
-    private val userPathsGenerator: UserPathsGenerator,
     private val localAccountDirectory: LocalAccountDirectory
 ) {
     companion object {
@@ -55,10 +52,8 @@ class AuthenticationService(
     private fun localAuth(emailOrPhoneNumber: String, password: String): LocalAuthOutcome {
         val accountInfo = localAccountDirectory.findAccountFor(emailOrPhoneNumber) ?: return LocalAuthOutcome.NoLocalData()
 
-        val paths = userPathsGenerator.getPaths(accountInfo.id)
-
         //if this doesn't exist it'll throw and we'll just try remote auth
-        val keyVaultPersistenceManager = JsonKeyVaultPersistenceManager(paths.keyVaultPath)
+        val keyVaultPersistenceManager = localAccountDirectory.getKeyVaultManager(accountInfo.id)
 
         val keyVault = try {
             keyVaultPersistenceManager.retrieveSync(password)
@@ -72,7 +67,7 @@ class AuthenticationService(
 
         //this isn't important; just use a null token in the auth result if this isn't present, and then fetch one remotely by refreshing
         val authToken = try {
-            val sessionData = JsonSessionDataPersistenceManager(paths.sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).retrieveSync()
+            val sessionData = localAccountDirectory.getSessionDataManager(accountInfo.id, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).retrieveSync()
             sessionData.authToken
         }
         catch (e: FileNotFoundException) {

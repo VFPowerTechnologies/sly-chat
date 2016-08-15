@@ -38,14 +38,12 @@ class ApplicationModule(
     @Provides
     fun providesAuthenticationService(
         serverUrls: BuildConfig.ServerUrls,
-        userPathsGenerator: UserPathsGenerator,
         @SlyHttp httpClientFactory: HttpClientFactory,
         localAccountDirectory: LocalAccountDirectory
     ): AuthenticationService {
         return AuthenticationService(
             serverUrls.API_SERVER,
             httpClientFactory,
-            userPathsGenerator,
             localAccountDirectory
         )
     }
