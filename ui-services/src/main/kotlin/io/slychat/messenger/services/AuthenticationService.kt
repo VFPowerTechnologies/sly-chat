@@ -1,21 +1,22 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.crypto.*
-import io.slychat.messenger.core.http.HttpClientFactory
-import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
+import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.bind
+import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.task
 import org.slf4j.LoggerFactory
 import java.io.FileNotFoundException
 
 /** API for various remote authentication functionality. */
 class AuthenticationService(
-    private val serverUrl: String,
-    private val httpClientFactory: HttpClientFactory,
+    private val authenticationClient: AuthenticationAsyncClient,
     private val localAccountDirectory: LocalAccountDirectory
 ) {
     companion object {
+        /** Outcome of a local authentication attempt. */
         private sealed class LocalAuthOutcome {
             class Successful(val result: AuthResult) : LocalAuthOutcome()
             class NoLocalData : LocalAuthOutcome()
@@ -25,30 +26,31 @@ class AuthenticationService(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private fun remoteAuth(emailOrPhoneNumber: String, password: String, registrationId: Int, deviceId: Int): AuthResult {
-        val loginClient = AuthenticationClient(serverUrl, httpClientFactory.create())
+    /** Attempts to authenticate to the remote server. */
+    private fun remoteAuth(emailOrPhoneNumber: String, password: String, registrationId: Int, deviceId: Int): Promise<AuthResult, Exception> {
+        return authenticationClient.getParams(emailOrPhoneNumber) bind { paramsResponse ->
+            if (paramsResponse.errorMessage != null)
+                throw AuthApiResponseException(paramsResponse.errorMessage)
 
-        val paramsResponse = loginClient.getParams(emailOrPhoneNumber)
+            val authParams = paramsResponse.params!!
 
-        if (paramsResponse.errorMessage != null)
-            throw AuthApiResponseException(paramsResponse.errorMessage)
+            val hashParams = HashDeserializers.deserialize(authParams.hashParams)
+            val hash = hashPasswordWithParams(password, hashParams)
 
-        val authParams = paramsResponse.params!!
+            val request = AuthenticationRequest(emailOrPhoneNumber, hash.hexify(), authParams.csrfToken, registrationId, deviceId)
 
-        val hashParams = HashDeserializers.deserialize(authParams.hashParams)
-        val hash = hashPasswordWithParams(password, hashParams)
+            authenticationClient.auth(request) map { response ->
+                if (response.errorMessage != null)
+                    throw AuthApiResponseException(response.errorMessage)
 
-        val request = AuthenticationRequest(emailOrPhoneNumber, hash.hexify(), authParams.csrfToken, registrationId, deviceId)
-
-        val response = loginClient.auth(request)
-        if (response.errorMessage != null)
-            throw AuthApiResponseException(response.errorMessage)
-
-        val data = response.data!!
-        val keyVault = KeyVault.deserialize(data.keyVault, password)
-        return AuthResult(data.authToken, keyVault, data.accountInfo)
+                val data = response.data!!
+                val keyVault = KeyVault.deserialize(data.keyVault, password)
+                AuthResult(data.authToken, keyVault, data.accountInfo)
+            }
+        }
     }
 
+    /** Attempts to authenticate using local data. */
     private fun localAuth(emailOrPhoneNumber: String, password: String): LocalAuthOutcome {
         val accountInfo = localAccountDirectory.findAccountFor(emailOrPhoneNumber) ?: return LocalAuthOutcome.NoLocalData()
 
@@ -59,7 +61,7 @@ class AuthenticationService(
             keyVaultPersistenceManager.retrieveSync(password)
         }
         catch (e: KeyVaultDecryptionFailedException) {
-           return LocalAuthOutcome.Failure(accountInfo.deviceId)
+            return LocalAuthOutcome.Failure(accountInfo.deviceId)
         }
         catch (e: FileNotFoundException) {
             return LocalAuthOutcome.NoLocalData()
@@ -77,29 +79,26 @@ class AuthenticationService(
         return LocalAuthOutcome.Successful(AuthResult(authToken, keyVault, accountInfo))
     }
 
-    private fun authSync(emailOrPhoneNumber: String, password: String, registrationId: Int): AuthResult {
-        val localAuthResult = localAuth(emailOrPhoneNumber, password)
-        return when (localAuthResult) {
-            is LocalAuthOutcome.NoLocalData -> {
-                log.debug("No local data found")
-                remoteAuth(emailOrPhoneNumber, password, registrationId, 0)
-            }
+    /** Attempts to authentication using a local session first, then falls back to remote authentication. */
+    fun auth(emailOrPhoneNumber: String, password: String, registrationId: Int): Promise<AuthResult, Exception> {
+        return task { localAuth(emailOrPhoneNumber, password) } bind { localAuthResult ->
+            when (localAuthResult) {
+                is LocalAuthOutcome.NoLocalData -> {
+                    log.debug("No local data found")
+                    remoteAuth(emailOrPhoneNumber, password, registrationId, 0)
+                }
 
-            is LocalAuthOutcome.Successful -> {
-                log.debug("Local auth successful")
-                localAuthResult.result
-            }
+                is LocalAuthOutcome.Successful -> {
+                    log.debug("Local auth successful")
+                    Promise.ofSuccess(localAuthResult.result)
+                }
 
             //can occur if user changed their account password but no longer remember the old password
-            is LocalAuthOutcome.Failure -> {
-                log.debug("Local auth failure")
-                remoteAuth(emailOrPhoneNumber, password, registrationId, localAuthResult.deviceId)
+                is LocalAuthOutcome.Failure -> {
+                    log.debug("Local auth failure")
+                    remoteAuth(emailOrPhoneNumber, password, registrationId, localAuthResult.deviceId)
+                }
             }
         }
-    }
-
-    /** Attempts to authentication using a local session first, then falls back to remote authentication. */
-    fun auth(emailOrPhoneNumber: String, password: String, registrationId: Int): Promise<AuthResult, Exception> = task {
-        authSync(emailOrPhoneNumber, password, registrationId)
     }
 }

@@ -9,6 +9,8 @@ import io.slychat.messenger.core.persistence.StartupInfoPersistenceManager
 
 /**
  * Responsible for managing local account data.
+ *
+ * Must be thread-safe.
  */
 interface LocalAccountDirectory {
     fun findAccountFor(emailOrPhoneNumber: String): AccountInfo?
