@@ -8,7 +8,7 @@ import io.slychat.messenger.core.crypto.hashes.SCryptParams
 import io.slychat.messenger.core.crypto.hashes.SHA256Params
 import java.util.*
 
-interface Deserializer<T> {
+interface Deserializer<out T> {
     val algorithmName: String
     fun deserialize(params: Map<String, String>): T
 }
@@ -31,9 +31,7 @@ abstract class Deserializers<T> {
 
     fun deserialize(serializedParams: SerializedCryptoParams): T {
         val algorithmName = serializedParams.algorithmName
-        val deserializer = deserializers[algorithmName]
-        if (deserializer == null)
-            throw IllegalArgumentException("Unsupported algorithm: $algorithmName")
+        val deserializer = deserializers[algorithmName] ?: throw IllegalArgumentException("Unsupported algorithm: $algorithmName")
 
         return deserializer.deserialize(serializedParams.params)
     }

@@ -56,13 +56,16 @@ class MessageCipherServiceImpl(
 
     private val workQueue = ArrayBlockingQueue<CipherWork>(20)
     private val encryptionSubject = PublishSubject.create<EncryptionResult>()
-    override val encryptedMessages: Observable<EncryptionResult> = encryptionSubject
+    override val encryptedMessages: Observable<EncryptionResult>
+        get() = encryptionSubject
 
     private val decryptionSubject = PublishSubject.create<DecryptionResult>()
-    override val decryptedMessages: Observable<DecryptionResult> = decryptionSubject
+    override val decryptedMessages: Observable<DecryptionResult>
+        get() = decryptionSubject
 
     private val deviceUpdateSubject = PublishSubject.create<DeviceUpdateResult>()
-    override val deviceUpdates: Observable<DeviceUpdateResult> = deviceUpdateSubject
+    override val deviceUpdates: Observable<DeviceUpdateResult>
+        get() = deviceUpdateSubject
 
     override fun start() {
         if (thread != null)

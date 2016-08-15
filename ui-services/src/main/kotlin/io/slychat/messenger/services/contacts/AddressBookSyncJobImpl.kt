@@ -6,9 +6,15 @@ import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.mapToMap
 import io.slychat.messenger.core.mapToSet
-import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.services.*
+import io.slychat.messenger.core.persistence.AddressBookUpdate
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
+import io.slychat.messenger.core.persistence.ContactsPersistenceManager
+import io.slychat.messenger.core.persistence.GroupPersistenceManager
+import io.slychat.messenger.services.PlatformContacts
+import io.slychat.messenger.services.UserData
 import io.slychat.messenger.services.auth.AuthTokenManager
+import io.slychat.messenger.services.bindUi
+import io.slychat.messenger.services.parsePhoneNumber
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
@@ -22,14 +28,10 @@ class AddressBookSyncJobImpl(
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val groupPersistenceManager: GroupPersistenceManager,
     private val userLoginData: UserData,
-    private val accountInfoPersistenceManager: AccountInfoPersistenceManager,
+    private val accountRegionCode: String,
     private val platformContacts: PlatformContacts
 ) : AddressBookSyncJob {
     private val log = LoggerFactory.getLogger(javaClass)
-
-    private fun getDefaultRegionCode(): Promise<String, Exception> {
-        return accountInfoPersistenceManager.retrieve() map { getAccountRegionCode(it!!) }
-    }
 
     private fun getPlatformContacts(defaultRegion: String): Promise<List<PlatformContact>, Exception> {
         return platformContacts.fetchContacts() map { contacts ->
@@ -66,13 +68,11 @@ class AddressBookSyncJobImpl(
     private fun syncPlatformContacts(): Promise<Unit, Exception> {
         log.info("Beginning platform contact sync")
 
-        return getDefaultRegionCode() bind { defaultRegion ->
-            authTokenManager.bind { userCredentials ->
-                getPlatformContacts(defaultRegion) bind { contacts ->
-                    contactsPersistenceManager.findMissing(contacts) bind { missingContacts ->
-                        log.debug("Missing platform contacts:", missingContacts)
-                        queryAndAddNewContacts(userCredentials, missingContacts)
-                    }
+        return authTokenManager.bind { userCredentials ->
+            getPlatformContacts(accountRegionCode) bind { contacts ->
+                contactsPersistenceManager.findMissing(contacts) bind { missingContacts ->
+                    log.debug("Missing platform contacts:", missingContacts)
+                    queryAndAddNewContacts(userCredentials, missingContacts)
                 }
             }
         }

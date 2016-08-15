@@ -20,7 +20,8 @@ class GroupServiceImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val groupEventSubject = PublishSubject.create<GroupEvent>()
-    override val groupEvents: Observable<GroupEvent> = groupEventSubject
+    override val groupEvents: Observable<GroupEvent>
+        get() = groupEventSubject
 
     override fun getGroups(): Promise<List<GroupInfo>, Exception> {
         return groupPersistenceManager.getList()

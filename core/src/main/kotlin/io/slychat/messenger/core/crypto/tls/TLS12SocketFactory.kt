@@ -7,7 +7,7 @@ import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
 
 class TLS12SocketFactory(
-    private val sslContext: SSLContext,
+    sslContext: SSLContext,
     private val sslConfigurator: SSLConfigurator
 ) : SSLSocketFactory() {
     private val internalFactory: SSLSocketFactory = sslContext.socketFactory

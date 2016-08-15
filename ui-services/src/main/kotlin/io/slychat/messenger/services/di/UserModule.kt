@@ -7,6 +7,7 @@ import io.slychat.messenger.core.BuildConfig.ServerUrls
 import io.slychat.messenger.core.crypto.EncryptionSpec
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
+import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
 import io.slychat.messenger.core.http.api.contacts.AddressBookAsyncClientImpl
 import io.slychat.messenger.core.http.api.contacts.ContactAsyncClientImpl
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClientImpl
@@ -17,8 +18,8 @@ import io.slychat.messenger.core.relay.base.RelayConnector
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.auth.AuthTokenManagerImpl
-import io.slychat.messenger.services.auth.AuthenticationServiceTokenProvider
 import io.slychat.messenger.services.auth.TokenProvider
+import io.slychat.messenger.services.auth.TokenRefresherTokenProvider
 import io.slychat.messenger.services.config.CipherConfigStorageFilter
 import io.slychat.messenger.services.config.FileConfigStorage
 import io.slychat.messenger.services.config.JsonConfigBackend
@@ -36,8 +37,9 @@ import java.util.concurrent.TimeUnit
 @Module
 class UserModule(
     @get:UserScope
-    @get:Provides
-    val providesUserLoginData: UserData
+    @get:Provides val providesUserLoginData: UserData,
+    //only used during construction of AccountInfoManager; never use this directly
+    private val accountInfo: AccountInfo
 ) {
     @UserScope
     @Provides
@@ -64,7 +66,7 @@ class UserModule(
         serverUrls: BuildConfig.ServerUrls,
         contactsPersistenceManager: ContactsPersistenceManager,
         groupPersistenceManager: GroupPersistenceManager,
-        accountInfoPersistenceManager: AccountInfoPersistenceManager,
+        accountInfoManager: AccountInfoManager,
         @SlyHttp httpClientFactory: HttpClientFactory,
         userLoginData: UserData,
         platformContacts: PlatformContacts
@@ -80,7 +82,7 @@ class UserModule(
             contactsPersistenceManager,
             groupPersistenceManager,
             userLoginData,
-            accountInfoPersistenceManager,
+            accountInfoManager.accountInfo,
             platformContacts
         )
     }
@@ -279,15 +281,9 @@ class UserModule(
     @UserScope
     @Provides
     fun providesTokenProvider(
-        application: SlyApplication,
-        userLoginData: UserData,
-        authenticationService: AuthenticationService
+        tokenRefresher: TokenRefresher
     ): TokenProvider =
-        AuthenticationServiceTokenProvider(
-            application.installationData.registrationId,
-            userLoginData,
-            authenticationService
-        )
+        TokenRefresherTokenProvider(tokenRefresher)
 
     @UserScope
     @Provides
@@ -331,4 +327,31 @@ class UserModule(
             contactsPersistenceManager,
             addressBookOperationManager
         )
+
+    @UserScope
+    @Provides
+    fun providesAccountInfoManager(
+        accountInfoPersistenceManager: AccountInfoPersistenceManager
+    ): AccountInfoManager {
+        return AccountInfoManagerImpl(accountInfo, accountInfoPersistenceManager)
+    }
+
+    @UserScope
+    @Provides
+    fun providesTokenRefresher(
+        application: SlyApplication,
+        serverUrls: ServerUrls,
+        @SlyHttp httpClientFactory: HttpClientFactory,
+        userData: UserData,
+        accountInfoManager: AccountInfoManager
+    ): TokenRefresher {
+        val loginClient = AuthenticationAsyncClientImpl(serverUrls.API_SERVER, httpClientFactory)
+
+        return TokenRefresherImpl(
+            userData,
+            accountInfoManager,
+            application.installationData.registrationId,
+            loginClient
+        )
+    }
 }

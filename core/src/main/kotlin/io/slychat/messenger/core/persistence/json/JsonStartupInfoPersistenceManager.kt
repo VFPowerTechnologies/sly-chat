@@ -14,4 +14,9 @@ class JsonStartupInfoPersistenceManager(val path: File) : StartupInfoPersistence
     override fun retrieve(): Promise<StartupInfo?, Exception> = task {
         readObjectFromJsonFile(path, StartupInfo::class.java)
     }
+
+    override fun delete(): Promise<Unit, Exception> = task {
+        path.delete()
+        Unit
+    }
 }

@@ -22,11 +22,13 @@ class RelayClientManagerImpl(
         private set
 
     private val onlineStatusSubject = BehaviorSubject.create(isOnline)
-    override val onlineStatus: Observable<Boolean> = onlineStatusSubject
+    override val onlineStatus: Observable<Boolean>
+        get() = onlineStatusSubject
 
     private val eventsSubject = PublishSubject.create<RelayClientEvent>()
 
-    override val events: Observable<RelayClientEvent> = eventsSubject
+    override val events: Observable<RelayClientEvent>
+        get() = eventsSubject
 
     override var connectionTag: Int = 0
         private set

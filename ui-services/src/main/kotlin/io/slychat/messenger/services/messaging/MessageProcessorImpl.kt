@@ -23,7 +23,8 @@ class MessageProcessorImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val newMessagesSubject = PublishSubject.create<MessageBundle>()
-    override val newMessages: Observable<MessageBundle> = newMessagesSubject
+    override val newMessages: Observable<MessageBundle>
+        get() = newMessagesSubject
 
     override fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception> {
         val m = wrapper.message

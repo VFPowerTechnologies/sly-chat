@@ -5,7 +5,7 @@ import io.slychat.messenger.core.crypto.SerializedCryptoParams
 import io.slychat.messenger.core.crypto.hexify
 import io.slychat.messenger.core.crypto.unhexify
 
-data class SHA256Params(
+class SHA256Params(
     val salt: ByteArray
 ) : HashParams {
     override val algorithmName: String = Companion.algorithmName

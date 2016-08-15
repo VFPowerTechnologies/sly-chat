@@ -7,14 +7,11 @@ import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.InstallationData
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.StartupInfo
-import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonStartupInfoPersistenceManager
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
-import io.slychat.messenger.services.di.*
 import io.slychat.messenger.services.LoginEvent.*
+import io.slychat.messenger.services.di.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
@@ -53,18 +50,22 @@ class SlyApplication {
     //the following observables never complete or error and are valid for the lifetime of the application
     //only changes in value are emitted from these
     private val networkAvailableSubject = BehaviorSubject.create(false)
-    val networkAvailable: Observable<Boolean> = networkAvailableSubject
+    val networkAvailable: Observable<Boolean>
+        get() = networkAvailableSubject
 
     private val relayAvailableSubject = BehaviorSubject.create(false)
-    val relayAvailable: Observable<Boolean> = relayAvailableSubject
+    val relayAvailable: Observable<Boolean>
+        get() = relayAvailableSubject
 
     private val userSessionAvailableSubject = BehaviorSubject.create(null as UserComponent?)
-    val userSessionAvailable: Observable<UserComponent?> = userSessionAvailableSubject
+    val userSessionAvailable: Observable<UserComponent?>
+        get() = userSessionAvailableSubject
 
     private var newTokenSyncSub: Subscription? = null
 
     private val loginEventsSubject = BehaviorSubject.create<LoginEvent>()
-    val loginEvents: Observable<LoginEvent> = loginEventsSubject
+    val loginEvents: Observable<LoginEvent>
+        get() = loginEventsSubject
 
     var loginState: LoginState = LoginState.LOGGED_OUT
         private set
@@ -201,16 +202,14 @@ class SlyApplication {
             return
         }
 
-        val userPathsGenerator = appComponent.userPathsGenerator
+        val localAccountDirectory = appComponent.localAccountDirectory
 
-        val path = userPathsGenerator.startupInfoPath
-        val startupInfoPersistenceManager = JsonStartupInfoPersistenceManager(path)
+        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager()
 
         //XXX this is kinda inefficient, since we already have the userid, then we fetch the email to pass to the normal login functions
         startupInfoPersistenceManager.retrieve() map { startupInfo ->
             if (startupInfo != null) {
-                val accountInfoPath = userPathsGenerator.getAccountInfoPath(startupInfo.lastLoggedInAccount)
-                val accountInfo = JsonAccountInfoPersistenceManager(accountInfoPath).retrieveSync()
+                val accountInfo = localAccountDirectory.findAccountFor(startupInfo.lastLoggedInAccount)
                 if (accountInfo != null)
                     AutoLoginInfo(accountInfo.email, startupInfo.savedAccountPassword)
                 else
@@ -252,7 +251,7 @@ class SlyApplication {
             val accountInfo = response.accountInfo
             val address = SlyAddress(accountInfo.id, accountInfo.deviceId)
             val userLoginData = UserData(address, keyVault)
-            val userComponent = createUserSession(userLoginData)
+            val userComponent = createUserSession(userLoginData, accountInfo)
 
             val authTokenManager = userComponent.authTokenManager
             if (response.authToken != null)
@@ -315,13 +314,14 @@ class SlyApplication {
      * Emits LoggedOut.
      */
     fun logout() {
-        val sessionDataPath = userComponent?.userPaths?.sessionDataPath
+        val startupInfoPersistenceManager = appComponent.localAccountDirectory.getStartupInfoPersistenceManager()
+        val sessionDataPersistenceManager = userComponent?.sessionDataPersistenceManager
 
         if (destroyUserSession()) {
             emitLoginEvent(LoggedOut())
             task {
-                appComponent.userPathsGenerator.startupInfoPath.delete()
-                sessionDataPath?.delete()
+                startupInfoPersistenceManager.delete()
+                sessionDataPersistenceManager?.delete()
             }.fail { e ->
                 log.error("Error removing startup info: {}", e.message, e)
             }
@@ -354,13 +354,13 @@ class SlyApplication {
         fetchOfflineMessages()
     }
 
-    fun createUserSession(userLoginData: UserData): UserComponent {
+    fun createUserSession(userLoginData: UserData, accountInfo: AccountInfo): UserComponent {
         if (userComponent != null)
             error("UserComponent already loaded")
 
         log.info("Creating user session")
 
-        val userComponent = appComponent.plus(UserModule(userLoginData))
+        val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo))
         this.userComponent = userComponent
 
         Sentry.setUserAddress(userComponent.userLoginData.address)
@@ -374,22 +374,23 @@ class SlyApplication {
      * Until this completes, do NOT use anything in the UserComponent.
      */
     private fun backgroundInitialization(userComponent: UserComponent, authToken: AuthToken?, password: String, rememberMe: Boolean, accountInfo: AccountInfo): Promise<Unit, Exception> {
-        val userPaths = userComponent.userPaths
         val persistenceManager = userComponent.sqlitePersistenceManager
         val userConfigService = userComponent.configService
         val userLoginData = userComponent.userLoginData
         val keyVault = userLoginData.keyVault
         val userId = userLoginData.userId
-        val sessionDataPath = appComponent.userPathsGenerator.getPaths(userId).sessionDataPath
-        val startupInfoPath = appComponent.userPathsGenerator.startupInfoPath
+
+        val localAccountDirectory = appComponent.localAccountDirectory
+        val sessionDataPersistenceManager = localAccountDirectory.getSessionDataPersistenceManager(userId, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams)
+        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager()
 
         //we could break this up into parts and emit progress events between stages
         return task {
-            createUserPaths(userPaths)
+            localAccountDirectory.createUserDirectories(userId)
         } bind {
             if (authToken != null) {
                 val cachedData = SessionData(authToken)
-                JsonSessionDataPersistenceManager(sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).store(cachedData)
+                sessionDataPersistenceManager.store(cachedData)
             }
             else
                 Promise.ofSuccess(Unit)
@@ -398,7 +399,7 @@ class SlyApplication {
         } bind {
             if (rememberMe) {
                 val startupInfo = StartupInfo(userId, password)
-                JsonStartupInfoPersistenceManager(startupInfoPath).store(startupInfo)
+                startupInfoPersistenceManager.store(startupInfo)
             }
             else
                 Promise.ofSuccess<Unit, Exception>(Unit)
@@ -659,7 +660,7 @@ class SlyApplication {
         val userComponent = this.userComponent ?: error("No user session")
 
         //TODO combine?
-        userComponent.accountInfoPersistenceManager.store(accountInfo) fail { e ->
+        userComponent.accountInfoManager.update(accountInfo) fail { e ->
             log.error("Unable to store account info: {}", e.message, e)
         }
 

@@ -45,7 +45,7 @@ fun Class<*>.loadSharedLibFromResource(base: String) {
     //.dll suffix is required for loading on windows, else a UnsatisfiedLinkError("Can't find dependent libraries") is thrown
     val suffix = if (currentOs.type == Os.Type.WINDOWS) ".dll" else ""
 
-    val path = File.createTempFile("sqlitetest", suffix)
+    val path = File.createTempFile("slychat", suffix)
     path.deleteOnExit()
 
     val inputStream = getResourceAsStream("/$libName") ?: throw UnsatisfiedLinkError("Unable to find shared library $libName")

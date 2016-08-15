@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import io.slychat.messenger.core.require
 
 /** A API result union. May either contain an error or a value, but not both. */
-data class ApiResult<T>(
+data class ApiResult<out T>(
     @param:JsonProperty("error")
     @get:JsonProperty("error")
     val error: ApiError?,

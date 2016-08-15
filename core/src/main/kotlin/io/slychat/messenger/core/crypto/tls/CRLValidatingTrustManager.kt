@@ -74,7 +74,7 @@ internal fun getCertificateCRLDistributionURIs(cert: X509Certificate): Collectio
 //can't use CertificateRevokedException as it's android API 24+
 //ditto with CRLReason
 class CertificateRevokedException(
-    val certificate: X509Certificate,
+    certificate: X509Certificate,
     val date: Date,
     val issuer: X500Principal
 ) : CertificateException("DN: <<${certificate.subjectDN}>> has been revoked")

@@ -5,6 +5,7 @@ import org.junit.Test
 import java.io.File
 import java.util.*
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class JsonFileKeyVaultStorageTest {
@@ -29,7 +30,7 @@ class JsonFileKeyVaultStorageTest {
     fun `should write and then read back a KeyVault`() {
         keyVault.toStorage(keyVaultStorage)
 
-        val reloadedVault = KeyVault.fromStorage(keyVaultStorage, password)
+        val reloadedVault = assertNotNull(KeyVault.fromStorage(keyVaultStorage, password), "KeyVault should not be null")
 
         assertTrue(Arrays.equals(reloadedVault.identityKeyPair.serialize(), keyVault.identityKeyPair.serialize()))
     }

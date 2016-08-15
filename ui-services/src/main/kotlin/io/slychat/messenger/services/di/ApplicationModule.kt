@@ -11,9 +11,8 @@ import io.slychat.messenger.core.div
 import io.slychat.messenger.core.http.HttpClientConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.JavaHttpClientFactory
-import io.slychat.messenger.services.AuthenticationService
-import io.slychat.messenger.services.SlyApplication
-import io.slychat.messenger.services.UserPathsGenerator
+import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.FileConfigStorage
 import io.slychat.messenger.services.config.JsonConfigBackend
@@ -30,12 +29,25 @@ class ApplicationModule(
 ) {
     @Singleton
     @Provides
+    fun providesLocalAccountDirectory(
+        userPathsGenerator: UserPathsGenerator
+    ): LocalAccountDirectory {
+        return FileSystemLocalAccountDirectory(userPathsGenerator)
+    }
+
+    @Singleton
+    @Provides
     fun providesAuthenticationService(
         serverUrls: BuildConfig.ServerUrls,
-        userPathsGenerator: UserPathsGenerator,
-        @SlyHttp httpClientFactory: HttpClientFactory
-    ): AuthenticationService =
-        AuthenticationService(serverUrls.API_SERVER, httpClientFactory, userPathsGenerator)
+        @SlyHttp httpClientFactory: HttpClientFactory,
+        localAccountDirectory: LocalAccountDirectory
+    ): AuthenticationService {
+        val authenticationClient = AuthenticationAsyncClientImpl(serverUrls.API_SERVER, httpClientFactory)
+        return AuthenticationService(
+            authenticationClient,
+            localAccountDirectory
+        )
+    }
 
     @Singleton
     @Provides

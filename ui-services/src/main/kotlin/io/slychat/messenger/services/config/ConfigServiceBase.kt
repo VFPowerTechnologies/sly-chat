@@ -18,7 +18,8 @@ abstract class ConfigServiceBase<ConfigT : Any, out EditorT : ConfigServiceBase.
     protected abstract val configClass: Class<ConfigT>
 
     private val subject = PublishSubject.create<Collection<String>>()
-    val updates: Observable<Collection<String>> = subject
+    val updates: Observable<Collection<String>>
+        get() = subject
 
     fun init(): Promise<Unit, Exception> {
         return backend.read(configClass) mapUi { newConfig ->
