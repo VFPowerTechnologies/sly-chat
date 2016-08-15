@@ -21,16 +21,12 @@ class JsonSessionDataPersistenceManager(
         writeObjectToJsonFile(path, serialized)
     }
 
-    override fun retrieve(): Promise<SessionData, Exception> = task {
+    override fun retrieve(): Promise<SessionData?, Exception> = task {
         retrieveSync()
     }
 
-    override fun retrieveSync(): SessionData {
-        val bytes = path.inputStream().use {
-            it.readBytes()
-        }
-
-        return objectMapper.readValue(bytes, SerializedSessionData::class.java).deserialize(localDataEncryptionKey, localDataEncryptionParams)
+    override fun retrieveSync(): SessionData? {
+        return readObjectFromJsonFile(path, SerializedSessionData::class.java)?.deserialize(localDataEncryptionKey, localDataEncryptionParams)
     }
 
     override fun delete(): Promise<Boolean, Exception> = task {

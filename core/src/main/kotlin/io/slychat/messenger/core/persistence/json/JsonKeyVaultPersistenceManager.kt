@@ -8,14 +8,14 @@ import nl.komponents.kovenant.task
 import java.io.File
 
 /** Wrapper around a JsonFileKeyVaultStorage. */
-class JsonKeyVaultPersistenceManager(private val path: File) : KeyVaultPersistenceManager {
+class JsonKeyVaultPersistenceManager(path: File) : KeyVaultPersistenceManager {
     private val keyVaultStorage = JsonFileKeyVaultStorage(path)
 
-    override fun retrieve(password: String): Promise<KeyVault, Exception> = task {
+    override fun retrieve(password: String): Promise<KeyVault?, Exception> = task {
         KeyVault.fromStorage(keyVaultStorage, password)
     }
 
-    override fun retrieveSync(password: String): KeyVault =
+    override fun retrieveSync(password: String): KeyVault? =
         KeyVault.fromStorage(keyVaultStorage, password)
 
     override fun store(keyVault: KeyVault): Promise<Unit, Exception> = task {

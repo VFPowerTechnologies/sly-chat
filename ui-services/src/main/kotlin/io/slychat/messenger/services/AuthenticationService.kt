@@ -8,7 +8,6 @@ import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.task
 import org.slf4j.LoggerFactory
-import java.io.FileNotFoundException
 
 /** API for various remote authentication functionality. */
 class AuthenticationService(
@@ -63,18 +62,18 @@ class AuthenticationService(
         catch (e: KeyVaultDecryptionFailedException) {
             return LocalAuthOutcome.Failure(accountInfo.deviceId)
         }
-        catch (e: FileNotFoundException) {
+
+        if (keyVault == null)
             return LocalAuthOutcome.NoLocalData()
-        }
 
         //this isn't important; just use a null token in the auth result if this isn't present, and then fetch one remotely by refreshing
-        val authToken = try {
-            val sessionData = localAccountDirectory.getSessionDataPersistenceManager(accountInfo.id, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).retrieveSync()
-            sessionData.authToken
-        }
-        catch (e: FileNotFoundException) {
-            null
-        }
+        val sessionDataPersistenceManager = localAccountDirectory.getSessionDataPersistenceManager(
+            accountInfo.id,
+            keyVault.localDataEncryptionKey,
+            keyVault.localDataEncryptionParams
+        )
+        val sessionData = sessionDataPersistenceManager.retrieveSync()
+        val authToken = sessionData?.authToken
 
         return LocalAuthOutcome.Successful(AuthResult(authToken, keyVault, accountInfo))
     }
