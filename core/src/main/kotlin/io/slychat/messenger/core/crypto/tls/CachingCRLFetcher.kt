@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 class CachingCRLFetcher(
     private val fetcher: CRLFetcher,
     private val expiresInMs: Long = TimeUnit.MINUTES.toMillis(30),
-    private val initialCache: Map<String, X509CRL> = emptyMap()
+    initialCache: Map<String, X509CRL> = emptyMap()
 ) : CRLFetcher {
     private val cache = HashMap<String, X509CRL>(initialCache)
     private val expiresAt = HashMap<String, Long>()

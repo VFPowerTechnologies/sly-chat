@@ -67,9 +67,9 @@ open class RelayException(message: String?, cause: Throwable?) : RuntimeExceptio
 }
 
 class InvalidHeaderSizeException(val size: Int) : RelayException("Header size expected to be $HEADER_SIZE, got $size")
-class InvalidHeaderSignatureException(val signature: String) : RelayException("Expected header signatured, got $signature")
+class InvalidHeaderSignatureException(signature: String) : RelayException("Expected header signatured, got $signature")
 class InvalidProtocolVersionException(val version: Int) : RelayException("Unsupported protocol version: $version")
-class InvalidPayloadException(val commandCode: Int) : RelayException("Invalid payload for command $commandCode")
+class InvalidPayloadException(commandCode: Int) : RelayException("Invalid payload for command $commandCode")
 
 val PROTOCOL_VERSION_SIZE = 2
 val CONTENT_LENGTH_SIZE = 5

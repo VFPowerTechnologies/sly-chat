@@ -9,7 +9,7 @@ data class RelayConnectionEstablished(val connection: RelayConnection) : RelayCo
 class RelayConnectionLost() : RelayConnectionEvent
 
 /** Represents an incoming or outgoing message to the relay server. */
-data class RelayMessage(
+class RelayMessage(
     val header: Header,
     val content: ByteArray
 ) : RelayConnectionEvent

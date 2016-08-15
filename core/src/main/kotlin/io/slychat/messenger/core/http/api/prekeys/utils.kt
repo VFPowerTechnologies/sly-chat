@@ -26,7 +26,7 @@ data class SerializedPreKeyBundle(
     val lastResortPreKey: String
 )
 
-data class UnsignedPreKeyPublicData(
+class UnsignedPreKeyPublicData(
     @JsonProperty("id")
     val id: Int,
     @JsonProperty("key")
@@ -43,7 +43,7 @@ fun PreKeyRecord.toPublicData(): UnsignedPreKeyPublicData =
         keyPair.publicKey.serialize()
     )
 
-data class SignedPreKeyPublicData(
+class SignedPreKeyPublicData(
     @JsonProperty("id")
     val id: Int,
     @JsonProperty("key")

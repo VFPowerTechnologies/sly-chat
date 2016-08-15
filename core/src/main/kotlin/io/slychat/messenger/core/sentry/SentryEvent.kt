@@ -1,6 +1,7 @@
 package io.slychat.messenger.core.sentry
 
 import com.fasterxml.jackson.annotation.JsonProperty
+
 import io.slychat.messenger.core.BuildConfig
 
 //https://docs.getsentry.com/hosted/clientdev/ for general client info
