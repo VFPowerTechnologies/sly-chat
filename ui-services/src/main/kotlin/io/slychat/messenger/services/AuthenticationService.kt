@@ -9,7 +9,7 @@ import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.task
 import org.slf4j.LoggerFactory
 
-/** API for various remote authentication functionality. */
+/** API for initial authentication functionality. */
 class AuthenticationService(
     private val authenticationClient: AuthenticationAsyncClient,
     private val localAccountDirectory: LocalAccountDirectory
@@ -92,7 +92,7 @@ class AuthenticationService(
                     Promise.ofSuccess(localAuthResult.result)
                 }
 
-            //can occur if user changed their account password but no longer remember the old password
+                //can occur if user changed their account password but no longer remember the old password
                 is LocalAuthOutcome.Failure -> {
                     log.debug("Local auth failure")
                     remoteAuth(emailOrPhoneNumber, password, registrationId, localAuthResult.deviceId)
