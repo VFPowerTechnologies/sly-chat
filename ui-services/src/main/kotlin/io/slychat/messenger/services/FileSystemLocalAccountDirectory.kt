@@ -5,9 +5,11 @@ import io.slychat.messenger.core.crypto.ciphers.CipherParams
 import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.KeyVaultPersistenceManager
 import io.slychat.messenger.core.persistence.SessionDataPersistenceManager
+import io.slychat.messenger.core.persistence.StartupInfoPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonKeyVaultPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
+import io.slychat.messenger.core.persistence.json.JsonStartupInfoPersistenceManager
 
 //FIXME externalize various persistence managers
 class FileSystemLocalAccountDirectory(
@@ -55,5 +57,14 @@ class FileSystemLocalAccountDirectory(
     override fun getSessionDataManager(userId: UserId, localDataEncryptionKey: ByteArray, localDataEncryptionParams: CipherParams): SessionDataPersistenceManager {
         val paths = userPathsGenerator.getPaths(userId)
         return JsonSessionDataPersistenceManager(paths.sessionDataPath, localDataEncryptionKey, localDataEncryptionParams)
+    }
+
+    override fun getStartupInfoManager(): StartupInfoPersistenceManager {
+        val startupInfoPath = userPathsGenerator.startupInfoPath
+        return JsonStartupInfoPersistenceManager(startupInfoPath)
+    }
+
+    override fun createUserDirectories(userId: UserId) {
+        userPathsGenerator.getPaths(userId).accountDir.mkdirs()
     }
 }

@@ -39,8 +39,6 @@ interface UserComponent {
 
     val userLoginData: UserData
 
-    val userPaths: UserPaths
-
     val relayClientManager: RelayClientManager
 
     val preKeyManager: PreKeyManager

@@ -6,8 +6,8 @@ import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonKeyVaultPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.*
+import io.slychat.messenger.services.LocalAccountDirectory
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.UserData
 import io.slychat.messenger.services.UserPaths
@@ -65,9 +65,16 @@ class PersistenceUserModule {
 
     @UserScope
     @Provides
-    fun providesSessionDataPersistenceManager(userPaths: UserPaths, userLoginData: UserData): SessionDataPersistenceManager {
+    fun providesSessionDataPersistenceManager(
+        userLoginData: UserData,
+        localAccountDirectory: LocalAccountDirectory
+    ): SessionDataPersistenceManager {
         val keyvault = userLoginData.keyVault
-        return JsonSessionDataPersistenceManager(userPaths.sessionDataPath, keyvault.localDataEncryptionKey, keyvault.localDataEncryptionParams)
+        return localAccountDirectory.getSessionDataManager(
+            userLoginData.userId,
+            keyvault.localDataEncryptionKey,
+            keyvault.localDataEncryptionParams
+        )
     }
 
     @UserScope

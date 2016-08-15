@@ -7,4 +7,7 @@ interface StartupInfoPersistenceManager {
 
     /** Should return null if no info is currently saved. */
     fun retrieve(): Promise<StartupInfo?, Exception>
+
+    /** Do nothing if file doesn't exist. */
+    fun delete(): Promise<Unit, Exception>
 }

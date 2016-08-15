@@ -8,7 +8,6 @@ import io.slychat.messenger.core.persistence.InstallationData
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.StartupInfo
 import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonStartupInfoPersistenceManager
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
@@ -315,13 +314,14 @@ class SlyApplication {
      * Emits LoggedOut.
      */
     fun logout() {
-        val sessionDataPath = userComponent?.userPaths?.sessionDataPath
+        val startupInfoPersistenceManager = appComponent.localAccountDirectory.getStartupInfoManager()
+        val sessionDataPersistenceManager = userComponent?.sessionDataPersistenceManager
 
         if (destroyUserSession()) {
             emitLoginEvent(LoggedOut())
             task {
-                appComponent.userPathsGenerator.startupInfoPath.delete()
-                sessionDataPath?.delete()
+                startupInfoPersistenceManager.delete()
+                sessionDataPersistenceManager?.delete()
             }.fail { e ->
                 log.error("Error removing startup info: {}", e.message, e)
             }
@@ -374,22 +374,23 @@ class SlyApplication {
      * Until this completes, do NOT use anything in the UserComponent.
      */
     private fun backgroundInitialization(userComponent: UserComponent, authToken: AuthToken?, password: String, rememberMe: Boolean, accountInfo: AccountInfo): Promise<Unit, Exception> {
-        val userPaths = userComponent.userPaths
         val persistenceManager = userComponent.sqlitePersistenceManager
         val userConfigService = userComponent.configService
         val userLoginData = userComponent.userLoginData
         val keyVault = userLoginData.keyVault
         val userId = userLoginData.userId
-        val sessionDataPath = appComponent.userPathsGenerator.getPaths(userId).sessionDataPath
-        val startupInfoPath = appComponent.userPathsGenerator.startupInfoPath
+
+        val localAccountDirectory = appComponent.localAccountDirectory
+        val sessionDataPersistenceManager = localAccountDirectory.getSessionDataManager(userId, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams)
+        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoManager()
 
         //we could break this up into parts and emit progress events between stages
         return task {
-            createUserPaths(userPaths)
+            localAccountDirectory.createUserDirectories(userId)
         } bind {
             if (authToken != null) {
                 val cachedData = SessionData(authToken)
-                JsonSessionDataPersistenceManager(sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).store(cachedData)
+                sessionDataPersistenceManager.store(cachedData)
             }
             else
                 Promise.ofSuccess(Unit)
@@ -398,7 +399,7 @@ class SlyApplication {
         } bind {
             if (rememberMe) {
                 val startupInfo = StartupInfo(userId, password)
-                JsonStartupInfoPersistenceManager(startupInfoPath).store(startupInfo)
+                startupInfoPersistenceManager.store(startupInfo)
             }
             else
                 Promise.ofSuccess<Unit, Exception>(Unit)
