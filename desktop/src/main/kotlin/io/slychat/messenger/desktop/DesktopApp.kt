@@ -18,6 +18,7 @@ import javafx.application.Application
 import javafx.application.Platform
 import javafx.scene.Scene
 import javafx.scene.control.Alert
+import javafx.scene.image.Image
 import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.shape.Rectangle
@@ -158,6 +159,8 @@ class DesktopApp : Application() {
         app.addOnInitListener {
             engine.load(javaClass.getResource("/ui/index.html").toExternalForm())
         }
+
+        javaClass.getResourceAsStream("/sly-messenger.png").use { primaryStage.icons.add(Image(it)) }
 
         primaryStage.scene = Scene(stackPane, 852.0, 480.0)
         primaryStage.show()
