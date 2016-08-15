@@ -8,7 +8,6 @@ import io.slychat.messenger.core.persistence.InstallationData
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.StartupInfo
 import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonStartupInfoPersistenceManager
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
 import io.slychat.messenger.services.LoginEvent.*
@@ -199,12 +198,9 @@ class SlyApplication {
             return
         }
 
-        val userPathsGenerator = appComponent.userPathsGenerator
-
-        val path = userPathsGenerator.startupInfoPath
-        val startupInfoPersistenceManager = JsonStartupInfoPersistenceManager(path)
-
         val localAccountDirectory = appComponent.localAccountDirectory
+
+        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager()
 
         //XXX this is kinda inefficient, since we already have the userid, then we fetch the email to pass to the normal login functions
         startupInfoPersistenceManager.retrieve() map { startupInfo ->

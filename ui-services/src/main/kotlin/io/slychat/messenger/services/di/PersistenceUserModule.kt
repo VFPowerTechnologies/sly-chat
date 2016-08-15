@@ -4,8 +4,6 @@ import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonKeyVaultPersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.*
 import io.slychat.messenger.services.LocalAccountDirectory
 import io.slychat.messenger.services.SlyApplication
@@ -59,8 +57,11 @@ class PersistenceUserModule {
 
     @UserScope
     @Provides
-    fun providesKeyVaultPersistenceManager(userPaths: UserPaths): KeyVaultPersistenceManager {
-        return JsonKeyVaultPersistenceManager(userPaths.keyVaultPath)
+    fun providesKeyVaultPersistenceManager(
+        userData: UserData,
+        localAccountDirectory: LocalAccountDirectory
+    ): KeyVaultPersistenceManager {
+        return localAccountDirectory.getKeyVaultPersistenceManager(userData.userId)
     }
 
     @UserScope
@@ -79,8 +80,12 @@ class PersistenceUserModule {
 
     @UserScope
     @Provides
-    fun providesAccountInfoPersistenceManager(userPaths: UserPaths): AccountInfoPersistenceManager =
-        JsonAccountInfoPersistenceManager(userPaths.accountInfoPath)
+    fun providesAccountInfoPersistenceManager(
+        userData: UserData,
+        localAccountDirectory: LocalAccountDirectory
+    ): AccountInfoPersistenceManager {
+        return localAccountDirectory.getAccountInfoPersistenceManager(userData.userId)
+    }
 
     @UserScope
     @Provides

@@ -2,10 +2,7 @@ package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.ciphers.CipherParams
-import io.slychat.messenger.core.persistence.AccountInfo
-import io.slychat.messenger.core.persistence.KeyVaultPersistenceManager
-import io.slychat.messenger.core.persistence.SessionDataPersistenceManager
-import io.slychat.messenger.core.persistence.StartupInfoPersistenceManager
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonKeyVaultPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
@@ -45,8 +42,12 @@ class FileSystemLocalAccountDirectory(
     }
 
     override fun findAccountFor(userId: UserId): AccountInfo? {
+        return getAccountInfoPersistenceManager(userId).retrieveSync()
+    }
+
+    override fun getAccountInfoPersistenceManager(userId: UserId): AccountInfoPersistenceManager {
         val accountInfoFile = userPathsGenerator.getAccountInfoPath(userId)
-        return JsonAccountInfoPersistenceManager(accountInfoFile).retrieveSync()
+        return JsonAccountInfoPersistenceManager(accountInfoFile)
     }
 
     override fun getKeyVaultPersistenceManager(userId: UserId): KeyVaultPersistenceManager {
