@@ -30,7 +30,8 @@ class AuthTokenManagerImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val newTokenSubject = BehaviorSubject.create<AuthToken?>()
-    override val newToken: Observable<AuthToken?> = newTokenSubject
+    override val newToken: Observable<AuthToken?>
+        get() = newTokenSubject
 
     private val queued = ArrayList<Deferred<AuthToken, Exception>>()
 

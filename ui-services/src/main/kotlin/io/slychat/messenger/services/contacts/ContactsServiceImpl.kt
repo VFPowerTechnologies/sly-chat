@@ -31,7 +31,8 @@ class ContactsServiceImpl(
 
     private val contactEventsSubject = PublishSubject.create<ContactEvent>()
 
-    override val contactEvents: Observable<ContactEvent> = contactEventsSubject
+    override val contactEvents: Observable<ContactEvent>
+        get() = contactEventsSubject
 
     init {
         addressBookOperationManager.running.subscribe { onContactSyncStatusUpdate(it) }

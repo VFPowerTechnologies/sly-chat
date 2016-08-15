@@ -37,7 +37,8 @@ class RelayClientImpl(
     private val publishSubject = PublishSubject.create<RelayClientEvent>()
 
     /** Client event stream. Will never call onError; check ConnectionLost.error instead. */
-    override val events: Observable<RelayClientEvent> = publishSubject
+    override val events: Observable<RelayClientEvent>
+        get() = publishSubject
 
     private fun onNext(event: RelayConnectionEvent) {
         when (event) {

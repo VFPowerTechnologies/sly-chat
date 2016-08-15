@@ -50,18 +50,22 @@ class SlyApplication {
     //the following observables never complete or error and are valid for the lifetime of the application
     //only changes in value are emitted from these
     private val networkAvailableSubject = BehaviorSubject.create(false)
-    val networkAvailable: Observable<Boolean> = networkAvailableSubject
+    val networkAvailable: Observable<Boolean>
+        get() = networkAvailableSubject
 
     private val relayAvailableSubject = BehaviorSubject.create(false)
-    val relayAvailable: Observable<Boolean> = relayAvailableSubject
+    val relayAvailable: Observable<Boolean>
+        get() = relayAvailableSubject
 
     private val userSessionAvailableSubject = BehaviorSubject.create(null as UserComponent?)
-    val userSessionAvailable: Observable<UserComponent?> = userSessionAvailableSubject
+    val userSessionAvailable: Observable<UserComponent?>
+        get() = userSessionAvailableSubject
 
     private var newTokenSyncSub: Subscription? = null
 
     private val loginEventsSubject = BehaviorSubject.create<LoginEvent>()
-    val loginEvents: Observable<LoginEvent> = loginEventsSubject
+    val loginEvents: Observable<LoginEvent>
+        get() = loginEventsSubject
 
     var loginState: LoginState = LoginState.LOGGED_OUT
         private set

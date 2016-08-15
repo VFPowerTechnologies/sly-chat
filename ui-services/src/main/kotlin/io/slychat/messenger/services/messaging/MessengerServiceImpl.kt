@@ -49,7 +49,8 @@ class MessengerServiceImpl(
         get() = messageReceiver.newMessages
 
     private val messageUpdatesSubject = PublishSubject.create<MessageBundle>()
-    override val messageUpdates: Observable<MessageBundle> = messageUpdatesSubject
+    override val messageUpdates: Observable<MessageBundle>
+        get() = messageUpdatesSubject
 
     private val subscriptions = CompositeSubscription()
 

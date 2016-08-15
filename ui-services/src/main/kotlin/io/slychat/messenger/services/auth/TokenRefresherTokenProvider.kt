@@ -15,7 +15,8 @@ class TokenRefresherTokenProvider(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val eventsSubject = PublishSubject.create<TokenEvent>()
-    override val events: Observable<TokenEvent> = eventsSubject
+    override val events: Observable<TokenEvent>
+        get() = eventsSubject
 
     private var running = false
 

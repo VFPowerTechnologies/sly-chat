@@ -23,7 +23,8 @@ import java.util.*
 
 class AndroidPlatformContacts(private val context: Context) : PlatformContacts {
     private val contactsUpdateSubject = PublishSubject.create<Unit>()
-    override val contactsUpdated: Observable<Unit> = contactsUpdateSubject
+    override val contactsUpdated: Observable<Unit>
+        get() = contactsUpdateSubject
 
     init {
         val observer = object : ContentObserver(Handler(context.mainLooper)) {

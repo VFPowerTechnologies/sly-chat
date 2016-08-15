@@ -37,7 +37,8 @@ class AddressBookOperationManagerImpl(
     private var queuedSync: AddressBookSyncJobDescription? = null
 
     private val runningSubject = PublishSubject.create<AddressBookSyncJobInfo>()
-    override val running: Observable<AddressBookSyncJobInfo> = runningSubject
+    override val running: Observable<AddressBookSyncJobInfo>
+        get() = runningSubject
 
     private var isNetworkAvailable: Boolean = false
 
