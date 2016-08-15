@@ -16,6 +16,7 @@ apply plugin: 'javafx-gradle-plugin'
 mainClassName = 'io.slychat.messenger.desktop.DesktopApp'
 
 sourceSets.main.resources.srcDirs += "$rootProject.projectDir/ui"
+sourceSets.main.resources.srcDirs += "$rootProject.projectDir/desktop-libraries"
 
 dependencies {
     compile project(':ui-services')

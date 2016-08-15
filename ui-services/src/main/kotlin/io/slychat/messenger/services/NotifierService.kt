@@ -31,6 +31,7 @@ import java.util.*
 class NotifierService(
     newMessages: Observable<MessageBundle>,
     uiEvents: Observable<UIEvent>,
+    uiVisibility: Observable<Boolean>,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val groupPersistenceManager: GroupPersistenceManager,
     private val platformNotificationService: PlatformNotificationService,
@@ -70,12 +71,17 @@ class NotifierService(
     private var currentlySelectedChatUser: UserId? = null
     private var currentlySelectedGroup: GroupId? = null
 
-    /** Should be called by UI implementations to reflect the visibility state of the UI window. */
-    var isUiVisible: Boolean = false
+    private var isUiVisible: Boolean = false
 
     init {
         uiEvents.subscribe { onUiEvent(it) }
         newMessages.subscribe { onNewMessages(it) }
+        uiVisibility.subscribe { onUiVisibilityChange(it) }
+    }
+
+    private fun onUiVisibilityChange(isVisible: Boolean) {
+        log.debug("UI visibility: {}", isVisible)
+        isUiVisible = isVisible
     }
 
     fun init() {

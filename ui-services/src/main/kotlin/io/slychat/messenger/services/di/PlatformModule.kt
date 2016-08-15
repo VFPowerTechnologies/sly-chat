@@ -1,5 +1,7 @@
 package io.slychat.messenger.services.di
 
+import dagger.Module
+import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.services.PlatformContacts
@@ -9,8 +11,7 @@ import io.slychat.messenger.services.ui.UILoadService
 import io.slychat.messenger.services.ui.UIPlatformInfoService
 import io.slychat.messenger.services.ui.UIPlatformService
 import io.slychat.messenger.services.ui.UIWindowService
-import dagger.Module
-import dagger.Provides
+import rx.Observable
 import rx.Scheduler
 import javax.inject.Singleton
 
@@ -50,6 +51,11 @@ class PlatformModule(
     @get:Singleton
     @get:Provides
     val providesLoadService: UILoadService,
+
+    @get:Singleton
+    @get:Provides
+    @get:UIVisibility
+    val uiVisibility: Observable<Boolean>,
 
     @get:Singleton
     @get:Provides

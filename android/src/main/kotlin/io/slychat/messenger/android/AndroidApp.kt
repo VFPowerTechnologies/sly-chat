@@ -114,14 +114,14 @@ class AndroidApp : Application() {
     //set to true once we've made this request once since startup
     private var hasCheckedGcmTokenStatus = false
 
+    private val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create()
+
     /** Points to the current activity, if one is set. Used to request permissions from various services. */
     var currentActivity: MainActivity? = null
         set(value) {
             field = value
 
-            val notifierService = app.userComponent?.notifierService
-            if (notifierService != null)
-                notifierService.isUiVisible = value != null
+            uiVisibility.onNext(value != null)
 
             if (queuedLoadComplete)
                 queuedLoadComplete = hideSplashImage() == false
@@ -159,6 +159,7 @@ class AndroidApp : Application() {
             notificationService,
             AndroidUIPlatformService(this),
             AndroidUILoadService(this),
+            uiVisibility,
             AndroidSchedulers.mainThread()
         )
 
@@ -363,10 +364,6 @@ class AndroidApp : Application() {
     }
 
     private fun onUserSessionCreated() {
-        val userComponent = app.userComponent!!
-
-        userComponent.notifierService.isUiVisible = currentActivity != null
-
         checkGCM()
     }
 

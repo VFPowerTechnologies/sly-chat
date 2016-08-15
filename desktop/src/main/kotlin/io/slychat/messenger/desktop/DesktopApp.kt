@@ -30,6 +30,7 @@ import nl.komponents.kovenant.jfx.JFXDispatcher
 import nl.komponents.kovenant.ui.KovenantUi
 import org.slf4j.LoggerFactory
 import rx.schedulers.JavaFxScheduler
+import rx.subjects.BehaviorSubject
 import javax.crypto.Cipher
 
 class DesktopApp : Application() {
@@ -101,6 +102,11 @@ class DesktopApp : Application() {
             null
         }
 
+        val uiVisibility = BehaviorSubject.create<Boolean>(!stage.isIconified)
+        stage.iconifiedProperty().addListener { o, oldV, newV ->
+            uiVisibility.onNext(!newV)
+        }
+
         val platformModule = PlatformModule(
             DesktopUIPlatformInfoService(),
             BuildConfig.DESKTOP_SERVER_URLS,
@@ -111,23 +117,14 @@ class DesktopApp : Application() {
             DesktopNotificationService(),
             DesktopUIPlatformService(hostServices),
             DesktopUILoadService(this),
+            uiVisibility,
             JavaFxScheduler.getInstance()
         )
 
         app.init(platformModule)
         app.isInBackground = false
 
-        stage.iconifiedProperty().addListener { o, oldV, newV ->
-            app.userComponent?.apply {
-                notifierService.isUiVisible = !newV
-            }
-        }
-
         val appComponent = app.appComponent
-        app.userSessionAvailable.subscribe {
-            if (it != null)
-                it.notifierService.isUiVisible = !stage.isIconified
-        }
 
         //temp
         app.updateNetworkStatus(true)
