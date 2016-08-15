@@ -55,7 +55,7 @@ class AuthenticationService(
         val accountInfo = localAccountDirectory.findAccountFor(emailOrPhoneNumber) ?: return LocalAuthOutcome.NoLocalData()
 
         //if this doesn't exist it'll throw and we'll just try remote auth
-        val keyVaultPersistenceManager = localAccountDirectory.getKeyVaultManager(accountInfo.id)
+        val keyVaultPersistenceManager = localAccountDirectory.getKeyVaultPersistenceManager(accountInfo.id)
 
         val keyVault = try {
             keyVaultPersistenceManager.retrieveSync(password)
@@ -69,7 +69,7 @@ class AuthenticationService(
 
         //this isn't important; just use a null token in the auth result if this isn't present, and then fetch one remotely by refreshing
         val authToken = try {
-            val sessionData = localAccountDirectory.getSessionDataManager(accountInfo.id, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).retrieveSync()
+            val sessionData = localAccountDirectory.getSessionDataPersistenceManager(accountInfo.id, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).retrieveSync()
             sessionData.authToken
         }
         catch (e: FileNotFoundException) {

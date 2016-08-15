@@ -17,11 +17,11 @@ interface LocalAccountDirectory {
 
     fun findAccountFor(userId: UserId): AccountInfo?
 
-    fun getKeyVaultManager(userId: UserId): KeyVaultPersistenceManager
+    fun getKeyVaultPersistenceManager(userId: UserId): KeyVaultPersistenceManager
 
-    fun getSessionDataManager(userId: UserId, localDataEncryptionKey: ByteArray, localDataEncryptionParams: CipherParams): SessionDataPersistenceManager
+    fun getSessionDataPersistenceManager(userId: UserId, localDataEncryptionKey: ByteArray, localDataEncryptionParams: CipherParams): SessionDataPersistenceManager
 
-    fun getStartupInfoManager(): StartupInfoPersistenceManager
+    fun getStartupInfoPersistenceManager(): StartupInfoPersistenceManager
 
     /** Create user account directory structure. */
     fun createUserDirectories(userId: UserId)

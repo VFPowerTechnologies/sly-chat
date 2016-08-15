@@ -314,7 +314,7 @@ class SlyApplication {
      * Emits LoggedOut.
      */
     fun logout() {
-        val startupInfoPersistenceManager = appComponent.localAccountDirectory.getStartupInfoManager()
+        val startupInfoPersistenceManager = appComponent.localAccountDirectory.getStartupInfoPersistenceManager()
         val sessionDataPersistenceManager = userComponent?.sessionDataPersistenceManager
 
         if (destroyUserSession()) {
@@ -381,8 +381,8 @@ class SlyApplication {
         val userId = userLoginData.userId
 
         val localAccountDirectory = appComponent.localAccountDirectory
-        val sessionDataPersistenceManager = localAccountDirectory.getSessionDataManager(userId, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams)
-        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoManager()
+        val sessionDataPersistenceManager = localAccountDirectory.getSessionDataPersistenceManager(userId, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams)
+        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager()
 
         //we could break this up into parts and emit progress events between stages
         return task {

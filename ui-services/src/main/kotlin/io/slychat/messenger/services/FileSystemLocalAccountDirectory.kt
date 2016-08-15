@@ -49,17 +49,17 @@ class FileSystemLocalAccountDirectory(
         return JsonAccountInfoPersistenceManager(accountInfoFile).retrieveSync()
     }
 
-    override fun getKeyVaultManager(userId: UserId): KeyVaultPersistenceManager {
+    override fun getKeyVaultPersistenceManager(userId: UserId): KeyVaultPersistenceManager {
         val paths = userPathsGenerator.getPaths(userId)
         return JsonKeyVaultPersistenceManager(paths.keyVaultPath)
     }
 
-    override fun getSessionDataManager(userId: UserId, localDataEncryptionKey: ByteArray, localDataEncryptionParams: CipherParams): SessionDataPersistenceManager {
+    override fun getSessionDataPersistenceManager(userId: UserId, localDataEncryptionKey: ByteArray, localDataEncryptionParams: CipherParams): SessionDataPersistenceManager {
         val paths = userPathsGenerator.getPaths(userId)
         return JsonSessionDataPersistenceManager(paths.sessionDataPath, localDataEncryptionKey, localDataEncryptionParams)
     }
 
-    override fun getStartupInfoManager(): StartupInfoPersistenceManager {
+    override fun getStartupInfoPersistenceManager(): StartupInfoPersistenceManager {
         val startupInfoPath = userPathsGenerator.startupInfoPath
         return JsonStartupInfoPersistenceManager(startupInfoPath)
     }
