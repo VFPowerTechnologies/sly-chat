@@ -21,7 +21,8 @@ class DatabaseMigrationInitial : DatabaseMigration(0, TABLE_NAMES) {
             "send_message_queue",
             "groups",
             "group_members",
-            "group_conversation_info"
+            "group_conversation_info",
+            "address_book_remote_version"
         )
     }
 
@@ -29,6 +30,7 @@ class DatabaseMigrationInitial : DatabaseMigration(0, TABLE_NAMES) {
         val nextSignedId = randomPreKeyId()
         val nextUnsignedId = randomPreKeyId()
         connection.exec("INSERT INTO prekey_ids (next_signed_id, next_unsigned_id) VALUES ($nextSignedId, $nextUnsignedId)")
+        connection.exec("INSERT INTO address_book_remote_version (version) VALUES (0)")
     }
 
     override fun apply(connection: SQLiteConnection) {

@@ -471,4 +471,20 @@ ON
 
         return connection.changes > 0
     }
+
+    override fun getAddressBookRemoteVersion(): Promise<Int, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withPrepared("SELECT version FROM address_book_remote_version") { stmt ->
+            stmt.step()
+            stmt.columnInt(0)
+        }
+    }
+
+    override fun updateAddressBookRemoteVersion(version: Int): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withPrepared("UPDATE address_book_remote_version SET version=?") { stmt ->
+            stmt.bind(1, version)
+            stmt.step()
+        }
+
+        Unit
+    }
 }

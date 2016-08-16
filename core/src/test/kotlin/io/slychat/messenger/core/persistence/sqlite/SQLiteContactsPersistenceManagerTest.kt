@@ -885,4 +885,15 @@ class SQLiteContactsPersistenceManagerTest {
             containsOnly(one, two)
         }
     }
+
+    @Test
+    fun `updateAddressBookVersion should update the address book version`() {
+        val newVersion = randomInt()
+
+        contactsPersistenceManager.updateAddressBookRemoteVersion(newVersion).get()
+
+        val currentVersion = contactsPersistenceManager.getAddressBookRemoteVersion().get()
+
+        assertEquals(newVersion, currentVersion, "Version not updated")
+    }
 }

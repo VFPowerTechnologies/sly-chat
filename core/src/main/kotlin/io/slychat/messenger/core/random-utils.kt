@@ -5,7 +5,7 @@ import io.slychat.messenger.core.persistence.*
 import java.util.*
 
 //[min, max]
-private fun randomInt(min: Int, max: Int): Int =
+fun randomInt(min: Int = 0, max: Int = Int.MAX_VALUE-1): Int =
     min + Random().nextInt((max - min) + 1)
 
 fun randomGroupInfo(): GroupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
