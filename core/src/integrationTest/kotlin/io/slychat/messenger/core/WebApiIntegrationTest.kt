@@ -82,7 +82,7 @@ class WebApiIntegrationTest {
 
         /** Short test for server dev functionality sanity. */
         private fun checkDevServerSanity() {
-            val devClient = DevClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+            val devClient = DevClient(serverBaseUrl, JavaHttpClient())
             val password = "test"
             val username = "a@a.com"
 
@@ -178,7 +178,7 @@ class WebApiIntegrationTest {
         @JvmStatic
         fun beforeClass() {
             try {
-                val response = io.slychat.messenger.core.http.JavaHttpClient().get("$serverBaseUrl/dev")
+                val response = JavaHttpClient().get("$serverBaseUrl/dev")
                 if (response.code == 404)
                     throw ServerDevModeDisabledException()
             }
@@ -194,7 +194,7 @@ class WebApiIntegrationTest {
     val password = "test"
     val invalidUserCredentials = UserCredentials(SlyAddress(UserId(999999), 999), AuthToken(""))
 
-    val devClient = DevClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+    val devClient = DevClient(serverBaseUrl, JavaHttpClient())
 
     var counter = 1111111111
 
@@ -234,7 +234,7 @@ class WebApiIntegrationTest {
         val keyVault = generateNewKeyVault(password)
         val request = registrationRequestFromKeyVault(dummyRegistrationInfo, keyVault)
 
-        val client = RegistrationClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
         val result = client.register(request)
         assertNull(result.errorMessage)
         assertNull(result.validationErrors)
@@ -266,7 +266,7 @@ class WebApiIntegrationTest {
         val keyVault = generateNewKeyVault(password)
         val request = registrationRequestFromKeyVault(registrationInfo, keyVault)
 
-        val client = RegistrationClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
         val result = client.register(request)
 
         assertNotNull(result.errorMessage, "Null error message")
@@ -291,7 +291,7 @@ class WebApiIntegrationTest {
     fun sendAuthRequestForUser(userA: GeneratedSiteUser, deviceId: Int): AuthenticationResponse {
         val username = userA.user.username
 
-        val client = AuthenticationClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = AuthenticationClient(serverBaseUrl, JavaHttpClient())
 
         val paramsApiResult = client.getParams(username)
         assertTrue(paramsApiResult.isSuccess, "Unable to fetch params")
@@ -355,7 +355,7 @@ class WebApiIntegrationTest {
 
         val generatedPreKeys = injectPreKeys(username, siteUser.keyVault, deviceId, maxCount)
 
-        val client = HttpPreKeyClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.getInfo(siteUser.getUserCredentials(authToken))
 
@@ -370,7 +370,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = HttpPreKeyClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
 
         assertFailsWith(UnauthorizedException::class) {
             client.store(invalidUserCredentials, request)
@@ -415,7 +415,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = HttpPreKeyClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.store(siteUser.getUserCredentials(authToken, deviceId), request)
         assertTrue(response.isSuccess)
@@ -434,7 +434,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = HttpPreKeyClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.store(siteUser.getUserCredentials(authToken), request)
         assertFalse(response.isSuccess, "Upload succeeded")
@@ -453,7 +453,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = HttpPreKeyClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.store(siteUser.getUserCredentials(authToken, deviceId), request)
         assertFalse(response.isSuccess, "Upload succeeded")
@@ -473,7 +473,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(registrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = HttpPreKeyClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.store(siteUser.getUserCredentials(authToken, deviceId), request)
         assertTrue(response.isSuccess, "Upload failed: ${response.errorMessage}")
@@ -499,7 +499,7 @@ class WebApiIntegrationTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, siteUser.keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = HttpPreKeyClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val exception = assertFailsWith<ApiException> {
             client.store(siteUser.getUserCredentials(authToken, deviceId), request)
@@ -512,7 +512,7 @@ class WebApiIntegrationTest {
     fun `prekey retrieval should fail when an invalid auth token is used`() {
         val siteUser = injectNewSiteUser()
 
-        val client = HttpPreKeyClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
         assertFailsWith(UnauthorizedException::class) {
             client.retrieve(invalidUserCredentials, PreKeyRetrievalRequest(siteUser.user.id, listOf()))
         }
@@ -556,7 +556,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(requestingUsername)
 
-        val client = HttpPreKeyClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.retrieve(requestingSiteUser.getUserCredentials(authToken), PreKeyRetrievalRequest(siteUser.user.id, listOf()))
 
@@ -579,7 +579,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(requestingUsername)
 
-        val client = HttpPreKeyClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.retrieve(requestingSiteUser.getUserCredentials(authToken, deviceId), PreKeyRetrievalRequest(siteUser.user.id, listOf()))
 
@@ -602,7 +602,7 @@ class WebApiIntegrationTest {
     }
 
     fun assertNextPreKeyIs(userId: UserId, authToken: AuthToken, expected: PreKeyRecord, signedPreKey: SignedPreKeyRecord) {
-        val client = HttpPreKeyClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
 
         val userCredentials = UserCredentials(SlyAddress(userId, DEFAULT_DEVICE_ID), authToken)
 
@@ -650,7 +650,7 @@ class WebApiIntegrationTest {
 
         val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, AllowedMessageLevel.ALL, siteUser.user.phoneNumber, siteUser.user.publicKey)
 
-        val client = ContactClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
         val contactResponseEmail = client.fetchContactInfo(siteUser.getUserCredentials(authToken), NewContactRequest(siteUser.user.username, null))
         assertTrue(contactResponseEmail.isSuccess)
@@ -667,7 +667,7 @@ class WebApiIntegrationTest {
 
         val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, AllowedMessageLevel.ALL, siteUser.user.phoneNumber, siteUser.user.publicKey)
 
-        val client = ContactClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
         val contactResponse = client.fetchContactInfo(siteUser.getUserCredentials(authToken), NewContactRequest(null, siteUser.user.phoneNumber))
         assertTrue(contactResponse.isSuccess)
@@ -812,7 +812,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(userA.username)
 
-        val client = ContactClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
         val platformContacts = listOf(
             PlatformContact("B", listOf(userC.username), listOf()),
@@ -837,7 +837,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(userA.username)
 
-        val client = ContactClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
         val request = FetchContactInfoByIdRequest(listOf(userB.id, userC.id))
         val response = client.fetchContactInfoById(userA.getUserCredentials(authToken), request)
@@ -854,7 +854,7 @@ class WebApiIntegrationTest {
     fun `Update Phone should succeed when right password is provided`() {
         val user = injectNamedSiteUser("a@a.com")
 
-        val client = RegistrationClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
 
         val newPhone = "123453456"
 
@@ -880,7 +880,7 @@ class WebApiIntegrationTest {
     fun `Update Phone should fail when wrong password is provided`() {
         val user = injectNamedSiteUser("a@a.com")
 
-        val client = RegistrationClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
 
         val request = UpdatePhoneRequest(user.user.username, "wrongPassword", "1111111111")
         val response = client.updatePhone(request)
@@ -906,7 +906,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(userA.username)
 
-        val client = AccountUpdateClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
 
         val newEmail = "b@b.com"
 
@@ -924,7 +924,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(userA.username)
 
-        val client = AccountUpdateClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
 
         val newEmail = "b@b.com"
 
@@ -940,7 +940,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(userA.username)
 
-        val client = AccountUpdateClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
 
         val newName = "newName"
 
@@ -957,7 +957,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(userA.username)
 
-        val client = AccountUpdateClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
 
         val newPhone = "12345678901"
 
@@ -981,7 +981,7 @@ class WebApiIntegrationTest {
 
         val authToken = devClient.createAuthToken(userA.username)
 
-        val client = AccountUpdateClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
 
         val newPhone = "2222222222"
 
