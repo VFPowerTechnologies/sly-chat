@@ -30,6 +30,7 @@ LoginController.prototype = {
     onLogout : function () {
         this.resetLoginInfo();
         this.resetUiOnLogout();
+        firstLogin = true;
         navigationController.loadPage("login.html", false);
         navigationController.clearHistory();
     },
@@ -130,7 +131,7 @@ LoginController.prototype = {
 
         slychat.showPreloader();
 
-        firstLoad = true;
+        firstLogin = true;
 
         loginService.login(username, password, rememberMe);
     },

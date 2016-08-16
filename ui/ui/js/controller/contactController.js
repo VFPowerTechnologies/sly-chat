@@ -147,7 +147,8 @@ ContactController.prototype  = {
         this.createContactList();
         this.createRecentContactList(jointedRecentChat);
 
-        if (firstLoad === true && jointedRecentChat.length <= 0) {
+        if (firstLogin === true && jointedRecentChat.length <= 0) {
+            firstLogin = false;
             slychat.popup('#contactPopup');
         }
         navigationController.hideSplashScreen();

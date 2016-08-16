@@ -36,6 +36,7 @@ Template7.global = {
 };
 
 var firstLoad = true;
+var firstLogin = true;
 
 // Application initialization
 var slychat = new Framework7({
