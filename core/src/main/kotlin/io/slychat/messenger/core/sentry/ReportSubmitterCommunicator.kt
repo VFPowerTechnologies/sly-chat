@@ -3,7 +3,7 @@ package io.slychat.messenger.core.sentry
 import java.util.concurrent.BlockingQueue
 
 /** Communicate with a running ReportSubmitter. */
-class ReportSubmitterCommunicator<ReportType>(
+class ReportSubmitterCommunicator<in ReportType>(
     private val messageQueue: BlockingQueue<ReporterMessage<ReportType>>
 ) {
     fun shutdown() {

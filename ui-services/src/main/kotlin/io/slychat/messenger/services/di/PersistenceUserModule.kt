@@ -4,10 +4,8 @@ import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonKeyVaultPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.*
+import io.slychat.messenger.services.LocalAccountDirectory
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.UserData
 import io.slychat.messenger.services.UserPaths
@@ -59,21 +57,35 @@ class PersistenceUserModule {
 
     @UserScope
     @Provides
-    fun providesKeyVaultPersistenceManager(userPaths: UserPaths): KeyVaultPersistenceManager {
-        return JsonKeyVaultPersistenceManager(userPaths.keyVaultPath)
+    fun providesKeyVaultPersistenceManager(
+        userData: UserData,
+        localAccountDirectory: LocalAccountDirectory
+    ): KeyVaultPersistenceManager {
+        return localAccountDirectory.getKeyVaultPersistenceManager(userData.userId)
     }
 
     @UserScope
     @Provides
-    fun providesSessionDataPersistenceManager(userPaths: UserPaths, userLoginData: UserData): SessionDataPersistenceManager {
+    fun providesSessionDataPersistenceManager(
+        userLoginData: UserData,
+        localAccountDirectory: LocalAccountDirectory
+    ): SessionDataPersistenceManager {
         val keyvault = userLoginData.keyVault
-        return JsonSessionDataPersistenceManager(userPaths.sessionDataPath, keyvault.localDataEncryptionKey, keyvault.localDataEncryptionParams)
+        return localAccountDirectory.getSessionDataPersistenceManager(
+            userLoginData.userId,
+            keyvault.localDataEncryptionKey,
+            keyvault.localDataEncryptionParams
+        )
     }
 
     @UserScope
     @Provides
-    fun providesAccountInfoPersistenceManager(userPaths: UserPaths): AccountInfoPersistenceManager =
-        JsonAccountInfoPersistenceManager(userPaths.accountInfoPath)
+    fun providesAccountInfoPersistenceManager(
+        userData: UserData,
+        localAccountDirectory: LocalAccountDirectory
+    ): AccountInfoPersistenceManager {
+        return localAccountDirectory.getAccountInfoPersistenceManager(userData.userId)
+    }
 
     @UserScope
     @Provides

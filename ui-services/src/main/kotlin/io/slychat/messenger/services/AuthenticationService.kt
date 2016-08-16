@@ -1,30 +1,21 @@
 package io.slychat.messenger.services
 
-import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.*
-import io.slychat.messenger.core.div
-import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
-import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
-import io.slychat.messenger.core.persistence.AccountInfo
-import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonKeyVaultPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.task
 import org.slf4j.LoggerFactory
-import java.io.FileNotFoundException
 
-/** API for various remote authentication functionality. */
+/** API for initial authentication functionality. */
 class AuthenticationService(
-    private val serverUrl: String,
-    private val httpClientFactory: HttpClientFactory,
-    private val userPathsGenerator: UserPathsGenerator
+    private val authenticationClient: AuthenticationAsyncClient,
+    private val localAccountDirectory: LocalAccountDirectory
 ) {
     companion object {
+        /** Outcome of a local authentication attempt. */
         private sealed class LocalAuthOutcome {
             class Successful(val result: AuthResult) : LocalAuthOutcome()
             class NoLocalData : LocalAuthOutcome()
@@ -34,140 +25,79 @@ class AuthenticationService(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private val loginClient = AuthenticationAsyncClient(serverUrl, httpClientFactory)
+    /** Attempts to authenticate to the remote server. */
+    private fun remoteAuth(emailOrPhoneNumber: String, password: String, registrationId: Int, deviceId: Int): Promise<AuthResult, Exception> {
+        return authenticationClient.getParams(emailOrPhoneNumber) bind { paramsResponse ->
+            if (paramsResponse.errorMessage != null)
+                throw AuthApiResponseException(paramsResponse.errorMessage)
 
-    fun refreshAuthToken(address: SlyAddress, registrationId: Int, remotePasswordHash: ByteArray): Promise<AuthTokenRefreshResult, Exception> {
-        val deviceId = address.deviceId
+            val authParams = paramsResponse.params!!
 
-        val path = userPathsGenerator.getAccountInfoPath(address.id)
+            val hashParams = HashDeserializers.deserialize(authParams.hashParams)
+            val hash = hashPasswordWithParams(password, hashParams)
 
-        return JsonAccountInfoPersistenceManager(path).retrieve() bind { accountInfo ->
-            val username = accountInfo!!.email
+            val request = AuthenticationRequest(emailOrPhoneNumber, hash.hexify(), authParams.csrfToken, registrationId, deviceId)
 
-            loginClient.getParams(username) map { resp ->
-                if (resp.errorMessage != null)
-                    throw AuthApiResponseException(resp.errorMessage)
+            authenticationClient.auth(request) map { response ->
+                if (response.errorMessage != null)
+                    throw AuthApiResponseException(response.errorMessage)
 
-                //TODO make sure hash params still match
-                resp.params!!.csrfToken
-            } bind { csrfToken ->
-                val request = AuthenticationRequest(username, remotePasswordHash.hexify(), csrfToken, registrationId, deviceId)
-                loginClient.auth(request)
-            } map { resp ->
-                if (resp.errorMessage != null)
-                    throw AuthApiResponseException(resp.errorMessage)
-
-                AuthTokenRefreshResult(resp.data!!.authToken)
+                val data = response.data!!
+                val keyVault = KeyVault.deserialize(data.keyVault, password)
+                AuthResult(data.authToken, keyVault, data.accountInfo)
             }
         }
     }
 
-    private fun findAccountFor(emailOrPhoneNumber: String): AccountInfo? {
-        val accountsDir = userPathsGenerator.accountsDir
-
-        if (!accountsDir.exists())
-            return null
-
-        for (accountDir in accountsDir.listFiles()) {
-            if (!accountDir.isDirectory)
-                continue
-
-            //ignore non-numeric dirs
-            try {
-                 accountDir.name.toLong()
-            }
-            catch (e: NumberFormatException) {
-                continue
-            }
-
-            val accountInfoFile = accountDir / UserPathsGenerator.ACCOUNT_INFO_FILENAME
-            val accountInfo = JsonAccountInfoPersistenceManager(accountInfoFile).retrieveSync() ?: continue
-
-            if (emailOrPhoneNumber == accountInfo.phoneNumber ||
-                emailOrPhoneNumber == accountInfo.email)
-                return accountInfo
-        }
-
-        return null
-    }
-
-    private fun remoteAuth(emailOrPhoneNumber: String, password: String, registrationId: Int, deviceId: Int): AuthResult {
-        val loginClient = AuthenticationClient(serverUrl, httpClientFactory.create())
-
-        val paramsResponse = loginClient.getParams(emailOrPhoneNumber)
-
-        if (paramsResponse.errorMessage != null)
-            throw AuthApiResponseException(paramsResponse.errorMessage)
-
-        val authParams = paramsResponse.params!!
-
-        val hashParams = HashDeserializers.deserialize(authParams.hashParams)
-        val hash = hashPasswordWithParams(password, hashParams)
-
-        val request = AuthenticationRequest(emailOrPhoneNumber, hash.hexify(), authParams.csrfToken, registrationId, deviceId)
-
-        val response = loginClient.auth(request)
-        if (response.errorMessage != null)
-            throw AuthApiResponseException(response.errorMessage)
-
-        val data = response.data!!
-        val keyVault = KeyVault.deserialize(data.keyVault, password)
-        return AuthResult(data.authToken, keyVault, data.accountInfo)
-    }
-
+    /** Attempts to authenticate using local data. */
     private fun localAuth(emailOrPhoneNumber: String, password: String): LocalAuthOutcome {
-        val accountInfo = findAccountFor(emailOrPhoneNumber) ?: return LocalAuthOutcome.NoLocalData()
-
-        val paths = userPathsGenerator.getPaths(accountInfo.id)
+        val accountInfo = localAccountDirectory.findAccountFor(emailOrPhoneNumber) ?: return LocalAuthOutcome.NoLocalData()
 
         //if this doesn't exist it'll throw and we'll just try remote auth
-        val keyVaultPersistenceManager = JsonKeyVaultPersistenceManager(paths.keyVaultPath)
+        val keyVaultPersistenceManager = localAccountDirectory.getKeyVaultPersistenceManager(accountInfo.id)
 
         val keyVault = try {
             keyVaultPersistenceManager.retrieveSync(password)
         }
         catch (e: KeyVaultDecryptionFailedException) {
-           return LocalAuthOutcome.Failure(accountInfo.deviceId)
-        }
-        catch (e: FileNotFoundException) {
-            return LocalAuthOutcome.NoLocalData()
+            return LocalAuthOutcome.Failure(accountInfo.deviceId)
         }
 
+        if (keyVault == null)
+            return LocalAuthOutcome.NoLocalData()
+
         //this isn't important; just use a null token in the auth result if this isn't present, and then fetch one remotely by refreshing
-        val authToken = try {
-            val sessionData = JsonSessionDataPersistenceManager(paths.sessionDataPath, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams).retrieveSync()
-            sessionData.authToken
-        }
-        catch (e: FileNotFoundException) {
-            null
-        }
+        val sessionDataPersistenceManager = localAccountDirectory.getSessionDataPersistenceManager(
+            accountInfo.id,
+            keyVault.localDataEncryptionKey,
+            keyVault.localDataEncryptionParams
+        )
+        val sessionData = sessionDataPersistenceManager.retrieveSync()
+        val authToken = sessionData?.authToken
 
         return LocalAuthOutcome.Successful(AuthResult(authToken, keyVault, accountInfo))
     }
 
-    private fun authSync(emailOrPhoneNumber: String, password: String, registrationId: Int): AuthResult {
-        val localAuthResult = localAuth(emailOrPhoneNumber, password)
-        return when (localAuthResult) {
-            is LocalAuthOutcome.NoLocalData -> {
-                log.debug("No local data found")
-                remoteAuth(emailOrPhoneNumber, password, registrationId, 0)
-            }
+    /** Attempts to authentication using a local session first, then falls back to remote authentication. */
+    fun auth(emailOrPhoneNumber: String, password: String, registrationId: Int): Promise<AuthResult, Exception> {
+        return task { localAuth(emailOrPhoneNumber, password) } bind { localAuthResult ->
+            when (localAuthResult) {
+                is LocalAuthOutcome.NoLocalData -> {
+                    log.debug("No local data found")
+                    remoteAuth(emailOrPhoneNumber, password, registrationId, 0)
+                }
 
-            is LocalAuthOutcome.Successful -> {
-                log.debug("Local auth successful")
-                localAuthResult.result
-            }
+                is LocalAuthOutcome.Successful -> {
+                    log.debug("Local auth successful")
+                    Promise.ofSuccess(localAuthResult.result)
+                }
 
-            //can occur if user changed their account password but no longer remember the old password
-            is LocalAuthOutcome.Failure -> {
-                log.debug("Local auth failure")
-                remoteAuth(emailOrPhoneNumber, password, registrationId, localAuthResult.deviceId)
+                //can occur if user changed their account password but no longer remember the old password
+                is LocalAuthOutcome.Failure -> {
+                    log.debug("Local auth failure")
+                    remoteAuth(emailOrPhoneNumber, password, registrationId, localAuthResult.deviceId)
+                }
             }
         }
-    }
-
-    /** Attempts to authentication using a local session first, then falls back to remote authentication. */
-    fun auth(emailOrPhoneNumber: String, password: String, registrationId: Int): Promise<AuthResult, Exception> = task {
-        authSync(emailOrPhoneNumber, password, registrationId)
     }
 }

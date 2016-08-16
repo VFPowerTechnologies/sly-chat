@@ -191,7 +191,7 @@ class WebApiIntegrationTest {
 
     val devClient = DevClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
 
-    var counter = 1111111111;
+    var counter = 1111111111
 
     fun injectSiteUser(registrationInfo: RegistrationInfo): GeneratedSiteUser {
         val siteUser = newSiteUser(registrationInfo, password)
@@ -866,7 +866,7 @@ class WebApiIntegrationTest {
         val request = UpdateEmailRequest(newEmail)
         val response = client.updateEmail(userA.getUserCredentials(authToken), request)
 
-        assertFalse(response.isSuccess);
+        assertFalse(response.isSuccess)
     }
 
     @Test
@@ -880,9 +880,9 @@ class WebApiIntegrationTest {
         val newName = "newName"
 
         val request = UpdateNameRequest(newName)
-        val response = client.updateName(userA.getUserCredentials(authToken), request);
+        val response = client.updateName(userA.getUserCredentials(authToken), request)
 
-        assertTrue(response.isSuccess);
+        assertTrue(response.isSuccess)
         assertEquals(response.accountInfo!!.name, newName)
     }
 
@@ -898,14 +898,14 @@ class WebApiIntegrationTest {
 
         val request = RequestPhoneUpdateRequest(newPhone)
         val userCredentials = userA.getUserCredentials(authToken)
-        val response = client.requestPhoneUpdate(userCredentials, request);
+        val response = client.requestPhoneUpdate(userCredentials, request)
 
-        assertTrue(response.isSuccess);
+        assertTrue(response.isSuccess)
 
         val secondRequest = ConfirmPhoneNumberRequest("12345")
-        val secondResponse = client.confirmPhoneNumber(userCredentials, secondRequest);
+        val secondResponse = client.confirmPhoneNumber(userCredentials, secondRequest)
 
-        assertTrue(secondResponse.isSuccess);
+        assertTrue(secondResponse.isSuccess)
         assertEquals(secondResponse.accountInfo!!.phoneNumber, newPhone)
     }
 
@@ -921,9 +921,9 @@ class WebApiIntegrationTest {
         val newPhone = "2222222222"
 
         val request = RequestPhoneUpdateRequest(newPhone)
-        val response = client.requestPhoneUpdate(userA.getUserCredentials(authToken), request);
+        val response = client.requestPhoneUpdate(userA.getUserCredentials(authToken), request)
 
-        assertFalse(response.isSuccess, "Update failed");
+        assertFalse(response.isSuccess, "Update failed")
     }
 
     fun checkGCMTokenStatus(user: SiteUser, exists: Boolean) {

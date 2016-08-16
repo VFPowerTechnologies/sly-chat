@@ -33,6 +33,7 @@ buildscript {
             androidCompileSdk: 23,
             jsbridge: '0.2.0-SNAPSHOT',
             controlsFx: '8.40.11',
+            nsMenuFx: '2.1.4',
         ]
     }
 

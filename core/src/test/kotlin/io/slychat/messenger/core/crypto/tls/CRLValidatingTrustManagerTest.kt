@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class CRLValidatingTrustManagerTest {
-    val certFactory = CertificateFactory.getInstance("X.509")
+    val certFactory: CertificateFactory = CertificateFactory.getInstance("X.509")
 
     fun getPEMStream(name: String): InputStream =
         javaClass.getResourceAsStream("/pki/$name.pem")

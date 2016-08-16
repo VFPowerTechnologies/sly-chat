@@ -5,13 +5,13 @@ import io.slychat.messenger.core.crypto.SerializedCryptoParams
 import io.slychat.messenger.core.crypto.hexify
 import io.slychat.messenger.core.crypto.unhexify
 
-data class AESGCMParams(
+class AESGCMParams(
     val iv: ByteArray,
     val authTagLength: Int
 ) : CipherParams {
     init {
-        io.slychat.messenger.core.require(iv.isNotEmpty(), "iv must not be empty")
-        io.slychat.messenger.core.require(authTagLength > 0, "authTagLength must be > 0")
+        require(iv.isNotEmpty()) { "iv must not be empty" }
+        require(authTagLength > 0) { "authTagLength must be > 0" }
     }
 
     override val algorithmName: String = Companion.algorithmName

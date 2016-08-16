@@ -16,6 +16,6 @@ package io.slychat.messenger.core.crypto
  *
  */
 interface KeyVaultStorage {
-    fun read(): SerializedKeyVault
+    fun read(): SerializedKeyVault?
     fun write(serializedKeyVault: SerializedKeyVault)
 }

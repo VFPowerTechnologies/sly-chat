@@ -5,7 +5,7 @@ import io.slychat.messenger.core.http.api.apiGetRequest
 import io.slychat.messenger.core.http.api.apiPostRequest
 import io.slychat.messenger.core.typeRef
 
-class AuthenticationClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
+class AuthenticationClient(serverBaseUrl: String, private val httpClient: HttpClient) {
     private val url = "$serverBaseUrl/v1/login"
 
     fun getParams(username: String): AuthenticationParamsResponse {

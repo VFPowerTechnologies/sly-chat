@@ -33,6 +33,13 @@ fun randomMessageId(): String = randomUUID()
 
 fun randomAuthToken(): AuthToken = AuthToken(randomUUID())
 
+private fun <E> List<E>.randomItem(): E {
+    return this[Random().nextInt(size)]
+}
+
+fun randomEmailAddress(): String =
+    listOf("abcdefghijklmopqrstuvwxyz").randomItem() + "@a.com"
+
 fun randomUserCredentials(): UserCredentials = UserCredentials(randomSlyAddress(), randomAuthToken())
 
 fun randomTextGroupMetadata(groupId: GroupId? = null): MessageMetadata {

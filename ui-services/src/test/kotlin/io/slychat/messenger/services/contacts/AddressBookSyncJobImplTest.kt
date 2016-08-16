@@ -31,15 +31,11 @@ class AddressBookSyncJobImplTest {
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val groupPersistenceManager:  GroupPersistenceManager = mock()
     val userLoginData = UserData(SlyAddress(randomUserId(), 1), keyVault)
-    val accountInfoPersistenceManager: AccountInfoPersistenceManager = mock()
+    val accountRegionCode = "1"
     val platformContacts: PlatformContacts = mock()
 
     @Before
     fun before() {
-        whenever(accountInfoPersistenceManager.retrieve()).thenReturn(
-            AccountInfo(userLoginData.userId, "name", "email", "15555555555", 1)
-        )
-
         whenever(platformContacts.fetchContacts()).thenReturn(emptyList())
 
         whenever(contactsPersistenceManager.findMissing(any())).thenReturn(listOf())
@@ -72,7 +68,7 @@ class AddressBookSyncJobImplTest {
             contactsPersistenceManager,
             groupPersistenceManager,
             userLoginData,
-            accountInfoPersistenceManager,
+            accountRegionCode,
             platformContacts
         )
     }

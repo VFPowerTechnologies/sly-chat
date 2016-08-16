@@ -13,8 +13,14 @@ class UserPathsGenerator(platformInfo: PlatformInfo) {
     val accountsDir = platformInfo.appFileStorageDirectory / "accounts"
     val startupInfoPath = platformInfo.appFileStorageDirectory / "startup-info.json"
 
+    /** Return the account info file path for the given user id. */
     fun getAccountInfoPath(userId: UserId): File {
-        return accountsDir / userId.long.toString() / ACCOUNT_INFO_FILENAME
+        return getAccountInfoPath(accountsDir / userId.long.toString())
+    }
+
+    /** Given a path to a user's account directory, return the account info file path. */
+    fun getAccountInfoPath(accountDir: File): File {
+        return accountDir / ACCOUNT_INFO_FILENAME
     }
 
     fun getPaths(userId: UserId): UserPaths {

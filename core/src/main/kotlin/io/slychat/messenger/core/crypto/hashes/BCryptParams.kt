@@ -17,7 +17,7 @@ import io.slychat.messenger.core.require
  *
  * @constructor
  */
-data class BCryptParams(
+class BCryptParams(
     val salt: ByteArray,
     val cost: Int
 ) : HashParams {

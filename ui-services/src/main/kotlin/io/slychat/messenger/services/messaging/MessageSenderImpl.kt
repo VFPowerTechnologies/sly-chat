@@ -34,7 +34,8 @@ class MessageSenderImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val messageSentSubject = PublishSubject.create<MessageMetadata>()
-    override val messageSent: Observable<MessageMetadata> = messageSentSubject
+    override val messageSent: Observable<MessageMetadata>
+        get() = messageSentSubject
 
     private val sendMessageQueue = ArrayDeque<QueuedSendMessage>()
     private var currentSendMessage: QueuedSendMessage? = null
