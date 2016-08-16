@@ -128,26 +128,33 @@ class AddressBookSyncJobImpl(
         return authTokenManager.bind { userCredentials ->
             contactsPersistenceManager.getAddressBookRemoteVersion() bind { addressBookRemoteVersion ->
                 addressBookClient.get(userCredentials, GetAddressBookRequest(addressBookRemoteVersion)) bind { response ->
-                    val allUpdates = decryptRemoteAddressBookEntries(keyVault, response.entries)
+                    if (response.entries.isNotEmpty()) {
+                        val allUpdates = decryptRemoteAddressBookEntries(keyVault, response.entries)
 
-                    val contactUpdates = ArrayList<AddressBookUpdate.Contact>()
-                    val groupUpdates = ArrayList<AddressBookUpdate.Group>()
+                        val contactUpdates = ArrayList<AddressBookUpdate.Contact>()
+                        val groupUpdates = ArrayList<AddressBookUpdate.Group>()
 
-                    allUpdates.forEach {
-                        when (it) {
-                            is AddressBookUpdate.Contact -> contactUpdates.add(it)
-                            is AddressBookUpdate.Group -> groupUpdates.add(it)
+                        allUpdates.forEach {
+                            when (it) {
+                                is AddressBookUpdate.Contact -> contactUpdates.add(it)
+                                is AddressBookUpdate.Group -> groupUpdates.add(it)
+                            }
+                        }
+
+                        //order is important
+                        updateContacts(userCredentials, contactUpdates) bind {
+                            updateGroups(groupUpdates) bind {
+                                if (response.version != addressBookRemoteVersion)
+                                    contactsPersistenceManager.updateAddressBookRemoteVersion(response.version)
+                                else
+                                    Promise.ofSuccess(Unit)
+                            }
                         }
                     }
+                    else {
+                        log.debug("No address book updates")
 
-                    //order is important
-                    updateContacts(userCredentials, contactUpdates) bind {
-                        updateGroups(groupUpdates) bind {
-                            if (response.version != addressBookRemoteVersion)
-                                contactsPersistenceManager.updateAddressBookRemoteVersion(response.version)
-                            else
-                                Promise.ofSuccess(Unit)
-                        }
+                        Promise.ofSuccess(Unit)
                     }
                 }
             }

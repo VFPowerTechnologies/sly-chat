@@ -100,6 +100,11 @@ class AddressBookSyncJobImplTest {
         runJobWithDescription { doRemoteSync() }
     }
 
+    fun randomRemoteEntries(): List<RemoteAddressBookEntry> {
+        val missing = randomUserIds()
+        return encryptRemoteAddressBookEntries(keyVault, missing.map { AddressBookUpdate.Contact(it, AllowedMessageLevel.ALL) })
+    }
+
     @Test
     fun `a remote sync should fetch any missing contact info`() {
         val missing = randomUserIds()
@@ -333,7 +338,7 @@ class AddressBookSyncJobImplTest {
         val newVersion = 1
 
         whenever(contactsPersistenceManager.getAddressBookRemoteVersion()).thenReturn(currentVersion)
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(newVersion, emptyList()))
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(newVersion, randomRemoteEntries()))
 
         runRemoteSync()
 
