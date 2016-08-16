@@ -181,15 +181,11 @@ ContactController.prototype  = {
         contactBlock.append(contactDetails);
 
         contactBlock.click(function (e) {
-            // if(contactBlock.hasClass("noClick"))
-            //     contactBlock.removeClass("noClick");
-            // else
-                this.loadChatPage(contact);
+            this.loadChatPage(contact);
         }.bind(this));
 
         contactBlock.on("mouseheld", function () {
             vibrate(50);
-            // contactBlock.addClass("noClick");
             this.openContactMenu(contact);
         }.bind(this));
 
@@ -790,7 +786,7 @@ ContactController.prototype  = {
                 "<p class='contact-info-details'>" + formatPublicKey(contact.publicKey) + "</p>" +
             "</div>";
 
-        openInfoPopup(content);
+        openInfoPopup(content, "Contact Info");
     },
 
     clearCache : function () {

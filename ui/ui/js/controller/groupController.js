@@ -541,7 +541,7 @@ GroupController.prototype = {
             '<div class="group-info-details"><div class="members">' + memberList + '</div></div>' +
             '</div>';
 
-        openInfoPopup(content);
+        openInfoPopup(content, "Group Info");
     },
 
     updateConversationWithNewMessage : function (groupId, messageInfo) {

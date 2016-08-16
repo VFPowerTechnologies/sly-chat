@@ -45,11 +45,14 @@ function copyToClipboard (message) {
     })
 }
 
-function openInfoPopup (content) {
+function openInfoPopup (content, title) {
+    if (title === undefined)
+        title = "";
+
     var navbar = '' +
         '<div class="navbar top-navbar">' +
             '<div class="navbar-inner">' +
-                '<a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a>' +
+                '<a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a>' + title +
             '</div>' +
         '</div>';
 

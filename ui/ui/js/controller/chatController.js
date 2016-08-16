@@ -25,7 +25,7 @@ ChatController.prototype = {
                     info: messageDetails,
                     speaker: null
                 };
-                $("#chat-content").append(this.createGroupMessageNode(groupMessageDetails, profileController.name));
+                $("#chat-content").append(this.createGroupMessageNode(groupMessageDetails, contact.id));
 
                 var input = $("#newMessageInput");
                 input.val("");
@@ -430,7 +430,7 @@ ChatController.prototype = {
                 '<p class="message-info-title">Message is encrypted <i class="fa fa-check-square color-green"></i></p>' +
             '</div>';
 
-        openInfoPopup(content);
+        openInfoPopup(content, "Message Info");
     },
 
     showGroupMessageInfo : function (message, groupId) {
@@ -505,7 +505,7 @@ ChatController.prototype = {
             '<div class="group-info-details"><div class="members">' + memberList + '</div></div>' +
             '</div>';
 
-        openInfoPopup(content);
+        openInfoPopup(content, "Message Info");
     },
 
     clearCache : function () {
