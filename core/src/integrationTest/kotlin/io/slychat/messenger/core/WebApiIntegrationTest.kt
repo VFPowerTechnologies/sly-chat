@@ -691,17 +691,40 @@ class WebApiIntegrationTest {
         val userC = injectNamedSiteUser("c@a.com")
 
         val aContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)))
-        val bContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(AddressBookUpdate.Contact(userC.user.id, AllowedMessageLevel.ALL)))
+        val bContacts = encryptRemoteAddressBookEntries(userB.keyVault, listOf(AddressBookUpdate.Contact(userC.user.id, AllowedMessageLevel.ALL)))
 
         devClient.addAddressBookEntries(userA.user.username, aContacts)
         devClient.addAddressBookEntries(userB.user.username, bContacts)
 
-        val client = AddressBookClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
+        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
 
         val authToken = devClient.createAuthToken(userA.user.username)
-        val response = client.get(userA.getUserCredentials(authToken), GetAddressBookRequest(0))
+        val response = client.get(userA.getUserCredentials(authToken), GetAddressBookRequest(1000))
 
         assertAddressBookEquals(aContacts, response.entries)
+    }
+
+    @Test
+    fun `Fetching a contact list when version has not changed should return an empty list`() {
+        val userA = injectNamedSiteUser("a@a.com")
+        val userB = injectNamedSiteUser("b@a.com")
+        val username = userA.user.username
+
+        val contacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)))
+
+        devClient.addAddressBookEntries(username, contacts)
+
+        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
+
+        val currentVersion = devClient.getAddressBookVersion(username)
+
+        val authToken = devClient.createAuthToken(username)
+        val response = client.get(userA.getUserCredentials(authToken), GetAddressBookRequest(currentVersion))
+
+        assertThat(response.entries).apply {
+            `as`("Should not return any entries")
+            isEmpty()
+        }
     }
 
     @Test
