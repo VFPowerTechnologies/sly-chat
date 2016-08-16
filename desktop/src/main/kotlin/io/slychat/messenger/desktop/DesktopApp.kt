@@ -3,7 +3,10 @@ package io.slychat.messenger.desktop
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
+import de.codecentric.centerdevice.MenuToolkit
 import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.Os
+import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
 import io.slychat.messenger.desktop.services.DesktopUILoadService
@@ -18,7 +21,13 @@ import javafx.application.Application
 import javafx.application.Platform
 import javafx.scene.Scene
 import javafx.scene.control.Alert
+import javafx.scene.control.MenuBar
+import javafx.scene.control.MenuItem
+import javafx.scene.control.SeparatorMenuItem
 import javafx.scene.image.Image
+import javafx.scene.input.KeyCode
+import javafx.scene.input.KeyCodeCombination
+import javafx.scene.input.KeyCombination
 import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.shape.Rectangle
@@ -161,6 +170,31 @@ class DesktopApp : Application() {
 
         primaryStage.scene = Scene(stackPane, 852.0, 480.0)
         primaryStage.show()
+
+        setupOsxMenu()
+    }
+
+    private fun setupOsxMenu() {
+        if (currentOs.type != Os.Type.OSX)
+            return
+
+        val tk = MenuToolkit.toolkit()
+
+        val appMenuBar = MenuBar()
+
+        val appMenu = tk.createDefaultApplicationMenu("Sly Chat")
+        appMenuBar.menus.add(appMenu)
+
+        //TODO
+        val prefsItem = MenuItem("Preferences")
+        prefsItem.accelerator = KeyCodeCombination(KeyCode.P, KeyCombination.META_DOWN)
+        appMenu.items.addAll(1, listOf(
+            SeparatorMenuItem(),
+            prefsItem,
+            SeparatorMenuItem()
+        ))
+
+        tk.setGlobalMenuBar(appMenuBar)
     }
 
     private fun onUserSessionCreated() {

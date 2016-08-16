@@ -28,6 +28,9 @@ dependencies {
     compile "ch.qos.logback:logback-classic:$versions.logbackClassic"
 
     compile "org.controlsfx:controlsfx:$versions.controlsFx"
+
+    //required on osx only
+    compile "de.codecentric.centerdevice:centerdevice-nsmenufx:$versions.nsMenuFx"
 }
 
 jfx {
