@@ -99,6 +99,11 @@ class WebApiIntegrationTest {
             if (users != listOf(siteUser))
                 throw DevServerInsaneException("Register functionality failed")
 
+            //address book versions
+            val newVersion = 1000
+            devClient.setAddressBookVersion(username, newVersion)
+            assertEquals(newVersion, devClient.getAddressBookVersion(username), "Address book version not updated")
+
             //auth token
             val authToken = devClient.createAuthToken(username)
 
@@ -267,6 +272,20 @@ class WebApiIntegrationTest {
         assertNotNull(result.errorMessage, "Null error message")
         val errorMessage = result.errorMessage!!
         assertTrue(errorMessage.contains("taken"), "Invalid error message: $errorMessage}")
+    }
+
+    @Test
+    fun `registration should create an address book versions entry for the new user`() {
+        val keyVault = generateNewKeyVault(password)
+        val request = registrationRequestFromKeyVault(dummyRegistrationInfo, keyVault)
+
+        val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
+        val result = client.register(request)
+        assertNull(result.errorMessage)
+
+        val addressBookVersion = devClient.getAddressBookVersion(dummyRegistrationInfo.email)
+        assertEquals(0, addressBookVersion, "Invalid address book version")
+
     }
 
     fun sendAuthRequestForUser(userA: GeneratedSiteUser, deviceId: Int): AuthenticationResponse {
@@ -680,7 +699,7 @@ class WebApiIntegrationTest {
         val client = AddressBookClient(serverBaseUrl, io.slychat.messenger.core.http.JavaHttpClient())
 
         val authToken = devClient.createAuthToken(userA.user.username)
-        val response = client.get(userA.getUserCredentials(authToken))
+        val response = client.get(userA.getUserCredentials(authToken), GetAddressBookRequest(0))
 
         assertAddressBookEquals(aContacts, response.entries)
     }
@@ -736,6 +755,29 @@ class WebApiIntegrationTest {
         val contacts = devClient.getAddressBook(userA.user.username)
 
         assertAddressBookEquals(aContacts, contacts)
+    }
+
+    @Test
+    fun `pushing remote updates should increase the address book version`() {
+        val userA = injectNamedSiteUser("a@a.com")
+        val userB = injectNamedSiteUser("b@a.com")
+
+        val username = userA.user.username
+
+        val previousVersion = devClient.getAddressBookVersion(username)
+
+        val authToken = devClient.createAuthToken(username)
+        val aContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)))
+
+        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
+        val userCredentials = userA.getUserCredentials(authToken)
+        val response = client.update(userCredentials, UpdateAddressBookRequest(aContacts))
+
+        assertNotEquals(previousVersion, response.version, "Version number not changed in response")
+
+        val newVersion = devClient.getAddressBookVersion(username)
+
+        assertEquals(response.version, newVersion, "Version number not changed remotely")
     }
 
     @Test
