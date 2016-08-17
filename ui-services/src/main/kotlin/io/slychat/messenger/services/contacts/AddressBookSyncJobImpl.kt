@@ -214,9 +214,12 @@ class AddressBookSyncJobImpl(
 
             val request = updateRequestFromAddressBookUpdates(keyVault, allUpdates)
             updateRemoteAddressBook(userCredentials, request) bind { response ->
+                val newVersion = response.version
+                log.debug("Address book version updated to: {}", newVersion)
+
                 contactsPersistenceManager.removeRemoteUpdates(contactUpdates.map { it.userId }) bind {
                     groupPersistenceManager.removeRemoteUpdates(groupUpdates.map { it.groupId }) bind {
-                        contactsPersistenceManager.updateAddressBookVersion(response.version)
+                        contactsPersistenceManager.updateAddressBookVersion(newVersion)
                     }
                 }
             }
