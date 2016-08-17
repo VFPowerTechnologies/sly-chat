@@ -71,6 +71,6 @@ interface ContactsPersistenceManager {
     fun getRemoteUpdates(): Promise<List<AddressBookUpdate.Contact>, Exception>
     fun removeRemoteUpdates(remoteUpdates: Collection<UserId>): Promise<Unit, Exception>
 
-    fun getAddressBookRemoteVersion(): Promise<Int, Exception>
-    fun updateAddressBookRemoteVersion(version: Int): Promise<Unit, Exception>
+    fun getAddressBookVersion(): Promise<Int, Exception>
+    fun updateAddressBookVersion(version: Int): Promise<Unit, Exception>
 }

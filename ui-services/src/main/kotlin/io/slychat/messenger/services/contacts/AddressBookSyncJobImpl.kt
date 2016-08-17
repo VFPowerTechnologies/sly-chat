@@ -131,7 +131,7 @@ class AddressBookSyncJobImpl(
         val keyVault = userLoginData.keyVault
 
         return authTokenManager.bind { userCredentials ->
-            contactsPersistenceManager.getAddressBookRemoteVersion() bind { addressBookVersion ->
+            contactsPersistenceManager.getAddressBookVersion() bind { addressBookVersion ->
                 log.debug("Local address book version: {}", addressBookVersion)
 
                 addressBookClient.get(userCredentials, GetAddressBookRequest(addressBookVersion)) bind { response ->
@@ -155,7 +155,7 @@ class AddressBookSyncJobImpl(
 
                                 if (newVersion != addressBookVersion) {
                                     log.debug("Address book version updated to: {}", newVersion)
-                                    contactsPersistenceManager.updateAddressBookRemoteVersion(newVersion)
+                                    contactsPersistenceManager.updateAddressBookVersion(newVersion)
                                 }
                                 else
                                     Promise.ofSuccess(Unit)
@@ -216,7 +216,7 @@ class AddressBookSyncJobImpl(
             updateRemoteAddressBook(userCredentials, request) bind { response ->
                 contactsPersistenceManager.removeRemoteUpdates(contactUpdates.map { it.userId }) bind {
                     groupPersistenceManager.removeRemoteUpdates(groupUpdates.map { it.groupId }) bind {
-                        contactsPersistenceManager.updateAddressBookRemoteVersion(response.version)
+                        contactsPersistenceManager.updateAddressBookVersion(response.version)
                     }
                 }
             }

@@ -61,8 +61,8 @@ class AddressBookSyncJobImplTest {
         whenever(contactAsyncClient.findLocalContacts(any(), any())).thenReturn(FindLocalContactsResponse(emptyList()))
         whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenReturn(FetchContactInfoByIdResponse(emptyList()))
 
-        whenever(contactsPersistenceManager.getAddressBookRemoteVersion()).thenReturn(defaultAddressBookRemoteVersion)
-        whenever(contactsPersistenceManager.updateAddressBookRemoteVersion(any())).thenReturn(Unit)
+        whenever(contactsPersistenceManager.getAddressBookVersion()).thenReturn(defaultAddressBookRemoteVersion)
+        whenever(contactsPersistenceManager.updateAddressBookVersion(any())).thenReturn(Unit)
 
         whenever(addressBookAsyncClient.update(any(), any())).thenReturn(UpdateAddressBookResponse(defaultAddressBookRemoteVersion))
         whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultAddressBookRemoteVersion, emptyList()))
@@ -313,7 +313,7 @@ class AddressBookSyncJobImplTest {
 
         runPush()
 
-        verify(contactsPersistenceManager).updateAddressBookRemoteVersion(newVersion)
+        verify(contactsPersistenceManager).updateAddressBookVersion(newVersion)
     }
 
     @Test
@@ -354,11 +354,11 @@ class AddressBookSyncJobImplTest {
     fun `a pull request should include the current address book version`() {
         val currentVersion = 0
 
-        whenever(contactsPersistenceManager.getAddressBookRemoteVersion()).thenReturn(currentVersion)
+        whenever(contactsPersistenceManager.getAddressBookVersion()).thenReturn(currentVersion)
 
         runPull()
 
-        verify(contactsPersistenceManager).getAddressBookRemoteVersion()
+        verify(contactsPersistenceManager).getAddressBookVersion()
         verify(addressBookAsyncClient).get(any(), eq(GetAddressBookRequest(currentVersion)))
     }
 
@@ -367,24 +367,24 @@ class AddressBookSyncJobImplTest {
         val currentVersion = 0
         val newVersion = 1
 
-        whenever(contactsPersistenceManager.getAddressBookRemoteVersion()).thenReturn(currentVersion)
+        whenever(contactsPersistenceManager.getAddressBookVersion()).thenReturn(currentVersion)
         whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(newVersion, randomRemoteEntries()))
 
         runPull()
 
-        verify(contactsPersistenceManager).updateAddressBookRemoteVersion(newVersion)
+        verify(contactsPersistenceManager).updateAddressBookVersion(newVersion)
     }
 
     @Test
     fun `a pull should not update the address book version to the value returned by the server if versions do not differ`() {
         val currentVersion = 0
 
-        whenever(contactsPersistenceManager.getAddressBookRemoteVersion()).thenReturn(currentVersion)
+        whenever(contactsPersistenceManager.getAddressBookVersion()).thenReturn(currentVersion)
         whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(currentVersion, emptyList()))
 
         runPull()
 
-        verify(contactsPersistenceManager, never()).updateAddressBookRemoteVersion(any())
+        verify(contactsPersistenceManager, never()).updateAddressBookVersion(any())
     }
 
     @Test

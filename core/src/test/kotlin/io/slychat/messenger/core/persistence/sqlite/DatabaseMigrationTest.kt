@@ -332,6 +332,6 @@ class DatabaseMigrationTest {
     }
 
     private fun check9to10(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
-        assertTableExists(connection, "address_book_remote_version")
+        assertTableExists(connection, "address_book_version")
     }
 }
