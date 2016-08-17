@@ -291,9 +291,10 @@ class UserModule(
     @Provides
     fun providesAuthTokenManager(
         userLoginData: UserData,
-        tokenProvider: TokenProvider
+        tokenProvider: TokenProvider,
+        timerFactory: TimerFactory
     ): AuthTokenManager =
-        AuthTokenManagerImpl(userLoginData.address, tokenProvider)
+        AuthTokenManagerImpl(userLoginData.address, tokenProvider, timerFactory)
 
     @UserScope
     @Provides

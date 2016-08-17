@@ -6,6 +6,7 @@ import io.slychat.messenger.core.UnauthorizedException
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.services.bindRecoverForUi
 import io.slychat.messenger.services.bindUi
+import io.slychat.messenger.services.contacts.TimerFactory
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
@@ -16,15 +17,17 @@ import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.BehaviorSubject
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 //XXX what do I do regarding network connectivity? I guess just hand out the token, and then the tasks can fail due to connection issues?
 //likewise, any token refresh would end up with an error
 class AuthTokenManagerImpl(
     private val address: SlyAddress,
-    private val tokenProvider: TokenProvider
+    private val tokenProvider: TokenProvider,
+    private val timerFactory: TimerFactory
 ) : AuthTokenManager {
     companion object {
-        private const val MAX_RETRIES = 2
+        internal const val MAX_RETRIES = 2
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -33,7 +36,7 @@ class AuthTokenManagerImpl(
     override val newToken: Observable<AuthToken?>
         get() = newTokenSubject
 
-    private val queued = ArrayList<Deferred<AuthToken, Exception>>()
+    private var queued = ArrayList<Deferred<AuthToken, Exception>>()
 
     private var currentToken: AuthToken? = null
 
@@ -73,13 +76,18 @@ class AuthTokenManagerImpl(
     private fun processQueue() {
         val token = currentToken ?: return
 
-        queued.forEach { it.resolve(token) }
-        queued.clear()
+        //for testing in sync mode, need to prevent concurrent modification to the queue
+        val old = queued
+        queued = ArrayList()
+
+        old.forEach { it.resolve(token) }
     }
 
     private fun failQueue(reason: Exception) {
-        queued.forEach { it.reject(reason) }
-        queued.clear()
+        val old = queued
+        queued = ArrayList()
+
+        old.forEach { it.reject(reason) }
     }
 
     override fun invalidateToken() {
@@ -90,6 +98,14 @@ class AuthTokenManagerImpl(
     private fun addToQueue(d: Deferred<AuthToken, Exception>) {
         queued.add(d)
         processQueue()
+    }
+
+    private fun nextRetryTimeout(attemptN: Int): Promise<Unit, Exception> {
+        val n = attemptN + 1
+        val exp = Math.pow(2.0, n.toDouble())
+        val secs = Random().nextInt(exp.toInt() + 1).toLong()
+
+        return timerFactory.run(secs, TimeUnit.SECONDS)
     }
 
     //don't like the code dup here, but no real way to not do this
@@ -115,13 +131,13 @@ class AuthTokenManagerImpl(
 
             invalidateToken()
 
-            wrapWithRetryMap(onUiThread, what, remainingTries-1)
+            val attemptN = MAX_RETRIES - remainingTries
+            nextRetryTimeout(attemptN) bind { wrapWithRetryMap(onUiThread, what, remainingTries - 1) }
         }
 
         addToQueue(d)
 
         return p3
-
     }
 
     private fun <T> wrapWithRetryBind(onUiThread: Boolean, what: (UserCredentials) -> Promise<T, Exception>, remainingTries: Int): Promise<T, Exception> {
@@ -146,7 +162,8 @@ class AuthTokenManagerImpl(
 
             invalidateToken()
 
-            wrapWithRetryBind(onUiThread, what, remainingTries-1)
+            val attemptN = MAX_RETRIES - remainingTries
+            nextRetryTimeout(attemptN) bind { wrapWithRetryBind(onUiThread, what, remainingTries - 1) }
         }
 
         addToQueue(d)
