@@ -1,6 +1,6 @@
 package io.slychat.messenger.services.contacts
 
-/** A description encapsulating a contact sync job and its dependencies on other contact jobs. */
+/** A description encapsulating an address book sync. */
 class AddressBookSyncJobDescription {
     var push: Boolean = false
         private set
