@@ -19,7 +19,8 @@ class AddressBookSyncJobFactoryImpl(
     private val groupPersistenceManager: GroupPersistenceManager,
     private val userLoginData: UserData,
     accountInfo: Observable<AccountInfo>,
-    private val platformContacts: PlatformContacts
+    private val platformContacts: PlatformContacts,
+    private val timerFactory: TimerFactory
 ) : AddressBookSyncJobFactory {
     private lateinit var accountRegionCode: String
 
@@ -38,7 +39,8 @@ class AddressBookSyncJobFactoryImpl(
             groupPersistenceManager,
             userLoginData,
             accountRegionCode,
-            platformContacts
+            platformContacts,
+            timerFactory
         )
     }
 }

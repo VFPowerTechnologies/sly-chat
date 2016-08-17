@@ -16,6 +16,8 @@ import io.slychat.messenger.services.*
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.FileConfigStorage
 import io.slychat.messenger.services.config.JsonConfigBackend
+import io.slychat.messenger.services.contacts.RxTimerFactory
+import io.slychat.messenger.services.contacts.TimerFactory
 import java.io.ByteArrayInputStream
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -93,5 +95,11 @@ class ApplicationModule(
         val storage = FileConfigStorage(appConfPath)
         val backend = JsonConfigBackend("app-config", storage)
         return AppConfigService(backend)
+    }
+
+    @Singleton
+    @Provides
+    fun providesTimerFactory(): TimerFactory {
+        return RxTimerFactory()
     }
 }

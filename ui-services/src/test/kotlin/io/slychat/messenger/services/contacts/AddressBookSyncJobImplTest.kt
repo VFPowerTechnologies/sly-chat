@@ -37,6 +37,7 @@ class AddressBookSyncJobImplTest {
     val userLoginData = UserData(SlyAddress(randomUserId(), 1), keyVault)
     val accountRegionCode = "1"
     val platformContacts: PlatformContacts = mock()
+    val timerFactory: TimerFactory = mock()
 
     @Before
     fun before() {
@@ -65,6 +66,8 @@ class AddressBookSyncJobImplTest {
 
         whenever(addressBookAsyncClient.update(any(), any())).thenReturn(UpdateAddressBookResponse(defaultAddressBookRemoteVersion))
         whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultAddressBookRemoteVersion, emptyList()))
+
+        whenever(timerFactory.run(any(), any())).thenReturn(Unit)
     }
 
     fun newJob(): AddressBookSyncJobImpl {
@@ -76,7 +79,8 @@ class AddressBookSyncJobImplTest {
             groupPersistenceManager,
             userLoginData,
             accountRegionCode,
-            platformContacts
+            platformContacts,
+            timerFactory
         )
     }
 

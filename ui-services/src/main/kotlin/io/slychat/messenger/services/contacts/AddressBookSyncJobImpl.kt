@@ -1,13 +1,10 @@
 package io.slychat.messenger.services.contacts
 
 import com.google.i18n.phonenumbers.PhoneNumberUtil
-import io.slychat.messenger.core.PlatformContact
-import io.slychat.messenger.core.UserCredentials
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.http.api.ResourceConflictException
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.kovenant.bindRecoverFor
-import io.slychat.messenger.core.mapToMap
-import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
@@ -22,6 +19,7 @@ import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class AddressBookSyncJobImpl(
     private val authTokenManager: AuthTokenManager,
@@ -31,10 +29,11 @@ class AddressBookSyncJobImpl(
     private val groupPersistenceManager: GroupPersistenceManager,
     private val userLoginData: UserData,
     private val accountRegionCode: String,
-    private val platformContacts: PlatformContacts
+    private val platformContacts: PlatformContacts,
+    private val timerFactory: TimerFactory
 ) : AddressBookSyncJob {
     companion object {
-        internal val UPDATE_MAX_RETRIES: Int = 2
+        internal val UPDATE_MAX_RETRIES: Int = 3
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -168,16 +167,24 @@ class AddressBookSyncJobImpl(
     }
 
     private fun updateRemoteAddressBook(userCredentials: UserCredentials, request: UpdateAddressBookRequest): Promise<UpdateAddressBookResponse, Exception> {
-        fun updateWithRetry(remainingAttempts: Int): Promise<UpdateAddressBookResponse, Exception> {
+        fun updateWithRetry(attemptN: Int): Promise<UpdateAddressBookResponse, Exception> {
             return addressBookClient.update(userCredentials, request) bindRecoverFor { e: ResourceConflictException ->
-                if (remainingAttempts == 0)
+                if (attemptN >= UPDATE_MAX_RETRIES)
                     throw e
-                else
-                    updateWithRetry(remainingAttempts - 1)
+                else {
+                    //we'd like if retries from multiple devices didn't occur simultaneously
+                    val min = (attemptN + 1) * 5
+                    val max = (attemptN + 2) * 5
+                    val secs = randomInt(min, max).toLong()
+
+                    timerFactory.run(secs, TimeUnit.SECONDS) bind {
+                        updateWithRetry(attemptN + 1)
+                    }
+                }
             }
         }
 
-        return updateWithRetry(UPDATE_MAX_RETRIES)
+        return updateWithRetry(0)
     }
 
     private fun processAddressBookUpdates(

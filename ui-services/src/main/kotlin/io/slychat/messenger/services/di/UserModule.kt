@@ -69,7 +69,8 @@ class UserModule(
         accountInfoManager: AccountInfoManager,
         @SlyHttp httpClientFactory: HttpClientFactory,
         userLoginData: UserData,
-        platformContacts: PlatformContacts
+        platformContacts: PlatformContacts,
+        timerFactory: TimerFactory
     ): AddressBookSyncJobFactory {
         val serverUrl = serverUrls.API_SERVER
         val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
@@ -83,7 +84,8 @@ class UserModule(
             groupPersistenceManager,
             userLoginData,
             accountInfoManager.accountInfo,
-            platformContacts
+            platformContacts,
+            timerFactory
         )
     }
 
