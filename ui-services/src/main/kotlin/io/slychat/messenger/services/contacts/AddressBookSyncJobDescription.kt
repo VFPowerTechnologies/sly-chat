@@ -1,32 +1,32 @@
 package io.slychat.messenger.services.contacts
 
-/** A description encapsulating a contact sync job and its dependencies on other contact jobs. */
+/** A description encapsulating an address book sync. */
 class AddressBookSyncJobDescription {
-    var updateRemote: Boolean = false
+    var push: Boolean = false
         private set
 
-    var platformContactSync: Boolean = false
+    var findPlatformContacts: Boolean = false
         private set
 
-    var remoteSync: Boolean = false
+    var pull: Boolean = false
         private set
 
-    fun doPlatformContactSync(): AddressBookSyncJobDescription {
-        platformContactSync = true
-        updateRemote = true
+    fun doFindPlatformContacts(): AddressBookSyncJobDescription {
+        findPlatformContacts = true
+        push = true
         return this
     }
 
-    fun doRemoteSync(): AddressBookSyncJobDescription {
-        platformContactSync = true
-        updateRemote = true
-        remoteSync = true
+    fun doPull(): AddressBookSyncJobDescription {
+        findPlatformContacts = true
+        push = true
+        pull = true
         return this
     }
 
-    fun doUpdateRemoteContactList(): AddressBookSyncJobDescription {
+    fun doPush(): AddressBookSyncJobDescription {
         //while not strictly necessary, might as well
-        updateRemote = true
+        push = true
         return this
     }
 }

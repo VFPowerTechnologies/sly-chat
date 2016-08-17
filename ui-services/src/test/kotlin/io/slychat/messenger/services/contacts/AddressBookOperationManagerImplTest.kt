@@ -87,7 +87,7 @@ class AddressBookOperationManagerImplTest {
     }
 
     fun doLocalSync(runner: AddressBookOperationManagerImpl) {
-        runner.withCurrentSyncJob { doPlatformContactSync() }
+        runner.withCurrentSyncJob { doFindPlatformContacts() }
     }
 
     fun successUnit(): Promise<Unit, Exception> = Promise.ofSuccess(Unit)
@@ -399,7 +399,7 @@ class AddressBookOperationManagerImplTest {
         val scheduler = MockSyncScheduler()
         val runner = createRunner(true, syncScheduler = scheduler)
 
-        runner.withCurrentSyncJobNoScheduler { doRemoteSync() }
+        runner.withCurrentSyncJobNoScheduler { doPull() }
 
         verify(addressBookJob).run(any())
     }

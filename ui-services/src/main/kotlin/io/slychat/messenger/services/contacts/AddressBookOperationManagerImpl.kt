@@ -136,18 +136,18 @@ class AddressBookOperationManagerImpl(
         this.queuedSync = null
 
         val info = AddressBookSyncJobInfo(
-            queuedJob.updateRemote,
-            queuedJob.platformContactSync,
-            queuedJob.remoteSync,
+            queuedJob.push,
+            queuedJob.findPlatformContacts,
+            queuedJob.pull,
             true
         )
 
         runningSubject.onNext(info)
 
         p success {
-            log.info("Contact job completed successfully")
+            log.info("Address book sync completed successfully")
         } fail { e ->
-            log.error("Contact job failed: {}", e.message, e)
+            log.error("Address book sync job failed: {}", e.message, e)
         } alwaysUi {
             runningSubject.onNext(info.copy(isRunning = false))
             currentRunningJob = null

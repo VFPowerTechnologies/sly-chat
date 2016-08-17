@@ -140,7 +140,7 @@ class GroupServiceImpl(
     }
 
     private fun triggerRemoteSync() {
-        addressBookOperationManager.withCurrentSyncJob { doRemoteSync() }
+        addressBookOperationManager.withCurrentSyncJob { doPull() }
     }
 
     override fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Unit, Exception> {

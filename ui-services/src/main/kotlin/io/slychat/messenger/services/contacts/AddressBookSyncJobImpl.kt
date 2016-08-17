@@ -1,11 +1,10 @@
 package io.slychat.messenger.services.contacts
 
 import com.google.i18n.phonenumbers.PhoneNumberUtil
-import io.slychat.messenger.core.PlatformContact
-import io.slychat.messenger.core.UserCredentials
+import io.slychat.messenger.core.*
+import io.slychat.messenger.core.http.api.ResourceConflictException
 import io.slychat.messenger.core.http.api.contacts.*
-import io.slychat.messenger.core.mapToMap
-import io.slychat.messenger.core.mapToSet
+import io.slychat.messenger.core.kovenant.bindRecoverFor
 import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
@@ -20,6 +19,7 @@ import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class AddressBookSyncJobImpl(
     private val authTokenManager: AuthTokenManager,
@@ -29,8 +29,13 @@ class AddressBookSyncJobImpl(
     private val groupPersistenceManager: GroupPersistenceManager,
     private val userLoginData: UserData,
     private val accountRegionCode: String,
-    private val platformContacts: PlatformContacts
+    private val platformContacts: PlatformContacts,
+    private val timerFactory: TimerFactory
 ) : AddressBookSyncJob {
+    companion object {
+        internal val UPDATE_MAX_RETRIES: Int = 3
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     private fun getPlatformContacts(defaultRegion: String): Promise<List<PlatformContact>, Exception> {
@@ -65,7 +70,7 @@ class AddressBookSyncJobImpl(
     }
 
     /** Attempts to find any registered users matching the user's platform contacts. */
-    private fun syncPlatformContacts(): Promise<Unit, Exception> {
+    private fun findPlatformContacts(): Promise<Unit, Exception> {
         log.info("Beginning platform contact sync")
 
         return authTokenManager.bind { userCredentials ->
@@ -120,31 +125,72 @@ class AddressBookSyncJobImpl(
     }
 
     /** Syncs the local address book with the remote address book. */
-    private fun syncRemoteAddressBook(): Promise<Unit, Exception> {
-        log.debug("Beginning remote address book sync")
+    private fun pullRemoteUpdates(): Promise<Unit, Exception> {
+        log.debug("Beginning remote update pull")
 
         val keyVault = userLoginData.keyVault
 
         return authTokenManager.bind { userCredentials ->
-            addressBookClient.get(userCredentials) bind { response ->
-                val allUpdates = decryptRemoteAddressBookEntries(keyVault, response.entries)
+            contactsPersistenceManager.getAddressBookVersion() bind { addressBookVersion ->
+                log.debug("Local address book version: {}", addressBookVersion)
 
-                val contactUpdates = ArrayList<AddressBookUpdate.Contact>()
-                val groupUpdates = ArrayList<AddressBookUpdate.Group>()
+                addressBookClient.get(userCredentials, GetAddressBookRequest(addressBookVersion)) bind { response ->
+                    if (response.entries.isNotEmpty()) {
+                        val allUpdates = decryptRemoteAddressBookEntries(keyVault, response.entries)
 
-                allUpdates.forEach {
-                    when (it) {
-                        is AddressBookUpdate.Contact -> contactUpdates.add(it)
-                        is AddressBookUpdate.Group -> groupUpdates.add(it)
+                        val contactUpdates = ArrayList<AddressBookUpdate.Contact>()
+                        val groupUpdates = ArrayList<AddressBookUpdate.Group>()
+
+                        allUpdates.forEach {
+                            when (it) {
+                                is AddressBookUpdate.Contact -> contactUpdates.add(it)
+                                is AddressBookUpdate.Group -> groupUpdates.add(it)
+                            }
+                        }
+
+                        //order is important
+                        updateContacts(userCredentials, contactUpdates) bind {
+                            updateGroups(groupUpdates) bind {
+                                val newVersion = response.version
+
+                                if (newVersion != addressBookVersion) {
+                                    log.debug("Address book version updated to: {}", newVersion)
+                                    contactsPersistenceManager.updateAddressBookVersion(newVersion)
+                                }
+                                else
+                                    Promise.ofSuccess(Unit)
+                            }
+                        }
                     }
-                }
+                    else {
+                        log.debug("No address book updates")
 
-                //order is important
-                updateContacts(userCredentials, contactUpdates) bind {
-                    updateGroups(groupUpdates)
+                        Promise.ofSuccess(Unit)
+                    }
                 }
             }
         }
+    }
+
+    private fun updateRemoteAddressBook(userCredentials: UserCredentials, request: UpdateAddressBookRequest): Promise<UpdateAddressBookResponse, Exception> {
+        fun updateWithRetry(attemptN: Int): Promise<UpdateAddressBookResponse, Exception> {
+            return addressBookClient.update(userCredentials, request) bindRecoverFor { e: ResourceConflictException ->
+                if (attemptN >= UPDATE_MAX_RETRIES)
+                    throw e
+                else {
+                    //we'd like if retries from multiple devices didn't occur simultaneously
+                    val min = (attemptN + 1) * 5
+                    val max = (attemptN + 2) * 5
+                    val secs = randomInt(min, max).toLong()
+
+                    timerFactory.run(secs, TimeUnit.SECONDS) bind {
+                        updateWithRetry(attemptN + 1)
+                    }
+                }
+            }
+        }
+
+        return updateWithRetry(0)
     }
 
     private fun processAddressBookUpdates(
@@ -167,16 +213,21 @@ class AddressBookSyncJobImpl(
             val keyVault = userLoginData.keyVault
 
             val request = updateRequestFromAddressBookUpdates(keyVault, allUpdates)
-            addressBookClient.update(userCredentials, request) bind {
+            updateRemoteAddressBook(userCredentials, request) bind { response ->
+                val newVersion = response.version
+                log.debug("Address book version updated to: {}", newVersion)
+
                 contactsPersistenceManager.removeRemoteUpdates(contactUpdates.map { it.userId }) bind {
-                    groupPersistenceManager.removeRemoteUpdates(groupUpdates.map { it.groupId })
+                    groupPersistenceManager.removeRemoteUpdates(groupUpdates.map { it.groupId }) bind {
+                        contactsPersistenceManager.updateAddressBookVersion(newVersion)
+                    }
                 }
             }
         }
     }
 
-    private fun updateRemoteAddressBook(): Promise<Unit, Exception> {
-        log.info("Beginning remote address book update")
+    private fun pushRemoteUpdates(): Promise<Unit, Exception> {
+        log.info("Beginning remote update push")
 
         return authTokenManager.bind { userCredentials ->
             contactsPersistenceManager.getRemoteUpdates() bind { contactUpdates ->
@@ -190,14 +241,14 @@ class AddressBookSyncJobImpl(
     override fun run(jobDescription: AddressBookSyncJobDescription): Promise<Unit, Exception> {
         val jobRunners = ArrayList<(Unit) -> Promise<Unit, Exception>>()
 
-        if (jobDescription.platformContactSync)
-            jobRunners.add { syncPlatformContacts() }
+        if (jobDescription.findPlatformContacts)
+            jobRunners.add { findPlatformContacts() }
 
-        if (jobDescription.updateRemote)
-            jobRunners.add { updateRemoteAddressBook() }
+        if (jobDescription.push)
+            jobRunners.add { pushRemoteUpdates() }
 
-        if (jobDescription.remoteSync)
-            jobRunners.add { syncRemoteAddressBook() }
+        if (jobDescription.pull)
+            jobRunners.add { pullRemoteUpdates() }
 
         return jobRunners.fold(Promise.ofSuccess(Unit)) { z, v ->
             z bindUi v
