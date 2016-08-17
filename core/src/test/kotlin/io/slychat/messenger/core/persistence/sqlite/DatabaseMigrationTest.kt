@@ -278,13 +278,13 @@ class DatabaseMigrationTest {
     @Test
     fun `migration 7 to 8`() {
         withTestDatabase(7, 8) { persistenceManager, connection ->
-            check7to8(persistenceManager, connection)
+            check7To8(persistenceManager, connection)
         }
     }
 
     private data class RemoteContactUpdateV7(val userId: Long, val allowedMessageLevel: Int)
 
-    private fun check7to8(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+    private fun check7To8(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         assertColDef(connection, "remote_contact_updates",  "allowed_message_level INTEGER NOT NULL")
         assertNoColDef(connection, "remote_contact_updates", "type TEXT NOT NULL")
 
@@ -306,11 +306,11 @@ class DatabaseMigrationTest {
     @Test
     fun `migration 8 to 9`() {
         withTestDatabase(8, 9) { persistenceManager, connection ->
-            check8to9(persistenceManager, connection)
+            check8To9(persistenceManager, connection)
         }
     }
 
-    private fun check8to9(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+    private fun check8To9(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         assertNoColDef(connection, "remote_contact_updates", "allowed_message_level INTEGER NOT NULL")
         assertTableExists(connection, "remote_group_updates")
 
@@ -322,5 +322,16 @@ class DatabaseMigrationTest {
             `as`("Should contain the upgraded row")
             containsOnly(153L)
         }
+    }
+
+    @Test
+    fun `migration 9 to 10`() {
+        withTestDatabase(9, 10) { persistenceManager, connection ->
+            check9to10(persistenceManager, connection)
+        }
+    }
+
+    private fun check9to10(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertTableExists(connection, "address_book_remote_version")
     }
 }
