@@ -443,7 +443,7 @@ ContactController.prototype  = {
         if (running == true) {
             if($(".contact-sync-notification").length <= 0) {
                 this.contactSyncNotification = slychat.addNotification({
-                    title: "Contact list is syncing",
+                    title: "Address book is syncing",
                     closeOnClick: true
                 });
             }
@@ -454,7 +454,7 @@ ContactController.prototype  = {
                 this.contactSyncNotification = null;
                 setTimeout(function () {
                     slychat.addNotification({
-                        title: "Contact list sync complete",
+                        title: "Address book sync complete",
                         closeOnClick: true,
                         hold: 3000
                     });
