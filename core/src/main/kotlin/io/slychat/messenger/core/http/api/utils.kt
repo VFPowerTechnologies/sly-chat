@@ -35,6 +35,10 @@ fun <T> valueFromApi(response: HttpResponse, typeReference: TypeReference<ApiRes
     val apiResult = when (response.code) {
         401 ->
             throw UnauthorizedException()
+        409 ->
+            throw ResourceConflictException()
+        429 ->
+            throw TooManyRequestsException()
         200, 400 ->
             readValueOrThrowInvalid(response, typeReference)
         in 500..599 -> {

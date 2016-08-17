@@ -13,6 +13,9 @@ class AddressBookClient(private val serverBaseUrl: String, private val httpClien
         return apiGetRequest(httpClient, url, userCredentials, listOf(), typeRef())
     }
 
+    /**
+     * @throws ResourceConflictException If the update could not be performed due to another client performing an update.
+     */
     fun update(userCredentials: UserCredentials, request: UpdateAddressBookRequest): UpdateAddressBookResponse {
         val url = "$serverBaseUrl/v1/address-book"
 
