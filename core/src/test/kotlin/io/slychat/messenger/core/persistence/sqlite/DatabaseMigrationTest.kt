@@ -9,6 +9,7 @@ import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DatabaseMigrationTest {
@@ -333,5 +334,12 @@ class DatabaseMigrationTest {
 
     private fun check9to10(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         assertTableExists(connection, "address_book_version")
+        val version = connection.withPrepared("SELECT version FROM address_book_version") { stmt ->
+            stmt.step()
+            stmt.columnNullableInt(0)
+        }
+
+        assertNotNull(version, "Missing initial version")
+        assertEquals(0, version, "Invalid version")
     }
 }
