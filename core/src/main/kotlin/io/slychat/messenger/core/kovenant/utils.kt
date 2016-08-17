@@ -39,8 +39,10 @@ infix inline fun <reified E : Exception, V> Promise<V, Exception>.bindRecoverFor
     }
 
 
-infix fun <V, V2> Promise<V, Exception>.recoverWith(body: (Exception) -> Promise<V2, Exception>): Promise<V2, Exception> {
-    val d = deferred<V2, Exception>()
+infix fun <V> Promise<V, Exception>.recoverWith(body: (Exception) -> Promise<V, Exception>): Promise<V, Exception> {
+    val d = deferred<V, Exception>()
+
+    success { d.resolve(it) }
 
     fail { e ->
         try {
