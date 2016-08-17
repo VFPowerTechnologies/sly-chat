@@ -3,6 +3,7 @@ package io.slychat.messenger.services.contacts
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateNewKeyVault
+import io.slychat.messenger.core.http.api.ResourceConflictException
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.PlatformContacts
@@ -16,6 +17,7 @@ import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class AddressBookSyncJobImplTest {
     companion object {
@@ -85,7 +87,6 @@ class AddressBookSyncJobImplTest {
         description.body()
 
         syncJob.run(description).get()
-
     }
 
     fun runUpdateRemote() {
@@ -309,6 +310,31 @@ class AddressBookSyncJobImplTest {
         runUpdateRemote()
 
         verify(contactsPersistenceManager).updateAddressBookRemoteVersion(newVersion)
+    }
+
+    @Test
+    fun `an update remote sync should retry up to MAX_RETRIES times and finally rethrow the exception when receiving a ResourceConflictException`() {
+        val retries = AddressBookSyncJobImpl.UPDATE_MAX_RETRIES
+        val totalAttempts = retries + 1
+
+        val updates = listOf(
+            AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
+        )
+
+        whenever(contactsPersistenceManager.getRemoteUpdates()).thenReturn(updates)
+
+        var ongoing = whenever(addressBookAsyncClient.update(any(), any()))
+            .thenReturn(ResourceConflictException())
+
+        (1..retries).forEach {
+            ongoing = ongoing.thenReturn(ResourceConflictException())
+        }
+
+        assertFailsWith(ResourceConflictException::class) {
+            runUpdateRemote()
+        }
+
+        verify(addressBookAsyncClient, times(totalAttempts)).update(any(), any())
     }
 
     @Test

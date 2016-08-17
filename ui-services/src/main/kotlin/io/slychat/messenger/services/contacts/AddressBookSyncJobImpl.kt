@@ -3,7 +3,9 @@ package io.slychat.messenger.services.contacts
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.core.UserCredentials
+import io.slychat.messenger.core.http.api.ResourceConflictException
 import io.slychat.messenger.core.http.api.contacts.*
+import io.slychat.messenger.core.kovenant.bindRecoverFor
 import io.slychat.messenger.core.mapToMap
 import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.persistence.AddressBookUpdate
@@ -31,6 +33,10 @@ class AddressBookSyncJobImpl(
     private val accountRegionCode: String,
     private val platformContacts: PlatformContacts
 ) : AddressBookSyncJob {
+    companion object {
+        internal val UPDATE_MAX_RETRIES: Int = 2
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     private fun getPlatformContacts(defaultRegion: String): Promise<List<PlatformContact>, Exception> {
@@ -120,7 +126,7 @@ class AddressBookSyncJobImpl(
     }
 
     /** Syncs the local address book with the remote address book. */
-    private fun syncRemoteAddressBook(): Promise<Unit, Exception> {
+    private fun syncWithRemoteAddressBook(): Promise<Unit, Exception> {
         log.debug("Beginning remote address book sync")
 
         val keyVault = userLoginData.keyVault
@@ -161,6 +167,19 @@ class AddressBookSyncJobImpl(
         }
     }
 
+    private fun updateRemoteAddressBook(userCredentials: UserCredentials, request: UpdateAddressBookRequest): Promise<UpdateAddressBookResponse, Exception> {
+        fun updateWithRetry(remainingAttempts: Int): Promise<UpdateAddressBookResponse, Exception> {
+            return addressBookClient.update(userCredentials, request) bindRecoverFor { e: ResourceConflictException ->
+                if (remainingAttempts == 0)
+                    throw e
+                else
+                    updateWithRetry(remainingAttempts - 1)
+            }
+        }
+
+        return updateWithRetry(UPDATE_MAX_RETRIES)
+    }
+
     private fun processAddressBookUpdates(
         userCredentials: UserCredentials,
         contactUpdates: Collection<AddressBookUpdate.Contact>,
@@ -181,7 +200,7 @@ class AddressBookSyncJobImpl(
             val keyVault = userLoginData.keyVault
 
             val request = updateRequestFromAddressBookUpdates(keyVault, allUpdates)
-            addressBookClient.update(userCredentials, request) bind { response ->
+            updateRemoteAddressBook(userCredentials, request) bind { response ->
                 contactsPersistenceManager.removeRemoteUpdates(contactUpdates.map { it.userId }) bind {
                     groupPersistenceManager.removeRemoteUpdates(groupUpdates.map { it.groupId }) bind {
                         contactsPersistenceManager.updateAddressBookRemoteVersion(response.version)
@@ -213,7 +232,7 @@ class AddressBookSyncJobImpl(
             jobRunners.add { updateRemoteAddressBook() }
 
         if (jobDescription.remoteSync)
-            jobRunners.add { syncRemoteAddressBook() }
+            jobRunners.add { syncWithRemoteAddressBook() }
 
         return jobRunners.fold(Promise.ofSuccess(Unit)) { z, v ->
             z bindUi v
