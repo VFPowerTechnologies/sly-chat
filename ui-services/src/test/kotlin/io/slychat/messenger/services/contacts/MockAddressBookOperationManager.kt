@@ -42,26 +42,26 @@ class MockAddressBookOperationManager : AddressBookOperationManager {
     }
 
     fun assertRemoteUpdateTriggered() {
-        assertTrue(currentSyncJobDescription.updateRemote, "Remote contact list update sync not triggered")
+        assertTrue(currentSyncJobDescription.push, "Remote contact list update sync not triggered")
     }
 
     fun assertRemoteSyncTriggered() {
-        assertTrue(currentSyncJobDescription.remoteSync, "Remote sync not triggered")
+        assertTrue(currentSyncJobDescription.pull, "Remote sync not triggered")
     }
 
     fun assertPlatformContactSyncTriggered() {
-        assertTrue(currentSyncJobDescription.platformContactSync, "Platform contact sync not triggered")
+        assertTrue(currentSyncJobDescription.findPlatformContacts, "Platform contact sync not triggered")
     }
 
     fun assertRemoteUpdateNotTriggered() {
-        assertFalse(currentSyncJobDescription.updateRemote, "Remote contact list update sync should not be triggered")
+        assertFalse(currentSyncJobDescription.push, "Remote contact list update sync should not be triggered")
     }
 
     fun assertRemoteSyncNotTriggered() {
-        assertFalse(currentSyncJobDescription.remoteSync, "Remote sync should not triggered")
+        assertFalse(currentSyncJobDescription.pull, "Remote sync should not triggered")
     }
 
     fun assertPlatformContactSyncNotTriggered() {
-        assertFalse(currentSyncJobDescription.platformContactSync, "Platform contact sync should not triggered")
+        assertFalse(currentSyncJobDescription.findPlatformContacts, "Platform contact sync should not triggered")
     }
 }

@@ -71,7 +71,7 @@ class AddressBookSyncJobImpl(
     }
 
     /** Attempts to find any registered users matching the user's platform contacts. */
-    private fun syncPlatformContacts(): Promise<Unit, Exception> {
+    private fun findPlatformContacts(): Promise<Unit, Exception> {
         log.info("Beginning platform contact sync")
 
         return authTokenManager.bind { userCredentials ->
@@ -126,8 +126,8 @@ class AddressBookSyncJobImpl(
     }
 
     /** Syncs the local address book with the remote address book. */
-    private fun syncWithRemoteAddressBook(): Promise<Unit, Exception> {
-        log.debug("Beginning remote address book sync")
+    private fun pullRemoteUpdates(): Promise<Unit, Exception> {
+        log.debug("Beginning remote update pull")
 
         val keyVault = userLoginData.keyVault
 
@@ -210,8 +210,8 @@ class AddressBookSyncJobImpl(
         }
     }
 
-    private fun updateRemoteAddressBook(): Promise<Unit, Exception> {
-        log.info("Beginning remote address book update")
+    private fun pushRemoteUpdates(): Promise<Unit, Exception> {
+        log.info("Beginning remote update push")
 
         return authTokenManager.bind { userCredentials ->
             contactsPersistenceManager.getRemoteUpdates() bind { contactUpdates ->
@@ -225,14 +225,14 @@ class AddressBookSyncJobImpl(
     override fun run(jobDescription: AddressBookSyncJobDescription): Promise<Unit, Exception> {
         val jobRunners = ArrayList<(Unit) -> Promise<Unit, Exception>>()
 
-        if (jobDescription.platformContactSync)
-            jobRunners.add { syncPlatformContacts() }
+        if (jobDescription.findPlatformContacts)
+            jobRunners.add { findPlatformContacts() }
 
-        if (jobDescription.updateRemote)
-            jobRunners.add { updateRemoteAddressBook() }
+        if (jobDescription.push)
+            jobRunners.add { pushRemoteUpdates() }
 
-        if (jobDescription.remoteSync)
-            jobRunners.add { syncWithRemoteAddressBook() }
+        if (jobDescription.pull)
+            jobRunners.add { pullRemoteUpdates() }
 
         return jobRunners.fold(Promise.ofSuccess(Unit)) { z, v ->
             z bindUi v

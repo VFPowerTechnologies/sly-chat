@@ -136,9 +136,9 @@ class AddressBookOperationManagerImpl(
         this.queuedSync = null
 
         val info = AddressBookSyncJobInfo(
-            queuedJob.updateRemote,
-            queuedJob.platformContactSync,
-            queuedJob.remoteSync,
+            queuedJob.push,
+            queuedJob.findPlatformContacts,
+            queuedJob.pull,
             true
         )
 

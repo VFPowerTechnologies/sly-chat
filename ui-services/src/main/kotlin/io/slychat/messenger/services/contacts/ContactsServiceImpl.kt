@@ -44,7 +44,7 @@ class ContactsServiceImpl(
             contactsPersistenceManager.add(contactInfo)
         } successUi { wasAdded ->
             if (wasAdded) {
-                withCurrentJob { doUpdateRemoteContactList() }
+                withCurrentJob { doPush() }
                 contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
             }
         }
@@ -58,7 +58,7 @@ class ContactsServiceImpl(
             contactsPersistenceManager.remove(id)
         } successUi { wasRemoved ->
             if (wasRemoved) {
-                withCurrentJob { doUpdateRemoteContactList() }
+                withCurrentJob { doPush() }
                 contactEventsSubject.onNext(ContactEvent.Removed(setOf(contactInfo)))
             }
         }
@@ -89,7 +89,7 @@ class ContactsServiceImpl(
             log.debug("Setting allowedMessageLevel=ALL for: {}", userId)
             contactsPersistenceManager.allowAll(userId)
         } successUi {
-            withCurrentJob { doUpdateRemoteContactList() }
+            withCurrentJob { doPush() }
 
             contactsPersistenceManager.get(userId) mapUi {
                 if (it != null)
@@ -99,15 +99,15 @@ class ContactsServiceImpl(
     }
 
     private fun doUpdateRemoteContactList() {
-        withCurrentJob { doUpdateRemoteContactList() }
+        withCurrentJob { doPush() }
     }
 
     override fun doRemoteSync() {
-        withCurrentJob { doRemoteSync() }
+        withCurrentJob { doPull() }
     }
 
     override fun doLocalSync() {
-        withCurrentJob { doPlatformContactSync() }
+        withCurrentJob { doFindPlatformContacts() }
     }
 
     private fun onContactSyncStatusUpdate(info: AddressBookSyncJobInfo) {

@@ -429,7 +429,7 @@ class SlyApplication {
 
     //should come up with something better...
     private fun forceAddressBookSync() {
-        userComponent?.apply { addressBookOperationManager.withCurrentSyncJobNoScheduler { doRemoteSync() } }
+        userComponent?.apply { addressBookOperationManager.withCurrentSyncJobNoScheduler { doPull() } }
     }
 
     /** called after a successful user session has been created to finish initializing components. */
