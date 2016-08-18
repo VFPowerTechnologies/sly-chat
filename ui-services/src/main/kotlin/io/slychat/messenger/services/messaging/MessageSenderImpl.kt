@@ -145,7 +145,7 @@ class MessageSenderImpl(
                     }
                     else {
                         markMessageAsDelivered(message.metadata) fail { e ->
-                            log.error("Unable to write message to log: {}", e.message, e)
+                            log.error("Unable to mark message as delivered: {}", e.message, e)
                         }
                     }
 
