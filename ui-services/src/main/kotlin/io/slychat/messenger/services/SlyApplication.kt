@@ -526,6 +526,7 @@ class SlyApplication {
             }
 
             is AuthenticationFailure -> {
+                log.info("Relay authentication failed")
                 //first we try and refresh; if that fails we need to prompt the user for a password
                 refreshAuthToken()
 

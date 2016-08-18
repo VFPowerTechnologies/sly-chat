@@ -79,6 +79,8 @@ class RelayClientImpl(
     }
 
     private fun emitEvent(ev: RelayClientEvent) {
+        log.debug("Event: {}", ev)
+
         publishSubject.onNext(ev)
     }
 
@@ -198,7 +200,7 @@ class RelayClientImpl(
 
         //if the error occured during connection
         if (relayConnection == null)
-            publishSubject.onNext(ConnectionFailure(e))
+            emitEvent(ConnectionFailure(e))
         else {
             log.error("Relay error", e)
             emitEvent(ConnectionLost(wasDisconnectRequested, e))
