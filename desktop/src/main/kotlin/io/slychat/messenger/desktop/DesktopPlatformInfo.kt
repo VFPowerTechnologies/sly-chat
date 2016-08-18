@@ -7,6 +7,10 @@ fun getUserHome(): File =
     File(System.getProperty("user.home"))
 
 fun getUserConfigDir(appName: String): File {
+    val configDirOverride = System.getenv("SLY_CONFIG_DIR")
+    if (configDirOverride != null)
+        return File(configDirOverride)
+
     val home = getUserHome()
 
     return when (currentOs.type) {
