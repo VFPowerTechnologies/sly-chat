@@ -4,12 +4,12 @@ version '0.1.0-SNAPSHOT'
 buildscript {
     ext {
         versions = [
-            kotlin: '1.0.2',
+            kotlin: '1.0.3',
             slf4j: '1.7.15',
             logbackClassic: '1.1.3',
             roboVM: '1.13.0',
-            jackson: '2.6.4',
-            kovenant: '3.2.2',
+            jackson: '2.8.1',
+            kovenant: '3.3.0',
             libsignal: '2.2.0',
             jodaTime: '2.9.2',
             sqlite4java: '1.0.392',
@@ -26,8 +26,7 @@ buildscript {
             dokka: '0.9.8',
             junit: '4.11',
             assertJ: '3.5.1',
-            mockito: '1.10.19',
-            mockitoKotlin: '0.4.1',
+            mockitoKotlin: '0.5.2',
             androidGradle: '2.1.0',
             androidBuildTools: '23.0.3',
             androidCompileSdk: 23,
