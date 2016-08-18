@@ -167,6 +167,7 @@ class DesktopApp : Application() {
         }
 
         javaClass.getResourceAsStream("/sly-messenger.png").use { primaryStage.icons.add(Image(it)) }
+        primaryStage.title = "Sly Chat"
 
         primaryStage.scene = Scene(stackPane, 852.0, 480.0)
         primaryStage.show()
