@@ -423,7 +423,9 @@ ContactController.prototype  = {
             switch(ev.type) {
                 case "ADD":
                     ev.contacts.forEach(function (contact) {
-                        this.addNewContactToCache(contact);
+                        //we don't show contacts for which no conversation exists
+                        if (contact.allowedMessageLevel === 'ALL')
+                            this.addNewContactToCache(contact);
                     }.bind(this));
                     break;
                 case 'REMOVE':
