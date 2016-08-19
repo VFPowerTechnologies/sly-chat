@@ -9,7 +9,6 @@ import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.messaging.DecryptionResult
 import io.slychat.messenger.services.messaging.EncryptedMessageInfo
-import io.slychat.messenger.services.messaging.EncryptionOk
 import io.slychat.messenger.services.messaging.EncryptionResult
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
@@ -71,9 +70,6 @@ class MessageCipherServiceImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val workQueue = ArrayBlockingQueue<CipherWork>(20)
-    private val encryptionSubject = PublishSubject.create<EncryptionResult>()
-    override val encryptedMessages: Observable<EncryptionResult>
-        get() = encryptionSubject
 
     private val decryptionSubject = PublishSubject.create<DecryptionResult>()
     override val decryptedMessages: Observable<DecryptionResult>
@@ -212,7 +208,7 @@ class MessageCipherServiceImpl(
                 MessageData(deviceId, sessionCipher.remoteRegistrationId, m)
             }
 
-            work.deferred.resolve(EncryptionOk(messages, work.connectionTag))
+            work.deferred.resolve(EncryptionResult(messages, work.connectionTag))
         }
         catch (e: Exception) {
             work.deferred.reject(e)

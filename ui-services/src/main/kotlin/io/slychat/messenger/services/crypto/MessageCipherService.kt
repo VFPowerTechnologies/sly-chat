@@ -10,7 +10,6 @@ import nl.komponents.kovenant.Promise
 import rx.Observable
 
 interface MessageCipherService {
-    val encryptedMessages: Observable<EncryptionResult>
     val decryptedMessages: Observable<DecryptionResult>
     val deviceUpdates: Observable<DeviceUpdateResult>
 

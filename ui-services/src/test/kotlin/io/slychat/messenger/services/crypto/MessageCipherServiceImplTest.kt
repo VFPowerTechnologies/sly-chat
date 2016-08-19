@@ -12,7 +12,6 @@ import io.slychat.messenger.core.randomSerializedMessage
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.messaging.EncryptedMessageInfo
-import io.slychat.messenger.services.messaging.EncryptionOk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.whispersystems.libsignal.IdentityKeyPair
@@ -220,8 +219,8 @@ class MessageCipherServiceImplTest {
 
         cipherService.processQueue(false)
 
-        val result = p.get()
-        assertThat(result).isInstanceOf(EncryptionOk::class.java).`as`("Encryption failure")
+        //shouldn't throw
+        p.get()
     }
 
     @Test
@@ -259,7 +258,7 @@ class MessageCipherServiceImplTest {
 
         val encryptionResult = senderService.encrypt(receiver.userId, originalMessage, connectionTag)
         senderService.processQueue(false)
-        val encryptedMessage = (encryptionResult.get() as EncryptionOk).encryptedMessages[0]
+        val encryptedMessage = encryptionResult.get().encryptedMessages[0]
 
         assertTrue(encryptedMessage.payload.isPreKeyWhisper, "Not a PreKeyWhisper")
 

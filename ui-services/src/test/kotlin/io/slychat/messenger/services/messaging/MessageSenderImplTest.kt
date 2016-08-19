@@ -16,6 +16,8 @@ import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.TestException
 import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenReturn
+import nl.komponents.kovenant.deferred
+import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import rx.schedulers.Schedulers
@@ -39,7 +41,6 @@ class MessageSenderImplTest {
     val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
     val relayOnlineStatus: BehaviorSubject<Boolean> = BehaviorSubject.create()
 
-    val encryptionResults: PublishSubject<EncryptionResult> = PublishSubject.create()
     val deviceUpdates: PublishSubject<DeviceUpdateResult> = PublishSubject.create()
 
     val defaultConnectionTag = Random().nextInt(Int.MAX_VALUE)
@@ -49,23 +50,33 @@ class MessageSenderImplTest {
         whenever(relayClientManager.isOnline).thenReturn(isOnline)
     }
 
+    fun randomEncryptionResult(): EncryptionResult {
+        val dummyMessageData = MessageData(randomDeviceId(), 0, randomEncryptedPayload())
+        return EncryptionResult(listOf(dummyMessageData), defaultConnectionTag)
+    }
+
+    @Before
+    fun before() {
+        whenever(messageQueuePersistenceManager.add(any<List<QueuedMessage>>())).thenReturn(Unit)
+        whenever(messageQueuePersistenceManager.add(any<QueuedMessage>())).thenReturn(Unit)
+        whenever(messageQueuePersistenceManager.remove(any(), any())).thenReturn(true)
+
+        whenever(relayClientManager.events).thenReturn(relayEvents)
+        whenever(relayClientManager.onlineStatus).thenReturn(relayOnlineStatus)
+        whenever(relayClientManager.connectionTag).thenReturn(defaultConnectionTag)
+
+        whenever(messageCipherService.deviceUpdates).thenReturn(deviceUpdates)
+
+        whenever(messageCipherService.encrypt(any(), any(), any())).thenReturn(randomEncryptionResult())
+    }
+
     fun createSender(
         relayIsOnline: Boolean = false,
         initialQueuedMessages: List<QueuedMessage> = emptyList()
     ): MessageSenderImpl {
         setRelayOnlineStatus(relayIsOnline)
 
-        whenever(messageQueuePersistenceManager.add(any<List<QueuedMessage>>())).thenReturn(Unit)
-        whenever(messageQueuePersistenceManager.add(any<QueuedMessage>())).thenReturn(Unit)
-        whenever(messageQueuePersistenceManager.remove(any(), any())).thenReturn(true)
         whenever(messageQueuePersistenceManager.getUndelivered()).thenReturn(initialQueuedMessages)
-
-        whenever(relayClientManager.events).thenReturn(relayEvents)
-        whenever(relayClientManager.onlineStatus).thenReturn(relayOnlineStatus)
-        whenever(relayClientManager.connectionTag).thenReturn(defaultConnectionTag)
-
-        whenever(messageCipherService.encryptedMessages).thenReturn(encryptionResults)
-        whenever(messageCipherService.deviceUpdates).thenReturn(deviceUpdates)
 
         return MessageSenderImpl(
             Schedulers.immediate(),
@@ -187,15 +198,15 @@ class MessageSenderImplTest {
         val metadata = queued.metadata
         val recipient = metadata.userId
 
-        sender.addToQueue(metadata, queued.serialized).get()
-
         val messageData = MessageData(1, 1, randomEncryptedPayload())
-        val result = EncryptionOk(
+        val result = EncryptionResult(
             listOf(messageData),
             defaultConnectionTag
         )
 
-        encryptionResults.onNext(result)
+        whenever(messageCipherService.encrypt(any(), any(), any())).thenReturn(result)
+
+        sender.addToQueue(metadata, queued.serialized).get()
 
         val relayUserMessage = RelayUserMessage(messageData.deviceId, messageData.registrationId, messageData.payload)
         val relayMessageBundle = RelayMessageBundle(listOf(relayUserMessage))
@@ -241,11 +252,15 @@ class MessageSenderImplTest {
     fun `it should discard encrypted messages when the relay is now offline`() {
         val queued = randomQueuedMessage()
 
+        val d = deferred<EncryptionResult, Exception>()
+
+        whenever(messageCipherService.encrypt(any(), any(), any())).thenReturn(d.promise)
+
         val sender = createSender(true, listOf(queued))
 
         setRelayOnlineStatus(false)
 
-        encryptionResults.onNext(EncryptionOk(listOf(MessageData(1, 1, randomEncryptedPayload())), defaultConnectionTag))
+        d.resolve(randomEncryptionResult())
 
         verify(relayClientManager, never()).sendMessage(any(), any(), any(), any())
     }
@@ -276,6 +291,7 @@ class MessageSenderImplTest {
         sender.addToQueue(queued.metadata, queued.serialized).get()
 
         reset(messageCipherService)
+        whenever(messageCipherService.encrypt(any(), any(), any())).thenReturn(randomEncryptionResult())
 
         val ev = DeviceUpdateResult(null)
 
