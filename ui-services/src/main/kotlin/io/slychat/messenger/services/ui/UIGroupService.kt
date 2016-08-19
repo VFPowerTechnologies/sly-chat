@@ -14,11 +14,11 @@ interface UIGroupService {
 
     fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception>
 
-    fun inviteUsers(groupId: GroupId, contacts: List<UIContactDetails>): Promise<Unit, Exception>
+    fun inviteUsers(groupId: GroupId, contacts: List<UIContactInfo>): Promise<Unit, Exception>
 
-    fun createNewGroup(name: String, initialMembers: List<UIContactDetails>): Promise<GroupId, Exception>
+    fun createNewGroup(name: String, initialMembers: List<UIContactInfo>): Promise<GroupId, Exception>
 
-    fun getMembers(groupId: GroupId): Promise<List<UIContactDetails>, Exception>
+    fun getMembers(groupId: GroupId): Promise<List<UIContactInfo>, Exception>
 
     fun part(groupId: GroupId): Promise<Boolean, Exception>
 

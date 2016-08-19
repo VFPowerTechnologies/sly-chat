@@ -20,22 +20,22 @@ interface UIContactsService {
     fun addContactEventListener(listener: (UIContactEvent) -> Unit)
 
     /** Retrieve list of contacts. UIContact.id will not be null. */
-    fun getContacts(): Promise<List<UIContactDetails>, Exception>
+    fun getContacts(): Promise<List<UIContactInfo>, Exception>
 
     /**
      * Add a new contact with the given info.
      */
-    fun addNewContact(contactDetails: UIContactDetails): Promise<UIContactDetails, Exception>
+    fun addNewContact(contactInfo: UIContactInfo): Promise<UIContactInfo, Exception>
 
     /**
      * Updates the given contact with the given info. newContactInfo.id must not be null.
      */
-    fun updateContact(newContactDetails: UIContactDetails): Promise<UIContactDetails, Exception>
+    fun updateContact(newContactInfo: UIContactInfo): Promise<UIContactInfo, Exception>
 
     /**
      * Remove the given contact with the given info.
      */
-    fun removeContact(contactDetails: UIContactDetails): Promise<Unit, Exception>
+    fun removeContact(contactInfo: UIContactInfo): Promise<Unit, Exception>
 
     /**
      * Fetch the contact details if contact exist. Email or phoneNumber must not be null.

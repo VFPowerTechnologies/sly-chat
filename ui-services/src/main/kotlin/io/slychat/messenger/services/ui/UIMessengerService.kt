@@ -8,7 +8,7 @@ import nl.komponents.kovenant.Promise
 @JSToJavaGenerate("MessengerService")
 interface UIMessengerService {
     /** Attempt to send a message to a contact. */
-    fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception>
+    fun sendMessageTo(contact: UIContactInfo, message: String): Promise<UIMessage, Exception>
 
     fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<UIMessage, Exception>
 
@@ -35,10 +35,10 @@ interface UIMessengerService {
      *
      * @return Up to count messages
      */
-    fun getLastMessagesFor(contact: UIContactDetails, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception>
+    fun getLastMessagesFor(contact: UIContactInfo, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception>
 
     /** Delete all messages for the given contact. */
-    fun deleteAllMessagesFor(contact: UIContactDetails): Promise<Unit, Exception>
+    fun deleteAllMessagesFor(contact: UIContactInfo): Promise<Unit, Exception>
 
     /**
      * Deletes all the given messages from the given contact's conversation.
@@ -46,7 +46,7 @@ interface UIMessengerService {
      * @param contact Contact.
      * @param messages List of message IDs to delete.
      */
-    fun deleteMessagesFor(contact: UIContactDetails, messages: List<String>): Promise<Unit, Exception>
+    fun deleteMessagesFor(contact: UIContactInfo, messages: List<String>): Promise<Unit, Exception>
 
     /**
      * @return Pairs of UIContact -> UIConversation for every available contact.
@@ -54,6 +54,6 @@ interface UIMessengerService {
     fun getConversations(): Promise<List<UIConversation>, Exception>
 
     /** Resets unread message count for the given contact's conversation. */
-    fun markConversationAsRead(contact: UIContactDetails): Promise<Unit, Exception>
+    fun markConversationAsRead(contact: UIContactInfo): Promise<Unit, Exception>
 }
 

@@ -88,18 +88,18 @@ class UIGroupServiceImpl(
         return getGroupServiceOrThrow().markConversationAsRead(groupId)
     }
 
-    override fun inviteUsers(groupId: GroupId, contacts: List<UIContactDetails>): Promise<Unit, Exception> {
+    override fun inviteUsers(groupId: GroupId, contacts: List<UIContactInfo>): Promise<Unit, Exception> {
         val ids = contacts.mapToSet { it.id }
         return getMessengerServiceOrThrow().inviteUsersToGroup(groupId, ids)
     }
 
-    override fun createNewGroup(name: String, initialMembers: List<UIContactDetails>): Promise<GroupId, Exception> {
+    override fun createNewGroup(name: String, initialMembers: List<UIContactInfo>): Promise<GroupId, Exception> {
         val ids = initialMembers.mapToSet { it.id }
 
         return getMessengerServiceOrThrow().createNewGroup(name, ids)
     }
 
-    override fun getMembers(groupId: GroupId): Promise<List<UIContactDetails>, Exception> {
+    override fun getMembers(groupId: GroupId): Promise<List<UIContactInfo>, Exception> {
         return getGroupServiceOrThrow().getMembersWithInfo(groupId) map { it.toUI() }
     }
 

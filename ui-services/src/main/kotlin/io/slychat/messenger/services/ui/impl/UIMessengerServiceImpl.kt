@@ -67,7 +67,7 @@ class UIMessengerServiceImpl(
 
     /* Interface methods. */
 
-    override fun sendMessageTo(contact: UIContactDetails, message: String): Promise<UIMessage, Exception> {
+    override fun sendMessageTo(contact: UIContactInfo, message: String): Promise<UIMessage, Exception> {
         return getMessengerServiceOrThrow().sendMessageTo(contact.id, message) map { messageInfo ->
             messageInfo.toUI()
         }
@@ -91,7 +91,7 @@ class UIMessengerServiceImpl(
         log.debug("addConversationStatusUpdateListener: TODO")
     }
 
-    override fun getLastMessagesFor(contact: UIContactDetails, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
+    override fun getLastMessagesFor(contact: UIContactInfo, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
         return getMessengerServiceOrThrow().getLastMessagesFor(contact.id, startingAt, count) map { messages ->
             messages.map { it.toUI() }
         }
@@ -107,7 +107,7 @@ class UIMessengerServiceImpl(
         }
     }
 
-    override fun markConversationAsRead(contact: UIContactDetails): Promise<Unit, Exception> {
+    override fun markConversationAsRead(contact: UIContactInfo): Promise<Unit, Exception> {
         return getMessengerServiceOrThrow().markConversationAsRead(contact.id)
     }
 
@@ -121,11 +121,11 @@ class UIMessengerServiceImpl(
             listener(messageInfo)
     }
 
-    override fun deleteAllMessagesFor(contact: UIContactDetails): Promise<Unit, Exception> {
+    override fun deleteAllMessagesFor(contact: UIContactInfo): Promise<Unit, Exception> {
         return getMessengerServiceOrThrow().deleteAllMessages(contact.id)
     }
 
-    override fun deleteMessagesFor(contact: UIContactDetails, messages: List<String>): Promise<Unit, Exception> {
+    override fun deleteMessagesFor(contact: UIContactInfo, messages: List<String>): Promise<Unit, Exception> {
         return getMessengerServiceOrThrow().deleteMessages(contact.id, messages)
     }
 }
