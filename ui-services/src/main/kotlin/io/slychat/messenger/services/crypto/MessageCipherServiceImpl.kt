@@ -75,10 +75,6 @@ class MessageCipherServiceImpl(
     override val decryptedMessages: Observable<DecryptionResult>
         get() = decryptionSubject
 
-    private val deviceUpdateSubject = PublishSubject.create<DeviceUpdateResult>()
-    override val deviceUpdates: Observable<DeviceUpdateResult>
-        get() = deviceUpdateSubject
-
     override fun start() {
         if (thread != null)
             return

@@ -8,7 +8,6 @@ import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.assertEventEmitted
-import io.slychat.messenger.services.crypto.DeviceUpdateResult
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageData
@@ -20,7 +19,6 @@ import nl.komponents.kovenant.deferred
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
-import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import java.util.*
@@ -40,8 +38,6 @@ class MessageSenderImplTest {
 
     val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
     val relayOnlineStatus: BehaviorSubject<Boolean> = BehaviorSubject.create()
-
-    val deviceUpdates: PublishSubject<DeviceUpdateResult> = PublishSubject.create()
 
     val defaultConnectionTag = Random().nextInt(Int.MAX_VALUE)
 
@@ -65,8 +61,6 @@ class MessageSenderImplTest {
         whenever(relayClientManager.onlineStatus).thenReturn(relayOnlineStatus)
         whenever(relayClientManager.connectionTag).thenReturn(defaultConnectionTag)
 
-        whenever(messageCipherService.deviceUpdates).thenReturn(deviceUpdates)
-
         whenever(messageCipherService.encrypt(any(), any(), any())).thenReturn(randomEncryptionResult())
     }
 
@@ -79,7 +73,6 @@ class MessageSenderImplTest {
         whenever(messageQueuePersistenceManager.getUndelivered()).thenReturn(initialQueuedMessages)
 
         return MessageSenderImpl(
-            Schedulers.immediate(),
             messageCipherService,
             relayClientManager,
             messageQueuePersistenceManager
@@ -277,6 +270,8 @@ class MessageSenderImplTest {
 
         sender.addToQueue(queued.metadata, queued.serialized).get()
 
+        whenever(messageCipherService.updateDevices(any(), any())).thenReturn(Unit)
+
         relayEvents.onNext(ev)
 
         verify(messageCipherService).updateDevices(to, content)
@@ -293,9 +288,12 @@ class MessageSenderImplTest {
         reset(messageCipherService)
         whenever(messageCipherService.encrypt(any(), any(), any())).thenReturn(randomEncryptionResult())
 
-        val ev = DeviceUpdateResult(null)
+        whenever(messageCipherService.updateDevices(any(), any())).thenReturn(Unit)
 
-        deviceUpdates.onNext(ev)
+        val info = DeviceMismatchContent(emptyList(), emptyList(), emptyList())
+        relayEvents.onNext(
+            DeviceMismatch(queued.metadata.userId, randomMessageId(), info)
+        )
 
         verify(messageCipherService).encrypt(queued.metadata.userId, queued.serialized, defaultConnectionTag)
     }

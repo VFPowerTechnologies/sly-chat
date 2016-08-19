@@ -11,7 +11,6 @@ import rx.Observable
 
 interface MessageCipherService {
     val decryptedMessages: Observable<DecryptionResult>
-    val deviceUpdates: Observable<DeviceUpdateResult>
 
     fun start()
     fun shutdown(join: Boolean)

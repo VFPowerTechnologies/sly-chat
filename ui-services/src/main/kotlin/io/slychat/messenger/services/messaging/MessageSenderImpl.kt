@@ -6,7 +6,6 @@ import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
 import io.slychat.messenger.core.persistence.QueuedMessage
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.services.RelayClientManager
-import io.slychat.messenger.services.crypto.DeviceUpdateResult
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
@@ -15,13 +14,11 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
-import rx.Scheduler
 import rx.subjects.PublishSubject
 import rx.subscriptions.CompositeSubscription
 import java.util.*
 
 class MessageSenderImpl(
-    scheduler: Scheduler,
     private val messageCipherService: MessageCipherService,
     private val relayClientManager: RelayClientManager,
     private val messageQueuePersistenceManager: MessageQueuePersistenceManager
@@ -46,10 +43,6 @@ class MessageSenderImpl(
     init {
         subscriptions.add(relayClientManager.events.subscribe { onRelayEvent(it) })
         subscriptions.add(relayClientManager.onlineStatus.subscribe { onRelayOnlineStatus(it) })
-
-        subscriptions.add(messageCipherService.deviceUpdates.observeOn(scheduler).subscribe {
-            processDeviceUpdateResult(it)
-        })
     }
 
     override fun init() {
@@ -156,7 +149,12 @@ class MessageSenderImpl(
 
                 is MessageSendDeviceMismatch -> {
                     log.info("Got device mismatch for user={}, messageId={}", result.to, result.messageId)
-                    messageCipherService.updateDevices(result.to, result.info)
+
+                    messageCipherService.updateDevices(result.to, result.info) successUi {
+                        processDeviceUpdateSuccess()
+                    } failUi {
+                        processDeviceUpdateFailure(it)
+                    }
                 }
 
             //TODO failures
@@ -228,13 +226,13 @@ class MessageSenderImpl(
         processMessageSendResult(MessageSendDeviceMismatch(event.to, event.messageId, event.info))
     }
 
-    private fun processDeviceUpdateResult(result: DeviceUpdateResult) {
-        val e = result.exception
-        if (e != null) {
-            log.error("Unable to update devices: {}", e.message, e)
-            //FIXME ???
-        }
+    private fun processDeviceUpdateFailure(cause: Exception) {
+        log.error("Unable to update devices: {}", cause.message, cause)
+        //FIXME ???
+        nextSendMessage()
+    }
 
+    private fun processDeviceUpdateSuccess() {
         log.info("Device mismatch fixed")
 
         retryCurrentSendMessage()
