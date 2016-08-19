@@ -57,7 +57,7 @@ function openInfoPopup (content, title) {
         '</div>';
 
     var popupHTML = '' +
-        '<div class="popup info-popup">' +
+        '<div class="popup info-popup tablet-fullscreen">' +
             '<div class="view navbar-fixed" data-page>' +
                 '<div class="pages">' +
                     '<div data-page class="page">' +

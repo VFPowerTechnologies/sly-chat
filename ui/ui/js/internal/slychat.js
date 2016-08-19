@@ -29,10 +29,12 @@ window.exceptionController = new ExceptionController();
 
 var isAndroid = Framework7.prototype.device.ios === false;
 var isIos = Framework7.prototype.device.ios === true;
+var isDesktop = Framework7.prototype.device.ios === false && Framework7.prototype.device.android === false;
 
 Template7.global = {
     android: isAndroid,
-    ios: isIos
+    ios: isIos,
+    isDesktop: isDesktop
 };
 
 var firstLoad = true;
@@ -68,7 +70,8 @@ if (!isIos) {
 
 // Add view
 var mainView = slychat.addView('.view-main', {
-    dynamicNavbar: true
+    dynamicNavbar: true,
+    reloadPages: true
 });
 
 // Controller init
