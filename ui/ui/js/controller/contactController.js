@@ -560,15 +560,7 @@ ContactController.prototype  = {
 
             var hiddenContent = contactBlock.find('.confirm-add-contact-hidden');
 
-            var data = {
-                id: contact.id,
-                name: contact.name,
-                email: contact.email,
-                phoneNumber: contact.phoneNumber,
-                publicKey: contact.publicKey
-            };
-
-            this.addContact(data, button, successIcon, hiddenContent);
+            this.addContact(contact, button, successIcon, hiddenContent);
         }.bind(this));
 
         return contactBlock;

@@ -1,6 +1,8 @@
 package io.slychat.messenger.services.ui.impl
 
+import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
 import io.slychat.messenger.core.persistence.AccountInfo
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.contacts.ContactEvent
 import io.slychat.messenger.services.contacts.ContactsService
@@ -56,6 +58,10 @@ class UIContactsServiceImpl(
             }
         }
     }
+
+    //return AllowedMessageLevel.ALL since this is used when adding contacts
+    private fun ApiContactInfo.toUI(): UIContactDetails =
+        UIContactDetails(id, name, phoneNumber, email, publicKey, AllowedMessageLevel.ALL)
 
     private fun onAccountInfoUpdate(accountInfo: AccountInfo) {
         currentRegionCode = getAccountRegionCode(accountInfo)
