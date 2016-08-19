@@ -607,7 +607,7 @@ class SlyApplication {
         userComponent.authTokenManager.mapUi { userCredentials ->
             relayClientManager.connect(userCredentials)
         } fail { e ->
-            log.error("Unable to retrieve auth token for relay connection: {}", e.message, e)
+            log.error("Unable to connect to relay: {}", e.message, e)
         } alwaysUi {
             //after connect() is called, relayClientManager.isOnline will be true
             connectingToRelay = false

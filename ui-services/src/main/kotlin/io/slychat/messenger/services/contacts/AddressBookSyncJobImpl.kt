@@ -76,7 +76,7 @@ class AddressBookSyncJobImpl(
         return authTokenManager.bind { userCredentials ->
             getPlatformContacts(accountRegionCode) bind { contacts ->
                 contactsPersistenceManager.findMissing(contacts) bind { missingContacts ->
-                    log.debug("Missing platform contacts:", missingContacts)
+                    log.debug("Missing platform contacts: {}", missingContacts)
                     queryAndAddNewContacts(userCredentials, missingContacts)
                 }
             }
