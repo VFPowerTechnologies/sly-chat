@@ -423,7 +423,9 @@ ContactController.prototype  = {
             switch(ev.type) {
                 case "ADD":
                     ev.contacts.forEach(function (contact) {
-                        this.addNewContactToCache(contact);
+                        //we don't show contacts for which no conversation exists
+                        if (contact.allowedMessageLevel === 'ALL')
+                            this.addNewContactToCache(contact);
                     }.bind(this));
                     break;
                 case 'REMOVE':
@@ -505,7 +507,7 @@ ContactController.prototype  = {
                 form.find(".error-block").html("<li>" + response.errorMessage +"</li>");
             }
             else {
-                this.createContactSearchResult(response.contactDetails);
+                this.createContactSearchResult(response.contactInfo);
             }
         }.bind(this)).catch(function (e) {
             slychat.hidePreloader();
@@ -560,15 +562,7 @@ ContactController.prototype  = {
 
             var hiddenContent = contactBlock.find('.confirm-add-contact-hidden');
 
-            var data = {
-                id: contact.id,
-                name: contact.name,
-                email: contact.email,
-                phoneNumber: contact.phoneNumber,
-                publicKey: contact.publicKey
-            };
-
-            this.addContact(data, button, successIcon, hiddenContent);
+            this.addContact(contact, button, successIcon, hiddenContent);
         }.bind(this));
 
         return contactBlock;
