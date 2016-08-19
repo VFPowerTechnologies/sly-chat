@@ -24,109 +24,109 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class MockDevice(val keyVault: KeyVault, val id: Int) {
-    val registrationId = KeyHelper.generateRegistrationId(false)
-    val preKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 10)
-    //FIXME InMemorySessionStore.getSubDeviceSession never returns 1; in our impl we do, so start device ids from 2
-    //instead so we don't run into this behavior
-    val signalStore = InMemorySignalProtocolStore(keyVault.identityKeyPair, registrationId)
+class MessageCipherServiceImplTest {
+    class MockDevice(val keyVault: KeyVault, val id: Int) {
+        val registrationId = KeyHelper.generateRegistrationId(false)
+        val preKeys = generatePrekeys(keyVault.identityKeyPair, 1, 1, 10)
+        //FIXME InMemorySessionStore.getSubDeviceSession never returns 1; in our impl we do, so start device ids from 2
+        //instead so we don't run into this behavior
+        val signalStore = InMemorySignalProtocolStore(keyVault.identityKeyPair, registrationId)
 
-    private var currentPreKeyId = 1
-    private var currentSignedPreKeyId = 1
+        private var currentPreKeyId = 1
+        private var currentSignedPreKeyId = 1
 
-    private fun nextPreKey(): PreKeyRecord {
-        val currentPreKey = preKeys.oneTimePreKeys[currentPreKeyId]
+        private fun nextPreKey(): PreKeyRecord {
+            val currentPreKey = preKeys.oneTimePreKeys[currentPreKeyId]
 
-        currentPreKeyId += 1
+            currentPreKeyId += 1
 
-        return currentPreKey
-    }
+            return currentPreKey
+        }
 
-    fun getPreKeyBundle(): PreKeyBundle {
-        val currentPreKey = nextPreKey()
+        fun getPreKeyBundle(): PreKeyBundle {
+            val currentPreKey = nextPreKey()
 
-        return PreKeyBundle(
-            registrationId,
-            id,
-            currentPreKey.id,
-            currentPreKey.keyPair.publicKey,
-            currentSignedPreKeyId,
-            preKeys.signedPreKey.keyPair.publicKey,
-            preKeys.signedPreKey.signature,
-            keyVault.identityKeyPair.publicKey
-        )
-    }
+            return PreKeyBundle(
+                registrationId,
+                id,
+                currentPreKey.id,
+                currentPreKey.keyPair.publicKey,
+                currentSignedPreKeyId,
+                preKeys.signedPreKey.keyPair.publicKey,
+                preKeys.signedPreKey.signature,
+                keyVault.identityKeyPair.publicKey
+            )
+        }
 
-    fun getPreKeySet(): SerializedPreKeySet {
-        val currentPreKey = nextPreKey()
+        fun getPreKeySet(): SerializedPreKeySet {
+            val currentPreKey = nextPreKey()
 
-        return SerializedPreKeySet(
-            registrationId,
-            keyVault.fingerprint,
-            serializeSignedPreKey(preKeys.signedPreKey),
-            serializePreKey(currentPreKey)
-        )
-    }
-}
-
-class MockUser(id: Long, val initialDeviceCount: Int = 1) {
-    val userId = UserId(id)
-    val password = "test"
-    val keyVault = generateNewKeyVault(password)
-
-    val devices = (1..initialDeviceCount).map { MockDevice(keyVault, it) }.toMutableList()
-
-    val signalStore: SignalProtocolStore
-        get() = devices[0].signalStore
-
-    fun getDevice(deviceId: Int): MockDevice = devices[deviceId-1]
-    fun setDevice(deviceId: Int, device: MockDevice) {
-        devices[deviceId-1] = device
-    }
-
-    fun addDevice(): MockDevice {
-        val n = devices.size
-
-        val newDevice = MockDevice(keyVault, n)
-        devices.add(newDevice)
-
-        return newDevice
-    }
-
-    fun swapDevice(deviceId: Int): MockDevice {
-        val newDevice = MockDevice(keyVault, deviceId)
-        setDevice(deviceId, newDevice)
-        return newDevice
-    }
-
-    fun addSessions(target: MockUser, deviceIds: List<Int>) {
-        deviceIds.forEach { deviceId ->
-            val device = target.devices[deviceId-1]
-
-            val bundle = device.getPreKeyBundle()
-            val address = SlyAddress(target.userId, bundle.deviceId).toSignalAddress()
-            val builder = SessionBuilder(signalStore, address)
-            builder.process(bundle)
+            return SerializedPreKeySet(
+                registrationId,
+                keyVault.fingerprint,
+                serializeSignedPreKey(preKeys.signedPreKey),
+                serializePreKey(currentPreKey)
+            )
         }
     }
 
-    fun getBundles(deviceIds: Collection<Int>): Map<Int, SerializedPreKeySet?> {
-        return deviceIds.map { deviceId ->
-            val device = devices[deviceId-1]
-            deviceId to device.getPreKeySet()
-        }.toMap()
+    class MockUser(id: Long, initialDeviceCount: Int = 1) {
+        val userId = UserId(id)
+        val password = "test"
+        val keyVault = generateNewKeyVault(password)
+
+        val devices = (1..initialDeviceCount).map { MockDevice(keyVault, it) }.toMutableList()
+
+        val signalStore: SignalProtocolStore
+            get() = devices[0].signalStore
+
+        fun getDevice(deviceId: Int): MockDevice = devices[deviceId-1]
+        fun setDevice(deviceId: Int, device: MockDevice) {
+            devices[deviceId-1] = device
+        }
+
+        fun addDevice(): MockDevice {
+            val n = devices.size
+
+            val newDevice = MockDevice(keyVault, n)
+            devices.add(newDevice)
+
+            return newDevice
+        }
+
+        fun swapDevice(deviceId: Int): MockDevice {
+            val newDevice = MockDevice(keyVault, deviceId)
+            setDevice(deviceId, newDevice)
+            return newDevice
+        }
+
+        fun addSessions(target: MockUser, deviceIds: List<Int>) {
+            deviceIds.forEach { deviceId ->
+                val device = target.devices[deviceId-1]
+
+                val bundle = device.getPreKeyBundle()
+                val address = SlyAddress(target.userId, bundle.deviceId).toSignalAddress()
+                val builder = SessionBuilder(signalStore, address)
+                builder.process(bundle)
+            }
+        }
+
+        fun getBundles(deviceIds: Collection<Int>): Map<Int, SerializedPreKeySet?> {
+            return deviceIds.map { deviceId ->
+                val device = devices[deviceId-1]
+                deviceId to device.getPreKeySet()
+            }.toMap()
+        }
     }
-}
 
-fun <T> flatten(vararg lists: List<T>): List<T> {
-    val r = ArrayList<T>()
+    fun <T> flatten(vararg lists: List<T>): List<T> {
+        val r = ArrayList<T>()
 
-    lists.forEach { r.addAll(it) }
+        lists.forEach { r.addAll(it) }
 
-    return r
-}
+        return r
+    }
 
-class MessageCipherServiceTest {
     fun createPreKeyClientMock(target: MockUser, expectedDeviceIds: List<Int>): PreKeyClient {
         val client = mock<PreKeyClient>()
 
