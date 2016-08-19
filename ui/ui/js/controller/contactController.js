@@ -145,13 +145,32 @@ ContactController.prototype  = {
 
         this.createRecentChatList(jointedRecentChat);
         this.createContactList();
+        this.createLeftContactList();
+        groupController.createLeftGroupList();
         this.createRecentContactList(jointedRecentChat);
 
-        if (firstLogin === true && jointedRecentChat.length <= 0) {
+        if (!isDesktop && firstLogin === true && jointedRecentChat.length <= 0) {
             firstLogin = false;
             slychat.popup('#contactPopup');
         }
         navigationController.hideSplashScreen();
+    },
+
+    createLeftContactList : function () {
+        var convo = [];
+        this.conversations.forEach(function(conversation) {
+            convo.push(conversation);
+        });
+        convo = this.orderByName(convo);
+
+        var frag = $(document.createDocumentFragment());
+        if (convo.length > 0) {
+            convo.forEach(function (conversation) {
+                frag.append(this.createLeftContactNode(conversation.contact));
+            }.bind(this));
+
+            $("#leftContactList").html(frag);
+        }
     },
 
     createContactList : function () {
@@ -181,6 +200,22 @@ ContactController.prototype  = {
         contactBlock.append(contactDetails);
 
         contactBlock.click(function (e) {
+            this.loadChatPage(contact);
+        }.bind(this));
+
+        contactBlock.on("mouseheld", function () {
+            vibrate(50);
+            this.openContactMenu(contact);
+        }.bind(this));
+
+        return contactBlock;
+    },
+
+    createLeftContactNode : function (contact) {
+        var contactBlock = $("<li id='leftContact_" + contact.id + "' class='contact-link'><a href='#'>" + contact.name + "</a></li>");
+
+        contactBlock.click(function (e) {
+            contactBlock.find(".left-menu-new-badge").remove();
             this.loadChatPage(contact);
         }.bind(this));
 

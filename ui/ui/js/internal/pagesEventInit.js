@@ -1,4 +1,30 @@
-// Login page init function
+$$(document).on('pageBeforeInit', function (e) {
+    var page = e.detail.page;
+    if (isDesktop) {
+        var mainView = $(".view-main");
+        var leftMenu = $("#leftMenuPanel");
+
+        switch (page.name) {
+            case "contacts":
+            case "chat":
+            case "addContact":
+            case "createGroup":
+            case "profile":
+                mainView.removeClass("left-menu-hidden");
+                leftMenu.removeClass("hidden");
+                break;
+
+            case "login":
+            case "register":
+            case "smsVerification":
+            case "updatePhone":
+                mainView.addClass("left-menu-hidden");
+                leftMenu.addClass("hidden");
+                break;
+        }
+    }
+});
+
 slychat.onPageInit('login', function (page) {
     navigationController.hideSplashScreen();
 
@@ -251,4 +277,21 @@ $$(document).on('open', '.popup-contact', function() {
     navigationController.dispatchEvent(event);
 });
 
+$$(document).on("click", "#addContactButton", function (e) {
+    e.preventDefault();
+    navigationController.loadPage('addContact.html', true);
+});
+
+$$(document).on("click", "#createGroupButton", function (e) {
+    e.preventDefault();
+    navigationController.loadPage('createGroup.html', true);
+});
+
+$$(document).on("click", "#loadProfileBtn", function (e) {
+    navigationController.loadPage('profile.html', true);
+});
+
+$$(document).on("click", "#logoutBtn", function (e) {
+    loginController.logout();
+});
 

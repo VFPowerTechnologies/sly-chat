@@ -18,6 +18,13 @@ ChatController.prototype = {
         });
     },
 
+    getCurrentContactId : function () {
+        if (navigationController.getCurrentPage() === "chat.html") {
+            return $("#contact-id").html();
+        }
+        return false;
+    },
+
     submitNewMessage : function (contact, message) {
         if (contact.email === undefined) {
             messengerService.sendGroupMessageTo(contact.id, message).then(function (messageDetails) {
@@ -228,14 +235,24 @@ ChatController.prototype = {
         if (messageInfo.groupId === null) {
             contactController.updateRecentChatNode(cachedContact, messageInfo);
             this.updateChatPageNewMessage(messages, contactName, contactId);
+            this.leftMenuAddNewMessageBadge(contactId);
         }
         else {
             contactController.updateRecentGroupChatNode(cachedContact, messageInfo);
             this.updateGroupChatPageNewMessage(messageInfo, contactName);
             groupController.updateConversationWithNewMessage(messageInfo.groupId, messageInfo);
+            this.leftMenuAddNewMessageBadge(messageInfo.groupId);
         }
 
         $(".timeago").timeago();
+    },
+
+    leftMenuAddNewMessageBadge : function (id) {
+        var node = $("#leftContact_" + id);
+        if (this.getCurrentContactId() != id) {
+            if (node.find(".left-menu-new-badge").length <= 0)
+                node.append('<span class="left-menu-new-badge" style="color: red; font-size: 12px; margin-left: 5px;">new</span>');
+        }
     },
 
     updateChatPageNewMessage : function (messages, contactName, contactId) {

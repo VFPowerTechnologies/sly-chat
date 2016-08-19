@@ -10,50 +10,83 @@
 
 </head>
 <body>
-<div class="statusbar-overlay"></div>
-<div class="panel-overlay"></div>
-<div class="panel panel-right panel-reveal">
-    <div class="list-block">
-        <ul>
-            <li>
-                <a id='profileBtn' href="#" class="item-link close-panel">
-                    <div class="item-content">
-                        <div class="item-media">
-                            <i class="fa fa-user"></i>
-                        </div>
-                        <div class="item-inner">
-                            <div class="item-title">Profile</div>
-                        </div>
-                    </div>
-                </a>
-            </li>
-            <li>
-                <a id="logoutBtn" href="#" class="item-link close-panel">
-                    <div class="item-content">
-                        <div class="item-media">
-                            <i class="fa fa-sign-out"></i>
-                        </div>
-                        <div class="item-inner">
-                            <div class="item-title">Logout</div>
-                        </div>
-                    </div>
-                </a>
-            </li>
-        </ul>
-    </div>
-</div>
+<!-- Views-->
 <div class="views">
-    <div id="mainView" class="view view-main navbar-through">
-        <div class="navbar">
-            <div class="navbar-inner">
+    <div class="panel-overlay"></div>
+    <div id="leftMenuPanel" class="panel panel-left panel-cover">
+        <!-- Left view-->
+        <div class="view view-left">
+            <div class="pages">
+                <div data-page="contact-left" class="page" style="background-color: #eee;">
+                    <div class="page-content">
+                        <div class="list-block" style="margin-top: 5px;">
+                            <ul>
+                                <li class="accordion-item"><a href="#" class="item-content item-link">
+                                    <div class="item-inner">
+                                        <div id='leftDesktopProfileName' class="item-title"></div>
+                                    </div></a>
+                                    <div class="accordion-item-content">
+                                        <div class="content-block" style="margin-left: 5px;">
+                                            <div class="list-block">
+                                                <ul>
+                                                    <li><a id='loadProfileBtn' href="#">Profile</a></li>
+                                                    <li><a id='logoutBtn' href="#">Logout</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li class="accordion-item accordion-item-expanded"><a href="#" class="item-content item-link">
+                                    <div class="item-inner">
+                                        <div class="item-title">Contacts</div>
+                                    </div></a>
+                                    <div class="accordion-item-content">
+                                        <div class="content-block" style="margin-left: 5px;">
+                                            <div class="list-block">
+                                                <div style="width: 100%; text-align: right;">
+                                                    <a href="#" id="addContactButton" style="font-size: 12px; color: blue;">Add contact</a>
+                                                </div>
+                                                <ul id="leftContactList">
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li class="accordion-item"><a href="#" class="item-content item-link">
+                                    <div class="item-inner">
+                                        <div class="item-title">Groups</div>
+                                    </div></a>
+                                    <div class="accordion-item-content">
+                                        <div class="content-block" style="margin-left: 5px;">
+                                            <div class="list-block">
+                                                <div style="width: 100%; text-align: right;">
+                                                    <a href="#" id="createGroupButton" style="font-size: 12px; color: blue;">New group</a>
+                                                </div>
+                                                <ul id="leftGroupList">
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
+    <div id="mainView" class="view view-main navbar-through">
+        <!--<div class="navbar">-->
+            <!--<div class="navbar-inner">-->
+            <!--</div>-->
+        <!--</div>-->
         <div class="pages toolbar-through">
             <div data-page="index" class="page">
             </div>
         </div>
     </div>
 </div>
+
 <div class="popup-overlay"></div>
 <div id='contactPopup' class="popup popup-contact tablet-fullscreen">
     <div class="view navbar-fixed" data-page>
