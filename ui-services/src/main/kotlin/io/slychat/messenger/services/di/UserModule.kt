@@ -136,12 +136,10 @@ class UserModule(
     @UserScope
     @Provides
     fun providesMessageReceiver(
-        scheduler: Scheduler,
         messageProcessor: MessageProcessor,
         packageQueuePersistenceManager: PackageQueuePersistenceManager,
         messageCipherService: MessageCipherService
     ): MessageReceiver = MessageReceiverImpl(
-        scheduler,
         messageProcessor,
         packageQueuePersistenceManager,
         messageCipherService
@@ -150,13 +148,11 @@ class UserModule(
     @UserScope
     @Provides
     fun providesMessageSender(
-        scheduler: Scheduler,
         relayClientManager: RelayClientManager,
         messageCipherService: MessageCipherService,
         messageQueuePersistenceManager: MessageQueuePersistenceManager
     ): MessageSender =
         MessageSenderImpl(
-            scheduler,
             messageCipherService,
             relayClientManager,
             messageQueuePersistenceManager

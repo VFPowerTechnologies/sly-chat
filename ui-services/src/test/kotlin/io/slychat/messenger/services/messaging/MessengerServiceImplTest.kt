@@ -9,7 +9,6 @@ import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.assertEventEmitted
-import io.slychat.messenger.services.contacts.ContactEvent
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.testutils.KovenantTestModeRule
@@ -44,8 +43,6 @@ class MessengerServiceImplTest {
     val messageSender: MessageSender = mock()
     val messageReceiver: MessageReceiver = mock()
 
-    val contactEvents: PublishSubject<ContactEvent> = PublishSubject.create()
-
     val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
 
     val messageSent: PublishSubject<MessageMetadata> = PublishSubject.create()
@@ -53,8 +50,6 @@ class MessengerServiceImplTest {
     @Before
     fun before() {
         whenever(messageSender.messageSent).thenReturn(messageSent)
-
-        whenever(contactsService.contactEvents).thenReturn(contactEvents)
 
         whenever(relayClientManager.events).thenReturn(relayEvents)
 

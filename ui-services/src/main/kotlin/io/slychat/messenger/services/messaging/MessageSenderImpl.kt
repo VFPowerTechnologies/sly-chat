@@ -6,21 +6,19 @@ import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
 import io.slychat.messenger.core.persistence.QueuedMessage
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.services.RelayClientManager
-import io.slychat.messenger.services.crypto.DeviceUpdateResult
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
-import rx.Scheduler
 import rx.subjects.PublishSubject
 import rx.subscriptions.CompositeSubscription
 import java.util.*
 
 class MessageSenderImpl(
-    scheduler: Scheduler,
     private val messageCipherService: MessageCipherService,
     private val relayClientManager: RelayClientManager,
     private val messageQueuePersistenceManager: MessageQueuePersistenceManager
@@ -45,14 +43,6 @@ class MessageSenderImpl(
     init {
         subscriptions.add(relayClientManager.events.subscribe { onRelayEvent(it) })
         subscriptions.add(relayClientManager.onlineStatus.subscribe { onRelayOnlineStatus(it) })
-
-        subscriptions.add(messageCipherService.encryptedMessages.observeOn(scheduler).subscribe {
-            processEncryptionResult(it)
-        })
-
-        subscriptions.add(messageCipherService.deviceUpdates.observeOn(scheduler).subscribe {
-            processDeviceUpdateResult(it)
-        })
     }
 
     override fun init() {
@@ -119,8 +109,13 @@ class MessageSenderImpl(
             nextSendMessage()
         }
         else {
-            messageCipherService.encrypt(message.metadata.userId, message.serialized, message.connectionTag)
             currentSendMessage = message
+
+            messageCipherService.encrypt(message.metadata.userId, message.serialized, message.connectionTag) successUi {
+                processEncryptionSuccess(it)
+            } failUi {
+                processEncryptionFailure(it)
+            }
         }
     }
 
@@ -145,7 +140,7 @@ class MessageSenderImpl(
                     }
                     else {
                         markMessageAsDelivered(message.metadata) fail { e ->
-                            log.error("Unable to write message to log: {}", e.message, e)
+                            log.error("Unable to mark message as delivered: {}", e.message, e)
                         }
                     }
 
@@ -154,7 +149,12 @@ class MessageSenderImpl(
 
                 is MessageSendDeviceMismatch -> {
                     log.info("Got device mismatch for user={}, messageId={}", result.to, result.messageId)
-                    messageCipherService.updateDevices(result.to, result.info)
+
+                    messageCipherService.updateDevices(result.to, result.info) successUi {
+                        processDeviceUpdateSuccess()
+                    } failUi {
+                        processDeviceUpdateFailure(it)
+                    }
                 }
 
             //TODO failures
@@ -226,55 +226,51 @@ class MessageSenderImpl(
         processMessageSendResult(MessageSendDeviceMismatch(event.to, event.messageId, event.info))
     }
 
-    private fun processDeviceUpdateResult(result: DeviceUpdateResult) {
-        val e = result.exception
-        if (e != null) {
-            log.error("Unable to update devices: {}", e.message, e)
-            //FIXME ???
-        }
+    private fun processDeviceUpdateFailure(cause: Exception) {
+        log.error("Unable to update devices: {}", cause.message, cause)
+        //FIXME ???
+        nextSendMessage()
+    }
 
+    private fun processDeviceUpdateSuccess() {
         log.info("Device mismatch fixed")
 
         retryCurrentSendMessage()
     }
 
-    private fun processEncryptionResult(result: EncryptionResult) {
+    private fun getCurrentSendMessage(): QueuedSendMessage? {
         //this can occur if we get disconnected during the encryption process
         //the queue'll be reset on disconnect, so just do nothing
         if (!relayClientManager.isOnline)
-            return
+            return null
 
         val message = currentSendMessage
-
-        if (message != null) {
-            val userId = message.metadata.userId
-            //we don't check this against the current id as even during a disconnect the last message could also be
-            //the first message to resend
-            val messageId = message.metadata.messageId
-
-            when (result) {
-                is EncryptionOk -> {
-                    val messages = result.encryptedMessages.map { e ->
-                        RelayUserMessage(e.deviceId, e.registrationId, e.payload)
-                    }
-                    val content = RelayMessageBundle(messages)
-                    //if we got disconnected while we were encrypting, just ignore the message as it'll just be encrypted again
-                    //sendMessage'll ignore any message without a matching connectionTag
-                    relayClientManager.sendMessage(result.connectionTag, userId, content, messageId)
-                }
-
-                is EncryptionUnknownFailure -> {
-                    log.error("Unknown error during encryption: {}", result.cause.message, result.cause)
-                    nextSendMessage()
-                }
-
-                else -> throw RuntimeException("Unknown result: $result")
-            }
-        }
-        else {
-            //can occur if we disconnect and then receive a message, so do nothing
+        //can occur if we disconnect and then receive a message, so do nothing
+        if (message == null)
             log.warn("processEncryptionResult called but currentMessage was null")
-        }
+
+        return message
     }
 
+    private fun processEncryptionFailure(cause: Exception) {
+        log.error("Unknown error during encryption: {}", cause.message, cause)
+        nextSendMessage()
+    }
+
+    private fun processEncryptionSuccess(result: EncryptionResult) {
+        val message = getCurrentSendMessage() ?: return
+
+        val userId = message.metadata.userId
+        //we don't check this against the current id as even during a disconnect the last message could also be
+        //the first message to resend
+        val messageId = message.metadata.messageId
+
+        val messages = result.encryptedMessages.map { e ->
+            RelayUserMessage(e.deviceId, e.registrationId, e.payload)
+        }
+        val content = RelayMessageBundle(messages)
+        //if we got disconnected while we were encrypting, just ignore the message as it'll just be encrypted again
+        //sendMessage'll ignore any message without a matching connectionTag
+        relayClientManager.sendMessage(result.connectionTag, userId, content, messageId)
+    }
 }

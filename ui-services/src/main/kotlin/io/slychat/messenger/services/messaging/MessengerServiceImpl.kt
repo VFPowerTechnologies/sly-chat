@@ -10,7 +10,6 @@ import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.bindUi
-import io.slychat.messenger.services.contacts.ContactEvent
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
@@ -55,9 +54,6 @@ class MessengerServiceImpl(
     private val subscriptions = CompositeSubscription()
 
     init {
-        //FIXME
-        subscriptions.add(contactsService.contactEvents.subscribe { onContactEvent(it) })
-
         subscriptions.add(relayClientManager.events.subscribe { onRelayEvent(it) })
 
         subscriptions.add(messageSender.messageSent.subscribe { onMessageSent(it) })
@@ -123,10 +119,6 @@ class MessengerServiceImpl(
         processPackages(packages) successUi {
             relayClientManager.sendMessageReceivedAck(event.messageId)
         }
-    }
-
-
-    private fun onContactEvent(event: ContactEvent) {
     }
 
     /** Writes the received message and then fires the new messages subject. */

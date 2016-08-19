@@ -7,7 +7,11 @@ import io.slychat.messenger.core.http.api.prekeys.PreKeyRetrievalRequest
 import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.auth.AuthTokenManager
-import io.slychat.messenger.services.messaging.*
+import io.slychat.messenger.services.messaging.EncryptedMessageInfo
+import io.slychat.messenger.services.messaging.EncryptionResult
+import nl.komponents.kovenant.Deferred
+import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.deferred
 import org.slf4j.LoggerFactory
 import org.whispersystems.libsignal.SessionBuilder
 import org.whispersystems.libsignal.SessionCipher
@@ -15,27 +19,8 @@ import org.whispersystems.libsignal.protocol.PreKeySignalMessage
 import org.whispersystems.libsignal.protocol.SignalMessage
 import org.whispersystems.libsignal.state.PreKeyBundle
 import org.whispersystems.libsignal.state.SignalProtocolStore
-import rx.Observable
-import rx.subjects.PublishSubject
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
-
-sealed class MessageDecryptionResult {
-    class Success(
-        val messageId: String,
-        val data: ByteArray
-    ) : MessageDecryptionResult()
-
-    class Failure(
-        val messageId: String,
-        val cause: Throwable
-    ) : MessageDecryptionResult()
-}
-
-class DeviceUpdateResult(val exception: Exception?) {
-    val isSuccess: Boolean
-        get() = exception == null
-}
 
 class MessageCipherServiceImpl(
     private val authTokenManager: AuthTokenManager,
@@ -44,9 +29,22 @@ class MessageCipherServiceImpl(
     private val signalStore: SignalProtocolStore
 ) : MessageCipherService, Runnable {
     private sealed class CipherWork {
-        class Encryption(val userId: UserId, val message: ByteArray, val connectionTag: Int) : CipherWork()
-        class Decryption(val address: SlyAddress, val encryptedMessages: EncryptedMessageInfo) : CipherWork()
-        class UpdateDevices(val userId: UserId, val info: DeviceMismatchContent) : CipherWork()
+        class Encryption(
+            val userId: UserId,
+            val message: ByteArray,
+            val connectionTag: Int,
+            val deferred: Deferred<EncryptionResult, Exception>
+        ) : CipherWork()
+        class Decryption(
+            val address: SlyAddress,
+            val encryptedMessage: EncryptedMessageInfo,
+            val deferred: Deferred<DecryptionResult, Exception>
+        ) : CipherWork()
+        class UpdateDevices(
+            val userId: UserId,
+            val info: DeviceMismatchContent,
+            val deferred: Deferred<Unit, Exception>
+        ) : CipherWork()
         class NoMoreWork : CipherWork()
     }
 
@@ -55,17 +53,6 @@ class MessageCipherServiceImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val workQueue = ArrayBlockingQueue<CipherWork>(20)
-    private val encryptionSubject = PublishSubject.create<EncryptionResult>()
-    override val encryptedMessages: Observable<EncryptionResult>
-        get() = encryptionSubject
-
-    private val decryptionSubject = PublishSubject.create<DecryptionResult>()
-    override val decryptedMessages: Observable<DecryptionResult>
-        get() = decryptionSubject
-
-    private val deviceUpdateSubject = PublishSubject.create<DeviceUpdateResult>()
-    override val deviceUpdates: Observable<DeviceUpdateResult>
-        get() = deviceUpdateSubject
 
     override fun start() {
         if (thread != null)
@@ -87,16 +74,22 @@ class MessageCipherServiceImpl(
         thread = null
     }
 
-    override fun encrypt(userId: UserId, message: ByteArray, connectionTag: Int) {
-        workQueue.add(CipherWork.Encryption(userId, message, connectionTag))
+    override fun encrypt(userId: UserId, message: ByteArray, connectionTag: Int): Promise<EncryptionResult, Exception> {
+        val d = deferred<EncryptionResult, Exception>()
+        workQueue.add(CipherWork.Encryption(userId, message, connectionTag, d))
+        return d.promise
     }
 
-    override fun decrypt(address: SlyAddress, messages: EncryptedMessageInfo) {
-        workQueue.add(CipherWork.Decryption(address, messages))
+    override fun decrypt(address: SlyAddress, messages: EncryptedMessageInfo): Promise<DecryptionResult, Exception> {
+        val d = deferred<DecryptionResult, Exception>()
+        workQueue.add(CipherWork.Decryption(address, messages, d))
+        return d.promise
     }
 
-    override fun updateDevices(userId: UserId, info: DeviceMismatchContent) {
-        workQueue.add(CipherWork.UpdateDevices(userId, info))
+    override fun updateDevices(userId: UserId, info: DeviceMismatchContent): Promise<Unit, Exception> {
+        val d = deferred<Unit, Exception>()
+        workQueue.add(CipherWork.UpdateDevices(userId, info, d))
+        return d.promise
     }
 
     override fun run() {
@@ -141,7 +134,7 @@ class MessageCipherServiceImpl(
 
         val info = work.info
 
-        val result = try {
+        try {
             val toRemove = HashSet(info.removed)
             toRemove.addAll(info.stale)
 
@@ -162,19 +155,17 @@ class MessageCipherServiceImpl(
             if (toAdd.isNotEmpty())
                 addNewBundles(userId, toAdd)
 
-            DeviceUpdateResult(null)
+            work.deferred.resolve(Unit)
         }
         catch (e: Exception) {
-            DeviceUpdateResult(e)
+            work.deferred.reject(e)
         }
-
-        deviceUpdateSubject.onNext(result)
     }
 
     private fun handleEncryption(work: CipherWork.Encryption) {
         val userId = work.userId
         val message = work.message
-        val result = try {
+        try {
             val sessionCiphers = getSessionCiphers(userId)
 
             val messages = sessionCiphers.map {
@@ -192,13 +183,11 @@ class MessageCipherServiceImpl(
                 MessageData(deviceId, sessionCipher.remoteRegistrationId, m)
             }
 
-            EncryptionOk(messages, work.connectionTag)
+            work.deferred.resolve(EncryptionResult(messages, work.connectionTag))
         }
         catch (e: Exception) {
-            EncryptionUnknownFailure(e)
+            work.deferred.reject(e)
         }
-
-        encryptionSubject.onNext(result)
     }
 
     private fun decryptEncryptedMessage(sessionCipher: SessionCipher, encryptedPackagePayload: EncryptedPackagePayloadV0): ByteArray {
@@ -212,21 +201,19 @@ class MessageCipherServiceImpl(
         return messageData
     }
 
-    private fun decryptMessageForUser(address: SlyAddress, encryptedMessageInfo: EncryptedMessageInfo): MessageDecryptionResult {
-        val sessionCipher = SessionCipher(signalStore, address.toSignalAddress())
-
-        return try {
-            val message = decryptEncryptedMessage(sessionCipher, encryptedMessageInfo.payload)
-            MessageDecryptionResult.Success(encryptedMessageInfo.messageId, message)
-        }
-        catch (e: Throwable) {
-            MessageDecryptionResult.Failure(encryptedMessageInfo.messageId, e)
-        }
-    }
-
     private fun handleDecryption(work: CipherWork.Decryption) {
-        val result = decryptMessageForUser(work.address, work.encryptedMessages)
-        decryptionSubject.onNext(DecryptionResult(work.address.id, result))
+        val sessionCipher = SessionCipher(signalStore, work.address.toSignalAddress())
+        val messageId = work.encryptedMessage.messageId
+
+        try {
+            val message = decryptEncryptedMessage(sessionCipher, work.encryptedMessage.payload)
+            work.deferred.resolve(
+                DecryptionResult(messageId, message)
+            )
+        }
+        catch (e: Exception) {
+            work.deferred.reject(e)
+        }
     }
 
     private fun fetchPreKeyBundles(userId: UserId, deviceIds: Collection<Int>): List<PreKeyBundle> {

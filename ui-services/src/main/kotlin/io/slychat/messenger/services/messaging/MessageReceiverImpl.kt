@@ -7,8 +7,8 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.persistence.PackageId
 import io.slychat.messenger.core.persistence.PackageQueuePersistenceManager
+import io.slychat.messenger.services.crypto.DecryptionResult
 import io.slychat.messenger.services.crypto.MessageCipherService
-import io.slychat.messenger.services.crypto.MessageDecryptionResult
 import io.slychat.messenger.services.crypto.deserializeEncryptedPackagePayload
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -16,33 +16,22 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
-import rx.Scheduler
-import rx.subscriptions.CompositeSubscription
 import java.util.*
 
 class MessageReceiverImpl(
-    scheduler: Scheduler,
     private val messageProcessor: MessageProcessor,
     private val packageQueuePersistenceManager: PackageQueuePersistenceManager,
     private val messageCipherService: MessageCipherService
 ) : MessageReceiver {
-    private data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessages: EncryptedMessageInfo)
+    private data class QueuedReceivedMessage(val from: SlyAddress, val encryptedMessage: EncryptedMessageInfo)
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val receivedMessageQueue = ArrayDeque<QueuedReceivedMessage>()
     private var currentReceivedMessage: QueuedReceivedMessage? = null
 
-    private val subscriptions = CompositeSubscription()
-
     override val newMessages: Observable<MessageBundle>
         get() = messageProcessor.newMessages
-
-    init {
-        subscriptions.add(messageCipherService.decryptedMessages.observeOn(scheduler).subscribe {
-            processDecryptionResult(it.userId, it.result)
-        })
-    }
 
     private fun initializeReceiveQueue() {
         packageQueuePersistenceManager.getQueuedPackages() successUi { packages ->
@@ -50,18 +39,18 @@ class MessageReceiverImpl(
         }
     }
 
-    private fun handleFailedDecryptionResult(userId: UserId, result: MessageDecryptionResult.Failure) {
+    private fun handleFailedDecryptionResult(userId: UserId, messageId: String, cause: Exception) {
         log.warn("Unable to decrypt message for {}", userId)
-         log.warn("Message decryption failure: {}", result.cause.message, result.cause)
+         log.warn("Message decryption failure: {}", cause.message, cause)
 
-        packageQueuePersistenceManager.removeFromQueue(userId, listOf(result.messageId)) fail { e ->
+        packageQueuePersistenceManager.removeFromQueue(userId, listOf(messageId)) fail { e ->
             log.warn("Unable to remove failed decryption packages from queue: {}", e.message, e)
         }
 
         nextReceiveMessage()
     }
 
-    private fun handleSuccessfulDecryptionResult(userId: UserId, result: MessageDecryptionResult.Success) {
+    private fun handleSuccessfulDecryptionResult(userId: UserId, result: DecryptionResult) {
         val objectMapper = ObjectMapper()
 
         val m = try {
@@ -94,13 +83,6 @@ class MessageReceiverImpl(
         }
     }
 
-    private fun processDecryptionResult(userId: UserId, result: MessageDecryptionResult) {
-        when (result) {
-            is MessageDecryptionResult.Failure -> handleFailedDecryptionResult(userId, result)
-            is MessageDecryptionResult.Success -> handleSuccessfulDecryptionResult(userId, result)
-        }
-    }
-
     private fun nextReceiveMessage() {
         currentReceivedMessage = null
         receivedMessageQueue.pop()
@@ -118,7 +100,11 @@ class MessageReceiverImpl(
 
         val message = receivedMessageQueue.first
 
-        messageCipherService.decrypt(message.from, message.encryptedMessages)
+        messageCipherService.decrypt(message.from, message.encryptedMessage) successUi {
+            handleSuccessfulDecryptionResult(message.from.id, it)
+        } failUi {
+            handleFailedDecryptionResult(message.from.id, message.encryptedMessage.messageId, it)
+        }
 
         currentReceivedMessage = message
     }

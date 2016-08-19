@@ -18,6 +18,7 @@ import org.spongycastle.crypto.modes.AEADBlockCipher
 import org.spongycastle.crypto.modes.GCMBlockCipher
 import org.spongycastle.crypto.params.AEADParameters
 import org.spongycastle.crypto.params.KeyParameter
+import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SignalProtocolStore
@@ -289,3 +290,6 @@ fun generateNewKeyVault(password: String): KeyVault {
         defaultDataEncryptionParams()
     )
 }
+
+fun identityKeyFingerprint(identityKey: IdentityKey): String =
+    identityKey.publicKey.serialize().hexify()

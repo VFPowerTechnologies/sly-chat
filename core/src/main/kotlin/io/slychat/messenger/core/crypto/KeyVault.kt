@@ -47,7 +47,7 @@ class KeyVault(
     val fingerprint: String
         get() {
             //this includes the prepended type byte
-            return identityKeyPair.publicKey.serialize().hexify()
+            return identityKeyFingerprint(identityKeyPair.publicKey)
         }
 
     fun serialize(): SerializedKeyVault {
