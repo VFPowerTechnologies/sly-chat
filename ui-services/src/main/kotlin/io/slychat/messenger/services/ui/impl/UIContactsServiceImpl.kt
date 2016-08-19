@@ -10,8 +10,8 @@ import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.formatPhoneNumber
 import io.slychat.messenger.services.getAccountRegionCode
 import io.slychat.messenger.services.parsePhoneNumber
-import io.slychat.messenger.services.ui.UIContactInfo
 import io.slychat.messenger.services.ui.UIContactEvent
+import io.slychat.messenger.services.ui.UIContactInfo
 import io.slychat.messenger.services.ui.UIContactsService
 import io.slychat.messenger.services.ui.UINewContactResult
 import nl.komponents.kovenant.Promise
@@ -116,16 +116,16 @@ class UIContactsServiceImpl(
         }
     }
 
-    override fun addNewContact(contactInfo: UIContactInfo): Promise<UIContactInfo, Exception> {
-        val contactInfo = contactInfo.toNative()
+    override fun addNewContact(uiContactInfo: UIContactInfo): Promise<UIContactInfo, Exception> {
+        val contactInfo = uiContactInfo.toNative()
 
         val contactsService = getContactsServiceOrThrow()
 
-        return contactsService.addContact(contactInfo) map { contactInfo }
+        return contactsService.addContact(contactInfo) map { uiContactInfo }
     }
 
-    override fun removeContact(contactInfo: UIContactInfo): Promise<Unit, Exception> {
-        val contactInfo = contactInfo.toNative()
+    override fun removeContact(uiContactInfo: UIContactInfo): Promise<Unit, Exception> {
+        val contactInfo = uiContactInfo.toNative()
 
         val contactsService = getContactsServiceOrThrow()
 

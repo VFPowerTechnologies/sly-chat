@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui
 
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
 import nl.komponents.kovenant.Promise
 
@@ -8,7 +9,7 @@ import nl.komponents.kovenant.Promise
 @JSToJavaGenerate("MessengerService")
 interface UIMessengerService {
     /** Attempt to send a message to a contact. */
-    fun sendMessageTo(contact: UIContactInfo, message: String): Promise<UIMessage, Exception>
+    fun sendMessageTo(userId: UserId, message: String): Promise<UIMessage, Exception>
 
     fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<UIMessage, Exception>
 
@@ -29,24 +30,24 @@ interface UIMessengerService {
      * getLastMessagesFor(contact, 0, 100): Returns message numbers [0, 99]
      * getLastMessagesFor(contact, 100, 100): Returns message numbers [100, 199]
      *
-     * @param contact Contact.
+     * @param userId Contact.
      * @param startingAt Backwards index to start at.
      * @param count Max number of messages to retrieve.
      *
      * @return Up to count messages
      */
-    fun getLastMessagesFor(contact: UIContactInfo, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception>
+    fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception>
 
     /** Delete all messages for the given contact. */
-    fun deleteAllMessagesFor(contact: UIContactInfo): Promise<Unit, Exception>
+    fun deleteAllMessagesFor(userId: UserId): Promise<Unit, Exception>
 
     /**
      * Deletes all the given messages from the given contact's conversation.
      *
-     * @param contact Contact.
+     * @param userId Contact.
      * @param messages List of message IDs to delete.
      */
-    fun deleteMessagesFor(contact: UIContactInfo, messages: List<String>): Promise<Unit, Exception>
+    fun deleteMessagesFor(userId: UserId, messages: List<String>): Promise<Unit, Exception>
 
     /**
      * @return Pairs of UIContact -> UIConversation for every available contact.
@@ -54,6 +55,6 @@ interface UIMessengerService {
     fun getConversations(): Promise<List<UIConversation>, Exception>
 
     /** Resets unread message count for the given contact's conversation. */
-    fun markConversationAsRead(contact: UIContactInfo): Promise<Unit, Exception>
+    fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>
 }
 

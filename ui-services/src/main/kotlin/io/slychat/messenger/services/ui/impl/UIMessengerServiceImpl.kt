@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.ui.impl
 
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.messaging.MessageBundle
@@ -67,8 +68,8 @@ class UIMessengerServiceImpl(
 
     /* Interface methods. */
 
-    override fun sendMessageTo(contact: UIContactInfo, message: String): Promise<UIMessage, Exception> {
-        return getMessengerServiceOrThrow().sendMessageTo(contact.id, message) map { messageInfo ->
+    override fun sendMessageTo(userId: UserId, message: String): Promise<UIMessage, Exception> {
+        return getMessengerServiceOrThrow().sendMessageTo(userId, message) map { messageInfo ->
             messageInfo.toUI()
         }
     }
@@ -91,8 +92,8 @@ class UIMessengerServiceImpl(
         log.debug("addConversationStatusUpdateListener: TODO")
     }
 
-    override fun getLastMessagesFor(contact: UIContactInfo, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
-        return getMessengerServiceOrThrow().getLastMessagesFor(contact.id, startingAt, count) map { messages ->
+    override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
+        return getMessengerServiceOrThrow().getLastMessagesFor(userId, startingAt, count) map { messages ->
             messages.map { it.toUI() }
         }
     }
@@ -107,8 +108,8 @@ class UIMessengerServiceImpl(
         }
     }
 
-    override fun markConversationAsRead(contact: UIContactInfo): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().markConversationAsRead(contact.id)
+    override fun markConversationAsRead(userId: UserId): Promise<Unit, Exception> {
+        return getMessengerServiceOrThrow().markConversationAsRead(userId)
     }
 
     private fun notifyNewMessageListeners(messageInfo: UIMessageInfo) {
@@ -121,11 +122,11 @@ class UIMessengerServiceImpl(
             listener(messageInfo)
     }
 
-    override fun deleteAllMessagesFor(contact: UIContactInfo): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().deleteAllMessages(contact.id)
+    override fun deleteAllMessagesFor(userId: UserId): Promise<Unit, Exception> {
+        return getMessengerServiceOrThrow().deleteAllMessages(userId)
     }
 
-    override fun deleteMessagesFor(contact: UIContactInfo, messages: List<String>): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().deleteMessages(contact.id, messages)
+    override fun deleteMessagesFor(userId: UserId, messages: List<String>): Promise<Unit, Exception> {
+        return getMessengerServiceOrThrow().deleteMessages(userId, messages)
     }
 }

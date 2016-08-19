@@ -505,7 +505,7 @@ ContactController.prototype  = {
                 form.find(".error-block").html("<li>" + response.errorMessage +"</li>");
             }
             else {
-                this.createContactSearchResult(response.contactDetails);
+                this.createContactSearchResult(response.contactInfo);
             }
         }.bind(this)).catch(function (e) {
             slychat.hidePreloader();

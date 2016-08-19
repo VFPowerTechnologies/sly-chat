@@ -25,7 +25,7 @@ interface UIContactsService {
     /**
      * Add a new contact with the given info.
      */
-    fun addNewContact(contactInfo: UIContactInfo): Promise<UIContactInfo, Exception>
+    fun addNewContact(uiContactInfo: UIContactInfo): Promise<UIContactInfo, Exception>
 
     /**
      * Updates the given contact with the given info. newContactInfo.id must not be null.
@@ -35,7 +35,7 @@ interface UIContactsService {
     /**
      * Remove the given contact with the given info.
      */
-    fun removeContact(contactInfo: UIContactInfo): Promise<Unit, Exception>
+    fun removeContact(uiContactInfo: UIContactInfo): Promise<Unit, Exception>
 
     /**
      * Fetch the contact details if contact exist. Email or phoneNumber must not be null.

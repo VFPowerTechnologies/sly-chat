@@ -9,7 +9,7 @@ ChatController.prototype = {
     },
 
     fetchMessageFor : function (start, count, contact) {
-        messengerService.getLastMessagesFor(contact, start, count).then(function (messages) {
+        messengerService.getLastMessagesFor(contact.id, start, count).then(function (messages) {
             var organizedMessages = this.organizeMessages(messages);
             this.displayMessage(organizedMessages, contact);
 
@@ -37,7 +37,7 @@ ChatController.prototype = {
             })
         }
         else {
-            messengerService.sendMessageTo(contact, message).then(function (messageDetails) {
+            messengerService.sendMessageTo(contact.id, message).then(function (messageDetails) {
                 $("#chat-content").append(this.createMessageNode(messageDetails, profileController.name));
 
                 var input = $("#newMessageInput");
@@ -68,7 +68,7 @@ ChatController.prototype = {
                 }
             }
         }
-        
+
         $("#chat-content").html(frag);
         this.scrollTop();
     },
@@ -287,7 +287,7 @@ ChatController.prototype = {
     },
 
     markConversationAsRead : function (contact) {
-        messengerService.markConversationAsRead(contact).catch(function (e) {
+        messengerService.markConversationAsRead(contact.id).catch(function (e) {
             exceptionController.handleError(e);
         });
     },
@@ -368,7 +368,7 @@ ChatController.prototype = {
         else
             messageIds = id;
 
-        messengerService.deleteMessagesFor(contact, messageIds).then(function () {
+        messengerService.deleteMessagesFor(contact.id, messageIds).then(function () {
             messageIds.forEach(function (id) {
                 $("#message_" + id).remove();
             });
@@ -379,7 +379,7 @@ ChatController.prototype = {
     },
 
     deleteConversation : function (contact) {
-        messengerService.deleteAllMessagesFor(contact).then(function () {
+        messengerService.deleteAllMessagesFor(contact.id).then(function () {
             contactController.resetCachedConversation();
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
