@@ -2,14 +2,11 @@ package io.slychat.messenger.services.messaging
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.randomUUID
+import io.slychat.messenger.services.crypto.DecryptionResult
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
-import io.slychat.messenger.services.crypto.MessageDecryptionResult
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.cond
 import io.slychat.messenger.testutils.testSubscriber
@@ -17,7 +14,6 @@ import io.slychat.messenger.testutils.thenReturn
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
-import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.assertEquals
@@ -33,7 +29,7 @@ class MessageReceiverImplTest {
     data class GeneratedTextMessages(
         val packages: List<Package>,
         val wrappers: List<TextMessageWrapper>,
-        val decryptedResults: List<MessageDecryptionResult.Success>
+        val decryptedResults: List<DecryptionResult>
     )
 
     class TestException : Exception("Test exc")
@@ -41,8 +37,6 @@ class MessageReceiverImplTest {
     val messageProcessor: MessageProcessor = mock()
     val packageQueuePersistenceManager: PackageQueuePersistenceManager = mock()
     val messageCipherService: MessageCipherService = mock()
-
-    val decryptionResults: PublishSubject<DecryptionResult> = PublishSubject.create()
 
     fun createTextMessage(message: String, group: String? = null): TextMessageWrapper {
         val groupId = group?.let { GroupId(it) }
@@ -69,7 +63,6 @@ class MessageReceiverImplTest {
         val payload = objectMapper.writeValueAsBytes(textMessage)
 
         return createPackage(from, payload)
-
     }
 
     fun createPackage(from: UserId, message: String): Package {
@@ -82,12 +75,12 @@ class MessageReceiverImplTest {
 
         val packages = ArrayList<Package>()
         val wrappers = ArrayList<TextMessageWrapper>()
-        val results = ArrayList<MessageDecryptionResult.Success>()
+        val results = ArrayList<DecryptionResult>()
 
         messages.forEach {
             val wrapped = createTextMessage(it)
             val pkg = createPackage(from, wrapped.m)
-            val result = MessageDecryptionResult.Success(pkg.id.messageId, objectMapper.writeValueAsBytes(wrapped))
+            val result = DecryptionResult(pkg.id.messageId, objectMapper.writeValueAsBytes(wrapped))
 
             wrappers.add(wrapped)
             packages.add(pkg)
@@ -98,21 +91,29 @@ class MessageReceiverImplTest {
     }
 
     fun createReceiver(): MessageReceiverImpl {
-        val scheduler = Schedulers.immediate()
-
-        whenever(messageCipherService.decryptedMessages).thenReturn(decryptionResults)
         whenever(packageQueuePersistenceManager.removeFromQueue(any<Collection<PackageId>>())).thenReturn(Unit)
         whenever(packageQueuePersistenceManager.removeFromQueue(any<UserId>(), any())).thenReturn(Unit)
         whenever(packageQueuePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(Unit)
         whenever(messageProcessor.processMessage(any(), any())).thenReturn(Unit)
 
-
         return MessageReceiverImpl(
-            scheduler,
             messageProcessor,
             packageQueuePersistenceManager,
             messageCipherService
         )
+    }
+
+    fun setRandomDecryptionResult() {
+        val objectMapper = ObjectMapper()
+        val wrapped = createTextMessage(randomMessageText())
+        val messageId = randomMessageId()
+
+        val result = DecryptionResult(messageId, objectMapper.writeValueAsBytes(wrapped))
+        setDecryptionResult(result)
+    }
+
+    fun setDecryptionResult(result: DecryptionResult) {
+        whenever(messageCipherService.decrypt(any(), any())).thenReturn(result)
     }
 
     @Test
@@ -124,6 +125,8 @@ class MessageReceiverImplTest {
         )
 
         whenever(packageQueuePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(Unit)
+
+        setRandomDecryptionResult()
 
         receiver.processPackages(packages).get()
     }
@@ -148,6 +151,8 @@ class MessageReceiverImplTest {
         val receiver = createReceiver()
 
         val pkg = createPackage(UserId(1), "test")
+
+        setRandomDecryptionResult()
 
         receiver.processPackages(listOf(pkg))
 
@@ -186,11 +191,11 @@ class MessageReceiverImplTest {
         val wrapped = createTextMessage("test")
         val pkg = createPackage(from, wrapped.m)
 
+        val result = DecryptionResult(pkg.id.messageId, objectMapper.writeValueAsBytes(wrapped))
+
+        setDecryptionResult(result)
+
         receiver.processPackages(listOf(pkg))
-
-        val result = MessageDecryptionResult.Success(pkg.id.messageId, objectMapper.writeValueAsBytes(wrapped))
-
-        decryptionResults.onNext(DecryptionResult(from, result))
 
         val captor = argumentCaptor<SlyMessageWrapper>()
         verify(messageProcessor).processMessage(eq(from), capture(captor))
@@ -205,11 +210,11 @@ class MessageReceiverImplTest {
         val from = UserId(1)
         val pkg = createPackage(from, "invalid")
 
+        val result = DecryptionResult(pkg.id.messageId, "invalid".toByteArray())
+
+        setDecryptionResult(result)
+
         receiver.processPackages(listOf(pkg))
-
-        val result = MessageDecryptionResult.Success(pkg.id.messageId, "invalid".toByteArray())
-
-        decryptionResults.onNext(DecryptionResult(from, result))
 
         val captor = argumentCaptor<Collection<String>>()
         verify(packageQueuePersistenceManager).removeFromQueue(eq(from), capture(captor))
@@ -229,11 +234,11 @@ class MessageReceiverImplTest {
         val generated = generateMessages(from, "1", "2")
         val address = generated.packages[0].id.address
 
-        receiver.processPackages(generated.packages)
-
         val result = generated.decryptedResults[0]
 
-        decryptionResults.onNext(DecryptionResult(from, result))
+        setDecryptionResult(result)
+
+        receiver.processPackages(generated.packages)
 
         val captor = argumentCaptor<EncryptedMessageInfo>()
 
@@ -256,11 +261,11 @@ class MessageReceiverImplTest {
         val wrapped = createTextMessage("test")
         val pkg = createPackage(from, wrapped.m)
 
+        val result = DecryptionResult(pkg.id.messageId, objectMapper.writeValueAsBytes(wrapped))
+
+        setDecryptionResult(result)
+
         receiver.processPackages(listOf(pkg))
-
-        val result = MessageDecryptionResult.Success(pkg.id.messageId, objectMapper.writeValueAsBytes(wrapped))
-
-        decryptionResults.onNext(DecryptionResult(from, result))
 
         verify(packageQueuePersistenceManager).removeFromQueue(from, listOf(pkg.id.messageId))
     }

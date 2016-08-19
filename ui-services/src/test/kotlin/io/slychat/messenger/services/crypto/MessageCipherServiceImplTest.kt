@@ -273,7 +273,7 @@ class MessageCipherServiceImplTest {
 
         val decryptionResult = receiverService.decrypt(senderAddress, encryptedMessageInfo)
         receiverService.processQueue(false)
-        val decryptedMessage = (decryptionResult.get().result as MessageDecryptionResult.Success).data
+        val decryptedMessage = decryptionResult.get().data
 
         assertThat(decryptedMessage).isEqualTo(originalMessage).`as`("Decrypted should match original")
     }

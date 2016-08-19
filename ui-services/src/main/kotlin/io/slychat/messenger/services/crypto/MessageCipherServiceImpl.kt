@@ -7,7 +7,6 @@ import io.slychat.messenger.core.http.api.prekeys.PreKeyRetrievalRequest
 import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.auth.AuthTokenManager
-import io.slychat.messenger.services.messaging.DecryptionResult
 import io.slychat.messenger.services.messaging.EncryptedMessageInfo
 import io.slychat.messenger.services.messaging.EncryptionResult
 import nl.komponents.kovenant.Deferred
@@ -20,24 +19,8 @@ import org.whispersystems.libsignal.protocol.PreKeySignalMessage
 import org.whispersystems.libsignal.protocol.SignalMessage
 import org.whispersystems.libsignal.state.PreKeyBundle
 import org.whispersystems.libsignal.state.SignalProtocolStore
-import rx.Observable
-import rx.subjects.PublishSubject
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
-
-sealed class MessageDecryptionResult {
-    class Success(
-        val messageId: String,
-        val data: ByteArray
-    ) : MessageDecryptionResult()
-
-    class Failure(
-        val messageId: String,
-        val cause: Throwable
-    ) : MessageDecryptionResult()
-}
-
-class DeviceUpdateResult(val exception: Exception?)
 
 class MessageCipherServiceImpl(
     private val authTokenManager: AuthTokenManager,
@@ -70,10 +53,6 @@ class MessageCipherServiceImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val workQueue = ArrayBlockingQueue<CipherWork>(20)
-
-    private val decryptionSubject = PublishSubject.create<DecryptionResult>()
-    override val decryptedMessages: Observable<DecryptionResult>
-        get() = decryptionSubject
 
     override fun start() {
         if (thread != null)
@@ -229,10 +208,7 @@ class MessageCipherServiceImpl(
         try {
             val message = decryptEncryptedMessage(sessionCipher, work.encryptedMessage.payload)
             work.deferred.resolve(
-                DecryptionResult(
-                    work.address.id,
-                    MessageDecryptionResult.Success(messageId, message)
-                )
+                DecryptionResult(messageId, message)
             )
         }
         catch (e: Exception) {

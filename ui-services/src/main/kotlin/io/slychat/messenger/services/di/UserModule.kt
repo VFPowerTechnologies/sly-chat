@@ -136,12 +136,10 @@ class UserModule(
     @UserScope
     @Provides
     fun providesMessageReceiver(
-        scheduler: Scheduler,
         messageProcessor: MessageProcessor,
         packageQueuePersistenceManager: PackageQueuePersistenceManager,
         messageCipherService: MessageCipherService
     ): MessageReceiver = MessageReceiverImpl(
-        scheduler,
         messageProcessor,
         packageQueuePersistenceManager,
         messageCipherService
