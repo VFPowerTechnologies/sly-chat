@@ -25,7 +25,6 @@ ConnectionController.prototype = {
     },
 
     handleConnectionDisplay : function () {
-        var currentPage = $$('#mainView').data('page');
         if (this.networkAvailable == true && this.relayConnected == true) {
             if (this.notification !== null) {
                 slychat.closeNotification(this.notification);
@@ -34,6 +33,7 @@ ConnectionController.prototype = {
         }
         else {
             setTimeout(function () {
+                var currentPage = $$('#mainView').data('page');
                 if (this.networkAvailable !== true) {
                     this.openConnectionNotification("No network access");
                 }

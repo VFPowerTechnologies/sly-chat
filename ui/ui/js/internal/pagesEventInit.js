@@ -252,13 +252,3 @@ $$(document).on('open', '.popup-contact', function() {
 });
 
 
-// TODO Implement left contact menu in chat page for easy switching between contact
-// var mc = new Hammer(document.getElementById('mainView'));
-// mc.on("swipeleft swiperight", function (e) {
-//     if(navigationController.getCurrentPage() == "chat.html") {
-//         if (e.type == "swiperight")
-//             console.log(e.type + " gesture detected");
-//         else if (e.type == "swipeleft")
-//             console.log(e.type + " gesture detected");
-//     }
-// });
