@@ -96,7 +96,7 @@ class SlyApplication {
         get() = field
 
     /** Only called directly when used for testing. */
-    internal fun init(applicationComponent: ApplicationComponent) {
+    internal fun init(applicationComponent: ApplicationComponent, doAutoLogin: Boolean = false) {
         appComponent = applicationComponent
 
         initializeApplicationServices()
@@ -118,7 +118,7 @@ class SlyApplication {
             .subscribe { onPlatformContactsUpdated() }
 
         appComponent.appConfigService.init() successUi {
-            initializationComplete()
+            initializationComplete(doAutoLogin)
         }
     }
 
@@ -131,16 +131,17 @@ class SlyApplication {
             .applicationModule(ApplicationModule(this))
             .build()
 
-        init(appComponent)
+        init(appComponent, true)
     }
 
-    private fun initializationComplete() {
+    private fun initializationComplete(doAutoLogin: Boolean) {
         log.info("Initialization complete")
         isInitialized = true
         onInitListeners.forEach { it(this) }
         onInitListeners.clear()
 
-        autoLogin()
+        if (doAutoLogin)
+            autoLogin()
     }
 
     fun addOnInitListener(listener: (SlyApplication) -> Unit) {
