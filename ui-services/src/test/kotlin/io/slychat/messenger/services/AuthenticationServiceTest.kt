@@ -63,7 +63,7 @@ class AuthenticationServiceTest {
         whenever(authenticationClient.getParams(email)).thenReturn(paramsResponse)
 
         val authToken = randomAuthToken()
-        val authData = AuthenticationData(authToken, keyVault.serialize(), accountInfo)
+        val authData = AuthenticationData(authToken, keyVault.serialize(), accountInfo, emptyList())
         val authenticationResponse = AuthenticationResponse(null, authData)
         whenever(authenticationClient.auth(any())).thenReturn(authenticationResponse)
 

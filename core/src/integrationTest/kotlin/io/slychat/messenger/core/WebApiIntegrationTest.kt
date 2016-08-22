@@ -19,6 +19,7 @@ import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.RemoteAddressBookEntry
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assume
 import org.junit.Before
@@ -316,6 +317,28 @@ class WebApiIntegrationTest {
         val receivedSerializedKeyVault = authApiResult.data!!.keyVault
 
         assertEquals(siteUser.keyVault, receivedSerializedKeyVault)
+    }
+
+    @Test
+    fun `authentication request should return other active devices for the current user`() {
+        val userA = injectNewSiteUser()
+        val siteUser = userA.user
+        val username = siteUser.username
+
+        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+        devClient.addDevice(username, defaultRegistrationId, DeviceState.INACTIVE)
+        devClient.addDevice(username, defaultRegistrationId, DeviceState.PENDING)
+        val activeDeviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+
+        val authApiResult = sendAuthRequestForUser(userA, deviceId)
+        assertTrue(authApiResult.isSuccess, "auth failed: ${authApiResult.errorMessage}")
+
+        val authData = authApiResult.data!!
+
+        Assertions.assertThat(authData.devices).apply {
+            `as`("Should only list active devices")
+            containsOnly(activeDeviceId)
+        }
     }
 
     fun runMaxDeviceTest(state: DeviceState) {

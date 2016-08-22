@@ -47,7 +47,7 @@ class AuthenticationClientTest {
         val serializedKeyVault = generateNewKeyVault(password).serialize()
 
         val httpClient = mock<HttpClient>()
-        val response = AuthenticationResponse(null, AuthenticationData(AuthToken("auth"), serializedKeyVault, accountInfo))
+        val response = AuthenticationResponse(null, AuthenticationData(AuthToken("auth"), serializedKeyVault, accountInfo, emptyList()))
         val apiResult = ApiResult(null, response)
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))
 

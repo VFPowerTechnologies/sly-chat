@@ -6,6 +6,10 @@ import io.slychat.messenger.core.AuthToken
 import io.slychat.messenger.core.crypto.SerializedKeyVault
 import io.slychat.messenger.core.persistence.AccountInfo
 
+/**
+ * @property devices Current list of active devices for this account, excluding the current device. This excludes
+ * pending devices, as we can't send messages to devices without registered prekeys.
+ */
 data class AuthenticationData(
     @param:JsonProperty("auth-token")
     @get:JsonProperty("auth-token")
@@ -17,7 +21,10 @@ data class AuthenticationData(
 
     @param:JsonProperty("account-info")
     @get:JsonProperty("account-info")
-    val accountInfo: AccountInfo
+    val accountInfo: AccountInfo,
+
+    @JsonProperty("devices")
+    val devices: List<Int>
 )
 
 data class AuthenticationResponse(
