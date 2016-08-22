@@ -95,7 +95,7 @@ class UIServicesModule {
 
     @Singleton
     @Provides
-    fun providesStateService(): UIStateService = UIStateService()
+    fun providesStateService(): UIStateService = UIStateServiceImpl()
 
     @Singleton
     @Provides

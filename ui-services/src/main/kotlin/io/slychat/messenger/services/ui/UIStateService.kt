@@ -1,24 +1,13 @@
 package io.slychat.messenger.services.ui
 
-import com.vfpowertech.jsbridge.processor.annotations.Exclude
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 
 @JSToJavaGenerate("StateService")
-class UIStateService {
-    private var currentState: UIState? = null
-
-    @set:Exclude
-    var initialPage: String? = null
-        get() {
-            val v = field
-            field = null
-            return v
-        }
+interface UIStateService {
+    val initialPage: String?
 
     /** Returns the current state, or null if none is set. */
-    fun getState(): UIState? = currentState
+    fun getState(): UIState?
 
-    fun setState(state: UIState?) {
-        currentState = state
-    }
+    fun setState(state: UIState?)
 }
