@@ -153,6 +153,18 @@ GroupController.prototype = {
         $("#groupList").html(frag);
     },
 
+    createLeftGroupList : function () {
+        var frag = $(document.createDocumentFragment());
+        if(Object.size(this.groupDetailsCache) > 0) {
+            for(var g in this.groupDetailsCache) {
+                if (this.groupDetailsCache.hasOwnProperty(g)) {
+                    frag.append(this.createLeftGroupNode(this.groupDetailsCache[g]));
+                }
+            }
+            $("#leftGroupList").html(frag);
+        }
+    },
+
     getGroupConversations : function () {
         if (Object.size(this.groupDetailsCache) <= 0)
             return false;
@@ -219,6 +231,21 @@ GroupController.prototype = {
                 "<div class='group-members'>" +
                 "</div>" +
             "</div>");
+
+        node.click(function (e) {
+            contactController.loadChatPage(group.group, true, true);
+        });
+
+        node.on("mouseheld", function () {
+            vibrate(50);
+            this.openGroupNodeMenu(group.group.id);
+        }.bind(this));
+
+        return node;
+    },
+
+    createLeftGroupNode : function (group) {
+        var node = $("<li id='leftContact_" + group.group.id + "'><a href='#'>" + group.group.name + "</a></li>");
 
         node.click(function (e) {
             contactController.loadChatPage(group.group, true, true);

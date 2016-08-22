@@ -45,6 +45,7 @@ LoginController.prototype = {
         var publicKey = e.publicKey;
 
         profileController.setUserInfo(accountInfo, publicKey);
+        $("#leftDesktopProfileName").html(accountInfo.name);
         this.resetLoginInfo();
 
         var noStateLoad = ["register.html", "login.html", "smsVerification.html", "updatePhone.html"];
