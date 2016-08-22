@@ -248,7 +248,7 @@ class UserModule(
         val serverUrl = serverUrls.API_SERVER
         val preKeyAsyncClient = PreKeyAsyncClient(serverUrl, httpClientFactory)
 
-        return PreKeyManager(
+        return PreKeyManagerImpl(
             application,
             userLoginData,
             preKeyAsyncClient,
