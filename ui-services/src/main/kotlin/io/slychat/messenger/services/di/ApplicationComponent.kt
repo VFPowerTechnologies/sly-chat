@@ -4,6 +4,7 @@ import dagger.Component
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.http.HttpClientFactory
+import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
 import io.slychat.messenger.services.AuthenticationService
 import io.slychat.messenger.services.LocalAccountDirectory
 import io.slychat.messenger.services.PlatformContacts
@@ -16,6 +17,7 @@ import javax.inject.Singleton
 @Singleton
 @Component(modules = arrayOf(ApplicationModule::class, RelayModule::class, UIServicesModule::class, PlatformModule::class))
 interface ApplicationComponent {
+    //FIXME used in Sentry.init
     val platformInfo: PlatformInfo
 
     val uiPlatformInfoService: UIPlatformInfoService
@@ -70,6 +72,8 @@ interface ApplicationComponent {
     val uiGroupService: UIGroupService
 
     val localAccountDirectory: LocalAccountDirectory
+
+    val installationDataPersistenceManager: InstallationDataPersistenceManager
 
     fun plus(userModule: UserModule): UserComponent
 }

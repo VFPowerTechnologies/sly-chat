@@ -1,13 +1,15 @@
 package io.slychat.messenger.services
 
 import com.fasterxml.jackson.core.JsonParseException
-import io.slychat.messenger.core.*
+import io.slychat.messenger.core.AuthToken
+import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.KeyVault
+import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.InstallationData
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.StartupInfo
-import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenceManager
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
 import io.slychat.messenger.services.LoginEvent.*
@@ -93,15 +95,9 @@ class SlyApplication {
 
         get() = field
 
-
-    /** Starts background initialization; use addOnInitListener to be notified when app has finished initializing. Once finalized, will trigger auto-login. */
-    fun init(platformModule: PlatformModule) {
-        log.info("Operating System: {} {}", currentOs.name, currentOs.version)
-
-        appComponent = DaggerApplicationComponent.builder()
-            .platformModule(platformModule)
-            .applicationModule(ApplicationModule(this))
-            .build()
+    /** Only called directly when used for testing. */
+    internal fun init(applicationComponent: ApplicationComponent) {
+        appComponent = applicationComponent
 
         initializeApplicationServices()
 
@@ -124,6 +120,18 @@ class SlyApplication {
         appComponent.appConfigService.init() successUi {
             initializationComplete()
         }
+    }
+
+    /** Starts background initialization; use addOnInitListener to be notified when app has finished initializing. Once finalized, will trigger auto-login. */
+    fun init(platformModule: PlatformModule) {
+        log.info("Operating System: {} {}", currentOs.name, currentOs.version)
+
+        val appComponent = DaggerApplicationComponent.builder()
+            .platformModule(platformModule)
+            .applicationModule(ApplicationModule(this))
+            .build()
+
+        init(appComponent)
     }
 
     private fun initializationComplete() {
@@ -152,9 +160,7 @@ class SlyApplication {
 
     //XXX this is kinda bad since we block on the main thread, but it's only done once during init anyways
     fun initInstallationData() {
-        val path = appComponent.platformInfo.appFileStorageDirectory / "installation-data.json"
-
-        val persistenceManager = JsonInstallationDataPersistenceManager(path)
+        val persistenceManager = appComponent.installationDataPersistenceManager
 
         val maybeInstallationData = try {
             persistenceManager.retrieve().get()

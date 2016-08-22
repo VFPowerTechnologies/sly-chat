@@ -12,6 +12,8 @@ import io.slychat.messenger.core.http.HttpClientConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.JavaHttpClientFactory
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
+import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
+import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenceManager
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.FileConfigStorage
@@ -101,5 +103,14 @@ class ApplicationModule(
     @Provides
     fun providesTimerFactory(): TimerFactory {
         return RxTimerFactory()
+    }
+
+    @Singleton
+    @Provides
+    fun providesInstallationDataPersistenceManager(
+        platformInfo: PlatformInfo
+    ): InstallationDataPersistenceManager {
+        val path = platformInfo.appFileStorageDirectory / "installation-data.json"
+        return JsonInstallationDataPersistenceManager(path)
     }
 }
