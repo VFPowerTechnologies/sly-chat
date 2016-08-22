@@ -94,8 +94,11 @@ class MessengerServiceImpl(
         log.debug("Processing sent group message <<{}/{}>>", groupId, metadata.messageId)
 
         groupService.markMessageAsDelivered(groupId, metadata.messageId) successUi { messageInfo ->
-            val bundle = MessageBundle(metadata.userId, groupId, listOf(messageInfo.info))
-            messageUpdatesSubject.onNext(bundle)
+            //if this is null, the message has already been delievered to one recipient, so we don't emit another event
+            if (messageInfo != null) {
+                val bundle = MessageBundle(metadata.userId, groupId, listOf(messageInfo.info))
+                messageUpdatesSubject.onNext(bundle)
+            }
         } fail { e ->
             log.error("Unable to mark group message <<{}/{}>> as delivered: {}", groupId, metadata.messageId, e.message, e)
         }

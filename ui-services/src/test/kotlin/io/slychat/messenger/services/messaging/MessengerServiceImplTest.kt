@@ -9,12 +9,10 @@ import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.assertEventEmitted
+import io.slychat.messenger.services.assertNoEventsEmitted
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
-import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.testSubscriber
-import io.slychat.messenger.testutils.thenAnswerWithArg
-import io.slychat.messenger.testutils.thenReturn
+import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -307,6 +305,22 @@ class MessengerServiceImplTest {
             assertThat(it.messages)
                 .containsOnly(messageInfo)
         }
+    }
+
+    @Test
+    fun `it should return emit a message updated event when receiving a message update for an already delivered TEXT_GROUP message`() {
+        val messengerService = createService()
+
+        val update = randomTextGroupMetadata()
+
+        whenever(groupService.markMessageAsDelivered(update.groupId!!, update.messageId))
+            .thenReturnNull()
+
+        val testSubscriber = messengerService.messageUpdates.testSubscriber()
+
+        messageSent.onNext(update)
+
+        assertNoEventsEmitted(testSubscriber)
     }
 
     @Test
