@@ -872,11 +872,20 @@ class SQLiteGroupPersistenceManagerTest {
         withJoinedGroup { groupId, members ->
             val id = insertRandomSentMessage(groupId)
 
-            groupPersistenceManager.markMessageAsDelivered(groupId, id).get()
+            val groupMessageInfo = assertNotNull(groupPersistenceManager.markMessageAsDelivered(groupId, id).get(), "Info wasn't returned")
 
-            val groupMessageInfo = assertNotNull(groupPersistenceManager.internalGetMessageInfo(groupId, id), "Missing message")
             assertTrue(groupMessageInfo.info.isDelivered, "Not marked as delivered")
             assertTrue(groupMessageInfo.info.receivedTimestamp != 0L, "Received timestamp not updated")
+        }
+    }
+
+    @Test
+    fun `markMessageAsDelievered should return null if the message has already been marked as delievered`() {
+        withJoinedGroup { groupId, members ->
+            val id = insertRandomSentMessage(groupId)
+
+            assertNotNull(groupPersistenceManager.markMessageAsDelivered(groupId, id).get(), "Info wasn't returned")
+            assertNull(groupPersistenceManager.markMessageAsDelivered(groupId, id).get(), "Message not marked as delievered")
         }
     }
 

@@ -582,25 +582,37 @@ LIMIT
         }
     }
 
-    override fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<GroupMessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<GroupMessageInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val tableName = GroupConversationTable.getTablename(groupId)
+
         val sql = "UPDATE $tableName SET is_delivered=1, received_timestamp=? WHERE id=?"
 
-        try {
-            connection.withPrepared(sql) { stmt ->
-                stmt.bind(1, currentTimestamp())
-                stmt.bind(2, messageId)
-                stmt.step()
-            }
+        val currentInfo = try {
+            getGroupMessageInfo(connection, groupId, messageId) ?: throw InvalidGroupMessageException(groupId, messageId)
         }
         catch (e: SQLiteException) {
             handleInvalidGroupException(e, groupId)
         }
 
-        if (connection.changes <= 0)
-            throw InvalidGroupMessageException(groupId, messageId)
+        if (!currentInfo.info.isDelivered) {
+            try {
+                connection.withPrepared(sql) { stmt ->
+                    stmt.bind(1, currentTimestamp())
+                    stmt.bind(2, messageId)
+                    stmt.step()
+                }
+            }
+            catch (e: SQLiteException) {
+                handleInvalidGroupException(e, groupId)
+            }
 
-        getGroupMessageInfo(connection, groupId, messageId) ?: throw InvalidGroupMessageException(groupId, messageId)
+            if (connection.changes <= 0)
+                throw InvalidGroupMessageException(groupId, messageId)
+
+            getGroupMessageInfo(connection, groupId, messageId) ?: throw InvalidGroupMessageException(groupId, messageId)
+        }
+        else
+            null
     }
 
     override fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
