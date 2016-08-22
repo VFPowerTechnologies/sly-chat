@@ -149,7 +149,7 @@ ContactController.prototype  = {
         groupController.createLeftGroupList();
         this.createRecentContactList(jointedRecentChat);
 
-        if (!isDesktop && firstLogin === true && jointedRecentChat.length <= 0) {
+        if (firstLogin === true && jointedRecentChat.length <= 0) {
             firstLogin = false;
             slychat.popup('#contactPopup');
         }
