@@ -44,7 +44,7 @@ class AuthenticationService(
 
                 val data = response.data!!
                 val keyVault = KeyVault.deserialize(data.keyVault, password)
-                AuthResult(data.authToken, keyVault, data.accountInfo, data.devices)
+                AuthResult(data.authToken, keyVault, data.accountInfo, data.otherDevices)
             }
         }
     }

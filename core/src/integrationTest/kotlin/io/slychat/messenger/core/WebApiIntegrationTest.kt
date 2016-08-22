@@ -8,6 +8,7 @@ import io.slychat.messenger.core.http.api.accountupdate.*
 import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
 import io.slychat.messenger.core.http.api.authentication.AuthenticationResponse
+import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.http.api.gcm.GcmClient
 import io.slychat.messenger.core.http.api.prekeys.*
@@ -328,16 +329,17 @@ class WebApiIntegrationTest {
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
         devClient.addDevice(username, defaultRegistrationId, DeviceState.INACTIVE)
         devClient.addDevice(username, defaultRegistrationId, DeviceState.PENDING)
-        val activeDeviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+        val activeDeviceRegistrationId = randomRegistrationId()
+        val activeDeviceId = devClient.addDevice(username, activeDeviceRegistrationId, DeviceState.ACTIVE)
 
         val authApiResult = sendAuthRequestForUser(userA, deviceId)
         assertTrue(authApiResult.isSuccess, "auth failed: ${authApiResult.errorMessage}")
 
         val authData = authApiResult.data!!
 
-        Assertions.assertThat(authData.devices).apply {
+        Assertions.assertThat(authData.otherDevices).apply {
             `as`("Should only list active devices")
-            containsOnly(activeDeviceId)
+            containsOnly(DeviceInfo(activeDeviceId, activeDeviceRegistrationId))
         }
     }
 

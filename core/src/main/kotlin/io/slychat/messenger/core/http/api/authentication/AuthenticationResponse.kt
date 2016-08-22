@@ -1,13 +1,24 @@
 package io.slychat.messenger.core.http.api.authentication
 
+import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import io.slychat.messenger.core.AuthToken
 import io.slychat.messenger.core.crypto.SerializedKeyVault
 import io.slychat.messenger.core.persistence.AccountInfo
 
+@JsonFormat(shape = JsonFormat.Shape.ARRAY)
+@JsonPropertyOrder("id", "registrationId")
+data class DeviceInfo(
+    @JsonProperty("id")
+    val id: Int,
+    @JsonProperty("registrationId")
+    val registrationId: Int
+)
+
 /**
- * @property devices Current list of active devices for this account, excluding the current device. This excludes
+ * @property otherDevices Current list of active devices for this account, excluding the current device. This excludes
  * pending devices, as we can't send messages to devices without registered prekeys.
  */
 data class AuthenticationData(
@@ -24,7 +35,7 @@ data class AuthenticationData(
     val accountInfo: AccountInfo,
 
     @JsonProperty("devices")
-    val devices: List<Int>
+    val otherDevices: List<DeviceInfo>
 )
 
 data class AuthenticationResponse(
