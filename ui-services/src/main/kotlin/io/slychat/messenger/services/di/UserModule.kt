@@ -225,13 +225,14 @@ class UserModule(
     @UserScope
     @Provides
     fun providesMessageCipherService(
+        userData: UserData,
         authTokenManager: AuthTokenManager,
         serverUrls: ServerUrls,
         signalProtocolStore: SignalProtocolStore,
         @SlyHttp httpClientFactory: HttpClientFactory
     ): MessageCipherService {
         val preKeyClient = HttpPreKeyClient(serverUrls.API_SERVER, httpClientFactory.create())
-        return MessageCipherServiceImpl(authTokenManager, preKeyClient, signalProtocolStore)
+        return MessageCipherServiceImpl(userData.userId, authTokenManager, preKeyClient, signalProtocolStore)
     }
 
     @UserScope

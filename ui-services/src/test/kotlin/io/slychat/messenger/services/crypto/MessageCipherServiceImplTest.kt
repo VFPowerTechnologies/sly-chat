@@ -1,19 +1,20 @@
 package io.slychat.messenger.services.crypto
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.addPreKeysToStore
 import io.slychat.messenger.core.crypto.generateKeyPair
 import io.slychat.messenger.core.crypto.generatePrekeys
 import io.slychat.messenger.core.crypto.identityKeyFingerprint
+import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.http.api.prekeys.*
-import io.slychat.messenger.core.randomSerializedMessage
-import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
+import io.slychat.messenger.services.crypto.MessageCipherServiceImpl.Companion.deviceDiff
 import io.slychat.messenger.services.messaging.EncryptedMessageInfo
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.Timeout
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.SessionBuilder
 import org.whispersystems.libsignal.SessionCipher
@@ -21,7 +22,6 @@ import org.whispersystems.libsignal.state.PreKeyBundle
 import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SignalProtocolStore
 import org.whispersystems.libsignal.state.impl.InMemorySignalProtocolStore
-import org.whispersystems.libsignal.util.KeyHelper
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -32,10 +32,15 @@ class MessageCipherServiceImplTest {
         //InMemorySessionStore.getSubDeviceSession never returns 1; in our impl we do (we have no master device concept),
         //so start device ids from 2 instead so we don't run into this behavior
         const val initialDeviceId = 2
+
     }
 
+    @Rule
+    @JvmField
+    val timeoutRule = Timeout(1000)
+
     class MockDevice(val identityKeyPair: IdentityKeyPair, val id: Int) {
-        val registrationId = KeyHelper.generateRegistrationId(false)
+        val registrationId = randomRegistrationId()
         val preKeys = generatePrekeys(identityKeyPair, 1, 1, 10)
         val signalStore = InMemorySignalProtocolStore(identityKeyPair, registrationId)
 
@@ -44,6 +49,10 @@ class MessageCipherServiceImplTest {
 
         init {
             addPreKeysToStore(signalStore, preKeys)
+        }
+
+        override fun toString(): String {
+            return "MockDevice(id=$id; registrationId=$registrationId)"
         }
 
         private fun nextPreKey(): PreKeyRecord {
@@ -86,8 +95,9 @@ class MessageCipherServiceImplTest {
         val userId = UserId(id)
         val identityKeyPair = generateKeyPair()
 
-        val devices = (0..initialDeviceCount - 1).map { createDevice(it + initialDeviceId) }.toMutableList()
-        val deviceIds = devices.map { it.id }
+        var devices = (0..initialDeviceCount - 1).map { createDevice(it) }.toMutableList()
+        val deviceIds: List<Int>
+            get() = devices.map { it.id }
 
         /** Shortcut for accessing the first device's SignalProtocolStore. */
         val signalStore: SignalProtocolStore
@@ -100,8 +110,14 @@ class MessageCipherServiceImplTest {
             devices[deviceId - initialDeviceId] = device
         }
 
+        fun newDevice(): MockDevice {
+            val device = createDevice(devices.size)
+            devices.add(device)
+            return device
+        }
+
         private fun createDevice(deviceId: Int): MockDevice {
-            val newDevice = MockDevice(identityKeyPair, deviceId)
+            val newDevice = MockDevice(identityKeyPair, deviceId + initialDeviceId)
             return newDevice
         }
 
@@ -161,7 +177,7 @@ class MessageCipherServiceImplTest {
 
     fun createCipherService(client: PreKeyClient, user: MockUser): MessageCipherServiceImpl {
         val authTokenManager = MockAuthTokenManager()
-        return MessageCipherServiceImpl(authTokenManager, client, user.signalStore)
+        return MessageCipherServiceImpl(user.userId, authTokenManager, client, user.signalStore)
     }
 
     fun assertSessionStatus(signalProtocolStore: SignalProtocolStore, target: MockUser, expectedDeviceIds: List<Int>, exists: Boolean) {
@@ -182,6 +198,17 @@ class MessageCipherServiceImplTest {
 
     fun assertSessionsNotExist(user: MockUser, target: MockUser, expectedDeviceIds: List<Int>) {
         assertSessionStatus(user.signalStore, target, expectedDeviceIds, false)
+    }
+
+    fun assertSessionsMatch(user: MockUser, target: MockUser, expectedDeviceIds: List<Int>) {
+        expectedDeviceIds.forEach { deviceId ->
+            val address = SlyAddress(target.userId, deviceId)
+            val sessionCipher = SessionCipher(user.signalStore, address.toSignalAddress())
+
+            val device = target.getDevice(deviceId)
+
+            assertEquals(device.registrationId, sessionCipher.remoteRegistrationId, "Registration IDs for deviceId=$deviceId don't match")
+        }
     }
 
     @Test
@@ -331,13 +358,148 @@ class MessageCipherServiceImplTest {
 
         p.get()
 
-        stale.forEach { deviceId ->
-            val address = SlyAddress(target.userId, deviceId)
-            val sessionCipher = SessionCipher(user.signalStore, address.toSignalAddress())
+        assertSessionsMatch(user, target, stale)
+    }
 
-            val device = target.getDevice(deviceId)
+    @Test
+    fun `it should add missing self devices to the given list when updateSelfDevices is called`() {
+        val self = MockUser(1)
 
-            assertEquals(device.registrationId, sessionCipher.remoteRegistrationId, "Registration IDs for deviceId=$deviceId don't match")
-        }
+        val otherDevice = self.newDevice()
+        val otherDeviceIds = listOf(otherDevice.id)
+        val otherDevices = listOf(
+            DeviceInfo(otherDevice.id, otherDevice.registrationId)
+        )
+
+        val client = createPreKeyClientMock(self, otherDeviceIds)
+
+        val cipherService = createCipherService(client, self)
+
+        val p = cipherService.updateSelfDevices(otherDevices)
+
+        cipherService.processQueue(false)
+
+        p.get()
+
+        assertSessionsExist(self, self, otherDeviceIds)
+    }
+
+    @Test
+    fun `it should remove missing devices from the given list when updateSelfDevices is called`() {
+        val self = MockUser(1)
+
+        val otherDevice = self.newDevice()
+        val otherDeviceIds = listOf(otherDevice.id)
+        val otherDevices = emptyList<DeviceInfo>()
+
+        val client = createPreKeyClientMock(self, emptyList())
+
+        val cipherService = createCipherService(client, self)
+
+        val p = cipherService.updateSelfDevices(otherDevices)
+
+        cipherService.processQueue(false)
+
+        p.get()
+
+        assertSessionsNotExist(self, self, otherDeviceIds)
+    }
+
+    @Test
+    fun `it should update stale entries from the given list when updateSelfDevices is called`() {
+        val self = MockUser(1)
+
+        val otherDevice = self.newDevice()
+        val otherDeviceIds = listOf(otherDevice.id)
+        self.addSessions(self, listOf(otherDevice.id))
+
+        val newOtherDevice = self.swapDevice(otherDevice.id)
+
+        val otherDevices = listOf(
+            DeviceInfo(newOtherDevice.id, newOtherDevice.registrationId)
+        )
+
+        val client = createPreKeyClientMock(self, otherDeviceIds)
+
+        val cipherService = createCipherService(client, self)
+
+        val p = cipherService.updateSelfDevices(otherDevices)
+
+        cipherService.processQueue(false)
+
+        p.get()
+
+        assertSessionsMatch(self, self, otherDeviceIds)
+    }
+
+    @Test
+    fun `it should add a new self device when addSelfDevice is called`() {
+        val self = MockUser(1)
+
+        val otherDevice = self.newDevice()
+        val otherDeviceIds = listOf(otherDevice.id)
+
+        val client = createPreKeyClientMock(self, otherDeviceIds)
+
+        val cipherService = createCipherService(client, self)
+
+        val p = cipherService.addSelfDevice(DeviceInfo(otherDevice.id, otherDevice.registrationId))
+
+        cipherService.processQueue(false)
+
+        p.get()
+
+        assertSessionsExist(self, self, otherDeviceIds)
+    }
+
+    fun doDiff(current: List<Int>, received: List<DeviceInfo>, devices: Map<Int, Int>): DeviceMismatchContent {
+        return deviceDiff(current, received) { devices.getOrElse(it, { 0 }) }
+    }
+
+    @Test
+    fun `deviceDiff should return missing device entries`() {
+        val devices = mapOf(1 to 1)
+
+        val current = listOf(1)
+        val received = listOf(
+            DeviceInfo(1, 1),
+            DeviceInfo(2, 2)
+        )
+
+        val diff = doDiff(current, received, devices)
+
+        val expected = DeviceMismatchContent(emptyList(), listOf(2), emptyList())
+
+        assertEquals(expected, diff, "Invalid diff")
+    }
+
+    @Test
+    fun `deviceDiff should return removed device entries`() {
+        val devices = mapOf(1 to 1)
+
+        val current = listOf(1)
+        val received = emptyList<DeviceInfo>()
+
+        val diff = doDiff(current, received, devices)
+
+        val expected = DeviceMismatchContent(emptyList(), emptyList(), listOf(1))
+
+        assertEquals(expected, diff, "Invalid diff")
+    }
+
+    @Test
+    fun `deviceDiff should return stale device entries`() {
+        val devices = mapOf(1 to 1)
+
+        val current = listOf(1)
+        val received = listOf(
+            DeviceInfo(1, 2)
+        )
+
+        val diff = doDiff(current, received, devices)
+
+        val expected = DeviceMismatchContent(listOf(1), emptyList(), emptyList())
+
+        assertEquals(expected, diff, "Invalid diff")
     }
 }
