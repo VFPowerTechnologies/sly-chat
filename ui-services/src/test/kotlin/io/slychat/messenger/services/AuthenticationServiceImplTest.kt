@@ -23,7 +23,7 @@ import org.whispersystems.libsignal.util.KeyHelper
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class AuthenticationServiceTest {
+class AuthenticationServiceImplTest {
     companion object {
         @JvmField
         @ClassRule
@@ -43,7 +43,7 @@ class AuthenticationServiceTest {
 
     val registrationId = KeyHelper.generateRegistrationId(false)
 
-    val authenticationService = AuthenticationService(
+    val authenticationService = AuthenticationServiceImpl(
         authenticationClient,
         localAccountDirectory
     )

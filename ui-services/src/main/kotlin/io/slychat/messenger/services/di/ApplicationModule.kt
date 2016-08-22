@@ -45,7 +45,7 @@ class ApplicationModule(
         localAccountDirectory: LocalAccountDirectory
     ): AuthenticationService {
         val authenticationClient = AuthenticationAsyncClientImpl(serverUrls.API_SERVER, httpClientFactory)
-        return AuthenticationService(
+        return AuthenticationServiceImpl(
             authenticationClient,
             localAccountDirectory
         )
