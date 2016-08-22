@@ -1,9 +1,10 @@
 function createDesktopMenu () {
     return '<div class="panel-overlay"></div>' +
         '<div id="leftMenuPanel" class="panel panel-left panel-cover">' +
-        '<div class="view view-left">' +
+        '<div class="view view-left navbar-through">' +
         '<div class="pages">' +
         '<div data-page="contact-left" class="page" style="background-color: #eee;">' +
+        '<div class="navbar"><div class="navbar-inner"><div class="left"><img style="height: 40px; width: 40px; margin-right: 10px; padding-left: 10px;" src="img/sly_logo.png"> Sly Chat </div></div></div>' +
         '<div class="page-content">' +
         '<div class="list-block" style="margin-top: 5px;">' +
         '<ul>' +
