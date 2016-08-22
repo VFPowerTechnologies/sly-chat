@@ -47,6 +47,10 @@ slychat.onPageInit('login', function (page) {
     $$('#registrationGoBtn').on('click', function () {
         navigationController.loadPage('register.html', true);
     });
+
+    if (isDesktop) {
+        $("#login").focus();
+    }
 });
 
 slychat.onPageInit('register', function (page) {
@@ -106,6 +110,10 @@ slychat.onPageInit('chat', function (page) {
         else
             $(this).removeClass("empty-textarea");
     });
+
+    if (isDesktop) {
+        $("#newMessageInput").focus();
+    }
 });
 
 slychat.onPageInit('addContact', function (page) {
