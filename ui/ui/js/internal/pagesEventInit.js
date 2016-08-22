@@ -1,3 +1,4 @@
+// Code to run on each page load.
 $$(document).on('pageBeforeInit', function (e) {
     var page = e.detail.page;
     if (isDesktop) {
@@ -48,7 +49,6 @@ slychat.onPageInit('login', function (page) {
     });
 });
 
-// Register page init function
 slychat.onPageInit('register', function (page) {
     updatePhoneWithIntl();
     $$('#countrySelect').on("change", function(e) {
@@ -67,7 +67,6 @@ slychat.onPageInit('register', function (page) {
     });
 });
 
-// Chat page init function
 slychat.onPageInit('chat', function (page) {
     if (page.query.email !== undefined) {
         chatController.fetchMessageFor(0, 100, page.query);
@@ -109,7 +108,6 @@ slychat.onPageInit('chat', function (page) {
     });
 });
 
-// Add Contact page init function
 slychat.onPageInit('addContact', function (page) {
     $$('#newContactSearchSubmit').on('click', function (e) {
         e.preventDefault();
@@ -117,13 +115,11 @@ slychat.onPageInit('addContact', function (page) {
     });
 });
 
-// Contact page init function
 slychat.onPageBeforeInit('contacts', function (page) {
     contactController.init();
     groupController.init();
 });
 
-// Sms Verification page init function
 slychat.onPageInit('smsVerification', function (page) {
     $$('#hiddenEmail').val(page.query.email);
     $$('#hiddenPassword').val(page.query.password);
@@ -150,7 +146,6 @@ slychat.onPageInit('smsVerification', function (page) {
     });
 });
 
-// Update Phone page init function
 slychat.onPageInit('updatePhone', function (page) {
     updatePhoneWithIntl();
     $$('#hiddenEmail').val(page.query.email);
@@ -167,7 +162,6 @@ slychat.onPageInit('updatePhone', function (page) {
     });
 });
 
-// Profile page init function
 slychat.onPageInit('profile', function (page) {
     profileController.displayInfo();
 
@@ -193,7 +187,6 @@ slychat.onPageInit('createGroup', function (page) {
     })
 });
 
-// Contact popup event
 $("#contactPopupNewBtn").on("click", function (e) {
     e.preventDefault();
     if ($("#contact-tab").hasClass("active")) {
@@ -202,6 +195,11 @@ $("#contactPopupNewBtn").on("click", function (e) {
     else {
         navigationController.loadPage('createGroup.html', true);
     }
+});
+
+$(window).resize(function () {
+    if($$('#mainView').data('page') == "chat")
+        chatController.scrollTop();
 });
 
 $$(document).on("input", ".invalid-required", function(e) {
@@ -213,12 +211,6 @@ $$(document).on("input", ".invalid-required", function(e) {
     }
 });
 
-$(window).resize(function () {
-    if($$('#mainView').data('page') == "chat")
-        chatController.scrollTop();
-});
-
-// Global event
 $$(document).on('click', '.backBtn', function () {
     navigationController.goBack();
 });
