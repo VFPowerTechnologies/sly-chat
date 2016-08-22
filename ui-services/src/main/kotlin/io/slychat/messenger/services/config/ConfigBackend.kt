@@ -11,6 +11,12 @@ interface ConfigBackend {
     fun <T> read(clazz: Class<T>): Promise<T?, Exception>
 }
 
+class DummyConfigBackend : ConfigBackend {
+    override fun update(o: Any) {}
+
+    override fun <T> read(clazz: Class<T>): Promise<T?, Exception> = Promise.ofSuccess(null)
+}
+
 class JsonConfigBackend(
     private val configName: String,
     private val storage: ConfigStorage
