@@ -44,7 +44,7 @@ class AuthenticationService(
 
                 val data = response.data!!
                 val keyVault = KeyVault.deserialize(data.keyVault, password)
-                AuthResult(data.authToken, keyVault, data.accountInfo)
+                AuthResult(data.authToken, keyVault, data.accountInfo, data.devices)
             }
         }
     }
@@ -75,7 +75,7 @@ class AuthenticationService(
         val sessionData = sessionDataPersistenceManager.retrieveSync()
         val authToken = sessionData?.authToken
 
-        return LocalAuthOutcome.Successful(AuthResult(authToken, keyVault, accountInfo))
+        return LocalAuthOutcome.Successful(AuthResult(authToken, keyVault, accountInfo, null))
     }
 
     /** Attempts to authentication using a local session first, then falls back to remote authentication. */

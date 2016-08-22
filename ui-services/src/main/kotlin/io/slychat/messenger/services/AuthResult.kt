@@ -7,5 +7,6 @@ import io.slychat.messenger.core.persistence.AccountInfo
 data class AuthResult(
     val authToken: AuthToken?,
     val keyVault: KeyVault,
-    val accountInfo: AccountInfo
+    val accountInfo: AccountInfo,
+    val otherDevices: List<Int>?
 )
