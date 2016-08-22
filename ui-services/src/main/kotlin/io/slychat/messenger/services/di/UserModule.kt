@@ -209,9 +209,9 @@ class UserModule(
         val closingSelector = shared.debounce(400, TimeUnit.MILLISECONDS, scheduler)
         val buffered = shared.buffer(closingSelector)
 
-        val bufferedMessages = NotifierService.flattenMessageBundles(buffered)
+        val bufferedMessages = NotifierServiceImpl.flattenMessageBundles(buffered)
 
-        return NotifierService(
+        return NotifierServiceImpl(
             bufferedMessages,
             uiEventService.events,
             uiVisibility,

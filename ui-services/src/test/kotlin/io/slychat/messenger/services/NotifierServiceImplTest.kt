@@ -23,7 +23,7 @@ import rx.subjects.PublishSubject
 import kotlin.test.assertFalse
 
 @Suppress("UNUSED_VARIABLE")
-class NotifierServiceTest {
+class NotifierServiceImplTest {
     companion object {
         @JvmField
         @ClassRule
@@ -44,12 +44,12 @@ class NotifierServiceTest {
         whenever(groupPersistenceManager.getInfo(any())).thenReturnNull()
     }
 
-    fun initNotifierService(isUiVisible: Boolean = false, config: UserConfig = UserConfig(notificationsEnabled = true)): NotifierService {
+    fun initNotifierService(isUiVisible: Boolean = false, config: UserConfig = UserConfig(notificationsEnabled = true)): NotifierServiceImpl {
         userConfigService = UserConfigService(mock(), config = config)
 
         uiVisibility.onNext(true)
 
-        val notifierService = NotifierService(
+        val notifierService = NotifierServiceImpl(
             newMessagesSubject,
             uiEventSubject,
             uiVisibility,
@@ -296,7 +296,7 @@ class NotifierServiceTest {
     fun getMessageIdsFromBundle(messageBundle: MessageBundle): List<String> = messageBundle.messages.map { it.id }
 
     fun flattenBundles(bundles: List<MessageBundle>): List<MessageBundle> {
-        val flattened = NotifierService.flattenMessageBundles(Observable.just(bundles))
+        val flattened = NotifierServiceImpl.flattenMessageBundles(Observable.just(bundles))
 
         return flattened.toList().toBlocking().single()
     }
