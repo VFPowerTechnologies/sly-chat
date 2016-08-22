@@ -374,7 +374,7 @@ class SlyApplication {
      * Until this completes, do NOT use anything in the UserComponent.
      */
     private fun backgroundInitialization(userComponent: UserComponent, authToken: AuthToken?, password: String, rememberMe: Boolean, accountInfo: AccountInfo): Promise<Unit, Exception> {
-        val persistenceManager = userComponent.sqlitePersistenceManager
+        val persistenceManager = userComponent.persistenceManager
         val userConfigService = userComponent.configService
         val userLoginData = userComponent.userLoginData
         val keyVault = userLoginData.keyVault
@@ -424,7 +424,7 @@ class SlyApplication {
         userComponent.contactsService.shutdown()
         userComponent.offlineMessageManager.shutdown()
         userComponent.preKeyManager.shutdown()
-        userComponent.sqlitePersistenceManager.shutdown()
+        userComponent.persistenceManager.shutdown()
     }
 
     //should come up with something better...

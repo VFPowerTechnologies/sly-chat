@@ -55,6 +55,11 @@ class PersistenceUserModule {
         return SQLitePersistenceManager(userPaths.databasePath, key, keyvault.localDataEncryptionParams)
     }
 
+    //this is hacky, but we wanna expose this to the app for init/shutdown, but we don't wanna expose its type directly
+    @UserScope
+    @Provides
+    fun providesPersistenceManager(sqlitePersistenceManager: SQLitePersistenceManager): PersistenceManager = sqlitePersistenceManager
+
     @UserScope
     @Provides
     fun providesKeyVaultPersistenceManager(
