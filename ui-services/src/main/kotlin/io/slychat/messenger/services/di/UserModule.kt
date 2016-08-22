@@ -269,7 +269,7 @@ class UserModule(
         val serverUrl = serverUrls.API_SERVER
         val offlineMessagesClient = OfflineMessagesAsyncClientImpl(serverUrl, httpClientFactory)
 
-        return OfflineMessageManager(
+        return OfflineMessageManagerImpl(
             application.networkAvailable,
             offlineMessagesClient,
             messengerService,
