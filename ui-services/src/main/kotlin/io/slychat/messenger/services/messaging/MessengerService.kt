@@ -14,6 +14,9 @@ interface MessengerService {
     val newMessages: Observable<MessageBundle>
     val messageUpdates: Observable<MessageBundle>
 
+    /** Broadcast a new device to other accounts. */
+    fun broadcastNewDevice(deviceId: Int): Promise<Unit, Exception>
+
     /* UIMessengerService interface */
     fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception>
     fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<GroupMessageInfo, Exception>

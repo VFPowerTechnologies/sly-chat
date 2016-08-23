@@ -352,4 +352,13 @@ class MessengerServiceImpl(
     override fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception> {
         return processPackages(offlineMessages)
     }
+
+    override fun broadcastNewDevice(deviceId: Int): Promise<Unit, Exception> {
+        val message = SyncMessage.NewDevice(deviceId)
+
+        val serialized = objectMapper.writeValueAsBytes(SyncMessageWrapper(message))
+
+        val metadata = MessageMetadata(selfId, null, MessageCategory.OTHER, randomUUID())
+        return messageSender.addToQueue(metadata, serialized)
+    }
 }

@@ -189,14 +189,14 @@ class MessageSenderImpl(
         return
     }
 
-    override fun addToQueue(metadata: MessageMetadata, message: ByteArray): Promise<Unit, Exception> {
+    override fun addToQueue(entry: SenderMessageEntry): Promise<Unit, Exception> {
         val queuedMessage = QueuedMessage(
-            metadata,
+            entry.metadata,
             currentTimestamp(),
-            message
+            entry.message
         )
         return messageQueuePersistenceManager.add(queuedMessage) mapUi {
-            addToQueueReal(metadata, message)
+            addToQueueReal(entry.metadata, entry.message)
         }
     }
 

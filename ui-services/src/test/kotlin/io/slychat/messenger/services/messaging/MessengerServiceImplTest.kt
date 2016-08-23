@@ -24,6 +24,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+//only downside of this api design is having to deserialize messages in tests
 class MessengerServiceImplTest {
     companion object {
         @JvmField
@@ -51,8 +52,8 @@ class MessengerServiceImplTest {
 
         whenever(relayClientManager.events).thenReturn(relayEvents)
 
-        whenever(messageSender.addToQueue(any())).thenReturn(Unit)
-        whenever(messageSender.addToQueue(any(), any())).thenReturn(Unit)
+        whenever(messageSender.addToQueue(any<SenderMessageEntry>())).thenReturn(Unit)
+        whenever(messageSender.addToQueue(anyList())).thenReturn(Unit)
 
         //some useful defaults
         whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswerWithArg(1)
@@ -354,7 +355,7 @@ class MessengerServiceImplTest {
             assertEquals(message, it.info.message, "Message is invalid")
         })
 
-        verify(messageSender, never()).addToQueue(any())
+        verify(messageSender, never()).addToQueue(any<List<SenderMessageEntry>>())
     }
 
     @Test
@@ -389,8 +390,8 @@ class MessengerServiceImplTest {
         messengerService.sendGroupMessageTo(groupId, message)
 
         var sentMessageId: String? = null
-        verify(messageSender).addToQueue(capture {
-            sentMessageId = it.first().metadata.messageId
+        verify(messageSender).addToQueue(capture<SenderMessageEntry> {
+            sentMessageId = it.metadata.messageId
         })
 
         verify(groupService).addMessage(eq(groupId), capture {
@@ -458,7 +459,7 @@ class MessengerServiceImplTest {
     }
 
     fun assertPartMessagesSent(members: Set<UserId>) {
-        verify(messageSender).addToQueue(capture {
+        verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
             assertEquals(members, it.mapToSet { it.metadata.userId }, "Invalid users")
             val messages = convertMessageFromSerialized<GroupEventMessageWrapper>(it)
             messages.forEach {
@@ -491,7 +492,7 @@ class MessengerServiceImplTest {
 
         messengerService.partGroup(groupId).get()
 
-        verify(messageSender, never()).addToQueue(any())
+        verify(messageSender, never()).addToQueue(any<List<SenderMessageEntry>>())
     }
 
     @Test
@@ -529,14 +530,18 @@ class MessengerServiceImplTest {
 
         messengerService.blockGroup(groupId).get()
 
-        verify(messageSender, never()).addToQueue(any())
+        verify(messageSender, never()).addToQueue(any<List<SenderMessageEntry>>())
     }
 
-    inline fun <reified T> assertNoGroupMessagesSent() {
+    fun getAllSentMessages(times: Int): List<SenderMessageEntry> {
         val captor = argumentCaptor<List<SenderMessageEntry>>()
-        verify(messageSender, atLeast(0)).addToQueue(capture(captor))
+        verify(messageSender, atLeast(times)).addToQueue(capture(captor))
 
-        val messages = captor.allValues.flatten()
+        return captor.allValues.flatten()
+    }
+
+    inline fun <reified T : GroupEventMessage> assertNoGroupMessagesSent() {
+        val messages = getAllSentMessages(0)
 
         if (messages.isEmpty())
             return
@@ -551,12 +556,18 @@ class MessengerServiceImplTest {
         }
     }
 
+    inline fun <reified T : SyncMessage> retrieveSyncMessage(): T {
+        val captor = argumentCaptor<SenderMessageEntry>()
+        verify(messageSender, atLeast(1)).addToQueue(capture(captor))
+
+        val wrapper = convertMessageFromSerialized<SyncMessageWrapper>(captor.value)
+
+        return wrapper.m as? T ?: throw AssertionError("Unexpected ${T::class.simpleName} message")
+    }
+
     /** Assert that the given group message type was sent to everyone in the given list, and that it satisifies certain conditions. */
     inline fun <reified T> assertGroupMessagesSentTo(expectedRecipients: Set<UserId>, asserter: (UserId, T) -> Unit) {
-        val captor = argumentCaptor<List<SenderMessageEntry>>()
-        verify(messageSender, atLeastOnce()).addToQueue(capture(captor))
-
-        val messages = captor.allValues.flatten()
+        val messages = getAllSentMessages(1)
 
         assertTrue(messages.isNotEmpty(), "No messages were sent")
 
@@ -702,5 +713,18 @@ class MessengerServiceImplTest {
 
         order.verify(groupService).join(any(), any())
         order.verify(messageSender).addToQueue(anyList())
+    }
+
+    @Test
+    fun `broadcastNewDevice should send a new device message to your own devices`() {
+        val messengerService = createService()
+
+        val deviceId = randomDeviceId()
+
+        messengerService.broadcastNewDevice(deviceId).get()
+
+        val message = retrieveSyncMessage<SyncMessage.NewDevice>()
+
+        assertEquals(SyncMessage.NewDevice(deviceId), message, "Invalid sync message")
     }
 }

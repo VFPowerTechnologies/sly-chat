@@ -9,12 +9,14 @@ import io.slychat.messenger.core.persistence.GroupId
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
     JsonSubTypes.Type(GroupEventMessageWrapper::class, name = "g"),
-    JsonSubTypes.Type(TextMessageWrapper::class, name = "t")
+    JsonSubTypes.Type(TextMessageWrapper::class, name = "t"),
+    JsonSubTypes.Type(SyncMessage::class, name = "s")
 )
 interface SlyMessage
 
 data class GroupEventMessageWrapper(@JsonProperty("m") val m: GroupEventMessage) : SlyMessage
 data class TextMessageWrapper(@JsonProperty("m") val m: TextMessage) : SlyMessage
+data class SyncMessageWrapper(@JsonProperty("m") val m: SyncMessage) : SlyMessage
 
 data class TextMessage(
     @JsonProperty("timestamp")
@@ -122,6 +124,36 @@ sealed class GroupEventMessage {
             result = 31 * result + name.hashCode()
             result = 31 * result + members.hashCode()
             return result
+        }
+    }
+}
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
+@JsonSubTypes(
+    JsonSubTypes.Type(SyncMessage.NewDevice::class, name = "d")
+)
+sealed class SyncMessage {
+    class NewDevice(
+        @JsonProperty("deviceId")
+        val deviceId: Int
+    ) : SyncMessage() {
+        override fun toString(): String {
+            return "NewDevice(deviceId=$deviceId)"
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as NewDevice
+
+            if (deviceId != other.deviceId) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return deviceId
         }
     }
 }

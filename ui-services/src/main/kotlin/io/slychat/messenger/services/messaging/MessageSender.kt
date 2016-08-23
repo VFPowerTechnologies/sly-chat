@@ -12,11 +12,15 @@ import rx.Observable
 interface MessageSender {
     val messageSent: Observable<MessageMetadata>
 
-    fun addToQueue(metadata: MessageMetadata, message: ByteArray): Promise<Unit, Exception>
+    fun addToQueue(entry: SenderMessageEntry): Promise<Unit, Exception>
 
     fun addToQueue(messages: List<SenderMessageEntry>): Promise<Unit, Exception>
 
     fun init()
 
     fun shutdown()
+}
+
+fun MessageSender.addToQueue(metadata: MessageMetadata, message: ByteArray): Promise<Unit, Exception> {
+    return addToQueue(SenderMessageEntry(metadata, message))
 }
