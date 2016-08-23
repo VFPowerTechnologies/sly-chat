@@ -17,7 +17,7 @@ NavigationController.prototype = {
         if(page == "contacts") {
             historyService.clear().then(function () {
                 this.loadPage("contacts.html", false);
-            });
+            }.bind(this));
         }
         else if(/^user\//.test(page)) {
             var id = page.split("/", 2)[1];
