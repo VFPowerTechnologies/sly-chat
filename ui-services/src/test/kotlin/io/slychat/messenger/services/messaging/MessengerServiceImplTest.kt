@@ -743,6 +743,7 @@ class MessengerServiceImplTest {
             metadata.messageId,
             Recipient.User(metadata.userId),
             messageInfo.message,
+            messageInfo.timestamp,
             messageInfo.receivedTimestamp
         )
 
@@ -767,6 +768,7 @@ class MessengerServiceImplTest {
             metadata.messageId,
             Recipient.Group(groupId),
             messageInfo.message,
+            messageInfo.timestamp,
             messageInfo.receivedTimestamp
         )
 

@@ -54,6 +54,8 @@ data class SyncSentMessageInfo(
     val recipient: Recipient,
     @JsonProperty("message")
     val message: String,
+    @JsonProperty("timestamp")
+    val timestamp: Long,
     @JsonProperty("receivedTimestamp")
     val receivedTimestamp: Long
 )

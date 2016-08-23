@@ -382,6 +382,7 @@ class MessengerServiceImpl(
             metadata.messageId,
             recipient,
             messageInfo.message,
+            messageInfo.timestamp,
             messageInfo.receivedTimestamp
         )
 
