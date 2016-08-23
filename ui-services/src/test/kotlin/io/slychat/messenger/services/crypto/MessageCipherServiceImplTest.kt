@@ -251,7 +251,7 @@ class MessageCipherServiceImplTest {
     }
 
     @Test
-    fun `it should not fetch remote key data when a user has an existing session`() {
+    fun `it should not fetch remote key data during encryption when a user has an existing session`() {
         val user = MockUser(1)
         val recipient = MockUser(2)
 
@@ -270,9 +270,27 @@ class MessageCipherServiceImplTest {
         verify(client, never()).retrieve(any(), any())
     }
 
+    @Test
+    fun `it should not fetch remote key data during encryption if the sender is yourself and no sessions exist`() {
+        val user = MockUser(1)
+
+        val client = mock<PreKeyClient>()
+
+        val cipherService = createCipherService(client, user)
+
+        val p = cipherService.encrypt(user.userId, randomSerializedMessage(), connectionTag)
+
+        cipherService.processQueue(false)
+
+        val result = p.get()
+        assertTrue(result.encryptedMessages.isEmpty(), "Encrypted message list not empty")
+
+        verify(client, never()).retrieve(any(), any())
+    }
+
     //tests PreKeyWhisper messages
     @Test
-    fun `decryption should success the receiver has no existing session`() {
+    fun `decryption should succeed when the receiver has no existing session`() {
         val sender = MockUser(1)
         val receiver = MockUser(2)
 

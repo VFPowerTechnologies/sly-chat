@@ -58,6 +58,7 @@ class MessageCipherServiceImpl(
             return DeviceMismatchContent(stale, missing, removedIds.toList())
         }
     }
+
     private sealed class CipherWork {
         class Encryption(
             val userId: UserId,
@@ -188,7 +189,7 @@ class MessageCipherServiceImpl(
 
     private fun handleAddSelfDevice(work: CipherWork.AddSelfDevice) {
         log.info("Adding self device: {}", work.deviceInfo)
-        
+
         val diff = DeviceMismatchContent(emptyList(), listOf(work.deviceInfo.id), emptyList())
 
         applyDiff(diff, selfId, work.deferred)
@@ -345,6 +346,8 @@ class MessageCipherServiceImpl(
     private fun getSessionCiphers(userId: UserId): List<Pair<Int, SessionCipher>> {
         val devices = signalStore.getSubDeviceSessions(userId.long.toString())
 
+        log.debug("Devices found for {}: {}", userId, devices)
+
         //check if we have any listed devices; if not, then fetch prekeys
         //else send what we have to relay and it'll tell us what to fix
         return if (devices.isNotEmpty()) {
@@ -353,8 +356,11 @@ class MessageCipherServiceImpl(
                 deviceId to SessionCipher(signalStore, address)
             }
         }
-        else {
+        else if (userId != selfId) {
             addNewBundles(userId, emptyList())
         }
+        //if we have no registered devices, don't do anything
+        else
+            emptyList()
     }
 }
