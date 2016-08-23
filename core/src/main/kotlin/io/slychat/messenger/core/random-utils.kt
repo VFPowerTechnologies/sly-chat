@@ -3,6 +3,7 @@ package io.slychat.messenger.core
 
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
+import org.whispersystems.libsignal.SignalProtocolAddress
 import java.util.*
 
 //[min, max]
@@ -20,8 +21,11 @@ fun randomGroupMembers(n: Int = 2): Set<UserId> = (1..n).mapTo(HashSet()) { rand
 fun randomUserId(): UserId =
     UserId(randomInt(1, 10000).toLong())
 
-fun randomSlyAddress(): SlyAddress =
-    SlyAddress(randomUserId(), randomDeviceId())
+fun randomSlyAddress(userId: UserId = randomUserId()): SlyAddress =
+    SlyAddress(userId, randomDeviceId())
+
+fun randomSignalAddress(userId: UserId = randomUserId()): SignalProtocolAddress =
+    randomSlyAddress(userId).toSignalAddress()
 
 fun randomDeviceId(): Int =
     randomInt(1, 50)

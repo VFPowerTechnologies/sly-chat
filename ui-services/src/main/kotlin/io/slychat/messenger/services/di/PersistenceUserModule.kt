@@ -94,17 +94,24 @@ class PersistenceUserModule {
 
     @UserScope
     @Provides
+    fun providesSignalSessionPersistenceManager(
+        sqlitePersistenceManager: SQLitePersistenceManager
+    ): SignalSessionPersistenceManager =
+        SQLiteSignalSessionPersistenceManager(sqlitePersistenceManager)
+
+    @UserScope
+    @Provides
     fun providesSignalProtocolStore(
         slyApplication: SlyApplication,
         userLoginData: UserData,
-        sqlitePersistenceManager: SQLitePersistenceManager,
+        signalSessionPersistenceManager: SignalSessionPersistenceManager,
         preKeyPersistenceManager: PreKeyPersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager
     ): SignalProtocolStore =
         SQLiteSignalProtocolStore(
-            userLoginData,
+            userLoginData.keyVault.identityKeyPair,
             slyApplication.installationData.registrationId,
-            sqlitePersistenceManager,
+            signalSessionPersistenceManager,
             preKeyPersistenceManager,
             contactsPersistenceManager
         )
