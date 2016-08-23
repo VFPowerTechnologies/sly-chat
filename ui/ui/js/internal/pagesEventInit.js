@@ -295,3 +295,16 @@ $$(document).on("click", "#logoutBtn", function (e) {
     loginController.logout();
 });
 
+$$(document).on("click", ".custom-dropdown", function (e) {
+    var element = $$(this);
+    var srcElement = $$(e.srcElement);
+    if ($$(e.srcElement).hasClass('list-button') || srcElement.parents('a').hasClass('list-button')) {
+        if (element.hasClass("custom-dropdown-toggled")) {
+            element.removeClass("custom-dropdown-toggled");
+        }
+        else {
+            element.addClass("custom-dropdown-toggled");
+        }
+    }
+});
+

@@ -8,41 +8,57 @@ function createDesktopMenu () {
         '<div class="page-content">' +
         '<div class="list-block" style="margin-top: 5px;">' +
         '<ul>' +
-        '<li class="accordion-item"><a href="#" class="item-content item-link">' +
-        '<div class="item-inner">' +
-        '<div id="leftDesktopProfileName" class="item-title"></div>' +
-        '</div></a>' +
-        '<div class="accordion-item-content">' +
-        '<div class="content-block" style="margin-left: 5px;">' +
-        '<div class="list-block">' +
-        '<ul>' +
-        '<li><a id="loadProfileBtn" href="#">Profile</a></li>' +
-        '<li><a id="logoutBtn" href="#">Logout</a></li>' +
-        '</ul></div></div></div></li>' +
-        '<li class="accordion-item accordion-item-expanded"><a href="#" class="item-content item-link">' +
-        '<div class="item-inner">' +
-        '<div class="item-title">Contacts</div>' +
-        '</div></a>' +
-        '<div class="accordion-item-content">' +
-        '<div class="content-block" style="margin-left: 5px;">' +
-        '<div class="list-block">' +
-        '<div style="width: 100%; text-align: right;">' +
-        '<a href="#" id="addContactButton" style="font-size: 12px; color: blue;">Add contact</a>' +
-        '</div>' +
-        '<ul id="leftContactList">' +
-        '</ul></div></div></div></li>' +
-        '<li class="accordion-item"><a href="#" class="item-content item-link">' +
-        '<div class="item-inner">' +
-        '<div class="item-title">Groups</div>' +
-        '</div></a>' +
-        '<div class="accordion-item-content">' +
-        '<div class="content-block" style="margin-left: 5px;">' +
-        '<div class="list-block">' +
-        '<div style="width: 100%; text-align: right;">' +
-        '<a href="#" id="createGroupButton" style="font-size: 12px; color: blue;">New group</a>' +
-        '</div>' +
-        '<ul id="leftGroupList"></ul>' +
-        '</div></div></div></li></ul></div></div></div></div></div></div>';
+            '<li class="custom-dropdown">' +
+                '<a href="#" class="list-button item-link item-content">' +
+                '<div class="item-inner">' +
+                    '<div id="leftDesktopProfileName" class="item-title"></div>' +
+                '</div></a>' +
+                '<div class="custom-dropdown-content">' +
+                    '<div class="content-block">' +
+                        '<div class="list-block">' +
+                            '<ul>' +
+                                '<li><a id="loadProfileBtn" href="#">Profile</a></li>' +
+                                '<li><a id="logoutBtn" href="#">Logout</a></li>' +
+                            '</ul>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</li>' +
+            '<li class="custom-dropdown custom-dropdown-toggled">' +
+                '<a href="#" class="list-button item-content item-link">' +
+                '<div class="item-inner">' +
+                    '<div class="item-title">Contacts</div>' +
+                '</div></a>' +
+                '<div class="custom-dropdown-content">' +
+                    '<div class="content-block">' +
+                        '<div class="list-block">' +
+                            '<div style="width: 100%; text-align: right;">' +
+                                '<a href="#" id="addContactButton" style="font-size: 12px; color: blue;">Add contact</a>' +
+                            '</div>' +
+                            '<ul id="leftContactList">' +
+                            '</ul>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</li>' +
+            '<li class="custom-dropdown">' +
+                '<a href="#" class="list-button item-content item-link">' +
+                '<div class="item-inner">' +
+                    '<div class="item-title">Groups</div>' +
+                '</div></a>' +
+                '<div class="custom-dropdown-content">' +
+                    '<div class="content-block">' +
+                        '<div class="list-block">' +
+                            '<div style="width: 100%; text-align: right;">' +
+                                '<a href="#" id="createGroupButton" style="font-size: 12px; color: blue;">New group</a>' +
+                            '</div>' +
+                            '<ul id="leftGroupList"></ul>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</li>' +
+        '</ul>' +
+        '</div></div></div></div></div></div>';
 }
 
 function createMobileContactPopup() {
