@@ -42,10 +42,11 @@ interface ContactsPersistenceManager {
     /**
      * Adds a new contact with the given message level.
      *
-     * If the contact was not previously present, then true is returned.
+     * If the contact was not previously present, or was modified, then true is returned.
      *
      * If a contact was previously present but had a lower message level, then true is returned as well as
-     * upgrading the message level.
+     * upgrading the message level. If the added level is lower than the current one, the previous message level is left
+     * as-is and false is returned.
      *
      * If the given message level is ALL, then conversation log and info are created for the user.
      */

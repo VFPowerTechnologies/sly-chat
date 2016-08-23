@@ -153,7 +153,7 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `add should update the message level for an existing user`() {
+    fun `add should update the message level for an existing user if the level is higher than the previous one`() {
         val contact = insertDummyContact(AllowedMessageLevel.GROUP_ONLY)
         val newContact = contact.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
 
@@ -162,6 +162,18 @@ class SQLiteContactsPersistenceManagerTest {
         val info = assertNotNull(contactsPersistenceManager.get(newContact.id).get(), "Missing user")
 
         assertEquals(newContact, info, "Invalid contact info")
+    }
+
+    @Test
+    fun `add should not modify the message level for an existing user if the level is lower than the previous one`() {
+        val contact = insertDummyContact(AllowedMessageLevel.ALL)
+        val newContact = contact.copy(allowedMessageLevel = AllowedMessageLevel.GROUP_ONLY)
+
+        assertFalse(contactsPersistenceManager.add(newContact).get(), "Was updated")
+
+        val info = assertNotNull(contactsPersistenceManager.get(newContact.id).get(), "Missing user")
+
+        assertEquals(contact, info, "Invalid contact info")
     }
 
     @Test

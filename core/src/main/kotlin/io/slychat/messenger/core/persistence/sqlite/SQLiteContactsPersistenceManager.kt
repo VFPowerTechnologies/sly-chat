@@ -251,23 +251,27 @@ ON
         val userId = contactInfo.id
         val currentInfo = queryContactInfo(connection, userId)
 
+        val newMessageLevel = contactInfo.allowedMessageLevel
+
         return if (currentInfo == null) {
             connection.prepare("INSERT INTO contacts (id, email, name, allowed_message_level, phone_number, public_key) VALUES (?, ?, ?, ?, ?, ?)").use { stmt ->
                 contactInfoToRow(contactInfo, stmt)
                 stmt.step()
             }
 
-            if (contactInfo.allowedMessageLevel == AllowedMessageLevel.ALL)
+            if (newMessageLevel == AllowedMessageLevel.ALL)
                 addConversationData(connection, userId)
 
             true
         }
         else {
-            return if (currentInfo.allowedMessageLevel != contactInfo.allowedMessageLevel) {
-                if (contactInfo.allowedMessageLevel == AllowedMessageLevel.ALL)
+            val currentMessageLevel = currentInfo.allowedMessageLevel
+
+            return if (currentMessageLevel != newMessageLevel && newMessageLevel > currentMessageLevel) {
+                if (newMessageLevel == AllowedMessageLevel.ALL)
                     addConversationData(connection, userId)
 
-                updateMessageLevel(connection, userId, contactInfo.allowedMessageLevel)
+                updateMessageLevel(connection, userId, newMessageLevel)
             }
             else
                 false
