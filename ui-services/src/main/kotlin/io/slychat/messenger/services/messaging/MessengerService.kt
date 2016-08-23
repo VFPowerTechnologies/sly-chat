@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.messaging
 
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
 import rx.Observable
@@ -15,7 +16,7 @@ interface MessengerService {
     val messageUpdates: Observable<MessageBundle>
 
     /** Broadcast a new device to other accounts. */
-    fun broadcastNewDevice(deviceId: Int): Promise<Unit, Exception>
+    fun broadcastNewDevice(deviceInfo: DeviceInfo): Promise<Unit, Exception>
 
     /* UIMessengerService interface */
     fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception>

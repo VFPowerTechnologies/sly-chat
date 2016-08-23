@@ -6,6 +6,7 @@ import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.currentOs
+import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
@@ -442,7 +443,8 @@ class SlyApplication {
         } bind {
             if (otherDevices != null) {
                 userComponent.messageCipherService.updateSelfDevices(otherDevices) bindUi {
-                    userComponent.messengerService.broadcastNewDevice(accountInfo.deviceId)
+                    val deviceInfo = DeviceInfo(accountInfo.deviceId, installationData.registrationId)
+                    userComponent.messengerService.broadcastNewDevice(deviceInfo)
                 }
             }
             else

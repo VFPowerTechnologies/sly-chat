@@ -1,6 +1,7 @@
 @file:JvmName("RandomUtils")
 package io.slychat.messenger.core
 
+import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
 import java.util.*
 
@@ -24,6 +25,8 @@ fun randomSlyAddress(): SlyAddress =
 
 fun randomDeviceId(): Int =
     randomInt(1, 50)
+
+fun randomDeviceInfo(): DeviceInfo = DeviceInfo(randomDeviceId(), randomRegistrationId())
 
 fun randomUserIds(n: Int = 2): Set<UserId> = (1..n).mapToSet { randomUserId() }
 

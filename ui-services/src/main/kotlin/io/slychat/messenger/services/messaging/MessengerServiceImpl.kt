@@ -3,6 +3,7 @@ package io.slychat.messenger.services.messaging
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.ReceivedMessage
@@ -353,8 +354,8 @@ class MessengerServiceImpl(
         return processPackages(offlineMessages)
     }
 
-    override fun broadcastNewDevice(deviceId: Int): Promise<Unit, Exception> {
-        val message = SyncMessage.NewDevice(deviceId)
+    override fun broadcastNewDevice(deviceInfo: DeviceInfo): Promise<Unit, Exception> {
+        val message = SyncMessage.NewDevice(deviceInfo)
 
         val serialized = objectMapper.writeValueAsBytes(SyncMessageWrapper(message))
 

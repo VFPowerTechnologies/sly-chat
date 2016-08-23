@@ -719,12 +719,12 @@ class MessengerServiceImplTest {
     fun `broadcastNewDevice should send a new device message to your own devices`() {
         val messengerService = createService()
 
-        val deviceId = randomDeviceId()
+        val deviceInfo = randomDeviceInfo()
 
-        messengerService.broadcastNewDevice(deviceId).get()
+        messengerService.broadcastNewDevice(deviceInfo).get()
 
         val message = retrieveSyncMessage<SyncMessage.NewDevice>()
 
-        assertEquals(SyncMessage.NewDevice(deviceId), message, "Invalid sync message")
+        assertEquals(SyncMessage.NewDevice(deviceInfo), message, "Invalid sync message")
     }
 }

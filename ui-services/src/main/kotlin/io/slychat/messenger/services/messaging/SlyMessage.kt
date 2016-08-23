@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.GroupId
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
@@ -135,25 +136,25 @@ sealed class GroupEventMessage {
 sealed class SyncMessage {
     class NewDevice(
         @JsonProperty("deviceId")
-        val deviceId: Int
+        val deviceInfo: DeviceInfo
     ) : SyncMessage() {
-        override fun toString(): String {
-            return "NewDevice(deviceId=$deviceId)"
-        }
-
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
             other as NewDevice
 
-            if (deviceId != other.deviceId) return false
+            if (deviceInfo != other.deviceInfo) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            return deviceId
+            return deviceInfo.hashCode()
+        }
+
+        override fun toString(): String {
+            return "NewDevice(deviceInfo=$deviceInfo)"
         }
     }
 }

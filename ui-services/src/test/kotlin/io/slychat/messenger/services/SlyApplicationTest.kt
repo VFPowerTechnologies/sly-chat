@@ -110,7 +110,7 @@ class SlyApplicationTest {
     @Test
     fun `it should attempt to login automatically after basic initialization`() { TODO() }
 
-    fun authWithOtherDevices(otherDevices: List<DeviceInfo>) {
+    fun authWithOtherDevices(otherDevices: List<DeviceInfo>): SlyApplication {
         val authResult = AuthResult(null, MockUserComponent.keyVault, accountInfo, otherDevices)
 
         whenever(appComponent.authenticationService.auth(any(), any(), any())).thenReturn(authResult)
@@ -119,6 +119,8 @@ class SlyApplicationTest {
         app.init(appComponent)
 
         doLogin(app)
+
+        return app
     }
 
     @Test
@@ -157,8 +159,10 @@ class SlyApplicationTest {
     @Test
     fun `it should send other devices a new device message during first initialization`() {
         val otherDevices = listOf(DeviceInfo(randomDeviceId(), randomRegistrationId()))
-        authWithOtherDevices(otherDevices)
+        val app = authWithOtherDevices(otherDevices)
 
-        verify(appComponent.userComponent.messengerService).broadcastNewDevice(accountInfo.deviceId)
+        val deviceInfo = DeviceInfo(accountInfo.deviceId, app.installationData.registrationId)
+
+        verify(appComponent.userComponent.messengerService).broadcastNewDevice(deviceInfo)
     }
 }
