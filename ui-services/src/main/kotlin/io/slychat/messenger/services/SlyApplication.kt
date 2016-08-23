@@ -267,8 +267,8 @@ class SlyApplication {
                 authTokenManager.invalidateToken()
 
             //until this finishes, nothing in the UserComponent should be touched
-            backgroundInitialization(userComponent, response.authToken, password, rememberMe, accountInfo) mapUi {
-                finalizeInit(userComponent, accountInfo)
+            backgroundInitialization(userComponent, response, password, rememberMe, accountInfo) mapUi {
+                finalizeInitialization(userComponent, accountInfo)
             }
         } failUi { e ->
             //incase session initialization failed we need to clean up the user session here
@@ -380,7 +380,13 @@ class SlyApplication {
      *
      * Until this completes, do NOT use anything in the UserComponent.
      */
-    private fun backgroundInitialization(userComponent: UserComponent, authToken: AuthToken?, password: String, rememberMe: Boolean, accountInfo: AccountInfo): Promise<Unit, Exception> {
+    private fun backgroundInitialization(
+        userComponent: UserComponent,
+        authResult: AuthResult,
+        password: String,
+        rememberMe: Boolean,
+        accountInfo: AccountInfo
+    ): Promise<Unit, Exception> {
         val persistenceManager = userComponent.persistenceManager
         val userConfigService = userComponent.configService
         val userLoginData = userComponent.userLoginData
@@ -388,8 +394,11 @@ class SlyApplication {
         val userId = userLoginData.userId
 
         val localAccountDirectory = appComponent.localAccountDirectory
-        val sessionDataPersistenceManager = localAccountDirectory.getSessionDataPersistenceManager(userId, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams)
         val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager()
+        val sessionDataPersistenceManager = userComponent.sessionDataPersistenceManager
+
+        val authToken = authResult.authToken
+        val otherDevices = authResult.otherDevices
 
         //we could break this up into parts and emit progress events between stages
         return task {
@@ -415,6 +424,14 @@ class SlyApplication {
         } bind {
             //FIXME this can be performed in parallel
             userConfigService.init()
+        } mapUi {
+            //need to do this here so we can use messageCipherService afterwards
+            startUserComponents(userComponent)
+        } bind {
+            if (otherDevices != null)
+                userComponent.messageCipherService.updateSelfDevices(otherDevices)
+            else
+                Promise.ofSuccess(Unit)
         }
     }
 
@@ -440,14 +457,14 @@ class SlyApplication {
     }
 
     /** called after a successful user session has been created to finish initializing components. */
-    private fun finalizeInit(userComponent: UserComponent, accountInfo: AccountInfo) {
+    private fun finalizeInitialization(userComponent: UserComponent, accountInfo: AccountInfo) {
+        log.info("Finalizing user initialization")
+
         newTokenSyncSub = userComponent.authTokenManager.newToken.subscribe {
             onNewToken(it)
         }
 
         initializeUserSession(userComponent)
-
-        startUserComponents(userComponent)
 
         userSessionAvailableSubject.onNext(userComponent)
 

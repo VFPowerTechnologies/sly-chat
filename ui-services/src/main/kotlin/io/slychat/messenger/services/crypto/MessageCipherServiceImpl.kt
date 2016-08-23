@@ -193,6 +193,8 @@ class MessageCipherServiceImpl(
     }
 
     private fun handleUpdateSelfDevices(work: CipherWork.UpdateSelfDevices) {
+        log.info("Updating self devices: {}", work.otherDevices)
+
         val currentDeviceIds = signalStore.getSubDeviceSessions(selfId.toString())
 
         val diff = deviceDiff(currentDeviceIds, work.otherDevices) {

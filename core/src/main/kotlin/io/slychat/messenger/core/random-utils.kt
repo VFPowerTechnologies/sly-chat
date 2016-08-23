@@ -100,12 +100,24 @@ fun randomContactInfoList(allowedMessageLevel: AllowedMessageLevel = AllowedMess
     return (1..n).map { randomContactInfo(allowedMessageLevel) }
 }
 
-fun randomMessageText(): String {
-    //XXX kinda dumb...
-    val base = "random message".toMutableList()
+private fun shuffleString(input: String): String {
+    val base = input.toMutableList()
     Collections.shuffle(base)
 
     return base.joinToString("")
+}
+
+fun randomName(): String {
+    return shuffleString("random name")
+}
+
+fun randomAccountInfo(deviceId: Int = randomDeviceId()): AccountInfo {
+    return AccountInfo(randomUserId(), randomName(), randomEmailAddress(), "", deviceId)
+}
+
+fun randomMessageText(): String {
+    //XXX kinda dumb...
+    return shuffleString("random message")
 }
 
 fun randomReceivedMessageInfo(): MessageInfo {
