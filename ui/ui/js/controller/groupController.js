@@ -583,9 +583,13 @@ GroupController.prototype = {
         }
         else {
             var messages = messageInfo.messages;
+            var unreadCount;
+            if (this.groupDetailsCache[groupId] !== undefined && this.groupDetailsCache[groupId].info !== undefined) {
+                unreadCount = this.groupDetailsCache[groupId].info.unreadMessageCount + messages.length;
+            }
             lastMessageInfo = {
                 lastSpeaker: messageInfo.contact,
-                unreadMessageCount: this.groupDetailsCache[groupId].info.unreadMessageCount + messages.length,
+                unreadMessageCount: unreadCount,
                 lastMessage: messages[messages.length - 1].message,
                 lastTimestamp: messages[messages.length - 1].timestamp
             };
