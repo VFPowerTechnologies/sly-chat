@@ -20,7 +20,3 @@ interface MessageSender {
 
     fun shutdown()
 }
-
-fun MessageSender.addToQueue(metadata: MessageMetadata, message: ByteArray): Promise<Unit, Exception> {
-    return addToQueue(SenderMessageEntry(metadata, message))
-}

@@ -195,7 +195,7 @@ class MessengerServiceImpl(
             val serialized = objectMapper.writeValueAsBytes(wrapper)
 
             val metadata = MessageMetadata(userId, null, MessageCategory.TEXT_SINGLE, messageInfo.id)
-            messageSender.addToQueue(metadata, serialized) bind {
+            messageSender.addToQueue(SenderMessageEntry(metadata, serialized)) bind {
                 messagePersistenceManager.addMessage(userId, messageInfo)
             }
         }
@@ -360,6 +360,6 @@ class MessengerServiceImpl(
         val serialized = objectMapper.writeValueAsBytes(SyncMessageWrapper(message))
 
         val metadata = MessageMetadata(selfId, null, MessageCategory.OTHER, randomUUID())
-        return messageSender.addToQueue(metadata, serialized)
+        return messageSender.addToQueue(SenderMessageEntry(metadata, serialized))
     }
 }

@@ -2,6 +2,7 @@ package io.slychat.messenger.services.messaging
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
 import io.slychat.messenger.core.persistence.QueuedMessage
 import io.slychat.messenger.core.relay.*
@@ -15,6 +16,7 @@ import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.TestException
 import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenReturn
+import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import org.junit.Before
 import org.junit.ClassRule
@@ -30,6 +32,10 @@ class MessageSenderImplTest {
         @JvmField
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
+    }
+
+    private fun MessageSender.addToQueue(metadata: MessageMetadata, message: ByteArray): Promise<Unit, Exception> {
+        return addToQueue(SenderMessageEntry(metadata, message))
     }
 
     val messageCipherService: MessageCipherService = mock()
