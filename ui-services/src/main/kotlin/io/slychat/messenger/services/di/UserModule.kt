@@ -124,12 +124,16 @@ class UserModule(
     @UserScope
     @Provides
     fun providesMessageProcessor(
+        userData: UserData,
         contactsService: ContactsService,
         messagePersistenceManager: MessagePersistenceManager,
+        messageCipherService: MessageCipherService,
         groupService: GroupService
     ): MessageProcessor = MessageProcessorImpl(
+        userData.userId,
         contactsService,
         messagePersistenceManager,
+        messageCipherService,
         groupService
     )
 

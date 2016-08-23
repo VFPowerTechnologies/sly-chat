@@ -4,11 +4,9 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
-import io.slychat.messenger.services.GroupService
-import io.slychat.messenger.services.bindRecoverForUi
-import io.slychat.messenger.services.bindUi
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.ContactsService
-import io.slychat.messenger.services.mapUi
+import io.slychat.messenger.services.crypto.MessageCipherService
 import nl.komponents.kovenant.Promise
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -16,8 +14,10 @@ import rx.subjects.PublishSubject
 import java.util.*
 
 class MessageProcessorImpl(
+    private val selfId: UserId,
     private val contactsService: ContactsService,
     private val messagePersistenceManager: MessagePersistenceManager,
+    private val messageCipherService: MessageCipherService,
     private val groupService: GroupService
 ) : MessageProcessor {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -35,9 +35,21 @@ class MessageProcessorImpl(
 
             is GroupEventMessageWrapper -> handleGroupMessage(sender, m.m)
 
+            is SyncMessageWrapper -> handleSyncMessage(sender, m.m)
+
             else -> {
                 log.error("Unhandled message type: {}", m.javaClass.name)
                 throw IllegalArgumentException("Unhandled message type: ${m.javaClass.name}")
+            }
+        }
+    }
+
+    private fun handleSyncMessage(sender: UserId, m: SyncMessage): Promise<Unit, Exception> {
+        return if (sender != selfId)
+            Promise.ofFail(SyncMessageFromOtherSecurityException(sender, m.javaClass.simpleName))
+        else {
+            when (m) {
+                is SyncMessage.NewDevice -> messageCipherService.addSelfDevice(m.deviceInfo)
             }
         }
     }

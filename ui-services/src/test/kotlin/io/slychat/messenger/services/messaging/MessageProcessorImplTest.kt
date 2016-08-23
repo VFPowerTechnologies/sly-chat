@@ -5,7 +5,9 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
 import io.slychat.messenger.services.GroupService
+import io.slychat.messenger.services.SyncMessageFromOtherSecurityException
 import io.slychat.messenger.services.contacts.ContactsService
+import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenReturn
@@ -16,6 +18,7 @@ import org.junit.ClassRule
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 
 class MessageProcessorImplTest {
@@ -25,8 +28,11 @@ class MessageProcessorImplTest {
         val kovenantTestMode = KovenantTestModeRule()
     }
 
+    val selfId = randomUserId()
+
     val contactsService: ContactsService = mock()
     val messagePersistenceManager: MessagePersistenceManager = mock()
+    val messageCipherService: MessageCipherService = mock()
     val groupService: GroupService = mock()
 
     fun createProcessor(): MessageProcessorImpl {
@@ -50,9 +56,13 @@ class MessageProcessorImplTest {
         whenever(groupService.removeMember(any(), any())).thenReturn(Unit)
         whenever(groupService.isUserMemberOf(any(), any())).thenReturn(true)
 
+        whenever(messageCipherService.addSelfDevice(any())).thenReturn(Unit)
+
         return MessageProcessorImpl(
+            selfId,
             contactsService,
             messagePersistenceManager,
+            messageCipherService,
             groupService
         )
     }
@@ -126,8 +136,9 @@ class MessageProcessorImplTest {
             whenever(groupService.getInfo(any())).thenReturnNull()
     }
 
-    fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomUUID(), TextMessageWrapper(m))
-    fun wrap(m: GroupEventMessage): SlyMessageWrapper = SlyMessageWrapper(randomUUID(), GroupEventMessageWrapper(m))
+    fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), TextMessageWrapper(m))
+    fun wrap(m: GroupEventMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), GroupEventMessageWrapper(m))
+    fun wrap(m: SyncMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SyncMessageWrapper(m))
 
     /* Group stuff */
 
@@ -536,5 +547,33 @@ class MessageProcessorImplTest {
     @Test
     fun `it should ignore group text messages for blocked groups`() {
         testDropGroupTextMessage(true, GroupMembershipLevel.BLOCKED)
+    }
+
+    @Test
+    fun `it should drop NewDevice messages where the sender is not yourself`() {
+        val processor = createProcessor()
+
+        val sender = randomUserId()
+        val m = SyncMessage.NewDevice(randomDeviceInfo())
+
+        assertFailsWith(SyncMessageFromOtherSecurityException::class) {
+            processor.processMessage(sender, wrap(m)).get()
+        }
+
+        verify(messageCipherService, never()).addSelfDevice(any())
+    }
+
+    @Test
+    fun `it should add a new device when receiving a NewDevice message`() {
+        val newDeviceInfo = randomDeviceInfo()
+
+        val processor = createProcessor()
+
+        val sender = selfId
+        val m = SyncMessage.NewDevice(newDeviceInfo)
+
+        processor.processMessage(sender, wrap(m)).get()
+
+        verify(messageCipherService).addSelfDevice(newDeviceInfo)
     }
 }
