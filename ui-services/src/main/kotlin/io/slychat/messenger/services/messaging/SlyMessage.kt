@@ -11,7 +11,7 @@ import io.slychat.messenger.core.persistence.GroupId
 @JsonSubTypes(
     JsonSubTypes.Type(GroupEventMessageWrapper::class, name = "g"),
     JsonSubTypes.Type(TextMessageWrapper::class, name = "t"),
-    JsonSubTypes.Type(SyncMessage::class, name = "s")
+    JsonSubTypes.Type(SyncMessageWrapper::class, name = "s")
 )
 interface SlyMessage
 

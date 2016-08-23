@@ -187,6 +187,8 @@ class MessageCipherServiceImpl(
     }
 
     private fun handleAddSelfDevice(work: CipherWork.AddSelfDevice) {
+        log.info("Adding self device: {}", work.deviceInfo)
+        
         val diff = DeviceMismatchContent(emptyList(), listOf(work.deviceInfo.id), emptyList())
 
         applyDiff(diff, selfId, work.deferred)
