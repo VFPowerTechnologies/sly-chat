@@ -97,7 +97,7 @@ class MessageCipherServiceImpl(
 
     private val workQueue = ArrayBlockingQueue<CipherWork>(20)
 
-    override fun start() {
+    override fun init() {
         if (thread != null)
             return
 

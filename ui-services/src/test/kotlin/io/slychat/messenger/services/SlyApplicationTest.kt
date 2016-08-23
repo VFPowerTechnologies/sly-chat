@@ -128,7 +128,7 @@ class SlyApplicationTest {
         val messageCipherService = appComponent.userComponent.messageCipherService
         val order = inOrder(messageCipherService)
 
-        order.verify(messageCipherService).start()
+        order.verify(messageCipherService).init()
         order.verify(messageCipherService).updateSelfDevices(any())
     }
 

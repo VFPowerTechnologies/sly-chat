@@ -9,7 +9,7 @@ import io.slychat.messenger.services.messaging.EncryptionResult
 import nl.komponents.kovenant.Promise
 
 interface MessageCipherService {
-    fun start()
+    fun init()
     fun shutdown(join: Boolean)
     fun encrypt(userId: UserId, message: ByteArray, connectionTag: Int): Promise<EncryptionResult, Exception>
     fun decrypt(address: SlyAddress, messages: EncryptedMessageInfo): Promise<DecryptionResult, Exception>
