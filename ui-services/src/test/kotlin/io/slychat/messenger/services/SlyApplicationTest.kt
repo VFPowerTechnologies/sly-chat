@@ -52,6 +52,7 @@ class SlyApplicationTest {
         whenever(userComponent.relayClientManager.onlineStatus).thenReturn(relayOnlineStatus)
         whenever(userComponent.relayClientManager.events).thenReturn(relayEvents)
         whenever(userComponent.messageCipherService.updateSelfDevices(any())).thenReturn(Unit)
+        whenever(userComponent.contactsService.addContact(any())).thenReturn(true)
 
         //used in finalizeInitialization
     }
@@ -128,6 +129,20 @@ class SlyApplicationTest {
         val order = inOrder(messageCipherService)
 
         order.verify(messageCipherService).start()
+        order.verify(messageCipherService).updateSelfDevices(any())
+    }
+
+    @Test
+    fun `our own account must be added to the address book before MessageCipherService is called`() {
+        val otherDevices = listOf(DeviceInfo(randomDeviceId(), randomRegistrationId()))
+        authWithOtherDevices(otherDevices)
+
+        val messageCipherService = appComponent.userComponent.messageCipherService
+        val contactsService = appComponent.userComponent.contactsService
+
+        val order = inOrder(contactsService, messageCipherService)
+
+        order.verify(contactsService).addContact(any())
         order.verify(messageCipherService).updateSelfDevices(any())
     }
 

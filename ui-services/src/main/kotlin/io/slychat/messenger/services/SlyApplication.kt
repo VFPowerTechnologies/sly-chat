@@ -6,10 +6,7 @@ import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.currentOs
-import io.slychat.messenger.core.persistence.AccountInfo
-import io.slychat.messenger.core.persistence.InstallationData
-import io.slychat.messenger.core.persistence.SessionData
-import io.slychat.messenger.core.persistence.StartupInfo
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
 import io.slychat.messenger.services.LoginEvent.*
@@ -427,6 +424,21 @@ class SlyApplication {
         } mapUi {
             //need to do this here so we can use messageCipherService afterwards
             startUserComponents(userComponent)
+        } bind {
+            //TODO should probably only really run this on initial account data creation
+            //we need to be present in our address book to create signal sessions
+            val publicKey = keyVault.fingerprint
+            val selfInfo = ContactInfo(
+                userId,
+                accountInfo.email,
+                accountInfo.name,
+                //we don't wanna be visible by default
+                AllowedMessageLevel.GROUP_ONLY,
+                accountInfo.phoneNumber,
+                publicKey
+            )
+
+            userComponent.contactsService.addContact(selfInfo)
         } bind {
             if (otherDevices != null)
                 userComponent.messageCipherService.updateSelfDevices(otherDevices)
