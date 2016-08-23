@@ -54,16 +54,24 @@ fun randomTextGroupMetadata(groupId: GroupId? = null): MessageMetadata {
     )
 }
 
-fun randomTextSingleMetadata(): MessageMetadata {
-    val recipient = randomUserId()
+fun randomTextSingleMetadata(recipientId: UserId = randomUserId()): MessageMetadata {
     val messageId = randomUUID()
     return MessageMetadata(
-        recipient,
+        recipientId,
         null,
         MessageCategory.TEXT_SINGLE,
         messageId
     )
+}
 
+fun randomOtherMetadata(recipientId: UserId = randomUserId()): MessageMetadata {
+    val messageId = randomUUID()
+    return MessageMetadata(
+        recipientId,
+        null,
+        MessageCategory.OTHER,
+        messageId
+    )
 }
 
 fun randomSerializedMessage(): ByteArray = Random().nextInt().toString().toByteArray()

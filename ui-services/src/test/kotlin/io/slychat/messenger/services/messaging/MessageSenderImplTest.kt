@@ -226,6 +226,30 @@ class MessageSenderImplTest {
         }
     }
 
+    //used for self messages when no other devices are available
+    @Test
+    fun `it should emit a message update event if no encrypted messages are returned from MessageCipherService`() {
+        val sender = createSender(true)
+
+        val queued = randomQueuedMessage()
+        val metadata = queued.metadata
+
+        val testSubscriber = sender.messageSent.testSubscriber()
+
+        val result = EncryptionResult(
+            emptyList(),
+            defaultConnectionTag
+        )
+
+        whenever(messageCipherService.encrypt(any(), any(), any())).thenReturn(result)
+
+        sender.addToQueue(metadata, queued.serialized).get()
+
+        assertEventEmitted(testSubscriber) {
+            assertEquals(metadata, it, "Invalid message metadata")
+        }
+    }
+
     @Test
     fun `it should clear the message queue on a relay disconnect`() {
         val queued = randomQueuedMessage()
