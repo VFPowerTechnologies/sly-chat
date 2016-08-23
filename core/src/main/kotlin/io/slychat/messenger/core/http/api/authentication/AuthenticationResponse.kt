@@ -34,7 +34,8 @@ data class AuthenticationData(
     @get:JsonProperty("account-info")
     val accountInfo: AccountInfo,
 
-    @JsonProperty("devices")
+    @param:JsonProperty("otherDevices")
+    @get:JsonProperty("otherDevices")
     val otherDevices: List<DeviceInfo>
 )
 
