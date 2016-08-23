@@ -25,6 +25,8 @@ class SlyApplicationTest {
         val kovenantRule = KovenantTestModeRule()
     }
 
+    val accountInfo = randomAccountInfo()
+
     val appComponent = MockApplicationComponent()
 
     val platformContactsUpdated: PublishSubject<Unit> = PublishSubject.create()
@@ -53,6 +55,7 @@ class SlyApplicationTest {
         whenever(userComponent.relayClientManager.events).thenReturn(relayEvents)
         whenever(userComponent.messageCipherService.updateSelfDevices(any())).thenReturn(Unit)
         whenever(userComponent.contactsService.addContact(any())).thenReturn(true)
+        whenever(userComponent.messengerService.broadcastNewDevice(any())).thenReturn(Unit)
 
         //used in finalizeInitialization
     }
@@ -108,8 +111,6 @@ class SlyApplicationTest {
     fun `it should attempt to login automatically after basic initialization`() { TODO() }
 
     fun authWithOtherDevices(otherDevices: List<DeviceInfo>) {
-        val accountInfo = randomAccountInfo()
-
         val authResult = AuthResult(null, MockUserComponent.keyVault, accountInfo, otherDevices)
 
         whenever(appComponent.authenticationService.auth(any(), any(), any())).thenReturn(authResult)
@@ -151,5 +152,13 @@ class SlyApplicationTest {
         val otherDevices = listOf(DeviceInfo(randomDeviceId(), randomRegistrationId()))
         authWithOtherDevices(otherDevices)
         verify(appComponent.userComponent.messageCipherService).updateSelfDevices(otherDevices)
+    }
+
+    @Test
+    fun `it should send other devices a new device message during first initialization`() {
+        val otherDevices = listOf(DeviceInfo(randomDeviceId(), randomRegistrationId()))
+        authWithOtherDevices(otherDevices)
+
+        verify(appComponent.userComponent.messengerService).broadcastNewDevice(accountInfo.deviceId)
     }
 }

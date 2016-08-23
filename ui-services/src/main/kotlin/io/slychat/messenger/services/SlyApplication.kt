@@ -440,8 +440,11 @@ class SlyApplication {
 
             userComponent.contactsService.addContact(selfInfo)
         } bind {
-            if (otherDevices != null)
-                userComponent.messageCipherService.updateSelfDevices(otherDevices)
+            if (otherDevices != null) {
+                userComponent.messageCipherService.updateSelfDevices(otherDevices) bindUi {
+                    userComponent.messengerService.broadcastNewDevice(accountInfo.deviceId)
+                }
+            }
             else
                 Promise.ofSuccess(Unit)
         }
