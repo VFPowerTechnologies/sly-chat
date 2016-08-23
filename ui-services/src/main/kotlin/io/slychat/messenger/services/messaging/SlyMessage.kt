@@ -135,7 +135,7 @@ sealed class GroupEventMessage {
 )
 sealed class SyncMessage {
     class NewDevice(
-        @JsonProperty("deviceId")
+        @JsonProperty("deviceInfo")
         val deviceInfo: DeviceInfo
     ) : SyncMessage() {
         override fun equals(other: Any?): Boolean {

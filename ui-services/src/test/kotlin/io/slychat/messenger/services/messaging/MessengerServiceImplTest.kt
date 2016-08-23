@@ -258,10 +258,10 @@ class MessengerServiceImplTest {
 
         messengerService.sendMessageTo(recipient, randomMessage())
 
-        verify(messageSender).addToQueue(capture {
-            assertEquals(recipient, it.userId, "Invalid recipient")
-            assertEquals(MessageCategory.TEXT_SINGLE, it.category, "Invalid category")
-        }, any())
+        verify(messageSender).addToQueue(capture<SenderMessageEntry> {
+            assertEquals(recipient, it.metadata.userId, "Invalid recipient")
+            assertEquals(MessageCategory.TEXT_SINGLE, it.metadata.category, "Invalid category")
+        })
     }
 
     //also doubles as checking for mark as delivered
@@ -390,8 +390,8 @@ class MessengerServiceImplTest {
         messengerService.sendGroupMessageTo(groupId, message)
 
         var sentMessageId: String? = null
-        verify(messageSender).addToQueue(capture<SenderMessageEntry> {
-            sentMessageId = it.metadata.messageId
+        verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
+            sentMessageId = it.first().metadata.messageId
         })
 
         verify(groupService).addMessage(eq(groupId), capture {
