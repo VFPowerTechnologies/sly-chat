@@ -727,4 +727,75 @@ class MessengerServiceImplTest {
 
         assertEquals(SyncMessage.NewDevice(deviceInfo), message, "Invalid sync message")
     }
+
+    @Test
+    fun `when receiving a sent notification for a text single message, it should send itself a sync message`() {
+        val messengerService = createService()
+
+        val messageInfo = randomSentMessageInfo()
+        val metadata = randomTextSingleMetadata()
+
+        whenever(messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId)).thenReturn(messageInfo)
+
+        messageSent.onNext(metadata)
+
+        val expected = SyncSentMessageInfo(
+            metadata.messageId,
+            Recipient.User(metadata.userId),
+            messageInfo.message,
+            messageInfo.receivedTimestamp
+        )
+
+        val message = retrieveSyncMessage<SyncMessage.SelfMessage>()
+        assertEquals(expected, message.sentMessageInfo, "Invalid sent message info")
+    }
+
+    @Test
+    fun `when receiving a sent notification for a text group message, it should send itself a sync message if the message was not marked as delivered`() {
+        val messengerService = createService()
+
+        val messageInfo = randomSentMessageInfo()
+        val metadata = randomTextGroupMetadata()
+        val groupId = metadata.groupId!!
+
+        val groupMessageInfo = GroupMessageInfo(null, messageInfo)
+        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId)).thenReturn(groupMessageInfo)
+
+        messageSent.onNext(metadata)
+
+        val expected = SyncSentMessageInfo(
+            metadata.messageId,
+            Recipient.Group(groupId),
+            messageInfo.message,
+            messageInfo.receivedTimestamp
+        )
+
+        val message = retrieveSyncMessage<SyncMessage.SelfMessage>()
+        assertEquals(expected, message.sentMessageInfo, "Invalid sent message info")
+    }
+
+    @Test
+    fun `when receiving a sent notification for a text group message, it should not send itself a sync message if the message was already marked as delivered`() {
+        val messengerService = createService()
+
+        val metadata = randomTextGroupMetadata()
+        val groupId = metadata.groupId!!
+
+        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId)).thenReturnNull()
+
+        messageSent.onNext(metadata)
+
+        verify(messageSender, never()).addToQueue(any<SenderMessageEntry>())
+    }
+
+    @Test
+    fun `when receiving a notification for an other category message, it should not send itself a sync message`() {
+        val messengerService = createService()
+
+        val metadata = randomOtherMetadata()
+
+        messageSent.onNext(metadata)
+
+        verify(messageSender, never()).addToQueue(any<SenderMessageEntry>())
+    }
 }

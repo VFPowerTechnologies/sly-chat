@@ -80,7 +80,9 @@ class MessengerServiceImpl(
     private fun processSingleUpdate(metadata: MessageMetadata) {
         log.debug("Processing sent convo message {} to {}", metadata.messageId, metadata.userId)
 
-        messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId) successUi { messageInfo ->
+        messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId) bindUi { messageInfo ->
+            broadcastSentMessage(metadata, messageInfo) map { messageInfo }
+        } successUi { messageInfo ->
             val bundle = MessageBundle(metadata.userId, null, listOf(messageInfo))
             messageUpdatesSubject.onNext(bundle)
         } fail { e ->
@@ -94,10 +96,15 @@ class MessengerServiceImpl(
 
         log.debug("Processing sent group message <<{}/{}>>", groupId, metadata.messageId)
 
-        groupService.markMessageAsDelivered(groupId, metadata.messageId) successUi { messageInfo ->
+        groupService.markMessageAsDelivered(groupId, metadata.messageId) bindUi { groupMessageInfo ->
+            if (groupMessageInfo != null)
+                broadcastSentMessage(metadata, groupMessageInfo.info) map { groupMessageInfo }
+            else
+                Promise.ofSuccess(groupMessageInfo)
+        } successUi { groupMessageInfo ->
             //if this is null, the message has already been delievered to one recipient, so we don't emit another event
-            if (messageInfo != null) {
-                val bundle = MessageBundle(metadata.userId, groupId, listOf(messageInfo.info))
+            if (groupMessageInfo != null) {
+                val bundle = MessageBundle(metadata.userId, groupId, listOf(groupMessageInfo.info))
                 messageUpdatesSubject.onNext(bundle)
             }
         } fail { e ->
@@ -354,12 +361,30 @@ class MessengerServiceImpl(
         return processPackages(offlineMessages)
     }
 
-    override fun broadcastNewDevice(deviceInfo: DeviceInfo): Promise<Unit, Exception> {
-        val message = SyncMessage.NewDevice(deviceInfo)
-
-        val serialized = objectMapper.writeValueAsBytes(SyncMessageWrapper(message))
+    private fun sendSyncMessage(m: SyncMessage): Promise<Unit, Exception> {
+        val serialized = objectMapper.writeValueAsBytes(SyncMessageWrapper(m))
 
         val metadata = MessageMetadata(selfId, null, MessageCategory.OTHER, randomUUID())
         return messageSender.addToQueue(SenderMessageEntry(metadata, serialized))
+    }
+
+    override fun broadcastNewDevice(deviceInfo: DeviceInfo): Promise<Unit, Exception> {
+        return sendSyncMessage(SyncMessage.NewDevice(deviceInfo))
+    }
+
+    private fun broadcastSentMessage(metadata: MessageMetadata, messageInfo: MessageInfo): Promise<Unit, Exception> {
+        val recipient = if (metadata.groupId != null)
+            Recipient.Group(metadata.groupId)
+        else
+            Recipient.User(metadata.userId)
+
+        val sentMessageInfo = SyncSentMessageInfo(
+            metadata.messageId,
+            recipient,
+            messageInfo.message,
+            messageInfo.receivedTimestamp
+        )
+
+        return sendSyncMessage(SyncMessage.SelfMessage(sentMessageInfo))
     }
 }
