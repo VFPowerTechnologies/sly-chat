@@ -51,7 +51,7 @@ class SQLiteSignalProtocolStore(
     //since we don't have the concept of a master device, we return all devices
     override fun getSubDeviceSessions(name: String): List<Int> {
         return sqlitePersistenceManager.syncRunQuery { connection ->
-            connection.withPrepared("SELECT device_id FROM signal_sessions WHERE contact_id LIKE ?") { stmt ->
+            connection.withPrepared("SELECT device_id FROM signal_sessions WHERE contact_id=?") { stmt ->
                 stmt.map {
                     stmt.columnInt(0)
                 }
