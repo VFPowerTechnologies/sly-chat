@@ -4,7 +4,7 @@ function createDesktopMenu () {
         '<div class="view view-left navbar-through">' +
         '<div class="pages">' +
         '<div data-page="contact-left" class="page" style="background-color: #eee;">' +
-        '<div class="navbar"><div class="navbar-inner"><div class="left"><img style="height: 40px; width: 40px; margin-right: 10px; padding-left: 10px;" src="img/sly_logo.png"> Sly Chat </div></div></div>' +
+        '<div class="navbar"><div class="navbar-inner"><a href="#" onclick="navigationController.loadPage(\'contacts.html\');"><div class="left"><img style="height: 40px; width: 40px; margin-right: 10px; padding-left: 10px;" src="img/sly_logo.png"> Sly Chat </div></a></div></div>' +
         '<div class="page-content">' +
         '<div class="list-block" style="margin-top: 5px;">' +
         '<ul>' +
@@ -33,7 +33,7 @@ function createDesktopMenu () {
                     '<div class="content-block">' +
                         '<div class="list-block">' +
                             '<div style="width: 100%; text-align: right;">' +
-                                '<a href="#" id="addContactButton" style="font-size: 12px; color: blue;">Add contact</a>' +
+                                '<a href="#" id="addContactButton"><i class="fa fa-plus-circle"></i></a>' +
                             '</div>' +
                             '<ul id="leftContactList">' +
                             '</ul>' +
@@ -50,7 +50,7 @@ function createDesktopMenu () {
                     '<div class="content-block">' +
                         '<div class="list-block">' +
                             '<div style="width: 100%; text-align: right;">' +
-                                '<a href="#" id="createGroupButton" style="font-size: 12px; color: blue;">New group</a>' +
+                                '<a href="#" id="createGroupButton"><i class="fa fa-plus-circle"></i></a>' +
                             '</div>' +
                             '<ul id="leftGroupList"></ul>' +
                         '</div>' +
