@@ -243,7 +243,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .avatar {
     height: 40px;
     width: 40px;
-    line-height: 40px;;
+    line-height: 40px;
     margin: 0 auto 5px auto;
     border-radius: 50%;
     background-color: #6d6d72;
