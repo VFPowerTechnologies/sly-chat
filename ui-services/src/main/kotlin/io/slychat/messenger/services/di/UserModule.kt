@@ -32,7 +32,6 @@ import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
 import rx.Observable
 import rx.Scheduler
-import rx.subjects.PublishSubject
 import java.util.concurrent.TimeUnit
 
 @Module
@@ -197,6 +196,7 @@ class UserModule(
     @UserScope
     @Provides
     fun providesNotifierService(
+        userData: UserData,
         messengerService: MessengerService,
         uiEventService: UIEventService,
         contactsPersistenceManager: ContactsPersistenceManager,
@@ -206,17 +206,27 @@ class UserModule(
         @UIVisibility uiVisibility: Observable<Boolean>,
         scheduler: Scheduler
     ): NotifierService {
+        val selfId = userData.userId
+
         //even if this a hot observable, it's not yet emitting so we can just connect using share() instead of
         //manually using the ConnectedObservable
-        val shared = messengerService.newMessages.share()
+        val shared = messengerService.newMessages
+            //ignore messages from self
+            .filter {
+                when (it) {
+                    is ConversationMessage.Single -> it.userId != selfId
+                    is ConversationMessage.Group -> it.speaker != null
+                }
+            }
+            .share()
 
         //we use debouncing to trigger a buffer flush
         val closingSelector = shared.debounce(400, TimeUnit.MILLISECONDS, scheduler)
         val buffered = shared.buffer(closingSelector)
+        val bufferedBundles = NotifierServiceImpl.flattenMessageBundles(buffered)
 
-        //FIXME
         return NotifierServiceImpl(
-            PublishSubject.create(),
+            bufferedBundles,
             uiEventService.events,
             uiVisibility,
             contactsPersistenceManager,

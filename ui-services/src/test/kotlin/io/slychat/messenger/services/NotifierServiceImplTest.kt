@@ -7,6 +7,7 @@ import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.contacts.NotificationConversationInfo
 import io.slychat.messenger.services.contacts.NotificationMessageInfo
+import io.slychat.messenger.services.messaging.ConversationMessage
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.cond
@@ -312,15 +313,18 @@ class NotifierServiceImplTest {
         verify(platformNotificationsService).addNewMessageNotification(any(), any(), any())
     }
 
-    fun randomMessageBundle(userId: UserId? = null, nMessages: Int = 2, groupId: GroupId? = null): MessageBundle {
+    fun randomConversationMessage(userId: UserId? = null, groupId: GroupId? = null): ConversationMessage {
         val user = userId ?: randomUserId()
-        return MessageBundle(user, groupId, randomReceivedMessageInfoList(nMessages))
+        return if (groupId == null)
+            ConversationMessage.Single(user, randomReceivedMessageInfo())
+        else
+            ConversationMessage.Group(groupId, user, randomReceivedMessageInfo())
     }
 
     fun getMessageIdsFromBundle(messageBundle: MessageBundle): List<String> = messageBundle.messages.map { it.id }
 
-    fun flattenBundles(bundles: List<MessageBundle>): List<MessageBundle> {
-        val flattened = NotifierServiceImpl.flattenMessageBundles(Observable.just(bundles))
+    fun flattenBundles(messages: List<ConversationMessage>): List<MessageBundle> {
+        val flattened = NotifierServiceImpl.flattenMessageBundles(Observable.just(messages))
 
         return flattened.toList().toBlocking().single()
     }
@@ -331,10 +335,10 @@ class NotifierServiceImplTest {
         val user2 = randomUserId()
 
         val bundles = listOf(
-            randomMessageBundle(user1, 1),
-            randomMessageBundle(user1, 1),
-            randomMessageBundle(user2, 1),
-            randomMessageBundle(user2, 1)
+            randomConversationMessage(user1),
+            randomConversationMessage(user1),
+            randomConversationMessage(user2),
+            randomConversationMessage(user2)
         )
 
         val output = flattenBundles(bundles)
@@ -357,13 +361,13 @@ class NotifierServiceImplTest {
         val userId = randomUserId()
 
         val bundles = listOf(
-            randomMessageBundle(userId, 1),
-            randomMessageBundle(userId, 1),
-            randomMessageBundle(userId, 1),
-            randomMessageBundle(userId, 1)
+            randomConversationMessage(userId),
+            randomConversationMessage(userId),
+            randomConversationMessage(userId),
+            randomConversationMessage(userId)
         )
 
-        val order = bundles.map { it.messages.first().id }
+        val order = bundles.map { it.info.id }
 
         val output = flattenBundles(bundles)
 
@@ -389,8 +393,8 @@ class NotifierServiceImplTest {
         val groupId = randomGroupId()
 
         val bundles = listOf(
-            randomMessageBundle(userId, 1),
-            randomMessageBundle(userId, 1, groupId)
+            randomConversationMessage(userId),
+            randomConversationMessage(userId, groupId)
         )
 
         val output = flattenBundles(bundles)

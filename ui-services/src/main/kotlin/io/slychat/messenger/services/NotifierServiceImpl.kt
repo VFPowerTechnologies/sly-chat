@@ -7,6 +7,7 @@ import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.contacts.NotificationConversationInfo
 import io.slychat.messenger.services.contacts.NotificationKey
 import io.slychat.messenger.services.contacts.NotificationMessageInfo
+import io.slychat.messenger.services.messaging.ConversationMessage
 import io.slychat.messenger.services.messaging.MessageBundle
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -28,6 +29,7 @@ import java.util.*
  * 1) If the current navigated to page is recent chats, all notifications are cleared.
  * 2) If the current navigated to page is a user's page, all notifications for that user are cleared.
  */
+//XXX this needs a serious redesign
 class NotifierServiceImpl(
     newMessages: Observable<MessageBundle>,
     uiEvents: Observable<UIEvent>,
@@ -39,19 +41,27 @@ class NotifierServiceImpl(
 ) : NotifierService {
     companion object {
         /** Groups and flatten a list of message bundles. */
-        fun flattenMessageBundles(observable: Observable<List<MessageBundle>>): Observable<MessageBundle> {
+        fun flattenMessageBundles(observable: Observable<List<ConversationMessage>>): Observable<MessageBundle> {
             return observable
-                .map { bufferedBundles ->
+                .map { messages ->
                     val grouped = HashMap<Pair<UserId, GroupId?>, MessageBundle>()
 
-                    bufferedBundles.forEach {
-                        val key = it.userId to it.groupId
+                    messages.forEach {
+                        val key = when (it) {
+                            is ConversationMessage.Single -> it.userId to null
+                            is ConversationMessage.Group -> it.speaker!! to it.groupId
+                        }
+
                         val existing = grouped[key]
 
-                        grouped[key] = if (existing == null)
-                            it
+                        grouped[key] = if (existing == null) {
+                            when (it) {
+                                is ConversationMessage.Single -> MessageBundle(it.userId, null, listOf(it.info))
+                                is ConversationMessage.Group -> MessageBundle(it.speaker!!, it.groupId, listOf(it.info))
+                            }
+                        }
                         else
-                            existing.copy(messages = existing.messages + it.messages)
+                            existing.copy(messages = existing.messages + it.info)
 
                     }
 
