@@ -288,6 +288,30 @@ class NotifierServiceImplTest {
         verify(platformNotificationsService, never()).addNewMessageNotification(any(), any(), any())
     }
 
+    @Test
+    fun `it should display group notifications for a sender when the sender single chat page is focused`() {
+        val notifierService = initNotifierService(isUiVisible = true)
+
+        val contactInfo = randomContactInfo()
+        val groupInfo = randomGroupInfo()
+
+        whenever(contactsPersistenceManager.get(contactInfo.id)).thenReturn(contactInfo)
+        whenever(groupPersistenceManager.getInfo(any())).thenReturn(groupInfo)
+
+        val pageChangeEvent = PageChangeEvent(PageType.CONVO, contactInfo.id.toString())
+        uiEventSubject.onNext(pageChangeEvent)
+
+        val bundle = MessageBundle(
+            contactInfo.id,
+            groupInfo.id,
+            listOf(randomReceivedMessageInfo())
+        )
+
+        newMessagesSubject.onNext(bundle)
+
+        verify(platformNotificationsService).addNewMessageNotification(any(), any(), any())
+    }
+
     fun randomMessageBundle(userId: UserId? = null, nMessages: Int = 2, groupId: GroupId? = null): MessageBundle {
         val user = userId ?: randomUserId()
         return MessageBundle(user, groupId, randomReceivedMessageInfoList(nMessages))
