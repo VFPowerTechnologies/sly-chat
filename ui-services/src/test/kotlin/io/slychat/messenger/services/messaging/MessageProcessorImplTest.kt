@@ -576,4 +576,83 @@ class MessageProcessorImplTest {
 
         verify(messageCipherService).addSelfDevice(newDeviceInfo)
     }
+
+    //TODO test for dropping these if self isn't sender
+    fun randomSingleSentMessageInfo(userId: UserId): SyncSentMessageInfo {
+        return SyncSentMessageInfo(
+            randomMessageId(),
+            Recipient.User(userId),
+            randomMessageText(),
+            currentTimestamp(),
+            currentTimestamp()
+        )
+    }
+
+    fun randomGroupSentMessageInfo(groupId: GroupId): SyncSentMessageInfo {
+        return SyncSentMessageInfo(
+            randomMessageId(),
+            Recipient.Group(groupId),
+            randomMessageText(),
+            currentTimestamp(),
+            currentTimestamp()
+        )
+    }
+
+    @Test
+    fun `it should store a new sent single text message when receiving a SelfMessage message for a single chat`() {
+        val processor = createProcessor()
+
+        val recipient = randomUserId()
+        val sentMessageInfo = randomSingleSentMessageInfo(recipient)
+        val messageInfo = sentMessageInfo.toMessageInfo()
+        val m = SyncMessage.SelfMessage(sentMessageInfo)
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        verify(messagePersistenceManager).addMessage(recipient, messageInfo)
+    }
+
+    @Test
+    fun `it should emit new message updates when receiving a SelfMessage message`() {
+        val processor = createProcessor()
+
+        val recipient = randomUserId()
+        val sentMessageInfo = randomSingleSentMessageInfo(recipient)
+        val messageInfo = sentMessageInfo.toMessageInfo()
+        val m = SyncMessage.SelfMessage(sentMessageInfo)
+
+        val testSubscriber = processor.newMessages.testSubscriber()
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        val bundles = testSubscriber.onNextEvents
+
+        val expectedBundle = MessageBundle(
+            recipient,
+            null,
+            listOf(messageInfo)
+        )
+
+        assertThat(bundles).apply {
+            `as`("Should contain a message update")
+            containsOnly(expectedBundle)
+        }
+    }
+
+    @Test
+    fun `it should store a new sent group message when receiving a SelfMessage message for a new group chat`() {
+        val processor = createProcessor()
+
+        val recipient = randomGroupId()
+        val sentMessageInfo = randomGroupSentMessageInfo(recipient)
+        val groupMessageInfo = GroupMessageInfo(null, sentMessageInfo.toMessageInfo())
+        val m = SyncMessage.SelfMessage(sentMessageInfo)
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        verify(groupService).addMessage(recipient, groupMessageInfo)
+    }
+
+    @Test
+    fun `it should emit new message updates when receiving a SelfMessage message for a group chat`() { TODO() }
 }

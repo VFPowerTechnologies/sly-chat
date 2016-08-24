@@ -50,18 +50,34 @@ class MessageProcessorImpl(
         else {
             when (m) {
                 is SyncMessage.NewDevice -> messageCipherService.addSelfDevice(m.deviceInfo)
-                is SyncMessage.SelfMessage -> TODO()
+                is SyncMessage.SelfMessage -> handleSelfMessage(m)
             }
         }
     }
 
-    private fun storeMessage(sender: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception> {
-        return messagePersistenceManager.addMessage(sender, messageInfo) bindRecoverForUi { e: InvalidMessageLevelException ->
-            log.debug("User doesn't have appropriate message level, upgrading ")
+    private fun handleSelfMessage(m: SyncMessage.SelfMessage): Promise<Unit, Exception> {
+        val sentMessageInfo = m.sentMessageInfo
 
-            contactsService.allowAll(sender) bindUi {
-                messagePersistenceManager.addMessage(sender, messageInfo)
+        val messageInfo = sentMessageInfo.toMessageInfo()
+
+        val recipient = sentMessageInfo.recipient
+
+        return when (recipient) {
+            is Recipient.User -> addSingleMessage(recipient.id, messageInfo)
+            is Recipient.Group -> TODO()
+        }
+    }
+
+    private fun addSingleMessage(userId: UserId, messageInfo: MessageInfo): Promise<Unit, Exception> {
+        return messagePersistenceManager.addMessage(userId, messageInfo) bindRecoverForUi { e: InvalidMessageLevelException ->
+            log.debug("User doesn't have appropriate message level, upgrading")
+
+            contactsService.allowAll(userId) bindUi {
+                messagePersistenceManager.addMessage(userId, messageInfo)
             }
+        } mapUi { messageInfo ->
+            val bundle = MessageBundle(userId, null, listOf(messageInfo))
+            newMessagesSubject.onNext(bundle)
         }
     }
 
@@ -70,10 +86,7 @@ class MessageProcessorImpl(
 
         val groupId = m.groupId
         return if (groupId == null) {
-            storeMessage(sender, messageInfo) mapUi { messageInfo ->
-                val bundle = MessageBundle(sender, null, listOf(messageInfo))
-                newMessagesSubject.onNext(bundle)
-            }
+            addSingleMessage(sender, messageInfo)
         }
         else {
             groupService.getInfo(groupId) bindUi { groupInfo ->
