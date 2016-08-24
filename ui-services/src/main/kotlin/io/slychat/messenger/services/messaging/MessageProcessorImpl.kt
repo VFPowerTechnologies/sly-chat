@@ -51,7 +51,7 @@ class MessageProcessorImpl(
             when (m) {
                 is SyncMessage.NewDevice -> messageCipherService.addSelfDevice(m.deviceInfo)
                 is SyncMessage.SelfMessage -> handleSelfMessage(m)
-                is SyncMessage.SelfSync -> TODO()
+                is SyncMessage.SelfSync -> Promise.ofSuccess(contactsService.doAddressBookPull())
             }
         }
     }
