@@ -7,7 +7,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MockAddressBookOperationManager : AddressBookOperationManager {
-    val runningSubject: PublishSubject<AddressBookSyncJobInfo> = PublishSubject.create()
+    val syncEventsSubject: PublishSubject<AddressBookSyncEvent> = PublishSubject.create()
 
     private var currentSyncJobDescription: AddressBookSyncJobDescription = AddressBookSyncJobDescription()
 
@@ -17,7 +17,7 @@ class MockAddressBookOperationManager : AddressBookOperationManager {
     var runOperationCallCount = 0
     var withCurrentJobCallCount = 0
 
-    override val running: Observable<AddressBookSyncJobInfo> = runningSubject
+    override val syncEvents: Observable<AddressBookSyncEvent> = syncEventsSubject
 
     override fun withCurrentSyncJob(body: AddressBookSyncJobDescription.() -> Unit) {
         withCurrentJobCallCount += 1

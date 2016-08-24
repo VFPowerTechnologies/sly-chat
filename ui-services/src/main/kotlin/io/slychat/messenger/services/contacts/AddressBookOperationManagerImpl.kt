@@ -4,6 +4,8 @@ import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.ui.alwaysUi
+import nl.komponents.kovenant.ui.failUi
+import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Subscription
@@ -36,8 +38,8 @@ class AddressBookOperationManagerImpl(
     private var currentRunningJob: AddressBookSyncJob? = null
     private var queuedSync: AddressBookSyncJobDescription? = null
 
-    private val runningSubject = PublishSubject.create<AddressBookSyncJobInfo>()
-    override val running: Observable<AddressBookSyncJobInfo>
+    private val runningSubject = PublishSubject.create<AddressBookSyncEvent>()
+    override val syncEvents: Observable<AddressBookSyncEvent>
         get() = runningSubject
 
     private var isNetworkAvailable: Boolean = false
@@ -138,23 +140,26 @@ class AddressBookOperationManagerImpl(
         val info = AddressBookSyncJobInfo(
             queuedJob.push,
             queuedJob.findPlatformContacts,
-            queuedJob.pull,
-            true
+            queuedJob.pull
         )
 
-        runningSubject.onNext(info)
+        runningSubject.onNext(AddressBookSyncEvent.Begin(info))
 
-        p success {
+        p successUi {
             log.info("Address book sync completed successfully")
-        } fail { e ->
+            syncCompleted(info, it)
+        } failUi { e ->
             log.error("Address book sync job failed: {}", e.message, e)
-        } alwaysUi {
-            runningSubject.onNext(info.copy(isRunning = false))
-            currentRunningJob = null
-            processNext()
+            syncCompleted(info, AddressBookSyncResult(false, 0, false))
         }
 
         return
+    }
+
+    private fun syncCompleted(info: AddressBookSyncJobInfo, result: AddressBookSyncResult) {
+        runningSubject.onNext(AddressBookSyncEvent.End(info, result))
+        currentRunningJob = null
+        processNext()
     }
 
     private fun processNext() {

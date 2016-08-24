@@ -344,11 +344,15 @@ class ContactsServiceImplTest {
     fun testSyncEvent(isRunning: Boolean) {
         val contactsService = createService()
 
-        val info = AddressBookSyncJobInfo(false, false, true, isRunning)
+        val info = AddressBookSyncJobInfo(false, false, true)
+        val event = if (isRunning)
+            AddressBookSyncEvent.Begin(info)
+        else
+            AddressBookSyncEvent.End(info, AddressBookSyncResult(true, 0, false))
 
         val testSubscriber = contactEventCollectorFor<ContactEvent.Sync>(contactsService)
 
-        addressBookOperationManager.runningSubject.onNext(info)
+        addressBookOperationManager.syncEventsSubject.onNext(event)
 
         assertEventEmitted(testSubscriber) { ev ->
             if (isRunning)

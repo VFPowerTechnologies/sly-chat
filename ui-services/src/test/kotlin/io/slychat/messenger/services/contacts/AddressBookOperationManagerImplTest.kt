@@ -4,6 +4,7 @@ import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.TestException
 import io.slychat.messenger.testutils.cond
+import io.slychat.messenger.testutils.testSubscriber
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
@@ -12,7 +13,6 @@ import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import rx.Observable
-import rx.observers.TestSubscriber
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import java.util.*
@@ -29,12 +29,12 @@ class AddressBookOperationManagerImplTest {
 
         class MockSyncJobFactory : AddressBookSyncJobFactory {
             val jobs = ArrayList<AddressBookSyncJob>()
-            val deferreds = ArrayList<Deferred<Unit, Exception>>()
+            val deferreds = ArrayList<Deferred<AddressBookSyncResult, Exception>>()
             override fun create(): AddressBookSyncJob {
                 val job = mock<AddressBookSyncJob>()
                 jobs.add(job)
 
-                val d = deferred<Unit, Exception>()
+                val d = deferred<AddressBookSyncResult, Exception>()
                 deferreds.add(d)
 
                 whenever(job.run(any())).thenReturn(d.promise)
@@ -62,7 +62,7 @@ class AddressBookOperationManagerImplTest {
 
     val factory: AddressBookSyncJobFactory = mock()
     val addressBookJob: AddressBookSyncJob = mock()
-    val jobDeferred = deferred<Unit, Exception>()
+    val jobDeferred = deferred<AddressBookSyncResult, Exception>()
 
     val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create()
 
@@ -129,7 +129,7 @@ class AddressBookOperationManagerImplTest {
 
         doLocalSync(runner)
 
-        jobDeferred.resolve(Unit)
+        jobDeferred.resolve(AddressBookSyncResult(true, 0, false))
 
         var wasRun = false
         runner.runOperation {
@@ -265,7 +265,7 @@ class AddressBookOperationManagerImplTest {
         doLocalSync(runner)
         doLocalSync(runner)
 
-        factory.deferreds[0].resolve(Unit)
+        factory.deferreds[0].resolve(AddressBookSyncResult(true, 0, false))
 
         assertEquals(2, factory.jobs.size, "Second job not created")
         verify(factory.jobs[1]).run(any())
@@ -275,16 +275,14 @@ class AddressBookOperationManagerImplTest {
     fun `it should emit a running event when a sync begins`() {
         val runner = createRunner(true)
 
-        val testSubscriber = TestSubscriber<AddressBookSyncJobInfo>()
-
-        runner.running.subscribe(testSubscriber)
+        val testSubscriber = runner.syncEvents.testSubscriber()
 
         doLocalSync(runner)
 
         val events = testSubscriber.onNextEvents
 
         assertThat(events)
-            .haveExactly(1, cond("isRunning") { it.isRunning })
+            .haveExactly(1, cond("isRunning") { it is AddressBookSyncEvent.Begin })
             .`as`("Running events")
     }
 
@@ -294,18 +292,16 @@ class AddressBookOperationManagerImplTest {
 
         val runner = createRunner(true, factory)
 
-        val testSubscriber = TestSubscriber<AddressBookSyncJobInfo>()
-
-        runner.running.subscribe(testSubscriber)
+        val testSubscriber = runner.syncEvents.testSubscriber()
 
         doLocalSync(runner)
 
-        factory.deferreds[0].resolve(Unit)
+        factory.deferreds[0].resolve(AddressBookSyncResult(true, 0, false))
 
         val events = testSubscriber.onNextEvents
 
         assertThat(events)
-            .haveExactly(1, cond("!isRunning") { !it.isRunning })
+            .haveExactly(1, cond("!isRunning") { it is AddressBookSyncEvent.End })
             .`as`("Running events")
     }
 

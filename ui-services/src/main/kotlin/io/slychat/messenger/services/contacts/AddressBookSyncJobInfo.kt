@@ -4,6 +4,5 @@ package io.slychat.messenger.services.contacts
 data class AddressBookSyncJobInfo(
     var updateRemote: Boolean,
     var localSync: Boolean,
-    var remoteSync: Boolean,
-    val isRunning: Boolean
+    var remoteSync: Boolean
 )

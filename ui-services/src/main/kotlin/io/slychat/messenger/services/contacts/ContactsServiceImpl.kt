@@ -35,7 +35,7 @@ class ContactsServiceImpl(
         get() = contactEventsSubject
 
     init {
-        addressBookOperationManager.running.subscribe { onContactSyncStatusUpdate(it) }
+        addressBookOperationManager.syncEvents.subscribe { onAddressBookSyncStatusUpdate(it) }
     }
 
     override fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
@@ -110,10 +110,16 @@ class ContactsServiceImpl(
         withCurrentJob { doFindPlatformContacts() }
     }
 
-    private fun onContactSyncStatusUpdate(info: AddressBookSyncJobInfo) {
+    private fun onAddressBookSyncStatusUpdate(event: AddressBookSyncEvent) {
         //if remote sync is at all enabled, we want the entire process to lock down the contact list
-        if (info.remoteSync)
-            contactEventsSubject.onNext(ContactEvent.Sync(info.isRunning))
+        if (event.info.remoteSync) {
+            val isRunning = when (event) {
+                is AddressBookSyncEvent.Begin -> true
+                is AddressBookSyncEvent.End -> false
+            }
+
+            contactEventsSubject.onNext(ContactEvent.Sync(isRunning))
+        }
     }
 
     /** Process the given unadded users. */
