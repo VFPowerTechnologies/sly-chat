@@ -64,7 +64,7 @@ class MessageProcessorImpl(
 
         return when (recipient) {
             is Recipient.User -> addSingleMessage(recipient.id, messageInfo)
-            is Recipient.Group -> TODO()
+            is Recipient.Group -> addGroupMessage(recipient.id, null, messageInfo)
         }
     }
 
@@ -95,7 +95,7 @@ class MessageProcessorImpl(
         }
     }
 
-    private fun addGroupMessage(groupId: GroupId, sender: UserId, messageInfo: MessageInfo): Promise<Unit, Exception> {
+    private fun addGroupMessage(groupId: GroupId, sender: UserId?, messageInfo: MessageInfo): Promise<Unit, Exception> {
         val groupMessageInfo = GroupMessageInfo(sender, messageInfo)
         return groupService.addMessage(groupId, groupMessageInfo) mapUi {
             val message = ConversationMessage.Group(groupId, sender, messageInfo)

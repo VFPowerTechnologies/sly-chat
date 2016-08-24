@@ -578,7 +578,6 @@ class MessageProcessorImplTest {
         verify(messageCipherService).addSelfDevice(newDeviceInfo)
     }
 
-    //TODO test for dropping these if self isn't sender
     fun randomSingleSentMessageInfo(userId: UserId): SyncSentMessageInfo {
         return SyncSentMessageInfo(
             randomMessageId(),
@@ -626,13 +625,13 @@ class MessageProcessorImplTest {
 
         processor.processMessage(selfId, wrap(m)).get()
 
-        val bundles = testSubscriber.onNextEvents
+        val messages = testSubscriber.onNextEvents
 
-        val expectedBundle = ConversationMessage.Single(recipient, messageInfo)
+        val expectedMessage = ConversationMessage.Single(recipient, messageInfo)
 
-        assertThat(bundles).apply {
+        assertThat(messages).apply {
             `as`("Should contain a message update")
-            containsOnly(expectedBundle)
+            containsOnly(expectedMessage)
         }
     }
 
@@ -651,5 +650,37 @@ class MessageProcessorImplTest {
     }
 
     @Test
-    fun `it should emit new message updates when receiving a SelfMessage message for a group chat`() { TODO() }
+    fun `it should emit new message updates when receiving a SelfMessage message for a group chat`() {
+        val processor = createProcessor()
+
+        val recipient = randomGroupId()
+        val sentMessageInfo = randomGroupSentMessageInfo(recipient)
+        val messageInfo = sentMessageInfo.toMessageInfo()
+        val m = SyncMessage.SelfMessage(sentMessageInfo)
+
+        val testSubscriber = processor.newMessages.testSubscriber()
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        val expectedMessage = ConversationMessage.Group(recipient, null, messageInfo)
+
+        val messages = testSubscriber.onNextEvents
+
+        assertThat(messages).apply {
+            `as`("Should contain a message update")
+            containsOnly(expectedMessage)
+        }
+    }
+
+    @Test
+    fun `it should drop SelfMessage messages where the sender is not yourself`() {
+        val processor = createProcessor()
+
+        val sender = randomUserId()
+        val m = SyncMessage.SelfMessage(randomSingleSentMessageInfo(randomUserId()))
+
+        assertFailsWith(SyncMessageFromOtherSecurityException::class) {
+            processor.processMessage(sender, wrap(m)).get()
+        }
+    }
 }

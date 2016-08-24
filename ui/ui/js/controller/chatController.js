@@ -196,20 +196,20 @@ ChatController.prototype = {
 
         //Get the contact that sent the message
         var cachedContact = contactController.getContact(contactId);
-        if(!cachedContact) {
-            console.log("No cached contact for " + contactId);
-            return;
-        }
-        var contactName = cachedContact.name;
 
         if (messageInfo.groupId === null) {
+            if(!cachedContact) {
+                console.log("No cached contact for " + contactId);
+                return;
+            }
+
             contactController.updateRecentChatNode(cachedContact, messageInfo);
-            this.updateChatPageNewMessage(messages, contactName, contactId);
+            this.updateChatPageNewMessage(messages, cachedContact.name, contactId);
             this.leftMenuAddNewMessageBadge(contactId);
         }
         else {
             contactController.updateRecentGroupChatNode(cachedContact, messageInfo);
-            this.updateGroupChatPageNewMessage(messageInfo, contactName);
+            this.updateGroupChatPageNewMessage(messageInfo);
             groupController.updateConversationWithNewMessage(messageInfo.groupId, messageInfo);
             this.leftMenuAddNewMessageBadge(messageInfo.groupId);
         }
@@ -502,7 +502,7 @@ ChatController.prototype = {
         }
     },
 
-    updateGroupChatPageNewMessage : function (messagesInfo, contactName) {
+    updateGroupChatPageNewMessage : function (messagesInfo) {
         var messages = messagesInfo.messages;
         var currentPageContactId = $("#contact-id");
         if(navigationController.getCurrentPage() == "chat.html" && currentPageContactId.length && currentPageContactId.html() == messagesInfo.groupId){
