@@ -14,23 +14,18 @@ ContactController.prototype  = {
     resetCachedConversation : function () {
         this.conversations = [];
         this.contacts = [];
+        groupController.clearCache();
         contactService.getContacts().then(function (contacts) {
             messengerService.getConversations().then(function (conversations) {
                 conversations.forEach(function(conversation){
                     this.conversations[conversation.contact.id] = conversation;
                 }.bind(this));
 
-                var groupDetails = groupController.getGroupDetails();
-                if (groupDetails === false) {
-                    groupService.getGroupConversations().then(function (groupConversations) {
-                        this.createContactHtml(groupConversations, conversations);
-                    }.bind(this)).catch(function (e) {
-                        exceptionController.handleError(e);
-                    });
-                }
-                else {
-                    this.createContactHtml(groupDetails, conversations);
-                }
+                groupService.getGroupConversations().then(function (groupConversations) {
+                    this.createContactHtml(groupConversations, conversations);
+                }.bind(this)).catch(function (e) {
+                    exceptionController.handleError(e);
+                });
             }.bind(this)).catch(function (e) {
                 exceptionController.handleError(e);
             });
