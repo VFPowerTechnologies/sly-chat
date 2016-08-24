@@ -111,6 +111,7 @@ ContactController.prototype  = {
         $("#contact-list").find("#contactLink_" + contact.id).remove();
         $("#recentContactList").find("#recentContactLink_" + contact.id).remove();
         $("#recentChatList").find("#recentChat_" + contact.id).remove();
+        $("#leftContact_" + contact.id).remove();
     },
 
     getActualGroupConversations : function (groupDetails) {

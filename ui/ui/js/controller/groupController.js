@@ -102,14 +102,15 @@ GroupController.prototype = {
                     this.groupDetailsCache[groupId] = groupDetails;
 
                     if ($("#groupNode_" + groupId).length <= 0) {
-                        var groupNode = this.createGroupNode(groupDetails);
                         if($("#groupList").html() == "No groups yet") {
-                            $("#groupList").html(groupNode);
+                            $("#groupList").html(this.createGroupNode(groupDetails));
                         }
                         else {
-                            $("#groupList").append(groupNode);
+                            $("#groupList").append(this.createGroupNode(groupDetails));
                         }
                     }
+
+                    $("#leftGroupList").append(this.createLeftGroupNode(groupDetails));
 
                     this.createGroupNodeMembers(groupId, members);
                 }.bind(this)).catch(function (e) {
@@ -461,7 +462,8 @@ GroupController.prototype = {
     deleteGroupFromCache : function (groupId) {
         delete this.groupDetailsCache[groupId];
         $("#groupNode_" + groupId).remove();
-        $("recentChat_" + conversation.group.id).remove();
+        $("#recentChat_" + groupId).remove();
+        $("#leftContact_" + groupId).remove();
     },
 
     leaveGroup : function (groupId) {
