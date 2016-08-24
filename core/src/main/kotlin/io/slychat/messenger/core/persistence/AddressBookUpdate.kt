@@ -48,7 +48,7 @@ sealed class AddressBookUpdate {
             return result
         }
 
-        override fun toString(): String{
+        override fun toString(): String {
             return "Group(groupId=$groupId, name='$name', members=$members, membershipLevel=$membershipLevel)"
         }
     }
