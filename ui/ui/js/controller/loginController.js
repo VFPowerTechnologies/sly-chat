@@ -157,5 +157,7 @@ LoginController.prototype = {
         $("#contact-list").html("");
         $("#recentContactList").html("");
         $("#groupList").html("");
+        $("#leftContactList").html("");
+        $("#leftGroupList").html("");
     }
 };
