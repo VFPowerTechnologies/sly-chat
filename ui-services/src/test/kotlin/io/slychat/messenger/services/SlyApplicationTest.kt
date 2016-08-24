@@ -110,7 +110,7 @@ class SlyApplicationTest {
     @Test
     fun `it should attempt to login automatically after basic initialization`() { TODO() }
 
-    fun authWithOtherDevices(otherDevices: List<DeviceInfo>): SlyApplication {
+    fun authWithOtherDevices(otherDevices: List<DeviceInfo>?): SlyApplication {
         val authResult = AuthResult(null, MockUserComponent.keyVault, accountInfo, otherDevices)
 
         whenever(appComponent.authenticationService.auth(any(), any(), any())).thenReturn(authResult)
@@ -147,6 +147,15 @@ class SlyApplicationTest {
 
         order.verify(contactsService).addContact(any())
         order.verify(messageCipherService).updateSelfDevices(any())
+    }
+
+    @Test
+    fun `it should not add our own account after initial initialization`() {
+        authWithOtherDevices(null)
+
+        val contactsService = appComponent.userComponent.contactsService
+
+        verify(contactsService, never()).addContact(any())
     }
 
     @Test

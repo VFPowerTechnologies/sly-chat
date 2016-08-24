@@ -428,18 +428,22 @@ class SlyApplication {
         } bind {
             //TODO should probably only really run this on initial account data creation
             //we need to be present in our address book to create signal sessions
-            val publicKey = keyVault.fingerprint
-            val selfInfo = ContactInfo(
-                userId,
-                accountInfo.email,
-                accountInfo.name,
-                //we don't wanna be visible by default
-                AllowedMessageLevel.GROUP_ONLY,
-                accountInfo.phoneNumber,
-                publicKey
-            )
+            if (otherDevices != null) {
+                val publicKey = keyVault.fingerprint
+                val selfInfo = ContactInfo(
+                    userId,
+                    accountInfo.email,
+                    accountInfo.name,
+                    //we don't wanna be visible by default
+                    AllowedMessageLevel.GROUP_ONLY,
+                    accountInfo.phoneNumber,
+                    publicKey
+                )
 
-            userComponent.contactsService.addContact(selfInfo)
+                userComponent.contactsService.addContact(selfInfo)
+            }
+            else
+                Promise.ofSuccess(false)
         } bind {
             if (otherDevices != null) {
                 userComponent.messageCipherService.updateSelfDevices(otherDevices) bindUi {
