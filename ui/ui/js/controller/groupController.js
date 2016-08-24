@@ -245,10 +245,14 @@ GroupController.prototype = {
     },
 
     createLeftGroupNode : function (group) {
-        var node = $("<li id='leftContact_" + group.group.id + "'><a href='#'>" + group.group.name + "</a></li>");
+        var newBadge = "";
+        if (group.info.unreadMessageCount > 0) {
+            newBadge = '<span class="left-menu-new-badge" style="color: red; font-size: 12px; margin-left: 5px;">new</span>';
+        }
+
+        var node = $("<li id='leftContact_" + group.group.id + "'><a href='#'>" + group.group.name + "</a>" + newBadge + "</li>");
 
         node.click(function (e) {
-            node.find(".left-menu-new-badge").remove();
             contactController.loadChatPage(group.group, true, true);
         });
 

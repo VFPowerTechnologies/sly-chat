@@ -72,6 +72,8 @@ slychat.onPageInit('register', function (page) {
 });
 
 slychat.onPageInit('chat', function (page) {
+    $('#leftContact_' + page.query.id).find(".left-menu-new-badge").remove();
+
     if (page.query.email !== undefined) {
         chatController.fetchMessageFor(0, 100, page.query);
         chatController.markConversationAsRead(contactController.getContact(page.query.id));

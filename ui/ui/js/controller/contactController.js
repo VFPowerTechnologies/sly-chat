@@ -166,7 +166,7 @@ ContactController.prototype  = {
         var frag = $(document.createDocumentFragment());
         if (convo.length > 0) {
             convo.forEach(function (conversation) {
-                frag.append(this.createLeftContactNode(conversation.contact));
+                frag.append(this.createLeftContactNode(conversation.contact, conversation.status.unreadMessageCount));
             }.bind(this));
 
             $("#leftContactList").html(frag);
@@ -211,11 +211,14 @@ ContactController.prototype  = {
         return contactBlock;
     },
 
-    createLeftContactNode : function (contact) {
-        var contactBlock = $("<li id='leftContact_" + contact.id + "' class='contact-link'><a href='#'>" + contact.name + "</a></li>");
+    createLeftContactNode : function (contact, unreadCount) {
+        var newBadge = "";
+        if (unreadCount > 0) {
+            newBadge = '<span class="left-menu-new-badge" style="color: red; font-size: 12px; margin-left: 5px;">new</span>';
+        }
+        var contactBlock = $("<li id='leftContact_" + contact.id + "' class='contact-link'><a href='#'>" + contact.name + "</a>" + newBadge + "</li>");
 
         contactBlock.click(function (e) {
-            contactBlock.find(".left-menu-new-badge").remove();
             this.loadChatPage(contact);
         }.bind(this));
 
