@@ -98,7 +98,14 @@ ContactController.prototype  = {
         });
 
         var groupDetails = groupController.getGroupDetails();
-        if (groupDetails !== false)
+        if (groupDetails === false) {
+            groupService.getGroupConversations().then(function (groupConversations) {
+                this.createContactHtml(groupConversations, conversations);
+            }.bind(this)).catch(function (e) {
+                exceptionController.handleError(e);
+            });
+        }
+        else
             this.createContactHtml(groupDetails, conversations);
     },
 
