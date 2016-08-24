@@ -164,7 +164,7 @@ class NotifierService(
                 return
 
             //don't fire notifications for the currently focused user
-            if (messageBundle.userId == currentlySelectedChatUser)
+            if (messageBundle.groupId == null && messageBundle.userId == currentlySelectedChatUser)
                 return
 
             if (currentlySelectedGroup != null && messageBundle.groupId == currentlySelectedGroup)
