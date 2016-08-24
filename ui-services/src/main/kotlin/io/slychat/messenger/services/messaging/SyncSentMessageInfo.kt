@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.core.persistence.MessageInfo
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
@@ -58,4 +59,16 @@ data class SyncSentMessageInfo(
     val timestamp: Long,
     @JsonProperty("receivedTimestamp")
     val receivedTimestamp: Long
-)
+) {
+    fun toMessageInfo(): MessageInfo {
+        return MessageInfo(
+            id,
+            message,
+            timestamp,
+            receivedTimestamp,
+            true,
+            true,
+            0
+        )
+    }
+}
