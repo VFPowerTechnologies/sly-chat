@@ -134,7 +134,7 @@ ContactController.prototype  = {
 
             this.loadChatPage(this.conversations[contactId].contact, false);
 
-            navigationController.hideSplashScreen();
+            uiController.hideSplashScreen();
             this.fetchConversation();
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
@@ -156,7 +156,7 @@ ContactController.prototype  = {
             firstLogin = false;
             slychat.popup('#contactPopup');
         }
-        navigationController.hideSplashScreen();
+        uiController.hideSplashScreen();
     },
 
     createLeftContactList : function () {

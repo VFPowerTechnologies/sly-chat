@@ -27,7 +27,7 @@ $$(document).on('pageBeforeInit', function (e) {
 });
 
 slychat.onPageInit('login', function (page) {
-    navigationController.hideSplashScreen();
+    uiController.hideSplashScreen();
 
     configService.getLoginRememberMe().then(function (v) {
         $$("#rememberMe").prop("checked", v);

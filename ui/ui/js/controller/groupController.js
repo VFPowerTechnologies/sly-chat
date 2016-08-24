@@ -76,7 +76,7 @@ GroupController.prototype = {
             }.bind(this));
 
             contactController.loadChatPage(this.groupDetailsCache[groupId].group, false, true);
-            navigationController.hideSplashScreen();
+            uiController.hideSplashScreen();
             contactController.init();
 
             this.createGroupList();

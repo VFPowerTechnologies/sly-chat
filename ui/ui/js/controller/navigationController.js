@@ -58,7 +58,7 @@ NavigationController.prototype = {
             console.error("Unknown page: " + page);
         }
 
-        this.hideSplashScreen();
+        uiController.hideSplashScreen();
     },
 
     goBack : function () {
@@ -182,13 +182,6 @@ NavigationController.prototype = {
         var page = $$('#mainView').data('page');
 
         return pages[page];
-    },
-
-    hideSplashScreen : function () {
-        if (firstLoad == true) {
-            window.loadService.loadComplete();
-            firstLoad = false;
-        }
     },
 
     openMenu : function () {
