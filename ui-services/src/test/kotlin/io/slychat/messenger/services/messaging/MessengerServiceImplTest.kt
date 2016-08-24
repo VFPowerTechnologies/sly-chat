@@ -10,7 +10,7 @@ import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.assertNoEventsEmitted
-import io.slychat.messenger.services.contacts.ContactsService
+import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
@@ -35,6 +35,7 @@ class MessengerServiceImplTest {
     }
 
     val contactsService: ContactsService = mock()
+    val addressBookOperationManager: AddressBookOperationManager = mock()
     val messagePersistenceManager: MessagePersistenceManager = mock()
     val groupService: GroupService = mock()
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
@@ -43,6 +44,8 @@ class MessengerServiceImplTest {
     val messageReceiver: MessageReceiver = mock()
 
     val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
+
+    val syncEvents: PublishSubject<AddressBookSyncEvent> = PublishSubject.create()
 
     val messageSent: PublishSubject<MessageMetadata> = PublishSubject.create()
 
@@ -66,11 +69,14 @@ class MessengerServiceImplTest {
         whenever(groupService.part(any())).thenReturn(true)
         whenever(groupService.block(any())).thenReturn(Unit)
         whenever(groupService.getMembers(any())).thenReturn(emptySet())
+
+        whenever(addressBookOperationManager.syncEvents).thenReturn(syncEvents)
     }
 
     fun createService(): MessengerServiceImpl {
         return MessengerServiceImpl(
             contactsService,
+            addressBookOperationManager,
             messagePersistenceManager,
             groupService,
             contactsPersistenceManager,
@@ -798,6 +804,30 @@ class MessengerServiceImplTest {
         val metadata = randomOtherMetadata()
 
         messageSent.onNext(metadata)
+
+        verify(messageSender, never()).addToQueue(any<SenderMessageEntry>())
+    }
+
+    @Test
+    fun `it should send itself a SelfAddressBookUpdated message when a sync job completes with a non-zero updateCount`() {
+        val messengerService = createService()
+
+        val info = AddressBookSyncJobInfo(true, true, true)
+        val result = AddressBookSyncResult(true, 1, false)
+
+        syncEvents.onNext(AddressBookSyncEvent.End(info, result))
+
+        retrieveSyncMessage<SyncMessage.SelfSync>()
+    }
+
+    @Test
+    fun `it should not send itself a SelfAddressBookUpdated message when a sync job completes with a zero updateCount`() {
+        val messengerService = createService()
+
+        val info = AddressBookSyncJobInfo(true, true, true)
+        val result = AddressBookSyncResult(true, 0, false)
+
+        syncEvents.onNext(AddressBookSyncEvent.End(info, result))
 
         verify(messageSender, never()).addToQueue(any<SenderMessageEntry>())
     }

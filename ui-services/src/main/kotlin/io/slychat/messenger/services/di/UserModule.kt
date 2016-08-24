@@ -166,6 +166,7 @@ class UserModule(
     @Provides
     fun providesMessengerService(
         contactsService: ContactsService,
+        addressBookOperationManager: AddressBookOperationManager,
         messagePersistenceManager: MessagePersistenceManager,
         groupService: GroupService,
         contactsPersistenceManager: ContactsPersistenceManager,
@@ -176,6 +177,7 @@ class UserModule(
     ): MessengerService =
         MessengerServiceImpl(
             contactsService,
+            addressBookOperationManager,
             messagePersistenceManager,
             groupService,
             contactsPersistenceManager,

@@ -11,6 +11,8 @@ import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.bindUi
+import io.slychat.messenger.services.contacts.AddressBookOperationManager
+import io.slychat.messenger.services.contacts.AddressBookSyncEvent
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
@@ -33,6 +35,7 @@ import java.util.*
  */
 class MessengerServiceImpl(
     private val contactsService: ContactsService,
+    private val addressBookOperationManager: AddressBookOperationManager,
     private val messagePersistenceManager: MessagePersistenceManager,
     private val groupService: GroupService,
     private val contactsPersistenceManager: ContactsPersistenceManager,
@@ -58,6 +61,8 @@ class MessengerServiceImpl(
         subscriptions.add(relayClientManager.events.subscribe { onRelayEvent(it) })
 
         subscriptions.add(messageSender.messageSent.subscribe { onMessageSent(it) })
+
+        subscriptions.add(addressBookOperationManager.syncEvents.subscribe { onSyncEvent(it) })
     }
 
     override fun init() {
@@ -65,6 +70,17 @@ class MessengerServiceImpl(
 
     override fun shutdown() {
         subscriptions.clear()
+    }
+
+    private fun onSyncEvent(event: AddressBookSyncEvent) {
+        when (event) {
+            is AddressBookSyncEvent.Begin -> {}
+
+            is AddressBookSyncEvent.End -> {
+                if (event.result.updateCount > 0)
+                    broadcastSync()
+            }
+        }
     }
 
     private fun onMessageSent(metadata: MessageMetadata) {
@@ -387,5 +403,11 @@ class MessengerServiceImpl(
         )
 
         return sendSyncMessage(SyncMessage.SelfMessage(sentMessageInfo))
+    }
+
+    private fun broadcastSync() {
+        sendSyncMessage(SyncMessage.SelfSync()) fail {
+            log.error("Failed to send SelfSync message: {}", it.message, it)
+        }
     }
 }

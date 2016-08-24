@@ -132,7 +132,8 @@ sealed class GroupEventMessage {
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
     JsonSubTypes.Type(SyncMessage.NewDevice::class, name = "d"),
-    JsonSubTypes.Type(SyncMessage.SelfMessage::class, name = "m")
+    JsonSubTypes.Type(SyncMessage.SelfMessage::class, name = "m"),
+    JsonSubTypes.Type(SyncMessage.SelfSync::class, name = "s")
 )
 sealed class SyncMessage {
     class NewDevice(
@@ -180,6 +181,22 @@ sealed class SyncMessage {
 
         override fun toString(): String {
             return "SelfMessage(sentMessageInfo=$sentMessageInfo)"
+        }
+    }
+
+    class SelfSync() : SyncMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+
+            return other?.javaClass == javaClass
+        }
+
+        override fun hashCode(): Int{
+            return 0
+        }
+
+        override fun toString(): String{
+            return "SelfSync()"
         }
     }
 }
