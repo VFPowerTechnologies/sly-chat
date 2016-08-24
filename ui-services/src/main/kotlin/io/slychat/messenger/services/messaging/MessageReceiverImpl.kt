@@ -30,7 +30,7 @@ class MessageReceiverImpl(
     private val receivedMessageQueue = ArrayDeque<QueuedReceivedMessage>()
     private var currentReceivedMessage: QueuedReceivedMessage? = null
 
-    override val newMessages: Observable<MessageBundle>
+    override val newMessages: Observable<ConversationMessage>
         get() = messageProcessor.newMessages
 
     private fun initializeReceiveQueue() {

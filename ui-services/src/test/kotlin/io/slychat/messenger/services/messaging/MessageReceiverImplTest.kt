@@ -286,16 +286,17 @@ class MessageReceiverImplTest {
 
     @Test
     fun `it should proxy new messages from MessageProcessor`() {
-        val subject = PublishSubject.create<MessageBundle>()
+        val subject = PublishSubject.create<ConversationMessage>()
         whenever(messageProcessor.newMessages).thenReturn(subject)
 
         val receiver = createReceiver()
 
         val testSubscriber = receiver.newMessages.testSubscriber()
 
-        val bundle = MessageBundle(UserId(1), null, listOf(
+        val bundle = ConversationMessage.Single(
+            UserId(1),
             MessageInfo.newReceived("m", currentTimestamp())
-        ))
+        )
 
         subject.onNext(bundle)
 

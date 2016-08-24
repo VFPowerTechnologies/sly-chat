@@ -12,7 +12,7 @@ interface MessengerService {
 
     fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception>
 
-    val newMessages: Observable<MessageBundle>
+    val newMessages: Observable<ConversationMessage>
     val messageUpdates: Observable<MessageBundle>
 
     /** Broadcast a new device to other accounts. */

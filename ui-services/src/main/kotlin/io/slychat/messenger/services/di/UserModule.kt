@@ -32,6 +32,7 @@ import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
 import rx.Observable
 import rx.Scheduler
+import rx.subjects.PublishSubject
 import java.util.concurrent.TimeUnit
 
 @Module
@@ -213,10 +214,9 @@ class UserModule(
         val closingSelector = shared.debounce(400, TimeUnit.MILLISECONDS, scheduler)
         val buffered = shared.buffer(closingSelector)
 
-        val bufferedMessages = NotifierServiceImpl.flattenMessageBundles(buffered)
-
+        //FIXME
         return NotifierServiceImpl(
-            bufferedMessages,
+            PublishSubject.create(),
             uiEventService.events,
             uiVisibility,
             contactsPersistenceManager,

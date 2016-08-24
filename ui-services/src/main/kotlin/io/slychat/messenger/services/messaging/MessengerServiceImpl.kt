@@ -45,7 +45,7 @@ class MessengerServiceImpl(
 
     private val objectMapper = ObjectMapper()
 
-    override val newMessages: Observable<MessageBundle>
+    override val newMessages: Observable<ConversationMessage>
         get() = messageReceiver.newMessages
 
     private val messageUpdatesSubject = PublishSubject.create<MessageBundle>()

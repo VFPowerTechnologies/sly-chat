@@ -22,8 +22,8 @@ class MessageProcessorImpl(
 ) : MessageProcessor {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private val newMessagesSubject = PublishSubject.create<MessageBundle>()
-    override val newMessages: Observable<MessageBundle>
+    private val newMessagesSubject = PublishSubject.create<ConversationMessage>()
+    override val newMessages: Observable<ConversationMessage>
         get() = newMessagesSubject
 
     override fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception> {
@@ -76,8 +76,8 @@ class MessageProcessorImpl(
                 messagePersistenceManager.addMessage(userId, messageInfo)
             }
         } mapUi { messageInfo ->
-            val bundle = MessageBundle(userId, null, listOf(messageInfo))
-            newMessagesSubject.onNext(bundle)
+            val message = ConversationMessage.Single(userId, messageInfo)
+            newMessagesSubject.onNext(message)
         }
     }
 
@@ -98,7 +98,8 @@ class MessageProcessorImpl(
     private fun addGroupMessage(groupId: GroupId, sender: UserId, messageInfo: MessageInfo): Promise<Unit, Exception> {
         val groupMessageInfo = GroupMessageInfo(sender, messageInfo)
         return groupService.addMessage(groupId, groupMessageInfo) mapUi {
-            newMessagesSubject.onNext(MessageBundle(sender, groupId, listOf(messageInfo)))
+            val message = ConversationMessage.Group(groupId, sender, messageInfo)
+            newMessagesSubject.onNext(message)
         }
     }
 

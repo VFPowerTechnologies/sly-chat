@@ -94,15 +94,18 @@ class MessageProcessorImplTest {
 
         processor.processMessage(from, wrapper).get()
 
-        val bundles = testSubscriber.onNextEvents
+        val messages = testSubscriber.onNextEvents
 
-        assertThat(bundles)
-            .hasSize(1)
-            .`as`("Bundle check")
+        assertThat(messages).apply {
+            `as`("")
+            hasSize(1)
+        }
 
-        val bundle = bundles[0]
+        val message = messages[0]
 
-        assertEquals(bundle.userId, from, "Invalid user id")
+        message as ConversationMessage.Single
+
+        assertEquals(message.userId, from, "Invalid user id")
     }
 
     @Test
@@ -508,13 +511,11 @@ class MessageProcessorImplTest {
         val newMessages = testSubscriber.onNextEvents
         assertEquals(1, newMessages.size, "Invalid number of new message events")
 
-        val bundle = newMessages[0]
-        assertEquals(1, bundle.messages.size, "Invalid number of messages in bundle")
-        assertEquals(groupInfo.id, bundle.groupId, "Invalid group id")
+        val message = newMessages[0] as ConversationMessage.Group
+        assertEquals(groupInfo.id, message.groupId, "Invalid group id")
 
-        val message = bundle.messages[0]
-        assertEquals(m.message, message.message, "Invalid message")
-        assertEquals(wrapper.messageId, message.id, "Invalid message id")
+        assertEquals(m.message, message.info.message, "Invalid message")
+        assertEquals(wrapper.messageId, message.info.id, "Invalid message id")
     }
 
     fun testDropGroupTextMessage(senderIsMember: Boolean, membershipLevel: GroupMembershipLevel) {
@@ -627,11 +628,7 @@ class MessageProcessorImplTest {
 
         val bundles = testSubscriber.onNextEvents
 
-        val expectedBundle = MessageBundle(
-            recipient,
-            null,
-            listOf(messageInfo)
-        )
+        val expectedBundle = ConversationMessage.Single(recipient, messageInfo)
 
         assertThat(bundles).apply {
             `as`("Should contain a message update")

@@ -230,23 +230,24 @@ class MessengerServiceImplTest {
 
     @Test
     fun `it should proxy new messages from MessageReceiver`() {
-        val subject = PublishSubject.create<MessageBundle>()
+        val subject = PublishSubject.create<ConversationMessage>()
         whenever(messageReceiver.newMessages).thenReturn(subject)
 
         val messengerService = createService()
 
         val testSubscriber = messengerService.newMessages.testSubscriber()
 
-        val bundle = MessageBundle(UserId(1), null, listOf(
+        val message = ConversationMessage.Single(
+            UserId(1),
             MessageInfo.newReceived("m", currentTimestamp())
-        ))
+        )
 
-        subject.onNext(bundle)
+        subject.onNext(message)
 
         val bundles = testSubscriber.onNextEvents
 
         assertThat(bundles)
-            .containsOnlyElementsOf(listOf(bundle))
+            .containsOnlyElementsOf(listOf(message))
             .`as`("Received bundles")
     }
 

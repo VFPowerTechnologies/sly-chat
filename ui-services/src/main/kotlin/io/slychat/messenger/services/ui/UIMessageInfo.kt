@@ -9,7 +9,7 @@ import io.slychat.messenger.core.persistence.GroupId
  * @property contact Contact's user id.
  */
 data class UIMessageInfo(
-    val contact: UserId,
+    val contact: UserId?,
     val groupId: GroupId?,
     val messages: List<UIMessage>
 )
