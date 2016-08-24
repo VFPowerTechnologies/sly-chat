@@ -248,6 +248,7 @@ GroupController.prototype = {
         var node = $("<li id='leftContact_" + group.group.id + "'><a href='#'>" + group.group.name + "</a></li>");
 
         node.click(function (e) {
+            node.find(".left-menu-new-badge").remove();
             contactController.loadChatPage(group.group, true, true);
         });
 
