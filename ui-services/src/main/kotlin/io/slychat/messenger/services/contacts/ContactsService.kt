@@ -24,6 +24,6 @@ interface ContactsService {
     /** Adds contact data for any missing user in the set. Should do nothing for the empty set. */
     fun addMissingContacts(users: Set<UserId>): Promise<Set<UserId>, Exception>
 
-    fun doRemoteSync()
-    fun doLocalSync()
+    fun doAddressBookPull()
+    fun doFindPlatformContacts()
 }

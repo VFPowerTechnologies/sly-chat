@@ -154,7 +154,7 @@ class SlyApplication {
 
         log.debug("Platform contacts updated")
 
-        userComponent.contactsService.doLocalSync()
+        userComponent.contactsService.doFindPlatformContacts()
     }
 
     //XXX this is kinda bad since we block on the main thread, but it's only done once during init anyways

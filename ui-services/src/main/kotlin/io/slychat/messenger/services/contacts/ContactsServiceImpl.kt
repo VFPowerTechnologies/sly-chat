@@ -98,15 +98,15 @@ class ContactsServiceImpl(
         }
     }
 
-    private fun doUpdateRemoteContactList() {
+    private fun doAddressBookPush() {
         withCurrentJob { doPush() }
     }
 
-    override fun doRemoteSync() {
+    override fun doAddressBookPull() {
         withCurrentJob { doPull() }
     }
 
-    override fun doLocalSync() {
+    override fun doFindPlatformContacts() {
         withCurrentJob { doFindPlatformContacts() }
     }
 
@@ -184,7 +184,7 @@ class ContactsServiceImpl(
                 missing.removeAll(exists)
                 addNewContactData(missing) mapUi {
                     if (it.added)
-                        doUpdateRemoteContactList()
+                        doAddressBookPush()
 
                     it.invalidIds
                 }

@@ -156,7 +156,7 @@ class ContactsServiceImplTest {
     fun `doLocalSync should defer to AddressBookOperationManager`() {
         val contactsService = createService()
 
-        contactsService.doLocalSync()
+        contactsService.doFindPlatformContacts()
 
         assertOperationManagerCalledForSync()
     }
@@ -165,7 +165,7 @@ class ContactsServiceImplTest {
     fun `doRemoteSync should defer to AddressBookOperationManager`() {
         val contactsService = createService()
 
-        contactsService.doRemoteSync()
+        contactsService.doAddressBookPull()
 
         assertOperationManagerCalledForSync()
     }
