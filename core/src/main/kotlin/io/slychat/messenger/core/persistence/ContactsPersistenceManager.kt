@@ -74,4 +74,7 @@ interface ContactsPersistenceManager {
 
     fun getRemoteUpdates(): Promise<List<AddressBookUpdate.Contact>, Exception>
     fun removeRemoteUpdates(remoteUpdates: Collection<UserId>): Promise<Unit, Exception>
+
+    /** Returns the new final address book hash. */
+    fun addAddressBookHashes(hashes: Collection<AddressBookHash>): Promise<String, Exception>
 }

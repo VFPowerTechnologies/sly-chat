@@ -21,7 +21,8 @@ class DatabaseMigrationInitial : DatabaseMigration(0, TABLE_NAMES) {
             "send_message_queue",
             "groups",
             "group_members",
-            "group_conversation_info"
+            "group_conversation_info",
+            "address_book_hashes"
         )
     }
 

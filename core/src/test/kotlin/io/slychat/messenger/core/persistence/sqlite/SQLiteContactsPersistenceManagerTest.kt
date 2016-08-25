@@ -905,4 +905,36 @@ class SQLiteContactsPersistenceManagerTest {
             containsOnly(one, two)
         }
     }
+
+    @Test
+    fun `addAddressBookHashes should return the final hash`() {
+        val hashes = listOf(
+            AddressBookHash("a250a891b058c5a8c91cebff812a2ab1f866b7f6824d088f580e157e94e7fba9", "78b67c974d4568edb213ae20dac3fc26"),
+            AddressBookHash("e92e18352e6048789e121d27c18d506d1b696690e952a51ab3b45ccb5347261c", "70d6a2405abc2e4c7de27333618a73c7")
+        )
+
+        val hash = contactsPersistenceManager.addAddressBookHashes(hashes).get()
+
+        assertEquals("b5aac2386a42a867b067f9c56fe90b87", hash, "Invalid hash")
+    }
+
+    @Test
+    fun `addAddressBookHashes should replace existing entries`() {
+        val idHash = "e92e18352e6048789e121d27c18d506d1b696690e952a51ab3b45ccb5347261c"
+
+        val hashes = listOf(
+            AddressBookHash("a250a891b058c5a8c91cebff812a2ab1f866b7f6824d088f580e157e94e7fba9", "78b67c974d4568edb213ae20dac3fc26"),
+            AddressBookHash(idHash, "70d6a2405abc2e4c7de27333618a73c7")
+        )
+
+        val newHashes = listOf(
+            AddressBookHash(idHash, "9cc42fbd334c3cba10b13735d3cb24a2")
+        )
+
+        contactsPersistenceManager.addAddressBookHashes(hashes).get()
+
+        val hash = contactsPersistenceManager.addAddressBookHashes(newHashes).get()
+
+        assertEquals("c0fb71af8a89259d8c95a744cbb65eb4", hash, "Invalid hash")
+    }
 }

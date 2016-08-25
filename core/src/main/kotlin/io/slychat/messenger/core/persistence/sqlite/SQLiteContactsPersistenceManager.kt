@@ -4,9 +4,12 @@ import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.crypto.unhexify
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
 import org.slf4j.LoggerFactory
+import org.spongycastle.crypto.digests.MD5Digest
 import java.util.*
 
 /** A contact is made up of an entry in the contacts table and an associated conv_ table containing their message log. */
@@ -480,5 +483,45 @@ ON
         }
 
         return connection.changes > 0
+    }
+
+    private fun calculateAddressBookHash(connection: SQLiteConnection): String {
+        val sql = """
+SELECT
+    data_hash
+FROM
+    address_book_hashes
+ORDER BY
+    id_hash
+"""
+        val digester = MD5Digest()
+        val digest = ByteArray(digester.digestSize)
+
+        connection.withPrepared(sql) { stmt ->
+            stmt.foreach {
+                val dataHash = stmt.columnBlob(0)
+                digester.update(dataHash, 0, dataHash.size)
+            }
+        }
+
+        digester.doFinal(digest, 0)
+
+        return digest.hexify()
+    }
+
+    override fun addAddressBookHashes(hashes: Collection<AddressBookHash>): Promise<String, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val sql = """
+INSERT OR REPLACE INTO
+    address_book_hashes
+    (id_hash, data_hash)
+VALUES
+    (?, ?)
+"""
+        connection.batchInsertWithinTransaction(sql, hashes) { stmt, hash ->
+            stmt.bind(1, hash.idHash.unhexify())
+            stmt.bind(2, hash.dataHash.unhexify())
+        }
+
+        calculateAddressBookHash(connection)
     }
 }
