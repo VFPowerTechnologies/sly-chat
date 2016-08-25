@@ -509,7 +509,18 @@ ORDER BY
         return digest.hexify()
     }
 
-    override fun addAddressBookHashes(hashes: Collection<AddressBookHash>): Promise<String, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    private fun md5(data: ByteArray): String {
+        val digester = MD5Digest()
+        val digest = ByteArray(digester.digestSize)
+
+        digester.update(data, 0, data.size)
+
+        digester.doFinal(digest, 0)
+
+        return digest.hexify()
+    }
+
+    override fun addRemoteEntryHashes(remoteEntries: Collection<RemoteAddressBookEntry>): Promise<String, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val sql = """
 INSERT OR REPLACE INTO
     address_book_hashes
@@ -517,9 +528,9 @@ INSERT OR REPLACE INTO
 VALUES
     (?, ?)
 """
-        connection.batchInsertWithinTransaction(sql, hashes) { stmt, hash ->
-            stmt.bind(1, hash.idHash.unhexify())
-            stmt.bind(2, hash.dataHash.unhexify())
+        connection.batchInsertWithinTransaction(sql, remoteEntries) { stmt, entry ->
+            stmt.bind(1, entry.hash.unhexify())
+            stmt.bind(2, md5(entry.encryptedData))
         }
 
         calculateAddressBookHash(connection)
