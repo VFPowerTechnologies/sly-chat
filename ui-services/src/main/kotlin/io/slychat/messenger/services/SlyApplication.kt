@@ -440,10 +440,10 @@ class SlyApplication {
                     publicKey
                 )
 
-                userComponent.contactsService.addContact(selfInfo)
+                userComponent.contactsService.addSelf(selfInfo)
             }
             else
-                Promise.ofSuccess(false)
+                Promise.ofSuccess(Unit)
         } bind {
             if (otherDevices != null) {
                 userComponent.messageCipherService.updateSelfDevices(otherDevices) bindUi {

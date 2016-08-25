@@ -54,7 +54,7 @@ class SlyApplicationTest {
         whenever(userComponent.relayClientManager.onlineStatus).thenReturn(relayOnlineStatus)
         whenever(userComponent.relayClientManager.events).thenReturn(relayEvents)
         whenever(userComponent.messageCipherService.updateSelfDevices(any())).thenReturn(Unit)
-        whenever(userComponent.contactsService.addContact(any())).thenReturn(true)
+        whenever(userComponent.contactsService.addSelf(any())).thenReturn(Unit)
         whenever(userComponent.messengerService.broadcastNewDevice(any())).thenReturn(Unit)
 
         //used in finalizeInitialization
@@ -145,7 +145,7 @@ class SlyApplicationTest {
 
         val order = inOrder(contactsService, messageCipherService)
 
-        order.verify(contactsService).addContact(any())
+        order.verify(contactsService).addSelf(any())
         order.verify(messageCipherService).updateSelfDevices(any())
     }
 
@@ -155,7 +155,7 @@ class SlyApplicationTest {
 
         val contactsService = appComponent.userComponent.contactsService
 
-        verify(contactsService, never()).addContact(any())
+        verify(contactsService, never()).addSelf(any())
     }
 
     @Test
