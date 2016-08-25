@@ -38,19 +38,7 @@ GroupController.prototype = {
         if (Object.size(this.groupDetailsCache) <= 0) {
             //Fetch all group and conversation details
             groupService.getGroupConversations().then(function (groupConversations) {
-                groupConversations.forEach(function (conversation) {
-                    var id = conversation.group.id;
-                    this.groupDetailsCache[id] = conversation;
-
-                    // Fetch each group members
-                    groupService.getMembers(id).then(function (members) {
-                        this.groupDetailsCache[id].members = members;
-                        this.createGroupNodeMembers(id, members);
-                    }.bind(this)).catch(function (e) {
-                        exceptionController.handleError(e);
-                    });
-
-                }.bind(this));
+                this.cacheGroupDetails(groupConversations);
 
                 // Create group list
                 this.createGroupList();
@@ -58,6 +46,22 @@ GroupController.prototype = {
                 exceptionController.handleError(e);
             });
         }
+    },
+
+    cacheGroupDetails : function (groupConversations) {
+        groupConversations.forEach(function (conversation) {
+            var id = conversation.group.id;
+            this.groupDetailsCache[id] = conversation;
+
+            // Fetch each group members
+            groupService.getMembers(id).then(function (members) {
+                this.groupDetailsCache[id].members = members;
+                this.createGroupNodeMembers(id, members);
+            }.bind(this)).catch(function (e) {
+                exceptionController.handleError(e);
+            });
+
+        }.bind(this));
     },
 
     fetchAndLoadGroupChat : function (groupId) {

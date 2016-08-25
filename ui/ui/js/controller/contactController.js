@@ -22,6 +22,7 @@ ContactController.prototype  = {
                 }.bind(this));
 
                 groupService.getGroupConversations().then(function (groupConversations) {
+                    groupController.cacheGroupDetails(groupConversations);
                     this.createContactHtml(groupConversations, conversations);
                 }.bind(this)).catch(function (e) {
                     exceptionController.handleError(e);
