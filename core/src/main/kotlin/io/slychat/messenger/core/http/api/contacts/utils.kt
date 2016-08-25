@@ -71,7 +71,7 @@ fun decryptRemoteAddressBookEntries(keyVault: KeyVault, entries: List<RemoteAddr
     }
 }
 
-fun updateRequestFromAddressBookUpdates(keyVault: KeyVault, version: Int, addressBookUpdates: List<AddressBookUpdate>): UpdateAddressBookRequest {
+fun updateRequestFromAddressBookUpdates(keyVault: KeyVault, addressBookUpdates: List<AddressBookUpdate>): UpdateAddressBookRequest {
     val updates = encryptRemoteAddressBookEntries(keyVault, addressBookUpdates)
 
     return UpdateAddressBookRequest(updates)

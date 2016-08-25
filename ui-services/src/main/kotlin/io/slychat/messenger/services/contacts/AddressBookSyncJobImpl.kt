@@ -131,10 +131,10 @@ class AddressBookSyncJobImpl(
         val keyVault = userLoginData.keyVault
 
         return authTokenManager.bind { userCredentials ->
-            contactsPersistenceManager.getAddressBookVersion() bind { addressBookVersion ->
-                log.debug("Local address book version: {}", addressBookVersion)
+            contactsPersistenceManager.getAddressBookHash() bind { addressBookHash ->
+                log.debug("Local address book hash: {}", addressBookHash)
 
-                addressBookClient.get(userCredentials, GetAddressBookRequest(addressBookVersion)) bind { response ->
+                addressBookClient.get(userCredentials, GetAddressBookRequest(addressBookHash)) bind { response ->
                     if (response.entries.isNotEmpty()) {
                         val allUpdates = decryptRemoteAddressBookEntries(keyVault, response.entries)
 
@@ -150,16 +150,7 @@ class AddressBookSyncJobImpl(
 
                         //order is important
                         updateContacts(userCredentials, contactUpdates) bind {
-                            updateGroups(groupUpdates) bind {
-                                val newVersion = response.hash
-
-                                if (newVersion != addressBookVersion) {
-                                    log.debug("Address book version updated to: {}", newVersion)
-                                    contactsPersistenceManager.updateAddressBookVersion(newVersion)
-                                }
-                                else
-                                    Promise.ofSuccess(Unit)
-                            } map { true }
+                            updateGroups(groupUpdates) map { true }
                         }
                     }
                     else {
@@ -213,19 +204,19 @@ class AddressBookSyncJobImpl(
             log.info("Remote updates: {}", allUpdates)
 
             val keyVault = userLoginData.keyVault
+            val request = updateRequestFromAddressBookUpdates(keyVault, allUpdates)
 
-            contactsPersistenceManager.getAddressBookVersion() bind { currentVersion ->
-                val request = updateRequestFromAddressBookUpdates(keyVault, currentVersion, allUpdates)
+            contactsPersistenceManager.addRemoteEntryHashes(request.entries) bind { currentHash ->
                 updateRemoteAddressBook(userCredentials, request) bind { response ->
                     val newVersion = response.hash
                     log.debug("Address book version updated to: {}", newVersion)
 
                     contactsPersistenceManager.removeRemoteUpdates(contactUpdates.map { it.userId }) bind {
-                        groupPersistenceManager.removeRemoteUpdates(groupUpdates.map { it.groupId }) bind {
-                            if (newVersion != currentVersion)
-                                contactsPersistenceManager.updateAddressBookVersion(newVersion) map { updateCount }
+                        groupPersistenceManager.removeRemoteUpdates(groupUpdates.map { it.groupId }) map {
+                            if (newVersion != currentHash)
+                                 updateCount
                             else
-                                Promise.ofSuccess(0)
+                                0
                         }
                     }
                 }
