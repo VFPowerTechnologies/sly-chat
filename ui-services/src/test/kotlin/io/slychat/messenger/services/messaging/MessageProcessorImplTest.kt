@@ -685,7 +685,7 @@ class MessageProcessorImplTest {
     }
 
     @Test
-    fun `it should do an address book pull when receiving an AddressBookSync message`() {
+    fun `it should do an immediate address book pull when receiving an AddressBookSync message`() {
         val processor = createProcessor()
 
         val sender = selfId
@@ -693,7 +693,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m))
 
-        verify(contactsService).doAddressBookPull()
+        verify(contactsService).doAddressBookPullImmediate()
     }
 
     @Test

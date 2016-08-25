@@ -27,5 +27,6 @@ interface ContactsService {
     fun addMissingContacts(users: Set<UserId>): Promise<Set<UserId>, Exception>
 
     fun doAddressBookPull()
+    fun doAddressBookPullImmediate()
     fun doFindPlatformContacts()
 }
