@@ -146,7 +146,7 @@ class AddressBookOperationManagerImpl(
         runningSubject.onNext(AddressBookSyncEvent.Begin(info))
 
         p successUi {
-            log.info("Address book sync completed successfully: {} remote updates; full pull: {}", it.updateCount, it.updateCount)
+            log.info("Address book sync completed successfully: {} remote updates; full pull: {}", it.updateCount, it.fullPull)
             syncCompleted(info, it)
         } failUi { e ->
             log.error("Address book sync job failed: {}", e.message, e)
