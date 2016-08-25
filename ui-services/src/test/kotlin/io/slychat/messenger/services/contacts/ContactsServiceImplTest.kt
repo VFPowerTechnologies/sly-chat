@@ -138,6 +138,19 @@ class ContactsServiceImplTest {
     }
 
     @Test
+    fun `adding self info should not generate a push`() {
+        val contactsService = createService()
+
+        val selfInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
+
+        whenever(contactsPersistenceManager.addSelf(selfInfo)).thenReturn(Unit)
+
+        contactsService.addSelf(selfInfo).get()
+
+        addressBookOperationManager.assertPushNotTriggered()
+    }
+
+    @Test
     fun `filterBlocked should filter out blocked contacts`() {
         val contactsService = createService()
 

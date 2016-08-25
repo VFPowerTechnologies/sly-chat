@@ -50,6 +50,13 @@ class ContactsServiceImpl(
         }
     }
 
+    override fun addSelf(selfInfo: ContactInfo): Promise<Unit, Exception> {
+        return addressBookOperationManager.runOperation {
+            log.debug("Adding self info: {}", selfInfo)
+            contactsPersistenceManager.addSelf(selfInfo)
+        }
+    }
+
     /** Remove the given contact from the contact list. */
     override fun removeContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
         return addressBookOperationManager.runOperation {

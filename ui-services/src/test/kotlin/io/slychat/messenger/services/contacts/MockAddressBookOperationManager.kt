@@ -41,27 +41,27 @@ class MockAddressBookOperationManager : AddressBookOperationManager {
             throw UnsupportedOperationException()
     }
 
-    fun assertRemoteUpdateTriggered() {
-        assertTrue(currentSyncJobDescription.push, "Remote contact list update sync not triggered")
+    fun assertPushTriggered() {
+        assertTrue(currentSyncJobDescription.push, "Push not triggered")
     }
 
-    fun assertRemoteSyncTriggered() {
-        assertTrue(currentSyncJobDescription.pull, "Remote sync not triggered")
+    fun assertPullTriggered() {
+        assertTrue(currentSyncJobDescription.pull, "Pull not triggered")
     }
 
-    fun assertPlatformContactSyncTriggered() {
-        assertTrue(currentSyncJobDescription.findPlatformContacts, "Platform contact sync not triggered")
+    fun assertFindPlatformContactsTriggered() {
+        assertTrue(currentSyncJobDescription.findPlatformContacts, "Find platform contacts not triggered")
     }
 
-    fun assertRemoteUpdateNotTriggered() {
-        assertFalse(currentSyncJobDescription.push, "Remote contact list update sync should not be triggered")
+    fun assertPushNotTriggered() {
+        assertFalse(currentSyncJobDescription.push, "Push should not be triggered")
     }
 
-    fun assertRemoteSyncNotTriggered() {
-        assertFalse(currentSyncJobDescription.pull, "Remote sync should not triggered")
+    fun assertPullNotTriggered() {
+        assertFalse(currentSyncJobDescription.pull, "PUll should not be triggered")
     }
 
-    fun assertPlatformContactSyncNotTriggered() {
-        assertFalse(currentSyncJobDescription.findPlatformContacts, "Platform contact sync should not triggered")
+    fun assertFindPlatformContactsNotTriggered() {
+        assertFalse(currentSyncJobDescription.findPlatformContacts, "Find platform contacts should not be triggered")
     }
 }
