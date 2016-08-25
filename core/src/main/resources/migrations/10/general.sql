@@ -1,4 +1,4 @@
--- -address_book_remote_version
+-- -address_book_version
 
 DROP TABLE IF EXISTS address_book_version;
 
