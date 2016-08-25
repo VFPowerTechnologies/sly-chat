@@ -133,7 +133,7 @@ sealed class GroupEventMessage {
 @JsonSubTypes(
     JsonSubTypes.Type(SyncMessage.NewDevice::class, name = "d"),
     JsonSubTypes.Type(SyncMessage.SelfMessage::class, name = "m"),
-    JsonSubTypes.Type(SyncMessage.SelfSync::class, name = "s")
+    JsonSubTypes.Type(SyncMessage.AddressBookSync::class, name = "s")
 )
 sealed class SyncMessage {
     class NewDevice(
@@ -184,7 +184,7 @@ sealed class SyncMessage {
         }
     }
 
-    class SelfSync() : SyncMessage() {
+    class AddressBookSync() : SyncMessage() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
 

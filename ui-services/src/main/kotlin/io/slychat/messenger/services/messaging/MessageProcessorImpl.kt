@@ -59,7 +59,7 @@ class MessageProcessorImpl(
                     handleSelfMessage(m)
                 }
 
-                is SyncMessage.SelfSync -> {
+                is SyncMessage.AddressBookSync -> {
                     log.info("Received self sync message")
                     Promise.ofSuccess(contactsService.doAddressBookPull())
                 }

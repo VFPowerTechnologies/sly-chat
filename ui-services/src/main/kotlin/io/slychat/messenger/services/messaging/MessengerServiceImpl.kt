@@ -406,7 +406,7 @@ class MessengerServiceImpl(
     }
 
     private fun broadcastSync() {
-        sendSyncMessage(SyncMessage.SelfSync()) fail {
+        sendSyncMessage(SyncMessage.AddressBookSync()) fail {
             log.error("Failed to send SelfSync message: {}", it.message, it)
         }
     }

@@ -817,7 +817,7 @@ class MessengerServiceImplTest {
 
         syncEvents.onNext(AddressBookSyncEvent.End(info, result))
 
-        retrieveSyncMessage<SyncMessage.SelfSync>()
+        retrieveSyncMessage<SyncMessage.AddressBookSync>()
     }
 
     @Test

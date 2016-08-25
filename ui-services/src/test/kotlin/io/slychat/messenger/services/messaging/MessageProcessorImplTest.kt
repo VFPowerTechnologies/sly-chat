@@ -685,11 +685,11 @@ class MessageProcessorImplTest {
     }
 
     @Test
-    fun `it should do an address book pull when receiving a self sync message`() {
+    fun `it should do an address book pull when receiving an AddressBookSync message`() {
         val processor = createProcessor()
 
         val sender = selfId
-        val m = SyncMessage.SelfSync()
+        val m = SyncMessage.AddressBookSync()
 
         processor.processMessage(sender, wrap(m))
 
@@ -697,11 +697,11 @@ class MessageProcessorImplTest {
     }
 
     @Test
-    fun `it should drop SelfSync messages where the sender is not yourself`() {
+    fun `it should drop AddressBookSync messages where the sender is not yourself`() {
         val processor = createProcessor()
 
         val sender = randomUserId()
-        val m = SyncMessage.SelfSync()
+        val m = SyncMessage.AddressBookSync()
 
         assertFailsWith(SyncMessageFromOtherSecurityException::class) {
             processor.processMessage(sender, wrap(m)).get()
