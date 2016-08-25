@@ -806,7 +806,7 @@ class WebApiIntegrationTest {
     }
 
     @Test
-    fun `pushing address book updates should increase the address book version`() {
+    fun `pushing address book updates should increase the address book version when the contents differ`() {
         val userA = injectNamedSiteUser("a@a.com")
         val userB = injectNamedSiteUser("b@a.com")
 
@@ -826,6 +826,27 @@ class WebApiIntegrationTest {
         val newVersion = devClient.getAddressBookVersion(username)
 
         assertEquals(response.version, newVersion, "Version number not changed remotely")
+    }
+
+    @Test
+    fun `pushing address book updates should not increase the address book version when the contents do not differ`() {
+        val userA = injectNamedSiteUser("a@a.com")
+        val userB = injectNamedSiteUser("b@a.com")
+
+        val username = userA.user.username
+
+        val authToken = devClient.createAuthToken(username)
+        val aContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)))
+
+        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
+        val userCredentials = userA.getUserCredentials(authToken)
+
+        val firstResponse = client.update(userCredentials, UpdateAddressBookRequest(0, aContacts))
+        val currentVersion = firstResponse.version
+
+        val secondResponse = client.update(userCredentials, UpdateAddressBookRequest(currentVersion, aContacts))
+
+        assertEquals(currentVersion, secondResponse.version, "Address book version should not be updated")
     }
 
     @Test

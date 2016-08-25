@@ -222,7 +222,10 @@ class AddressBookSyncJobImpl(
 
                     contactsPersistenceManager.removeRemoteUpdates(contactUpdates.map { it.userId }) bind {
                         groupPersistenceManager.removeRemoteUpdates(groupUpdates.map { it.groupId }) bind {
-                            contactsPersistenceManager.updateAddressBookVersion(newVersion) map { updateCount }
+                            if (newVersion != currentVersion)
+                                contactsPersistenceManager.updateAddressBookVersion(newVersion) map { updateCount }
+                            else
+                                Promise.ofSuccess(0)
                         }
                     }
                 }

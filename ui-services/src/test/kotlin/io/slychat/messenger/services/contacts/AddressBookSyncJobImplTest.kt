@@ -31,6 +31,7 @@ class AddressBookSyncJobImplTest {
     }
 
     val defaultAddressBookVersion = 10
+    val defaultUpdatedAddressBookVersion = defaultAddressBookVersion + 1
 
     val contactAsyncClient: ContactAsyncClient = mock()
     val addressBookAsyncClient: AddressBookAsyncClient = mock()
@@ -66,8 +67,8 @@ class AddressBookSyncJobImplTest {
         whenever(contactsPersistenceManager.getAddressBookVersion()).thenReturn(defaultAddressBookVersion)
         whenever(contactsPersistenceManager.updateAddressBookVersion(any())).thenReturn(Unit)
 
-        whenever(addressBookAsyncClient.update(any(), any())).thenReturn(UpdateAddressBookResponse(defaultAddressBookVersion))
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultAddressBookVersion, emptyList()))
+        whenever(addressBookAsyncClient.update(any(), any())).thenReturn(UpdateAddressBookResponse(defaultUpdatedAddressBookVersion))
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultUpdatedAddressBookVersion, emptyList()))
 
         whenever(timerFactory.run(any(), any())).thenReturn(Unit)
     }
@@ -258,7 +259,7 @@ class AddressBookSyncJobImplTest {
     }
 
     @Test
-    fun `an push should not issue a remote request if no missing platform contacts are found`() {
+    fun `a push should not issue a remote request if no missing platform contacts are found`() {
         runPush()
 
         verify(addressBookAsyncClient, never()).update(any(), any())
@@ -272,7 +273,30 @@ class AddressBookSyncJobImplTest {
     }
 
     @Test
-    fun `a push should indicate the number of updates available`() {
+    fun `a push should indicate no updates were performed if the server returns the same version number`() {
+        val groupInfo = randomGroupInfo()
+
+        val groupUpdates = listOf(
+            AddressBookUpdate.Group(groupInfo.id, groupInfo.name, emptySet(), groupInfo.membershipLevel)
+        )
+
+        val contactUpdates = listOf(
+            AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
+        )
+
+        whenever(contactsPersistenceManager.getRemoteUpdates()).thenReturn(contactUpdates)
+        whenever(groupPersistenceManager.getRemoteUpdates()).thenReturn(groupUpdates)
+
+        whenever(contactsPersistenceManager.getAddressBookVersion()).thenReturn(defaultAddressBookVersion)
+        whenever(addressBookAsyncClient.update(any(), any())).thenReturn(UpdateAddressBookResponse(defaultAddressBookVersion))
+
+        val result = runPush()
+
+        assertEquals(0, result.updateCount, "Update count wasn't 0")
+    }
+
+    @Test
+    fun `a push should indicate the number of updates available if the server returns a new version number`() {
         val groupInfo = randomGroupInfo()
 
         val groupUpdates = listOf(
@@ -292,7 +316,7 @@ class AddressBookSyncJobImplTest {
     }
 
     @Test
-    fun `an push should send group updates`() {
+    fun `a push should send group updates`() {
         val groupInfo = randomGroupInfo()
 
         val updates = listOf(
@@ -308,7 +332,7 @@ class AddressBookSyncJobImplTest {
     }
 
     @Test
-    fun `an push should send contact updates`() {
+    fun `a push should send contact updates`() {
         val updates = listOf(
             AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
         )
@@ -322,7 +346,7 @@ class AddressBookSyncJobImplTest {
     }
 
     @Test
-    fun `an push should delete group updates after a successful update`() {
+    fun `a push should delete group updates after a successful update`() {
         val groupInfo = randomGroupInfo()
 
         val updates = listOf(
@@ -337,7 +361,7 @@ class AddressBookSyncJobImplTest {
     }
 
     @Test
-    fun `an push should delete contact updates after a successful update`() {
+    fun `a push should delete contact updates after a successful update`() {
         val updates = listOf(
             AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
         )
@@ -350,7 +374,7 @@ class AddressBookSyncJobImplTest {
     }
 
     @Test
-    fun `an push should update the address book version to value returned by the server`() {
+    fun `a push should update the address book version to value returned by the server when the versions differ`() {
         val newVersion = 1000
         val updates = listOf(
             AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
@@ -365,7 +389,21 @@ class AddressBookSyncJobImplTest {
     }
 
     @Test
-    fun `an push should retry up to MAX_RETRIES times and finally rethrow the exception when receiving a ResourceConflictException`() {
+    fun `a push should not update the address book version when the value returned by the server matches the current value`() {
+        val updates = listOf(
+            AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
+        )
+
+        whenever(contactsPersistenceManager.getRemoteUpdates()).thenReturn(updates)
+        whenever(addressBookAsyncClient.update(any(), any())).thenReturn(UpdateAddressBookResponse(defaultAddressBookVersion))
+
+        runPush()
+
+        verify(contactsPersistenceManager, never()).updateAddressBookVersion(any())
+    }
+
+    @Test
+    fun `a push should retry up to MAX_RETRIES times and finally rethrow the exception when receiving a ResourceConflictException`() {
         val retries = AddressBookSyncJobImpl.UPDATE_MAX_RETRIES
         val totalAttempts = retries + 1
 
