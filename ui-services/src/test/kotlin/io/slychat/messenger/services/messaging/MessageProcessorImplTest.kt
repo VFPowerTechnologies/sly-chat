@@ -613,6 +613,19 @@ class MessageProcessorImplTest {
     }
 
     @Test
+    fun `it should call ContactsService to add missing users when receiving a single text message`() {
+        val processor = createProcessor()
+
+        val recipient = randomUserId()
+        val sentMessageInfo = randomSingleSentMessageInfo(recipient)
+        val m = SyncMessage.SelfMessage(sentMessageInfo)
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        verify(contactsService).addMissingContacts(setOf(recipient))
+    }
+
+    @Test
     fun `it should emit new message updates when receiving a SelfMessage message`() {
         val processor = createProcessor()
 
