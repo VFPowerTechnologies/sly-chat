@@ -218,6 +218,45 @@ NavigationController.prototype = {
             }
         ];
         slychat.actions(buttons);
-    }
+    },
 
+    loadInitialPage : function () {
+        var noStateLoad = ["register.html", "login.html", "smsVerification.html", "updatePhone.html"];
+
+        stateService.getInitialPage().then(function (initialPage) {
+            if(initialPage === null) {
+                stateService.getState().then(function (state) {
+                    if (state === null || state.currentPage === undefined || state.currentPage === null || state.currentPage == "login.html") {
+                        navigationController.loadPage('contacts.html');
+                        navigationController.clearHistory();
+                    }
+                    else {
+                        if(state.currentPage.indexOf("chat.html") <= -1) {
+                            if ($.inArray(state.currentPage, noStateLoad) > -1) {
+                                navigationController.loadPage('contacts.html');
+                                navigationController.clearHistory();
+                            }
+                            else {
+                                navigationController.loadPage(state.currentPage, false);
+                            }
+                        }
+                        else {
+                            if (typeof state.currentContact != "undefined" && state.currentContact != null) {
+                                contactController.fetchAndLoadChat(state.currentContact);
+                            }
+                            else {
+                                navigationController.loadPage(state.currentPage, false);
+                            }
+                        }
+                    }
+                }).catch(function (e) {
+                    exceptionController.handleError(e);
+                });
+            }
+            else
+            {
+                navigationController.goTo(initialPage);
+            }
+        });
+    }
 };

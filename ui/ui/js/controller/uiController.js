@@ -19,6 +19,7 @@ var UIController = function () {
     window.groupService = new GroupService();
 
     window.navigationController = new NavigationController();
+    window.userSessionController = new UserSessionController();
     window.loginController = new LoginController();
     window.registrationController = new RegistrationController();
     window.profileController = new ProfileController();
