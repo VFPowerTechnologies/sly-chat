@@ -77,4 +77,5 @@ interface ContactsPersistenceManager {
 
     /** Returns the new final address book hash. */
     fun addAddressBookHashes(hashes: Collection<AddressBookHash>): Promise<String, Exception>
+    fun getAddressBookHash(): Promise<String, Exception>
 }

@@ -8,7 +8,7 @@ import io.slychat.messenger.core.typeRef
 
 class AddressBookClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     fun get(userCredentials: UserCredentials, request: GetAddressBookRequest): GetAddressBookResponse {
-        val url = "$serverBaseUrl/v1/address-book?version=${request.version}"
+        val url = "$serverBaseUrl/v1/address-book?hash=${request.hash}"
 
         return apiGetRequest(httpClient, url, userCredentials, listOf(), typeRef())
     }

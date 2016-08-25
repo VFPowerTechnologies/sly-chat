@@ -524,4 +524,8 @@ VALUES
 
         calculateAddressBookHash(connection)
     }
+
+    override fun getAddressBookHash(): Promise<String, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        calculateAddressBookHash(connection)
+    }
 }
