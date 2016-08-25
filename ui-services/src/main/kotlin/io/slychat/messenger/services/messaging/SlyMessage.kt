@@ -191,12 +191,12 @@ sealed class SyncMessage {
             return other?.javaClass == javaClass
         }
 
-        override fun hashCode(): Int{
+        override fun hashCode(): Int {
             return 0
         }
 
-        override fun toString(): String{
-            return "SelfSync()"
+        override fun toString(): String {
+            return "AddressBookSync()"
         }
     }
 }
