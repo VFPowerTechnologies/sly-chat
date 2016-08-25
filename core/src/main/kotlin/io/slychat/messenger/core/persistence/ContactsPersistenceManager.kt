@@ -74,12 +74,4 @@ interface ContactsPersistenceManager {
 
     fun getRemoteUpdates(): Promise<List<AddressBookUpdate.Contact>, Exception>
     fun removeRemoteUpdates(remoteUpdates: Collection<UserId>): Promise<Unit, Exception>
-
-    /**
-     * 0 is the initial version and represents an empty address book.
-     * -1 is return from the server if we push remote updates and our version doesn't match the (at the time) current version on the server.
-     */
-    fun getAddressBookVersion(): Promise<Int, Exception>
-
-    fun updateAddressBookVersion(version: Int): Promise<Unit, Exception>
 }
