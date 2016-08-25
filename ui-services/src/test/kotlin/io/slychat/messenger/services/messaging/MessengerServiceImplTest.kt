@@ -663,7 +663,7 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `createNewGroup should sent invitations to each initial member`() {
+    fun `createNewGroup should sent invitations to each initial member and yourself`() {
         val groupName = randomGroupName()
         val initialMembers = randomUserIds()
 
@@ -671,7 +671,9 @@ class MessengerServiceImplTest {
 
         messengerService.createNewGroup(groupName, initialMembers).get()
 
-        assertGroupMessagesSentTo<GroupEventMessage.Invitation>(initialMembers) { recipient, m ->
+        val allMembers = initialMembers + selfId
+
+        assertGroupMessagesSentTo<GroupEventMessage.Invitation>(allMembers) { recipient, m ->
             val expectedMembers = HashSet(initialMembers)
             expectedMembers.remove(recipient)
 
@@ -681,14 +683,16 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `createNewGroup should not sent invitations if given no initial members`() {
+    fun `createNewGroup should not sent invitations to anyone but yourself if given no initial members`() {
         val groupName = randomGroupName()
 
         val messengerService = createService()
 
         messengerService.createNewGroup(groupName, emptySet()).get()
 
-        assertNoGroupMessagesSent<GroupEventMessage.Invitation>()
+        assertGroupMessagesSentTo<GroupEventMessage.Invitation>(setOf(selfId)) { recipient, m ->
+            assertThat(m.members).isEmpty()
+        }
     }
 
     @Test

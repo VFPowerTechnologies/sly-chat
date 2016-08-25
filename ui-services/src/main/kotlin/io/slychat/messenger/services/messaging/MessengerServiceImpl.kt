@@ -277,7 +277,10 @@ class MessengerServiceImpl(
             GroupMembershipLevel.JOINED
         )
 
-        val messages = initialMembers.map {
+        //include your other devices; this bypasses the issue where you get a SelfMessage and have no info on the group
+        val allMembers = initialMembers + selfId
+
+        val messages = allMembers.map {
             val members = HashSet(initialMembers)
             members.remove(it)
 
