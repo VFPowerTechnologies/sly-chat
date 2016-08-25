@@ -290,6 +290,12 @@ ON
         }
     }
 
+    override fun addSelf(selfInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        addContactNoTransaction(connection, selfInfo)
+        
+        Unit
+    }
+
     private fun createRemoteUpdates(connection: SQLiteConnection, contactInfo: Collection<ContactInfo>) {
         val remoteUpdates = contactInfo.map { AddressBookUpdate.Contact(it.id, it.allowedMessageLevel) }
         addRemoteUpdateNoTransaction(connection, remoteUpdates)

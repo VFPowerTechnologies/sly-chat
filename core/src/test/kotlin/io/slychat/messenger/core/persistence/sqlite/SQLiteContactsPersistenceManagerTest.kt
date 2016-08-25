@@ -238,6 +238,14 @@ class SQLiteContactsPersistenceManagerTest {
         assertNotNull(contactsPersistenceManager.getConversationInfo(newContact.id).get(), "Conversation info not created")
     }
 
+    @Test
+    fun `addSelf should not generate a remote update`() {
+        val contact = contactA
+        contactsPersistenceManager.addSelf(contact).get()
+
+        assertTrue(contactsPersistenceManager.getRemoteUpdates().get().isEmpty(), "Remote updates were generated")
+    }
+
     fun testAddContactMulti(existingContacts: Collection<ContactInfo>, newContacts: Collection<ContactInfo>) {
         contactsPersistenceManager.add(existingContacts).get()
 

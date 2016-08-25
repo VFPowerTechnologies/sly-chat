@@ -52,6 +52,9 @@ interface ContactsPersistenceManager {
      */
     fun add(contactInfo: ContactInfo): Promise<Boolean, Exception>
 
+    /** This adds the given contact info, but doesn't generate a remote update. Only used to add yourself on initialization. */
+    fun addSelf(selfInfo: ContactInfo): Promise<Unit, Exception>
+
     /** Adds all the given contacts and returns the list of contacts were not previously present. */
     fun add(contacts: Collection<ContactInfo>): Promise<Set<ContactInfo>, Exception>
     /** Updates the given contact's info. */
