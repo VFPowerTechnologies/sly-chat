@@ -135,8 +135,11 @@ class AddressBookSyncJobImpl(
                 log.debug("Local address book hash: {}", addressBookHash)
 
                 addressBookClient.get(userCredentials, GetAddressBookRequest(addressBookHash)) bind { response ->
-                    if (response.entries.isNotEmpty()) {
-                        val allUpdates = decryptRemoteAddressBookEntries(keyVault, response.entries)
+                    val remoteEntries = response.entries
+
+                    if (remoteEntries.isNotEmpty()) {
+                        log.debug("Updating address book")
+                        val allUpdates = decryptRemoteAddressBookEntries(keyVault, remoteEntries)
 
                         val contactUpdates = ArrayList<AddressBookUpdate.Contact>()
                         val groupUpdates = ArrayList<AddressBookUpdate.Group>()
@@ -150,7 +153,9 @@ class AddressBookSyncJobImpl(
 
                         //order is important
                         updateContacts(userCredentials, contactUpdates) bind {
-                            updateGroups(groupUpdates) map { true }
+                            updateGroups(groupUpdates) bind {
+                                contactsPersistenceManager.addRemoteEntryHashes(remoteEntries)
+                            } map { true }
                         }
                     }
                     else {
@@ -206,14 +211,14 @@ class AddressBookSyncJobImpl(
             val keyVault = userLoginData.keyVault
             val request = updateRequestFromAddressBookUpdates(keyVault, allUpdates)
 
-            contactsPersistenceManager.addRemoteEntryHashes(request.entries) bind { currentHash ->
+            contactsPersistenceManager.addRemoteEntryHashes(request.entries) bind { localHash ->
                 updateRemoteAddressBook(userCredentials, request) bind { response ->
-                    val newVersion = response.hash
-                    log.debug("Address book version updated to: {}", newVersion)
+                    val serverHash = response.hash
+                    log.debug("Remote/local Address book hashes: {}/{}", serverHash, localHash)
 
                     contactsPersistenceManager.removeRemoteUpdates(contactUpdates.map { it.userId }) bind {
                         groupPersistenceManager.removeRemoteUpdates(groupUpdates.map { it.groupId }) map {
-                            if (newVersion != currentHash)
+                            if (serverHash != localHash)
                                  updateCount
                             else
                                 0

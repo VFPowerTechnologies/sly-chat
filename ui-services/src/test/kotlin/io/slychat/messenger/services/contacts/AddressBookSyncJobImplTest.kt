@@ -209,6 +209,18 @@ class AddressBookSyncJobImplTest {
     }
 
     @Test
+    fun `a pull should update the address book hashes`() {
+        val update = AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
+        val entries = encryptRemoteAddressBookEntries(keyVault, listOf(update))
+
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(entries))
+
+        runPull()
+
+        verify(contactsPersistenceManager).addRemoteEntryHashes(entries)
+    }
+
+    @Test
     fun `a pull should add contacts before groups`() {
         val groupInfo = randomGroupInfo()
 
@@ -424,8 +436,6 @@ class AddressBookSyncJobImplTest {
 
     @Test
     fun `a pull request should include the current address book hash`() {
-        val currentVersion = 0
-
         whenever(contactsPersistenceManager.getAddressBookHash()).thenReturn(emptyMd5)
 
         runPull()
