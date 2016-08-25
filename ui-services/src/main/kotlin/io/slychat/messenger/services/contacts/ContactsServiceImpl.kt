@@ -113,10 +113,6 @@ class ContactsServiceImpl(
         withCurrentJob { doPull() }
     }
 
-    override fun doAddressBookPullImmediate() {
-        addressBookOperationManager.withCurrentSyncJobNoScheduler { doPull() }
-    }
-
     override fun doFindPlatformContacts() {
         withCurrentJob { doFindPlatformContacts() }
     }

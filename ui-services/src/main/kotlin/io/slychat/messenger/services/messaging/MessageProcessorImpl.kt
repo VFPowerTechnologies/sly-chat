@@ -61,9 +61,7 @@ class MessageProcessorImpl(
 
                 is SyncMessage.AddressBookSync -> {
                     log.info("Received self sync message")
-                    //due to how the next message will get processed, we force a pull now, to add an missing contacts/groups
-                    //that might be needed for SelfMessages
-                    Promise.ofSuccess(contactsService.doAddressBookPullImmediate())
+                    Promise.ofSuccess(contactsService.doAddressBookPull())
                 }
             }
         }
