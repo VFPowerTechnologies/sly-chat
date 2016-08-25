@@ -49,9 +49,20 @@ class MessageProcessorImpl(
             Promise.ofFail(SyncMessageFromOtherSecurityException(sender, m.javaClass.simpleName))
         else {
             when (m) {
-                is SyncMessage.NewDevice -> messageCipherService.addSelfDevice(m.deviceInfo)
-                is SyncMessage.SelfMessage -> handleSelfMessage(m)
-                is SyncMessage.SelfSync -> Promise.ofSuccess(contactsService.doAddressBookPull())
+                is SyncMessage.NewDevice -> {
+                    log.info("Received new device message")
+                    messageCipherService.addSelfDevice(m.deviceInfo)
+                }
+
+                is SyncMessage.SelfMessage -> {
+                    log.info("Received self sent message")
+                    handleSelfMessage(m)
+                }
+
+                is SyncMessage.SelfSync -> {
+                    log.info("Received self sync message")
+                    Promise.ofSuccess(contactsService.doAddressBookPull())
+                }
             }
         }
     }
