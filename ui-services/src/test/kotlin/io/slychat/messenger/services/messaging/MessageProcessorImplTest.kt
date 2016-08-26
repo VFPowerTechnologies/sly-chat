@@ -2,6 +2,8 @@ package io.slychat.messenger.services.messaging
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.randomMessageId
+import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
 import io.slychat.messenger.services.GroupService

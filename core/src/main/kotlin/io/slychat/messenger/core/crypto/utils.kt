@@ -293,3 +293,14 @@ fun generateNewKeyVault(password: String): KeyVault {
 
 fun identityKeyFingerprint(identityKey: IdentityKey): String =
     identityKey.publicKey.serialize().hexify()
+
+/** Returns a random UUID as a string, without dashes. */
+fun randomUUID(): String {
+    val bytes = ByteArray(16)
+    SecureRandom().nextBytes(bytes)
+    return bytes.hexify()
+}
+
+fun randomRegistrationId(): Int = KeyHelper.generateRegistrationId(false)
+
+fun randomMessageId(): String = randomUUID()

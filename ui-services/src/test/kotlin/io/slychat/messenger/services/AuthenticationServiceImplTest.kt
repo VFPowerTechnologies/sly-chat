@@ -8,6 +8,7 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.KeyVaultDecryptionFailedException
 import io.slychat.messenger.core.crypto.defaultRemotePasswordHashParams
 import io.slychat.messenger.core.crypto.generateNewKeyVault
+import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.http.api.authentication.*
 import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.KeyVaultPersistenceManager

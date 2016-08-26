@@ -1,6 +1,6 @@
 package io.slychat.messenger.core.sentry
 
-import io.slychat.messenger.core.randomUUID
+import io.slychat.messenger.core.crypto.randomUUID
 import org.joda.time.DateTimeZone
 import org.joda.time.format.DateTimeFormat
 import java.util.*

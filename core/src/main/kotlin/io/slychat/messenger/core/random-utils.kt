@@ -1,6 +1,9 @@
 @file:JvmName("RandomUtils")
 package io.slychat.messenger.core
 
+import io.slychat.messenger.core.crypto.randomMessageId
+import io.slychat.messenger.core.crypto.randomRegistrationId
+import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
 import org.whispersystems.libsignal.SignalProtocolAddress
@@ -35,8 +38,6 @@ fun randomDeviceInfo(): DeviceInfo = DeviceInfo(randomDeviceId(), randomRegistra
 fun randomUserIds(n: Int = 2): Set<UserId> = (1..n).mapToSet { randomUserId() }
 
 fun randomGroupId(): GroupId = GroupId(randomUUID())
-
-fun randomMessageId(): String = randomUUID()
 
 fun randomAuthToken(): AuthToken = AuthToken(randomUUID())
 
@@ -137,10 +138,6 @@ fun randomMessageText(): String {
 
 fun randomReceivedMessageInfo(): MessageInfo {
     return MessageInfo.newReceived(randomMessageText(), currentTimestamp())
-}
-
-fun randomReceivedMessageInfoList(n: Int = 2): List<MessageInfo> {
-    return (1..n).map { MessageInfo.newReceived(randomMessageText(), currentTimestamp()) }
 }
 
 fun randomSentMessageInfo(): MessageInfo {

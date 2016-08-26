@@ -1,7 +1,7 @@
 package io.slychat.messenger.core.persistence
 
 import io.slychat.messenger.core.currentTimestamp
-import io.slychat.messenger.core.randomUUID
+import io.slychat.messenger.core.crypto.randomUUID
 
 /**
  * Information about a conversation message.

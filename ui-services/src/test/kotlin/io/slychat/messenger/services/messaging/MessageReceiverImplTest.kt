@@ -3,6 +3,8 @@ package io.slychat.messenger.services.messaging
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.randomMessageId
+import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.crypto.DecryptionResult
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0

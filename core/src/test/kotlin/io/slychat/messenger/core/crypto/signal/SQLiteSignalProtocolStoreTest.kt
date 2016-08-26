@@ -11,7 +11,7 @@ import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.persistence.PreKeyPersistenceManager
 import io.slychat.messenger.core.persistence.SignalSessionPersistenceManager
 import io.slychat.messenger.core.randomContactInfo
-import io.slychat.messenger.core.randomRegistrationId
+import io.slychat.messenger.core.crypto.randomRegistrationId
 import io.slychat.messenger.core.randomSignalAddress
 import io.slychat.messenger.testutils.thenResolve
 import org.junit.Test

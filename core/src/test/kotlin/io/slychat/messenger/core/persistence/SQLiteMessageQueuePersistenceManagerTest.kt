@@ -1,6 +1,7 @@
 package io.slychat.messenger.core.persistence
 
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import org.assertj.core.api.Assertions.assertThat

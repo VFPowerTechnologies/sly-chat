@@ -4,7 +4,7 @@ import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClient
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesClearRequest
 import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.persistence.PackageId
-import io.slychat.messenger.core.randomUUID
+import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.messaging.MessengerService
 import nl.komponents.kovenant.Promise

@@ -1,8 +1,8 @@
 package io.slychat.messenger.core.persistence
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import io.slychat.messenger.core.randomRegistrationId
-import io.slychat.messenger.core.randomUUID
+import io.slychat.messenger.core.crypto.randomRegistrationId
+import io.slychat.messenger.core.crypto.randomUUID
 
 data class InstallationData(
     @JsonProperty("installationId")

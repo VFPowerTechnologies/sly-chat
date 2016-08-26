@@ -2,11 +2,8 @@
 package io.slychat.messenger.core
 
 import com.fasterxml.jackson.core.type.TypeReference
-import io.slychat.messenger.core.crypto.hexify
 import org.joda.time.DateTime
-import org.whispersystems.libsignal.util.KeyHelper
 import java.io.File
-import java.security.SecureRandom
 import java.util.*
 
 /**
@@ -66,15 +63,6 @@ operator fun File.div(child: String): File =
 
 operator fun String.div(child: String): File =
     File(this, child)
-
-/** Returns a random UUID as a string, without dashes. */
-fun randomUUID(): String {
-    val bytes = ByteArray(16)
-    SecureRandom().nextBytes(bytes)
-    return bytes.hexify()
-}
-
-fun randomRegistrationId(): Int = KeyHelper.generateRegistrationId(false)
 
 /** Returns the current time in milliseconds. */
 fun currentTimestamp(): Long = DateTime().millis

@@ -5,7 +5,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.randomUUID
+import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.services.GroupService

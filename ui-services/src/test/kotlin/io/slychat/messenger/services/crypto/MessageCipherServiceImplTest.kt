@@ -2,10 +2,7 @@ package io.slychat.messenger.services.crypto
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
-import io.slychat.messenger.core.crypto.addPreKeysToStore
-import io.slychat.messenger.core.crypto.generateKeyPair
-import io.slychat.messenger.core.crypto.generatePrekeys
-import io.slychat.messenger.core.crypto.identityKeyFingerprint
+import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.http.api.prekeys.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent

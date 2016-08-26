@@ -6,7 +6,7 @@ import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.MessageInfo
 import io.slychat.messenger.core.randomContactInfo
-import io.slychat.messenger.core.randomUUID
+import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.testutils.withTimeAs
 import org.junit.After
 import org.junit.Before
