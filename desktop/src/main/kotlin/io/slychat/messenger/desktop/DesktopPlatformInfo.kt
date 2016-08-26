@@ -14,8 +14,10 @@ fun getUserConfigDir(appName: String): File {
     val home = getUserHome()
 
     return when (currentOs.type) {
-        Os.Type.LINUX ->
-            File(File(home, ".config"), appName)
+        Os.Type.LINUX -> {
+            val configHome = System.getenv("XDG_CONFIG_HOME")?.let { File(it) } ?: File(home, ".config")
+            File(configHome, appName)
+        }
 
         Os.Type.WINDOWS ->
             File(System.getenv("LOCALAPPDATA"), appName)
