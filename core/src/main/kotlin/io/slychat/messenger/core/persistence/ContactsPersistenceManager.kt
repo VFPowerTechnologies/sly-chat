@@ -42,14 +42,18 @@ interface ContactsPersistenceManager {
     /**
      * Adds a new contact with the given message level.
      *
-     * If the contact was not previously present, then true is returned.
+     * If the contact was not previously present, or was modified, then true is returned.
      *
      * If a contact was previously present but had a lower message level, then true is returned as well as
-     * upgrading the message level.
+     * upgrading the message level. If the added level is lower than the current one, the previous message level is left
+     * as-is and false is returned.
      *
      * If the given message level is ALL, then conversation log and info are created for the user.
      */
     fun add(contactInfo: ContactInfo): Promise<Boolean, Exception>
+
+    /** This adds the given contact info, but doesn't generate a remote update. Only used to add yourself on initialization. */
+    fun addSelf(selfInfo: ContactInfo): Promise<Unit, Exception>
 
     /** Adds all the given contacts and returns the list of contacts were not previously present. */
     fun add(contacts: Collection<ContactInfo>): Promise<Set<ContactInfo>, Exception>
@@ -71,6 +75,7 @@ interface ContactsPersistenceManager {
     fun getRemoteUpdates(): Promise<List<AddressBookUpdate.Contact>, Exception>
     fun removeRemoteUpdates(remoteUpdates: Collection<UserId>): Promise<Unit, Exception>
 
-    fun getAddressBookVersion(): Promise<Int, Exception>
-    fun updateAddressBookVersion(version: Int): Promise<Unit, Exception>
+    /** Returns the new final address book hash. */
+    fun addRemoteEntryHashes(remoteEntries: Collection<RemoteAddressBookEntry>): Promise<String, Exception>
+    fun getAddressBookHash(): Promise<String, Exception>
 }

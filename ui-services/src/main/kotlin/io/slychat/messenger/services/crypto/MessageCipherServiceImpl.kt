@@ -2,9 +2,11 @@ package io.slychat.messenger.services.crypto
 
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.http.api.prekeys.PreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyRetrievalRequest
 import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
+import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.messaging.EncryptedMessageInfo
@@ -23,11 +25,40 @@ import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 
 class MessageCipherServiceImpl(
+    private val selfId: UserId,
     private val authTokenManager: AuthTokenManager,
     private val preKeyClient: PreKeyClient,
     //the store is only ever used in the work thread, so no locking is done
     private val signalStore: SignalProtocolStore
 ) : MessageCipherService, Runnable {
+    companion object {
+        fun deviceDiff(currentDeviceIds: List<Int>, receivedDevices: List<DeviceInfo>, getRegistrationId: (Int) -> Int): DeviceMismatchContent {
+            val missing = ArrayList<Int>()
+            val stale = ArrayList<Int>()
+
+            val receivedDeviceIds = receivedDevices.mapToSet { it.id }
+
+            //need: in common
+            //not in currentDeviceIds
+            //no longer in currentDeviceIds (ie not in receivedDeviceIds)
+            val removedIds = currentDeviceIds - receivedDeviceIds
+
+            receivedDevices.forEach {
+                if (it.id !in removedIds) {
+                    val remoteRegistrationId = getRegistrationId(it.id)
+
+                    if (remoteRegistrationId == 0)
+                        missing.add(it.id)
+                    else if (remoteRegistrationId != it.registrationId)
+                        stale.add(it.id)
+                    //else we already have the device, do nothing
+                }
+            }
+
+            return DeviceMismatchContent(stale, missing, removedIds.toList())
+        }
+    }
+
     private sealed class CipherWork {
         class Encryption(
             val userId: UserId,
@@ -35,16 +66,29 @@ class MessageCipherServiceImpl(
             val connectionTag: Int,
             val deferred: Deferred<EncryptionResult, Exception>
         ) : CipherWork()
+
         class Decryption(
             val address: SlyAddress,
             val encryptedMessage: EncryptedMessageInfo,
             val deferred: Deferred<DecryptionResult, Exception>
         ) : CipherWork()
+
         class UpdateDevices(
             val userId: UserId,
             val info: DeviceMismatchContent,
             val deferred: Deferred<Unit, Exception>
         ) : CipherWork()
+
+        class UpdateSelfDevices(
+            val otherDevices: List<DeviceInfo>,
+            val deferred: Deferred<Unit, Exception>
+        ) : CipherWork()
+
+        class AddSelfDevice(
+            val deviceInfo: DeviceInfo,
+            val deferred: Deferred<Unit, Exception>
+        ) : CipherWork()
+
         class NoMoreWork : CipherWork()
     }
 
@@ -54,7 +98,7 @@ class MessageCipherServiceImpl(
 
     private val workQueue = ArrayBlockingQueue<CipherWork>(20)
 
-    override fun start() {
+    override fun init() {
         if (thread != null)
             return
 
@@ -92,6 +136,18 @@ class MessageCipherServiceImpl(
         return d.promise
     }
 
+    override fun updateSelfDevices(otherDevices: List<DeviceInfo>): Promise<Unit, Exception> {
+        val d = deferred<Unit, Exception>()
+        workQueue.add(CipherWork.UpdateSelfDevices(otherDevices, d))
+        return d.promise
+    }
+
+    override fun addSelfDevice(deviceInfo: DeviceInfo): Promise<Unit, Exception> {
+        val d = deferred<Unit, Exception>()
+        workQueue.add(CipherWork.AddSelfDevice(deviceInfo, d))
+        return d.promise
+    }
+
     override fun run() {
         processQueue(true)
     }
@@ -120,6 +176,8 @@ class MessageCipherServiceImpl(
             is CipherWork.Encryption -> handleEncryption(work)
             is CipherWork.Decryption -> handleDecryption(work)
             is CipherWork.UpdateDevices -> handleDeviceUpdate(work)
+            is CipherWork.UpdateSelfDevices -> handleUpdateSelfDevices(work)
+            is CipherWork.AddSelfDevice -> handleAddSelfDevice(work)
             is CipherWork.NoMoreWork -> return false
             else -> {
                 log.error("Unknown work type: {}", work)
@@ -129,11 +187,37 @@ class MessageCipherServiceImpl(
         return true
     }
 
+    private fun handleAddSelfDevice(work: CipherWork.AddSelfDevice) {
+        log.info("Adding self device: {}", work.deviceInfo)
+
+        val diff = DeviceMismatchContent(emptyList(), listOf(work.deviceInfo.id), emptyList())
+
+        applyDiff(diff, selfId, work.deferred)
+    }
+
+    private fun handleUpdateSelfDevices(work: CipherWork.UpdateSelfDevices) {
+        log.info("Updating self devices: {}", work.otherDevices)
+
+        val currentDeviceIds = signalStore.getSubDeviceSessions(selfId.toString())
+
+        val diff = deviceDiff(currentDeviceIds, work.otherDevices) {
+            val address = SlyAddress(selfId, it)
+            val sessionCipher = SessionCipher(signalStore, address.toSignalAddress())
+            sessionCipher.remoteRegistrationId
+        }
+
+        applyDiff(diff, selfId, work.deferred)
+    }
+
     private fun handleDeviceUpdate(work: CipherWork.UpdateDevices) {
         val userId = work.userId
 
         val info = work.info
 
+        applyDiff(info, userId, work.deferred)
+    }
+
+    private fun applyDiff(info: DeviceMismatchContent, userId: UserId, deferred: Deferred<Unit, Exception>) {
         try {
             val toRemove = HashSet(info.removed)
             toRemove.addAll(info.stale)
@@ -155,10 +239,10 @@ class MessageCipherServiceImpl(
             if (toAdd.isNotEmpty())
                 addNewBundles(userId, toAdd)
 
-            work.deferred.resolve(Unit)
+            deferred.resolve(Unit)
         }
         catch (e: Exception) {
-            work.deferred.reject(e)
+            deferred.reject(e)
         }
     }
 
@@ -262,6 +346,8 @@ class MessageCipherServiceImpl(
     private fun getSessionCiphers(userId: UserId): List<Pair<Int, SessionCipher>> {
         val devices = signalStore.getSubDeviceSessions(userId.long.toString())
 
+        log.debug("Devices found for {}: {}", userId, devices)
+
         //check if we have any listed devices; if not, then fetch prekeys
         //else send what we have to relay and it'll tell us what to fix
         return if (devices.isNotEmpty()) {
@@ -270,8 +356,11 @@ class MessageCipherServiceImpl(
                 deviceId to SessionCipher(signalStore, address)
             }
         }
-        else {
+        else if (userId != selfId) {
             addNewBundles(userId, emptyList())
         }
+        //if we have no registered devices, don't do anything
+        else
+            emptyList()
     }
 }

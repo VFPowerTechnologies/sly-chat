@@ -7,10 +7,13 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Promise
 import rx.Observable
+import rx.subjects.PublishSubject
 
 /** Just runs the given functions with dummy credentials. */
 class MockAuthTokenManager : AuthTokenManager {
     private val dummyCreds = UserCredentials(SlyAddress(UserId(0), 0), AuthToken("dummy"))
+
+    val newTokenSubject: PublishSubject<AuthToken> = PublishSubject.create()
 
     private inline fun <T> tryPromise(body: (UserCredentials) -> T): Promise<T, Exception> = try {
         Promise.ofSuccess(body(dummyCreds))
@@ -20,14 +23,14 @@ class MockAuthTokenManager : AuthTokenManager {
     }
 
     override val newToken: Observable<AuthToken?>
-        get() = throw UnsupportedOperationException()
+        get() = newTokenSubject
 
+    //TODO
     override fun setToken(authToken: AuthToken) {
-        throw UnsupportedOperationException()
     }
 
+    //TODO
     override fun invalidateToken() {
-        throw UnsupportedOperationException()
     }
 
     override fun <T> bind(what: (UserCredentials) -> Promise<T, Exception>): Promise<T, Exception> = what(dummyCreds)

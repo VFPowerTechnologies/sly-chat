@@ -3,6 +3,7 @@ package io.slychat.messenger.services.ui.impl
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.messaging.ConversationMessage
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.*
@@ -56,9 +57,15 @@ class UIMessengerServiceImpl(
     }
 
     /** First we add to the log, then we display it to the user. */
-    private fun onNewMessages(messageBundle: MessageBundle) {
-        val messages = messageBundle.messages.map { it.toUI() }
-        notifyNewMessageListeners(UIMessageInfo(messageBundle.userId, messageBundle.groupId, messages))
+    private fun onNewMessages(message: ConversationMessage) {
+        val messages = listOf(message.info.toUI())
+
+        val uiMessageInfo = when (message) {
+            is ConversationMessage.Single -> UIMessageInfo(message.userId, null, messages)
+            is ConversationMessage.Group -> UIMessageInfo(message.speaker, message.groupId, messages)
+        }
+
+        notifyNewMessageListeners(uiMessageInfo)
     }
 
     private fun onMessageStatusUpdate(messageBundle: MessageBundle) {

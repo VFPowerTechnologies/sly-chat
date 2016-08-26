@@ -14,6 +14,8 @@ interface ContactsService {
     fun fetchRemoteContactInfo(email: String?, queryPhoneNumber: String?): Promise<FetchContactResponse, Exception>
     /** Add a new non-pending contact for which we already have info. */
     fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception>
+    fun addSelf(selfInfo: ContactInfo): Promise<Unit, Exception>
+
     /** Remove the given contact from the contact list. */
     fun removeContact(contactInfo: ContactInfo): Promise<Boolean, Exception>
     fun updateContact(contactInfo: ContactInfo): Promise<Unit, Exception>
@@ -24,6 +26,6 @@ interface ContactsService {
     /** Adds contact data for any missing user in the set. Should do nothing for the empty set. */
     fun addMissingContacts(users: Set<UserId>): Promise<Set<UserId>, Exception>
 
-    fun doRemoteSync()
-    fun doLocalSync()
+    fun doAddressBookPull()
+    fun doFindPlatformContacts()
 }

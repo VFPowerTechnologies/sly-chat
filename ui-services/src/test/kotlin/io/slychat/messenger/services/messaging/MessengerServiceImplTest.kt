@@ -9,12 +9,10 @@ import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.assertEventEmitted
-import io.slychat.messenger.services.contacts.ContactsService
+import io.slychat.messenger.services.assertNoEventsEmitted
+import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
-import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.testSubscriber
-import io.slychat.messenger.testutils.thenAnswerWithArg
-import io.slychat.messenger.testutils.thenReturn
+import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -26,6 +24,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+//only downside of this api design is having to deserialize messages in tests
 class MessengerServiceImplTest {
     companion object {
         @JvmField
@@ -36,6 +35,7 @@ class MessengerServiceImplTest {
     }
 
     val contactsService: ContactsService = mock()
+    val addressBookOperationManager: AddressBookOperationManager = mock()
     val messagePersistenceManager: MessagePersistenceManager = mock()
     val groupService: GroupService = mock()
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
@@ -45,6 +45,8 @@ class MessengerServiceImplTest {
 
     val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
 
+    val syncEvents: PublishSubject<AddressBookSyncEvent> = PublishSubject.create()
+
     val messageSent: PublishSubject<MessageMetadata> = PublishSubject.create()
 
     @Before
@@ -53,8 +55,8 @@ class MessengerServiceImplTest {
 
         whenever(relayClientManager.events).thenReturn(relayEvents)
 
-        whenever(messageSender.addToQueue(any())).thenReturn(Unit)
-        whenever(messageSender.addToQueue(any(), any())).thenReturn(Unit)
+        whenever(messageSender.addToQueue(any<SenderMessageEntry>())).thenReturn(Unit)
+        whenever(messageSender.addToQueue(anyList())).thenReturn(Unit)
 
         //some useful defaults
         whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswerWithArg(1)
@@ -67,11 +69,14 @@ class MessengerServiceImplTest {
         whenever(groupService.part(any())).thenReturn(true)
         whenever(groupService.block(any())).thenReturn(Unit)
         whenever(groupService.getMembers(any())).thenReturn(emptySet())
+
+        whenever(addressBookOperationManager.syncEvents).thenReturn(syncEvents)
     }
 
     fun createService(): MessengerServiceImpl {
         return MessengerServiceImpl(
             contactsService,
+            addressBookOperationManager,
             messagePersistenceManager,
             groupService,
             contactsPersistenceManager,
@@ -231,23 +236,24 @@ class MessengerServiceImplTest {
 
     @Test
     fun `it should proxy new messages from MessageReceiver`() {
-        val subject = PublishSubject.create<MessageBundle>()
+        val subject = PublishSubject.create<ConversationMessage>()
         whenever(messageReceiver.newMessages).thenReturn(subject)
 
         val messengerService = createService()
 
         val testSubscriber = messengerService.newMessages.testSubscriber()
 
-        val bundle = MessageBundle(UserId(1), null, listOf(
+        val message = ConversationMessage.Single(
+            UserId(1),
             MessageInfo.newReceived("m", currentTimestamp())
-        ))
+        )
 
-        subject.onNext(bundle)
+        subject.onNext(message)
 
         val bundles = testSubscriber.onNextEvents
 
         assertThat(bundles)
-            .containsOnlyElementsOf(listOf(bundle))
+            .containsOnlyElementsOf(listOf(message))
             .`as`("Received bundles")
     }
 
@@ -259,10 +265,10 @@ class MessengerServiceImplTest {
 
         messengerService.sendMessageTo(recipient, randomMessage())
 
-        verify(messageSender).addToQueue(capture {
-            assertEquals(recipient, it.userId, "Invalid recipient")
-            assertEquals(MessageCategory.TEXT_SINGLE, it.category, "Invalid category")
-        }, any())
+        verify(messageSender).addToQueue(capture<SenderMessageEntry> {
+            assertEquals(recipient, it.metadata.userId, "Invalid recipient")
+            assertEquals(MessageCategory.TEXT_SINGLE, it.metadata.category, "Invalid category")
+        })
     }
 
     //also doubles as checking for mark as delivered
@@ -310,6 +316,22 @@ class MessengerServiceImplTest {
     }
 
     @Test
+    fun `it should return emit a message updated event when receiving a message update for an already delivered TEXT_GROUP message`() {
+        val messengerService = createService()
+
+        val update = randomTextGroupMetadata()
+
+        whenever(groupService.markMessageAsDelivered(update.groupId!!, update.messageId))
+            .thenReturnNull()
+
+        val testSubscriber = messengerService.messageUpdates.testSubscriber()
+
+        messageSent.onNext(update)
+
+        assertNoEventsEmitted(testSubscriber)
+    }
+
+    @Test
     fun `it should send the proper number of group messages when creating a group text message`() {
         val groupId = randomGroupId()
         val members = randomGroupMembers()
@@ -340,7 +362,7 @@ class MessengerServiceImplTest {
             assertEquals(message, it.info.message, "Message is invalid")
         })
 
-        verify(messageSender, never()).addToQueue(any())
+        verify(messageSender, never()).addToQueue(any<List<SenderMessageEntry>>())
     }
 
     @Test
@@ -375,7 +397,7 @@ class MessengerServiceImplTest {
         messengerService.sendGroupMessageTo(groupId, message)
 
         var sentMessageId: String? = null
-        verify(messageSender).addToQueue(capture {
+        verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
             sentMessageId = it.first().metadata.messageId
         })
 
@@ -444,7 +466,7 @@ class MessengerServiceImplTest {
     }
 
     fun assertPartMessagesSent(members: Set<UserId>) {
-        verify(messageSender).addToQueue(capture {
+        verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
             assertEquals(members, it.mapToSet { it.metadata.userId }, "Invalid users")
             val messages = convertMessageFromSerialized<GroupEventMessageWrapper>(it)
             messages.forEach {
@@ -477,7 +499,7 @@ class MessengerServiceImplTest {
 
         messengerService.partGroup(groupId).get()
 
-        verify(messageSender, never()).addToQueue(any())
+        verify(messageSender, never()).addToQueue(any<List<SenderMessageEntry>>())
     }
 
     @Test
@@ -515,14 +537,18 @@ class MessengerServiceImplTest {
 
         messengerService.blockGroup(groupId).get()
 
-        verify(messageSender, never()).addToQueue(any())
+        verify(messageSender, never()).addToQueue(any<List<SenderMessageEntry>>())
     }
 
-    inline fun <reified T> assertNoGroupMessagesSent() {
+    fun getAllSentMessages(times: Int): List<SenderMessageEntry> {
         val captor = argumentCaptor<List<SenderMessageEntry>>()
-        verify(messageSender, atLeast(0)).addToQueue(capture(captor))
+        verify(messageSender, atLeast(times)).addToQueue(capture(captor))
 
-        val messages = captor.allValues.flatten()
+        return captor.allValues.flatten()
+    }
+
+    inline fun <reified T : GroupEventMessage> assertNoGroupMessagesSent() {
+        val messages = getAllSentMessages(0)
 
         if (messages.isEmpty())
             return
@@ -537,12 +563,18 @@ class MessengerServiceImplTest {
         }
     }
 
+    inline fun <reified T : SyncMessage> retrieveSyncMessage(): T {
+        val captor = argumentCaptor<SenderMessageEntry>()
+        verify(messageSender, atLeast(1)).addToQueue(capture(captor))
+
+        val wrapper = convertMessageFromSerialized<SyncMessageWrapper>(captor.value)
+
+        return wrapper.m as? T ?: throw AssertionError("Unexpected ${T::class.simpleName} message")
+    }
+
     /** Assert that the given group message type was sent to everyone in the given list, and that it satisifies certain conditions. */
     inline fun <reified T> assertGroupMessagesSentTo(expectedRecipients: Set<UserId>, asserter: (UserId, T) -> Unit) {
-        val captor = argumentCaptor<List<SenderMessageEntry>>()
-        verify(messageSender, atLeastOnce()).addToQueue(capture(captor))
-
-        val messages = captor.allValues.flatten()
+        val messages = getAllSentMessages(1)
 
         assertTrue(messages.isNotEmpty(), "No messages were sent")
 
@@ -631,7 +663,7 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `createNewGroup should sent invitations to each initial member`() {
+    fun `createNewGroup should sent invitations to each initial member and yourself`() {
         val groupName = randomGroupName()
         val initialMembers = randomUserIds()
 
@@ -639,7 +671,9 @@ class MessengerServiceImplTest {
 
         messengerService.createNewGroup(groupName, initialMembers).get()
 
-        assertGroupMessagesSentTo<GroupEventMessage.Invitation>(initialMembers) { recipient, m ->
+        val allMembers = initialMembers + selfId
+
+        assertGroupMessagesSentTo<GroupEventMessage.Invitation>(allMembers) { recipient, m ->
             val expectedMembers = HashSet(initialMembers)
             expectedMembers.remove(recipient)
 
@@ -649,14 +683,16 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `createNewGroup should not sent invitations if given no initial members`() {
+    fun `createNewGroup should not sent invitations to anyone but yourself if given no initial members`() {
         val groupName = randomGroupName()
 
         val messengerService = createService()
 
         messengerService.createNewGroup(groupName, emptySet()).get()
 
-        assertNoGroupMessagesSent<GroupEventMessage.Invitation>()
+        assertGroupMessagesSentTo<GroupEventMessage.Invitation>(setOf(selfId)) { recipient, m ->
+            assertThat(m.members).isEmpty()
+        }
     }
 
     @Test
@@ -688,5 +724,115 @@ class MessengerServiceImplTest {
 
         order.verify(groupService).join(any(), any())
         order.verify(messageSender).addToQueue(anyList())
+    }
+
+    @Test
+    fun `broadcastNewDevice should send a new device message to your own devices`() {
+        val messengerService = createService()
+
+        val deviceInfo = randomDeviceInfo()
+
+        messengerService.broadcastNewDevice(deviceInfo).get()
+
+        val message = retrieveSyncMessage<SyncMessage.NewDevice>()
+
+        assertEquals(SyncMessage.NewDevice(deviceInfo), message, "Invalid sync message")
+    }
+
+    @Test
+    fun `when receiving a sent notification for a text single message, it should send itself a sync message`() {
+        val messengerService = createService()
+
+        val messageInfo = randomSentMessageInfo()
+        val metadata = randomTextSingleMetadata()
+
+        whenever(messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId)).thenReturn(messageInfo)
+
+        messageSent.onNext(metadata)
+
+        val expected = SyncSentMessageInfo(
+            metadata.messageId,
+            Recipient.User(metadata.userId),
+            messageInfo.message,
+            messageInfo.timestamp,
+            messageInfo.receivedTimestamp
+        )
+
+        val message = retrieveSyncMessage<SyncMessage.SelfMessage>()
+        assertEquals(expected, message.sentMessageInfo, "Invalid sent message info")
+    }
+
+    @Test
+    fun `when receiving a sent notification for a text group message, it should send itself a sync message if the message was not marked as delivered`() {
+        val messengerService = createService()
+
+        val messageInfo = randomSentMessageInfo()
+        val metadata = randomTextGroupMetadata()
+        val groupId = metadata.groupId!!
+
+        val groupMessageInfo = GroupMessageInfo(null, messageInfo)
+        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId)).thenReturn(groupMessageInfo)
+
+        messageSent.onNext(metadata)
+
+        val expected = SyncSentMessageInfo(
+            metadata.messageId,
+            Recipient.Group(groupId),
+            messageInfo.message,
+            messageInfo.timestamp,
+            messageInfo.receivedTimestamp
+        )
+
+        val message = retrieveSyncMessage<SyncMessage.SelfMessage>()
+        assertEquals(expected, message.sentMessageInfo, "Invalid sent message info")
+    }
+
+    @Test
+    fun `when receiving a sent notification for a text group message, it should not send itself a sync message if the message was already marked as delivered`() {
+        val messengerService = createService()
+
+        val metadata = randomTextGroupMetadata()
+        val groupId = metadata.groupId!!
+
+        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId)).thenReturnNull()
+
+        messageSent.onNext(metadata)
+
+        verify(messageSender, never()).addToQueue(any<SenderMessageEntry>())
+    }
+
+    @Test
+    fun `when receiving a notification for an other category message, it should not send itself a sync message`() {
+        val messengerService = createService()
+
+        val metadata = randomOtherMetadata()
+
+        messageSent.onNext(metadata)
+
+        verify(messageSender, never()).addToQueue(any<SenderMessageEntry>())
+    }
+
+    @Test
+    fun `it should send itself a SelfAddressBookUpdated message when a sync job completes with a non-zero updateCount`() {
+        val messengerService = createService()
+
+        val info = AddressBookSyncJobInfo(true, true, true)
+        val result = AddressBookSyncResult(true, 1, false)
+
+        syncEvents.onNext(AddressBookSyncEvent.End(info, result))
+
+        retrieveSyncMessage<SyncMessage.AddressBookSync>()
+    }
+
+    @Test
+    fun `it should not send itself a SelfAddressBookUpdated message when a sync job completes with a zero updateCount`() {
+        val messengerService = createService()
+
+        val info = AddressBookSyncJobInfo(true, true, true)
+        val result = AddressBookSyncResult(true, 0, false)
+
+        syncEvents.onNext(AddressBookSyncEvent.End(info, result))
+
+        verify(messageSender, never()).addToQueue(any<SenderMessageEntry>())
     }
 }

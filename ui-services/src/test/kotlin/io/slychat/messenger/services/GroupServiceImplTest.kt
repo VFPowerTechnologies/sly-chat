@@ -177,9 +177,9 @@ class GroupServiceImplTest {
         groupService.addMembers(groupId, users).get()
 
         if (wasAdded)
-            addressBookOperationManager.assertRemoteUpdateTriggered()
+            addressBookOperationManager.assertPushTriggered()
         else
-            addressBookOperationManager.assertRemoteUpdateNotTriggered()
+            addressBookOperationManager.assertPushNotTriggered()
     }
 
     @Test
@@ -201,9 +201,9 @@ class GroupServiceImplTest {
         groupService.removeMember(groupId, user).get()
 
         if (wasRemoved)
-            addressBookOperationManager.assertRemoteUpdateTriggered()
+            addressBookOperationManager.assertPushTriggered()
         else
-            addressBookOperationManager.assertRemoteUpdateNotTriggered()
+            addressBookOperationManager.assertPushNotTriggered()
 
     }
 
@@ -226,9 +226,9 @@ class GroupServiceImplTest {
         groupService.join(groupInfo, invited).get()
 
         if (wasJoined)
-            addressBookOperationManager.assertRemoteUpdateTriggered()
+            addressBookOperationManager.assertPushTriggered()
         else
-            addressBookOperationManager.assertRemoteUpdateNotTriggered()
+            addressBookOperationManager.assertPushNotTriggered()
 
     }
 
@@ -250,9 +250,9 @@ class GroupServiceImplTest {
         groupService.part(groupId).get()
 
         if (wasParted)
-            addressBookOperationManager.assertRemoteUpdateTriggered()
+            addressBookOperationManager.assertPushTriggered()
         else
-            addressBookOperationManager.assertRemoteUpdateNotTriggered()
+            addressBookOperationManager.assertPushNotTriggered()
     }
 
     @Test
@@ -273,9 +273,9 @@ class GroupServiceImplTest {
         groupService.block(groupId).get()
 
         if (wasBlocked)
-            addressBookOperationManager.assertRemoteUpdateTriggered()
+            addressBookOperationManager.assertPushTriggered()
         else
-            addressBookOperationManager.assertRemoteUpdateNotTriggered()
+            addressBookOperationManager.assertPushNotTriggered()
     }
 
     @Test
@@ -296,9 +296,9 @@ class GroupServiceImplTest {
         groupService.unblock(groupId).get()
 
         if (wasUnblocked)
-            addressBookOperationManager.assertRemoteUpdateTriggered()
+            addressBookOperationManager.assertPushTriggered()
         else
-            addressBookOperationManager.assertRemoteUpdateNotTriggered()
+            addressBookOperationManager.assertPushNotTriggered()
     }
 
     @Test

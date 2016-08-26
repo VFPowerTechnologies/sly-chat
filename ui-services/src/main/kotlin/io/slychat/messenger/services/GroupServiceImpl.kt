@@ -43,7 +43,7 @@ class GroupServiceImpl(
         return groupPersistenceManager.addMessage(groupId, groupMessageInfo)
     }
 
-    override fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<GroupMessageInfo, Exception> {
+    override fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<GroupMessageInfo?, Exception> {
         return groupPersistenceManager.markMessageAsDelivered(groupId, messageId)
     }
 

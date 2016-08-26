@@ -22,7 +22,7 @@ import rx.subjects.BehaviorSubject
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class OfflineMessageManagerTest {
+class OfflineMessageManagerImplTest {
     companion object {
         @JvmField
         @ClassRule
@@ -46,13 +46,13 @@ class OfflineMessageManagerTest {
         }
     }
 
-    fun createManager(isOnline: Boolean = false): OfflineMessageManager {
+    fun createManager(isOnline: Boolean = false): OfflineMessageManagerImpl {
         networkAvailable.onNext(isOnline)
 
         whenever(offlineMessagesClient.clear(any(), any())).thenReturn(Unit)
         whenever(messengerService.addOfflineMessages(any())).thenReturn(Unit)
 
-        return OfflineMessageManager(
+        return OfflineMessageManagerImpl(
             networkAvailable,
             offlineMessagesClient,
             messengerService,
@@ -143,7 +143,7 @@ class OfflineMessageManagerTest {
     fun `it should unregister from networkAvailable on shutdown`() {
         var unsubscribed  = false
 
-        val manager = OfflineMessageManager(
+        val manager = OfflineMessageManagerImpl(
             networkAvailable.doOnUnsubscribe { unsubscribed = true },
             offlineMessagesClient,
             messengerService,

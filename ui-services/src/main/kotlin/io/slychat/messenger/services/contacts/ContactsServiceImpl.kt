@@ -35,7 +35,7 @@ class ContactsServiceImpl(
         get() = contactEventsSubject
 
     init {
-        addressBookOperationManager.running.subscribe { onContactSyncStatusUpdate(it) }
+        addressBookOperationManager.syncEvents.subscribe { onAddressBookSyncStatusUpdate(it) }
     }
 
     override fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
@@ -47,6 +47,13 @@ class ContactsServiceImpl(
                 withCurrentJob { doPush() }
                 contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
             }
+        }
+    }
+
+    override fun addSelf(selfInfo: ContactInfo): Promise<Unit, Exception> {
+        return addressBookOperationManager.runOperation {
+            log.debug("Adding self info: {}", selfInfo)
+            contactsPersistenceManager.addSelf(selfInfo)
         }
     }
 
@@ -98,22 +105,28 @@ class ContactsServiceImpl(
         }
     }
 
-    private fun doUpdateRemoteContactList() {
+    private fun doAddressBookPush() {
         withCurrentJob { doPush() }
     }
 
-    override fun doRemoteSync() {
+    override fun doAddressBookPull() {
         withCurrentJob { doPull() }
     }
 
-    override fun doLocalSync() {
+    override fun doFindPlatformContacts() {
         withCurrentJob { doFindPlatformContacts() }
     }
 
-    private fun onContactSyncStatusUpdate(info: AddressBookSyncJobInfo) {
+    private fun onAddressBookSyncStatusUpdate(event: AddressBookSyncEvent) {
         //if remote sync is at all enabled, we want the entire process to lock down the contact list
-        if (info.remoteSync)
-            contactEventsSubject.onNext(ContactEvent.Sync(info.isRunning))
+        if (event.info.remoteSync) {
+            val isRunning = when (event) {
+                is AddressBookSyncEvent.Begin -> true
+                is AddressBookSyncEvent.End -> false
+            }
+
+            contactEventsSubject.onNext(ContactEvent.Sync(isRunning))
+        }
     }
 
     /** Process the given unadded users. */
@@ -178,7 +191,7 @@ class ContactsServiceImpl(
                 missing.removeAll(exists)
                 addNewContactData(missing) mapUi {
                     if (it.added)
-                        doUpdateRemoteContactList()
+                        doAddressBookPush()
 
                     it.invalidIds
                 }

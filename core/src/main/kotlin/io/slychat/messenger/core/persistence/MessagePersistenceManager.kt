@@ -6,8 +6,6 @@ import nl.komponents.kovenant.Promise
 interface MessagePersistenceManager {
     /**
      * Updates the conversation info for the given UserId.
-     *
-     * For received messages, must also delete the corresponding queued message.
      */
     fun addMessage(userId: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception>
 

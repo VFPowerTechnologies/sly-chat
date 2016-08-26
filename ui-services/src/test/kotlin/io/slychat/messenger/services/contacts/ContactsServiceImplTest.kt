@@ -138,6 +138,19 @@ class ContactsServiceImplTest {
     }
 
     @Test
+    fun `adding self info should not generate a push`() {
+        val contactsService = createService()
+
+        val selfInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
+
+        whenever(contactsPersistenceManager.addSelf(selfInfo)).thenReturn(Unit)
+
+        contactsService.addSelf(selfInfo).get()
+
+        addressBookOperationManager.assertPushNotTriggered()
+    }
+
+    @Test
     fun `filterBlocked should filter out blocked contacts`() {
         val contactsService = createService()
 
@@ -156,7 +169,7 @@ class ContactsServiceImplTest {
     fun `doLocalSync should defer to AddressBookOperationManager`() {
         val contactsService = createService()
 
-        contactsService.doLocalSync()
+        contactsService.doFindPlatformContacts()
 
         assertOperationManagerCalledForSync()
     }
@@ -165,7 +178,7 @@ class ContactsServiceImplTest {
     fun `doRemoteSync should defer to AddressBookOperationManager`() {
         val contactsService = createService()
 
-        contactsService.doRemoteSync()
+        contactsService.doAddressBookPull()
 
         assertOperationManagerCalledForSync()
     }
@@ -344,11 +357,15 @@ class ContactsServiceImplTest {
     fun testSyncEvent(isRunning: Boolean) {
         val contactsService = createService()
 
-        val info = AddressBookSyncJobInfo(false, false, true, isRunning)
+        val info = AddressBookSyncJobInfo(false, false, true)
+        val event = if (isRunning)
+            AddressBookSyncEvent.Begin(info)
+        else
+            AddressBookSyncEvent.End(info, AddressBookSyncResult(true, 0, false))
 
         val testSubscriber = contactEventCollectorFor<ContactEvent.Sync>(contactsService)
 
-        addressBookOperationManager.runningSubject.onNext(info)
+        addressBookOperationManager.syncEventsSubject.onNext(event)
 
         assertEventEmitted(testSubscriber) { ev ->
             if (isRunning)

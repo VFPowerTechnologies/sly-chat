@@ -4,17 +4,20 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.GroupId
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
     JsonSubTypes.Type(GroupEventMessageWrapper::class, name = "g"),
-    JsonSubTypes.Type(TextMessageWrapper::class, name = "t")
+    JsonSubTypes.Type(TextMessageWrapper::class, name = "t"),
+    JsonSubTypes.Type(SyncMessageWrapper::class, name = "s")
 )
 interface SlyMessage
 
 data class GroupEventMessageWrapper(@JsonProperty("m") val m: GroupEventMessage) : SlyMessage
 data class TextMessageWrapper(@JsonProperty("m") val m: TextMessage) : SlyMessage
+data class SyncMessageWrapper(@JsonProperty("m") val m: SyncMessage) : SlyMessage
 
 data class TextMessage(
     @JsonProperty("timestamp")
@@ -122,6 +125,78 @@ sealed class GroupEventMessage {
             result = 31 * result + name.hashCode()
             result = 31 * result + members.hashCode()
             return result
+        }
+    }
+}
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
+@JsonSubTypes(
+    JsonSubTypes.Type(SyncMessage.NewDevice::class, name = "d"),
+    JsonSubTypes.Type(SyncMessage.SelfMessage::class, name = "m"),
+    JsonSubTypes.Type(SyncMessage.AddressBookSync::class, name = "s")
+)
+sealed class SyncMessage {
+    class NewDevice(
+        @JsonProperty("deviceInfo")
+        val deviceInfo: DeviceInfo
+    ) : SyncMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as NewDevice
+
+            if (deviceInfo != other.deviceInfo) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return deviceInfo.hashCode()
+        }
+
+        override fun toString(): String {
+            return "NewDevice(deviceInfo=$deviceInfo)"
+        }
+    }
+
+    class SelfMessage(
+        @JsonProperty("sentMessageInfo")
+        val sentMessageInfo: SyncSentMessageInfo
+    ) : SyncMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as SelfMessage
+
+            if (sentMessageInfo != other.sentMessageInfo) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return sentMessageInfo.hashCode()
+        }
+
+        override fun toString(): String {
+            return "SelfMessage(sentMessageInfo=$sentMessageInfo)"
+        }
+    }
+
+    class AddressBookSync() : SyncMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+
+            return other?.javaClass == javaClass
+        }
+
+        override fun hashCode(): Int {
+            return 0
+        }
+
+        override fun toString(): String {
+            return "AddressBookSync()"
         }
     }
 }

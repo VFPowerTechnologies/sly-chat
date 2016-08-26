@@ -4,11 +4,9 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
-import io.slychat.messenger.services.GroupService
-import io.slychat.messenger.services.bindRecoverForUi
-import io.slychat.messenger.services.bindUi
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.ContactsService
-import io.slychat.messenger.services.mapUi
+import io.slychat.messenger.services.crypto.MessageCipherService
 import nl.komponents.kovenant.Promise
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -16,14 +14,16 @@ import rx.subjects.PublishSubject
 import java.util.*
 
 class MessageProcessorImpl(
+    private val selfId: UserId,
     private val contactsService: ContactsService,
     private val messagePersistenceManager: MessagePersistenceManager,
+    private val messageCipherService: MessageCipherService,
     private val groupService: GroupService
 ) : MessageProcessor {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private val newMessagesSubject = PublishSubject.create<MessageBundle>()
-    override val newMessages: Observable<MessageBundle>
+    private val newMessagesSubject = PublishSubject.create<ConversationMessage>()
+    override val newMessages: Observable<ConversationMessage>
         get() = newMessagesSubject
 
     override fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception> {
@@ -35,6 +35,8 @@ class MessageProcessorImpl(
 
             is GroupEventMessageWrapper -> handleGroupMessage(sender, m.m)
 
+            is SyncMessageWrapper -> handleSyncMessage(sender, m.m)
+
             else -> {
                 log.error("Unhandled message type: {}", m.javaClass.name)
                 throw IllegalArgumentException("Unhandled message type: ${m.javaClass.name}")
@@ -42,13 +44,55 @@ class MessageProcessorImpl(
         }
     }
 
-    private fun storeMessage(sender: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception> {
-        return messagePersistenceManager.addMessage(sender, messageInfo) bindRecoverForUi { e: InvalidMessageLevelException ->
-            log.debug("User doesn't have appropriate message level, upgrading ")
+    private fun handleSyncMessage(sender: UserId, m: SyncMessage): Promise<Unit, Exception> {
+        return if (sender != selfId)
+            Promise.ofFail(SyncMessageFromOtherSecurityException(sender, m.javaClass.simpleName))
+        else {
+            when (m) {
+                is SyncMessage.NewDevice -> {
+                    log.info("Received new device message")
+                    messageCipherService.addSelfDevice(m.deviceInfo)
+                }
 
-            contactsService.allowAll(sender) bindUi {
-                messagePersistenceManager.addMessage(sender, messageInfo)
+                is SyncMessage.SelfMessage -> {
+                    log.info("Received self sent message")
+                    handleSelfMessage(m)
+                }
+
+                is SyncMessage.AddressBookSync -> {
+                    log.info("Received self sync message")
+                    Promise.ofSuccess(contactsService.doAddressBookPull())
+                }
             }
+        }
+    }
+
+    private fun handleSelfMessage(m: SyncMessage.SelfMessage): Promise<Unit, Exception> {
+        val sentMessageInfo = m.sentMessageInfo
+
+        val messageInfo = sentMessageInfo.toMessageInfo()
+
+        val recipient = sentMessageInfo.recipient
+
+        return when (recipient) {
+            //if we add a new contact, then message them right away, the SelfMessage'll get here before the AddressBookSync one
+            is Recipient.User -> contactsService.addMissingContacts(setOf(recipient.id)) bindUi {
+                addSingleMessage(recipient.id, messageInfo)
+            }
+            is Recipient.Group -> addGroupMessage(recipient.id, null, messageInfo)
+        }
+    }
+
+    private fun addSingleMessage(userId: UserId, messageInfo: MessageInfo): Promise<Unit, Exception> {
+        return messagePersistenceManager.addMessage(userId, messageInfo) bindRecoverForUi { e: InvalidMessageLevelException ->
+            log.debug("User doesn't have appropriate message level, upgrading")
+
+            contactsService.allowAll(userId) bindUi {
+                messagePersistenceManager.addMessage(userId, messageInfo)
+            }
+        } mapUi { messageInfo ->
+            val message = ConversationMessage.Single(userId, messageInfo)
+            newMessagesSubject.onNext(message)
         }
     }
 
@@ -57,10 +101,7 @@ class MessageProcessorImpl(
 
         val groupId = m.groupId
         return if (groupId == null) {
-            storeMessage(sender, messageInfo) mapUi { messageInfo ->
-                val bundle = MessageBundle(sender, null, listOf(messageInfo))
-                newMessagesSubject.onNext(bundle)
-            }
+            addSingleMessage(sender, messageInfo)
         }
         else {
             groupService.getInfo(groupId) bindUi { groupInfo ->
@@ -69,10 +110,11 @@ class MessageProcessorImpl(
         }
     }
 
-    private fun addGroupMessage(groupId: GroupId, sender: UserId, messageInfo: MessageInfo): Promise<Unit, Exception> {
+    private fun addGroupMessage(groupId: GroupId, sender: UserId?, messageInfo: MessageInfo): Promise<Unit, Exception> {
         val groupMessageInfo = GroupMessageInfo(sender, messageInfo)
         return groupService.addMessage(groupId, groupMessageInfo) mapUi {
-            newMessagesSubject.onNext(MessageBundle(sender, groupId, listOf(messageInfo)))
+            val message = ConversationMessage.Group(groupId, sender, messageInfo)
+            newMessagesSubject.onNext(message)
         }
     }
 
@@ -129,7 +171,10 @@ class MessageProcessorImpl(
 
     private fun handleGroupInvitation(sender: UserId, groupInfo: GroupInfo?, m: GroupEventMessage.Invitation): Promise<Unit, Exception> {
         val members = HashSet(m.members)
-        members.add(sender)
+
+        //since we send ourselves invitations as well, we don't include ourselves in the list
+        if (sender != selfId)
+            members.add(sender)
 
         return if (groupInfo == null || groupInfo.membershipLevel == GroupMembershipLevel.PARTED) {
             //we already have the sender added, so we don't need to include them

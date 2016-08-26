@@ -1,7 +1,9 @@
 @file:JvmName("RandomUtils")
 package io.slychat.messenger.core
 
+import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
+import org.whispersystems.libsignal.SignalProtocolAddress
 import java.util.*
 
 //[min, max]
@@ -19,11 +21,16 @@ fun randomGroupMembers(n: Int = 2): Set<UserId> = (1..n).mapTo(HashSet()) { rand
 fun randomUserId(): UserId =
     UserId(randomInt(1, 10000).toLong())
 
-fun randomSlyAddress(): SlyAddress =
-    SlyAddress(randomUserId(), randomDeviceId())
+fun randomSlyAddress(userId: UserId = randomUserId()): SlyAddress =
+    SlyAddress(userId, randomDeviceId())
+
+fun randomSignalAddress(userId: UserId = randomUserId()): SignalProtocolAddress =
+    randomSlyAddress(userId).toSignalAddress()
 
 fun randomDeviceId(): Int =
     randomInt(1, 50)
+
+fun randomDeviceInfo(): DeviceInfo = DeviceInfo(randomDeviceId(), randomRegistrationId())
 
 fun randomUserIds(n: Int = 2): Set<UserId> = (1..n).mapToSet { randomUserId() }
 
@@ -51,16 +58,24 @@ fun randomTextGroupMetadata(groupId: GroupId? = null): MessageMetadata {
     )
 }
 
-fun randomTextSingleMetadata(): MessageMetadata {
-    val recipient = randomUserId()
+fun randomTextSingleMetadata(recipientId: UserId = randomUserId()): MessageMetadata {
     val messageId = randomUUID()
     return MessageMetadata(
-        recipient,
+        recipientId,
         null,
         MessageCategory.TEXT_SINGLE,
         messageId
     )
+}
 
+fun randomOtherMetadata(recipientId: UserId = randomUserId()): MessageMetadata {
+    val messageId = randomUUID()
+    return MessageMetadata(
+        recipientId,
+        null,
+        MessageCategory.OTHER,
+        messageId
+    )
 }
 
 fun randomSerializedMessage(): ByteArray = Random().nextInt().toString().toByteArray()
@@ -100,12 +115,24 @@ fun randomContactInfoList(allowedMessageLevel: AllowedMessageLevel = AllowedMess
     return (1..n).map { randomContactInfo(allowedMessageLevel) }
 }
 
-fun randomMessageText(): String {
-    //XXX kinda dumb...
-    val base = "random message".toMutableList()
+private fun shuffleString(input: String): String {
+    val base = input.toMutableList()
     Collections.shuffle(base)
 
     return base.joinToString("")
+}
+
+fun randomName(): String {
+    return shuffleString("random name")
+}
+
+fun randomAccountInfo(deviceId: Int = randomDeviceId()): AccountInfo {
+    return AccountInfo(randomUserId(), randomName(), randomEmailAddress(), "", deviceId)
+}
+
+fun randomMessageText(): String {
+    //XXX kinda dumb...
+    return shuffleString("random message")
 }
 
 fun randomReceivedMessageInfo(): MessageInfo {

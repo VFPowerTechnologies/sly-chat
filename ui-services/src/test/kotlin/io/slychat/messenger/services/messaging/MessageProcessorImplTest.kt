@@ -5,7 +5,9 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
 import io.slychat.messenger.services.GroupService
+import io.slychat.messenger.services.SyncMessageFromOtherSecurityException
 import io.slychat.messenger.services.contacts.ContactsService
+import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenReturn
@@ -16,6 +18,7 @@ import org.junit.ClassRule
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 
 class MessageProcessorImplTest {
@@ -25,8 +28,11 @@ class MessageProcessorImplTest {
         val kovenantTestMode = KovenantTestModeRule()
     }
 
+    val selfId = randomUserId()
+
     val contactsService: ContactsService = mock()
     val messagePersistenceManager: MessagePersistenceManager = mock()
+    val messageCipherService: MessageCipherService = mock()
     val groupService: GroupService = mock()
 
     fun createProcessor(): MessageProcessorImpl {
@@ -50,9 +56,13 @@ class MessageProcessorImplTest {
         whenever(groupService.removeMember(any(), any())).thenReturn(Unit)
         whenever(groupService.isUserMemberOf(any(), any())).thenReturn(true)
 
+        whenever(messageCipherService.addSelfDevice(any())).thenReturn(Unit)
+
         return MessageProcessorImpl(
+            selfId,
             contactsService,
             messagePersistenceManager,
+            messageCipherService,
             groupService
         )
     }
@@ -84,15 +94,18 @@ class MessageProcessorImplTest {
 
         processor.processMessage(from, wrapper).get()
 
-        val bundles = testSubscriber.onNextEvents
+        val messages = testSubscriber.onNextEvents
 
-        assertThat(bundles)
-            .hasSize(1)
-            .`as`("Bundle check")
+        assertThat(messages).apply {
+            `as`("")
+            hasSize(1)
+        }
 
-        val bundle = bundles[0]
+        val message = messages[0]
 
-        assertEquals(bundle.userId, from, "Invalid user id")
+        message as ConversationMessage.Single
+
+        assertEquals(message.userId, from, "Invalid user id")
     }
 
     @Test
@@ -126,8 +139,9 @@ class MessageProcessorImplTest {
             whenever(groupService.getInfo(any())).thenReturnNull()
     }
 
-    fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomUUID(), TextMessageWrapper(m))
-    fun wrap(m: GroupEventMessage): SlyMessageWrapper = SlyMessageWrapper(randomUUID(), GroupEventMessageWrapper(m))
+    fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), TextMessageWrapper(m))
+    fun wrap(m: GroupEventMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), GroupEventMessageWrapper(m))
+    fun wrap(m: SyncMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SyncMessageWrapper(m))
 
     /* Group stuff */
 
@@ -156,6 +170,21 @@ class MessageProcessorImplTest {
         verify(contactsService).addMissingContacts(m.members)
 
         verify(groupService).join(info, fullMembers)
+    }
+
+    @Test
+    fun `it should not add itself as a member when receiving an invitation from another device`() {
+        val m = generateInvite()
+
+        val processor = createProcessor()
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        val info = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
+
+        verify(contactsService).addMissingContacts(m.members)
+
+        verify(groupService).join(info, m.members)
     }
 
     @Test
@@ -497,13 +526,11 @@ class MessageProcessorImplTest {
         val newMessages = testSubscriber.onNextEvents
         assertEquals(1, newMessages.size, "Invalid number of new message events")
 
-        val bundle = newMessages[0]
-        assertEquals(1, bundle.messages.size, "Invalid number of messages in bundle")
-        assertEquals(groupInfo.id, bundle.groupId, "Invalid group id")
+        val message = newMessages[0] as ConversationMessage.Group
+        assertEquals(groupInfo.id, message.groupId, "Invalid group id")
 
-        val message = bundle.messages[0]
-        assertEquals(m.message, message.message, "Invalid message")
-        assertEquals(wrapper.messageId, message.id, "Invalid message id")
+        assertEquals(m.message, message.info.message, "Invalid message")
+        assertEquals(wrapper.messageId, message.info.id, "Invalid message id")
     }
 
     fun testDropGroupTextMessage(senderIsMember: Boolean, membershipLevel: GroupMembershipLevel) {
@@ -536,5 +563,178 @@ class MessageProcessorImplTest {
     @Test
     fun `it should ignore group text messages for blocked groups`() {
         testDropGroupTextMessage(true, GroupMembershipLevel.BLOCKED)
+    }
+
+    @Test
+    fun `it should drop NewDevice messages where the sender is not yourself`() {
+        val processor = createProcessor()
+
+        val sender = randomUserId()
+        val m = SyncMessage.NewDevice(randomDeviceInfo())
+
+        assertFailsWith(SyncMessageFromOtherSecurityException::class) {
+            processor.processMessage(sender, wrap(m)).get()
+        }
+
+        verify(messageCipherService, never()).addSelfDevice(any())
+    }
+
+    @Test
+    fun `it should add a new device when receiving a NewDevice message`() {
+        val newDeviceInfo = randomDeviceInfo()
+
+        val processor = createProcessor()
+
+        val sender = selfId
+        val m = SyncMessage.NewDevice(newDeviceInfo)
+
+        processor.processMessage(sender, wrap(m)).get()
+
+        verify(messageCipherService).addSelfDevice(newDeviceInfo)
+    }
+
+    fun randomSingleSentMessageInfo(userId: UserId): SyncSentMessageInfo {
+        return SyncSentMessageInfo(
+            randomMessageId(),
+            Recipient.User(userId),
+            randomMessageText(),
+            currentTimestamp(),
+            currentTimestamp()
+        )
+    }
+
+    fun randomGroupSentMessageInfo(groupId: GroupId): SyncSentMessageInfo {
+        return SyncSentMessageInfo(
+            randomMessageId(),
+            Recipient.Group(groupId),
+            randomMessageText(),
+            currentTimestamp(),
+            currentTimestamp()
+        )
+    }
+
+    @Test
+    fun `it should store a new sent single text message when receiving a SelfMessage message for a single chat`() {
+        val processor = createProcessor()
+
+        val recipient = randomUserId()
+        val sentMessageInfo = randomSingleSentMessageInfo(recipient)
+        val messageInfo = sentMessageInfo.toMessageInfo()
+        val m = SyncMessage.SelfMessage(sentMessageInfo)
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        verify(messagePersistenceManager).addMessage(recipient, messageInfo)
+    }
+
+    @Test
+    fun `it should call ContactsService to add missing users when receiving a single text message`() {
+        val processor = createProcessor()
+
+        val recipient = randomUserId()
+        val sentMessageInfo = randomSingleSentMessageInfo(recipient)
+        val m = SyncMessage.SelfMessage(sentMessageInfo)
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        verify(contactsService).addMissingContacts(setOf(recipient))
+    }
+
+    @Test
+    fun `it should emit new message updates when receiving a SelfMessage message`() {
+        val processor = createProcessor()
+
+        val recipient = randomUserId()
+        val sentMessageInfo = randomSingleSentMessageInfo(recipient)
+        val messageInfo = sentMessageInfo.toMessageInfo()
+        val m = SyncMessage.SelfMessage(sentMessageInfo)
+
+        val testSubscriber = processor.newMessages.testSubscriber()
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        val messages = testSubscriber.onNextEvents
+
+        val expectedMessage = ConversationMessage.Single(recipient, messageInfo)
+
+        assertThat(messages).apply {
+            `as`("Should contain a message update")
+            containsOnly(expectedMessage)
+        }
+    }
+
+    @Test
+    fun `it should store a new sent group message when receiving a SelfMessage message for a new group chat`() {
+        val processor = createProcessor()
+
+        val recipient = randomGroupId()
+        val sentMessageInfo = randomGroupSentMessageInfo(recipient)
+        val groupMessageInfo = GroupMessageInfo(null, sentMessageInfo.toMessageInfo())
+        val m = SyncMessage.SelfMessage(sentMessageInfo)
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        verify(groupService).addMessage(recipient, groupMessageInfo)
+    }
+
+    @Test
+    fun `it should emit new message updates when receiving a SelfMessage message for a group chat`() {
+        val processor = createProcessor()
+
+        val recipient = randomGroupId()
+        val sentMessageInfo = randomGroupSentMessageInfo(recipient)
+        val messageInfo = sentMessageInfo.toMessageInfo()
+        val m = SyncMessage.SelfMessage(sentMessageInfo)
+
+        val testSubscriber = processor.newMessages.testSubscriber()
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        val expectedMessage = ConversationMessage.Group(recipient, null, messageInfo)
+
+        val messages = testSubscriber.onNextEvents
+
+        assertThat(messages).apply {
+            `as`("Should contain a message update")
+            containsOnly(expectedMessage)
+        }
+    }
+
+    @Test
+    fun `it should drop SelfMessage messages where the sender is not yourself`() {
+        val processor = createProcessor()
+
+        val sender = randomUserId()
+        val m = SyncMessage.SelfMessage(randomSingleSentMessageInfo(randomUserId()))
+
+        assertFailsWith(SyncMessageFromOtherSecurityException::class) {
+            processor.processMessage(sender, wrap(m)).get()
+        }
+    }
+
+    @Test
+    fun `it should do an address book pull when receiving an AddressBookSync message`() {
+        val processor = createProcessor()
+
+        val sender = selfId
+        val m = SyncMessage.AddressBookSync()
+
+        processor.processMessage(sender, wrap(m))
+
+        verify(contactsService).doAddressBookPull()
+    }
+
+    @Test
+    fun `it should drop AddressBookSync messages where the sender is not yourself`() {
+        val processor = createProcessor()
+
+        val sender = randomUserId()
+        val m = SyncMessage.AddressBookSync()
+
+        assertFailsWith(SyncMessageFromOtherSecurityException::class) {
+            processor.processMessage(sender, wrap(m)).get()
+        }
+
+        verify(contactsService, never()).doAddressBookPull()
     }
 }

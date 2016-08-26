@@ -189,14 +189,14 @@ class MessageSenderImpl(
         return
     }
 
-    override fun addToQueue(metadata: MessageMetadata, message: ByteArray): Promise<Unit, Exception> {
+    override fun addToQueue(entry: SenderMessageEntry): Promise<Unit, Exception> {
         val queuedMessage = QueuedMessage(
-            metadata,
+            entry.metadata,
             currentTimestamp(),
-            message
+            entry.message
         )
         return messageQueuePersistenceManager.add(queuedMessage) mapUi {
-            addToQueueReal(metadata, message)
+            addToQueueReal(entry.metadata, entry.message)
         }
     }
 
@@ -268,9 +268,17 @@ class MessageSenderImpl(
         val messages = result.encryptedMessages.map { e ->
             RelayUserMessage(e.deviceId, e.registrationId, e.payload)
         }
-        val content = RelayMessageBundle(messages)
-        //if we got disconnected while we were encrypting, just ignore the message as it'll just be encrypted again
-        //sendMessage'll ignore any message without a matching connectionTag
-        relayClientManager.sendMessage(result.connectionTag, userId, content, messageId)
+
+        if (messages.isNotEmpty()) {
+            val content = RelayMessageBundle(messages)
+            //if we got disconnected while we were encrypting, just ignore the message as it'll just be encrypted again
+            //sendMessage'll ignore any message without a matching connectionTag
+            relayClientManager.sendMessage(result.connectionTag, userId, content, messageId)
+        }
+        else {
+            //if we have no encryptedMessages and didn't get an error, it was a message to self
+            //so just act as if it was sent successfully
+            handleServerRecievedMessage(ServerReceivedMessage(userId, messageId))
+        }
     }
 }

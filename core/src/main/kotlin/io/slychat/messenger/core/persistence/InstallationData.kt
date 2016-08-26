@@ -1,8 +1,8 @@
 package io.slychat.messenger.core.persistence
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import io.slychat.messenger.core.randomRegistrationId
 import io.slychat.messenger.core.randomUUID
-import org.whispersystems.libsignal.util.KeyHelper
 
 data class InstallationData(
     @JsonProperty("installationId")
@@ -15,6 +15,6 @@ data class InstallationData(
 
         /** Generate new installation data. */
         fun generate(): InstallationData =
-            InstallationData(generateInstallationId(), KeyHelper.generateRegistrationId(false))
+            InstallationData(generateInstallationId(), randomRegistrationId())
     }
 }

@@ -25,7 +25,7 @@ interface GroupService {
 
     fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception>
 
-    fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<GroupMessageInfo, Exception>
+    fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<GroupMessageInfo?, Exception>
 
     /* UIGroupService interface */
     fun getGroups(): Promise<List<GroupInfo>, Exception>

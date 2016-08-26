@@ -2,6 +2,7 @@ package io.slychat.messenger.services.messaging
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
 import io.slychat.messenger.core.persistence.QueuedMessage
 import io.slychat.messenger.core.relay.*
@@ -15,6 +16,7 @@ import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.TestException
 import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenReturn
+import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import org.junit.Before
 import org.junit.ClassRule
@@ -30,6 +32,10 @@ class MessageSenderImplTest {
         @JvmField
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
+    }
+
+    private fun MessageSender.addToQueue(metadata: MessageMetadata, message: ByteArray): Promise<Unit, Exception> {
+        return addToQueue(SenderMessageEntry(metadata, message))
     }
 
     val messageCipherService: MessageCipherService = mock()
@@ -220,6 +226,30 @@ class MessageSenderImplTest {
         sender.addToQueue(metadata, queued.serialized).get()
 
         relayEvents.onNext(ServerReceivedMessage(recipient, metadata.messageId))
+
+        assertEventEmitted(testSubscriber) {
+            assertEquals(metadata, it, "Invalid message metadata")
+        }
+    }
+
+    //used for self messages when no other devices are available
+    @Test
+    fun `it should emit a message update event if no encrypted messages are returned from MessageCipherService`() {
+        val sender = createSender(true)
+
+        val queued = randomQueuedMessage()
+        val metadata = queued.metadata
+
+        val testSubscriber = sender.messageSent.testSubscriber()
+
+        val result = EncryptionResult(
+            emptyList(),
+            defaultConnectionTag
+        )
+
+        whenever(messageCipherService.encrypt(any(), any(), any())).thenReturn(result)
+
+        sender.addToQueue(metadata, queued.serialized).get()
 
         assertEventEmitted(testSubscriber) {
             assertEquals(metadata, it, "Invalid message metadata")

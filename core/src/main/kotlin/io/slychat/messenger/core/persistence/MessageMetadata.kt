@@ -2,7 +2,10 @@ package io.slychat.messenger.core.persistence
 
 import io.slychat.messenger.core.UserId
 
-/** Various data used to identify the message. */
+/** Various data used to identify the message.
+ *
+ * @property category Used to identify the message type for post-send processing.
+ */
 data class MessageMetadata(
     val userId: UserId,
     val groupId: GroupId?,

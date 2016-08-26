@@ -55,6 +55,11 @@ class PersistenceUserModule {
         return SQLitePersistenceManager(userPaths.databasePath, key, keyvault.localDataEncryptionParams)
     }
 
+    //this is hacky, but we wanna expose this to the app for init/shutdown, but we don't wanna expose its type directly
+    @UserScope
+    @Provides
+    fun providesPersistenceManager(sqlitePersistenceManager: SQLitePersistenceManager): PersistenceManager = sqlitePersistenceManager
+
     @UserScope
     @Provides
     fun providesKeyVaultPersistenceManager(
@@ -89,17 +94,24 @@ class PersistenceUserModule {
 
     @UserScope
     @Provides
+    fun providesSignalSessionPersistenceManager(
+        sqlitePersistenceManager: SQLitePersistenceManager
+    ): SignalSessionPersistenceManager =
+        SQLiteSignalSessionPersistenceManager(sqlitePersistenceManager)
+
+    @UserScope
+    @Provides
     fun providesSignalProtocolStore(
         slyApplication: SlyApplication,
         userLoginData: UserData,
-        sqlitePersistenceManager: SQLitePersistenceManager,
+        signalSessionPersistenceManager: SignalSessionPersistenceManager,
         preKeyPersistenceManager: PreKeyPersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager
     ): SignalProtocolStore =
         SQLiteSignalProtocolStore(
-            userLoginData,
+            userLoginData.keyVault.identityKeyPair,
             slyApplication.installationData.registrationId,
-            sqlitePersistenceManager,
+            signalSessionPersistenceManager,
             preKeyPersistenceManager,
             contactsPersistenceManager
         )

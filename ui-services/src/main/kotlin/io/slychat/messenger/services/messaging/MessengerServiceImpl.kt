@@ -3,6 +3,7 @@ package io.slychat.messenger.services.messaging
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomUUID
 import io.slychat.messenger.core.relay.ReceivedMessage
@@ -10,6 +11,8 @@ import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.bindUi
+import io.slychat.messenger.services.contacts.AddressBookOperationManager
+import io.slychat.messenger.services.contacts.AddressBookSyncEvent
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
@@ -32,6 +35,7 @@ import java.util.*
  */
 class MessengerServiceImpl(
     private val contactsService: ContactsService,
+    private val addressBookOperationManager: AddressBookOperationManager,
     private val messagePersistenceManager: MessagePersistenceManager,
     private val groupService: GroupService,
     private val contactsPersistenceManager: ContactsPersistenceManager,
@@ -44,7 +48,7 @@ class MessengerServiceImpl(
 
     private val objectMapper = ObjectMapper()
 
-    override val newMessages: Observable<MessageBundle>
+    override val newMessages: Observable<ConversationMessage>
         get() = messageReceiver.newMessages
 
     private val messageUpdatesSubject = PublishSubject.create<MessageBundle>()
@@ -57,6 +61,8 @@ class MessengerServiceImpl(
         subscriptions.add(relayClientManager.events.subscribe { onRelayEvent(it) })
 
         subscriptions.add(messageSender.messageSent.subscribe { onMessageSent(it) })
+
+        subscriptions.add(addressBookOperationManager.syncEvents.subscribe { onSyncEvent(it) })
     }
 
     override fun init() {
@@ -64,6 +70,17 @@ class MessengerServiceImpl(
 
     override fun shutdown() {
         subscriptions.clear()
+    }
+
+    private fun onSyncEvent(event: AddressBookSyncEvent) {
+        when (event) {
+            is AddressBookSyncEvent.Begin -> {}
+
+            is AddressBookSyncEvent.End -> {
+                if (event.result.updateCount > 0)
+                    broadcastSync()
+            }
+        }
     }
 
     private fun onMessageSent(metadata: MessageMetadata) {
@@ -79,7 +96,9 @@ class MessengerServiceImpl(
     private fun processSingleUpdate(metadata: MessageMetadata) {
         log.debug("Processing sent convo message {} to {}", metadata.messageId, metadata.userId)
 
-        messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId) successUi { messageInfo ->
+        messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId) bindUi { messageInfo ->
+            broadcastSentMessage(metadata, messageInfo) map { messageInfo }
+        } successUi { messageInfo ->
             val bundle = MessageBundle(metadata.userId, null, listOf(messageInfo))
             messageUpdatesSubject.onNext(bundle)
         } fail { e ->
@@ -93,9 +112,17 @@ class MessengerServiceImpl(
 
         log.debug("Processing sent group message <<{}/{}>>", groupId, metadata.messageId)
 
-        groupService.markMessageAsDelivered(groupId, metadata.messageId) successUi { messageInfo ->
-            val bundle = MessageBundle(metadata.userId, groupId, listOf(messageInfo.info))
-            messageUpdatesSubject.onNext(bundle)
+        groupService.markMessageAsDelivered(groupId, metadata.messageId) bindUi { groupMessageInfo ->
+            if (groupMessageInfo != null)
+                broadcastSentMessage(metadata, groupMessageInfo.info) map { groupMessageInfo }
+            else
+                Promise.ofSuccess(groupMessageInfo)
+        } successUi { groupMessageInfo ->
+            //if this is null, the message has already been delievered to one recipient, so we don't emit another event
+            if (groupMessageInfo != null) {
+                val bundle = MessageBundle(metadata.userId, groupId, listOf(groupMessageInfo.info))
+                messageUpdatesSubject.onNext(bundle)
+            }
         } fail { e ->
             log.error("Unable to mark group message <<{}/{}>> as delivered: {}", groupId, metadata.messageId, e.message, e)
         }
@@ -191,7 +218,7 @@ class MessengerServiceImpl(
             val serialized = objectMapper.writeValueAsBytes(wrapper)
 
             val metadata = MessageMetadata(userId, null, MessageCategory.TEXT_SINGLE, messageInfo.id)
-            messageSender.addToQueue(metadata, serialized) bind {
+            messageSender.addToQueue(SenderMessageEntry(metadata, serialized)) bind {
                 messagePersistenceManager.addMessage(userId, messageInfo)
             }
         }
@@ -250,7 +277,10 @@ class MessengerServiceImpl(
             GroupMembershipLevel.JOINED
         )
 
-        val messages = initialMembers.map {
+        //include your other devices; this bypasses the issue where you get a SelfMessage and have no info on the group
+        val allMembers = initialMembers + selfId
+
+        val messages = allMembers.map {
             val members = HashSet(initialMembers)
             members.remove(it)
 
@@ -348,5 +378,39 @@ class MessengerServiceImpl(
 
     override fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception> {
         return processPackages(offlineMessages)
+    }
+
+    private fun sendSyncMessage(m: SyncMessage): Promise<Unit, Exception> {
+        val serialized = objectMapper.writeValueAsBytes(SyncMessageWrapper(m))
+
+        val metadata = MessageMetadata(selfId, null, MessageCategory.OTHER, randomUUID())
+        return messageSender.addToQueue(SenderMessageEntry(metadata, serialized))
+    }
+
+    override fun broadcastNewDevice(deviceInfo: DeviceInfo): Promise<Unit, Exception> {
+        return sendSyncMessage(SyncMessage.NewDevice(deviceInfo))
+    }
+
+    private fun broadcastSentMessage(metadata: MessageMetadata, messageInfo: MessageInfo): Promise<Unit, Exception> {
+        val recipient = if (metadata.groupId != null)
+            Recipient.Group(metadata.groupId)
+        else
+            Recipient.User(metadata.userId)
+
+        val sentMessageInfo = SyncSentMessageInfo(
+            metadata.messageId,
+            recipient,
+            messageInfo.message,
+            messageInfo.timestamp,
+            messageInfo.receivedTimestamp
+        )
+
+        return sendSyncMessage(SyncMessage.SelfMessage(sentMessageInfo))
+    }
+
+    private fun broadcastSync() {
+        sendSyncMessage(SyncMessage.AddressBookSync()) fail {
+            log.error("Failed to send SelfSync message: {}", it.message, it)
+        }
     }
 }

@@ -124,12 +124,16 @@ class UserModule(
     @UserScope
     @Provides
     fun providesMessageProcessor(
+        userData: UserData,
         contactsService: ContactsService,
         messagePersistenceManager: MessagePersistenceManager,
+        messageCipherService: MessageCipherService,
         groupService: GroupService
     ): MessageProcessor = MessageProcessorImpl(
+        userData.userId,
         contactsService,
         messagePersistenceManager,
+        messageCipherService,
         groupService
     )
 
@@ -162,6 +166,7 @@ class UserModule(
     @Provides
     fun providesMessengerService(
         contactsService: ContactsService,
+        addressBookOperationManager: AddressBookOperationManager,
         messagePersistenceManager: MessagePersistenceManager,
         groupService: GroupService,
         contactsPersistenceManager: ContactsPersistenceManager,
@@ -172,6 +177,7 @@ class UserModule(
     ): MessengerService =
         MessengerServiceImpl(
             contactsService,
+            addressBookOperationManager,
             messagePersistenceManager,
             groupService,
             contactsPersistenceManager,
@@ -192,6 +198,7 @@ class UserModule(
     @UserScope
     @Provides
     fun providesNotifierService(
+        userData: UserData,
         messengerService: MessengerService,
         uiEventService: UIEventService,
         contactsPersistenceManager: ContactsPersistenceManager,
@@ -201,18 +208,27 @@ class UserModule(
         @UIVisibility uiVisibility: Observable<Boolean>,
         scheduler: Scheduler
     ): NotifierService {
+        val selfId = userData.userId
+
         //even if this a hot observable, it's not yet emitting so we can just connect using share() instead of
         //manually using the ConnectedObservable
-        val shared = messengerService.newMessages.share()
+        val shared = messengerService.newMessages
+            //ignore messages from self
+            .filter {
+                when (it) {
+                    is ConversationMessage.Single -> it.userId != selfId
+                    is ConversationMessage.Group -> it.speaker != null
+                }
+            }
+            .share()
 
         //we use debouncing to trigger a buffer flush
         val closingSelector = shared.debounce(400, TimeUnit.MILLISECONDS, scheduler)
         val buffered = shared.buffer(closingSelector)
+        val bufferedBundles = NotifierServiceImpl.flattenMessageBundles(buffered)
 
-        val bufferedMessages = NotifierService.flattenMessageBundles(buffered)
-
-        return NotifierService(
-            bufferedMessages,
+        return NotifierServiceImpl(
+            bufferedBundles,
             uiEventService.events,
             uiVisibility,
             contactsPersistenceManager,
@@ -225,13 +241,14 @@ class UserModule(
     @UserScope
     @Provides
     fun providesMessageCipherService(
+        userData: UserData,
         authTokenManager: AuthTokenManager,
         serverUrls: ServerUrls,
         signalProtocolStore: SignalProtocolStore,
         @SlyHttp httpClientFactory: HttpClientFactory
     ): MessageCipherService {
         val preKeyClient = HttpPreKeyClient(serverUrls.API_SERVER, httpClientFactory.create())
-        return MessageCipherServiceImpl(authTokenManager, preKeyClient, signalProtocolStore)
+        return MessageCipherServiceImpl(userData.userId, authTokenManager, preKeyClient, signalProtocolStore)
     }
 
     @UserScope
@@ -247,7 +264,7 @@ class UserModule(
         val serverUrl = serverUrls.API_SERVER
         val preKeyAsyncClient = PreKeyAsyncClient(serverUrl, httpClientFactory)
 
-        return PreKeyManager(
+        return PreKeyManagerImpl(
             application,
             userLoginData,
             preKeyAsyncClient,
@@ -268,7 +285,7 @@ class UserModule(
         val serverUrl = serverUrls.API_SERVER
         val offlineMessagesClient = OfflineMessagesAsyncClientImpl(serverUrl, httpClientFactory)
 
-        return OfflineMessageManager(
+        return OfflineMessageManagerImpl(
             application.networkAvailable,
             offlineMessagesClient,
             messengerService,

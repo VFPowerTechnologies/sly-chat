@@ -4,10 +4,10 @@ import dagger.Component
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.http.HttpClientFactory
+import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
 import io.slychat.messenger.services.AuthenticationService
 import io.slychat.messenger.services.LocalAccountDirectory
 import io.slychat.messenger.services.PlatformContacts
-import io.slychat.messenger.services.UserPathsGenerator
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.ui.*
 import rx.Scheduler
@@ -17,6 +17,7 @@ import javax.inject.Singleton
 @Singleton
 @Component(modules = arrayOf(ApplicationModule::class, RelayModule::class, UIServicesModule::class, PlatformModule::class))
 interface ApplicationComponent {
+    //FIXME used in Sentry.init
     val platformInfo: PlatformInfo
 
     val uiPlatformInfoService: UIPlatformInfoService
@@ -39,8 +40,6 @@ interface ApplicationComponent {
 
     val uiEventService: UIEventService
 
-    val userPathsGenerator: UserPathsGenerator
-
     val rxScheduler: Scheduler
 
     val authenticationService: AuthenticationService
@@ -59,21 +58,22 @@ interface ApplicationComponent {
 
     val platformContacts: PlatformContacts
 
+    //FIXME only used for gcm client in AndroidApp
     val serverUrls: BuildConfig.ServerUrls
 
     val appConfigService: AppConfigService
 
+    //FIXME only used for gcm client in AndroidApp
     @get:SlyHttp
     val slyHttpClientFactory: HttpClientFactory
-
-    @get:ExternalHttp
-    val externalHttpClientFactory: HttpClientFactory
 
     val uiConfigService: UIConfigService
 
     val uiGroupService: UIGroupService
 
     val localAccountDirectory: LocalAccountDirectory
+
+    val installationDataPersistenceManager: InstallationDataPersistenceManager
 
     fun plus(userModule: UserModule): UserComponent
 }

@@ -15,6 +15,7 @@ import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.SessionDataPersistenceManager
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenReturn
+import org.assertj.core.api.Assertions
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -22,7 +23,7 @@ import org.whispersystems.libsignal.util.KeyHelper
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class AuthenticationServiceTest {
+class AuthenticationServiceImplTest {
     companion object {
         @JvmField
         @ClassRule
@@ -42,7 +43,7 @@ class AuthenticationServiceTest {
 
     val registrationId = KeyHelper.generateRegistrationId(false)
 
-    val authenticationService = AuthenticationService(
+    val authenticationService = AuthenticationServiceImpl(
         authenticationClient,
         localAccountDirectory
     )
@@ -52,6 +53,8 @@ class AuthenticationServiceTest {
 
     @Before
     fun before() {
+        whenever(localAccountDirectory.findAccountFor(any<UserId>())).thenReturn(null)
+        whenever(localAccountDirectory.findAccountFor(any<String>())).thenReturn(null)
         whenever(localAccountDirectory.getSessionDataPersistenceManager(any(), any(), any())).thenReturn(sessionDataPersistenceManager)
         whenever(localAccountDirectory.getKeyVaultPersistenceManager(any())).thenReturn(keyVaultPersistenceManager)
     }
@@ -63,37 +66,48 @@ class AuthenticationServiceTest {
         whenever(authenticationClient.getParams(email)).thenReturn(paramsResponse)
 
         val authToken = randomAuthToken()
-        val authData = AuthenticationData(authToken, keyVault.serialize(), accountInfo)
+        val authData = AuthenticationData(authToken, keyVault.serialize(), accountInfo, emptyList())
         val authenticationResponse = AuthenticationResponse(null, authData)
         whenever(authenticationClient.auth(any())).thenReturn(authenticationResponse)
 
         body(authToken)
     }
 
-    @Test
-    fun `it should prefer local data when available (session data not available)`() {
+    fun withSuccessfulLocalAuthNoSession(body: () -> Unit) {
         whenever(localAccountDirectory.findAccountFor(email)).thenReturn(accountInfo)
         whenever(sessionDataPersistenceManager.retrieveSync()).thenReturn(null)
         whenever(keyVaultPersistenceManager.retrieveSync(password)).thenReturn(keyVault)
 
-        val result = authenticationService.auth(email, password, registrationId).get()
+        body()
+    }
 
-        assertEquals(accountInfo, result.accountInfo, "Invalid account info")
-        assertNull(result.authToken, "Auth token should be null")
+    fun withSuccessfulLocalAuth(body: (SessionData) -> Unit) {
+        withSuccessfulLocalAuthNoSession {
+            val sessionData = SessionData(randomAuthToken())
+            whenever(sessionDataPersistenceManager.retrieveSync()).thenReturn(sessionData)
+
+            body(sessionData)
+        }
+    }
+
+    @Test
+    fun `it should prefer local data when available (session data not available)`() {
+        withSuccessfulLocalAuthNoSession {
+            val result = authenticationService.auth(email, password, registrationId).get()
+
+            assertEquals(accountInfo, result.accountInfo, "Invalid account info")
+            assertNull(result.authToken, "Auth token should be null")
+        }
     }
 
     @Test
     fun `it should prefer local data when available (session data available)`() {
-        val sessionData = SessionData(randomAuthToken())
+        withSuccessfulLocalAuth { sessionData ->
+            val result = authenticationService.auth(email, password, registrationId).get()
 
-        whenever(localAccountDirectory.findAccountFor(email)).thenReturn(accountInfo)
-        whenever(sessionDataPersistenceManager.retrieveSync()).thenReturn(sessionData)
-        whenever(keyVaultPersistenceManager.retrieveSync(password)).thenReturn(keyVault)
-
-        val result = authenticationService.auth(email, password, registrationId).get()
-
-        assertEquals(accountInfo, result.accountInfo, "Invalid account info")
-        assertEquals(sessionData.authToken, result.authToken, "Invalid auth token")
+            assertEquals(accountInfo, result.accountInfo, "Invalid account info")
+            assertEquals(sessionData.authToken, result.authToken, "Invalid auth token")
+        }
     }
 
     @Test
@@ -128,6 +142,29 @@ class AuthenticationServiceTest {
             authenticationService.auth(email, password, registrationId).get()
 
             verify(authenticationClient).auth(any())
+        }
+    }
+
+    @Test
+    fun `it should return devices when authenticating via remote authentication`() {
+        withSuccessfulRemoteAuth { authToken ->
+            val result = authenticationService.auth(email, password, registrationId).get()
+
+            Assertions.assertThat(result.otherDevices).apply {
+                `as`("Should contain devices")
+                isEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun `it should not return devices when authenticating via local authentication`() {
+        whenever(localAccountDirectory.findAccountFor(email)).thenReturn(accountInfo)
+
+        withSuccessfulLocalAuthNoSession {
+            val result = authenticationService.auth(email, password, registrationId).get()
+
+            assertNull(result.otherDevices, "Should not contain devices")
         }
     }
 }

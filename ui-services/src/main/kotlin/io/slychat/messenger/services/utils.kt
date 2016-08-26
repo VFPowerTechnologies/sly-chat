@@ -113,10 +113,6 @@ infix inline fun <reified E : Exception, T> Promise<T, Exception>.bindRecoverFor
     }
 
 
-fun createUserPaths(userPaths: UserPaths) {
-    userPaths.accountDir.mkdirs()
-}
-
 fun initSentry(applicationComponent: ApplicationComponent): ReportSubmitterCommunicator<ByteArray>? {
     val dsn = BuildConfig.sentryDsn ?: return null
 

@@ -1,13 +1,13 @@
 package io.slychat.messenger.services
 
 import com.fasterxml.jackson.core.JsonParseException
-import io.slychat.messenger.core.*
+import io.slychat.messenger.core.AuthToken
+import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.KeyVault
-import io.slychat.messenger.core.persistence.AccountInfo
-import io.slychat.messenger.core.persistence.InstallationData
-import io.slychat.messenger.core.persistence.SessionData
-import io.slychat.messenger.core.persistence.StartupInfo
-import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenceManager
+import io.slychat.messenger.core.currentOs
+import io.slychat.messenger.core.http.api.authentication.DeviceInfo
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
 import io.slychat.messenger.services.LoginEvent.*
@@ -93,15 +93,9 @@ class SlyApplication {
 
         get() = field
 
-
-    /** Starts background initialization; use addOnInitListener to be notified when app has finished initializing. Once finalized, will trigger auto-login. */
-    fun init(platformModule: PlatformModule) {
-        log.info("Operating System: {} {}", currentOs.name, currentOs.version)
-
-        appComponent = DaggerApplicationComponent.builder()
-            .platformModule(platformModule)
-            .applicationModule(ApplicationModule(this))
-            .build()
+    /** Only called directly when used for testing. */
+    internal fun init(applicationComponent: ApplicationComponent, doAutoLogin: Boolean = false) {
+        appComponent = applicationComponent
 
         initializeApplicationServices()
 
@@ -122,17 +116,30 @@ class SlyApplication {
             .subscribe { onPlatformContactsUpdated() }
 
         appComponent.appConfigService.init() successUi {
-            initializationComplete()
+            initializationComplete(doAutoLogin)
         }
     }
 
-    private fun initializationComplete() {
+    /** Starts background initialization; use addOnInitListener to be notified when app has finished initializing. Once finalized, will trigger auto-login. */
+    fun init(platformModule: PlatformModule) {
+        log.info("Operating System: {} {}", currentOs.name, currentOs.version)
+
+        val appComponent = DaggerApplicationComponent.builder()
+            .platformModule(platformModule)
+            .applicationModule(ApplicationModule(this))
+            .build()
+
+        init(appComponent, true)
+    }
+
+    private fun initializationComplete(doAutoLogin: Boolean) {
         log.info("Initialization complete")
         isInitialized = true
         onInitListeners.forEach { it(this) }
         onInitListeners.clear()
 
-        autoLogin()
+        if (doAutoLogin)
+            autoLogin()
     }
 
     fun addOnInitListener(listener: (SlyApplication) -> Unit) {
@@ -147,14 +154,12 @@ class SlyApplication {
 
         log.debug("Platform contacts updated")
 
-        userComponent.contactsService.doLocalSync()
+        userComponent.contactsService.doFindPlatformContacts()
     }
 
     //XXX this is kinda bad since we block on the main thread, but it's only done once during init anyways
     fun initInstallationData() {
-        val path = appComponent.platformInfo.appFileStorageDirectory / "installation-data.json"
-
-        val persistenceManager = JsonInstallationDataPersistenceManager(path)
+        val persistenceManager = appComponent.installationDataPersistenceManager
 
         val maybeInstallationData = try {
             persistenceManager.retrieve().get()
@@ -260,8 +265,8 @@ class SlyApplication {
                 authTokenManager.invalidateToken()
 
             //until this finishes, nothing in the UserComponent should be touched
-            backgroundInitialization(userComponent, response.authToken, password, rememberMe, accountInfo) mapUi {
-                finalizeInit(userComponent, accountInfo)
+            backgroundInitialization(userComponent, response, password, rememberMe, accountInfo) mapUi {
+                finalizeInitialization(userComponent, accountInfo)
             }
         } failUi { e ->
             //incase session initialization failed we need to clean up the user session here
@@ -373,16 +378,25 @@ class SlyApplication {
      *
      * Until this completes, do NOT use anything in the UserComponent.
      */
-    private fun backgroundInitialization(userComponent: UserComponent, authToken: AuthToken?, password: String, rememberMe: Boolean, accountInfo: AccountInfo): Promise<Unit, Exception> {
-        val persistenceManager = userComponent.sqlitePersistenceManager
+    private fun backgroundInitialization(
+        userComponent: UserComponent,
+        authResult: AuthResult,
+        password: String,
+        rememberMe: Boolean,
+        accountInfo: AccountInfo
+    ): Promise<Unit, Exception> {
+        val persistenceManager = userComponent.persistenceManager
         val userConfigService = userComponent.configService
         val userLoginData = userComponent.userLoginData
         val keyVault = userLoginData.keyVault
         val userId = userLoginData.userId
 
         val localAccountDirectory = appComponent.localAccountDirectory
-        val sessionDataPersistenceManager = localAccountDirectory.getSessionDataPersistenceManager(userId, keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams)
         val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager()
+        val sessionDataPersistenceManager = userComponent.sessionDataPersistenceManager
+
+        val authToken = authResult.authToken
+        val otherDevices = authResult.otherDevices
 
         //we could break this up into parts and emit progress events between stages
         return task {
@@ -408,6 +422,37 @@ class SlyApplication {
         } bind {
             //FIXME this can be performed in parallel
             userConfigService.init()
+        } mapUi {
+            //need to do this here so we can use messageCipherService afterwards
+            startUserComponents(userComponent)
+        } bind {
+            //TODO should probably only really run this on initial account data creation
+            //we need to be present in our address book to create signal sessions
+            if (otherDevices != null) {
+                val publicKey = keyVault.fingerprint
+                val selfInfo = ContactInfo(
+                    userId,
+                    accountInfo.email,
+                    accountInfo.name,
+                    //we don't wanna be visible by default
+                    AllowedMessageLevel.GROUP_ONLY,
+                    accountInfo.phoneNumber,
+                    publicKey
+                )
+
+                userComponent.contactsService.addSelf(selfInfo)
+            }
+            else
+                Promise.ofSuccess(Unit)
+        } bind {
+            if (otherDevices != null) {
+                userComponent.messageCipherService.updateSelfDevices(otherDevices) bindUi {
+                    val deviceInfo = DeviceInfo(accountInfo.deviceId, installationData.registrationId)
+                    userComponent.messengerService.broadcastNewDevice(deviceInfo)
+                }
+            }
+            else
+                Promise.ofSuccess(Unit)
         }
     }
 
@@ -415,7 +460,7 @@ class SlyApplication {
         //dagger lazily initializes all components, so we need to force creation
         userComponent.notifierService.init()
         userComponent.messengerService.init()
-        userComponent.messageCipherService.start()
+        userComponent.messageCipherService.init()
     }
 
     private fun shutdownUserComponents(userComponent: UserComponent) {
@@ -424,7 +469,7 @@ class SlyApplication {
         userComponent.contactsService.shutdown()
         userComponent.offlineMessageManager.shutdown()
         userComponent.preKeyManager.shutdown()
-        userComponent.sqlitePersistenceManager.shutdown()
+        userComponent.persistenceManager.shutdown()
     }
 
     //should come up with something better...
@@ -433,14 +478,14 @@ class SlyApplication {
     }
 
     /** called after a successful user session has been created to finish initializing components. */
-    private fun finalizeInit(userComponent: UserComponent, accountInfo: AccountInfo) {
+    private fun finalizeInitialization(userComponent: UserComponent, accountInfo: AccountInfo) {
+        log.info("Finalizing user initialization")
+
         newTokenSyncSub = userComponent.authTokenManager.newToken.subscribe {
             onNewToken(it)
         }
 
         initializeUserSession(userComponent)
-
-        startUserComponents(userComponent)
 
         userSessionAvailableSubject.onNext(userComponent)
 
@@ -607,7 +652,7 @@ class SlyApplication {
         userComponent.authTokenManager.mapUi { userCredentials ->
             relayClientManager.connect(userCredentials)
         } fail { e ->
-            log.error("Unable to retrieve auth token for relay connection: {}", e.message, e)
+            log.error("Unable to connect to relay: {}", e.message, e)
         } alwaysUi {
             //after connect() is called, relayClientManager.isOnline will be true
             connectingToRelay = false

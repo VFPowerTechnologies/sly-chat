@@ -6,7 +6,7 @@ import rx.Observable
 
 /** Handles incoming messages. */
 interface MessageProcessor {
-    val newMessages: Observable<MessageBundle>
+    val newMessages: Observable<ConversationMessage>
 
     fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception>
 
