@@ -348,24 +348,38 @@ ContactController.prototype  = {
         return recentDiv;
     },
 
+    updateMessageBadge : function (node, messageInfo) {
+        var receivedCount = messageInfo.messages.reduce(function (v, message) {
+            if (!message.sent)
+                return v + 1;
+            else
+                return v;
+        }, 0);
+
+        if(receivedCount == 0)
+            return;
+
+        node.addClass("new");
+
+        var badge = node.find(".new-message-badge");
+        if(badge.length <= 0) {
+            node.append('<div class="right new-message-badge">' + receivedCount + '</div>');
+        }
+        else {
+            var newAmount = badge.html();
+            badge.html(parseInt(newAmount) + receivedCount);
+        }
+    },
+
     updateRecentChatNode : function (contact, messageInfo) {
         var message = messageInfo.messages[messageInfo.messages.length - 1];
-
         var node = $("#recentChat_" + contact.id);
 
         var recentChatList = $("#recentChatList");
 
         if (node.length > 0) {
             var time = new Date(message.receivedTimestamp).toISOString();
-            node.addClass("new");
-            var badge = node.find(".new-message-badge");
-            if(badge.length <= 0) {
-                node.append('<div class="right new-message-badge">1</div>');
-            }
-            else {
-                var newAmount = badge.html();
-                badge.html(parseInt(newAmount) + 1);
-            }
+            this.updateMessageBadge(node, messageInfo);
             node.find(".left").html(this.formatLastMessage(message.message));
             node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
 
@@ -397,15 +411,7 @@ ContactController.prototype  = {
 
         if (node.length > 0) {
             var time = new Date(message.receivedTimestamp).toISOString();
-            node.addClass("new");
-            var badge = node.find(".new-message-badge");
-            if(badge.length <= 0) {
-                node.append('<div class="right new-message-badge">1</div>');
-            }
-            else {
-                var newAmount = badge.html();
-                badge.html(parseInt(newAmount) + 1);
-            }
+            this.updateMessageBadge(node, messageInfo);
             node.find(".group-contact-name").html(contact.name);
             node.find(".left").html(this.formatLastMessage(message.message));
             node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
