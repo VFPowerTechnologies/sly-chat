@@ -33,6 +33,7 @@ import javafx.scene.paint.Color
 import javafx.scene.shape.Rectangle
 import javafx.scene.web.WebEngine
 import javafx.scene.web.WebView
+import javafx.stage.Screen
 import javafx.stage.Stage
 import javafx.util.Duration
 import nl.komponents.kovenant.jfx.JFXDispatcher
@@ -80,6 +81,28 @@ class DesktopApp : Application() {
             null
         }
         debugger.sendMessage("{\"id\": 1, \"method\": \"Console.enable\"}")
+    }
+
+    /**
+     * JavaFX centers the window on screen by default, but it has no concept of a currently focused screen and just
+     * spawns it on the primary screen by default.
+     *
+     * Here we access the current cursor position and use it to locate the focused screen, then center the window on
+     * that screen.
+     */
+    private fun initializeWindowPosition(primaryStage: Stage) {
+        val robot = com.sun.glass.ui.Application.GetApplication().createRobot()
+        val mouseX = robot.mouseX
+        val mouseY = robot.mouseY
+
+        val currentScreen = Screen.getScreensForRectangle(mouseX.toDouble(), mouseY.toDouble(), 1.0, 1.0).first()
+
+        val visualBounds = currentScreen.visualBounds
+
+        primaryStage.x = visualBounds.minX
+        primaryStage.y = visualBounds.minY
+
+        primaryStage.centerOnScreen()
     }
 
     override fun start(primaryStage: Stage) {
@@ -170,6 +193,7 @@ class DesktopApp : Application() {
         primaryStage.title = "Sly Chat"
 
         primaryStage.scene = Scene(stackPane, 852.0, 480.0)
+        initializeWindowPosition(primaryStage)
         primaryStage.show()
 
         setupOsxMenu()
