@@ -10,7 +10,8 @@ import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.cond
 import io.slychat.messenger.testutils.testSubscriber
-import io.slychat.messenger.testutils.thenReturn
+import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenReject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
@@ -91,10 +92,10 @@ class MessageReceiverImplTest {
     }
 
     fun createReceiver(): MessageReceiverImpl {
-        whenever(packageQueuePersistenceManager.removeFromQueue(any<Collection<PackageId>>())).thenReturn(Unit)
-        whenever(packageQueuePersistenceManager.removeFromQueue(any<UserId>(), any())).thenReturn(Unit)
-        whenever(packageQueuePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(Unit)
-        whenever(messageProcessor.processMessage(any(), any())).thenReturn(Unit)
+        whenever(packageQueuePersistenceManager.removeFromQueue(any<Collection<PackageId>>())).thenResolve(Unit)
+        whenever(packageQueuePersistenceManager.removeFromQueue(any<UserId>(), any())).thenResolve(Unit)
+        whenever(packageQueuePersistenceManager.addToQueue(any<Collection<Package>>())).thenResolve(Unit)
+        whenever(messageProcessor.processMessage(any(), any())).thenResolve(Unit)
 
         return MessageReceiverImpl(
             messageProcessor,
@@ -113,7 +114,7 @@ class MessageReceiverImplTest {
     }
 
     fun setDecryptionResult(result: DecryptionResult) {
-        whenever(messageCipherService.decrypt(any(), any())).thenReturn(result)
+        whenever(messageCipherService.decrypt(any(), any())).thenResolve(result)
     }
 
     @Test
@@ -124,7 +125,7 @@ class MessageReceiverImplTest {
             createPackage(UserId(1), "message")
         )
 
-        whenever(packageQueuePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(Unit)
+        whenever(packageQueuePersistenceManager.addToQueue(any<Collection<Package>>())).thenResolve(Unit)
 
         setRandomDecryptionResult()
 
@@ -139,7 +140,7 @@ class MessageReceiverImplTest {
             createPackage(UserId(1), "message")
         )
 
-        whenever(packageQueuePersistenceManager.addToQueue(any<Collection<Package>>())).thenReturn(TestException())
+        whenever(packageQueuePersistenceManager.addToQueue(any<Collection<Package>>())).thenReject(TestException())
 
         assertFailsWith(TestException::class) {
             receiver.processPackages(packages).get()
@@ -277,7 +278,7 @@ class MessageReceiverImplTest {
     fun `it should fetch all pending packages on initialization`() {
         val receiver = createReceiver()
 
-        whenever(packageQueuePersistenceManager.getQueuedPackages()).thenReturn(emptyList())
+        whenever(packageQueuePersistenceManager.getQueuedPackages()).thenResolve(emptyList())
 
         receiver.init()
 

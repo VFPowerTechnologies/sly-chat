@@ -10,8 +10,8 @@ import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.testSubscriber
-import io.slychat.messenger.testutils.thenReturn
-import io.slychat.messenger.testutils.thenReturnNull
+import io.slychat.messenger.testutils.thenReject
+import io.slychat.messenger.testutils.thenResolve
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
@@ -42,7 +42,7 @@ class MessageProcessorImplTest {
             Promise.ofSuccess<MessageInfo, Exception>(a)
         }
 
-        whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
+        whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
 
         whenever(groupService.addMessage(any(), any())).thenAnswer {
             @Suppress("UNCHECKED_CAST")
@@ -50,13 +50,13 @@ class MessageProcessorImplTest {
             Promise.ofSuccess<GroupMessageInfo, Exception>(a)
         }
 
-        whenever(groupService.join(any(), any())).thenReturn(Unit)
-        whenever(groupService.getInfo(any())).thenReturnNull()
-        whenever(groupService.addMembers(any(), any())).thenReturn(Unit)
-        whenever(groupService.removeMember(any(), any())).thenReturn(Unit)
-        whenever(groupService.isUserMemberOf(any(), any())).thenReturn(true)
+        whenever(groupService.join(any(), any())).thenResolve(Unit)
+        whenever(groupService.getInfo(any())).thenResolve(null)
+        whenever(groupService.addMembers(any(), any())).thenResolve(Unit)
+        whenever(groupService.removeMember(any(), any())).thenResolve(Unit)
+        whenever(groupService.isUserMemberOf(any(), any())).thenResolve(true)
 
-        whenever(messageCipherService.addSelfDevice(any())).thenReturn(Unit)
+        whenever(messageCipherService.addSelfDevice(any())).thenResolve(Unit)
 
         return MessageProcessorImpl(
             selfId,
@@ -118,10 +118,10 @@ class MessageProcessorImplTest {
 
         val from = randomUserId()
 
-        whenever(contactsService.allowAll(from)).thenReturn(Unit)
+        whenever(contactsService.allowAll(from)).thenResolve(Unit)
         whenever(messagePersistenceManager.addMessage(any(), any()))
-            .thenReturn(InvalidMessageLevelException(from))
-            .thenReturn(randomReceivedMessageInfo())
+            .thenReject(InvalidMessageLevelException(from))
+            .thenResolve(randomReceivedMessageInfo())
 
         processor.processMessage(from, wrapper).get()
 
@@ -134,9 +134,9 @@ class MessageProcessorImplTest {
 
     fun returnGroupInfo(groupInfo: GroupInfo?) {
         if (groupInfo != null)
-            whenever(groupService.getInfo(groupInfo.id)).thenReturn(groupInfo)
+            whenever(groupService.getInfo(groupInfo.id)).thenResolve(groupInfo)
         else
-            whenever(groupService.getInfo(any())).thenReturnNull()
+            whenever(groupService.getInfo(any())).thenResolve(null)
     }
 
     fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), TextMessageWrapper(m))
@@ -197,7 +197,7 @@ class MessageProcessorImplTest {
 
         val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
 
-        whenever(groupService.getInfo(m.id)).thenReturn(groupInfo)
+        whenever(groupService.getInfo(m.id)).thenResolve(groupInfo)
 
         processor.processMessage(sender, wrap(m)).get()
 
@@ -219,9 +219,9 @@ class MessageProcessorImplTest {
         remaining.add(sender)
         remaining.remove(invalidUser)
 
-        whenever(groupService.getInfo(m.id)).thenReturnNull()
+        whenever(groupService.getInfo(m.id)).thenResolve(null)
 
-        whenever(contactsService.addMissingContacts(anySet())).thenReturn(setOf(invalidUser))
+        whenever(contactsService.addMissingContacts(anySet())).thenResolve(setOf(invalidUser))
 
         process.processMessage(sender, wrap(m)).get()
 
@@ -238,7 +238,7 @@ class MessageProcessorImplTest {
 
         val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
 
-        whenever(groupService.getInfo(m.id)).thenReturnNull()
+        whenever(groupService.getInfo(m.id)).thenResolve(null)
 
         process.processMessage(sender, wrap(m)).get()
 
@@ -257,9 +257,9 @@ class MessageProcessorImplTest {
 
         val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.BLOCKED)
 
-        whenever(groupService.getInfo(m.id)).thenReturn(groupInfo)
+        whenever(groupService.getInfo(m.id)).thenResolve(groupInfo)
 
-        whenever(contactsService.addMissingContacts(anySet())).thenReturn(emptySet())
+        whenever(contactsService.addMissingContacts(anySet())).thenResolve(emptySet())
 
         processor.processMessage(sender, wrap(m)).get()
 
@@ -279,7 +279,7 @@ class MessageProcessorImplTest {
 
         val groupInfo = GroupInfo(m.id, m.name, GroupMembershipLevel.PARTED)
 
-        whenever(groupService.getInfo(m.id)).thenReturn(groupInfo)
+        whenever(groupService.getInfo(m.id)).thenResolve(groupInfo)
 
         processor.processMessage(sender, wrap(m)).get()
 
@@ -300,7 +300,7 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(groupService.getInfo(m.id)).thenReturn(groupInfo)
+        whenever(groupService.getInfo(m.id)).thenResolve(groupInfo)
 
         processor.processMessage(sender, wrap(m)).get()
 
@@ -316,7 +316,7 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(groupService.getInfo(m.id)).thenReturn(groupInfo)
+        whenever(groupService.getInfo(m.id)).thenResolve(groupInfo)
 
         processor.processMessage(sender, wrap(m)).get()
 
@@ -333,9 +333,9 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(groupService.isUserMemberOf(groupInfo.id, sender)).thenReturn(true)
+        whenever(groupService.isUserMemberOf(groupInfo.id, sender)).thenResolve(true)
 
-        whenever(groupService.getInfo(m.id)).thenReturn(groupInfo)
+        whenever(groupService.getInfo(m.id)).thenResolve(groupInfo)
 
         processor.processMessage(sender, wrap(m)).get()
 
@@ -352,7 +352,7 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(groupService.getInfo(m.id)).thenReturn(groupInfo)
+        whenever(groupService.getInfo(m.id)).thenResolve(groupInfo)
 
         processor.processMessage(sender, wrap(m)).get()
     }
@@ -366,9 +366,9 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(groupService.isUserMemberOf(groupInfo.id, sender)).thenReturn(true)
+        whenever(groupService.isUserMemberOf(groupInfo.id, sender)).thenResolve(true)
 
-        whenever(groupService.getInfo(m.id)).thenReturn(groupInfo)
+        whenever(groupService.getInfo(m.id)).thenResolve(groupInfo)
 
         processor.processMessage(sender, wrap(m)).get()
 
@@ -386,9 +386,9 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(groupService.isUserMemberOf(groupInfo.id, sender)).thenReturn(false)
+        whenever(groupService.isUserMemberOf(groupInfo.id, sender)).thenResolve(false)
 
-        whenever(groupService.getInfo(m.id)).thenReturn(groupInfo)
+        whenever(groupService.getInfo(m.id)).thenResolve(groupInfo)
 
         processor.processMessage(sender, wrap(m)).get()
 
@@ -404,9 +404,9 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(groupService.isUserMemberOf(groupInfo.id, sender)).thenReturn(false)
+        whenever(groupService.isUserMemberOf(groupInfo.id, sender)).thenResolve(false)
 
-        whenever(groupService.getInfo(m.id)).thenReturn(groupInfo)
+        whenever(groupService.getInfo(m.id)).thenResolve(groupInfo)
 
         processor.processMessage(sender, wrap(m)).get()
 
@@ -425,7 +425,7 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(groupService.getInfo(m.id)).thenReturn(groupInfo)
+        whenever(groupService.getInfo(m.id)).thenResolve(groupInfo)
 
         processor.processMessage(sender, wrap(m)).get()
 
@@ -441,7 +441,7 @@ class MessageProcessorImplTest {
 
         val processor = createProcessor()
 
-        whenever(groupService.getInfo(m.id)).thenReturn(groupInfo)
+        whenever(groupService.getInfo(m.id)).thenResolve(groupInfo)
 
         processor.processMessage(sender, wrap(m)).get()
 
@@ -460,8 +460,8 @@ class MessageProcessorImplTest {
 
         returnGroupInfo(groupInfo)
 
-        whenever(groupService.addMembers(groupInfo.id, setOf(newMember))).thenReturn(Unit)
-        whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
+        whenever(groupService.addMembers(groupInfo.id, setOf(newMember))).thenResolve(Unit)
+        whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
 
         processor.processMessage(sender, wrap(m)).get()
 
@@ -480,7 +480,7 @@ class MessageProcessorImplTest {
 
         returnGroupInfo(groupInfo)
 
-        whenever(contactsService.addMissingContacts(any())).thenReturn(setOf(newMember))
+        whenever(contactsService.addMissingContacts(any())).thenResolve(setOf(newMember))
 
         processor.processMessage(sender, wrap(m)).get()
 
@@ -543,7 +543,7 @@ class MessageProcessorImplTest {
 
         returnGroupInfo(groupInfo)
 
-        whenever(groupService.isUserMemberOf(groupInfo.id, sender)).thenReturn(senderIsMember)
+        whenever(groupService.isUserMemberOf(groupInfo.id, sender)).thenResolve(senderIsMember)
 
         processor.processMessage(sender, wrap(m)).get()
 

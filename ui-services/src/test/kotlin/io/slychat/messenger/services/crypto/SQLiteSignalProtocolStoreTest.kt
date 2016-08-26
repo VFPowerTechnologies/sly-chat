@@ -13,8 +13,7 @@ import io.slychat.messenger.core.persistence.SignalSessionPersistenceManager
 import io.slychat.messenger.core.randomContactInfo
 import io.slychat.messenger.core.randomRegistrationId
 import io.slychat.messenger.core.randomSignalAddress
-import io.slychat.messenger.testutils.thenReturn
-import io.slychat.messenger.testutils.thenReturnNull
+import io.slychat.messenger.testutils.thenResolve
 import org.junit.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -39,7 +38,7 @@ class SQLiteSignalProtocolStoreTest {
     fun `isTrustedIdentity should return false for users not in the address book`() {
         val address = randomSignalAddress()
 
-        whenever(contactsPersistenceManager.get(any<UserId>())).thenReturnNull()
+        whenever(contactsPersistenceManager.get(any<UserId>())).thenResolve(null)
 
         assertFalse(signalStore.isTrustedIdentity(address.name, identityKeyPair.publicKey))
     }
@@ -50,7 +49,7 @@ class SQLiteSignalProtocolStoreTest {
 
         val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
 
-        whenever(contactsPersistenceManager.get(any<UserId>())).thenReturn(contactInfo)
+        whenever(contactsPersistenceManager.get(any<UserId>())).thenResolve(contactInfo)
 
         assertFalse(signalStore.isTrustedIdentity(address.name, identityKeyPair.publicKey))
     }
@@ -63,7 +62,7 @@ class SQLiteSignalProtocolStoreTest {
             publicKey = identityKeyFingerprint(identityKeyPair.publicKey)
         )
 
-        whenever(contactsPersistenceManager.get(any<UserId>())).thenReturn(contactInfo)
+        whenever(contactsPersistenceManager.get(any<UserId>())).thenResolve(contactInfo)
 
         assertTrue(signalStore.isTrustedIdentity(address.name, identityKeyPair.publicKey))
     }

@@ -11,8 +11,7 @@ import io.slychat.messenger.services.messaging.ConversationMessage
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.cond
-import io.slychat.messenger.testutils.thenReturn
-import io.slychat.messenger.testutils.thenReturnNull
+import io.slychat.messenger.testutils.thenResolve
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -42,7 +41,7 @@ class NotifierServiceImplTest {
 
     @Before
     fun before() {
-        whenever(groupPersistenceManager.getInfo(any())).thenReturnNull()
+        whenever(groupPersistenceManager.getInfo(any())).thenResolve(null)
     }
 
     fun initNotifierService(isUiVisible: Boolean = false, config: UserConfig = UserConfig(notificationsEnabled = true)): NotifierServiceImpl {
@@ -196,8 +195,8 @@ class NotifierServiceImplTest {
             listOf(messageInfo)
         )
 
-        whenever(contactsPersistenceManager.get(userId)).thenReturn(contactInfo)
-        whenever(groupPersistenceManager.getInfo(groupId)).thenReturn(groupInfo)
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
+        whenever(groupPersistenceManager.getInfo(groupId)).thenResolve(groupInfo)
 
         newMessagesSubject.onNext(bundle)
 
@@ -240,8 +239,8 @@ class NotifierServiceImplTest {
             listOf(randomReceivedMessageInfo())
         )
 
-        whenever(contactsPersistenceManager.get(userId)).thenReturn(contactInfo)
-        whenever(groupPersistenceManager.getInfo(any())).thenReturnNull()
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
+        whenever(groupPersistenceManager.getInfo(any())).thenResolve(null)
 
         newMessagesSubject.onNext(bundle)
 
@@ -255,8 +254,8 @@ class NotifierServiceImplTest {
         val contactInfo = randomContactInfo()
         val groupInfo = randomGroupInfo()
 
-        whenever(contactsPersistenceManager.get(contactInfo.id)).thenReturn(contactInfo)
-        whenever(groupPersistenceManager.getInfo(any())).thenReturn(groupInfo)
+        whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
+        whenever(groupPersistenceManager.getInfo(any())).thenResolve(groupInfo)
 
         val pageChangeEvent = PageChangeEvent(PageType.GROUP, groupInfo.id.string)
         uiEventSubject.onNext(pageChangeEvent)
@@ -272,8 +271,8 @@ class NotifierServiceImplTest {
         val contactInfo = randomContactInfo()
         val groupInfo = randomGroupInfo()
 
-        whenever(contactsPersistenceManager.get(contactInfo.id)).thenReturn(contactInfo)
-        whenever(groupPersistenceManager.getInfo(any())).thenReturn(groupInfo)
+        whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
+        whenever(groupPersistenceManager.getInfo(any())).thenResolve(groupInfo)
 
         val pageChangeEvent = PageChangeEvent(PageType.GROUP, groupInfo.id.string)
         uiEventSubject.onNext(pageChangeEvent)
@@ -296,8 +295,8 @@ class NotifierServiceImplTest {
         val contactInfo = randomContactInfo()
         val groupInfo = randomGroupInfo()
 
-        whenever(contactsPersistenceManager.get(contactInfo.id)).thenReturn(contactInfo)
-        whenever(groupPersistenceManager.getInfo(any())).thenReturn(groupInfo)
+        whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
+        whenever(groupPersistenceManager.getInfo(any())).thenResolve(groupInfo)
 
         val pageChangeEvent = PageChangeEvent(PageType.CONVO, contactInfo.id.toString())
         uiEventSubject.onNext(pageChangeEvent)

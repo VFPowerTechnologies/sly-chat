@@ -13,7 +13,8 @@ import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.TestException
-import io.slychat.messenger.testutils.thenReturn
+import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenReject
 import nl.komponents.kovenant.deferred
 import org.assertj.core.api.Assertions
 import org.junit.ClassRule
@@ -49,8 +50,8 @@ class OfflineMessageManagerImplTest {
     fun createManager(isOnline: Boolean = false): OfflineMessageManagerImpl {
         networkAvailable.onNext(isOnline)
 
-        whenever(offlineMessagesClient.clear(any(), any())).thenReturn(Unit)
-        whenever(messengerService.addOfflineMessages(any())).thenReturn(Unit)
+        whenever(offlineMessagesClient.clear(any(), any())).thenResolve(Unit)
+        whenever(messengerService.addOfflineMessages(any())).thenResolve(Unit)
 
         return OfflineMessageManagerImpl(
             networkAvailable,
@@ -63,7 +64,7 @@ class OfflineMessageManagerImplTest {
     fun setGetResponse(serialized: List<SerializedOfflineMessage>): String {
         val range = "1:2"
         val response = OfflineMessagesGetResponse(range, serialized)
-        whenever(offlineMessagesClient.get(any())).thenReturn(response)
+        whenever(offlineMessagesClient.get(any())).thenResolve(response)
         return range
     }
 
@@ -172,7 +173,7 @@ class OfflineMessageManagerImplTest {
     fun `it should not call clear if messenger service store fails`() {
         val manager = createManager(true)
 
-        whenever(messengerService.addOfflineMessages(any())).thenReturn(TestException())
+        whenever(messengerService.addOfflineMessages(any())).thenReject(TestException())
 
         setGetResponse(randomSerializedOfflineMessages())
 

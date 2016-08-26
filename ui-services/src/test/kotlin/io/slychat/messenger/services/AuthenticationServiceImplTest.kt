@@ -14,7 +14,8 @@ import io.slychat.messenger.core.persistence.KeyVaultPersistenceManager
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.SessionDataPersistenceManager
 import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.thenReturn
+import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenReject
 import org.assertj.core.api.Assertions
 import org.junit.Before
 import org.junit.ClassRule
@@ -63,12 +64,12 @@ class AuthenticationServiceImplTest {
     fun withSuccessfulRemoteAuth(body: (AuthToken) -> Unit) {
         val authParams = AuthenticationParams(randomUUID(), authParams.serialize())
         val paramsResponse = AuthenticationParamsResponse(null, authParams)
-        whenever(authenticationClient.getParams(email)).thenReturn(paramsResponse)
+        whenever(authenticationClient.getParams(email)).thenResolve(paramsResponse)
 
         val authToken = randomAuthToken()
         val authData = AuthenticationData(authToken, keyVault.serialize(), accountInfo, emptyList())
         val authenticationResponse = AuthenticationResponse(null, authData)
-        whenever(authenticationClient.auth(any())).thenReturn(authenticationResponse)
+        whenever(authenticationClient.auth(any())).thenResolve(authenticationResponse)
 
         body(authToken)
     }

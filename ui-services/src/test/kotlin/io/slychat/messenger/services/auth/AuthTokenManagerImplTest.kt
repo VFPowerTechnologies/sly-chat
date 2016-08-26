@@ -8,7 +8,8 @@ import io.slychat.messenger.core.randomSlyAddress
 import io.slychat.messenger.services.contacts.TimerFactory
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.TestException
-import io.slychat.messenger.testutils.thenReturn
+import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenReject
 import nl.komponents.kovenant.Promise
 import org.junit.ClassRule
 import org.junit.Rule
@@ -42,7 +43,7 @@ class AuthTokenManagerImplTest {
     init {
         whenever(tokenProvider.events).thenReturn(tokenEvents)
 
-        whenever(timerFactory.run(any(), any())).thenReturn(Unit)
+        whenever(timerFactory.run(any(), any())).thenResolve(Unit)
 
         tokenManager = AuthTokenManagerImpl(address, tokenProvider, timerFactory)
     }

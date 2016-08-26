@@ -9,7 +9,8 @@ import io.slychat.messenger.core.randomDeviceId
 import io.slychat.messenger.core.randomRegistrationId
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.thenReturn
+import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenReject
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Ignore
@@ -37,7 +38,7 @@ class SlyApplicationTest {
 
     @Before
     fun before() {
-        whenever(appComponent.installationDataPersistenceManager.retrieve()).thenReturn(InstallationData.generate())
+        whenever(appComponent.installationDataPersistenceManager.retrieve()).thenResolve(InstallationData.generate())
 
         whenever(appComponent.platformContacts.contactsUpdated).thenReturn(platformContactsUpdated)
 
@@ -46,16 +47,16 @@ class SlyApplicationTest {
         val userComponent = appComponent.userComponent
 
         //used in backgroundInitialization
-        whenever(userComponent.sessionDataPersistenceManager.store(any())).thenReturn(Unit)
-        whenever(startupInfoPersistenceManager.store(any())).thenReturn(Unit)
-        whenever(userComponent.persistenceManager.initAsync()).thenReturn(Unit)
-        whenever(userComponent.accountInfoManager.update(any())).thenReturn(Unit)
-        whenever(userComponent.keyVaultPersistenceManager.store(any())).thenReturn(Unit)
+        whenever(userComponent.sessionDataPersistenceManager.store(any())).thenResolve(Unit)
+        whenever(startupInfoPersistenceManager.store(any())).thenResolve(Unit)
+        whenever(userComponent.persistenceManager.initAsync()).thenResolve(Unit)
+        whenever(userComponent.accountInfoManager.update(any())).thenResolve(Unit)
+        whenever(userComponent.keyVaultPersistenceManager.store(any())).thenResolve(Unit)
         whenever(userComponent.relayClientManager.onlineStatus).thenReturn(relayOnlineStatus)
         whenever(userComponent.relayClientManager.events).thenReturn(relayEvents)
-        whenever(userComponent.messageCipherService.updateSelfDevices(any())).thenReturn(Unit)
-        whenever(userComponent.contactsService.addSelf(any())).thenReturn(Unit)
-        whenever(userComponent.messengerService.broadcastNewDevice(any())).thenReturn(Unit)
+        whenever(userComponent.messageCipherService.updateSelfDevices(any())).thenResolve(Unit)
+        whenever(userComponent.contactsService.addSelf(any())).thenResolve(Unit)
+        whenever(userComponent.messengerService.broadcastNewDevice(any())).thenResolve(Unit)
 
         //used in finalizeInitialization
     }
@@ -113,7 +114,7 @@ class SlyApplicationTest {
     fun authWithOtherDevices(otherDevices: List<DeviceInfo>?): SlyApplication {
         val authResult = AuthResult(null, MockUserComponent.keyVault, accountInfo, otherDevices)
 
-        whenever(appComponent.authenticationService.auth(any(), any(), any())).thenReturn(authResult)
+        whenever(appComponent.authenticationService.auth(any(), any(), any())).thenResolve(authResult)
         val app = createApp()
 
         app.init(appComponent)

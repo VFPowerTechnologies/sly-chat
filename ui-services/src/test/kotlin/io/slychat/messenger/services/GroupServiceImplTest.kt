@@ -14,7 +14,8 @@ import io.slychat.messenger.services.contacts.MockAddressBookOperationManager
 import io.slychat.messenger.services.messaging.GroupEvent
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenAnswerWithArg
-import io.slychat.messenger.testutils.thenReturn
+import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenReject
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -37,12 +38,12 @@ class GroupServiceImplTest {
 
     @Before
     fun before() {
-        whenever(groupPersistenceManager.removeMember(any(), any())).thenReturn(true)
+        whenever(groupPersistenceManager.removeMember(any(), any())).thenResolve(true)
         whenever(groupPersistenceManager.addMembers(any(), any())).thenAnswerWithArg(1)
-        whenever(groupPersistenceManager.join(any(), any())).thenReturn(true)
-        whenever(groupPersistenceManager.part(any())).thenReturn(true)
-        whenever(groupPersistenceManager.block(any())).thenReturn(true)
-        whenever(groupPersistenceManager.unblock(any())).thenReturn(true)
+        whenever(groupPersistenceManager.join(any(), any())).thenResolve(true)
+        whenever(groupPersistenceManager.part(any())).thenResolve(true)
+        whenever(groupPersistenceManager.block(any())).thenResolve(true)
+        whenever(groupPersistenceManager.unblock(any())).thenResolve(true)
     }
 
     fun assertOperationManagerUsed() {
@@ -94,7 +95,7 @@ class GroupServiceImplTest {
 
     @Test
     fun `it should emit a Joined event when adding a duplicate member`() {
-        whenever(groupPersistenceManager.addMembers(any(), any())).thenReturn(emptySet())
+        whenever(groupPersistenceManager.addMembers(any(), any())).thenResolve(emptySet())
         testJoinEvent(false)
     }
 
@@ -118,13 +119,13 @@ class GroupServiceImplTest {
 
     @Test
     fun `it should emit a Parted event when removing a member`() {
-        whenever(groupPersistenceManager.removeMember(any(), any())).thenReturn(true)
+        whenever(groupPersistenceManager.removeMember(any(), any())).thenResolve(true)
         testPartEvent(true)
     }
 
     @Test
     fun `it not should emit a Parted event when removing a non-existent member`() {
-        whenever(groupPersistenceManager.removeMember(any(), any())).thenReturn(false)
+        whenever(groupPersistenceManager.removeMember(any(), any())).thenResolve(false)
         testPartEvent(false)
     }
 
@@ -172,7 +173,7 @@ class GroupServiceImplTest {
         if (wasAdded)
             whenever(groupPersistenceManager.addMembers(groupId,  users)).thenAnswerWithArg(1)
         else
-            whenever(groupPersistenceManager.addMembers(groupId,  users)).thenReturn(emptySet())
+            whenever(groupPersistenceManager.addMembers(groupId,  users)).thenResolve(emptySet())
 
         groupService.addMembers(groupId, users).get()
 
@@ -196,7 +197,7 @@ class GroupServiceImplTest {
         val groupId = randomGroupId()
         val user = randomUserId()
 
-        whenever(groupPersistenceManager.removeMember(groupId, user)).thenReturn(wasRemoved)
+        whenever(groupPersistenceManager.removeMember(groupId, user)).thenResolve(wasRemoved)
 
         groupService.removeMember(groupId, user).get()
 
@@ -221,7 +222,7 @@ class GroupServiceImplTest {
         val groupInfo = randomGroupInfo()
         val invited = randomUserIds()
 
-        whenever(groupPersistenceManager.join(groupInfo, invited)).thenReturn(wasJoined)
+        whenever(groupPersistenceManager.join(groupInfo, invited)).thenResolve(wasJoined)
 
         groupService.join(groupInfo, invited).get()
 
@@ -245,7 +246,7 @@ class GroupServiceImplTest {
     fun testPartRemoteUpdate(wasParted: Boolean) {
         val groupId = randomGroupId()
 
-        whenever(groupPersistenceManager.part(groupId)).thenReturn(wasParted)
+        whenever(groupPersistenceManager.part(groupId)).thenResolve(wasParted)
 
         groupService.part(groupId).get()
 
@@ -268,7 +269,7 @@ class GroupServiceImplTest {
     fun testBlockRemoteUpdate(wasBlocked: Boolean) {
         val groupId = randomGroupId()
 
-        whenever(groupPersistenceManager.block(groupId)).thenReturn(wasBlocked)
+        whenever(groupPersistenceManager.block(groupId)).thenResolve(wasBlocked)
 
         groupService.block(groupId).get()
 
@@ -291,7 +292,7 @@ class GroupServiceImplTest {
     fun testUnblockRemoteUpdate(wasUnblocked: Boolean) {
         val groupId = randomGroupId()
 
-        whenever(groupPersistenceManager.unblock(groupId)).thenReturn(wasUnblocked)
+        whenever(groupPersistenceManager.unblock(groupId)).thenResolve(wasUnblocked)
 
         groupService.unblock(groupId).get()
 

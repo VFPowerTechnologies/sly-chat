@@ -15,7 +15,8 @@ import io.slychat.messenger.services.crypto.MessageData
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.TestException
 import io.slychat.messenger.testutils.testSubscriber
-import io.slychat.messenger.testutils.thenReturn
+import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenReject
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import org.junit.Before
@@ -59,15 +60,15 @@ class MessageSenderImplTest {
 
     @Before
     fun before() {
-        whenever(messageQueuePersistenceManager.add(any<List<QueuedMessage>>())).thenReturn(Unit)
-        whenever(messageQueuePersistenceManager.add(any<QueuedMessage>())).thenReturn(Unit)
-        whenever(messageQueuePersistenceManager.remove(any(), any())).thenReturn(true)
+        whenever(messageQueuePersistenceManager.add(any<List<QueuedMessage>>())).thenResolve(Unit)
+        whenever(messageQueuePersistenceManager.add(any<QueuedMessage>())).thenResolve(Unit)
+        whenever(messageQueuePersistenceManager.remove(any(), any())).thenResolve(true)
 
         whenever(relayClientManager.events).thenReturn(relayEvents)
         whenever(relayClientManager.onlineStatus).thenReturn(relayOnlineStatus)
         whenever(relayClientManager.connectionTag).thenReturn(defaultConnectionTag)
 
-        whenever(messageCipherService.encrypt(any(), any(), any())).thenReturn(randomEncryptionResult())
+        whenever(messageCipherService.encrypt(any(), any(), any())).thenResolve(randomEncryptionResult())
     }
 
     fun createSender(
@@ -76,7 +77,7 @@ class MessageSenderImplTest {
     ): MessageSenderImpl {
         setRelayOnlineStatus(relayIsOnline)
 
-        whenever(messageQueuePersistenceManager.getUndelivered()).thenReturn(initialQueuedMessages)
+        whenever(messageQueuePersistenceManager.getUndelivered()).thenResolve(initialQueuedMessages)
 
         return MessageSenderImpl(
             messageCipherService,
@@ -203,7 +204,7 @@ class MessageSenderImplTest {
             defaultConnectionTag
         )
 
-        whenever(messageCipherService.encrypt(any(), any(), any())).thenReturn(result)
+        whenever(messageCipherService.encrypt(any(), any(), any())).thenResolve(result)
 
         sender.addToQueue(metadata, queued.serialized).get()
 
@@ -247,7 +248,7 @@ class MessageSenderImplTest {
             defaultConnectionTag
         )
 
-        whenever(messageCipherService.encrypt(any(), any(), any())).thenReturn(result)
+        whenever(messageCipherService.encrypt(any(), any(), any())).thenResolve(result)
 
         sender.addToQueue(metadata, queued.serialized).get()
 
@@ -263,7 +264,7 @@ class MessageSenderImplTest {
         val sender = createSender(true, listOf(queued))
 
         reset(messageCipherService)
-        whenever(messageQueuePersistenceManager.getUndelivered()).thenReturn(emptyList())
+        whenever(messageQueuePersistenceManager.getUndelivered()).thenResolve(emptyList())
 
         setRelayOnlineStatus(false)
         setRelayOnlineStatus(true)
@@ -300,7 +301,7 @@ class MessageSenderImplTest {
 
         sender.addToQueue(queued.metadata, queued.serialized).get()
 
-        whenever(messageCipherService.updateDevices(any(), any())).thenReturn(Unit)
+        whenever(messageCipherService.updateDevices(any(), any())).thenResolve(Unit)
 
         relayEvents.onNext(ev)
 
@@ -316,9 +317,9 @@ class MessageSenderImplTest {
         sender.addToQueue(queued.metadata, queued.serialized).get()
 
         reset(messageCipherService)
-        whenever(messageCipherService.encrypt(any(), any(), any())).thenReturn(randomEncryptionResult())
+        whenever(messageCipherService.encrypt(any(), any(), any())).thenResolve(randomEncryptionResult())
 
-        whenever(messageCipherService.updateDevices(any(), any())).thenReturn(Unit)
+        whenever(messageCipherService.updateDevices(any(), any())).thenResolve(Unit)
 
         val info = DeviceMismatchContent(emptyList(), emptyList(), emptyList())
         relayEvents.onNext(
@@ -334,7 +335,7 @@ class MessageSenderImplTest {
 
         val queued = randomQueuedMessage()
 
-        whenever(messageQueuePersistenceManager.add(any<QueuedMessage>())).thenReturn(TestException())
+        whenever(messageQueuePersistenceManager.add(any<QueuedMessage>())).thenReject(TestException())
 
         assertFailsWith(TestException::class) {
             sender.addToQueue(queued.metadata, queued.serialized).get()

@@ -55,20 +55,20 @@ class MessengerServiceImplTest {
 
         whenever(relayClientManager.events).thenReturn(relayEvents)
 
-        whenever(messageSender.addToQueue(any<SenderMessageEntry>())).thenReturn(Unit)
-        whenever(messageSender.addToQueue(anyList())).thenReturn(Unit)
+        whenever(messageSender.addToQueue(any<SenderMessageEntry>())).thenResolve(Unit)
+        whenever(messageSender.addToQueue(anyList())).thenResolve(Unit)
 
         //some useful defaults
         whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswerWithArg(1)
 
-        whenever(contactsService.addMissingContacts(any())).thenReturn(emptySet())
-        whenever(messageReceiver.processPackages(any())).thenReturn(Unit)
+        whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
+        whenever(messageReceiver.processPackages(any())).thenResolve(Unit)
 
-        whenever(groupService.addMembers(any(), any())).thenReturn(Unit)
-        whenever(groupService.join(any(), any())).thenReturn(Unit)
-        whenever(groupService.part(any())).thenReturn(true)
-        whenever(groupService.block(any())).thenReturn(Unit)
-        whenever(groupService.getMembers(any())).thenReturn(emptySet())
+        whenever(groupService.addMembers(any(), any())).thenResolve(Unit)
+        whenever(groupService.join(any(), any())).thenResolve(Unit)
+        whenever(groupService.part(any())).thenResolve(true)
+        whenever(groupService.block(any())).thenResolve(Unit)
+        whenever(groupService.getMembers(any())).thenResolve(emptySet())
 
         whenever(addressBookOperationManager.syncEvents).thenReturn(syncEvents)
     }
@@ -279,7 +279,7 @@ class MessengerServiceImplTest {
         val update = randomTextSingleMetadata()
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
 
-        whenever(messagePersistenceManager.markMessageAsDelivered(update.userId, update.messageId)).thenReturn(messageInfo)
+        whenever(messagePersistenceManager.markMessageAsDelivered(update.userId, update.messageId)).thenResolve(messageInfo)
 
         val testSubscriber = messengerService.messageUpdates.testSubscriber()
 
@@ -301,7 +301,7 @@ class MessengerServiceImplTest {
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
 
         whenever(groupService.markMessageAsDelivered(update.groupId!!, update.messageId))
-            .thenReturn(GroupMessageInfo(update.userId, messageInfo))
+            .thenResolve(GroupMessageInfo(update.userId, messageInfo))
 
         val testSubscriber = messengerService.messageUpdates.testSubscriber()
 
@@ -322,7 +322,7 @@ class MessengerServiceImplTest {
         val update = randomTextGroupMetadata()
 
         whenever(groupService.markMessageAsDelivered(update.groupId!!, update.messageId))
-            .thenReturnNull()
+            .thenResolve(null)
 
         val testSubscriber = messengerService.messageUpdates.testSubscriber()
 
@@ -338,7 +338,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupService.getMembers(groupId)).thenReturn(members)
+        whenever(groupService.getMembers(groupId)).thenResolve(members)
 
         messengerService.sendGroupMessageTo(groupId, "msg")
 
@@ -353,7 +353,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupService.getMembers(groupId)).thenReturn(emptySet())
+        whenever(groupService.getMembers(groupId)).thenResolve(emptySet())
 
         val message = "msg"
         messengerService.sendGroupMessageTo(groupId, message)
@@ -372,7 +372,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupService.getMembers(groupId)).thenReturn(members)
+        whenever(groupService.getMembers(groupId)).thenResolve(members)
 
         val message = "msg"
 
@@ -390,7 +390,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupService.getMembers(groupId)).thenReturn(members)
+        whenever(groupService.getMembers(groupId)).thenResolve(members)
 
         val message = "msg"
 
@@ -458,7 +458,7 @@ class MessengerServiceImplTest {
 
         val groupId = randomGroupId()
 
-        whenever(groupService.getMembers(groupId)).thenReturn(randomUserIds())
+        whenever(groupService.getMembers(groupId)).thenResolve(randomUserIds())
 
         messengerService.partGroup(groupId).get()
 
@@ -482,7 +482,7 @@ class MessengerServiceImplTest {
         val groupId = randomGroupId()
         val members = randomUserIds()
 
-        whenever(groupService.getMembers(groupId)).thenReturn(members)
+        whenever(groupService.getMembers(groupId)).thenResolve(members)
 
         messengerService.partGroup(groupId).get()
 
@@ -495,7 +495,7 @@ class MessengerServiceImplTest {
 
         val groupId = randomGroupId()
 
-        whenever(groupService.getMembers(groupId)).thenReturn(emptySet())
+        whenever(groupService.getMembers(groupId)).thenResolve(emptySet())
 
         messengerService.partGroup(groupId).get()
 
@@ -520,7 +520,7 @@ class MessengerServiceImplTest {
         val groupId = randomGroupId()
         val members = randomUserIds()
 
-        whenever(groupService.getMembers(groupId)).thenReturn(members)
+        whenever(groupService.getMembers(groupId)).thenResolve(members)
 
         messengerService.blockGroup(groupId).get()
 
@@ -533,7 +533,7 @@ class MessengerServiceImplTest {
 
         val groupId = randomGroupId()
 
-        whenever(groupService.getMembers(groupId)).thenReturn(emptySet())
+        whenever(groupService.getMembers(groupId)).thenResolve(emptySet())
 
         messengerService.blockGroup(groupId).get()
 
@@ -611,8 +611,8 @@ class MessengerServiceImplTest {
         val groupId = groupInfo.id
         val members = if (noMembers) emptySet() else randomUserIds()
 
-        whenever(groupService.getInfo(groupId)).thenReturn(groupInfo)
-        whenever(groupService.getMembers(groupId)).thenReturn(members)
+        whenever(groupService.getInfo(groupId)).thenResolve(groupInfo)
+        whenever(groupService.getMembers(groupId)).thenResolve(members)
 
         body(messengerService, groupInfo, members)
     }
@@ -746,7 +746,7 @@ class MessengerServiceImplTest {
         val messageInfo = randomSentMessageInfo()
         val metadata = randomTextSingleMetadata()
 
-        whenever(messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId)).thenReturn(messageInfo)
+        whenever(messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId)).thenResolve(messageInfo)
 
         messageSent.onNext(metadata)
 
@@ -771,7 +771,7 @@ class MessengerServiceImplTest {
         val groupId = metadata.groupId!!
 
         val groupMessageInfo = GroupMessageInfo(null, messageInfo)
-        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId)).thenReturn(groupMessageInfo)
+        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId)).thenResolve(groupMessageInfo)
 
         messageSent.onNext(metadata)
 
@@ -794,7 +794,7 @@ class MessengerServiceImplTest {
         val metadata = randomTextGroupMetadata()
         val groupId = metadata.groupId!!
 
-        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId)).thenReturnNull()
+        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId)).thenResolve(null)
 
         messageSent.onNext(metadata)
 

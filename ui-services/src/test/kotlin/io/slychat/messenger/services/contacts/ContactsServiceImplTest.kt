@@ -15,7 +15,8 @@ import io.slychat.messenger.services.assertNoEventsEmitted
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.services.subclassFilterTestSubscriber
 import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.thenReturn
+import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenReject
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
@@ -64,7 +65,7 @@ class ContactsServiceImplTest {
 
         val contactInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
 
-        whenever(contactsPersistenceManager.add(contactInfo)).thenReturn(true)
+        whenever(contactsPersistenceManager.add(contactInfo)).thenResolve(true)
 
         assertTrue(contactsService.addContact(contactInfo).get(), "Contact not seen as added")
 
@@ -79,7 +80,7 @@ class ContactsServiceImplTest {
 
         val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
 
-        whenever(contactsPersistenceManager.remove(userId)).thenReturn(true)
+        whenever(contactsPersistenceManager.remove(userId)).thenResolve(true)
 
         assertTrue(contactsService.removeContact(contactInfo).get(), "Contact not seen as removed")
 
@@ -94,7 +95,7 @@ class ContactsServiceImplTest {
 
         val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
 
-        whenever(contactsPersistenceManager.update(contactInfo)).thenReturn(Unit)
+        whenever(contactsPersistenceManager.update(contactInfo)).thenResolve(Unit)
 
         //should return
         contactsService.updateContact(contactInfo).get()
@@ -108,7 +109,7 @@ class ContactsServiceImplTest {
 
         val contactInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
 
-        whenever(contactsPersistenceManager.add(contactInfo)).thenReturn(true)
+        whenever(contactsPersistenceManager.add(contactInfo)).thenResolve(true)
 
         val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
 
@@ -128,7 +129,7 @@ class ContactsServiceImplTest {
 
         val contactInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
 
-        whenever(contactsPersistenceManager.add(contactInfo)).thenReturn(false)
+        whenever(contactsPersistenceManager.add(contactInfo)).thenResolve(false)
 
         val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
 
@@ -143,7 +144,7 @@ class ContactsServiceImplTest {
 
         val selfInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
 
-        whenever(contactsPersistenceManager.addSelf(selfInfo)).thenReturn(Unit)
+        whenever(contactsPersistenceManager.addSelf(selfInfo)).thenResolve(Unit)
 
         contactsService.addSelf(selfInfo).get()
 
@@ -158,7 +159,7 @@ class ContactsServiceImplTest {
         val allowed = ids.subList(1, ids.size).toSet()
         val idSet = ids.toSet()
 
-        whenever(contactsPersistenceManager.filterBlocked(idSet)).thenReturn(allowed)
+        whenever(contactsPersistenceManager.filterBlocked(idSet)).thenResolve(allowed)
 
         val gotAllowed = contactsService.filterBlocked(idSet).get()
 
@@ -194,7 +195,7 @@ class ContactsServiceImplTest {
 
         val presentContacts = localExists(ids)
 
-        whenever(contactsPersistenceManager.exists(any<Set<UserId>>())).thenReturn(presentContacts)
+        whenever(contactsPersistenceManager.exists(any<Set<UserId>>())).thenResolve(presentContacts)
 
         whenever(contactsPersistenceManager.add(any<Collection<ContactInfo>>())).thenAnswer {
             val v = if (added) {
@@ -212,7 +213,7 @@ class ContactsServiceImplTest {
 
         val response = FetchContactInfoByIdResponse(apiContacts)
 
-        whenever(contactClient.fetchContactInfoById(any(), any())).thenReturn(response)
+        whenever(contactClient.fetchContactInfoById(any(), any())).thenResolve(response)
 
         return contactsService.addMissingContacts(ids).get()
     }
@@ -390,8 +391,8 @@ class ContactsServiceImplTest {
     fun `allowAll should update the message level for the given user`() {
         val userId = randomUserId()
 
-        whenever(contactsPersistenceManager.get(userId)).thenReturn(randomContactInfo().copy(id = userId))
-        whenever(contactsPersistenceManager.allowAll(userId)).thenReturn(Unit)
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(randomContactInfo().copy(id = userId))
+        whenever(contactsPersistenceManager.allowAll(userId)).thenResolve(Unit)
 
         val contactsService = createService()
 
@@ -403,8 +404,8 @@ class ContactsServiceImplTest {
     @Test
     fun `allowAll should trigger a remote update`() {
         val userId = randomUserId()
-        whenever(contactsPersistenceManager.allowAll(any())).thenReturn(Unit)
-        whenever(contactsPersistenceManager.get(userId)).thenReturn(randomContactInfo().copy(id = userId))
+        whenever(contactsPersistenceManager.allowAll(any())).thenResolve(Unit)
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(randomContactInfo().copy(id = userId))
 
         val contactsService = createService()
 
@@ -416,8 +417,8 @@ class ContactsServiceImplTest {
     @Test
     fun `allowAll should fire a contact updated event`() {
         val userId = randomUserId()
-        whenever(contactsPersistenceManager.allowAll(any())).thenReturn(Unit)
-        whenever(contactsPersistenceManager.get(userId)).thenReturn(randomContactInfo().copy(id = userId))
+        whenever(contactsPersistenceManager.allowAll(any())).thenResolve(Unit)
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(randomContactInfo().copy(id = userId))
 
         val contactsService = createService()
 
