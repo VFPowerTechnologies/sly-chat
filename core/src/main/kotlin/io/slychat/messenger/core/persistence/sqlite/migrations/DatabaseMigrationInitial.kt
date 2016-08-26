@@ -3,9 +3,11 @@ package io.slychat.messenger.core.persistence.sqlite.migrations
 import com.almworks.sqlite4java.SQLiteConnection
 import io.slychat.messenger.core.crypto.randomPreKeyId
 import io.slychat.messenger.core.persistence.sqlite.DatabaseMigration
+import io.slychat.messenger.core.persistence.sqlite.TableCreationFailedException
+import io.slychat.messenger.core.readResourceFileText
 
 /** Initial database setup. */
-class DatabaseMigrationInitial : DatabaseMigration(0, TABLE_NAMES) {
+class DatabaseMigrationInitial : DatabaseMigration(0) {
     companion object {
         /** Table names in creation order. */
         private val TABLE_NAMES = arrayListOf(
@@ -32,8 +34,26 @@ class DatabaseMigrationInitial : DatabaseMigration(0, TABLE_NAMES) {
         connection.exec("INSERT INTO prekey_ids (next_signed_id, next_unsigned_id) VALUES ($nextSignedId, $nextUnsignedId)")
     }
 
+    private fun createTables(connection: SQLiteConnection) {
+        for (tableName in TABLE_NAMES)
+            createTable(connection, tableName)
+    }
+
+    private fun createTable(connection: SQLiteConnection, tableName: String) {
+        val sql = javaClass.readResourceFileText("/schema/$tableName.sql")
+        log.debug("Creating table {}", tableName)
+        try {
+            connection.exec(sql)
+        }
+        catch (t: Throwable) {
+            log.error("Creation of table {} failed", tableName, t)
+            throw TableCreationFailedException(tableName, t)
+        }
+    }
+
+
     override fun apply(connection: SQLiteConnection) {
-        createNewTables(connection)
+        createTables(connection)
         initializePreKeyIds(connection)
     }
 }

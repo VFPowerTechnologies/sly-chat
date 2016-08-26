@@ -1,14 +1,11 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
-import io.slychat.messenger.core.readResourceFileText
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
 
 abstract class DatabaseMigration(
-    val version: Int,
-    val newTables: List<String> = ArrayList()
+    val version: Int
 ) {
     protected val log: Logger = LoggerFactory.getLogger(javaClass)
 
@@ -17,7 +14,6 @@ abstract class DatabaseMigration(
      *
      * 1) Applies /migrations/<version>/general.sql
      * 2) Applies /migrations/<version>/convo.sql
-     * 3) Creates named tables via /schema/<tableName>.sql
      **/
     open fun apply(connection: SQLiteConnection) {
         val general = getGeneralMigration(version)
@@ -27,25 +23,6 @@ abstract class DatabaseMigration(
         val convo = getConvoMigration(version)
         if (convo != null)
             applyConvoMigration(connection, version, convo)
-
-        createNewTables(connection)
-    }
-
-    protected fun createNewTables(connection: SQLiteConnection) {
-        for (tableName in newTables)
-            createTable(connection, tableName)
-    }
-
-    protected fun createTable(connection: SQLiteConnection, tableName: String) {
-        val sql = javaClass.readResourceFileText("/schema/$tableName.sql")
-        log.debug("Creating table {}", tableName)
-        try {
-            connection.exec(sql)
-        }
-        catch (t: Throwable) {
-            log.error("Creation of table {} failed", tableName, t)
-            throw TableCreationFailedException(tableName, t)
-        }
     }
 
     protected fun readResourceAsString(path: String): String? =
