@@ -9,9 +9,7 @@ import io.slychat.messenger.core.Os
 import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
-import io.slychat.messenger.desktop.services.DesktopUILoadService
-import io.slychat.messenger.desktop.services.DesktopUIPlatformInfoService
-import io.slychat.messenger.desktop.services.DesktopUIPlatformService
+import io.slychat.messenger.desktop.services.*
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.ui.createAppDirectories
@@ -44,6 +42,8 @@ import rx.subjects.BehaviorSubject
 import javax.crypto.Cipher
 
 class DesktopApp : Application() {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private val app: SlyApplication = SlyApplication()
     private lateinit var stage: Stage
     private lateinit var webView: WebView
@@ -127,11 +127,29 @@ class DesktopApp : Application() {
         val platformInfo = DesktopPlatformInfo()
         createAppDirectories(platformInfo)
 
+        //for some reason this isn't present on certain linux systems (tested on ubuntu 16.04, arch linux)
         val hostServices = try {
-           this.hostServices
+            //if this fails to load, you end up with a HostServices with a null delegate that just throws on every method
+            //so we check to see if we've actually loaded the class or not
+            val hostServices = this.hostServices
+
+            hostServices.documentBase
+
+            hostServices
         }
-        catch (e: ClassNotFoundException) {
+        catch (e: NullPointerException) {
             null
+        }
+
+        val browser = if (hostServices != null)
+            JFXBrowser(hostServices)
+        else {
+            if (currentOs.type == Os.Type.LINUX)
+                LinuxBrowser()
+            else {
+                log.error("Unable to load HostServices and not on Linux")
+                DummyBrowser()
+            }
         }
 
         val uiVisibility = BehaviorSubject.create<Boolean>(!stage.isIconified)
@@ -147,7 +165,7 @@ class DesktopApp : Application() {
             DesktopWindowService(primaryStage),
             DesktopPlatformContacts(),
             DesktopNotificationService(),
-            DesktopUIPlatformService(hostServices),
+            DesktopUIPlatformService(browser),
             DesktopUILoadService(this),
             uiVisibility,
             JavaFxScheduler.getInstance()
