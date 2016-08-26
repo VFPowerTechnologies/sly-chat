@@ -198,7 +198,6 @@ class UserModule(
     @UserScope
     @Provides
     fun providesNotifierService(
-        userData: UserData,
         messengerService: MessengerService,
         uiEventService: UIEventService,
         contactsPersistenceManager: ContactsPersistenceManager,
@@ -208,18 +207,11 @@ class UserModule(
         @UIVisibility uiVisibility: Observable<Boolean>,
         scheduler: Scheduler
     ): NotifierService {
-        val selfId = userData.userId
-
         //even if this a hot observable, it's not yet emitting so we can just connect using share() instead of
         //manually using the ConnectedObservable
         val shared = messengerService.newMessages
             //ignore messages from self
-            .filter {
-                when (it) {
-                    is ConversationMessage.Single -> it.userId != selfId
-                    is ConversationMessage.Group -> it.speaker != null
-                }
-            }
+            .filter { it.info.isSent == false }
             .share()
 
         //we use debouncing to trigger a buffer flush
