@@ -25,6 +25,10 @@ class SentryAppender : AppenderBase<ILoggingEvent>() {
     }
 
     override fun append(eventObject: ILoggingEvent) {
+        //this is here to prevent a misconfiguration from causing uploads of anything warning level
+        if (!eventObject.level.isGreaterOrEqual(Level.WARN))
+            return
+
         val culprit = if (eventObject.callerData.isNotEmpty())
             extractCulprit(eventObject.callerData[0])
         else
