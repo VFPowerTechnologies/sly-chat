@@ -1,4 +1,4 @@
-package io.slychat.messenger.services.crypto
+package io.slychat.messenger.core.crypto.signal
 
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock

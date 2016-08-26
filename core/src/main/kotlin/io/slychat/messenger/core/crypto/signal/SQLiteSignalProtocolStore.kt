@@ -1,4 +1,4 @@
-package io.slychat.messenger.services.crypto
+package io.slychat.messenger.core.crypto.signal
 
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.hexify

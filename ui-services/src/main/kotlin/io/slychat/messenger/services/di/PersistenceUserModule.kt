@@ -3,13 +3,13 @@ package io.slychat.messenger.services.di
 import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.crypto.signal.SQLiteSignalProtocolStore
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.*
 import io.slychat.messenger.services.LocalAccountDirectory
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.UserData
 import io.slychat.messenger.services.UserPaths
-import io.slychat.messenger.services.crypto.SQLiteSignalProtocolStore
 import org.whispersystems.libsignal.state.SignalProtocolStore
 
 @Module
