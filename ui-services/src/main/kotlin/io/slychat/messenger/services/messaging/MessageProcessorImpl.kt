@@ -171,7 +171,10 @@ class MessageProcessorImpl(
 
     private fun handleGroupInvitation(sender: UserId, groupInfo: GroupInfo?, m: GroupEventMessage.Invitation): Promise<Unit, Exception> {
         val members = HashSet(m.members)
-        members.add(sender)
+
+        //since we send ourselves invitations as well, we don't include ourselves in the list
+        if (sender != selfId)
+            members.add(sender)
 
         return if (groupInfo == null || groupInfo.membershipLevel == GroupMembershipLevel.PARTED) {
             //we already have the sender added, so we don't need to include them
