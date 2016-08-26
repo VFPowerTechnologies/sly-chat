@@ -227,15 +227,7 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         return postRequest(request, "/dev/users/$username/devices", Int::class.java)
     }
 
-    fun getAddressBookVersion(username: String): Int {
-        return getRequest("/dev/address-book/version/$username", Int::class.java)
-    }
-
-    fun setAddressBookVersion(username: String, version: Int) {
-        val request = mapOf(
-            "version" to version
-        )
-
-        postRequestNoResponse(request,  "/dev/address-book/version/$username")
+    fun getAddressBookHash(username: String): String {
+        return getRequest("/dev/address-book/hash/$username", String::class.java)
     }
 }

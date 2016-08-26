@@ -1,6 +1,7 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.unhexify
 import io.slychat.messenger.core.persistence.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -907,13 +908,34 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
-    fun `updateAddressBookVersion should update the address book version`() {
-        val newVersion = randomInt()
+    fun `addAddressBookHashes should return the final hash`() {
+        val hashes = listOf(
+            RemoteAddressBookEntry("a250a891b058c5a8c91cebff812a2ab1f866b7f6824d088f580e157e94e7fba9", "78b67c974d4568edb213ae20dac3fc26".unhexify()),
+            RemoteAddressBookEntry("e92e18352e6048789e121d27c18d506d1b696690e952a51ab3b45ccb5347261c", "70d6a2405abc2e4c7de27333618a73c7".unhexify())
+        )
 
-        contactsPersistenceManager.updateAddressBookVersion(newVersion).get()
+        val hash = contactsPersistenceManager.addRemoteEntryHashes(hashes).get()
 
-        val currentVersion = contactsPersistenceManager.getAddressBookVersion().get()
+        assertEquals("1159434cef1766bce1b8759b2c8d6d66", hash, "Invalid hash")
+    }
 
-        assertEquals(newVersion, currentVersion, "Version not updated")
+    @Test
+    fun `addAddressBookHashes should replace existing entries`() {
+        val idHash = "e92e18352e6048789e121d27c18d506d1b696690e952a51ab3b45ccb5347261c"
+
+        val hashes = listOf(
+            RemoteAddressBookEntry("a250a891b058c5a8c91cebff812a2ab1f866b7f6824d088f580e157e94e7fba9", "78b67c974d4568edb213ae20dac3fc26".unhexify()),
+            RemoteAddressBookEntry(idHash, "70d6a2405abc2e4c7de27333618a73c7".unhexify())
+        )
+
+        val newHashes = listOf(
+            RemoteAddressBookEntry(idHash, "9cc42fbd334c3cba10b13735d3cb24a2".unhexify())
+        )
+
+        contactsPersistenceManager.addRemoteEntryHashes(hashes).get()
+
+        val hash = contactsPersistenceManager.addRemoteEntryHashes(newHashes).get()
+
+        assertEquals("e11aed8cac52cd06bc48c49d75dbae6d", hash, "Invalid hash")
     }
 }

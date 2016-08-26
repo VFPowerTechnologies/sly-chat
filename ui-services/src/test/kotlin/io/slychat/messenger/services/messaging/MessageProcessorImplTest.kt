@@ -173,6 +173,21 @@ class MessageProcessorImplTest {
     }
 
     @Test
+    fun `it should not add itself as a member when receiving an invitation from another device`() {
+        val m = generateInvite()
+
+        val processor = createProcessor()
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        val info = GroupInfo(m.id, m.name, GroupMembershipLevel.JOINED)
+
+        verify(contactsService).addMissingContacts(m.members)
+
+        verify(groupService).join(info, m.members)
+    }
+
+    @Test
     fun `it should ignore duplicate invitations`() {
         val sender = randomUserId()
 

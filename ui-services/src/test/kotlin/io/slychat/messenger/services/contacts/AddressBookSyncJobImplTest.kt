@@ -30,8 +30,8 @@ class AddressBookSyncJobImplTest {
         val keyVault = generateNewKeyVault("test")
     }
 
-    val defaultAddressBookVersion = 10
-    val defaultUpdatedAddressBookVersion = defaultAddressBookVersion + 1
+    val emptyMd5 = "d41d8cd98f00b204e9800998ecf8427e"
+    val updateMd5 = "d41d8cd98f00b204e9800998ecf8427f"
 
     val contactAsyncClient: ContactAsyncClient = mock()
     val addressBookAsyncClient: AddressBookAsyncClient = mock()
@@ -64,11 +64,11 @@ class AddressBookSyncJobImplTest {
         whenever(contactAsyncClient.findLocalContacts(any(), any())).thenReturn(FindLocalContactsResponse(emptyList()))
         whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenReturn(FetchContactInfoByIdResponse(emptyList()))
 
-        whenever(contactsPersistenceManager.getAddressBookVersion()).thenReturn(defaultAddressBookVersion)
-        whenever(contactsPersistenceManager.updateAddressBookVersion(any())).thenReturn(Unit)
+        whenever(contactsPersistenceManager.getAddressBookHash()).thenReturn(emptyMd5)
+        whenever(contactsPersistenceManager.addRemoteEntryHashes(any())).thenReturn(emptyMd5)
 
-        whenever(addressBookAsyncClient.update(any(), any())).thenReturn(UpdateAddressBookResponse(defaultUpdatedAddressBookVersion))
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultUpdatedAddressBookVersion, emptyList()))
+        whenever(addressBookAsyncClient.update(any(), any())).thenReturn(UpdateAddressBookResponse(updateMd5))
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(emptyList()))
 
         whenever(timerFactory.run(any(), any())).thenReturn(Unit)
     }
@@ -118,7 +118,7 @@ class AddressBookSyncJobImplTest {
         val missing = randomUserIds()
         val remoteEntries = encryptRemoteAddressBookEntries(keyVault, missing.map { AddressBookUpdate.Contact(it, AllowedMessageLevel.ALL) })
 
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultAddressBookVersion, remoteEntries))
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(remoteEntries))
         whenever(contactsPersistenceManager.exists(missing)).thenReturn(emptySet())
 
         runPull()
@@ -143,7 +143,7 @@ class AddressBookSyncJobImplTest {
         val apiContacts = missing.map { ApiContactInfo(it, "$it@a.com", it.toString(), it.toString(), it.toString()) }
         val remoteEntries = encryptRemoteAddressBookEntries(keyVault, missing.map { AddressBookUpdate.Contact(it, messageLevels[it]!!) })
 
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultAddressBookVersion, remoteEntries))
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(remoteEntries))
         whenever(contactsPersistenceManager.exists(missing)).thenReturn(emptySet())
         whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenReturn(FetchContactInfoByIdResponse(apiContacts))
 
@@ -165,7 +165,7 @@ class AddressBookSyncJobImplTest {
         val remoteUpdates = present.zip(messageLevels).map { AddressBookUpdate.Contact(it.first, it.second) }
         val remoteEntries = encryptRemoteAddressBookEntries(keyVault, remoteUpdates)
 
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultAddressBookVersion, remoteEntries))
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(remoteEntries))
         whenever(contactsPersistenceManager.exists(present)).thenReturn(present)
 
         runPull()
@@ -180,7 +180,7 @@ class AddressBookSyncJobImplTest {
 
     @Test
     fun `a pull not should add contacts if none are present`() {
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultAddressBookVersion, emptyList()))
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(emptyList()))
 
         runPull()
 
@@ -192,7 +192,7 @@ class AddressBookSyncJobImplTest {
         val update = AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
         val entries = encryptRemoteAddressBookEntries(keyVault, listOf(update))
 
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultAddressBookVersion, entries))
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(entries))
 
         val result = runPull()
 
@@ -201,11 +201,23 @@ class AddressBookSyncJobImplTest {
 
     @Test
     fun `a pull should indicate no full pull was done if no entries are returned from the server`() {
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultAddressBookVersion, emptyList()))
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(emptyList()))
 
         val result = runPull()
 
         assertFalse(result.fullPull, "Indicates a full pull was done")
+    }
+
+    @Test
+    fun `a pull should update the address book hashes`() {
+        val update = AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
+        val entries = encryptRemoteAddressBookEntries(keyVault, listOf(update))
+
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(entries))
+
+        runPull()
+
+        verify(contactsPersistenceManager).addRemoteEntryHashes(entries)
     }
 
     @Test
@@ -221,7 +233,7 @@ class AddressBookSyncJobImplTest {
 
         val remoteEntries = encryptRemoteAddressBookEntries(keyVault, remoteUpdates)
 
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultAddressBookVersion, remoteEntries))
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(remoteEntries))
         whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenReturn(FetchContactInfoByIdResponse(apiContacts))
 
         runPull()
@@ -240,7 +252,7 @@ class AddressBookSyncJobImplTest {
         )
         val remoteEntries = encryptRemoteAddressBookEntries(keyVault, remoteUpdates)
 
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultAddressBookVersion, remoteEntries))
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(remoteEntries))
 
         runPull()
 
@@ -251,7 +263,7 @@ class AddressBookSyncJobImplTest {
     fun `a pull not should add groups if none are present`() {
         val remoteEntries = encryptRemoteAddressBookEntries(keyVault, emptyList())
 
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(defaultAddressBookVersion, remoteEntries))
+        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(remoteEntries))
 
         runPull()
 
@@ -287,8 +299,8 @@ class AddressBookSyncJobImplTest {
         whenever(contactsPersistenceManager.getRemoteUpdates()).thenReturn(contactUpdates)
         whenever(groupPersistenceManager.getRemoteUpdates()).thenReturn(groupUpdates)
 
-        whenever(contactsPersistenceManager.getAddressBookVersion()).thenReturn(defaultAddressBookVersion)
-        whenever(addressBookAsyncClient.update(any(), any())).thenReturn(UpdateAddressBookResponse(defaultAddressBookVersion))
+        whenever(contactsPersistenceManager.getAddressBookHash()).thenReturn(emptyMd5)
+        whenever(addressBookAsyncClient.update(any(), any())).thenReturn(UpdateAddressBookResponse(emptyMd5))
 
         val result = runPush()
 
@@ -327,7 +339,7 @@ class AddressBookSyncJobImplTest {
 
         runPush()
 
-        val request = updateRequestFromAddressBookUpdates(keyVault, defaultAddressBookVersion, updates)
+        val request = updateRequestFromAddressBookUpdates(keyVault, updates)
         verify(addressBookAsyncClient).update(any(), eq(request))
     }
 
@@ -341,7 +353,7 @@ class AddressBookSyncJobImplTest {
 
         runPush()
 
-        val request = updateRequestFromAddressBookUpdates(keyVault, defaultAddressBookVersion, updates)
+        val request = updateRequestFromAddressBookUpdates(keyVault, updates)
         verify(addressBookAsyncClient).update(any(), eq(request))
     }
 
@@ -374,32 +386,18 @@ class AddressBookSyncJobImplTest {
     }
 
     @Test
-    fun `a push should update the address book version to value returned by the server when the versions differ`() {
-        val newVersion = 1000
+    fun `a push should update the address book hashes`() {
         val updates = listOf(
             AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
         )
 
+        val remoteEntries = encryptRemoteAddressBookEntries(keyVault, updates)
+
         whenever(contactsPersistenceManager.getRemoteUpdates()).thenReturn(updates)
-        whenever(addressBookAsyncClient.update(any(), any())).thenReturn(UpdateAddressBookResponse(newVersion))
 
         runPush()
 
-        verify(contactsPersistenceManager).updateAddressBookVersion(newVersion)
-    }
-
-    @Test
-    fun `a push should not update the address book version when the value returned by the server matches the current value`() {
-        val updates = listOf(
-            AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
-        )
-
-        whenever(contactsPersistenceManager.getRemoteUpdates()).thenReturn(updates)
-        whenever(addressBookAsyncClient.update(any(), any())).thenReturn(UpdateAddressBookResponse(defaultAddressBookVersion))
-
-        runPush()
-
-        verify(contactsPersistenceManager, never()).updateAddressBookVersion(any())
+        verify(contactsPersistenceManager).addRemoteEntryHashes(remoteEntries)
     }
 
     @Test
@@ -437,40 +435,13 @@ class AddressBookSyncJobImplTest {
     }
 
     @Test
-    fun `a pull request should include the current address book version`() {
-        val currentVersion = 0
-
-        whenever(contactsPersistenceManager.getAddressBookVersion()).thenReturn(currentVersion)
+    fun `a pull request should include the current address book hash`() {
+        whenever(contactsPersistenceManager.getAddressBookHash()).thenReturn(emptyMd5)
 
         runPull()
 
-        verify(contactsPersistenceManager).getAddressBookVersion()
-        verify(addressBookAsyncClient).get(any(), eq(GetAddressBookRequest(currentVersion)))
-    }
-
-    @Test
-    fun `a pull should update the address book version to the value returned by the server if versions differ`() {
-        val currentVersion = 0
-        val newVersion = 1
-
-        whenever(contactsPersistenceManager.getAddressBookVersion()).thenReturn(currentVersion)
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(newVersion, randomRemoteEntries()))
-
-        runPull()
-
-        verify(contactsPersistenceManager).updateAddressBookVersion(newVersion)
-    }
-
-    @Test
-    fun `a pull should not update the address book version to the value returned by the server if versions do not differ`() {
-        val currentVersion = 0
-
-        whenever(contactsPersistenceManager.getAddressBookVersion()).thenReturn(currentVersion)
-        whenever(addressBookAsyncClient.get(any(), any())).thenReturn(GetAddressBookResponse(currentVersion, emptyList()))
-
-        runPull()
-
-        verify(contactsPersistenceManager, never()).updateAddressBookVersion(any())
+        verify(contactsPersistenceManager).getAddressBookHash()
+        verify(addressBookAsyncClient).get(any(), eq(GetAddressBookRequest(emptyMd5)))
     }
 
     @Test

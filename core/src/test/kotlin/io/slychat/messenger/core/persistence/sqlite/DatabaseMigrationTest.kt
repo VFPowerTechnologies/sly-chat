@@ -342,4 +342,16 @@ class DatabaseMigrationTest {
         assertNotNull(version, "Missing initial version")
         assertEquals(0, version, "Invalid version")
     }
+
+    @Test
+    fun `migration 10 to 11`() {
+        withTestDatabase(10, 11) { persistenceManager, connection ->
+            check10to11(persistenceManager, connection)
+        }
+    }
+
+    private fun check10to11(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertTableNotExists(connection, "address_book_version")
+        assertTableExists(connection, "address_book_hashes")
+    }
 }

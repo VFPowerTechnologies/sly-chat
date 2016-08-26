@@ -4,9 +4,12 @@ import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.crypto.unhexify
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
 import org.slf4j.LoggerFactory
+import org.spongycastle.crypto.digests.MD5Digest
 import java.util.*
 
 /** A contact is made up of an entry in the contacts table and an associated conv_ table containing their message log. */
@@ -482,19 +485,58 @@ ON
         return connection.changes > 0
     }
 
-    override fun getAddressBookVersion(): Promise<Int, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withPrepared("SELECT version FROM address_book_version") { stmt ->
-            stmt.step()
-            stmt.columnInt(0)
+    private fun calculateAddressBookHash(connection: SQLiteConnection): String {
+        val sql = """
+SELECT
+    data_hash
+FROM
+    address_book_hashes
+ORDER BY
+    id_hash
+"""
+        val digester = MD5Digest()
+        val digest = ByteArray(digester.digestSize)
+
+        connection.withPrepared(sql) { stmt ->
+            stmt.foreach {
+                val dataHash = stmt.columnBlob(0)
+                digester.update(dataHash, 0, dataHash.size)
+            }
         }
+
+        digester.doFinal(digest, 0)
+
+        return digest.hexify()
     }
 
-    override fun updateAddressBookVersion(version: Int): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withPrepared("UPDATE address_book_version SET version=?") { stmt ->
-            stmt.bind(1, version)
-            stmt.step()
+    private fun md5(data: ByteArray): ByteArray {
+        val digester = MD5Digest()
+        val digest = ByteArray(digester.digestSize)
+
+        digester.update(data, 0, data.size)
+
+        digester.doFinal(digest, 0)
+
+        return digest
+    }
+
+    override fun addRemoteEntryHashes(remoteEntries: Collection<RemoteAddressBookEntry>): Promise<String, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val sql = """
+INSERT OR REPLACE INTO
+    address_book_hashes
+    (id_hash, data_hash)
+VALUES
+    (?, ?)
+"""
+        connection.batchInsertWithinTransaction(sql, remoteEntries) { stmt, entry ->
+            stmt.bind(1, entry.hash.unhexify())
+            stmt.bind(2, md5(entry.encryptedData))
         }
 
-        Unit
+        calculateAddressBookHash(connection)
+    }
+
+    override fun getAddressBookHash(): Promise<String, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        calculateAddressBookHash(connection)
     }
 }
