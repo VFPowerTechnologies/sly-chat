@@ -509,7 +509,7 @@ ORDER BY
         return digest.hexify()
     }
 
-    private fun md5(data: ByteArray): String {
+    private fun md5(data: ByteArray): ByteArray {
         val digester = MD5Digest()
         val digest = ByteArray(digester.digestSize)
 
@@ -517,7 +517,7 @@ ORDER BY
 
         digester.doFinal(digest, 0)
 
-        return digest.hexify()
+        return digest
     }
 
     override fun addRemoteEntryHashes(remoteEntries: Collection<RemoteAddressBookEntry>): Promise<String, Exception> = sqlitePersistenceManager.runQuery { connection ->

@@ -916,7 +916,7 @@ class SQLiteContactsPersistenceManagerTest {
 
         val hash = contactsPersistenceManager.addRemoteEntryHashes(hashes).get()
 
-        assertEquals("cabe6ee6dc8539472cef082c5e95658d", hash, "Invalid hash")
+        assertEquals("1159434cef1766bce1b8759b2c8d6d66", hash, "Invalid hash")
     }
 
     @Test
@@ -936,6 +936,6 @@ class SQLiteContactsPersistenceManagerTest {
 
         val hash = contactsPersistenceManager.addRemoteEntryHashes(newHashes).get()
 
-        assertEquals("678fab1cf38469e319b3a6e656bafea2", hash, "Invalid hash")
+        assertEquals("e11aed8cac52cd06bc48c49d75dbae6d", hash, "Invalid hash")
     }
 }
