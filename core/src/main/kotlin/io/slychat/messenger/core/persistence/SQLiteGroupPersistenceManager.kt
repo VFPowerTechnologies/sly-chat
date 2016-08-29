@@ -41,6 +41,11 @@ class SQLiteGroupPersistenceManager(
         queryGroupMembers(connection, groupId)
     }
 
+    override fun getNonBlockedMembers(groupId: GroupId): Promise<Set<UserId>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        throwIfGroupIsInvalid(connection, groupId)
+        queryNonBlockedGroupMembers(connection, groupId)
+    }
+
     private fun queryGroupConversationInfo(connection: SQLiteConnection, groupId: GroupId): GroupConversationInfo? {
         return connection.withPrepared("SELECT last_speaker_contact_id, unread_count, last_message, last_timestamp FROM group_conversation_info WHERE group_id=?") { stmt ->
             stmt.bind(1, groupId)
@@ -243,6 +248,30 @@ VALUES
             stmt.bind(1, id)
 
             stmt.mapToSet { UserId(stmt.columnLong(0)) }
+        }
+    }
+
+    private fun queryNonBlockedGroupMembers(connection: SQLiteConnection, id: GroupId): Set<UserId> {
+        val sql = """
+SELECT
+    contact_id
+FROM
+    group_members
+JOIN
+    contacts
+ON
+    contacts.id = contact_id
+WHERE
+    group_id = ?
+AND
+    contacts.allowed_message_level != ?
+"""
+
+        return connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, id)
+            stmt.bind(2, AllowedMessageLevel.BLOCKED)
+
+            stmt.mapToSet { UserId(it.columnLong(0)) }
         }
     }
 

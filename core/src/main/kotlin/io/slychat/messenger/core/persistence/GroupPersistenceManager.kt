@@ -15,8 +15,11 @@ interface GroupPersistenceManager {
     /** Returns info on a specific group. */
     fun getInfo(groupId: GroupId): Promise<GroupInfo?, Exception>
 
-    /** Returns the membership list of the given group. If the group doesn't exist, an InvalidGroupException is thrown. */
+    /** Returns the full membership list (including blocked users) of the given group. If the group doesn't exist, an InvalidGroupException is thrown. */
     fun getMembers(groupId: GroupId): Promise<Set<UserId>, Exception>
+
+    /** Return only non-blocked group members. */
+    fun getNonBlockedMembers(groupId: GroupId): Promise<Set<UserId>, Exception>
 
     /** Return conversation info for the specified group. */
     fun getConversationInfo(groupId: GroupId): Promise<GroupConversationInfo?, Exception>
