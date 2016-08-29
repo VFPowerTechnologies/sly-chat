@@ -6,6 +6,7 @@ import io.slychat.messenger.core.Os
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.loadSharedLibFromResource
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.GroupId
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -47,6 +48,27 @@ fun SQLiteStatement.bind(index: Int, value: UserId?) {
         bind(index, value.long)
     else
         bindNull(index)
+}
+
+fun SQLiteStatement.bind(index: Int, allowedMessageLevel: AllowedMessageLevel) {
+    bind(index, allowedMessageLevel.toInt())
+}
+
+fun SQLiteStatement.columnAllowedMessageLevel(index: Int): AllowedMessageLevel {
+    return columnInt(index).toAllowedMessageLevel()
+}
+
+private fun AllowedMessageLevel.toInt(): Int = when (this) {
+    AllowedMessageLevel.BLOCKED -> 0
+    AllowedMessageLevel.GROUP_ONLY -> 1
+    AllowedMessageLevel.ALL -> 2
+}
+
+private fun Int.toAllowedMessageLevel(): AllowedMessageLevel = when (this) {
+    0 -> AllowedMessageLevel.BLOCKED
+    1 -> AllowedMessageLevel.GROUP_ONLY
+    2 -> AllowedMessageLevel.ALL
+    else -> throw IllegalArgumentException("Invalid integer value for AllowedMessageLevel: $this")
 }
 
 inline fun <R> SQLiteConnection.withPrepared(sql: String, body: (SQLiteStatement) -> R): R {

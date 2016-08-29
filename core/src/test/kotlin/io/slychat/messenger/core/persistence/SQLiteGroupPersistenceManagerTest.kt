@@ -203,6 +203,30 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     @Test
+    fun `getNonBlockedMembers should ignore blocked group members`() {
+        withJoinedGroup { id, members ->
+            val toBlock = members.first()
+            val rest = members - toBlock
+
+            contactsPersistenceManager.block(toBlock).get()
+
+            val got = groupPersistenceManager.getNonBlockedMembers(id).get()
+
+            assertThat(got).apply {
+                `as`("Should not return blocked members")
+                containsOnlyElementsOf(rest)
+            }
+        }
+    }
+
+    @Test
+    fun `getNonBlockedMembers should throw InvalidGroupException if the group is invalid`() {
+        assertFailsWith(InvalidGroupException::class) {
+            groupPersistenceManager.getNonBlockedMembers(randomGroupId()).get()
+        }
+    }
+
+    @Test
     fun `getInfo should return info for an existing group`() {
         withEmptyJoinedGroup { groupInfo ->
             val got = groupPersistenceManager.getInfo(groupInfo.id).get()

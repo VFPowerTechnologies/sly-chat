@@ -14,7 +14,10 @@ import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.assertNoEventsEmitted
 import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
-import io.slychat.messenger.testutils.*
+import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.testSubscriber
+import io.slychat.messenger.testutils.thenAnswerWithArg
+import io.slychat.messenger.testutils.thenResolve
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -340,7 +343,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupService.getMembers(groupId)).thenResolve(members)
+        whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(members)
 
         messengerService.sendGroupMessageTo(groupId, "msg")
 
@@ -355,7 +358,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupService.getMembers(groupId)).thenResolve(emptySet())
+        whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(emptySet())
 
         val message = "msg"
         messengerService.sendGroupMessageTo(groupId, message)
@@ -374,7 +377,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupService.getMembers(groupId)).thenResolve(members)
+        whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(members)
 
         val message = "msg"
 
@@ -392,7 +395,7 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        whenever(groupService.getMembers(groupId)).thenResolve(members)
+        whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(members)
 
         val message = "msg"
 

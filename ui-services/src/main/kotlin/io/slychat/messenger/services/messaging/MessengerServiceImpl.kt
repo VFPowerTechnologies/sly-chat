@@ -236,7 +236,13 @@ class MessengerServiceImpl(
 
     /** Fetches group members for the given group and sends the given message to the MessageSender. */
     private fun sendMessageToGroup(groupId: GroupId, message: SlyMessage, messageCategory: MessageCategory, messageId: String? = null): Promise<Set<UserId>, Exception> {
-        return groupService.getMembers(groupId) bindUi { members ->
+        //we still send control messages to blocked contacts; however, we don't send text messages to them
+        val getMembers = if (messageCategory == MessageCategory.TEXT_GROUP)
+            groupService.getNonBlockedMembers(groupId)
+        else
+            groupService.getMembers(groupId)
+
+        return getMembers bindUi { members ->
             if (members.isNotEmpty())
                 sendMessageToMembers(groupId, members, message, messageCategory, messageId)
             else

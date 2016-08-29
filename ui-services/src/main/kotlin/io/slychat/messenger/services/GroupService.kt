@@ -15,6 +15,8 @@ interface GroupService {
 
     fun getMembers(groupId: GroupId): Promise<Set<UserId>, Exception>
 
+    fun getNonBlockedMembers(groupId: GroupId): Promise<Set<UserId>, Exception>
+
     fun getInfo(groupId: GroupId): Promise<GroupInfo?, Exception>
 
     fun addMessage(groupId: GroupId, groupMessageInfo: GroupMessageInfo): Promise<GroupMessageInfo, Exception>
