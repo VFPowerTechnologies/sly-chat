@@ -15,9 +15,16 @@ RegistrationController.prototype = {
         if(!formValid)
             return;
 
+        var passwordConfirm = $$('#registration-password-confirm').val();
+        var password = $$('#registration-password').val();
+
+        if (password !== '' && password !== passwordConfirm) {
+            form.find(".error-block").html("<li>Passwords does not match</li>");
+            return;
+        }
+
         var email = $$('#registration-email').val();
         var name = $$('#registration-name').val();
-        var password = $$('#registration-password').val();
         var phoneValue = $("#phone").val();
         var selectedCountry = $("#countrySelect").val();
         var phone = getFormatedPhoneNumber(phoneValue, selectedCountry);
