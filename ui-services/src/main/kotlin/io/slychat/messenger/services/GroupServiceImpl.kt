@@ -31,6 +31,10 @@ class GroupServiceImpl(
         return groupPersistenceManager.getMembers(groupId)
     }
 
+    override fun getNonBlockedMembers(groupId: GroupId): Promise<Set<UserId>, Exception> {
+        return groupPersistenceManager.getNonBlockedMembers(groupId)
+    }
+
     override fun getGroupConversations(): Promise<List<GroupConversation>, Exception> {
         return groupPersistenceManager.getAllConversations()
     }
