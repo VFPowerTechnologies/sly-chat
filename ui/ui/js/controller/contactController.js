@@ -220,13 +220,13 @@ ContactController.prototype  = {
         if (unreadCount > 0) {
             newBadge = '<span class="left-menu-new-badge" style="color: red; font-size: 12px; margin-left: 5px;">new</span>';
         }
-        var contactBlock = $("<li id='leftContact_" + contact.id + "' class='contact-link'><a href='#'>" + contact.name + "</a>" + newBadge + "</li>");
+        var contactBlock = $("<li id='leftContact_" + contact.id + "' class='contact-link'><a class='left-contact-link' href='#'>" + contact.name + "</a>" + newBadge + "</li>");
 
-        contactBlock.click(function (e) {
+        contactBlock.find('.left-contact-link').click(function (e) {
             this.loadChatPage(contact);
         }.bind(this));
 
-        contactBlock.on("mouseheld", function () {
+        contactBlock.find('.left-contact-link').on("mouseheld", function () {
             vibrate(50);
             this.openContactMenu(contact);
         }.bind(this));

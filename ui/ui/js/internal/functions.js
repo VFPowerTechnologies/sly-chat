@@ -3,8 +3,8 @@ function createDesktopMenu () {
         '<div id="leftMenuPanel" class="panel panel-left panel-cover">' +
         '<div class="view view-left navbar-through">' +
         '<div class="pages">' +
-        '<div data-page="contact-left" class="page" style="background-color: #eee;">' +
-        '<div class="navbar"><div class="navbar-inner"><a href="#" onclick="navigationController.loadPage(\'contacts.html\');"><div class="left"><img style="height: 40px; width: 40px; margin-right: 10px; padding-left: 10px;" src="img/sly_logo.png"> Sly Chat </div></a></div></div>' +
+        '<div data-page="contact-left" class="page" style="background-color: #861E00;">' +
+        '<div class="navbar" style="background-color: #861E00;"><div class="navbar-inner"><a href="#" onclick="navigationController.loadPage(\'contacts.html\');"><div class="left" style="color: #ff5722;"><img style="height: 40px; width: 40px; margin-right: 10px; padding-left: 10px;" src="img/sly_logo.png"> Sly Chat </div></a></div></div>' +
         '<div class="page-content">' +
         '<div class="list-block" style="margin-top: 5px;">' +
         '<ul>' +
@@ -32,7 +32,7 @@ function createDesktopMenu () {
                 '<div class="custom-dropdown-content">' +
                     '<div class="content-block">' +
                         '<div class="list-block">' +
-                            '<div style="width: 100%; text-align: right;">' +
+                            '<div style="position: fixed; right: 10px; top: 30px;">' +
                                 '<a href="#" id="addContactButton"><i class="fa fa-plus-circle"></i></a>' +
                             '</div>' +
                             '<ul id="leftContactList">' +
@@ -41,7 +41,7 @@ function createDesktopMenu () {
                     '</div>' +
                 '</div>' +
             '</li>' +
-            '<li class="custom-dropdown">' +
+            '<li class="custom-dropdown custom-dropdown-toggled">' +
                 '<a href="#" class="list-button item-content item-link">' +
                 '<div class="item-inner">' +
                     '<div class="item-title">Groups</div>' +
@@ -49,7 +49,7 @@ function createDesktopMenu () {
                 '<div class="custom-dropdown-content">' +
                     '<div class="content-block">' +
                         '<div class="list-block">' +
-                            '<div style="width: 100%; text-align: right;">' +
+                            '<div style="position: fixed; right: 10px; top: 30px;">' +
                                 '<a href="#" id="createGroupButton"><i class="fa fa-plus-circle"></i></a>' +
                             '</div>' +
                             '<ul id="leftGroupList"></ul>' +

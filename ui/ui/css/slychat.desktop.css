@@ -1,9 +1,10 @@
 #contactPopup .floating-button {
     top: 5px;
 }
-.navbar {
-    background-color: #eee !important;
+#mainView .navbar {
+    background-color: #fff !important;
     color: black !important;
+    border-bottom: 1px solid #eee;
 }
 #chatPageContent {
     top: 56px;
@@ -41,4 +42,12 @@
 #leftMenuPanel.hidden {
     width: 250px;
     left: -250px;
+}
+
+#leftContactList, #leftGroupList {
+    width: 80%;
+}
+
+#leftMenuPanel .item-title, #leftMenuPanel a {
+    color: #fff;
 }

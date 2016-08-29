@@ -255,13 +255,13 @@ GroupController.prototype = {
             newBadge = '<span class="left-menu-new-badge" style="color: red; font-size: 12px; margin-left: 5px;">new</span>';
         }
 
-        var node = $("<li id='leftContact_" + group.group.id + "'><a href='#'>" + group.group.name + "</a>" + newBadge + "</li>");
+        var node = $("<li id='leftContact_" + group.group.id + "'><a class='left-contact-link' href='#'>" + group.group.name + "</a>" + newBadge + "</li>");
 
-        node.click(function (e) {
+        node.find('.left-contact-link').click(function (e) {
             contactController.loadChatPage(group.group, true, true);
         });
 
-        node.on("mouseheld", function () {
+        node.find('.left-contact-link').on("mouseheld", function () {
             vibrate(50);
             this.openGroupNodeMenu(group.group.id);
         }.bind(this));
