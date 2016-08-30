@@ -1,10 +1,12 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.withTimeAs
 import org.junit.Test
 import rx.subjects.PublishSubject
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class RelayClockImplTest {
@@ -43,6 +45,18 @@ class RelayClockImplTest {
         }
 
         assertTrue(wasCalled, "No event emitted")
+    }
+
+    @Test
+    fun `it should always return the last value on subscription`() {
+        val relayClock = RelayClockImpl(
+            clockDifference,
+            0
+        )
+
+        val testSubscriber = relayClock.clockDiffUpdates.testSubscriber()
+
+        assertNotNull(testSubscriber.onNextEvents.firstOrNull(), "Not value given")
     }
 
     @Test
@@ -113,7 +127,7 @@ class RelayClockImplTest {
         val diff = threshold + 1
 
         var wasCalled = false
-        relayClock.clockDiffUpdates.subscribe {
+        relayClock.clockDiffUpdates.skip(1).subscribe {
             wasCalled = true
 
             assertEquals(diff, it, "Invalid diff in update")

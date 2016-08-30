@@ -49,7 +49,7 @@ class MockUserComponent : UserComponent {
     override val userLoginData: UserData = UserData(randomSlyAddress(), keyVault)
 
     override val relayClock: RelayClock = mock()
-    
+
     override val relayClientManager: RelayClientManager = mock()
 
     override val preKeyManager: PreKeyManager = mock()

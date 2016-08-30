@@ -16,7 +16,7 @@ class RelayClockImpl(
 
     private var clockDiff = 0L
 
-    private val clockDiffSubject = BehaviorSubject.create<Long>()
+    private val clockDiffSubject = BehaviorSubject.create<Long>(0)
     override val clockDiffUpdates: Observable<Long>
         get() = clockDiffSubject
 
