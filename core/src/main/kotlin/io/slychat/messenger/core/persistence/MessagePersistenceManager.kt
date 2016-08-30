@@ -12,7 +12,7 @@ interface MessagePersistenceManager {
     fun addMessages(userId: UserId, messages: Collection<MessageInfo>): Promise<List<MessageInfo>, Exception>
 
     /** Marks a sent message as being received and updates its timestamp to the current time. */
-    fun markMessageAsDelivered(userId: UserId, messageId: String): Promise<MessageInfo, Exception>
+    fun markMessageAsDelivered(userId: UserId, messageId: String, timestamp: Long): Promise<MessageInfo, Exception>
 
     /** Retrieve the last n messages for the given contact starting backwards at the given index. */
     fun getLastMessages(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception>
