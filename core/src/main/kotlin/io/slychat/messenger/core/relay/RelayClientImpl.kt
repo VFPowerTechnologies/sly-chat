@@ -208,21 +208,25 @@ class RelayClientImpl(
     }
 
     private fun updateClockDifference(serverTimestamp: Long) {
+        val now = monotonicTime()
+
         val lastSentTime = lastMessageSentTime
         lastMessageSentTime = null
 
-        //more or less a ghetto SNTP
+        //more or less a ghetto SNTP; we're willing to take some seconds worth of accuracy loss here
         if (lastSentTime != null) {
-            val now = monotonicTime()
             val diff = now - lastSentTime.requestTicks
 
             //if the returned time went backwards or overflowed, just ignore it for this iteration
             if (diff >= 0) {
                 val responseTime = lastSentTime.sentTimeMs + diff
-                val clockDiff = serverTimestamp - responseTime
+                //TODO we should probably have the server send back the time it received the message since that would improve accuracy
+                val clockDiff = ((serverTimestamp - lastSentTime.sentTimeMs) + (serverTimestamp - responseTime)) / 2
 
                 clockDifferenceSubject.onNext(clockDiff)
             }
+            else
+                log.warn("Diff overflowed or went backwards: {} - {}", now, lastSentTime.requestTicks)
         }
         else
             log.warn("Received a sync message from server without a corresponding request")
