@@ -23,6 +23,9 @@ interface RelayClient {
      * 2) authentication
      *
      * Connecting to this observable will immediately yield the last known value, if any.
+     *
+     * Since we don't require too high precision for this, we accept that doing this over tcp may cause the difference
+     * to be larger due to retransmissions, etc.
      */
     val clockDifference: Observable<Long>
 
