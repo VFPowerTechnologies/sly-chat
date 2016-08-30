@@ -4,7 +4,7 @@ function createDesktopMenu () {
         '<div class="view view-left navbar-through">' +
         '<div class="pages">' +
         '<div data-page="contact-left" class="page" style="background-color: #861E00;">' +
-        '<div class="navbar" style="background-color: #861E00;"><div class="navbar-inner"><a href="#" onclick="navigationController.loadPage(\'contacts.html\');"><div class="left" style="color: #ff5722;"><img style="height: 40px; width: 40px; margin-right: 10px; padding-left: 10px;" src="img/sly_logo.png"> Sly Chat </div></a></div></div>' +
+        '<div class="navbar" style="background-color: #861E00;"><div class="navbar-inner"><a href="#" onclick="navigationController.loadPage(\'contacts.html\');"><div class="left" style="color: #ff5722;"><img style="height: 40px; width: 40px; margin-right: 10px; padding-left: 10px;" src="img/sly_logo_transparent_bg.png"> Sly Chat </div></a></div></div>' +
         '<div class="page-content">' +
         '<div class="list-block" style="margin-top: 5px;">' +
         '<ul>' +
