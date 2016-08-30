@@ -35,6 +35,9 @@ interface RelayClientManager {
     /** Received relay messages. */
     val events: Observable<RelayClientEvent>
 
+    /** Clock difference between system and relay. */
+    val clockDifference: Observable<Long>
+
     /** Connect to the relay. */
     fun connect(userCredentials: UserCredentials)
     fun disconnect()
