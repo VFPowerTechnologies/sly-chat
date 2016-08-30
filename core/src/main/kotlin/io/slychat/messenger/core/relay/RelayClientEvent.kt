@@ -39,9 +39,9 @@ class AuthenticationExpired() : RelayClientEvent {
     }
 }
 
-data class ReceivedMessage(val from: SlyAddress, val content: String, val messageId: String) : RelayClientEvent
+data class ReceivedMessage(val from: SlyAddress, val content: String, val messageId: String, val timestamp: Long) : RelayClientEvent
 
-data class ServerReceivedMessage(val to: UserId, val messageId: String) : RelayClientEvent
+data class ServerReceivedMessage(val to: UserId, val messageId: String, val timestamp: Long) : RelayClientEvent
 
 data class MessageSentToUser(val to: UserId, val messageId: String) : RelayClientEvent
 

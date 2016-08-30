@@ -146,7 +146,7 @@ class RelayClientImpl(
                     to
                 )
 
-                emitEvent(ServerReceivedMessage(to.toUserId(), messageId))
+                emitEvent(ServerReceivedMessage(to.toUserId(), messageId, message.header.timestamp))
             }
 
             //when receiving a message of this type, it indicates a new message from someone
@@ -161,7 +161,7 @@ class RelayClientImpl(
 
                 val content = readMessageContent(message.content)
 
-                emitEvent(ReceivedMessage(SlyAddress.fromString(from)!!, content, messageId))
+                emitEvent(ReceivedMessage(SlyAddress.fromString(from)!!, content, messageId, message.header.timestamp))
             }
 
             CommandCode.SERVER_USER_OFFLINE -> {
@@ -191,7 +191,7 @@ class RelayClientImpl(
                     //if the returned time went backwards or overflowed, just ignore it for this iteration
                     if (diff >= 0) {
                         val responseTime = lastSentTime.sentTimeMs + diff
-                        val clockDiff = message.header.timestampMs - responseTime
+                        val clockDiff = message.header.timestamp - responseTime
 
                         clockDifferenceSubject.onNext(clockDiff)
                     }

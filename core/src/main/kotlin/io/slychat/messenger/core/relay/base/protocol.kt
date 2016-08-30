@@ -92,7 +92,7 @@ data class Header(
     val messageFragmentTotal: Int,
     //TODO move this to match the header order when the relay support is complete
     //this is always 0 in client requests
-    val timestampMs: Long,
+    val timestamp: Long,
     val commandCode: CommandCode
 ) {
     init {
