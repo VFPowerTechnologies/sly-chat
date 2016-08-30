@@ -47,8 +47,8 @@ class GroupServiceImpl(
         return groupPersistenceManager.addMessage(groupId, groupMessageInfo)
     }
 
-    override fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<GroupMessageInfo?, Exception> {
-        return groupPersistenceManager.markMessageAsDelivered(groupId, messageId, )
+    override fun markMessageAsDelivered(groupId: GroupId, messageId: String, timestamp: Long): Promise<GroupMessageInfo?, Exception> {
+        return groupPersistenceManager.markMessageAsDelivered(groupId, messageId, timestamp)
     }
 
     override fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> {

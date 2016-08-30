@@ -13,11 +13,7 @@ import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageData
-import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.TestException
-import io.slychat.messenger.testutils.testSubscriber
-import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenReject
+import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import org.junit.Before
@@ -168,7 +164,7 @@ class MessageSenderImplTest {
 
         sender.addToQueue(metadata, queued.serialized).get()
 
-        relayEvents.onNext(ServerReceivedMessage(metadata.userId, metadata.messageId))
+        relayEvents.onNext(ServerReceivedMessage(metadata.userId, metadata.messageId, currentTimestamp()))
 
         verify(messageQueuePersistenceManager).remove(metadata.userId, metadata.messageId)
     }
@@ -183,7 +179,7 @@ class MessageSenderImplTest {
         sender.addToQueue(first.metadata, first.serialized).get()
         sender.addToQueue(second.metadata, second.serialized).get()
 
-        relayEvents.onNext(ServerReceivedMessage(first.metadata.userId, first.metadata.messageId))
+        relayEvents.onNext(ServerReceivedMessage(first.metadata.userId, first.metadata.messageId, currentTimestamp()))
 
         val order = inOrder(messageCipherService)
 
@@ -227,10 +223,12 @@ class MessageSenderImplTest {
 
         sender.addToQueue(metadata, queued.serialized).get()
 
-        relayEvents.onNext(ServerReceivedMessage(recipient, metadata.messageId))
+        val timestamp = currentTimestamp()
+        val record = MessageSendRecord(metadata, timestamp)
+        relayEvents.onNext(ServerReceivedMessage(recipient, metadata.messageId, timestamp))
 
         assertEventEmitted(testSubscriber) {
-            assertEquals(metadata, it, "Invalid message metadata")
+            assertEquals(record, it, "Invalid message send record")
         }
     }
 
@@ -253,8 +251,10 @@ class MessageSenderImplTest {
 
         sender.addToQueue(metadata, queued.serialized).get()
 
+        val record = MessageSendRecord(metadata, currentTimestamp())
+
         assertEventEmitted(testSubscriber) {
-            assertEquals(metadata, it, "Invalid message metadata")
+            assertEquals(record.metadata, it.metadata, "Invalid message metadata")
         }
     }
 

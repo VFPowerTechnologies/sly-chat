@@ -83,20 +83,22 @@ class MessengerServiceImpl(
         }
     }
 
-    private fun onMessageSent(metadata: MessageMetadata) {
+    private fun onMessageSent(record: MessageSendRecord) {
+        val metadata = record.metadata
+
         log.debug("Processing sent message {} (category: {})", metadata.messageId, metadata.category)
 
         when (metadata.category) {
-            MessageCategory.TEXT_SINGLE -> processSingleUpdate(metadata)
-            MessageCategory.TEXT_GROUP -> processGroupUpdate(metadata)
+            MessageCategory.TEXT_SINGLE -> processSingleUpdate(metadata, record.serverReceivedTimestamp)
+            MessageCategory.TEXT_GROUP -> processGroupUpdate(metadata, record.serverReceivedTimestamp)
             MessageCategory.OTHER -> {}
         }
     }
 
-    private fun processSingleUpdate(metadata: MessageMetadata) {
+    private fun processSingleUpdate(metadata: MessageMetadata, serverReceivedTimestamp: Long) {
         log.debug("Processing sent convo message {} to {}", metadata.messageId, metadata.userId)
 
-        messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId) bindUi { messageInfo ->
+        messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId, serverReceivedTimestamp) bindUi { messageInfo ->
             broadcastSentMessage(metadata, messageInfo) map { messageInfo }
         } successUi { messageInfo ->
             val bundle = MessageBundle(metadata.userId, null, listOf(messageInfo))
@@ -106,13 +108,13 @@ class MessengerServiceImpl(
         }
     }
 
-    private fun processGroupUpdate(metadata: MessageMetadata) {
+    private fun processGroupUpdate(metadata: MessageMetadata, serverReceivedTimestamp: Long) {
         //can't be null due to constructor checks
         val groupId = metadata.groupId!!
 
         log.debug("Processing sent group message <<{}/{}>>", groupId, metadata.messageId)
 
-        groupService.markMessageAsDelivered(groupId, metadata.messageId) bindUi { groupMessageInfo ->
+        groupService.markMessageAsDelivered(groupId, metadata.messageId, serverReceivedTimestamp) bindUi { groupMessageInfo ->
             if (groupMessageInfo != null)
                 broadcastSentMessage(metadata, groupMessageInfo.info) map { groupMessageInfo }
             else

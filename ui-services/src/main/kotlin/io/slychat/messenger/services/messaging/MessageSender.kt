@@ -1,6 +1,5 @@
 package io.slychat.messenger.services.messaging
 
-import io.slychat.messenger.core.persistence.MessageMetadata
 import nl.komponents.kovenant.Promise
 import rx.Observable
 
@@ -10,7 +9,7 @@ import rx.Observable
  * Not concerned with actual message contents, messages are represented as bytes to be encrypted and sent to the relay.
  */
 interface MessageSender {
-    val messageSent: Observable<MessageMetadata>
+    val messageSent: Observable<MessageSendRecord>
 
     fun addToQueue(entry: SenderMessageEntry): Promise<Unit, Exception>
 
