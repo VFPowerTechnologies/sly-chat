@@ -4,7 +4,6 @@ import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.sqlite.*
 import nl.komponents.kovenant.Promise
 import java.util.*
@@ -611,7 +610,7 @@ LIMIT
         }
     }
 
-    override fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<GroupMessageInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun markMessageAsDelivered(groupId: GroupId, messageId: String, timestamp: Long): Promise<GroupMessageInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val tableName = GroupConversationTable.getTablename(groupId)
 
         val sql = "UPDATE $tableName SET is_delivered=1, received_timestamp=? WHERE id=?"
@@ -626,7 +625,7 @@ LIMIT
         if (!currentInfo.info.isDelivered) {
             try {
                 connection.withPrepared(sql) { stmt ->
-                    stmt.bind(1, currentTimestamp())
+                    stmt.bind(1, timestamp)
                     stmt.bind(2, messageId)
                     stmt.step()
                 }

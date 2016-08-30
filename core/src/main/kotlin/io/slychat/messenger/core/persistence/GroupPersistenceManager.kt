@@ -61,7 +61,7 @@ interface GroupPersistenceManager {
     fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception>
 
     /** Marks the given group message as delivered. If the message has already been marked as delievered, returns null. */
-    fun markMessageAsDelivered(groupId: GroupId, messageId: String): Promise<GroupMessageInfo?, Exception>
+    fun markMessageAsDelivered(groupId: GroupId, messageId: String, timestamp: Long): Promise<GroupMessageInfo?, Exception>
 
     /** Resets unread message count for the given contact's conversation. */
     fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception>
