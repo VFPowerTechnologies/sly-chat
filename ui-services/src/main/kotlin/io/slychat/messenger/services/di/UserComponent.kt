@@ -51,4 +51,6 @@ interface UserComponent {
     val addressBookOperationManager: AddressBookOperationManager
 
     val accountInfoManager: AccountInfoManager
+
+    val relayClock: RelayClock
 }

@@ -2,6 +2,7 @@ package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.messaging.ConversationMessage
 import io.slychat.messenger.services.messaging.MessageBundle
@@ -11,7 +12,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import rx.Observable
-import rx.Subscription
+import rx.subscriptions.CompositeSubscription
 import java.util.*
 
 /** This exists for the lifetime of the application. It wraps MessengerService, which exists for the lifetime of the user session. */
@@ -22,11 +23,12 @@ class UIMessengerServiceImpl(
 
     private val newMessageListeners = ArrayList<(UIMessageInfo) -> Unit>()
     private val messageStatusUpdateListeners = ArrayList<(UIMessageInfo) -> Unit>()
+    private val clockDifferenceUpdateListeners = ArrayList<(Long) -> Unit>()
 
-    private var newMessageSub: Subscription? = null
-    private var messageStatusUpdateSub: Subscription? = null
+    private val subscriptions = CompositeSubscription()
 
     private var messengerService: MessengerService? = null
+    private var relayClock: RelayClock? = null
 
     init {
         userSessionAvailable.subscribe { onUserSessionAvailabilityChanged(it) }
@@ -36,20 +38,23 @@ class UIMessengerServiceImpl(
         if (userComponent != null) {
             val messengerService = userComponent.messengerService
 
-            newMessageSub = messengerService.newMessages.subscribe { onNewMessages(it) }
-            messageStatusUpdateSub = messengerService.messageUpdates.subscribe { onMessageStatusUpdate(it) }
+            subscriptions.add(messengerService.newMessages.subscribe { onNewMessages(it) })
+            subscriptions.add(messengerService.messageUpdates.subscribe { onMessageStatusUpdate(it) })
+            subscriptions.add(userComponent.relayClock.clockDiffUpdates.subscribe { onClockDifferenceUpdate(it) })
 
             this.messengerService = userComponent.messengerService
+            relayClock = userComponent.relayClock
         }
         else {
-            newMessageSub?.unsubscribe()
-            newMessageSub = null
-
-            messageStatusUpdateSub?.unsubscribe()
-            messageStatusUpdateSub = null
+            subscriptions.clear()
 
             messengerService = null
+            relayClock = null
         }
+    }
+
+    private fun onClockDifferenceUpdate(diff: Long) {
+        clockDifferenceUpdateListeners.forEach { it(diff) }
     }
 
     private fun getMessengerServiceOrThrow(): MessengerService {
@@ -97,6 +102,10 @@ class UIMessengerServiceImpl(
 
     override fun addConversationStatusUpdateListener(listener: (UIConversation) -> Unit) {
         log.debug("addConversationStatusUpdateListener: TODO")
+    }
+
+    override fun addClockDifferenceUpdateListener(listener: (Long) -> Unit) {
+        clockDifferenceUpdateListeners.add(listener)
     }
 
     override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {

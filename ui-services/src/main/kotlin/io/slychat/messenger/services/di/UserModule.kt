@@ -362,4 +362,14 @@ class UserModule(
             loginClient
         )
     }
+
+    @UserScope
+    @Provides
+    fun providesRelayClock(
+        relayClientManager: RelayClientManager
+    ): RelayClock =
+        RelayClockImpl(
+            relayClientManager.clockDifference,
+            TimeUnit.SECONDS.toMillis(60)
+        )
 }
