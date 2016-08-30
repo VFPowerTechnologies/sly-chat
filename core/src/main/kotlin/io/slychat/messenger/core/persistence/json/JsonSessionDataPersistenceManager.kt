@@ -1,24 +1,29 @@
 package io.slychat.messenger.core.persistence.json
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.slychat.messenger.core.crypto.ciphers.CipherParams
-import io.slychat.messenger.core.persistence.SerializedSessionData
+import io.slychat.messenger.core.crypto.EncryptionSpec
+import io.slychat.messenger.core.crypto.decryptData
+import io.slychat.messenger.core.crypto.encryptDataWithParams
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.SessionDataPersistenceManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
+import org.spongycastle.crypto.InvalidCipherTextException
 import java.io.File
+import java.io.FileNotFoundException
 
 class JsonSessionDataPersistenceManager(
     val path: File,
-    private val localDataEncryptionKey: ByteArray,
-    private val localDataEncryptionParams: CipherParams
+    private val encryptionSpec: EncryptionSpec
 ) : SessionDataPersistenceManager {
     val objectMapper = ObjectMapper()
 
     override fun store(sessionData: SessionData): Promise<Unit, Exception> = task {
-        val serialized = sessionData.serialize(localDataEncryptionKey, localDataEncryptionParams)
-        writeObjectToJsonFile(path, serialized)
+        val serialized = objectMapper.writeValueAsBytes(sessionData)
+
+        val encrypted = encryptDataWithParams(encryptionSpec, serialized)
+
+        path.writeBytes(encrypted.data)
     }
 
     override fun retrieve(): Promise<SessionData?, Exception> = task {
@@ -26,7 +31,21 @@ class JsonSessionDataPersistenceManager(
     }
 
     override fun retrieveSync(): SessionData? {
-        return readObjectFromJsonFile(path, SerializedSessionData::class.java)?.deserialize(localDataEncryptionKey, localDataEncryptionParams)
+        val encrypted = try {
+            path.readBytes()
+        }
+        catch (e: FileNotFoundException) {
+            return null
+        }
+
+        val decrypted = try {
+            decryptData(encryptionSpec, encrypted)
+        }
+        catch (e: InvalidCipherTextException) {
+            return null
+        }
+
+        return objectMapper.readValue(decrypted, SessionData::class.java)
     }
 
     override fun delete(): Promise<Boolean, Exception> = task {
