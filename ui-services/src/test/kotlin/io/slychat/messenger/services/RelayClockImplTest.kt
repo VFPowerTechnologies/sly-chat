@@ -115,8 +115,7 @@ class RelayClockImplTest {
         }
     }
 
-    @Test
-    fun `it should emit a diff event when the value is above the given threshold`() {
+    fun testUpdateEmission(body: (RelayClockImpl, Long) -> Unit) {
         val threshold = 100L
 
         val relayClock = RelayClockImpl(
@@ -126,15 +125,26 @@ class RelayClockImplTest {
 
         val diff = threshold + 1
 
-        var wasCalled = false
-        relayClock.clockDiffUpdates.skip(1).subscribe {
-            wasCalled = true
+        val testSubscriber = relayClock.clockDiffUpdates.skip(1).testSubscriber()
 
-            assertEquals(diff, it, "Invalid diff in update")
+        body(relayClock, diff)
+
+        val emitted = assertNotNull(testSubscriber.onNextEvents.firstOrNull(), "No event emitted")
+
+        assertEquals(diff, emitted, "Invalid diff in update")
+    }
+
+    @Test
+    fun `it should emit a diff event when the value is above the given threshold`() {
+        testUpdateEmission { relayClock, diff ->
+            clockDifference.onNext(diff)
         }
+    }
 
-        clockDifference.onNext(diff)
-
-        assertTrue(wasCalled, "No event emitted")
+    @Test
+    fun `setDifference should emit an update event if above the threshold`() {
+        testUpdateEmission { relayClock, diff ->
+            relayClock.setDifference(diff)
+        }
     }
 }

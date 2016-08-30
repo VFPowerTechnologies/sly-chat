@@ -28,6 +28,14 @@ class RelayClockImpl(
     }
 
     private fun onClockDifferenceUpdate(diff: Long) {
+        setDifference(diff)
+    }
+
+    override fun currentTime(): Long {
+        return currentTimestamp() + clockDiff
+    }
+
+    override fun setDifference(diff: Long) {
         clockDiff = if (Math.abs(diff) <= differenceThreshold) {
             log.debug("Difference is below threshold ({} < {}), ignoring", differenceThreshold, diff)
             0
@@ -38,9 +46,5 @@ class RelayClockImpl(
         }
 
         clockDiffSubject.onNext(clockDiff)
-    }
-
-    override fun currentTime(): Long {
-        return currentTimestamp() + clockDiff
     }
 }
