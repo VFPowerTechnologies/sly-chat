@@ -4,11 +4,13 @@ import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.relay.base.*
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Observer
 import rx.Scheduler
+import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import java.net.InetSocketAddress
 
@@ -29,12 +31,25 @@ class RelayClientImpl(
         }
     }
 
+    /**
+     * @property requestTicks Is a monotonic clock value, taken from System.nanoTime and converted to ms.
+     */
+    private class SentTimeData(val sentTimeMs: Long, val requestTicks: Long)
+
+    //this is only used for certain messages: Authentication, ping/pong
+    /** Time for when the last message was sent. */
+    private var lastMessageSentTime: SentTimeData? = null
+
     private val log = LoggerFactory.getLogger(javaClass)
     private var relayConnection: RelayConnection? = null
     override var state: RelayClientState = RelayClientState.DISCONNECTED
         private set
     private var wasDisconnectRequested = false
     private val publishSubject = PublishSubject.create<RelayClientEvent>()
+
+    private val clockDifferenceSubject = BehaviorSubject.create<Long>()
+    override val clockDifference: Observable<Long>
+        get() = clockDifferenceSubject
 
     /** Client event stream. Will never call onError; check ConnectionLost.error instead. */
     override val events: Observable<RelayClientEvent>
@@ -164,6 +179,25 @@ class RelayClientImpl(
 
             CommandCode.SERVER_PONG -> {
                 log.debug("PONG")
+
+                val lastSentTime = lastMessageSentTime
+                lastMessageSentTime = null
+
+                //more or less a ghetto SNTP
+                if (lastSentTime != null) {
+                    val now = monotonicTime()
+                    val diff = now - lastSentTime.requestTicks
+
+                    //if the returned time went backwards or overflowed, just ignore it for this iteration
+                    if (diff >= 0) {
+                        val responseTime = lastSentTime.sentTimeMs + diff
+                        val clockDiff = message.header.timestampMs - responseTime
+
+                        clockDifferenceSubject.onNext(clockDiff)
+                    }
+                }
+                else
+                    log.warn("Received a PONG from server without a corresponding PING")
             }
 
             CommandCode.SERVER_DEVICE_MISMATCH -> {
@@ -257,5 +291,14 @@ class RelayClientImpl(
         log.debug("PING")
         val connection = getAuthConnectionOrThrow()
         connection.sendMessage(createPingMessage())
+
+        lastMessageSentTime = SentTimeData(
+            currentTimestamp(),
+            monotonicTime()
+        )
+    }
+
+    private fun monotonicTime(): Long {
+        return System.nanoTime() / 1000000
     }
 }
