@@ -1,3 +1,3 @@
-package io.slychat.messenger.services
+package io.slychat.messenger.services.auth
 
 class AuthApiResponseException(val errorMessage: String): RuntimeException(errorMessage)

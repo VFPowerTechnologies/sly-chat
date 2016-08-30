@@ -1,4 +1,4 @@
-package io.slychat.messenger.services
+package io.slychat.messenger.services.auth
 
 import io.slychat.messenger.core.AuthToken
 import io.slychat.messenger.core.crypto.KeyVault

@@ -4,6 +4,8 @@ import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.hexify
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
+import io.slychat.messenger.services.auth.AuthApiResponseException
+import io.slychat.messenger.services.auth.AuthTokenRefreshResult
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map

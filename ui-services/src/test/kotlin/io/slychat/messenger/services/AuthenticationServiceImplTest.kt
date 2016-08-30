@@ -14,6 +14,7 @@ import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.KeyVaultPersistenceManager
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.SessionDataPersistenceManager
+import io.slychat.messenger.services.auth.AuthenticationServiceImpl
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
 import io.slychat.messenger.testutils.thenReject

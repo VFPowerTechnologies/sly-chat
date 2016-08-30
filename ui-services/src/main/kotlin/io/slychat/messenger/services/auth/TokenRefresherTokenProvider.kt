@@ -1,6 +1,6 @@
 package io.slychat.messenger.services.auth
 
-import io.slychat.messenger.services.AuthApiResponseException
+import io.slychat.messenger.services.auth.AuthApiResponseException
 import io.slychat.messenger.services.TokenRefresher
 import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.failUi

@@ -8,6 +8,7 @@ import io.slychat.messenger.core.randomAccountInfo
 import io.slychat.messenger.core.randomDeviceId
 import io.slychat.messenger.core.crypto.randomRegistrationId
 import io.slychat.messenger.core.relay.RelayClientEvent
+import io.slychat.messenger.services.auth.AuthResult
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
 import io.slychat.messenger.testutils.thenReject

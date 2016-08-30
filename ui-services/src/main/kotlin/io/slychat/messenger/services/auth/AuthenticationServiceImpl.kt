@@ -1,8 +1,9 @@
-package io.slychat.messenger.services
+package io.slychat.messenger.services.auth
 
 import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
+import io.slychat.messenger.services.LocalAccountDirectory
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map

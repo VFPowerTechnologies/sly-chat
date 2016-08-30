@@ -11,6 +11,8 @@ import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
 import io.slychat.messenger.services.LoginEvent.*
+import io.slychat.messenger.services.auth.AuthApiResponseException
+import io.slychat.messenger.services.auth.AuthResult
 import io.slychat.messenger.services.di.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
