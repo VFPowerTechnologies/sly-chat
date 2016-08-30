@@ -11,8 +11,10 @@ import io.slychat.messenger.core.emptyByteArray
 import io.slychat.messenger.core.randomUserCredentials
 import io.slychat.messenger.core.relay.base.*
 import io.slychat.messenger.testutils.testSubscriber
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
+import org.junit.Before
 import org.junit.Test
+import rx.observers.TestSubscriber
 import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
 import java.io.ByteArrayInputStream
@@ -32,6 +34,15 @@ class RelayClientImplTest {
             false,
             false
         )
+    }
+
+    val relayConnector = mock<RelayConnector>()
+
+    val relayEvents: PublishSubject<RelayConnectionEvent> = PublishSubject.create()
+
+    @Before
+    fun before() {
+        whenever(relayConnector.connect(any(), any())).thenReturn(relayEvents)
     }
 
     fun createPongMessage(): RelayMessage {
@@ -68,23 +79,45 @@ class RelayClientImplTest {
         return RelayMessage(header, emptyByteArray())
     }
 
-    @Test
-    fun `it should update client server clock diff time when sending and receiving keep alive messages`() {
-        val relayConnector = mock<RelayConnector>()
-
-        val relayEvents = PublishSubject.create<RelayConnectionEvent>()
-        whenever(relayConnector.connect(any(), any())).thenReturn(relayEvents)
-
-        val credentials = randomUserCredentials()
-        val client = RelayClientImpl(
+    fun createClient(): RelayClientImpl {
+        return RelayClientImpl(
             relayConnector,
             Schedulers.immediate(),
             InetSocketAddress("127.0.0.1", 2153),
-            credentials,
+            randomUserCredentials(),
             dummySslConfigurator
         )
+    }
+
+    fun assertClockDifferenceEmitted(testSubscriber: TestSubscriber<Long>) {
+        Assertions.assertThat(testSubscriber.onNextEvents).apply {
+            `as`("Should emit a time difference event")
+            hasSize(1)
+        }
+    }
+
+    @Test
+    fun `it should update client server clock diff time during successful authentication`() {
+        val client = createClient()
 
         val testSubscriber = client.clockDifference.testSubscriber()
+
+        client.connect()
+
+        val relayConnection = mock<RelayConnection>()
+        relayEvents.onNext(RelayConnectionEstablished(relayConnection))
+
+        relayEvents.onNext(createSuccessfulAuthMessage())
+
+        assertClockDifferenceEmitted(testSubscriber)
+    }
+
+    @Test
+    fun `it should update client server clock diff time when sending and receiving keep alive messages`() {
+        val client = createClient()
+
+        //skip the auth version
+        val testSubscriber = client.clockDifference.skip(1).testSubscriber()
 
         client.connect()
 
@@ -97,9 +130,6 @@ class RelayClientImplTest {
 
         relayEvents.onNext(createPongMessage())
 
-        assertThat(testSubscriber.onNextEvents).apply {
-            `as`("Should emit a time difference event")
-            hasSize(1)
-        }
+        assertClockDifferenceEmitted(testSubscriber)
     }
 }

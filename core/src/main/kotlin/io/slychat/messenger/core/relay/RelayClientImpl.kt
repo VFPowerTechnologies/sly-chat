@@ -91,6 +91,7 @@ class RelayClientImpl(
         val connection = getConnectionOrThrow()
         connection.sendMessage(createAuthRequest(credentials))
         state = RelayClientState.AUTHENTICATING
+        updateLastSentTime()
     }
 
     private fun emitEvent(ev: RelayClientEvent) {
@@ -103,6 +104,8 @@ class RelayClientImpl(
     private fun handleRelayMessage(message: RelayMessage) {
         when (message.header.commandCode) {
             CommandCode.SERVER_REGISTER_SUCCESSFUL -> {
+                updateClockDifference(message.header.timestamp)
+
                 log.info("Registration successful")
                 state = RelayClientState.AUTHENTICATED
 
@@ -180,24 +183,7 @@ class RelayClientImpl(
             CommandCode.SERVER_PONG -> {
                 log.debug("PONG")
 
-                val lastSentTime = lastMessageSentTime
-                lastMessageSentTime = null
-
-                //more or less a ghetto SNTP
-                if (lastSentTime != null) {
-                    val now = monotonicTime()
-                    val diff = now - lastSentTime.requestTicks
-
-                    //if the returned time went backwards or overflowed, just ignore it for this iteration
-                    if (diff >= 0) {
-                        val responseTime = lastSentTime.sentTimeMs + diff
-                        val clockDiff = message.header.timestamp - responseTime
-
-                        clockDifferenceSubject.onNext(clockDiff)
-                    }
-                }
-                else
-                    log.warn("Received a PONG from server without a corresponding PING")
+                updateClockDifference(message.header.timestamp)
             }
 
             CommandCode.SERVER_DEVICE_MISMATCH -> {
@@ -219,6 +205,27 @@ class RelayClientImpl(
                 log.warn("Unhandled message type: {}", message.header.commandCode)
             }
         }
+    }
+
+    private fun updateClockDifference(serverTimestamp: Long) {
+        val lastSentTime = lastMessageSentTime
+        lastMessageSentTime = null
+
+        //more or less a ghetto SNTP
+        if (lastSentTime != null) {
+            val now = monotonicTime()
+            val diff = now - lastSentTime.requestTicks
+
+            //if the returned time went backwards or overflowed, just ignore it for this iteration
+            if (diff >= 0) {
+                val responseTime = lastSentTime.sentTimeMs + diff
+                val clockDiff = serverTimestamp - responseTime
+
+                clockDifferenceSubject.onNext(clockDiff)
+            }
+        }
+        else
+            log.warn("Received a sync message from server without a corresponding request")
     }
 
     private fun onCompleted() {
@@ -287,15 +294,19 @@ class RelayClientImpl(
         connection.sendMessage(createMessageReceivedMessage(credentials, messageId))
     }
 
+    private fun updateLastSentTime() {
+        lastMessageSentTime = SentTimeData(
+            currentTimestamp(),
+            monotonicTime()
+        )
+    }
+
     override fun sendPing() {
         log.debug("PING")
         val connection = getAuthConnectionOrThrow()
         connection.sendMessage(createPingMessage())
 
-        lastMessageSentTime = SentTimeData(
-            currentTimestamp(),
-            monotonicTime()
-        )
+        updateLastSentTime()
     }
 
     private fun monotonicTime(): Long {
