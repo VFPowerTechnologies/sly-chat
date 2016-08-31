@@ -100,6 +100,8 @@ class SlyApplication {
     internal fun init(applicationComponent: ApplicationComponent, doAutoLogin: Boolean = false) {
         appComponent = applicationComponent
 
+        appComponent.networkStatus.subscribe { updateNetworkStatus(it) }
+
         initializeApplicationServices()
 
         initInstallationData()
@@ -336,7 +338,7 @@ class SlyApplication {
         }
     }
 
-    fun updateNetworkStatus(isAvailable: Boolean) {
+    private fun updateNetworkStatus(isAvailable: Boolean) {
         //ignore dup updates
         if (isAvailable == isNetworkAvailable)
             return
