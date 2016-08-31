@@ -117,9 +117,7 @@ class SlyApplicationTest {
     @Test
     fun `it should attempt to login automatically after basic initialization`() { TODO() }
 
-    fun authWithOtherDevices(otherDevices: List<DeviceInfo>?): SlyApplication {
-        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, accountInfo, otherDevices)
-
+    fun auth(authResult: AuthResult): SlyApplication {
         whenever(appComponent.authenticationService.auth(any(), any(), any())).thenResolve(authResult)
         val app = createApp()
 
@@ -128,6 +126,18 @@ class SlyApplicationTest {
         doLogin(app)
 
         return app
+    }
+
+    fun authWithOtherDevices(otherDevices: List<DeviceInfo>?): SlyApplication {
+        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, accountInfo, otherDevices)
+
+        return auth(authResult)
+    }
+
+    fun authWithSessionData(sessionData: SessionData): SlyApplication {
+        val authResult = AuthResult(sessionData, MockUserComponent.keyVault, accountInfo, null)
+
+        return auth(authResult)
     }
 
     @Test
@@ -210,5 +220,14 @@ class SlyApplicationTest {
         clockDiffUpdates.onNext(diff)
 
         verify(userComponent.sessionDataManager).updateClockDifference(diff)
+    }
+
+    @Test
+    fun `it should initialize RelayClock with the clock diff value from SessionData during login`() {
+        val sessionData = SessionData().copy(relayClockDifference = 4000L)
+
+        val app = authWithSessionData(sessionData)
+
+        verify(userComponent.relayClock).setDifference(sessionData.relayClockDifference)
     }
 }

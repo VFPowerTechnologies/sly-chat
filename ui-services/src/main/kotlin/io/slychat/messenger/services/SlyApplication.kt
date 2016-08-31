@@ -272,7 +272,7 @@ class SlyApplication {
 
             //until this finishes, nothing in the UserComponent should be touched
             backgroundInitialization(userComponent, response, password, rememberMe) mapUi {
-                finalizeInitialization(userComponent, accountInfo)
+                finalizeInitialization(userComponent, accountInfo, sessionData)
             }
         } failUi { e ->
             //incase session initialization failed we need to clean up the user session here
@@ -476,12 +476,15 @@ class SlyApplication {
     }
 
     /** called after a successful user session has been created to finish initializing components. */
-    private fun finalizeInitialization(userComponent: UserComponent, accountInfo: AccountInfo) {
+    private fun finalizeInitialization(userComponent: UserComponent, accountInfo: AccountInfo, sessionData: SessionData) {
         log.info("Finalizing user initialization")
 
         userComponentSubscriptions.add(userComponent.authTokenManager.newToken.subscribe {
             onNewToken(it)
         })
+
+        //we don't care about receiving the event here
+        userComponent.relayClock.setDifference(sessionData.relayClockDifference)
 
         userComponentSubscriptions.add(userComponent.relayClock.clockDiffUpdates.subscribe {
             onClockDiffUpdate(it)
