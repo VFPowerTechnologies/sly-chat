@@ -14,7 +14,7 @@ ChatController.prototype = {
                 var messageBlock = $("#message_" + message.id);
                 if(messageBlock.length && message.sent == true){
                     var time = new Date(message.timestamp).toISOString();
-                    messageBlock.find(".timespan").html("<time class='timeago' datetime='" + time + "' title='" + $.timeago(time) + "'>" + $.timeago(time) + "</time>");
+                    messageBlock.find(".timespan").html("<time class='timeago' datetime='" + time + "' title='" + $.timeago(time, window.relayTimeDifference) + "'>" + $.timeago(time, window.relayTimeDifference) + "</time>");
                 }
             }.bind(this));
 
@@ -54,7 +54,7 @@ ChatController.prototype = {
         }
         else {
             var time = new Date(message.info.timestamp).toISOString();
-            timespan = "<time class='timeago' datetime='" + time + "' title='" + $.timeago(time) + "'>" + $.timeago(time) + "</time>";
+            timespan = "<time class='timeago' datetime='" + time + "' title='" + $.timeago(time, window.relayTimeDifference) + "'>" + $.timeago(time, window.relayTimeDifference) + "</time>";
         }
 
         this.lastMessage = message;
@@ -76,6 +76,8 @@ ChatController.prototype = {
             vibrate(50);
             this.openGroupMessageMenu(message, group);
         }.bind(this));
+
+        messageNode.find(".timeago").timeago("initiation", {relayDifference: window.relayTimeDifference});
 
         return messageNode;
     },
@@ -104,7 +106,7 @@ ChatController.prototype = {
         }
         else {
             var time = new Date(message.timestamp).toISOString();
-            timespan = "<time class='timeago' datetime='" + time + "' title='" + $.timeago(time) + "'>" + $.timeago(time) + "</time>";
+            timespan = "<time class='timeago' datetime='" + time + "' title='" + $.timeago(time, window.relayTimeDifference) + "'>" + $.timeago(time, window.relayTimeDifference) + "</time>";
         }
 
         this.lastMessage = message;
@@ -118,6 +120,8 @@ ChatController.prototype = {
             vibrate(50);
             this.openMessageMenu(message);
         }.bind(this));
+
+        messageNode.find(".timeago").timeago("initiation", {relayDifference: window.relayTimeDifference});
 
         return messageNode;
     },

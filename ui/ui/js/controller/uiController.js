@@ -29,6 +29,8 @@ var UIController = function () {
     window.groupController = new GroupController();
     window.exceptionController = new ExceptionController();
 
+    window.relayTimeDifference = 0;
+
     window.$$ = Dom7;
     $.fn.intlTelInput.loadUtils("js/external-lib/utils.js");
 };
@@ -39,6 +41,15 @@ UIController.prototype = {
         this.initMainView();
         this.handlePlatformUpdate();
         this.initController();
+        this.addTimeDifferenceListener();
+    },
+
+    addTimeDifferenceListener : function () {
+        messengerService.addClockDifferenceUpdateListener(function (difference) {
+            window.relayTimeDifference = difference;
+        }).catch(function (e) {
+            exceptionController.handleError(e);
+        })
     },
 
     initController : function () {

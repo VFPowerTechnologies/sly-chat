@@ -293,7 +293,7 @@ ContactController.prototype  = {
         var time = new Date(conversation.status.lastTimestamp).toISOString();
         var recentDiv = $("<div id='recentChat_" + conversation.contact.id + "' class='item-link recent-contact-link row " + newClass + "'>" +
             "<div class='recent-chat-name'><span>" + conversation.contact.name + "</span></div>" +
-            "<div class='right'><span><small class='last-message-time'><time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time></small></span></div>" +
+            "<div class='right'><span><small class='last-message-time'><time class='timeago' datetime='" + time + "'>" + $.timeago(time, window.relayTimeDifference) + "</time></small></span></div>" +
             "<div class='left'>" + this.formatLastMessage(conversation.status.lastMessage) + "</div>" +
             newBadge +
             "</div>");
@@ -306,6 +306,8 @@ ContactController.prototype  = {
             vibrate(50);
             this.openConversationMenu(conversation.contact);
         }.bind(this));
+
+        recentDiv.find(".timeago").timeago("initiation", {relayDifference: window.relayTimeDifference});
 
         return recentDiv;
     },
@@ -331,7 +333,7 @@ ContactController.prototype  = {
 
         var recentDiv = $("<div id='recentChat_" + conversation.group.id + "' class='item-link recent-contact-link row " + newClass + "'>" +
             "<div class='recent-chat-name'><span><span class='group-contact-name' style='display: inline;'>" + contactName + "</span> (" + conversation.group.name + ")</span></div>" +
-            "<div class='right'><span><small class='last-message-time'><time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time></small></span></div>" +
+            "<div class='right'><span><small class='last-message-time'><time class='timeago' datetime='" + time + "'>" + $.timeago(time, window.relayTimeDifference) + "</time></small></span></div>" +
             "<div class='left'>" + this.formatLastMessage(conversation.info.lastMessage) + "</div>" +
             newBadge +
             "</div>");
@@ -344,6 +346,8 @@ ContactController.prototype  = {
             vibrate(50);
             this.openGroupConversationMenu(conversation.group.id);
         }.bind(this));
+
+        recentDiv.find(".timeago").timeago("initiation", {relayDifference: window.relayTimeDifference});
 
         return recentDiv;
     },
@@ -381,7 +385,7 @@ ContactController.prototype  = {
             var time = new Date(message.receivedTimestamp).toISOString();
             this.updateMessageBadge(node, messageInfo);
             node.find(".left").html(this.formatLastMessage(message.message));
-            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
+            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time, window.relayTimeDifference) + "</time>");
 
             recentChatList.prepend(node);
         }
@@ -414,7 +418,7 @@ ContactController.prototype  = {
             this.updateMessageBadge(node, messageInfo);
             node.find(".group-contact-name").html(contact.name);
             node.find(".left").html(this.formatLastMessage(message.message));
-            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
+            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time, window.relayTimeDifference) + "</time>");
 
             recentChatList.prepend(node);
         }

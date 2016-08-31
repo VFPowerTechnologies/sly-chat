@@ -25,15 +25,15 @@
         factory(jQuery);
     }
 }(function ($) {
-    $.timeago = function(timestamp) {
+    $.timeago = function(timestamp, diff) {
         if (timestamp instanceof Date) {
-            return inWords(timestamp);
+            return inWords(timestamp, diff);
         } else if (typeof timestamp === "string") {
-            return inWords($.timeago.parse(timestamp));
+            return inWords($.timeago.parse(timestamp), diff);
         } else if (typeof timestamp === "number") {
-            return inWords(new Date(timestamp));
+            return inWords(new Date(timestamp), diff);
         } else {
-            return inWords($.timeago.datetime(timestamp));
+            return inWords($.timeago.datetime(timestamp), diff);
         }
     };
     var $t = $.timeago;
@@ -147,6 +147,18 @@
                 this._timeagoInterval = setInterval(refresh_el, $s.refreshMillis);
             }
         },
+        initiation: function(options) {
+            var diff = undefined;
+            if (options !== undefined && options.relayDifference !== undefined) {
+                diff = options.relayDifference;
+            }
+            var refresh_el = $.proxy(refresh, this, diff);
+            refresh_el();
+            var $s = $t.settings;
+            if ($s.refreshMillis > 0) {
+                this._timeagoInterval = setInterval(refresh_el, $s.refreshMillis);
+            }
+        },
         update: function(timestamp) {
             var date = (timestamp instanceof Date) ? timestamp : $t.parse(timestamp);
             $(this).data('timeago', { datetime: date });
@@ -177,7 +189,7 @@
         return this;
     };
 
-    function refresh() {
+    function refresh(diff) {
         var $s = $t.settings;
 
         //check if it's still visible
@@ -191,7 +203,7 @@
 
         if (!isNaN(data.datetime)) {
             if ( $s.cutoff == 0 || Math.abs(distance(data.datetime)) < $s.cutoff) {
-                $(this).text(inWords(data.datetime));
+                $(this).text(inWords(data.datetime, diff));
             }
         }
         return this;
@@ -211,12 +223,19 @@
         return element.data("timeago");
     }
 
-    function inWords(date) {
-        return $t.inWords(distance(date));
+    function inWords(date, diff) {
+        return $t.inWords(distance(date, diff));
     }
 
-    function distance(date) {
-        return (new Date().getTime() - date.getTime());
+    function distance(date, diff) {
+        var now;
+
+        if (diff === undefined)
+            now = new Date();
+        else
+            now = new Date(new Date().getTime() + diff);
+            
+        return (now.getTime() - date.getTime());
     }
 
     // fix for IE6 suckage
