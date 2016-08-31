@@ -1,17 +1,18 @@
 package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.*
+import io.slychat.messenger.core.crypto.randomRegistrationId
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.InstallationData
+import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.StartupInfoPersistenceManager
 import io.slychat.messenger.core.randomAccountInfo
+import io.slychat.messenger.core.randomAuthToken
 import io.slychat.messenger.core.randomDeviceId
-import io.slychat.messenger.core.crypto.randomRegistrationId
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.services.auth.AuthResult
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenReject
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Ignore
@@ -30,6 +31,7 @@ class SlyApplicationTest {
     val accountInfo = randomAccountInfo()
 
     val appComponent = MockApplicationComponent()
+    val userComponent = appComponent.userComponent
 
     val platformContactsUpdated: PublishSubject<Unit> = PublishSubject.create()
     val relayOnlineStatus: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
@@ -48,7 +50,7 @@ class SlyApplicationTest {
         val userComponent = appComponent.userComponent
 
         //used in backgroundInitialization
-        whenever(userComponent.sessionDataPersistenceManager.store(any())).thenResolve(Unit)
+        whenever(userComponent.sessionDataManager.update(any())).thenResolve(Unit)
         whenever(startupInfoPersistenceManager.store(any())).thenResolve(Unit)
         whenever(userComponent.persistenceManager.initAsync()).thenResolve(Unit)
         whenever(userComponent.accountInfoManager.update(any())).thenResolve(Unit)
@@ -58,6 +60,7 @@ class SlyApplicationTest {
         whenever(userComponent.messageCipherService.updateSelfDevices(any())).thenResolve(Unit)
         whenever(userComponent.contactsService.addSelf(any())).thenResolve(Unit)
         whenever(userComponent.messengerService.broadcastNewDevice(any())).thenResolve(Unit)
+        whenever(userComponent.sessionDataManager.delete()).thenResolve(true)
 
         //used in finalizeInitialization
     }
@@ -113,7 +116,7 @@ class SlyApplicationTest {
     fun `it should attempt to login automatically after basic initialization`() { TODO() }
 
     fun authWithOtherDevices(otherDevices: List<DeviceInfo>?): SlyApplication {
-        val authResult = AuthResult(null, MockUserComponent.keyVault, accountInfo, otherDevices)
+        val authResult = AuthResult(SessionData(null), MockUserComponent.keyVault, accountInfo, otherDevices)
 
         whenever(appComponent.authenticationService.auth(any(), any(), any())).thenResolve(authResult)
         val app = createApp()
@@ -175,5 +178,24 @@ class SlyApplicationTest {
         val deviceInfo = DeviceInfo(accountInfo.deviceId, app.installationData.registrationId)
 
         verify(appComponent.userComponent.messengerService).broadcastNewDevice(deviceInfo)
+    }
+
+    @Test
+    fun `it should update the session data auth token when receiving an auth token event`() {
+        val app = authWithOtherDevices(null)
+
+        val authToken = randomAuthToken()
+        userComponent.mockAuthTokenManager.newTokenSubject.onNext(authToken)
+
+        verify(userComponent.sessionDataManager).updateAuthToken(authToken)
+    }
+
+    @Test
+    fun `it should delete session data on log out`() {
+        val app = authWithOtherDevices(null)
+
+        app.logout()
+
+        verify(userComponent.sessionDataManager).delete()
     }
 }

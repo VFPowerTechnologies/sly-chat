@@ -3,6 +3,7 @@ package io.slychat.messenger.services.auth
 import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
+import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.services.LocalAccountDirectory
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -45,7 +46,10 @@ class AuthenticationServiceImpl(
 
                 val data = response.data!!
                 val keyVault = KeyVault.deserialize(data.keyVault, password)
-                AuthResult(data.authToken, keyVault, data.accountInfo, data.otherDevices)
+
+                //we have no local session, so just use an empty SessionData
+                val sessionData = SessionData(data.authToken)
+                AuthResult(sessionData, keyVault, data.accountInfo, data.otherDevices)
             }
         }
     }
@@ -73,10 +77,10 @@ class AuthenticationServiceImpl(
             keyVault.localDataEncryptionKey,
             keyVault.localDataEncryptionParams
         )
-        val sessionData = sessionDataPersistenceManager.retrieveSync()
-        val authToken = sessionData?.authToken
+        //if we can't read it from disk, create an empty one
+        val sessionData = sessionDataPersistenceManager.retrieveSync() ?: SessionData()
 
-        return LocalAuthOutcome.Successful(AuthResult(authToken, keyVault, accountInfo, null))
+        return LocalAuthOutcome.Successful(AuthResult(sessionData, keyVault, accountInfo, null))
     }
 
     /** Attempts to authentication using a local session first, then falls back to remote authentication. */

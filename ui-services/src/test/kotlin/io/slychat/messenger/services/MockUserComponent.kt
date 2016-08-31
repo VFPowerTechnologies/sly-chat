@@ -32,7 +32,7 @@ class MockUserComponent : UserComponent {
 
     override val messagePersistenceManager: MessagePersistenceManager = mock()
 
-    override val sessionDataPersistenceManager: SessionDataPersistenceManager = mock()
+    override val sessionDataManager: SessionDataManager = mock()
 
     override val preKeyPersistenceManager: PreKeyPersistenceManager = mock()
 
@@ -56,7 +56,10 @@ class MockUserComponent : UserComponent {
 
     override val offlineMessageManager: OfflineMessageManager = mock()
 
-    override val authTokenManager: AuthTokenManager = MockAuthTokenManager()
+    val mockAuthTokenManager = MockAuthTokenManager()
+
+    override val authTokenManager: AuthTokenManager
+        get() = mockAuthTokenManager
 
     override val configService: UserConfigService = UserConfigService(DummyConfigBackend())
 

@@ -8,4 +8,6 @@ import io.slychat.messenger.core.AuthToken
 data class SessionData(
     @param:JsonProperty("authToken")
     val authToken: AuthToken?
-)
+) {
+    constructor() : this(null)
+}

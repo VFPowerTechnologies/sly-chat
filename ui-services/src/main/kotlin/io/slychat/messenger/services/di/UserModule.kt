@@ -372,4 +372,11 @@ class UserModule(
             relayClientManager.clockDifference,
             TimeUnit.SECONDS.toMillis(60)
         )
+
+    @UserScope
+    @Provides
+    fun providesSessionDataManager(
+        sessionDataPersistenceManager: SessionDataPersistenceManager
+    ): SessionDataManager =
+        SessionDataManagerImpl(sessionDataPersistenceManager)
 }

@@ -256,18 +256,21 @@ class SlyApplication {
             val keyVault = response.keyVault
 
             val accountInfo = response.accountInfo
+            val sessionData = response.sessionData
             val address = SlyAddress(accountInfo.id, accountInfo.deviceId)
+
             val userLoginData = UserData(address, keyVault)
+
             val userComponent = createUserSession(userLoginData, accountInfo)
 
             val authTokenManager = userComponent.authTokenManager
-            if (response.authToken != null)
-                authTokenManager.setToken(response.authToken)
+            if (sessionData.authToken != null)
+                authTokenManager.setToken(sessionData.authToken)
             else
                 authTokenManager.invalidateToken()
 
             //until this finishes, nothing in the UserComponent should be touched
-            backgroundInitialization(userComponent, response, password, rememberMe, accountInfo) mapUi {
+            backgroundInitialization(userComponent, response, password, rememberMe) mapUi {
                 finalizeInitialization(userComponent, accountInfo)
             }
         } failUi { e ->
@@ -289,29 +292,20 @@ class SlyApplication {
 
     private fun onNewToken(authToken: AuthToken?) {
         val userComponent = userComponent ?: return
-        val sessionDataPersistenceManager = userComponent.sessionDataPersistenceManager
+        val sessionDataManager = userComponent.sessionDataManager
 
         log.info("Updating on-disk session data")
 
         if (authToken == null) {
-            //XXX it's unlikely but possible this might run AFTER a new token comes in and gets written to disk
-            //depending on load and scheduler behavior
-            sessionDataPersistenceManager.delete() fail { e ->
-                log.error("Error during session data file removal: {}", e.message, e)
-            }
-
             //need to reconnect, since the token is no longer valid
             disconnectFromRelay()
 
             return
         }
 
-        sessionDataPersistenceManager.store(SessionData(authToken)) fail { e ->
-            log.error("Unable to write session data to disk: {}", e.message, e)
-        }
+        sessionDataManager.updateAuthToken(authToken)
 
         connectToRelay()
-
         userComponent.preKeyManager.checkForUpload()
     }
 
@@ -322,13 +316,13 @@ class SlyApplication {
      */
     fun logout() {
         val startupInfoPersistenceManager = appComponent.localAccountDirectory.getStartupInfoPersistenceManager()
-        val sessionDataPersistenceManager = userComponent?.sessionDataPersistenceManager
+        val sessionDataManager = userComponent?.sessionDataManager
 
         if (destroyUserSession()) {
             emitLoginEvent(LoggedOut())
             task {
                 startupInfoPersistenceManager.delete()
-                sessionDataPersistenceManager?.delete()
+                sessionDataManager?.delete()
             }.fail { e ->
                 log.error("Error removing startup info: {}", e.message, e)
             }
@@ -384,8 +378,7 @@ class SlyApplication {
         userComponent: UserComponent,
         authResult: AuthResult,
         password: String,
-        rememberMe: Boolean,
-        accountInfo: AccountInfo
+        rememberMe: Boolean
     ): Promise<Unit, Exception> {
         val persistenceManager = userComponent.persistenceManager
         val userConfigService = userComponent.configService
@@ -395,21 +388,17 @@ class SlyApplication {
 
         val localAccountDirectory = appComponent.localAccountDirectory
         val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager()
-        val sessionDataPersistenceManager = userComponent.sessionDataPersistenceManager
+        val sessionDataManager = userComponent.sessionDataManager
 
-        val authToken = authResult.authToken
+        val sessionData = authResult.sessionData
+        val accountInfo = authResult.accountInfo
         val otherDevices = authResult.otherDevices
 
         //we could break this up into parts and emit progress events between stages
         return task {
             localAccountDirectory.createUserDirectories(userId)
         } bind {
-            if (authToken != null) {
-                val cachedData = SessionData(authToken)
-                sessionDataPersistenceManager.store(cachedData)
-            }
-            else
-                Promise.ofSuccess(Unit)
+            sessionDataManager.update(sessionData)
         } bind {
             storeAccountData(keyVault, accountInfo)
         } bind {
