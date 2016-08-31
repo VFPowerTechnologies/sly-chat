@@ -106,10 +106,6 @@ class UIMessengerServiceImpl(
         messageStatusUpdateListeners.add(listener)
     }
 
-    override fun addConversationStatusUpdateListener(listener: (UIConversation) -> Unit) {
-        log.debug("addConversationStatusUpdateListener: TODO")
-    }
-
     override fun addClockDifferenceUpdateListener(listener: (Long) -> Unit) {
         clockDifferenceUpdateListeners.add(listener)
 
