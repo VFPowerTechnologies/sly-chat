@@ -648,21 +648,25 @@ class SlyApplication {
 
         val relayClientManager = userComponent.relayClientManager
 
-        if (relayClientManager.state == RelayClientState.DISCONNECTING)
-            wantRelayReconnect = true
+        when (relayClientManager.state) {
+            //just mark this so we'll attempt to reconnect later
+            RelayClientState.DISCONNECTING ->
+                wantRelayReconnect = true
 
-        if (relayClientManager.isOnline)
-            return
+            RelayClientState.DISCONNECTED -> {
+                connectingToRelay = true
 
-        connectingToRelay = true
+                userComponent.authTokenManager.mapUi { userCredentials ->
+                    relayClientManager.connect(userCredentials)
+                } fail { e ->
+                    log.error("Unable to connect to relay: {}", e.message, e)
+                } alwaysUi {
+                    connectingToRelay = false
+                }
+            }
 
-        userComponent.authTokenManager.mapUi { userCredentials ->
-            relayClientManager.connect(userCredentials)
-        } fail { e ->
-            log.error("Unable to connect to relay: {}", e.message, e)
-        } alwaysUi {
-            //after connect() is called, relayClientManager.isOnline will be true
-            connectingToRelay = false
+            //do nothing
+            else -> {}
         }
     }
 

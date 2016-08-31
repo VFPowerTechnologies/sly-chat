@@ -72,7 +72,7 @@ class MockApplicationComponent : ApplicationComponent {
 
     override val installationDataPersistenceManager: InstallationDataPersistenceManager = mock()
 
-    val networkStatusSubject: BehaviorSubject<Boolean> = BehaviorSubject.create(true)
+    val networkStatusSubject: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
 
     override val networkStatus: Observable<Boolean>
         get() = networkStatusSubject
