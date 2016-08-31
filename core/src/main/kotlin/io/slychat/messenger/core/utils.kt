@@ -180,3 +180,5 @@ val currentOs: Os = osFromProperties(
     System.getProperty("os.name"),
     System.getProperty("os.version")
 )
+
+fun emptyByteArray(): ByteArray = ByteArray(0)

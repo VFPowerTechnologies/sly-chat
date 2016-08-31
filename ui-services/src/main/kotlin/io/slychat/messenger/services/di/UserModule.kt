@@ -173,6 +173,7 @@ class UserModule(
         relayClientManager: RelayClientManager,
         messageReceiver: MessageReceiver,
         messageSender: MessageSender,
+        relayClock: RelayClock,
         userLoginData: UserData
     ): MessengerService =
         MessengerServiceImpl(
@@ -184,6 +185,7 @@ class UserModule(
             relayClientManager,
             messageSender,
             messageReceiver,
+            relayClock,
             userLoginData.userId
         )
 
@@ -362,4 +364,21 @@ class UserModule(
             loginClient
         )
     }
+
+    @UserScope
+    @Provides
+    fun providesRelayClock(
+        relayClientManager: RelayClientManager
+    ): RelayClock =
+        RelayClockImpl(
+            relayClientManager.clockDifference,
+            TimeUnit.SECONDS.toMillis(60)
+        )
+
+    @UserScope
+    @Provides
+    fun providesSessionDataManager(
+        sessionDataPersistenceManager: SessionDataPersistenceManager
+    ): SessionDataManager =
+        SessionDataManagerImpl(sessionDataPersistenceManager)
 }

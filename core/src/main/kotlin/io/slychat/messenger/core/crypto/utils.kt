@@ -227,7 +227,11 @@ fun encryptDataWithParams(encryptionSpec: EncryptionSpec, plaintext: ByteArray):
     else -> throw IllegalArgumentException("Unknown cipher: ${encryptionSpec.params.algorithmName}")
 }
 
-/** Decrypt data with the given parameters. */
+/**
+ * Decrypt data with the given parameters.
+ *
+ * @throws InvalidCipherTextException If decryption fails.
+ */
 fun decryptData(encryptionSpec: EncryptionSpec, ciphertext: ByteArray): ByteArray = when (encryptionSpec.params) {
     is AESGCMParams -> {
         val cipher = newGCMCipher(false, encryptionSpec.params, encryptionSpec.key)

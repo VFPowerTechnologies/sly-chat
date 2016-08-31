@@ -897,10 +897,12 @@ class SQLiteGroupPersistenceManagerTest {
         withJoinedGroup { groupId, members ->
             val id = insertRandomSentMessage(groupId)
 
-            val groupMessageInfo = assertNotNull(groupPersistenceManager.markMessageAsDelivered(groupId, id).get(), "Info wasn't returned")
+            val receivedTimestamp = currentTimestamp() - 1000
+
+            val groupMessageInfo = assertNotNull(groupPersistenceManager.markMessageAsDelivered(groupId, id, receivedTimestamp).get(), "Info wasn't returned")
 
             assertTrue(groupMessageInfo.info.isDelivered, "Not marked as delivered")
-            assertTrue(groupMessageInfo.info.receivedTimestamp != 0L, "Received timestamp not updated")
+            assertEquals(receivedTimestamp, groupMessageInfo.info.receivedTimestamp, "Received timestamp set to unexpected value")
         }
     }
 
@@ -909,8 +911,8 @@ class SQLiteGroupPersistenceManagerTest {
         withJoinedGroup { groupId, members ->
             val id = insertRandomSentMessage(groupId)
 
-            assertNotNull(groupPersistenceManager.markMessageAsDelivered(groupId, id).get(), "Info wasn't returned")
-            assertNull(groupPersistenceManager.markMessageAsDelivered(groupId, id).get(), "Message not marked as delievered")
+            assertNotNull(groupPersistenceManager.markMessageAsDelivered(groupId, id, currentTimestamp()).get(), "Info wasn't returned")
+            assertNull(groupPersistenceManager.markMessageAsDelivered(groupId, id, currentTimestamp()).get(), "Message not marked as delievered")
         }
     }
 
@@ -918,14 +920,14 @@ class SQLiteGroupPersistenceManagerTest {
     fun `markMessageAsDelivered should throw InvalidGroupMessageException if the given message if the message does not exist`() {
         withJoinedGroup { groupId, members ->
             assertFailsWith(InvalidGroupMessageException::class) {
-                groupPersistenceManager.markMessageAsDelivered(groupId, randomMessageId()).get()
+                groupPersistenceManager.markMessageAsDelivered(groupId, randomMessageId(), currentTimestamp()).get()
             }
         }
     }
 
     @Test
     fun `markMessageAsDelivered should throw InvalidGroupException if the group id is invalid`() {
-        assertFailsWithInvalidGroup { groupPersistenceManager.markMessageAsDelivered(randomGroupId(), randomMessageId()).get() }
+        assertFailsWithInvalidGroup { groupPersistenceManager.markMessageAsDelivered(randomGroupId(), randomMessageId(), currentTimestamp()).get() }
     }
 
     @Test

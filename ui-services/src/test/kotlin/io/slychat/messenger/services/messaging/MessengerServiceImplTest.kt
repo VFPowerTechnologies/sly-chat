@@ -8,10 +8,7 @@ import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
-import io.slychat.messenger.services.GroupService
-import io.slychat.messenger.services.RelayClientManager
-import io.slychat.messenger.services.assertEventEmitted
-import io.slychat.messenger.services.assertNoEventsEmitted
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.testutils.KovenantTestModeRule
@@ -47,12 +44,13 @@ class MessengerServiceImplTest {
     val relayClientManager: RelayClientManager = mock()
     val messageSender: MessageSender = mock()
     val messageReceiver: MessageReceiver = mock()
+    val relayClock: RelayClock = mock()
 
     val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
 
     val syncEvents: PublishSubject<AddressBookSyncEvent> = PublishSubject.create()
 
-    val messageSent: PublishSubject<MessageMetadata> = PublishSubject.create()
+    val messageSent: PublishSubject<MessageSendRecord> = PublishSubject.create()
 
     @Before
     fun before() {
@@ -76,6 +74,29 @@ class MessengerServiceImplTest {
         whenever(groupService.getMembers(any())).thenResolve(emptySet())
 
         whenever(addressBookOperationManager.syncEvents).thenReturn(syncEvents)
+
+        whenever(relayClock.currentTime()).thenAnswer { currentTimestamp() }
+    }
+
+    fun randomTextSingleRecord(): MessageSendRecord {
+        return MessageSendRecord(
+            randomTextSingleMetadata(),
+            currentTimestamp()
+        )
+    }
+
+    fun randomTextGroupRecord(): MessageSendRecord {
+        return MessageSendRecord(
+            randomTextGroupMetadata(),
+            currentTimestamp()
+        )
+    }
+
+    fun randomOtherRecord(): MessageSendRecord {
+        return MessageSendRecord(
+            randomOtherMetadata(),
+            currentTimestamp()
+        )
     }
 
     fun createService(): MessengerServiceImpl {
@@ -88,20 +109,12 @@ class MessengerServiceImplTest {
             relayClientManager,
             messageSender,
             messageReceiver,
+            relayClock,
             selfId
         )
     }
 
     fun randomMessage(): String = randomUUID()
-
-    fun randomTextSingleMetadata(): MessageMetadata {
-        return MessageMetadata(
-            randomUserId(),
-            null,
-            MessageCategory.TEXT_SINGLE,
-            randomMessageId()
-        )
-    }
 
     fun wheneverAllowMessagesFrom(fn: (Set<UserId>) -> Promise<Set<UserId>, Exception>) {
         whenever(contactsService.filterBlocked(anySet())).thenAnswer {
@@ -190,7 +203,7 @@ class MessengerServiceImplTest {
 
         val sender = SlyAddress(UserId(2), 1)
 
-        val ev = ReceivedMessage(sender, "payload", "messageId")
+        val ev = ReceivedMessage(sender, "payload", "messageId", currentTimestamp())
 
         setAllowedUsers(emptySet())
 
@@ -209,7 +222,7 @@ class MessengerServiceImplTest {
 
         val sender = SlyAddress(UserId(2), 1)
         val messageId = randomUUID()
-        val ev = ReceivedMessage(sender, newMessagePayload("payload"), messageId)
+        val ev = ReceivedMessage(sender, newMessagePayload("payload"), messageId, currentTimestamp())
 
         setAllowAllUsers()
 
@@ -228,7 +241,7 @@ class MessengerServiceImplTest {
 
         val sender = SlyAddress(UserId(2), 1)
         val messageId = randomUUID()
-        val ev = ReceivedMessage(sender, newMessagePayload("payload"), messageId)
+        val ev = ReceivedMessage(sender, newMessagePayload("payload"), messageId, currentTimestamp())
 
         setAllowAllUsers()
 
@@ -276,19 +289,40 @@ class MessengerServiceImplTest {
         })
     }
 
+    @Test
+    fun `it should use the RelayClock when creating sent message timestamps`() {
+        val currentTime = 1000L
+
+        whenever(relayClock.currentTime()).thenReturn(currentTime)
+
+        val messengerService = createService()
+
+        messengerService.sendMessageTo(randomUserId(), randomMessage())
+
+        verify(messageSender).addToQueue(capture<SenderMessageEntry> {
+            //cheating a little
+            val objectMapper = ObjectMapper()
+
+            val message = objectMapper.readValue(it.message, TextMessageWrapper::class.java).m
+
+            assertEquals(currentTime, message.timestamp, "RelayClock time not used")
+        })
+    }
+
     //also doubles as checking for mark as delivered
     @Test
     fun `it should emit a message updated event when receiving a message update for TEXT_SINGLE message`() {
         val messengerService = createService()
 
-        val update = randomTextSingleMetadata()
+        val record = randomTextSingleRecord()
+        val update = record.metadata
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
 
-        whenever(messagePersistenceManager.markMessageAsDelivered(update.userId, update.messageId)).thenResolve(messageInfo)
+        whenever(messagePersistenceManager.markMessageAsDelivered(update.userId, update.messageId, record.serverReceivedTimestamp)).thenResolve(messageInfo)
 
         val testSubscriber = messengerService.messageUpdates.testSubscriber()
 
-        messageSent.onNext(update)
+        messageSent.onNext(record)
 
         assertEventEmitted(testSubscriber) {
             assertEquals(update.userId, it.userId, "Invalid user id")
@@ -302,15 +336,16 @@ class MessengerServiceImplTest {
     fun `it should emit a message updated event when receiving a message update for TEXT_GROUP message`() {
         val messengerService = createService()
 
-        val update = randomTextGroupMetadata()
+        val record = randomTextGroupRecord()
+        val update = record.metadata
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
 
-        whenever(groupService.markMessageAsDelivered(update.groupId!!, update.messageId))
+        whenever(groupService.markMessageAsDelivered(update.groupId!!, update.messageId, record.serverReceivedTimestamp))
             .thenResolve(GroupMessageInfo(update.userId, messageInfo))
 
         val testSubscriber = messengerService.messageUpdates.testSubscriber()
 
-        messageSent.onNext(update)
+        messageSent.onNext(record)
 
         assertEventEmitted(testSubscriber) {
             assertEquals(update.userId, it.userId, "Invalid user id")
@@ -324,14 +359,15 @@ class MessengerServiceImplTest {
     fun `it should return emit a message updated event when receiving a message update for an already delivered TEXT_GROUP message`() {
         val messengerService = createService()
 
-        val update = randomTextGroupMetadata()
+        val record = randomTextGroupRecord()
+        val update = record.metadata
 
-        whenever(groupService.markMessageAsDelivered(update.groupId!!, update.messageId))
+        whenever(groupService.markMessageAsDelivered(update.groupId!!, update.messageId, record.serverReceivedTimestamp))
             .thenResolve(null)
 
         val testSubscriber = messengerService.messageUpdates.testSubscriber()
 
-        messageSent.onNext(update)
+        messageSent.onNext(record)
 
         assertNoEventsEmitted(testSubscriber)
     }
@@ -749,11 +785,12 @@ class MessengerServiceImplTest {
         val messengerService = createService()
 
         val messageInfo = randomSentMessageInfo()
-        val metadata = randomTextSingleMetadata()
+        val record = randomTextSingleRecord()
+        val metadata = record.metadata
 
-        whenever(messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId)).thenResolve(messageInfo)
+        whenever(messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId, record.serverReceivedTimestamp)).thenResolve(messageInfo)
 
-        messageSent.onNext(metadata)
+        messageSent.onNext(record)
 
         val expected = SyncSentMessageInfo(
             metadata.messageId,
@@ -772,13 +809,14 @@ class MessengerServiceImplTest {
         val messengerService = createService()
 
         val messageInfo = randomSentMessageInfo()
-        val metadata = randomTextGroupMetadata()
+        val record = randomTextGroupRecord()
+        val metadata = record.metadata
         val groupId = metadata.groupId!!
 
         val groupMessageInfo = GroupMessageInfo(null, messageInfo)
-        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId)).thenResolve(groupMessageInfo)
+        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId, record.serverReceivedTimestamp)).thenResolve(groupMessageInfo)
 
-        messageSent.onNext(metadata)
+        messageSent.onNext(record)
 
         val expected = SyncSentMessageInfo(
             metadata.messageId,
@@ -796,12 +834,13 @@ class MessengerServiceImplTest {
     fun `when receiving a sent notification for a text group message, it should not send itself a sync message if the message was already marked as delivered`() {
         val messengerService = createService()
 
-        val metadata = randomTextGroupMetadata()
+        val record = randomTextGroupRecord()
+        val metadata = record.metadata
         val groupId = metadata.groupId!!
 
-        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId)).thenResolve(null)
+        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId, record.serverReceivedTimestamp)).thenResolve(null)
 
-        messageSent.onNext(metadata)
+        messageSent.onNext(record)
 
         verify(messageSender, never()).addToQueue(any<SenderMessageEntry>())
     }
@@ -810,9 +849,7 @@ class MessengerServiceImplTest {
     fun `when receiving a notification for an other category message, it should not send itself a sync message`() {
         val messengerService = createService()
 
-        val metadata = randomOtherMetadata()
-
-        messageSent.onNext(metadata)
+        messageSent.onNext(randomOtherRecord())
 
         verify(messageSender, never()).addToQueue(any<SenderMessageEntry>())
     }

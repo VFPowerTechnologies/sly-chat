@@ -15,6 +15,8 @@ import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClie
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenceManager
 import io.slychat.messenger.services.*
+import io.slychat.messenger.services.auth.AuthenticationService
+import io.slychat.messenger.services.auth.AuthenticationServiceImpl
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.FileConfigStorage
 import io.slychat.messenger.services.config.JsonConfigBackend

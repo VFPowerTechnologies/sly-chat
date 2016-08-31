@@ -1,16 +1,15 @@
 package io.slychat.messenger.core.persistence
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import io.slychat.messenger.core.AuthToken
-import io.slychat.messenger.core.crypto.EncryptionSpec
-import io.slychat.messenger.core.crypto.ciphers.CipherParams
-import io.slychat.messenger.core.crypto.encryptDataWithParams
-import io.slychat.messenger.core.crypto.hexify
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class SessionData(
-    val authToken: AuthToken
+    @param:JsonProperty("authToken")
+    val authToken: AuthToken?,
+    @param:JsonProperty("relayClockDifference")
+    val relayClockDifference: Long
 ) {
-    fun serialize(localDataEncryptionKey: ByteArray, localDataEncryptionParams: CipherParams): SerializedSessionData {
-        val encryptedAuthToken = encryptDataWithParams(EncryptionSpec(localDataEncryptionKey, localDataEncryptionParams), authToken.string.toByteArray(Charsets.UTF_8))
-        return SerializedSessionData(encryptedAuthToken.data.hexify())
-    }
+    constructor() : this(null, 0)
 }

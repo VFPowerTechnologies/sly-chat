@@ -19,8 +19,7 @@ interface UIMessengerService {
     /** Listener for sent message status updates. */
     fun addMessageStatusUpdateListener(listener: (UIMessageInfo) -> Unit)
 
-    /** Listener for conversation status updates. */
-    fun addConversationStatusUpdateListener(listener: (UIConversation) -> Unit)
+    fun addClockDifferenceUpdateListener(listener: (Long) -> Unit)
 
     /**
      * Retrieve the last n messages for the given contact starting backwards at the given index.

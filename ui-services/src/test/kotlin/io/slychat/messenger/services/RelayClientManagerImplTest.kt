@@ -18,6 +18,7 @@ class RelayClientManagerImplTest {
     val relayClient: RelayClient = mock()
 
     val relayClientEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
+    val clockDifference: PublishSubject<Long> = PublishSubject.create()
 
     @Before
     fun before() {
@@ -26,6 +27,7 @@ class RelayClientManagerImplTest {
         whenever(relayClient.state).thenReturn(RelayClientState.DISCONNECTED)
 
         whenever(relayClient.events).thenReturn(relayClientEvents)
+        whenever(relayClient.clockDifference).thenReturn(clockDifference)
     }
 
     @Test

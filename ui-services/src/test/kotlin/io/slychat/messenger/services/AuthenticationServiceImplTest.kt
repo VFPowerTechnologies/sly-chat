@@ -14,9 +14,9 @@ import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.KeyVaultPersistenceManager
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.SessionDataPersistenceManager
+import io.slychat.messenger.services.auth.AuthenticationServiceImpl
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenReject
 import org.assertj.core.api.Assertions
 import org.junit.Before
 import org.junit.ClassRule
@@ -85,7 +85,7 @@ class AuthenticationServiceImplTest {
 
     fun withSuccessfulLocalAuth(body: (SessionData) -> Unit) {
         withSuccessfulLocalAuthNoSession {
-            val sessionData = SessionData(randomAuthToken())
+            val sessionData = SessionData().copy(authToken = randomAuthToken())
             whenever(sessionDataPersistenceManager.retrieveSync()).thenReturn(sessionData)
 
             body(sessionData)
@@ -98,7 +98,7 @@ class AuthenticationServiceImplTest {
             val result = authenticationService.auth(email, password, registrationId).get()
 
             assertEquals(accountInfo, result.accountInfo, "Invalid account info")
-            assertNull(result.authToken, "Auth token should be null")
+            assertNull(result.sessionData.authToken, "Auth token should be null")
         }
     }
 
@@ -108,7 +108,7 @@ class AuthenticationServiceImplTest {
             val result = authenticationService.auth(email, password, registrationId).get()
 
             assertEquals(accountInfo, result.accountInfo, "Invalid account info")
-            assertEquals(sessionData.authToken, result.authToken, "Invalid auth token")
+            assertEquals(sessionData.authToken, result.sessionData.authToken, "Invalid auth token")
         }
     }
 
@@ -119,7 +119,7 @@ class AuthenticationServiceImplTest {
         withSuccessfulRemoteAuth { authToken ->
             val result = authenticationService.auth(email, password, registrationId).get()
             assertEquals(accountInfo, result.accountInfo, "Invalid account info")
-            assertEquals(authToken, result.authToken, "Auth token is invalid")
+            assertEquals(authToken, result.sessionData.authToken, "Auth token is invalid")
         }
     }
 

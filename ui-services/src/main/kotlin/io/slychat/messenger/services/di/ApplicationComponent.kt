@@ -5,7 +5,7 @@ import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
-import io.slychat.messenger.services.AuthenticationService
+import io.slychat.messenger.services.auth.AuthenticationService
 import io.slychat.messenger.services.LocalAccountDirectory
 import io.slychat.messenger.services.PlatformContacts
 import io.slychat.messenger.services.config.AppConfigService

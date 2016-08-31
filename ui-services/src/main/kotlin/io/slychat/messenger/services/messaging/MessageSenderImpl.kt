@@ -31,8 +31,8 @@ class MessageSenderImpl(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private val messageSentSubject = PublishSubject.create<MessageMetadata>()
-    override val messageSent: Observable<MessageMetadata>
+    private val messageSentSubject = PublishSubject.create<MessageSendRecord>()
+    override val messageSent: Observable<MessageSendRecord>
         get() = messageSentSubject
 
     private val sendMessageQueue = ArrayDeque<QueuedSendMessage>()
@@ -119,9 +119,9 @@ class MessageSenderImpl(
         }
     }
 
-    private fun markMessageAsDelivered(metadata: MessageMetadata): Promise<Unit, Exception> {
+    private fun markMessageAsDelivered(metadata: MessageMetadata, timestamp: Long): Promise<Unit, Exception> {
         return messageQueuePersistenceManager.remove(metadata.userId, metadata.messageId) map { Unit } successUi {
-            messageSentSubject.onNext(metadata)
+            messageSentSubject.onNext(MessageSendRecord(metadata, timestamp))
         }
     }
 
@@ -139,7 +139,7 @@ class MessageSenderImpl(
                         log.error("Message mismatch")
                     }
                     else {
-                        markMessageAsDelivered(message.metadata) fail { e ->
+                        markMessageAsDelivered(message.metadata, result.timestamp) fail { e ->
                             log.error("Unable to mark message as delivered: {}", e.message, e)
                         }
                     }
@@ -219,7 +219,7 @@ class MessageSenderImpl(
     }
 
     private fun handleServerRecievedMessage(event: ServerReceivedMessage) {
-        processMessageSendResult(MessageSendOk(event.to, event.messageId))
+        processMessageSendResult(MessageSendOk(event.to, event.messageId, event.timestamp))
     }
 
     private fun handleDeviceMismatch(event: DeviceMismatch) {
@@ -278,7 +278,8 @@ class MessageSenderImpl(
         else {
             //if we have no encryptedMessages and didn't get an error, it was a message to self
             //so just act as if it was sent successfully
-            handleServerRecievedMessage(ServerReceivedMessage(userId, messageId))
+            //XXX since this isn't used in the ui display, we just use the normal timestamp
+            handleServerRecievedMessage(ServerReceivedMessage(userId, messageId, currentTimestamp()))
         }
     }
 }

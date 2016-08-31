@@ -15,6 +15,20 @@ interface RelayClient {
     val state: RelayClientState
     val events: Observable<RelayClientEvent>
 
+    /**
+     * The (approximate) clock difference between the current system and the relay, in ms.
+     *
+     * Only certain messages will trigger this calculation:
+     * a) ping/pong
+     * 2) authentication
+     *
+     * Connecting to this observable will immediately yield the last known value, if any.
+     *
+     * Since we don't require too high precision for this, we accept that doing this over tcp may cause the difference
+     * to be larger due to retransmissions, etc.
+     */
+    val clockDifference: Observable<Long>
+
     fun connect()
     fun disconnect()
     fun sendMessage(to: UserId, content: RelayMessageBundle, messageId: String)

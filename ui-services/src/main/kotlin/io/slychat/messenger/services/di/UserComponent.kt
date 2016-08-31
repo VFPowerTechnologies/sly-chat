@@ -22,8 +22,6 @@ interface UserComponent {
 
     val messagePersistenceManager: MessagePersistenceManager
 
-    val sessionDataPersistenceManager : SessionDataPersistenceManager
-
     val preKeyPersistenceManager: PreKeyPersistenceManager
 
     val contactsService: ContactsService
@@ -51,4 +49,8 @@ interface UserComponent {
     val addressBookOperationManager: AddressBookOperationManager
 
     val accountInfoManager: AccountInfoManager
+
+    val relayClock: RelayClock
+
+    val sessionDataManager: SessionDataManager
 }

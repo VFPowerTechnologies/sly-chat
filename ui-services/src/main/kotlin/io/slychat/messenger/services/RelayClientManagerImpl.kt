@@ -9,6 +9,7 @@ import rx.Observer
 import rx.Scheduler
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
+import rx.subscriptions.CompositeSubscription
 import java.util.*
 
 class RelayClientManagerImpl(
@@ -30,8 +31,14 @@ class RelayClientManagerImpl(
     override val events: Observable<RelayClientEvent>
         get() = eventsSubject
 
+    private val clockDifferenceSubject = BehaviorSubject.create<Long>()
+    override val clockDifference: Observable<Long>
+        get() = clockDifferenceSubject
+
     override var connectionTag: Int = 0
         private set
+
+    private var clientSubscriptions = CompositeSubscription()
 
     private fun resetConnectionTag() {
         connectionTag = Random().nextInt(Integer.MAX_VALUE)
@@ -65,37 +72,50 @@ class RelayClientManagerImpl(
 
         val client = relayClientFactory.createClient(userCredentials)
 
-        client.events
-            .observeOn(scheduler)
-            .subscribe(object : Observer<RelayClientEvent> {
-                override fun onCompleted() {
-                    this@RelayClientManagerImpl.onClientCompleted()
-                }
-
-                override fun onNext(event: RelayClientEvent) {
-                    when (event) {
-                        //we only mark the relay connection as usable once authentication has completed
-                        is AuthenticationSuccessful -> setOnlineStatus(true)
-                        is AuthenticationFailure -> setOnlineStatus(false)
-                        is ConnectionLost -> setOnlineStatus(false)
-                        is ConnectionFailure -> relayClient = null
+        clientSubscriptions.add(
+            client.events
+                .observeOn(scheduler)
+                .subscribe(object : Observer<RelayClientEvent> {
+                    override fun onCompleted() {
+                        this@RelayClientManagerImpl.onClientCompleted()
                     }
 
-                    this@RelayClientManagerImpl.eventsSubject.onNext(event)
-                }
+                    override fun onNext(event: RelayClientEvent) {
+                        when (event) {
+                        //we only mark the relay connection as usable once authentication has completed
+                            is AuthenticationSuccessful -> setOnlineStatus(true)
+                            is AuthenticationFailure -> setOnlineStatus(false)
+                            is ConnectionLost -> setOnlineStatus(false)
+                            is ConnectionFailure -> relayClient = null
+                        }
 
-                //will never be called
-                override fun onError(e: Throwable) {
-                    this@RelayClientManagerImpl.onClientError(e)
-                }
-            })
+                        this@RelayClientManagerImpl.eventsSubject.onNext(event)
+                    }
+
+                    //will never be called
+                    override fun onError(e: Throwable) {
+                        this@RelayClientManagerImpl.onClientError(e)
+                    }
+                })
+        )
+
+        clientSubscriptions.add(
+            client.clockDifference
+                .observeOn(scheduler)
+                .subscribe { onClockDifferenceUpdate(it) }
+        )
 
         relayClient = client
 
         client.connect()
     }
 
+    private fun onClockDifferenceUpdate(diff: Long) {
+        clockDifferenceSubject.onNext(diff)
+    }
+
     override fun disconnect() {
+        clientSubscriptions.clear()
         val relayClient = relayClient ?: return
         relayClient.disconnect()
     }

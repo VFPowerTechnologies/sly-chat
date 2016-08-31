@@ -5,7 +5,6 @@ import com.almworks.sqlite4java.SQLiteConstants
 import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.InvalidMessageException
 import io.slychat.messenger.core.persistence.MessageInfo
 import io.slychat.messenger.core.persistence.MessagePersistenceManager
@@ -99,11 +98,11 @@ VALUES
             listOf()
     }
 
-    override fun markMessageAsDelivered(userId: UserId, messageId: String): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun markMessageAsDelivered(userId: UserId, messageId: String, timestamp: Long): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val table = ConversationTable.getTablenameForContact(userId)
 
         connection.prepare("UPDATE $table SET is_delivered=1, received_timestamp=? WHERE id=?").use { stmt ->
-            stmt.bind(1, currentTimestamp())
+            stmt.bind(1, timestamp)
             stmt.bind(2, messageId)
             stmt.step()
         }

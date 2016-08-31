@@ -2,12 +2,11 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteException
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.MessageInfo
 import io.slychat.messenger.core.randomContactInfo
-import io.slychat.messenger.core.crypto.randomUUID
-import io.slychat.messenger.testutils.withTimeAs
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
@@ -197,13 +196,10 @@ class SQLiteMessagePersistenceManagerTest {
 
         val sentMessageInfo = addMessage(contact, true, testMessage, 0)
 
-        val expectedTimestamp = sentMessageInfo.timestamp+10
+        val receivedTimestamp = currentTimestamp() - 1000
+        val updatedMessageInfo = messagePersistenceManager.markMessageAsDelivered(contact, sentMessageInfo.id, receivedTimestamp).get()
 
-        val updatedMessageInfo = withTimeAs(expectedTimestamp) {
-            messagePersistenceManager.markMessageAsDelivered(contact, sentMessageInfo.id).get()
-        }
-
-        assertEquals(expectedTimestamp, updatedMessageInfo.receivedTimestamp)
+        assertEquals(receivedTimestamp, updatedMessageInfo.receivedTimestamp)
         assertTrue(updatedMessageInfo.isDelivered)
     }
 

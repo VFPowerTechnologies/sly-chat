@@ -5,6 +5,7 @@ package io.slychat.messenger.core.relay.base
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.relay.RelayMessageBundle
 import io.slychat.messenger.core.relay.base.CommandCode.*
 import java.util.*
@@ -59,11 +60,7 @@ enum class CommandCode(val code: Int) {
 }
 
 open class RelayException(message: String?, cause: Throwable?) : RuntimeException(message, cause) {
-    constructor() : this(null, null)
-
     constructor(message: String) : this(message, null)
-
-    constructor(cause: Throwable) : this(null, cause)
 }
 
 class InvalidHeaderSizeException(val size: Int) : RelayException("Header size expected to be $HEADER_SIZE, got $size")
@@ -93,6 +90,9 @@ data class Header(
     val messageId: String,
     val messageFragmentNumber: Int,
     val messageFragmentTotal: Int,
+    //TODO move this to match the header order when the relay support is complete
+    //this is always 0 in client requests
+    val timestamp: Long,
     val commandCode: CommandCode
 ) {
     init {
@@ -124,7 +124,7 @@ class StringReader(private val s: String) {
     }
 }
 
-fun String.rstrip(): String =
+private fun String.rstrip(): String =
     this.replaceFirst(Regex("\\s+$"), "")
 
 fun headerFromBytes(bytes: ByteArray): Header {
@@ -164,14 +164,16 @@ fun headerFromBytes(bytes: ByteArray): Header {
         messageId,
         messageNumber,
         messageNumberTotal,
+        //TODO
+        currentTimestamp(),
         CommandCode.fromInt(commandCodeNumber)
     )
 }
 
-fun Int.leftZeroPad(size: Int): String =
+private fun Int.leftZeroPad(size: Int): String =
     "%0${size}d".format(this)
 
-fun String.rightSpacePad(size: Int): String =
+private fun String.rightSpacePad(size: Int): String =
     "%-${size}s".format(this)
 
 fun headerToString(header: Header): String {
@@ -205,6 +207,7 @@ fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
         "",
         0,
         1,
+        0,
         CLIENT_REGISTER_REQUEST
     )
 
@@ -222,6 +225,7 @@ fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, conte
         messageId,
         0,
         1,
+        0,
         CLIENT_SEND_MESSAGE
     )
 
@@ -238,6 +242,7 @@ fun createPingMessage(): RelayMessage {
         "",
         0,
         1,
+        0,
         CLIENT_PING
     )
 
@@ -256,6 +261,7 @@ fun createMessageReceivedMessage(userCredentials: UserCredentials, messageId: St
         "",
         0,
         1,
+        0,
         CLIENT_RECEIVED_MESSAGE
     )
 

@@ -7,7 +7,7 @@ import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.accountupdate.UpdatePhoneRequest
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.registration.*
-import io.slychat.messenger.services.AuthApiResponseException
+import io.slychat.messenger.services.auth.AuthApiResponseException
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
