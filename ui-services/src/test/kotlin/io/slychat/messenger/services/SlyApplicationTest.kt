@@ -36,6 +36,7 @@ class SlyApplicationTest {
     val platformContactsUpdated: PublishSubject<Unit> = PublishSubject.create()
     val relayOnlineStatus: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
     val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
+    val clockDiffUpdates: PublishSubject<Long> = PublishSubject.create()
 
     val startupInfoPersistenceManager: StartupInfoPersistenceManager = mock()
 
@@ -61,6 +62,7 @@ class SlyApplicationTest {
         whenever(userComponent.contactsService.addSelf(any())).thenResolve(Unit)
         whenever(userComponent.messengerService.broadcastNewDevice(any())).thenResolve(Unit)
         whenever(userComponent.sessionDataManager.delete()).thenResolve(true)
+        whenever(userComponent.relayClock.clockDiffUpdates).thenReturn(clockDiffUpdates)
 
         //used in finalizeInitialization
     }
@@ -116,7 +118,7 @@ class SlyApplicationTest {
     fun `it should attempt to login automatically after basic initialization`() { TODO() }
 
     fun authWithOtherDevices(otherDevices: List<DeviceInfo>?): SlyApplication {
-        val authResult = AuthResult(SessionData(null), MockUserComponent.keyVault, accountInfo, otherDevices)
+        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, accountInfo, otherDevices)
 
         whenever(appComponent.authenticationService.auth(any(), any(), any())).thenResolve(authResult)
         val app = createApp()
@@ -197,5 +199,16 @@ class SlyApplicationTest {
         app.logout()
 
         verify(userComponent.sessionDataManager).delete()
+    }
+
+    @Test
+    fun `it should update the relay clock diff when RelayClock changes`() {
+        val app = authWithOtherDevices(null)
+
+        val diff = 4000L
+
+        clockDiffUpdates.onNext(diff)
+
+        verify(userComponent.sessionDataManager).updateClockDifference(diff)
     }
 }

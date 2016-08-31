@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Subscription
 import rx.subjects.BehaviorSubject
+import rx.subscriptions.CompositeSubscription
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -63,7 +64,7 @@ class SlyApplication {
     val userSessionAvailable: Observable<UserComponent?>
         get() = userSessionAvailableSubject
 
-    private var newTokenSyncSub: Subscription? = null
+    private val userComponentSubscriptions = CompositeSubscription()
 
     private val loginEventsSubject = BehaviorSubject.create<LoginEvent>()
     val loginEvents: Observable<LoginEvent>
@@ -309,6 +310,12 @@ class SlyApplication {
         userComponent.preKeyManager.checkForUpload()
     }
 
+    private fun onClockDiffUpdate(diff: Long) {
+        val userComponent = userComponent ?: return
+
+        userComponent.sessionDataManager.updateClockDifference(diff)
+    }
+
     /**
      * Log out of the current session. Meant to be called when the user explicitly requests to terminate a session.
      *
@@ -472,9 +479,13 @@ class SlyApplication {
     private fun finalizeInitialization(userComponent: UserComponent, accountInfo: AccountInfo) {
         log.info("Finalizing user initialization")
 
-        newTokenSyncSub = userComponent.authTokenManager.newToken.subscribe {
+        userComponentSubscriptions.add(userComponent.authTokenManager.newToken.subscribe {
             onNewToken(it)
-        }
+        })
+
+        userComponentSubscriptions.add(userComponent.relayClock.clockDiffUpdates.subscribe {
+            onClockDiffUpdate(it)
+        })
 
         initializeUserSession(userComponent)
 
@@ -664,8 +675,7 @@ class SlyApplication {
     fun destroyUserSession(): Boolean {
         val userComponent = this.userComponent ?: return false
 
-        newTokenSyncSub?.unsubscribe()
-        newTokenSyncSub = null
+        userComponentSubscriptions.clear()
 
         log.info("Destroying user session")
 

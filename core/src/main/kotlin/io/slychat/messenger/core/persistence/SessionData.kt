@@ -7,7 +7,9 @@ import io.slychat.messenger.core.AuthToken
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SessionData(
     @param:JsonProperty("authToken")
-    val authToken: AuthToken?
+    val authToken: AuthToken?,
+    @param:JsonProperty("relayClockDifference")
+    val relayClockDifference: Long
 ) {
-    constructor() : this(null)
+    constructor() : this(null, 0)
 }

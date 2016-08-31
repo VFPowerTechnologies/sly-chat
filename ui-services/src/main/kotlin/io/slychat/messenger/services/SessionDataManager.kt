@@ -9,8 +9,7 @@ interface SessionDataManager {
 
     fun updateAuthToken(authToken: AuthToken?): Promise<Unit, Exception>
 
-    //TODO
-    //fun updateClockDifference(diff: Long): Promise<Unit, Exception>
+    fun updateClockDifference(diff: Long): Promise<Unit, Exception>
 
     fun update(newSessionData: SessionData): Promise<Unit, Exception>
 

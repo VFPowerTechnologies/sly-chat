@@ -85,7 +85,7 @@ class AuthenticationServiceImplTest {
 
     fun withSuccessfulLocalAuth(body: (SessionData) -> Unit) {
         withSuccessfulLocalAuthNoSession {
-            val sessionData = SessionData(randomAuthToken())
+            val sessionData = SessionData().copy(authToken = randomAuthToken())
             whenever(sessionDataPersistenceManager.retrieveSync()).thenReturn(sessionData)
 
             body(sessionData)

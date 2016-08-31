@@ -48,7 +48,7 @@ class AuthenticationServiceImpl(
                 val keyVault = KeyVault.deserialize(data.keyVault, password)
 
                 //we have no local session, so just use an empty SessionData
-                val sessionData = SessionData(data.authToken)
+                val sessionData = SessionData().copy(authToken = data.authToken)
                 AuthResult(sessionData, keyVault, data.accountInfo, data.otherDevices)
             }
         }

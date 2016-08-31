@@ -29,9 +29,11 @@ class SessionDataManagerImpl(
     }
 
     override fun updateAuthToken(authToken: AuthToken?): Promise<Unit, Exception> {
-        val sessionData = this.sessionData
-
         return writeSessionData(sessionData.copy(authToken = authToken))
+    }
+
+    override fun updateClockDifference(diff: Long): Promise<Unit, Exception> {
+        return writeSessionData(sessionData.copy(relayClockDifference = diff))
     }
 
     override fun update(newSessionData: SessionData): Promise<Unit, Exception> {
