@@ -8,10 +8,7 @@ import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
-import io.slychat.messenger.services.GroupService
-import io.slychat.messenger.services.RelayClientManager
-import io.slychat.messenger.services.assertEventEmitted
-import io.slychat.messenger.services.assertNoEventsEmitted
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.testutils.KovenantTestModeRule
@@ -47,6 +44,7 @@ class MessengerServiceImplTest {
     val relayClientManager: RelayClientManager = mock()
     val messageSender: MessageSender = mock()
     val messageReceiver: MessageReceiver = mock()
+    val relayClock: RelayClock = mock()
 
     val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
 
@@ -76,6 +74,8 @@ class MessengerServiceImplTest {
         whenever(groupService.getMembers(any())).thenResolve(emptySet())
 
         whenever(addressBookOperationManager.syncEvents).thenReturn(syncEvents)
+
+        whenever(relayClock.currentTime()).thenAnswer { currentTimestamp() }
     }
 
     fun randomTextSingleRecord(): MessageSendRecord {
@@ -109,6 +109,7 @@ class MessengerServiceImplTest {
             relayClientManager,
             messageSender,
             messageReceiver,
+            relayClock,
             selfId
         )
     }
@@ -285,6 +286,26 @@ class MessengerServiceImplTest {
         verify(messageSender).addToQueue(capture<SenderMessageEntry> {
             assertEquals(recipient, it.metadata.userId, "Invalid recipient")
             assertEquals(MessageCategory.TEXT_SINGLE, it.metadata.category, "Invalid category")
+        })
+    }
+
+    @Test
+    fun `it should use the RelayClock when creating sent message timestamps`() {
+        val currentTime = 1000L
+
+        whenever(relayClock.currentTime()).thenReturn(currentTime)
+
+        val messengerService = createService()
+
+        messengerService.sendMessageTo(randomUserId(), randomMessage())
+
+        verify(messageSender).addToQueue(capture<SenderMessageEntry> {
+            //cheating a little
+            val objectMapper = ObjectMapper()
+
+            val message = objectMapper.readValue(it.message, TextMessageWrapper::class.java).m
+
+            assertEquals(currentTime, message.timestamp, "RelayClock time not used")
         })
     }
 

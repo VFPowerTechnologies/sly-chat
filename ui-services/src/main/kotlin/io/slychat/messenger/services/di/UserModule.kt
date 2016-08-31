@@ -173,6 +173,7 @@ class UserModule(
         relayClientManager: RelayClientManager,
         messageReceiver: MessageReceiver,
         messageSender: MessageSender,
+        relayClock: RelayClock,
         userLoginData: UserData
     ): MessengerService =
         MessengerServiceImpl(
@@ -184,6 +185,7 @@ class UserModule(
             relayClientManager,
             messageSender,
             messageReceiver,
+            relayClock,
             userLoginData.userId
         )
 

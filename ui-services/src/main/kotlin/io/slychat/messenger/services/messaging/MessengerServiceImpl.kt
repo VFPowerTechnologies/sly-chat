@@ -8,13 +8,10 @@ import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
-import io.slychat.messenger.services.GroupService
-import io.slychat.messenger.services.RelayClientManager
-import io.slychat.messenger.services.bindUi
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.AddressBookOperationManager
 import io.slychat.messenger.services.contacts.AddressBookSyncEvent
 import io.slychat.messenger.services.contacts.ContactsService
-import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
@@ -35,13 +32,14 @@ import java.util.*
  */
 class MessengerServiceImpl(
     private val contactsService: ContactsService,
-    private val addressBookOperationManager: AddressBookOperationManager,
+    addressBookOperationManager: AddressBookOperationManager,
     private val messagePersistenceManager: MessagePersistenceManager,
     private val groupService: GroupService,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val relayClientManager: RelayClientManager,
     private val messageSender: MessageSender,
     private val messageReceiver: MessageReceiver,
+    private val relayClock: RelayClock,
     private val selfId: UserId
 ) : MessengerService {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -213,7 +211,7 @@ class MessengerServiceImpl(
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         return if (!isSelfMessage) {
-            val messageInfo = MessageInfo.newSent(message, 0)
+            val messageInfo = MessageInfo.newSent(message, relayClock.currentTime(), 0)
             val m = TextMessage(messageInfo.timestamp, message, null)
             val wrapper = TextMessageWrapper(m)
 
