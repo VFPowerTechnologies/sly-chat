@@ -168,6 +168,7 @@ class DesktopApp : Application() {
             DesktopUIPlatformService(browser),
             DesktopUILoadService(this),
             uiVisibility,
+            BehaviorSubject.create(true),
             JavaFxScheduler.getInstance()
         )
 
@@ -175,9 +176,6 @@ class DesktopApp : Application() {
         app.isInBackground = false
 
         val appComponent = app.appComponent
-
-        //temp
-        app.updateNetworkStatus(true)
 
         stackPane = StackPane()
 

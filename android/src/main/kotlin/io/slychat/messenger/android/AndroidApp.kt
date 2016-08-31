@@ -114,7 +114,8 @@ class AndroidApp : Application() {
     //set to true once we've made this request once since startup
     private var hasCheckedGcmTokenStatus = false
 
-    private val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create()
+    private val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
+    private val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
 
     /** Points to the current activity, if one is set. Used to request permissions from various services. */
     var currentActivity: MainActivity? = null
@@ -160,6 +161,7 @@ class AndroidApp : Application() {
             AndroidUIPlatformService(this),
             AndroidUILoadService(this),
             uiVisibility,
+            networkStatus,
             AndroidSchedulers.mainThread()
         )
 
@@ -418,7 +420,7 @@ class AndroidApp : Application() {
     }
 
     fun updateNetworkStatus(isConnected: Boolean) {
-        app.updateNetworkStatus(isConnected)
+        networkStatus.onNext(isConnected)
 
         if (isConnected) {
             checkGCM()

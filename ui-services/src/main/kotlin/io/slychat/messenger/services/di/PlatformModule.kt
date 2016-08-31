@@ -59,6 +59,11 @@ class PlatformModule(
 
     @get:Singleton
     @get:Provides
+    @get:NetworkStatus
+    val networkStatus: Observable<Boolean>,
+
+    @get:Singleton
+    @get:Provides
     val providesScheduler: Scheduler
 )
 

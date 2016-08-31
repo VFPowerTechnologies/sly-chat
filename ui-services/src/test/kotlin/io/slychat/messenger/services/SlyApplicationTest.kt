@@ -10,6 +10,7 @@ import io.slychat.messenger.core.randomAccountInfo
 import io.slychat.messenger.core.randomAuthToken
 import io.slychat.messenger.core.randomDeviceId
 import io.slychat.messenger.core.relay.RelayClientEvent
+import io.slychat.messenger.core.relay.RelayClientState
 import io.slychat.messenger.services.auth.AuthResult
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
@@ -17,6 +18,7 @@ import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Ignore
 import org.junit.Test
+import org.mockito.exceptions.verification.NeverWantedButInvoked
 import rx.observers.TestSubscriber
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
@@ -65,6 +67,9 @@ class SlyApplicationTest {
         whenever(userComponent.relayClock.clockDiffUpdates).thenReturn(clockDiffUpdates)
 
         //used in finalizeInitialization
+
+        //other
+        whenever(userComponent.relayClientManager.state).thenReturn(RelayClientState.DISCONNECTED)
     }
 
     fun createApp(): SlyApplication {
@@ -230,4 +235,59 @@ class SlyApplicationTest {
 
         verify(userComponent.relayClock).setDifference(sessionData.relayClockDifference)
     }
+
+    fun testNoRelayConnection(relayClientState: RelayClientState) {
+        val app = authWithOtherDevices(null)
+
+        app.isInBackground = false
+
+        whenever(userComponent.relayClientManager.state).thenReturn(relayClientState)
+
+        appComponent.networkStatusSubject.onNext(true)
+
+        try {
+            verify(userComponent.relayClientManager, never()).connect(any())
+        }
+        catch (e: NeverWantedButInvoked) {
+            throw AssertionError("connect() called for state=$relayClientState")
+        }
+    }
+
+    @Test
+    fun `it should not attempt to reconnect when the relay client state is not disconnected`() {
+        val states = listOf(
+            RelayClientState.AUTHENTICATING,
+            RelayClientState.AUTHENTICATED,
+            RelayClientState.CONNECTED,
+            RelayClientState.CONNECTING,
+            RelayClientState.DISCONNECTING
+        )
+
+        states.forEach { testNoRelayConnection(it) }
+    }
+
+    @Test
+    fun `it should connect to the relay when the client state is disconnected`() {
+        val app = authWithOtherDevices(null)
+
+        app.isInBackground = false
+
+        whenever(userComponent.relayClientManager.state).thenReturn(RelayClientState.DISCONNECTED)
+
+        appComponent.networkStatusSubject.onNext(true)
+
+        verify(userComponent.relayClientManager).connect(any())
+    }
+
+    @Ignore
+    @Test
+    fun `it should not connect to the relay while in the background if network is available`() { TODO() }
+
+    @Ignore
+    @Test
+    fun `it should reconnect to the relay when brought to the foreground and network is available`() { TODO() }
+
+    @Ignore
+    @Test
+    fun `it should reconnect if connect was called while disconnecting`() { TODO() }
 }

@@ -30,7 +30,7 @@ interface RelayClientManager {
     /** Fires updates on relay connection status updates. */
     val onlineStatus: Observable<Boolean>
 
-    val state: RelayClientState?
+    val state: RelayClientState
 
     /** Received relay messages. */
     val events: Observable<RelayClientEvent>

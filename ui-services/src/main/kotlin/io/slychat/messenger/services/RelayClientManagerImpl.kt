@@ -52,8 +52,10 @@ class RelayClientManagerImpl(
     private fun setOnlineStatus(isOnline: Boolean) {
         log.info("Relay is online: {}", isOnline)
         this.isOnline = isOnline
-        if (!isOnline)
+        if (!isOnline) {
             relayClient = null
+            clientSubscriptions.clear()
+        }
         else
             resetConnectionTag()
 
@@ -80,13 +82,17 @@ class RelayClientManagerImpl(
                         this@RelayClientManagerImpl.onClientCompleted()
                     }
 
+                    //not getting here for some reason
                     override fun onNext(event: RelayClientEvent) {
                         when (event) {
-                        //we only mark the relay connection as usable once authentication has completed
+                            //we only mark the relay connection as usable once authentication has completed
                             is AuthenticationSuccessful -> setOnlineStatus(true)
+
                             is AuthenticationFailure -> setOnlineStatus(false)
+
                             is ConnectionLost -> setOnlineStatus(false)
-                            is ConnectionFailure -> relayClient = null
+
+                            is ConnectionFailure -> setOnlineStatus(false)
                         }
 
                         this@RelayClientManagerImpl.eventsSubject.onNext(event)
@@ -115,7 +121,6 @@ class RelayClientManagerImpl(
     }
 
     override fun disconnect() {
-        clientSubscriptions.clear()
         val relayClient = relayClient ?: return
         relayClient.disconnect()
     }
@@ -145,6 +150,6 @@ class RelayClientManagerImpl(
         getClientOrThrow().sendPing()
     }
 
-    override val state: RelayClientState?
-        get() = relayClient?.state
+    override val state: RelayClientState
+        get() = relayClient?.state ?: RelayClientState.DISCONNECTED
 }

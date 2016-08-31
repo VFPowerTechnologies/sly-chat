@@ -12,8 +12,10 @@ import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.di.UserModule
 import io.slychat.messenger.services.ui.*
+import rx.Observable
 import rx.Scheduler
 import rx.schedulers.Schedulers
+import rx.subjects.BehaviorSubject
 
 class MockApplicationComponent : ApplicationComponent {
     override val platformInfo: PlatformInfo = mock()
@@ -69,6 +71,11 @@ class MockApplicationComponent : ApplicationComponent {
     override val localAccountDirectory: LocalAccountDirectory = mock()
 
     override val installationDataPersistenceManager: InstallationDataPersistenceManager = mock()
+
+    val networkStatusSubject: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
+
+    override val networkStatus: Observable<Boolean>
+        get() = networkStatusSubject
 
     val userComponent = MockUserComponent()
 
