@@ -25,6 +25,8 @@ class UIMessengerServiceImpl(
     private val messageStatusUpdateListeners = ArrayList<(UIMessageInfo) -> Unit>()
     private val clockDifferenceUpdateListeners = ArrayList<(Long) -> Unit>()
 
+    private var relayClockDiff = 0L
+
     private val subscriptions = CompositeSubscription()
 
     private var messengerService: MessengerService? = null
@@ -50,10 +52,14 @@ class UIMessengerServiceImpl(
 
             messengerService = null
             relayClock = null
+
+            relayClockDiff = 0
         }
     }
 
     private fun onClockDifferenceUpdate(diff: Long) {
+        relayClockDiff = diff
+
         clockDifferenceUpdateListeners.forEach { it(diff) }
     }
 
@@ -106,6 +112,8 @@ class UIMessengerServiceImpl(
 
     override fun addClockDifferenceUpdateListener(listener: (Long) -> Unit) {
         clockDifferenceUpdateListeners.add(listener)
+
+        listener(relayClockDiff)
     }
 
     override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
