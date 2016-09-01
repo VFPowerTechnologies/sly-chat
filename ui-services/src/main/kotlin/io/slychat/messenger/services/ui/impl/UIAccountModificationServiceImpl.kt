@@ -83,16 +83,17 @@ class UIAccountModificationServiceImpl(
     override fun confirmPhoneNumber(smsCode: String): Promise<UIAccountUpdateResult, Exception> {
         val userComponent = getUserComponentOrThrow()
 
+        val oldAccountInfo = currentAccountInfo ?: throw RuntimeException("Missing account info")
+
         return userComponent.authTokenManager.bind { userCredentials ->
             accountUpdateClient.confirmPhoneNumber(userCredentials, ConfirmPhoneNumberRequest(smsCode)) bind { response ->
                 if (response.isSuccess === true && response.accountInfo !== null) {
-                    //FIXME
                     val newAccountInfo = AccountInfo(
                         UserId(response.accountInfo.id),
                         response.accountInfo.name,
                         response.accountInfo.username,
                         response.accountInfo.phoneNumber,
-                        0
+                        oldAccountInfo.deviceId
                     )
 
                     updateAccountInfo(userComponent, newAccountInfo) map {
