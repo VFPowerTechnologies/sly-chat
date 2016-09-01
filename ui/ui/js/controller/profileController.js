@@ -108,7 +108,7 @@ ProfileController.prototype = {
     },
 
     submitSmsVerification : function () {
-        var code = $('smsCodeInput').val();
+        var code = $('#smsCodeInput').val();
         if (code === '')
             return;
 
