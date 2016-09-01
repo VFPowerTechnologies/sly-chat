@@ -77,6 +77,8 @@ class MockApplicationComponent : ApplicationComponent {
     override val networkStatus: Observable<Boolean>
         get() = networkStatusSubject
 
+    override val versionChecker: VersionChecker = mock()
+
     val userComponent = MockUserComponent()
 
     override fun plus(userModule: UserModule): UserComponent {

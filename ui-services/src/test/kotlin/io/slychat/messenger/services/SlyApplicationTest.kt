@@ -72,6 +72,10 @@ class SlyApplicationTest {
         whenever(userComponent.relayClientManager.state).thenReturn(RelayClientState.DISCONNECTED)
     }
 
+    fun networkIsAvailable(isAvailable: Boolean) {
+        appComponent.networkStatusSubject.onNext(isAvailable)
+    }
+
     fun createApp(): SlyApplication {
         val app = SlyApplication()
 
@@ -141,6 +145,12 @@ class SlyApplicationTest {
 
     fun authWithSessionData(sessionData: SessionData): SlyApplication {
         val authResult = AuthResult(sessionData, MockUserComponent.keyVault, accountInfo, null)
+
+        return auth(authResult)
+    }
+
+    fun auth(): SlyApplication {
+        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, accountInfo, null)
 
         return auth(authResult)
     }
@@ -237,7 +247,7 @@ class SlyApplicationTest {
     }
 
     fun testNoRelayConnection(relayClientState: RelayClientState) {
-        val app = authWithOtherDevices(null)
+        val app = auth()
 
         app.isInBackground = false
 
@@ -268,7 +278,7 @@ class SlyApplicationTest {
 
     @Test
     fun `it should connect to the relay when the client state is disconnected`() {
-        val app = authWithOtherDevices(null)
+        val app = auth()
 
         app.isInBackground = false
 
@@ -290,4 +300,13 @@ class SlyApplicationTest {
     @Ignore
     @Test
     fun `it should reconnect if connect was called while disconnecting`() { TODO() }
+
+    @Test
+    fun `it must call for a version check on startup`() {
+        val app = createApp()
+
+        app.init(appComponent)
+
+        verify(appComponent.versionChecker).init()
+    }
 }

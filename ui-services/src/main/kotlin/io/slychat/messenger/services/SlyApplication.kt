@@ -123,6 +123,8 @@ class SlyApplication {
         appComponent.appConfigService.init() successUi {
             initializationComplete(doAutoLogin)
         }
+
+        applicationComponent.versionChecker.init()
     }
 
     /** Starts background initialization; use addOnInitListener to be notified when app has finished initializing. Once finalized, will trigger auto-login. */
