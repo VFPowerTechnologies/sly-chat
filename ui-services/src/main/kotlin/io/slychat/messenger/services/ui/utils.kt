@@ -67,4 +67,7 @@ fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponen
 
     val groupService = applicationComponent.uiGroupService
     dispatcher.registerService("GroupService", UIGroupServiceToJavaProxy(groupService, dispatcher))
+
+    val clientInfoService = applicationComponent.uiClientInfoService
+    dispatcher.registerService("ClientInfoService", UIClientInfoServiceToJavaProxy(clientInfoService, dispatcher))
 }

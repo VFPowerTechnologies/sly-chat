@@ -17,6 +17,7 @@ var UIController = function () {
     window.infoService = new InfoService();
     window.configService = new ConfigService();
     window.groupService = new GroupService();
+    window.clientInfoService = new ClientInfoService();
 
     window.navigationController = new NavigationController();
     window.userSessionController = new UserSessionController();

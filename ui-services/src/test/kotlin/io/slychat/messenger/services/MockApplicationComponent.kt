@@ -40,6 +40,8 @@ class MockApplicationComponent : ApplicationComponent {
 
     override val uiEventService: UIEventService = mock()
 
+    override val uiClientInfoService: UIClientInfoService = mock()
+
     override val rxScheduler: Scheduler = Schedulers.immediate()
 
     override val authenticationService: AuthenticationService = mock()

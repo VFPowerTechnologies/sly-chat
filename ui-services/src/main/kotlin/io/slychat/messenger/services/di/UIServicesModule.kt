@@ -12,6 +12,7 @@ import io.slychat.messenger.core.http.api.infoservice.InfoServiceAsyncClient
 import io.slychat.messenger.core.http.api.registration.RegistrationAsyncClient
 import io.slychat.messenger.services.PlatformTelephonyService
 import io.slychat.messenger.services.SlyApplication
+import io.slychat.messenger.services.VersionChecker
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.ui.*
 import io.slychat.messenger.services.ui.dummy.UIDevelServiceImpl
@@ -142,5 +143,13 @@ class UIServicesModule {
         app: SlyApplication
     ): UIGroupService {
         return UIGroupServiceImpl(app.userSessionAvailable)
+    }
+
+    @Singleton
+    @Provides
+    fun providesUIClientInfoService(
+        versionChecker: VersionChecker
+    ): UIClientInfoService {
+        return UIClientInfoServiceImpl(versionChecker.versionOutOfDate)
     }
 }

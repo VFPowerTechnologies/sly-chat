@@ -44,6 +44,8 @@ class HttpVersionChecker(
         if (!isNetworkAvailable || isRunning || lastResult != null)
             return
 
+        log.debug("Running version check")
+
         isRunning = true
 
         val client = clientVersionAsyncClientFactory.create()
@@ -58,6 +60,8 @@ class HttpVersionChecker(
     }
 
     private fun updateResult(isUpToDate: Boolean) {
+        log.debug("Version check complete: {}", isUpToDate)
+
         lastResult = isUpToDate
 
         if (!isUpToDate)

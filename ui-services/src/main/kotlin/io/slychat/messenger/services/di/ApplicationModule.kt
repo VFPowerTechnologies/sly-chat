@@ -117,6 +117,7 @@ class ApplicationModule(
         return JsonInstallationDataPersistenceManager(path)
     }
 
+    @Singleton
     @Provides
     fun providesVersionChecker(
         serverUrls: BuildConfig.ServerUrls,
