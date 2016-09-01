@@ -230,4 +230,8 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
     fun getAddressBookHash(username: String): String {
         return getRequest("/dev/address-book/hash/$username", String::class.java)
     }
+
+    fun getLatestVersion(): String {
+        return getRequest("/dev/client-version/latest", String::class.java)
+    }
 }
