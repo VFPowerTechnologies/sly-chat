@@ -175,16 +175,8 @@ slychat.onPageInit('updatePhone', function (page) {
 slychat.onPageInit('profile', function (page) {
     profileController.displayInfo();
 
-    $$('#profileEmailLink').on('click', function () {
-        profileController.openEmailUpdateForm();
-    });
-
-    $$('#profileNameLink').on('click', function () {
-        profileController.openNameUpdateForm();
-    });
-
-    $$('#profilePhoneLink').on('click', function () {
-        profileController.openPhoneUpdateForm();
+    $$('#openProfileUpdatePopup').on('click', function () {
+        profileController.openProfileEditPopup();
     });
 });
 

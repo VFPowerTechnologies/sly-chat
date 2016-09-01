@@ -42,7 +42,7 @@ LoginController.prototype = {
         slychat.hidePreloader();
         this.resetLoginInfo();
 
-        userSessionController.startUserSession(e.accountInfo, e.plubicKey);
+        userSessionController.startUserSession(e.accountInfo, e.publicKey);
         navigationController.loadInitialPage();
     },
 
