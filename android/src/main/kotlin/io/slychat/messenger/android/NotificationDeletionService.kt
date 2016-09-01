@@ -13,7 +13,9 @@ class NotificationDeletionService : Service() {
     override fun onCreate() {
         val app = AndroidApp.get(this)
 
-        app.notificationService.clearAllMessageNotifications()
+        app.addOnSuccessfulInitListener {
+            app.notificationService.clearAllMessageNotifications()
+        }
 
         stopSelf()
     }

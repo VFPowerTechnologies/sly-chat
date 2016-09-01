@@ -88,6 +88,11 @@ fun gcmInit(context: Context): LoadError? {
 fun gcmInitAsync(context: Context): Promise<LoadError?, Exception> = task { gcmInit(context) }
 
 class AndroidApp : Application() {
+    companion object {
+        fun get(context: Context): AndroidApp =
+            context.applicationContext as AndroidApp
+    }
+
     private var gcmInitRunning = false
     private var gcmInitComplete = false
 
@@ -101,9 +106,13 @@ class AndroidApp : Application() {
     //if AndroidUILoadService.loadComplete is called while we're paused (eg: during the permissions dialog)
     private var queuedLoadComplete = false
 
-    private val loadCompleteSubject = BehaviorSubject.create<LoadError>()
+    private val onSuccessfulInitListeners = ArrayList<() -> Unit>()
+    private var isInitialized = false
+    private var wasSuccessfullyInitialized = false
+
+    private val loadCompleteSubject = BehaviorSubject.create<LoadError?>()
     /** Fires once both GCM services and SlyApplication have completed initialization, in that order. */
-    val loadComplete: Observable<LoadError> = loadCompleteSubject.observeOn(AndroidSchedulers.mainThread())
+    val loadComplete: Observable<LoadError?> = loadCompleteSubject.observeOn(AndroidSchedulers.mainThread())
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -205,7 +214,7 @@ class AndroidApp : Application() {
                 log.debug("GCM init successful")
                 init()
                 app.addOnInitListener {
-                    loadCompleteSubject.onNext(loadError)
+                    finishInitialization(null)
                 }
             }
             else {
@@ -214,7 +223,7 @@ class AndroidApp : Application() {
                 else
                     log.error("GCM init failure: {}: {}", loadError.type, loadError.errorCode)
 
-                loadCompleteSubject.onNext(loadError)
+                finishInitialization(loadError)
             }
         }
     }
@@ -448,8 +457,25 @@ class AndroidApp : Application() {
         queuedLoadComplete = hideSplashImage() == false
     }
 
-    companion object {
-        fun get(context: Context): AndroidApp =
-            context.applicationContext as AndroidApp
+    private fun finishInitialization(loadError: LoadError?) {
+        isInitialized = true
+        loadCompleteSubject.onNext(loadError)
+
+        if (loadError == null) {
+            wasSuccessfullyInitialized = true
+
+            onSuccessfulInitListeners.forEach { it() }
+            onSuccessfulInitListeners.clear()
+        }
+    }
+
+    /** Fires only if GCM services and SlyApplication have successfully completed initialization. Used by services. */
+    fun addOnSuccessfulInitListener(listener: () -> Unit) {
+        if (wasSuccessfullyInitialized) {
+            listener()
+        }
+        else if (!isInitialized) {
+            onSuccessfulInitListeners.add(listener)
+        }
     }
 }
