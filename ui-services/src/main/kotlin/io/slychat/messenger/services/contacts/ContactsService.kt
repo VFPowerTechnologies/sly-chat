@@ -14,6 +14,7 @@ interface ContactsService {
     fun fetchRemoteContactInfo(email: String?, queryPhoneNumber: String?): Promise<FindContactResponse, Exception>
     /** Add a new non-pending contact for which we already have info. */
     fun addByInfo(contactInfo: ContactInfo): Promise<Boolean, Exception>
+    fun addById(userId: UserId): Promise<Boolean, Exception>
     fun addSelf(selfInfo: ContactInfo): Promise<Unit, Exception>
 
     /** Remove the given contact from the contact list. */

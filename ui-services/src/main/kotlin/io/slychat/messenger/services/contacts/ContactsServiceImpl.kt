@@ -50,6 +50,24 @@ class ContactsServiceImpl(
         }
     }
 
+    override fun addById(userId: UserId): Promise<Boolean, Exception> {
+        return authTokenManager.bind { userCredentials ->
+            contactClient.findById(userCredentials, userId)
+        } bind { response ->
+            val contactInfo = response.contactInfo?.toCore(AllowedMessageLevel.ALL)
+            if (contactInfo == null)
+                Promise.ofSuccess(false)
+            else {
+                addressBookOperationManager.run {
+                    contactsPersistenceManager.add(contactInfo) successUi {
+                        if (it)
+                            contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
+                    }
+                }
+            }
+        }
+    }
+
     override fun addSelf(selfInfo: ContactInfo): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
             log.debug("Adding self info: {}", selfInfo)
