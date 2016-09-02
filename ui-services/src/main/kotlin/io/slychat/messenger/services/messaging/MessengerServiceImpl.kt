@@ -397,6 +397,10 @@ class MessengerServiceImpl(
         return sendSyncMessage(SyncMessage.NewDevice(deviceInfo))
     }
 
+    override fun notifyContactAdd(userId: UserId): Promise<Unit, Exception> {
+        TODO()
+    }
+
     private fun broadcastSentMessage(metadata: MessageMetadata, messageInfo: MessageInfo): Promise<Unit, Exception> {
         val recipient = if (metadata.groupId != null)
             Recipient.Group(metadata.groupId)

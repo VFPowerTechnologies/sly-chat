@@ -8,6 +8,7 @@ import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
@@ -37,9 +38,20 @@ class MessageProcessorImpl(
 
             is SyncMessageWrapper -> handleSyncMessage(sender, m.m)
 
+            is ControlMessageWrapper -> handleControlMessage(sender, m.m)
+
             else -> {
                 log.error("Unhandled message type: {}", m.javaClass.name)
                 throw IllegalArgumentException("Unhandled message type: ${m.javaClass.name}")
+            }
+        }
+    }
+
+    private fun  handleControlMessage(sender: UserId, m: ControlMessage): Promise<Unit, Exception> {
+        return when (m) {
+            is ControlMessage.WasAdded -> {
+                log.info("{} added us as a contact", sender)
+                contactsService.addById(sender) map { Unit }
             }
         }
     }

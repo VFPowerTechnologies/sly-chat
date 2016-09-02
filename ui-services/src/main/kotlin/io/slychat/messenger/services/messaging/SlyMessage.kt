@@ -11,13 +11,15 @@ import io.slychat.messenger.core.persistence.GroupId
 @JsonSubTypes(
     JsonSubTypes.Type(GroupEventMessageWrapper::class, name = "g"),
     JsonSubTypes.Type(TextMessageWrapper::class, name = "t"),
-    JsonSubTypes.Type(SyncMessageWrapper::class, name = "s")
+    JsonSubTypes.Type(SyncMessageWrapper::class, name = "s"),
+    JsonSubTypes.Type(ControlMessageWrapper::class, name = "c")
 )
 interface SlyMessage
 
 data class GroupEventMessageWrapper(@JsonProperty("m") val m: GroupEventMessage) : SlyMessage
 data class TextMessageWrapper(@JsonProperty("m") val m: TextMessage) : SlyMessage
 data class SyncMessageWrapper(@JsonProperty("m") val m: SyncMessage) : SlyMessage
+data class ControlMessageWrapper(@JsonProperty("m") val m: ControlMessage) : SlyMessage
 
 data class TextMessage(
     @JsonProperty("timestamp")
@@ -197,6 +199,29 @@ sealed class SyncMessage {
 
         override fun toString(): String {
             return "AddressBookSync()"
+        }
+    }
+}
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
+@JsonSubTypes(
+    JsonSubTypes.Type(ControlMessage.WasAdded::class, name = "a")
+)
+sealed class ControlMessage {
+    /** Sender added you as a contact. */
+    class WasAdded() : ControlMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+
+            return other?.javaClass == javaClass
+        }
+
+        override fun hashCode(): Int {
+            return 0
+        }
+
+        override fun toString(): String {
+            return "WasAdded()"
         }
     }
 }
