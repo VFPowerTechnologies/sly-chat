@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.messaging
 
+import io.slychat.messenger.core.persistence.SenderMessageEntry
 import nl.komponents.kovenant.Promise
 import rx.Observable
 

@@ -81,22 +81,12 @@ fun randomOtherMetadata(recipientId: UserId = randomUserId()): MessageMetadata {
 
 fun randomSerializedMessage(): ByteArray = Random().nextInt().toString().toByteArray()
 
-fun randomQueuedMessage(): QueuedMessage {
-    val serialized = randomSerializedMessage()
-
-    val metadata = randomTextSingleMetadata()
-
-    val queued = QueuedMessage(
-        metadata,
-        currentTimestamp(),
-        serialized
-    )
-
-    return queued
+fun randomSenderMessageEntry(): SenderMessageEntry {
+    return SenderMessageEntry(randomTextSingleMetadata(), randomSerializedMessage())
 }
 
-fun randomQueuedMessages(n: Int = 2): List<QueuedMessage> {
-    return (1..n).map { randomQueuedMessage() }
+fun randomSenderMessageEntries(n: Int = 2): List<SenderMessageEntry> {
+    return (1..n).map { randomSenderMessageEntry() }
 }
 
 fun randomContactInfo(allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL): ContactInfo {
