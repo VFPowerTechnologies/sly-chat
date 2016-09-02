@@ -69,31 +69,31 @@ class SQLiteMessageQueuePersistenceManagerTest {
     fun `add(single) should add a new message`() {
         val entry = randomMessageEntry()
 
-        val qm = messageQueuePersistenceManager.add(entry).get()
+        messageQueuePersistenceManager.add(entry).get()
 
-        val got = messageQueuePersistenceManager.get(qm.metadata.userId, qm.metadata.messageId).get()
+        val got = messageQueuePersistenceManager.get(entry.metadata.userId, entry.metadata.messageId).get()
 
-        assertEquals(qm, got, "Invalid queued message")
+        assertEquals(entry, got, "Invalid message entry")
     }
 
     @Test
     fun `add(multi) should add all the given new messages`() {
         val entries = randomMessageEntries()
 
-        val qms = messageQueuePersistenceManager.add(entries).get()
+        messageQueuePersistenceManager.add(entries).get()
 
-        qms.forEach {
+        entries.forEach {
             val got = messageQueuePersistenceManager.get(it.metadata.userId, it.metadata.messageId).get()
-            assertEquals(it, got, "Invalid queued message")
+            assertEquals(it, got, "Invalid message entry")
         }
     }
 
     @Test
     fun `remove should remove an existing message`() {
         val entry = randomMessageEntry()
-        val qm = messageQueuePersistenceManager.add(entry).get()
+        messageQueuePersistenceManager.add(entry).get()
 
-        assertTrue(messageQueuePersistenceManager.remove(qm.metadata.userId, qm.metadata.messageId).get(), "Message not removed")
+        assertTrue(messageQueuePersistenceManager.remove(entry.metadata.userId, entry.metadata.messageId).get(), "Message not removed")
     }
 
     @Test
@@ -102,44 +102,17 @@ class SQLiteMessageQueuePersistenceManagerTest {
     }
 
     @Test
-    fun `getUndelivered should return all previously added messages`() {
-        val entries = randomMessageEntries()
-
-        val qms = messageQueuePersistenceManager.add(entries).get()
-
-        val undelivered = messageQueuePersistenceManager.getUndelivered().get()
-
-        assertThat(undelivered)
-            .containsOnlyElementsOf(qms)
-            .`as`("Undelievered messages")
-
-        val sorted = undelivered.sortedBy { it.id }
-
-        assertEquals(sorted, undelivered, "Undelivered messages not properly sorted")
-    }
-
-    @Test
     fun `getUndelivered should return all previously added messages in ascending order by id`() {
         val entries = randomMessageEntries(10)
 
-        val qms = messageQueuePersistenceManager.add(entries).get()
-
-        //make sure they're returned in order as well
-        val sortedMetadata = qms.map { it.metadata }
-
-        assertThat(sortedMetadata).apply {
-            `as`("Returned values should be in order")
-            containsExactlyElementsOf(entries.map { it.metadata })
-        }
+        messageQueuePersistenceManager.add(entries).get()
 
         val undelivered = messageQueuePersistenceManager.getUndelivered().get()
 
-        assertFalse(undelivered.isEmpty(), "No messages returned")
-
-        //displaying the id only in case of failure is nicer
-        val sorted = undelivered.map { it.id }.sorted()
-
-        assertEquals(sorted, undelivered.map { it.id }, "Undelivered messages not properly sorted")
+        assertThat(undelivered.map { it.metadata }).apply {
+            `as`("Returned values should be in order")
+            containsExactlyElementsOf(entries.map { it.metadata })
+        }
     }
 
     @Test

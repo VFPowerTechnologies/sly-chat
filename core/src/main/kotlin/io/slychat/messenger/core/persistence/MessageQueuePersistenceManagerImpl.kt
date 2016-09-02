@@ -3,56 +3,37 @@ package io.slychat.messenger.core.persistence
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
+import io.slychat.messenger.core.persistence.sqlite.batchInsertWithinTransaction
 import io.slychat.messenger.core.persistence.sqlite.map
 import io.slychat.messenger.core.persistence.sqlite.withPrepared
-import io.slychat.messenger.core.persistence.sqlite.withTransaction
 import nl.komponents.kovenant.Promise
-import java.util.*
 
 class SQLiteMessageQueuePersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
 ) : MessageQueuePersistenceManager {
-    override fun add(entry: SenderMessageEntry): Promise<QueuedMessage, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun add(entry: SenderMessageEntry): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withPrepared("INSERT INTO send_message_queue (contact_id, group_id, category, message_id, serialized) VALUES (?, ?, ?, ?, ?)") { stmt ->
             entryToRow(stmt, entry)
             stmt.step()
             Unit
         }
+    }
 
-        QueuedMessage(
-            entry.metadata,
-            connection.lastInsertId,
-            entry.message
+    override fun add(entries: Collection<SenderMessageEntry>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.batchInsertWithinTransaction(
+            "INSERT INTO send_message_queue (contact_id, group_id, category, message_id, serialized) VALUES (?, ?, ?, ?, ?)",
+            entries,
+            { stmt, v -> entryToRow(stmt, v) }
         )
     }
 
-    override fun add(entries: Collection<SenderMessageEntry>): Promise<List<QueuedMessage>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val r = ArrayList<QueuedMessage>()
-
-        connection.withTransaction {
-            val sql = "INSERT INTO send_message_queue (contact_id, group_id, category, message_id, serialized) VALUES (?, ?, ?, ?, ?)"
-            connection.withPrepared(sql) { stmt ->
-                entries.forEach {
-                    entryToRow(stmt, it)
-                    stmt.step()
-                    stmt.reset(true)
-                    r.add(
-                        QueuedMessage(it.metadata, connection.lastInsertId, it.message)
-                    )
-                }
-            }
-        }
-
-        r
-    }
-
-    fun get(userId: UserId, messageId: String): Promise<QueuedMessage?, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withPrepared("SELECT contact_id, group_id, category, message_id, id, serialized FROM send_message_queue WHERE contact_id=? AND message_id=?") { stmt ->
+    fun get(userId: UserId, messageId: String): Promise<SenderMessageEntry?, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withPrepared("SELECT contact_id, group_id, category, message_id, serialized FROM send_message_queue WHERE contact_id=? AND message_id=?") { stmt ->
             stmt.bind(1, userId.long)
             stmt.bind(2, messageId)
 
             if (stmt.step()) {
-                rowToQueuedMessage(stmt)
+                rowToEntry(stmt)
             }
             else
                 null
@@ -67,7 +48,7 @@ class SQLiteMessageQueuePersistenceManager(
         stmt.bind(5, entry.message)
     }
 
-    private fun rowToQueuedMessage(stmt: SQLiteStatement): QueuedMessage {
+    private fun rowToEntry(stmt: SQLiteStatement): SenderMessageEntry {
         val groupId = if (stmt.columnNull(1)) null else GroupId(stmt.columnString(1))
 
         val metadata = MessageMetadata(
@@ -77,10 +58,9 @@ class SQLiteMessageQueuePersistenceManager(
             stmt.columnString(3)
         )
 
-        val id = stmt.columnLong(4)
-        val serialized = stmt.columnBlob(5)
+        val serialized = stmt.columnBlob(4)
 
-        return QueuedMessage(metadata, id, serialized)
+        return SenderMessageEntry(metadata, serialized)
     }
 
     override fun remove(userId: UserId, messageId: String): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -94,9 +74,9 @@ class SQLiteMessageQueuePersistenceManager(
         connection.changes > 0
     }
 
-    override fun getUndelivered(): Promise<List<QueuedMessage>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withPrepared("SELECT contact_id, group_id, category, message_id, id, serialized FROM send_message_queue ORDER BY id") { stmt ->
-            stmt.map { rowToQueuedMessage(it) }
+    override fun getUndelivered(): Promise<List<SenderMessageEntry>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withPrepared("SELECT contact_id, group_id, category, message_id, serialized FROM send_message_queue ORDER BY id") { stmt ->
+            stmt.map { rowToEntry(it) }
         }
     }
 }
