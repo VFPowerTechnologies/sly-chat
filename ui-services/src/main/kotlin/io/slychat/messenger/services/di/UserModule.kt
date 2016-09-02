@@ -381,4 +381,13 @@ class UserModule(
         sessionDataPersistenceManager: SessionDataPersistenceManager
     ): SessionDataManager =
         SessionDataManagerImpl(sessionDataPersistenceManager)
+
+    @UserScope
+    @Provides
+    fun providesMutualContactNotifier(
+        contactsService: ContactsService,
+        messengerService: MessengerService
+    ): MutualContactNotifier {
+        return MutualContactNotifierImpl(contactsService.contactEvents, messengerService)
+    }
 }

@@ -106,6 +106,18 @@ fun randomContactInfoList(allowedMessageLevel: AllowedMessageLevel = AllowedMess
     return (1..n).map { randomContactInfo(allowedMessageLevel) }
 }
 
+fun randomPhoneNumber(): String {
+    return "1" + shuffleString("0123456789")
+}
+
+fun randomPlatformContact(): PlatformContact {
+    return PlatformContact(
+        randomName(),
+        listOf(randomEmailAddress()),
+        listOf(randomPhoneNumber())
+    )
+}
+
 private fun shuffleString(input: String): String {
     val base = input.toMutableList()
     Collections.shuffle(base)

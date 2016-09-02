@@ -45,6 +45,7 @@ class MessageProcessorImplTest {
         }
 
         whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
+        whenever(contactsService.addById(any())).thenResolve(true)
 
         whenever(groupService.addMessage(any(), any())).thenAnswer {
             @Suppress("UNCHECKED_CAST")
@@ -144,6 +145,7 @@ class MessageProcessorImplTest {
     fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), TextMessageWrapper(m))
     fun wrap(m: GroupEventMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), GroupEventMessageWrapper(m))
     fun wrap(m: SyncMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SyncMessageWrapper(m))
+    fun wrap(m: ControlMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), ControlMessageWrapper(m))
 
     /* Group stuff */
 
@@ -738,5 +740,18 @@ class MessageProcessorImplTest {
         }
 
         verify(contactsService, never()).doAddressBookPull()
+    }
+
+    @Test
+    fun `it should add the sender as an ALL level contact when receiving a WasAdded message`() {
+        val processor = createProcessor()
+
+        val sender = randomUserId()
+
+        val m = ControlMessage.WasAdded()
+
+        processor.processMessage(sender, wrap(m))
+
+        verify(contactsService).addById(sender)
     }
 }

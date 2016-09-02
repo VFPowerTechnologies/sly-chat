@@ -38,7 +38,7 @@ class ContactsServiceImpl(
         addressBookOperationManager.syncEvents.subscribe { onAddressBookSyncStatusUpdate(it) }
     }
 
-    override fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
+    override fun addByInfo(contactInfo: ContactInfo): Promise<Boolean, Exception> {
         return addressBookOperationManager.runOperation {
             log.debug("Adding new contact: {}", contactInfo.id)
             contactsPersistenceManager.add(contactInfo)
@@ -46,6 +46,49 @@ class ContactsServiceImpl(
             if (wasAdded) {
                 withCurrentJob { doPush() }
                 contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
+            }
+        }
+    }
+
+    private fun addNewUserRemotely(userId: UserId): Promise<Boolean, Exception> {
+        return authTokenManager.bind { userCredentials ->
+            contactClient.findById(userCredentials, userId)
+        } bind { response ->
+            val contactInfo = response.contactInfo?.toCore(AllowedMessageLevel.ALL)
+            if (contactInfo == null)
+                Promise.ofSuccess(false)
+            else {
+                contactsPersistenceManager.add(contactInfo) successUi {
+                    if (it)
+                        contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
+                }
+            }
+        }
+    }
+
+    private fun upgradeUserMessageLevel(contactInfo: ContactInfo): Promise<Boolean, Exception> {
+        if (contactInfo.allowedMessageLevel == AllowedMessageLevel.ALL)
+            return Promise.ofSuccess(false)
+
+        return contactsPersistenceManager.allowAll(contactInfo.id) mapUi {
+            val contactUpdate = ContactUpdate(
+                contactInfo,
+                contactInfo.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
+            )
+
+            contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactUpdate)))
+            true
+        }
+    }
+
+    override fun addById(userId: UserId): Promise<Boolean, Exception> {
+        return addressBookOperationManager.runOperation {
+            contactsPersistenceManager.get(userId) bind {
+                //don't need to worry about blacklisted users, as their messages never even get decrypted
+                if (it != null)
+                    upgradeUserMessageLevel(it)
+                else
+                    addNewUserRemotely(userId)
             }
         }
     }
@@ -73,10 +116,17 @@ class ContactsServiceImpl(
 
     override fun updateContact(contactInfo: ContactInfo): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
-            log.debug("Updating contact: {}", contactInfo.id)
-            contactsPersistenceManager.update(contactInfo)
-        } successUi {
-            contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactInfo)))
+            contactsPersistenceManager.get(contactInfo.id) bind { oldInfo ->
+                if (oldInfo == null)
+                    throw IllegalStateException("Unable to find user: ${contactInfo.id}")
+
+                log.debug("Updating contact: {}", contactInfo.id)
+
+                contactsPersistenceManager.update(contactInfo) successUi {
+                    val contactUpdate = ContactUpdate(oldInfo, contactInfo)
+                    contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactUpdate)))
+                }
+            }
         }
     }
 
@@ -94,13 +144,21 @@ class ContactsServiceImpl(
     override fun allowAll(userId: UserId): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
             log.debug("Setting allowedMessageLevel=ALL for: {}", userId)
-            contactsPersistenceManager.allowAll(userId)
-        } successUi {
-            withCurrentJob { doPush() }
 
-            contactsPersistenceManager.get(userId) mapUi {
-                if (it != null)
-                    contactEventsSubject.onNext(ContactEvent.Updated(setOf(it)))
+            contactsPersistenceManager.get(userId) bind { oldInfo ->
+                if (oldInfo == null)
+                    throw IllegalStateException("Unable to find user: $userId")
+
+                contactsPersistenceManager.allowAll(userId) successUi {
+                    withCurrentJob { doPush() }
+
+                    val contactUpdate = ContactUpdate(
+                        oldInfo,
+                        oldInfo.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
+                    )
+
+                    contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactUpdate)))
+                }
             }
         }
     }
@@ -119,13 +177,18 @@ class ContactsServiceImpl(
 
     private fun onAddressBookSyncStatusUpdate(event: AddressBookSyncEvent) {
         //if remote sync is at all enabled, we want the entire process to lock down the contact list
-        if (event.info.remoteSync) {
+        if (event.info.pull) {
             val isRunning = when (event) {
                 is AddressBookSyncEvent.Begin -> true
                 is AddressBookSyncEvent.End -> false
             }
 
             contactEventsSubject.onNext(ContactEvent.Sync(isRunning))
+        }
+
+        if (event is AddressBookSyncEvent.End) {
+            if (event.result.addedLocalContacts.isNotEmpty())
+                contactEventsSubject.onNext(ContactEvent.Added(event.result.addedLocalContacts))
         }
     }
 
@@ -136,10 +199,10 @@ class ContactsServiceImpl(
 
         log.debug("Fetching missing contact info for {}", users.map { it.long })
 
-        val request = FetchContactInfoByIdRequest(users.toList())
+        val request = FindAllByIdRequest(users.toList())
 
         return authTokenManager.bind { userCredentials ->
-            contactClient.fetchContactInfoById(userCredentials, request) bindUi { response ->
+            contactClient.findAllById(userCredentials, request) bindUi { response ->
                 handleContactLookupResponse(users, response)
             } fail { e ->
                 //the only recoverable error would be a network error; when the network is restored, this'll get called again
@@ -148,7 +211,7 @@ class ContactsServiceImpl(
         }
     }
 
-    private fun handleContactLookupResponse(users: Set<UserId>, response: FetchContactInfoByIdResponse): Promise<AddContactsResult, Exception> {
+    private fun handleContactLookupResponse(users: Set<UserId>, response: FindAllByIdResponse): Promise<AddContactsResult, Exception> {
         val foundIds = response.contacts.mapTo(HashSet()) { it.id }
 
         val missing = HashSet(users)
@@ -208,11 +271,11 @@ class ContactsServiceImpl(
     }
 
     //FIXME return an Either<String, ApiContactInfo>
-    override fun fetchRemoteContactInfo(email: String?, queryPhoneNumber: String?): Promise<FetchContactResponse, Exception> {
+    override fun fetchRemoteContactInfo(email: String?, queryPhoneNumber: String?): Promise<FindContactResponse, Exception> {
         return authTokenManager.bind { userCredentials ->
-            val request = NewContactRequest(email, queryPhoneNumber)
+            val request = FindContactRequest(email, queryPhoneNumber)
 
-            contactClient.fetchNewContactInfo(userCredentials, request)
+            contactClient.find(userCredentials, request)
         }
     }
 }

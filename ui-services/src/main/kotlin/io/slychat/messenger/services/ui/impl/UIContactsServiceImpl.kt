@@ -80,7 +80,7 @@ class UIContactsServiceImpl(
                 UIContactEvent.Removed(event.contacts.toUI())
 
             is ContactEvent.Updated ->
-                UIContactEvent.Updated(event.contacts.toUI())
+                UIContactEvent.Updated(event.contacts.map { it.new }.toUI())
 
             is ContactEvent.Sync -> {
                 isContactSyncActive = event.isRunning
@@ -121,7 +121,7 @@ class UIContactsServiceImpl(
 
         val contactsService = getContactsServiceOrThrow()
 
-        return contactsService.addContact(contactInfo) map { uiContactInfo }
+        return contactsService.addByInfo(contactInfo) map { uiContactInfo }
     }
 
     override fun removeContact(uiContactInfo: UIContactInfo): Promise<Unit, Exception> {

@@ -613,6 +613,12 @@ class MessengerServiceImplTest {
         return wrapper.m as? T ?: throw AssertionError("Unexpected ${T::class.simpleName} message")
     }
 
+    inline fun <reified T : ControlMessage> convertToControlMessage(entry: SenderMessageEntry): T {
+        val wrapper = convertMessageFromSerialized<ControlMessageWrapper>(entry)
+
+        return wrapper.m as? T ?: throw AssertionError("Unexpected ${T::class.simpleName} message")
+    }
+
     /** Assert that the given group message type was sent to everyone in the given list, and that it satisifies certain conditions. */
     inline fun <reified T> assertGroupMessagesSentTo(expectedRecipients: Set<UserId>, asserter: (UserId, T) -> Unit) {
         val messages = getAllSentMessages(1)
@@ -876,5 +882,18 @@ class MessengerServiceImplTest {
         syncEvents.onNext(AddressBookSyncEvent.End(info, result))
 
         verify(messageSender, never()).addToQueue(any<SenderMessageEntry>())
+    }
+
+    @Test
+    fun `it should send a WasAdded message when notifyContactAdd is called`() {
+        val messengerService = createService()
+        val userId = randomUserId()
+
+        messengerService.notifyContactAdd(setOf(userId)).get()
+
+        getAllSentMessages(1).forEach {
+            assertEquals(userId, it.metadata.userId, "Invalid recipient id")
+            convertToControlMessage<ControlMessage.WasAdded>(it)
+        }
     }
 }

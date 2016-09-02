@@ -2,7 +2,7 @@ package io.slychat.messenger.core.http.api.contacts
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class NewContactRequest(
+data class FindContactRequest(
     @param:JsonProperty("contact-username")
     @get:JsonProperty("contact-username")
     val username: String?,

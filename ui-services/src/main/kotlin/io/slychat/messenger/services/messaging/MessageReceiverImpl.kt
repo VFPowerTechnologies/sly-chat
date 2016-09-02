@@ -40,8 +40,7 @@ class MessageReceiverImpl(
     }
 
     private fun handleFailedDecryptionResult(userId: UserId, messageId: String, cause: Exception) {
-        log.warn("Unable to decrypt message for {}", userId)
-         log.warn("Message decryption failure: {}", cause.message, cause)
+        log.warn("Unable to decrypt message from {}: {}", userId, cause.message, cause)
 
         packageQueuePersistenceManager.removeFromQueue(userId, listOf(messageId)) fail { e ->
             log.warn("Unable to remove failed decryption packages from queue: {}", e.message, e)

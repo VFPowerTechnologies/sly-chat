@@ -397,6 +397,16 @@ class MessengerServiceImpl(
         return sendSyncMessage(SyncMessage.NewDevice(deviceInfo))
     }
 
+    override fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception> {
+        val serialized = objectMapper.writeValueAsBytes(ControlMessageWrapper(ControlMessage.WasAdded()))
+
+        val messages = userIds.map {
+            SenderMessageEntry(MessageMetadata(it, null, MessageCategory.OTHER, randomUUID()), serialized)
+        }
+
+        return messageSender.addToQueue(messages)
+    }
+
     private fun broadcastSentMessage(metadata: MessageMetadata, messageInfo: MessageInfo): Promise<Unit, Exception> {
         val recipient = if (metadata.groupId != null)
             Recipient.Group(metadata.groupId)

@@ -4,7 +4,9 @@ import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
 import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
-import io.slychat.messenger.core.http.api.contacts.FetchContactInfoByIdResponse
+import io.slychat.messenger.core.http.api.contacts.FindAllByIdResponse
+import io.slychat.messenger.core.http.api.contacts.FindByIdResponse
+import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
@@ -16,7 +18,6 @@ import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.services.subclassFilterTestSubscriber
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenReject
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
@@ -36,6 +37,18 @@ class ContactsServiceImplTest {
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val contactClient: ContactAsyncClient = mock()
     val addressBookOperationManager = MockAddressBookOperationManager()
+
+    fun randomApiContactInfo(): ApiContactInfo {
+        val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
+
+        return ApiContactInfo(
+            contactInfo.id,
+            contactInfo.email,
+            contactInfo.name,
+            contactInfo.phoneNumber,
+            contactInfo.publicKey
+        )
+    }
 
     fun createService(): ContactsServiceImpl {
         return ContactsServiceImpl(
@@ -67,7 +80,7 @@ class ContactsServiceImplTest {
 
         whenever(contactsPersistenceManager.add(contactInfo)).thenResolve(true)
 
-        assertTrue(contactsService.addContact(contactInfo).get(), "Contact not seen as added")
+        assertTrue(contactsService.addByInfo(contactInfo).get(), "Contact not seen as added")
 
         assertOperationManagerUsed()
     }
@@ -94,6 +107,7 @@ class ContactsServiceImplTest {
         val userId = UserId(1)
 
         val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
 
         whenever(contactsPersistenceManager.update(contactInfo)).thenResolve(Unit)
 
@@ -113,7 +127,7 @@ class ContactsServiceImplTest {
 
         val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
 
-        contactsService.addContact(contactInfo)
+        contactsService.addByInfo(contactInfo)
 
         assertEventEmitted(testSubscriber) { event ->
             val contacts = event.contacts
@@ -133,7 +147,7 @@ class ContactsServiceImplTest {
 
         val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
 
-        contactsService.addContact(contactInfo)
+        contactsService.addByInfo(contactInfo)
 
         testSubscriber.assertNoValues()
     }
@@ -211,9 +225,9 @@ class ContactsServiceImplTest {
 
         val apiContacts = remoteExists(ids).map { ApiContactInfo(it, "$it", "$it", "$it", "pubkey") }
 
-        val response = FetchContactInfoByIdResponse(apiContacts)
+        val response = FindAllByIdResponse(apiContacts)
 
-        whenever(contactClient.fetchContactInfoById(any(), any())).thenResolve(response)
+        whenever(contactClient.findAllById(any(), any())).thenResolve(response)
 
         return contactsService.addMissingContacts(ids).get()
     }
@@ -430,7 +444,195 @@ class ContactsServiceImplTest {
             assertEquals(1, ev.contacts.size, "Invalid number of updated contacts")
             val c = ev.contacts.first()
 
-            assertEquals(AllowedMessageLevel.ALL, c.allowedMessageLevel, "Invalid message level")
+            assertEquals(AllowedMessageLevel.ALL, c.new.allowedMessageLevel, "Invalid message level")
         }
+    }
+
+    @Test
+    fun `addById should add an existing user`() {
+        val contactsService = createService()
+
+        val apiContactInfo = randomApiContactInfo()
+        val userId = apiContactInfo.id
+
+        whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(apiContactInfo))
+        whenever(contactsPersistenceManager.add(any<ContactInfo>())).thenResolve(true)
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
+
+        val contactInfo = apiContactInfo.toCore(AllowedMessageLevel.ALL)
+
+        assertTrue(contactsService.addById(userId).get(), "Not seen as added")
+
+        verify(contactsPersistenceManager).add(contactInfo)
+    }
+
+    @Test
+    fun `addById should just upgrade the message level if a user already exists`() {
+        val contactInfo = randomContactInfo(AllowedMessageLevel.GROUP_ONLY)
+        val userId = contactInfo.id
+
+        val contactsService = createService()
+
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
+        whenever(contactsPersistenceManager.allowAll(userId)).thenResolve(Unit)
+
+        contactsService.addById(userId).get()
+
+        verify(contactsPersistenceManager).allowAll(userId)
+    }
+
+    @Test
+    fun `addById should not do anything if the user already exists and has ALL message level`() {
+        val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
+        val userId = contactInfo.id
+
+        val contactsService = createService()
+
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
+
+        assertFalse(contactsService.addById(userId).get(), "Should not be added")
+
+        verify(contactsPersistenceManager, never()).allowAll(userId)
+    }
+
+    @Test
+    fun `addById should emit an event when upgrading the message level if a user already exists`() {
+        val contactInfo = randomContactInfo(AllowedMessageLevel.GROUP_ONLY)
+        val userId = contactInfo.id
+
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Updated>(contactsService)
+
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
+        whenever(contactsPersistenceManager.allowAll(userId)).thenResolve(Unit)
+
+        contactsService.addById(userId).get()
+
+        assertEventEmitted(testSubscriber) { event ->
+            val expected = contactInfo.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
+
+            assertEquals(setOf(expected), event.contacts.mapToSet { it.new }, "Invalid contact info")
+        }
+    }
+
+    @Test
+    fun `addById should not emit an event if the user already exists and has ALL message level`() {
+        val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
+        val userId = contactInfo.id
+
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Updated>(contactsService)
+
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
+
+        assertFalse(contactsService.addById(userId).get(), "Should not be added")
+
+        assertNoEventsEmitted(testSubscriber)
+    }
+
+    @Test
+    fun `addById should do nothing if the user id is invalid`() {
+        val userId = randomUserId()
+
+        val contactsService = createService()
+
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
+        whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(null))
+
+        assertFalse(contactsService.addById(userId).get(), "Seen as added")
+
+        verify(contactsPersistenceManager, never()).add(any<ContactInfo>())
+    }
+
+    @Test
+    fun `addById should emit an event if a user was added`() {
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
+
+        val apiContactInfo = randomApiContactInfo()
+        val userId = apiContactInfo.id
+
+        whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(apiContactInfo))
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
+        whenever(contactsPersistenceManager.add(any<ContactInfo>())).thenResolve(true)
+
+        val contactInfo = apiContactInfo.toCore(AllowedMessageLevel.ALL)
+
+        contactsService.addById(userId).get()
+
+        assertEventEmitted(testSubscriber) { event ->
+            assertEquals(setOf(contactInfo), event.contacts)
+        }
+    }
+
+    @Test
+    fun `addById should not emit an event if a user was not found`() {
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
+
+        val userId = randomUserId()
+
+        whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(null))
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
+
+        contactsService.addById(userId).get()
+
+        assertNoEventsEmitted(testSubscriber)
+    }
+
+    @Test
+    fun `addById should not emit an event if a user was not added`() {
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
+
+        val apiContactInfo = randomApiContactInfo()
+        val userId = apiContactInfo.id
+
+        whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(apiContactInfo))
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
+        whenever(contactsPersistenceManager.add(any<ContactInfo>())).thenResolve(false)
+
+        contactsService.addById(userId).get()
+
+        assertNoEventsEmitted(testSubscriber)
+    }
+
+    //FIXME this is bugged; if part of the job fails, we don't get the info
+    @Test
+    fun `it should emit an added event when a non-empty addedLocalContacts is present in a sync result`() {
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
+
+        val info = AddressBookSyncJobInfo(false, true, false)
+        val addedLocalContacts = setOf(randomContactInfo(AllowedMessageLevel.ALL))
+        val result = AddressBookSyncResult(true, 0, false, addedLocalContacts)
+        val event = AddressBookSyncEvent.End(info, result)
+
+        addressBookOperationManager.syncEventsSubject.onNext(event)
+
+        assertEventEmitted(testSubscriber) { event ->
+            assertEquals(addedLocalContacts, event.contacts, "Invalid added contacts")
+        }
+    }
+
+    @Test
+    fun `it should not emit an added event when an empty addedLocalContacts is present in a sync result`() {
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
+
+        val info = AddressBookSyncJobInfo(false, true, false)
+        val result = AddressBookSyncResult(true, 0, false, emptySet())
+        val event = AddressBookSyncEvent.End(info, result)
+
+        addressBookOperationManager.syncEventsSubject.onNext(event)
+
+        assertNoEventsEmitted(testSubscriber)
     }
 }

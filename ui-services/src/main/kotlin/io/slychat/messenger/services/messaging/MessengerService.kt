@@ -18,6 +18,9 @@ interface MessengerService {
     /** Broadcast a new device to other accounts. */
     fun broadcastNewDevice(deviceInfo: DeviceInfo): Promise<Unit, Exception>
 
+    /** Notify another user that you've added them as a contact. */
+    fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception>
+
     /* UIMessengerService interface */
     fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception>
     fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<GroupMessageInfo, Exception>
