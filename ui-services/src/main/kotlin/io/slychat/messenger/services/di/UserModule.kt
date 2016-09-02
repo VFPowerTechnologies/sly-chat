@@ -359,7 +359,7 @@ class UserModule(
 
         return TokenRefresherImpl(
             userData,
-            accountInfoManager,
+            accountInfoManager.accountInfo,
             application.installationData.registrationId,
             loginClient
         )
