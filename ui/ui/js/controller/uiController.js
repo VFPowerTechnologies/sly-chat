@@ -43,6 +43,7 @@ UIController.prototype = {
         this.handlePlatformUpdate();
         this.initController();
         this.addTimeDifferenceListener();
+        this.addOutdatedVersionListener();
     },
 
     addTimeDifferenceListener : function () {
@@ -51,6 +52,14 @@ UIController.prototype = {
         }).catch(function (e) {
             exceptionController.handleError(e);
         })
+    },
+
+    addOutdatedVersionListener : function () {
+        clientInfoService.addVersionOutdatedListener(function () {
+            this.createOutOfDatePopup();
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        });
     },
 
     initController : function () {
@@ -115,5 +124,38 @@ UIController.prototype = {
             window.loadService.loadComplete();
             window.firstLoad = false;
         }
+    },
+
+    createOutOfDatePopup : function () {
+        setTimeout(function () {
+            var url;
+
+            if (isDesktop === true)
+                url = "http://slychat.io";
+            else if (isAndroid === true && isDesktop === false)
+                url = "http://slychat.io";
+            else if (isIos === true)
+                url = "http://slychat.io";
+
+            slychat.modal({
+                title:  'Application out of date',
+                text: 'Your application is out of date, please update for a better experience.',
+                buttons: [
+                    {
+                        text: 'Update',
+                        onClick: function() {
+                            platformService.openURL(url).catch(function (e) {
+                                exceptionController.handleError(e);
+                            });
+                        }
+                    },
+                    {
+                        text: 'Later',
+                        onClick: function() {
+                        }
+                    }
+                ]
+            });
+        }, 3000);
     }
 };
