@@ -22,6 +22,7 @@ import io.slychat.messenger.services.config.FileConfigStorage
 import io.slychat.messenger.services.config.JsonConfigBackend
 import io.slychat.messenger.services.contacts.RxTimerFactory
 import io.slychat.messenger.services.contacts.TimerFactory
+import rx.Observable
 import java.io.ByteArrayInputStream
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -114,5 +115,21 @@ class ApplicationModule(
     ): InstallationDataPersistenceManager {
         val path = platformInfo.appFileStorageDirectory / "installation-data.json"
         return JsonInstallationDataPersistenceManager(path)
+    }
+
+    @Singleton
+    @Provides
+    fun providesVersionChecker(
+        serverUrls: BuildConfig.ServerUrls,
+        @SlyHttp httpClientFactory: HttpClientFactory,
+        @NetworkStatus networkAvailable: Observable<Boolean>
+    ): VersionChecker {
+        val factory = HttpClientVersionAsyncClientFactory(serverUrls.API_SERVER, httpClientFactory)
+
+        return HttpVersionChecker(
+            BuildConfig.VERSION,
+            networkAvailable,
+            factory
+        )
     }
 }

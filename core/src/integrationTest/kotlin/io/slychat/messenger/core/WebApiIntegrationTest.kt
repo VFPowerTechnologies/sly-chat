@@ -15,6 +15,7 @@ import io.slychat.messenger.core.http.api.prekeys.*
 import io.slychat.messenger.core.http.api.registration.RegistrationClient
 import io.slychat.messenger.core.http.api.registration.RegistrationInfo
 import io.slychat.messenger.core.http.api.registration.registrationRequestFromKeyVault
+import io.slychat.messenger.core.http.api.versioncheck.ClientVersionClientImpl
 import io.slychat.messenger.core.http.get
 import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
@@ -1024,5 +1025,28 @@ class WebApiIntegrationTest {
         client.unregister(user.getUserCredentials(authToken))
 
         checkGCMTokenStatus(user, false)
+    }
+
+    @Test
+    fun `version check should ignore SNAPSHOT versions`() {
+        val client = ClientVersionClientImpl(serverBaseUrl, JavaHttpClient())
+
+        assertTrue(client.check("0.0.0-SNAPSHOT"), "SNAPSHOT versions should always be valid")
+    }
+
+    @Test
+    fun `version check should return false for an older version`() {
+        val client = ClientVersionClientImpl(serverBaseUrl, JavaHttpClient())
+
+        assertFalse(client.check("0.0.0"), "Version should be outdated")
+    }
+
+    @Test
+    fun `version check should return true for an up-to-date version`() {
+        val latestVersion = devClient.getLatestVersion()
+
+        val client = ClientVersionClientImpl(serverBaseUrl, JavaHttpClient())
+
+        assertTrue(client.check(latestVersion), "Latest version not accepted as up to date")
     }
 }

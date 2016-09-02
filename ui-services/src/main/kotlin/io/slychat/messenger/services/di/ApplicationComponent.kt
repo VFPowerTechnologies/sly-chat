@@ -7,6 +7,7 @@ import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
 import io.slychat.messenger.services.LocalAccountDirectory
 import io.slychat.messenger.services.PlatformContacts
+import io.slychat.messenger.services.VersionChecker
 import io.slychat.messenger.services.auth.AuthenticationService
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.ui.*
@@ -57,6 +58,8 @@ interface ApplicationComponent {
 
     val uiPlatformService: UIPlatformService
 
+    val uiClientInfoService: UIClientInfoService
+
     val platformContacts: PlatformContacts
 
     //FIXME only used for gcm client in AndroidApp
@@ -78,6 +81,8 @@ interface ApplicationComponent {
 
     @get:NetworkStatus
     val networkStatus: Observable<Boolean>
+
+    val versionChecker: VersionChecker
 
     fun plus(userModule: UserModule): UserComponent
 }
