@@ -189,6 +189,13 @@ slychat.onPageInit('createGroup', function (page) {
     })
 });
 
+slychat.onPageInit('contactInfo', function (page) {
+    $("#contactName").html(page.query.contactName);
+    $("#contactEmail").html(page.query.contactEmail);
+    $("#contactPhone").html(page.query.contactPhone);
+    $("#contactPubKey").html(formatPublicKey(page.query.contactPublicKey));
+});
+
 $("#contactPopupNewBtn").on("click", function (e) {
     e.preventDefault();
     if ($("#contact-tab").hasClass("active")) {

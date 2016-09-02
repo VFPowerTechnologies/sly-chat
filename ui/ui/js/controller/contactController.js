@@ -713,6 +713,20 @@ ContactController.prototype  = {
         navigationController.loadPage('chat.html', pushCurrenPage, options);
     },
 
+    loadContactInfo : function (contact) {
+        var options = {
+            url: "contactInfo.html",
+            query: {
+                contactName : contact.name,
+                contactEmail : contact.email,
+                contactPhone : contact.phoneNumber,
+                contactPublicKey : contact.publicKey
+            }
+        };
+
+        navigationController.loadPage('contactInfo.html', true, options);
+    },
+
     getContact : function (id) {
         if(id in this.contacts)
             return this.contacts[id];
@@ -796,7 +810,7 @@ ContactController.prototype  = {
             {
                 text: 'Contact Info',
                 onClick: function () {
-                    this.showContactInfo(contact);
+                    this.loadContactInfo(contact);
                 }.bind(this)
             },
             {

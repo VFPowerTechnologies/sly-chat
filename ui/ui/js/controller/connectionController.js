@@ -7,7 +7,8 @@ var ConnectionController = function () {
         "chat",
         "addContact",
         "profile",
-        'createGroup'
+        'createGroup',
+        'contactInfo'
     ];
 };
 
