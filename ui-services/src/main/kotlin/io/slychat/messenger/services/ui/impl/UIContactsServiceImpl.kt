@@ -121,7 +121,7 @@ class UIContactsServiceImpl(
 
         val contactsService = getContactsServiceOrThrow()
 
-        return contactsService.addContact(contactInfo) map { uiContactInfo }
+        return contactsService.addByInfo(contactInfo) map { uiContactInfo }
     }
 
     override fun removeContact(uiContactInfo: UIContactInfo): Promise<Unit, Exception> {

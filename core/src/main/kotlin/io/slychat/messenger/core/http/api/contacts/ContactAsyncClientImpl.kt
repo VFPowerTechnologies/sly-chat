@@ -10,19 +10,19 @@ import nl.komponents.kovenant.task
 class ContactAsyncClientImpl(private val serverUrl: String, private val factory: HttpClientFactory) : ContactAsyncClient {
     private fun newClient() = ContactClient(serverUrl, factory.create())
 
-    override fun fetchNewContactInfo(userCredentials: UserCredentials, request: NewContactRequest): Promise<FetchContactResponse, Exception> = task {
-         newClient().fetchContactInfo(userCredentials, request)
+    override fun find(userCredentials: UserCredentials, request: FindContactRequest): Promise<FindContactResponse, Exception> = task {
+         newClient().find(userCredentials, request)
     }
 
     override fun findLocalContacts(userCredentials: UserCredentials, request: FindLocalContactsRequest): Promise<FindLocalContactsResponse, Exception> = task {
         newClient().findLocalContacts(userCredentials, request)
     }
 
-    override fun fetchMultiContactInfoById(userCredentials: UserCredentials, request: FetchMultiContactInfoByIdRequest): Promise<FetchMultiContactInfoByIdResponse, Exception> = task {
-        newClient().fetchMultiContactInfoById(userCredentials, request)
+    override fun findAllById(userCredentials: UserCredentials, request: FindAllByIdRequest): Promise<FindAllByIdResponse, Exception> = task {
+        newClient().findAllById(userCredentials, request)
     }
 
-    override fun fetchContactInfoById(userCredentials: UserCredentials, userId: UserId): Promise<FetchContactInfoByIdResponse, Exception> = task {
-        newClient().fetchContactInfoById(userCredentials, userId)
+    override fun findById(userCredentials: UserCredentials, userId: UserId): Promise<FindByIdResponse, Exception> = task {
+        newClient().findById(userCredentials, userId)
     }
 }

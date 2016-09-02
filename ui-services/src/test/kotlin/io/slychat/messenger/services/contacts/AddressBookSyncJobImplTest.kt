@@ -63,7 +63,7 @@ class AddressBookSyncJobImplTest {
         whenever(groupPersistenceManager.removeRemoteUpdates(any())).thenResolve(Unit)
 
         whenever(contactAsyncClient.findLocalContacts(any(), any())).thenResolve(FindLocalContactsResponse(emptyList()))
-        whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenResolve(FetchContactInfoByIdResponse(emptyList()))
+        whenever(contactAsyncClient.findAllById(any(), any())).thenResolve(FindAllByIdResponse(emptyList()))
 
         whenever(contactsPersistenceManager.getAddressBookHash()).thenResolve(emptyMd5)
         whenever(contactsPersistenceManager.addRemoteEntryHashes(any())).thenResolve(emptyMd5)
@@ -124,7 +124,7 @@ class AddressBookSyncJobImplTest {
 
         runPull()
 
-        verify(contactAsyncClient).fetchContactInfoById(any(), capture {
+        verify(contactAsyncClient).findAllById(any(), capture {
             assertThat(it.ids).apply {
                 `as`("Missing ids should be looked up")
                 containsOnlyElementsOf(missing)
@@ -146,7 +146,7 @@ class AddressBookSyncJobImplTest {
 
         whenever(addressBookAsyncClient.get(any(), any())).thenResolve(GetAddressBookResponse(remoteEntries))
         whenever(contactsPersistenceManager.exists(missing)).thenResolve(emptySet())
-        whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenResolve(FetchContactInfoByIdResponse(apiContacts))
+        whenever(contactAsyncClient.findAllById(any(), any())).thenResolve(FindAllByIdResponse(apiContacts))
 
         runPull()
 
@@ -235,7 +235,7 @@ class AddressBookSyncJobImplTest {
         val remoteEntries = encryptRemoteAddressBookEntries(keyVault, remoteUpdates)
 
         whenever(addressBookAsyncClient.get(any(), any())).thenResolve(GetAddressBookResponse(remoteEntries))
-        whenever(contactAsyncClient.fetchContactInfoById(any(), any())).thenResolve(FetchContactInfoByIdResponse(apiContacts))
+        whenever(contactAsyncClient.findAllById(any(), any())).thenResolve(FindAllByIdResponse(apiContacts))
 
         runPull()
 
@@ -432,7 +432,7 @@ class AddressBookSyncJobImplTest {
 
         runPull()
 
-        verify(contactAsyncClient, never()).fetchContactInfoById(any(), any())
+        verify(contactAsyncClient, never()).findAllById(any(), any())
     }
 
     @Test

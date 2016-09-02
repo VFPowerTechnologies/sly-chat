@@ -103,8 +103,8 @@ class AddressBookSyncJobImpl(
             val updateExists = updates.filter { it.userId in exists }
 
             val p = if (missing.isNotEmpty()) {
-                val request = FetchContactInfoByIdRequest(missing.toList())
-                contactClient.fetchContactInfoById(userCredentials, request) map { response ->
+                val request = FindAllByIdRequest(missing.toList())
+                contactClient.findAllById(userCredentials, request) map { response ->
                     response.contacts.map { it.toCore(messageLevelByUserId[it.id]!!) }
                 }
             }

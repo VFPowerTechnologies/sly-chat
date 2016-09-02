@@ -4,7 +4,7 @@ import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
 import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
-import io.slychat.messenger.core.http.api.contacts.FetchContactInfoByIdResponse
+import io.slychat.messenger.core.http.api.contacts.FindAllByIdResponse
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
@@ -67,7 +67,7 @@ class ContactsServiceImplTest {
 
         whenever(contactsPersistenceManager.add(contactInfo)).thenResolve(true)
 
-        assertTrue(contactsService.addContact(contactInfo).get(), "Contact not seen as added")
+        assertTrue(contactsService.addByInfo(contactInfo).get(), "Contact not seen as added")
 
         assertOperationManagerUsed()
     }
@@ -113,7 +113,7 @@ class ContactsServiceImplTest {
 
         val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
 
-        contactsService.addContact(contactInfo)
+        contactsService.addByInfo(contactInfo)
 
         assertEventEmitted(testSubscriber) { event ->
             val contacts = event.contacts
@@ -133,7 +133,7 @@ class ContactsServiceImplTest {
 
         val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
 
-        contactsService.addContact(contactInfo)
+        contactsService.addByInfo(contactInfo)
 
         testSubscriber.assertNoValues()
     }
@@ -211,9 +211,9 @@ class ContactsServiceImplTest {
 
         val apiContacts = remoteExists(ids).map { ApiContactInfo(it, "$it", "$it", "$it", "pubkey") }
 
-        val response = FetchContactInfoByIdResponse(apiContacts)
+        val response = FindAllByIdResponse(apiContacts)
 
-        whenever(contactClient.fetchContactInfoById(any(), any())).thenResolve(response)
+        whenever(contactClient.findAllById(any(), any())).thenResolve(response)
 
         return contactsService.addMissingContacts(ids).get()
     }

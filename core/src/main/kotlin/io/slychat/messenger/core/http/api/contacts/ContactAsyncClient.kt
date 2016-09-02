@@ -5,11 +5,11 @@ import io.slychat.messenger.core.UserId
 import nl.komponents.kovenant.Promise
 
 interface ContactAsyncClient {
-    fun fetchNewContactInfo(userCredentials: UserCredentials, request: NewContactRequest): Promise<FetchContactResponse, Exception>
+    fun find(userCredentials: UserCredentials, request: FindContactRequest): Promise<FindContactResponse, Exception>
 
     fun findLocalContacts(userCredentials: UserCredentials, request: FindLocalContactsRequest): Promise<FindLocalContactsResponse, Exception>
 
-    fun fetchMultiContactInfoById(userCredentials: UserCredentials, request: FetchMultiContactInfoByIdRequest): Promise<FetchMultiContactInfoByIdResponse, Exception>
+    fun findAllById(userCredentials: UserCredentials, request: FindAllByIdRequest): Promise<FindAllByIdResponse, Exception>
 
-    fun fetchContactInfoById(userCredentials: UserCredentials, userId: UserId): Promise<FetchContactInfoByIdResponse, Exception>
+    fun findById(userCredentials: UserCredentials, userId: UserId): Promise<FindByIdResponse, Exception>
 }

@@ -9,22 +9,22 @@ import io.slychat.messenger.core.http.api.apiPostRequest
 import io.slychat.messenger.core.typeRef
 
 class ContactClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
-    fun fetchContactInfo(userCredentials: UserCredentials, request: NewContactRequest): FetchContactResponse {
+    fun find(userCredentials: UserCredentials, request: FindContactRequest): FindContactResponse {
         val url = "$serverBaseUrl/v1/contact/new/info"
 
         return apiPostRequest(httpClient, url, userCredentials, request, typeRef())
     }
 
-    fun fetchMultiContactInfoById(userCredentials: UserCredentials, request: FetchMultiContactInfoByIdRequest): FetchMultiContactInfoByIdResponse {
+    fun findAllById(userCredentials: UserCredentials, request: FindAllByIdRequest): FindAllByIdResponse {
         val url = "$serverBaseUrl/v1/contact/find"
 
         return apiPostRequest(httpClient, url, userCredentials, request, typeRef())
     }
 
-    fun fetchContactInfoById(userCredentials: UserCredentials, userId: UserId): FetchContactInfoByIdResponse {
+    fun findById(userCredentials: UserCredentials, userId: UserId): FindByIdResponse {
         val url = "$serverBaseUrl/v1/contact/find/$userId"
 
-        return apiGetRequest(httpClient, url, userCredentials, emptyList(), typeRef<ApiResult<FetchContactInfoByIdResponse>>())
+        return apiGetRequest(httpClient, url, userCredentials, emptyList(), typeRef<ApiResult<FindByIdResponse>>())
     }
 
     fun findLocalContacts(userCredentials: UserCredentials, request: FindLocalContactsRequest): FindLocalContactsResponse {

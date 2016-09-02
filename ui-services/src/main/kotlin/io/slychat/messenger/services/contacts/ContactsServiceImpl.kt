@@ -38,7 +38,7 @@ class ContactsServiceImpl(
         addressBookOperationManager.syncEvents.subscribe { onAddressBookSyncStatusUpdate(it) }
     }
 
-    override fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
+    override fun addByInfo(contactInfo: ContactInfo): Promise<Boolean, Exception> {
         return addressBookOperationManager.runOperation {
             log.debug("Adding new contact: {}", contactInfo.id)
             contactsPersistenceManager.add(contactInfo)
@@ -136,10 +136,10 @@ class ContactsServiceImpl(
 
         log.debug("Fetching missing contact info for {}", users.map { it.long })
 
-        val request = FetchContactInfoByIdRequest(users.toList())
+        val request = FindAllByIdRequest(users.toList())
 
         return authTokenManager.bind { userCredentials ->
-            contactClient.fetchContactInfoById(userCredentials, request) bindUi { response ->
+            contactClient.findAllById(userCredentials, request) bindUi { response ->
                 handleContactLookupResponse(users, response)
             } fail { e ->
                 //the only recoverable error would be a network error; when the network is restored, this'll get called again
@@ -148,7 +148,7 @@ class ContactsServiceImpl(
         }
     }
 
-    private fun handleContactLookupResponse(users: Set<UserId>, response: FetchContactInfoByIdResponse): Promise<AddContactsResult, Exception> {
+    private fun handleContactLookupResponse(users: Set<UserId>, response: FindAllByIdResponse): Promise<AddContactsResult, Exception> {
         val foundIds = response.contacts.mapTo(HashSet()) { it.id }
 
         val missing = HashSet(users)
@@ -208,11 +208,11 @@ class ContactsServiceImpl(
     }
 
     //FIXME return an Either<String, ApiContactInfo>
-    override fun fetchRemoteContactInfo(email: String?, queryPhoneNumber: String?): Promise<FetchContactResponse, Exception> {
+    override fun fetchRemoteContactInfo(email: String?, queryPhoneNumber: String?): Promise<FindContactResponse, Exception> {
         return authTokenManager.bind { userCredentials ->
-            val request = NewContactRequest(email, queryPhoneNumber)
+            val request = FindContactRequest(email, queryPhoneNumber)
 
-            contactClient.fetchNewContactInfo(userCredentials, request)
+            contactClient.find(userCredentials, request)
         }
     }
 }

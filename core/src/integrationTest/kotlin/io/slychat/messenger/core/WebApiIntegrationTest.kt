@@ -665,7 +665,7 @@ class WebApiIntegrationTest {
 
         val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
-        val contactResponseEmail = client.fetchContactInfo(siteUser.getUserCredentials(authToken), NewContactRequest(siteUser.user.username, null))
+        val contactResponseEmail = client.find(siteUser.getUserCredentials(authToken), FindContactRequest(siteUser.user.username, null))
         assertTrue(contactResponseEmail.isSuccess)
 
         val receivedEmailContactInfo = contactResponseEmail.contactInfo!!
@@ -682,7 +682,7 @@ class WebApiIntegrationTest {
 
         val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
-        val contactResponse = client.fetchContactInfo(siteUser.getUserCredentials(authToken), NewContactRequest(null, siteUser.user.phoneNumber))
+        val contactResponse = client.find(siteUser.getUserCredentials(authToken), FindContactRequest(null, siteUser.user.phoneNumber))
         assertTrue(contactResponse.isSuccess)
 
         val receivedContactInfo = contactResponse.contactInfo!!
@@ -828,8 +828,8 @@ class WebApiIntegrationTest {
 
         val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
-        val request = FetchMultiContactInfoByIdRequest(listOf(userB.id, userC.id))
-        val response = client.fetchMultiContactInfoById(userA.getUserCredentials(authToken), request)
+        val request = FindAllByIdRequest(listOf(userB.id, userC.id))
+        val response = client.findAllById(userA.getUserCredentials(authToken), request)
 
         val expected = listOf(
             userB.toContactInfo(),
@@ -848,7 +848,7 @@ class WebApiIntegrationTest {
 
         val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
-        val response = client.fetchContactInfoById(userA.getUserCredentials(authToken), userB.id)
+        val response = client.findById(userA.getUserCredentials(authToken), userB.id)
 
         assertEquals(userB.toContactInfo(), response.contactInfo?.toCore(AllowedMessageLevel.ALL), "Invalid contact info")
     }
@@ -861,7 +861,7 @@ class WebApiIntegrationTest {
 
         val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
-        val response = client.fetchContactInfoById(userA.getUserCredentials(authToken), randomUserId())
+        val response = client.findById(userA.getUserCredentials(authToken), randomUserId())
 
         assertNull(response.contactInfo, "Should be not return contact info")
     }

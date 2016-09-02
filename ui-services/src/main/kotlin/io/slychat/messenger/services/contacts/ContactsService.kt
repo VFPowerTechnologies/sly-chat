@@ -1,7 +1,7 @@
 package io.slychat.messenger.services.contacts
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.http.api.contacts.FetchContactResponse
+import io.slychat.messenger.core.http.api.contacts.FindContactResponse
 import io.slychat.messenger.core.persistence.ContactInfo
 import nl.komponents.kovenant.Promise
 import rx.Observable
@@ -11,9 +11,9 @@ interface ContactsService {
 
     fun shutdown()
 
-    fun fetchRemoteContactInfo(email: String?, queryPhoneNumber: String?): Promise<FetchContactResponse, Exception>
+    fun fetchRemoteContactInfo(email: String?, queryPhoneNumber: String?): Promise<FindContactResponse, Exception>
     /** Add a new non-pending contact for which we already have info. */
-    fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception>
+    fun addByInfo(contactInfo: ContactInfo): Promise<Boolean, Exception>
     fun addSelf(selfInfo: ContactInfo): Promise<Unit, Exception>
 
     /** Remove the given contact from the contact list. */
