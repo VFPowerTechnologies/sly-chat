@@ -80,7 +80,7 @@ class UIContactsServiceImpl(
                 UIContactEvent.Removed(event.contacts.toUI())
 
             is ContactEvent.Updated ->
-                UIContactEvent.Updated(event.contacts.toUI())
+                UIContactEvent.Updated(event.contacts.map { it.new }.toUI())
 
             is ContactEvent.Sync -> {
                 isContactSyncActive = event.isRunning

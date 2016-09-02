@@ -6,6 +6,7 @@ import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
 import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
 import io.slychat.messenger.core.http.api.contacts.FindAllByIdResponse
 import io.slychat.messenger.core.http.api.contacts.FindByIdResponse
+import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
@@ -106,6 +107,7 @@ class ContactsServiceImplTest {
         val userId = UserId(1)
 
         val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
 
         whenever(contactsPersistenceManager.update(contactInfo)).thenResolve(Unit)
 
@@ -442,7 +444,7 @@ class ContactsServiceImplTest {
             assertEquals(1, ev.contacts.size, "Invalid number of updated contacts")
             val c = ev.contacts.first()
 
-            assertEquals(AllowedMessageLevel.ALL, c.allowedMessageLevel, "Invalid message level")
+            assertEquals(AllowedMessageLevel.ALL, c.new.allowedMessageLevel, "Invalid message level")
         }
     }
 
@@ -508,7 +510,9 @@ class ContactsServiceImplTest {
         contactsService.addById(userId).get()
 
         assertEventEmitted(testSubscriber) { event ->
-            assertEquals(setOf(contactInfo), event.contacts, "Invalid contact info")
+            val expected = contactInfo.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
+
+            assertEquals(setOf(expected), event.contacts.mapToSet { it.new }, "Invalid contact info")
         }
     }
 

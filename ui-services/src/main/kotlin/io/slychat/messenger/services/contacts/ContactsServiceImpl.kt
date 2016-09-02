@@ -71,7 +71,12 @@ class ContactsServiceImpl(
             return Promise.ofSuccess(false)
 
         return contactsPersistenceManager.allowAll(contactInfo.id) mapUi {
-            contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactInfo)))
+            val contactUpdate = ContactUpdate(
+                contactInfo,
+                contactInfo.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
+            )
+
+            contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactUpdate)))
             true
         }
     }
@@ -111,10 +116,17 @@ class ContactsServiceImpl(
 
     override fun updateContact(contactInfo: ContactInfo): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
-            log.debug("Updating contact: {}", contactInfo.id)
-            contactsPersistenceManager.update(contactInfo)
-        } successUi {
-            contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactInfo)))
+            contactsPersistenceManager.get(contactInfo.id) bind { oldInfo ->
+                if (oldInfo == null)
+                    throw IllegalStateException("Unable to find user: ${contactInfo.id}")
+
+                log.debug("Updating contact: {}", contactInfo.id)
+
+                contactsPersistenceManager.update(contactInfo) successUi {
+                    val contactUpdate = ContactUpdate(oldInfo, contactInfo)
+                    contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactUpdate)))
+                }
+            }
         }
     }
 
@@ -132,13 +144,21 @@ class ContactsServiceImpl(
     override fun allowAll(userId: UserId): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
             log.debug("Setting allowedMessageLevel=ALL for: {}", userId)
-            contactsPersistenceManager.allowAll(userId)
-        } successUi {
-            withCurrentJob { doPush() }
 
-            contactsPersistenceManager.get(userId) mapUi {
-                if (it != null)
-                    contactEventsSubject.onNext(ContactEvent.Updated(setOf(it)))
+            contactsPersistenceManager.get(userId) bind { oldInfo ->
+                if (oldInfo == null)
+                    throw IllegalStateException("Unable to find user: $userId")
+
+                contactsPersistenceManager.allowAll(userId) successUi {
+                    withCurrentJob { doPush() }
+
+                    val contactUpdate = ContactUpdate(
+                        oldInfo,
+                        oldInfo.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
+                    )
+
+                    contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactUpdate)))
+                }
             }
         }
     }
