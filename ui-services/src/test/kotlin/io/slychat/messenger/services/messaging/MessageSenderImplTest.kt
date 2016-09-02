@@ -5,7 +5,7 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
-import io.slychat.messenger.core.persistence.QueuedMessage
+import io.slychat.messenger.core.persistence.SenderMessageEntry
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.RelayClientManager
@@ -57,8 +57,10 @@ class MessageSenderImplTest {
 
     @Before
     fun before() {
-        whenever(messageQueuePersistenceManager.add(any<List<QueuedMessage>>())).thenResolve(Unit)
-        whenever(messageQueuePersistenceManager.add(any<QueuedMessage>())).thenResolve(Unit)
+        whenever(messageQueuePersistenceManager.add(any<SenderMessageEntry>())).thenResolve(Unit)
+
+        whenever(messageQueuePersistenceManager.add(any<Collection<SenderMessageEntry>>())).thenResolve(Unit)
+
         whenever(messageQueuePersistenceManager.remove(any(), any())).thenResolve(true)
 
         whenever(relayClientManager.events).thenReturn(relayEvents)
@@ -70,11 +72,11 @@ class MessageSenderImplTest {
 
     fun createSender(
         relayIsOnline: Boolean = false,
-        initialQueuedMessages: List<QueuedMessage> = emptyList()
+        initialEntries: List<SenderMessageEntry> = emptyList()
     ): MessageSenderImpl {
         setRelayOnlineStatus(relayIsOnline)
 
-        whenever(messageQueuePersistenceManager.getUndelivered()).thenResolve(initialQueuedMessages)
+        whenever(messageQueuePersistenceManager.getUndelivered()).thenResolve(initialEntries)
 
         return MessageSenderImpl(
             messageCipherService,
@@ -106,51 +108,46 @@ class MessageSenderImplTest {
     fun `it should queue messages while the relay is offline`() {
         val sender = createSender()
 
-        val queued = randomQueuedMessage()
+        val entry = randomSenderMessageEntry()
 
-        sender.addToQueue(queued.metadata, queued.serialized).get()
+        sender.addToQueue(entry).get()
 
-        verify(messageQueuePersistenceManager).add(capture<QueuedMessage> {
-            assertEquals(queued.metadata.messageId, it.metadata.messageId, "Invalid message id")
-            assertEquals(queued.metadata.userId, it.metadata.userId, "Invalid recipient")
-        })
+        verify(messageQueuePersistenceManager).add(entry)
 
         verify(messageCipherService, never()).encrypt(any(), any(), any())
     }
 
     @Test
     fun `it should process queued messages when a relay connection is available on startup`() {
-        val queued = randomQueuedMessage()
+        val entry = randomSenderMessageEntry()
 
-        val sender = createSender(true, listOf(queued))
+        val sender = createSender(true, listOf(entry))
 
-        verify(messageCipherService).encrypt(queued.metadata.userId, queued.serialized, defaultConnectionTag)
+        verify(messageCipherService).encrypt(entry.metadata.userId, entry.message, defaultConnectionTag)
     }
 
     @Test
     fun `it should process messages when a relay connection is available and no messages are currently queued`() {
-        val queued = randomQueuedMessage()
+        val entry = randomSenderMessageEntry()
 
         val sender = createSender(true)
 
-        sender.addToQueue(queued.metadata, queued.serialized).get()
+        sender.addToQueue(entry.metadata, entry.message).get()
 
-        verify(messageCipherService).encrypt(queued.metadata.userId, queued.serialized, defaultConnectionTag)
+        verify(messageCipherService).encrypt(entry.metadata.userId, entry.message, defaultConnectionTag)
     }
 
     @Test
     fun `it should queue messages when the relay is online and a message is already being processed`() {
-        val first = randomQueuedMessage()
+        val first = randomSenderMessageEntry()
         val sender = createSender(true, listOf(first))
 
-        val second = randomQueuedMessage()
-        sender.addToQueue(second.metadata, second.serialized).get()
+        val second = randomSenderMessageEntry()
+        sender.addToQueue(second).get()
 
-        verify(messageQueuePersistenceManager).add(capture<QueuedMessage> {
-            assertEquals(second.metadata.messageId, it.metadata.messageId, "Invalid message id")
-        })
+        verify(messageQueuePersistenceManager).add(second)
 
-        verify(messageCipherService, times(1)).encrypt(first.metadata.userId, first.serialized, defaultConnectionTag)
+        verify(messageCipherService, times(1)).encrypt(first.metadata.userId, first.message, defaultConnectionTag)
     }
 
     //XXX these tests kinda bypass the encryption result part, so kinda nasty since it relies on a specific impl detail
@@ -158,11 +155,11 @@ class MessageSenderImplTest {
     fun `it should remove the package from the sent queue once a message has been acknowledged as delivered`() {
         val sender = createSender(true)
 
-        val queued = randomQueuedMessage()
+        val entry = randomSenderMessageEntry()
 
-        val metadata = queued.metadata
+        val metadata = entry.metadata
 
-        sender.addToQueue(metadata, queued.serialized).get()
+        sender.addToQueue(metadata, entry.message).get()
 
         relayEvents.onNext(ServerReceivedMessage(metadata.userId, metadata.messageId, currentTimestamp()))
 
@@ -173,11 +170,11 @@ class MessageSenderImplTest {
     fun `it should process the next queued message once a successful send result has been received`() {
         val sender = createSender(true)
 
-        val first = randomQueuedMessage()
-        val second = randomQueuedMessage()
+        val first = randomSenderMessageEntry()
+        val second = randomSenderMessageEntry()
 
-        sender.addToQueue(first.metadata, first.serialized).get()
-        sender.addToQueue(second.metadata, second.serialized).get()
+        sender.addToQueue(first.metadata, first.message).get()
+        sender.addToQueue(second.metadata, second.message).get()
 
         relayEvents.onNext(ServerReceivedMessage(first.metadata.userId, first.metadata.messageId, currentTimestamp()))
 
@@ -191,8 +188,8 @@ class MessageSenderImplTest {
     fun `it should send the encrypted message to the relay upon receiving a successful encryption result`() {
         val sender = createSender(true)
 
-        val queued = randomQueuedMessage()
-        val metadata = queued.metadata
+        val entry = randomSenderMessageEntry()
+        val metadata = entry.metadata
         val recipient = metadata.userId
 
         val messageData = MessageData(1, 1, randomEncryptedPayload())
@@ -203,7 +200,7 @@ class MessageSenderImplTest {
 
         whenever(messageCipherService.encrypt(any(), any(), any())).thenResolve(result)
 
-        sender.addToQueue(metadata, queued.serialized).get()
+        sender.addToQueue(metadata, entry.message).get()
 
         val relayUserMessage = RelayUserMessage(messageData.deviceId, messageData.registrationId, messageData.payload)
         val relayMessageBundle = RelayMessageBundle(listOf(relayUserMessage))
@@ -215,13 +212,13 @@ class MessageSenderImplTest {
     fun `it should emit a message update event once a message has been acknowledged as delivered`() {
         val sender = createSender(true)
 
-        val queued = randomQueuedMessage()
-        val metadata = queued.metadata
+        val entry = randomSenderMessageEntry()
+        val metadata = entry.metadata
         val recipient = metadata.userId
 
         val testSubscriber = sender.messageSent.testSubscriber()
 
-        sender.addToQueue(metadata, queued.serialized).get()
+        sender.addToQueue(metadata, entry.message).get()
 
         val timestamp = currentTimestamp()
         val record = MessageSendRecord(metadata, timestamp)
@@ -237,8 +234,8 @@ class MessageSenderImplTest {
     fun `it should emit a message update event if no encrypted messages are returned from MessageCipherService`() {
         val sender = createSender(true)
 
-        val queued = randomQueuedMessage()
-        val metadata = queued.metadata
+        val entry = randomSenderMessageEntry()
+        val metadata = entry.metadata
 
         val testSubscriber = sender.messageSent.testSubscriber()
 
@@ -249,7 +246,7 @@ class MessageSenderImplTest {
 
         whenever(messageCipherService.encrypt(any(), any(), any())).thenResolve(result)
 
-        sender.addToQueue(metadata, queued.serialized).get()
+        sender.addToQueue(metadata, entry.message).get()
 
         val record = MessageSendRecord(metadata, currentTimestamp())
 
@@ -260,9 +257,9 @@ class MessageSenderImplTest {
 
     @Test
     fun `it should clear the message queue on a relay disconnect`() {
-        val queued = randomQueuedMessage()
+        val entry = randomSenderMessageEntry()
 
-        val sender = createSender(true, listOf(queued))
+        val sender = createSender(true, listOf(entry))
 
         reset(messageCipherService)
         whenever(messageQueuePersistenceManager.getUndelivered()).thenResolve(emptyList())
@@ -275,13 +272,13 @@ class MessageSenderImplTest {
 
     @Test
     fun `it should discard encrypted messages when the relay is now offline`() {
-        val queued = randomQueuedMessage()
+        val entry = randomSenderMessageEntry()
 
         val d = deferred<EncryptionResult, Exception>()
 
         whenever(messageCipherService.encrypt(any(), any(), any())).thenReturn(d.promise)
 
-        val sender = createSender(true, listOf(queued))
+        val sender = createSender(true, listOf(entry))
 
         setRelayOnlineStatus(false)
 
@@ -294,13 +291,13 @@ class MessageSenderImplTest {
     fun `it should call MessageCipherService to do a device refresh when receiving a DeviceMismatch from the relay`() {
         val sender = createSender(true)
 
-        val queued = randomQueuedMessage()
+        val entry = randomSenderMessageEntry()
 
         val content = DeviceMismatchContent(listOf(1), listOf(2), listOf(3))
-        val to = queued.metadata.userId
-        val ev = DeviceMismatch(to, queued.metadata.messageId, content)
+        val to = entry.metadata.userId
+        val ev = DeviceMismatch(to, entry.metadata.messageId, content)
 
-        sender.addToQueue(queued.metadata, queued.serialized).get()
+        sender.addToQueue(entry.metadata, entry.message).get()
 
         whenever(messageCipherService.updateDevices(any(), any())).thenResolve(Unit)
 
@@ -313,9 +310,9 @@ class MessageSenderImplTest {
     fun `it should resubmit the current message for encryption after a successful device mismatch update`() {
         val sender = createSender(true)
 
-        val queued = randomQueuedMessage()
+        val entry = randomSenderMessageEntry()
 
-        sender.addToQueue(queued.metadata, queued.serialized).get()
+        sender.addToQueue(entry.metadata, entry.message).get()
 
         reset(messageCipherService)
         whenever(messageCipherService.encrypt(any(), any(), any())).thenResolve(randomEncryptionResult())
@@ -324,22 +321,22 @@ class MessageSenderImplTest {
 
         val info = DeviceMismatchContent(emptyList(), emptyList(), emptyList())
         relayEvents.onNext(
-            DeviceMismatch(queued.metadata.userId, randomMessageId(), info)
+            DeviceMismatch(entry.metadata.userId, randomMessageId(), info)
         )
 
-        verify(messageCipherService).encrypt(queued.metadata.userId, queued.serialized, defaultConnectionTag)
+        verify(messageCipherService).encrypt(entry.metadata.userId, entry.message, defaultConnectionTag)
     }
 
     @Test
     fun `addQueue(message) should propagate failures if writing to the send queue fails`() {
         val sender = createSender(true)
 
-        val queued = randomQueuedMessage()
+        val entry = randomSenderMessageEntry()
 
-        whenever(messageQueuePersistenceManager.add(any<QueuedMessage>())).thenReject(TestException())
+        whenever(messageQueuePersistenceManager.add(entry)).thenReject(TestException())
 
         assertFailsWith(TestException::class) {
-            sender.addToQueue(queued.metadata, queued.serialized).get()
+            sender.addToQueue(entry.metadata, entry.message).get()
         }
     }
 
@@ -360,10 +357,7 @@ class MessageSenderImplTest {
 
         sender.addToQueue(messages).get()
 
-        verify(messageQueuePersistenceManager).add(capture<Collection<QueuedMessage>> {
-            val sentTo = it.mapToSet { it.metadata.userId }
-            assertEquals(members, sentTo, "Invalid users")
-        })
+        verify(messageQueuePersistenceManager).add(messages)
     }
 
     @Test
@@ -372,6 +366,6 @@ class MessageSenderImplTest {
 
         sender.addToQueue(emptyList()).get()
 
-        verify(messageQueuePersistenceManager, never()).add(anyCollection())
+        verify(messageQueuePersistenceManager, never()).add(any<Collection<SenderMessageEntry>>())
     }
 }
