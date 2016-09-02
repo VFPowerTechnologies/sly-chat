@@ -819,7 +819,7 @@ class WebApiIntegrationTest {
     }
 
     @Test
-    fun `fetchContactInfoById should fetch users with the given ids`() {
+    fun `fetchMultiContactInfoById should fetch users with the given ids`() {
         val userA = injectNamedSiteUser("a@a.com").user
         val userB = injectNamedSiteUser("b@a.com").user
         val userC = injectNamedSiteUser("c@a.com").user
@@ -828,8 +828,8 @@ class WebApiIntegrationTest {
 
         val client = ContactClient(serverBaseUrl, JavaHttpClient())
 
-        val request = FetchContactInfoByIdRequest(listOf(userB.id, userC.id))
-        val response = client.fetchContactInfoById(userA.getUserCredentials(authToken), request)
+        val request = FetchMultiContactInfoByIdRequest(listOf(userB.id, userC.id))
+        val response = client.fetchMultiContactInfoById(userA.getUserCredentials(authToken), request)
 
         val expected = listOf(
             userB.toContactInfo(),
@@ -837,6 +837,33 @@ class WebApiIntegrationTest {
         )
 
         assertEquals(expected, response.contacts.sortedBy { it.email }.map { it.toCore(AllowedMessageLevel.ALL) })
+    }
+
+    @Test
+    fun `fetchContactInfoById should return valid contact info for an existing user`() {
+        val userA = injectNamedSiteUser("a@a.com").user
+        val userB = injectNamedSiteUser("b@a.com").user
+
+        val authToken = devClient.createAuthToken(userA.username)
+
+        val client = ContactClient(serverBaseUrl, JavaHttpClient())
+
+        val response = client.fetchContactInfoById(userA.getUserCredentials(authToken), userB.id)
+
+        assertEquals(userB.toContactInfo(), response.contactInfo?.toCore(AllowedMessageLevel.ALL), "Invalid contact info")
+    }
+
+    @Test
+    fun `fetchContactInfoById should return null for a non-existent user`() {
+        val userA = injectNamedSiteUser("a@a.com").user
+
+        val authToken = devClient.createAuthToken(userA.username)
+
+        val client = ContactClient(serverBaseUrl, JavaHttpClient())
+
+        val response = client.fetchContactInfoById(userA.getUserCredentials(authToken), randomUserId())
+
+        assertNull(response.contactInfo, "Should be not return contact info")
     }
 
     @Test
