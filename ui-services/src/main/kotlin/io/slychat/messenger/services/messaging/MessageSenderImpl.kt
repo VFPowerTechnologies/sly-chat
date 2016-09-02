@@ -3,7 +3,7 @@ package io.slychat.messenger.services.messaging
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
-import io.slychat.messenger.core.persistence.QueuedMessage
+import io.slychat.messenger.core.persistence.SenderMessageEntry
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.crypto.MessageCipherService
@@ -60,7 +60,7 @@ class MessageSenderImpl(
 
         messageQueuePersistenceManager.getUndelivered() successUi { undelivered ->
             undelivered.forEach { e ->
-                addToQueueReal(e.metadata, e.serialized)
+                addToQueueReal(e.metadata, e.message)
             }
         }
     }
@@ -190,12 +190,7 @@ class MessageSenderImpl(
     }
 
     override fun addToQueue(entry: SenderMessageEntry): Promise<Unit, Exception> {
-        val queuedMessage = QueuedMessage(
-            entry.metadata,
-            currentTimestamp(),
-            entry.message
-        )
-        return messageQueuePersistenceManager.add(queuedMessage) mapUi {
+        return messageQueuePersistenceManager.add(entry) mapUi {
             addToQueueReal(entry.metadata, entry.message)
         }
     }
@@ -204,16 +199,7 @@ class MessageSenderImpl(
         if (messages.isEmpty())
             return Promise.ofSuccess(Unit)
 
-        val timestamp = currentTimestamp()
-        val queuedMessages = messages.map {
-            QueuedMessage(
-                it.metadata,
-                timestamp,
-                it.message
-            )
-        }
-
-        return messageQueuePersistenceManager.add(queuedMessages) mapUi {
+        return messageQueuePersistenceManager.add(messages) mapUi {
             addToQueueReal(messages)
         }
     }
