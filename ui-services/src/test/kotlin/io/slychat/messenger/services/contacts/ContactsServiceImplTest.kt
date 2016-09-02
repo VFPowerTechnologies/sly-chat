@@ -464,6 +464,70 @@ class ContactsServiceImplTest {
     }
 
     @Test
+    fun `addById should just upgrade the message level if a user already exists`() {
+        val contactInfo = randomContactInfo(AllowedMessageLevel.GROUP_ONLY)
+        val userId = contactInfo.id
+
+        val contactsService = createService()
+
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
+        whenever(contactsPersistenceManager.allowAll(userId)).thenResolve(Unit)
+
+        contactsService.addById(userId).get()
+
+        verify(contactsPersistenceManager).allowAll(userId)
+    }
+
+    @Test
+    fun `addById should not do anything if the user already exists and has ALL message level`() {
+        val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
+        val userId = contactInfo.id
+
+        val contactsService = createService()
+
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
+
+        assertFalse(contactsService.addById(userId).get(), "Should not be added")
+
+        verify(contactsPersistenceManager, never()).allowAll(userId)
+    }
+
+    @Test
+    fun `addById should emit an event when upgrading the message level if a user already exists`() {
+        val contactInfo = randomContactInfo(AllowedMessageLevel.GROUP_ONLY)
+        val userId = contactInfo.id
+
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Updated>(contactsService)
+
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
+        whenever(contactsPersistenceManager.allowAll(userId)).thenResolve(Unit)
+
+        contactsService.addById(userId).get()
+
+        assertEventEmitted(testSubscriber) { event ->
+            assertEquals(setOf(contactInfo), event.contacts, "Invalid contact info")
+        }
+    }
+
+    @Test
+    fun `addById should not emit an event if the user already exists and has ALL message level`() {
+        val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
+        val userId = contactInfo.id
+
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Updated>(contactsService)
+
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
+
+        assertFalse(contactsService.addById(userId).get(), "Should not be added")
+
+        assertNoEventsEmitted(testSubscriber)
+    }
+
+    @Test
     fun `addById should do nothing if the user id is invalid`() {
         val userId = randomUserId()
 

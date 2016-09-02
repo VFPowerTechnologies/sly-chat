@@ -50,7 +50,7 @@ class ContactsServiceImpl(
         }
     }
 
-    override fun addById(userId: UserId): Promise<Boolean, Exception> {
+    private fun addNewUserRemotely(userId: UserId): Promise<Boolean, Exception> {
         return authTokenManager.bind { userCredentials ->
             contactClient.findById(userCredentials, userId)
         } bind { response ->
@@ -58,12 +58,33 @@ class ContactsServiceImpl(
             if (contactInfo == null)
                 Promise.ofSuccess(false)
             else {
-                addressBookOperationManager.run {
-                    contactsPersistenceManager.add(contactInfo) successUi {
-                        if (it)
-                            contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
-                    }
+                contactsPersistenceManager.add(contactInfo) successUi {
+                    if (it)
+                        contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
                 }
+            }
+        }
+    }
+
+    private fun upgradeUserMessageLevel(contactInfo: ContactInfo): Promise<Boolean, Exception> {
+        if (contactInfo.allowedMessageLevel == AllowedMessageLevel.ALL)
+            return Promise.ofSuccess(false)
+
+        return contactsPersistenceManager.allowAll(contactInfo.id) mapUi {
+            contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactInfo)))
+            true
+        }
+    }
+
+
+    override fun addById(userId: UserId): Promise<Boolean, Exception> {
+        return addressBookOperationManager.runOperation {
+            contactsPersistenceManager.get(userId) bind {
+                //don't need to worry about blacklisted users, as their messages never even get decrypted
+                if (it != null)
+                    upgradeUserMessageLevel(it)
+                else
+                    addNewUserRemotely(userId)
             }
         }
     }
