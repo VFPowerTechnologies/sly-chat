@@ -99,6 +99,14 @@ fun randomQueuedMessages(n: Int = 2): List<QueuedMessage> {
     return (1..n).map { randomQueuedMessage() }
 }
 
+fun randomSenderMessageEntry(): SenderMessageEntry {
+    return SenderMessageEntry(randomTextSingleMetadata(), randomSerializedMessage())
+}
+
+fun randomSenderMessageEntries(n: Int = 2): List<SenderMessageEntry> {
+    return (1..n).map { randomSenderMessageEntry() }
+}
+
 fun randomContactInfo(allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL): ContactInfo {
     val userId = randomUserId()
 

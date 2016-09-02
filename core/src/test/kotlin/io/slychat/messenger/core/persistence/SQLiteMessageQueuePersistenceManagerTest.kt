@@ -1,15 +1,18 @@
 package io.slychat.messenger.core.persistence
 
-import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.randomMessageId
+import io.slychat.messenger.core.persistence.sqlite.SQLiteContactsPersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
+import io.slychat.messenger.core.randomContactInfo
+import io.slychat.messenger.core.randomSenderMessageEntries
+import io.slychat.messenger.core.randomSenderMessageEntry
+import io.slychat.messenger.core.randomUserId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
-import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -25,24 +28,48 @@ class SQLiteMessageQueuePersistenceManagerTest {
 
     lateinit var persistenceManager: SQLitePersistenceManager
     lateinit var messageQueuePersistenceManager: SQLiteMessageQueuePersistenceManager
+    lateinit var contactsPersistenceManager: SQLiteContactsPersistenceManager
 
     @Before
     fun before() {
         persistenceManager = SQLitePersistenceManager(null, null, null)
         persistenceManager.init()
         messageQueuePersistenceManager = SQLiteMessageQueuePersistenceManager(persistenceManager)
+        contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)
     }
+
+    fun addContacts(entry: SenderMessageEntry) {
+        addContacts(listOf(entry))
+    }
+
+    fun addContacts(entries: Collection<SenderMessageEntry>) {
+        val userIds = entries.map { randomContactInfo().copy(id = it.metadata.userId) }
+        contactsPersistenceManager.add(userIds).get()
+    }
+
 
     @After
     fun after() {
         persistenceManager.shutdown()
     }
 
+    fun randomMessageEntry(): SenderMessageEntry {
+        val entry = randomSenderMessageEntry()
+        addContacts(entry)
+        return entry
+    }
+
+    fun randomMessageEntries(n: Int = 2): List<SenderMessageEntry> {
+        val entries = randomSenderMessageEntries(n)
+        addContacts(entries)
+        return entries
+    }
+
     @Test
     fun `add(single) should add a new message`() {
-        val qm = randomQueuedMessage()
+        val entry = randomMessageEntry()
 
-        messageQueuePersistenceManager.add(qm).get()
+        val qm = messageQueuePersistenceManager.add(entry).get()
 
         val got = messageQueuePersistenceManager.get(qm.metadata.userId, qm.metadata.messageId).get()
 
@@ -51,9 +78,9 @@ class SQLiteMessageQueuePersistenceManagerTest {
 
     @Test
     fun `add(multi) should add all the given new messages`() {
-        val qms = randomQueuedMessages()
+        val entries = randomMessageEntries()
 
-        messageQueuePersistenceManager.add(qms).get()
+        val qms = messageQueuePersistenceManager.add(entries).get()
 
         qms.forEach {
             val got = messageQueuePersistenceManager.get(it.metadata.userId, it.metadata.messageId).get()
@@ -63,8 +90,8 @@ class SQLiteMessageQueuePersistenceManagerTest {
 
     @Test
     fun `remove should remove an existing message`() {
-        val qm = randomQueuedMessage()
-        messageQueuePersistenceManager.add(qm).get()
+        val entry = randomMessageEntry()
+        val qm = messageQueuePersistenceManager.add(entry).get()
 
         assertTrue(messageQueuePersistenceManager.remove(qm.metadata.userId, qm.metadata.messageId).get(), "Message not removed")
     }
@@ -76,9 +103,9 @@ class SQLiteMessageQueuePersistenceManagerTest {
 
     @Test
     fun `getUndelivered should return all previously added messages`() {
-        val qms = randomQueuedMessages()
+        val entries = randomMessageEntries()
 
-        messageQueuePersistenceManager.add(qms).get()
+        val qms = messageQueuePersistenceManager.add(entries).get()
 
         val undelivered = messageQueuePersistenceManager.getUndelivered().get()
 
@@ -86,36 +113,33 @@ class SQLiteMessageQueuePersistenceManagerTest {
             .containsOnlyElementsOf(qms)
             .`as`("Undelievered messages")
 
-        val sorted = undelivered.sortedBy { it.timestamp }
+        val sorted = undelivered.sortedBy { it.id }
 
         assertEquals(sorted, undelivered, "Undelivered messages not properly sorted")
     }
 
     @Test
-    fun `getUndelivered should return all previously added messages in descending order by timestamp`() {
-        val timestampBase = currentTimestamp()
+    fun `getUndelivered should return all previously added messages in ascending order by id`() {
+        val entries = randomMessageEntries(10)
 
-        val qms = (0..10).mapTo(ArrayList()) {
-            QueuedMessage(
-                randomTextSingleMetadata(),
-                timestampBase+it,
-                randomSerializedMessage()
-            )
+        val qms = messageQueuePersistenceManager.add(entries).get()
+
+        //make sure they're returned in order as well
+        val sortedMetadata = qms.map { it.metadata }
+
+        assertThat(sortedMetadata).apply {
+            `as`("Returned values should be in order")
+            containsExactlyElementsOf(entries.map { it.metadata })
         }
-
-        //we attempt to randomize the list a bit so that insertion order doesn't reflect timestamp order
-        Collections.shuffle(qms)
-
-        messageQueuePersistenceManager.add(qms).get()
 
         val undelivered = messageQueuePersistenceManager.getUndelivered().get()
 
         assertFalse(undelivered.isEmpty(), "No messages returned")
 
-        //displaying the timestamps only in case of failure is nicer
-        val sorted = undelivered.map { it.timestamp }.sorted()
+        //displaying the id only in case of failure is nicer
+        val sorted = undelivered.map { it.id }.sorted()
 
-        assertEquals(sorted, undelivered.map { it.timestamp }, "Undelivered messages not properly sorted")
+        assertEquals(sorted, undelivered.map { it.id }, "Undelivered messages not properly sorted")
     }
 
     @Test

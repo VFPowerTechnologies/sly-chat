@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.messaging
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.slychat.messenger.core.persistence.SenderMessageEntry
 
 inline fun <reified T : SlyMessage> convertMessageFromSerialized(messageEntry: SenderMessageEntry): T {
     val objectMapper = ObjectMapper()

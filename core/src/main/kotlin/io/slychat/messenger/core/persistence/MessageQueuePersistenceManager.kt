@@ -4,9 +4,9 @@ import io.slychat.messenger.core.UserId
 import nl.komponents.kovenant.Promise
 
 interface MessageQueuePersistenceManager {
-    fun add(queuedMessages: Collection<QueuedMessage>): Promise<Unit, Exception>
+    fun add(entries: Collection<SenderMessageEntry>): Promise<List<QueuedMessage>, Exception>
 
-    fun add(queuedMessage: QueuedMessage): Promise<Unit, Exception>
+    fun add(entry: SenderMessageEntry): Promise<QueuedMessage, Exception>
 
     fun remove(userId: UserId, messageId: String): Promise<Boolean, Exception>
 

@@ -354,4 +354,30 @@ class DatabaseMigrationTest {
         assertTableNotExists(connection, "address_book_version")
         assertTableExists(connection, "address_book_hashes")
     }
+
+    @Test
+    fun `migration 11 to 12`() {
+        withTestDatabase(11, 12) { persistenceManager, connection ->
+            check11to12(persistenceManager, connection)
+        }
+    }
+
+    private fun check11to12(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertNoColDef(connection, "send_message_queue", "timestamp INTEGER NOT NULL")
+
+        assertNoColDef(connection, "send_message_queue", "user_id INTEGER NOT NULL")
+        assertColDef(connection, "send_message_queue", "contact_id INTEGER NOT NULL")
+
+        assertTableNotExists(connection, "send_message_queue_old")
+
+        val sql = "SELECT message_id FROM send_message_queue ORDER BY id"
+        val messageIds = connection.withPrepared(sql) { stmt ->
+            stmt.map { stmt.columnString(0).toLong() }
+        }
+
+        assertThat(messageIds).apply {
+            `as`("Message order should be retained")
+            containsExactly(1, 2, 3)
+        }
+    }
 }
