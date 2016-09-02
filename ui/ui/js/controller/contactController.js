@@ -73,8 +73,7 @@ ContactController.prototype  = {
     },
 
     addNewContactToCache : function (contact) {
-        if (this.contacts[contact.id] === undefined)
-            this.contacts[contact.id] = contact;
+        this.contacts[contact.id] = contact;
 
         if (this.conversations[contact.id] === undefined) {
             this.conversations[contact.id] = {
@@ -474,6 +473,7 @@ ContactController.prototype  = {
         contactService.addContactEventListener(function (ev) {
             switch(ev.type) {
                 case "ADD":
+                case "UPDATE":
                     ev.contacts.forEach(function (contact) {
                         //we don't show contacts for which no conversation exists
                         if (contact.allowedMessageLevel === 'ALL')
