@@ -150,7 +150,7 @@ class AddressBookOperationManagerImpl(
             syncCompleted(info, it)
         } failUi { e ->
             log.error("Address book sync job failed: {}", e.message, e)
-            syncCompleted(info, AddressBookSyncResult(false, 0, false))
+            syncCompleted(info, AddressBookSyncResult(false, 0, false, emptySet()))
         }
 
         return

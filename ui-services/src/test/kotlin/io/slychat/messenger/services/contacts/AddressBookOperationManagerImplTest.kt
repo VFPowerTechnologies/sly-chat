@@ -129,7 +129,7 @@ class AddressBookOperationManagerImplTest {
 
         doLocalSync(runner)
 
-        jobDeferred.resolve(AddressBookSyncResult(true, 0, false))
+        jobDeferred.resolve(AddressBookSyncResult(true, 0, false, emptySet()))
 
         var wasRun = false
         runner.runOperation {
@@ -265,7 +265,7 @@ class AddressBookOperationManagerImplTest {
         doLocalSync(runner)
         doLocalSync(runner)
 
-        factory.deferreds[0].resolve(AddressBookSyncResult(true, 0, false))
+        factory.deferreds[0].resolve(AddressBookSyncResult())
 
         assertEquals(2, factory.jobs.size, "Second job not created")
         verify(factory.jobs[1]).run(any())

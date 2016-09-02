@@ -76,7 +76,6 @@ class ContactsServiceImpl(
         }
     }
 
-
     override fun addById(userId: UserId): Promise<Boolean, Exception> {
         return addressBookOperationManager.runOperation {
             contactsPersistenceManager.get(userId) bind {

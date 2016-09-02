@@ -11,8 +11,8 @@ import io.slychat.messenger.services.UserData
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenAnswerSuccess
-import io.slychat.messenger.testutils.thenResolve
 import io.slychat.messenger.testutils.thenReject
+import io.slychat.messenger.testutils.thenResolve
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
@@ -478,14 +478,13 @@ class AddressBookSyncJobImplTest {
         verify(contactAsyncClient).findLocalContacts(any(), eq(FindLocalContactsRequest(missingContacts)))
     }
 
-    @Test
-    fun `a find platform contacts should add local contacts with remote accounts to the contact list with ALL message level`() {
+    fun testFindPlatformAdd(): Pair<AddressBookSyncResult, ContactInfo> {
         val userId = randomUserId()
-        val email = "a@a.com"
-        val name = "name"
-        val phoneNumber = "15555555555"
+        val email = randomEmailAddress()
+        val name = randomName()
+        val phoneNumber = randomPhoneNumber()
         val publicKey = "pubkey"
-        val platformContact = PlatformContact(name, listOf(email), listOf(phoneNumber))
+        val platformContact = randomPlatformContact()
 
         val missingContacts = listOf(platformContact)
         val apiContacts =  listOf(
@@ -495,9 +494,17 @@ class AddressBookSyncJobImplTest {
 
         whenever(platformContacts.fetchContacts()).thenResolve(missingContacts)
         whenever(contactsPersistenceManager.findMissing(anyList())).thenResolve(missingContacts)
+        whenever(contactsPersistenceManager.add(anyCollection())).thenResolve(setOf(contactInfo))
         whenever(contactAsyncClient.findLocalContacts(any(), any())).thenResolve(FindLocalContactsResponse(apiContacts))
 
-        runFindPlatformContacts()
+        val result = runFindPlatformContacts()
+
+        return result to contactInfo
+    }
+
+    @Test
+    fun `a find platform contacts should add local contacts with remote accounts to the contact list with ALL message level`() {
+        val (result, contactInfo) = testFindPlatformAdd()
 
         verify(contactsPersistenceManager).add(capture<Collection<ContactInfo>> {
             assertThat(it).apply {
@@ -505,5 +512,15 @@ class AddressBookSyncJobImplTest {
                 containsOnly(contactInfo)
             }
         })
+    }
+
+    @Test
+    fun `a find platform contacts should return added contacts in the result`() {
+        val (result, contactInfo) = testFindPlatformAdd()
+
+        assertThat(result.addedLocalContacts).apply {
+            `as`("Should contain the added contact")
+            containsOnly(contactInfo)
+        }
     }
 }

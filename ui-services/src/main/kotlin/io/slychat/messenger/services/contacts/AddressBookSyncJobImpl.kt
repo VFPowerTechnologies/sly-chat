@@ -5,10 +5,7 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.http.api.ResourceConflictException
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.kovenant.bindRecoverFor
-import io.slychat.messenger.core.persistence.AddressBookUpdate
-import io.slychat.messenger.core.persistence.AllowedMessageLevel
-import io.slychat.messenger.core.persistence.ContactsPersistenceManager
-import io.slychat.messenger.core.persistence.GroupPersistenceManager
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.PlatformContacts
 import io.slychat.messenger.services.UserData
 import io.slychat.messenger.services.auth.AuthTokenManager
@@ -56,21 +53,21 @@ class AddressBookSyncJobImpl(
         }
     }
 
-    private fun queryAndAddNewContacts(userCredentials: UserCredentials, missingContacts: List<PlatformContact>): Promise<Unit, Exception> {
+    private fun queryAndAddNewContacts(userCredentials: UserCredentials, missingContacts: List<PlatformContact>): Promise<Set<ContactInfo>, Exception> {
         return if (missingContacts.isNotEmpty()) {
             contactClient.findLocalContacts(userCredentials, FindLocalContactsRequest(missingContacts)) bind { foundContacts ->
                 log.debug("Found platform contacts: {}", foundContacts)
 
-                contactsPersistenceManager.add(foundContacts.contacts.map { it.toCore(AllowedMessageLevel.ALL) }) map { Unit }
+                contactsPersistenceManager.add(foundContacts.contacts.map { it.toCore(AllowedMessageLevel.ALL) })
             }
         }
         else
-            Promise.ofSuccess(Unit)
+            Promise.ofSuccess(emptySet())
 
     }
 
     /** Attempts to find any registered users matching the user's platform contacts. */
-    private fun findPlatformContacts(): Promise<Unit, Exception> {
+    private fun findPlatformContacts(): Promise<Set<ContactInfo>, Exception> {
         log.info("Beginning platform contact sync")
 
         return authTokenManager.bind { userCredentials ->
@@ -245,7 +242,7 @@ class AddressBookSyncJobImpl(
         val jobRunners = ArrayList<(AddressBookSyncResult) -> Promise<AddressBookSyncResult, Exception>>()
 
         if (jobDescription.findPlatformContacts)
-            jobRunners.add { result -> findPlatformContacts() map { result } }
+            jobRunners.add { result -> findPlatformContacts() map { result.copy(addedLocalContacts = it) } }
 
         if (jobDescription.push)
             jobRunners.add { result -> pushRemoteUpdates() map { result.copy(updateCount = it) } }
@@ -253,7 +250,7 @@ class AddressBookSyncJobImpl(
         if (jobDescription.pull)
             jobRunners.add { result -> pullRemoteUpdates() map { result.copy(fullPull = it) } }
 
-        return jobRunners.fold(Promise.ofSuccess(AddressBookSyncResult(true, 0, false))) { z, v ->
+        return jobRunners.fold(Promise.ofSuccess(AddressBookSyncResult(true, 0, false, emptySet()))) { z, v ->
             z bindUi v
         }
     }
