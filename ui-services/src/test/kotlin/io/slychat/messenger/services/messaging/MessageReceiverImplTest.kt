@@ -2,18 +2,17 @@ package io.slychat.messenger.services.messaging
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.*
+import io.slychat.messenger.core.SlyAddress
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.randomUUID
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.randomMessageText
 import io.slychat.messenger.services.crypto.DecryptionResult
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
-import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.cond
-import io.slychat.messenger.testutils.testSubscriber
-import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenReject
+import io.slychat.messenger.testutils.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
@@ -31,7 +30,7 @@ class MessageReceiverImplTest {
 
     data class GeneratedTextMessages(
         val packages: List<Package>,
-        val wrappers: List<TextMessageWrapper>,
+        val wrappers: List<SlyMessage.Text>,
         val decryptedResults: List<DecryptionResult>
     )
 
@@ -41,9 +40,9 @@ class MessageReceiverImplTest {
     val packageQueuePersistenceManager: PackageQueuePersistenceManager = mock()
     val messageCipherService: MessageCipherService = mock()
 
-    fun createTextMessage(message: String, group: String? = null): TextMessageWrapper {
+    fun createTextMessage(message: String, group: String? = null): SlyMessage.Text {
         val groupId = group?.let { GroupId(it) }
-        return TextMessageWrapper(TextMessage(currentTimestamp(), message, groupId))
+        return SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId))
     }
 
     fun createPackage(from: UserId, payload: ByteArray): Package {
@@ -77,7 +76,7 @@ class MessageReceiverImplTest {
         val objectMapper = ObjectMapper()
 
         val packages = ArrayList<Package>()
-        val wrappers = ArrayList<TextMessageWrapper>()
+        val wrappers = ArrayList<SlyMessage.Text>()
         val results = ArrayList<DecryptionResult>()
 
         messages.forEach {

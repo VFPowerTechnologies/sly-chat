@@ -32,18 +32,13 @@ class MessageProcessorImpl(
         val messageId = wrapper.messageId
 
         return when (m) {
-            is TextMessageWrapper -> handleTextMessage(sender, messageId, m.m)
+            is SlyMessage.Text -> handleTextMessage(sender, messageId, m.m)
 
-            is GroupEventMessageWrapper -> handleGroupMessage(sender, m.m)
+            is SlyMessage.GroupEvent -> handleGroupMessage(sender, m.m)
 
-            is SyncMessageWrapper -> handleSyncMessage(sender, m.m)
+            is SlyMessage.Sync -> handleSyncMessage(sender, m.m)
 
-            is ControlMessageWrapper -> handleControlMessage(sender, m.m)
-
-            else -> {
-                log.error("Unhandled message type: {}", m.javaClass.name)
-                throw IllegalArgumentException("Unhandled message type: ${m.javaClass.name}")
-            }
+            is SlyMessage.Control -> handleControlMessage(sender, m.m)
         }
     }
 

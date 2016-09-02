@@ -9,17 +9,96 @@ import io.slychat.messenger.core.persistence.GroupId
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
-    JsonSubTypes.Type(GroupEventMessageWrapper::class, name = "g"),
-    JsonSubTypes.Type(TextMessageWrapper::class, name = "t"),
-    JsonSubTypes.Type(SyncMessageWrapper::class, name = "s"),
-    JsonSubTypes.Type(ControlMessageWrapper::class, name = "c")
+    JsonSubTypes.Type(SlyMessage.GroupEvent::class, name = "g"),
+    JsonSubTypes.Type(SlyMessage.Text::class, name = "t"),
+    JsonSubTypes.Type(SlyMessage.Sync::class, name = "s"),
+    JsonSubTypes.Type(SlyMessage.Control::class, name = "c")
 )
-interface SlyMessage
+sealed class SlyMessage {
+    class GroupEvent(@JsonProperty("m") val m: GroupEventMessage) : SlyMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
 
-data class GroupEventMessageWrapper(@JsonProperty("m") val m: GroupEventMessage) : SlyMessage
-data class TextMessageWrapper(@JsonProperty("m") val m: TextMessage) : SlyMessage
-data class SyncMessageWrapper(@JsonProperty("m") val m: SyncMessage) : SlyMessage
-data class ControlMessageWrapper(@JsonProperty("m") val m: ControlMessage) : SlyMessage
+            other as GroupEvent
+
+            if (m != other.m) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return m.hashCode()
+        }
+
+        override fun toString(): String {
+            return "GroupEvent(m=$m)"
+        }
+    }
+
+    class Text(@JsonProperty("m") val m: TextMessage) : SlyMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as Text
+
+            if (m != other.m) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return m.hashCode()
+        }
+
+        override fun toString(): String {
+            return "Text(m=$m)"
+        }
+    }
+
+    class Sync(@JsonProperty("m") val m: SyncMessage) : SlyMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as Sync
+
+            if (m != other.m) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return m.hashCode()
+        }
+
+        override fun toString(): String {
+            return "Sync(m=$m)"
+        }
+    }
+
+    class Control(@JsonProperty("m") val m: ControlMessage) : SlyMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as Control
+
+            if (m != other.m) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return m.hashCode()
+        }
+
+        override fun toString(): String {
+            return "Control(m=$m)"
+        }
+    }
+}
 
 data class TextMessage(
     @JsonProperty("timestamp")

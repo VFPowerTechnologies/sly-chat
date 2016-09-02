@@ -76,7 +76,7 @@ class MessageProcessorImplTest {
 
         val m = TextMessage(currentTimestamp(), "m", null)
 
-        val wrapper = SlyMessageWrapper(randomUUID(), TextMessageWrapper(m))
+        val wrapper = SlyMessageWrapper(randomUUID(), SlyMessage.Text(m))
 
         processor.processMessage(UserId(1), wrapper).get()
 
@@ -89,7 +89,7 @@ class MessageProcessorImplTest {
 
         val m = TextMessage(currentTimestamp(), "m", null)
 
-        val wrapper = SlyMessageWrapper(randomUUID(), TextMessageWrapper(m))
+        val wrapper = SlyMessageWrapper(randomUUID(), SlyMessage.Text(m))
 
         val testSubscriber = processor.newMessages.testSubscriber()
 
@@ -117,7 +117,7 @@ class MessageProcessorImplTest {
 
         val m = randomTextMessage()
 
-        val wrapper = SlyMessageWrapper(randomUUID(), TextMessageWrapper(m))
+        val wrapper = SlyMessageWrapper(randomUUID(), SlyMessage.Text(m))
 
         val from = randomUserId()
 
@@ -142,10 +142,10 @@ class MessageProcessorImplTest {
             whenever(groupService.getInfo(any())).thenResolve(null)
     }
 
-    fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), TextMessageWrapper(m))
-    fun wrap(m: GroupEventMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), GroupEventMessageWrapper(m))
-    fun wrap(m: SyncMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SyncMessageWrapper(m))
-    fun wrap(m: ControlMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), ControlMessageWrapper(m))
+    fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Text(m))
+    fun wrap(m: GroupEventMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.GroupEvent(m))
+    fun wrap(m: SyncMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Sync(m))
+    fun wrap(m: ControlMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Control(m))
 
     /* Group stuff */
 

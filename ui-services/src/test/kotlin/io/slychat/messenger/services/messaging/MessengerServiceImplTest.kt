@@ -303,7 +303,7 @@ class MessengerServiceImplTest {
             //cheating a little
             val objectMapper = ObjectMapper()
 
-            val message = objectMapper.readValue(it.message, TextMessageWrapper::class.java).m
+            val message = objectMapper.readValue(it.message, SlyMessage.Text::class.java).m
 
             assertEquals(currentTime, message.timestamp, "RelayClock time not used")
         })
@@ -509,7 +509,7 @@ class MessengerServiceImplTest {
     fun assertPartMessagesSent(members: Set<UserId>) {
         verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
             assertEquals(members, it.mapToSet { it.metadata.userId }, "Invalid users")
-            val messages = convertMessageFromSerialized<GroupEventMessageWrapper>(it)
+            val messages = convertMessageFromSerialized<SlyMessage.GroupEvent>(it)
             messages.forEach {
                 assertTrue(it.m is GroupEventMessage.Part, "Invalid message type")
             }
@@ -597,7 +597,7 @@ class MessengerServiceImplTest {
         messages.forEach {
             val recipient = it.metadata.userId
 
-            val wrapper = convertMessageFromSerialized<GroupEventMessageWrapper>(it)
+            val wrapper = convertMessageFromSerialized<SlyMessage.GroupEvent>(it)
 
             if (wrapper.m is T)
                 throw AssertionError("Unexpected ${T::class.simpleName} message to $recipient")
@@ -608,13 +608,13 @@ class MessengerServiceImplTest {
         val captor = argumentCaptor<SenderMessageEntry>()
         verify(messageSender, atLeast(1)).addToQueue(capture(captor))
 
-        val wrapper = convertMessageFromSerialized<SyncMessageWrapper>(captor.value)
+        val wrapper = convertMessageFromSerialized<SlyMessage.Sync>(captor.value)
 
         return wrapper.m as? T ?: throw AssertionError("Unexpected ${T::class.simpleName} message")
     }
 
     inline fun <reified T : ControlMessage> convertToControlMessage(entry: SenderMessageEntry): T {
-        val wrapper = convertMessageFromSerialized<ControlMessageWrapper>(entry)
+        val wrapper = convertMessageFromSerialized<SlyMessage.Control>(entry)
 
         return wrapper.m as? T ?: throw AssertionError("Unexpected ${T::class.simpleName} message")
     }
@@ -631,7 +631,7 @@ class MessengerServiceImplTest {
         messages.forEach {
             val recipient = it.metadata.userId
 
-            val wrapper = convertMessageFromSerialized<GroupEventMessageWrapper>(it)
+            val wrapper = convertMessageFromSerialized<SlyMessage.GroupEvent>(it)
 
             val m = wrapper.m as? T
 

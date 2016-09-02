@@ -213,7 +213,7 @@ class MessengerServiceImpl(
         return if (!isSelfMessage) {
             val messageInfo = MessageInfo.newSent(message, relayClock.currentTime(), 0)
             val m = TextMessage(messageInfo.timestamp, message, null)
-            val wrapper = TextMessageWrapper(m)
+            val wrapper = SlyMessage.Text(m)
 
             val serialized = objectMapper.writeValueAsBytes(wrapper)
 
@@ -263,7 +263,7 @@ class MessengerServiceImpl(
     }
 
     override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<GroupMessageInfo, Exception> {
-        val m = TextMessageWrapper(TextMessage(currentTimestamp(), message, groupId))
+        val m = SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId))
 
         val messageId = randomUUID()
 
@@ -290,7 +290,7 @@ class MessengerServiceImpl(
             val members = HashSet(initialMembers)
             members.remove(it)
 
-            val m = GroupEventMessageWrapper(GroupEventMessage.Invitation(groupInfo.id, groupInfo.name, members))
+            val m = SlyMessage.GroupEvent(GroupEventMessage.Invitation(groupInfo.id, groupInfo.name, members))
             val serialized = objectMapper.writeValueAsBytes(m)
 
             val metadata = MessageMetadata(it, groupInfo.id, MessageCategory.OTHER, randomUUID())
@@ -305,14 +305,14 @@ class MessengerServiceImpl(
 
     private fun sendJoinToMembers(groupId: GroupId, members: Set<UserId>, newMembers: Set<UserId>): Promise<Unit, Exception> {
         //join messages are idempotent so don't bother checking for dups here
-        val m = GroupEventMessageWrapper(GroupEventMessage.Join(groupId, newMembers))
+        val m = SlyMessage.GroupEvent(GroupEventMessage.Join(groupId, newMembers))
 
         return sendMessageToMembers(groupId, members, m, MessageCategory.OTHER) map { Unit }
     }
 
     private fun sendInvitationToNewMembers(groupInfo: GroupInfo, newMembers: Set<UserId>, members: Set<UserId>): Promise<Unit, Exception> {
         val groupId = groupInfo.id
-        val invitation = GroupEventMessageWrapper(GroupEventMessage.Invitation(groupId, groupInfo.name, members))
+        val invitation = SlyMessage.GroupEvent(GroupEventMessage.Invitation(groupId, groupInfo.name, members))
 
         return sendMessageToMembers(groupId, newMembers, invitation, MessageCategory.OTHER) bindUi {
             groupService.addMembers(groupId, newMembers)
@@ -335,7 +335,7 @@ class MessengerServiceImpl(
     }
 
     private fun sendPartMessagesTo(groupId: GroupId): Promise<Set<UserId>, Exception> {
-        val message = GroupEventMessageWrapper(GroupEventMessage.Part(groupId))
+        val message = SlyMessage.GroupEvent(GroupEventMessage.Part(groupId))
 
         return sendMessageToGroup(groupId, message, MessageCategory.OTHER)
     }
@@ -387,7 +387,7 @@ class MessengerServiceImpl(
     }
 
     private fun sendSyncMessage(m: SyncMessage): Promise<Unit, Exception> {
-        val serialized = objectMapper.writeValueAsBytes(SyncMessageWrapper(m))
+        val serialized = objectMapper.writeValueAsBytes(SlyMessage.Sync(m))
 
         val metadata = MessageMetadata(selfId, null, MessageCategory.OTHER, randomUUID())
         return messageSender.addToQueue(SenderMessageEntry(metadata, serialized))
@@ -398,7 +398,7 @@ class MessengerServiceImpl(
     }
 
     override fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception> {
-        val serialized = objectMapper.writeValueAsBytes(ControlMessageWrapper(ControlMessage.WasAdded()))
+        val serialized = objectMapper.writeValueAsBytes(SlyMessage.Control(ControlMessage.WasAdded()))
 
         val messages = userIds.map {
             SenderMessageEntry(MessageMetadata(it, null, MessageCategory.OTHER, randomUUID()), serialized)
