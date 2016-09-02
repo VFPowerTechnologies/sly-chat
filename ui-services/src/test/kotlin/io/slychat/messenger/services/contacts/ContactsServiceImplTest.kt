@@ -592,4 +592,38 @@ class ContactsServiceImplTest {
 
         assertNoEventsEmitted(testSubscriber)
     }
+
+    //FIXME this is bugged; if part of the job fails, we don't get the info
+    @Test
+    fun `it should emit an added event when a non-empty addedLocalContacts is present in a sync result`() {
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
+
+        val info = AddressBookSyncJobInfo(false, true, false)
+        val addedLocalContacts = setOf(randomContactInfo(AllowedMessageLevel.ALL))
+        val result = AddressBookSyncResult(true, 0, false, addedLocalContacts)
+        val event = AddressBookSyncEvent.End(info, result)
+
+        addressBookOperationManager.syncEventsSubject.onNext(event)
+
+        assertEventEmitted(testSubscriber) { event ->
+            assertEquals(addedLocalContacts, event.contacts, "Invalid added contacts")
+        }
+    }
+
+    @Test
+    fun `it should not emit an added event when an empty addedLocalContacts is present in a sync result`() {
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
+
+        val info = AddressBookSyncJobInfo(false, true, false)
+        val result = AddressBookSyncResult(true, 0, false, emptySet())
+        val event = AddressBookSyncEvent.End(info, result)
+
+        addressBookOperationManager.syncEventsSubject.onNext(event)
+
+        assertNoEventsEmitted(testSubscriber)
+    }
 }

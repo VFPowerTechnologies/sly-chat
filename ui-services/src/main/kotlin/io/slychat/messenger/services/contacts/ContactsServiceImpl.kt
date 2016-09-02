@@ -157,13 +157,18 @@ class ContactsServiceImpl(
 
     private fun onAddressBookSyncStatusUpdate(event: AddressBookSyncEvent) {
         //if remote sync is at all enabled, we want the entire process to lock down the contact list
-        if (event.info.remoteSync) {
+        if (event.info.pull) {
             val isRunning = when (event) {
                 is AddressBookSyncEvent.Begin -> true
                 is AddressBookSyncEvent.End -> false
             }
 
             contactEventsSubject.onNext(ContactEvent.Sync(isRunning))
+        }
+
+        if (event is AddressBookSyncEvent.End) {
+            if (event.result.addedLocalContacts.isNotEmpty())
+                contactEventsSubject.onNext(ContactEvent.Added(event.result.addedLocalContacts))
         }
     }
 

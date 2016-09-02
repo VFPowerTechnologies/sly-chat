@@ -2,7 +2,7 @@ package io.slychat.messenger.services.contacts
 
 /** Info for a running job. */
 data class AddressBookSyncJobInfo(
-    var updateRemote: Boolean,
-    var localSync: Boolean,
-    var remoteSync: Boolean
+    val push: Boolean,
+    val findLocalContacts: Boolean,
+    val pull: Boolean
 )
