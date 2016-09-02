@@ -66,4 +66,6 @@ class MockUserComponent : UserComponent {
     override val addressBookOperationManager: AddressBookOperationManager = mock()
 
     override val accountInfoManager: AccountInfoManager = mock()
+
+    override val mutualContactNotifier: MutualContactNotifier = mock()
 }

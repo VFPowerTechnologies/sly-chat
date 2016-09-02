@@ -613,11 +613,8 @@ class MessengerServiceImplTest {
         return wrapper.m as? T ?: throw AssertionError("Unexpected ${T::class.simpleName} message")
     }
 
-    inline fun <reified T : ControlMessage> retrieveControlMessage(): T {
-        val captor = argumentCaptor<SenderMessageEntry>()
-        verify(messageSender, atLeast(1)).addToQueue(capture(captor))
-
-        val wrapper = convertMessageFromSerialized<ControlMessageWrapper>(captor.value)
+    inline fun <reified T : ControlMessage> convertToControlMessage(entry: SenderMessageEntry): T {
+        val wrapper = convertMessageFromSerialized<ControlMessageWrapper>(entry)
 
         return wrapper.m as? T ?: throw AssertionError("Unexpected ${T::class.simpleName} message")
     }
@@ -892,8 +889,11 @@ class MessengerServiceImplTest {
         val messengerService = createService()
         val userId = randomUserId()
 
-        messengerService.notifyContactAdd(userId).get()
+        messengerService.notifyContactAdd(setOf(userId)).get()
 
-        retrieveControlMessage<ControlMessage.WasAdded>()
+        getAllSentMessages(1).forEach {
+            assertEquals(userId, it.metadata.userId, "Invalid recipient id")
+            convertToControlMessage<ControlMessage.WasAdded>(it)
+        }
     }
 }

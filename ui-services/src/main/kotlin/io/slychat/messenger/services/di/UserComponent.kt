@@ -53,4 +53,6 @@ interface UserComponent {
     val relayClock: RelayClock
 
     val sessionDataManager: SessionDataManager
+
+    val mutualContactNotifier: MutualContactNotifier
 }
