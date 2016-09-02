@@ -455,6 +455,7 @@ class ContactsServiceImplTest {
 
         whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(apiContactInfo))
         whenever(contactsPersistenceManager.add(any<ContactInfo>())).thenResolve(true)
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
 
         val contactInfo = apiContactInfo.toCore(AllowedMessageLevel.ALL)
 
@@ -533,6 +534,7 @@ class ContactsServiceImplTest {
 
         val contactsService = createService()
 
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
         whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(null))
 
         assertFalse(contactsService.addById(userId).get(), "Seen as added")
@@ -550,6 +552,7 @@ class ContactsServiceImplTest {
         val userId = apiContactInfo.id
 
         whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(apiContactInfo))
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
         whenever(contactsPersistenceManager.add(any<ContactInfo>())).thenResolve(true)
 
         val contactInfo = apiContactInfo.toCore(AllowedMessageLevel.ALL)
@@ -570,6 +573,7 @@ class ContactsServiceImplTest {
         val userId = randomUserId()
 
         whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(null))
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
 
         contactsService.addById(userId).get()
 
@@ -586,6 +590,7 @@ class ContactsServiceImplTest {
         val userId = apiContactInfo.id
 
         whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(apiContactInfo))
+        whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
         whenever(contactsPersistenceManager.add(any<ContactInfo>())).thenResolve(false)
 
         contactsService.addById(userId).get()
