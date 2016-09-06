@@ -307,17 +307,30 @@ AND
     }
 
     private fun rowToGroupMessageInfo(stmt: SQLiteStatement): GroupMessageInfo {
+        val id = stmt.columnString(0)
         val speaker = stmt.columnNullableLong(1)?.let { UserId(it) }
+        val timestamp = stmt.columnLong(2)
+        val receivedTimestamp = stmt.columnLong(3)
+        val isRead = stmt.columnBool(4)
+        val isDestroyed = stmt.columnBool(5)
+        val ttl = stmt.columnLong(6)
+        val expiresAt = stmt.columnLong(7)
+        val isDelivered = stmt.columnBool(8)
+        val message = stmt.columnString(9)
+
         return GroupMessageInfo(
             speaker,
             MessageInfo(
-                stmt.columnString(0),
-                stmt.columnString(6),
-                stmt.columnLong(2),
-                stmt.columnLong(3),
+                id,
+                message,
+                timestamp,
+                receivedTimestamp,
                 speaker == null,
-                stmt.columnBool(5),
-                stmt.columnLong(4)
+                isDelivered,
+                isRead,
+                isDestroyed,
+                ttl,
+                expiresAt
             )
         )
     }
@@ -511,15 +524,15 @@ AND
         val sql =
 """
 INSERT INTO $tableName
-    (id, speaker_contact_id, timestamp, received_timestamp, ttl, is_delivered, message, n)
+    (id, speaker_contact_id, timestamp, received_timestamp, is_read, is_destroyed, ttl, expires_at, is_delivered, message, n)
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, (SELECT count(n)
-                           FROM   $tableName
-                           WHERE  timestamp = ?)+1)
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT count(n)
+                                    FROM   $tableName
+                                    WHERE  timestamp = ?)+1)
 """
         connection.withPrepared(sql) { stmt ->
             groupMessageInfoToRow(groupMessageInfo, stmt)
-            stmt.bind(8, groupMessageInfo.info.timestamp)
+            stmt.bind(11, groupMessageInfo.info.timestamp)
             stmt.step()
         }
     }
@@ -530,9 +543,12 @@ VALUES
         stmt.bind(2, groupMessageInfo.speaker)
         stmt.bind(3, messageInfo.timestamp)
         stmt.bind(4, messageInfo.receivedTimestamp)
-        stmt.bind(5, messageInfo.ttl)
-        stmt.bind(6, messageInfo.isDelivered)
-        stmt.bind(7, messageInfo.message)
+        stmt.bind(5, messageInfo.isRead)
+        stmt.bind(6, messageInfo.isDestroyed)
+        stmt.bind(7, messageInfo.ttl)
+        stmt.bind(8, messageInfo.expiresAt)
+        stmt.bind(9, messageInfo.isDelivered)
+        stmt.bind(10, messageInfo.message)
     }
 
     /** Throws InvalidGroupException if group_conv table was missing, else rethrows the given exception. */
@@ -580,7 +596,10 @@ SELECT
     speaker_contact_id,
     timestamp,
     received_timestamp,
+    is_read,
+    is_destroyed,
     ttl,
+    expires_at,
     is_delivered,
     message
 FROM
@@ -663,7 +682,10 @@ SELECT
     speaker_contact_id,
     timestamp,
     received_timestamp,
+    is_read,
+    is_destroyed,
     ttl,
+    expires_at,
     is_delivered,
     message
 FROM
@@ -689,7 +711,10 @@ SELECT
     speaker_contact_id,
     timestamp,
     received_timestamp,
+    is_read,
+    is_destroyed,
     ttl,
+    expires_at,
     is_delivered,
     message
 FROM
@@ -843,7 +868,10 @@ SELECT
     speaker_contact_id,
     timestamp,
     received_timestamp,
+    is_read,
+    is_destroyed,
     ttl,
+    expires_at,
     is_delivered,
     message
 FROM

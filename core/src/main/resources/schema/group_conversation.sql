@@ -14,8 +14,16 @@ CREATE TABLE IF NOT EXISTS `group_conv_%id%` (
     received_timestamp INTEGER NOT NULL,
     -- used when timestamp is equal to guarantee order
     n INTEGER NOT NULL,
-    -- for messages that expire, this should be set to a unix time (in ms) in the future; otherwise 0
+    is_read INTEGER NOT NULL,
+    is_destroyed INTEGER NOT NULL,
+    -- number of seconds from view until the message is destroyed
+    -- 0 indicates the message has no time limit
     ttl INTEGER NOT NULL,
+    -- a time when this message should no longer be viewable
+    -- 0 indicates no time limit
+    expires_at INTEGER NOT NULL,
+    -- if is_sent = true and this is 1, then the message was received by the relay server
+    -- if is_sent is false this value should be set to 1
     -- if is_sent = true and this is 1, then the message was received by the relay server
     -- if is_sent is false this value should be set to 1
     is_delivered INTEGER NOT NULL,

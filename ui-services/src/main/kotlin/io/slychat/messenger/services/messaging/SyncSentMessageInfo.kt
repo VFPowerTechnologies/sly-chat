@@ -61,6 +61,7 @@ data class SyncSentMessageInfo(
     val receivedTimestamp: Long
 ) {
     fun toMessageInfo(): MessageInfo {
+        //FIXME
         return MessageInfo(
             id,
             message,
@@ -68,6 +69,9 @@ data class SyncSentMessageInfo(
             receivedTimestamp,
             true,
             true,
+            true,
+            false,
+            0,
             0
         )
     }

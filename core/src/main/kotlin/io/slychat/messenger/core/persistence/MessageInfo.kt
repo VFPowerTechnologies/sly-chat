@@ -1,7 +1,7 @@
 package io.slychat.messenger.core.persistence
 
+import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.currentTimestamp
-import io.slychat.messenger.core.crypto.randomUUID
 
 /**
  * Information about a conversation message.
@@ -18,40 +18,35 @@ data class MessageInfo(
     val receivedTimestamp: Long,
     val isSent: Boolean,
     val isDelivered: Boolean,
-    val ttl: Long
+    val isRead: Boolean,
+    val isDestroyed: Boolean,
+    val ttl: Long,
+    val expiresAt: Long
 ) {
     companion object {
-        fun newSent(id: String, message: String, timestamp: Long, receivedTimestamp: Long, ttl: Long): MessageInfo =
-            MessageInfo(id, message, timestamp, receivedTimestamp, true, false, ttl)
-
         fun newSent(message: String, ttl: Long): MessageInfo =
-            MessageInfo(randomUUID(), message, currentTimestamp(), 0, true, false, ttl)
+            MessageInfo(randomMessageId(), message, currentTimestamp(), 0, true, false, true, false, ttl, 0)
 
         fun newSelfSent(message: String, ttl: Long): MessageInfo {
             val receivedTimestamp = currentTimestamp()
-            return MessageInfo(randomUUID(), message, receivedTimestamp, receivedTimestamp, true, true, ttl)
+            return MessageInfo(randomMessageId(), message, receivedTimestamp, receivedTimestamp, true, true, true, false, ttl, 0)
         }
 
         fun newSent(message: String, timestamp: Long, ttl: Long): MessageInfo =
-            MessageInfo(randomUUID(), message, timestamp, 0, true, false, ttl)
-
-        fun newSent(message: String, timestamp: Long, receivedTimestamp: Long, ttl: Long): MessageInfo =
-            MessageInfo(randomUUID(), message, timestamp, receivedTimestamp, true, false, ttl)
+            MessageInfo(randomMessageId(), message, timestamp, 0, true, false, true, false, ttl, 0)
 
         fun newReceived(id: String, message: String, timestamp: Long, receivedTimestamp: Long, ttl: Long): MessageInfo =
-            MessageInfo(id, message, timestamp, receivedTimestamp, false, true, ttl)
-
-        fun newReceived(message: String, timestamp: Long, receivedTimestamp: Long, ttl: Long): MessageInfo =
-            MessageInfo(randomUUID(), message, timestamp, receivedTimestamp, false, true, ttl)
+            MessageInfo(id, message, timestamp, receivedTimestamp, false, true, false, false, ttl, 0)
 
         fun newReceived(message: String, timestamp: Long, ttl: Long): MessageInfo =
-            MessageInfo(randomUUID(), message, timestamp, currentTimestamp(), false, true, ttl)
+            MessageInfo(randomMessageId(), message, timestamp, currentTimestamp(), false, true, false, false, ttl, 0)
 
         fun newReceived(message: String, timestamp: Long): MessageInfo =
-            MessageInfo(randomUUID(), message, timestamp, currentTimestamp(), false, true, 0)
+            MessageInfo(randomMessageId(), message, timestamp, currentTimestamp(), false, true, false, false, 0, 0)
     }
 
     init {
         if (!isSent) require(isDelivered) { "isDelivered must be true when isSent is false" }
+        if (isSent) require(isRead) { "isRead must be true when isSent is true" }
     }
 }

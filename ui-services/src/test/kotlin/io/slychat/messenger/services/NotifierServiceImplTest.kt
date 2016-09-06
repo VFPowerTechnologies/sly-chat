@@ -2,7 +2,6 @@ package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
-import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
@@ -103,7 +102,7 @@ class NotifierServiceImplTest {
         val contactInfo = setupContactInfo(1)
 
         val messages = (0..1).map {
-            MessageInfo(randomUUID(), it.toString(), currentTimestamp(), currentTimestamp(), false, true, 0)
+            randomSentMessageInfo()
         }
 
         val messageBundle = MessageBundle(contactInfo.id, null, messages)
