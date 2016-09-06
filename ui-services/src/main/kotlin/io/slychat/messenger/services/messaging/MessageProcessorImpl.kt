@@ -19,13 +19,42 @@ class MessageProcessorImpl(
     private val contactsService: ContactsService,
     private val messagePersistenceManager: MessagePersistenceManager,
     private val messageCipherService: MessageCipherService,
-    private val groupService: GroupService
+    private val groupService: GroupService,
+    uiEvents: Observable<UIEvent>
 ) : MessageProcessor {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val newMessagesSubject = PublishSubject.create<ConversationMessage>()
     override val newMessages: Observable<ConversationMessage>
         get() = newMessagesSubject
+
+    private var currentlySelectedChatUser: UserId? = null
+    private var currentlySelectedGroup: GroupId? = null
+
+    init {
+        uiEvents.subscribe { onUiEvent(it) }
+    }
+
+    private fun onUiEvent(event: UIEvent) {
+        when (event) {
+            is PageChangeEvent -> {
+                currentlySelectedChatUser = null
+                currentlySelectedGroup = null
+
+                when (event.page) {
+                    PageType.CONVO -> {
+                        val userId = UserId(event.extra.toLong())
+                        currentlySelectedChatUser = userId
+                    }
+
+                    PageType.GROUP -> {
+                        val groupId = GroupId(event.extra)
+                        currentlySelectedGroup = groupId
+                    }
+                }
+            }
+        }
+    }
 
     override fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception> {
         val m = wrapper.message
@@ -104,9 +133,15 @@ class MessageProcessorImpl(
     }
 
     private fun handleTextMessage(sender: UserId, messageId: String, m: TextMessage): Promise<Unit, Exception> {
-        val messageInfo = MessageInfo.newReceived(messageId, m.message, m.timestamp, currentTimestamp(), m.ttl)
-
         val groupId = m.groupId
+
+        val isRead = if (groupId == null)
+            sender == currentlySelectedChatUser
+        else
+            groupId == currentlySelectedGroup
+
+        val messageInfo = MessageInfo.newReceived(messageId, m.message, m.timestamp, currentTimestamp(), isRead, m.ttl)
+
         return if (groupId == null) {
             addSingleMessage(sender, messageInfo)
         }

@@ -147,7 +147,7 @@ class SQLiteMessagePersistenceManagerTest {
         val userId = UserId(1)
         createConvosFor(userId)
 
-        val messageInfo = MessageInfo.newReceived(randomUUID(), "message", currentTimestamp(), currentTimestamp(), 0)
+        val messageInfo = MessageInfo.newReceived(randomUUID(), "message", currentTimestamp(), currentTimestamp(), false, 0)
 
         messagePersistenceManager.addMessage(userId, messageInfo).get()
         messagePersistenceManager.addMessage(userId, messageInfo).get()

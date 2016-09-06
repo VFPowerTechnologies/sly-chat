@@ -128,13 +128,15 @@ class UserModule(
         contactsService: ContactsService,
         messagePersistenceManager: MessagePersistenceManager,
         messageCipherService: MessageCipherService,
-        groupService: GroupService
+        groupService: GroupService,
+        uiEventService: UIEventService
     ): MessageProcessor = MessageProcessorImpl(
         userData.userId,
         contactsService,
         messagePersistenceManager,
         messageCipherService,
-        groupService
+        groupService,
+        uiEventService.events
     )
 
     @UserScope

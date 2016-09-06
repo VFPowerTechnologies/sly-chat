@@ -6,8 +6,7 @@ import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
-import io.slychat.messenger.services.GroupService
-import io.slychat.messenger.services.SyncMessageFromOtherSecurityException
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.testutils.KovenantTestModeRule
@@ -18,10 +17,12 @@ import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
+import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class MessageProcessorImplTest {
     companion object {
@@ -36,6 +37,22 @@ class MessageProcessorImplTest {
     val messagePersistenceManager: MessagePersistenceManager = mock()
     val messageCipherService: MessageCipherService = mock()
     val groupService: GroupService = mock()
+    val uiEvents: PublishSubject<UIEvent> = PublishSubject.create()
+
+    fun randomTextMessage(groupId: GroupId? = null): TextMessage =
+        TextMessage(currentTimestamp(), randomUUID(), groupId, randomInt(50, 100).toLong())
+
+    fun returnGroupInfo(groupInfo: GroupInfo?) {
+        if (groupInfo != null)
+            whenever(groupService.getInfo(groupInfo.id)).thenResolve(groupInfo)
+        else
+            whenever(groupService.getInfo(any())).thenResolve(null)
+    }
+
+    fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Text(m))
+    fun wrap(m: GroupEventMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.GroupEvent(m))
+    fun wrap(m: SyncMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Sync(m))
+    fun wrap(m: ControlMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Control(m))
 
     fun createProcessor(): MessageProcessorImpl {
         whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswer {
@@ -66,7 +83,8 @@ class MessageProcessorImplTest {
             contactsService,
             messagePersistenceManager,
             messageCipherService,
-            groupService
+            groupService,
+            uiEvents
         )
     }
 
@@ -84,6 +102,7 @@ class MessageProcessorImplTest {
 
         verify(messagePersistenceManager).addMessage(eq(sender), capture {
             assertEquals(m.ttl, it.ttl, "Invalid TTL")
+            assertFalse(it.isRead, "Message should not be marked as read")
             assertEquals(m.message, it.message, "Invalid message text")
         })
     }
@@ -105,7 +124,7 @@ class MessageProcessorImplTest {
         val messages = testSubscriber.onNextEvents
 
         assertThat(messages).apply {
-            `as`("")
+            `as`("Should contain only a single message")
             hasSize(1)
         }
 
@@ -114,6 +133,25 @@ class MessageProcessorImplTest {
         message as ConversationMessage.Single
 
         assertEquals(message.userId, from, "Invalid user id")
+    }
+
+    @Test
+    fun `it should mark new messages for the currently single convo focused page as read`() {
+        val processor = createProcessor()
+
+        val m = randomTextMessage()
+
+        val wrapper = SlyMessageWrapper(randomUUID(), SlyMessage.Text(m))
+
+        val sender = UserId(1)
+
+        uiEvents.onNext(PageChangeEvent(PageType.CONVO, sender.toString()))
+
+        processor.processMessage(sender, wrapper).get()
+
+        verify(messagePersistenceManager).addMessage(eq(sender), capture {
+            assertTrue(it.isRead, "Message should be marked as read")
+        })
     }
 
     @Test
@@ -136,21 +174,6 @@ class MessageProcessorImplTest {
         verify(contactsService).allowAll(from)
         verify(messagePersistenceManager, times(2)).addMessage(any(), any())
     }
-
-    fun randomTextMessage(groupId: GroupId? = null): TextMessage =
-        TextMessage(currentTimestamp(), randomUUID(), groupId, randomInt(50, 100).toLong())
-
-    fun returnGroupInfo(groupInfo: GroupInfo?) {
-        if (groupInfo != null)
-            whenever(groupService.getInfo(groupInfo.id)).thenResolve(groupInfo)
-        else
-            whenever(groupService.getInfo(any())).thenResolve(null)
-    }
-
-    fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Text(m))
-    fun wrap(m: GroupEventMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.GroupEvent(m))
-    fun wrap(m: SyncMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Sync(m))
-    fun wrap(m: ControlMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Control(m))
 
     /* Group stuff */
 
@@ -512,7 +535,28 @@ class MessageProcessorImplTest {
         verify(groupService).addMessage(eq(groupInfo.id), capture { groupMessageInfo ->
             val messageInfo = groupMessageInfo.info
             assertFalse(messageInfo.isSent, "Message marked as sent")
+            assertFalse(messageInfo.isRead, "Message should not be marked as read")
             assertEquals(m.message, messageInfo.message, "Invalid message")
+        })
+    }
+
+    @Test
+    fun `it should mark new messages for the currently group convo focused page as read`() {
+        val sender = randomUserId()
+
+        val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
+        val m = randomTextMessage(groupInfo.id)
+
+        val processor = createProcessor()
+
+        returnGroupInfo(groupInfo)
+
+        uiEvents.onNext(PageChangeEvent(PageType.GROUP, groupInfo.id.toString()))
+
+        processor.processMessage(sender, wrap(m)).get()
+
+        verify(groupService).addMessage(eq(groupInfo.id), capture {
+            assertTrue(it.info.isRead, "Message should be marked as read")
         })
     }
 
