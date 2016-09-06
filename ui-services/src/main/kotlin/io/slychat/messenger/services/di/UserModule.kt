@@ -392,4 +392,14 @@ class UserModule(
     ): MutualContactNotifier {
         return MutualContactNotifierImpl(contactsService.contactEvents, messengerService)
     }
+
+    @UserScope
+    @Provides
+    fun providesConversationWatcher(
+        uiEventService: UIEventService,
+        contactsPersistenceManager: ContactsPersistenceManager,
+        groupService: GroupService
+    ): ConversationWatcher {
+        return ConversationWatcherImpl(uiEventService.events, contactsPersistenceManager, groupService)
+    }
 }

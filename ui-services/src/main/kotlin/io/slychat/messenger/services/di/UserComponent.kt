@@ -55,4 +55,6 @@ interface UserComponent {
     val sessionDataManager: SessionDataManager
 
     val mutualContactNotifier: MutualContactNotifier
+
+    val conversationWatcher: ConversationWatcher
 }
