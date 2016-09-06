@@ -11,6 +11,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.Subscription
 import rx.subjects.PublishSubject
 import java.util.*
 
@@ -31,8 +32,17 @@ class MessageProcessorImpl(
     private var currentlySelectedChatUser: UserId? = null
     private var currentlySelectedGroup: GroupId? = null
 
+    private var subscription: Subscription? = null
+
     init {
-        uiEvents.subscribe { onUiEvent(it) }
+        subscription = uiEvents.subscribe { onUiEvent(it) }
+    }
+
+    override fun init() {}
+
+    override fun shutdown() {
+        subscription?.unsubscribe()
+        subscription = null
     }
 
     private fun onUiEvent(event: UIEvent) {

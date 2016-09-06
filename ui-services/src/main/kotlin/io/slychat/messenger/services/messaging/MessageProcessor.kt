@@ -10,6 +10,9 @@ interface MessageProcessor {
 
     fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception>
 
+    fun init()
+    fun shutdown()
+
     //TODO self-messages
     //maybe send a self-message via processMessages
     //for the ui side, just return the generated MessageInfo and do the db write in the bg
