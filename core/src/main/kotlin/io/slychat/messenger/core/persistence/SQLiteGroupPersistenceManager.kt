@@ -531,7 +531,7 @@ VALUES
         stmt.bind(3, messageInfo.timestamp)
         stmt.bind(4, messageInfo.receivedTimestamp)
         stmt.bind(5, messageInfo.ttl)
-        stmt.bind(6, messageInfo.isDelivered.toInt())
+        stmt.bind(6, messageInfo.isDelivered)
         stmt.bind(7, messageInfo.message)
     }
 

@@ -43,6 +43,11 @@ fun SQLiteStatement.bind(index: Int, value: GroupId?) {
     bind(index, value?.string)
 }
 
+fun SQLiteStatement.bind(index: Int, boolean: Boolean) {
+    val v = if (boolean) 1 else 0
+    bind(index, v)
+}
+
 fun SQLiteStatement.bind(index: Int, value: UserId?) {
     if (value != null)
         bind(index, value.long)

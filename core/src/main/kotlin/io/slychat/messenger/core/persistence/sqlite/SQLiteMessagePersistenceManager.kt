@@ -11,8 +11,6 @@ import io.slychat.messenger.core.persistence.MessagePersistenceManager
 import nl.komponents.kovenant.Promise
 import java.util.*
 
-fun Boolean.toInt(): Int = if (this) 1 else 0
-
 /** Depends on SQLiteContactsPersistenceManager for creating and deleting conversation tables. */
 class SQLiteMessagePersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
@@ -207,11 +205,11 @@ VALUES
 
     private fun messageInfoToRow(messageInfo: MessageInfo, stmt: SQLiteStatement) {
         stmt.bind(1, messageInfo.id)
-        stmt.bind(2, messageInfo.isSent.toInt())
+        stmt.bind(2, messageInfo.isSent)
         stmt.bind(3, messageInfo.timestamp)
         stmt.bind(4, messageInfo.receivedTimestamp)
         stmt.bind(5, messageInfo.ttl)
-        stmt.bind(6, messageInfo.isDelivered.toInt())
+        stmt.bind(6, messageInfo.isDelivered)
         stmt.bind(7, messageInfo.message)
     }
 
