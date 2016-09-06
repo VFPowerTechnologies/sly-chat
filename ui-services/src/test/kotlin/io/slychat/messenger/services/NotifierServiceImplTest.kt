@@ -16,6 +16,7 @@ import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Test
 import rx.Observable
 import rx.subjects.BehaviorSubject
@@ -98,11 +99,11 @@ class NotifierServiceImplTest {
         return contactInfo
     }
 
-    fun testConvoNotificationDisplay(shouldShow: Boolean) {
+    fun testConvoNotificationDisplay(shouldShow: Boolean, isRead: Boolean = false) {
         val contactInfo = setupContactInfo(1)
 
         val messages = (0..1).map {
-            randomSentMessageInfo()
+            randomReceivedMessageInfo().copy(isRead = isRead)
         }
 
         val messageBundle = MessageBundle(contactInfo.id, null, messages)
@@ -139,8 +140,10 @@ class NotifierServiceImplTest {
         testConvoNotificationDisplay(false)
     }
 
+    //currently filtered out before getting to notifier service
+    @Ignore
     @Test
-    fun `it should not show notifications for the currently open user page`() {
+    fun `it should not show notifications for a user message if isRead is true`() {
         val notifierService = initNotifierService(isUiVisible = true)
 
         setupContactInfo(1)
@@ -264,8 +267,10 @@ class NotifierServiceImplTest {
         verify(platformNotificationsService, times(1)).clearMessageNotificationsFor(conversationInfo)
     }
 
+    //currently filtered out before getting to notifier service
+    @Ignore
     @Test
-    fun `it should not display notifications directed at the currently focused group`() {
+    fun `it should not display notifications for a group message if isRead is true`() {
         val notifierService = initNotifierService(isUiVisible = true)
 
         val contactInfo = randomContactInfo()
@@ -274,13 +279,10 @@ class NotifierServiceImplTest {
         whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
         whenever(groupPersistenceManager.getInfo(any())).thenResolve(groupInfo)
 
-        val pageChangeEvent = UIEvent.PageChange(PageType.GROUP, groupInfo.id.string)
-        uiEventSubject.onNext(pageChangeEvent)
-
         val bundle = MessageBundle(
             contactInfo.id,
             groupInfo.id,
-            listOf(randomReceivedMessageInfo())
+            listOf(randomReceivedMessageInfo().copy(isRead = true))
         )
 
         newMessagesSubject.onNext(bundle)

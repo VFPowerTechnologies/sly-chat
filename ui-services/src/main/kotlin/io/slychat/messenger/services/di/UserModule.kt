@@ -215,7 +215,7 @@ class UserModule(
         //manually using the ConnectedObservable
         val shared = messengerService.newMessages
             //ignore messages from self
-            .filter { it.info.isSent == false }
+            .filter { it.info.isSent == false && !it.info.isRead }
             .share()
 
         //we use debouncing to trigger a buffer flush
