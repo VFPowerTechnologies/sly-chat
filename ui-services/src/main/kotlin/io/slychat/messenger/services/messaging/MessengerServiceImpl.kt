@@ -212,7 +212,7 @@ class MessengerServiceImpl(
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         return if (!isSelfMessage) {
             val messageInfo = MessageInfo.newSent(message, relayClock.currentTime(), 0)
-            val m = TextMessage(messageInfo.timestamp, message, null)
+            val m = TextMessage(messageInfo.timestamp, message, null, 0)
             val wrapper = SlyMessage.Text(m)
 
             val serialized = objectMapper.writeValueAsBytes(wrapper)
@@ -263,7 +263,7 @@ class MessengerServiceImpl(
     }
 
     override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<GroupMessageInfo, Exception> {
-        val m = SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId))
+        val m = SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId, 0))
 
         val messageId = randomUUID()
 

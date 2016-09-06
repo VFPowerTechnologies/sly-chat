@@ -42,7 +42,7 @@ class MessageReceiverImplTest {
 
     fun createTextMessage(message: String, group: String? = null): SlyMessage.Text {
         val groupId = group?.let { GroupId(it) }
-        return SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId))
+        return SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId, 0))
     }
 
     fun createPackage(from: UserId, payload: ByteArray): Package {

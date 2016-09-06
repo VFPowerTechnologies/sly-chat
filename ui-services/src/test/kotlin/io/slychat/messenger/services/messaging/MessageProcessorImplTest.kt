@@ -74,7 +74,7 @@ class MessageProcessorImplTest {
     fun `it should store newly received text messages`() {
         val processor = createProcessor()
 
-        val m = TextMessage(currentTimestamp(), "m", null)
+        val m = randomTextMessage()
 
         val wrapper = SlyMessageWrapper(randomUUID(), SlyMessage.Text(m))
 
@@ -87,7 +87,7 @@ class MessageProcessorImplTest {
     fun `it should emit new message events after storing new text messages`() {
         val processor = createProcessor()
 
-        val m = TextMessage(currentTimestamp(), "m", null)
+        val m = randomTextMessage()
 
         val wrapper = SlyMessageWrapper(randomUUID(), SlyMessage.Text(m))
 
@@ -133,7 +133,7 @@ class MessageProcessorImplTest {
     }
 
     fun randomTextMessage(groupId: GroupId? = null): TextMessage =
-        TextMessage(currentTimestamp(), randomUUID(), groupId)
+        TextMessage(currentTimestamp(), randomUUID(), groupId, 0)
 
     fun returnGroupInfo(groupInfo: GroupInfo?) {
         if (groupInfo != null)
