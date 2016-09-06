@@ -104,7 +104,7 @@ class MessageProcessorImpl(
     }
 
     private fun handleTextMessage(sender: UserId, messageId: String, m: TextMessage): Promise<Unit, Exception> {
-        val messageInfo = MessageInfo.newReceived(messageId, m.message, m.timestamp, currentTimestamp(), 0)
+        val messageInfo = MessageInfo.newReceived(messageId, m.message, m.timestamp, currentTimestamp(), m.ttl)
 
         val groupId = m.groupId
         return if (groupId == null) {

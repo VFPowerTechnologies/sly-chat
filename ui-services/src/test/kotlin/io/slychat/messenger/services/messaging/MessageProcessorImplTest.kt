@@ -78,9 +78,14 @@ class MessageProcessorImplTest {
 
         val wrapper = SlyMessageWrapper(randomUUID(), SlyMessage.Text(m))
 
-        processor.processMessage(UserId(1), wrapper).get()
+        val sender = UserId(1)
 
-        verify(messagePersistenceManager).addMessage(eq(UserId(1)), any())
+        processor.processMessage(sender, wrapper).get()
+
+        verify(messagePersistenceManager).addMessage(eq(sender), capture {
+            assertEquals(m.ttl, it.ttl, "Invalid TTL")
+            assertEquals(m.message, it.message, "Invalid message text")
+        })
     }
 
     @Test
@@ -133,7 +138,7 @@ class MessageProcessorImplTest {
     }
 
     fun randomTextMessage(groupId: GroupId? = null): TextMessage =
-        TextMessage(currentTimestamp(), randomUUID(), groupId, 0)
+        TextMessage(currentTimestamp(), randomUUID(), groupId, randomInt(50, 100).toLong())
 
     fun returnGroupInfo(groupInfo: GroupInfo?) {
         if (groupInfo != null)
