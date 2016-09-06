@@ -6,7 +6,10 @@ import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
-import io.slychat.messenger.services.*
+import io.slychat.messenger.services.GroupService
+import io.slychat.messenger.services.PageType
+import io.slychat.messenger.services.SyncMessageFromOtherSecurityException
+import io.slychat.messenger.services.UIEvent
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.testutils.KovenantTestModeRule
@@ -145,7 +148,7 @@ class MessageProcessorImplTest {
 
         val sender = UserId(1)
 
-        uiEvents.onNext(PageChangeEvent(PageType.CONVO, sender.toString()))
+        uiEvents.onNext(UIEvent.PageChange(PageType.CONVO, sender.toString()))
 
         processor.processMessage(sender, wrapper).get()
 
@@ -551,7 +554,7 @@ class MessageProcessorImplTest {
 
         returnGroupInfo(groupInfo)
 
-        uiEvents.onNext(PageChangeEvent(PageType.GROUP, groupInfo.id.toString()))
+        uiEvents.onNext(UIEvent.PageChange(PageType.GROUP, groupInfo.id.toString()))
 
         processor.processMessage(sender, wrap(m)).get()
 

@@ -68,7 +68,7 @@ class NotifierServiceImplTest {
     fun `it should clear all notifications when the contacts page is visited`() {
         val notifierService = initNotifierService()
 
-        val pageChangeEvent = PageChangeEvent(PageType.CONTACTS, "")
+        val pageChangeEvent = UIEvent.PageChange(PageType.CONTACTS, "")
         uiEventSubject.onNext(pageChangeEvent)
 
         verify(platformNotificationsService, times(1)).clearAllMessageNotifications()
@@ -85,7 +85,7 @@ class NotifierServiceImplTest {
         val conversationInfo = NotificationConversationInfo.from(contactInfo)
         whenever(contactsPersistenceManager.get(userId)).thenReturn(Promise.ofSuccess(contactInfo))
 
-        val pageChangeEvent = PageChangeEvent(PageType.CONVO, userId.long.toString())
+        val pageChangeEvent = UIEvent.PageChange(PageType.CONVO, userId.long.toString())
         uiEventSubject.onNext(pageChangeEvent)
 
         verify(platformNotificationsService, times(1)).clearMessageNotificationsFor(conversationInfo)
@@ -145,7 +145,7 @@ class NotifierServiceImplTest {
 
         setupContactInfo(1)
 
-        uiEventSubject.onNext(PageChangeEvent(PageType.CONVO, "1"))
+        uiEventSubject.onNext(UIEvent.PageChange(PageType.CONVO, "1"))
 
         testConvoNotificationDisplay(false)
     }
@@ -156,7 +156,7 @@ class NotifierServiceImplTest {
 
         setupContactInfo(2)
 
-        uiEventSubject.onNext(PageChangeEvent(PageType.CONVO, "2"))
+        uiEventSubject.onNext(UIEvent.PageChange(PageType.CONVO, "2"))
 
         testConvoNotificationDisplay(true)
     }
@@ -165,7 +165,7 @@ class NotifierServiceImplTest {
     fun `it should not show notifications when the contact page page is focused`() {
         val notifierService = initNotifierService(isUiVisible = true)
 
-        uiEventSubject.onNext(PageChangeEvent(PageType.CONTACTS, ""))
+        uiEventSubject.onNext(UIEvent.PageChange(PageType.CONTACTS, ""))
 
         testConvoNotificationDisplay(false)
     }
@@ -257,7 +257,7 @@ class NotifierServiceImplTest {
         whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
         whenever(groupPersistenceManager.getInfo(any())).thenResolve(groupInfo)
 
-        val pageChangeEvent = PageChangeEvent(PageType.GROUP, groupInfo.id.string)
+        val pageChangeEvent = UIEvent.PageChange(PageType.GROUP, groupInfo.id.string)
         uiEventSubject.onNext(pageChangeEvent)
 
         val conversationInfo = NotificationConversationInfo.from(groupInfo)
@@ -274,7 +274,7 @@ class NotifierServiceImplTest {
         whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
         whenever(groupPersistenceManager.getInfo(any())).thenResolve(groupInfo)
 
-        val pageChangeEvent = PageChangeEvent(PageType.GROUP, groupInfo.id.string)
+        val pageChangeEvent = UIEvent.PageChange(PageType.GROUP, groupInfo.id.string)
         uiEventSubject.onNext(pageChangeEvent)
 
         val bundle = MessageBundle(
@@ -298,7 +298,7 @@ class NotifierServiceImplTest {
         whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
         whenever(groupPersistenceManager.getInfo(any())).thenResolve(groupInfo)
 
-        val pageChangeEvent = PageChangeEvent(PageType.CONVO, contactInfo.id.toString())
+        val pageChangeEvent = UIEvent.PageChange(PageType.CONVO, contactInfo.id.toString())
         uiEventSubject.onNext(pageChangeEvent)
 
         val bundle = MessageBundle(

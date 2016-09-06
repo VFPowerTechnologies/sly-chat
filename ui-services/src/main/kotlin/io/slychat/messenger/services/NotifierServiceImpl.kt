@@ -188,7 +188,7 @@ class NotifierServiceImpl(
 
     private fun onUiEvent(event: UIEvent) {
         when (event) {
-            is PageChangeEvent -> {
+            is UIEvent.PageChange -> {
                 currentPage = event.page
                 currentlySelectedChatUser = null
                 currentlySelectedGroup = null

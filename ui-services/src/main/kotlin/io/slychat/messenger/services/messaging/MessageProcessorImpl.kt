@@ -37,7 +37,7 @@ class MessageProcessorImpl(
 
     private fun onUiEvent(event: UIEvent) {
         when (event) {
-            is PageChangeEvent -> {
+            is UIEvent.PageChange -> {
                 currentlySelectedChatUser = null
                 currentlySelectedGroup = null
 
