@@ -205,14 +205,14 @@ class MessengerServiceImpl(
 
     /* UIMessengerService interface */
 
-    override fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception> {
+    override fun sendMessageTo(userId: UserId, message: String, ttl: Long): Promise<MessageInfo, Exception> {
         val isSelfMessage = userId == selfId
 
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         return if (!isSelfMessage) {
             val messageInfo = MessageInfo.newSent(message, relayClock.currentTime(), 0)
-            val m = TextMessage(messageInfo.timestamp, message, null, 0)
+            val m = TextMessage(messageInfo.timestamp, message, null, ttl)
             val wrapper = SlyMessage.Text(m)
 
             val serialized = objectMapper.writeValueAsBytes(wrapper)
@@ -262,8 +262,8 @@ class MessengerServiceImpl(
         return messageSender.addToQueue(messages) map { members }
     }
 
-    override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<GroupMessageInfo, Exception> {
-        val m = SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId, 0))
+    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<GroupMessageInfo, Exception> {
+        val m = SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId, ttl))
 
         val messageId = randomUUID()
 

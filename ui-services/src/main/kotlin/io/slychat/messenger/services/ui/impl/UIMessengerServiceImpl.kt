@@ -86,14 +86,14 @@ class UIMessengerServiceImpl(
 
     /* Interface methods. */
 
-    override fun sendMessageTo(userId: UserId, message: String): Promise<UIMessage, Exception> {
-        return getMessengerServiceOrThrow().sendMessageTo(userId, message) map { messageInfo ->
+    override fun sendMessageTo(userId: UserId, message: String, ttl: Long): Promise<UIMessage, Exception> {
+        return getMessengerServiceOrThrow().sendMessageTo(userId, message, ttl) map { messageInfo ->
             messageInfo.toUI()
         }
     }
 
-    override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<UIMessage, Exception> {
-        return getMessengerServiceOrThrow().sendGroupMessageTo(groupId, message) map {
+    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<UIMessage, Exception> {
+        return getMessengerServiceOrThrow().sendGroupMessageTo(groupId, message, ttl) map {
             it.info.toUI()
         }
     }

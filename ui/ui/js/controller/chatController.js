@@ -455,7 +455,7 @@ ChatController.prototype = {
 
     submitNewMessage : function (contact, message) {
         if (contact.email === undefined) {
-            messengerService.sendGroupMessageTo(contact.id, message).then(function (messageDetails) {
+            messengerService.sendGroupMessageTo(contact.id, message, 0).then(function (messageDetails) {
                 var groupMessageDetails = {
                     info: messageDetails,
                     speaker: null
@@ -472,7 +472,7 @@ ChatController.prototype = {
             })
         }
         else {
-            messengerService.sendMessageTo(contact.id, message).then(function (messageDetails) {
+            messengerService.sendMessageTo(contact.id, message, 0).then(function (messageDetails) {
                 $("#chat-content").append(this.createMessageNode(messageDetails, profileController.name));
 
                 var input = $("#newMessageInput");

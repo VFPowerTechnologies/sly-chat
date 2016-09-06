@@ -114,8 +114,6 @@ class MessengerServiceImplTest {
         )
     }
 
-    fun randomMessage(): String = randomUUID()
-
     fun wheneverAllowMessagesFrom(fn: (Set<UserId>) -> Promise<Set<UserId>, Exception>) {
         whenever(contactsService.filterBlocked(anySet())).thenAnswer {
             @Suppress("UNCHECKED_CAST")
@@ -281,12 +279,18 @@ class MessengerServiceImplTest {
 
         val recipient = randomUserId()
 
-        messengerService.sendMessageTo(recipient, randomMessage())
+        messengerService.sendMessageTo(recipient, randomMessageText(), 0)
 
         verify(messageSender).addToQueue(capture<SenderMessageEntry> {
             assertEquals(recipient, it.metadata.userId, "Invalid recipient")
             assertEquals(MessageCategory.TEXT_SINGLE, it.metadata.category, "Invalid category")
         })
+    }
+
+    fun deserializeTextMessage(bytes: ByteArray): TextMessage {
+        val objectMapper = ObjectMapper()
+
+        return objectMapper.readValue(bytes, SlyMessage.Text::class.java).m
     }
 
     @Test
@@ -297,15 +301,25 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        messengerService.sendMessageTo(randomUserId(), randomMessage())
+        messengerService.sendMessageTo(randomUserId(), randomMessageText(), 0)
 
         verify(messageSender).addToQueue(capture<SenderMessageEntry> {
-            //cheating a little
-            val objectMapper = ObjectMapper()
-
-            val message = objectMapper.readValue(it.message, SlyMessage.Text::class.java).m
+            val message = deserializeTextMessage(it.message)
 
             assertEquals(currentTime, message.timestamp, "RelayClock time not used")
+        })
+    }
+
+    @Test
+    fun `it should include the ttl in the generated TextMessage for a single convo`() {
+        val messengerService = createService()
+
+        val ttl = 1000L
+        messengerService.sendMessageTo(randomUserId(), randomMessageText(), ttl)
+
+        verify(messageSender).addToQueue(capture<SenderMessageEntry> {
+            val message = deserializeTextMessage(it.message)
+            assertEquals(ttl, message.ttl, "Invalid TTL")
         })
     }
 
@@ -381,7 +395,7 @@ class MessengerServiceImplTest {
 
         whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(members)
 
-        messengerService.sendGroupMessageTo(groupId, "msg")
+        messengerService.sendGroupMessageTo(groupId, "msg", 0)
 
         verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
             assertEquals(members, it.map { it.metadata.userId }.toSet(), "Member list is invalid")
@@ -397,7 +411,7 @@ class MessengerServiceImplTest {
         whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(emptySet())
 
         val message = "msg"
-        messengerService.sendGroupMessageTo(groupId, message)
+        messengerService.sendGroupMessageTo(groupId, message, 0)
 
         verify(groupService).addMessage(eq(groupId), capture {
             assertEquals(message, it.info.message, "Message is invalid")
@@ -417,7 +431,7 @@ class MessengerServiceImplTest {
 
         val message = "msg"
 
-        messengerService.sendGroupMessageTo(groupId, message)
+        messengerService.sendGroupMessageTo(groupId, message, 0)
 
         verify(groupService).addMessage(eq(groupId), capture {
             assertEquals(message, it.info.message, "Text message doesn't match")
@@ -435,7 +449,7 @@ class MessengerServiceImplTest {
 
         val message = "msg"
 
-        messengerService.sendGroupMessageTo(groupId, message)
+        messengerService.sendGroupMessageTo(groupId, message, 0)
 
         var sentMessageId: String? = null
         verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
@@ -444,6 +458,24 @@ class MessengerServiceImplTest {
 
         verify(groupService).addMessage(eq(groupId), capture {
             assertEquals(sentMessageId!!, it.info.id, "Message IDs don't match")
+        })
+    }
+
+    @Test
+    fun `it should include the ttl in the generated TextMessage for a group convo`() {
+        val messengerService = createService()
+
+        val groupId = randomGroupId()
+
+        whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(setOf(randomUserId()))
+
+        val ttl = 1000L
+        messengerService.sendGroupMessageTo(groupId, randomMessageText(), ttl)
+
+        verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
+            val m = it.first()
+            val message = deserializeTextMessage(m.message)
+            assertEquals(ttl, message.ttl, "Invalid TTL")
         })
     }
 
