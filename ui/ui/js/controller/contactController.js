@@ -778,7 +778,7 @@ ContactController.prototype  = {
             {
                 text: 'Group Info',
                 onClick: function () {
-                    groupController.showGroupInfo(groupId);
+                    groupController.loadGroupInfo(groupId);
                 }.bind(this)
             },
             {

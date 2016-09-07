@@ -514,12 +514,76 @@ GroupController.prototype = {
         });
     },
 
+    createGroupInfoMemberList : function (members) {
+        var memberNode = $("#groupInfoMemberList");
+
+        if (memberNode.length <= 0)
+            return;
+
+        var frag = $(document.createDocumentFragment());
+
+        members.forEach(function (member) {
+            frag.append(this.createGroupInfoMemberNode(member));
+        }.bind(this));
+
+        memberNode.html(frag);
+    },
+
+    createGroupInfoMemberNode : function (member) {
+        var node = $("<li><a href='#' class='link'>" +
+            "<div>" + member.name + "</div>" +
+            "<div class='group-info-member-hidden' style='display: none; margin-bottom: 10px; margin-left: 10px;'>" + member.email + "</div>" +
+            "</a></li>");
+
+        node.click(function(e) {
+            e.preventDefault();
+            node.find(".group-info-member-hidden").toggle();
+        });
+
+        node.on('mouseheld', function(e) {
+            e.preventDefault();
+            this.openGroupMemberMenu(member);
+        }.bind(this));
+
+        return node;
+    },
+
+    loadGroupInfo : function (groupId) {
+        var options = {
+            url: "groupInfo.html",
+            query: {
+                groupId : groupId
+            }
+        };
+
+        navigationController.loadPage('groupInfo.html', true, options);
+    },
+
+    openGroupMemberMenu : function (member) {
+        var buttons = [
+            {
+                text: 'Contact info',
+                onClick: function () {
+                    contactController.loadContactInfo(contactController.getContact(member.id));
+                }.bind(this)
+            },
+            {
+                text: 'Cancel',
+                color: 'red',
+                onClick: function () {
+                }
+            }
+        ];
+
+        slychat.actions(buttons);
+    },
+
     openGroupNodeMenu : function (groupId) {
         var buttons = [
             {
                 text: 'Group Info',
                 onClick: function () {
-                    groupController.showGroupInfo(groupId);
+                    groupController.loadGroupInfo(groupId);
                 }.bind(this)
             },
             {

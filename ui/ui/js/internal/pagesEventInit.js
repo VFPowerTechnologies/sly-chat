@@ -196,6 +196,22 @@ slychat.onPageInit('contactInfo', function (page) {
     $("#contactPubKey").html(formatPublicKey(page.query.contactPublicKey));
 });
 
+slychat.onPageInit('groupInfo', function (page) {
+    var group = groupController.getGroup(page.query.groupId);
+    var members = false;
+
+    if (group !== false) {
+        $("#groupName").html(group.name);
+
+        members = groupController.getGroupMembers(page.query.groupId);
+
+        if (members !== false) {
+            groupController.createGroupInfoMemberList(members);
+        }
+    }
+
+});
+
 $("#contactPopupNewBtn").on("click", function (e) {
     e.preventDefault();
     if ($("#contact-tab").hasClass("active")) {
