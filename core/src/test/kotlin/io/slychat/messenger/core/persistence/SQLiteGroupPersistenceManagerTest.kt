@@ -10,7 +10,7 @@ import org.junit.Test
 import java.util.*
 import kotlin.test.*
 
-class SQLiteGroupPersistenceManagerTest {
+class SQLiteGroupPersistenceManagerTest : GroupPersistenceManagerTestUtils {
     companion object {
         @JvmStatic
         @BeforeClass
@@ -20,8 +20,8 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     lateinit var persistenceManager: SQLitePersistenceManager
-    lateinit var groupPersistenceManager: SQLiteGroupPersistenceManager
-    lateinit var contactsPersistenceManager: SQLiteContactsPersistenceManager
+    lateinit override var groupPersistenceManager: SQLiteGroupPersistenceManager
+    lateinit override var contactsPersistenceManager: SQLiteContactsPersistenceManager
     lateinit var conversationInfoTestUtils: ConversationInfoTestUtils
 
     @Before
@@ -37,65 +37,6 @@ class SQLiteGroupPersistenceManagerTest {
     @After
     fun after() {
         persistenceManager.shutdown()
-    }
-
-    fun insertRandomContact(): UserId {
-        val contactInfo = randomContactInfo()
-
-        contactsPersistenceManager.add(contactInfo).get()
-
-        return contactInfo.id
-    }
-
-    /** Randomly generates and creates proper contact entries for users. Required for foreign key constraints. */
-    fun insertRandomContacts(n: Int = 2): Set<UserId> {
-        return (1..n).mapToSet { insertRandomContact() }
-    }
-
-    fun withJoinedGroupFull(body: (GroupInfo, members: Set<UserId>) -> Unit) {
-        val groupInfo = randomGroupInfo()
-        val members = insertRandomContacts()
-
-        groupPersistenceManager.internalAddInfo(groupInfo)
-        groupPersistenceManager.internalAddMembers(groupInfo.id, members)
-
-        body(groupInfo, members)
-    }
-
-    fun withJoinedGroup(body: (GroupId, members: Set<UserId>) -> Unit) = withJoinedGroupFull {
-        groupInfo, members -> body(groupInfo.id, members)
-    }
-
-    fun withPartedGroupFull(body: (GroupInfo) -> Unit) {
-        val groupInfo = randomGroupInfo(GroupMembershipLevel.PARTED)
-
-        groupPersistenceManager.internalAddInfo(groupInfo)
-
-        body(groupInfo)
-    }
-
-    fun withPartedGroup(body: (GroupId) -> Unit) = withPartedGroupFull {
-        body(it.id)
-    }
-
-    fun withBlockedGroupFull(body: (GroupInfo) -> Unit) {
-        val groupInfo = randomGroupInfo(GroupMembershipLevel.BLOCKED)
-
-        groupPersistenceManager.internalAddInfo(groupInfo)
-
-        body(groupInfo)
-    }
-
-    fun withBlockedGroup(body: (GroupId) -> Unit) = withBlockedGroupFull {
-        body(it.id)
-    }
-
-    fun withEmptyJoinedGroup(body: (GroupInfo) -> Unit) {
-        val groupInfo = randomGroupInfo()
-
-        groupPersistenceManager.internalAddInfo(groupInfo)
-
-        body(groupInfo)
     }
 
     fun assertGroupInfo(groupId: GroupId, body: (GroupInfo) -> Unit) {
