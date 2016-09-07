@@ -21,7 +21,7 @@ class SQLiteMessagePersistenceManagerTest {
     lateinit var persistenceManager: SQLitePersistenceManager
     lateinit var contactsPersistenceManager: SQLiteContactsPersistenceManager
     lateinit var messagePersistenceManager: SQLiteMessagePersistenceManager
-    lateinit var conversationInfoUtils: ConversationInfoUtils
+    lateinit var conversationInfoTestUtils: ConversationInfoTestUtils
 
     @Before
     fun before() {
@@ -29,7 +29,7 @@ class SQLiteMessagePersistenceManagerTest {
         persistenceManager.init()
         contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)
         messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
-        conversationInfoUtils = ConversationInfoUtils(persistenceManager)
+        conversationInfoTestUtils = ConversationInfoTestUtils(persistenceManager)
     }
 
     @After
@@ -142,7 +142,7 @@ class SQLiteMessagePersistenceManagerTest {
 
         val conversationMessageInfo = randomSentGroupMessageInfo()
         messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
-        val lastConversationInfo = conversationInfoUtils.getConversationInfo(conversationId)
+        val lastConversationInfo = conversationInfoTestUtils.getConversationInfo(conversationId)
 
         assertEquals(conversationMessageInfo.info.timestamp, lastConversationInfo.lastTimestamp, "Timestamp wasn't updated")
         assertEquals(conversationMessageInfo.info.message, lastConversationInfo.lastMessage, "Message wasn't updated")
@@ -672,7 +672,7 @@ class SQLiteMessagePersistenceManagerTest {
 
         val lastMessage = randomMessageText()
 
-        conversationInfoUtils.setConversationInfo(
+        conversationInfoTestUtils.setConversationInfo(
             ConversationId(userId),
             ConversationInfo(null, 2, lastMessage, currentTimestamp())
         )

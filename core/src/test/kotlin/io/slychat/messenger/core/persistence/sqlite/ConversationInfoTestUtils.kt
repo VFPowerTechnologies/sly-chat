@@ -5,11 +5,15 @@ import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.ConversationInfo
 import io.slychat.messenger.core.persistence.GroupId
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class ConversationInfoUtils(
+class ConversationInfoTestUtils(
     private val persistenceManager: SQLitePersistenceManager
 ) {
+    private val conversationInfoUtils = ConversationInfoUtils()
+
     fun doesConvTableExist(conversationId: ConversationId): Boolean =
         persistenceManager.syncRunQuery { ConversationTable.exists(it, conversationId) }
 
@@ -32,8 +36,22 @@ class ConversationInfoUtils(
     fun getConversationInfo(userId: UserId): ConversationInfo = getConversationInfo(ConversationId(userId))
     fun getConversationInfo(groupId: GroupId): ConversationInfo = getConversationInfo(ConversationId(groupId))
 
-    fun getConversationInfo(conversationId: ConversationId): ConversationInfo {
-        TODO()
+    fun getConversationInfo(conversationId: ConversationId): ConversationInfo = persistenceManager.syncRunQuery {
+        assertNotNull(conversationInfoUtils.getConversationInfo(it, conversationId), "Missing conversation info")
+    }
+
+    fun assertConversationInfoExists(userId: UserId): Unit = assertConversationInfoExists(ConversationId(userId))
+    fun assertConversationInfoExists(groupId: GroupId): Unit = assertConversationInfoExists(ConversationId(groupId))
+
+    fun assertConversationInfoExists(conversationId: ConversationId): Unit = persistenceManager.syncRunQuery {
+        assertNotNull(conversationInfoUtils.getConversationInfo(it, conversationId), "Missing conversation info")
+    }
+
+    fun assertConversationInfoNotExists(userId: UserId): Unit = assertConversationInfoNotExists(ConversationId(userId))
+    fun assertConversationInfoNotExists(groupId: GroupId): Unit = assertConversationInfoNotExists(ConversationId(groupId))
+
+    fun assertConversationInfoNotExists(conversationId: ConversationId) = persistenceManager.syncRunQuery {
+        assertNull(conversationInfoUtils.getConversationInfo(it, conversationId), "Conversation info is present")
     }
 
     fun setConversationInfo(conversationId: ConversationId, conversationInfo: ConversationInfo) = persistenceManager.syncRunQuery {

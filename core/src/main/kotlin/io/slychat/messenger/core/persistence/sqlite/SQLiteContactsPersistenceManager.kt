@@ -167,7 +167,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     }
 
     private fun deleteConversationInfo(connection: SQLiteConnection, conversationId: ConversationId) {
-        connection.withPrepared("DELETE FROM conversation_info WHERE contact_id=?") { stmt ->
+        connection.withPrepared("DELETE FROM conversation_info WHERE conversation_id=?") { stmt ->
             stmt.bind(1, conversationId)
             stmt.step()
         }

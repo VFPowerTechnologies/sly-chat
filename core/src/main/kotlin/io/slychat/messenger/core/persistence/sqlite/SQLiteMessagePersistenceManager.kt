@@ -11,6 +11,7 @@ import nl.komponents.kovenant.Promise
 class SQLiteMessagePersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
 ) : MessagePersistenceManager {
+    private val conversationInfoUtils = ConversationInfoUtils()
 
     override fun addMessages(conversationId: ConversationId, messages: Collection<ConversationMessageInfo>): Promise<Unit, Exception> {
         if (messages.isEmpty())
@@ -28,15 +29,6 @@ class SQLiteMessagePersistenceManager(
 
     override fun getUndeliveredMessages(): Promise<Map<ConversationId, List<ConversationMessageInfo>>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         TODO()
-    }
-
-    private fun rowToConversationInfo(stmt: SQLiteStatement): ConversationInfo {
-        return ConversationInfo(
-            stmt.columnNullableLong(0)?.let { UserId(it) },
-            stmt.columnInt(1),
-            stmt.columnString(2),
-            stmt.columnNullableLong(3)
-        )
     }
 
     private fun isMissingConvTableError(e: SQLiteException): Boolean =
@@ -65,79 +57,17 @@ class SQLiteMessagePersistenceManager(
             throw e
     }
 
-    private fun queryConversationInfo(connection: SQLiteConnection, conversationId: ConversationId): ConversationInfo? {
-        return connection.withPrepared("SELECT last_speaker_contact_id, unread_count, last_message, last_timestamp FROM group_conversation_info WHERE conversation_id=?") { stmt ->
-            stmt.bind(1, conversationId)
-
-            if (stmt.step())
-                rowToConversationInfo(stmt)
-            else
-                null
-        }
-    }
-
     override fun getConversationInfo(conversationId: ConversationId): Promise<ConversationInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        queryConversationInfo(connection, conversationId)
+        conversationInfoUtils.getConversationInfo(connection, conversationId)
     }
 
     override fun getAllGroupConversations(): Promise<List<GroupConversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val sql =
-            """
-SELECT
-    c.last_speaker_contact_id,
-    c.unread_count,
-    c.last_message,
-    c.last_timestamp,
-    g.id,
-    g.name,
-    g.membership_level
-FROM
-    conversation_info
-AS
-    c
-JOIN
-    groups
-AS
-    g
-ON
-    c.group_id=g.id
-WHERE
-    g.membership_level=?
-"""
-        connection.withPrepared(sql) { stmt ->
-            stmt.bind(1, GroupMembershipLevel.JOINED)
-            stmt.map {
-                val groupInfo = rowToGroupInfo(stmt, 4)
-                val convoInfo = rowToConversationInfo(it)
-
-                GroupConversation(groupInfo, convoInfo)
-            }
-        }
+        conversationInfoUtils.getAllGroupConversations(connection)
     }
 
     override fun getAllUserConversations(): Promise<List<UserConversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val sql = """
-SELECT
-    id, email, name, allowed_message_level, phone_number, public_key,
-    unread_count, last_message, last_timestamp
-FROM
-    contacts
-JOIN
-    conversation_info
-ON
-    contacts.id=conversation_info.contact_id
-        """
-
-        connection.withPrepared(sql) { stmt ->
-            stmt.map { stmt ->
-                val contact = contactInfoFromRow(stmt)
-                val lastTimestamp = stmt.columnNullableLong(8)
-                val info = ConversationInfo(contact.id, stmt.columnInt(6), stmt.columnString(7), lastTimestamp)
-                UserConversation(contact, info)
-            }
-        }
+        conversationInfoUtils.getAllUserConversations(connection)
     }
-
 
     override fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
@@ -389,12 +319,16 @@ SELECT
     message
 FROM
     $tableName
+WHERE
+    id=?
 ORDER BY
     timestamp DESC, n DESC
 LIMIT
     1
 """
         it.withPrepared(sql) { stmt ->
+            stmt.bind(1, messageId)
+
             if (!stmt.step())
                 null
             else

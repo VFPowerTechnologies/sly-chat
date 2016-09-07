@@ -22,7 +22,7 @@ class SQLiteGroupPersistenceManagerTest {
     lateinit var persistenceManager: SQLitePersistenceManager
     lateinit var groupPersistenceManager: SQLiteGroupPersistenceManager
     lateinit var contactsPersistenceManager: SQLiteContactsPersistenceManager
-    lateinit var conversationInfoUtils: ConversationInfoUtils
+    lateinit var conversationInfoTestUtils: ConversationInfoTestUtils
 
     @Before
     fun before() {
@@ -31,7 +31,7 @@ class SQLiteGroupPersistenceManagerTest {
         groupPersistenceManager = SQLiteGroupPersistenceManager(persistenceManager)
         contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)
 
-        conversationInfoUtils = ConversationInfoUtils(persistenceManager)
+        conversationInfoTestUtils = ConversationInfoTestUtils(persistenceManager)
     }
 
     @After
@@ -400,7 +400,7 @@ class SQLiteGroupPersistenceManagerTest {
     }
 
     fun assertInitialConversationInfo(id: GroupId) {
-        val conversationInfo = assertNotNull(conversationInfoUtils.getConversationInfo(id), "Missing group conversation info")
+        val conversationInfo = assertNotNull(conversationInfoTestUtils.getConversationInfo(id), "Missing group conversation info")
 
         assertNull(conversationInfo.lastMessage, "Last message should be empty")
         assertNull(conversationInfo.lastTimestamp, "Last timestamp should be empty")
@@ -450,7 +450,7 @@ class SQLiteGroupPersistenceManagerTest {
         withJoinedGroup { groupId, members ->
             groupPersistenceManager.part(groupId).get()
 
-            conversationInfoUtils.assertConvTableNotExists(groupId, "Conversation info not removed")
+            conversationInfoTestUtils.assertConvTableNotExists(groupId, "Conversation info not removed")
         }
     }
 
@@ -514,7 +514,7 @@ class SQLiteGroupPersistenceManagerTest {
         withJoinedGroup { groupId, members ->
             groupPersistenceManager.block(groupId).get()
 
-            conversationInfoUtils.assertConvTableNotExists(groupId, "Conversation info not removed")
+            conversationInfoTestUtils.assertConvTableNotExists(groupId, "Conversation info not removed")
         }
     }
 
@@ -854,7 +854,7 @@ class SQLiteGroupPersistenceManagerTest {
             val lastSpeaker = insertRandomContact()
             val ci = ConversationInfo(lastSpeaker, 1, randomMessageText(), currentTimestamp())
 
-            conversationInfoUtils.setConversationInfo(ConversationId(groupId), ci)
+            conversationInfoTestUtils.setConversationInfo(ConversationId(groupId), ci)
 
             ci
         }

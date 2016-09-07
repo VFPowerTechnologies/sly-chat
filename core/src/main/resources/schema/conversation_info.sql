@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS group_conversation_info (
+CREATE TABLE IF NOT EXISTS conversation_info (
     conversation_id TEXT PRIMARY KEY,
     last_speaker_contact_id INTEGER,
     unread_count INTEGER NOT NULL,
