@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui
 
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
+import io.slychat.messenger.core.UserId
 import nl.komponents.kovenant.Promise
 
 /** Contact management. */
@@ -41,4 +42,10 @@ interface UIContactsService {
      * Fetch the contact details if contact exist. Email or phoneNumber must not be null.
      */
     fun fetchNewContactInfo(email: String?, phoneNumber: String?): Promise<UINewContactResult, Exception>
+
+    fun getBlockList(): Promise<Set<UserId>, Exception>
+
+    fun block(userId: UserId): Promise<Unit, Exception>
+
+    fun unblock(userId: UserId): Promise<Unit, Exception>
 }
