@@ -69,8 +69,8 @@ class MessageProcessorImplTest {
 
         whenever(groupService.addMessage(any(), any())).thenAnswer {
             @Suppress("UNCHECKED_CAST")
-            val a = it.arguments[1] as GroupMessageInfo
-            Promise.ofSuccess<GroupMessageInfo, Exception>(a)
+            val a = it.arguments[1] as ConversationMessageInfo
+            Promise.ofSuccess<ConversationMessageInfo, Exception>(a)
         }
 
         whenever(groupService.join(any(), any())).thenResolve(Unit)
@@ -725,7 +725,7 @@ class MessageProcessorImplTest {
 
         val recipient = randomGroupId()
         val sentMessageInfo = randomGroupSentMessageInfo(recipient)
-        val groupMessageInfo = GroupMessageInfo(null, sentMessageInfo.toMessageInfo())
+        val groupMessageInfo = ConversationMessageInfo(null, sentMessageInfo.toMessageInfo())
         val m = SyncMessage.SelfMessage(sentMessageInfo)
 
         processor.processMessage(selfId, wrap(m)).get()

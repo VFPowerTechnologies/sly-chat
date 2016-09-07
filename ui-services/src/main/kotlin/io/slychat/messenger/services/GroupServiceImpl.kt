@@ -43,11 +43,11 @@ class GroupServiceImpl(
         return groupPersistenceManager.getInfo(groupId)
     }
 
-    override fun addMessage(groupId: GroupId, groupMessageInfo: GroupMessageInfo): Promise<GroupMessageInfo, Exception> {
-        return groupPersistenceManager.addMessage(groupId, groupMessageInfo)
+    override fun addMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo): Promise<ConversationMessageInfo, Exception> {
+        return groupPersistenceManager.addMessage(groupId, conversationMessageInfo)
     }
 
-    override fun markMessageAsDelivered(groupId: GroupId, messageId: String, timestamp: Long): Promise<GroupMessageInfo?, Exception> {
+    override fun markMessageAsDelivered(groupId: GroupId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception> {
         return groupPersistenceManager.markMessageAsDelivered(groupId, messageId, timestamp)
     }
 
@@ -131,7 +131,7 @@ class GroupServiceImpl(
         return groupPersistenceManager.getBlockList()
     }
 
-    override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<GroupMessageInfo>, Exception> {
+    override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception> {
         return groupPersistenceManager.getLastMessages(groupId, startingAt, count)
     }
 

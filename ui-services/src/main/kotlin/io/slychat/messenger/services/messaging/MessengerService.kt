@@ -23,13 +23,13 @@ interface MessengerService {
 
     /* UIMessengerService interface */
     fun sendMessageTo(userId: UserId, message: String, ttl: Long): Promise<MessageInfo, Exception>
-    fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<GroupMessageInfo, Exception>
+    fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<ConversationMessageInfo, Exception>
     fun createNewGroup(groupName: String, initialMembers: Set<UserId>): Promise<GroupId, Exception>
     fun inviteUsersToGroup(groupId: GroupId, newMembers: Set<UserId>): Promise<Unit, Exception>
     fun partGroup(groupId: GroupId): Promise<Boolean, Exception>
     fun blockGroup(groupId: GroupId): Promise<Unit, Exception>
     fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception>
-    fun getConversations(): Promise<List<Conversation>, Exception>
+    fun getConversations(): Promise<List<UserConversation>, Exception>
     fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>
     fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception>
     fun deleteAllMessages(userId: UserId): Promise<Unit, Exception>

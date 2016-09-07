@@ -262,14 +262,14 @@ class MessengerServiceImpl(
         return messageSender.addToQueue(messages) map { members }
     }
 
-    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<GroupMessageInfo, Exception> {
+    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<ConversationMessageInfo, Exception> {
         val m = SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId, ttl))
 
         val messageId = randomUUID()
 
         return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bindUi {
             val messageInfo = MessageInfo.newSent(message, 0).copy(id = messageId)
-            val groupMessageInfo = GroupMessageInfo(null, messageInfo)
+            val groupMessageInfo = ConversationMessageInfo(null, messageInfo)
             groupService.addMessage(groupId, groupMessageInfo)
         }
     }
@@ -356,7 +356,7 @@ class MessengerServiceImpl(
         return messagePersistenceManager.getLastMessages(userId, startingAt, count)
     }
 
-    override fun getConversations(): Promise<List<Conversation>, Exception> {
+    override fun getConversations(): Promise<List<UserConversation>, Exception> {
         return contactsPersistenceManager.getAllConversations()
     }
 

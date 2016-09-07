@@ -163,7 +163,7 @@ class MessageProcessorImpl(
     }
 
     private fun addGroupMessage(groupId: GroupId, sender: UserId?, messageInfo: MessageInfo): Promise<Unit, Exception> {
-        val groupMessageInfo = GroupMessageInfo(sender, messageInfo)
+        val groupMessageInfo = ConversationMessageInfo(sender, messageInfo)
         return groupService.addMessage(groupId, groupMessageInfo) mapUi {
             val message = ConversationMessage.Group(groupId, sender, messageInfo)
             newMessagesSubject.onNext(message)

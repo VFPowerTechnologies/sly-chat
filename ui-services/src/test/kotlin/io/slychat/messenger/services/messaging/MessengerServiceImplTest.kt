@@ -355,7 +355,7 @@ class MessengerServiceImplTest {
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
 
         whenever(groupService.markMessageAsDelivered(update.groupId!!, update.messageId, record.serverReceivedTimestamp))
-            .thenResolve(GroupMessageInfo(update.userId, messageInfo))
+            .thenResolve(ConversationMessageInfo(update.userId, messageInfo))
 
         val testSubscriber = messengerService.messageUpdates.testSubscriber()
 
@@ -851,7 +851,7 @@ class MessengerServiceImplTest {
         val metadata = record.metadata
         val groupId = metadata.groupId!!
 
-        val groupMessageInfo = GroupMessageInfo(null, messageInfo)
+        val groupMessageInfo = ConversationMessageInfo(null, messageInfo)
         whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId, record.serverReceivedTimestamp)).thenResolve(groupMessageInfo)
 
         messageSent.onNext(record)

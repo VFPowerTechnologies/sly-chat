@@ -1,26 +1,41 @@
 package io.slychat.messenger.core.persistence
 
-import io.slychat.messenger.core.UserId
 import nl.komponents.kovenant.Promise
 
 interface MessagePersistenceManager {
     /**
      * Updates the conversation info for the given UserId.
      */
-    fun addMessage(userId: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception>
+    fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception>
 
-    fun addMessages(userId: UserId, messages: Collection<MessageInfo>): Promise<List<MessageInfo>, Exception>
-
-    /** Marks a sent message as being received and updates its timestamp to the current time. */
-    fun markMessageAsDelivered(userId: UserId, messageId: String, timestamp: Long): Promise<MessageInfo, Exception>
+    fun addMessages(conversationId: ConversationId, messages: Collection<ConversationMessageInfo>): Promise<Unit, Exception>
 
     /** Retrieve the last n messages for the given contact starting backwards at the given index. */
-    fun getLastMessages(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception>
+    fun getLastMessages(conversationId: ConversationId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception>
 
-    /** Returns all unsent messages. If a contact has no undelievered messages, it won't be included in the result. */
-    fun getUndeliveredMessages(): Promise<Map<UserId, List<MessageInfo>>, Exception>
+    /** Return conversation info for the specified group. */
+    fun getConversationInfo(conversationId: ConversationId): Promise<ConversationInfo?, Exception>
 
-    fun deleteMessages(userId: UserId, messageIds: Collection<String>): Promise<Unit, Exception>
+    /** Returns info for all available conversations. */
+    fun getAllUserConversations(): Promise<List<UserConversation>, Exception>
 
-    fun deleteAllMessages(userId: UserId): Promise<Unit, Exception>
+    /** Returns group data + group conversation info. */
+    fun getAllGroupConversations(): Promise<List<GroupConversation>, Exception>
+
+    /** Removes a set of messages from the group log. */
+    fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception>
+
+    /** Clears a group log. */
+    fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception>
+
+    //FIXME
+    /** Marks the given group message as delivered, and updates its sent timestamp. If the message has already been marked as delievered, returns null. */
+    fun markMessageAsDelivered(conversationId: ConversationId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception>
+
+    /** Resets unread message count for the given contact's conversation. */
+    fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception>
+
+    //FIXME
+    /** Returns all undelivered messages for a given group. */
+    fun getUndeliveredMessages(): Promise<Map<ConversationId, List<ConversationMessageInfo>>, Exception>
 }

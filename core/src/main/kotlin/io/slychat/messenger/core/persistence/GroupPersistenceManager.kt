@@ -21,12 +21,6 @@ interface GroupPersistenceManager {
     /** Return only non-blocked group members. */
     fun getNonBlockedMembers(groupId: GroupId): Promise<Set<UserId>, Exception>
 
-    /** Return conversation info for the specified group. */
-    fun getConversationInfo(groupId: GroupId): Promise<GroupConversationInfo?, Exception>
-
-    /** Returns group data + group conversation info. */
-    fun getAllConversations(): Promise<List<GroupConversation>, Exception>
-
     /** Add new members to the given group. The group entry must already exist. Returns the new set of members. */
     fun addMembers(groupId: GroupId, users: Set<UserId>): Promise<Set<UserId>, Exception>
 
@@ -50,27 +44,6 @@ interface GroupPersistenceManager {
 
     /** Unblock the given group. */
     fun unblock(groupId: GroupId): Promise<Boolean, Exception>
-
-    /** Add a message from a user to the given group. If userId is null, is taken to be from yourself. */
-    fun addMessage(groupId: GroupId, groupMessageInfo: GroupMessageInfo): Promise<GroupMessageInfo, Exception>
-
-    /** Removes a set of messages from the group log. */
-    fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception>
-
-    /** Clears a group log. */
-    fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception>
-
-    /** Marks the given group message as delivered. If the message has already been marked as delievered, returns null. */
-    fun markMessageAsDelivered(groupId: GroupId, messageId: String, timestamp: Long): Promise<GroupMessageInfo?, Exception>
-
-    /** Resets unread message count for the given contact's conversation. */
-    fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception>
-
-    /** Returns the last range of messages from a group. */
-    fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<GroupMessageInfo>, Exception>
-
-    /** Returns all undelivered messages for a given group. */
-    fun getUndeliveredMessages(): Promise<Map<GroupId, List<GroupMessageInfo>>, Exception>
 
     fun applyDiff(updates: Collection<AddressBookUpdate.Group>): Promise<Unit, Exception>
 

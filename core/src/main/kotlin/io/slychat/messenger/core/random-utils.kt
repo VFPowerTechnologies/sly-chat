@@ -39,6 +39,10 @@ fun randomUserIds(n: Int = 2): Set<UserId> = (1..n).mapToSet { randomUserId() }
 
 fun randomGroupId(): GroupId = GroupId(randomUUID())
 
+fun randomGroupConversationId(): ConversationId.Group = ConversationId(randomGroupId())
+
+fun randomUserConversationId(): ConversationId.User = ConversationId(randomUserId())
+
 fun randomAuthToken(): AuthToken = AuthToken(randomUUID())
 
 private fun <E> List<E>.randomItem(): E {
@@ -146,10 +150,10 @@ fun randomSentMessageInfo(): MessageInfo {
     return MessageInfo.newSent(randomMessageText(), 0)
 }
 
-fun randomReceivedGroupMessageInfo(speaker: UserId?): GroupMessageInfo {
-    return GroupMessageInfo(speaker, randomReceivedMessageInfo())
+fun randomReceivedConversationMessageInfo(speaker: UserId?): ConversationMessageInfo {
+    return ConversationMessageInfo(speaker, randomReceivedMessageInfo())
 }
 
-fun randomSentGroupMessageInfo(): GroupMessageInfo {
-    return GroupMessageInfo(null, randomSentMessageInfo())
+fun randomSentGroupMessageInfo(): ConversationMessageInfo {
+    return ConversationMessageInfo(null, randomSentMessageInfo())
 }

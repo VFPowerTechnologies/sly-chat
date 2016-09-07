@@ -7,7 +7,9 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.loadSharedLibFromResource
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
+import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.core.persistence.GroupMembershipLevel
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -55,12 +57,34 @@ fun SQLiteStatement.bind(index: Int, value: UserId?) {
         bindNull(index)
 }
 
+fun SQLiteStatement.bind(index: Int, value: Int?) {
+    if (value != null)
+        bind(index, value)
+    else
+        bindNull(index)
+}
+
+fun SQLiteStatement.bind(index: Int, value: Long?) {
+    if (value != null)
+        bind(index, value)
+    else
+        bindNull(index)
+}
+
 fun SQLiteStatement.bind(index: Int, allowedMessageLevel: AllowedMessageLevel) {
     bind(index, allowedMessageLevel.toInt())
 }
 
+fun SQLiteStatement.bind(index: Int, groupMembershipLevel: GroupMembershipLevel) {
+    bind(index, groupMembershipLevel.toInt())
+}
+
 fun SQLiteStatement.columnAllowedMessageLevel(index: Int): AllowedMessageLevel {
     return columnInt(index).toAllowedMessageLevel()
+}
+
+fun SQLiteStatement.columnGroupMembershipLevel(index: Int): GroupMembershipLevel {
+    return columnInt(index).toGroupMembershipLevel()
 }
 
 private fun AllowedMessageLevel.toInt(): Int = when (this) {
@@ -74,6 +98,41 @@ private fun Int.toAllowedMessageLevel(): AllowedMessageLevel = when (this) {
     1 -> AllowedMessageLevel.GROUP_ONLY
     2 -> AllowedMessageLevel.ALL
     else -> throw IllegalArgumentException("Invalid integer value for AllowedMessageLevel: $this")
+}
+
+private fun GroupMembershipLevel.toInt(): Int = when (this) {
+    GroupMembershipLevel.BLOCKED -> 0
+    GroupMembershipLevel.PARTED -> 1
+    GroupMembershipLevel.JOINED -> 2
+}
+
+private fun Int.toGroupMembershipLevel(): GroupMembershipLevel = when (this) {
+    0 -> GroupMembershipLevel.BLOCKED
+    1 -> GroupMembershipLevel.PARTED
+    2 -> GroupMembershipLevel.JOINED
+    else -> throw IllegalArgumentException("Invalid integer value for MembershipLevel: $this")
+}
+
+internal fun ConversationId.toKey(): String = when (this) {
+    is ConversationId.User -> "U${this.id}"
+    is ConversationId.Group -> "G${this.id}"
+}
+
+private fun String.toConversationId(): ConversationId {
+    require(this.isNotEmpty()) { "Empty string is an invalid ConversationId" }
+
+    val first = this[0]
+    val rest = this.substring(1)
+
+    return when (first) {
+        'U' -> ConversationId.User(UserId(rest.toLong()))
+        'G' -> ConversationId.Group(GroupId(rest))
+        else -> throw IllegalArgumentException("Invalid string value for ConversationId: $this")
+    }
+}
+
+fun SQLiteStatement.bind(index: Int, conversationId: ConversationId) {
+    bind(index, conversationId.toKey())
 }
 
 inline fun <R> SQLiteConnection.withPrepared(sql: String, body: (SQLiteStatement) -> R): R {
@@ -161,7 +220,7 @@ private fun getArch(os: String): String {
         arch
 }
 
-private fun getOS(): String {
+private fun getOs(): String {
     return when (currentOs.type) {
         Os.Type.OSX -> "osx"
         Os.Type.WINDOWS -> "win32"
@@ -172,7 +231,7 @@ private fun getOS(): String {
 }
 
 fun sqlite4JavaGetLibraryName(): String {
-    val os = getOS()
+    val os = getOs()
     val arch = getArch(os)
 
     return "sqlite4java-$os-$arch"

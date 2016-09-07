@@ -19,7 +19,7 @@ interface GroupService {
 
     fun getInfo(groupId: GroupId): Promise<GroupInfo?, Exception>
 
-    fun addMessage(groupId: GroupId, groupMessageInfo: GroupMessageInfo): Promise<GroupMessageInfo, Exception>
+    fun addMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo): Promise<ConversationMessageInfo, Exception>
 
     fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception>
 
@@ -27,7 +27,7 @@ interface GroupService {
 
     fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception>
 
-    fun markMessageAsDelivered(groupId: GroupId, messageId: String, timestamp: Long): Promise<GroupMessageInfo?, Exception>
+    fun markMessageAsDelivered(groupId: GroupId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception>
 
     /* UIGroupService interface */
     fun getGroups(): Promise<List<GroupInfo>, Exception>
@@ -48,5 +48,5 @@ interface GroupService {
 
     fun getBlockList(): Promise<Set<GroupId>, Exception>
 
-    fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<GroupMessageInfo>, Exception>
+    fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception>
 }

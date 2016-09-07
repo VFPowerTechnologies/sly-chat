@@ -2,6 +2,8 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.readResourceFileText
 
 /**
@@ -17,29 +19,40 @@ object ConversationTable {
         tableTemplate = javaClass.readResourceFileText("/schema/conversation.sql")
     }
 
-    fun getTablenameForContact(userId: UserId) =
-        "conv_${userId.long}"
+    fun getTablename(conversationId: ConversationId) =
+        "conv_${conversationId.toKey()}"
 
-    fun create(connection: SQLiteConnection, userId: UserId) {
-        val sql = tableTemplate.replace("%id%", userId.long.toString())
+    fun create(connection: SQLiteConnection, conversationId: ConversationId) {
+        val sql = tableTemplate.replace("%id%", conversationId.toKey())
         connection.exec(sql)
     }
 
-    fun delete(connection: SQLiteConnection, userId: UserId) {
-        connection.exec("DROP TABLE IF EXISTS `conv_${userId.long}`")
+    fun delete(connection: SQLiteConnection, conversationId: ConversationId) {
+        val tableName = getTablename(conversationId)
+        connection.exec("DROP TABLE IF EXISTS `$tableName`")
     }
 
-    fun exists(connection: SQLiteConnection, userId: UserId): Boolean {
+    fun exists(connection: SQLiteConnection, userId: UserId): Boolean = exists(connection, ConversationId.User(userId))
+    fun exists(connection: SQLiteConnection, groupId: GroupId): Boolean = exists(connection, ConversationId.Group(groupId))
+
+    fun exists(connection: SQLiteConnection, conversationId: ConversationId): Boolean {
         connection.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").use { stmt ->
-            stmt.bind(1, getTablenameForContact(userId))
+            stmt.bind(1, getTablename(conversationId))
             return stmt.step()
         }
     }
 
     fun getConversationTableNames(connection: SQLiteConnection): List<String> {
-        return connection.prepare("SELECT id FROM contacts").use { stmt ->
-            stmt.map { it.columnLong(0) }
-                .map { ConversationTable.getTablenameForContact(UserId(it)) }
+        val users = connection.prepare("SELECT id FROM contacts").use { stmt ->
+            stmt.map { UserId(it.columnLong(0)) }
+                .map { ConversationTable.getTablename(ConversationId.User(it)) }
         }
+
+        val groups = connection.prepare("SELECT id FROM groups").use { stmt ->
+            stmt.map { GroupId(it.columnString(0)) }
+                .map { ConversationTable.getTablename(ConversationId.Group(it)) }
+        }
+
+        return users + groups
     }
 }

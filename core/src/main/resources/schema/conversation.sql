@@ -3,8 +3,8 @@
 CREATE TABLE IF NOT EXISTS `conv_%id%` (
     -- message uuid
     id TEXT PRIMARY KEY NOT NULL,
-    -- whether we sent this message or received it
-    is_sent INTEGER NOT NULL,
+    -- NULL for your own messages
+    speaker_contact_id INTEGER,
     -- unix time, in milliseconds
     -- for sent messages, this is set twice; once on insertion, and then updated when setting is_delivered=1
     -- this is to allow proper ordering of unsent messages
