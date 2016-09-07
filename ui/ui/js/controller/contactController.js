@@ -3,6 +3,7 @@ var ContactController = function () {
     this.sync = false;
     this.contactSyncNotification = null;
     this.contacts = [];
+    this.lastContactInfoId = null;
 };
 
 ContactController.prototype  = {
@@ -717,14 +718,14 @@ ContactController.prototype  = {
         var options = {
             url: "contactInfo.html",
             query: {
-                contactName : contact.name,
-                contactEmail : contact.email,
-                contactPhone : contact.phoneNumber,
-                contactPublicKey : contact.publicKey
+                contactId: contact.id
             }
         };
 
         navigationController.loadPage('contactInfo.html', true, options);
+        slychat.closeModal();
+
+        this.lastContactInfoId = contact.id;
     },
 
     getContact : function (id) {
@@ -752,7 +753,7 @@ ContactController.prototype  = {
             {
                 text: 'Contact Info',
                 onClick: function () {
-                    this.showContactInfo(contact);
+                    this.loadContactInfo(contact);
                 }.bind(this)
             },
             {

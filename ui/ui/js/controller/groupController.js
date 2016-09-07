@@ -1,6 +1,7 @@
 var GroupController = function () {
     this.groups = [];
     this.groupDetailsCache = [];
+    this.lastGroupId = null;
 
     /*
         this.groupDetailsCache = [
@@ -530,10 +531,10 @@ GroupController.prototype = {
     },
 
     createGroupInfoMemberNode : function (member) {
-        var node = $("<li><a href='#' class='link'>" +
+        var node = $("<li><a href='#' class='link item-content'><div class='item-inner' style='display: block;'>" +
             "<div>" + member.name + "</div>" +
             "<div class='group-info-member-hidden' style='display: none; margin-bottom: 10px; margin-left: 10px;'>" + member.email + "</div>" +
-            "</a></li>");
+            "</div></a></li>");
 
         node.click(function(e) {
             e.preventDefault();
@@ -541,7 +542,7 @@ GroupController.prototype = {
         });
 
         node.on('mouseheld', function(e) {
-            e.preventDefault();
+            vibrate(50);
             this.openGroupMemberMenu(member);
         }.bind(this));
 
@@ -557,6 +558,8 @@ GroupController.prototype = {
         };
 
         navigationController.loadPage('groupInfo.html', true, options);
+        slychat.closeModal();
+        this.lastGroupId = groupId;
     },
 
     openGroupMemberMenu : function (member) {

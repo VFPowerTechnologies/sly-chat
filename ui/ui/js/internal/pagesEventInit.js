@@ -190,20 +190,36 @@ slychat.onPageInit('createGroup', function (page) {
 });
 
 slychat.onPageInit('contactInfo', function (page) {
-    $("#contactName").html(page.query.contactName);
-    $("#contactEmail").html(page.query.contactEmail);
-    $("#contactPhone").html(page.query.contactPhone);
-    $("#contactPubKey").html(formatPublicKey(page.query.contactPublicKey));
+    var contact = false;
+    if (page.query.contactId === undefined) {
+        contact = contactController.getContact(contactController.lastContactInfoId);
+    }
+    else {
+        contact = contactController.getContact(page.query.contactId);
+    }
+
+    if (contact !== false) {
+        $("#contactName").html(contact.name);
+        $("#contactEmail").html(contact.email);
+        $("#contactPhone").html(contact.phoneNumber);
+        $("#contactPubKey").html(formatPublicKey(contact.publicKey));
+    }
 });
 
 slychat.onPageInit('groupInfo', function (page) {
-    var group = groupController.getGroup(page.query.groupId);
-    var members = false;
+    var group;
+    if (page.query.groupId === undefined) {
+        group = groupController.getGroup(groupController.lastGroupId);
+    }
+    else {
+        group = groupController.getGroup(page.query.groupId);
+    }
 
+    var members = false;
     if (group !== false) {
         $("#groupName").html(group.name);
 
-        members = groupController.getGroupMembers(page.query.groupId);
+        members = groupController.getGroupMembers(group.id);
 
         if (members !== false) {
             groupController.createGroupInfoMemberList(members);
