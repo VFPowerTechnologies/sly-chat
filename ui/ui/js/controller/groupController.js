@@ -524,16 +524,21 @@ GroupController.prototype = {
         var frag = $(document.createDocumentFragment());
 
         members.forEach(function (member) {
-            frag.append(this.createGroupInfoMemberNode(member));
+            var contact = contactController.getContact(member.id);
+            frag.append(this.createGroupInfoMemberNode(contact));
         }.bind(this));
 
         memberNode.html(frag);
     },
 
     createGroupInfoMemberNode : function (member) {
-        var node = $("<li><a href='#' class='link item-content'><div class='item-inner' style='display: block;'>" +
-            "<div>" + member.name + "</div>" +
-            "<div class='group-info-member-hidden' style='display: none; margin-bottom: 10px; margin-left: 10px;'>" + member.email + "</div>" +
+        var blocked = '';
+        if (member.allowedMessageLevel == "BLOCKED")
+            blocked = "<span class='member-blocked'>(blocked)</span>";
+
+        var node = $("<li id='member_" + member.id + "'><a href='#' class='link item-content'><div class='item-inner' style='display: block;'>" +
+            "<div class='member-name'>" + member.name + blocked + "</div>" +
+            "<div class='group-info-member-hidden'>" + member.email + "</div>" +
             "</div></a></li>");
 
         node.click(function(e) {
@@ -563,6 +568,53 @@ GroupController.prototype = {
     },
 
     openGroupMemberMenu : function (member) {
+        var block;
+        if (member.allowedMessageLevel == "BLOCKED") {
+            block = {
+                    text: 'Unblock',
+                    onClick: function () {
+                        slychat.confirm("Are you sure you want to unblock " + member.name, function () {
+                            contactService.unblock(member.id).then(function () {
+                                contactController.contacts[member.id].allowedMessageLevel = "GROUP_ONLY";
+                                this.createGroupInfoMemberList(this.getGroupMembers($("#groupIdHidden").html()));
+                                slychat.addNotification({
+                                    title: "Contact has been unblocked",
+                                    hold: 2000
+                                });
+                            }.bind(this)).catch(function (e) {
+                                slychat.addNotification({
+                                    title: "An error occured",
+                                    hold: 2000
+                                });
+                                exceptionController.handleError(e);
+                            });
+                        }.bind(this));
+                    }.bind(this)
+                };
+        }
+        else {
+            block = {
+                text: 'Block',
+                onClick: function () {
+                    slychat.confirm("Are you sure you want to block " + member.name, function () {
+                        contactService.block(member.id).then(function () {
+                            contactController.contacts[member.id].allowedMessageLevel = "BLOCKED";
+                            this.createGroupInfoMemberList(this.getGroupMembers($("#groupIdHidden").html()));
+                            slychat.addNotification({
+                                title: "Contact has been blocked",
+                                hold: 2000
+                            });
+                        }.bind(this)).catch(function (e) {
+                            slychat.addNotification({
+                                title: "An error occured",
+                                hold: 2000
+                            });
+                            exceptionController.handleError(e);
+                        });
+                    }.bind(this));
+                }.bind(this)
+            };
+        }
         var buttons = [
             {
                 text: 'Contact info',
@@ -570,6 +622,7 @@ GroupController.prototype = {
                     contactController.loadContactInfo(contactController.getContact(member.id));
                 }.bind(this)
             },
+            block,
             {
                 text: 'Cancel',
                 color: 'red',

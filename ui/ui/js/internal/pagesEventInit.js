@@ -217,6 +217,7 @@ slychat.onPageInit('groupInfo', function (page) {
 
     var members = false;
     if (group !== false) {
+        $("#groupIdHidden").html(group.id);
         $("#groupName").html(group.name);
 
         members = groupController.getGroupMembers(group.id);
