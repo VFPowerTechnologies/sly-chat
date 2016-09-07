@@ -181,7 +181,7 @@ class SQLiteGroupPersistenceManager(
     }
 
     private fun deleteGroupConversationInfo(connection: SQLiteConnection, id: ConversationId) {
-        connection.withPrepared("DELETE FROM conversation_info WHERE conversationId_id=?") { stmt ->
+        connection.withPrepared("DELETE FROM conversation_info WHERE conversation_id=?") { stmt ->
             stmt.bind(1, id)
             stmt.step()
         }

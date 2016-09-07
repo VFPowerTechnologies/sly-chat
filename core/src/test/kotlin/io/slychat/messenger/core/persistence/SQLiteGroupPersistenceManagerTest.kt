@@ -389,16 +389,6 @@ class SQLiteGroupPersistenceManagerTest {
         assertConvTableExists(groupInfo.id)
     }
 
-    fun doesConvTableExist(groupId: GroupId): Boolean =
-        persistenceManager.syncRunQuery { ConversationTable.exists(it, groupId) }
-
-    //FIXME
-    fun assertConversationInfo(id: GroupId, groupConversationInfo: ConversationInfo) {
-        TODO()
-
-        //assertEquals(groupConversationInfo, conversationInfo, "Invalid conversation info")
-    }
-
     fun assertInitialConversationInfo(id: GroupId) {
         val conversationInfo = assertNotNull(conversationInfoTestUtils.getConversationInfo(id), "Missing group conversation info")
 
@@ -885,6 +875,12 @@ class SQLiteGroupPersistenceManagerTest {
         assertGroupInfo(groupId) { assertEquals(updatedInfo, it, "Invalid group info") }
 
         assertNoRemoteUpdates()
+    }
+
+    private fun assertConversationInfo(groupId: GroupId, convoInfo: ConversationInfo) {
+        val got = conversationInfoTestUtils.getConversationInfo(groupId)
+
+        assertEquals(convoInfo, got, "Invalid conversation info")
     }
 
     @Test
