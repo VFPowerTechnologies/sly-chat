@@ -44,7 +44,7 @@ class ContactsServiceImpl(
             contactsPersistenceManager.add(contactInfo)
         } successUi { wasAdded ->
             if (wasAdded) {
-                withCurrentJob { doPush() }
+                doAddressBookPush()
                 contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
             }
         }
@@ -108,7 +108,7 @@ class ContactsServiceImpl(
             contactsPersistenceManager.remove(id)
         } successUi { wasRemoved ->
             if (wasRemoved) {
-                withCurrentJob { doPush() }
+                doAddressBookPush()
                 contactEventsSubject.onNext(ContactEvent.Removed(setOf(contactInfo)))
             }
         }
@@ -150,12 +150,18 @@ class ContactsServiceImpl(
     override fun block(userId: UserId): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
             contactsPersistenceManager.block(userId)
+        } successUi {
+            //FIXME
+            doAddressBookPush()
         }
     }
 
     override fun unblock(userId: UserId): Promise<Unit, Exception> {
         return addressBookOperationManager.run {
             contactsPersistenceManager.unblock(userId)
+        } successUi {
+            //FIXME
+            doAddressBookPush()
         }
     }
 
@@ -168,7 +174,7 @@ class ContactsServiceImpl(
                     throw IllegalStateException("Unable to find user: $userId")
 
                 contactsPersistenceManager.allowAll(userId) successUi {
-                    withCurrentJob { doPush() }
+                    doAddressBookPush()
 
                     val contactUpdate = ContactUpdate(
                         oldInfo,
