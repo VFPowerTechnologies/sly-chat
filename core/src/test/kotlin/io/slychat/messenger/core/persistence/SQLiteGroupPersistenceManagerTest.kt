@@ -330,14 +330,6 @@ class SQLiteGroupPersistenceManagerTest : GroupPersistenceManagerTestUtils {
         assertConvTableExists(groupInfo.id)
     }
 
-    fun assertInitialConversationInfo(id: GroupId) {
-        val conversationInfo = assertNotNull(conversationInfoTestUtils.getConversationInfo(id), "Missing group conversation info")
-
-        assertNull(conversationInfo.lastMessage, "Last message should be empty")
-        assertNull(conversationInfo.lastTimestamp, "Last timestamp should be empty")
-        assertEquals(0, conversationInfo.unreadMessageCount, "Unread count should be 0")
-    }
-
     fun assertJoined(v: Boolean) {
         assertTrue(v, "Should return true for joined groups")
     }
@@ -352,7 +344,7 @@ class SQLiteGroupPersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
         assertJoined(groupPersistenceManager.join(groupInfo, insertRandomContacts()).get())
 
-        assertInitialConversationInfo(groupInfo.id)
+        conversationInfoTestUtils.assertInitialConversationInfo(groupInfo.id)
     }
 
     @Test
@@ -360,7 +352,7 @@ class SQLiteGroupPersistenceManagerTest : GroupPersistenceManagerTestUtils {
         withPartedGroupFull {
             val groupInfo = it.copy(membershipLevel = GroupMembershipLevel.JOINED)
             assertJoined(groupPersistenceManager.join(groupInfo, insertRandomContacts()).get())
-            assertInitialConversationInfo(it.id)
+            conversationInfoTestUtils.assertInitialConversationInfo(it.id)
         }
     }
 

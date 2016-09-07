@@ -4,10 +4,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.ConversationInfo
 import io.slychat.messenger.core.persistence.GroupId
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class ConversationInfoTestUtils(
     private val persistenceManager: SQLitePersistenceManager
@@ -63,5 +60,13 @@ class ConversationInfoTestUtils(
             stmt.bind(5, conversationId)
             stmt.step()
         }
+    }
+
+    fun assertInitialConversationInfo(id: GroupId) {
+        val conversationInfo = getConversationInfo(id)
+
+        assertNull(conversationInfo.lastMessage, "Last message should be empty")
+        assertNull(conversationInfo.lastTimestamp, "Last timestamp should be empty")
+        assertEquals(0, conversationInfo.unreadMessageCount, "Unread count should be 0")
     }
 }

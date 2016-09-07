@@ -386,18 +386,16 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         assertFailsWith(InvalidConversationException::class, body)
     }
 
-    //FIXME
-    /*
     @Test
     fun `getGroupConversationInfo should return info for a joined group`() {
         withJoinedGroup { groupId, members ->
-            assertNotNull(messagePersistenceManager.getConversationInfo(groupId).get(), "No returned conversation info")
+            assertNotNull(messagePersistenceManager.getConversationInfo(groupId.toConversationId()).get(), "No returned conversation info")
         }
     }
 
     @Test
-    fun `getConversationInfo should throw InvalidConversationException for a nonexistent group`() {
-        assertFailsWithInvalidConversation { messagePersistenceManager.getConversationInfo(randomGroupId()).get() }
+    fun `getConversationInfo should return null for a nonexistent group`() {
+         assertNull(messagePersistenceManager.getConversationInfo(randomGroupConversationId()).get())
     }
 
     @Test
@@ -405,7 +403,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         withJoinedGroup { joinedId, members ->
             withPartedGroup {
                 withBlockedGroup {
-                    val info = messagePersistenceManager.getAllConversations().get()
+                    val info = messagePersistenceManager.getAllGroupConversations().get()
                     assertThat(info.map { it.group.id }).apply {
                         `as`("Group conversation info")
                         containsOnly(joinedId)
@@ -416,21 +414,22 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
-    fun `getAllConversations should return nothing if no groups are available`() {
-        assertTrue(messagePersistenceManager.getAllConversations().get().isEmpty(), "Group list not empty")
+    fun `getAllGroupConversations should return nothing if no groups are available`() {
+        assertTrue(messagePersistenceManager.getAllGroupConversations().get().isEmpty(), "Group list not empty")
     }
 
     @Test
     fun `deleteMessages should remove the given messages from the group log`() {
         withJoinedGroup { groupId, members ->
+            val conversationId = groupId.toConversationId()
             val ids = insertRandomMessages(groupId, members)
 
             val toRemove = ids.subList(0, 2)
             val remaining = ids.subList(2, ids.size)
 
-            messagePersistenceManager.deleteMessages(groupId, toRemove).get()
+            messagePersistenceManager.deleteMessages(conversationId, toRemove).get()
 
-            val messages = messagePersistenceManager.internalGetAllMessages(groupId)
+            val messages = messagePersistenceManager.internalGetAllMessages(conversationId)
 
             assertThat(messages.map { it.info.id }).apply {
                 `as`("Group messages")
@@ -445,9 +444,10 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         withJoinedGroup { groupId, members ->
             val ids = insertRandomMessages(groupId, members)
 
-            messagePersistenceManager.deleteMessages(groupId, listOf(randomMessageId(), randomMessageId())).get()
+            val conversationId = groupId.toConversationId()
+            messagePersistenceManager.deleteMessages(conversationId, listOf(randomMessageId(), randomMessageId())).get()
 
-            val messages = messagePersistenceManager.internalGetAllMessages(groupId)
+            val messages = messagePersistenceManager.internalGetAllMessages(conversationId)
 
             assertThat(messages.map { it.info.id }).apply {
                 `as`("Group messages")
@@ -465,10 +465,11 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
             val toRemove = ids.subList(0, 2)
 
-            messagePersistenceManager.deleteMessages(groupId, toRemove).get()
+            val conversationId = groupId.toConversationId()
+            messagePersistenceManager.deleteMessages(conversationId, toRemove).get()
 
             //should contain the last inserted message
-            val convoInfo = assertNotNull(messagePersistenceManager.internalGetConversationInfo(groupId), "Missing group conversation info")
+            val convoInfo = conversationInfoTestUtils.getConversationInfo(conversationId)
 
             val lastMessageInfo = info.last()
 
@@ -483,9 +484,9 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         withJoinedGroup { groupId, members ->
             val ids = insertRandomMessages(groupId, members)
 
-            messagePersistenceManager.deleteMessages(groupId, ids).get()
+            messagePersistenceManager.deleteMessages(groupId.toConversationId(), ids).get()
 
-            assertInitialConversationInfo(groupId)
+            conversationInfoTestUtils.assertInitialConversationInfo(groupId)
         }
     }
 
@@ -493,7 +494,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     fun `deleteMessages should throw InvalidConversationException if the group id is invalid`() {
         assertFailsWithInvalidConversation {
             //XXX this won't actually fail for an empty list
-            messagePersistenceManager.deleteMessages(randomGroupId(), listOf(randomMessageId())).get()
+            messagePersistenceManager.deleteMessages(randomGroupConversationId(), listOf(randomMessageId())).get()
         }
     }
 
@@ -502,9 +503,10 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         withJoinedGroup { groupId, members ->
             insertRandomMessages(groupId, members)
 
-            messagePersistenceManager.deleteAllMessages(groupId).get()
+            val conversationId = groupId.toConversationId()
+            messagePersistenceManager.deleteAllMessages(conversationId).get()
 
-            val messages = messagePersistenceManager.internalGetAllMessages(groupId)
+            val messages = messagePersistenceManager.internalGetAllMessages(conversationId)
 
             assertThat(messages).apply {
                 `as`("Group messages")
@@ -518,9 +520,9 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         withJoinedGroup { groupId, members ->
             insertRandomMessages(groupId, members)
 
-            messagePersistenceManager.deleteAllMessages(groupId).get()
+            messagePersistenceManager.deleteAllMessages(groupId.toConversationId()).get()
 
-            assertInitialConversationInfo(groupId)
+            conversationInfoTestUtils.assertInitialConversationInfo(groupId)
         }
     }
 
@@ -529,23 +531,23 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         withJoinedGroup { groupId, members ->
             insertRandomMessages(groupId, members)
 
-            messagePersistenceManager.deleteAllMessages(groupId).get()
+            messagePersistenceManager.deleteAllMessages(groupId.toConversationId()).get()
 
-            assertInitialConversationInfo(groupId)
+            conversationInfoTestUtils.assertInitialConversationInfo(groupId)
         }
     }
 
     @Test
     fun `markMessageAsDelivered should update isDelivered and receivedTimestamp fields`() {
-        createConvosFor(contact)
+        val userId = addRandomContact()
 
-        val sentMessageInfo = addMessage(contact, true, testMessage, 0)
+        val conversationMessageInfo = addMessage(userId, true, randomMessageText(), 0)
 
         val receivedTimestamp = currentTimestamp() - 1000
-        val updatedMessageInfo = messagePersistenceManager.markMessageAsDelivered(contact, sentMessageInfo.id, receivedTimestamp).get()
+        val updatedMessageInfo = assertNotNull(messagePersistenceManager.markMessageAsDelivered(userId.toConversationId(), conversationMessageInfo.info.id, receivedTimestamp).get(), "Message not updated")
 
-        assertEquals(receivedTimestamp, updatedMessageInfo.receivedTimestamp)
-        assertTrue(updatedMessageInfo.isDelivered)
+        assertEquals(receivedTimestamp, updatedMessageInfo.info.receivedTimestamp)
+        assertTrue(updatedMessageInfo.info.isDelivered)
     }
 
     @Test
@@ -555,7 +557,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
             val receivedTimestamp = currentTimestamp() - 1000
 
-            val groupMessageInfo = assertNotNull(messagePersistenceManager.markMessageAsDelivered(groupId, id, receivedTimestamp).get(), "Info wasn't returned")
+            val groupMessageInfo = assertNotNull(messagePersistenceManager.markMessageAsDelivered(groupId.toConversationId(), id, receivedTimestamp).get(), "Info wasn't returned")
 
             assertTrue(groupMessageInfo.info.isDelivered, "Not marked as delivered")
             assertEquals(receivedTimestamp, groupMessageInfo.info.receivedTimestamp, "Received timestamp set to unexpected value")
@@ -567,48 +569,50 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         withJoinedGroup { groupId, members ->
             val id = insertRandomSentMessage(groupId)
 
-            assertNotNull(messagePersistenceManager.markMessageAsDelivered(groupId, id, currentTimestamp()).get(), "Info wasn't returned")
-            assertNull(messagePersistenceManager.markMessageAsDelivered(groupId, id, currentTimestamp()).get(), "Message not marked as delievered")
+            val conversationId = groupId.toConversationId()
+            assertNotNull(messagePersistenceManager.markMessageAsDelivered(conversationId, id, currentTimestamp()).get(), "Info wasn't returned")
+            assertNull(messagePersistenceManager.markMessageAsDelivered(conversationId, id, currentTimestamp()).get(), "Message not marked as delievered")
         }
     }
 
     @Test
     fun `markMessageAsDelivered should throw InvalidGroupMessageException if the given message if the message does not exist`() {
         withJoinedGroup { groupId, members ->
-            assertFailsWith(InvalidGroupMessageException::class) {
-                messagePersistenceManager.markMessageAsDelivered(groupId, randomMessageId(), currentTimestamp()).get()
+            assertFailsWith(InvalidConversationMessageException::class) {
+                messagePersistenceManager.markMessageAsDelivered(groupId.toConversationId(), randomMessageId(), currentTimestamp()).get()
             }
         }
     }
 
     @Test
     fun `markMessageAsDelivered should throw InvalidConversationException if the group id is invalid`() {
-        assertFailsWithInvalidConversation { messagePersistenceManager.markMessageAsDelivered(randomGroupId(), randomMessageId(), currentTimestamp()).get() }
+        assertFailsWithInvalidConversation { messagePersistenceManager.markMessageAsDelivered(randomGroupConversationId(), randomMessageId(), currentTimestamp()).get() }
     }
 
     @Test
     fun `markConversationAsRead should reset the unread count`() {
         withJoinedGroup { groupId, members ->
-            val convoInfo = GroupConversationInfo(
-                groupId,
+            val conversationInfo = ConversationInfo(
                 members.first(),
                 1,
                 randomMessageText(),
                 currentTimestamp()
             )
-            messagePersistenceManager.internalSetConversationInfo(convoInfo)
+            val conversationId = groupId.toConversationId()
 
-            messagePersistenceManager.markConversationAsRead(groupId).get()
+            conversationInfoTestUtils.setConversationInfo(conversationId, conversationInfo)
 
-            val got = assertNotNull(messagePersistenceManager.internalGetConversationInfo(groupId), "Missing conversation info")
+            messagePersistenceManager.markConversationAsRead(conversationId).get()
 
-            assertEquals(0, got.unreadCount, "Unread count not reset")
+            val got = conversationInfoTestUtils.getConversationInfo(groupId)
+
+            assertEquals(0, got.unreadMessageCount, "Unread count not reset")
         }
     }
 
     @Test
     fun `markConversationAsRead should throw InvalidConversationException for a non-existent group`() {
-        assertFailsWithInvalidConversation { messagePersistenceManager.markConversationAsRead(randomGroupId()).get() }
+        assertFailsWithInvalidConversation { messagePersistenceManager.markConversationAsRead(randomGroupConversationId()).get() }
     }
 
     @Test
@@ -616,7 +620,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         withJoinedGroup { groupId, members ->
             val ids = insertRandomMessages(groupId, members)
 
-            val lastMessageIds = messagePersistenceManager.getLastMessages(groupId, 0, 2).get().map { it.info.id }
+            val lastMessageIds = messagePersistenceManager.getLastMessages(groupId.toConversationId(), 0, 2).get().map { it.info.id }
             val expectedIds = ids.subList(ids.size-2, ids.size).reversed()
 
             assertThat(lastMessageIds).apply {
@@ -629,7 +633,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `getLastMessages should return nothing if the range does not exist`() {
         withJoinedGroup { groupId, members ->
-            val lastMessages = messagePersistenceManager.getLastMessages(groupId, 0, 100).get()
+            val lastMessages = messagePersistenceManager.getLastMessages(groupId.toConversationId(), 0, 100).get()
 
             assertThat(lastMessages).apply {
                 `as`("Last messages")
@@ -640,14 +644,13 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
     @Test
     fun `getLastMessages should throw InvalidConversationException if the group id is invalid`() {
-        assertFailsWithInvalidConversation { messagePersistenceManager.getLastMessages(randomGroupId(), 0, 100).get() }
+        assertFailsWithInvalidConversation { messagePersistenceManager.getLastMessages(randomGroupConversationId(), 0, 100).get() }
     }
 
     @Test
-    fun `getAllConversations should return an empty list if no conversations are available`() {
-        assertTrue(contactsPersistenceManager.getAllConversations().get().isEmpty())
+    fun `getAllGroupConversations should return an empty list if no conversations are available`() {
+        assertTrue(messagePersistenceManager.getAllGroupConversations().get().isEmpty())
     }
-    */
 
     @Test
     fun `getAllUserConversations should return conversations for ALL users`() {

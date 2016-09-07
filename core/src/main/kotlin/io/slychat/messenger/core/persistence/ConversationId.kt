@@ -50,3 +50,7 @@ sealed class ConversationId {
         operator fun invoke(groupId: GroupId): ConversationId.Group = ConversationId.Group(groupId)
     }
 }
+
+fun UserId.toConversationId(): ConversationId.User = ConversationId(this)
+
+fun GroupId.toConversationId(): ConversationId.Group = ConversationId(this)

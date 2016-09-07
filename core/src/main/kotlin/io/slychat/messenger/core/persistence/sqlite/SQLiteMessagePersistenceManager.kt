@@ -211,7 +211,7 @@ LIMIT
         val sql = "UPDATE $tableName SET is_delivered=1, received_timestamp=? WHERE id=?"
 
         val currentInfo = try {
-            getConversationMessageInfo(connection, conversationId, messageId) ?: throw InvalidMessageException(conversationId, messageId)
+            getConversationMessageInfo(connection, conversationId, messageId) ?: throw InvalidConversationMessageException(conversationId, messageId)
         }
         catch (e: SQLiteException) {
             //FIXME
@@ -231,9 +231,9 @@ LIMIT
             }
 
             if (connection.changes <= 0)
-                throw InvalidMessageException(conversationId, messageId)
+                throw InvalidConversationMessageException(conversationId, messageId)
 
-            getConversationMessageInfo(connection, conversationId, messageId) ?: throw InvalidMessageException(conversationId, messageId)
+            getConversationMessageInfo(connection, conversationId, messageId) ?: throw InvalidConversationMessageException(conversationId, messageId)
         }
         else
             null

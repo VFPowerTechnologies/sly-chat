@@ -78,8 +78,10 @@ JOIN
 AS
     g
 ON
-    c.group_id=g.id
+    g.id=substr(c.conversation_id, 2)
 WHERE
+    c.conversation_id LIKE 'G%'
+AND
     g.membership_level=?
 """
         return connection.withPrepared(sql) { stmt ->
