@@ -711,43 +711,28 @@ class SQLiteMessagePersistenceManagerTest {
         assertNull(messagePersistenceManager.getConversationInfo(ConversationId(id)).get(), "Conversation info should not exist")
     }
 
-    //FIXME
-    /*
-    @Test
-    fun `getConversation should include unread message counts in a conversation`() {
-        loadContactList()
-
-        val before = assertNotNull(messagePersistenceManager.getConversationInfo(contactA.id).get(), "Missing conversation info")
-        assertEquals(0, before.unreadMessageCount)
-
-        setConversationInfo(contactId, 1, testMessage, currentTimestamp())
-
-        val after = assertNotNull(messagePersistenceManager.getConversationInfo(contactA.id).get(), "Missing conversation info")
-        assertEquals(1, after.unreadMessageCount)
-    }
-
     @Test
     fun `getConversation should return null if the given conversation doesn't exist`() {
-        assertNull(messagePersistenceManager.getConversationInfo(contactA.id).get())
+        assertNull(messagePersistenceManager.getConversationInfo(randomUserConversationId()).get())
     }
 
     @Test
     fun `markConversationAsRead should mark all unread messages as read`() {
-        loadContactList()
+        val userId = addRandomContact()
+        val conversationId = ConversationId(userId)
 
-        setConversationInfo(contactId, 2, testMessage, currentTimestamp())
+        conversationInfoTestUtils.setConversationInfo(conversationId, ConversationInfo(null, 2, randomMessageText(), currentTimestamp()))
 
-        messagePersistenceManager.markConversationAsRead(contactA.id).get()
+        messagePersistenceManager.markConversationAsRead(conversationId).get()
 
-        val got = assertNotNull(messagePersistenceManager.getConversationInfo(contactA.id).get(), "Missing conversation info")
-        assertEquals(0, got.unreadMessageCount)
+        val got = assertNotNull(messagePersistenceManager.getConversationInfo(conversationId).get(), "Missing conversation info")
+        assertEquals(0, got.unreadMessageCount, "Unread count should be 0")
     }
 
     @Test
     fun `markConversationAsRead should throw InvalidConversationException if the given conversation doesn't exist`() {
         assertFailsWith(InvalidConversationException::class) {
-            messagePersistenceManager.markConversationAsRead(contactA.id).get()
+            messagePersistenceManager.markConversationAsRead(randomUserConversationId()).get()
         }
     }
-    */
 }

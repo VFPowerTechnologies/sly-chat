@@ -240,13 +240,12 @@ LIMIT
     }
 
     override fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        //TODO does this do still return if the value was the same? pretty sure it does
-        val wasUpdated = connection.withPrepared("UPDATE conversation_info set unread_count=0 WHERE conversation_id=?") { stmt ->
+        connection.withPrepared("UPDATE conversation_info set unread_count=0 WHERE conversation_id=?") { stmt ->
             stmt.bind(1, conversationId)
             stmt.step()
         }
 
-        if (!wasUpdated)
+        if (connection.changes == 0)
             throw InvalidConversationException(conversationId)
 
         Unit
