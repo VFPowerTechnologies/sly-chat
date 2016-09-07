@@ -16,8 +16,6 @@ class SQLiteMessagePersistenceManagerTest {
         }
     }
 
-    private data class LastConversationInfo(val unreadCount: Int, val lastMessage: String?, val lastTimestamp: Long?)
-
     lateinit var persistenceManager: SQLitePersistenceManager
     lateinit var contactsPersistenceManager: SQLiteContactsPersistenceManager
     lateinit var messagePersistenceManager: SQLiteMessagePersistenceManager
@@ -252,9 +250,12 @@ class SQLiteMessagePersistenceManagerTest {
 
         val conversationId = ConversationId(userId)
         messagePersistenceManager.addMessages(conversationId, messages).get()
-        val got = messagePersistenceManager.getLastMessages(conversationId, 0, 100).get()
+        val got = messagePersistenceManager.internalGetAllMessages(conversationId)
 
-        assertEquals(messages, got, "MessageInfo lists don't match")
+        assertThat(got).apply {
+            `as`("Lists don't match")
+            containsExactlyElementsOf(messages)
+        }
     }
 
     @Test
@@ -272,7 +273,10 @@ class SQLiteMessagePersistenceManagerTest {
         val got = messagePersistenceManager.getLastMessages(ConversationId(userId), start, count).get()
 
         assertEquals(count, got.size)
-        assertEquals(expected, got)
+        assertThat(got).apply {
+            hasSize(count)
+            containsExactlyElementsOf(expected)
+        }
     }
 
     @Ignore

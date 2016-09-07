@@ -43,7 +43,9 @@ FROM
 JOIN
     conversation_info
 ON
-    contacts.id=conversation_info.contact_id
+    contacts.id=substr(conversation_info.conversation_id, 2)
+WHERE
+    conversation_info.conversation_id LIKE 'U%'
         """
 
         return connection.withPrepared(sql) { stmt ->
