@@ -141,6 +141,24 @@ class ContactsServiceImpl(
         }
     }
 
+    override fun getBlockList(): Promise<Set<UserId>, Exception> {
+        return addressBookOperationManager.runOperation {
+            contactsPersistenceManager.getBlockList()
+        }
+    }
+
+    override fun block(userId: UserId): Promise<Unit, Exception> {
+        return addressBookOperationManager.runOperation {
+            contactsPersistenceManager.block(userId)
+        }
+    }
+
+    override fun unblock(userId: UserId): Promise<Unit, Exception> {
+        return addressBookOperationManager.run {
+            contactsPersistenceManager.unblock(userId)
+        }
+    }
+
     override fun allowAll(userId: UserId): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
             log.debug("Setting allowedMessageLevel=ALL for: {}", userId)

@@ -22,6 +22,10 @@ interface ContactsService {
     fun updateContact(contactInfo: ContactInfo): Promise<Unit, Exception>
     fun filterBlocked(users: Set<UserId>): Promise<Set<UserId>, Exception>
 
+    fun getBlockList(): Promise<Set<UserId>, Exception>
+    fun block(userId: UserId): Promise<Unit, Exception>
+    fun unblock(userId: UserId): Promise<Unit, Exception>
+
     fun allowAll(userId: UserId): Promise<Unit, Exception>
 
     /** Adds contact data for any missing user in the set. Should do nothing for the empty set. */

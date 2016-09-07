@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.ui.impl
 
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
 import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
@@ -164,5 +165,17 @@ class UIContactsServiceImpl(
                 UINewContactResult(true, null, contactInfo.toUI())
             }
         }
+    }
+
+    override fun getBlockList(): Promise<Set<UserId>, Exception> {
+        return getContactsServiceOrThrow().getBlockList()
+    }
+
+    override fun block(userId: UserId): Promise<Unit, Exception> {
+        return getContactsServiceOrThrow().block(userId)
+    }
+
+    override fun unblock(userId: UserId): Promise<Unit, Exception> {
+        return getContactsServiceOrThrow().unblock(userId)
     }
 }
