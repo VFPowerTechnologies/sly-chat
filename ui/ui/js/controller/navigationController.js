@@ -167,21 +167,9 @@ NavigationController.prototype = {
     },
 
     getCurrentPage : function () {
-        var pages = {
-            contacts: 'contacts.html',
-            chat: 'chat.html',
-            addContact: 'addContact.html',
-            index: 'index.html',
-            login: 'login.html',
-            register: 'register.html',
-            smsVerification: 'smsVerification.html',
-            updatePhone: 'updatePhone.html',
-            profile: 'profile.html',
-            createGroup: 'createGroup.html'
-        };
         var page = $$('#mainView').data('page');
 
-        return pages[page];
+        return page + ".html";
     },
 
     openMenu : function () {
