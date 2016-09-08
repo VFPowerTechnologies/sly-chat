@@ -647,7 +647,8 @@ class MessageProcessorImplTest {
             Recipient.User(userId),
             randomMessageText(),
             currentTimestamp(),
-            currentTimestamp()
+            currentTimestamp(),
+            randomTtl()
         )
     }
 
@@ -657,7 +658,8 @@ class MessageProcessorImplTest {
             Recipient.Group(groupId),
             randomMessageText(),
             currentTimestamp(),
-            currentTimestamp()
+            currentTimestamp(),
+            randomTtl()
         )
     }
 

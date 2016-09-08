@@ -825,7 +825,8 @@ class MessengerServiceImplTest {
             Recipient.User(metadata.userId),
             messageInfo.message,
             messageInfo.timestamp,
-            messageInfo.receivedTimestamp
+            messageInfo.receivedTimestamp,
+            messageInfo.ttl
         )
 
         val message = retrieveSyncMessage<SyncMessage.SelfMessage>()
@@ -851,7 +852,8 @@ class MessengerServiceImplTest {
             Recipient.Group(groupId),
             messageInfo.message,
             messageInfo.timestamp,
-            messageInfo.receivedTimestamp
+            messageInfo.receivedTimestamp,
+            messageInfo.ttl
         )
 
         val message = retrieveSyncMessage<SyncMessage.SelfMessage>()

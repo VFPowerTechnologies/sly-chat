@@ -424,7 +424,8 @@ class MessengerServiceImpl(
             recipient,
             messageInfo.message,
             messageInfo.timestamp,
-            messageInfo.receivedTimestamp
+            messageInfo.receivedTimestamp,
+            messageInfo.ttl
         )
 
         return sendSyncMessage(SyncMessage.SelfMessage(sentMessageInfo)) map { messageInfo }

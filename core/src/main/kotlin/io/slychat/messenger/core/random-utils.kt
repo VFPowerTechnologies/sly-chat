@@ -133,6 +133,8 @@ fun randomName(): String {
     return shuffleString("random name")
 }
 
+fun randomTtl(): Long = randomInt(500, 1000).toLong()
+
 fun randomAccountInfo(deviceId: Int = randomDeviceId()): AccountInfo {
     return AccountInfo(randomUserId(), randomName(), randomEmailAddress(), "", deviceId)
 }
