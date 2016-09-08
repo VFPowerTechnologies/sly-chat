@@ -38,30 +38,45 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         persistenceManager.shutdown()
     }
 
-    fun insertRandomMessagesFull(id: GroupId, members: Set<UserId>): List<ConversationMessageInfo> {
+    fun insertRandomReceivedMessagesFull(id: GroupId, members: Set<UserId>): List<ConversationMessageInfo> =
+        insertRandomReceivedMessagesFull(id.toConversationId(), members)
+
+    fun insertRandomReceivedMessagesFull(userId: UserId): List<ConversationMessageInfo> =
+        insertRandomReceivedMessagesFull(userId.toConversationId(), setOf(userId))
+
+    fun insertRandomReceivedMessagesFull(id: ConversationId, senders: Set<UserId>): List<ConversationMessageInfo> {
         val info = ArrayList<ConversationMessageInfo>()
 
-        members.forEach { member ->
+        senders.forEach { member ->
             (1..2).forEach {
                 val groupMessageInfo = randomReceivedConversationMessageInfo(member)
                 info.add(groupMessageInfo)
 
-                messagePersistenceManager.addMessage(ConversationId(id), groupMessageInfo).get()
+                messagePersistenceManager.addMessage(id, groupMessageInfo).get()
             }
         }
 
         return info
     }
 
-    fun insertRandomSentMessage(id: GroupId): String {
-        val groupMessageInfo = randomSentGroupMessageInfo()
-        messagePersistenceManager.addMessage(ConversationId(id), groupMessageInfo).get()
+    fun insertRandomSentMessage(id: GroupId): String =
+        insertRandomSentMessage(id.toConversationId())
 
-        return groupMessageInfo.info.id
+    fun insertRandomSentMessage(id: ConversationId): String {
+        val conversationMessageInfo = randomSentConversationMessageInfo()
+        messagePersistenceManager.addMessage(id, conversationMessageInfo).get()
+
+        return conversationMessageInfo.info.id
     }
 
-    fun insertRandomMessages(id: GroupId, members: Set<UserId>): List<String> {
-        return insertRandomMessagesFull(id, members).map { it.info.id }
+    fun insertRandomReceivedMessages(id: GroupId, members: Set<UserId>): List<String> =
+        insertRandomReceivedMessages(id.toConversationId(), members)
+
+    fun insertRandomReceivedMessages(id: UserId): List<String> =
+        insertRandomReceivedMessages(id.toConversationId(), setOf(id))
+
+    fun insertRandomReceivedMessages(id: ConversationId, senders: Set<UserId>): List<String> {
+        return insertRandomReceivedMessagesFull(id, senders).map { it.info.id }
     }
 
     fun addRandomContact(allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL): UserId {
@@ -82,11 +97,18 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     fun getMessage(conversationId: ConversationId, messageId: String): ConversationMessageInfo {
-        return assertNotNull(messagePersistenceManager.getMessage(conversationId, messageId), "Missing message")
+        return assertNotNull(messagePersistenceManager.internalGetMessage(conversationId, messageId), "Missing message")
     }
 
     fun getConversationInfo(conversationId: ConversationId): ConversationInfo {
         return assertNotNull(messagePersistenceManager.getConversationInfo(conversationId).get(), "No last conversation info")
+    }
+
+    fun foreachConvType(body: (ConversationId, participants: Set<UserId>) -> Unit) {
+        val userId = addRandomContact()
+        body(userId.toConversationId(), setOf(userId))
+
+        withJoinedGroup { groupId, members -> body(groupId.toConversationId(), members) }
     }
 
     @Test
@@ -142,7 +164,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     fun `addMessage should update conversation info when inserting a sent message`() {
         val conversationId = ConversationId(addRandomContact())
 
-        val conversationMessageInfo = randomSentGroupMessageInfo()
+        val conversationMessageInfo = randomSentConversationMessageInfo()
         messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
         val lastConversationInfo = conversationInfoTestUtils.getConversationInfo(conversationId)
 
@@ -422,7 +444,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     fun `deleteMessages should remove the given messages from the group log`() {
         withJoinedGroup { groupId, members ->
             val conversationId = groupId.toConversationId()
-            val ids = insertRandomMessages(groupId, members)
+            val ids = insertRandomReceivedMessages(groupId, members)
 
             val toRemove = ids.subList(0, 2)
             val remaining = ids.subList(2, ids.size)
@@ -442,7 +464,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `deleteMessages should do nothing if the given messages are not present in the group log`() {
         withJoinedGroup { groupId, members ->
-            val ids = insertRandomMessages(groupId, members)
+            val ids = insertRandomReceivedMessages(groupId, members)
 
             val conversationId = groupId.toConversationId()
             messagePersistenceManager.deleteMessages(conversationId, listOf(randomMessageId(), randomMessageId())).get()
@@ -460,7 +482,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `deleteMessages should update the corresponding group conversation info when some messages remain`() {
         withJoinedGroup { groupId, members ->
-            val info = insertRandomMessagesFull(groupId, members)
+            val info = insertRandomReceivedMessagesFull(groupId, members)
             val ids = info.map { it.info.id }
 
             val toRemove = ids.subList(0, 2)
@@ -482,7 +504,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `deleteMessages should update the corresponding group conversation info when no messages remain`() {
         withJoinedGroup { groupId, members ->
-            val ids = insertRandomMessages(groupId, members)
+            val ids = insertRandomReceivedMessages(groupId, members)
 
             messagePersistenceManager.deleteMessages(groupId.toConversationId(), ids).get()
 
@@ -501,7 +523,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `deleteAllMessages should clear the entire group log`() {
         withJoinedGroup { groupId, members ->
-            insertRandomMessages(groupId, members)
+            insertRandomReceivedMessages(groupId, members)
 
             val conversationId = groupId.toConversationId()
             messagePersistenceManager.deleteAllMessages(conversationId).get()
@@ -518,7 +540,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `deleteAllMessages should update the corresponding group conversation info`() {
         withJoinedGroup { groupId, members ->
-            insertRandomMessages(groupId, members)
+            insertRandomReceivedMessages(groupId, members)
 
             messagePersistenceManager.deleteAllMessages(groupId.toConversationId()).get()
 
@@ -529,7 +551,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `deleteAllMessages should throw InvalidConversationException if the group id is invalid`() {
         withJoinedGroup { groupId, members ->
-            insertRandomMessages(groupId, members)
+            insertRandomReceivedMessages(groupId, members)
 
             messagePersistenceManager.deleteAllMessages(groupId.toConversationId()).get()
 
@@ -616,9 +638,24 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
+    fun `markConversationAsRead should mark all isRead messages as true`() {
+        foreachConvType { conversationId, participants ->
+            val messages = insertRandomReceivedMessagesFull(conversationId, participants)
+
+            messagePersistenceManager.markConversationAsRead(conversationId).get()
+
+            messages.forEach {
+                val messageId = it.info.id
+                val conversationMessageInfo = assertNotNull(messagePersistenceManager.internalGetMessage(conversationId, messageId), "Missing message $messageId")
+                assertTrue(conversationMessageInfo.info.isRead, "Message $messageId not marked as read")
+            }
+        }
+    }
+
+    @Test
     fun `getLastMessages should return the asked for message range`() {
         withJoinedGroup { groupId, members ->
-            val ids = insertRandomMessages(groupId, members)
+            val ids = insertRandomReceivedMessages(groupId, members)
 
             val lastMessageIds = messagePersistenceManager.getLastMessages(groupId.toConversationId(), 0, 2).get().map { it.info.id }
             val expectedIds = ids.subList(ids.size-2, ids.size).reversed()

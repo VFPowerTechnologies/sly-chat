@@ -154,6 +154,6 @@ fun randomReceivedConversationMessageInfo(speaker: UserId?): ConversationMessage
     return ConversationMessageInfo(speaker, randomReceivedMessageInfo())
 }
 
-fun randomSentGroupMessageInfo(): ConversationMessageInfo {
+fun randomSentConversationMessageInfo(): ConversationMessageInfo {
     return ConversationMessageInfo(null, randomSentMessageInfo())
 }
