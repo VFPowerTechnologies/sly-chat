@@ -1,10 +1,10 @@
-package io.slychat.messenger.core.persistence
+package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.sqlite.*
+import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
 import java.util.*
 
@@ -465,7 +465,7 @@ ON
 
         groups.map {
             val members = queryGroupMembers(connection, it.id)
-            AddressBookUpdate.Group(it.id, it.name,  members, it.membershipLevel)
+            AddressBookUpdate.Group(it.id, it.name, members, it.membershipLevel)
         }
     }
 

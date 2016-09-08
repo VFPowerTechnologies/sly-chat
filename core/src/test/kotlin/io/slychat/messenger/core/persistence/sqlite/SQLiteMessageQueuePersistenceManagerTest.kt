@@ -1,7 +1,9 @@
-package io.slychat.messenger.core.persistence
+package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.crypto.randomMessageId
+import io.slychat.messenger.core.persistence.SenderMessageEntry
 import io.slychat.messenger.core.persistence.sqlite.SQLiteContactsPersistenceManager
+import io.slychat.messenger.core.persistence.sqlite.SQLiteMessageQueuePersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import io.slychat.messenger.core.randomContactInfo

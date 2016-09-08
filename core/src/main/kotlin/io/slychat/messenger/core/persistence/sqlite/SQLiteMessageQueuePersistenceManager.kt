@@ -1,7 +1,8 @@
-package io.slychat.messenger.core.persistence
+package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.batchInsertWithinTransaction
 import io.slychat.messenger.core.persistence.sqlite.map

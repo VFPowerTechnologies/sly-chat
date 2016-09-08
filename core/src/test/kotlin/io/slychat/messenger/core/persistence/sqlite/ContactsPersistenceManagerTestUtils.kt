@@ -1,4 +1,4 @@
-package io.slychat.messenger.core.persistence
+package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.mapToSet
