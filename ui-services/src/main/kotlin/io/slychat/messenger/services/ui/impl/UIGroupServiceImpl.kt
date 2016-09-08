@@ -73,7 +73,7 @@ class UIGroupServiceImpl(
 
     private fun GroupConversation.toUi(): UIGroupConversation {
         val groupInfo = UIGroupInfo(group.id, group.name)
-        val convoInfo = UIGroupConversationInfo(info.lastSpeaker,info.unreadCount, info.lastMessage, info.lastTimestamp)
+        val convoInfo = UIGroupConversationInfo(info.lastSpeaker,info.unreadMessageCount, info.lastMessage, info.lastTimestamp)
 
         return UIGroupConversation(groupInfo, convoInfo)
     }
