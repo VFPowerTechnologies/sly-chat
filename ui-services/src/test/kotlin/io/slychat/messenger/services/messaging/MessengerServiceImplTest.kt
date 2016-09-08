@@ -331,8 +331,9 @@ class MessengerServiceImplTest {
         val record = randomTextSingleRecord()
         val update = record.metadata
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
+        val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
 
-        whenever(messagePersistenceManager.markMessageAsDelivered(update.userId, update.messageId, record.serverReceivedTimestamp)).thenResolve(messageInfo)
+        whenever(messagePersistenceManager.markMessageAsDelivered(update.userId.toConversationId(), update.messageId, record.serverReceivedTimestamp)).thenResolve(conversationMessageInfo)
 
         val testSubscriber = messengerService.messageUpdates.testSubscriber()
 
@@ -488,7 +489,7 @@ class MessengerServiceImplTest {
 
         messengerService.deleteMessages(userId, ids)
 
-        verify(messagePersistenceManager).deleteMessages(userId, ids)
+        verify(messagePersistenceManager).deleteMessages(userId.toConversationId(), ids)
     }
 
     @Test
@@ -499,7 +500,7 @@ class MessengerServiceImplTest {
 
         messengerService.deleteAllMessages(userId)
 
-        verify(messagePersistenceManager).deleteAllMessages(userId)
+        verify(messagePersistenceManager).deleteAllMessages(userId.toConversationId())
     }
 
     @Test
@@ -823,10 +824,11 @@ class MessengerServiceImplTest {
         val messengerService = createService()
 
         val messageInfo = randomSentMessageInfo()
+        val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
         val record = randomTextSingleRecord()
         val metadata = record.metadata
 
-        whenever(messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId, record.serverReceivedTimestamp)).thenResolve(messageInfo)
+        whenever(messagePersistenceManager.markMessageAsDelivered(metadata.userId.toConversationId(), metadata.messageId, record.serverReceivedTimestamp)).thenResolve(conversationMessageInfo)
 
         messageSent.onNext(record)
 

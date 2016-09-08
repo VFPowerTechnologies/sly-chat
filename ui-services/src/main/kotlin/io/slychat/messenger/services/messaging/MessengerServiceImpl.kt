@@ -96,11 +96,13 @@ class MessengerServiceImpl(
     private fun processSingleUpdate(metadata: MessageMetadata, serverReceivedTimestamp: Long) {
         log.debug("Processing sent convo message {} to {}", metadata.messageId, metadata.userId)
 
-        messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId, serverReceivedTimestamp) bindUi { messageInfo ->
-            broadcastSentMessage(metadata, messageInfo) map { messageInfo }
+        messagePersistenceManager.markMessageAsDelivered(metadata.userId.toConversationId(), metadata.messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
+            broadcastSentMessage(metadata, conversationMessageInfo)
         } successUi { messageInfo ->
-            val bundle = MessageBundle(metadata.userId, null, listOf(messageInfo))
-            messageUpdatesSubject.onNext(bundle)
+            if (messageInfo != null) {
+                val bundle = MessageBundle(metadata.userId, null, listOf(messageInfo))
+                messageUpdatesSubject.onNext(bundle)
+            }
         } fail { e ->
             log.error("Unable to mark convo message <<{}>> to {} as delivered: {}", metadata.messageId, metadata.userId, e.message, e)
         }
@@ -112,15 +114,12 @@ class MessengerServiceImpl(
 
         log.debug("Processing sent group message <<{}/{}>>", groupId, metadata.messageId)
 
-        groupService.markMessageAsDelivered(groupId, metadata.messageId, serverReceivedTimestamp) bindUi { groupMessageInfo ->
-            if (groupMessageInfo != null)
-                broadcastSentMessage(metadata, groupMessageInfo.info) map { groupMessageInfo }
-            else
-                Promise.ofSuccess(groupMessageInfo)
-        } successUi { groupMessageInfo ->
+        groupService.markMessageAsDelivered(groupId, metadata.messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
+            broadcastSentMessage(metadata, conversationMessageInfo)
+        } successUi { messageInfo ->
             //if this is null, the message has already been delievered to one recipient, so we don't emit another event
-            if (groupMessageInfo != null) {
-                val bundle = MessageBundle(metadata.userId, groupId, listOf(groupMessageInfo.info))
+            if (messageInfo != null) {
+                val bundle = MessageBundle(metadata.userId, groupId, listOf(messageInfo))
                 messageUpdatesSubject.onNext(bundle)
             }
         } fail { e ->
@@ -151,7 +150,8 @@ class MessengerServiceImpl(
     /** Writes the received message and then fires the new messages subject. */
     private fun writeReceivedSelfMessage(from: UserId, decryptedMessage: String): Promise<Unit, Exception> {
         val messageInfo = MessageInfo.newReceived(decryptedMessage, currentTimestamp(), 0)
-        return messagePersistenceManager.addMessage(from, messageInfo) mapUi { messageInfo ->
+        val conversationMessageInfo = ConversationMessageInfo(from, messageInfo)
+        return messagePersistenceManager.addMessage(from.toConversationId(), conversationMessageInfo) mapUi { messageInfo ->
             //FIXME
             //newMessagesSubject.onNext(MessageBundle(from, listOf(messageInfo)))
         }
@@ -212,6 +212,7 @@ class MessengerServiceImpl(
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         return if (!isSelfMessage) {
             val messageInfo = MessageInfo.newSent(message, relayClock.currentTime(), 0)
+            val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
             val m = TextMessage(messageInfo.timestamp, message, null, ttl)
             val wrapper = SlyMessage.Text(m)
 
@@ -219,13 +220,14 @@ class MessengerServiceImpl(
 
             val metadata = MessageMetadata(userId, null, MessageCategory.TEXT_SINGLE, messageInfo.id)
             messageSender.addToQueue(SenderMessageEntry(metadata, serialized)) bind {
-                messagePersistenceManager.addMessage(userId, messageInfo)
+                messagePersistenceManager.addMessage(userId.toConversationId(), conversationMessageInfo) map { messageInfo }
             }
         }
         else {
             val messageInfo = MessageInfo.newSelfSent(message, 0)
+            val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
             //we need to insure that the send message info is sent back to the ui before the ServerReceivedMessage is fired
-            messagePersistenceManager.addMessage(userId, messageInfo) map { messageInfo ->
+            messagePersistenceManager.addMessage(userId.toConversationId(), conversationMessageInfo) map {
                 Thread.sleep(30)
                 messageInfo
             } successUi { messageInfo ->
@@ -269,8 +271,8 @@ class MessengerServiceImpl(
 
         return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bindUi {
             val messageInfo = MessageInfo.newSent(message, 0).copy(id = messageId)
-            val groupMessageInfo = ConversationMessageInfo(null, messageInfo)
-            groupService.addMessage(groupId, groupMessageInfo)
+            val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
+            groupService.addMessage(groupId, conversationMessageInfo) map { conversationMessageInfo }
         }
     }
 
@@ -352,24 +354,24 @@ class MessengerServiceImpl(
         }
     }
 
-    override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception> {
-        return messagePersistenceManager.getLastMessages(userId, startingAt, count)
+    override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception> {
+        return messagePersistenceManager.getLastMessages(userId.toConversationId(), startingAt, count)
     }
 
     override fun getConversations(): Promise<List<UserConversation>, Exception> {
-        return contactsPersistenceManager.getAllConversations()
+        return messagePersistenceManager.getAllUserConversations()
     }
 
     override fun markConversationAsRead(userId: UserId): Promise<Unit, Exception> {
-        return contactsPersistenceManager.markConversationAsRead(userId)
+        return messagePersistenceManager.markConversationAsRead(userId.toConversationId())
     }
 
     override fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception> {
-        return messagePersistenceManager.deleteMessages(userId, messageIds)
+        return messagePersistenceManager.deleteMessages(userId.toConversationId(), messageIds)
     }
 
     override fun deleteAllMessages(userId: UserId): Promise<Unit, Exception> {
-        return messagePersistenceManager.deleteAllMessages(userId)
+        return messagePersistenceManager.deleteAllMessages(userId.toConversationId())
     }
 
     override fun deleteGroupMessages(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception> {
@@ -407,12 +409,17 @@ class MessengerServiceImpl(
         return messageSender.addToQueue(messages)
     }
 
-    private fun broadcastSentMessage(metadata: MessageMetadata, messageInfo: MessageInfo): Promise<Unit, Exception> {
+    //FIXME
+    private fun broadcastSentMessage(metadata: MessageMetadata, conversationMessageInfo: ConversationMessageInfo?): Promise<MessageInfo?, Exception> {
+        if (conversationMessageInfo == null)
+            return Promise.ofSuccess(null)
+
         val recipient = if (metadata.groupId != null)
             Recipient.Group(metadata.groupId)
         else
             Recipient.User(metadata.userId)
 
+        val messageInfo = conversationMessageInfo.info
         val sentMessageInfo = SyncSentMessageInfo(
             metadata.messageId,
             recipient,
@@ -421,7 +428,7 @@ class MessengerServiceImpl(
             messageInfo.receivedTimestamp
         )
 
-        return sendSyncMessage(SyncMessage.SelfMessage(sentMessageInfo))
+        return sendSyncMessage(SyncMessage.SelfMessage(sentMessageInfo)) map { messageInfo }
     }
 
     private fun broadcastSync() {

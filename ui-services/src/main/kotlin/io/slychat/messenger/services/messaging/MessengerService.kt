@@ -28,7 +28,7 @@ interface MessengerService {
     fun inviteUsersToGroup(groupId: GroupId, newMembers: Set<UserId>): Promise<Unit, Exception>
     fun partGroup(groupId: GroupId): Promise<Boolean, Exception>
     fun blockGroup(groupId: GroupId): Promise<Unit, Exception>
-    fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception>
+    fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception>
     fun getConversations(): Promise<List<UserConversation>, Exception>
     fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>
     fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception>
