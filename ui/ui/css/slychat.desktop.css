@@ -51,3 +51,8 @@
 #leftMenuPanel .item-title, #leftMenuPanel a {
     color: #fff;
 }
+
+.notifications {
+    top: 0 !important;
+    bottom: auto !important;
+}

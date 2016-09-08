@@ -54,11 +54,11 @@ ConnectionController.prototype = {
         }
     },
 
-    openConnectionNotification : function (message, additionalClass) {
+    openConnectionNotification : function (message) {
         if (this.notification === null) {
             var options = {
                 title: message,
-                additionalClass: 'connection-notification ' + additionalClass,
+                additionalClass: 'connection-notification',
                 closeOnClick: false
             };
 
@@ -66,7 +66,6 @@ ConnectionController.prototype = {
         }
         else {
             $(this.notification).removeClass("no-network not-connected");
-            $(this.notification).addClass(additionalClass);
             $(this.notification).find(".item-text").html(message);
         }
     },
