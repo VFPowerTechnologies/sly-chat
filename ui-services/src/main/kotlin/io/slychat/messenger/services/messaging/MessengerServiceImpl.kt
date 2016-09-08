@@ -35,7 +35,6 @@ class MessengerServiceImpl(
     addressBookOperationManager: AddressBookOperationManager,
     private val messagePersistenceManager: MessagePersistenceManager,
     private val groupService: GroupService,
-    private val contactsPersistenceManager: ContactsPersistenceManager,
     private val relayClientManager: RelayClientManager,
     private val messageSender: MessageSender,
     private val messageReceiver: MessageReceiver,
@@ -114,7 +113,7 @@ class MessengerServiceImpl(
 
         log.debug("Processing sent group message <<{}/{}>>", groupId, metadata.messageId)
 
-        groupService.markMessageAsDelivered(groupId, metadata.messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
+        messagePersistenceManager.markMessageAsDelivered(groupId.toConversationId(), metadata.messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
             broadcastSentMessage(metadata, conversationMessageInfo)
         } successUi { messageInfo ->
             //if this is null, the message has already been delievered to one recipient, so we don't emit another event
@@ -272,7 +271,7 @@ class MessengerServiceImpl(
         return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bindUi {
             val messageInfo = MessageInfo.newSent(message, 0).copy(id = messageId)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
-            groupService.addMessage(groupId, conversationMessageInfo) map { conversationMessageInfo }
+            messagePersistenceManager.addMessage(groupId.toConversationId(), conversationMessageInfo) map { conversationMessageInfo }
         }
     }
 
@@ -375,11 +374,11 @@ class MessengerServiceImpl(
     }
 
     override fun deleteGroupMessages(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception> {
-        return groupService.deleteMessages(groupId, messageIds)
+        return messagePersistenceManager.deleteMessages(groupId.toConversationId(), messageIds)
     }
 
     override fun deleteAllGroupMessages(groupId: GroupId): Promise<Unit, Exception> {
-        return groupService.deleteAllMessages(groupId)
+        return messagePersistenceManager.deleteAllMessages(groupId.toConversationId())
     }
 
     /* Other */

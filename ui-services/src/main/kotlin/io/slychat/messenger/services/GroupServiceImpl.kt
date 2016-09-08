@@ -44,20 +44,8 @@ class GroupServiceImpl(
         return groupPersistenceManager.getInfo(groupId)
     }
 
-    override fun addMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
-        return messagePersistenceManager.addMessage(groupId.toConversationId(), conversationMessageInfo)
-    }
-
-    override fun markMessageAsDelivered(groupId: GroupId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception> {
-        return messagePersistenceManager.markMessageAsDelivered(groupId.toConversationId(), messageId, timestamp)
-    }
-
     override fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> {
         return groupPersistenceManager.isUserMemberOf(groupId, userId)
-    }
-
-    override fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception> {
-        return messagePersistenceManager.markConversationAsRead(groupId.toConversationId())
     }
 
     override fun getMembersWithInfo(groupId: GroupId): Promise<List<ContactInfo>, Exception> {
@@ -130,18 +118,6 @@ class GroupServiceImpl(
 
     override fun getBlockList(): Promise<Set<GroupId>, Exception> {
         return groupPersistenceManager.getBlockList()
-    }
-
-    override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception> {
-        return messagePersistenceManager.getLastMessages(groupId.toConversationId(), startingAt, count)
-    }
-
-    override fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception> {
-        return messagePersistenceManager.deleteAllMessages(groupId.toConversationId())
-    }
-
-    override fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception> {
-        return messagePersistenceManager.deleteMessages(groupId.toConversationId(), messageIds)
     }
 
     private fun triggerRemoteSync() {

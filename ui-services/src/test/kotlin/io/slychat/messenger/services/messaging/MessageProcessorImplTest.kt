@@ -62,7 +62,7 @@ class MessageProcessorImplTest {
         whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
         whenever(contactsService.addById(any())).thenResolve(true)
 
-        whenever(groupService.addMessage(any(), any())).thenResolve(Unit)
+        whenever(messagePersistenceManager.addMessage(any(), any())).thenResolve(Unit)
 
         whenever(groupService.join(any(), any())).thenResolve(Unit)
         whenever(groupService.getInfo(any())).thenResolve(null)
@@ -527,7 +527,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(groupService).addMessage(eq(groupInfo.id), capture { groupMessageInfo ->
+        verify(messagePersistenceManager).addMessage(eq(groupInfo.id.toConversationId()), capture { groupMessageInfo ->
             val messageInfo = groupMessageInfo.info
             assertFalse(messageInfo.isSent, "Message marked as sent")
             assertFalse(messageInfo.isRead, "Message should not be marked as read")
@@ -550,7 +550,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(groupService).addMessage(eq(groupInfo.id), capture {
+        verify(messagePersistenceManager).addMessage(eq(groupInfo.id.toConversationId()), capture {
             assertTrue(it.info.isRead, "Message should be marked as read")
         })
     }
@@ -595,7 +595,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(groupService, never()).addMessage(any(), any())
+        verify(messagePersistenceManager, never()).addMessage(any(), any())
     }
 
     @Test
@@ -723,7 +723,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(selfId, wrap(m)).get()
 
-        verify(groupService).addMessage(recipient, groupMessageInfo)
+        verify(messagePersistenceManager).addMessage(recipient.toConversationId(), groupMessageInfo)
     }
 
     @Test

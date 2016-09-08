@@ -3,6 +3,8 @@ package io.slychat.messenger.services.ui.impl
 import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.persistence.GroupConversation
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.core.persistence.MessagePersistenceManager
+import io.slychat.messenger.core.persistence.toConversationId
 import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.mapUi
@@ -23,6 +25,7 @@ class UIGroupServiceImpl(
     private var groupEventsSub: Subscription? = null
 
     private var groupService: GroupService? = null
+    private var messagePersistenceManager: MessagePersistenceManager? = null
     private var messengerService: MessengerService? = null
 
     init {
@@ -33,10 +36,12 @@ class UIGroupServiceImpl(
 
                 groupService = null
                 messengerService = null
+                messagePersistenceManager = null
             }
             else {
                 groupService = it.groupService
                 messengerService = it.messengerService
+                messagePersistenceManager = it.messagePersistenceManager
 
                 groupEventsSub = it.groupService.groupEvents.subscribe { onGroupEvent(it) }
             }
@@ -59,6 +64,10 @@ class UIGroupServiceImpl(
 
     private fun getGroupServiceOrThrow(): GroupService {
         return groupService ?: throw IllegalStateException("No user session")
+    }
+
+    private fun getMessagePersistenceManagerOrThrow(): MessagePersistenceManager {
+        return messagePersistenceManager ?: throw IllegalStateException("No user session")
     }
 
     override fun addGroupEventListener(listener: (UIGroupEvent) -> Unit) {
@@ -85,7 +94,7 @@ class UIGroupServiceImpl(
     }
 
     override fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception> {
-        return getGroupServiceOrThrow().markConversationAsRead(groupId)
+        return getMessagePersistenceManagerOrThrow().markConversationAsRead(groupId.toConversationId())
     }
 
     override fun inviteUsers(groupId: GroupId, contacts: List<UIContactInfo>): Promise<Unit, Exception> {
@@ -120,17 +129,17 @@ class UIGroupServiceImpl(
     }
 
     override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<UIGroupMessage>, Exception> {
-        return getGroupServiceOrThrow().getLastMessages(groupId, startingAt, count) map {
+        return getMessagePersistenceManagerOrThrow().getLastMessages(groupId.toConversationId(), startingAt, count) map {
             it.map { UIGroupMessage(it.speaker, it.info.toUI()) }
         }
     }
 
     override fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception> {
-        return getGroupServiceOrThrow().deleteAllMessages(groupId)
+        return getMessagePersistenceManagerOrThrow().deleteAllMessages(groupId.toConversationId())
     }
 
     override fun deleteMessagesFor(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception> {
-        return getGroupServiceOrThrow().deleteMessages(groupId, messageIds)
+        return getMessagePersistenceManagerOrThrow().deleteMessages(groupId.toConversationId(), messageIds)
     }
 
     override fun getInfo(groupId: GroupId): Promise<UIGroupInfo?, Exception> {
