@@ -51,6 +51,6 @@ sealed class ConversationId {
     }
 }
 
-fun UserId.toConversationId(): ConversationId.User = ConversationId(this)
+fun UserId.toConversationId(): ConversationId.User = ConversationId.User(this)
 
-fun GroupId.toConversationId(): ConversationId.Group = ConversationId(this)
+fun GroupId.toConversationId(): ConversationId.Group = ConversationId.Group(this)

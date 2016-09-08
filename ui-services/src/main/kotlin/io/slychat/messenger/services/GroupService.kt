@@ -19,7 +19,7 @@ interface GroupService {
 
     fun getInfo(groupId: GroupId): Promise<GroupInfo?, Exception>
 
-    fun addMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo): Promise<ConversationMessageInfo, Exception>
+    fun addMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception>
 
     fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception>
 

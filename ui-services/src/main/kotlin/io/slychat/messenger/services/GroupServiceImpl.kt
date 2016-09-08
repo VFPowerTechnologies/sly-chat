@@ -15,7 +15,8 @@ import rx.subjects.PublishSubject
 class GroupServiceImpl(
     private val groupPersistenceManager: GroupPersistenceManager,
     private val contactsPersistenceManager: ContactsPersistenceManager,
-    private val addressBookOperationManager: AddressBookOperationManager
+    private val addressBookOperationManager: AddressBookOperationManager,
+    private val messagePersistenceManager: MessagePersistenceManager
 ) : GroupService {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -36,19 +37,19 @@ class GroupServiceImpl(
     }
 
     override fun getGroupConversations(): Promise<List<GroupConversation>, Exception> {
-        return groupPersistenceManager.getAllConversations()
+        return messagePersistenceManager.getAllGroupConversations()
     }
 
     override fun getInfo(groupId: GroupId): Promise<GroupInfo?, Exception> {
         return groupPersistenceManager.getInfo(groupId)
     }
 
-    override fun addMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo): Promise<ConversationMessageInfo, Exception> {
-        return groupPersistenceManager.addMessage(groupId, conversationMessageInfo)
+    override fun addMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
+        return messagePersistenceManager.addMessage(groupId.toConversationId(), conversationMessageInfo)
     }
 
     override fun markMessageAsDelivered(groupId: GroupId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception> {
-        return groupPersistenceManager.markMessageAsDelivered(groupId, messageId, timestamp)
+        return messagePersistenceManager.markMessageAsDelivered(groupId.toConversationId(), messageId, timestamp)
     }
 
     override fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> {
@@ -56,7 +57,7 @@ class GroupServiceImpl(
     }
 
     override fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception> {
-        return groupPersistenceManager.markConversationAsRead(groupId)
+        return messagePersistenceManager.markConversationAsRead(groupId.toConversationId())
     }
 
     override fun getMembersWithInfo(groupId: GroupId): Promise<List<ContactInfo>, Exception> {
@@ -132,15 +133,15 @@ class GroupServiceImpl(
     }
 
     override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception> {
-        return groupPersistenceManager.getLastMessages(groupId, startingAt, count)
+        return messagePersistenceManager.getLastMessages(groupId.toConversationId(), startingAt, count)
     }
 
     override fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception> {
-        return groupPersistenceManager.deleteAllMessages(groupId)
+        return messagePersistenceManager.deleteAllMessages(groupId.toConversationId())
     }
 
     override fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception> {
-        return groupPersistenceManager.deleteMessages(groupId, messageIds)
+        return messagePersistenceManager.deleteMessages(groupId.toConversationId(), messageIds)
     }
 
     private fun triggerRemoteSync() {

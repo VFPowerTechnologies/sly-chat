@@ -332,12 +332,14 @@ class UserModule(
     fun providesGroupService(
         groupPersistenceManager: GroupPersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager,
-        addressBookOperationManager: AddressBookOperationManager
+        addressBookOperationManager: AddressBookOperationManager,
+        messagePersistenceManager: MessagePersistenceManager
     ): GroupService =
         GroupServiceImpl(
             groupPersistenceManager,
             contactsPersistenceManager,
-            addressBookOperationManager
+            addressBookOperationManager,
+            messagePersistenceManager
         )
 
     @UserScope
