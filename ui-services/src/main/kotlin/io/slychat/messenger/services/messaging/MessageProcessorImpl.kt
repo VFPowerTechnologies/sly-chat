@@ -117,27 +117,32 @@ class MessageProcessorImpl(
         val sentMessageInfo = m.sentMessageInfo
 
         val messageInfo = sentMessageInfo.toMessageInfo()
+        val conversationMessageInfo = ConversationMessageInfo(
+            null,
+            messageInfo
+        )
 
         val recipient = sentMessageInfo.recipient
 
         return when (recipient) {
             //if we add a new contact, then message them right away, the SelfMessage'll get here before the AddressBookSync one
             is Recipient.User -> contactsService.addMissingContacts(setOf(recipient.id)) bindUi {
-                addSingleMessage(recipient.id, messageInfo)
+                addSingleMessage(recipient.id, conversationMessageInfo)
             }
-            is Recipient.Group -> addGroupMessage(recipient.id, null, messageInfo)
+            is Recipient.Group -> addGroupMessage(recipient.id, conversationMessageInfo)
         }
     }
 
-    private fun addSingleMessage(userId: UserId, messageInfo: MessageInfo): Promise<Unit, Exception> {
-        return messagePersistenceManager.addMessage(userId, messageInfo) bindRecoverForUi { e: InvalidMessageLevelException ->
+    private fun addSingleMessage(userId: UserId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
+        val conversationId = userId.toConversationId()
+        return messagePersistenceManager.addMessage(conversationId, conversationMessageInfo) bindRecoverForUi { e: InvalidMessageLevelException ->
             log.debug("User doesn't have appropriate message level, upgrading")
 
             contactsService.allowAll(userId) bindUi {
-                messagePersistenceManager.addMessage(userId, messageInfo)
+                messagePersistenceManager.addMessage(conversationId, conversationMessageInfo)
             }
-        } mapUi { messageInfo ->
-            val message = ConversationMessage.Single(userId, messageInfo)
+        } mapUi {
+            val message = ConversationMessage.Single(userId, conversationMessageInfo.info)
             newMessagesSubject.onNext(message)
         }
     }
@@ -151,21 +156,21 @@ class MessageProcessorImpl(
             groupId == currentlySelectedGroup
 
         val messageInfo = MessageInfo.newReceived(messageId, m.message, m.timestamp, currentTimestamp(), isRead, m.ttl)
+        val conversationInfo = ConversationMessageInfo(sender, messageInfo)
 
         return if (groupId == null) {
-            addSingleMessage(sender, messageInfo)
+            addSingleMessage(sender, conversationInfo)
         }
         else {
             groupService.getInfo(groupId) bindUi { groupInfo ->
-                runIfJoinedAndUserIsMember(groupInfo, sender) { addGroupMessage(groupId, sender, messageInfo) }
+                runIfJoinedAndUserIsMember(groupInfo, sender) { addGroupMessage(groupId, conversationInfo) }
             }
         }
     }
 
-    private fun addGroupMessage(groupId: GroupId, sender: UserId?, messageInfo: MessageInfo): Promise<Unit, Exception> {
-        val groupMessageInfo = ConversationMessageInfo(sender, messageInfo)
-        return groupService.addMessage(groupId, groupMessageInfo) mapUi {
-            val message = ConversationMessage.Group(groupId, sender, messageInfo)
+    private fun addGroupMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
+        return groupService.addMessage(groupId, conversationMessageInfo) mapUi {
+            val message = ConversationMessage.Group(groupId, conversationMessageInfo.speaker, conversationMessageInfo.info)
             newMessagesSubject.onNext(message)
         }
     }

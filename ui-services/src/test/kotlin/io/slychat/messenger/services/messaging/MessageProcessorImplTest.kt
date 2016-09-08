@@ -103,10 +103,11 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrapper).get()
 
-        verify(messagePersistenceManager).addMessage(eq(sender), capture {
-            assertEquals(m.ttl, it.ttl, "Invalid TTL")
-            assertFalse(it.isRead, "Message should not be marked as read")
-            assertEquals(m.message, it.message, "Invalid message text")
+        verify(messagePersistenceManager).addMessage(eq(sender.toConversationId()), capture {
+            val info = it.info
+            assertEquals(m.ttl, info.ttl, "Invalid TTL")
+            assertFalse(info.isRead, "Message should not be marked as read")
+            assertEquals(m.message, info.message, "Invalid message text")
         })
     }
 
@@ -152,8 +153,8 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrapper).get()
 
-        verify(messagePersistenceManager).addMessage(eq(sender), capture {
-            assertTrue(it.isRead, "Message should be marked as read")
+        verify(messagePersistenceManager).addMessage(eq(sender.toConversationId()), capture {
+            assertTrue(it.info.isRead, "Message should be marked as read")
         })
     }
 
@@ -170,7 +171,7 @@ class MessageProcessorImplTest {
         whenever(contactsService.allowAll(from)).thenResolve(Unit)
         whenever(messagePersistenceManager.addMessage(any(), any()))
             .thenReject(InvalidMessageLevelException(from))
-            .thenResolve(randomReceivedMessageInfo())
+            .thenResolve(Unit)
 
         processor.processMessage(from, wrapper).get()
 
@@ -676,11 +677,12 @@ class MessageProcessorImplTest {
         val recipient = randomUserId()
         val sentMessageInfo = randomSingleSentMessageInfo(recipient)
         val messageInfo = sentMessageInfo.toMessageInfo()
+        val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
         val m = SyncMessage.SelfMessage(sentMessageInfo)
 
         processor.processMessage(selfId, wrap(m)).get()
 
-        verify(messagePersistenceManager).addMessage(recipient, messageInfo)
+        verify(messagePersistenceManager).addMessage(recipient.toConversationId(), conversationMessageInfo)
     }
 
     @Test
