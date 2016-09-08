@@ -16,7 +16,6 @@ import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenReject
 import io.slychat.messenger.testutils.thenResolve
-import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
@@ -58,20 +57,12 @@ class MessageProcessorImplTest {
     fun wrap(m: ControlMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Control(m))
 
     fun createProcessor(): MessageProcessorImpl {
-        whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val a = it.arguments[1] as MessageInfo
-            Promise.ofSuccess<MessageInfo, Exception>(a)
-        }
+        whenever(messagePersistenceManager.addMessage(any(), any())).thenResolve(Unit)
 
         whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
         whenever(contactsService.addById(any())).thenResolve(true)
 
-        whenever(groupService.addMessage(any(), any())).thenAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val a = it.arguments[1] as ConversationMessageInfo
-            Promise.ofSuccess<ConversationMessageInfo, Exception>(a)
-        }
+        whenever(groupService.addMessage(any(), any())).thenResolve(Unit)
 
         whenever(groupService.join(any(), any())).thenResolve(Unit)
         whenever(groupService.getInfo(any())).thenResolve(null)
