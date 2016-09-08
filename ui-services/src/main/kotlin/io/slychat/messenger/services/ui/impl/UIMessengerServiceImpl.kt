@@ -128,10 +128,6 @@ class UIMessengerServiceImpl(
         }
     }
 
-    override fun markConversationAsRead(userId: UserId): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().markConversationAsRead(userId)
-    }
-
     private fun notifyNewMessageListeners(messageInfo: UIMessageInfo) {
         for (listener in newMessageListeners)
             listener(messageInfo)

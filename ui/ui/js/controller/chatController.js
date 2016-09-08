@@ -229,12 +229,6 @@ ChatController.prototype = {
         }
     },
 
-    markConversationAsRead : function (contact) {
-        messengerService.markConversationAsRead(contact.id).catch(function (e) {
-            exceptionController.handleError(e);
-        });
-    },
-
     openGroupMessageMenu : function (message, groupId) {
         var contact = contactController.getContact($('#contact-id').html());
 
@@ -528,7 +522,6 @@ ChatController.prototype = {
                 messageDiv.append(fragment);
 
                 this.scrollTop();
-                groupController.markGroupConversationAsRead(messagesInfo.groupId);
             }
         }
     }

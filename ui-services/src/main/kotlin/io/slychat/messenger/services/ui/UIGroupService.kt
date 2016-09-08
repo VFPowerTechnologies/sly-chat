@@ -12,8 +12,6 @@ interface UIGroupService {
 
     fun getGroupConversations(): Promise<List<UIGroupConversation>, Exception>
 
-    fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception>
-
     fun inviteUsers(groupId: GroupId, contacts: List<UIContactInfo>): Promise<Unit, Exception>
 
     fun createNewGroup(name: String, initialMembers: List<UIContactInfo>): Promise<GroupId, Exception>

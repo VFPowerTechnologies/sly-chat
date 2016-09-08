@@ -93,10 +93,6 @@ class UIGroupServiceImpl(
         }
     }
 
-    override fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception> {
-        return getMessagePersistenceManagerOrThrow().markConversationAsRead(groupId.toConversationId())
-    }
-
     override fun inviteUsers(groupId: GroupId, contacts: List<UIContactInfo>): Promise<Unit, Exception> {
         val ids = contacts.mapToSet { it.id }
         return getMessengerServiceOrThrow().inviteUsersToGroup(groupId, ids)

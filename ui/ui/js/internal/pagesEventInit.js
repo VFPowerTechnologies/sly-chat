@@ -76,11 +76,9 @@ slychat.onPageInit('chat', function (page) {
 
     if (page.query.email !== undefined) {
         chatController.fetchMessageFor(0, 100, page.query);
-        chatController.markConversationAsRead(contactController.getContact(page.query.id));
     }
     else {
         groupController.fetchGroupMessage(0, 100, page.query.id);
-        groupController.markGroupConversationAsRead(page.query.id);
     }
 
     $$('#contact-name').html(page.query.name);
