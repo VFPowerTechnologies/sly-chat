@@ -44,6 +44,13 @@ UIController.prototype = {
         this.initController();
         this.addTimeDifferenceListener();
         this.addOutdatedVersionListener();
+        this.count = 0;
+    },
+
+    getCount : function () {
+        var c = this.count;
+        this.count++;
+        return c;
     },
 
     addTimeDifferenceListener : function () {
@@ -86,6 +93,7 @@ UIController.prototype = {
         window.firstLogin = true;
 
         window.slychat = new Framework7({
+            desktop: isDesktop,
             material: !isIos,
             cache: false,
             swipeBackPage: false,

@@ -11042,6 +11042,7 @@
             if (!_tempNotificationElement) _tempNotificationElement = document.createElement('div');
         
             params.material = app.params.material;
+            params.desktop = app.params.desktop;
         
             var container = $('.notifications');
             if (container.length === 0) {
@@ -11125,12 +11126,12 @@
                 }, params.hold);
             }
         
-            list[params.material ? 'append' : 'prepend'](item[0]);
+            list[params.material ? (params.desktop ? 'prepend' : 'append') : 'prepend'](item[0]);
             container.show();
         
             var itemHeight = item.outerHeight(), clientLeft;
             if (params.material) {
-                container.transform('translate3d(0, '+itemHeight+'px, 0)');
+                container.transform('translate3d(0, ' + (params.desktop ? '-' : '') +itemHeight+'px, 0)');
                 container.transition(0);
         
                 clientLeft = item[0].clientLeft;
