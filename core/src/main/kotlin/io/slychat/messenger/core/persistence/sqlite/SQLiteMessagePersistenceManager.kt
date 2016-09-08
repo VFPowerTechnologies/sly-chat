@@ -22,7 +22,9 @@ class SQLiteMessagePersistenceManager(
             connection.withTransaction {
                 messages.map { insertMessage(connection, conversationId, it) }
                 val last = messages.last()
-                updateConversationInfo(connection, conversationId, last.speaker, last.info.message, last.info.timestamp, messages.size)
+                val unreadInc = messages.filter { !it.info.isRead }.size
+
+                updateConversationInfo(connection, conversationId, last.speaker, last.info.message, last.info.timestamp, unreadInc)
             }
         }
     }
@@ -88,12 +90,13 @@ class SQLiteMessagePersistenceManager(
 
             val messageInfo = conversationMessageInfo.info
 
-            updateConversationInfo(connection, conversationId, conversationMessageInfo.speaker, messageInfo.message, messageInfo.timestamp, 1)
+            val unreadInc = if (messageInfo.isRead) 0 else 1
+            updateConversationInfo(connection, conversationId, conversationMessageInfo.speaker, messageInfo.message, messageInfo.timestamp, unreadInc)
         }
     }
 
     private fun updateConversationInfo(connection: SQLiteConnection, conversationId: ConversationId, speaker: UserId?, lastMessage: String?, lastTimestamp: Long?, unreadIncrement: Int) {
-        val unreadCountFragment = if (speaker != null) "unread_count=unread_count+$unreadIncrement," else ""
+        val unreadCountFragment = if (unreadIncrement > 0) "unread_count=unread_count+$unreadIncrement," else ""
 
         connection.withPrepared("UPDATE conversation_info SET $unreadCountFragment last_speaker_contact_id=?, last_message=?, last_timestamp=? WHERE conversation_id=?") { stmt ->
             stmt.bind(1, speaker)

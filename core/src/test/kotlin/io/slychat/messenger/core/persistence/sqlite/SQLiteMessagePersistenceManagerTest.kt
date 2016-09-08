@@ -229,7 +229,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         withJoinedGroup { groupId, members ->
             val conversationId = ConversationId(groupId)
 
-            val groupMessageInfo = randomReceivedConversationMessageInfo(null)
+            val groupMessageInfo = randomSentConversationMessageInfo()
             messagePersistenceManager.addMessage(conversationId, groupMessageInfo).get()
 
             val conversationInfo = conversationInfoTestUtils.getConversationInfo(conversationId)
@@ -267,6 +267,66 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         assertFailsWithInvalidConversation {
           messagePersistenceManager.addMessage(randomGroupConversationId(), randomReceivedConversationMessageInfo(null)).get()
         }
+    }
+
+    fun testSingleUnreadInc(isRead: Boolean) {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val messageInfo = randomReceivedMessageInfo(isRead)
+            val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
+
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+
+            val conversationInfo = conversationInfoTestUtils.getConversationInfo(conversationId)
+
+            if (!isRead)
+                assertEquals(1, conversationInfo.unreadMessageCount, "Count should increase")
+            else
+                assertEquals(0, conversationInfo.unreadMessageCount, "Count should not increase")
+        }
+    }
+
+    fun testMultiUnreadInc(isRead: Boolean) {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val messageInfo = randomReceivedMessageInfo(isRead)
+            val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
+
+            //there to make sure the update doesn't rely on the last message's speaker
+            val selfConversationMessageInfo = ConversationMessageInfo(null, randomSentMessageInfo())
+
+            val messages = listOf(conversationMessageInfo, selfConversationMessageInfo)
+            messagePersistenceManager.addMessages(conversationId, messages).get()
+
+            val conversationInfo = conversationInfoTestUtils.getConversationInfo(conversationId)
+
+            if (!isRead)
+                assertEquals(1, conversationInfo.unreadMessageCount, "Count should increase")
+            else
+                assertEquals(0, conversationInfo.unreadMessageCount, "Count should not increase")
+        }
+    }
+
+    @Test
+    fun `addMessage should inc the conversation info unread count if an inserted message is unread`() {
+        testSingleUnreadInc(false)
+    }
+
+    @Test
+    fun `addMessage should not inc the conversation info unread count if an inserted message is read`() {
+        testSingleUnreadInc(true)
+    }
+
+    @Test
+    fun `addMessages should inc the conversation info unread count if an inserted message is unread`() {
+        testMultiUnreadInc(false)
+    }
+
+    @Test
+    fun `addMessages should not inc the conversation info unread count if an inserted message is read`() {
+        testMultiUnreadInc(true)
     }
 
     @Test
