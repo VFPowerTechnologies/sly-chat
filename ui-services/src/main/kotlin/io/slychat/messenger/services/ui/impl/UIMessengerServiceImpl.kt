@@ -114,7 +114,7 @@ class UIMessengerServiceImpl(
 
     override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
         return getMessengerServiceOrThrow().getLastMessagesFor(userId, startingAt, count) map { messages ->
-            messages.map { it.toUI() }
+            messages.map { it.info.toUI() }
         }
     }
 
