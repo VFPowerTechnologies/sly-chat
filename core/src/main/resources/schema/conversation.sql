@@ -29,3 +29,4 @@ CREATE TABLE IF NOT EXISTS `conv_%id%` (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS `unique_conv_%id%_timestamp_n` ON `conv_%id%` (timestamp, n);
+CREATE INDEX IF NOT EXISTS `idx_conv_%id%_is_read` ON `conv_%id%` (is_read);
