@@ -1,8 +1,9 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.core.persistence.MessagePersistenceManager
+import io.slychat.messenger.core.persistence.toConversationId
 import io.slychat.messenger.services.messaging.ConversationMessage
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -11,8 +12,7 @@ import rx.subjects.PublishSubject
 
 class ConversationWatcherImpl(
     uiEvents: Observable<UIEvent>,
-    private val contactsPersistenceManager: ContactsPersistenceManager,
-    private val groupService: GroupService
+    private val messagePersistenceManager: MessagePersistenceManager
 ) : ConversationWatcher {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -37,21 +37,19 @@ class ConversationWatcherImpl(
     private fun onUiEvent(event: UIEvent) {
         when (event) {
             is UIEvent.PageChange -> {
-                when (event.page) {
-                    PageType.CONVO -> {
-                        val userId = UserId(event.extra.toLong())
+                val conversationId = when (event.page) {
+                    PageType.CONVO ->
+                        UserId(event.extra.toLong()).toConversationId()
 
-                        contactsPersistenceManager.markConversationAsRead(userId) fail {
-                            log.error("Failed to mark conversation for {} as read: {}", userId, it.message, it)
-                        }
-                    }
+                    PageType.GROUP ->
+                        GroupId(event.extra).toConversationId()
 
-                    PageType.GROUP -> {
-                        val groupId = GroupId(event.extra)
+                    else -> null
+                }
 
-                        groupService.markConversationAsRead(groupId) fail {
-                            log.error("Failed to mark conversation for {} as read: {}", groupId, it.message, it)
-                        }
+                if (conversationId != null) {
+                    messagePersistenceManager.markConversationAsRead(conversationId) fail {
+                        log.error("Failed to mark conversation {} as read: {}", conversationId, it.message, it)
                     }
                 }
             }

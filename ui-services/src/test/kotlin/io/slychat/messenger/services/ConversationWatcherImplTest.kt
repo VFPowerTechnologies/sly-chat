@@ -4,7 +4,8 @@ import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
-import io.slychat.messenger.core.persistence.ContactsPersistenceManager
+import io.slychat.messenger.core.persistence.MessagePersistenceManager
+import io.slychat.messenger.core.persistence.toConversationId
 import io.slychat.messenger.core.randomGroupId
 import io.slychat.messenger.core.randomUserId
 import io.slychat.messenger.testutils.KovenantTestModeRule
@@ -22,15 +23,13 @@ class ConversationWatcherImplTest {
     }
 
     val uiEvents: PublishSubject<UIEvent> = PublishSubject.create()
-    val contactsPersistenceManager: ContactsPersistenceManager = mock()
-    val groupService: GroupService = mock()
+    val messagePersistenceManager: MessagePersistenceManager = mock()
 
-    val watcher = ConversationWatcherImpl(uiEvents, contactsPersistenceManager, groupService)
+    val watcher = ConversationWatcherImpl(uiEvents, messagePersistenceManager)
 
     @Before
     fun before() {
-        whenever(contactsPersistenceManager.markConversationAsRead(any())).thenResolve(Unit)
-        whenever(groupService.markConversationAsRead(any())).thenResolve(Unit)
+        whenever(messagePersistenceManager.markConversationAsRead(any())).thenResolve(Unit)
     }
 
     @Test
@@ -39,7 +38,7 @@ class ConversationWatcherImplTest {
 
         uiEvents.onNext(UIEvent.PageChange(PageType.CONVO, userId.toString()))
 
-        verify(contactsPersistenceManager).markConversationAsRead(userId)
+        verify(messagePersistenceManager).markConversationAsRead(userId.toConversationId())
     }
 
     @Test
@@ -48,6 +47,6 @@ class ConversationWatcherImplTest {
 
         uiEvents.onNext(UIEvent.PageChange(PageType.GROUP, groupId.toString()))
 
-        verify(groupService).markConversationAsRead(groupId)
+        verify(messagePersistenceManager).markConversationAsRead(groupId.toConversationId())
     }
 }

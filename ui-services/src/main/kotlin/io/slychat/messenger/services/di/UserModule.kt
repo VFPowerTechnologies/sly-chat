@@ -399,9 +399,8 @@ class UserModule(
     @Provides
     fun providesConversationWatcher(
         uiEventService: UIEventService,
-        contactsPersistenceManager: ContactsPersistenceManager,
-        groupService: GroupService
+        messagePersistenceManager: MessagePersistenceManager
     ): ConversationWatcher {
-        return ConversationWatcherImpl(uiEventService.events, contactsPersistenceManager, groupService)
+        return ConversationWatcherImpl(uiEventService.events, messagePersistenceManager)
     }
 }
