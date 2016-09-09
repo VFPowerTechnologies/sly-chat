@@ -3,7 +3,7 @@ package io.slychat.messenger.core.persistence.sqlite
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.GroupInfo
-import io.slychat.messenger.core.persistence.sqlite.SQLiteGroupPersistenceManager
+import io.slychat.messenger.core.persistence.GroupMembershipLevel
 import io.slychat.messenger.core.randomGroupInfo
 
 interface GroupPersistenceManagerTestUtils : ContactsPersistenceManagerTestUtils {
