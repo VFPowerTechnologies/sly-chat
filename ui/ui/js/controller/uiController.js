@@ -47,12 +47,6 @@ UIController.prototype = {
         this.count = 0;
     },
 
-    getCount : function () {
-        var c = this.count;
-        this.count++;
-        return c;
-    },
-
     addTimeDifferenceListener : function () {
         messengerService.addClockDifferenceUpdateListener(function (difference) {
             window.relayTimeDifference = difference;
