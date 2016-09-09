@@ -104,7 +104,7 @@ class MessageServiceImplTest {
 
                 val testSubscriber = messageService.newMessages.testSubscriber()
 
-                messageService.addNewMessage(conversationId, conversationMessageInfo).get()
+                messageService.addMessage(conversationId, conversationMessageInfo).get()
 
                 Assertions.assertThat(testSubscriber.onNextEvents).apply {
                     `as`("Should emit an event")

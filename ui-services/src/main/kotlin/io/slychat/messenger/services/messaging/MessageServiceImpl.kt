@@ -30,7 +30,7 @@ class MessageServiceImpl(
         }
     }
 
-    override fun addNewMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
+    override fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
         return messagePersistenceManager.addMessage(conversationId, conversationMessageInfo) mapUi {
             val conversationMessage = when (conversationId) {
                 is ConversationId.User -> ConversationMessage.Single(conversationId.id, conversationMessageInfo.info)

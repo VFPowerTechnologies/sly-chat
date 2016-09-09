@@ -126,14 +126,14 @@ class UserModule(
     fun providesMessageProcessor(
         userData: UserData,
         contactsService: ContactsService,
-        messagePersistenceManager: MessagePersistenceManager,
+        messageService: MessageService,
         messageCipherService: MessageCipherService,
         groupService: GroupService,
         uiEventService: UIEventService
     ): MessageProcessor = MessageProcessorImpl(
         userData.userId,
         contactsService,
-        messagePersistenceManager,
+        messageService,
         messageCipherService,
         groupService,
         uiEventService.events
@@ -401,4 +401,13 @@ class UserModule(
     ): ConversationWatcher {
         return ConversationWatcherImpl(uiEventService.events, messagePersistenceManager)
     }
+
+    @UserScope
+    @Provides
+    fun proviesMessageService(
+        messagePersistenceManager: MessagePersistenceManager
+    ): MessageService {
+        return MessageServiceImpl(messagePersistenceManager)
+    }
+
 }

@@ -6,15 +6,11 @@ import rx.Observable
 
 /** Handles incoming messages. */
 interface MessageProcessor {
+    //FIXME
     val newMessages: Observable<ConversationMessage>
 
     fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception>
 
     fun init()
     fun shutdown()
-
-    //TODO self-messages
-    //maybe send a self-message via processMessages
-    //for the ui side, just return the generated MessageInfo and do the db write in the bg
-    //if this fails, then ???; right now we just essentially crash anyways
 }

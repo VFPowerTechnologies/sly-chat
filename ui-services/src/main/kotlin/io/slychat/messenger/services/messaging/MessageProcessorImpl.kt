@@ -18,7 +18,7 @@ import java.util.*
 class MessageProcessorImpl(
     private val selfId: UserId,
     private val contactsService: ContactsService,
-    private val messagePersistenceManager: MessagePersistenceManager,
+    private val messageService: MessageService,
     private val messageCipherService: MessageCipherService,
     private val groupService: GroupService,
     uiEvents: Observable<UIEvent>
@@ -135,15 +135,12 @@ class MessageProcessorImpl(
 
     private fun addSingleMessage(userId: UserId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
         val conversationId = userId.toConversationId()
-        return messagePersistenceManager.addMessage(conversationId, conversationMessageInfo) bindRecoverForUi { e: InvalidMessageLevelException ->
+        return messageService.addMessage(conversationId, conversationMessageInfo) bindRecoverForUi { e: InvalidMessageLevelException ->
             log.debug("User doesn't have appropriate message level, upgrading")
 
             contactsService.allowAll(userId) bindUi {
-                messagePersistenceManager.addMessage(conversationId, conversationMessageInfo)
+                messageService.addMessage(conversationId, conversationMessageInfo)
             }
-        } mapUi {
-            val message = ConversationMessage.Single(userId, conversationMessageInfo.info)
-            newMessagesSubject.onNext(message)
         }
     }
 
@@ -169,10 +166,7 @@ class MessageProcessorImpl(
     }
 
     private fun addGroupMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
-        return messagePersistenceManager.addMessage(groupId.toConversationId(), conversationMessageInfo) mapUi {
-            val message = ConversationMessage.Group(groupId, conversationMessageInfo.speaker, conversationMessageInfo.info)
-            newMessagesSubject.onNext(message)
-        }
+        return messageService.addMessage(groupId.toConversationId(), conversationMessageInfo)
     }
 
     private fun handleGroupMessage(sender: UserId, m: GroupEventMessage): Promise<Unit, Exception> {
