@@ -48,8 +48,8 @@ class MessengerServiceImpl(
     override val newMessages: Observable<ConversationMessage>
         get() = messageReceiver.newMessages
 
-    private val messageUpdatesSubject = PublishSubject.create<MessageBundle>()
-    override val messageUpdates: Observable<MessageBundle>
+    private val messageUpdatesSubject = PublishSubject.create<MessageUpdateEvent>()
+    override val messageUpdates: Observable<MessageUpdateEvent>
         get() = messageUpdatesSubject
 
     private val subscriptions = CompositeSubscription()
@@ -93,17 +93,21 @@ class MessengerServiceImpl(
     }
 
     private fun processSingleUpdate(metadata: MessageMetadata, serverReceivedTimestamp: Long) {
-        log.debug("Processing sent convo message {} to {}", metadata.messageId, metadata.userId)
+        val messageId = metadata.messageId
 
-        messagePersistenceManager.markMessageAsDelivered(metadata.userId.toConversationId(), metadata.messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
+        log.debug("Processing sent convo message {} to {}", messageId, metadata.userId)
+
+        val conversationId = metadata.userId.toConversationId()
+
+        messagePersistenceManager.markMessageAsDelivered(conversationId, messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
             broadcastSentMessage(metadata, conversationMessageInfo)
         } successUi { messageInfo ->
             if (messageInfo != null) {
-                val bundle = MessageBundle(metadata.userId, null, listOf(messageInfo))
-                messageUpdatesSubject.onNext(bundle)
+                val update = MessageUpdateEvent.Delivered(conversationId, messageId, serverReceivedTimestamp)
+                messageUpdatesSubject.onNext(update)
             }
         } fail { e ->
-            log.error("Unable to mark convo message <<{}>> to {} as delivered: {}", metadata.messageId, metadata.userId, e.message, e)
+            log.error("Unable to mark convo message <<{}>> to {} as delivered: {}", messageId, metadata.userId, e.message, e)
         }
     }
 
@@ -111,18 +115,22 @@ class MessengerServiceImpl(
         //can't be null due to constructor checks
         val groupId = metadata.groupId!!
 
-        log.debug("Processing sent group message <<{}/{}>>", groupId, metadata.messageId)
+        val messageId = metadata.messageId
 
-        messagePersistenceManager.markMessageAsDelivered(groupId.toConversationId(), metadata.messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
+        log.debug("Processing sent group message <<{}/{}>>", groupId, messageId)
+
+        val conversationId = groupId.toConversationId()
+
+        messagePersistenceManager.markMessageAsDelivered(conversationId, messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
             broadcastSentMessage(metadata, conversationMessageInfo)
         } successUi { messageInfo ->
             //if this is null, the message has already been delievered to one recipient, so we don't emit another event
             if (messageInfo != null) {
-                val bundle = MessageBundle(metadata.userId, groupId, listOf(messageInfo))
-                messageUpdatesSubject.onNext(bundle)
+                val update = MessageUpdateEvent.Delivered(conversationId, messageId, serverReceivedTimestamp)
+                messageUpdatesSubject.onNext(update)
             }
         } fail { e ->
-            log.error("Unable to mark group message <<{}/{}>> as delivered: {}", groupId, metadata.messageId, e.message, e)
+            log.error("Unable to mark group message <<{}/{}>> as delivered: {}", groupId, messageId, e.message, e)
         }
     }
 
@@ -408,7 +416,6 @@ class MessengerServiceImpl(
         return messageSender.addToQueue(messages)
     }
 
-    //FIXME
     private fun broadcastSentMessage(metadata: MessageMetadata, conversationMessageInfo: ConversationMessageInfo?): Promise<MessageInfo?, Exception> {
         if (conversationMessageInfo == null)
             return Promise.ofSuccess(null)

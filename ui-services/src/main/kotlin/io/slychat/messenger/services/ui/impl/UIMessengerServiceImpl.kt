@@ -1,11 +1,12 @@
 package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.messaging.ConversationMessage
-import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
@@ -22,7 +23,7 @@ class UIMessengerServiceImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val newMessageListeners = ArrayList<(UIMessageInfo) -> Unit>()
-    private val messageStatusUpdateListeners = ArrayList<(UIMessageInfo) -> Unit>()
+    private val messageStatusUpdateListeners = ArrayList<(UIMessageUpdateEvent) -> Unit>()
     private val clockDifferenceUpdateListeners = ArrayList<(Long) -> Unit>()
 
     private var relayClockDiff = 0L
@@ -79,9 +80,19 @@ class UIMessengerServiceImpl(
         notifyNewMessageListeners(uiMessageInfo)
     }
 
-    private fun onMessageStatusUpdate(messageBundle: MessageBundle) {
-        val messages = messageBundle.messages.map { it.toUI() }
-        notifyMessageStatusUpdateListeners(UIMessageInfo(messageBundle.userId, messageBundle.groupId, messages))
+    private fun onMessageStatusUpdate(event: MessageUpdateEvent) {
+        val uiEvent = when (event) {
+            is MessageUpdateEvent.Delivered -> {
+                val (userId, groupId) = when (event.conversationId) {
+                    is ConversationId.User -> event.conversationId.id to null
+                    is ConversationId.Group -> null to event.conversationId.id
+                }
+
+                UIMessageUpdateEvent.Delivered(userId, groupId, event.messageId, event.deliveredTimestamp)
+            }
+        }
+
+        notifyMessageStatusUpdateListeners(uiEvent)
     }
 
     /* Interface methods. */
@@ -102,7 +113,7 @@ class UIMessengerServiceImpl(
         newMessageListeners.add(listener)
     }
 
-    override fun addMessageStatusUpdateListener(listener: (UIMessageInfo) -> Unit) {
+    override fun addMessageStatusUpdateListener(listener: (UIMessageUpdateEvent) -> Unit) {
         messageStatusUpdateListeners.add(listener)
     }
 
@@ -129,13 +140,11 @@ class UIMessengerServiceImpl(
     }
 
     private fun notifyNewMessageListeners(messageInfo: UIMessageInfo) {
-        for (listener in newMessageListeners)
-            listener(messageInfo)
+        newMessageListeners.forEach { it(messageInfo) }
     }
 
-    private fun notifyMessageStatusUpdateListeners(messageInfo: UIMessageInfo) {
-        for (listener in messageStatusUpdateListeners)
-            listener(messageInfo)
+    private fun notifyMessageStatusUpdateListeners(event: UIMessageUpdateEvent) {
+        messageStatusUpdateListeners.forEach { it(event) }
     }
 
     override fun deleteAllMessagesFor(userId: UserId): Promise<Unit, Exception> {

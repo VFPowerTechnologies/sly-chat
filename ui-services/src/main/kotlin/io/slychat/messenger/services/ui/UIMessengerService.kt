@@ -3,6 +3,7 @@ package io.slychat.messenger.services.ui
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.services.ui.impl.UIMessageUpdateEvent
 import nl.komponents.kovenant.Promise
 
 /** Responsible for all message-related functionality between contacts. */
@@ -17,7 +18,7 @@ interface UIMessengerService {
     fun addNewMessageListener(listener: (UIMessageInfo) -> Unit)
 
     /** Listener for sent message status updates. */
-    fun addMessageStatusUpdateListener(listener: (UIMessageInfo) -> Unit)
+    fun addMessageStatusUpdateListener(listener: (UIMessageUpdateEvent) -> Unit)
 
     fun addClockDifferenceUpdateListener(listener: (Long) -> Unit)
 

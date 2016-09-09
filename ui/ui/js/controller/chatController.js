@@ -9,14 +9,17 @@ ChatController.prototype = {
     },
 
     addMessageUpdateListener : function () {
-        messengerService.addMessageStatusUpdateListener(function (messageInfo) {
-            messageInfo.messages.forEach(function (message) {
-                var messageBlock = $("#message_" + message.id);
-                if(messageBlock.length && message.sent == true){
-                    var time = new Date(message.timestamp).toISOString();
-                    messageBlock.find(".timespan").html("<time class='timeago' datetime='" + time + "' title='" + $.timeago(time, window.relayTimeDifference) + "'>" + $.timeago(time, window.relayTimeDifference) + "</time>");
-                }
-            }.bind(this));
+        messengerService.addMessageStatusUpdateListener(function (event) {
+            switch (event.type) {
+                case 'DELIVERED':
+                    var messageBlock = $("#message_" + event.messageId);
+                    if(messageBlock.length){
+                        var time = new Date(event.deliveredTimestamp).toISOString();
+                        messageBlock.find(".timespan").html("<time class='timeago' datetime='" + time + "' title='" + $.timeago(time, window.relayTimeDifference) + "'>" + $.timeago(time, window.relayTimeDifference) + "</time>");
+                    }
+
+                    break;
+            }
 
             contactController.resetCachedConversation();
         }.bind(this));

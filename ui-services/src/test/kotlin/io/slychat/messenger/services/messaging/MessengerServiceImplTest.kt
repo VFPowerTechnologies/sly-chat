@@ -20,6 +20,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
+import rx.observers.TestSubscriber
 import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.assertEquals
@@ -50,6 +51,10 @@ class MessengerServiceImplTest {
     val syncEvents: PublishSubject<AddressBookSyncEvent> = PublishSubject.create()
 
     val messageSent: PublishSubject<MessageSendRecord> = PublishSubject.create()
+
+    inline fun <reified T : MessageUpdateEvent> messageUpdateEventCollectorFor(messengerService: MessengerServiceImpl): TestSubscriber<T> {
+        return messengerService.messageUpdates.subclassFilterTestSubscriber()
+    }
 
     @Before
     fun before() {
@@ -321,17 +326,16 @@ class MessengerServiceImplTest {
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
         val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
 
-        whenever(messagePersistenceManager.markMessageAsDelivered(update.userId.toConversationId(), update.messageId, record.serverReceivedTimestamp)).thenResolve(conversationMessageInfo)
+        val conversationId = update.userId.toConversationId()
+        whenever(messagePersistenceManager.markMessageAsDelivered(conversationId, update.messageId, record.serverReceivedTimestamp)).thenResolve(conversationMessageInfo)
 
-        val testSubscriber = messengerService.messageUpdates.testSubscriber()
+        val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Delivered>(messengerService)
 
         messageSent.onNext(record)
 
         assertEventEmitted(testSubscriber) {
-            assertEquals(update.userId, it.userId, "Invalid user id")
-            assertNull(it.groupId, "groupId should be null")
-            assertThat(it.messages)
-                .containsOnly(messageInfo)
+            assertEquals(conversationId, it.conversationId, "Invalid conversation id")
+            assertEquals(update.messageId, it.messageId, "Invalid message id")
         }
     }
 
@@ -343,18 +347,19 @@ class MessengerServiceImplTest {
         val update = record.metadata
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
 
-        whenever(messagePersistenceManager.markMessageAsDelivered(update.groupId!!.toConversationId(), update.messageId, record.serverReceivedTimestamp))
+        val conversationId = update.groupId!!.toConversationId()
+
+        whenever(messagePersistenceManager.markMessageAsDelivered(conversationId, update.messageId, record.serverReceivedTimestamp))
             .thenResolve(ConversationMessageInfo(update.userId, messageInfo))
 
-        val testSubscriber = messengerService.messageUpdates.testSubscriber()
+        val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Delivered>(messengerService)
 
         messageSent.onNext(record)
 
         assertEventEmitted(testSubscriber) {
-            assertEquals(update.userId, it.userId, "Invalid user id")
-            assertEquals(update.groupId, it.groupId, "Invalid group id")
-            assertThat(it.messages)
-                .containsOnly(messageInfo)
+            assertEquals(conversationId, it.conversationId, "Invalid conversation id")
+            assertEquals(update.messageId, it.messageId, "Invalid message id")
+            assertEquals(record.serverReceivedTimestamp, it.deliveredTimestamp, "Invalid delivered timestamp")
         }
     }
 
