@@ -138,7 +138,8 @@ class MessengerServiceImpl(
 
     /** Writes the received message and then fires the new messages subject. */
     private fun writeReceivedSelfMessage(from: UserId, messageText: String): Promise<Unit, Exception> {
-        val messageInfo = MessageInfo.newReceived(messageText, currentTimestamp(), 0)
+        //we mark the message as already read as well to avoid notifications (FIXME)
+        val messageInfo = MessageInfo.newReceived(messageText, currentTimestamp(), true)
         val conversationMessageInfo = ConversationMessageInfo(from, messageInfo)
         return messageService.addMessage(from.toConversationId(), conversationMessageInfo)
     }
