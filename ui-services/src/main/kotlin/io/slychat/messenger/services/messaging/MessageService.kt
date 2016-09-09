@@ -2,6 +2,7 @@ package io.slychat.messenger.services.messaging
 
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.ConversationMessageInfo
+import io.slychat.messenger.core.persistence.GroupConversation
 import io.slychat.messenger.core.persistence.UserConversation
 import io.slychat.messenger.services.MessageUpdateEvent
 import nl.komponents.kovenant.Promise
@@ -21,5 +22,6 @@ interface MessageService {
     fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception>
     fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception>
     fun getAllUserConversations(): Promise<List<UserConversation>, Exception>
+    fun getAllGroupConversations(): Promise<List<GroupConversation>, Exception>
     fun getLastMessages(conversationId: ConversationId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception>
 }

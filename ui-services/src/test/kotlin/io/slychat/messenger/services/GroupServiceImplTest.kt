@@ -6,13 +6,13 @@ import com.nhaarman.mockito_kotlin.whenever
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.persistence.GroupMembershipLevel
 import io.slychat.messenger.core.persistence.GroupPersistenceManager
-import io.slychat.messenger.core.persistence.MessagePersistenceManager
 import io.slychat.messenger.core.randomGroupId
 import io.slychat.messenger.core.randomGroupInfo
 import io.slychat.messenger.core.randomUserId
 import io.slychat.messenger.core.randomUserIds
 import io.slychat.messenger.services.contacts.MockAddressBookOperationManager
 import io.slychat.messenger.services.messaging.GroupEvent
+import io.slychat.messenger.services.messaging.MessageService
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenAnswerWithArg
 import io.slychat.messenger.testutils.thenResolve
@@ -33,13 +33,13 @@ class GroupServiceImplTest {
     val groupPersistenceManager: GroupPersistenceManager = mock()
     val contactPersistenceManager: ContactsPersistenceManager = mock()
     val addressBookOperationManager = MockAddressBookOperationManager()
-    val messagePersistenceManager: MessagePersistenceManager = mock()
+    val messageService: MessageService = mock()
 
     val groupService = GroupServiceImpl(
         groupPersistenceManager,
         contactPersistenceManager,
         addressBookOperationManager,
-        messagePersistenceManager
+        messageService
     )
 
     @Before

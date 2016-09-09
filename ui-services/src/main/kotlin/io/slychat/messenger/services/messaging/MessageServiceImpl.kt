@@ -1,9 +1,6 @@
 package io.slychat.messenger.services.messaging
 
-import io.slychat.messenger.core.persistence.ConversationId
-import io.slychat.messenger.core.persistence.ConversationMessageInfo
-import io.slychat.messenger.core.persistence.MessagePersistenceManager
-import io.slychat.messenger.core.persistence.UserConversation
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
@@ -56,6 +53,10 @@ class MessageServiceImpl(
 
     override fun getAllUserConversations(): Promise<List<UserConversation>, Exception> {
         return messagePersistenceManager.getAllUserConversations()
+    }
+
+    override fun getAllGroupConversations(): Promise<List<GroupConversation>, Exception> {
+        return messagePersistenceManager.getAllGroupConversations()
     }
 
     override fun getLastMessages(conversationId: ConversationId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception> {

@@ -4,6 +4,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.contacts.AddressBookOperationManager
 import io.slychat.messenger.services.messaging.GroupEvent
+import io.slychat.messenger.services.messaging.MessageService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.successUi
@@ -16,7 +17,7 @@ class GroupServiceImpl(
     private val groupPersistenceManager: GroupPersistenceManager,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val addressBookOperationManager: AddressBookOperationManager,
-    private val messagePersistenceManager: MessagePersistenceManager
+    private val messageService: MessageService
 ) : GroupService {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -37,7 +38,7 @@ class GroupServiceImpl(
     }
 
     override fun getGroupConversations(): Promise<List<GroupConversation>, Exception> {
-        return messagePersistenceManager.getAllGroupConversations()
+        return messageService.getAllGroupConversations()
     }
 
     override fun getInfo(groupId: GroupId): Promise<GroupInfo?, Exception> {
