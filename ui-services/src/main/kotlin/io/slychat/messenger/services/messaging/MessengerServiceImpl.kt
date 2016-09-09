@@ -137,13 +137,10 @@ class MessengerServiceImpl(
     }
 
     /** Writes the received message and then fires the new messages subject. */
-    private fun writeReceivedSelfMessage(from: UserId, decryptedMessage: String): Promise<Unit, Exception> {
-        val messageInfo = MessageInfo.newReceived(decryptedMessage, currentTimestamp(), 0)
+    private fun writeReceivedSelfMessage(from: UserId, messageText: String): Promise<Unit, Exception> {
+        val messageInfo = MessageInfo.newReceived(messageText, currentTimestamp(), 0)
         val conversationMessageInfo = ConversationMessageInfo(from, messageInfo)
-        return messageService.addMessage(from.toConversationId(), conversationMessageInfo) mapUi { messageInfo ->
-            //FIXME
-            //newMessagesSubject.onNext(MessageBundle(from, listOf(messageInfo)))
-        }
+        return messageService.addMessage(from.toConversationId(), conversationMessageInfo)
     }
 
     private fun usersFromPackages(packages: List<Package>): Set<UserId> = packages.mapTo(HashSet()) { it.userId }
@@ -194,7 +191,7 @@ class MessengerServiceImpl(
 
     /* UIMessengerService interface */
 
-    override fun sendMessageTo(userId: UserId, message: String, ttl: Long): Promise<MessageInfo, Exception> {
+    override fun sendMessageTo(userId: UserId, message: String, ttl: Long): Promise<Unit, Exception> {
         val isSelfMessage = userId == selfId
 
         //HACK
@@ -209,17 +206,14 @@ class MessengerServiceImpl(
 
             val metadata = MessageMetadata(userId, null, MessageCategory.TEXT_SINGLE, messageInfo.id)
             messageSender.addToQueue(SenderMessageEntry(metadata, serialized)) bind {
-                messageService.addMessage(userId.toConversationId(), conversationMessageInfo) map { messageInfo }
+                messageService.addMessage(userId.toConversationId(), conversationMessageInfo)
             }
         }
         else {
             val messageInfo = MessageInfo.newSelfSent(message, 0)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
             //we need to insure that the send message info is sent back to the ui before the ServerReceivedMessage is fired
-            messageService.addMessage(userId.toConversationId(), conversationMessageInfo) map {
-                Thread.sleep(30)
-                messageInfo
-            } successUi { messageInfo ->
+            messageService.addMessage(userId.toConversationId(), conversationMessageInfo) successUi {
                 writeReceivedSelfMessage(userId, messageInfo.message)
             }
         }
@@ -253,7 +247,7 @@ class MessengerServiceImpl(
         return messageSender.addToQueue(messages) map { members }
     }
 
-    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<ConversationMessageInfo, Exception> {
+    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<Unit, Exception> {
         val m = SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId, ttl))
 
         val messageId = randomUUID()
@@ -261,7 +255,7 @@ class MessengerServiceImpl(
         return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bindUi {
             val messageInfo = MessageInfo.newSent(message, 0).copy(id = messageId)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
-            messageService.addMessage(groupId.toConversationId(), conversationMessageInfo) map { conversationMessageInfo }
+            messageService.addMessage(groupId.toConversationId(), conversationMessageInfo)
         }
     }
 

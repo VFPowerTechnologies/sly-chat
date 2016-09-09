@@ -452,26 +452,22 @@ ChatController.prototype = {
 
     submitNewMessage : function (contact, message) {
         if (contact.email === undefined) {
-            messengerService.sendGroupMessageTo(contact.id, message, 0).then(function (messageDetails) {
+            messengerService.sendGroupMessageTo(contact.id, message, 0).then(function () {
                 var groupMessageDetails = {
                     info: messageDetails,
                     speaker: null
                 };
-                $("#chat-content").append(this.createGroupMessageNode(groupMessageDetails, contact.id));
 
                 var input = $("#newMessageInput");
                 input.val("");
                 input.click();
                 this.scrollTop();
-                groupController.updateConversationWithNewMessage(contact.id, messageDetails);
             }.bind(this)).catch(function (e) {
                 exceptionController.handleError(e);
             })
         }
         else {
-            messengerService.sendMessageTo(contact.id, message, 0).then(function (messageDetails) {
-                $("#chat-content").append(this.createMessageNode(messageDetails, profileController.name));
-
+            messengerService.sendMessageTo(contact.id, message, 0).then(function () {
                 var input = $("#newMessageInput");
                 input.val("");
                 input.click();
@@ -498,7 +494,6 @@ ChatController.prototype = {
 
                 messageDiv.append(fragment);
                 this.scrollTop();
-                this.markConversationAsRead(contact);
             }
         }
     },

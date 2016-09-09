@@ -10,9 +10,9 @@ import nl.komponents.kovenant.Promise
 @JSToJavaGenerate("MessengerService")
 interface UIMessengerService {
     /** Attempt to send a message to a contact. */
-    fun sendMessageTo(userId: UserId, message: String, ttl: Long): Promise<UIMessage, Exception>
+    fun sendMessageTo(userId: UserId, message: String, ttl: Long): Promise<Unit, Exception>
 
-    fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<UIMessage, Exception>
+    fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<Unit, Exception>
 
     /** Listener for new incoming messages. Each list will contain messages only from a single contact. */
     fun addNewMessageListener(listener: (UIMessageInfo) -> Unit)
