@@ -7,16 +7,21 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.currentTimestamp
-import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.core.persistence.Package
+import io.slychat.messenger.core.persistence.PackageId
+import io.slychat.messenger.core.persistence.PackageQueuePersistenceManager
 import io.slychat.messenger.core.randomMessageText
 import io.slychat.messenger.services.crypto.DecryptionResult
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
-import io.slychat.messenger.testutils.*
+import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.cond
+import io.slychat.messenger.testutils.thenReject
+import io.slychat.messenger.testutils.thenResolve
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
-import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -284,28 +289,5 @@ class MessageReceiverImplTest {
         receiver.init()
 
         verify(packageQueuePersistenceManager).getQueuedPackages()
-    }
-
-    @Test
-    fun `it should proxy new messages from MessageProcessor`() {
-        val subject = PublishSubject.create<ConversationMessage>()
-        whenever(messageProcessor.newMessages).thenReturn(subject)
-
-        val receiver = createReceiver()
-
-        val testSubscriber = receiver.newMessages.testSubscriber()
-
-        val bundle = ConversationMessage.Single(
-            UserId(1),
-            MessageInfo.newReceived("m", currentTimestamp())
-        )
-
-        subject.onNext(bundle)
-
-        val bundles = testSubscriber.onNextEvents
-
-        assertThat(bundles)
-            .containsOnlyElementsOf(listOf(bundle))
-            .`as`("Received bundles")
     }
 }

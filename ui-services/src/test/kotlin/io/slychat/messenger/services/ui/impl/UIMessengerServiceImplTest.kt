@@ -20,8 +20,8 @@ class UIMessengerServiceImplTest {
 
     @Before
     fun before() {
-        whenever(userComponent.messengerService.messageUpdates).thenReturn(messageUpdates)
-        whenever(userComponent.messengerService.newMessages).thenReturn(newMessages)
+        whenever(userComponent.messageService.messageUpdates).thenReturn(messageUpdates)
+        whenever(userComponent.messageService.newMessages).thenReturn(newMessages)
         whenever(userComponent.relayClock.clockDiffUpdates).thenReturn(clockDiffUpdates)
     }
 

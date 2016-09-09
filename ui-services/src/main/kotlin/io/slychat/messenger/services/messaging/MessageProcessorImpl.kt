@@ -12,7 +12,6 @@ import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Subscription
-import rx.subjects.PublishSubject
 import java.util.*
 
 class MessageProcessorImpl(
@@ -24,10 +23,6 @@ class MessageProcessorImpl(
     uiEvents: Observable<UIEvent>
 ) : MessageProcessor {
     private val log = LoggerFactory.getLogger(javaClass)
-
-    private val newMessagesSubject = PublishSubject.create<ConversationMessage>()
-    override val newMessages: Observable<ConversationMessage>
-        get() = newMessagesSubject
 
     private var currentlySelectedChatUser: UserId? = null
     private var currentlySelectedGroup: GroupId? = null

@@ -3,18 +3,13 @@ package io.slychat.messenger.services.messaging
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.services.MessageUpdateEvent
 import nl.komponents.kovenant.Promise
-import rx.Observable
 
 interface MessengerService {
     fun init()
     fun shutdown()
 
     fun addOfflineMessages(offlineMessages: List<Package>): Promise<Unit, Exception>
-
-    val newMessages: Observable<ConversationMessage>
-    val messageUpdates: Observable<MessageUpdateEvent>
 
     /** Broadcast a new device to other accounts. */
     fun broadcastNewDevice(deviceInfo: DeviceInfo): Promise<Unit, Exception>

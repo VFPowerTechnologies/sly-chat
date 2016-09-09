@@ -7,6 +7,7 @@ import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.messaging.ConversationMessage
+import io.slychat.messenger.services.messaging.MessageService
 import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
@@ -31,6 +32,7 @@ class UIMessengerServiceImpl(
     private val subscriptions = CompositeSubscription()
 
     private var messengerService: MessengerService? = null
+    private var messageService: MessageService? = null
     private var relayClock: RelayClock? = null
 
     init {
@@ -39,14 +41,15 @@ class UIMessengerServiceImpl(
 
     private fun onUserSessionAvailabilityChanged(userComponent: UserComponent?) {
         if (userComponent != null) {
-            val messengerService = userComponent.messengerService
+            val messageService = userComponent.messageService
 
-            subscriptions.add(messengerService.newMessages.subscribe { onNewMessages(it) })
-            subscriptions.add(messengerService.messageUpdates.subscribe { onMessageStatusUpdate(it) })
+            subscriptions.add(messageService.newMessages.subscribe { onNewMessages(it) })
+            subscriptions.add(messageService.messageUpdates.subscribe { onMessageStatusUpdate(it) })
             subscriptions.add(userComponent.relayClock.clockDiffUpdates.subscribe { onClockDifferenceUpdate(it) })
 
-            this.messengerService = userComponent.messengerService
+            messengerService = userComponent.messengerService
             relayClock = userComponent.relayClock
+            this.messageService = messageService
         }
         else {
             subscriptions.clear()

@@ -3,6 +3,7 @@ package io.slychat.messenger.services.messaging
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.ConversationMessageInfo
 import io.slychat.messenger.core.persistence.MessagePersistenceManager
+import io.slychat.messenger.core.persistence.UserConversation
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
@@ -43,5 +44,21 @@ class MessageServiceImpl(
 
     override fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception> {
         return messagePersistenceManager.markConversationAsRead(conversationId)
+    }
+
+    override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> {
+        return messagePersistenceManager.deleteMessages(conversationId, messageIds)
+    }
+
+    override fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception> {
+        return messagePersistenceManager.deleteAllMessages(conversationId)
+    }
+
+    override fun getAllUserConversations(): Promise<List<UserConversation>, Exception> {
+        return messagePersistenceManager.getAllUserConversations()
+    }
+
+    override fun getLastMessages(conversationId: ConversationId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception> {
+        return messagePersistenceManager.getLastMessages(conversationId, startingAt, count)
     }
 }

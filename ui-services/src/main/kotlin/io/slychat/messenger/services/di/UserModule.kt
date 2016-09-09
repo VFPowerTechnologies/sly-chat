@@ -169,7 +169,7 @@ class UserModule(
     fun providesMessengerService(
         contactsService: ContactsService,
         addressBookOperationManager: AddressBookOperationManager,
-        messagePersistenceManager: MessagePersistenceManager,
+        messageService: MessageService,
         groupService: GroupService,
         relayClientManager: RelayClientManager,
         messageReceiver: MessageReceiver,
@@ -180,7 +180,7 @@ class UserModule(
         MessengerServiceImpl(
             contactsService,
             addressBookOperationManager,
-            messagePersistenceManager,
+            messageService,
             groupService,
             relayClientManager,
             messageSender,
@@ -200,7 +200,7 @@ class UserModule(
     @UserScope
     @Provides
     fun providesNotifierService(
-        messengerService: MessengerService,
+        messageService: MessageService,
         uiEventService: UIEventService,
         contactsPersistenceManager: ContactsPersistenceManager,
         groupPersistenceManager: GroupPersistenceManager,
@@ -211,7 +211,7 @@ class UserModule(
     ): NotifierService {
         //even if this a hot observable, it's not yet emitting so we can just connect using share() instead of
         //manually using the ConnectedObservable
-        val shared = messengerService.newMessages
+        val shared = messageService.newMessages
             //ignore messages from self
             .filter { it.info.isSent == false && !it.info.isRead }
             .share()

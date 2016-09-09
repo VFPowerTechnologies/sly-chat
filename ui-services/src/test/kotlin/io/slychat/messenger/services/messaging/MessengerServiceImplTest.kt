@@ -8,11 +8,12 @@ import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
-import io.slychat.messenger.services.*
+import io.slychat.messenger.services.GroupService
+import io.slychat.messenger.services.RelayClientManager
+import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenAnswerWithArg
 import io.slychat.messenger.testutils.thenResolve
 import nl.komponents.kovenant.Promise
@@ -20,11 +21,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
-import rx.observers.TestSubscriber
 import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 //only downside of this api design is having to deserialize messages in tests
@@ -39,7 +38,7 @@ class MessengerServiceImplTest {
 
     val contactsService: ContactsService = mock()
     val addressBookOperationManager: AddressBookOperationManager = mock()
-    val messagePersistenceManager: MessagePersistenceManager = mock()
+    val messageService: MessageService = mock()
     val groupService: GroupService = mock()
     val relayClientManager: RelayClientManager = mock()
     val messageSender: MessageSender = mock()
@@ -52,10 +51,6 @@ class MessengerServiceImplTest {
 
     val messageSent: PublishSubject<MessageSendRecord> = PublishSubject.create()
 
-    inline fun <reified T : MessageUpdateEvent> messageUpdateEventCollectorFor(messengerService: MessengerServiceImpl): TestSubscriber<T> {
-        return messengerService.messageUpdates.subclassFilterTestSubscriber()
-    }
-
     @Before
     fun before() {
         whenever(messageSender.messageSent).thenReturn(messageSent)
@@ -66,7 +61,7 @@ class MessengerServiceImplTest {
         whenever(messageSender.addToQueue(anyList())).thenResolve(Unit)
 
         //some useful defaults
-        whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswerWithArg(1)
+        whenever(messageService.addMessage(any(), any())).thenAnswerWithArg(1)
 
         whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
         whenever(messageReceiver.processPackages(any())).thenResolve(Unit)
@@ -107,7 +102,7 @@ class MessengerServiceImplTest {
         return MessengerServiceImpl(
             contactsService,
             addressBookOperationManager,
-            messagePersistenceManager,
+            messageService,
             groupService,
             relayClientManager,
             messageSender,
@@ -244,29 +239,6 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `it should proxy new messages from MessageReceiver`() {
-        val subject = PublishSubject.create<ConversationMessage>()
-        whenever(messageReceiver.newMessages).thenReturn(subject)
-
-        val messengerService = createService()
-
-        val testSubscriber = messengerService.newMessages.testSubscriber()
-
-        val message = ConversationMessage.Single(
-            UserId(1),
-            MessageInfo.newReceived("m", currentTimestamp())
-        )
-
-        subject.onNext(message)
-
-        val bundles = testSubscriber.onNextEvents
-
-        assertThat(bundles)
-            .containsOnlyElementsOf(listOf(message))
-            .`as`("Received bundles")
-    }
-
-    @Test
     fun `it should queue a single text message to be sent when sendMessageTo is called`() {
         val messengerService = createService()
 
@@ -327,16 +299,11 @@ class MessengerServiceImplTest {
         val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
 
         val conversationId = update.userId.toConversationId()
-        whenever(messagePersistenceManager.markMessageAsDelivered(conversationId, update.messageId, record.serverReceivedTimestamp)).thenResolve(conversationMessageInfo)
-
-        val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Delivered>(messengerService)
+        whenever(messageService.markMessageAsDelivered(any(), any(), any())).thenResolve(conversationMessageInfo)
 
         messageSent.onNext(record)
 
-        assertEventEmitted(testSubscriber) {
-            assertEquals(conversationId, it.conversationId, "Invalid conversation id")
-            assertEquals(update.messageId, it.messageId, "Invalid message id")
-        }
+        verify(messageService).markMessageAsDelivered(conversationId, update.messageId, record.serverReceivedTimestamp)
     }
 
     @Test
@@ -349,35 +316,12 @@ class MessengerServiceImplTest {
 
         val conversationId = update.groupId!!.toConversationId()
 
-        whenever(messagePersistenceManager.markMessageAsDelivered(conversationId, update.messageId, record.serverReceivedTimestamp))
+        whenever(messageService.markMessageAsDelivered(any(), any(), any()))
             .thenResolve(ConversationMessageInfo(update.userId, messageInfo))
 
-        val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Delivered>(messengerService)
-
         messageSent.onNext(record)
 
-        assertEventEmitted(testSubscriber) {
-            assertEquals(conversationId, it.conversationId, "Invalid conversation id")
-            assertEquals(update.messageId, it.messageId, "Invalid message id")
-            assertEquals(record.serverReceivedTimestamp, it.deliveredTimestamp, "Invalid delivered timestamp")
-        }
-    }
-
-    @Test
-    fun `it should return emit a message updated event when receiving a message update for an already delivered TEXT_GROUP message`() {
-        val messengerService = createService()
-
-        val record = randomTextGroupRecord()
-        val update = record.metadata
-
-        whenever(messagePersistenceManager.markMessageAsDelivered(update.groupId!!.toConversationId(), update.messageId, record.serverReceivedTimestamp))
-            .thenResolve(null)
-
-        val testSubscriber = messengerService.messageUpdates.testSubscriber()
-
-        messageSent.onNext(record)
-
-        assertNoEventsEmitted(testSubscriber)
+        verify(messageService).markMessageAsDelivered(conversationId, update.messageId, record.serverReceivedTimestamp)
     }
 
     @Test
@@ -407,7 +351,7 @@ class MessengerServiceImplTest {
         val message = "msg"
         messengerService.sendGroupMessageTo(groupId, message, 0)
 
-        verify(messagePersistenceManager).addMessage(eq(groupId.toConversationId()), capture {
+        verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(message, it.info.message, "Message is invalid")
         })
 
@@ -427,7 +371,7 @@ class MessengerServiceImplTest {
 
         messengerService.sendGroupMessageTo(groupId, message, 0)
 
-        verify(messagePersistenceManager).addMessage(eq(groupId.toConversationId()), capture {
+        verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(message, it.info.message, "Text message doesn't match")
         })
     }
@@ -450,7 +394,7 @@ class MessengerServiceImplTest {
             sentMessageId = it.first().metadata.messageId
         })
 
-        verify(messagePersistenceManager).addMessage(eq(groupId.toConversationId()), capture {
+        verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(sentMessageId!!, it.info.id, "Message IDs don't match")
         })
     }
@@ -482,7 +426,7 @@ class MessengerServiceImplTest {
 
         messengerService.deleteMessages(userId, ids)
 
-        verify(messagePersistenceManager).deleteMessages(userId.toConversationId(), ids)
+        verify(messageService).deleteMessages(userId.toConversationId(), ids)
     }
 
     @Test
@@ -493,7 +437,7 @@ class MessengerServiceImplTest {
 
         messengerService.deleteAllMessages(userId)
 
-        verify(messagePersistenceManager).deleteAllMessages(userId.toConversationId())
+        verify(messageService).deleteAllMessages(userId.toConversationId())
     }
 
     @Test
@@ -505,7 +449,7 @@ class MessengerServiceImplTest {
 
         messengerService.deleteGroupMessages(groupId, ids)
 
-        verify(messagePersistenceManager).deleteMessages(groupId.toConversationId(), ids)
+        verify(messageService).deleteMessages(groupId.toConversationId(), ids)
     }
 
     @Test
@@ -516,7 +460,7 @@ class MessengerServiceImplTest {
 
         messengerService.deleteAllGroupMessages(groupId)
 
-        verify(messagePersistenceManager).deleteAllMessages(groupId.toConversationId())
+        verify(messageService).deleteAllMessages(groupId.toConversationId())
     }
 
     @Test
@@ -821,7 +765,7 @@ class MessengerServiceImplTest {
         val record = randomTextSingleRecord()
         val metadata = record.metadata
 
-        whenever(messagePersistenceManager.markMessageAsDelivered(metadata.userId.toConversationId(), metadata.messageId, record.serverReceivedTimestamp)).thenResolve(conversationMessageInfo)
+        whenever(messageService.markMessageAsDelivered(metadata.userId.toConversationId(), metadata.messageId, record.serverReceivedTimestamp)).thenResolve(conversationMessageInfo)
 
         messageSent.onNext(record)
 
@@ -848,7 +792,7 @@ class MessengerServiceImplTest {
         val groupId = metadata.groupId!!
 
         val groupMessageInfo = ConversationMessageInfo(null, messageInfo)
-        whenever(messagePersistenceManager.markMessageAsDelivered(groupId.toConversationId(), metadata.messageId, record.serverReceivedTimestamp)).thenResolve(groupMessageInfo)
+        whenever(messageService.markMessageAsDelivered(groupId.toConversationId(), metadata.messageId, record.serverReceivedTimestamp)).thenResolve(groupMessageInfo)
 
         messageSent.onNext(record)
 
@@ -873,7 +817,7 @@ class MessengerServiceImplTest {
         val metadata = record.metadata
         val groupId = metadata.groupId!!
 
-        whenever(messagePersistenceManager.markMessageAsDelivered(groupId.toConversationId(), metadata.messageId, record.serverReceivedTimestamp)).thenResolve(null)
+        whenever(messageService.markMessageAsDelivered(groupId.toConversationId(), metadata.messageId, record.serverReceivedTimestamp)).thenResolve(null)
 
         messageSent.onNext(record)
 
