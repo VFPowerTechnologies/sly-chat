@@ -322,6 +322,22 @@ OFFSET
         }
     }
 
+    override fun get(conversationId: ConversationId, messageId: String): Promise<ConversationMessageInfo?, Exception> {
+        TODO()
+    }
+
+    override fun expireMessages(messages: Map<ConversationId, Collection<String>>): Promise<Unit, Exception> {
+        TODO()
+    }
+
+    override fun setExpiration(conversationId: ConversationId, messageId: String, expiresAt: Long): Promise<Unit, Exception> {
+        TODO()
+    }
+
+    override fun getMessagesAwaitingExpiration(): Promise<Map<ConversationId, Collection<MessageInfo>>, Exception> {
+        TODO()
+    }
+
     /* test use only */
     internal fun internalGetMessage(conversationId: ConversationId, messageId: String): ConversationMessageInfo? = sqlitePersistenceManager.syncRunQuery {
         val tableName = ConversationTable.getTablename(conversationId)

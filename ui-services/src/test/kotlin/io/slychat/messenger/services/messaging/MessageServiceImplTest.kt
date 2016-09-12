@@ -1,20 +1,18 @@
 package io.slychat.messenger.services.messaging
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.whenever
+import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.core.persistence.ConversationMessageInfo
+import io.slychat.messenger.core.persistence.MessageInfo
 import io.slychat.messenger.core.persistence.MessagePersistenceManager
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.assertNoEventsEmitted
 import io.slychat.messenger.services.subclassFilterTestSubscriber
-import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.testSubscriber
-import io.slychat.messenger.testutils.thenResolve
-import org.assertj.core.api.Assertions
+import io.slychat.messenger.testutils.*
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Ignore
@@ -37,9 +35,11 @@ class MessageServiceImplTest {
 
     @Before
     fun before() {
-        whenever(messagePersistenceManager.addMessage(any(), any())).thenResolve(Unit)
+        whenever(messagePersistenceManager.addMessage(any(), any())).thenResolveUnit()
         whenever(messagePersistenceManager.markMessageAsDelivered(any(), any(), any())).thenResolve(null)
-        whenever(messagePersistenceManager.markConversationAsRead(any())).thenResolve(Unit)
+        whenever(messagePersistenceManager.markConversationAsRead(any())).thenResolveUnit()
+        whenever(messagePersistenceManager.setExpiration(any(), any(), any())).thenResolveUnit()
+        whenever(messagePersistenceManager.expireMessages(any())).thenResolveUnit()
     }
 
     fun forEachConvType(body: (ConversationId) -> Unit) {
@@ -47,7 +47,7 @@ class MessageServiceImplTest {
         body(randomGroupConversationId())
     }
 
-    inline fun <reified T : MessageUpdateEvent> messageUpdateEventCollectorFor(messageService: MessageServiceImpl): TestSubscriber<T> {
+    inline fun <reified T : MessageUpdateEvent> messageUpdateEventCollectorFor(): TestSubscriber<T> {
         return messageService.messageUpdates.subclassFilterTestSubscriber()
     }
 
@@ -65,7 +65,7 @@ class MessageServiceImplTest {
             else
                 stubbing.thenResolve(null)
 
-            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Delivered>(messageService)
+            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Delivered>()
 
             val got = messageService.markMessageAsDelivered(conversationId, messageId, timestamp).get()
 
@@ -106,7 +106,7 @@ class MessageServiceImplTest {
 
                 messageService.addMessage(conversationId, conversationMessageInfo).get()
 
-                Assertions.assertThat(testSubscriber.onNextEvents).apply {
+                assertThat(testSubscriber.onNextEvents).apply {
                     `as`("Should emit an event")
                     containsOnly(expected)
                 }
@@ -129,6 +129,78 @@ class MessageServiceImplTest {
             messageService.markConversationAsRead(it).get()
 
             verify(messagePersistenceManager).markConversationAsRead(it)
+        }
+    }
+
+    @Test
+    fun `it should emit an expiring event when startMessageExpiration is called for an existing message id`() {
+        forEachConvType { conversationId ->
+            val baseTime = 1L
+            val ttl = 500L
+
+            val conversationMessageInfo = ConversationMessageInfo(
+                null,
+                MessageInfo.Companion.newSent(randomMessageText(), ttl)
+            )
+
+            val messageId = conversationMessageInfo.info.id
+
+            whenever(messagePersistenceManager.get(conversationId, messageId)).thenResolve(conversationMessageInfo)
+
+            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Expiring>()
+
+            withTimeAs(baseTime) {
+                messageService.startMessageExpiration(conversationId, messageId).get()
+            }
+
+            val expiresAt = baseTime + ttl
+
+            verify(messagePersistenceManager).setExpiration(conversationId, messageId, expiresAt)
+
+            val expectedEvent = MessageUpdateEvent.Expiring(conversationId, messageId, ttl, expiresAt)
+
+            assertEventEmitted(testSubscriber) {
+                assertEquals(expectedEvent, it, "Invalid event")
+            }
+        }
+    }
+
+    @Test
+    fun `it should not emit an expiring event when startMessageExpiration is called for an invalid message id`() {
+        forEachConvType { conversationId ->
+            whenever(messagePersistenceManager.get(any(), any())).thenResolve(null)
+
+            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Expiring>()
+
+            messageService.startMessageExpiration(conversationId, randomMessageId()).get()
+
+            verify(messagePersistenceManager, never()).setExpiration(any(), any(), any())
+
+            assertNoEventsEmitted(testSubscriber)
+        }
+    }
+
+    @Test
+    fun `it should emit expired events for messages when expireMessages is called`() {
+        forEachConvType { conversationId ->
+            val messageIds = (0..2).map { randomMessageId() }
+
+            val messages = mapOf(
+                conversationId to messageIds
+            )
+
+            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Expired>()
+
+            messageService.expireMessages(messages).get()
+
+            val expected = messageIds.map {
+                MessageUpdateEvent.Expired(conversationId, it)
+            }
+
+            assertThat(testSubscriber.onNextEvents).apply {
+                `as`("Should emit events")
+                containsOnlyElementsOf(expected)
+            }
         }
     }
 }

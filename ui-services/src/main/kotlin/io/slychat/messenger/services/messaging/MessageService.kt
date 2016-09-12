@@ -9,6 +9,9 @@ interface MessageService {
     val newMessages: Observable<ConversationMessage>
     val messageUpdates: Observable<MessageUpdateEvent>
 
+    //generates Expiring events
+    fun startMessageExpiration(conversationId: ConversationId, messageId: String): Promise<Unit, Exception>
+    //generates Expired events
     fun expireMessages(messages: Map<ConversationId, Collection<String>>): Promise<Unit, Exception>
     fun getMessagesAwaitingExpiration(): Promise<Map<ConversationId, Collection<MessageInfo>>, Exception>
 

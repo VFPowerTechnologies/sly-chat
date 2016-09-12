@@ -38,4 +38,12 @@ interface MessagePersistenceManager {
     //FIXME
     /** Returns all undelivered messages for a given group. */
     fun getUndeliveredMessages(): Promise<Map<ConversationId, List<ConversationMessageInfo>>, Exception>
+
+    fun get(conversationId: ConversationId, messageId: String): Promise<ConversationMessageInfo?, Exception>
+
+    fun expireMessages(messages: Map<ConversationId, Collection<String>>): Promise<Unit, Exception>
+
+    fun setExpiration(conversationId: ConversationId, messageId: String, expiresAt: Long): Promise<Unit, Exception>
+
+    fun getMessagesAwaitingExpiration(): Promise<Map<ConversationId, Collection<MessageInfo>>, Exception>
 }

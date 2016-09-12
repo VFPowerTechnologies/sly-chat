@@ -1,16 +1,21 @@
 package io.slychat.messenger.services.messaging
 
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.successUi
+import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
 
 class MessageServiceImpl(
     private val messagePersistenceManager: MessagePersistenceManager
 ) : MessageService {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private val newMessagesSubject = PublishSubject.create<ConversationMessage>()
     override val newMessages: Observable<ConversationMessage>
         get() = newMessagesSubject
@@ -63,11 +68,38 @@ class MessageServiceImpl(
         return messagePersistenceManager.getLastMessages(conversationId, startingAt, count)
     }
 
+    private fun startMessageExpiration(conversationId: ConversationId, messageId: String, conversationMessageInfo: ConversationMessageInfo?): Promise<Unit, Exception> {
+        if (conversationMessageInfo == null) {
+            log.warn("Invalid message id {} for conversation {}", messageId, conversationId)
+            return Promise.ofSuccess(Unit)
+        }
+
+        val expiresAt = currentTimestamp() + conversationMessageInfo.info.ttl
+
+        return messagePersistenceManager.setExpiration(conversationId, messageId, expiresAt) successUi {
+            messageUpdatesSubject.onNext(MessageUpdateEvent.Expiring(conversationId, messageId, conversationMessageInfo.info.ttl, expiresAt))
+        }
+    }
+
+    override fun startMessageExpiration(conversationId: ConversationId, messageId: String): Promise<Unit, Exception> {
+        return messagePersistenceManager.get(conversationId, messageId) bind {
+            startMessageExpiration(conversationId, messageId, it)
+        } fail {
+            log.error("Unable to start message expiration: {}", it.message, it)
+        }
+    }
+
     override fun expireMessages(messages: Map<ConversationId, Collection<String>>): Promise<Unit, Exception> {
-        TODO()
+        return messagePersistenceManager.expireMessages(messages) successUi  {
+            for ((conversationId, messageIds) in messages) {
+                messageIds.forEach {
+                    messageUpdatesSubject.onNext(MessageUpdateEvent.Expired(conversationId, it))
+                }
+            }
+        }
     }
 
     override fun getMessagesAwaitingExpiration(): Promise<Map<ConversationId, Collection<MessageInfo>>, Exception> {
-        TODO()
+        return messagePersistenceManager.getMessagesAwaitingExpiration()
     }
 }
