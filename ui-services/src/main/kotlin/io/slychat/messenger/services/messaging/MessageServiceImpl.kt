@@ -76,8 +76,9 @@ class MessageServiceImpl(
 
         val expiresAt = currentTimestamp() + conversationMessageInfo.info.ttl
 
-        return messagePersistenceManager.setExpiration(conversationId, messageId, expiresAt) successUi {
-            messageUpdatesSubject.onNext(MessageUpdateEvent.Expiring(conversationId, messageId, conversationMessageInfo.info.ttl, expiresAt))
+        return messagePersistenceManager.setExpiration(conversationId, messageId, expiresAt) mapUi { wasUpdated ->
+            if (wasUpdated)
+                messageUpdatesSubject.onNext(MessageUpdateEvent.Expiring(conversationId, messageId, conversationMessageInfo.info.ttl, expiresAt))
         }
     }
 
@@ -99,7 +100,7 @@ class MessageServiceImpl(
         }
     }
 
-    override fun getMessagesAwaitingExpiration(): Promise<Map<ConversationId, Collection<MessageInfo>>, Exception> {
+    override fun getMessagesAwaitingExpiration(): Promise<List<ExpiringMessage>, Exception> {
         return messagePersistenceManager.getMessagesAwaitingExpiration()
     }
 }

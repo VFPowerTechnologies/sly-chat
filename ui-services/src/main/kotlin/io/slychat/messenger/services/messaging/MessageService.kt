@@ -13,7 +13,7 @@ interface MessageService {
     fun startMessageExpiration(conversationId: ConversationId, messageId: String): Promise<Unit, Exception>
     //generates Expired events
     fun expireMessages(messages: Map<ConversationId, Collection<String>>): Promise<Unit, Exception>
-    fun getMessagesAwaitingExpiration(): Promise<Map<ConversationId, Collection<MessageInfo>>, Exception>
+    fun getMessagesAwaitingExpiration(): Promise<List<ExpiringMessage>, Exception>
 
     //we still need the return value here to broadcast sent messages, so keep it
     fun markMessageAsDelivered(conversationId: ConversationId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception>

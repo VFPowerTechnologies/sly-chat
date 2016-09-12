@@ -4,6 +4,7 @@ import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.core.persistence.ExpiringMessage
 import io.slychat.messenger.core.persistence.MessageInfo
 import io.slychat.messenger.core.randomMessageText
 import io.slychat.messenger.core.randomReceivedMessageInfo
@@ -40,7 +41,7 @@ class MessageExpirationWatcherImplTest {
     fun before() {
         whenever(messageService.messageUpdates).thenReturn(messageUpdates)
         whenever(messageService.expireMessages(any())).thenResolveUnit()
-        whenever(messageService.getMessagesAwaitingExpiration()).thenResolve(emptyMap())
+        whenever(messageService.getMessagesAwaitingExpiration()).thenResolve(emptyList())
     }
 
     fun randomExpiringReceivedMessageInfo(expiresAt: Long, ttl: Long = 500): MessageInfo =
@@ -69,8 +70,8 @@ class MessageExpirationWatcherImplTest {
         val messageInfo = randomReceivedMessageInfo().copy(expiresAt = currentTime - 1)
         val conversationId = randomUserConversationId()
 
-        val messages = mapOf<ConversationId, Collection<MessageInfo>>(
-            conversationId to listOf(messageInfo)
+        val messages = listOf(
+            ExpiringMessage(conversationId, messageInfo.id, messageInfo.expiresAt)
         )
 
         val expected = mapOf<ConversationId, Collection<String>>(
@@ -122,8 +123,8 @@ class MessageExpirationWatcherImplTest {
 
         val conversationId = randomUserConversationId()
 
-        val messages = mapOf<ConversationId, List<MessageInfo>>(
-            conversationId to listOf(messageInfo)
+        val messages = listOf(
+            ExpiringMessage(conversationId, messageInfo.id, messageInfo.expiresAt)
         )
 
         whenever(messageService.getMessagesAwaitingExpiration()).thenResolve(messages)
@@ -148,9 +149,11 @@ class MessageExpirationWatcherImplTest {
         val expiringMessageInfo = randomExpiringReceivedMessageInfo(baseTime - 1)
         val expiringConversationId = randomUserConversationId()
 
-        val messages = mapOf<ConversationId, List<MessageInfo>>(
-            expiringConversationId to listOf(expiringMessageInfo),
-            randomUserConversationId() to listOf(randomExpiringReceivedMessageInfo(baseTime + 1))
+        val notExpiredMessageInfo = randomExpiringReceivedMessageInfo(baseTime + 1)
+
+        val messages = listOf(
+            ExpiringMessage(expiringConversationId, expiringMessageInfo.id, expiringMessageInfo.expiresAt),
+            ExpiringMessage(randomUserConversationId(), notExpiredMessageInfo.id, notExpiredMessageInfo.expiresAt)
         )
 
         whenever(messageService.getMessagesAwaitingExpiration()).thenResolve(messages)
@@ -176,8 +179,8 @@ class MessageExpirationWatcherImplTest {
         val expiresAt = baseTime + 1
         val messageInfo = randomExpiringReceivedMessageInfo(expiresAt)
 
-        val messages = mapOf<ConversationId, List<MessageInfo>>(
-            conversationId to listOf(messageInfo)
+        val messages = listOf(
+            ExpiringMessage(conversationId, messageInfo.id, messageInfo.expiresAt)
         )
 
         whenever(messageService.getMessagesAwaitingExpiration()).thenResolve(messages)
@@ -201,7 +204,7 @@ class MessageExpirationWatcherImplTest {
 
     @Test
     fun `it should not call destroyMessages on init if no messages need to be destroyed`() {
-        whenever(messageService.getMessagesAwaitingExpiration()).thenResolve(emptyMap())
+        whenever(messageService.getMessagesAwaitingExpiration()).thenResolve(emptyList())
 
         val watcher = createWatcher()
 
@@ -225,9 +228,9 @@ class MessageExpirationWatcherImplTest {
         val conversationId = randomUserConversationId()
         val conversationId2 = randomUserConversationId()
 
-        val messages = mapOf<ConversationId, List<MessageInfo>>(
-            conversationId to listOf(messageInfo),
-            conversationId2 to listOf(messageInfo2)
+        val messages = listOf(
+            ExpiringMessage(conversationId, messageInfo.id, messageInfo.expiresAt),
+            ExpiringMessage(conversationId2, messageInfo2.id, messageInfo2.expiresAt)
         )
 
         whenever(messageService.getMessagesAwaitingExpiration()).thenResolve(messages)
@@ -264,9 +267,9 @@ class MessageExpirationWatcherImplTest {
         val conversationId = randomUserConversationId()
         val conversationId2 = randomUserConversationId()
 
-        val messages = mapOf<ConversationId, List<MessageInfo>>(
-            conversationId to listOf(messageInfo),
-            conversationId2 to listOf(messageInfo2)
+        val messages = listOf(
+            ExpiringMessage(conversationId, messageInfo.id, messageInfo.expiresAt),
+            ExpiringMessage(conversationId2, messageInfo2.id, messageInfo2.expiresAt)
         )
 
         whenever(messageService.getMessagesAwaitingExpiration()).thenResolve(messages)
@@ -289,9 +292,10 @@ class MessageExpirationWatcherImplTest {
     @Test
     fun `it should cancel any pending timer on shutdown`() {
         val baseTime = 1L
+        val messageInfo = randomExpiringReceivedMessageInfo(baseTime + 1)
 
-        val messages = mapOf<ConversationId, List<MessageInfo>>(
-            randomUserConversationId() to listOf(randomExpiringReceivedMessageInfo(baseTime + 1))
+        val messages = listOf(
+            ExpiringMessage(randomUserConversationId(), messageInfo.id, messageInfo.expiresAt)
         )
 
         whenever(messageService.getMessagesAwaitingExpiration()).thenResolve(messages)

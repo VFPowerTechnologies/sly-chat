@@ -2,8 +2,6 @@ package io.slychat.messenger.core.persistence
 
 import nl.komponents.kovenant.Promise
 
-data class ExpiringMessage(val conversationId: ConversationId, val messageId: String, val expiresAt: Long)
-
 interface MessagePersistenceManager {
     /**
      * Updates the conversation info for the given UserId.

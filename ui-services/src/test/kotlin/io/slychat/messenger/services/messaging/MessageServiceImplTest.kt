@@ -38,7 +38,7 @@ class MessageServiceImplTest {
         whenever(messagePersistenceManager.addMessage(any(), any())).thenResolveUnit()
         whenever(messagePersistenceManager.markMessageAsDelivered(any(), any(), any())).thenResolve(null)
         whenever(messagePersistenceManager.markConversationAsRead(any())).thenResolveUnit()
-        whenever(messagePersistenceManager.setExpiration(any(), any(), any())).thenResolveUnit()
+        whenever(messagePersistenceManager.setExpiration(any(), any(), any())).thenResolve(true)
         whenever(messagePersistenceManager.expireMessages(any())).thenResolveUnit()
     }
 
@@ -169,6 +169,23 @@ class MessageServiceImplTest {
     fun `it should not emit an expiring event when startMessageExpiration is called for an invalid message id`() {
         forEachConvType { conversationId ->
             whenever(messagePersistenceManager.get(any(), any())).thenResolve(null)
+
+            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Expiring>()
+
+            messageService.startMessageExpiration(conversationId, randomMessageId()).get()
+
+            verify(messagePersistenceManager, never()).setExpiration(any(), any(), any())
+
+            assertNoEventsEmitted(testSubscriber)
+        }
+    }
+
+    @Test
+    fun `it should not emit an expiring event when startMessageExpiration is called for an already expiring message id`() {
+        forEachConvType { conversationId ->
+            whenever(messagePersistenceManager.get(any(), any())).thenResolve(null)
+
+            whenever(messagePersistenceManager.setExpiration(any(), any(), any())).thenResolve(false)
 
             val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Expiring>()
 

@@ -2,7 +2,7 @@ package io.slychat.messenger.services.messaging
 
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.ConversationId
-import io.slychat.messenger.core.persistence.MessageInfo
+import io.slychat.messenger.core.persistence.ExpiringMessage
 import io.slychat.messenger.services.MessageUpdateEvent
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -33,24 +33,25 @@ class MessageExpirationWatcherImpl(
         }
     }
 
-    private fun processInitial(initialMessages: Map<ConversationId, Collection<MessageInfo>>) {
+    private fun processInitial(expiringMessages: List<ExpiringMessage>) {
         val toDestroy = MessageListMap()
         val toAdd = ArrayList<ExpiringMessages.ExpiringEntry>()
 
         val currentTime = currentTimestamp()
 
-        for ((conversationId, info) in initialMessages) {
-            info.forEach { messageInfo ->
-                if (messageInfo.expiresAt <= currentTime)
-                    toDestroy[conversationId].add(messageInfo.id)
-                else {
-                    val entry = ExpiringMessages.ExpiringEntry(conversationId, messageInfo.id, messageInfo.expiresAt)
-                    toAdd.add(entry)
-                }
+        expiringMessages.forEach { expiringMessage ->
+            val conversationId = expiringMessage.conversationId
+            val messageId = expiringMessage.messageId
+
+            if (expiringMessage.expiresAt <= currentTime)
+                toDestroy[conversationId].add(messageId)
+            else {
+                val entry = ExpiringMessages.ExpiringEntry(conversationId, messageId, expiringMessage.expiresAt)
+                toAdd.add(entry)
             }
         }
 
-        expiringMessages.addAll(toAdd)
+        this.expiringMessages.addAll(toAdd)
         updateTimer()
 
         if (toDestroy.isNotEmpty()) {
