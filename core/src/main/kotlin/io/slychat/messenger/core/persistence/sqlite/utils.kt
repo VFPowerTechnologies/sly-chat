@@ -83,6 +83,10 @@ fun SQLiteStatement.columnAllowedMessageLevel(index: Int): AllowedMessageLevel {
     return columnInt(index).toAllowedMessageLevel()
 }
 
+fun SQLiteStatement.columnConversationId(index: Int): ConversationId {
+    return columnString(index).toConversationId()
+}
+
 fun SQLiteStatement.columnGroupMembershipLevel(index: Int): GroupMembershipLevel {
     return columnInt(index).toGroupMembershipLevel()
 }
@@ -118,7 +122,7 @@ internal fun ConversationId.toKey(): String = when (this) {
     is ConversationId.Group -> "G${this.id}"
 }
 
-private fun String.toConversationId(): ConversationId {
+internal fun String.toConversationId(): ConversationId {
     require(this.isNotEmpty()) { "Empty string is an invalid ConversationId" }
 
     val first = this[0]

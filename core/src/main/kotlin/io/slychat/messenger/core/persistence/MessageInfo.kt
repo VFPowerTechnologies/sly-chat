@@ -19,7 +19,7 @@ data class MessageInfo(
     val isSent: Boolean,
     val isDelivered: Boolean,
     val isRead: Boolean,
-    val isDestroyed: Boolean,
+    val isExpired: Boolean,
     val ttl: Long,
     val expiresAt: Long
 ) {

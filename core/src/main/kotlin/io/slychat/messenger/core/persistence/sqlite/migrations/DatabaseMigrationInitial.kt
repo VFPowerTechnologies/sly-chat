@@ -23,7 +23,8 @@ class DatabaseMigrationInitial : DatabaseMigration(0) {
             "send_message_queue",
             "groups",
             "group_members",
-            "address_book_hashes"
+            "address_book_hashes",
+            "expiring_messages"
         )
     }
 

@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS `conv_%id%` (
     -- used when timestamp is equal to guarantee order
     n INTEGER NOT NULL,
     is_read INTEGER NOT NULL,
-    is_destroyed INTEGER NOT NULL,
+    is_expired INTEGER NOT NULL,
     -- number of seconds from view until the message is destroyed
     -- 0 indicates the message has no time limit
     ttl INTEGER NOT NULL,

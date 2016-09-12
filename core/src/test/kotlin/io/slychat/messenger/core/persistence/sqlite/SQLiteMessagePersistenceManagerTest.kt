@@ -41,10 +41,11 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     fun insertRandomReceivedMessagesFull(id: GroupId, members: Set<UserId>): List<ConversationMessageInfo> =
         insertRandomReceivedMessagesFull(id.toConversationId(), members)
 
-    fun insertRandomReceivedMessagesFull(userId: UserId): List<ConversationMessageInfo> =
-        insertRandomReceivedMessagesFull(userId.toConversationId(), setOf(userId))
-
     fun insertRandomReceivedMessagesFull(id: ConversationId, senders: Set<UserId>): List<ConversationMessageInfo> {
+        return insertRandomReceivedMessagesFull(messagePersistenceManager, id, senders)
+    }
+
+    fun insertRandomReceivedMessagesFull(messagePersistenceManager: MessagePersistenceManager, id: ConversationId, senders: Set<UserId>): List<ConversationMessageInfo> {
         val info = ArrayList<ConversationMessageInfo>()
 
         senders.forEach { member ->
@@ -72,9 +73,6 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     fun insertRandomReceivedMessages(id: GroupId, members: Set<UserId>): List<String> =
         insertRandomReceivedMessages(id.toConversationId(), members)
 
-    fun insertRandomReceivedMessages(id: UserId): List<String> =
-        insertRandomReceivedMessages(id.toConversationId(), setOf(id))
-
     fun insertRandomReceivedMessages(id: ConversationId, senders: Set<UserId>): List<String> {
         return insertRandomReceivedMessagesFull(id, senders).map { it.info.id }
     }
@@ -96,36 +94,93 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         return conversationMessageInfo
     }
 
-    fun getMessage(conversationId: ConversationId, messageId: String): ConversationMessageInfo {
-        return assertNotNull(messagePersistenceManager.internalGetMessage(conversationId, messageId), "Missing message")
-    }
-
     fun getConversationInfo(conversationId: ConversationId): ConversationInfo {
         return assertNotNull(messagePersistenceManager.getConversationInfo(conversationId).get(), "No last conversation info")
     }
 
-    fun foreachConvType(body: (ConversationId, participants: Set<UserId>) -> Unit) {
-        val userId = addRandomContact()
-        body(userId.toConversationId(), setOf(userId))
+    //TODO we should clean up all these tests to use this instead, since due to the merge the majority of behavior is
+    //identical between conversation types
+    class MessageTestFixture() : GroupPersistenceManagerTestUtils {
+        private val persistenceManager = SQLitePersistenceManager(null, null, null)
 
-        withJoinedGroup { groupId, members -> body(groupId.toConversationId(), members) }
+        val messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
+        override val contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)
+        override val groupPersistenceManager = SQLiteGroupPersistenceManager(persistenceManager)
+        val conversationInfoTestUtils = ConversationInfoTestUtils(persistenceManager)
+
+        fun addMessage(conversationId: ConversationId, speaker: UserId, isSent: Boolean, message: String, ttl: Long): ConversationMessageInfo {
+            val conversationMessageInfo = if (isSent)
+                ConversationMessageInfo(null, randomSentMessageInfo().copy(message = message, ttl = ttl))
+            else
+                ConversationMessageInfo(speaker, randomReceivedMessageInfo().copy(message = message, ttl = ttl))
+
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+
+            return conversationMessageInfo
+        }
+
+        fun addExpiringMessage(conversationId: ConversationId): ConversationMessageInfo {
+            val sentMessage = randomSentConversationMessageInfo()
+            val messageId = sentMessage.info.id
+            val expiresAt = 10L
+
+            messagePersistenceManager.addMessage(conversationId, sentMessage).get()
+            messagePersistenceManager.setExpiration(conversationId, messageId, expiresAt).get()
+
+            return ConversationMessageInfo(
+                null,
+                sentMessage.info.copy(expiresAt = expiresAt)
+            )
+        }
+
+        fun getMessage(conversationId: ConversationId, messageId: String): ConversationMessageInfo {
+            return assertNotNull(messagePersistenceManager.get(conversationId, messageId).get(), "Missing message $messageId")
+        }
+
+        fun run(body: MessageTestFixture.() -> Unit) {
+            persistenceManager.init()
+
+            try {
+                this.body()
+            }
+            finally {
+                persistenceManager.shutdown()
+            }
+        }
+    }
+
+    fun foreachConvType(body: MessageTestFixture.(ConversationId, Set<UserId>) -> Unit) {
+        MessageTestFixture().run {
+            val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
+            val userId = contactInfo.id
+
+            contactsPersistenceManager.add(contactInfo).get()
+
+            this.body(userId.toConversationId(), setOf(userId))
+        }
+
+        MessageTestFixture().run {
+            withJoinedGroup { groupId, members -> body(groupId.toConversationId(), members) }
+        }
     }
 
     @Test
     fun `addMessage should add a valid sent message`() {
-        val userId = addRandomContact()
-        val ttl = 5L
+        foreachConvType { conversationId, participants ->
+            val userId = participants.first()
+            val ttl = 5L
 
-        val messageText = randomMessageText()
-        val inserted = addMessage(userId, true, messageText, ttl)
+            val messageText = randomMessageText()
+            val inserted = addMessage(conversationId, userId, true, messageText, ttl)
 
-        val got = getMessage(ConversationId(userId), inserted.info.id)
-        val messageInfo = got.info
+            val got = getMessage(conversationId, inserted.info.id)
+            val messageInfo = got.info
 
-        assertEquals(messageText, messageInfo.message)
-        assertEquals(ttl, messageInfo.ttl)
-        assertTrue(messageInfo.isSent)
-        assertFalse(messageInfo.isDelivered)
+            assertEquals(messageText, messageInfo.message)
+            assertEquals(ttl, messageInfo.ttl)
+            assertTrue(messageInfo.isSent)
+            assertFalse(messageInfo.isDelivered)
+        }
     }
 
     @Test
@@ -149,15 +204,16 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
     @Test
     fun `addMessage should add a valid received message`() {
-        val userId = addRandomContact()
-        val conversationId = ConversationId(userId)
+        foreachConvType { conversationId, participants ->
+            val userId = participants.first()
 
-        val inserted = addMessage(userId, false, randomMessageText(), 0)
+            val inserted = addMessage(conversationId, userId, false, randomMessageText(), 0)
 
-        val got = getMessage(conversationId, inserted.info.id)
+            val got = getMessage(conversationId, inserted.info.id)
 
-        assertEquals(inserted.info.message, got.info.message)
-        assertFalse(got.info.isSent)
+            assertEquals(inserted.info.message, got.info.message)
+            assertFalse(got.info.isSent)
+        }
     }
 
     @Test
@@ -598,6 +654,27 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
+    fun `deleteAllMessages should remove an expiring message entries`() {
+        foreachConvType { conversationId, set ->
+            val sentMessage = randomSentConversationMessageInfo()
+            val messageId = sentMessage.info.id
+            val expiresAt = 10L
+
+            messagePersistenceManager.addMessage(conversationId, sentMessage).get()
+
+            messagePersistenceManager.setExpiration(conversationId, messageId, expiresAt).get()
+
+            messagePersistenceManager.deleteAllMessages(conversationId)
+
+            val awaitingExpiration = messagePersistenceManager.getMessagesAwaitingExpiration().get()
+            assertThat(awaitingExpiration).apply {
+                `as`("Expiring messages should be deleted")
+                isEmpty()
+            }
+        }
+    }
+
+    @Test
     fun `deleteAllMessages should update the corresponding group conversation info`() {
         withJoinedGroup { groupId, members ->
             insertRandomReceivedMessages(groupId, members)
@@ -700,13 +777,13 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `markConversationAsRead should mark all isRead messages as true`() {
         foreachConvType { conversationId, participants ->
-            val messages = insertRandomReceivedMessagesFull(conversationId, participants)
+            val messages = insertRandomReceivedMessagesFull(messagePersistenceManager, conversationId, participants)
 
             messagePersistenceManager.markConversationAsRead(conversationId).get()
 
             messages.forEach {
                 val messageId = it.info.id
-                val conversationMessageInfo = assertNotNull(messagePersistenceManager.internalGetMessage(conversationId, messageId), "Missing message $messageId")
+                val conversationMessageInfo = getMessage(conversationId, messageId)
                 assertTrue(conversationMessageInfo.info.isRead, "Message $messageId not marked as read")
             }
         }
@@ -846,6 +923,88 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     fun `markConversationAsRead should throw InvalidConversationException if the given conversation doesn't exist`() {
         assertFailsWith(InvalidConversationException::class) {
             messagePersistenceManager.markConversationAsRead(randomUserConversationId()).get()
+        }
+    }
+
+    @Test
+    fun `setExpiration should throw InvalidConversationMessageException if the message does not exists`() {
+        foreachConvType { conversationId, participants ->
+            assertFailsWith(InvalidConversationMessageException::class) {
+                messagePersistenceManager.setExpiration(conversationId, randomMessageId(), 1).get()
+            }
+        }
+    }
+
+    @Test
+    fun `setExpiration should create an expiring_messages entry for the given message`() {
+        foreachConvType { conversationId, participants ->
+            val conversationMessageInfo = addExpiringMessage(conversationId)
+            val messageId = conversationMessageInfo.info.id
+            val expiresAt = conversationMessageInfo.info.expiresAt
+
+            val awaitingExpiration = messagePersistenceManager.getMessagesAwaitingExpiration().get()
+
+            val expected = ExpiringMessage(conversationId, messageId, expiresAt)
+
+            assertThat(awaitingExpiration).apply {
+                `as`("Should contain an expiring entry")
+                containsOnly(expected)
+            }
+        }
+    }
+
+    @Test
+    fun `setExpiration should do nothing for an already expiring message`() {
+        foreachConvType { conversationId, participants ->
+            val conversationMessageInfo = addExpiringMessage(conversationId)
+            val messageId = conversationMessageInfo.info.id
+            val expiresAt = conversationMessageInfo.info.expiresAt
+
+            assertFalse(messagePersistenceManager.setExpiration(conversationId, messageId, expiresAt + 1).get())
+
+            val got = getMessage(conversationId, messageId)
+
+            assertEquals(expiresAt, got.info.expiresAt, "Record should not be updated")
+        }
+    }
+
+    //this is kinda lacking
+    @Test
+    fun `expireMessages should set all message entries to expired`() {
+        foreachConvType { conversationId, participants ->
+            val conversationMessageInfo = addExpiringMessage(conversationId)
+            val messageId = conversationMessageInfo.info.id
+
+            val messages = mapOf(
+                conversationId to listOf(messageId)
+            )
+
+            messagePersistenceManager.expireMessages(messages).get()
+
+            val got = getMessage(conversationId, messageId)
+
+            assertTrue(got.info.isExpired, "Message should be marked as expired")
+            assertEquals(0, got.info.ttl, "TTL not reset")
+            assertEquals(0, got.info.expiresAt, "expiresAt not reset")
+        }
+    }
+
+    @Test
+    fun `expireMessages should remove all message entries from expiring list`() {
+        foreachConvType { conversationId, participants ->
+            val conversationMessageInfo = addExpiringMessage(conversationId)
+            val messageId = conversationMessageInfo.info.id
+
+            val messages = mapOf(
+                conversationId to listOf(messageId)
+            )
+
+            messagePersistenceManager.expireMessages(messages).get()
+
+            assertThat(messagePersistenceManager.getMessagesAwaitingExpiration().get()).apply {
+                `as`("Should remove related expiring entries")
+                isEmpty()
+            }
         }
     }
 }
