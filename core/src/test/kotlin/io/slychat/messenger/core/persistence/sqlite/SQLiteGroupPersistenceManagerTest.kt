@@ -622,8 +622,9 @@ class SQLiteGroupPersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
 
             val conversationMessageInfo = randomSentConversationMessageInfo()
-            messagePersistenceManager.addMessage(groupId.toConversationId(), conversationMessageInfo).get()
-            messagePersistenceManager.setExpiration(groupId.toConversationId(), conversationMessageInfo.info.id, 100).get()
+            val conversationId = groupId.toConversationId()
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+            messagePersistenceManager.setExpiration(conversationId, conversationMessageInfo.info.id, 100).get()
 
             groupPersistenceManager.part(groupId).get()
 
@@ -669,8 +670,9 @@ class SQLiteGroupPersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
 
             val conversationMessageInfo = randomSentConversationMessageInfo()
-            messagePersistenceManager.addMessage(groupId.toConversationId(), conversationMessageInfo).get()
-            messagePersistenceManager.setExpiration(groupId.toConversationId(), conversationMessageInfo.info.id, 100).get()
+            val conversationId = groupId.toConversationId()
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+            messagePersistenceManager.setExpiration(conversationId, conversationMessageInfo.info.id, 100).get()
 
             groupPersistenceManager.block(groupId).get()
 

@@ -357,8 +357,9 @@ class SQLiteContactsPersistenceManagerTest {
         val messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
 
         val conversationMessageInfo = randomSentConversationMessageInfo()
-        messagePersistenceManager.addMessage(userId.toConversationId(), conversationMessageInfo).get()
-        messagePersistenceManager.setExpiration(userId.toConversationId(), conversationMessageInfo.info.id, 100).get()
+        val conversationId = userId.toConversationId()
+        messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+        messagePersistenceManager.setExpiration(conversationId, conversationMessageInfo.info.id, 100).get()
 
         contactsPersistenceManager.remove(userId).get()
 
@@ -557,6 +558,25 @@ class SQLiteContactsPersistenceManagerTest {
         contactsPersistenceManager.block(contact.id).get()
 
         conversationInfoTestUtils.assertConvTableNotExists(contact.id, "Conversation table not removed")
+    }
+
+    @Test
+    fun `block should remove expiring message entries for an existing user`() {
+        val userId = insertDummyContact(AllowedMessageLevel.ALL).id
+
+        val messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
+
+        val conversationMessageInfo = randomSentConversationMessageInfo()
+        val conversationId = userId.toConversationId()
+        messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+        messagePersistenceManager.setExpiration(conversationId, conversationMessageInfo.info.id, 100).get()
+
+        contactsPersistenceManager.block(userId).get()
+
+        assertThat(messagePersistenceManager.getMessagesAwaitingExpiration().get()).apply {
+            `as`("Expiring message entries should be removed")
+            isEmpty()
+        }
     }
 
     @Test
