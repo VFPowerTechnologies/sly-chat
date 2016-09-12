@@ -44,7 +44,7 @@ class UIMessengerServiceImpl(
             val messageService = userComponent.messageService
 
             subscriptions.add(messageService.newMessages.subscribe { onNewMessages(it) })
-            subscriptions.add(messageService.messageUpdates.subscribe { onMessageStatusUpdate(it) })
+            subscriptions.add(messageService.messageUpdates.subscribe { onMessageUpdate(it) })
             subscriptions.add(userComponent.relayClock.clockDiffUpdates.subscribe { onClockDifferenceUpdate(it) })
 
             messengerService = userComponent.messengerService
@@ -83,22 +83,38 @@ class UIMessengerServiceImpl(
         notifyNewMessageListeners(uiMessageInfo)
     }
 
-    private fun onMessageStatusUpdate(event: MessageUpdateEvent) {
+    private fun conversationIdToUserGroupPair(conversationId: ConversationId): Pair<UserId?, GroupId?> {
+        return when (conversationId) {
+            is ConversationId.User -> conversationId.id to null
+            is ConversationId.Group -> null to conversationId.id
+        }
+    }
+
+    private fun onMessageUpdate(event: MessageUpdateEvent) {
         val uiEvent = when (event) {
             is MessageUpdateEvent.Delivered -> {
-                val (userId, groupId) = when (event.conversationId) {
-                    is ConversationId.User -> event.conversationId.id to null
-                    is ConversationId.Group -> null to event.conversationId.id
-                }
+                val (userId, groupId) = conversationIdToUserGroupPair(event.conversationId)
 
                 UIMessageUpdateEvent.Delivered(userId, groupId, event.messageId, event.deliveredTimestamp)
             }
 
-            //FIXME
-            else -> TODO()
+            is MessageUpdateEvent.Expiring -> {
+                val (userId, groupId) = conversationIdToUserGroupPair(event.conversationId)
+
+                UIMessageUpdateEvent.Expiring(userId, groupId, event.messageId, event.ttl, event.expiresAt)
+            }
+
+            is MessageUpdateEvent.Expired -> {
+                val (userId, groupId) = conversationIdToUserGroupPair(event.conversationId)
+
+                UIMessageUpdateEvent.Expired(userId, groupId, event.messageId)
+            }
+
+            else -> null
         }
 
-        notifyMessageStatusUpdateListeners(uiEvent)
+        if (uiEvent != null)
+            notifyMessageStatusUpdateListeners(uiEvent)
     }
 
     /* Interface methods. */
