@@ -107,10 +107,12 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         val id = ConversationId.User(userId)
         ConversationTable.delete(connection, id)
         deleteConversationInfo(connection, id)
+        deleteExpiringMessagesForConversation(connection, id)
     }
 
     override fun block(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         updateContactMessageLevel(connection, userId, AllowedMessageLevel.BLOCKED)
+        Unit
     }
 
     override fun unblock(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -120,8 +122,8 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
     override fun allowAll(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         updateContactMessageLevel(connection, userId, AllowedMessageLevel.ALL)
+        Unit
     }
-
 
     private fun searchByLikeField(connection: SQLiteConnection, fieldName: String, searchValue: String): List<ContactInfo> =
         connection.prepare("SELECT id, email, name, allowed_message_level, phone_number, public_key FROM contacts WHERE $fieldName LIKE ? ESCAPE '!'").use { stmt ->
@@ -144,26 +146,6 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
     override fun searchByName(name: String): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery {
         searchByLikeField(it, "name", name)
-    }
-
-    private fun removeContactNoTransaction(connection: SQLiteConnection, userId: UserId): Boolean {
-        connection.prepare("UPDATE contacts set allowed_message_level=? WHERE id=?").use { stmt ->
-            stmt.bind(1, AllowedMessageLevel.GROUP_ONLY)
-            stmt.bind(2, userId)
-
-            stmt.step()
-        }
-
-        val wasRemoved = connection.changes > 0
-
-        if (wasRemoved) {
-            val id = ConversationId.User(userId)
-            ConversationTable.delete(connection, id)
-
-            deleteConversationInfo(connection, id)
-        }
-
-        return wasRemoved
     }
 
     private fun deleteConversationInfo(connection: SQLiteConnection, conversationId: ConversationId) {
@@ -268,7 +250,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
     override fun remove(userId: UserId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
-            val wasRemoved = removeContactNoTransaction(connection, userId)
+            val wasRemoved = updateContactMessageLevel(connection, userId, AllowedMessageLevel.GROUP_ONLY)
             if (wasRemoved) {
                 val remoteUpdates = listOf(AddressBookUpdate.Contact(userId, AllowedMessageLevel.GROUP_ONLY))
                 addRemoteUpdateNoTransaction(connection, remoteUpdates)
@@ -383,15 +365,15 @@ ON
     }
 
     /** Updates message level for an existing contact. Handles deletion of conversation data and creation of remote update. */
-    private fun updateContactMessageLevel(connection: SQLiteConnection, userId: UserId, newMessageLevel: AllowedMessageLevel) {
+    private fun updateContactMessageLevel(connection: SQLiteConnection, userId: UserId, newMessageLevel: AllowedMessageLevel): Boolean {
         val currentInfo = queryContactInfo(connection, userId)
         if (currentInfo == null) {
             log.warn("Attempt to update message level for a non-existent user: {}", userId)
-            return
+            return false
         }
 
         if (currentInfo.allowedMessageLevel == newMessageLevel)
-            return
+            return false
 
         updateMessageLevel(connection, userId, newMessageLevel)
 
@@ -402,6 +384,8 @@ ON
 
         val remoteUpdates = listOf(AddressBookUpdate.Contact(userId, newMessageLevel))
         addRemoteUpdateNoTransaction(connection, remoteUpdates)
+
+        return true
     }
 
     private fun updateMessageLevel(connection: SQLiteConnection, user: UserId, newMessageLevel: AllowedMessageLevel): Boolean {

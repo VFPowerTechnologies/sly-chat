@@ -8,6 +8,13 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
 
+internal fun deleteExpiringMessagesForConversation(connection: SQLiteConnection, conversationId: ConversationId) {
+    connection.withPrepared("DELETE FROM expiring_messages WHERE conversation_id=?") { stmt ->
+        stmt.bind(1, conversationId)
+        stmt.step()
+    }
+}
+
 /** Depends on SQLiteContactsPersistenceManager for creating and deleting conversation tables. */
 class SQLiteMessagePersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
@@ -204,10 +211,7 @@ LIMIT
                 stmt.step()
             }
 
-            connection.withPrepared("DELETE FROM expiring_messages WHERE conversation_id=?") { stmt ->
-                stmt.bind(1, conversationId)
-                stmt.step()
-            }
+            deleteExpiringMessagesForConversation(connection, conversationId)
 
             insertOrReplaceNewConversationInfo(connection, conversationId)
         }

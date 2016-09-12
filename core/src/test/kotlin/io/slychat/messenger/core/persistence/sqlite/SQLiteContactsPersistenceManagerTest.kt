@@ -1,11 +1,8 @@
 package io.slychat.messenger.core.persistence.sqlite
 
-import io.slychat.messenger.core.PlatformContact
-import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.unhexify
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.randomContactInfoList
-import io.slychat.messenger.core.randomUserId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -350,6 +347,25 @@ class SQLiteContactsPersistenceManagerTest {
         contactsPersistenceManager.remove(contactA.id).get()
 
         conversationInfoTestUtils.assertConvTableNotExists(contactA.id)
+    }
+
+    //ugh...
+    @Test
+    fun `remove should remove expiring message entries for an existing user`() {
+        val userId = insertDummyContact(AllowedMessageLevel.ALL).id
+
+        val messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
+
+        val conversationMessageInfo = randomSentConversationMessageInfo()
+        messagePersistenceManager.addMessage(userId.toConversationId(), conversationMessageInfo).get()
+        messagePersistenceManager.setExpiration(userId.toConversationId(), conversationMessageInfo.info.id, 100).get()
+
+        contactsPersistenceManager.remove(userId).get()
+
+        assertThat(messagePersistenceManager.getMessagesAwaitingExpiration().get()).apply {
+            `as`("Expiring message entries should be removed")
+            isEmpty()
+        }
     }
 
     @Test
