@@ -65,10 +65,27 @@ class MessageExpirationWatcherImpl(
         currentTimer?.unsubscribe()
     }
 
-    private fun onMessageUpdate(event: MessageUpdateEvent) = when (event) {
-        is MessageUpdateEvent.Expiring -> onMessageExpiring(event)
-        is MessageUpdateEvent.Expired -> onMessageExpired(event)
-        else -> {}
+    private fun onMessageUpdate(event: MessageUpdateEvent) {
+        return when (event) {
+            is MessageUpdateEvent.Expiring -> onMessageExpiring(event)
+            is MessageUpdateEvent.Expired -> onMessageExpired(event)
+            is MessageUpdateEvent.Deleted -> onMessagesDeleted(event)
+            is MessageUpdateEvent.DeletedAll -> onAllMessagesDelete(event)
+            else -> {}
+        }
+    }
+
+    private fun onAllMessagesDelete(event: MessageUpdateEvent.DeletedAll) {
+        if (expiringMessages.removeAll(event.conversationId))
+            updateTimer()
+    }
+
+    private fun onMessagesDeleted(event: MessageUpdateEvent.Deleted) {
+        event.messageIds.forEach {
+            expiringMessages.remove(event.conversationId, it)
+        }
+
+        updateTimer()
     }
 
     //this is here for consistency between devices; if I start a countdown on one device, and then one on another,

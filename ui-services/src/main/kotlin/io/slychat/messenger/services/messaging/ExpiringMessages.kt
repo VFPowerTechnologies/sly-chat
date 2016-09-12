@@ -36,6 +36,10 @@ internal class ExpiringMessages {
         return list.removeIf { it.messageId == messageId && it.conversationId == conversationId }
     }
 
+    fun removeAll(conversationId: ConversationId): Boolean {
+        return list.removeIf { it.conversationId == conversationId }
+    }
+
     fun removeExpired(currentTime: Long): List<ExpiringEntry> {
         val expired = list.takeWhile { it.expireAt <= currentTime }
         if (expired.isNotEmpty())
