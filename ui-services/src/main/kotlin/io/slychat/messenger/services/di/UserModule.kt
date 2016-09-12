@@ -32,6 +32,7 @@ import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
 import rx.Observable
 import rx.Scheduler
+import rx.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
 @Module
@@ -408,6 +409,20 @@ class UserModule(
         messagePersistenceManager: MessagePersistenceManager
     ): MessageService {
         return MessageServiceImpl(messagePersistenceManager)
+    }
+
+    @UserScope
+    @Provides
+    fun providersMessageExpirationWatcher(
+        scheduler: Scheduler,
+        messageService: MessageService
+    ): MessageExpirationWatcher {
+        val rxTimerFactory = RxTimerFactory(Schedulers.computation())
+        return MessageExpirationWatcherImpl(
+            scheduler,
+            rxTimerFactory,
+            messageService
+        )
     }
 
 }

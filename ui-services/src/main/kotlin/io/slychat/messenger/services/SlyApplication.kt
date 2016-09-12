@@ -466,9 +466,11 @@ class SlyApplication {
         userComponent.messageCipherService.init()
         userComponent.mutualContactNotifier.init()
         userComponent.conversationWatcher.init()
+        userComponent.messageExpirationWatcher.init()
     }
 
     private fun shutdownUserComponents(userComponent: UserComponent) {
+        userComponent.messageExpirationWatcher.shutdown()
         userComponent.conversationWatcher.shutdown()
         userComponent.mutualContactNotifier.shutdown()
         userComponent.messageCipherService.shutdown(false)

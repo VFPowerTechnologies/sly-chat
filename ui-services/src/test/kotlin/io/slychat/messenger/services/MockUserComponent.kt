@@ -13,6 +13,7 @@ import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.messaging.MessageExpirationWatcher
 import io.slychat.messenger.services.messaging.MessageProcessor
 import io.slychat.messenger.services.messaging.MessageService
 import io.slychat.messenger.services.messaging.MessengerService
@@ -76,4 +77,6 @@ class MockUserComponent : UserComponent {
     override val messageProcessor: MessageProcessor = mock()
 
     override val messageService: MessageService = mock()
+
+    override val messageExpirationWatcher: MessageExpirationWatcher = mock()
 }
