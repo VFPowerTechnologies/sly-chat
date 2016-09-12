@@ -80,4 +80,49 @@ sealed class MessageUpdateEvent {
             return "Expired(conversationId=$conversationId, messageId='$messageId')"
         }
     }
+
+    class Deleted(val conversationId: ConversationId, val messageIds: Collection<String>) : MessageUpdateEvent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as Deleted
+
+            if (conversationId != other.conversationId) return false
+            if (messageIds != other.messageIds) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = conversationId.hashCode()
+            result = 31 * result + messageIds.hashCode()
+            return result
+        }
+
+        override fun toString(): String {
+            return "Deleted(conversationId=$conversationId, messageIds=$messageIds)"
+        }
+    }
+
+    class DeletedAll(val conversationId: ConversationId) : MessageUpdateEvent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as DeletedAll
+
+            if (conversationId != other.conversationId) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return conversationId.hashCode()
+        }
+
+        override fun toString(): String {
+            return "DeletedAll(conversationId=$conversationId)"
+        }
+    }
 }

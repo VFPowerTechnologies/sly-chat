@@ -49,11 +49,15 @@ class MessageServiceImpl(
     }
 
     override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> {
-        return messagePersistenceManager.deleteMessages(conversationId, messageIds)
+        return messagePersistenceManager.deleteMessages(conversationId, messageIds) successUi {
+            messageUpdatesSubject.onNext(MessageUpdateEvent.Deleted(conversationId, messageIds))
+        }
     }
 
     override fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception> {
-        return messagePersistenceManager.deleteAllMessages(conversationId)
+        return messagePersistenceManager.deleteAllMessages(conversationId) successUi {
+            messageUpdatesSubject.onNext(MessageUpdateEvent.DeletedAll(conversationId))
+        }
     }
 
     override fun getAllUserConversations(): Promise<List<UserConversation>, Exception> {

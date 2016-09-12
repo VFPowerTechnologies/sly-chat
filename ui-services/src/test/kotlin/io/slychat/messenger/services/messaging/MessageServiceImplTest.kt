@@ -40,6 +40,8 @@ class MessageServiceImplTest {
         whenever(messagePersistenceManager.markConversationAsRead(any())).thenResolveUnit()
         whenever(messagePersistenceManager.setExpiration(any(), any(), any())).thenResolve(true)
         whenever(messagePersistenceManager.expireMessages(any())).thenResolveUnit()
+        whenever(messagePersistenceManager.deleteAllMessages(any())).thenResolveUnit()
+        whenever(messagePersistenceManager.deleteMessages(any(), any())).thenResolveUnit()
     }
 
     fun forEachConvType(body: (ConversationId) -> Unit) {
@@ -217,6 +219,37 @@ class MessageServiceImplTest {
             assertThat(testSubscriber.onNextEvents).apply {
                 `as`("Should emit events")
                 containsOnlyElementsOf(expected)
+            }
+        }
+    }
+
+    @Test
+    fun `it should emit a Deleted event when deleteMessages is called`() {
+        forEachConvType { conversationId ->
+            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Deleted>()
+            val messageIds = (0..1).map { randomMessageId() }
+
+            messageService.deleteMessages(conversationId, messageIds).get()
+
+            val expected = MessageUpdateEvent.Deleted(conversationId, messageIds)
+
+            assertEventEmitted(testSubscriber) {
+                assertEquals(expected, it, "Invalid event")
+            }
+        }
+    }
+
+    @Test
+    fun `it should emit a DeletedAll event when deleteAllMessages is called`() {
+        forEachConvType { conversationId ->
+            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.DeletedAll>()
+
+            messageService.deleteAllMessages(conversationId).get()
+
+            val expected = MessageUpdateEvent.DeletedAll(conversationId)
+
+            assertEventEmitted(testSubscriber) {
+                assertEquals(expected, it, "Invalid event")
             }
         }
     }
