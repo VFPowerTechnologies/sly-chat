@@ -2,7 +2,6 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.persistence.sqlite.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -618,6 +617,24 @@ class SQLiteGroupPersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
+    fun `part should remove any associated expiring messages`() {
+        withJoinedGroup { groupId, members ->
+            val messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
+
+            val conversationMessageInfo = randomSentConversationMessageInfo()
+            messagePersistenceManager.addMessage(groupId.toConversationId(), conversationMessageInfo).get()
+            messagePersistenceManager.setExpiration(groupId.toConversationId(), conversationMessageInfo.info.id, 100).get()
+
+            groupPersistenceManager.part(groupId).get()
+
+            assertThat(messagePersistenceManager.getMessagesAwaitingExpiration().get()).apply {
+                `as`("Expiring message entries should be removed")
+                isEmpty()
+            }
+        }
+    }
+
+    @Test
     fun `part should not create a remote update when parting an already parted group`() {
         withPartedGroup { groupId ->
             groupPersistenceManager.part(groupId).get()
@@ -643,6 +660,24 @@ class SQLiteGroupPersistenceManagerTest : GroupPersistenceManagerTestUtils {
             groupPersistenceManager.block(it).get()
 
             assertNoRemoteUpdates()
+        }
+    }
+
+    @Test
+    fun `block should remove any associated expiring messages`() {
+        withJoinedGroup { groupId, members ->
+            val messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
+
+            val conversationMessageInfo = randomSentConversationMessageInfo()
+            messagePersistenceManager.addMessage(groupId.toConversationId(), conversationMessageInfo).get()
+            messagePersistenceManager.setExpiration(groupId.toConversationId(), conversationMessageInfo.info.id, 100).get()
+
+            groupPersistenceManager.block(groupId).get()
+
+            assertThat(messagePersistenceManager.getMessagesAwaitingExpiration().get()).apply {
+                `as`("Expiring message entries should be removed")
+                isEmpty()
+            }
         }
     }
 

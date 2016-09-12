@@ -291,6 +291,7 @@ AND
 
         updateMembershipLevel(connection, groupId, GroupMembershipLevel.PARTED)
         deleteConversationData(connection, groupId)
+        deleteExpiringMessagesForConversation(connection, groupId.toConversationId())
     }
 
     //joined -> blocked
@@ -298,6 +299,7 @@ AND
         clearMemberList(connection, groupId)
         updateMembershipLevel(connection, groupId, GroupMembershipLevel.BLOCKED)
         deleteConversationData(connection, groupId)
+        deleteExpiringMessagesForConversation(connection, groupId.toConversationId())
     }
 
     //blocked -> parted
