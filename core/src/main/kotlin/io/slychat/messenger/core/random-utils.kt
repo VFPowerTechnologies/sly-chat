@@ -144,7 +144,7 @@ fun randomMessageText(): String {
     return shuffleString("random message")
 }
 
-fun randomReceivedMessageInfo(isRead: Boolean = false): MessageInfo {
+fun randomReceivedMessageInfo(isRead: Boolean = false, expiresAt: Long = 0): MessageInfo {
     return MessageInfo.newReceived(randomMessageText(), currentTimestamp(), isRead)
 }
 

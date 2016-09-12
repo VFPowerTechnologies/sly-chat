@@ -41,7 +41,7 @@ class AddressBookSyncJobImplTest {
     val userLoginData = UserData(SlyAddress(randomUserId(), 1), keyVault)
     val accountRegionCode = "1"
     val platformContacts: PlatformContacts = mock()
-    val timerFactory: TimerFactory = mock()
+    val promiseTimerFactory: PromiseTimerFactory = mock()
 
     @Before
     fun before() {
@@ -71,7 +71,7 @@ class AddressBookSyncJobImplTest {
         whenever(addressBookAsyncClient.update(any(), any())).thenResolve(UpdateAddressBookResponse(updateMd5))
         whenever(addressBookAsyncClient.get(any(), any())).thenResolve(GetAddressBookResponse(emptyList()))
 
-        whenever(timerFactory.run(any(), any())).thenResolve(Unit)
+        whenever(promiseTimerFactory.run(any(), any())).thenResolve(Unit)
     }
 
     fun newJob(): AddressBookSyncJobImpl {
@@ -84,7 +84,7 @@ class AddressBookSyncJobImplTest {
             userLoginData,
             accountRegionCode,
             platformContacts,
-            timerFactory
+            promiseTimerFactory
         )
     }
 

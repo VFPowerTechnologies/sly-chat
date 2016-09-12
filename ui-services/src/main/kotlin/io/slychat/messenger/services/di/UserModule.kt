@@ -70,7 +70,7 @@ class UserModule(
         @SlyHttp httpClientFactory: HttpClientFactory,
         userLoginData: UserData,
         platformContacts: PlatformContacts,
-        timerFactory: TimerFactory
+        promiseTimerFactory: PromiseTimerFactory
     ): AddressBookSyncJobFactory {
         val serverUrl = serverUrls.API_SERVER
         val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
@@ -85,7 +85,7 @@ class UserModule(
             userLoginData,
             accountInfoManager.accountInfo,
             platformContacts,
-            timerFactory
+            promiseTimerFactory
         )
     }
 
@@ -299,9 +299,9 @@ class UserModule(
     fun providesAuthTokenManager(
         userLoginData: UserData,
         tokenProvider: TokenProvider,
-        timerFactory: TimerFactory
+        promiseTimerFactory: PromiseTimerFactory
     ): AuthTokenManager =
-        AuthTokenManagerImpl(userLoginData.address, tokenProvider, timerFactory)
+        AuthTokenManagerImpl(userLoginData.address, tokenProvider, promiseTimerFactory)
 
     @UserScope
     @Provides

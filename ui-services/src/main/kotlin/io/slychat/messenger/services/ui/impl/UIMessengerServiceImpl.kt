@@ -93,6 +93,9 @@ class UIMessengerServiceImpl(
 
                 UIMessageUpdateEvent.Delivered(userId, groupId, event.messageId, event.deliveredTimestamp)
             }
+
+            //FIXME
+            else -> TODO()
         }
 
         notifyMessageStatusUpdateListeners(uiEvent)

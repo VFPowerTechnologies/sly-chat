@@ -62,4 +62,12 @@ class MessageServiceImpl(
     override fun getLastMessages(conversationId: ConversationId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception> {
         return messagePersistenceManager.getLastMessages(conversationId, startingAt, count)
     }
+
+    override fun expireMessages(messages: Map<ConversationId, Collection<String>>): Promise<Unit, Exception> {
+        TODO()
+    }
+
+    override fun getMessagesAwaitingExpiration(): Promise<Map<ConversationId, Collection<MessageInfo>>, Exception> {
+        TODO()
+    }
 }

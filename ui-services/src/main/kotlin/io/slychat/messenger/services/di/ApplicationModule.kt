@@ -20,8 +20,8 @@ import io.slychat.messenger.services.auth.AuthenticationServiceImpl
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.FileConfigStorage
 import io.slychat.messenger.services.config.JsonConfigBackend
-import io.slychat.messenger.services.contacts.RxTimerFactory
-import io.slychat.messenger.services.contacts.TimerFactory
+import io.slychat.messenger.services.contacts.RxPromiseTimerFactory
+import io.slychat.messenger.services.contacts.PromiseTimerFactory
 import rx.Observable
 import java.io.ByteArrayInputStream
 import java.security.cert.CertificateFactory
@@ -104,8 +104,8 @@ class ApplicationModule(
 
     @Singleton
     @Provides
-    fun providesTimerFactory(): TimerFactory {
-        return RxTimerFactory()
+    fun providesTimerFactory(): PromiseTimerFactory {
+        return RxPromiseTimerFactory()
     }
 
     @Singleton
