@@ -30,8 +30,4 @@ interface MessengerService {
     fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception>
     fun getConversations(): Promise<List<UserConversation>, Exception>
     fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>
-    fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception>
-    fun deleteAllMessages(userId: UserId): Promise<Unit, Exception>
-    fun deleteGroupMessages(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception>
-    fun deleteAllGroupMessages(groupId: GroupId): Promise<Unit, Exception>
 }

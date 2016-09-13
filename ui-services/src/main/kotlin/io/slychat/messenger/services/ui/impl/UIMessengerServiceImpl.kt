@@ -3,6 +3,7 @@ package io.slychat.messenger.services.ui.impl
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.core.persistence.toConversationId
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.di.UserComponent
@@ -69,6 +70,10 @@ class UIMessengerServiceImpl(
 
     private fun getMessengerServiceOrThrow(): MessengerService {
         return messengerService ?: error("No user session has been established")
+    }
+
+    private fun getMessageServiceOrThrow(): MessageService {
+        return messageService ?: error("No user session has been established")
     }
 
     /** First we add to the log, then we display it to the user. */
@@ -165,11 +170,16 @@ class UIMessengerServiceImpl(
         messageStatusUpdateListeners.forEach { it(event) }
     }
 
+    //also fix UIGroupService to use that instead of persistencemanager directly
     override fun deleteAllMessagesFor(userId: UserId): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().deleteAllMessages(userId)
+        return getMessageServiceOrThrow().deleteAllMessages(userId.toConversationId())
     }
 
     override fun deleteMessagesFor(userId: UserId, messages: List<String>): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().deleteMessages(userId, messages)
+        return getMessageServiceOrThrow().deleteMessages(userId.toConversationId(), messages)
+    }
+
+    override fun startMessageExpiration(userId: UserId, messageId: String): Promise<Unit, Exception> {
+        return getMessageServiceOrThrow().startMessageExpiration(userId.toConversationId(), messageId)
     }
 }

@@ -350,19 +350,19 @@ class MessengerServiceImpl(
         return messageService.markConversationAsRead(userId.toConversationId())
     }
 
-    override fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception> {
+    fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception> {
         return messageService.deleteMessages(userId.toConversationId(), messageIds)
     }
 
-    override fun deleteAllMessages(userId: UserId): Promise<Unit, Exception> {
+    fun deleteAllMessages(userId: UserId): Promise<Unit, Exception> {
         return messageService.deleteAllMessages(userId.toConversationId())
     }
 
-    override fun deleteGroupMessages(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception> {
+    fun deleteGroupMessages(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception> {
         return messageService.deleteMessages(groupId.toConversationId(), messageIds)
     }
 
-    override fun deleteAllGroupMessages(groupId: GroupId): Promise<Unit, Exception> {
+    fun deleteAllGroupMessages(groupId: GroupId): Promise<Unit, Exception> {
         return messageService.deleteAllMessages(groupId.toConversationId())
     }
 

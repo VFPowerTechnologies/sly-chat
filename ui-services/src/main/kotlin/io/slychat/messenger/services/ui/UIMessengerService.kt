@@ -54,5 +54,6 @@ interface UIMessengerService {
      */
     fun getConversations(): Promise<List<UIConversation>, Exception>
 
+    fun startMessageExpiration(userId: UserId, messageId: String): Promise<Unit, Exception>
 }
 
