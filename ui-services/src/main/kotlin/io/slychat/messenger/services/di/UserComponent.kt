@@ -8,6 +8,9 @@ import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.contacts.AddressBookOperationManager
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
+import io.slychat.messenger.services.messaging.MessageExpirationWatcher
+import io.slychat.messenger.services.messaging.MessageProcessor
+import io.slychat.messenger.services.messaging.MessageService
 import io.slychat.messenger.services.messaging.MessengerService
 
 /** Scoped to a user's login session. */
@@ -55,4 +58,12 @@ interface UserComponent {
     val sessionDataManager: SessionDataManager
 
     val mutualContactNotifier: MutualContactNotifier
+
+    val conversationWatcher: ConversationWatcher
+
+    val messageProcessor: MessageProcessor
+
+    val messageService: MessageService
+
+    val messageExpirationWatcher: MessageExpirationWatcher
 }

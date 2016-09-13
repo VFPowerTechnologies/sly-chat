@@ -30,15 +30,6 @@ interface ContactsPersistenceManager {
 
     fun allowAll(userId: UserId): Promise<Unit, Exception>
 
-    /** Returns info for all available conversations. */
-    fun getAllConversations(): Promise<List<Conversation>, Exception>
-
-    /** Returns a ConversationInfo for the given user. */
-    fun getConversationInfo(userId: UserId): Promise<ConversationInfo?, Exception>
-
-    /** Resets unread message count for the given contact's conversation. */
-    fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>
-
     /**
      * Adds a new contact with the given message level.
      *

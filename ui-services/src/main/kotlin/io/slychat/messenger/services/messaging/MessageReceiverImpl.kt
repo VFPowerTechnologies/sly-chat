@@ -15,7 +15,6 @@ import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
-import rx.Observable
 import java.util.*
 
 class MessageReceiverImpl(
@@ -29,9 +28,6 @@ class MessageReceiverImpl(
 
     private val receivedMessageQueue = ArrayDeque<QueuedReceivedMessage>()
     private var currentReceivedMessage: QueuedReceivedMessage? = null
-
-    override val newMessages: Observable<ConversationMessage>
-        get() = messageProcessor.newMessages
 
     private fun initializeReceiveQueue() {
         packageQueuePersistenceManager.getQueuedPackages() successUi { packages ->

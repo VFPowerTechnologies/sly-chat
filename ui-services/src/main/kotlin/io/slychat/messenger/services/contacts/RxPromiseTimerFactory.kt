@@ -5,7 +5,7 @@ import nl.komponents.kovenant.deferred
 import rx.Observable
 import java.util.concurrent.TimeUnit
 
-class RxTimerFactory : TimerFactory {
+class RxPromiseTimerFactory : PromiseTimerFactory {
     //TODO CancelablePromise when we upgrade kovenant
     override fun run(timeout: Long, timeUnit: TimeUnit): Promise<Unit, Exception> {
         val observable = Observable.timer(timeout, timeUnit)

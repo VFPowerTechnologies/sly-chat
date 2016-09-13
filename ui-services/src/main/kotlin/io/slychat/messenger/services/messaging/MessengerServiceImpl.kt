@@ -33,9 +33,8 @@ import java.util.*
 class MessengerServiceImpl(
     private val contactsService: ContactsService,
     addressBookOperationManager: AddressBookOperationManager,
-    private val messagePersistenceManager: MessagePersistenceManager,
+    private val messageService: MessageService,
     private val groupService: GroupService,
-    private val contactsPersistenceManager: ContactsPersistenceManager,
     private val relayClientManager: RelayClientManager,
     private val messageSender: MessageSender,
     private val messageReceiver: MessageReceiver,
@@ -45,13 +44,6 @@ class MessengerServiceImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val objectMapper = ObjectMapper()
-
-    override val newMessages: Observable<ConversationMessage>
-        get() = messageReceiver.newMessages
-
-    private val messageUpdatesSubject = PublishSubject.create<MessageBundle>()
-    override val messageUpdates: Observable<MessageBundle>
-        get() = messageUpdatesSubject
 
     private val subscriptions = CompositeSubscription()
 
@@ -94,15 +86,16 @@ class MessengerServiceImpl(
     }
 
     private fun processSingleUpdate(metadata: MessageMetadata, serverReceivedTimestamp: Long) {
-        log.debug("Processing sent convo message {} to {}", metadata.messageId, metadata.userId)
+        val messageId = metadata.messageId
 
-        messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId, serverReceivedTimestamp) bindUi { messageInfo ->
-            broadcastSentMessage(metadata, messageInfo) map { messageInfo }
-        } successUi { messageInfo ->
-            val bundle = MessageBundle(metadata.userId, null, listOf(messageInfo))
-            messageUpdatesSubject.onNext(bundle)
+        log.debug("Processing sent convo message {} to {}", messageId, metadata.userId)
+
+        val conversationId = metadata.userId.toConversationId()
+
+        messageService.markMessageAsDelivered(conversationId, messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
+            broadcastSentMessage(metadata, conversationMessageInfo)
         } fail { e ->
-            log.error("Unable to mark convo message <<{}>> to {} as delivered: {}", metadata.messageId, metadata.userId, e.message, e)
+            log.error("Unable to mark convo message <<{}>> to {} as delivered: {}", messageId, metadata.userId, e.message, e)
         }
     }
 
@@ -110,21 +103,16 @@ class MessengerServiceImpl(
         //can't be null due to constructor checks
         val groupId = metadata.groupId!!
 
-        log.debug("Processing sent group message <<{}/{}>>", groupId, metadata.messageId)
+        val messageId = metadata.messageId
 
-        groupService.markMessageAsDelivered(groupId, metadata.messageId, serverReceivedTimestamp) bindUi { groupMessageInfo ->
-            if (groupMessageInfo != null)
-                broadcastSentMessage(metadata, groupMessageInfo.info) map { groupMessageInfo }
-            else
-                Promise.ofSuccess(groupMessageInfo)
-        } successUi { groupMessageInfo ->
-            //if this is null, the message has already been delievered to one recipient, so we don't emit another event
-            if (groupMessageInfo != null) {
-                val bundle = MessageBundle(metadata.userId, groupId, listOf(groupMessageInfo.info))
-                messageUpdatesSubject.onNext(bundle)
-            }
+        log.debug("Processing sent group message <<{}/{}>>", groupId, messageId)
+
+        val conversationId = groupId.toConversationId()
+
+        messageService.markMessageAsDelivered(conversationId, messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
+            broadcastSentMessage(metadata, conversationMessageInfo)
         } fail { e ->
-            log.error("Unable to mark group message <<{}/{}>> as delivered: {}", groupId, metadata.messageId, e.message, e)
+            log.error("Unable to mark group message <<{}/{}>> as delivered: {}", groupId, messageId, e.message, e)
         }
     }
 
@@ -149,12 +137,11 @@ class MessengerServiceImpl(
     }
 
     /** Writes the received message and then fires the new messages subject. */
-    private fun writeReceivedSelfMessage(from: UserId, decryptedMessage: String): Promise<Unit, Exception> {
-        val messageInfo = MessageInfo.newReceived(decryptedMessage, currentTimestamp(), 0)
-        return messagePersistenceManager.addMessage(from, messageInfo) mapUi { messageInfo ->
-            //FIXME
-            //newMessagesSubject.onNext(MessageBundle(from, listOf(messageInfo)))
-        }
+    private fun writeReceivedSelfMessage(from: UserId, messageText: String): Promise<Unit, Exception> {
+        //we mark the message as already read as well to avoid notifications (FIXME)
+        val messageInfo = MessageInfo.newReceived(messageText, currentTimestamp(), true)
+        val conversationMessageInfo = ConversationMessageInfo(from, messageInfo)
+        return messageService.addMessage(from.toConversationId(), conversationMessageInfo)
     }
 
     private fun usersFromPackages(packages: List<Package>): Set<UserId> = packages.mapTo(HashSet()) { it.userId }
@@ -205,30 +192,29 @@ class MessengerServiceImpl(
 
     /* UIMessengerService interface */
 
-    override fun sendMessageTo(userId: UserId, message: String): Promise<MessageInfo, Exception> {
+    override fun sendMessageTo(userId: UserId, message: String, ttl: Long): Promise<Unit, Exception> {
         val isSelfMessage = userId == selfId
 
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         return if (!isSelfMessage) {
             val messageInfo = MessageInfo.newSent(message, relayClock.currentTime(), 0)
-            val m = TextMessage(messageInfo.timestamp, message, null)
+            val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
+            val m = TextMessage(messageInfo.timestamp, message, null, ttl)
             val wrapper = SlyMessage.Text(m)
 
             val serialized = objectMapper.writeValueAsBytes(wrapper)
 
             val metadata = MessageMetadata(userId, null, MessageCategory.TEXT_SINGLE, messageInfo.id)
             messageSender.addToQueue(SenderMessageEntry(metadata, serialized)) bind {
-                messagePersistenceManager.addMessage(userId, messageInfo)
+                messageService.addMessage(userId.toConversationId(), conversationMessageInfo)
             }
         }
         else {
             val messageInfo = MessageInfo.newSelfSent(message, 0)
+            val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
             //we need to insure that the send message info is sent back to the ui before the ServerReceivedMessage is fired
-            messagePersistenceManager.addMessage(userId, messageInfo) map { messageInfo ->
-                Thread.sleep(30)
-                messageInfo
-            } successUi { messageInfo ->
+            messageService.addMessage(userId.toConversationId(), conversationMessageInfo) successUi {
                 writeReceivedSelfMessage(userId, messageInfo.message)
             }
         }
@@ -262,15 +248,15 @@ class MessengerServiceImpl(
         return messageSender.addToQueue(messages) map { members }
     }
 
-    override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<GroupMessageInfo, Exception> {
-        val m = SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId))
+    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<Unit, Exception> {
+        val m = SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId, ttl))
 
         val messageId = randomUUID()
 
         return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bindUi {
             val messageInfo = MessageInfo.newSent(message, 0).copy(id = messageId)
-            val groupMessageInfo = GroupMessageInfo(null, messageInfo)
-            groupService.addMessage(groupId, groupMessageInfo)
+            val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
+            messageService.addMessage(groupId.toConversationId(), conversationMessageInfo)
         }
     }
 
@@ -352,32 +338,32 @@ class MessengerServiceImpl(
         }
     }
 
-    override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception> {
-        return messagePersistenceManager.getLastMessages(userId, startingAt, count)
+    override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception> {
+        return messageService.getLastMessages(userId.toConversationId(), startingAt, count)
     }
 
-    override fun getConversations(): Promise<List<Conversation>, Exception> {
-        return contactsPersistenceManager.getAllConversations()
+    override fun getConversations(): Promise<List<UserConversation>, Exception> {
+        return messageService.getAllUserConversations()
     }
 
     override fun markConversationAsRead(userId: UserId): Promise<Unit, Exception> {
-        return contactsPersistenceManager.markConversationAsRead(userId)
+        return messageService.markConversationAsRead(userId.toConversationId())
     }
 
-    override fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception> {
-        return messagePersistenceManager.deleteMessages(userId, messageIds)
+    fun deleteMessages(userId: UserId, messageIds: List<String>): Promise<Unit, Exception> {
+        return messageService.deleteMessages(userId.toConversationId(), messageIds)
     }
 
-    override fun deleteAllMessages(userId: UserId): Promise<Unit, Exception> {
-        return messagePersistenceManager.deleteAllMessages(userId)
+    fun deleteAllMessages(userId: UserId): Promise<Unit, Exception> {
+        return messageService.deleteAllMessages(userId.toConversationId())
     }
 
-    override fun deleteGroupMessages(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception> {
-        return groupService.deleteMessages(groupId, messageIds)
+    fun deleteGroupMessages(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception> {
+        return messageService.deleteMessages(groupId.toConversationId(), messageIds)
     }
 
-    override fun deleteAllGroupMessages(groupId: GroupId): Promise<Unit, Exception> {
-        return groupService.deleteAllMessages(groupId)
+    fun deleteAllGroupMessages(groupId: GroupId): Promise<Unit, Exception> {
+        return messageService.deleteAllMessages(groupId.toConversationId())
     }
 
     /* Other */
@@ -407,21 +393,26 @@ class MessengerServiceImpl(
         return messageSender.addToQueue(messages)
     }
 
-    private fun broadcastSentMessage(metadata: MessageMetadata, messageInfo: MessageInfo): Promise<Unit, Exception> {
+    private fun broadcastSentMessage(metadata: MessageMetadata, conversationMessageInfo: ConversationMessageInfo?): Promise<MessageInfo?, Exception> {
+        if (conversationMessageInfo == null)
+            return Promise.ofSuccess(null)
+
         val recipient = if (metadata.groupId != null)
             Recipient.Group(metadata.groupId)
         else
             Recipient.User(metadata.userId)
 
+        val messageInfo = conversationMessageInfo.info
         val sentMessageInfo = SyncSentMessageInfo(
             metadata.messageId,
             recipient,
             messageInfo.message,
             messageInfo.timestamp,
-            messageInfo.receivedTimestamp
+            messageInfo.receivedTimestamp,
+            messageInfo.ttl
         )
 
-        return sendSyncMessage(SyncMessage.SelfMessage(sentMessageInfo))
+        return sendSyncMessage(SyncMessage.SelfMessage(sentMessageInfo)) map { messageInfo }
     }
 
     private fun broadcastSync() {

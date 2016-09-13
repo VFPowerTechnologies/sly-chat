@@ -4,6 +4,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.contacts.AddressBookOperationManager
 import io.slychat.messenger.services.messaging.GroupEvent
+import io.slychat.messenger.services.messaging.MessageService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.successUi
@@ -15,7 +16,8 @@ import rx.subjects.PublishSubject
 class GroupServiceImpl(
     private val groupPersistenceManager: GroupPersistenceManager,
     private val contactsPersistenceManager: ContactsPersistenceManager,
-    private val addressBookOperationManager: AddressBookOperationManager
+    private val addressBookOperationManager: AddressBookOperationManager,
+    private val messageService: MessageService
 ) : GroupService {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -36,27 +38,15 @@ class GroupServiceImpl(
     }
 
     override fun getGroupConversations(): Promise<List<GroupConversation>, Exception> {
-        return groupPersistenceManager.getAllConversations()
+        return messageService.getAllGroupConversations()
     }
 
     override fun getInfo(groupId: GroupId): Promise<GroupInfo?, Exception> {
         return groupPersistenceManager.getInfo(groupId)
     }
 
-    override fun addMessage(groupId: GroupId, groupMessageInfo: GroupMessageInfo): Promise<GroupMessageInfo, Exception> {
-        return groupPersistenceManager.addMessage(groupId, groupMessageInfo)
-    }
-
-    override fun markMessageAsDelivered(groupId: GroupId, messageId: String, timestamp: Long): Promise<GroupMessageInfo?, Exception> {
-        return groupPersistenceManager.markMessageAsDelivered(groupId, messageId, timestamp)
-    }
-
     override fun isUserMemberOf(groupId: GroupId, userId: UserId): Promise<Boolean, Exception> {
         return groupPersistenceManager.isUserMemberOf(groupId, userId)
-    }
-
-    override fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception> {
-        return groupPersistenceManager.markConversationAsRead(groupId)
     }
 
     override fun getMembersWithInfo(groupId: GroupId): Promise<List<ContactInfo>, Exception> {
@@ -129,18 +119,6 @@ class GroupServiceImpl(
 
     override fun getBlockList(): Promise<Set<GroupId>, Exception> {
         return groupPersistenceManager.getBlockList()
-    }
-
-    override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<GroupMessageInfo>, Exception> {
-        return groupPersistenceManager.getLastMessages(groupId, startingAt, count)
-    }
-
-    override fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception> {
-        return groupPersistenceManager.deleteAllMessages(groupId)
-    }
-
-    override fun deleteMessages(groupId: GroupId, messageIds: Collection<String>): Promise<Unit, Exception> {
-        return groupPersistenceManager.deleteMessages(groupId, messageIds)
     }
 
     private fun triggerRemoteSync() {

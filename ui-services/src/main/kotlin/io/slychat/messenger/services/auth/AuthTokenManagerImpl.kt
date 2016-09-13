@@ -6,7 +6,7 @@ import io.slychat.messenger.core.UnauthorizedException
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.services.bindRecoverForUi
 import io.slychat.messenger.services.bindUi
-import io.slychat.messenger.services.contacts.TimerFactory
+import io.slychat.messenger.services.contacts.PromiseTimerFactory
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
 class AuthTokenManagerImpl(
     private val address: SlyAddress,
     private val tokenProvider: TokenProvider,
-    private val timerFactory: TimerFactory
+    private val promiseTimerFactory: PromiseTimerFactory
 ) : AuthTokenManager {
     companion object {
         internal const val MAX_RETRIES = 2
@@ -105,7 +105,7 @@ class AuthTokenManagerImpl(
         val exp = Math.pow(2.0, n.toDouble())
         val secs = Random().nextInt(exp.toInt() + 1).toLong()
 
-        return timerFactory.run(secs, TimeUnit.SECONDS)
+        return promiseTimerFactory.run(secs, TimeUnit.SECONDS)
     }
 
     //don't like the code dup here, but no real way to not do this

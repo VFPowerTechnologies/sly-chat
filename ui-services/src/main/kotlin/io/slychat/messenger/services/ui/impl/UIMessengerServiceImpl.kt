@@ -1,11 +1,14 @@
 package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.core.persistence.toConversationId
+import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.messaging.ConversationMessage
-import io.slychat.messenger.services.messaging.MessageBundle
+import io.slychat.messenger.services.messaging.MessageService
 import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
@@ -22,7 +25,7 @@ class UIMessengerServiceImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val newMessageListeners = ArrayList<(UIMessageInfo) -> Unit>()
-    private val messageStatusUpdateListeners = ArrayList<(UIMessageInfo) -> Unit>()
+    private val messageStatusUpdateListeners = ArrayList<(UIMessageUpdateEvent) -> Unit>()
     private val clockDifferenceUpdateListeners = ArrayList<(Long) -> Unit>()
 
     private var relayClockDiff = 0L
@@ -30,6 +33,7 @@ class UIMessengerServiceImpl(
     private val subscriptions = CompositeSubscription()
 
     private var messengerService: MessengerService? = null
+    private var messageService: MessageService? = null
     private var relayClock: RelayClock? = null
 
     init {
@@ -38,14 +42,15 @@ class UIMessengerServiceImpl(
 
     private fun onUserSessionAvailabilityChanged(userComponent: UserComponent?) {
         if (userComponent != null) {
-            val messengerService = userComponent.messengerService
+            val messageService = userComponent.messageService
 
-            subscriptions.add(messengerService.newMessages.subscribe { onNewMessages(it) })
-            subscriptions.add(messengerService.messageUpdates.subscribe { onMessageStatusUpdate(it) })
+            subscriptions.add(messageService.newMessages.subscribe { onNewMessages(it) })
+            subscriptions.add(messageService.messageUpdates.subscribe { onMessageUpdate(it) })
             subscriptions.add(userComponent.relayClock.clockDiffUpdates.subscribe { onClockDifferenceUpdate(it) })
 
-            this.messengerService = userComponent.messengerService
+            messengerService = userComponent.messengerService
             relayClock = userComponent.relayClock
+            this.messageService = messageService
         }
         else {
             subscriptions.clear()
@@ -67,6 +72,10 @@ class UIMessengerServiceImpl(
         return messengerService ?: error("No user session has been established")
     }
 
+    private fun getMessageServiceOrThrow(): MessageService {
+        return messageService ?: error("No user session has been established")
+    }
+
     /** First we add to the log, then we display it to the user. */
     private fun onNewMessages(message: ConversationMessage) {
         val messages = listOf(message.info.toUI())
@@ -79,30 +88,55 @@ class UIMessengerServiceImpl(
         notifyNewMessageListeners(uiMessageInfo)
     }
 
-    private fun onMessageStatusUpdate(messageBundle: MessageBundle) {
-        val messages = messageBundle.messages.map { it.toUI() }
-        notifyMessageStatusUpdateListeners(UIMessageInfo(messageBundle.userId, messageBundle.groupId, messages))
+    private fun conversationIdToUserGroupPair(conversationId: ConversationId): Pair<UserId?, GroupId?> {
+        return when (conversationId) {
+            is ConversationId.User -> conversationId.id to null
+            is ConversationId.Group -> null to conversationId.id
+        }
+    }
+
+    private fun onMessageUpdate(event: MessageUpdateEvent) {
+        val uiEvent = when (event) {
+            is MessageUpdateEvent.Delivered -> {
+                val (userId, groupId) = conversationIdToUserGroupPair(event.conversationId)
+
+                UIMessageUpdateEvent.Delivered(userId, groupId, event.messageId, event.deliveredTimestamp)
+            }
+
+            is MessageUpdateEvent.Expiring -> {
+                val (userId, groupId) = conversationIdToUserGroupPair(event.conversationId)
+
+                UIMessageUpdateEvent.Expiring(userId, groupId, event.messageId, event.ttl, event.expiresAt)
+            }
+
+            is MessageUpdateEvent.Expired -> {
+                val (userId, groupId) = conversationIdToUserGroupPair(event.conversationId)
+
+                UIMessageUpdateEvent.Expired(userId, groupId, event.messageId)
+            }
+
+            else -> null
+        }
+
+        if (uiEvent != null)
+            notifyMessageStatusUpdateListeners(uiEvent)
     }
 
     /* Interface methods. */
 
-    override fun sendMessageTo(userId: UserId, message: String): Promise<UIMessage, Exception> {
-        return getMessengerServiceOrThrow().sendMessageTo(userId, message) map { messageInfo ->
-            messageInfo.toUI()
-        }
+    override fun sendMessageTo(userId: UserId, message: String, ttl: Long): Promise<Unit, Exception> {
+        return getMessengerServiceOrThrow().sendMessageTo(userId, message, ttl)
     }
 
-    override fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<UIMessage, Exception> {
-        return getMessengerServiceOrThrow().sendGroupMessageTo(groupId, message) map {
-            it.info.toUI()
-        }
+    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<Unit, Exception> {
+        return getMessengerServiceOrThrow().sendGroupMessageTo(groupId, message, ttl)
     }
 
     override fun addNewMessageListener(listener: (UIMessageInfo) -> Unit) {
         newMessageListeners.add(listener)
     }
 
-    override fun addMessageStatusUpdateListener(listener: (UIMessageInfo) -> Unit) {
+    override fun addMessageStatusUpdateListener(listener: (UIMessageUpdateEvent) -> Unit) {
         messageStatusUpdateListeners.add(listener)
     }
 
@@ -114,7 +148,7 @@ class UIMessengerServiceImpl(
 
     override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
         return getMessengerServiceOrThrow().getLastMessagesFor(userId, startingAt, count) map { messages ->
-            messages.map { it.toUI() }
+            messages.map { it.info.toUI() }
         }
     }
 
@@ -128,25 +162,24 @@ class UIMessengerServiceImpl(
         }
     }
 
-    override fun markConversationAsRead(userId: UserId): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().markConversationAsRead(userId)
-    }
-
     private fun notifyNewMessageListeners(messageInfo: UIMessageInfo) {
-        for (listener in newMessageListeners)
-            listener(messageInfo)
+        newMessageListeners.forEach { it(messageInfo) }
     }
 
-    private fun notifyMessageStatusUpdateListeners(messageInfo: UIMessageInfo) {
-        for (listener in messageStatusUpdateListeners)
-            listener(messageInfo)
+    private fun notifyMessageStatusUpdateListeners(event: UIMessageUpdateEvent) {
+        messageStatusUpdateListeners.forEach { it(event) }
     }
 
+    //also fix UIGroupService to use that instead of persistencemanager directly
     override fun deleteAllMessagesFor(userId: UserId): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().deleteAllMessages(userId)
+        return getMessageServiceOrThrow().deleteAllMessages(userId.toConversationId())
     }
 
     override fun deleteMessagesFor(userId: UserId, messages: List<String>): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().deleteMessages(userId, messages)
+        return getMessageServiceOrThrow().deleteMessages(userId.toConversationId(), messages)
+    }
+
+    override fun startMessageExpiration(userId: UserId, messageId: String): Promise<Unit, Exception> {
+        return getMessageServiceOrThrow().startMessageExpiration(userId.toConversationId(), messageId)
     }
 }

@@ -7,21 +7,22 @@ import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
 import io.slychat.messenger.services.GroupService
+import io.slychat.messenger.services.PageType
 import io.slychat.messenger.services.SyncMessageFromOtherSecurityException
+import io.slychat.messenger.services.UIEvent
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenReject
 import io.slychat.messenger.testutils.thenResolve
-import nl.komponents.kovenant.Promise
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
+import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class MessageProcessorImplTest {
     companion object {
@@ -33,25 +34,31 @@ class MessageProcessorImplTest {
     val selfId = randomUserId()
 
     val contactsService: ContactsService = mock()
-    val messagePersistenceManager: MessagePersistenceManager = mock()
+    val messageService: MessageService = mock()
     val messageCipherService: MessageCipherService = mock()
     val groupService: GroupService = mock()
+    val uiEvents: PublishSubject<UIEvent> = PublishSubject.create()
+
+    fun randomTextMessage(groupId: GroupId? = null): TextMessage =
+        TextMessage(currentTimestamp(), randomUUID(), groupId, randomInt(50, 100).toLong())
+
+    fun returnGroupInfo(groupInfo: GroupInfo?) {
+        if (groupInfo != null)
+            whenever(groupService.getInfo(groupInfo.id)).thenResolve(groupInfo)
+        else
+            whenever(groupService.getInfo(any())).thenResolve(null)
+    }
+
+    fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Text(m))
+    fun wrap(m: GroupEventMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.GroupEvent(m))
+    fun wrap(m: SyncMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Sync(m))
+    fun wrap(m: ControlMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Control(m))
 
     fun createProcessor(): MessageProcessorImpl {
-        whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val a = it.arguments[1] as MessageInfo
-            Promise.ofSuccess<MessageInfo, Exception>(a)
-        }
+        whenever(messageService.addMessage(any(), any())).thenResolve(Unit)
 
         whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
         whenever(contactsService.addById(any())).thenResolve(true)
-
-        whenever(groupService.addMessage(any(), any())).thenAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val a = it.arguments[1] as GroupMessageInfo
-            Promise.ofSuccess<GroupMessageInfo, Exception>(a)
-        }
 
         whenever(groupService.join(any(), any())).thenResolve(Unit)
         whenever(groupService.getInfo(any())).thenResolve(null)
@@ -64,9 +71,10 @@ class MessageProcessorImplTest {
         return MessageProcessorImpl(
             selfId,
             contactsService,
-            messagePersistenceManager,
+            messageService,
             messageCipherService,
-            groupService
+            groupService,
+            uiEvents
         )
     }
 
@@ -74,41 +82,39 @@ class MessageProcessorImplTest {
     fun `it should store newly received text messages`() {
         val processor = createProcessor()
 
-        val m = TextMessage(currentTimestamp(), "m", null)
+        val m = randomTextMessage()
 
         val wrapper = SlyMessageWrapper(randomUUID(), SlyMessage.Text(m))
 
-        processor.processMessage(UserId(1), wrapper).get()
+        val sender = UserId(1)
 
-        verify(messagePersistenceManager).addMessage(eq(UserId(1)), any())
+        processor.processMessage(sender, wrapper).get()
+
+        verify(messageService).addMessage(eq(sender.toConversationId()), capture {
+            val info = it.info
+            assertEquals(m.ttl, info.ttl, "Invalid TTL")
+            assertFalse(info.isRead, "Message should not be marked as read")
+            assertEquals(m.message, info.message, "Invalid message text")
+        })
     }
 
     @Test
-    fun `it should emit new message events after storing new text messages`() {
+    fun `it should mark new messages for the currently single convo focused page as read`() {
         val processor = createProcessor()
 
-        val m = TextMessage(currentTimestamp(), "m", null)
+        val m = randomTextMessage()
 
         val wrapper = SlyMessageWrapper(randomUUID(), SlyMessage.Text(m))
 
-        val testSubscriber = processor.newMessages.testSubscriber()
+        val sender = UserId(1)
 
-        val from = UserId(1)
+        uiEvents.onNext(UIEvent.PageChange(PageType.CONVO, sender.toString()))
 
-        processor.processMessage(from, wrapper).get()
+        processor.processMessage(sender, wrapper).get()
 
-        val messages = testSubscriber.onNextEvents
-
-        assertThat(messages).apply {
-            `as`("")
-            hasSize(1)
-        }
-
-        val message = messages[0]
-
-        message as ConversationMessage.Single
-
-        assertEquals(message.userId, from, "Invalid user id")
+        verify(messageService).addMessage(eq(sender.toConversationId()), capture {
+            assertTrue(it.info.isRead, "Message should be marked as read")
+        })
     }
 
     @Test
@@ -122,30 +128,15 @@ class MessageProcessorImplTest {
         val from = randomUserId()
 
         whenever(contactsService.allowAll(from)).thenResolve(Unit)
-        whenever(messagePersistenceManager.addMessage(any(), any()))
+        whenever(messageService.addMessage(any(), any()))
             .thenReject(InvalidMessageLevelException(from))
-            .thenResolve(randomReceivedMessageInfo())
+            .thenResolve(Unit)
 
         processor.processMessage(from, wrapper).get()
 
         verify(contactsService).allowAll(from)
-        verify(messagePersistenceManager, times(2)).addMessage(any(), any())
+        verify(messageService, times(2)).addMessage(any(), any())
     }
-
-    fun randomTextMessage(groupId: GroupId? = null): TextMessage =
-        TextMessage(currentTimestamp(), randomUUID(), groupId)
-
-    fun returnGroupInfo(groupInfo: GroupInfo?) {
-        if (groupInfo != null)
-            whenever(groupService.getInfo(groupInfo.id)).thenResolve(groupInfo)
-        else
-            whenever(groupService.getInfo(any())).thenResolve(null)
-    }
-
-    fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Text(m))
-    fun wrap(m: GroupEventMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.GroupEvent(m))
-    fun wrap(m: SyncMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Sync(m))
-    fun wrap(m: ControlMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Control(m))
 
     /* Group stuff */
 
@@ -504,15 +495,16 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(groupService).addMessage(eq(groupInfo.id), capture { groupMessageInfo ->
+        verify(messageService).addMessage(eq(groupInfo.id.toConversationId()), capture { groupMessageInfo ->
             val messageInfo = groupMessageInfo.info
             assertFalse(messageInfo.isSent, "Message marked as sent")
+            assertFalse(messageInfo.isRead, "Message should not be marked as read")
             assertEquals(m.message, messageInfo.message, "Invalid message")
         })
     }
 
     @Test
-    fun `it should emit a new message event when receiving a new group text message`() {
+    fun `it should mark new messages for the currently group convo focused page as read`() {
         val sender = randomUserId()
 
         val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
@@ -522,19 +514,13 @@ class MessageProcessorImplTest {
 
         returnGroupInfo(groupInfo)
 
-        val testSubscriber = processor.newMessages.testSubscriber()
+        uiEvents.onNext(UIEvent.PageChange(PageType.GROUP, groupInfo.id.toString()))
 
-        val wrapper = wrap(m)
-        processor.processMessage(sender, wrapper).get()
+        processor.processMessage(sender, wrap(m)).get()
 
-        val newMessages = testSubscriber.onNextEvents
-        assertEquals(1, newMessages.size, "Invalid number of new message events")
-
-        val message = newMessages[0] as ConversationMessage.Group
-        assertEquals(groupInfo.id, message.groupId, "Invalid group id")
-
-        assertEquals(m.message, message.info.message, "Invalid message")
-        assertEquals(wrapper.messageId, message.info.id, "Invalid message id")
+        verify(messageService).addMessage(eq(groupInfo.id.toConversationId()), capture {
+            assertTrue(it.info.isRead, "Message should be marked as read")
+        })
     }
 
     fun testDropGroupTextMessage(senderIsMember: Boolean, membershipLevel: GroupMembershipLevel) {
@@ -551,7 +537,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(groupService, never()).addMessage(any(), any())
+        verify(messageService, never()).addMessage(any(), any())
     }
 
     @Test
@@ -603,7 +589,8 @@ class MessageProcessorImplTest {
             Recipient.User(userId),
             randomMessageText(),
             currentTimestamp(),
-            currentTimestamp()
+            currentTimestamp(),
+            randomTtl()
         )
     }
 
@@ -613,7 +600,8 @@ class MessageProcessorImplTest {
             Recipient.Group(groupId),
             randomMessageText(),
             currentTimestamp(),
-            currentTimestamp()
+            currentTimestamp(),
+            randomTtl()
         )
     }
 
@@ -624,11 +612,12 @@ class MessageProcessorImplTest {
         val recipient = randomUserId()
         val sentMessageInfo = randomSingleSentMessageInfo(recipient)
         val messageInfo = sentMessageInfo.toMessageInfo()
+        val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
         val m = SyncMessage.SelfMessage(sentMessageInfo)
 
         processor.processMessage(selfId, wrap(m)).get()
 
-        verify(messagePersistenceManager).addMessage(recipient, messageInfo)
+        verify(messageService).addMessage(recipient.toConversationId(), conversationMessageInfo)
     }
 
     @Test
@@ -645,63 +634,17 @@ class MessageProcessorImplTest {
     }
 
     @Test
-    fun `it should emit new message updates when receiving a SelfMessage message`() {
-        val processor = createProcessor()
-
-        val recipient = randomUserId()
-        val sentMessageInfo = randomSingleSentMessageInfo(recipient)
-        val messageInfo = sentMessageInfo.toMessageInfo()
-        val m = SyncMessage.SelfMessage(sentMessageInfo)
-
-        val testSubscriber = processor.newMessages.testSubscriber()
-
-        processor.processMessage(selfId, wrap(m)).get()
-
-        val messages = testSubscriber.onNextEvents
-
-        val expectedMessage = ConversationMessage.Single(recipient, messageInfo)
-
-        assertThat(messages).apply {
-            `as`("Should contain a message update")
-            containsOnly(expectedMessage)
-        }
-    }
-
-    @Test
     fun `it should store a new sent group message when receiving a SelfMessage message for a new group chat`() {
         val processor = createProcessor()
 
         val recipient = randomGroupId()
         val sentMessageInfo = randomGroupSentMessageInfo(recipient)
-        val groupMessageInfo = GroupMessageInfo(null, sentMessageInfo.toMessageInfo())
+        val groupMessageInfo = ConversationMessageInfo(null, sentMessageInfo.toMessageInfo())
         val m = SyncMessage.SelfMessage(sentMessageInfo)
 
         processor.processMessage(selfId, wrap(m)).get()
 
-        verify(groupService).addMessage(recipient, groupMessageInfo)
-    }
-
-    @Test
-    fun `it should emit new message updates when receiving a SelfMessage message for a group chat`() {
-        val processor = createProcessor()
-
-        val recipient = randomGroupId()
-        val sentMessageInfo = randomGroupSentMessageInfo(recipient)
-        val messageInfo = sentMessageInfo.toMessageInfo()
-        val m = SyncMessage.SelfMessage(sentMessageInfo)
-
-        val testSubscriber = processor.newMessages.testSubscriber()
-
-        processor.processMessage(selfId, wrap(m)).get()
-
-        val expectedMessage = ConversationMessage.Group(recipient, null, messageInfo)
-
-        val messages = testSubscriber.onNextEvents
-
-        assertThat(messages).apply {
-            `as`("Should contain a message update")
-            containsOnly(expectedMessage)
-        }
+        verify(messageService).addMessage(recipient.toConversationId(), groupMessageInfo)
     }
 
     @Test

@@ -20,7 +20,7 @@ class AddressBookSyncJobFactoryImpl(
     private val userLoginData: UserData,
     accountInfo: Observable<AccountInfo>,
     private val platformContacts: PlatformContacts,
-    private val timerFactory: TimerFactory
+    private val promiseTimerFactory: PromiseTimerFactory
 ) : AddressBookSyncJobFactory {
     private lateinit var accountRegionCode: String
 
@@ -40,7 +40,7 @@ class AddressBookSyncJobFactoryImpl(
             userLoginData,
             accountRegionCode,
             platformContacts,
-            timerFactory
+            promiseTimerFactory
         )
     }
 }

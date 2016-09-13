@@ -5,7 +5,7 @@ import io.slychat.messenger.core.UnauthorizedException
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.randomAuthToken
 import io.slychat.messenger.core.randomSlyAddress
-import io.slychat.messenger.services.contacts.TimerFactory
+import io.slychat.messenger.services.contacts.PromiseTimerFactory
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.TestException
 import io.slychat.messenger.testutils.thenResolve
@@ -36,16 +36,16 @@ class AuthTokenManagerImplTest {
 
     val address = randomSlyAddress()
     val tokenProvider: TokenProvider = mock()
-    val timerFactory: TimerFactory = mock()
+    val promiseTimerFactory: PromiseTimerFactory = mock()
 
     lateinit var tokenManager: AuthTokenManagerImpl
 
     init {
         whenever(tokenProvider.events).thenReturn(tokenEvents)
 
-        whenever(timerFactory.run(any(), any())).thenResolve(Unit)
+        whenever(promiseTimerFactory.run(any(), any())).thenResolve(Unit)
 
-        tokenManager = AuthTokenManagerImpl(address, tokenProvider, timerFactory)
+        tokenManager = AuthTokenManagerImpl(address, tokenProvider, promiseTimerFactory)
     }
 
     fun emitNewToken() {

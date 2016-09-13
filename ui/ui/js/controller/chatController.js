@@ -9,14 +9,17 @@ ChatController.prototype = {
     },
 
     addMessageUpdateListener : function () {
-        messengerService.addMessageStatusUpdateListener(function (messageInfo) {
-            messageInfo.messages.forEach(function (message) {
-                var messageBlock = $("#message_" + message.id);
-                if(messageBlock.length && message.sent == true){
-                    var time = new Date(message.timestamp).toISOString();
-                    messageBlock.find(".timespan").html("<time class='timeago' datetime='" + time + "' title='" + $.timeago(time, window.relayTimeDifference) + "'>" + $.timeago(time, window.relayTimeDifference) + "</time>");
-                }
-            }.bind(this));
+        messengerService.addMessageStatusUpdateListener(function (event) {
+            switch (event.type) {
+                case 'DELIVERED':
+                    var messageBlock = $("#message_" + event.messageId);
+                    if(messageBlock.length){
+                        var time = new Date(event.deliveredTimestamp).toISOString();
+                        messageBlock.find(".timespan").html("<time class='timeago' datetime='" + time + "' title='" + $.timeago(time, window.relayTimeDifference) + "'>" + $.timeago(time, window.relayTimeDifference) + "</time>");
+                    }
+
+                    break;
+            }
 
             contactController.resetCachedConversation();
         }.bind(this));
@@ -227,12 +230,6 @@ ChatController.prototype = {
             if (node.find(".left-menu-new-badge").length <= 0)
                 node.append('<span class="left-menu-new-badge" style="color: red; font-size: 12px; margin-left: 5px;">new</span>');
         }
-    },
-
-    markConversationAsRead : function (contact) {
-        messengerService.markConversationAsRead(contact.id).catch(function (e) {
-            exceptionController.handleError(e);
-        });
     },
 
     openGroupMessageMenu : function (message, groupId) {
@@ -455,26 +452,22 @@ ChatController.prototype = {
 
     submitNewMessage : function (contact, message) {
         if (contact.email === undefined) {
-            messengerService.sendGroupMessageTo(contact.id, message).then(function (messageDetails) {
+            messengerService.sendGroupMessageTo(contact.id, message, 0).then(function () {
                 var groupMessageDetails = {
                     info: messageDetails,
                     speaker: null
                 };
-                $("#chat-content").append(this.createGroupMessageNode(groupMessageDetails, contact.id));
 
                 var input = $("#newMessageInput");
                 input.val("");
                 input.click();
                 this.scrollTop();
-                groupController.updateConversationWithNewMessage(contact.id, messageDetails);
             }.bind(this)).catch(function (e) {
                 exceptionController.handleError(e);
             })
         }
         else {
-            messengerService.sendMessageTo(contact.id, message).then(function (messageDetails) {
-                $("#chat-content").append(this.createMessageNode(messageDetails, profileController.name));
-
+            messengerService.sendMessageTo(contact.id, message, 0).then(function () {
                 var input = $("#newMessageInput");
                 input.val("");
                 input.click();
@@ -501,7 +494,6 @@ ChatController.prototype = {
 
                 messageDiv.append(fragment);
                 this.scrollTop();
-                this.markConversationAsRead(contact);
             }
         }
     },
@@ -528,7 +520,6 @@ ChatController.prototype = {
                 messageDiv.append(fragment);
 
                 this.scrollTop();
-                groupController.markGroupConversationAsRead(messagesInfo.groupId);
             }
         }
     }
