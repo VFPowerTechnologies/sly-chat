@@ -145,7 +145,7 @@ class MessageProcessorImpl(
         else
             groupId == currentlySelectedGroup
 
-        val messageInfo = MessageInfo.newReceived(m.id, m.message, m.timestamp, currentTimestamp(), isRead, m.ttl)
+        val messageInfo = MessageInfo.newReceived(m.id.string, m.message, m.timestamp, currentTimestamp(), isRead, m.ttl)
         val conversationInfo = ConversationMessageInfo(sender, messageInfo)
 
         return if (groupId == null) {

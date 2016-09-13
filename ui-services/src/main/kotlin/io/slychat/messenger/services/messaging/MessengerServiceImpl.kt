@@ -2,6 +2,7 @@ package io.slychat.messenger.services.messaging
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
@@ -200,7 +201,7 @@ class MessengerServiceImpl(
         return if (!isSelfMessage) {
             val messageInfo = MessageInfo.newSent(message, relayClock.currentTime(), 0)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
-            val m = TextMessage(messageInfo.id, messageInfo.timestamp, message, null, ttl)
+            val m = TextMessage(MessageId(messageInfo.id), messageInfo.timestamp, message, null, ttl)
             val wrapper = SlyMessage.Text(m)
 
             val serialized = objectMapper.writeValueAsBytes(wrapper)
@@ -249,7 +250,7 @@ class MessengerServiceImpl(
     }
 
     override fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<Unit, Exception> {
-        val m = SlyMessage.Text(TextMessage(randomUUID(), currentTimestamp(), message, groupId, ttl))
+        val m = SlyMessage.Text(TextMessage(MessageId(randomMessageId()), currentTimestamp(), message, groupId, ttl))
 
         val messageId = randomUUID()
 

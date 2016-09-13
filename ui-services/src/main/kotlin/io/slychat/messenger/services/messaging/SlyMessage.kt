@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.core.persistence.MessageId
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
@@ -104,7 +105,7 @@ sealed class SlyMessage {
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class TextMessage(
     @JsonProperty("id")
-    val id: String,
+    val id: MessageId,
     @JsonProperty("timestamp")
     val timestamp: Long,
     @JsonProperty("message")

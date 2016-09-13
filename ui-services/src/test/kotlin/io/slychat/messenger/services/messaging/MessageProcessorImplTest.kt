@@ -44,7 +44,7 @@ class MessageProcessorImplTest {
     val uiEvents: PublishSubject<UIEvent> = PublishSubject.create()
 
     fun randomTextMessage(groupId: GroupId? = null): TextMessage =
-        TextMessage(randomMessageId(), currentTimestamp(), randomUUID(), groupId, randomInt(50, 100).toLong())
+        TextMessage(MessageId(randomMessageId()), currentTimestamp(), randomUUID(), groupId, randomInt(50, 100).toLong())
 
     fun returnGroupInfo(groupInfo: GroupInfo?) {
         if (groupInfo != null)
