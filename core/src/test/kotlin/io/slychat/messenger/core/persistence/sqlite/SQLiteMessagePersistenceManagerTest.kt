@@ -986,6 +986,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             assertTrue(got.info.isExpired, "Message should be marked as expired")
             assertEquals(0, got.info.ttl, "TTL not reset")
             assertEquals(0, got.info.expiresAt, "expiresAt not reset")
+            assertEquals("", got.info.message, "Message text not deleted")
         }
     }
 

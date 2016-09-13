@@ -376,6 +376,7 @@ LIMIT
 UPDATE
     $tableName
 SET
+    message="",
     is_expired=1,
     ttl=0,
     expires_at=0
