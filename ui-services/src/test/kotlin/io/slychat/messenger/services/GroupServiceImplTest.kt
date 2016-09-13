@@ -1,5 +1,6 @@
 package io.slychat.messenger.services
 
+import com.nhaarman.mockito_kotlin.MockitoKotlin
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
@@ -28,6 +29,10 @@ class GroupServiceImplTest {
         @JvmField
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
+
+        init {
+            MockitoKotlin.registerInstanceCreator { randomGroupId() }
+        }
     }
 
     val groupPersistenceManager: GroupPersistenceManager = mock()

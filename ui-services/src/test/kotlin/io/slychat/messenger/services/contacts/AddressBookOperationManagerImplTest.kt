@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.contacts
 
 import com.nhaarman.mockito_kotlin.*
+import io.slychat.messenger.core.randomGroupId
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.TestException
 import io.slychat.messenger.testutils.cond
@@ -26,6 +27,10 @@ class AddressBookOperationManagerImplTest {
         @JvmField
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
+
+        init {
+            MockitoKotlin.registerInstanceCreator { randomGroupId() }
+        }
 
         class MockSyncJobFactory : AddressBookSyncJobFactory {
             val jobs = ArrayList<AddressBookSyncJob>()

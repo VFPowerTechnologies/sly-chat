@@ -34,6 +34,10 @@ class MessengerServiceImplTest {
         val kovenantTestMode = KovenantTestModeRule()
 
         val selfId = randomUserId()
+
+        init {
+            MockitoKotlin.registerInstanceCreator { randomGroupId() }
+        }
     }
 
     val contactsService: ContactsService = mock()

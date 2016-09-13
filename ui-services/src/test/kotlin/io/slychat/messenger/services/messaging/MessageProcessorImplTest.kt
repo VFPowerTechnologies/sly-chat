@@ -29,6 +29,10 @@ class MessageProcessorImplTest {
         @JvmField
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
+
+        init {
+            MockitoKotlin.registerInstanceCreator { randomGroupId() }
+        }
     }
 
     val selfId = randomUserId()
