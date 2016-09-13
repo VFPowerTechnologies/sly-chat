@@ -34,6 +34,10 @@ class MessengerServiceImplTest {
         val kovenantTestMode = KovenantTestModeRule()
 
         val selfId = randomUserId()
+
+        init {
+            MockitoKotlin.registerInstanceCreator { randomGroupId() }
+        }
     }
 
     val contactsService: ContactsService = mock()
@@ -415,52 +419,6 @@ class MessengerServiceImplTest {
             val message = deserializeTextMessage(m.message)
             assertEquals(ttl, message.ttl, "Invalid TTL")
         })
-    }
-
-    @Test
-    fun `deleteMessages should proxy the call to MessagePersistenceManager`() {
-        val messengerService = createService()
-
-        val userId = randomUserId()
-        val ids = (0..1).map { randomMessageId() }
-
-        messengerService.deleteMessages(userId, ids)
-
-        verify(messageService).deleteMessages(userId.toConversationId(), ids)
-    }
-
-    @Test
-    fun `deleteAllMessages should proxy the call to MessagePersistenceManager`() {
-        val messengerService = createService()
-
-        val userId = randomUserId()
-
-        messengerService.deleteAllMessages(userId)
-
-        verify(messageService).deleteAllMessages(userId.toConversationId())
-    }
-
-    @Test
-    fun `deleteGroupMessages should proxy the call to GroupPersistenceManager`() {
-        val messengerService = createService()
-
-        val groupId = randomGroupId()
-        val ids = (0..1).map { randomMessageId() }
-
-        messengerService.deleteGroupMessages(groupId, ids)
-
-        verify(messageService).deleteMessages(groupId.toConversationId(), ids)
-    }
-
-    @Test
-    fun `deleteAllGroupMessages should proxy the call to GroupPersistenceManager`() {
-        val messengerService = createService()
-
-        val groupId = randomGroupId()
-
-        messengerService.deleteAllGroupMessages(groupId)
-
-        verify(messageService).deleteAllMessages(groupId.toConversationId())
     }
 
     @Test

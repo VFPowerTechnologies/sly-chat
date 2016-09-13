@@ -29,6 +29,10 @@ class NotifierServiceImplTest {
         @JvmField
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
+
+        init {
+            MockitoKotlin.registerInstanceCreator { randomGroupId() }
+        }
     }
 
     val contactsPersistenceManager: ContactsPersistenceManager = mock()

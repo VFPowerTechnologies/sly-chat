@@ -49,8 +49,7 @@ class MessageReceiverImpl(
         val objectMapper = ObjectMapper()
 
         val m = try {
-            val m = objectMapper.readValue(result.data, SlyMessage::class.java)
-            SlyMessageWrapper(result.messageId, m)
+            objectMapper.readValue(result.data, SlyMessage::class.java)
         }
         catch (e: JsonParseException) {
             log.warn("Unable to deserialize message from {}: {}", userId, e.message, e)

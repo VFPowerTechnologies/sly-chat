@@ -1,11 +1,13 @@
 package io.slychat.messenger.services.messaging
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.core.persistence.MessageId
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
@@ -100,7 +102,10 @@ sealed class SlyMessage {
     }
 }
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class TextMessage(
+    @JsonProperty("id")
+    val id: MessageId,
     @JsonProperty("timestamp")
     val timestamp: Long,
     @JsonProperty("message")
@@ -121,6 +126,7 @@ sealed class GroupEventMessage {
     abstract val id: GroupId
 
     /** A user has joined the group. Sent from the user sending the GroupInvitation. Must be sent from a current member of the group. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     class Join(
         @JsonProperty("id")
         override val id: GroupId,
@@ -153,6 +159,7 @@ sealed class GroupEventMessage {
     }
 
     /** Sender has left the group. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     class Part(
         @JsonProperty("id")
         override val id: GroupId
@@ -178,6 +185,7 @@ sealed class GroupEventMessage {
     }
 
     /** Invitation to a new group. The sender is implicitly considered as a member and thus is not included in the member list. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     class Invitation(
         @JsonProperty("id")
         override val id: GroupId,
@@ -219,6 +227,7 @@ sealed class GroupEventMessage {
     JsonSubTypes.Type(SyncMessage.AddressBookSync::class, name = "s")
 )
 sealed class SyncMessage {
+    @JsonIgnoreProperties(ignoreUnknown = true)
     class NewDevice(
         @JsonProperty("deviceInfo")
         val deviceInfo: DeviceInfo
@@ -243,6 +252,7 @@ sealed class SyncMessage {
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     class SelfMessage(
         @JsonProperty("sentMessageInfo")
         val sentMessageInfo: SyncSentMessageInfo
@@ -267,6 +277,7 @@ sealed class SyncMessage {
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     class AddressBookSync() : SyncMessage() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -290,6 +301,7 @@ sealed class SyncMessage {
 )
 sealed class ControlMessage {
     /** Sender added you as a contact. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     class WasAdded() : ControlMessage() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

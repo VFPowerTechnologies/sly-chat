@@ -7,10 +7,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.currentTimestamp
-import io.slychat.messenger.core.persistence.GroupId
-import io.slychat.messenger.core.persistence.Package
-import io.slychat.messenger.core.persistence.PackageId
-import io.slychat.messenger.core.persistence.PackageQueuePersistenceManager
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomMessageText
 import io.slychat.messenger.services.crypto.DecryptionResult
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
@@ -47,7 +44,7 @@ class MessageReceiverImplTest {
 
     fun createTextMessage(message: String, group: String? = null): SlyMessage.Text {
         val groupId = group?.let { GroupId(it) }
-        return SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId, 0))
+        return SlyMessage.Text(TextMessage(MessageId(randomMessageId()), currentTimestamp(), message, groupId, 0))
     }
 
     fun createPackage(from: UserId, payload: ByteArray): Package {
@@ -204,10 +201,10 @@ class MessageReceiverImplTest {
 
         receiver.processPackages(listOf(pkg))
 
-        val captor = argumentCaptor<SlyMessageWrapper>()
+        val captor = argumentCaptor<SlyMessage>()
         verify(messageProcessor).processMessage(eq(from), capture(captor))
 
-        assertEquals(SlyMessageWrapper(pkg.id.messageId, wrapped), captor.value, "Deserialized message doesn't match")
+        assertEquals(wrapped, captor.value, "Deserialized message doesn't match")
     }
 
     @Test

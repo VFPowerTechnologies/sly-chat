@@ -305,6 +305,11 @@ fun randomUUID(): String {
     return bytes.hexify()
 }
 
+private val uuidRegex = "[0-9a-f]{32}".toRegex()
+fun isValidUUIDFormat(s: String): Boolean {
+    return uuidRegex.matches(s)
+}
+
 fun randomRegistrationId(): Int = KeyHelper.generateRegistrationId(false)
 
 fun randomMessageId(): String = randomUUID()

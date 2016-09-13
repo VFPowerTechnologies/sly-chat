@@ -66,7 +66,6 @@ subprojects {
             testCompile "org.jetbrains.kotlin:kotlin-reflect:$versions.kotlin"
             testCompile "junit:junit:$versions.junit"
             testCompile "org.assertj:assertj-core:$versions.assertJ"
-            testCompile "org.mockito:mockito-core:$versions.mockito"
             testCompile "com.nhaarman:mockito-kotlin:$versions.mockitoKotlin"
         }
     }
