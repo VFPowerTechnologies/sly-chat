@@ -15,7 +15,7 @@ fun asyncGenerateNewKeyVault(password: String): Promise<KeyVault, Exception> = t
 }
 
 fun MessageInfo.toUI(): UIMessage {
-    return UIMessage(id, isSent, timestamp, receivedTimestamp, message)
+    return UIMessage(id, isSent, timestamp, receivedTimestamp, message, ttl, isExpired)
 }
 
 fun ContactInfo.toUI(): UIContactInfo =
