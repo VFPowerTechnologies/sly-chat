@@ -3,10 +3,12 @@ package io.slychat.messenger.services.ui.impl
 import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.persistence.GroupConversation
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.core.persistence.toConversationId
 import io.slychat.messenger.services.GroupService
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.mapUi
 import io.slychat.messenger.services.messaging.GroupEvent
+import io.slychat.messenger.services.messaging.MessageService
 import io.slychat.messenger.services.messaging.MessengerService
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
@@ -23,6 +25,7 @@ class UIGroupServiceImpl(
     private var groupEventsSub: Subscription? = null
 
     private var groupService: GroupService? = null
+    private var messageService: MessageService? = null
     private var messengerService: MessengerService? = null
 
     init {
@@ -33,10 +36,12 @@ class UIGroupServiceImpl(
 
                 groupService = null
                 messengerService = null
+                messageService = null
             }
             else {
                 groupService = it.groupService
                 messengerService = it.messengerService
+                messageService = it.messageService
 
                 groupEventsSub = it.groupService.groupEvents.subscribe { onGroupEvent(it) }
             }
@@ -61,6 +66,10 @@ class UIGroupServiceImpl(
         return groupService ?: throw IllegalStateException("No user session")
     }
 
+    private fun getMessageServiceOrThrow(): MessageService {
+        return messageService ?: throw IllegalStateException("No user session")
+    }
+
     override fun addGroupEventListener(listener: (UIGroupEvent) -> Unit) {
         groupEventListeners.add(listener)
     }
@@ -73,7 +82,7 @@ class UIGroupServiceImpl(
 
     private fun GroupConversation.toUi(): UIGroupConversation {
         val groupInfo = UIGroupInfo(group.id, group.name)
-        val convoInfo = UIGroupConversationInfo(info.lastSpeaker,info.unreadCount, info.lastMessage, info.lastTimestamp)
+        val convoInfo = UIGroupConversationInfo(info.lastSpeaker,info.unreadMessageCount, info.lastMessage, info.lastTimestamp)
 
         return UIGroupConversation(groupInfo, convoInfo)
     }
@@ -82,10 +91,6 @@ class UIGroupServiceImpl(
         return getGroupServiceOrThrow().getGroupConversations() map {
             it.map { it.toUi() }
         }
-    }
-
-    override fun markConversationAsRead(groupId: GroupId): Promise<Unit, Exception> {
-        return getGroupServiceOrThrow().markConversationAsRead(groupId)
     }
 
     override fun inviteUsers(groupId: GroupId, contacts: List<UIContactInfo>): Promise<Unit, Exception> {
@@ -120,22 +125,26 @@ class UIGroupServiceImpl(
     }
 
     override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<UIGroupMessage>, Exception> {
-        return getGroupServiceOrThrow().getLastMessages(groupId, startingAt, count) map {
+        return getMessageServiceOrThrow().getLastMessages(groupId.toConversationId(), startingAt, count) map {
             it.map { UIGroupMessage(it.speaker, it.info.toUI()) }
         }
     }
 
     override fun deleteAllMessages(groupId: GroupId): Promise<Unit, Exception> {
-        return getGroupServiceOrThrow().deleteAllMessages(groupId)
+        return getMessageServiceOrThrow().deleteAllMessages(groupId.toConversationId())
     }
 
     override fun deleteMessagesFor(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception> {
-        return getGroupServiceOrThrow().deleteMessages(groupId, messageIds)
+        return getMessageServiceOrThrow().deleteMessages(groupId.toConversationId(), messageIds)
     }
 
     override fun getInfo(groupId: GroupId): Promise<UIGroupInfo?, Exception> {
         return getGroupServiceOrThrow().getInfo(groupId) mapUi { maybeGroupInfo ->
             maybeGroupInfo?.let { UIGroupInfo(it.id, it.name) }
         }
+    }
+
+    override fun startMessageExpiration(groupId: GroupId, messageId: String): Promise<Unit, Exception> {
+        return getMessageServiceOrThrow().startMessageExpiration(groupId.toConversationId(), messageId)
     }
 }

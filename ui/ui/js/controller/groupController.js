@@ -201,14 +201,6 @@ GroupController.prototype = {
         });
     },
 
-    markGroupConversationAsRead : function (id) {
-        groupService.markConversationAsRead(id).then(function () {
-            this.groupDetailsCache[id].info.unreadMessageCount = 0;
-        }.bind(this)).catch(function (e) {
-            exceptionController.handleError(e);
-        })
-    },
-
     insertContactList : function () {
         var conversations = contactController.conversations;
         var frag = $(document.createDocumentFragment());

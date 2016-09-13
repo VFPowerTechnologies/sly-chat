@@ -27,7 +27,7 @@ class AddressBookSyncJobImpl(
     private val userLoginData: UserData,
     private val accountRegionCode: String,
     private val platformContacts: PlatformContacts,
-    private val timerFactory: TimerFactory
+    private val promiseTimerFactory: PromiseTimerFactory
 ) : AddressBookSyncJob {
     companion object {
         internal val UPDATE_MAX_RETRIES: Int = 3
@@ -176,7 +176,7 @@ class AddressBookSyncJobImpl(
                     val max = (attemptN + 2) * 5
                     val secs = randomInt(min, max).toLong()
 
-                    timerFactory.run(secs, TimeUnit.SECONDS) bind {
+                    promiseTimerFactory.run(secs, TimeUnit.SECONDS) bind {
                         updateWithRetry(attemptN + 1)
                     }
                 }

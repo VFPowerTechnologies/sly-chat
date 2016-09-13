@@ -3,21 +3,22 @@ package io.slychat.messenger.services.ui
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.services.ui.UIMessageUpdateEvent
 import nl.komponents.kovenant.Promise
 
 /** Responsible for all message-related functionality between contacts. */
 @JSToJavaGenerate("MessengerService")
 interface UIMessengerService {
     /** Attempt to send a message to a contact. */
-    fun sendMessageTo(userId: UserId, message: String): Promise<UIMessage, Exception>
+    fun sendMessageTo(userId: UserId, message: String, ttl: Long): Promise<Unit, Exception>
 
-    fun sendGroupMessageTo(groupId: GroupId, message: String): Promise<UIMessage, Exception>
+    fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<Unit, Exception>
 
     /** Listener for new incoming messages. Each list will contain messages only from a single contact. */
     fun addNewMessageListener(listener: (UIMessageInfo) -> Unit)
 
     /** Listener for sent message status updates. */
-    fun addMessageStatusUpdateListener(listener: (UIMessageInfo) -> Unit)
+    fun addMessageStatusUpdateListener(listener: (UIMessageUpdateEvent) -> Unit)
 
     fun addClockDifferenceUpdateListener(listener: (Long) -> Unit)
 
@@ -53,7 +54,6 @@ interface UIMessengerService {
      */
     fun getConversations(): Promise<List<UIConversation>, Exception>
 
-    /** Resets unread message count for the given contact's conversation. */
-    fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>
+    fun startMessageExpiration(userId: UserId, messageId: String): Promise<Unit, Exception>
 }
 

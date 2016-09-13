@@ -2,7 +2,6 @@ package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
-import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
@@ -17,6 +16,7 @@ import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Test
 import rx.Observable
 import rx.subjects.BehaviorSubject
@@ -69,7 +69,7 @@ class NotifierServiceImplTest {
     fun `it should clear all notifications when the contacts page is visited`() {
         val notifierService = initNotifierService()
 
-        val pageChangeEvent = PageChangeEvent(PageType.CONTACTS, "")
+        val pageChangeEvent = UIEvent.PageChange(PageType.CONTACTS, "")
         uiEventSubject.onNext(pageChangeEvent)
 
         verify(platformNotificationsService, times(1)).clearAllMessageNotifications()
@@ -86,7 +86,7 @@ class NotifierServiceImplTest {
         val conversationInfo = NotificationConversationInfo.from(contactInfo)
         whenever(contactsPersistenceManager.get(userId)).thenReturn(Promise.ofSuccess(contactInfo))
 
-        val pageChangeEvent = PageChangeEvent(PageType.CONVO, userId.long.toString())
+        val pageChangeEvent = UIEvent.PageChange(PageType.CONVO, userId.long.toString())
         uiEventSubject.onNext(pageChangeEvent)
 
         verify(platformNotificationsService, times(1)).clearMessageNotificationsFor(conversationInfo)
@@ -99,11 +99,11 @@ class NotifierServiceImplTest {
         return contactInfo
     }
 
-    fun testConvoNotificationDisplay(shouldShow: Boolean) {
+    fun testConvoNotificationDisplay(shouldShow: Boolean, isRead: Boolean = false) {
         val contactInfo = setupContactInfo(1)
 
         val messages = (0..1).map {
-            MessageInfo(randomUUID(), it.toString(), currentTimestamp(), currentTimestamp(), false, true, 0)
+            randomReceivedMessageInfo().copy(isRead = isRead)
         }
 
         val messageBundle = MessageBundle(contactInfo.id, null, messages)
@@ -140,13 +140,15 @@ class NotifierServiceImplTest {
         testConvoNotificationDisplay(false)
     }
 
+    //currently filtered out before getting to notifier service
+    @Ignore
     @Test
-    fun `it should not show notifications for the currently open user page`() {
+    fun `it should not show notifications for a user message if isRead is true`() {
         val notifierService = initNotifierService(isUiVisible = true)
 
         setupContactInfo(1)
 
-        uiEventSubject.onNext(PageChangeEvent(PageType.CONVO, "1"))
+        uiEventSubject.onNext(UIEvent.PageChange(PageType.CONVO, "1"))
 
         testConvoNotificationDisplay(false)
     }
@@ -157,7 +159,7 @@ class NotifierServiceImplTest {
 
         setupContactInfo(2)
 
-        uiEventSubject.onNext(PageChangeEvent(PageType.CONVO, "2"))
+        uiEventSubject.onNext(UIEvent.PageChange(PageType.CONVO, "2"))
 
         testConvoNotificationDisplay(true)
     }
@@ -166,7 +168,7 @@ class NotifierServiceImplTest {
     fun `it should not show notifications when the contact page page is focused`() {
         val notifierService = initNotifierService(isUiVisible = true)
 
-        uiEventSubject.onNext(PageChangeEvent(PageType.CONTACTS, ""))
+        uiEventSubject.onNext(UIEvent.PageChange(PageType.CONTACTS, ""))
 
         testConvoNotificationDisplay(false)
     }
@@ -258,15 +260,17 @@ class NotifierServiceImplTest {
         whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
         whenever(groupPersistenceManager.getInfo(any())).thenResolve(groupInfo)
 
-        val pageChangeEvent = PageChangeEvent(PageType.GROUP, groupInfo.id.string)
+        val pageChangeEvent = UIEvent.PageChange(PageType.GROUP, groupInfo.id.string)
         uiEventSubject.onNext(pageChangeEvent)
 
         val conversationInfo = NotificationConversationInfo.from(groupInfo)
         verify(platformNotificationsService, times(1)).clearMessageNotificationsFor(conversationInfo)
     }
 
+    //currently filtered out before getting to notifier service
+    @Ignore
     @Test
-    fun `it should not display notifications directed at the currently focused group`() {
+    fun `it should not display notifications for a group message if isRead is true`() {
         val notifierService = initNotifierService(isUiVisible = true)
 
         val contactInfo = randomContactInfo()
@@ -275,13 +279,10 @@ class NotifierServiceImplTest {
         whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
         whenever(groupPersistenceManager.getInfo(any())).thenResolve(groupInfo)
 
-        val pageChangeEvent = PageChangeEvent(PageType.GROUP, groupInfo.id.string)
-        uiEventSubject.onNext(pageChangeEvent)
-
         val bundle = MessageBundle(
             contactInfo.id,
             groupInfo.id,
-            listOf(randomReceivedMessageInfo())
+            listOf(randomReceivedMessageInfo().copy(isRead = true))
         )
 
         newMessagesSubject.onNext(bundle)
@@ -299,7 +300,7 @@ class NotifierServiceImplTest {
         whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
         whenever(groupPersistenceManager.getInfo(any())).thenResolve(groupInfo)
 
-        val pageChangeEvent = PageChangeEvent(PageType.CONVO, contactInfo.id.toString())
+        val pageChangeEvent = UIEvent.PageChange(PageType.CONVO, contactInfo.id.toString())
         uiEventSubject.onNext(pageChangeEvent)
 
         val bundle = MessageBundle(

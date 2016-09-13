@@ -9,6 +9,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.OngoingStubbing
 import rx.Observable
 import rx.observers.TestSubscriber
+import rx.plugins.RxJavaHooks
 import java.io.File
 
 inline fun <R> withTempFile(suffix: String = "", body: (File) -> R): R {
@@ -31,6 +32,15 @@ fun <R> withTimeAs(millis: Long, body: () -> R): R {
     }
 }
 
+fun <R> withRxHooks(body: () -> R): R {
+    return try {
+        body()
+    }
+    finally {
+        RxJavaHooks.reset()
+    }
+}
+
 fun <R> withKovenantThreadedContext(body: () -> R): R {
     val savedContext = Kovenant.context
     Kovenant.context = Kovenant.createContext {}
@@ -45,6 +55,10 @@ fun <R> withKovenantThreadedContext(body: () -> R): R {
 /** Convinence function for returning a successful promise. */
 fun <T> OngoingStubbing<Promise<T, Exception>>.thenResolve(v: T): OngoingStubbing<Promise<T, Exception>> {
     return this.thenReturn(Promise.ofSuccess(v))
+}
+
+fun OngoingStubbing<Promise<Unit, Exception>>.thenResolveUnit(): OngoingStubbing<Promise<Unit, Exception>> {
+    return this.thenReturn(Promise.ofSuccess(Unit))
 }
 
 /** Convinence function for returning a failed promise. */

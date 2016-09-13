@@ -5,7 +5,7 @@ import io.slychat.messenger.core.UserId
 /**
  * @property speaker Self if null.
  */
-data class GroupMessageInfo(
+data class ConversationMessageInfo(
     val speaker: UserId?,
     val info: MessageInfo
 )

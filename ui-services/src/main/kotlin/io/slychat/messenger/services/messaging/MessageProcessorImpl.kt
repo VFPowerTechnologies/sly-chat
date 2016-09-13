@@ -11,21 +11,55 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import rx.Observable
-import rx.subjects.PublishSubject
+import rx.Subscription
 import java.util.*
 
 class MessageProcessorImpl(
     private val selfId: UserId,
     private val contactsService: ContactsService,
-    private val messagePersistenceManager: MessagePersistenceManager,
+    private val messageService: MessageService,
     private val messageCipherService: MessageCipherService,
-    private val groupService: GroupService
+    private val groupService: GroupService,
+    uiEvents: Observable<UIEvent>
 ) : MessageProcessor {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private val newMessagesSubject = PublishSubject.create<ConversationMessage>()
-    override val newMessages: Observable<ConversationMessage>
-        get() = newMessagesSubject
+    private var currentlySelectedChatUser: UserId? = null
+    private var currentlySelectedGroup: GroupId? = null
+
+    private var subscription: Subscription? = null
+
+    init {
+        subscription = uiEvents.subscribe { onUiEvent(it) }
+    }
+
+    override fun init() {}
+
+    override fun shutdown() {
+        subscription?.unsubscribe()
+        subscription = null
+    }
+
+    private fun onUiEvent(event: UIEvent) {
+        when (event) {
+            is UIEvent.PageChange -> {
+                currentlySelectedChatUser = null
+                currentlySelectedGroup = null
+
+                when (event.page) {
+                    PageType.CONVO -> {
+                        val userId = UserId(event.extra.toLong())
+                        currentlySelectedChatUser = userId
+                    }
+
+                    PageType.GROUP -> {
+                        val groupId = GroupId(event.extra)
+                        currentlySelectedGroup = groupId
+                    }
+                }
+            }
+        }
+    }
 
     override fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception> {
         val m = wrapper.message
@@ -78,51 +112,56 @@ class MessageProcessorImpl(
         val sentMessageInfo = m.sentMessageInfo
 
         val messageInfo = sentMessageInfo.toMessageInfo()
+        val conversationMessageInfo = ConversationMessageInfo(
+            null,
+            messageInfo
+        )
 
         val recipient = sentMessageInfo.recipient
 
         return when (recipient) {
             //if we add a new contact, then message them right away, the SelfMessage'll get here before the AddressBookSync one
             is Recipient.User -> contactsService.addMissingContacts(setOf(recipient.id)) bindUi {
-                addSingleMessage(recipient.id, messageInfo)
+                addSingleMessage(recipient.id, conversationMessageInfo)
             }
-            is Recipient.Group -> addGroupMessage(recipient.id, null, messageInfo)
+            is Recipient.Group -> addGroupMessage(recipient.id, conversationMessageInfo)
         }
     }
 
-    private fun addSingleMessage(userId: UserId, messageInfo: MessageInfo): Promise<Unit, Exception> {
-        return messagePersistenceManager.addMessage(userId, messageInfo) bindRecoverForUi { e: InvalidMessageLevelException ->
+    private fun addSingleMessage(userId: UserId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
+        val conversationId = userId.toConversationId()
+        return messageService.addMessage(conversationId, conversationMessageInfo) bindRecoverForUi { e: InvalidMessageLevelException ->
             log.debug("User doesn't have appropriate message level, upgrading")
 
             contactsService.allowAll(userId) bindUi {
-                messagePersistenceManager.addMessage(userId, messageInfo)
+                messageService.addMessage(conversationId, conversationMessageInfo)
             }
-        } mapUi { messageInfo ->
-            val message = ConversationMessage.Single(userId, messageInfo)
-            newMessagesSubject.onNext(message)
         }
     }
 
     private fun handleTextMessage(sender: UserId, messageId: String, m: TextMessage): Promise<Unit, Exception> {
-        val messageInfo = MessageInfo.newReceived(messageId, m.message, m.timestamp, currentTimestamp(), 0)
-
         val groupId = m.groupId
+
+        val isRead = if (groupId == null)
+            sender == currentlySelectedChatUser
+        else
+            groupId == currentlySelectedGroup
+
+        val messageInfo = MessageInfo.newReceived(messageId, m.message, m.timestamp, currentTimestamp(), isRead, m.ttl)
+        val conversationInfo = ConversationMessageInfo(sender, messageInfo)
+
         return if (groupId == null) {
-            addSingleMessage(sender, messageInfo)
+            addSingleMessage(sender, conversationInfo)
         }
         else {
             groupService.getInfo(groupId) bindUi { groupInfo ->
-                runIfJoinedAndUserIsMember(groupInfo, sender) { addGroupMessage(groupId, sender, messageInfo) }
+                runIfJoinedAndUserIsMember(groupInfo, sender) { addGroupMessage(groupId, conversationInfo) }
             }
         }
     }
 
-    private fun addGroupMessage(groupId: GroupId, sender: UserId?, messageInfo: MessageInfo): Promise<Unit, Exception> {
-        val groupMessageInfo = GroupMessageInfo(sender, messageInfo)
-        return groupService.addMessage(groupId, groupMessageInfo) mapUi {
-            val message = ConversationMessage.Group(groupId, sender, messageInfo)
-            newMessagesSubject.onNext(message)
-        }
+    private fun addGroupMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
+        return messageService.addMessage(groupId.toConversationId(), conversationMessageInfo)
     }
 
     private fun handleGroupMessage(sender: UserId, m: GroupEventMessage): Promise<Unit, Exception> {

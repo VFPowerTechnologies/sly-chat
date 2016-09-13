@@ -78,8 +78,6 @@ class NotifierServiceImpl(
         private set
 
     private var currentPage: PageType? = null
-    private var currentlySelectedChatUser: UserId? = null
-    private var currentlySelectedGroup: GroupId? = null
 
     private var isUiVisible: Boolean = false
 
@@ -170,14 +168,9 @@ class NotifierServiceImpl(
             return
 
         if (isUiVisible) {
+            //we still need to track this, as messages aren't marked as read unless the actual user/group page is focused
+            //XXX this should only affect the android version, not desktop
             if (currentPage == PageType.CONTACTS)
-                return
-
-            //don't fire notifications for the currently focused user
-            if (messageBundle.groupId == null && messageBundle.userId == currentlySelectedChatUser)
-                return
-
-            if (currentlySelectedGroup != null && messageBundle.groupId == currentlySelectedGroup)
                 return
         }
 
@@ -188,17 +181,14 @@ class NotifierServiceImpl(
 
     private fun onUiEvent(event: UIEvent) {
         when (event) {
-            is PageChangeEvent -> {
+            is UIEvent.PageChange -> {
                 currentPage = event.page
-                currentlySelectedChatUser = null
-                currentlySelectedGroup = null
 
                 log.debug("UI page changed to: {}", event)
 
                 when (event.page) {
                     PageType.CONVO -> {
                         val userId = UserId(event.extra.toLong())
-                        currentlySelectedChatUser = userId
                         withContactInfo(userId) { contactInfo ->
                             val info = NotificationConversationInfo.from(contactInfo)
                             platformNotificationService.clearMessageNotificationsFor(info)
@@ -210,7 +200,6 @@ class NotifierServiceImpl(
 
                     PageType.GROUP -> {
                         val groupId = GroupId(event.extra)
-                        currentlySelectedGroup = groupId
                         withGroupInfo(groupId) { groupInfo ->
                             val info = NotificationConversationInfo.from(groupInfo)
                             platformNotificationService.clearMessageNotificationsFor(info)

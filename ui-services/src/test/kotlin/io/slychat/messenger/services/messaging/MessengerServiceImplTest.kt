@@ -8,11 +8,12 @@ import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
-import io.slychat.messenger.services.*
+import io.slychat.messenger.services.GroupService
+import io.slychat.messenger.services.RelayClientManager
+import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenAnswerWithArg
 import io.slychat.messenger.testutils.thenResolve
 import nl.komponents.kovenant.Promise
@@ -23,7 +24,6 @@ import org.junit.Test
 import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 //only downside of this api design is having to deserialize messages in tests
@@ -38,9 +38,8 @@ class MessengerServiceImplTest {
 
     val contactsService: ContactsService = mock()
     val addressBookOperationManager: AddressBookOperationManager = mock()
-    val messagePersistenceManager: MessagePersistenceManager = mock()
+    val messageService: MessageService = mock()
     val groupService: GroupService = mock()
-    val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val relayClientManager: RelayClientManager = mock()
     val messageSender: MessageSender = mock()
     val messageReceiver: MessageReceiver = mock()
@@ -62,7 +61,7 @@ class MessengerServiceImplTest {
         whenever(messageSender.addToQueue(anyList())).thenResolve(Unit)
 
         //some useful defaults
-        whenever(messagePersistenceManager.addMessage(any(), any())).thenAnswerWithArg(1)
+        whenever(messageService.addMessage(any(), any())).thenAnswerWithArg(1)
 
         whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
         whenever(messageReceiver.processPackages(any())).thenResolve(Unit)
@@ -103,9 +102,8 @@ class MessengerServiceImplTest {
         return MessengerServiceImpl(
             contactsService,
             addressBookOperationManager,
-            messagePersistenceManager,
+            messageService,
             groupService,
-            contactsPersistenceManager,
             relayClientManager,
             messageSender,
             messageReceiver,
@@ -114,18 +112,8 @@ class MessengerServiceImplTest {
         )
     }
 
-    fun randomMessage(): String = randomUUID()
-
     fun wheneverAllowMessagesFrom(fn: (Set<UserId>) -> Promise<Set<UserId>, Exception>) {
         whenever(contactsService.filterBlocked(anySet())).thenAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val a = it.arguments[0] as Set<UserId>
-            fn(a)
-        }
-    }
-
-    fun wheneverExists(fn: (Set<UserId>) -> Promise<Set<UserId>, Exception>) {
-        whenever(contactsPersistenceManager.exists(anySet())).thenAnswer {
             @Suppress("UNCHECKED_CAST")
             val a = it.arguments[0] as Set<UserId>
             fn(a)
@@ -245,34 +233,9 @@ class MessengerServiceImplTest {
 
         setAllowAllUsers()
 
-        wheneverExists { Promise.ofSuccess(it) }
-
         relayEvents.onNext(ev)
 
         verify(relayClientManager).sendMessageReceivedAck(messageId)
-    }
-
-    @Test
-    fun `it should proxy new messages from MessageReceiver`() {
-        val subject = PublishSubject.create<ConversationMessage>()
-        whenever(messageReceiver.newMessages).thenReturn(subject)
-
-        val messengerService = createService()
-
-        val testSubscriber = messengerService.newMessages.testSubscriber()
-
-        val message = ConversationMessage.Single(
-            UserId(1),
-            MessageInfo.newReceived("m", currentTimestamp())
-        )
-
-        subject.onNext(message)
-
-        val bundles = testSubscriber.onNextEvents
-
-        assertThat(bundles)
-            .containsOnlyElementsOf(listOf(message))
-            .`as`("Received bundles")
     }
 
     @Test
@@ -281,12 +244,18 @@ class MessengerServiceImplTest {
 
         val recipient = randomUserId()
 
-        messengerService.sendMessageTo(recipient, randomMessage())
+        messengerService.sendMessageTo(recipient, randomMessageText(), 0)
 
         verify(messageSender).addToQueue(capture<SenderMessageEntry> {
             assertEquals(recipient, it.metadata.userId, "Invalid recipient")
             assertEquals(MessageCategory.TEXT_SINGLE, it.metadata.category, "Invalid category")
         })
+    }
+
+    fun deserializeTextMessage(bytes: ByteArray): TextMessage {
+        val objectMapper = ObjectMapper()
+
+        return objectMapper.readValue(bytes, SlyMessage.Text::class.java).m
     }
 
     @Test
@@ -297,15 +266,25 @@ class MessengerServiceImplTest {
 
         val messengerService = createService()
 
-        messengerService.sendMessageTo(randomUserId(), randomMessage())
+        messengerService.sendMessageTo(randomUserId(), randomMessageText(), 0)
 
         verify(messageSender).addToQueue(capture<SenderMessageEntry> {
-            //cheating a little
-            val objectMapper = ObjectMapper()
-
-            val message = objectMapper.readValue(it.message, SlyMessage.Text::class.java).m
+            val message = deserializeTextMessage(it.message)
 
             assertEquals(currentTime, message.timestamp, "RelayClock time not used")
+        })
+    }
+
+    @Test
+    fun `it should include the ttl in the generated TextMessage for a single convo`() {
+        val messengerService = createService()
+
+        val ttl = 1000L
+        messengerService.sendMessageTo(randomUserId(), randomMessageText(), ttl)
+
+        verify(messageSender).addToQueue(capture<SenderMessageEntry> {
+            val message = deserializeTextMessage(it.message)
+            assertEquals(ttl, message.ttl, "Invalid TTL")
         })
     }
 
@@ -317,19 +296,14 @@ class MessengerServiceImplTest {
         val record = randomTextSingleRecord()
         val update = record.metadata
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
+        val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
 
-        whenever(messagePersistenceManager.markMessageAsDelivered(update.userId, update.messageId, record.serverReceivedTimestamp)).thenResolve(messageInfo)
-
-        val testSubscriber = messengerService.messageUpdates.testSubscriber()
+        val conversationId = update.userId.toConversationId()
+        whenever(messageService.markMessageAsDelivered(any(), any(), any())).thenResolve(conversationMessageInfo)
 
         messageSent.onNext(record)
 
-        assertEventEmitted(testSubscriber) {
-            assertEquals(update.userId, it.userId, "Invalid user id")
-            assertNull(it.groupId, "groupId should be null")
-            assertThat(it.messages)
-                .containsOnly(messageInfo)
-        }
+        verify(messageService).markMessageAsDelivered(conversationId, update.messageId, record.serverReceivedTimestamp)
     }
 
     @Test
@@ -340,36 +314,14 @@ class MessengerServiceImplTest {
         val update = record.metadata
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
 
-        whenever(groupService.markMessageAsDelivered(update.groupId!!, update.messageId, record.serverReceivedTimestamp))
-            .thenResolve(GroupMessageInfo(update.userId, messageInfo))
+        val conversationId = update.groupId!!.toConversationId()
 
-        val testSubscriber = messengerService.messageUpdates.testSubscriber()
-
-        messageSent.onNext(record)
-
-        assertEventEmitted(testSubscriber) {
-            assertEquals(update.userId, it.userId, "Invalid user id")
-            assertEquals(update.groupId, it.groupId, "Invalid group id")
-            assertThat(it.messages)
-                .containsOnly(messageInfo)
-        }
-    }
-
-    @Test
-    fun `it should return emit a message updated event when receiving a message update for an already delivered TEXT_GROUP message`() {
-        val messengerService = createService()
-
-        val record = randomTextGroupRecord()
-        val update = record.metadata
-
-        whenever(groupService.markMessageAsDelivered(update.groupId!!, update.messageId, record.serverReceivedTimestamp))
-            .thenResolve(null)
-
-        val testSubscriber = messengerService.messageUpdates.testSubscriber()
+        whenever(messageService.markMessageAsDelivered(any(), any(), any()))
+            .thenResolve(ConversationMessageInfo(update.userId, messageInfo))
 
         messageSent.onNext(record)
 
-        assertNoEventsEmitted(testSubscriber)
+        verify(messageService).markMessageAsDelivered(conversationId, update.messageId, record.serverReceivedTimestamp)
     }
 
     @Test
@@ -381,7 +333,7 @@ class MessengerServiceImplTest {
 
         whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(members)
 
-        messengerService.sendGroupMessageTo(groupId, "msg")
+        messengerService.sendGroupMessageTo(groupId, "msg", 0)
 
         verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
             assertEquals(members, it.map { it.metadata.userId }.toSet(), "Member list is invalid")
@@ -397,9 +349,9 @@ class MessengerServiceImplTest {
         whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(emptySet())
 
         val message = "msg"
-        messengerService.sendGroupMessageTo(groupId, message)
+        messengerService.sendGroupMessageTo(groupId, message, 0)
 
-        verify(groupService).addMessage(eq(groupId), capture {
+        verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(message, it.info.message, "Message is invalid")
         })
 
@@ -417,9 +369,9 @@ class MessengerServiceImplTest {
 
         val message = "msg"
 
-        messengerService.sendGroupMessageTo(groupId, message)
+        messengerService.sendGroupMessageTo(groupId, message, 0)
 
-        verify(groupService).addMessage(eq(groupId), capture {
+        verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(message, it.info.message, "Text message doesn't match")
         })
     }
@@ -435,15 +387,33 @@ class MessengerServiceImplTest {
 
         val message = "msg"
 
-        messengerService.sendGroupMessageTo(groupId, message)
+        messengerService.sendGroupMessageTo(groupId, message, 0)
 
         var sentMessageId: String? = null
         verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
             sentMessageId = it.first().metadata.messageId
         })
 
-        verify(groupService).addMessage(eq(groupId), capture {
+        verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(sentMessageId!!, it.info.id, "Message IDs don't match")
+        })
+    }
+
+    @Test
+    fun `it should include the ttl in the generated TextMessage for a group convo`() {
+        val messengerService = createService()
+
+        val groupId = randomGroupId()
+
+        whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(setOf(randomUserId()))
+
+        val ttl = 1000L
+        messengerService.sendGroupMessageTo(groupId, randomMessageText(), ttl)
+
+        verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
+            val m = it.first()
+            val message = deserializeTextMessage(m.message)
+            assertEquals(ttl, message.ttl, "Invalid TTL")
         })
     }
 
@@ -456,7 +426,7 @@ class MessengerServiceImplTest {
 
         messengerService.deleteMessages(userId, ids)
 
-        verify(messagePersistenceManager).deleteMessages(userId, ids)
+        verify(messageService).deleteMessages(userId.toConversationId(), ids)
     }
 
     @Test
@@ -467,7 +437,7 @@ class MessengerServiceImplTest {
 
         messengerService.deleteAllMessages(userId)
 
-        verify(messagePersistenceManager).deleteAllMessages(userId)
+        verify(messageService).deleteAllMessages(userId.toConversationId())
     }
 
     @Test
@@ -479,7 +449,7 @@ class MessengerServiceImplTest {
 
         messengerService.deleteGroupMessages(groupId, ids)
 
-        verify(groupService).deleteMessages(groupId, ids)
+        verify(messageService).deleteMessages(groupId.toConversationId(), ids)
     }
 
     @Test
@@ -490,7 +460,7 @@ class MessengerServiceImplTest {
 
         messengerService.deleteAllGroupMessages(groupId)
 
-        verify(groupService).deleteAllMessages(groupId)
+        verify(messageService).deleteAllMessages(groupId.toConversationId())
     }
 
     @Test
@@ -791,10 +761,11 @@ class MessengerServiceImplTest {
         val messengerService = createService()
 
         val messageInfo = randomSentMessageInfo()
+        val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
         val record = randomTextSingleRecord()
         val metadata = record.metadata
 
-        whenever(messagePersistenceManager.markMessageAsDelivered(metadata.userId, metadata.messageId, record.serverReceivedTimestamp)).thenResolve(messageInfo)
+        whenever(messageService.markMessageAsDelivered(metadata.userId.toConversationId(), metadata.messageId, record.serverReceivedTimestamp)).thenResolve(conversationMessageInfo)
 
         messageSent.onNext(record)
 
@@ -803,7 +774,8 @@ class MessengerServiceImplTest {
             Recipient.User(metadata.userId),
             messageInfo.message,
             messageInfo.timestamp,
-            messageInfo.receivedTimestamp
+            messageInfo.receivedTimestamp,
+            messageInfo.ttl
         )
 
         val message = retrieveSyncMessage<SyncMessage.SelfMessage>()
@@ -819,8 +791,8 @@ class MessengerServiceImplTest {
         val metadata = record.metadata
         val groupId = metadata.groupId!!
 
-        val groupMessageInfo = GroupMessageInfo(null, messageInfo)
-        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId, record.serverReceivedTimestamp)).thenResolve(groupMessageInfo)
+        val groupMessageInfo = ConversationMessageInfo(null, messageInfo)
+        whenever(messageService.markMessageAsDelivered(groupId.toConversationId(), metadata.messageId, record.serverReceivedTimestamp)).thenResolve(groupMessageInfo)
 
         messageSent.onNext(record)
 
@@ -829,7 +801,8 @@ class MessengerServiceImplTest {
             Recipient.Group(groupId),
             messageInfo.message,
             messageInfo.timestamp,
-            messageInfo.receivedTimestamp
+            messageInfo.receivedTimestamp,
+            messageInfo.ttl
         )
 
         val message = retrieveSyncMessage<SyncMessage.SelfMessage>()
@@ -844,7 +817,7 @@ class MessengerServiceImplTest {
         val metadata = record.metadata
         val groupId = metadata.groupId!!
 
-        whenever(groupService.markMessageAsDelivered(groupId, metadata.messageId, record.serverReceivedTimestamp)).thenResolve(null)
+        whenever(messageService.markMessageAsDelivered(groupId.toConversationId(), metadata.messageId, record.serverReceivedTimestamp)).thenResolve(null)
 
         messageSent.onNext(record)
 

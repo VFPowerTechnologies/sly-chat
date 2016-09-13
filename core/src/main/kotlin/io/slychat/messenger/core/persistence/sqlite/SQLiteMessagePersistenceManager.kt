@@ -5,33 +5,130 @@ import com.almworks.sqlite4java.SQLiteConstants
 import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.InvalidMessageException
-import io.slychat.messenger.core.persistence.MessageInfo
-import io.slychat.messenger.core.persistence.MessagePersistenceManager
+import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
-import java.util.*
 
-fun Boolean.toInt(): Int = if (this) 1 else 0
+internal fun deleteExpiringMessagesForConversation(connection: SQLiteConnection, conversationId: ConversationId) {
+    connection.withPrepared("DELETE FROM expiring_messages WHERE conversation_id=?") { stmt ->
+        stmt.bind(1, conversationId)
+        stmt.step()
+    }
+}
 
 /** Depends on SQLiteContactsPersistenceManager for creating and deleting conversation tables. */
 class SQLiteMessagePersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
 ) : MessagePersistenceManager {
-    private fun insertMessage(connection: SQLiteConnection, userId: UserId, messageInfo: MessageInfo) {
-        val table = ConversationTable.getTablenameForContact(userId)
-        val sql = """
-INSERT INTO $table
-    (id, is_sent, timestamp, received_timestamp, ttl, is_delivered, message, n)
-VALUES
-    (?, ?, ?, ?, ?, ?, ?, (SELECT count(n)
-                           FROM   $table
-                           WHERE  timestamp = ?)+1)
-"""
+    private val conversationInfoUtils = ConversationInfoUtils()
 
+    override fun addMessages(conversationId: ConversationId, messages: Collection<ConversationMessageInfo>): Promise<Unit, Exception> {
+        if (messages.isEmpty())
+            return Promise.ofSuccess(Unit)
+
+        return sqlitePersistenceManager.runQuery { connection ->
+            connection.withTransaction {
+                messages.map { insertMessage(connection, conversationId, it) }
+                val last = messages.last()
+                val unreadInc = messages.filter { !it.info.isRead }.size
+
+                updateConversationInfo(connection, conversationId, last.speaker, last.info.message, last.info.timestamp, unreadInc)
+            }
+        }
+    }
+
+
+    override fun getUndeliveredMessages(): Promise<Map<ConversationId, List<ConversationMessageInfo>>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        TODO()
+    }
+
+    private fun isMissingConvTableError(e: SQLiteException): Boolean =
+        e.message?.let { "no such table: conv_" in it } ?: false
+
+    private fun conversationMessageInfoToRow(conversationMessageInfo: ConversationMessageInfo, stmt: SQLiteStatement) {
+        val messageInfo = conversationMessageInfo.info
+        stmt.bind(1, messageInfo.id)
+        stmt.bind(2, conversationMessageInfo.speaker)
+        stmt.bind(3, messageInfo.timestamp)
+        stmt.bind(4, messageInfo.receivedTimestamp)
+        stmt.bind(5, messageInfo.isRead)
+        stmt.bind(6, messageInfo.isExpired)
+        stmt.bind(7, messageInfo.ttl)
+        stmt.bind(8, messageInfo.expiresAt)
+        stmt.bind(9, messageInfo.isDelivered)
+        stmt.bind(10, messageInfo.message)
+    }
+
+    /** Throws InvalidGroupException if group_conv table was missing, else rethrows the given exception. */
+    //change this to invalidconversation or something instead
+    private fun handleInvalidConversationException(e: SQLiteException, conversationId: ConversationId): Nothing {
+        if (isMissingConvTableError(e))
+            throw InvalidConversationException(conversationId)
+        else
+            throw e
+    }
+
+    override fun getConversationInfo(conversationId: ConversationId): Promise<ConversationInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        conversationInfoUtils.getConversationInfo(connection, conversationId)
+    }
+
+    override fun getAllGroupConversations(): Promise<List<GroupConversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        conversationInfoUtils.getAllGroupConversations(connection)
+    }
+
+    override fun getAllUserConversations(): Promise<List<UserConversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        conversationInfoUtils.getAllUserConversations(connection)
+    }
+
+    override fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            try {
+                insertMessage(connection, conversationId, conversationMessageInfo)
+            }
+            catch (e: SQLiteException) {
+                if (isMissingConvTableError(e)) {
+                    when (conversationId) {
+                        is ConversationId.User -> throw InvalidMessageLevelException(conversationId.id)
+                        is ConversationId.Group -> throw InvalidConversationException(conversationId)
+                    }
+                }
+                else
+                    throw e
+            }
+
+            val messageInfo = conversationMessageInfo.info
+
+            val unreadInc = if (messageInfo.isRead) 0 else 1
+            updateConversationInfo(connection, conversationId, conversationMessageInfo.speaker, messageInfo.message, messageInfo.timestamp, unreadInc)
+        }
+    }
+
+    private fun updateConversationInfo(connection: SQLiteConnection, conversationId: ConversationId, speaker: UserId?, lastMessage: String?, lastTimestamp: Long?, unreadIncrement: Int) {
+        val unreadCountFragment = if (unreadIncrement > 0) "unread_count=unread_count+$unreadIncrement," else ""
+
+        connection.withPrepared("UPDATE conversation_info SET $unreadCountFragment last_speaker_contact_id=?, last_message=?, last_timestamp=? WHERE conversation_id=?") { stmt ->
+            stmt.bind(1, speaker)
+            stmt.bind(2, lastMessage)
+            stmt.bind(3, lastTimestamp)
+            stmt.bind(4, conversationId)
+            stmt.step()
+        }
+    }
+
+    private fun insertMessage(connection: SQLiteConnection, conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo) {
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql =
+            """
+INSERT INTO $tableName
+    (id, speaker_contact_id, timestamp, received_timestamp, is_read, is_expired, ttl, expires_at, is_delivered, message, n)
+VALUES
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT count(n)
+                                    FROM   $tableName
+                                    WHERE  timestamp = ?)+1)
+"""
         try {
-            connection.prepare(sql).use { stmt ->
-                messageInfoToRow(messageInfo, stmt)
-                stmt.bind(8, messageInfo.timestamp)
+            connection.withPrepared(sql) { stmt ->
+                conversationMessageInfoToRow(conversationMessageInfo, stmt)
+                stmt.bind(11, conversationMessageInfo.info.timestamp)
                 stmt.step()
             }
         }
@@ -41,7 +138,7 @@ VALUES
             //ignores duplicates
             if (message != null) {
                 if (e.baseErrorCode == SQLiteConstants.SQLITE_CONSTRAINT &&
-                    message.contains("UNIQUE constraint failed: conv_\\d\\.id]".toRegex()))
+                    message.contains("UNIQUE constraint failed: conv_[^.]+.id]".toRegex()))
                     return
             }
 
@@ -49,182 +146,401 @@ VALUES
         }
     }
 
-    private fun updateConversationInfo(connection: SQLiteConnection, userId: UserId, isSent: Boolean, lastMessage: String, lastTimestamp: Long, unreadIncrement: Int) {
-        val unreadCountFragment = if (!isSent) "unread_count=unread_count+$unreadIncrement," else ""
+    override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        if (messageIds.isNotEmpty()) {
+            val tableName = ConversationTable.getTablename(conversationId)
 
-        connection.prepare("UPDATE conversation_info SET $unreadCountFragment last_message=?, last_timestamp=? WHERE contact_id=?").use { stmt ->
-            stmt.bind(1, lastMessage)
-            stmt.bind(2, lastTimestamp)
-            stmt.bind(3, userId.long)
-            stmt.step()
-        }
-    }
+            try {
+                connection.prepare("DELETE FROM $tableName WHERE id IN (${getPlaceholders(messageIds.size)})").use { stmt ->
+                    messageIds.forEachIndexed { i, messageId ->
+                        stmt.bind(i + 1, messageId)
+                    }
 
-    private fun addMessageReal(connection: SQLiteConnection, userId: UserId, messageInfo: MessageInfo): MessageInfo {
-        connection.withTransaction {
-            insertMessage(connection, userId, messageInfo)
-            updateConversationInfo(connection, userId, messageInfo.isSent, messageInfo.message, messageInfo.timestamp, 1)
-        }
-
-        return messageInfo
-    }
-
-    private fun isMissingConvTableError(e: SQLiteException): Boolean =
-        e.message?.let { "no such table: conv_" in it } ?: false
-
-    override fun addMessage(userId: UserId, messageInfo: MessageInfo): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        try {
-            addMessageReal(connection, userId, messageInfo)
-        }
-        catch (e: SQLiteException) {
-            if (isMissingConvTableError(e))
-                throw InvalidMessageLevelException(userId)
-            else
-                throw e
-        }
-
-        messageInfo
-    }
-
-    override fun addMessages(userId: UserId, messages: Collection<MessageInfo>): Promise<List<MessageInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        if (messages.isNotEmpty()) {
-            connection.withTransaction {
-                messages.map { insertMessage(connection, userId, it) }
-                updateConversationInfo(connection, userId, false, messages.last().message, messages.last().timestamp, messages.size)
-                messages.toList()
+                    stmt.step()
+                }
             }
-        }
-        else
-            listOf()
-    }
-
-    override fun markMessageAsDelivered(userId: UserId, messageId: String, timestamp: Long): Promise<MessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val table = ConversationTable.getTablenameForContact(userId)
-
-        connection.prepare("UPDATE $table SET is_delivered=1, received_timestamp=? WHERE id=?").use { stmt ->
-            stmt.bind(1, timestamp)
-            stmt.bind(2, messageId)
-            stmt.step()
-        }
-
-        if (connection.changes <= 0)
-            throw InvalidMessageException(userId, messageId)
-
-        connection.prepare("SELECT id, is_sent, timestamp, received_timestamp, ttl, is_delivered, message FROM $table WHERE id=?").use { stmt ->
-            stmt.bind(1, messageId)
-            if (!stmt.step())
-                throw InvalidMessageException(userId, messageId)
-            rowToMessageInfo(stmt)
-        }
-    }
-
-    private fun queryLastMessages(connection: SQLiteConnection, userId: UserId, startingAt: Int, count: Int): List<MessageInfo> {
-        val sql = "SELECT id, is_sent, timestamp, received_timestamp, ttl, is_delivered, message FROM ${ConversationTable.getTablenameForContact(userId)} ORDER BY timestamp DESC, n DESC LIMIT $count OFFSET $startingAt"
-        return connection.prepare(sql).use { stmt ->
-            stmt.map { rowToMessageInfo(it) }
-        }
-    }
-
-    override fun getLastMessages(userId: UserId, startingAt: Int, count: Int): Promise<List<MessageInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        queryLastMessages(connection, userId, startingAt, count)
-    }
-
-    override fun getUndeliveredMessages(): Promise<Map<UserId, List<MessageInfo>>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val contactIds = connection.prepare("SELECT contact_id FROM conversation_info").use { stmt ->
-            stmt.map { UserId(it.columnLong(0)) }
-        }
-
-        val r = HashMap<UserId, List<MessageInfo>>()
-
-        for (userId in contactIds) {
-            val table = ConversationTable.getTablenameForContact(userId)
-
-            val messages = connection.prepare("SELECT id, is_sent, timestamp, received_timestamp, ttl, is_delivered, message FROM $table WHERE is_delivered=0 ORDER BY timestamp, n").use { stmt ->
-                stmt.map { rowToMessageInfo(it) }
+            catch (e: SQLiteException) {
+                handleInvalidConversationException(e, conversationId)
             }
 
-            if (messages.isNotEmpty())
-                r[userId] = messages
+            val lastMessage = getLastConvoMessage(connection, conversationId)
+            if (lastMessage == null)
+                insertOrReplaceNewConversationInfo(connection, conversationId)
+            else {
+                val info = lastMessage.info
+                updateConversationInfo(connection, conversationId, lastMessage.speaker, info.message, info.timestamp, 0)
+            }
         }
-
-        r
     }
 
-    private fun getLastConvoMessage(connection: SQLiteConnection, userId: UserId): MessageInfo? {
-        val table = ConversationTable.getTablenameForContact(userId)
+    private fun getLastConvoMessage(connection: SQLiteConnection, conversationId: ConversationId): ConversationMessageInfo? {
+        val tableName = ConversationTable.getTablename(conversationId)
 
-        return connection.prepare("SELECT id, is_sent, timestamp, received_timestamp, ttl, is_delivered, message FROM $table ORDER BY timestamp DESC, n DESC LIMIT 1").use { stmt ->
+        val sql =
+            """
+SELECT
+    id,
+    speaker_contact_id,
+    timestamp,
+    received_timestamp,
+    is_read,
+    is_expired,
+    ttl,
+    expires_at,
+    is_delivered,
+    message
+FROM
+    $tableName
+ORDER BY
+    timestamp DESC, n DESC
+LIMIT
+    1
+"""
+        return connection.withPrepared(sql) { stmt ->
             if (!stmt.step())
                 null
             else
-                rowToMessageInfo(stmt)
+                rowToConversationMessageInfo(stmt)
         }
     }
 
-    override fun deleteMessages(userId: UserId, messageIds: Collection<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        if (!messageIds.isEmpty()) {
-            val table = ConversationTable.getTablenameForContact(userId)
-
-            connection.prepare("DELETE FROM $table WHERE id IN (${getPlaceholders(messageIds.size)})").use { stmt ->
-                messageIds.forEachIndexed { i, messageId ->
-                    stmt.bind(i+1, messageId)
-                }
-
+    override fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            val tableName = ConversationTable.getTablename(conversationId)
+            connection.withPrepared("DELETE FROM $tableName") { stmt ->
                 stmt.step()
             }
 
-            val lastMessage = getLastConvoMessage(connection, userId)
-            if (lastMessage == null) {
-                resetConversationInfo(connection, userId)
+            deleteExpiringMessagesForConversation(connection, conversationId)
+
+            insertOrReplaceNewConversationInfo(connection, conversationId)
+        }
+    }
+
+    override fun markMessageAsDelivered(conversationId: ConversationId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val tableName = ConversationTable.getTablename(conversationId)
+
+        val sql = "UPDATE $tableName SET is_delivered=1, received_timestamp=? WHERE id=?"
+
+        val currentInfo = try {
+            getConversationMessageInfo(connection, conversationId, messageId) ?: throw InvalidConversationMessageException(conversationId, messageId)
+        }
+        catch (e: SQLiteException) {
+            //FIXME
+            handleInvalidConversationException(e, conversationId)
+        }
+
+        if (!currentInfo.info.isDelivered) {
+            try {
+                connection.withPrepared(sql) { stmt ->
+                    stmt.bind(1, timestamp)
+                    stmt.bind(2, messageId)
+                    stmt.step()
+                }
             }
-            else {
-                //regarding the unread count
-                //right now we can't do squat about this... we don't actually keep track of which individual messages are unread
-                //although, if someone deletes an individual message, they're in the contact chat's page, which means the unread count
-                //would have been set to zero anyways
-                updateConversationInfo(connection, userId, lastMessage.isSent, lastMessage.message, lastMessage.timestamp, 0)
+            catch (e: SQLiteException) {
+                handleInvalidConversationException(e, conversationId)
             }
+
+            if (connection.changes <= 0)
+                throw InvalidConversationMessageException(conversationId, messageId)
+
+            getConversationMessageInfo(connection, conversationId, messageId) ?: throw InvalidConversationMessageException(conversationId, messageId)
+        }
+        else
+            null
+    }
+
+    override fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            connection.withPrepared("UPDATE conversation_info set unread_count=0 WHERE conversation_id=?") { stmt ->
+                stmt.bind(1, conversationId)
+                stmt.step()
+            }
+
+            if (connection.changes == 0)
+                throw InvalidConversationException(conversationId)
+
+            val tableName = ConversationTable.getTablename(conversationId)
+            connection.exec("UPDATE $tableName SET is_read=1 WHERE is_read=0")
         }
 
         Unit
     }
 
-    private fun resetConversationInfo(connection: SQLiteConnection, userId: UserId) {
-        connection.prepare("UPDATE conversation_info set unread_count=0, last_message=null, last_timestamp=null where contact_id=?").use { stmt ->
-            stmt.bind(1, userId.long)
+    private fun getConversationMessageInfo(connection: SQLiteConnection, conversationId: ConversationId, messageId: String): ConversationMessageInfo? {
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql =
+            """
+SELECT
+    id,
+    speaker_contact_id,
+    timestamp,
+    received_timestamp,
+    is_read,
+    is_expired,
+    ttl,
+    expires_at,
+    is_delivered,
+    message
+FROM
+    $tableName
+WHERE
+    id=?
+"""
+        return connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, messageId)
+            if (stmt.step())
+                rowToConversationMessageInfo(stmt)
+            else
+                null
+        }
+    }
+
+    override fun getLastMessages(conversationId: ConversationId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql =
+            """
+SELECT
+    id,
+    speaker_contact_id,
+    timestamp,
+    received_timestamp,
+    is_read,
+    is_expired,
+    ttl,
+    expires_at,
+    is_delivered,
+    message
+FROM
+    $tableName
+ORDER BY
+    timestamp DESC, n DESC
+LIMIT
+    $count
+OFFSET
+    $startingAt
+"""
+        try {
+            connection.withPrepared(sql) { stmt ->
+                stmt.map { rowToConversationMessageInfo(it) }
+            }
+        }
+        catch (e: SQLiteException) {
+            handleInvalidConversationException(e, conversationId)
+        }
+    }
+
+    private fun queryMessageInfo(connection: SQLiteConnection, conversationId: ConversationId, messageId: String): ConversationMessageInfo? {
+        val tableName = ConversationTable.getTablename(conversationId)
+
+        val sql =
+            """
+SELECT
+    id,
+    speaker_contact_id,
+    timestamp,
+    received_timestamp,
+    is_read,
+    is_expired,
+    ttl,
+    expires_at,
+    is_delivered,
+    message
+FROM
+    $tableName
+WHERE
+    id=?
+ORDER BY
+    timestamp DESC, n DESC
+LIMIT
+    1
+"""
+        return connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, messageId)
+
+            if (!stmt.step())
+                null
+            else
+                rowToConversationMessageInfo(stmt)
+        }
+    }
+
+    override fun get(conversationId: ConversationId, messageId: String): Promise<ConversationMessageInfo?, Exception> = sqlitePersistenceManager.runQuery {
+        queryMessageInfo(it, conversationId, messageId)
+    }
+
+    private fun updateMessageSetExpired(connection: SQLiteConnection, conversationId: ConversationId, messageIds: Collection<String>) {
+        val tableName = ConversationTable.getTablename(conversationId)
+        val updateSql = """
+UPDATE
+    $tableName
+SET
+    is_expired=1,
+    ttl=0,
+    expires_at=0
+WHERE
+    id=?
+"""
+        connection.withPrepared(updateSql) { stmt ->
+            messageIds.forEach { messageId ->
+                stmt.bind(1, messageId)
+                stmt.step()
+            }
+        }
+    }
+
+    private fun deleteExpiringMessages(connection: SQLiteConnection, conversationId: ConversationId, messageIds: Collection<String>) {
+        val deleteSql = """
+DELETE FROM
+    expiring_messages
+WHERE
+    conversation_id=?
+AND
+    message_id=?
+"""
+
+        connection.withPrepared(deleteSql) { stmt ->
+            stmt.bind(1, conversationId)
+
+            messageIds.forEach { messageId ->
+                stmt.bind(2, messageId)
+                stmt.step()
+            }
+        }
+    }
+
+    override fun expireMessages(messages: Map<ConversationId, Collection<String>>): Promise<Unit, Exception> {
+        if (messages.isEmpty())
+            return Promise.ofSuccess(Unit)
+
+        return sqlitePersistenceManager.runQuery { connection ->
+            connection.withTransaction {
+                for ((conversationId, messageIds) in messages) {
+                    updateMessageSetExpired(connection, conversationId, messageIds)
+                    deleteExpiringMessages(connection, conversationId, messageIds)
+                }
+            }
+        }
+    }
+
+    private fun updateMessageSetExpiring(connection: SQLiteConnection, conversationId: ConversationId, messageId: String, expiresAt: Long) {
+        val tableName = ConversationTable.getTablename(conversationId)
+
+        val sql = """
+UPDATE
+    $tableName
+SET
+    expires_at=?
+WHERE
+    id=?
+"""
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, expiresAt)
+            stmt.bind(2, messageId)
+            stmt.step()
+            if (connection.changes <= 0)
+                throw InvalidConversationMessageException(conversationId, messageId)
+        }
+    }
+
+    private fun insertExpiringMessage(connection: SQLiteConnection, conversationId: ConversationId, messageId: String, expiresAt: Long) {
+        val sql = """
+INSERT INTO
+    expiring_messages
+    (conversation_id, message_id, expires_at)
+VALUES
+    (?, ?, ?)
+"""
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, conversationId)
+            stmt.bind(2, messageId)
+            stmt.bind(3, expiresAt)
             stmt.step()
         }
     }
 
-    override fun deleteAllMessages(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val table = ConversationTable.getTablenameForContact(userId)
+    override fun setExpiration(conversationId: ConversationId, messageId: String, expiresAt: Long): Promise<Boolean, Exception> {
+        require(expiresAt > 0) { "expiresAt must be > 0, got $expiresAt" }
 
-        connection.exec("DELETE FROM $table")
-        resetConversationInfo(connection,  userId)
+        return sqlitePersistenceManager.runQuery { connection ->
+            try {
+                connection.withTransaction {
+                    insertExpiringMessage(connection, conversationId, messageId, expiresAt)
+                    updateMessageSetExpiring(connection, conversationId, messageId, expiresAt)
+                }
 
-        Unit
+                true
+            }
+            catch (e: SQLiteException) {
+                val message = e.message
+
+                if (message == null)
+                    throw e
+                else {
+                    if (e.baseErrorCode == SQLiteConstants.SQLITE_CONSTRAINT &&
+                        message.contains("UNIQUE constraint failed: expiring_messages.conversation_id, expiring_messages.message_id".toRegex()))
+                        false
+                    else
+                        throw e
+                }
+            }
+        }
     }
 
-    private fun messageInfoToRow(messageInfo: MessageInfo, stmt: SQLiteStatement) {
-        stmt.bind(1, messageInfo.id)
-        stmt.bind(2, messageInfo.isSent.toInt())
-        stmt.bind(3, messageInfo.timestamp)
-        stmt.bind(4, messageInfo.receivedTimestamp)
-        stmt.bind(5, messageInfo.ttl)
-        stmt.bind(6, messageInfo.isDelivered.toInt())
-        stmt.bind(7, messageInfo.message)
+    override fun getMessagesAwaitingExpiration(): Promise<List<ExpiringMessage>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val sql = """
+SELECT
+    conversation_id,
+    message_id,
+    expires_at
+FROM
+    expiring_messages
+"""
+
+        connection.withPrepared(sql) { stmt ->
+            stmt.map { rowToExpiringMessage(stmt) }
+        }
     }
 
-    private fun rowToMessageInfo(stmt: SQLiteStatement): MessageInfo {
-        val id = stmt.columnString(0)
-        val isSent = stmt.columnInt(1) != 0
-        val timestamp = stmt.columnLong(2)
-        val receivedTimestamp = stmt.columnLong(3)
-        val ttl = stmt.columnLong(4)
-        val isDelivered = stmt.columnInt(5) != 0
-        val message = stmt.columnString(6)
-
-        return MessageInfo(id, message, timestamp, receivedTimestamp, isSent, isDelivered, ttl)
+    private fun rowToExpiringMessage(stmt: SQLiteStatement): ExpiringMessage {
+        return ExpiringMessage(
+            stmt.columnConversationId(0),
+            stmt.columnString(1),
+            stmt.columnLong(2)
+        )
     }
 
+    /* test use only */
+    internal fun internalMessageExists(conversationId: ConversationId, messageId: String): Boolean = sqlitePersistenceManager.syncRunQuery { connection ->
+        connection.withPrepared("SELECT 1 FROM ${ConversationTable.getTablename(conversationId)} WHERE id=?") { stmt ->
+            stmt.bind(1, messageId)
+            stmt.step()
+        }
+    }
+
+    internal fun internalGetAllMessages(conversationId: ConversationId): List<ConversationMessageInfo> = sqlitePersistenceManager.syncRunQuery { connection ->
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql =
+            """
+SELECT
+    id,
+    speaker_contact_id,
+    timestamp,
+    received_timestamp,
+    is_read,
+    is_expired,
+    ttl,
+    expires_at,
+    is_delivered,
+    message
+FROM
+    $tableName
+ORDER BY
+    timestamp, n
+"""
+        connection.withPrepared(sql) { stmt ->
+            stmt.map { rowToConversationMessageInfo(it) }
+        }
+    }
 }

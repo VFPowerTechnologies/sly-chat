@@ -32,6 +32,7 @@ import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
 import rx.Observable
 import rx.Scheduler
+import rx.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
 @Module
@@ -70,7 +71,7 @@ class UserModule(
         @SlyHttp httpClientFactory: HttpClientFactory,
         userLoginData: UserData,
         platformContacts: PlatformContacts,
-        timerFactory: TimerFactory
+        promiseTimerFactory: PromiseTimerFactory
     ): AddressBookSyncJobFactory {
         val serverUrl = serverUrls.API_SERVER
         val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
@@ -85,7 +86,7 @@ class UserModule(
             userLoginData,
             accountInfoManager.accountInfo,
             platformContacts,
-            timerFactory
+            promiseTimerFactory
         )
     }
 
@@ -126,15 +127,17 @@ class UserModule(
     fun providesMessageProcessor(
         userData: UserData,
         contactsService: ContactsService,
-        messagePersistenceManager: MessagePersistenceManager,
+        messageService: MessageService,
         messageCipherService: MessageCipherService,
-        groupService: GroupService
+        groupService: GroupService,
+        uiEventService: UIEventService
     ): MessageProcessor = MessageProcessorImpl(
         userData.userId,
         contactsService,
-        messagePersistenceManager,
+        messageService,
         messageCipherService,
-        groupService
+        groupService,
+        uiEventService.events
     )
 
     @UserScope
@@ -167,9 +170,8 @@ class UserModule(
     fun providesMessengerService(
         contactsService: ContactsService,
         addressBookOperationManager: AddressBookOperationManager,
-        messagePersistenceManager: MessagePersistenceManager,
+        messageService: MessageService,
         groupService: GroupService,
-        contactsPersistenceManager: ContactsPersistenceManager,
         relayClientManager: RelayClientManager,
         messageReceiver: MessageReceiver,
         messageSender: MessageSender,
@@ -179,9 +181,8 @@ class UserModule(
         MessengerServiceImpl(
             contactsService,
             addressBookOperationManager,
-            messagePersistenceManager,
+            messageService,
             groupService,
-            contactsPersistenceManager,
             relayClientManager,
             messageSender,
             messageReceiver,
@@ -200,7 +201,7 @@ class UserModule(
     @UserScope
     @Provides
     fun providesNotifierService(
-        messengerService: MessengerService,
+        messageService: MessageService,
         uiEventService: UIEventService,
         contactsPersistenceManager: ContactsPersistenceManager,
         groupPersistenceManager: GroupPersistenceManager,
@@ -211,9 +212,9 @@ class UserModule(
     ): NotifierService {
         //even if this a hot observable, it's not yet emitting so we can just connect using share() instead of
         //manually using the ConnectedObservable
-        val shared = messengerService.newMessages
+        val shared = messageService.newMessages
             //ignore messages from self
-            .filter { it.info.isSent == false }
+            .filter { it.info.isSent == false && !it.info.isRead }
             .share()
 
         //we use debouncing to trigger a buffer flush
@@ -299,9 +300,9 @@ class UserModule(
     fun providesAuthTokenManager(
         userLoginData: UserData,
         tokenProvider: TokenProvider,
-        timerFactory: TimerFactory
+        promiseTimerFactory: PromiseTimerFactory
     ): AuthTokenManager =
-        AuthTokenManagerImpl(userLoginData.address, tokenProvider, timerFactory)
+        AuthTokenManagerImpl(userLoginData.address, tokenProvider, promiseTimerFactory)
 
     @UserScope
     @Provides
@@ -330,12 +331,14 @@ class UserModule(
     fun providesGroupService(
         groupPersistenceManager: GroupPersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager,
-        addressBookOperationManager: AddressBookOperationManager
+        addressBookOperationManager: AddressBookOperationManager,
+        messageService: MessageService
     ): GroupService =
         GroupServiceImpl(
             groupPersistenceManager,
             contactsPersistenceManager,
-            addressBookOperationManager
+            addressBookOperationManager,
+            messageService
         )
 
     @UserScope
@@ -390,4 +393,36 @@ class UserModule(
     ): MutualContactNotifier {
         return MutualContactNotifierImpl(contactsService.contactEvents, messengerService)
     }
+
+    @UserScope
+    @Provides
+    fun providesConversationWatcher(
+        uiEventService: UIEventService,
+        messageService: MessageService
+    ): ConversationWatcher {
+        return ConversationWatcherImpl(uiEventService.events, messageService)
+    }
+
+    @UserScope
+    @Provides
+    fun providesMessageService(
+        messagePersistenceManager: MessagePersistenceManager
+    ): MessageService {
+        return MessageServiceImpl(messagePersistenceManager)
+    }
+
+    @UserScope
+    @Provides
+    fun providersMessageExpirationWatcher(
+        scheduler: Scheduler,
+        messageService: MessageService
+    ): MessageExpirationWatcher {
+        val rxTimerFactory = RxTimerFactory(Schedulers.computation())
+        return MessageExpirationWatcherImpl(
+            scheduler,
+            rxTimerFactory,
+            messageService
+        )
+    }
+
 }

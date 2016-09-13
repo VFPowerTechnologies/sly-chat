@@ -39,6 +39,10 @@ fun randomUserIds(n: Int = 2): Set<UserId> = (1..n).mapToSet { randomUserId() }
 
 fun randomGroupId(): GroupId = GroupId(randomUUID())
 
+fun randomGroupConversationId(): ConversationId.Group = ConversationId(randomGroupId())
+
+fun randomUserConversationId(): ConversationId.User = ConversationId(randomUserId())
+
 fun randomAuthToken(): AuthToken = AuthToken(randomUUID())
 
 private fun <E> List<E>.randomItem(): E {
@@ -129,6 +133,8 @@ fun randomName(): String {
     return shuffleString("random name")
 }
 
+fun randomTtl(): Long = randomInt(500, 1000).toLong()
+
 fun randomAccountInfo(deviceId: Int = randomDeviceId()): AccountInfo {
     return AccountInfo(randomUserId(), randomName(), randomEmailAddress(), "", deviceId)
 }
@@ -138,18 +144,18 @@ fun randomMessageText(): String {
     return shuffleString("random message")
 }
 
-fun randomReceivedMessageInfo(): MessageInfo {
-    return MessageInfo.newReceived(randomMessageText(), currentTimestamp())
+fun randomReceivedMessageInfo(isRead: Boolean = false, expiresAt: Long = 0): MessageInfo {
+    return MessageInfo.newReceived(randomMessageText(), currentTimestamp(), isRead)
 }
 
 fun randomSentMessageInfo(): MessageInfo {
     return MessageInfo.newSent(randomMessageText(), 0)
 }
 
-fun randomReceivedGroupMessageInfo(speaker: UserId?): GroupMessageInfo {
-    return GroupMessageInfo(speaker, randomReceivedMessageInfo())
+fun randomReceivedConversationMessageInfo(speaker: UserId?): ConversationMessageInfo {
+    return ConversationMessageInfo(speaker, randomReceivedMessageInfo())
 }
 
-fun randomSentGroupMessageInfo(): GroupMessageInfo {
-    return GroupMessageInfo(null, randomSentMessageInfo())
+fun randomSentConversationMessageInfo(): ConversationMessageInfo {
+    return ConversationMessageInfo(null, randomSentMessageInfo())
 }

@@ -12,10 +12,10 @@ import io.slychat.messenger.core.randomUserId
 import io.slychat.messenger.core.randomUserIds
 import io.slychat.messenger.services.contacts.MockAddressBookOperationManager
 import io.slychat.messenger.services.messaging.GroupEvent
+import io.slychat.messenger.services.messaging.MessageService
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenAnswerWithArg
 import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenReject
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -33,8 +33,14 @@ class GroupServiceImplTest {
     val groupPersistenceManager: GroupPersistenceManager = mock()
     val contactPersistenceManager: ContactsPersistenceManager = mock()
     val addressBookOperationManager = MockAddressBookOperationManager()
+    val messageService: MessageService = mock()
 
-    val groupService = GroupServiceImpl(groupPersistenceManager, contactPersistenceManager, addressBookOperationManager)
+    val groupService = GroupServiceImpl(
+        groupPersistenceManager,
+        contactPersistenceManager,
+        addressBookOperationManager,
+        messageService
+    )
 
     @Before
     fun before() {

@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.messaging
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
@@ -48,6 +49,7 @@ sealed class Recipient {
     }
 }
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class SyncSentMessageInfo(
     @JsonProperty("id")
     val id: String,
@@ -58,9 +60,12 @@ data class SyncSentMessageInfo(
     @JsonProperty("timestamp")
     val timestamp: Long,
     @JsonProperty("receivedTimestamp")
-    val receivedTimestamp: Long
+    val receivedTimestamp: Long,
+    @JsonProperty("ttl")
+    val ttl: Long
 ) {
     fun toMessageInfo(): MessageInfo {
+        //FIXME
         return MessageInfo(
             id,
             message,
@@ -68,6 +73,9 @@ data class SyncSentMessageInfo(
             receivedTimestamp,
             true,
             true,
+            true,
+            false,
+            ttl,
             0
         )
     }
