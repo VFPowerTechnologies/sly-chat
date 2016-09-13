@@ -644,6 +644,38 @@ ContactController.prototype  = {
         });
     },
 
+    blockContact : function (contactId) {
+        contactService.block(contactId).then(function () {
+            this.resetCachedConversation();
+            slychat.addNotification({
+                title: "Contact has been blocked",
+                hold: 2000
+            });
+        }.bind(this)).catch(function (e) {
+            slychat.addNotification({
+                title: "An error occured",
+                hold: 2000
+            });
+            exceptionController.handleError(e);
+        });
+    },
+
+    unblockContact : function (contactId) {
+        contactService.unblock(contactId).then(function () {
+            this.resetCachedConversation();
+            slychat.addNotification({
+                title: "Contact has been unblocked",
+                hold: 2000
+            });
+        }.bind(this)).catch(function (e) {
+            slychat.addNotification({
+                title: "An error occured",
+                hold: 2000
+            });
+            exceptionController.handleError(e);
+        });
+    },
+
     orderByName : function (convo) {
         convo.sort(function(a, b) {
             var emailA = a.contact.email.toLowerCase();
@@ -749,28 +781,62 @@ ContactController.prototype  = {
     },
 
     openConversationMenu : function (contact) {
-        var buttons = [
-            {
+        var buttons = [];
+
+        if (contact.publicKey == profileController.publicKey) {
+            buttons.push({
+                text: 'Profile',
+                onClick: function () {
+                    navigationController.loadPage('profile.html', true);
+                }.bind(this)
+            });
+        }
+        else {
+            buttons.push({
                 text: 'Contact Info',
                 onClick: function () {
                     this.loadContactInfo(contact);
                 }.bind(this)
-            },
-            {
-                text: 'Delete Conversation',
-                onClick: function () {
-                    slychat.confirm("Are you sure you want to delete this conversation?", function () {
-                        chatController.deleteConversation(contact);
-                    })
-                }
-            },
-            {
-                text: 'Cancel',
-                color: 'red',
-                onClick: function () {
-                }
+            });
+
+            if (contact.allowedMessageLevel == "BLOCKED") {
+                buttons.push({
+                    text: 'Unblock',
+                    onClick: function () {
+                        slychat.confirm("Are you sure you want to unblock " + contact.name, function () {
+                            this.unblockContact(contact.id);
+                        }.bind(this));
+                    }.bind(this)
+                });
             }
-        ];
+            else {
+                buttons.push({
+                    text: 'Block',
+                    onClick: function () {
+                        slychat.confirm("Are you sure you want to block " + contact.name, function () {
+                            this.blockContact(contact.id);
+                        }.bind(this));
+                    }.bind(this)
+                });
+            }
+        }
+
+        buttons.push({
+            text: 'Delete Conversation',
+            onClick: function () {
+                slychat.confirm("Are you sure you want to delete this conversation?", function () {
+                    chatController.deleteConversation(contact);
+                })
+            }
+        });
+
+        buttons.push({
+            text: 'Cancel',
+            color: 'red',
+            onClick: function () {
+            }
+        });
+
         slychat.actions(buttons);
     },
 
@@ -807,47 +873,60 @@ ContactController.prototype  = {
     },
 
     openContactMenu : function (contact) {
-        var buttons = [
-            {
+        var buttons = [];
+        if (contact.publicKey == profileController.publicKey) {
+            buttons.push({
+                text: 'Profile',
+                onClick: function () {
+                    navigationController.loadPage('profile.html', true);
+                }.bind(this)
+            });
+        }
+        else {
+            buttons.push({
                 text: 'Contact Info',
                 onClick: function () {
                     this.loadContactInfo(contact);
                 }.bind(this)
-            },
-            {
-                text: 'Delete Contact',
-                onClick: function () {
-                    slychat.confirm("Are you sure you want to delete this conversation?", function () {
-                        // TODO update confirm style
-                        this.deleteContact(contact);
-                    }.bind(this))
-                }.bind(this)
-            },
-            {
-                text: 'Cancel',
-                color: 'red',
-                onClick: function () {
-                }
+            });
+
+            if (contact.allowedMessageLevel == "BLOCKED") {
+                buttons.push({
+                    text: 'Unblock',
+                    onClick: function () {
+                        slychat.confirm("Are you sure you want to unblock " + contact.name, function () {
+                            this.unblockContact(contact.id);
+                        }.bind(this));
+                    }.bind(this)
+                });
             }
-        ];
+            else {
+                buttons.push({
+                    text: 'Block',
+                    onClick: function () {
+                        slychat.confirm("Are you sure you want to block " + contact.name, function () {
+                            this.blockContact(contact.id);
+                        }.bind(this));
+                    }.bind(this)
+                });
+            }
+
+        }
+        buttons.push({
+            text: 'Delete Contact',
+            onClick: function () {
+                slychat.confirm("Are you sure you want to delete this conversation?", function () {
+                    this.deleteContact(contact);
+                }.bind(this))
+            }.bind(this)
+        });
+        buttons.push({
+            text: 'Cancel',
+            color: 'red',
+            onClick: function () {
+            }
+        });
         slychat.actions(buttons);
-    },
-
-    showContactInfo : function (contact) {
-        var content = "<div class='contact-info'>" +
-                "<p class='contact-info-title'>Name:</p>" +
-                "<p class='contact-info-details'>" + contact.name + "</p>" +
-            "</div>" +
-            "<div class='contact-info'>" +
-                "<p class='contact-info-title'>Email:</p>" +
-                "<p class='contact-info-details'>" + contact.email + "</p>" +
-            "</div>" +
-            "<div class='contact-info'>" +
-                "<p class='contact-info-title'>Public Key:</p>" +
-                "<p class='contact-info-details'>" + formatPublicKey(contact.publicKey) + "</p>" +
-            "</div>";
-
-        openInfoPopup(content, "Contact Info");
     },
 
     clearCache : function () {
