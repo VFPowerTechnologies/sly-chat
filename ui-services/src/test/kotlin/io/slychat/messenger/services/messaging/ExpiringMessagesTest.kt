@@ -28,7 +28,6 @@ class ExpiringMessagesTest {
         assertEquals(listOf(e2, e1), expiringMessages.toList())
     }
 
-
     @Test
     fun `addAll should keep the list sorted in ascending order`() {
         val ordered = (1..5L).map { randomEntry(it) }

@@ -6,13 +6,13 @@ import java.util.*
 internal class ExpiringMessages {
     data class ExpiringEntry(val conversationId: ConversationId, val messageId: String, val expireAt: Long)
 
-    private val comparator: (ExpiringEntry, ExpiringEntry) -> Int = { a, b -> a.expireAt.compareTo(b.expireAt) }
+    private val comparator: Comparator<ExpiringEntry> = Comparator { a, b -> a.expireAt.compareTo(b.expireAt) }
     private var list = ArrayList<ExpiringEntry>()
 
     fun toList(): List<ExpiringEntry> = ArrayList(list)
 
     private fun sortList() {
-        list.sort(comparator)
+        list.sortWith(comparator)
     }
 
     fun add(entry: ExpiringEntry) {
@@ -33,11 +33,11 @@ internal class ExpiringMessages {
 
     //remove if exists, else do nothing
     fun remove(conversationId: ConversationId, messageId: String): Boolean {
-        return list.removeIf { it.messageId == messageId && it.conversationId == conversationId }
+        return list.removeAll { it.messageId == messageId && it.conversationId == conversationId }
     }
 
     fun removeAll(conversationId: ConversationId): Boolean {
-        return list.removeIf { it.conversationId == conversationId }
+        return list.removeAll { it.conversationId == conversationId }
     }
 
     fun removeExpired(currentTime: Long): List<ExpiringEntry> {
