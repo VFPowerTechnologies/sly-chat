@@ -5,7 +5,7 @@ import nl.komponents.kovenant.Promise
 
 /** Handles incoming messages. */
 interface MessageProcessor {
-    fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception>
+    fun processMessage(sender: UserId, message: SlyMessage): Promise<Unit, Exception>
 
     fun init()
     fun shutdown()

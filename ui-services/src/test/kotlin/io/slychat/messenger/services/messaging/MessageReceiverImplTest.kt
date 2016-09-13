@@ -47,7 +47,7 @@ class MessageReceiverImplTest {
 
     fun createTextMessage(message: String, group: String? = null): SlyMessage.Text {
         val groupId = group?.let { GroupId(it) }
-        return SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId, 0))
+        return SlyMessage.Text(TextMessage(randomMessageId(), currentTimestamp(), message, groupId, 0))
     }
 
     fun createPackage(from: UserId, payload: ByteArray): Package {
@@ -204,10 +204,10 @@ class MessageReceiverImplTest {
 
         receiver.processPackages(listOf(pkg))
 
-        val captor = argumentCaptor<SlyMessageWrapper>()
+        val captor = argumentCaptor<SlyMessage>()
         verify(messageProcessor).processMessage(eq(from), capture(captor))
 
-        assertEquals(SlyMessageWrapper(pkg.id.messageId, wrapped), captor.value, "Deserialized message doesn't match")
+        assertEquals(wrapped, captor.value, "Deserialized message doesn't match")
     }
 
     @Test

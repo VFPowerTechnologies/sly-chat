@@ -61,18 +61,16 @@ class MessageProcessorImpl(
         }
     }
 
-    override fun processMessage(sender: UserId, wrapper: SlyMessageWrapper): Promise<Unit, Exception> {
-        val m = wrapper.message
-        val messageId = wrapper.messageId
+    override fun processMessage(sender: UserId, message: SlyMessage): Promise<Unit, Exception> {
 
-        return when (m) {
-            is SlyMessage.Text -> handleTextMessage(sender, messageId, m.m)
+        return when (message) {
+            is SlyMessage.Text -> handleTextMessage(sender, message.m)
 
-            is SlyMessage.GroupEvent -> handleGroupMessage(sender, m.m)
+            is SlyMessage.GroupEvent -> handleGroupMessage(sender, message.m)
 
-            is SlyMessage.Sync -> handleSyncMessage(sender, m.m)
+            is SlyMessage.Sync -> handleSyncMessage(sender, message.m)
 
-            is SlyMessage.Control -> handleControlMessage(sender, m.m)
+            is SlyMessage.Control -> handleControlMessage(sender, message.m)
         }
     }
 
@@ -139,7 +137,7 @@ class MessageProcessorImpl(
         }
     }
 
-    private fun handleTextMessage(sender: UserId, messageId: String, m: TextMessage): Promise<Unit, Exception> {
+    private fun handleTextMessage(sender: UserId, m: TextMessage): Promise<Unit, Exception> {
         val groupId = m.groupId
 
         val isRead = if (groupId == null)
@@ -147,7 +145,7 @@ class MessageProcessorImpl(
         else
             groupId == currentlySelectedGroup
 
-        val messageInfo = MessageInfo.newReceived(messageId, m.message, m.timestamp, currentTimestamp(), isRead, m.ttl)
+        val messageInfo = MessageInfo.newReceived(m.id, m.message, m.timestamp, currentTimestamp(), isRead, m.ttl)
         val conversationInfo = ConversationMessageInfo(sender, messageInfo)
 
         return if (groupId == null) {

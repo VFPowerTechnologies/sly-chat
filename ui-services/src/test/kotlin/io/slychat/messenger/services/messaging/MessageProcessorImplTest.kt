@@ -40,7 +40,7 @@ class MessageProcessorImplTest {
     val uiEvents: PublishSubject<UIEvent> = PublishSubject.create()
 
     fun randomTextMessage(groupId: GroupId? = null): TextMessage =
-        TextMessage(currentTimestamp(), randomUUID(), groupId, randomInt(50, 100).toLong())
+        TextMessage(randomMessageId(), currentTimestamp(), randomUUID(), groupId, randomInt(50, 100).toLong())
 
     fun returnGroupInfo(groupInfo: GroupInfo?) {
         if (groupInfo != null)
@@ -49,10 +49,10 @@ class MessageProcessorImplTest {
             whenever(groupService.getInfo(any())).thenResolve(null)
     }
 
-    fun wrap(m: TextMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Text(m))
-    fun wrap(m: GroupEventMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.GroupEvent(m))
-    fun wrap(m: SyncMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Sync(m))
-    fun wrap(m: ControlMessage): SlyMessageWrapper = SlyMessageWrapper(randomMessageId(), SlyMessage.Control(m))
+    fun wrap(m: TextMessage): SlyMessage = SlyMessage.Text(m)
+    fun wrap(m: GroupEventMessage): SlyMessage = SlyMessage.GroupEvent(m)
+    fun wrap(m: SyncMessage): SlyMessage = SlyMessage.Sync(m)
+    fun wrap(m: ControlMessage): SlyMessage = SlyMessage.Control(m)
 
     fun createProcessor(): MessageProcessorImpl {
         whenever(messageService.addMessage(any(), any())).thenResolve(Unit)
@@ -84,11 +84,11 @@ class MessageProcessorImplTest {
 
         val m = randomTextMessage()
 
-        val wrapper = SlyMessageWrapper(randomUUID(), SlyMessage.Text(m))
+        val message = SlyMessage.Text(m)
 
         val sender = UserId(1)
 
-        processor.processMessage(sender, wrapper).get()
+        processor.processMessage(sender, message).get()
 
         verify(messageService).addMessage(eq(sender.toConversationId()), capture {
             val info = it.info
@@ -104,13 +104,13 @@ class MessageProcessorImplTest {
 
         val m = randomTextMessage()
 
-        val wrapper = SlyMessageWrapper(randomUUID(), SlyMessage.Text(m))
+        val message = SlyMessage.Text(m)
 
         val sender = UserId(1)
 
         uiEvents.onNext(UIEvent.PageChange(PageType.CONVO, sender.toString()))
 
-        processor.processMessage(sender, wrapper).get()
+        processor.processMessage(sender, message).get()
 
         verify(messageService).addMessage(eq(sender.toConversationId()), capture {
             assertTrue(it.info.isRead, "Message should be marked as read")
@@ -123,7 +123,7 @@ class MessageProcessorImplTest {
 
         val m = randomTextMessage()
 
-        val wrapper = SlyMessageWrapper(randomUUID(), SlyMessage.Text(m))
+        val message = SlyMessage.Text(m)
 
         val from = randomUserId()
 
@@ -132,7 +132,7 @@ class MessageProcessorImplTest {
             .thenReject(InvalidMessageLevelException(from))
             .thenResolve(Unit)
 
-        processor.processMessage(from, wrapper).get()
+        processor.processMessage(from, message).get()
 
         verify(contactsService).allowAll(from)
         verify(messageService, times(2)).addMessage(any(), any())

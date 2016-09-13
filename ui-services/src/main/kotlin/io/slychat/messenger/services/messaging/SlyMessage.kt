@@ -101,6 +101,8 @@ sealed class SlyMessage {
 }
 
 data class TextMessage(
+    @JsonProperty("id")
+    val id: String,
     @JsonProperty("timestamp")
     val timestamp: Long,
     @JsonProperty("message")

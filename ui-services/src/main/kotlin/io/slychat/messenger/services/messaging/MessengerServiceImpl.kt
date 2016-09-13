@@ -200,7 +200,7 @@ class MessengerServiceImpl(
         return if (!isSelfMessage) {
             val messageInfo = MessageInfo.newSent(message, relayClock.currentTime(), 0)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
-            val m = TextMessage(messageInfo.timestamp, message, null, ttl)
+            val m = TextMessage(messageInfo.id, messageInfo.timestamp, message, null, ttl)
             val wrapper = SlyMessage.Text(m)
 
             val serialized = objectMapper.writeValueAsBytes(wrapper)
@@ -249,7 +249,7 @@ class MessengerServiceImpl(
     }
 
     override fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<Unit, Exception> {
-        val m = SlyMessage.Text(TextMessage(currentTimestamp(), message, groupId, ttl))
+        val m = SlyMessage.Text(TextMessage(randomUUID(), currentTimestamp(), message, groupId, ttl))
 
         val messageId = randomUUID()
 
