@@ -21,6 +21,7 @@ data class UIMessage(
     val receivedTimestamp: Long,
     val message: String,
     val ttl: Long,
+    val expiresAt: Long,
     val isExpired: Boolean
 )
 
