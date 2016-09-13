@@ -1,4 +1,4 @@
-package io.slychat.messenger.services.ui.impl
+package io.slychat.messenger.services.ui
 
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
