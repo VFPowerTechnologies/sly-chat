@@ -225,7 +225,8 @@ sealed class GroupEventMessage {
 @JsonSubTypes(
     JsonSubTypes.Type(SyncMessage.NewDevice::class, name = "d"),
     JsonSubTypes.Type(SyncMessage.SelfMessage::class, name = "m"),
-    JsonSubTypes.Type(SyncMessage.AddressBookSync::class, name = "s")
+    JsonSubTypes.Type(SyncMessage.AddressBookSync::class, name = "s"),
+    JsonSubTypes.Type(SyncMessage.MessageExpired::class, name = "e")
 )
 sealed class SyncMessage {
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -253,10 +254,11 @@ sealed class SyncMessage {
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     class MessageExpired(
-        @JsonProperty
+        @JsonProperty("conversationId")
         val conversationId: ConversationId,
-        @JsonProperty
+        @JsonProperty("messageId")
         val messageId: MessageId
     ) : SyncMessage() {
         override fun equals(other: Any?): Boolean {

@@ -827,4 +827,17 @@ class MessengerServiceImplTest {
             convertToControlMessage<ControlMessage.WasAdded>(it)
         }
     }
+
+    @Test
+    fun `it should generate a MessageExpired sync message when broadcastMessageExpired is called`() {
+        val messengerService = createService()
+
+        val conversationId = randomUserConversationId()
+        val messageId = randomMessageId()
+        messengerService.broadcastMessageExpired(conversationId, messageId).get()
+
+        val message = retrieveSyncMessage<SyncMessage.MessageExpired>()
+
+        assertEquals(SyncMessage.MessageExpired(conversationId, MessageId(messageId)), message, "Invalid sync message")
+    }
 }

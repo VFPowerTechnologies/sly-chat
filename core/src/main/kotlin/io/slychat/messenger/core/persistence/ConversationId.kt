@@ -1,9 +1,17 @@
 package io.slychat.messenger.core.persistence
 
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.slychat.messenger.core.UserId
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
+@JsonSubTypes(
+    JsonSubTypes.Type(ConversationId.User::class, name = "u"),
+    JsonSubTypes.Type(ConversationId.Group::class, name = "g")
+)
 sealed class ConversationId {
-    class User(val id: UserId) : ConversationId() {
+    class User(@JsonProperty("id") val id: UserId) : ConversationId() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
@@ -24,7 +32,7 @@ sealed class ConversationId {
         }
     }
 
-    class Group(val id: GroupId) : ConversationId() {
+    class Group(@JsonProperty("id") val id: GroupId) : ConversationId() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false

@@ -369,7 +369,7 @@ class MessengerServiceImpl(
     }
 
     override fun broadcastMessageExpired(conversationId: ConversationId, messageId: String): Promise<Unit, Exception> {
-        TODO()
+        return sendSyncMessage(SyncMessage.MessageExpired(conversationId, MessageId(messageId)))
     }
 
     override fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception> {
