@@ -1029,4 +1029,33 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             }
         }
     }
+
+    @Test
+    fun `getConversationDisplayInfo should return data when last message data is available`() {
+        foreachConvType { conversationId, participants ->
+            val messageText = randomMessageText()
+            val speaker = participants.first()
+
+            val conversationMessageInfo = addMessage(conversationId, speaker, false, messageText, 0)
+
+            val groupName = when (conversationId) {
+                is ConversationId.Group -> groupPersistenceManager.getInfo(conversationId.id).get()!!.name
+                else -> null
+            }
+
+            val speakerName = contactsPersistenceManager.get(speaker).get()!!.name
+
+            val lastMessageData = LastMessageData(
+                speakerName,
+                conversationMessageInfo.info.message,
+                conversationMessageInfo.info.timestamp
+            )
+
+            val expected = ConversationDisplayInfo(conversationId, groupName, 1, lastMessageData)
+
+            val conversationDisplayInfo = messagePersistenceManager.getConversationDisplayInfo(conversationId).get()
+
+            assertEquals(expected, conversationDisplayInfo, "Invalid display info")
+        }
+    }
 }

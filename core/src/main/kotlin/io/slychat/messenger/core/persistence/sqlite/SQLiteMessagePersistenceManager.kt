@@ -514,6 +514,60 @@ FROM
         )
     }
 
+    private fun getGroupName(connection: SQLiteConnection, groupId: GroupId): String {
+        val sql = """
+SELECT
+    name
+FROM
+    groups
+WHERE
+    id=?
+"""
+        return connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, groupId)
+            if (!stmt.step())
+                throw InvalidGroupException(groupId)
+
+            stmt.columnString(0)
+        }
+    }
+
+    private fun getUserName(connection: SQLiteConnection, userId: UserId): String {
+        val sql = """
+SELECT
+    name
+FROM
+    contacts
+WHERE
+    id=?
+"""
+        return connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, userId)
+            if (!stmt.step())
+                throw InvalidContactException(userId)
+
+            stmt.columnString(0)
+        }
+    }
+
+    override fun getConversationDisplayInfo(conversationId: ConversationId): Promise<ConversationDisplayInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val conversationInfo = conversationInfoUtils.getConversationInfo(connection, conversationId) ?: throw InvalidConversationException(conversationId)
+
+        val groupName = when (conversationId) {
+            is ConversationId.Group -> getGroupName(connection, conversationId.id)
+            else -> null
+        }
+
+        val lastMessageData = if (conversationInfo.lastSpeaker != null) {
+            val speakerName = getUserName(connection, conversationInfo.lastSpeaker)
+            LastMessageData(speakerName, conversationInfo.lastMessage!!, conversationInfo.lastTimestamp!!)
+        }
+        else
+            null
+
+        ConversationDisplayInfo(conversationId, groupName, conversationInfo.unreadMessageCount, lastMessageData)
+    }
+
     /* test use only */
     internal fun internalMessageExists(conversationId: ConversationId, messageId: String): Boolean = sqlitePersistenceManager.syncRunQuery { connection ->
         connection.withPrepared("SELECT 1 FROM ${ConversationTable.getTablename(conversationId)} WHERE id=?") { stmt ->
