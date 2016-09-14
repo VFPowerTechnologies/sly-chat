@@ -57,7 +57,7 @@ sealed class MessageUpdateEvent {
         }
     }
 
-    class Expired(val conversationId: ConversationId, val messageId: String) : MessageUpdateEvent() {
+    class Expired(val conversationId: ConversationId, val messageId: String, val fromSync: Boolean) : MessageUpdateEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
@@ -66,6 +66,7 @@ sealed class MessageUpdateEvent {
 
             if (conversationId != other.conversationId) return false
             if (messageId != other.messageId) return false
+            if (fromSync != other.fromSync) return false
 
             return true
         }
@@ -73,11 +74,12 @@ sealed class MessageUpdateEvent {
         override fun hashCode(): Int {
             var result = conversationId.hashCode()
             result = 31 * result + messageId.hashCode()
+            result = 31 * result + fromSync.hashCode()
             return result
         }
 
         override fun toString(): String {
-            return "Expired(conversationId=$conversationId, messageId='$messageId')"
+            return "Expired(conversationId=$conversationId, messageId='$messageId', fromSync=$fromSync)"
         }
     }
 

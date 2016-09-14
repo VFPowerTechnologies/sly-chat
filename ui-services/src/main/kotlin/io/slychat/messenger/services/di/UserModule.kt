@@ -417,14 +417,15 @@ class UserModule(
     @Provides
     fun providersMessageExpirationWatcher(
         scheduler: Scheduler,
-        messageService: MessageService
+        messageService: MessageService,
+        messengerService: MessengerService
     ): MessageExpirationWatcher {
         val rxTimerFactory = RxTimerFactory(Schedulers.computation())
         return MessageExpirationWatcherImpl(
             scheduler,
             rxTimerFactory,
-            messageService
+            messageService,
+            messengerService
         )
     }
-
 }

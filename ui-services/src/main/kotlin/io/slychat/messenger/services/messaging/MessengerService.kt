@@ -2,10 +2,7 @@ package io.slychat.messenger.services.messaging
 
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
-import io.slychat.messenger.core.persistence.ConversationMessageInfo
-import io.slychat.messenger.core.persistence.GroupId
-import io.slychat.messenger.core.persistence.Package
-import io.slychat.messenger.core.persistence.UserConversation
+import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
 
 interface MessengerService {
@@ -16,6 +13,8 @@ interface MessengerService {
 
     /** Broadcast a new device to other accounts. */
     fun broadcastNewDevice(deviceInfo: DeviceInfo): Promise<Unit, Exception>
+
+    fun broadcastMessageExpired(conversationId: ConversationId, messageId: String): Promise<Unit, Exception>
 
     /** Notify another user that you've added them as a contact. */
     fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception>

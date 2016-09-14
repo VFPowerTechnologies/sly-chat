@@ -210,15 +210,39 @@ class MessageServiceImplTest {
 
             val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Expired>()
 
-            messageService.expireMessages(messages).get()
+            messageService.expireMessages(messages, false).get()
 
             val expected = messageIds.map {
-                MessageUpdateEvent.Expired(conversationId, it)
+                MessageUpdateEvent.Expired(conversationId, it, false)
             }
 
             assertThat(testSubscriber.onNextEvents).apply {
                 `as`("Should emit events")
                 containsOnlyElementsOf(expected)
+            }
+        }
+    }
+
+    @Test
+    fun `it should emit expired events with the given fromSync value when expiredMessages is called`() {
+        val conversationId = randomUserConversationId()
+        val messageId = randomMessageId()
+
+        val messages = mapOf<ConversationId, List<String>>(
+            conversationId to listOf(messageId)
+        )
+
+        forEachConvType {
+            listOf(true, false).forEach { fromSync ->
+                val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Expired>()
+                messageService.expireMessages(messages, fromSync)
+
+                val expected = MessageUpdateEvent.Expired(conversationId, messageId, fromSync)
+
+                assertThat(testSubscriber.onNextEvents).apply {
+                    `as`("Should emit events")
+                    containsOnly(expected)
+                }
             }
         }
     }

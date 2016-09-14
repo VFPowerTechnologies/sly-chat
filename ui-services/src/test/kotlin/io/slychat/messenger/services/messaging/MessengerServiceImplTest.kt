@@ -548,13 +548,13 @@ class MessengerServiceImplTest {
     }
 
     /** Assert that the given group message type was sent to everyone in the given list, and that it satisifies certain conditions. */
-    inline fun <reified T> assertGroupMessagesSentTo(expectedRecipients: Set<UserId>, asserter: (UserId, T) -> Unit) {
+    inline fun <reified T> assertGroupMessagesSentTo(expectedConversationIds: Set<UserId>, asserter: (UserId, T) -> Unit) {
         val messages = getAllSentMessages(1)
 
         assertTrue(messages.isNotEmpty(), "No messages were sent")
 
         val sendTo = HashMap<UserId, Boolean>()
-        sendTo.putAll(expectedRecipients.map { it to false })
+        sendTo.putAll(expectedConversationIds.map { it to false })
 
         messages.forEach {
             val recipient = it.metadata.userId
@@ -571,7 +571,7 @@ class MessengerServiceImplTest {
             }
         }
 
-        val missing = HashSet(expectedRecipients)
+        val missing = HashSet(expectedConversationIds)
         missing.removeAll(sendTo.filterValues { it }.keys)
 
         if (missing.isNotEmpty())
@@ -729,7 +729,7 @@ class MessengerServiceImplTest {
 
         val expected = SyncSentMessageInfo(
             metadata.messageId,
-            Recipient.User(metadata.userId),
+            ConversationId.User(metadata.userId),
             messageInfo.message,
             messageInfo.timestamp,
             messageInfo.receivedTimestamp,
@@ -756,7 +756,7 @@ class MessengerServiceImplTest {
 
         val expected = SyncSentMessageInfo(
             metadata.messageId,
-            Recipient.Group(groupId),
+            ConversationId.Group(groupId),
             messageInfo.message,
             messageInfo.timestamp,
             messageInfo.receivedTimestamp,
@@ -826,5 +826,18 @@ class MessengerServiceImplTest {
             assertEquals(userId, it.metadata.userId, "Invalid recipient id")
             convertToControlMessage<ControlMessage.WasAdded>(it)
         }
+    }
+
+    @Test
+    fun `it should generate a MessageExpired sync message when broadcastMessageExpired is called`() {
+        val messengerService = createService()
+
+        val conversationId = randomUserConversationId()
+        val messageId = randomMessageId()
+        messengerService.broadcastMessageExpired(conversationId, messageId).get()
+
+        val message = retrieveSyncMessage<SyncMessage.MessageExpired>()
+
+        assertEquals(SyncMessage.MessageExpired(conversationId, MessageId(messageId)), message, "Invalid sync message")
     }
 }

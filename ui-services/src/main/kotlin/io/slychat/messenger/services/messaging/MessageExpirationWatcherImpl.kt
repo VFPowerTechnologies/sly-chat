@@ -14,7 +14,8 @@ import java.util.concurrent.TimeUnit
 class MessageExpirationWatcherImpl(
     private val scheduler: Scheduler,
     private val rxTimerFactory: RxTimerFactory,
-    private val messageService: MessageService
+    private val messageService: MessageService,
+    private val messengerService: MessengerService
 ) : MessageExpirationWatcher {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -55,7 +56,7 @@ class MessageExpirationWatcherImpl(
         updateTimer()
 
         if (toDestroy.isNotEmpty()) {
-            messageService.expireMessages(toDestroy.toMap()) fail {
+            messageService.expireMessages(toDestroy.toMap(), false) fail {
                 log.error("Unable to destroy messages: {}", it.message, it)
             }
         }
@@ -91,10 +92,19 @@ class MessageExpirationWatcherImpl(
     //this is here for consistency between devices; if I start a countdown on one device, and then one on another,
     //the first one that finishes should cause the message to be destroyed on both (assuming both are still online)
     private fun onMessageExpired(event: MessageUpdateEvent.Expired) {
-        log.debug("Message {}/{} has expired", event.conversationId, event.messageId)
+        val conversationId = event.conversationId
+        val messageId = event.messageId
 
-        if (expiringMessages.remove(event.conversationId, event.messageId))
+        log.debug("Message {}/{} has expired", conversationId, messageId)
+
+        if (expiringMessages.remove(conversationId, messageId))
             updateTimer()
+
+        if (!event.fromSync) {
+            messengerService.broadcastMessageExpired(conversationId, messageId) fail {
+                log.error("Failed to broadcast expired message {}/{}: {}", conversationId, messageId, it.message, it)
+            }
+        }
     }
 
     private fun onMessageExpiring(event: MessageUpdateEvent.Expiring) {
@@ -146,7 +156,7 @@ class MessageExpirationWatcherImpl(
             messageIds.add(it.messageId)
         }
 
-        messageService.expireMessages(m) fail {
+        messageService.expireMessages(m, false) fail {
             log.error("Failed to destroy messages: {}", it.message, it)
         }
 

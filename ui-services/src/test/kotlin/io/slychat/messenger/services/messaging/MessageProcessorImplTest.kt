@@ -15,14 +15,13 @@ import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenReject
 import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenResolveUnit
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
 import rx.subjects.PublishSubject
 import java.util.*
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class MessageProcessorImplTest {
     companion object {
@@ -590,7 +589,7 @@ class MessageProcessorImplTest {
     fun randomSingleSentMessageInfo(userId: UserId): SyncSentMessageInfo {
         return SyncSentMessageInfo(
             randomMessageId(),
-            Recipient.User(userId),
+            ConversationId.User(userId),
             randomMessageText(),
             currentTimestamp(),
             currentTimestamp(),
@@ -601,7 +600,7 @@ class MessageProcessorImplTest {
     fun randomGroupSentMessageInfo(groupId: GroupId): SyncSentMessageInfo {
         return SyncSentMessageInfo(
             randomMessageId(),
-            Recipient.Group(groupId),
+            ConversationId.Group(groupId),
             randomMessageText(),
             currentTimestamp(),
             currentTimestamp(),
@@ -697,8 +696,42 @@ class MessageProcessorImplTest {
 
         val m = ControlMessage.WasAdded()
 
-        processor.processMessage(sender, wrap(m))
+        processor.processMessage(sender, wrap(m)).get()
 
         verify(contactsService).addById(sender)
+    }
+
+    @Test
+    fun `it should mark messages as expired when receiving a MessageExpired message`() {
+        val processor = createProcessor()
+
+        val sender = selfId
+
+        val conversationId = randomUserConversationId()
+        val messageId = randomMessageId()
+        val m = SyncMessage.MessageExpired(conversationId, MessageId(messageId))
+
+        whenever(messageService.expireMessages(any(), any())).thenResolveUnit()
+
+        processor.processMessage(sender, wrap(m)).get()
+
+        verify(messageService).expireMessages(capture {
+            val messageIds = assertNotNull(it[conversationId], "Missing conversation")
+            assertThat(messageIds).apply {
+                `as`("Should contain the given message id")
+                containsOnly(messageId)
+            }
+        }, eq(true))
+    }
+
+    @Test
+    fun `it should drop MessageExpired messages where the sender is not yourself`() {
+        val processor = createProcessor()
+
+        val m = SyncMessage.MessageExpired(randomUserConversationId(), MessageId(randomMessageId()))
+
+        assertFailsWith(SyncMessageFromOtherSecurityException::class) {
+            processor.processMessage(randomUserId(), wrap(m)).get()
+        }
     }
 }
