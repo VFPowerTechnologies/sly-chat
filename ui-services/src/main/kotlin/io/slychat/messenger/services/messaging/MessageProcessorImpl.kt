@@ -120,14 +120,14 @@ class MessageProcessorImpl(
             messageInfo
         )
 
-        val recipient = sentMessageInfo.recipient
+        val conversationId = sentMessageInfo.conversationId
 
-        return when (recipient) {
+        return when (conversationId) {
             //if we add a new contact, then message them right away, the SelfMessage'll get here before the AddressBookSync one
-            is Recipient.User -> contactsService.addMissingContacts(setOf(recipient.id)) bindUi {
-                addSingleMessage(recipient.id, conversationMessageInfo)
+            is ConversationId.User -> contactsService.addMissingContacts(setOf(conversationId.id)) bindUi {
+                addSingleMessage(conversationId.id, conversationMessageInfo)
             }
-            is Recipient.Group -> addGroupMessage(recipient.id, conversationMessageInfo)
+            is ConversationId.Group -> addGroupMessage(conversationId.id, conversationMessageInfo)
         }
     }
 

@@ -589,7 +589,7 @@ class MessageProcessorImplTest {
     fun randomSingleSentMessageInfo(userId: UserId): SyncSentMessageInfo {
         return SyncSentMessageInfo(
             randomMessageId(),
-            Recipient.User(userId),
+            ConversationId.User(userId),
             randomMessageText(),
             currentTimestamp(),
             currentTimestamp(),
@@ -600,7 +600,7 @@ class MessageProcessorImplTest {
     fun randomGroupSentMessageInfo(groupId: GroupId): SyncSentMessageInfo {
         return SyncSentMessageInfo(
             randomMessageId(),
-            Recipient.Group(groupId),
+            ConversationId.Group(groupId),
             randomMessageText(),
             currentTimestamp(),
             currentTimestamp(),
