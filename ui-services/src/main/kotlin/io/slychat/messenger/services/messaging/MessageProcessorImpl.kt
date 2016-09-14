@@ -103,7 +103,10 @@ class MessageProcessorImpl(
                     Promise.ofSuccess(contactsService.doAddressBookPull())
                 }
 
-                is SyncMessage.MessageExpired -> TODO()
+                is SyncMessage.MessageExpired -> {
+                    log.info("Received message expired for {}/{}", m.conversationId, m.messageId)
+                    messageService.expireMessages(mapOf(m.conversationId to listOf(m.messageId.string)), true)
+                }
             }
         }
     }
