@@ -210,10 +210,10 @@ class MessageServiceImplTest {
 
             val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Expired>()
 
-            messageService.expireMessages(messages, ).get()
+            messageService.expireMessages(messages, false).get()
 
             val expected = messageIds.map {
-                MessageUpdateEvent.Expired(conversationId, it, )
+                MessageUpdateEvent.Expired(conversationId, it, false)
             }
 
             assertThat(testSubscriber.onNextEvents).apply {

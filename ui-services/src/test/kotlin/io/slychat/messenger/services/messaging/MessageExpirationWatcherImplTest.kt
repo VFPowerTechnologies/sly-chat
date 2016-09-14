@@ -38,6 +38,8 @@ class MessageExpirationWatcherImplTest {
 
     val messageService: MessageService = mock()
 
+    val messengerService: MessengerService = mock()
+
     val baseTime = 1L
 
     @Before
@@ -45,6 +47,7 @@ class MessageExpirationWatcherImplTest {
         whenever(messageService.messageUpdates).thenReturn(messageUpdates)
         whenever(messageService.expireMessages(any(), any())).thenResolveUnit()
         whenever(messageService.getMessagesAwaitingExpiration()).thenResolve(emptyList())
+        whenever(messengerService.broadcastMessageExpired(any(), any())).thenResolveUnit()
     }
 
     fun randomExpiringReceivedMessageInfo(expiresAt: Long, ttl: Long = 500): MessageInfo =
@@ -52,7 +55,7 @@ class MessageExpirationWatcherImplTest {
 
     fun createWatcher(): MessageExpirationWatcherImpl {
         val rxTimerFactory = RxTimerFactory(testScheduler)
-        return MessageExpirationWatcherImpl(testScheduler, rxTimerFactory, messageService)
+        return MessageExpirationWatcherImpl(testScheduler, rxTimerFactory, messageService, messengerService)
     }
 
     @Test
@@ -139,7 +142,7 @@ class MessageExpirationWatcherImplTest {
             testScheduler.advanceTimeTo(expiresAt, TimeUnit.MILLISECONDS)
         }
 
-        verify(messageService, never()).expireMessages(any(), false)
+        verify(messageService, never()).expireMessages(any(), any())
     }
 
     @Test
@@ -206,7 +209,7 @@ class MessageExpirationWatcherImplTest {
 
         watcher.init()
 
-        verify(messageService, never()).expireMessages(any(), false)
+        verify(messageService, never()).expireMessages(any(), any())
     }
 
     @Test
@@ -308,7 +311,7 @@ class MessageExpirationWatcherImplTest {
 
         verify(messageService).expireMessages(capture {
             assertNull(it[toDelete.conversationId], "Expiring deleted message")
-        }, false)
+        }, eq(false))
     }
 
     //TODO timer update check
@@ -374,7 +377,7 @@ class MessageExpirationWatcherImplTest {
 
         verify(messageService).expireMessages(capture {
             assertNull(it[deletedConversationId], "Expiring deleted message")
-        }, false)
+        }, eq(false))
     }
 
     @Test
@@ -437,7 +440,7 @@ class MessageExpirationWatcherImplTest {
             }
         }
 
-        val watcher = MessageExpirationWatcherImpl(testScheduler, testRxTimerFactory, messageService)
+        val watcher = MessageExpirationWatcherImpl(testScheduler, testRxTimerFactory, messageService, messengerService)
 
         withTimeAs(baseTime) {
             watcher.init()
@@ -447,5 +450,29 @@ class MessageExpirationWatcherImplTest {
 
         assertEquals(1, testRxTimerFactory.nTimers, "Only expected one timer to be created")
         assertTrue(testRxTimerFactory.unsubscribed, "Didn't unsubscribe from the timer")
+    }
+
+    @Test
+    fun `it should call broadcastMessageExpired when receiving a Expired event with fromSync=false`() {
+        val watcher = createWatcher()
+
+        val conversationId = randomUserConversationId()
+        val messageId = randomMessageId()
+        val event = MessageUpdateEvent.Expired(conversationId, messageId, false)
+
+        messageUpdates.onNext(event)
+
+        verify(messengerService).broadcastMessageExpired(conversationId, messageId)
+    }
+
+    @Test
+    fun `it should not call broadcastMessageExpired when receiving a Expired event with fromSync=true`() {
+        val watcher = createWatcher()
+
+        val event = MessageUpdateEvent.Expired(randomUserConversationId(), randomMessageId(), true)
+
+        messageUpdates.onNext(event)
+
+        verify(messengerService, never()).broadcastMessageExpired(any(), any())
     }
 }

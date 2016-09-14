@@ -102,6 +102,8 @@ class MessageProcessorImpl(
                     log.info("Received self sync message")
                     Promise.ofSuccess(contactsService.doAddressBookPull())
                 }
+
+                is SyncMessage.MessageExpired -> TODO()
             }
         }
     }

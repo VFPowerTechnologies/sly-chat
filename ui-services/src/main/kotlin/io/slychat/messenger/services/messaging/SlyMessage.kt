@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
+import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.MessageId
 
@@ -249,6 +250,35 @@ sealed class SyncMessage {
 
         override fun toString(): String {
             return "NewDevice(deviceInfo=$deviceInfo)"
+        }
+    }
+
+    class MessageExpired(
+        @JsonProperty
+        val conversationId: ConversationId,
+        @JsonProperty
+        val messageId: MessageId
+    ) : SyncMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as MessageExpired
+
+            if (conversationId != other.conversationId) return false
+            if (messageId != other.messageId) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = conversationId.hashCode()
+            result = 31 * result + messageId.hashCode()
+            return result
+        }
+
+        override fun toString(): String {
+            return "MessageExpired(conversationId=$conversationId, messageId=$messageId)"
         }
     }
 
