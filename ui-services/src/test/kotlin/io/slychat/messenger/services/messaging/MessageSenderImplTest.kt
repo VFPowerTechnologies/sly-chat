@@ -66,7 +66,8 @@ class MessageSenderImplTest {
         whenever(messageQueuePersistenceManager.add(any<Collection<SenderMessageEntry>>())).thenResolve(Unit)
 
         whenever(messageQueuePersistenceManager.remove(any(), any())).thenResolve(true)
-        whenever(messageQueuePersistenceManager.removeAll(any())).thenResolve(true)
+        whenever(messageQueuePersistenceManager.removeAll(any(), any())).thenResolve(true)
+        whenever(messageQueuePersistenceManager.removeAllForConversation(any())).thenResolve(true)
 
         whenever(relayClientManager.events).thenReturn(relayEvents)
         whenever(relayClientManager.onlineStatus).thenReturn(relayOnlineStatus)
@@ -403,7 +404,6 @@ class MessageSenderImplTest {
         verify(relayClientManager, times(1)).sendMessage(any(), any(), any(), any())
     }
 
-    //can do this check with the relay set to offline
     @Test
     fun `it should remove a message from the send queue when a Deleted event is received and the relay is online`() {
         val sender = createSender(true)
@@ -412,33 +412,39 @@ class MessageSenderImplTest {
         val messageId = entry.metadata.messageId
         val conversationId = entry.metadata.getConversationId()
 
+        val messageIds = listOf(messageId)
+
         runWhileSending(sender) {
             sender.addToQueue(entry).get()
 
-            val event = MessageUpdateEvent.Deleted(conversationId, listOf(messageId))
+            val event = MessageUpdateEvent.Deleted(conversationId, messageIds)
             messageUpdateEvents.onNext(event)
         }
 
-        val removed = listOf(entry.metadata)
-        verify(messageQueuePersistenceManager).removeAll(removed)
+        verify(messageQueuePersistenceManager).removeAll(conversationId, messageIds)
+    }
+
+    @Test
+    fun `it should remove a message from the send queue when a Deleted event is received and the relay is offline`() {
+        val sender = createSender(false)
+
+        val entry = randomSenderMessageEntry()
+        val messageId = entry.metadata.messageId
+        val conversationId = entry.metadata.getConversationId()
+
+        val messageIds = listOf(messageId)
+
+        val event = MessageUpdateEvent.Deleted(conversationId, messageIds)
+        messageUpdateEvents.onNext(event)
+
+        verify(messageQueuePersistenceManager).removeAll(conversationId, messageIds)
     }
 
     @Ignore
     @Test
     fun `it should ignore a message delete if the message is currently sending`() {
-        val sender = createSender(true)
-
-        val testSubscriber = sender.messageSent.testSubscriber()
-
-        runWhileSending(sender) {
-            val event = MessageUpdateEvent.Deleted(it.metadata.getConversationId(), listOf(it.metadata.messageId))
-            messageUpdateEvents.onNext(event)
-        }
-
-        verify(messageQueuePersistenceManager, never()).removeAll(any())
-
         //we don't want to emit a sent event if the message happened to be deleted; else MessengerService'll pointlessly log an error when calling markMessageAsDelivered
-        testSubscriber.assertNoValues()
+        TODO()
     }
 
     @Test
@@ -471,10 +477,22 @@ class MessageSenderImplTest {
             messageUpdateEvents.onNext(event)
         }
 
-        val removed = listOf(entry.metadata)
-        verify(messageQueuePersistenceManager).removeAll(removed)
+        verify(messageQueuePersistenceManager).removeAllForConversation(conversationId)
     }
 
+    @Test
+    fun `it should all messages for a given conversation from the send queue when a DeletedAll event is received and the relay is offline`() {
+        val sender = createSender(false)
+
+        val conversationId = randomUserConversationId()
+
+        val event = MessageUpdateEvent.DeletedAll(conversationId)
+        messageUpdateEvents.onNext(event)
+
+        verify(messageQueuePersistenceManager).removeAllForConversation(conversationId)
+    }
+
+    @Ignore
     @Test
     fun `it should ignore a message in a DeletedAll if the message is currently sending`() {
         TODO()

@@ -71,26 +71,23 @@ class MessageSenderImpl(
         return found
     }
 
-    private fun removeMessagesFromActiveQueue(predicate: (QueuedSendMessage) -> Boolean) {
-        val removed = removeAll(sendMessageQueue, predicate)
+    private fun onMessagesDeleted(event: MessageUpdateEvent.Deleted) {
+        sendMessageQueue.removeAll {
+            it.metadata.getConversationId() == event.conversationId && event.messageIds.contains(it.metadata.messageId)
+        }
 
-        if (removed.isEmpty())
-            return
-
-        messageQueuePersistenceManager.removeAll(removed.map { it.metadata }) fail {
+        messageQueuePersistenceManager.removeAll(event.conversationId, event.messageIds) fail {
             log.error("Failed to delete deleted messages from send queue: {}", it.message, it)
         }
     }
 
-    private fun onMessagesDeleted(event: MessageUpdateEvent.Deleted) {
-        removeMessagesFromActiveQueue {
-            it.metadata.getConversationId() == event.conversationId && event.messageIds.contains(it.metadata.messageId)
-        }
-    }
-
     private fun onAllMessagesDeleted(event: MessageUpdateEvent.DeletedAll) {
-        removeMessagesFromActiveQueue {
+        sendMessageQueue.removeAll {
             it.metadata.getConversationId() == event.conversationId
+        }
+
+        messageQueuePersistenceManager.removeAllForConversation(event.conversationId) fail {
+            log.error("Failed to delete deleted messages from send queue: {}", it.message, it)
         }
     }
 

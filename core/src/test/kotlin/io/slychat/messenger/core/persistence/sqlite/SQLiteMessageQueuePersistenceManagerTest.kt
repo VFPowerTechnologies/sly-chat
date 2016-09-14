@@ -1,11 +1,11 @@
 package io.slychat.messenger.core.persistence.sqlite
 
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.randomMessageId
+import io.slychat.messenger.core.persistence.MessageCategory
+import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.SenderMessageEntry
-import io.slychat.messenger.core.randomContactInfo
-import io.slychat.messenger.core.randomSenderMessageEntries
-import io.slychat.messenger.core.randomSenderMessageEntry
-import io.slychat.messenger.core.randomUserId
+import io.slychat.messenger.core.persistence.toConversationId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -15,7 +15,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class SQLiteMessageQueuePersistenceManagerTest {
+class SQLiteMessageQueuePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     companion object {
         @JvmStatic
         @BeforeClass
@@ -26,7 +26,8 @@ class SQLiteMessageQueuePersistenceManagerTest {
 
     lateinit var persistenceManager: SQLitePersistenceManager
     lateinit var messageQueuePersistenceManager: SQLiteMessageQueuePersistenceManager
-    lateinit var contactsPersistenceManager: SQLiteContactsPersistenceManager
+    lateinit override var contactsPersistenceManager: SQLiteContactsPersistenceManager
+    lateinit override var groupPersistenceManager: SQLiteGroupPersistenceManager
 
     @Before
     fun before() {
@@ -34,6 +35,7 @@ class SQLiteMessageQueuePersistenceManagerTest {
         persistenceManager.init()
         messageQueuePersistenceManager = SQLiteMessageQueuePersistenceManager(persistenceManager)
         contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)
+        groupPersistenceManager = SQLiteGroupPersistenceManager(persistenceManager)
     }
 
     fun addContacts(entry: SenderMessageEntry) {
@@ -41,8 +43,13 @@ class SQLiteMessageQueuePersistenceManagerTest {
     }
 
     fun addContacts(entries: Collection<SenderMessageEntry>) {
-        val userIds = entries.map { randomContactInfo().copy(id = it.metadata.userId) }
-        contactsPersistenceManager.add(userIds).get()
+        val contactInfo = entries.map { randomContactInfo().copy(id = it.metadata.userId) }
+        contactsPersistenceManager.add(contactInfo).get()
+    }
+
+    fun addContact(userId: UserId) {
+        val contactInfo = randomContactInfo().copy(id = userId)
+        contactsPersistenceManager.add(contactInfo).get()
     }
 
 
@@ -100,18 +107,94 @@ class SQLiteMessageQueuePersistenceManagerTest {
     }
 
     @Test
-    fun `removeAll should remove all the given message ids`() {
-        val entries = (0..1).map { randomMessageEntry() }
+    fun `removeAll should remove all the given message ids (user conversation)`() {
+        val conversationId = randomUserConversationId()
+        addContact(conversationId.id)
+        val entries = (0..1).map {
+            SenderMessageEntry(
+                MessageMetadata(conversationId.id, null, MessageCategory.TEXT_SINGLE, randomMessageId()),
+                randomSerializedMessage()
+            )
+        }
 
         messageQueuePersistenceManager.add(entries).get()
 
-        val metadata = entries.map { it.metadata }
+        val messageIds = entries.map { it.metadata.messageId }
 
-        messageQueuePersistenceManager.removeAll(metadata).get()
+        assertTrue(messageQueuePersistenceManager.removeAll(conversationId, messageIds).get(), "No changes reported")
 
         assertThat(messageQueuePersistenceManager.getUndelivered().get()).apply {
             `as`("Should remove all ids")
             isEmpty()
+        }
+    }
+
+    @Test
+    fun `removeAll should remove all the given message ids (group conversation)`() {
+        withJoinedGroup { groupId, members ->
+            val conversationId = groupId.toConversationId()
+
+            val entries = members.map {
+                SenderMessageEntry(
+                    MessageMetadata(it, groupId, MessageCategory.TEXT_GROUP, randomMessageId()),
+                    randomSerializedMessage()
+                )
+            }
+
+            messageQueuePersistenceManager.add(entries).get()
+
+            val messageIds = entries.map { it.metadata.messageId }
+
+            assertTrue(messageQueuePersistenceManager.removeAll(conversationId, messageIds).get(), "No changes reported")
+
+            assertThat(messageQueuePersistenceManager.getUndelivered().get()).apply {
+                `as`("Should remove all ids")
+                isEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun `removeAllForConversation should remove all messages for a conversation (user conversation)`() {
+        val conversationId = randomUserConversationId()
+        addContact(conversationId.id)
+        val entries = (0..1).map {
+            SenderMessageEntry(
+                MessageMetadata(conversationId.id, null, MessageCategory.TEXT_SINGLE, randomMessageId()),
+                randomSerializedMessage()
+            )
+        }
+
+        messageQueuePersistenceManager.add(entries).get()
+
+        assertTrue(messageQueuePersistenceManager.removeAllForConversation(conversationId).get(), "No changes reported")
+
+        assertThat(messageQueuePersistenceManager.getUndelivered().get()).apply {
+            `as`("Should remove all ids")
+            isEmpty()
+        }
+    }
+
+    @Test
+    fun `removeAllForConversation should remove all messages for a conversation (group conversation)`() {
+        withJoinedGroup { groupId, members ->
+            val conversationId = groupId.toConversationId()
+
+            val entries = members.map {
+                SenderMessageEntry(
+                    MessageMetadata(it, groupId, MessageCategory.TEXT_GROUP, randomMessageId()),
+                    randomSerializedMessage()
+                )
+            }
+
+            messageQueuePersistenceManager.add(entries).get()
+
+            assertTrue(messageQueuePersistenceManager.removeAllForConversation(conversationId).get(), "No changes reported")
+
+            assertThat(messageQueuePersistenceManager.getUndelivered().get()).apply {
+                `as`("Should remove all ids")
+                isEmpty()
+            }
         }
     }
 

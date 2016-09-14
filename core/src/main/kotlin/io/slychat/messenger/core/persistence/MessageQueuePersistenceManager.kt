@@ -10,8 +10,9 @@ interface MessageQueuePersistenceManager {
 
     fun remove(userId: UserId, messageId: String): Promise<Boolean, Exception>
 
-    //XXX need a userid+messageid; since we assume message ids are unique enough
-    fun removeAll(entries: Collection<MessageMetadata>): Promise<Boolean, Exception>
+    fun removeAll(conversationId: ConversationId, messageIds: Collection<String>): Promise<Boolean, Exception>
+
+    fun removeAllForConversation(conversationId: ConversationId): Promise<Boolean, Exception>
 
     /** Returned list is ordered by original insertion order. */
     fun getUndelivered(): Promise<List<SenderMessageEntry>, Exception>

@@ -83,13 +83,107 @@ class SQLiteMessageQueuePersistenceManager(
         return connection.changes > 0
     }
 
-    override fun removeAll(entries: Collection<MessageMetadata>): Promise<Boolean, Exception> {
-        if (entries.isEmpty())
+    override fun removeAll(conversationId: ConversationId, messageIds: Collection<String>): Promise<Boolean, Exception> {
+        if (messageIds.isEmpty())
             return Promise.ofSuccess(false)
 
         return sqlitePersistenceManager.runQuery { connection ->
             connection.withTransaction {
-                deleteEntries(connection, entries)
+                when (conversationId) {
+                    is ConversationId.Group -> removeForGroup(connection, conversationId.id, messageIds)
+                    is ConversationId.User -> removeForUser(connection, conversationId.id, messageIds)
+                }
+            }
+        }
+    }
+
+    private fun removeForUser(connection: SQLiteConnection, id: UserId, messageIds: Collection<String>): Boolean {
+        val sql = """
+DELETE FROM
+    send_message_queue
+WHERE
+    contact_id=?
+AND
+    message_id=?
+"""
+        var nChanges = 0
+
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, id)
+
+            messageIds.forEach {
+                stmt.bind(2, it)
+                stmt.step()
+                stmt.reset(false)
+
+                nChanges += connection.changes
+            }
+        }
+
+        return nChanges > 0
+    }
+
+    private fun removeForGroup(connection: SQLiteConnection, id: GroupId, messageIds: Collection<String>): Boolean {
+        val sql = """
+DELETE FROM
+    send_message_queue
+WHERE
+    group_id=?
+AND
+    message_id=?
+"""
+        var nChanges = 0
+
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, id)
+
+            messageIds.forEach {
+                stmt.bind(2, it)
+                stmt.step()
+                stmt.reset(false)
+
+                nChanges += connection.changes
+            }
+        }
+
+        return nChanges > 0
+    }
+
+    private fun removeForUser(connection: SQLiteConnection, id: UserId): Boolean {
+        val sql = """
+DELETE FROM
+    send_message_queue
+WHERE
+    contact_id=?
+"""
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, id)
+            stmt.step()
+        }
+
+        return connection.changes > 0
+    }
+
+    private fun removeForGroup(connection: SQLiteConnection, id: GroupId): Boolean {
+        val sql = """
+DELETE FROM
+    send_message_queue
+WHERE
+    group_id=?
+"""
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, id)
+            stmt.step()
+        }
+
+        return connection.changes > 0
+    }
+
+    override fun removeAllForConversation(conversationId: ConversationId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            when (conversationId) {
+                is ConversationId.Group -> removeForGroup(connection, conversationId.id)
+                is ConversationId.User -> removeForUser(connection, conversationId.id)
             }
         }
     }
