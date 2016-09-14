@@ -19,4 +19,9 @@ data class MessageMetadata(
         else if (category == MessageCategory.TEXT_SINGLE && groupId != null)
             throw IllegalArgumentException("groupId must be null when category is TEXT_SINGLE")
     }
+
+    fun getConversationId(): ConversationId = if (groupId != null)
+        ConversationId.Group(groupId)
+    else
+        ConversationId.User(userId)
 }

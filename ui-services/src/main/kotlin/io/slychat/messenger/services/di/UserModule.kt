@@ -157,12 +157,14 @@ class UserModule(
     fun providesMessageSender(
         relayClientManager: RelayClientManager,
         messageCipherService: MessageCipherService,
-        messageQueuePersistenceManager: MessageQueuePersistenceManager
+        messageQueuePersistenceManager: MessageQueuePersistenceManager,
+        messageService: MessageService
     ): MessageSender =
         MessageSenderImpl(
             messageCipherService,
             relayClientManager,
-            messageQueuePersistenceManager
+            messageQueuePersistenceManager,
+            messageService.messageUpdates
         )
 
     @UserScope

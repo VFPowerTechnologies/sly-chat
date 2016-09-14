@@ -1,12 +1,9 @@
 package io.slychat.messenger.core.persistence.sqlite
 
+import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
-import io.slychat.messenger.core.persistence.sqlite.batchInsertWithinTransaction
-import io.slychat.messenger.core.persistence.sqlite.map
-import io.slychat.messenger.core.persistence.sqlite.withPrepared
 import nl.komponents.kovenant.Promise
 
 class SQLiteMessageQueuePersistenceManager(
@@ -64,20 +61,45 @@ class SQLiteMessageQueuePersistenceManager(
         return SenderMessageEntry(metadata, serialized)
     }
 
-    override fun remove(userId: UserId, messageId: String): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    private fun removeFromQueue(connection: SQLiteConnection, userId: UserId, messageId: String) {
         connection.withPrepared("DELETE FROM send_message_queue WHERE contact_id=? AND message_id=?") { stmt ->
             stmt.bind(1, userId.long)
             stmt.bind(2, messageId)
 
             stmt.step()
         }
+    }
 
+    override fun remove(userId: UserId, messageId: String): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        removeFromQueue(connection, userId, messageId)
         connection.changes > 0
     }
 
-    override fun getUndelivered(): Promise<List<SenderMessageEntry>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withPrepared("SELECT contact_id, group_id, category, message_id, serialized FROM send_message_queue ORDER BY id") { stmt ->
+    private fun deleteEntries(connection: SQLiteConnection, entries: Collection<MessageMetadata>): Boolean {
+        entries.forEach { metadata ->
+            removeFromQueue(connection, metadata.userId, metadata.messageId)
+        }
+
+        return connection.changes > 0
+    }
+
+    override fun removeAll(entries: Collection<MessageMetadata>): Promise<Boolean, Exception> {
+        if (entries.isEmpty())
+            return Promise.ofSuccess(false)
+
+        return sqlitePersistenceManager.runQuery { connection ->
+            connection.withTransaction {
+                deleteEntries(connection, entries)
+            }
+        }
+    }
+
+    private fun queryUndelivered(connection: SQLiteConnection): List<SenderMessageEntry> {
+        return connection.withPrepared("SELECT contact_id, group_id, category, message_id, serialized FROM send_message_queue ORDER BY id") { stmt ->
             stmt.map { rowToEntry(it) }
         }
+    }
+    override fun getUndelivered(): Promise<List<SenderMessageEntry>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        queryUndelivered(connection)
     }
 }

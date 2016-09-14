@@ -2,10 +2,6 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.persistence.SenderMessageEntry
-import io.slychat.messenger.core.persistence.sqlite.SQLiteContactsPersistenceManager
-import io.slychat.messenger.core.persistence.sqlite.SQLiteMessageQueuePersistenceManager
-import io.slychat.messenger.core.persistence.sqlite.SQLitePersistenceManager
-import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import io.slychat.messenger.core.randomContactInfo
 import io.slychat.messenger.core.randomSenderMessageEntries
 import io.slychat.messenger.core.randomSenderMessageEntry
@@ -101,6 +97,22 @@ class SQLiteMessageQueuePersistenceManagerTest {
     @Test
     fun `remove should do nothing if a message does not exist`() {
         assertFalse(messageQueuePersistenceManager.remove(randomUserId(), randomMessageId()).get(), "Message not removed")
+    }
+
+    @Test
+    fun `removeAll should remove all the given message ids`() {
+        val entries = (0..1).map { randomMessageEntry() }
+
+        messageQueuePersistenceManager.add(entries).get()
+
+        val metadata = entries.map { it.metadata }
+
+        messageQueuePersistenceManager.removeAll(metadata).get()
+
+        assertThat(messageQueuePersistenceManager.getUndelivered().get()).apply {
+            `as`("Should remove all ids")
+            isEmpty()
+        }
     }
 
     @Test

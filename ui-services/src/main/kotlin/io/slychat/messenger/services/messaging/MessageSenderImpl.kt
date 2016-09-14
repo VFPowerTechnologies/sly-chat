@@ -5,6 +5,7 @@ import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
 import io.slychat.messenger.core.persistence.SenderMessageEntry
 import io.slychat.messenger.core.relay.*
+import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.mapUi
@@ -21,7 +22,8 @@ import java.util.*
 class MessageSenderImpl(
     private val messageCipherService: MessageCipherService,
     private val relayClientManager: RelayClientManager,
-    private val messageQueuePersistenceManager: MessageQueuePersistenceManager
+    private val messageQueuePersistenceManager: MessageQueuePersistenceManager,
+    messageUpdates: Observable<MessageUpdateEvent>
 ) : MessageSender {
     private class QueuedSendMessage(
         val metadata: MessageMetadata,
@@ -43,6 +45,53 @@ class MessageSenderImpl(
     init {
         subscriptions.add(relayClientManager.events.subscribe { onRelayEvent(it) })
         subscriptions.add(relayClientManager.onlineStatus.subscribe { onRelayOnlineStatus(it) })
+        subscriptions.add(messageUpdates.subscribe { onMessageUpdateEvent(it) })
+    }
+
+    private fun onMessageUpdateEvent(event: MessageUpdateEvent) = when (event) {
+        is MessageUpdateEvent.Deleted -> onMessagesDeleted(event)
+        is MessageUpdateEvent.DeletedAll -> onAllMessagesDeleted(event)
+        else -> {}
+    }
+
+    //basicly a copy of kotlin's filterInPlace, but with returning the removed items
+    private fun <T> removeAll(collection: MutableCollection<T>, predicate: (T) -> Boolean): List<T> {
+        val found = ArrayList<T>()
+
+        with(collection.iterator()) {
+            while (hasNext()) {
+                val nextItem = next()
+                if (predicate(nextItem)) {
+                    remove()
+                    found.add(nextItem)
+                }
+            }
+        }
+
+        return found
+    }
+
+    private fun removeMessagesFromActiveQueue(predicate: (QueuedSendMessage) -> Boolean) {
+        val removed = removeAll(sendMessageQueue, predicate)
+
+        if (removed.isEmpty())
+            return
+
+        messageQueuePersistenceManager.removeAll(removed.map { it.metadata }) fail {
+            log.error("Failed to delete deleted messages from send queue: {}", it.message, it)
+        }
+    }
+
+    private fun onMessagesDeleted(event: MessageUpdateEvent.Deleted) {
+        removeMessagesFromActiveQueue {
+            it.metadata.getConversationId() == event.conversationId && event.messageIds.contains(it.metadata.messageId)
+        }
+    }
+
+    private fun onAllMessagesDeleted(event: MessageUpdateEvent.DeletedAll) {
+        removeMessagesFromActiveQueue {
+            it.metadata.getConversationId() == event.conversationId
+        }
     }
 
     override fun init() {
@@ -79,13 +128,13 @@ class MessageSenderImpl(
     }
 
     private fun retryCurrentSendMessage() {
+        sendMessageQueue.addFirst(currentSendMessage)
         currentSendMessage = null
         processSendMessageQueue()
     }
 
     private fun nextSendMessage() {
         currentSendMessage = null
-        sendMessageQueue.pop()
         processSendMessageQueue()
     }
 
@@ -110,6 +159,7 @@ class MessageSenderImpl(
         }
         else {
             currentSendMessage = message
+            sendMessageQueue.pop()
 
             messageCipherService.encrypt(message.metadata.userId, message.serialized, message.connectionTag) successUi {
                 processEncryptionSuccess(it)
