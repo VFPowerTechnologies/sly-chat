@@ -94,11 +94,11 @@ class MessageServiceImpl(
         }
     }
 
-    override fun expireMessages(messages: Map<ConversationId, Collection<String>>): Promise<Unit, Exception> {
+    override fun expireMessages(messages: Map<ConversationId, Collection<String>>, fromSync: Boolean): Promise<Unit, Exception> {
         return messagePersistenceManager.expireMessages(messages) successUi  {
             for ((conversationId, messageIds) in messages) {
                 messageIds.forEach {
-                    messageUpdatesSubject.onNext(MessageUpdateEvent.Expired(conversationId, it))
+                    messageUpdatesSubject.onNext(MessageUpdateEvent.Expired(conversationId, it, fromSync))
                 }
             }
         }

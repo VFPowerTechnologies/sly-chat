@@ -43,7 +43,7 @@ class MessageExpirationWatcherImplTest {
     @Before
     fun before() {
         whenever(messageService.messageUpdates).thenReturn(messageUpdates)
-        whenever(messageService.expireMessages(any())).thenResolveUnit()
+        whenever(messageService.expireMessages(any(), any())).thenResolveUnit()
         whenever(messageService.getMessagesAwaitingExpiration()).thenResolve(emptyList())
     }
 
@@ -87,7 +87,7 @@ class MessageExpirationWatcherImplTest {
             watcher.init()
         }
 
-        verify(messageService).expireMessages(expected)
+        verify(messageService).expireMessages(expected, false)
     }
 
     @Test
@@ -111,7 +111,7 @@ class MessageExpirationWatcherImplTest {
             conversationId to listOf(messageId)
         )
 
-        verify(messageService).expireMessages(expected)
+        verify(messageService).expireMessages(expected, false)
     }
 
     @Test
@@ -133,13 +133,13 @@ class MessageExpirationWatcherImplTest {
             watcher.init()
         }
 
-        messageUpdates.onNext(MessageUpdateEvent.Expired(conversationId, messageInfo.id))
+        messageUpdates.onNext(MessageUpdateEvent.Expired(conversationId, messageInfo.id, false))
 
         withTimeAs(expiresAt) {
             testScheduler.advanceTimeTo(expiresAt, TimeUnit.MILLISECONDS)
         }
 
-        verify(messageService, never()).expireMessages(any())
+        verify(messageService, never()).expireMessages(any(), false)
     }
 
     @Test
@@ -166,7 +166,7 @@ class MessageExpirationWatcherImplTest {
             expiringConversationId to listOf(expiringMessageInfo.id)
         )
 
-        verify(messageService).expireMessages(destroyedMessages)
+        verify(messageService).expireMessages(destroyedMessages, false)
     }
 
     @Test
@@ -195,7 +195,7 @@ class MessageExpirationWatcherImplTest {
             conversationId to listOf(messageInfo.id)
         )
 
-        verify(messageService).expireMessages(destroyedMessages)
+        verify(messageService).expireMessages(destroyedMessages, false)
     }
 
     @Test
@@ -206,7 +206,7 @@ class MessageExpirationWatcherImplTest {
 
         watcher.init()
 
-        verify(messageService, never()).expireMessages(any())
+        verify(messageService, never()).expireMessages(any(), false)
     }
 
     @Test
@@ -243,7 +243,7 @@ class MessageExpirationWatcherImplTest {
 
         verify(messageService).expireMessages(mapOf(
             conversationId2 to listOf(messageInfo2.id)
-        ))
+        ), false)
     }
 
     @Test
@@ -270,7 +270,7 @@ class MessageExpirationWatcherImplTest {
             watcher.init()
         }
 
-        messageUpdates.onNext(MessageUpdateEvent.Expired(conversationId, messageInfo.id))
+        messageUpdates.onNext(MessageUpdateEvent.Expired(conversationId, messageInfo.id, false))
 
         withTimeAs(expiresAt2) {
             testScheduler.advanceTimeTo(expiresAt2, TimeUnit.MILLISECONDS)
@@ -278,7 +278,7 @@ class MessageExpirationWatcherImplTest {
 
         verify(messageService).expireMessages(mapOf(
             conversationId2 to listOf(messageInfo2.id)
-        ))
+        ), false)
     }
 
     @Test
@@ -308,7 +308,7 @@ class MessageExpirationWatcherImplTest {
 
         verify(messageService).expireMessages(capture {
             assertNull(it[toDelete.conversationId], "Expiring deleted message")
-        })
+        }, false)
     }
 
     //TODO timer update check
@@ -342,7 +342,7 @@ class MessageExpirationWatcherImplTest {
             conversationId to listOf(messageId)
         )
 
-        verify(messageService).expireMessages(expected)
+        verify(messageService).expireMessages(expected, false)
     }
 
     @Test
@@ -374,7 +374,7 @@ class MessageExpirationWatcherImplTest {
 
         verify(messageService).expireMessages(capture {
             assertNull(it[deletedConversationId], "Expiring deleted message")
-        })
+        }, false)
     }
 
     @Test
@@ -408,7 +408,7 @@ class MessageExpirationWatcherImplTest {
             conversationId to listOf(messageId, messageId2)
         )
 
-        verify(messageService).expireMessages(expected)
+        verify(messageService).expireMessages(expected, false)
     }
 
     @Test

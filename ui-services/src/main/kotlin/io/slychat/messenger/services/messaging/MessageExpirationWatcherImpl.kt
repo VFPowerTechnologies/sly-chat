@@ -55,7 +55,7 @@ class MessageExpirationWatcherImpl(
         updateTimer()
 
         if (toDestroy.isNotEmpty()) {
-            messageService.expireMessages(toDestroy.toMap()) fail {
+            messageService.expireMessages(toDestroy.toMap(), false) fail {
                 log.error("Unable to destroy messages: {}", it.message, it)
             }
         }
@@ -146,7 +146,7 @@ class MessageExpirationWatcherImpl(
             messageIds.add(it.messageId)
         }
 
-        messageService.expireMessages(m) fail {
+        messageService.expireMessages(m, false) fail {
             log.error("Failed to destroy messages: {}", it.message, it)
         }
 
