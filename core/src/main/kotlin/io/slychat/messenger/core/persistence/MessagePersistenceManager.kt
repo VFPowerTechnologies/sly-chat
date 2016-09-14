@@ -22,7 +22,7 @@ interface MessagePersistenceManager {
     /** Returns group data + group conversation info. */
     fun getAllGroupConversations(): Promise<List<GroupConversation>, Exception>
 
-    /** Removes a set of messages from the group log. */
+    /** Removes a set of messages from the group log. This also removes an expiring messages, as well as any queued send entries for this message. */
     fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception>
 
     /** Clears a group log. */

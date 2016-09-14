@@ -163,6 +163,8 @@ VALUES
                 handleInvalidConversationException(e, conversationId)
             }
 
+            deleteExpiringMessages(connection, conversationId, messageIds)
+
             val lastMessage = getLastConvoMessage(connection, conversationId)
             if (lastMessage == null)
                 insertOrReplaceNewConversationInfo(connection, conversationId)

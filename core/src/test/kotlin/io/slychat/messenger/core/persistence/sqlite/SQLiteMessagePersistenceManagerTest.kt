@@ -629,6 +629,27 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
+    fun `deleteMessages should remove expiring message entries`() {
+        foreachConvType { conversationId, set ->
+            val sentMessage = randomSentConversationMessageInfo()
+            val messageId = sentMessage.info.id
+            val expiresAt = 10L
+
+            messagePersistenceManager.addMessage(conversationId, sentMessage).get()
+
+            messagePersistenceManager.setExpiration(conversationId, messageId, expiresAt).get()
+
+            messagePersistenceManager.deleteMessages(conversationId, listOf(messageId))
+
+            val awaitingExpiration = messagePersistenceManager.getMessagesAwaitingExpiration().get()
+            assertThat(awaitingExpiration).apply {
+                `as`("Expiring messages should be deleted")
+                isEmpty()
+            }
+        }
+    }
+
+    @Test
     fun `deleteMessages should throw InvalidConversationException if the group id is invalid`() {
         assertFailsWithInvalidConversation {
             //XXX this won't actually fail for an empty list
@@ -654,7 +675,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
-    fun `deleteAllMessages should remove an expiring message entries`() {
+    fun `deleteAllMessages should remove expiring message entries`() {
         foreachConvType { conversationId, set ->
             val sentMessage = randomSentConversationMessageInfo()
             val messageId = sentMessage.info.id
