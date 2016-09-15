@@ -1,27 +1,26 @@
 package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.*
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.randomConversationDisplayInfo
+import io.slychat.messenger.core.randomGroupId
+import io.slychat.messenger.core.randomReceivedMessageInfo
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.contacts.NotificationConversationInfo
 import io.slychat.messenger.services.contacts.NotificationMessageInfo
-import io.slychat.messenger.services.messaging.ConversationMessage
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.cond
 import io.slychat.messenger.testutils.thenResolve
 import nl.komponents.kovenant.Promise
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
-import org.junit.Ignore
 import org.junit.Test
-import rx.Observable
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @Suppress("UNUSED_VARIABLE")
 class NotifierServiceImplTest {
@@ -40,9 +39,9 @@ class NotifierServiceImplTest {
     val platformNotificationsService: PlatformNotificationService = mock()
     lateinit var userConfigService: UserConfigService
 
-    val newMessagesSubject: PublishSubject<MessageBundle> = PublishSubject.create()
     val uiEventSubject: PublishSubject<UIEvent> = PublishSubject.create()
     val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create()
+    val conversationInfoUpdates: PublishSubject<ConversationDisplayInfo> = PublishSubject.create()
 
     @Before
     fun before() {
@@ -52,14 +51,12 @@ class NotifierServiceImplTest {
     fun initNotifierService(isUiVisible: Boolean = false, config: UserConfig = UserConfig(notificationsEnabled = true)): NotifierServiceImpl {
         userConfigService = UserConfigService(mock(), config = config)
 
-        uiVisibility.onNext(true)
+        uiVisibility.onNext(isUiVisible)
 
         val notifierService = NotifierServiceImpl(
-            newMessagesSubject,
             uiEventSubject,
+            conversationInfoUpdates,
             uiVisibility,
-            contactsPersistenceManager,
-            groupPersistenceManager,
             platformNotificationsService,
             userConfigService
         )
@@ -77,23 +74,6 @@ class NotifierServiceImplTest {
         uiEventSubject.onNext(pageChangeEvent)
 
         verify(platformNotificationsService, times(1)).clearAllMessageNotifications()
-    }
-
-    @Test
-    fun `it should clear only notifications for the focused user when a convo is visited`() {
-        val notifierService = initNotifierService()
-
-        val userId = UserId(1)
-        val email = "email"
-        val name = "name"
-        val contactInfo = ContactInfo(userId, email, name, AllowedMessageLevel.ALL, "", "")
-        val conversationInfo = NotificationConversationInfo.from(contactInfo)
-        whenever(contactsPersistenceManager.get(userId)).thenReturn(Promise.ofSuccess(contactInfo))
-
-        val pageChangeEvent = UIEvent.PageChange(PageType.CONVO, userId.long.toString())
-        uiEventSubject.onNext(pageChangeEvent)
-
-        verify(platformNotificationsService, times(1)).clearMessageNotificationsFor(conversationInfo)
     }
 
     fun setupContactInfo(id: Long): ContactInfo {
@@ -122,12 +102,13 @@ class NotifierServiceImplTest {
             lastMessage.timestamp
         )
 
-        newMessagesSubject.onNext(messageBundle)
+        val conversationDisplayInfo = randomConversationDisplayInfo()
+        conversationInfoUpdates.onNext(conversationDisplayInfo)
 
         if (shouldShow)
-            verify(platformNotificationsService).addNewMessageNotification(conversationInfo, messageInfo, messageCount)
+            verify(platformNotificationsService).updateConversationNotification(conversationDisplayInfo)
         else
-            verify(platformNotificationsService, never()).addNewMessageNotification(any(), any(), any())
+            verify(platformNotificationsService, never()).updateConversationNotification(any())
     }
 
     @Test
@@ -144,21 +125,8 @@ class NotifierServiceImplTest {
         testConvoNotificationDisplay(false)
     }
 
-    //currently filtered out before getting to notifier service
-    @Ignore
     @Test
-    fun `it should not show notifications for a user message if isRead is true`() {
-        val notifierService = initNotifierService(isUiVisible = true)
-
-        setupContactInfo(1)
-
-        uiEventSubject.onNext(UIEvent.PageChange(PageType.CONVO, "1"))
-
-        testConvoNotificationDisplay(false)
-    }
-
-    @Test
-    fun `it should show notifications for an unfocused user`() {
+    fun `it should show notifications when the contacts page is not focused`() {
         val notifierService = initNotifierService(isUiVisible = true)
 
         setupContactInfo(2)
@@ -186,240 +154,26 @@ class NotifierServiceImplTest {
         assertFalse(notifierService.enableNotificationDisplay, "Config change not reflected")
     }
 
-    fun testGroupMessageBundle(body: (ContactInfo, GroupInfo, NotificationMessageInfo) -> Unit) {
-        val notifierService = initNotifierService()
+    @Test
+    fun `it should unsubscribe from UI events on shutdown`() {
 
-        val groupInfo = randomGroupInfo()
-        val groupId = groupInfo.id
+        uiVisibility.onNext(false)
 
-        val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
-        val userId = contactInfo.id
+        var hasUnsubscribed = false
 
-        val messageInfo = randomReceivedMessageInfo()
-        val bundle = MessageBundle(
-            userId,
-            groupId,
-            listOf(messageInfo)
+        val notifierService = NotifierServiceImpl(
+            uiEventSubject.doOnUnsubscribe { hasUnsubscribed = true },
+            conversationInfoUpdates,
+            uiVisibility,
+            platformNotificationsService,
+            UserConfigService(mock())
         )
 
-        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
-        whenever(groupPersistenceManager.getInfo(groupId)).thenResolve(groupInfo)
+        notifierService.init()
 
-        newMessagesSubject.onNext(bundle)
+        notifierService.shutdown()
 
-        val notificationMessageInfo = NotificationMessageInfo(
-            contactInfo.name,
-            messageInfo.message,
-            messageInfo.timestamp
-        )
-
-        body(contactInfo, groupInfo, notificationMessageInfo)
-    }
-
-    @Test
-    fun `it should fetch group info when a groupId is specified in the MessageBundle`() {
-        testGroupMessageBundle { contactInfo, groupInfo, messageInfo ->
-            verify(groupPersistenceManager).getInfo(groupInfo.id)
-
-        }
-    }
-
-    @Test
-    fun `it should send ContactDisplayInfo with group info when a groupId is specified in the MessageBundle`() {
-        testGroupMessageBundle { contactInfo, groupInfo, messageInfo ->
-            val conversationInfo = NotificationConversationInfo.from(groupInfo)
-
-            verify(platformNotificationsService).addNewMessageNotification(conversationInfo, messageInfo, 1)
-        }
-    }
-
-    @Test
-    fun `it should not fetch group info when no groupId is specified in the MessageBundle`() {
-        val notifierService = initNotifierService()
-
-        val userId = randomUserId()
-        val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
-
-        val bundle = MessageBundle(
-            userId,
-            null,
-            listOf(randomReceivedMessageInfo())
-        )
-
-        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
-        whenever(groupPersistenceManager.getInfo(any())).thenResolve(null)
-
-        newMessagesSubject.onNext(bundle)
-
-        verify(groupPersistenceManager, never()).getInfo(any())
-    }
-
-    @Test
-    fun `it should clear only notifications for the focused group when a group is visited`() {
-        val notifierService = initNotifierService()
-
-        val contactInfo = randomContactInfo()
-        val groupInfo = randomGroupInfo()
-
-        whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
-        whenever(groupPersistenceManager.getInfo(any())).thenResolve(groupInfo)
-
-        val pageChangeEvent = UIEvent.PageChange(PageType.GROUP, groupInfo.id.string)
-        uiEventSubject.onNext(pageChangeEvent)
-
-        val conversationInfo = NotificationConversationInfo.from(groupInfo)
-        verify(platformNotificationsService, times(1)).clearMessageNotificationsFor(conversationInfo)
-    }
-
-    //currently filtered out before getting to notifier service
-    @Ignore
-    @Test
-    fun `it should not display notifications for a group message if isRead is true`() {
-        val notifierService = initNotifierService(isUiVisible = true)
-
-        val contactInfo = randomContactInfo()
-        val groupInfo = randomGroupInfo()
-
-        whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
-        whenever(groupPersistenceManager.getInfo(any())).thenResolve(groupInfo)
-
-        val bundle = MessageBundle(
-            contactInfo.id,
-            groupInfo.id,
-            listOf(randomReceivedMessageInfo().copy(isRead = true))
-        )
-
-        newMessagesSubject.onNext(bundle)
-
-        verify(platformNotificationsService, never()).addNewMessageNotification(any(), any(), any())
-    }
-
-    @Test
-    fun `it should display group notifications for a sender when the sender single chat page is focused`() {
-        val notifierService = initNotifierService(isUiVisible = true)
-
-        val contactInfo = randomContactInfo()
-        val groupInfo = randomGroupInfo()
-
-        whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
-        whenever(groupPersistenceManager.getInfo(any())).thenResolve(groupInfo)
-
-        val pageChangeEvent = UIEvent.PageChange(PageType.CONVO, contactInfo.id.toString())
-        uiEventSubject.onNext(pageChangeEvent)
-
-        val bundle = MessageBundle(
-            contactInfo.id,
-            groupInfo.id,
-            listOf(randomReceivedMessageInfo())
-        )
-
-        newMessagesSubject.onNext(bundle)
-
-        verify(platformNotificationsService).addNewMessageNotification(any(), any(), any())
-    }
-
-    fun randomConversationMessage(userId: UserId? = null, groupId: GroupId? = null): ConversationMessage {
-        val user = userId ?: randomUserId()
-        return if (groupId == null)
-            ConversationMessage.Single(user, randomReceivedMessageInfo())
-        else
-            ConversationMessage.Group(groupId, user, randomReceivedMessageInfo())
-    }
-
-    fun getMessageIdsFromBundle(messageBundle: MessageBundle): List<String> = messageBundle.messages.map { it.id }
-
-    fun flattenBundles(messages: List<ConversationMessage>): List<MessageBundle> {
-        val flattened = NotifierServiceImpl.flattenMessageBundles(Observable.just(messages))
-
-        return flattened.toList().toBlocking().single()
-    }
-
-    @Test
-    fun `flattenMessageBundles should group user MessageBundles together`() {
-        val user1 = randomUserId()
-        val user2 = randomUserId()
-
-        val bundles = listOf(
-            randomConversationMessage(user1),
-            randomConversationMessage(user1),
-            randomConversationMessage(user2),
-            randomConversationMessage(user2)
-        )
-
-        val output = flattenBundles(bundles)
-
-        assertThat(output).apply {
-            `as`("Messages should be grouped")
-            hasSize(2)
-            have(cond("Message count") { it.messages.size == 2 })
-        }
-
-        val users = output.mapToSet { it.userId }
-        assertThat(users).apply {
-            `as`("Grouped users")
-            containsOnly(user1, user2)
-        }
-    }
-
-    @Test
-    fun `flattenMessageBundles should preserve the message order`() {
-        val userId = randomUserId()
-
-        val bundles = listOf(
-            randomConversationMessage(userId),
-            randomConversationMessage(userId),
-            randomConversationMessage(userId),
-            randomConversationMessage(userId)
-        )
-
-        val order = bundles.map { it.info.id }
-
-        val output = flattenBundles(bundles)
-
-        assertThat(output).apply {
-            `as`("Messages should be grouped")
-            hasSize(1)
-        }
-
-        val bundle = output.first()
-
-        val got = bundle.messages.map { it.id }
-
-        assertThat(got).apply {
-            `as`("Messages should be in order")
-            hasSize(4)
-            containsExactlyElementsOf(order)
-        }
-    }
-
-    @Test
-    fun `flattenMessageBundles should group user and group bundles separately`() {
-        val userId = randomUserId()
-        val groupId = randomGroupId()
-
-        val bundles = listOf(
-            randomConversationMessage(userId),
-            randomConversationMessage(userId, groupId)
-        )
-
-        val output = flattenBundles(bundles)
-
-        assertThat(output).apply {
-            `as`("Messages should be grouped by (userId, groupId)")
-            hasSize(2)
-        }
-
-        val expected = setOf(
-            userId to null,
-            userId to groupId
-        )
-
-        val grouped = output.mapToSet { it.userId to it.groupId }
-
-        assertThat(grouped).apply {
-            `as`("Messages should be grouped by (userId, groupId)")
-            hasSameElementsAs(expected)
-        }
+        assertTrue(hasUnsubscribed, "Must unsubscribe from UI events on shutdown")
     }
 }
 
