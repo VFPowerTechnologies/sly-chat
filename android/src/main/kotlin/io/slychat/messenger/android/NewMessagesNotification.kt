@@ -29,7 +29,7 @@ class NewMessagesNotification {
         if (conversationDisplayInfo.unreadCount == 0)
             contents.remove(conversationDisplayInfo.conversationId)
         else {
-            //notifier service filters this out for us
+            //constructor prevents lastMessageData being null if unreadCount is 0
             val lastMessageData = conversationDisplayInfo.lastMessageData!!
             contents[conversationDisplayInfo.conversationId] = NewMessageData(
                 conversationDisplayInfo.groupName,

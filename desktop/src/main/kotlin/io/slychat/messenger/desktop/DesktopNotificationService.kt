@@ -13,17 +13,22 @@ class DesktopNotificationService : PlatformNotificationService {
     }
 
     override fun updateConversationNotification(conversationDisplayInfo: ConversationDisplayInfo) {
-        val lastMessageData = conversationDisplayInfo.lastMessageData!!
+        val lastMessageData = conversationDisplayInfo.lastMessageData
+
+        val messageInfo = if (lastMessageData != null)
+            "; ${lastMessageData.speakerName} said: ${lastMessageData.message}"
+        else
+            ""
 
         log.info(
-            "New notification for : {} said: {}; count={}",
+            "New notification for {}: count={}{}",
             conversationDisplayInfo.conversationId,
-            lastMessageData.speakerName,
-            lastMessageData.message,
-            conversationDisplayInfo.unreadCount
+            conversationDisplayInfo.unreadCount,
+            messageInfo
         )
 
-        openNotification("Sly Chat", "You have a new message from ${lastMessageData.speakerName}")
+        if (lastMessageData != null)
+            openNotification("Sly Chat", "You have a new message from ${lastMessageData.speakerName}")
     }
 
     private fun openNotification(title: String, text: String) {

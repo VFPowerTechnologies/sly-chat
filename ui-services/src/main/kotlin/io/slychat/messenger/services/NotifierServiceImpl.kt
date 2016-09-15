@@ -42,17 +42,14 @@ class NotifierServiceImpl(
         if (currentPage == PageType.CONTACTS)
             return
 
-        if (conversationDisplayInfo.lastMessageData == null) {
-            log.warn("Called with empty message data for {}", conversationDisplayInfo.conversationId)
-            return
-        }
-
         platformNotificationService.updateConversationNotification(conversationDisplayInfo)
     }
 
     private fun onUiVisibilityChange(isVisible: Boolean) {
         log.debug("UI visibility: {}", isVisible)
         isUiVisible = isVisible
+        if (!isVisible)
+            currentPage = null
     }
 
     override fun init() {

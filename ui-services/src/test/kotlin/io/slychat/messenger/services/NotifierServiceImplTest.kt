@@ -137,6 +137,16 @@ class NotifierServiceImplTest {
     }
 
     @Test
+    fun `hiding the ui after visiting the contacts page should show notifications`() {
+        val notifierService = initNotifierService(isUiVisible = true)
+
+        uiEventSubject.onNext(UIEvent.PageChange(PageType.CONTACTS, ""))
+        uiVisibility.onNext(false)
+
+        testConvoNotificationDisplay(true)
+    }
+
+    @Test
     fun `it should update notifications enabled when receiving config update events`() {
         val notifierService = initNotifierService()
 
