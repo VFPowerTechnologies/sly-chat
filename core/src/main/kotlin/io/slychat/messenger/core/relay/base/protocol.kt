@@ -5,17 +5,16 @@ package io.slychat.messenger.core.relay.base
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.hexify
-import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.relay.RelayMessageBundle
 import io.slychat.messenger.core.relay.base.CommandCode.*
 import java.util.*
 
-val HEADER_SIZE = 589
+val HEADER_SIZE = 608
 //CSP
-val SIGNATURE = "CSP"
-val SIGNATURE_BYTES = SIGNATURE.toByteArray(Charsets.US_ASCII)
+private val SIGNATURE = "CSP"
+private val SIGNATURE_BYTES = SIGNATURE.toByteArray(Charsets.US_ASCII)
 
-val PROTOCOL_VERSION_1 = 1
+private val PROTOCOL_VERSION_1 = 1
 
 //CLIENT_ indicates a client->server command, SERVER_ server->client
 enum class CommandCode(val code: Int) {
@@ -68,15 +67,16 @@ class InvalidHeaderSignatureException(signature: String) : RelayException("Expec
 class InvalidProtocolVersionException(val version: Int) : RelayException("Unsupported protocol version: $version")
 class InvalidPayloadException(commandCode: Int) : RelayException("Invalid payload for command $commandCode")
 
-val PROTOCOL_VERSION_SIZE = 2
-val CONTENT_LENGTH_SIZE = 5
-val FROM_USER_TOKEN_SIZE = 32
-val FROM_USER_ID_SIZE = 254
-val TO_USER_ID_SIZE = 254
-val MESSAGE_ID_SIZE = 32
-val MESSAGE_NUMBER_SIZE = 2
-val MESSAGE_NUMBER_TOTAL_SIZE = 2
-val COMMAND_CODE_SIZE = 3
+private val PROTOCOL_VERSION_SIZE = 2
+private val CONTENT_LENGTH_SIZE = 5
+private val FROM_USER_TOKEN_SIZE = 32
+private val FROM_USER_ID_SIZE = 254
+private val TO_USER_ID_SIZE = 254
+private val MESSAGE_ID_SIZE = 32
+private val MESSAGE_NUMBER_SIZE = 2
+private val MESSAGE_NUMBER_TOTAL_SIZE = 2
+private val COMMAND_CODE_SIZE = 3
+private val TIMESTAMP_SIZE = 19
 
 data class Header(
     val version: Int,
@@ -90,7 +90,6 @@ data class Header(
     val messageId: String,
     val messageFragmentNumber: Int,
     val messageFragmentTotal: Int,
-    //TODO move this to match the header order when the relay support is complete
     //this is always 0 in client requests
     val timestamp: Long,
     val commandCode: CommandCode
@@ -101,6 +100,7 @@ data class Header(
         require(toUserId.length <= TO_USER_ID_SIZE) { "toUserEmail: ${toUserId.length} > $TO_USER_ID_SIZE" }
         require(messageId.length <= MESSAGE_ID_SIZE) { "messageId: ${messageId.length} > $MESSAGE_ID_SIZE" }
         require(messageFragmentNumber < messageFragmentTotal) { "messageFragmentNumber >= messageFragmentTotal: $messageFragmentNumber >= $messageFragmentTotal" }
+        require(timestamp >= 0) { "timestamp: must be >= 0, got $timestamp" }
     }
 }
 
@@ -150,10 +150,13 @@ fun headerFromBytes(bytes: ByteArray): Header {
 
     val messageId = reader.read(MESSAGE_ID_SIZE)
 
+    //relay uses 0 padding for numbers and toInt/toLong ignore leading zeros
     val messageNumber = reader.read(MESSAGE_NUMBER_SIZE).toInt()
     val messageNumberTotal = reader.read(MESSAGE_NUMBER_TOTAL_SIZE).toInt()
 
     val commandCodeNumber = reader.read(COMMAND_CODE_SIZE).toInt()
+
+    val timestamp = reader.read(TIMESTAMP_SIZE).toLong()
 
     return Header(
         version,
@@ -164,13 +167,15 @@ fun headerFromBytes(bytes: ByteArray): Header {
         messageId,
         messageNumber,
         messageNumberTotal,
-        //TODO
-        currentTimestamp(),
+        timestamp,
         CommandCode.fromInt(commandCodeNumber)
     )
 }
 
 private fun Int.leftZeroPad(size: Int): String =
+    "%0${size}d".format(this)
+
+private fun Long.leftZeroPad(size: Int): String =
     "%0${size}d".format(this)
 
 private fun String.rightSpacePad(size: Int): String =
@@ -189,6 +194,7 @@ fun headerToString(header: Header): String {
         builder.append(messageFragmentNumber.leftZeroPad(MESSAGE_NUMBER_SIZE))
         builder.append(messageFragmentTotal.leftZeroPad(MESSAGE_NUMBER_TOTAL_SIZE))
         builder.append(commandCode.code.leftZeroPad(COMMAND_CODE_SIZE))
+        builder.append(timestamp.leftZeroPad(TIMESTAMP_SIZE))
     }
     return builder.toString()
 }
@@ -214,8 +220,8 @@ fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
     return RelayMessage(header, ByteArray(0))
 }
 
-fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, content: RelayMessageBundle, messageId: String): RelayMessage {
-    val content = writeSendMessageContent(content)
+fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, messageBundle: RelayMessageBundle, messageId: String): RelayMessage {
+    val content = writeSendMessageContent(messageBundle)
     val header = Header(
         PROTOCOL_VERSION_1,
         content.size,
