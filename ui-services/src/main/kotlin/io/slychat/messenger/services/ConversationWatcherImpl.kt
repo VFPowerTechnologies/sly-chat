@@ -34,9 +34,9 @@ class ConversationWatcherImpl(
 
     private fun onUiVisibilityChanged(isVisible: Boolean) {
         val conversationId = currentConversationId
-        if (isVisible && conversationId != null) {
+
+        if (isVisible && conversationId != null)
             markConversationAsRead(conversationId)
-        }
     }
 
     override fun init() {}
