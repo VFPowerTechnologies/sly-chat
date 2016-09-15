@@ -386,9 +386,10 @@ class UserModule(
     @Provides
     fun providesConversationWatcher(
         uiEventService: UIEventService,
+        @UIVisibility uiVisibility: Observable<Boolean>,
         messageService: MessageService
     ): ConversationWatcher {
-        return ConversationWatcherImpl(uiEventService.events, messageService)
+        return ConversationWatcherImpl(uiEventService.events, uiVisibility, messageService)
     }
 
     @UserScope
