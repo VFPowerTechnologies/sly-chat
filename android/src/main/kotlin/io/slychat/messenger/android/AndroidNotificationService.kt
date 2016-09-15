@@ -10,47 +10,8 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.text.SpannableString
 import android.text.style.StyleSpan
+import io.slychat.messenger.core.persistence.ConversationDisplayInfo
 import io.slychat.messenger.services.PlatformNotificationService
-import io.slychat.messenger.services.contacts.NotificationConversationInfo
-import io.slychat.messenger.services.contacts.NotificationMessageInfo
-import java.util.*
-
-/** The latest available message for a conversation. */
-data class NewMessageData(
-    val speakerName: String,
-    val lastMessage: String,
-    val lastMessageTimestamp: Long,
-    val unreadCount: Int
-)
-
-/** Current state of the new messages notification. */
-class NewMessagesNotification {
-    val contents = HashMap<NotificationConversationInfo, NewMessageData>()
-
-    fun hasNewMessages(): Boolean = contents.isNotEmpty()
-    fun userCount(): Int = contents.size
-
-    fun clear() {
-        contents.clear()
-    }
-
-    /** Increases the unread count by the amount given in newMessageData. */
-    fun update(conversationInfo: NotificationConversationInfo, newMessageData: NewMessageData) {
-        val current = contents[conversationInfo]
-        val newValue = if (current != null) {
-            val newUnreadCount = current.unreadCount + newMessageData.unreadCount
-            NewMessageData(current.speakerName, newMessageData.lastMessage, newMessageData.lastMessageTimestamp, newUnreadCount)
-        }
-        else
-            newMessageData
-
-        contents[conversationInfo] = newValue
-    }
-
-    fun clear(conversationInfo: NotificationConversationInfo) {
-        contents.remove(conversationInfo)
-    }
-}
 
 class AndroidNotificationService(private val context: Context) : PlatformNotificationService {
     companion object {
@@ -63,19 +24,13 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
     private val newMessagesNotification = NewMessagesNotification()
 
     /* PlatformNotificationService methods */
-    override fun clearMessageNotificationsFor(notificationConversationInfo: NotificationConversationInfo) {
-        newMessagesNotification.clear(notificationConversationInfo)
+    override fun updateConversationNotification(conversationDisplayInfo: ConversationDisplayInfo) {
+        newMessagesNotification.update(conversationDisplayInfo)
         updateNewMessagesNotification()
     }
 
     override fun clearAllMessageNotifications() {
         newMessagesNotification.clear()
-        updateNewMessagesNotification()
-    }
-
-    override fun addNewMessageNotification(notificationConversationInfo: NotificationConversationInfo, lastMessageInfo: NotificationMessageInfo, messageCount: Int) {
-        val newMessageData = NewMessageData(lastMessageInfo.speakerName, lastMessageInfo.message, lastMessageInfo.timestamp, messageCount)
-        newMessagesNotification.update(notificationConversationInfo, newMessageData)
         updateNewMessagesNotification()
     }
 
@@ -181,7 +136,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
         if (isSingleUser) {
             val conversationInfo = newMessagesNotification.contents.keys.first()
-            intent.putExtra(MainActivity.EXTRA_CONVO_KEY, conversationInfo.key)
+            intent.putExtra(MainActivity.EXTRA_CONVO_KEY, conversationInfo.asString())
         }
 
         return getPendingIntentForActivity(intent)
@@ -194,7 +149,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
     }
 
     //updates the current new message notification based on the current data
-    fun updateNewMessagesNotification() {
+    private fun updateNewMessagesNotification() {
         if (!newMessagesNotification.hasNewMessages()) {
             notificationManager.cancel(NOTIFICATION_ID_NEW_MESSAGES)
             return

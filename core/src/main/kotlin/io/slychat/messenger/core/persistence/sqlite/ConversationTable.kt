@@ -20,10 +20,10 @@ object ConversationTable {
     }
 
     fun getTablename(conversationId: ConversationId) =
-        "conv_${conversationId.toKey()}"
+        "conv_${conversationId.asString()}"
 
     fun create(connection: SQLiteConnection, conversationId: ConversationId) {
-        val sql = tableTemplate.replace("%id%", conversationId.toKey())
+        val sql = tableTemplate.replace("%id%", conversationId.asString())
         connection.exec(sql)
     }
 

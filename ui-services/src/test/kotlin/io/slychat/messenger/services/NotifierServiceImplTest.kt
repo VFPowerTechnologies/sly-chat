@@ -8,8 +8,6 @@ import io.slychat.messenger.core.randomGroupId
 import io.slychat.messenger.core.randomReceivedMessageInfo
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
-import io.slychat.messenger.services.contacts.NotificationConversationInfo
-import io.slychat.messenger.services.contacts.NotificationMessageInfo
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
@@ -92,15 +90,8 @@ class NotifierServiceImplTest {
 
         val messageBundle = MessageBundle(contactInfo.id, null, messages)
 
-        val conversationInfo = NotificationConversationInfo.from(contactInfo)
         val lastMessage = messageBundle.messages.last()
         val messageCount = messageBundle.messages.size
-
-        val messageInfo = NotificationMessageInfo(
-            contactInfo.name,
-            lastMessage.message,
-            lastMessage.timestamp
-        )
 
         val conversationDisplayInfo = randomConversationDisplayInfo()
         conversationInfoUpdates.onNext(conversationDisplayInfo)
