@@ -147,7 +147,6 @@ class NotifierServiceImplTest {
 
     @Test
     fun `it should unsubscribe from UI events on shutdown`() {
-
         uiVisibility.onNext(false)
 
         var hasUnsubscribed = false
