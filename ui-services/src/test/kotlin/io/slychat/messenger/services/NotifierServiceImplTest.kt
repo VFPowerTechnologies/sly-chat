@@ -147,6 +147,28 @@ class NotifierServiceImplTest {
     }
 
     @Test
+    fun `restoring the ui after having visited the contacts page should not show notifications`() {
+        val notifierService = initNotifierService(isUiVisible = true)
+
+        uiEventSubject.onNext(UIEvent.PageChange(PageType.CONTACTS, ""))
+        uiVisibility.onNext(false)
+        uiVisibility.onNext(true)
+
+        testConvoNotificationDisplay(false)
+    }
+
+    @Test
+    fun `it should clear notifications when restoring ui if the previous page is the contacts page`() {
+        val notifierService = initNotifierService(isUiVisible = true)
+
+        uiEventSubject.onNext(UIEvent.PageChange(PageType.CONTACTS, ""))
+        uiVisibility.onNext(false)
+        uiVisibility.onNext(true)
+
+        verify(platformNotificationsService, times(2)).clearAllMessageNotifications()
+    }
+
+    @Test
     fun `it should update notifications enabled when receiving config update events`() {
         val notifierService = initNotifierService()
 

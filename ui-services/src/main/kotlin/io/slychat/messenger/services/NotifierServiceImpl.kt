@@ -39,7 +39,7 @@ class NotifierServiceImpl(
         if (!enableNotificationDisplay)
             return
 
-        if (currentPage == PageType.CONTACTS)
+        if (isUiVisible && currentPage == PageType.CONTACTS)
             return
 
         platformNotificationService.updateConversationNotification(conversationDisplayInfo)
@@ -47,9 +47,11 @@ class NotifierServiceImpl(
 
     private fun onUiVisibilityChange(isVisible: Boolean) {
         log.debug("UI visibility: {}", isVisible)
+
         isUiVisible = isVisible
-        if (!isVisible)
-            currentPage = null
+
+        if (isVisible && currentPage == PageType.CONTACTS)
+            platformNotificationService.clearAllMessageNotifications()
     }
 
     override fun init() {

@@ -144,6 +144,27 @@ class MessageProcessorImplTest {
     }
 
     @Test
+    fun `it should remember the previous ui page`() {
+        val processor = createProcessor()
+
+        val m = randomTextMessage()
+
+        val message = SlyMessage.Text(m)
+
+        val sender = UserId(1)
+
+        uiEvents.onNext(UIEvent.PageChange(PageType.CONVO, sender.toString()))
+        uiVisibility.onNext(false)
+        uiVisibility.onNext(true)
+
+        processor.processMessage(sender, message).get()
+
+        verify(messageService).addMessage(eq(sender.toConversationId()), capture {
+            assertTrue(it.info.isRead, "Message should be marked as read")
+        })
+    }
+
+    @Test
     fun `it should handle InvalidMessageLevelException by calling ContactsService and retrying afterwards`() {
         val processor = createProcessor()
 
