@@ -26,6 +26,16 @@ class MessageExpirationWatcherImpl(
 
     init {
         messageService.messageUpdates.subscribe { onMessageUpdate(it) }
+        messageService.newMessages.filter { it.info.isSent && it.info.ttl > 0 }.subscribe { onSelfExpiringMessage(it) }
+    }
+
+    private fun onSelfExpiringMessage(conversationMessage: ConversationMessage) {
+        val conversationId = conversationMessage.conversationId
+        val messageId = conversationMessage.info.id
+
+        messageService.startMessageExpiration(conversationId, messageId) fail {
+            log.error("Error attempting to expire a self message for {}/{}: {}", conversationId, messageId, it.message, it)
+        }
     }
 
     override fun init() {

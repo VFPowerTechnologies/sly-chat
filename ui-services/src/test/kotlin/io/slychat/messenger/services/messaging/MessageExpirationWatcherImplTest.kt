@@ -1,14 +1,12 @@
 package io.slychat.messenger.services.messaging
 
 import com.nhaarman.mockito_kotlin.*
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.randomMessageId
-import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.ExpiringMessage
 import io.slychat.messenger.core.persistence.MessageInfo
-import io.slychat.messenger.core.randomMessageText
-import io.slychat.messenger.core.randomReceivedMessageInfo
-import io.slychat.messenger.core.randomUserConversationId
+import io.slychat.messenger.core.persistence.toConversationId
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
@@ -35,6 +33,7 @@ class MessageExpirationWatcherImplTest {
     val testScheduler = TestScheduler()
 
     val messageUpdates: PublishSubject<MessageUpdateEvent> = PublishSubject.create()
+    val newMessages: PublishSubject<ConversationMessage> = PublishSubject.create()
 
     val messageService: MessageService = mock()
 
@@ -45,8 +44,10 @@ class MessageExpirationWatcherImplTest {
     @Before
     fun before() {
         whenever(messageService.messageUpdates).thenReturn(messageUpdates)
+        whenever(messageService.newMessages).thenReturn(newMessages)
         whenever(messageService.expireMessages(any(), any())).thenResolveUnit()
         whenever(messageService.getMessagesAwaitingExpiration()).thenResolve(emptyList())
+        whenever(messageService.startMessageExpiration(any(), any())).thenResolveUnit()
         whenever(messengerService.broadcastMessageExpired(any(), any())).thenResolveUnit()
     }
 
@@ -474,5 +475,32 @@ class MessageExpirationWatcherImplTest {
         messageUpdates.onNext(event)
 
         verify(messengerService, never()).broadcastMessageExpired(any(), any())
+    }
+
+    @Test
+    fun `it should auto-expire sent messages with a ttl`() {
+        val ttlMs = 1L
+        val messageInfo = randomSentMessageInfo(ttlMs)
+        val userId = randomUserId()
+        val conversationMessage = ConversationMessage.Single(userId, messageInfo)
+
+        val watcher = createWatcher()
+
+        newMessages.onNext(conversationMessage)
+
+        verify(messageService).startMessageExpiration(userId.toConversationId(), messageInfo.id)
+    }
+
+    @Test
+    fun `it should not auto-expire sent messages without a ttl`() {
+        val ttlMs = 0L
+        val messageInfo = randomSentMessageInfo(ttlMs)
+        val conversationMessage = ConversationMessage.Single(randomUserId(), messageInfo)
+
+        val watcher = createWatcher()
+
+        newMessages.onNext(conversationMessage)
+
+        verify(messageService, never()).startMessageExpiration(any(), any())
     }
 }
