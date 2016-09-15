@@ -409,6 +409,7 @@ AND
             messageIds.forEach { messageId ->
                 stmt.bind(2, messageId)
                 stmt.step()
+                stmt.reset(false)
             }
         }
     }
