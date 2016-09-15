@@ -11,7 +11,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import rx.Observable
-import rx.Subscription
+import rx.subscriptions.CompositeSubscription
 import java.util.*
 
 class MessageProcessorImpl(
@@ -20,6 +20,7 @@ class MessageProcessorImpl(
     private val messageService: MessageService,
     private val messageCipherService: MessageCipherService,
     private val groupService: GroupService,
+    uiVisibility: Observable<Boolean>,
     uiEvents: Observable<UIEvent>
 ) : MessageProcessor {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -27,17 +28,24 @@ class MessageProcessorImpl(
     private var currentlySelectedChatUser: UserId? = null
     private var currentlySelectedGroup: GroupId? = null
 
-    private var subscription: Subscription? = null
+    private var subscriptions = CompositeSubscription()
 
     init {
-        subscription = uiEvents.subscribe { onUiEvent(it) }
+        subscriptions.add(uiEvents.subscribe { onUiEvent(it) })
+        subscriptions.add(uiVisibility.subscribe { onUiVisibilityChange(it) })
+    }
+
+    private fun onUiVisibilityChange(isVisible: Boolean) {
+        if (!isVisible) {
+            currentlySelectedChatUser = null
+            currentlySelectedGroup = null
+        }
     }
 
     override fun init() {}
 
     override fun shutdown() {
-        subscription?.unsubscribe()
-        subscription = null
+        subscriptions.clear()
     }
 
     private fun onUiEvent(event: UIEvent) {

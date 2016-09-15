@@ -130,6 +130,7 @@ class UserModule(
         messageService: MessageService,
         messageCipherService: MessageCipherService,
         groupService: GroupService,
+        @UIVisibility uiVisibility: Observable<Boolean>,
         uiEventService: UIEventService
     ): MessageProcessor = MessageProcessorImpl(
         userData.userId,
@@ -137,6 +138,7 @@ class UserModule(
         messageService,
         messageCipherService,
         groupService,
+        uiVisibility,
         uiEventService.events
     )
 
