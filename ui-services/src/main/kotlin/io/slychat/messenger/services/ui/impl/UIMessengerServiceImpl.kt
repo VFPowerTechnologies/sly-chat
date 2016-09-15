@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.ConversationDisplayInfo
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.toConversationId
@@ -26,6 +27,7 @@ class UIMessengerServiceImpl(
 
     private val newMessageListeners = ArrayList<(UIMessageInfo) -> Unit>()
     private val messageStatusUpdateListeners = ArrayList<(UIMessageUpdateEvent) -> Unit>()
+    private val conversationInfoUpdateListeners = ArrayList<(UIConversationDisplayInfo) -> Unit>()
     private val clockDifferenceUpdateListeners = ArrayList<(Long) -> Unit>()
 
     private var relayClockDiff = 0L
@@ -46,6 +48,7 @@ class UIMessengerServiceImpl(
 
             subscriptions.add(messageService.newMessages.subscribe { onNewMessages(it) })
             subscriptions.add(messageService.messageUpdates.subscribe { onMessageUpdate(it) })
+            subscriptions.add(messageService.conversationInfoUpdates.subscribe { onConversationInfoUpdate(it) })
             subscriptions.add(userComponent.relayClock.clockDiffUpdates.subscribe { onClockDifferenceUpdate(it) })
 
             messengerService = userComponent.messengerService
@@ -60,6 +63,28 @@ class UIMessengerServiceImpl(
 
             relayClockDiff = 0
         }
+    }
+
+    private fun onConversationInfoUpdate(conversationDisplayInfo: ConversationDisplayInfo) {
+        val conversationId = conversationDisplayInfo.conversationId
+        val (userId, groupId) = when (conversationId) {
+            is ConversationId.Group -> null to conversationId.id
+            is ConversationId.User -> conversationId.id to null
+        }
+
+        val uiLastMessageData = conversationDisplayInfo.lastMessageData?.let {
+            UILastMessageData(it.speakerName, it.message, it.timestamp)
+        }
+
+        val uiConversationDisplayInfo = UIConversationDisplayInfo(
+            userId,
+            groupId,
+            conversationDisplayInfo.groupName,
+            conversationDisplayInfo.unreadCount,
+            uiLastMessageData
+        )
+
+        conversationInfoUpdateListeners.forEach { it(uiConversationDisplayInfo) }
     }
 
     private fun onClockDifferenceUpdate(diff: Long) {
@@ -138,6 +163,10 @@ class UIMessengerServiceImpl(
 
     override fun addMessageStatusUpdateListener(listener: (UIMessageUpdateEvent) -> Unit) {
         messageStatusUpdateListeners.add(listener)
+    }
+
+    override fun addConversationInfoUpdateListener(listener: (UIConversationDisplayInfo) -> Unit) {
+        conversationInfoUpdateListeners.add(listener)
     }
 
     override fun addClockDifferenceUpdateListener(listener: (Long) -> Unit) {

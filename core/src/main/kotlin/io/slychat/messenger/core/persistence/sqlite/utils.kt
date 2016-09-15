@@ -84,7 +84,7 @@ fun SQLiteStatement.columnAllowedMessageLevel(index: Int): AllowedMessageLevel {
 }
 
 fun SQLiteStatement.columnConversationId(index: Int): ConversationId {
-    return columnString(index).toConversationId()
+    return ConversationId.fromString(columnString(index))
 }
 
 fun SQLiteStatement.columnGroupMembershipLevel(index: Int): GroupMembershipLevel {
@@ -117,26 +117,8 @@ private fun Int.toGroupMembershipLevel(): GroupMembershipLevel = when (this) {
     else -> throw IllegalArgumentException("Invalid integer value for MembershipLevel: $this")
 }
 
-internal fun ConversationId.toKey(): String = when (this) {
-    is ConversationId.User -> "U${this.id}"
-    is ConversationId.Group -> "G${this.id}"
-}
-
-internal fun String.toConversationId(): ConversationId {
-    require(this.isNotEmpty()) { "Empty string is an invalid ConversationId" }
-
-    val first = this[0]
-    val rest = this.substring(1)
-
-    return when (first) {
-        'U' -> ConversationId.User(UserId(rest.toLong()))
-        'G' -> ConversationId.Group(GroupId(rest))
-        else -> throw IllegalArgumentException("Invalid string value for ConversationId: $this")
-    }
-}
-
 fun SQLiteStatement.bind(index: Int, conversationId: ConversationId) {
-    bind(index, conversationId.toKey())
+    bind(index, conversationId.asString())
 }
 
 inline fun <R> SQLiteConnection.withPrepared(sql: String, body: (SQLiteStatement) -> R): R {

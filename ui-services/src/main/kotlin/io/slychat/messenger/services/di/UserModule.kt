@@ -130,6 +130,7 @@ class UserModule(
         messageService: MessageService,
         messageCipherService: MessageCipherService,
         groupService: GroupService,
+        @UIVisibility uiVisibility: Observable<Boolean>,
         uiEventService: UIEventService
     ): MessageProcessor = MessageProcessorImpl(
         userData.userId,
@@ -137,6 +138,7 @@ class UserModule(
         messageService,
         messageCipherService,
         groupService,
+        uiVisibility,
         uiEventService.events
     )
 
@@ -205,31 +207,15 @@ class UserModule(
     fun providesNotifierService(
         messageService: MessageService,
         uiEventService: UIEventService,
-        contactsPersistenceManager: ContactsPersistenceManager,
-        groupPersistenceManager: GroupPersistenceManager,
         platformNotificationService: PlatformNotificationService,
         userConfigService: UserConfigService,
         @UIVisibility uiVisibility: Observable<Boolean>,
         scheduler: Scheduler
     ): NotifierService {
-        //even if this a hot observable, it's not yet emitting so we can just connect using share() instead of
-        //manually using the ConnectedObservable
-        val shared = messageService.newMessages
-            //ignore messages from self
-            .filter { it.info.isSent == false && !it.info.isRead }
-            .share()
-
-        //we use debouncing to trigger a buffer flush
-        val closingSelector = shared.debounce(400, TimeUnit.MILLISECONDS, scheduler)
-        val buffered = shared.buffer(closingSelector)
-        val bufferedBundles = NotifierServiceImpl.flattenMessageBundles(buffered)
-
         return NotifierServiceImpl(
-            bufferedBundles,
             uiEventService.events,
+            messageService.conversationInfoUpdates,
             uiVisibility,
-            contactsPersistenceManager,
-            groupPersistenceManager,
             platformNotificationService,
             userConfigService
         )
@@ -377,7 +363,7 @@ class UserModule(
     ): RelayClock =
         RelayClockImpl(
             relayClientManager.clockDifference,
-            TimeUnit.SECONDS.toMillis(60)
+            TimeUnit.SECONDS.toMillis(20)
         )
 
     @UserScope
@@ -400,9 +386,10 @@ class UserModule(
     @Provides
     fun providesConversationWatcher(
         uiEventService: UIEventService,
+        @UIVisibility uiVisibility: Observable<Boolean>,
         messageService: MessageService
     ): ConversationWatcher {
-        return ConversationWatcherImpl(uiEventService.events, messageService)
+        return ConversationWatcherImpl(uiEventService.events, uiVisibility, messageService)
     }
 
     @UserScope

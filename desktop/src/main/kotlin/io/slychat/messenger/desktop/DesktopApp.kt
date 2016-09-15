@@ -153,6 +153,11 @@ class DesktopApp : Application() {
         }
 
         val uiVisibility = BehaviorSubject.create<Boolean>(!stage.isIconified)
+
+        stage.focusedProperty().addListener { o, oldV, newV ->
+            uiVisibility.onNext(newV)
+        }
+
         stage.iconifiedProperty().addListener { o, oldV, newV ->
             uiVisibility.onNext(!newV)
         }

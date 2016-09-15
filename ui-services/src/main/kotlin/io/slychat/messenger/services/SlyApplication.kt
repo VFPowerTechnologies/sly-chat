@@ -480,6 +480,7 @@ class SlyApplication {
         userComponent.offlineMessageManager.shutdown()
         userComponent.preKeyManager.shutdown()
         userComponent.persistenceManager.shutdown()
+        userComponent.notifierService.shutdown()
     }
 
     //should come up with something better...

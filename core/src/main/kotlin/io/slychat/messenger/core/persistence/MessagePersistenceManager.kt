@@ -28,7 +28,6 @@ interface MessagePersistenceManager {
     /** Clears a group log. */
     fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception>
 
-    //FIXME
     /** Marks the given group message as delivered, and updates its sent timestamp. If the message has already been marked as delievered, returns null. */
     fun markMessageAsDelivered(conversationId: ConversationId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception>
 
@@ -47,4 +46,6 @@ interface MessagePersistenceManager {
     fun setExpiration(conversationId: ConversationId, messageId: String, expiresAt: Long): Promise<Boolean, Exception>
 
     fun getMessagesAwaitingExpiration(): Promise<List<ExpiringMessage>, Exception>
+
+    fun getConversationDisplayInfo(conversationId: ConversationId): Promise<ConversationDisplayInfo, Exception>
 }

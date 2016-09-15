@@ -11,7 +11,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import rx.Observable
-import rx.Subscription
+import rx.subscriptions.CompositeSubscription
 import java.util.*
 
 class MessageProcessorImpl(
@@ -20,24 +20,30 @@ class MessageProcessorImpl(
     private val messageService: MessageService,
     private val messageCipherService: MessageCipherService,
     private val groupService: GroupService,
+    uiVisibility: Observable<Boolean>,
     uiEvents: Observable<UIEvent>
 ) : MessageProcessor {
     private val log = LoggerFactory.getLogger(javaClass)
 
+    private var isUiVisible = false
     private var currentlySelectedChatUser: UserId? = null
     private var currentlySelectedGroup: GroupId? = null
 
-    private var subscription: Subscription? = null
+    private var subscriptions = CompositeSubscription()
 
     init {
-        subscription = uiEvents.subscribe { onUiEvent(it) }
+        subscriptions.add(uiEvents.subscribe { onUiEvent(it) })
+        subscriptions.add(uiVisibility.subscribe { onUiVisibilityChange(it) })
+    }
+
+    private fun onUiVisibilityChange(isVisible: Boolean) {
+        isUiVisible = isVisible
     }
 
     override fun init() {}
 
     override fun shutdown() {
-        subscription?.unsubscribe()
-        subscription = null
+        subscriptions.clear()
     }
 
     private fun onUiEvent(event: UIEvent) {
@@ -61,17 +67,14 @@ class MessageProcessorImpl(
         }
     }
 
-    override fun processMessage(sender: UserId, message: SlyMessage): Promise<Unit, Exception> {
+    override fun processMessage(sender: UserId, message: SlyMessage): Promise<Unit, Exception> = when (message) {
+        is SlyMessage.Text -> handleTextMessage(sender, message.m)
 
-        return when (message) {
-            is SlyMessage.Text -> handleTextMessage(sender, message.m)
+        is SlyMessage.GroupEvent -> handleGroupMessage(sender, message.m)
 
-            is SlyMessage.GroupEvent -> handleGroupMessage(sender, message.m)
+        is SlyMessage.Sync -> handleSyncMessage(sender, message.m)
 
-            is SlyMessage.Sync -> handleSyncMessage(sender, message.m)
-
-            is SlyMessage.Control -> handleControlMessage(sender, message.m)
-        }
+        is SlyMessage.Control -> handleControlMessage(sender, message.m)
     }
 
     private fun  handleControlMessage(sender: UserId, m: ControlMessage): Promise<Unit, Exception> {
@@ -145,10 +148,14 @@ class MessageProcessorImpl(
     private fun handleTextMessage(sender: UserId, m: TextMessage): Promise<Unit, Exception> {
         val groupId = m.groupId
 
-        val isRead = if (groupId == null)
-            sender == currentlySelectedChatUser
+        val isRead = if (isUiVisible) {
+            if (groupId == null)
+                sender == currentlySelectedChatUser
+            else
+                groupId == currentlySelectedGroup
+        }
         else
-            groupId == currentlySelectedGroup
+            false
 
         val messageInfo = MessageInfo.newReceived(m.id.string, m.message, m.timestamp, currentTimestamp(), isRead, m.ttl)
         val conversationInfo = ConversationMessageInfo(sender, messageInfo)
