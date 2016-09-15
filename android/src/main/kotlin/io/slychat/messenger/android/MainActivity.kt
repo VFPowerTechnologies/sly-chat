@@ -21,7 +21,7 @@ import com.google.android.gms.common.GoogleApiAvailability
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import io.slychat.messenger.core.BuildConfig
-import io.slychat.messenger.services.contacts.NotificationKey
+import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.services.ui.js.NavigationService
 import io.slychat.messenger.services.ui.js.javatojs.NavigationServiceToJSProxy
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
@@ -69,10 +69,10 @@ class MainActivity : AppCompatActivity() {
         val page = when (messagesType) {
             EXTRA_PENDING_MESSAGES_TYPE_SINGLE -> {
                 val conversationKey = intent.getStringExtra(EXTRA_CONVO_KEY) ?: throw RuntimeException("Missing EXTRA_CONVO_KEY")
-                val notificationKey = NotificationKey.keyToId(conversationKey)
+                val notificationKey = ConversationId.fromString(conversationKey)
                 when (notificationKey) {
-                    is NotificationKey.User -> "user/${notificationKey.userId}"
-                    is NotificationKey.Group -> "group/${notificationKey.groupId}"
+                    is ConversationId.User -> "user/${notificationKey.id}"
+                    is ConversationId.Group -> "group/${notificationKey.id}"
                 }
             }
 

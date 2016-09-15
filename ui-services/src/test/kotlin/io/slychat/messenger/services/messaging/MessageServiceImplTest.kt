@@ -3,10 +3,7 @@ package io.slychat.messenger.services.messaging
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.randomMessageId
-import io.slychat.messenger.core.persistence.ConversationId
-import io.slychat.messenger.core.persistence.ConversationMessageInfo
-import io.slychat.messenger.core.persistence.MessageInfo
-import io.slychat.messenger.core.persistence.MessagePersistenceManager
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.assertNoEventsEmitted
@@ -42,6 +39,14 @@ class MessageServiceImplTest {
         whenever(messagePersistenceManager.expireMessages(any())).thenResolveUnit()
         whenever(messagePersistenceManager.deleteAllMessages(any())).thenResolveUnit()
         whenever(messagePersistenceManager.deleteMessages(any(), any())).thenResolveUnit()
+
+        val conversationDisplayInfo = ConversationDisplayInfo(
+            randomGroupConversationId(),
+            randomGroupName(),
+            0,
+            LastMessageData("contact", randomMessageText(), currentTimestamp())
+        )
+        whenever(messagePersistenceManager.getConversationDisplayInfo(any())).thenResolve(conversationDisplayInfo)
     }
 
     fun forEachConvType(body: (ConversationId) -> Unit) {
@@ -131,6 +136,66 @@ class MessageServiceImplTest {
             messageService.markConversationAsRead(it).get()
 
             verify(messagePersistenceManager).markConversationAsRead(it)
+        }
+    }
+
+    fun testConversationInfoUpdate(body: (ConversationId) -> Unit) {
+        forEachConvType { conversationId ->
+            val testSubscriber = messageService.conversationInfoUpdates.testSubscriber()
+
+            val conversationDisplayInfo = ConversationDisplayInfo(
+                conversationId,
+                randomGroupName(),
+                1,
+                LastMessageData("contact", randomMessageText(), currentTimestamp())
+            )
+
+            whenever(messagePersistenceManager.getConversationDisplayInfo(conversationId)).thenResolve(conversationDisplayInfo)
+
+            body(conversationId)
+
+            assertThat(testSubscriber.onNextEvents).apply {
+                `as`("Should emit an update event")
+                containsOnly(conversationDisplayInfo)
+            }
+        }
+
+    }
+
+    @Test
+    fun `it should emit a conversation info update when markConversationAsRead is called`() {
+        testConversationInfoUpdate {
+            messageService.markConversationAsRead(it).get()
+        }
+    }
+
+    @Test
+    fun `it should emit a conversation info update when addMessage is called for a received message`() {
+        testConversationInfoUpdate { conversationId ->
+            val conversationMessageInfo = randomReceivedConversationMessageInfo(randomUserId())
+
+            messageService.addMessage(conversationId, conversationMessageInfo).get()
+        }
+    }
+
+    @Test
+    fun `it should not emit a conversation info update when addMessage is called for a sent message`() {
+        forEachConvType { conversationId ->
+            val testSubscriber = messageService.conversationInfoUpdates.testSubscriber()
+
+            messageService.addMessage(conversationId, randomSentConversationMessageInfo()).get()
+
+            assertThat(testSubscriber.onNextEvents).apply {
+                `as`("Should not emit an update")
+                isEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun `it should emit a conversation info update when deleteAllMessages is called`() {
+        testConversationInfoUpdate { conversationId ->
+            messageService.deleteAllMessages(conversationId)
         }
     }
 

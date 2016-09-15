@@ -53,9 +53,27 @@ sealed class ConversationId {
         }
     }
 
+    fun asString(): String = when (this) {
+        is ConversationId.User -> "U${this.id}"
+        is ConversationId.Group -> "G${this.id}"
+    }
+
     companion object {
         operator fun invoke(userId: UserId): ConversationId.User = ConversationId.User(userId)
         operator fun invoke(groupId: GroupId): ConversationId.Group = ConversationId.Group(groupId)
+
+        fun fromString(string: String): ConversationId {
+            require(string.length >= 2) { "ConversationId string must be least 2 characters" }
+
+            val first = string[0]
+            val rest = string.substring(1)
+
+            return when (first) {
+                'U' -> ConversationId.User(UserId(rest.toLong()))
+                'G' -> ConversationId.Group(GroupId(rest))
+                else -> throw IllegalArgumentException("Invalid string value for ConversationId: $this")
+            }
+        }
     }
 }
 

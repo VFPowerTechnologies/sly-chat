@@ -159,3 +159,11 @@ fun randomReceivedConversationMessageInfo(speaker: UserId?): ConversationMessage
 fun randomSentConversationMessageInfo(): ConversationMessageInfo {
     return ConversationMessageInfo(null, randomSentMessageInfo())
 }
+
+fun randomConversationDisplayInfo(): ConversationDisplayInfo =
+    ConversationDisplayInfo(
+        randomGroupConversationId(),
+        randomGroupName(),
+        1,
+        LastMessageData("speakerName", randomMessageText(), currentTimestamp())
+    )

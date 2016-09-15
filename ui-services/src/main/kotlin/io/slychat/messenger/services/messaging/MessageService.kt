@@ -8,6 +8,7 @@ import rx.Observable
 interface MessageService {
     val newMessages: Observable<ConversationMessage>
     val messageUpdates: Observable<MessageUpdateEvent>
+    val conversationInfoUpdates: Observable<ConversationDisplayInfo>
 
     //generates Expiring events
     fun startMessageExpiration(conversationId: ConversationId, messageId: String): Promise<Unit, Exception>

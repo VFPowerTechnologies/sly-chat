@@ -19,6 +19,7 @@ import io.slychat.messenger.testutils.thenResolveUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Test
+import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.*
@@ -40,6 +41,7 @@ class MessageProcessorImplTest {
     val messageService: MessageService = mock()
     val messageCipherService: MessageCipherService = mock()
     val groupService: GroupService = mock()
+    val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(true)
     val uiEvents: PublishSubject<UIEvent> = PublishSubject.create()
 
     fun randomTextMessage(groupId: GroupId? = null): TextMessage =
@@ -77,6 +79,7 @@ class MessageProcessorImplTest {
             messageService,
             messageCipherService,
             groupService,
+            uiVisibility,
             uiEvents
         )
     }
@@ -112,6 +115,47 @@ class MessageProcessorImplTest {
         val sender = UserId(1)
 
         uiEvents.onNext(UIEvent.PageChange(PageType.CONVO, sender.toString()))
+
+        processor.processMessage(sender, message).get()
+
+        verify(messageService).addMessage(eq(sender.toConversationId()), capture {
+            assertTrue(it.info.isRead, "Message should be marked as read")
+        })
+    }
+
+    @Test
+    fun `it should not mark new messages for the currently single convo focused page as read if the ui is no longer visible`() {
+        val processor = createProcessor()
+
+        val m = randomTextMessage()
+
+        val message = SlyMessage.Text(m)
+
+        val sender = UserId(1)
+
+        uiEvents.onNext(UIEvent.PageChange(PageType.CONVO, sender.toString()))
+        uiVisibility.onNext(false)
+
+        processor.processMessage(sender, message).get()
+
+        verify(messageService).addMessage(eq(sender.toConversationId()), capture {
+            assertFalse(it.info.isRead, "Message should be not marked as read")
+        })
+    }
+
+    @Test
+    fun `it should remember the previous ui page`() {
+        val processor = createProcessor()
+
+        val m = randomTextMessage()
+
+        val message = SlyMessage.Text(m)
+
+        val sender = UserId(1)
+
+        uiEvents.onNext(UIEvent.PageChange(PageType.CONVO, sender.toString()))
+        uiVisibility.onNext(false)
+        uiVisibility.onNext(true)
 
         processor.processMessage(sender, message).get()
 

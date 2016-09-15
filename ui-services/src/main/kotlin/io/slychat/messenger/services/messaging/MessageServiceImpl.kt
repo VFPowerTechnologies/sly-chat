@@ -24,12 +24,24 @@ class MessageServiceImpl(
     override val messageUpdates: Observable<MessageUpdateEvent>
         get() = messageUpdatesSubject
 
+    private val conversationInfoUpdatesSubject = PublishSubject.create<ConversationDisplayInfo>()
+    override val conversationInfoUpdates: Observable<ConversationDisplayInfo>
+        get() = conversationInfoUpdatesSubject
+
     override fun markMessageAsDelivered(conversationId: ConversationId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception> {
         return messagePersistenceManager.markMessageAsDelivered(conversationId, messageId, timestamp) successUi {
             if (it != null) {
                 val update = MessageUpdateEvent.Delivered(conversationId, messageId, timestamp)
                 messageUpdatesSubject.onNext(update)
             }
+        }
+    }
+
+    private fun emitCurrentConversationDisplayInfo(conversationId: ConversationId) {
+        messagePersistenceManager.getConversationDisplayInfo(conversationId) successUi {
+            conversationInfoUpdatesSubject.onNext(it)
+        } fail {
+            log.error("Unable to fetch conversation display info for {}: {}", conversationId, it.message, it)
         }
     }
 
@@ -41,11 +53,16 @@ class MessageServiceImpl(
             }
 
             newMessagesSubject.onNext(conversationMessage)
+        } success {
+            if (!conversationMessageInfo.info.isSent)
+                emitCurrentConversationDisplayInfo(conversationId)
         }
     }
 
     override fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception> {
-        return messagePersistenceManager.markConversationAsRead(conversationId)
+        return messagePersistenceManager.markConversationAsRead(conversationId) success {
+            emitCurrentConversationDisplayInfo(conversationId)
+        }
     }
 
     override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> {
@@ -54,9 +71,11 @@ class MessageServiceImpl(
         }
     }
 
+    //this can be called without opening the conversation, so we might have unread messages
     override fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception> {
         return messagePersistenceManager.deleteAllMessages(conversationId) successUi {
             messageUpdatesSubject.onNext(MessageUpdateEvent.DeletedAll(conversationId))
+            emitCurrentConversationDisplayInfo(conversationId)
         }
     }
 

@@ -1,10 +1,9 @@
 package io.slychat.messenger.desktop
 
+import io.slychat.messenger.core.persistence.ConversationDisplayInfo
 import io.slychat.messenger.services.PlatformNotificationService
-import io.slychat.messenger.services.contacts.NotificationConversationInfo
-import io.slychat.messenger.services.contacts.NotificationMessageInfo
-import org.slf4j.LoggerFactory
 import org.controlsfx.control.Notifications
+import org.slf4j.LoggerFactory
 
 class DesktopNotificationService : PlatformNotificationService {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -13,20 +12,26 @@ class DesktopNotificationService : PlatformNotificationService {
         log.info("Clearing all notifications")
     }
 
-    override fun clearMessageNotificationsFor(notificationConversationInfo: NotificationConversationInfo) {
-        log.info("Clearing notifications for key={}", notificationConversationInfo.key)
-    }
+    override fun updateConversationNotification(conversationDisplayInfo: ConversationDisplayInfo) {
+        if (conversationDisplayInfo.unreadCount == 0)
+            return
 
-    override fun addNewMessageNotification(notificationConversationInfo: NotificationConversationInfo, lastMessageInfo: NotificationMessageInfo, messageCount: Int) {
+        val lastMessageData = conversationDisplayInfo.lastMessageData
+
+        val messageInfo = if (lastMessageData != null)
+            "; ${lastMessageData.speakerName} said: ${lastMessageData.message}"
+        else
+            ""
+
         log.info(
-            "New notification for key={}: {} said: {}; count={}",
-            notificationConversationInfo.key,
-            lastMessageInfo.speakerName,
-            lastMessageInfo.message,
-            messageCount
+            "New notification for {}: count={}{}",
+            conversationDisplayInfo.conversationId,
+            conversationDisplayInfo.unreadCount,
+            messageInfo
         )
 
-        openNotification("Sly Chat", "You have a new message from ${lastMessageInfo.speakerName}")
+        if (lastMessageData != null)
+            openNotification("Sly Chat", "You have a new message from ${lastMessageData.speakerName}")
     }
 
     private fun openNotification(title: String, text: String) {

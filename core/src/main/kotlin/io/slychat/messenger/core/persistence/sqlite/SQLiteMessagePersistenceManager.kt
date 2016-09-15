@@ -409,6 +409,7 @@ AND
             messageIds.forEach { messageId ->
                 stmt.bind(2, messageId)
                 stmt.step()
+                stmt.reset(false)
             }
         }
     }
@@ -512,6 +513,60 @@ FROM
             stmt.columnString(1),
             stmt.columnLong(2)
         )
+    }
+
+    private fun getGroupName(connection: SQLiteConnection, groupId: GroupId): String {
+        val sql = """
+SELECT
+    name
+FROM
+    groups
+WHERE
+    id=?
+"""
+        return connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, groupId)
+            if (!stmt.step())
+                throw InvalidGroupException(groupId)
+
+            stmt.columnString(0)
+        }
+    }
+
+    private fun getUserName(connection: SQLiteConnection, userId: UserId): String {
+        val sql = """
+SELECT
+    name
+FROM
+    contacts
+WHERE
+    id=?
+"""
+        return connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, userId)
+            if (!stmt.step())
+                throw InvalidContactException(userId)
+
+            stmt.columnString(0)
+        }
+    }
+
+    override fun getConversationDisplayInfo(conversationId: ConversationId): Promise<ConversationDisplayInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val conversationInfo = conversationInfoUtils.getConversationInfo(connection, conversationId) ?: throw InvalidConversationException(conversationId)
+
+        val groupName = when (conversationId) {
+            is ConversationId.Group -> getGroupName(connection, conversationId.id)
+            else -> null
+        }
+
+        val lastMessageData = if (conversationInfo.lastSpeaker != null) {
+            val speakerName = getUserName(connection, conversationInfo.lastSpeaker)
+            LastMessageData(speakerName, conversationInfo.lastMessage!!, conversationInfo.lastTimestamp!!)
+        }
+        else
+            null
+
+        ConversationDisplayInfo(conversationId, groupName, conversationInfo.unreadMessageCount, lastMessageData)
     }
 
     /* test use only */
