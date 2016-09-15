@@ -193,6 +193,13 @@ class MessageServiceImplTest {
     }
 
     @Test
+    fun `it should emit a conversation info update when deleteAllMessages is called`() {
+        testConversationInfoUpdate { conversationId ->
+            messageService.deleteAllMessages(conversationId)
+        }
+    }
+
+    @Test
     fun `it should emit an expiring event when startMessageExpiration is called for an existing message id`() {
         forEachConvType { conversationId ->
             val baseTime = 1L

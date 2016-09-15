@@ -9,6 +9,9 @@ data class ConversationDisplayInfo(
 ) {
     init {
         require(unreadCount >= 0) { "unreadCount must be >= 0, got $unreadCount" }
+        
+        if (lastMessageData == null && unreadCount != 0)
+            throw IllegalArgumentException("unreadCount must be 0 if lastMessageData is null")
     }
 }
 

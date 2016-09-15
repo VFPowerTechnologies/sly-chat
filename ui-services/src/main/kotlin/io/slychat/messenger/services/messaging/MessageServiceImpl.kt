@@ -71,9 +71,11 @@ class MessageServiceImpl(
         }
     }
 
+    //this can be called without opening the conversation, so we might have unread messages
     override fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception> {
         return messagePersistenceManager.deleteAllMessages(conversationId) successUi {
             messageUpdatesSubject.onNext(MessageUpdateEvent.DeletedAll(conversationId))
+            emitCurrentConversationDisplayInfo(conversationId)
         }
     }
 
