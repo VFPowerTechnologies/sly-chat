@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui.impl
 
 import com.nhaarman.mockito_kotlin.whenever
+import io.slychat.messenger.core.persistence.ConversationDisplayInfo
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.MockUserComponent
 import io.slychat.messenger.services.di.UserComponent
@@ -15,12 +16,14 @@ class UIMessengerServiceImplTest {
     val userComponent = MockUserComponent()
 
     val messageUpdates: PublishSubject<MessageUpdateEvent> = PublishSubject.create()
+    val conversationInfoUpdates: PublishSubject<ConversationDisplayInfo> = PublishSubject.create()
     val newMessages: PublishSubject<ConversationMessage> = PublishSubject.create()
     val clockDiffUpdates: PublishSubject<Long> = PublishSubject.create()
 
     @Before
     fun before() {
         whenever(userComponent.messageService.messageUpdates).thenReturn(messageUpdates)
+        whenever(userComponent.messageService.conversationInfoUpdates).thenReturn(conversationInfoUpdates)
         whenever(userComponent.messageService.newMessages).thenReturn(newMessages)
         whenever(userComponent.relayClock.clockDiffUpdates).thenReturn(clockDiffUpdates)
     }
