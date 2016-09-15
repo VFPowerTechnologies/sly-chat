@@ -13,6 +13,9 @@ class DesktopNotificationService : PlatformNotificationService {
     }
 
     override fun updateConversationNotification(conversationDisplayInfo: ConversationDisplayInfo) {
+        if (conversationDisplayInfo.unreadCount == 0)
+            return
+
         val lastMessageData = conversationDisplayInfo.lastMessageData
 
         val messageInfo = if (lastMessageData != null)
