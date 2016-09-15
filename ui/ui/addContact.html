@@ -1,4 +1,4 @@
-{{#unless @global.android}}
+{{#if @global.ios}}
 <div class="navbar">
     <div class="navbar-inner">
         <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a> New Contact</div>
@@ -6,12 +6,12 @@
         </div>
     </div>
 </div>
-{{/unless}}
+{{/if}}
 
 <div class="pages">
     <div data-page="addContact" class="page page-on-center">
 
-        {{#if @global.android}}
+        {{#unless @global.ios}}
         <div class="navbar">
             <div class="navbar-inner">
                 <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
@@ -20,7 +20,7 @@
                 </div>
             </div>
         </div>
-        {{/if}}
+        {{/unless}}
 
         <div class="page-content">
             <div>

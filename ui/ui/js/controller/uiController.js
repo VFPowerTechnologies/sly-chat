@@ -73,7 +73,7 @@ UIController.prototype = {
     },
 
     initApplication : function () {
-        window.isAndroid = Framework7.prototype.device.ios === false;
+        window.isAndroid = Framework7.prototype.device.android === true;
         window.isIos = Framework7.prototype.device.ios === true;
         window.isDesktop = Framework7.prototype.device.ios === false && Framework7.prototype.device.android === false;
 

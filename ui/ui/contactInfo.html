@@ -1,4 +1,4 @@
-{{#unless @global.android}}
+{{#if @global.ios}}
 <!-- Top Navbar -->
 <div class="navbar top-navbar">
     <div class="navbar-inner">
@@ -6,13 +6,12 @@
         <div class="center sliding">Contact Info</div>
     </div>
 </div>
-{{/unless}}
+{{/if}}
 
 <div class="pages">
     <div data-page="contactInfo" class="page">
 
         {{#if @global.android}}
-        {{#unless @global.isDesktop}}
         <!-- Top Navbar -->
         <div class="navbar top-navbar">
             <div class="navbar-inner">
@@ -20,7 +19,6 @@
                 <div class="center sliding">Contact Info</div>
             </div>
         </div>
-        {{/unless}}
         {{/if}}
 
         {{#if @global.isDesktop}}
