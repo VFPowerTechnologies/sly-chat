@@ -98,7 +98,7 @@ class MessageProcessorImplTest {
 
         verify(messageService).addMessage(eq(sender.toConversationId()), capture {
             val info = it.info
-            assertEquals(m.ttl, info.ttl, "Invalid TTL")
+            assertEquals(m.ttlMs, info.ttlMs, "Invalid TTL")
             assertFalse(info.isRead, "Message should not be marked as read")
             assertEquals(m.message, info.message, "Invalid message text")
         })

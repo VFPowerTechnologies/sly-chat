@@ -85,9 +85,9 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
     fun addMessage(userId: UserId, isSent: Boolean, message: String, ttl: Long): ConversationMessageInfo {
         val conversationMessageInfo = if (isSent)
-            ConversationMessageInfo(null, randomSentMessageInfo().copy(message = message, ttl = ttl))
+            ConversationMessageInfo(null, randomSentMessageInfo().copy(message = message, ttlMs = ttl))
         else
-            ConversationMessageInfo(userId, randomReceivedMessageInfo().copy(message = message, ttl = ttl))
+            ConversationMessageInfo(userId, randomReceivedMessageInfo().copy(message = message, ttlMs = ttl))
 
         messagePersistenceManager.addMessage(ConversationId(userId), conversationMessageInfo).get()
 
@@ -110,9 +110,9 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
         fun addMessage(conversationId: ConversationId, speaker: UserId, isSent: Boolean, message: String, ttl: Long): ConversationMessageInfo {
             val conversationMessageInfo = if (isSent)
-                ConversationMessageInfo(null, randomSentMessageInfo().copy(message = message, ttl = ttl))
+                ConversationMessageInfo(null, randomSentMessageInfo().copy(message = message, ttlMs = ttl))
             else
-                ConversationMessageInfo(speaker, randomReceivedMessageInfo().copy(message = message, ttl = ttl))
+                ConversationMessageInfo(speaker, randomReceivedMessageInfo().copy(message = message, ttlMs = ttl))
 
             messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
 
@@ -177,7 +177,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val messageInfo = got.info
 
             assertEquals(messageText, messageInfo.message)
-            assertEquals(ttl, messageInfo.ttl)
+            assertEquals(ttl, messageInfo.ttlMs)
             assertTrue(messageInfo.isSent)
             assertFalse(messageInfo.isDelivered)
         }
@@ -1005,7 +1005,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val got = getMessage(conversationId, messageId)
 
             assertTrue(got.info.isExpired, "Message should be marked as expired")
-            assertEquals(0, got.info.ttl, "TTL not reset")
+            assertEquals(0, got.info.ttlMs, "TTL not reset")
             assertEquals(0, got.info.expiresAt, "expiresAt not reset")
             assertEquals("", got.info.message, "Message text not deleted")
         }

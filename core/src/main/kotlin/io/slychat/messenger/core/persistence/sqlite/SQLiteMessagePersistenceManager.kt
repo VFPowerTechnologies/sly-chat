@@ -52,7 +52,7 @@ class SQLiteMessagePersistenceManager(
         stmt.bind(4, messageInfo.receivedTimestamp)
         stmt.bind(5, messageInfo.isRead)
         stmt.bind(6, messageInfo.isExpired)
-        stmt.bind(7, messageInfo.ttl)
+        stmt.bind(7, messageInfo.ttlMs)
         stmt.bind(8, messageInfo.expiresAt)
         stmt.bind(9, messageInfo.isDelivered)
         stmt.bind(10, messageInfo.message)

@@ -29,7 +29,7 @@ class MessageExpirationWatcherImpl(
         messageService.newMessages.filter {
             val messageInfo = it.conversationMessageInfo.info
 
-            messageInfo.isSent && messageInfo.ttl > 0
+            messageInfo.isSent && messageInfo.ttlMs > 0
         }.subscribe { onSelfExpiringMessage(it) }
     }
 

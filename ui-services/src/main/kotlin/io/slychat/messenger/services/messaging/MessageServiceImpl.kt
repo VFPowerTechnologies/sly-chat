@@ -94,11 +94,11 @@ class MessageServiceImpl(
             return Promise.ofSuccess(Unit)
         }
 
-        val expiresAt = currentTimestamp() + conversationMessageInfo.info.ttl
+        val expiresAt = currentTimestamp() + conversationMessageInfo.info.ttlMs
 
         return messagePersistenceManager.setExpiration(conversationId, messageId, expiresAt) mapUi { wasUpdated ->
             if (wasUpdated)
-                messageUpdatesSubject.onNext(MessageUpdateEvent.Expiring(conversationId, messageId, conversationMessageInfo.info.ttl, expiresAt))
+                messageUpdatesSubject.onNext(MessageUpdateEvent.Expiring(conversationId, messageId, conversationMessageInfo.info.ttlMs, expiresAt))
         }
     }
 
