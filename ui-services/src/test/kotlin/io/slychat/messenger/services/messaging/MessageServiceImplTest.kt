@@ -287,6 +287,17 @@ class MessageServiceImplTest {
     }
 
     @Test
+    fun `it should emit a conversation info update when expireMessages is called`() {
+        testConversationInfoUpdate { conversationId ->
+            val messages = mapOf(
+                conversationId to listOf(randomMessageId())
+            )
+
+            messageService.expireMessages(messages, false).get()
+        }
+    }
+
+    @Test
     fun `it should emit expired events with the given fromSync value when expiredMessages is called`() {
         val conversationId = randomUserConversationId()
         val messageId = randomMessageId()

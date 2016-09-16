@@ -116,6 +116,8 @@ class MessageServiceImpl(
                 messageIds.forEach {
                     messageUpdatesSubject.onNext(MessageUpdateEvent.Expired(conversationId, it, fromSync))
                 }
+
+                emitCurrentConversationDisplayInfo(conversationId)
             }
         }
     }
