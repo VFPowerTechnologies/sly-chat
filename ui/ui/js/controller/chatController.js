@@ -453,11 +453,6 @@ ChatController.prototype = {
     submitNewMessage : function (contact, message) {
         if (contact.email === undefined) {
             messengerService.sendGroupMessageTo(contact.id, message, 0).then(function () {
-                var groupMessageDetails = {
-                    info: messageDetails,
-                    speaker: null
-                };
-
                 var input = $("#newMessageInput");
                 input.val("");
                 input.click();
