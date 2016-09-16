@@ -565,7 +565,7 @@ GroupController.prototype = {
             block = {
                     text: 'Unblock',
                     onClick: function () {
-                        slychat.confirm("Are you sure you want to unblock " + member.name, function () {
+                        slychat.confirm("Are you sure you want to unblock " + member.name + "?", function () {
                             contactService.unblock(member.id).then(function () {
                                 contactController.contacts[member.id].allowedMessageLevel = "GROUP_ONLY";
                                 this.createGroupInfoMemberList(this.getGroupMembers($("#groupIdHidden").html()));
@@ -588,7 +588,7 @@ GroupController.prototype = {
             block = {
                 text: 'Block',
                 onClick: function () {
-                    slychat.confirm("Are you sure you want to block " + member.name, function () {
+                    slychat.confirm("Are you sure you want to block " + member.name + "?", function () {
                         contactService.block(member.id).then(function () {
                             contactController.contacts[member.id].allowedMessageLevel = "BLOCKED";
                             this.createGroupInfoMemberList(this.getGroupMembers($("#groupIdHidden").html()));
