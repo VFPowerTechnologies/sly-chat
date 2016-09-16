@@ -206,16 +206,20 @@ class AddressBookSyncJobImpl(
             log.info("Remote updates: {}", allUpdates)
 
             val keyVault = userLoginData.keyVault
-            val request = updateRequestFromAddressBookUpdates(keyVault, allUpdates)
+            val entries = encryptRemoteAddressBookEntries(keyVault, allUpdates)
 
-            contactsPersistenceManager.addRemoteEntryHashes(request.entries) bind { localHash ->
+            contactsPersistenceManager.addRemoteEntryHashes(entries) bind { localHash ->
+                val request = UpdateAddressBookRequest(localHash, entries)
+
                 updateRemoteAddressBook(userCredentials, request) bind { response ->
                     val serverHash = response.hash
-                    log.debug("Remote/local Address book hashes: {}/{}", serverHash, localHash)
+                    val updated = response.updated
+
+                    log.debug("Remote/local Address book hashes: {}/{}; updated: {}", serverHash, localHash, updated)
 
                     contactsPersistenceManager.removeRemoteUpdates(contactUpdates.map { it.userId }) bind {
                         groupPersistenceManager.removeRemoteUpdates(groupUpdates.map { it.groupId }) map {
-                            if (serverHash != localHash)
+                            if (updated)
                                  updateCount
                             else
                                 0

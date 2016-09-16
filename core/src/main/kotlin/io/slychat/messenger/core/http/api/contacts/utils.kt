@@ -7,6 +7,7 @@ import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.RemoteAddressBookEntry
+import org.spongycastle.crypto.digests.MD5Digest
 import org.spongycastle.crypto.digests.SHA256Digest
 
 private fun UserId.toByteArray(): ByteArray =
@@ -71,8 +72,42 @@ fun decryptRemoteAddressBookEntries(keyVault: KeyVault, entries: List<RemoteAddr
     }
 }
 
-fun updateRequestFromAddressBookUpdates(keyVault: KeyVault, addressBookUpdates: List<AddressBookUpdate>): UpdateAddressBookRequest {
+fun updateRequestFromAddressBookUpdates(addressBookHash: String, keyVault: KeyVault, addressBookUpdates: List<AddressBookUpdate>): UpdateAddressBookRequest {
     val updates = encryptRemoteAddressBookEntries(keyVault, addressBookUpdates)
 
-    return UpdateAddressBookRequest(updates)
+    return UpdateAddressBookRequest(addressBookHash, updates)
+}
+
+fun md5(data: ByteArray): ByteArray {
+    val digester = MD5Digest()
+    val digest = ByteArray(digester.digestSize)
+
+    digester.update(data, 0, data.size)
+
+    digester.doFinal(digest, 0)
+
+    return digest
+}
+
+inline fun md5Fold(body: ((ByteArray) -> Unit) -> Unit): ByteArray {
+    val digester = MD5Digest()
+    val digest = ByteArray(digester.digestSize)
+
+    val updater = { piece: ByteArray ->
+        digester.update(piece, 0, piece.size)
+    }
+
+    body(updater)
+
+    digester.doFinal(digest, 0)
+
+    return digest
+}
+
+fun hashFromRemoteAddressBookEntries(remoteAddressBookEntries: Collection<RemoteAddressBookEntry>): String {
+    return md5Fold { updater ->
+        remoteAddressBookEntries.forEach {
+            updater(md5(it.encryptedData))
+        }
+    }.hexify()
 }
