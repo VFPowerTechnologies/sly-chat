@@ -34,6 +34,9 @@ dependencies {
 }
 
 jfx {
+    //don't disable this, otherwise errors won't be displayed at all
+    verbose = true
+
     mainClass = mainClassName
 
     jfxMainAppJarName = 'sly-messenger.jar'
@@ -41,9 +44,4 @@ jfx {
     appName = 'sly-messenger'
 
     vendor = 'Keystream Information Systems'
-
-    //the plugin refuses to run jfxNative without this, even if no gradle instances are running, or via --no-daemon
-    //this is to get around a cleaning bug involving a dangling fd on windows
-    //see https://github.com/FibreFoX/javafx-gradle-plugin/issues/12
-    skipDaemonModeCheck = true
 }
