@@ -103,11 +103,9 @@ class MessageServiceImplTest {
 
     fun testAddMessage(isDuplicate: Boolean) {
         forEachConvType { conversationId ->
-            listOf(randomSentConversationMessageInfo(), randomReceivedConversationMessageInfo(randomUserId())).forEach { conversationMessageInfo ->
-                val expected = when (conversationId) {
-                    is ConversationId.User -> ConversationMessage.Single(conversationId.id, conversationMessageInfo.info)
-                    is ConversationId.Group -> ConversationMessage.Group(conversationId.id, conversationMessageInfo.speaker, conversationMessageInfo.info)
-                }
+            val conversationMessageInfo = randomSentConversationMessageInfo()
+            listOf(conversationMessageInfo, randomReceivedConversationMessageInfo(randomUserId())).forEach { conversationMessageInfo ->
+                val expected = ConversationMessage(conversationId, conversationMessageInfo)
 
                 val testSubscriber = messageService.newMessages.testSubscriber()
 

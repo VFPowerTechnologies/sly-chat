@@ -20,8 +20,8 @@ interface MessengerService {
     fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception>
 
     /* UIMessengerService interface */
-    fun sendMessageTo(userId: UserId, message: String, ttl: Long): Promise<Unit, Exception>
-    fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<Unit, Exception>
+    fun sendMessageTo(userId: UserId, message: String, ttlMs: Long): Promise<Unit, Exception>
+    fun sendGroupMessageTo(groupId: GroupId, message: String, ttlMs: Long): Promise<Unit, Exception>
     fun createNewGroup(groupName: String, initialMembers: Set<UserId>): Promise<GroupId, Exception>
     fun inviteUsersToGroup(groupId: GroupId, newMembers: Set<UserId>): Promise<Unit, Exception>
     fun partGroup(groupId: GroupId): Promise<Boolean, Exception>

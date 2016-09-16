@@ -363,7 +363,7 @@ class UserModule(
     ): RelayClock =
         RelayClockImpl(
             relayClientManager.clockDifference,
-            TimeUnit.SECONDS.toMillis(20)
+            TimeUnit.SECONDS.toMillis(5)
         )
 
     @UserScope

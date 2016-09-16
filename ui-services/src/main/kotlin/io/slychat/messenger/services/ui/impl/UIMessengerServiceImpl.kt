@@ -103,11 +103,13 @@ class UIMessengerServiceImpl(
 
     /** First we add to the log, then we display it to the user. */
     private fun onNewMessages(message: ConversationMessage) {
-        val messages = listOf(message.info.toUI())
+        val conversationMessageInfo = message.conversationMessageInfo
+        val messages = listOf(conversationMessageInfo.info.toUI())
+        val conversationId = message.conversationId
 
-        val uiMessageInfo = when (message) {
-            is ConversationMessage.Single -> UIMessageInfo(message.userId, null, messages)
-            is ConversationMessage.Group -> UIMessageInfo(message.speaker, message.groupId, messages)
+        val uiMessageInfo = when (conversationId) {
+            is ConversationId.User -> UIMessageInfo(conversationId.id, null, messages)
+            is ConversationId.Group -> UIMessageInfo(conversationMessageInfo.speaker, conversationId.id, messages)
         }
 
         notifyNewMessageListeners(uiMessageInfo)
@@ -149,12 +151,12 @@ class UIMessengerServiceImpl(
 
     /* Interface methods. */
 
-    override fun sendMessageTo(userId: UserId, message: String, ttl: Long): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().sendMessageTo(userId, message, ttl)
+    override fun sendMessageTo(userId: UserId, message: String, ttlMs: Long): Promise<Unit, Exception> {
+        return getMessengerServiceOrThrow().sendMessageTo(userId, message, ttlMs)
     }
 
-    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().sendGroupMessageTo(groupId, message, ttl)
+    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttlMs: Long): Promise<Unit, Exception> {
+        return getMessengerServiceOrThrow().sendGroupMessageTo(groupId, message, ttlMs)
     }
 
     override fun addNewMessageListener(listener: (UIMessageInfo) -> Unit) {

@@ -9,7 +9,7 @@ class DesktopNotificationService : PlatformNotificationService {
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun clearAllMessageNotifications() {
-        log.info("Clearing all notifications")
+        log.debug("Clearing all notifications")
     }
 
     override fun updateConversationNotification(conversationDisplayInfo: ConversationDisplayInfo) {
@@ -18,16 +18,10 @@ class DesktopNotificationService : PlatformNotificationService {
 
         val lastMessageData = conversationDisplayInfo.lastMessageData
 
-        val messageInfo = if (lastMessageData != null)
-            "; ${lastMessageData.speakerName} said: ${lastMessageData.message}"
-        else
-            ""
-
-        log.info(
-            "New notification for {}: count={}{}",
+        log.debug(
+            "New notification for {}: count={}",
             conversationDisplayInfo.conversationId,
-            conversationDisplayInfo.unreadCount,
-            messageInfo
+            conversationDisplayInfo.unreadCount
         )
 
         if (lastMessageData != null)

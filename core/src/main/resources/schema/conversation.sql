@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS `conv_%id%` (
     n INTEGER NOT NULL,
     is_read INTEGER NOT NULL,
     is_expired INTEGER NOT NULL,
-    -- number of seconds from view until the message is destroyed
+    -- number of ms from view until the message is destroyed
     -- 0 indicates the message has no time limit
     ttl INTEGER NOT NULL,
     -- a time when this message should no longer be viewable

@@ -18,7 +18,7 @@ data class SyncSentMessageInfo(
     @JsonProperty("receivedTimestamp")
     val receivedTimestamp: Long,
     @JsonProperty("ttl")
-    val ttl: Long
+    val ttlMs: Long
 ) {
     fun toMessageInfo(): MessageInfo {
         return MessageInfo(
@@ -30,7 +30,7 @@ data class SyncSentMessageInfo(
             true,
             true,
             false,
-            ttl,
+            ttlMs,
             0
         )
     }
