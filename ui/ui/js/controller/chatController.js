@@ -14,8 +14,8 @@ ChatController.prototype = {
                 case 'DELIVERED':
                     var messageBlock = $("#message_" + event.messageId);
                     if(messageBlock.length){
-                        var time = new Date(event.deliveredTimestamp).toISOString();
-                        messageBlock.find(".timespan").html("<time class='timeago' datetime='" + time + "' title='" + $.timeago(time, window.relayTimeDifference) + "'>" + $.timeago(time, window.relayTimeDifference) + "</time>");
+                        var time = new Date(event.deliveredTimestamp - window.relayTimeDifference).toISOString();
+                        messageBlock.find(".timespan").html("<time class='timeago' datetime='" + time + "' title='" + $.timeago(time) + "'>" + $.timeago(time) + "</time>");
                     }
 
                     break;
@@ -56,8 +56,8 @@ ChatController.prototype = {
             timespan = "Delivering...";
         }
         else {
-            var time = new Date(message.info.timestamp).toISOString();
-            timespan = "<time class='timeago' datetime='" + time + "' title='" + $.timeago(time, window.relayTimeDifference) + "'>" + $.timeago(time, window.relayTimeDifference) + "</time>";
+            var time = new Date(message.info.timestamp - window.relayTimeDifference).toISOString();
+            timespan = "<time class='timeago' datetime='" + time + "' title='" + $.timeago(time) + "'>" + $.timeago(time) + "</time>";
         }
 
         this.lastMessage = message;
@@ -80,7 +80,7 @@ ChatController.prototype = {
             this.openGroupMessageMenu(message, group);
         }.bind(this));
 
-        messageNode.find(".timeago").timeago("initiation", {relayDifference: window.relayTimeDifference});
+        messageNode.find(".timeago").timeago();
 
         return messageNode;
     },
@@ -108,8 +108,8 @@ ChatController.prototype = {
             timespan = "Delivering...";
         }
         else {
-            var time = new Date(message.timestamp).toISOString();
-            timespan = "<time class='timeago' datetime='" + time + "' title='" + $.timeago(time, window.relayTimeDifference) + "'>" + $.timeago(time, window.relayTimeDifference) + "</time>";
+            var time = new Date(message.timestamp - window.relayTimeDifference).toISOString();
+            timespan = "<time class='timeago' datetime='" + time + "' title='" + $.timeago(time) + "'>" + $.timeago(time) + "</time>";
         }
 
         this.lastMessage = message;
@@ -124,7 +124,7 @@ ChatController.prototype = {
             this.openMessageMenu(message);
         }.bind(this));
 
-        messageNode.find(".timeago").timeago("initiation", {relayDifference: window.relayTimeDifference});
+        messageNode.find(".timeago").timeago();
 
         return messageNode;
     },
