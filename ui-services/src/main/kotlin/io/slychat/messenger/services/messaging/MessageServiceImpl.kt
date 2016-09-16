@@ -47,10 +47,7 @@ class MessageServiceImpl(
 
     override fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
         return messagePersistenceManager.addMessage(conversationId, conversationMessageInfo) mapUi {
-            val conversationMessage = when (conversationId) {
-                is ConversationId.User -> ConversationMessage.Single(conversationId.id, conversationMessageInfo.info)
-                is ConversationId.Group -> ConversationMessage.Group(conversationId.id, conversationMessageInfo.speaker, conversationMessageInfo.info)
-            }
+            val conversationMessage = ConversationMessage(conversationId, conversationMessageInfo)
 
             newMessagesSubject.onNext(conversationMessage)
         } success {
