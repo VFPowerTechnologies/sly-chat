@@ -68,7 +68,7 @@ class AddressBookSyncJobImplTest {
         whenever(contactsPersistenceManager.getAddressBookHash()).thenResolve(emptyMd5)
         whenever(contactsPersistenceManager.addRemoteEntryHashes(any())).thenResolve(emptyMd5)
 
-        whenever(addressBookAsyncClient.update(any(), any())).thenResolve(UpdateAddressBookResponse(updateMd5))
+        whenever(addressBookAsyncClient.update(any(), any())).thenResolve(UpdateAddressBookResponse(updateMd5, true))
         whenever(addressBookAsyncClient.get(any(), any())).thenResolve(GetAddressBookResponse(emptyList()))
 
         whenever(promiseTimerFactory.run(any(), any())).thenResolve(Unit)
@@ -286,7 +286,7 @@ class AddressBookSyncJobImplTest {
     }
 
     @Test
-    fun `a push should indicate no updates were performed if the server returns the same version number`() {
+    fun `a push should indicate no updates were performed if the server returns updated=false`() {
         val groupInfo = randomGroupInfo()
 
         val groupUpdates = listOf(
@@ -301,7 +301,7 @@ class AddressBookSyncJobImplTest {
         whenever(groupPersistenceManager.getRemoteUpdates()).thenResolve(groupUpdates)
 
         whenever(contactsPersistenceManager.getAddressBookHash()).thenResolve(emptyMd5)
-        whenever(addressBookAsyncClient.update(any(), any())).thenResolve(UpdateAddressBookResponse(emptyMd5))
+        whenever(addressBookAsyncClient.update(any(), any())).thenResolve(UpdateAddressBookResponse(emptyMd5, false))
 
         val result = runPush()
 
@@ -309,7 +309,7 @@ class AddressBookSyncJobImplTest {
     }
 
     @Test
-    fun `a push should indicate the number of updates available if the server returns a new version number`() {
+    fun `a push should indicate the number of updates available if the server returns updated=true`() {
         val groupInfo = randomGroupInfo()
 
         val groupUpdates = listOf(
@@ -340,7 +340,8 @@ class AddressBookSyncJobImplTest {
 
         runPush()
 
-        val request = updateRequestFromAddressBookUpdates(keyVault, updates)
+        val request = updateRequestFromAddressBookUpdates(emptyMd5, keyVault, updates)
+
         verify(addressBookAsyncClient).update(any(), eq(request))
     }
 
@@ -354,7 +355,8 @@ class AddressBookSyncJobImplTest {
 
         runPush()
 
-        val request = updateRequestFromAddressBookUpdates(keyVault, updates)
+        val request = updateRequestFromAddressBookUpdates(emptyMd5, keyVault, updates)
+
         verify(addressBookAsyncClient).update(any(), eq(request))
     }
 

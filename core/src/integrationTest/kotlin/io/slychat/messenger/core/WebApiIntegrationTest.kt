@@ -741,6 +741,31 @@ class WebApiIntegrationTest {
     }
 
     @Test
+    fun `updating the address book should add return the updated hash`() {
+        val userA = injectNamedSiteUser("a@a.com")
+        val userB = injectNamedSiteUser("b@a.com")
+        val userC = injectNamedSiteUser("c@a.com")
+
+        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
+
+        val authToken = devClient.createAuthToken(userA.user.username)
+
+        val updates = listOf(
+            AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.GROUP_ONLY),
+            AddressBookUpdate.Contact(userC.user.id, AllowedMessageLevel.BLOCKED)
+        )
+
+        val updated = encryptRemoteAddressBookEntries(userA.keyVault, updates)
+        val localHash = hashFromRemoteAddressBookEntries(updated)
+
+        val request = UpdateAddressBookRequest(localHash, updated)
+
+        val response = client.update(userA.getUserCredentials(authToken), request)
+
+        assertEquals(localHash, response.hash, "Server hash doesn't match local hash")
+    }
+
+    @Test
     fun `Updating the address book should update the given contacts`() {
         val userA = injectNamedSiteUser("a@a.com")
         val userB = injectNamedSiteUser("b@a.com")
@@ -759,10 +784,15 @@ class WebApiIntegrationTest {
             AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.GROUP_ONLY),
             AddressBookUpdate.Contact(userC.user.id, AllowedMessageLevel.BLOCKED)
         )
-        val updated = encryptRemoteAddressBookEntries(userA.keyVault, updates)
-        val request = UpdateAddressBookRequest(updated)
 
-        client.update(userA.getUserCredentials(authToken), request)
+        val updated = encryptRemoteAddressBookEntries(userA.keyVault, updates)
+        val localHash = hashFromRemoteAddressBookEntries(updated)
+
+        val request = UpdateAddressBookRequest(localHash, updated)
+
+        val response = client.update(userA.getUserCredentials(authToken), request)
+
+        assertTrue(response.updated, "Server says updates had no effect")
 
         val addressBook = devClient.getAddressBook(userA.user.username)
 
@@ -776,16 +806,44 @@ class WebApiIntegrationTest {
     }
 
     @Test
+    fun `updates that have no effects should be reported by the server`() {
+        val userA = injectNamedSiteUser("a@a.com")
+        val userB = injectNamedSiteUser("b@a.com")
+
+        val contactList = encryptRemoteAddressBookEntries(userA.keyVault, listOf(userB).map { AddressBookUpdate.Contact(it.user.id, AllowedMessageLevel.ALL) })
+
+        devClient.addAddressBookEntries(userA.user.username, contactList)
+
+        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
+
+        val authToken = devClient.createAuthToken(userA.user.username)
+
+        val updates = listOf(
+            AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)
+        )
+
+        val updated = encryptRemoteAddressBookEntries(userA.keyVault, updates)
+        val localHash = hashFromRemoteAddressBookEntries(updated)
+
+        val request = UpdateAddressBookRequest(localHash, updated)
+
+        val response = client.update(userA.getUserCredentials(authToken), request)
+
+        assertFalse(response.updated, "Server reports that updates occured")
+    }
+
+    @Test
     fun `Updating the address book should create new contact entries`() {
         val userA = injectNamedSiteUser("a@a.com")
         val userB = injectNamedSiteUser("b@a.com")
 
         val authToken = devClient.createAuthToken(userA.user.username)
         val aContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)))
+        val localHash = hashFromRemoteAddressBookEntries(aContacts)
 
         val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
         val userCredentials = userA.getUserCredentials(authToken)
-        client.update(userCredentials, UpdateAddressBookRequest(aContacts))
+        client.update(userCredentials, UpdateAddressBookRequest(localHash, aContacts))
 
         val contacts = devClient.getAddressBook(userA.user.username)
 

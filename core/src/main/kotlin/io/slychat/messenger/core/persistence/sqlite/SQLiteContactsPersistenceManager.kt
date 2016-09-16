@@ -6,10 +6,11 @@ import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.hexify
 import io.slychat.messenger.core.crypto.unhexify
+import io.slychat.messenger.core.http.api.contacts.md5
+import io.slychat.messenger.core.http.api.contacts.md5Fold
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
 import org.slf4j.LoggerFactory
-import org.spongycastle.crypto.digests.MD5Digest
 import java.util.*
 
 internal fun contactInfoFromRow(stmt: SQLiteStatement) =
@@ -407,30 +408,13 @@ FROM
 ORDER BY
     id_hash
 """
-        val digester = MD5Digest()
-        val digest = ByteArray(digester.digestSize)
-
-        connection.withPrepared(sql) { stmt ->
-            stmt.foreach {
-                val dataHash = stmt.columnBlob(0)
-                digester.update(dataHash, 0, dataHash.size)
+        return connection.withPrepared(sql) { stmt ->
+            md5Fold {
+                stmt.foreach {
+                    it(stmt.columnBlob(0))
+                }
             }
-        }
-
-        digester.doFinal(digest, 0)
-
-        return digest.hexify()
-    }
-
-    private fun md5(data: ByteArray): ByteArray {
-        val digester = MD5Digest()
-        val digest = ByteArray(digester.digestSize)
-
-        digester.update(data, 0, data.size)
-
-        digester.doFinal(digest, 0)
-
-        return digest
+        }.hexify()
     }
 
     override fun addRemoteEntryHashes(remoteEntries: Collection<RemoteAddressBookEntry>): Promise<String, Exception> = sqlitePersistenceManager.runQuery { connection ->
