@@ -3,7 +3,7 @@
  * updating fuzzy timestamps (e.g. "4 minutes ago" or "about 1 day ago").
  *
  * @name timeago
- * @version 1.5.2
+ * @version 1.5.3
  * @requires jQuery v1.2.3+
  * @author Ryan McGeary
  * @license MIT License - http://www.opensource.org/licenses/mit-license.php
@@ -25,15 +25,15 @@
         factory(jQuery);
     }
 }(function ($) {
-    $.timeago = function(timestamp, diff) {
+    $.timeago = function(timestamp) {
         if (timestamp instanceof Date) {
-            return inWords(timestamp, diff);
+            return inWords(timestamp);
         } else if (typeof timestamp === "string") {
-            return inWords($.timeago.parse(timestamp), diff);
+            return inWords($.timeago.parse(timestamp));
         } else if (typeof timestamp === "number") {
-            return inWords(new Date(timestamp), diff);
+            return inWords(new Date(timestamp));
         } else {
-            return inWords($.timeago.datetime(timestamp), diff);
+            return inWords($.timeago.datetime(timestamp));
         }
     };
     var $t = $.timeago;
@@ -67,6 +67,7 @@
                 numbers: []
             }
         },
+
 
         inWords: function(distanceMillis) {
             if (!this.settings.allowPast && ! this.settings.allowFuture) {
@@ -147,22 +148,12 @@
                 this._timeagoInterval = setInterval(refresh_el, $s.refreshMillis);
             }
         },
-        initiation: function(options) {
-            var diff = undefined;
-            if (options !== undefined && options.relayDifference !== undefined) {
-                diff = options.relayDifference;
-            }
-            var refresh_el = $.proxy(refresh, this, diff);
-            refresh_el();
-            var $s = $t.settings;
-            if ($s.refreshMillis > 0) {
-                this._timeagoInterval = setInterval(refresh_el, $s.refreshMillis);
-            }
-        },
         update: function(timestamp) {
             var date = (timestamp instanceof Date) ? timestamp : $t.parse(timestamp);
             $(this).data('timeago', { datetime: date });
-            if ($t.settings.localeTitle) $(this).attr("title", date.toLocaleString());
+            if ($t.settings.localeTitle) {
+                $(this).attr("title", date.toLocaleString());
+            }
             refresh.apply(this);
         },
         updateFromDOM: function() {
@@ -189,7 +180,7 @@
         return this;
     };
 
-    function refresh(diff) {
+    function refresh() {
         var $s = $t.settings;
 
         //check if it's still visible
@@ -202,8 +193,12 @@
         var data = prepareData(this);
 
         if (!isNaN(data.datetime)) {
-            if ( $s.cutoff == 0 || Math.abs(distance(data.datetime)) < $s.cutoff) {
-                $(this).text(inWords(data.datetime, diff));
+            if ( $s.cutoff === 0 || Math.abs(distance(data.datetime)) < $s.cutoff) {
+                $(this).text(inWords(data.datetime));
+            } else {
+                if ($(this).attr('title').length > 0) {
+                    $(this).text($(this).attr('title'));
+                }
             }
         }
         return this;
@@ -223,19 +218,12 @@
         return element.data("timeago");
     }
 
-    function inWords(date, diff) {
-        return $t.inWords(distance(date, diff));
+    function inWords(date) {
+        return $t.inWords(distance(date));
     }
 
-    function distance(date, diff) {
-        var now;
-
-        if (diff === undefined)
-            now = new Date();
-        else
-            now = new Date(new Date().getTime() + diff);
-            
-        return (now.getTime() - date.getTime());
+    function distance(date) {
+        return (new Date().getTime() - date.getTime());
     }
 
     // fix for IE6 suckage
