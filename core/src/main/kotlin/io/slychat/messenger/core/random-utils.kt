@@ -148,16 +148,16 @@ fun randomReceivedMessageInfo(isRead: Boolean = false, expiresAt: Long = 0): Mes
     return MessageInfo.newReceived(randomMessageText(), currentTimestamp(), isRead)
 }
 
-fun randomSentMessageInfo(): MessageInfo {
-    return MessageInfo.newSent(randomMessageText(), 0)
+fun randomSentMessageInfo(ttlMs: Long = 0): MessageInfo {
+    return MessageInfo.newSent(randomMessageText(), ttlMs)
 }
 
 fun randomReceivedConversationMessageInfo(speaker: UserId?): ConversationMessageInfo {
     return ConversationMessageInfo(speaker, randomReceivedMessageInfo())
 }
 
-fun randomSentConversationMessageInfo(): ConversationMessageInfo {
-    return ConversationMessageInfo(null, randomSentMessageInfo())
+fun randomSentConversationMessageInfo(ttlMs: Long = 0): ConversationMessageInfo {
+    return ConversationMessageInfo(null, randomSentMessageInfo(ttlMs))
 }
 
 fun randomConversationDisplayInfo(): ConversationDisplayInfo =

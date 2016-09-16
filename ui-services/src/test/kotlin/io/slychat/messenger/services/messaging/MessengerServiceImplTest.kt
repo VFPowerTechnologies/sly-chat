@@ -288,7 +288,7 @@ class MessengerServiceImplTest {
 
         verify(messageSender).addToQueue(capture<SenderMessageEntry> {
             val message = deserializeTextMessage(it.message)
-            assertEquals(ttl, message.ttl, "Invalid TTL")
+            assertEquals(ttl, message.ttlMs, "Invalid TTL")
         })
     }
 
@@ -417,7 +417,7 @@ class MessengerServiceImplTest {
         verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
             val m = it.first()
             val message = deserializeTextMessage(m.message)
-            assertEquals(ttl, message.ttl, "Invalid TTL")
+            assertEquals(ttl, message.ttlMs, "Invalid TTL")
         })
     }
 
@@ -733,7 +733,7 @@ class MessengerServiceImplTest {
             messageInfo.message,
             messageInfo.timestamp,
             messageInfo.receivedTimestamp,
-            messageInfo.ttl
+            messageInfo.ttlMs
         )
 
         val message = retrieveSyncMessage<SyncMessage.SelfMessage>()
@@ -760,7 +760,7 @@ class MessengerServiceImplTest {
             messageInfo.message,
             messageInfo.timestamp,
             messageInfo.receivedTimestamp,
-            messageInfo.ttl
+            messageInfo.ttlMs
         )
 
         val message = retrieveSyncMessage<SyncMessage.SelfMessage>()

@@ -193,7 +193,7 @@ class MessengerServiceImpl(
 
     /* UIMessengerService interface */
 
-    override fun sendMessageTo(userId: UserId, message: String, ttl: Long): Promise<Unit, Exception> {
+    override fun sendMessageTo(userId: UserId, message: String, ttlMs: Long): Promise<Unit, Exception> {
         val isSelfMessage = userId == selfId
 
         //HACK
@@ -201,7 +201,7 @@ class MessengerServiceImpl(
         return if (!isSelfMessage) {
             val messageInfo = MessageInfo.newSent(message, relayClock.currentTime(), 0)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
-            val m = TextMessage(MessageId(messageInfo.id), messageInfo.timestamp, message, null, ttl)
+            val m = TextMessage(MessageId(messageInfo.id), messageInfo.timestamp, message, null, ttlMs)
             val wrapper = SlyMessage.Text(m)
 
             val serialized = objectMapper.writeValueAsBytes(wrapper)
@@ -249,8 +249,8 @@ class MessengerServiceImpl(
         return messageSender.addToQueue(messages) map { members }
     }
 
-    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttl: Long): Promise<Unit, Exception> {
-        val m = SlyMessage.Text(TextMessage(MessageId(randomMessageId()), currentTimestamp(), message, groupId, ttl))
+    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttlMs: Long): Promise<Unit, Exception> {
+        val m = SlyMessage.Text(TextMessage(MessageId(randomMessageId()), currentTimestamp(), message, groupId, ttlMs))
 
         val messageId = randomUUID()
 
@@ -398,7 +398,7 @@ class MessengerServiceImpl(
             messageInfo.message,
             messageInfo.timestamp,
             messageInfo.receivedTimestamp,
-            messageInfo.ttl
+            messageInfo.ttlMs
         )
 
         return sendSyncMessage(SyncMessage.SelfMessage(sentMessageInfo)) map { messageInfo }

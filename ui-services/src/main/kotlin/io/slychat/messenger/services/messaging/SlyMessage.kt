@@ -114,7 +114,7 @@ data class TextMessage(
     @JsonProperty("groupId")
     val groupId: GroupId?,
     @JsonProperty("ttl")
-    val ttl: Long
+    val ttlMs: Long
 )
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")

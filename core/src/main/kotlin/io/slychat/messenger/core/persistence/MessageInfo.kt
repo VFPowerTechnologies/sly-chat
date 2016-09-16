@@ -20,26 +20,26 @@ data class MessageInfo(
     val isDelivered: Boolean,
     val isRead: Boolean,
     val isExpired: Boolean,
-    val ttl: Long,
+    val ttlMs: Long,
     val expiresAt: Long
 ) {
     companion object {
-        fun newSent(message: String, ttl: Long): MessageInfo =
-            MessageInfo(randomMessageId(), message, currentTimestamp(), 0, true, false, true, false, ttl, 0)
+        fun newSent(message: String, ttlMs: Long): MessageInfo =
+            MessageInfo(randomMessageId(), message, currentTimestamp(), 0, true, false, true, false, ttlMs, 0)
 
-        fun newSelfSent(message: String, ttl: Long): MessageInfo {
+        fun newSelfSent(message: String, ttlMs: Long): MessageInfo {
             val receivedTimestamp = currentTimestamp()
-            return MessageInfo(randomMessageId(), message, receivedTimestamp, receivedTimestamp, true, true, true, false, ttl, 0)
+            return MessageInfo(randomMessageId(), message, receivedTimestamp, receivedTimestamp, true, true, true, false, ttlMs, 0)
         }
 
-        fun newSent(message: String, timestamp: Long, ttl: Long): MessageInfo =
-            MessageInfo(randomMessageId(), message, timestamp, 0, true, false, true, false, ttl, 0)
+        fun newSent(message: String, timestamp: Long, ttlMs: Long): MessageInfo =
+            MessageInfo(randomMessageId(), message, timestamp, 0, true, false, true, false, ttlMs, 0)
 
-        fun newReceived(id: String, message: String, timestamp: Long, receivedTimestamp: Long, isRead: Boolean, ttl: Long): MessageInfo =
-            MessageInfo(id, message, timestamp, receivedTimestamp, false, true, isRead, false, ttl, 0)
+        fun newReceived(id: String, message: String, timestamp: Long, receivedTimestamp: Long, isRead: Boolean, ttlMs: Long): MessageInfo =
+            MessageInfo(id, message, timestamp, receivedTimestamp, false, true, isRead, false, ttlMs, 0)
 
-        fun newReceived(message: String, timestamp: Long, ttl: Long): MessageInfo =
-            MessageInfo(randomMessageId(), message, timestamp, currentTimestamp(), false, true, false, false, ttl, 0)
+        fun newReceived(message: String, timestamp: Long, ttlMs: Long): MessageInfo =
+            MessageInfo(randomMessageId(), message, timestamp, currentTimestamp(), false, true, false, false, ttlMs, 0)
 
 
         fun newReceived(message: String, timestamp: Long, isRead: Boolean): MessageInfo =
@@ -49,5 +49,10 @@ data class MessageInfo(
     init {
         if (!isSent) require(isDelivered) { "isDelivered must be true when isSent is false" }
         if (isSent) require(isRead) { "isRead must be true when isSent is true" }
+
+        require(ttlMs >= 0) { "ttlMs: $ttlMs < 0" }
+        require(expiresAt >= 0) { "expiresAt: $expiresAt < 0" }
+        require(timestamp >= 0) { "timestamp: $timestamp < 0" }
+        require(receivedTimestamp >= 0) { "receivedTimestamp: $receivedTimestamp < 0" }
     }
 }
