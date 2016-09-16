@@ -38,11 +38,10 @@ data class MessageInfo(
             MessageInfo(id, message, timestamp, receivedTimestamp, false, true, isRead, false, ttlMs, 0)
 
         fun newReceived(message: String, timestamp: Long, ttlMs: Long): MessageInfo =
-            MessageInfo(randomMessageId(), message, timestamp, currentTimestamp(), false, true, false, false, ttlMs, 0)
-
+            MessageInfo(randomMessageId(), message, timestamp, timestamp, false, true, false, false, ttlMs, 0)
 
         fun newReceived(message: String, timestamp: Long, isRead: Boolean): MessageInfo =
-            MessageInfo(randomMessageId(), message, timestamp, currentTimestamp(), false, true, isRead, false, 0, 0)
+            MessageInfo(randomMessageId(), message, timestamp, timestamp, false, true, isRead, false, 0, 0)
     }
 
     init {
