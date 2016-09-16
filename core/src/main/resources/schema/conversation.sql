@@ -6,8 +6,7 @@ CREATE TABLE IF NOT EXISTS `conv_%id%` (
     -- NULL for your own messages
     speaker_contact_id INTEGER,
     -- unix time, in milliseconds
-    -- for sent messages, this is set twice; once on insertion, and then updated when setting is_delivered=1
-    -- this is to allow proper ordering of unsent messages
+    -- this is set when you sent the message
     timestamp INTEGER NOT NULL,
     -- for sent messages, this is updated when the server receives the message
     -- for received message, this is set to the time the client received the message from the server

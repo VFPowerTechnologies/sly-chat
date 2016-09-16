@@ -263,19 +263,52 @@ class MessengerServiceImplTest {
     }
 
     @Test
-    fun `it should use the RelayClock when creating sent message timestamps`() {
+    fun `it should use the RelayClock when creating sent message timestamps for user messages`() {
         val currentTime = 1000L
 
         whenever(relayClock.currentTime()).thenReturn(currentTime)
 
         val messengerService = createService()
 
-        messengerService.sendMessageTo(randomUserId(), randomMessageText(), 0)
+        val userId = randomUserId()
+
+        messengerService.sendMessageTo(userId, randomMessageText(), 0)
 
         verify(messageSender).addToQueue(capture<SenderMessageEntry> {
             val message = deserializeTextMessage(it.message)
 
             assertEquals(currentTime, message.timestamp, "RelayClock time not used")
+        })
+
+        verify(messageService).addMessage(eq(userId.toConversationId()), capture {
+            assertEquals(currentTime, it.info.timestamp, "RelayClock time not used")
+        })
+    }
+
+    @Test
+    fun `it should use the RelayClock when creating sent message timestamps for group messages`() {
+        val currentTime = 1000L
+
+        whenever(relayClock.currentTime()).thenReturn(currentTime)
+
+        val messengerService = createService()
+
+        val groupId = randomGroupId()
+
+        whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(setOf(randomUserId()))
+
+        messengerService.sendGroupMessageTo(groupId, randomMessageText(), 0)
+
+        verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
+            it.forEach {
+                val message = deserializeTextMessage(it.message)
+
+                assertEquals(currentTime, message.timestamp, "RelayClock time not used")
+            }
+        })
+
+        verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
+            assertEquals(currentTime, it.info.timestamp, "RelayClock time not used")
         })
     }
 

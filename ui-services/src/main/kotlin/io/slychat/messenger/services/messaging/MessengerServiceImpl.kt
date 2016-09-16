@@ -140,7 +140,7 @@ class MessengerServiceImpl(
     /** Writes the received message and then fires the new messages subject. */
     private fun writeReceivedSelfMessage(from: UserId, messageText: String): Promise<Unit, Exception> {
         //we mark the message as already read as well to avoid notifications (FIXME)
-        val messageInfo = MessageInfo.newReceived(messageText, currentTimestamp(), true)
+        val messageInfo = MessageInfo.newReceived(messageText, relayClock.currentTime(), true)
         val conversationMessageInfo = ConversationMessageInfo(from, messageInfo)
         return messageService.addMessage(from.toConversationId(), conversationMessageInfo)
     }
@@ -199,6 +199,7 @@ class MessengerServiceImpl(
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         val timestamp = relayClock.currentTime()
+
         return if (!isSelfMessage) {
             val messageInfo = MessageInfo.newSent(message, timestamp, 0)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
@@ -251,12 +252,14 @@ class MessengerServiceImpl(
     }
 
     override fun sendGroupMessageTo(groupId: GroupId, message: String, ttlMs: Long): Promise<Unit, Exception> {
-        val m = SlyMessage.Text(TextMessage(MessageId(randomMessageId()), currentTimestamp(), message, groupId, ttlMs))
+        val timestamp = relayClock.currentTime()
+
+        val m = SlyMessage.Text(TextMessage(MessageId(randomMessageId()), timestamp, message, groupId, ttlMs))
 
         val messageId = randomUUID()
 
         return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bindUi {
-            val messageInfo = MessageInfo.newSent(message, 0).copy(id = messageId)
+            val messageInfo = MessageInfo.newSent(message, timestamp, ttlMs).copy(id = messageId)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
             messageService.addMessage(groupId.toConversationId(), conversationMessageInfo)
         }
