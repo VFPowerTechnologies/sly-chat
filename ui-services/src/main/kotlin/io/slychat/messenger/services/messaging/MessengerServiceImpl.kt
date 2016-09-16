@@ -198,8 +198,9 @@ class MessengerServiceImpl(
 
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
+        val timestamp = relayClock.currentTime()
         return if (!isSelfMessage) {
-            val messageInfo = MessageInfo.newSent(message, relayClock.currentTime(), 0)
+            val messageInfo = MessageInfo.newSent(message, timestamp, 0)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
             val m = TextMessage(MessageId(messageInfo.id), messageInfo.timestamp, message, null, ttlMs)
             val wrapper = SlyMessage.Text(m)
@@ -212,7 +213,7 @@ class MessengerServiceImpl(
             }
         }
         else {
-            val messageInfo = MessageInfo.newSelfSent(message, 0)
+            val messageInfo = MessageInfo.newSelfSent(message, timestamp, 0)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
             //we need to insure that the send message info is sent back to the ui before the ServerReceivedMessage is fired
             messageService.addMessage(userId.toConversationId(), conversationMessageInfo) successUi {

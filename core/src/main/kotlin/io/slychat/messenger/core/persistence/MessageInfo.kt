@@ -27,8 +27,7 @@ data class MessageInfo(
         fun newSent(message: String, ttlMs: Long): MessageInfo =
             MessageInfo(randomMessageId(), message, currentTimestamp(), 0, true, false, true, false, ttlMs, 0)
 
-        fun newSelfSent(message: String, ttlMs: Long): MessageInfo {
-            val receivedTimestamp = currentTimestamp()
+        fun newSelfSent(message: String, receivedTimestamp: Long, ttlMs: Long): MessageInfo {
             return MessageInfo(randomMessageId(), message, receivedTimestamp, receivedTimestamp, true, true, true, false, ttlMs, 0)
         }
 

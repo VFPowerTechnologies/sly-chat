@@ -6,10 +6,7 @@ import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
-import io.slychat.messenger.services.GroupService
-import io.slychat.messenger.services.PageType
-import io.slychat.messenger.services.SyncMessageFromOtherSecurityException
-import io.slychat.messenger.services.UIEvent
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.testutils.KovenantTestModeRule
@@ -41,6 +38,7 @@ class MessageProcessorImplTest {
     val messageService: MessageService = mock()
     val messageCipherService: MessageCipherService = mock()
     val groupService: GroupService = mock()
+    val relayClock: RelayClock = mock()
     val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(true)
     val uiEvents: PublishSubject<UIEvent> = PublishSubject.create()
 
@@ -73,12 +71,15 @@ class MessageProcessorImplTest {
 
         whenever(messageCipherService.addSelfDevice(any())).thenResolve(Unit)
 
+        whenever(relayClock.currentTime()).thenReturn(currentTimestamp())
+
         return MessageProcessorImpl(
             selfId,
             contactsService,
             messageService,
             messageCipherService,
             groupService,
+            relayClock,
             uiVisibility,
             uiEvents
         )
@@ -94,6 +95,9 @@ class MessageProcessorImplTest {
 
         val sender = UserId(1)
 
+        val relayTime = 1L
+        whenever(relayClock.currentTime()).thenReturn(relayTime)
+
         processor.processMessage(sender, message).get()
 
         verify(messageService).addMessage(eq(sender.toConversationId()), capture {
@@ -101,6 +105,7 @@ class MessageProcessorImplTest {
             assertEquals(m.ttlMs, info.ttlMs, "Invalid TTL")
             assertFalse(info.isRead, "Message should not be marked as read")
             assertEquals(m.message, info.message, "Invalid message text")
+            assertEquals(relayTime, info.receivedTimestamp, "Invalid received timestamp")
         })
     }
 

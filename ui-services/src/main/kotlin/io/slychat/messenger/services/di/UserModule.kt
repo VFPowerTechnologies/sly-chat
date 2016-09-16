@@ -131,13 +131,15 @@ class UserModule(
         messageCipherService: MessageCipherService,
         groupService: GroupService,
         @UIVisibility uiVisibility: Observable<Boolean>,
-        uiEventService: UIEventService
+        uiEventService: UIEventService,
+        relayClock: RelayClock
     ): MessageProcessor = MessageProcessorImpl(
         userData.userId,
         contactsService,
         messageService,
         messageCipherService,
         groupService,
+        relayClock,
         uiVisibility,
         uiEventService.events
     )
