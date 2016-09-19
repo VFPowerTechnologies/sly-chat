@@ -50,6 +50,8 @@ class MessageServiceImplTest {
         whenever(messagePersistenceManager.getConversationDisplayInfo(any())).thenResolve(conversationDisplayInfo)
     }
 
+    private fun randomMessageIds(): List<String> = (0..1).map { randomMessageId() }
+
     fun forEachConvType(body: (ConversationId) -> Unit) {
         body(randomUserConversationId())
         body(randomGroupConversationId())
@@ -171,18 +173,51 @@ class MessageServiceImplTest {
     @Test
     fun `it should emit a conversation info update when markConversationMessagesAsRead is called`() {
         testConversationInfoUpdate {
-            messageService.markConversationMessagesAsRead(it, (0..1).map { randomMessageId() }).get()
+            messageService.markConversationMessagesAsRead(it, randomMessageIds()).get()
         }
     }
 
     @Test
     fun `it should mark the given message ids as read markConversationMessagesAsRead is called`() {
         forEachConvType {
-            val messageIds = (0..1).map { randomMessageId() }
+            val messageIds = randomMessageIds()
 
             messageService.markConversationMessagesAsRead(it, messageIds).get()
 
             verify(messagePersistenceManager).markConversationMessagesAsRead(it, messageIds)
+        }
+    }
+
+    private fun testReadEvent(fromSync: Boolean, body: (ConversationId, List<String>) -> Unit) {
+        forEachConvType { conversationId ->
+            val messageIds = randomMessageIds()
+
+            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Read>()
+
+            body(conversationId, messageIds)
+
+            assertEventEmitted(testSubscriber) {
+                val expected = MessageUpdateEvent.Read(conversationId, messageIds, fromSync)
+                assertEquals(expected, it, "Invalid event contents")
+            }
+        }
+
+    }
+
+    @Test
+    fun `it should emit Read events when markConversationAsRead is called`() {
+        testReadEvent(false) { conversationId, messageIds ->
+            whenever(messagePersistenceManager.markConversationAsRead(conversationId)).thenResolve(messageIds)
+            messageService.markConversationAsRead(conversationId).get()
+        }
+    }
+
+    @Test
+    fun `it should emit Read events when markConversationMessagesAsRead is called`() {
+        testReadEvent(true) { conversationId, messageIds ->
+            whenever(messagePersistenceManager.markConversationMessagesAsRead(conversationId, messageIds)).thenResolve(messageIds)
+
+            messageService.markConversationMessagesAsRead(conversationId, messageIds).get()
         }
     }
 
@@ -351,7 +386,7 @@ class MessageServiceImplTest {
     fun `it should emit a Deleted event when deleteMessages is called`() {
         forEachConvType { conversationId ->
             val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Deleted>()
-            val messageIds = (0..1).map { randomMessageId() }
+            val messageIds = randomMessageIds()
 
             messageService.deleteMessages(conversationId, messageIds).get()
 
