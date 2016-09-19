@@ -34,7 +34,7 @@ class MessageServiceImplTest {
     fun before() {
         whenever(messagePersistenceManager.addMessage(any(), any())).thenResolveUnit()
         whenever(messagePersistenceManager.markMessageAsDelivered(any(), any(), any())).thenResolve(null)
-        whenever(messagePersistenceManager.markConversationAsRead(any())).thenResolve(emptyList())
+        whenever(messagePersistenceManager.markConversationAsRead(any())).thenResolve(randomMessageIds())
         whenever(messagePersistenceManager.markConversationMessagesAsRead(any(), any())).thenAnswerWithArg(1)
         whenever(messagePersistenceManager.setExpiration(any(), any(), any())).thenResolve(true)
         whenever(messagePersistenceManager.expireMessages(any())).thenResolveUnit()
