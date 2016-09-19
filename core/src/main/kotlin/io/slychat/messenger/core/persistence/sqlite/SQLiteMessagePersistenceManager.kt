@@ -7,6 +7,7 @@ import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
+import java.util.*
 
 internal fun deleteExpiringMessagesForConversation(connection: SQLiteConnection, conversationId: ConversationId) {
     connection.withPrepared("DELETE FROM expiring_messages WHERE conversation_id=?") { stmt ->
@@ -285,6 +286,63 @@ LIMIT
         }
 
         Unit
+    }
+
+    private fun getUnreadMessageIds(connection: SQLiteConnection, conversationId: ConversationId): List<String> {
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql = """
+SELECT
+    id
+FROM
+    $tableName
+WHERE
+    is_read = 0
+"""
+        return connection.withPrepared(sql) { stmt ->
+            stmt.map { it.columnString(0) }
+        }
+    }
+
+    private fun markConversationMessagesAsRead(connection: SQLiteConnection, conversationId: ConversationId, messageIds: Collection<String>): List<String> {
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql = """
+UPDATE
+    $tableName
+SET
+    is_read=1
+WHERE
+    id=?
+AND
+    is_read=0
+"""
+        val r = ArrayList<String>()
+
+        connection.withPrepared(sql) { stmt ->
+            messageIds.forEach {
+                stmt.bind(1, it)
+                stmt.step()
+                if (connection.changes > 0)
+                    r.add(it)
+                stmt.reset(true)
+            }
+        }
+
+        return r
+    }
+
+    override fun markConversationMessagesAsRead(conversationId: ConversationId, messageIds: Collection<String>): Promise<List<String>, Exception> {
+        if (messageIds.isEmpty())
+            return Promise.ofSuccess(emptyList())
+
+        return sqlitePersistenceManager.runQuery { connection ->
+            connection.withTransaction {
+                val unreadMessageIds = markConversationMessagesAsRead(connection, conversationId, messageIds)
+
+                updateConversationInfo(connection, conversationId)
+
+                unreadMessageIds
+            }
+        }
     }
 
     private fun getConversationMessageInfo(connection: SQLiteConnection, conversationId: ConversationId, messageId: String): ConversationMessageInfo? {

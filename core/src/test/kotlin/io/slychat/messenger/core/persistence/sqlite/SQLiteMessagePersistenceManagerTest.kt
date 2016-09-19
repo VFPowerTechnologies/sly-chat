@@ -1101,4 +1101,39 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             assertEquals(expected, conversationDisplayInfo, "Invalid display info")
         }
     }
+
+    @Test
+    fun `markConversationMessagesAsRead should return message ids which are marked as read`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+            val messageIds = (0..1).map {
+                addMessage(conversationId, speaker, false, randomMessageText(), 0).info.id
+            }
+
+            val got = messagePersistenceManager.markConversationMessagesAsRead(conversationId, messageIds + listOf(randomMessageId())).get()
+
+            assertThat(got).apply {
+                `as`("Should only returned ids marked as read")
+                containsOnlyElementsOf(messageIds)
+            }
+        }
+    }
+
+    @Test
+    fun `markConversationAsRead should update the conversation info unread count`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            addMessage(conversationId, speaker, false, randomMessageText(), 0).info.id
+
+            val messageIds = listOf(
+                addMessage(conversationId, speaker, false, randomMessageText(), 0).info.id
+            )
+
+            messagePersistenceManager.markConversationMessagesAsRead(conversationId, messageIds + listOf(randomMessageId())).get()
+
+            val unreadCount = conversationInfoTestUtils.getConversationInfo(conversationId).unreadMessageCount
+            assertEquals(1, unreadCount)
+        }
+    }
 }

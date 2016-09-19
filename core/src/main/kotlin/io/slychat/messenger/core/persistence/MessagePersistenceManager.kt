@@ -34,6 +34,9 @@ interface MessagePersistenceManager {
     /** Resets unread message count for the given contact's conversation. */
     fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception>
 
+    //XXX I feel like returning stuff here is probably pointless... we only use this from sync messages anyways
+    fun markConversationMessagesAsRead(conversationId: ConversationId, messageIds: Collection<String>): Promise<List<String>, Exception>
+
     //FIXME
     /** Returns all undelivered messages for a given group. */
     fun getUndeliveredMessages(): Promise<Map<ConversationId, List<ConversationMessageInfo>>, Exception>
