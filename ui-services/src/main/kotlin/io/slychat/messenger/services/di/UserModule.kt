@@ -218,6 +218,8 @@ class UserModule(
             uiEventService.events,
             messageService.conversationInfoUpdates,
             uiVisibility,
+            scheduler,
+            400,
             platformNotificationService,
             userConfigService
         )

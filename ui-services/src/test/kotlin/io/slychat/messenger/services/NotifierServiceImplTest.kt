@@ -15,8 +15,10 @@ import nl.komponents.kovenant.Promise
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
+import rx.schedulers.TestScheduler
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -41,12 +43,14 @@ class NotifierServiceImplTest {
     val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create()
     val conversationInfoUpdates: PublishSubject<ConversationDisplayInfo> = PublishSubject.create()
 
+    val testScheduler = TestScheduler()
+
     @Before
     fun before() {
         whenever(groupPersistenceManager.getInfo(any())).thenResolve(null)
     }
 
-    fun initNotifierService(isUiVisible: Boolean = false, config: UserConfig = UserConfig(notificationsEnabled = true)): NotifierServiceImpl {
+    fun createNotifierService(isUiVisible: Boolean = false, config: UserConfig = UserConfig(notificationsEnabled = true), bufferMs: Long = 0): NotifierServiceImpl {
         userConfigService = UserConfigService(mock(), config = config)
 
         uiVisibility.onNext(isUiVisible)
@@ -55,6 +59,8 @@ class NotifierServiceImplTest {
             uiEventSubject,
             conversationInfoUpdates,
             uiVisibility,
+            testScheduler,
+            bufferMs,
             platformNotificationsService,
             userConfigService
         )
@@ -66,7 +72,7 @@ class NotifierServiceImplTest {
 
     @Test
     fun `it should clear all notifications when the contacts page is visited`() {
-        val notifierService = initNotifierService()
+        val notifierService = createNotifierService()
 
         val pageChangeEvent = UIEvent.PageChange(PageType.CONTACTS, "")
         uiEventSubject.onNext(pageChangeEvent)
@@ -96,29 +102,31 @@ class NotifierServiceImplTest {
         val conversationDisplayInfo = randomConversationDisplayInfo()
         conversationInfoUpdates.onNext(conversationDisplayInfo)
 
-        if (shouldShow)
-            verify(platformNotificationsService).updateConversationNotification(conversationDisplayInfo)
+        if (shouldShow) {
+            val state = NotificationState(listOf(NotificationConversationInfo(conversationDisplayInfo, true)))
+            verify(platformNotificationsService).updateNotificationState(state)
+        }
         else
-            verify(platformNotificationsService, never()).updateConversationNotification(any())
+            verify(platformNotificationsService, never()).updateNotificationState(any())
     }
 
     @Test
     fun `it should show notifications when notifications are enabled and the ui is not visible`() {
-        val notifierService = initNotifierService(isUiVisible = false)
+        val notifierService = createNotifierService(isUiVisible = false)
 
         testConvoNotificationDisplay(true)
     }
 
     @Test
     fun `it should not show notifications when notifications are disabled and the ui is not visible`() {
-        val notifierService = initNotifierService(isUiVisible = false, config = UserConfig(notificationsEnabled = false))
+        val notifierService = createNotifierService(isUiVisible = false, config = UserConfig(notificationsEnabled = false))
 
         testConvoNotificationDisplay(false)
     }
 
     @Test
     fun `it should show notifications when the contacts page is not focused`() {
-        val notifierService = initNotifierService(isUiVisible = true)
+        val notifierService = createNotifierService(isUiVisible = true)
 
         setupContactInfo(2)
 
@@ -129,7 +137,7 @@ class NotifierServiceImplTest {
 
     @Test
     fun `it should not show notifications when the contact page page is focused`() {
-        val notifierService = initNotifierService(isUiVisible = true)
+        val notifierService = createNotifierService(isUiVisible = true)
 
         uiEventSubject.onNext(UIEvent.PageChange(PageType.CONTACTS, ""))
 
@@ -138,7 +146,7 @@ class NotifierServiceImplTest {
 
     @Test
     fun `hiding the ui after visiting the contacts page should show notifications`() {
-        val notifierService = initNotifierService(isUiVisible = true)
+        val notifierService = createNotifierService(isUiVisible = true)
 
         uiEventSubject.onNext(UIEvent.PageChange(PageType.CONTACTS, ""))
         uiVisibility.onNext(false)
@@ -148,7 +156,7 @@ class NotifierServiceImplTest {
 
     @Test
     fun `restoring the ui after having visited the contacts page should not show notifications`() {
-        val notifierService = initNotifierService(isUiVisible = true)
+        val notifierService = createNotifierService(isUiVisible = true)
 
         uiEventSubject.onNext(UIEvent.PageChange(PageType.CONTACTS, ""))
         uiVisibility.onNext(false)
@@ -159,7 +167,7 @@ class NotifierServiceImplTest {
 
     @Test
     fun `it should clear notifications when restoring ui if the previous page is the contacts page`() {
-        val notifierService = initNotifierService(isUiVisible = true)
+        val notifierService = createNotifierService(isUiVisible = true)
 
         uiEventSubject.onNext(UIEvent.PageChange(PageType.CONTACTS, ""))
         uiVisibility.onNext(false)
@@ -170,7 +178,7 @@ class NotifierServiceImplTest {
 
     @Test
     fun `it should update notifications enabled when receiving config update events`() {
-        val notifierService = initNotifierService()
+        val notifierService = createNotifierService()
 
         userConfigService.withEditor { notificationsEnabled = false }
 
@@ -187,6 +195,8 @@ class NotifierServiceImplTest {
             uiEventSubject.doOnUnsubscribe { hasUnsubscribed = true },
             conversationInfoUpdates,
             uiVisibility,
+            testScheduler,
+            0,
             platformNotificationsService,
             UserConfigService(mock())
         )
@@ -197,5 +207,24 @@ class NotifierServiceImplTest {
 
         assertTrue(hasUnsubscribed, "Must unsubscribe from UI events on shutdown")
     }
+
+    @Test
+    fun `it should properly buffer ConversationDisplayInfo`() {
+        val bufferMs = 10L
+
+        val notifierService = createNotifierService(bufferMs = bufferMs)
+
+        val conversationDisplayInfo = randomConversationDisplayInfo()
+        conversationInfoUpdates.onNext(conversationDisplayInfo)
+
+        verify(platformNotificationsService, never()).updateNotificationState(any())
+
+        testScheduler.advanceTimeBy(bufferMs, TimeUnit.MILLISECONDS)
+
+        verify(platformNotificationsService).updateNotificationState(any())
+    }
+
+    @Test
+    fun `mergeNotificationConversationInfo should do stuff`() { TODO() }
 }
 
