@@ -734,12 +734,24 @@ GroupController.prototype = {
     },
 
     updateConversationInfo : function (info) {
-        this.groupDetailsCache[info.groupId].info = {
-            // lastSpeaker: info.lastMessageData.lastSpeakeId,
-            lastSpeaker: this.groupDetailsCache[info.groupId].info.lastSpeaker,
-            unreadMessageCount: info.unreadCount,
-            lastMessage: info.lastMessageData.message,
-            lastTimestamp: info.lastMessageData.timestamp
+        if (this.groupDetailsCache[info.groupId] !== undefined && this.groupDetailsCache[info.groupId].info !== undefined) {
+            if (info.lastMessageData == null) {
+                this.groupDetailsCache[info.groupId].info = {
+                    lastSpeaker: null,
+                    unreadMessageCount: 0,
+                    lastMessage: null,
+                    lastTimestamp: null
+                }
+            }
+            else {
+                this.groupDetailsCache[info.groupId].info = {
+                    // lastSpeaker: info.lastMessageData.lastSpeakeId,
+                    lastSpeaker: this.groupDetailsCache[info.groupId].info.lastSpeaker,
+                    unreadMessageCount: info.unreadCount,
+                    lastMessage: info.lastMessageData.message,
+                    lastTimestamp: info.lastMessageData.timestamp
+                }
+            }
         }
     },
 

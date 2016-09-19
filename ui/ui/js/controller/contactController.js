@@ -952,11 +952,23 @@ ContactController.prototype  = {
     },
 
     updateConversationInfo : function (info) {
-        this.conversations[info.userId].status = {
-            unreadMessageCount: info.unreadCount,
-            lastMessage: info.lastMessageData.message,
-            lastTimestamp: info.lastMessageData.timestamp,
-            online: true
+        if (this.conversations[info.userId] !== undefined && this.conversations[info.userId].status !== undefined) {
+            if (info.lastMessageData == null) {
+                this.conversations[info.userId].status = {
+                    unreadMessageCount: 0,
+                    lastMessage: null,
+                    lastTimestamp: null,
+                    online: true
+                };
+            }
+            else {
+                this.conversations[info.userId].status = {
+                    unreadMessageCount: info.unreadCount,
+                    lastMessage: info.lastMessageData.message,
+                    lastTimestamp: info.lastMessageData.timestamp,
+                    online: true
+                };
+            }
         }
     },
 
