@@ -214,7 +214,6 @@ ChatController.prototype = {
         }
         else {
             this.updateGroupChatPageNewMessage(messageInfo);
-            groupController.updateConversationWithNewMessage(messageInfo.groupId, messageInfo);
         }
 
         $(".timeago").timeago();
