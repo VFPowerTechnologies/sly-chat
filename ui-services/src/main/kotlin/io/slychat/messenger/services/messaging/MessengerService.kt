@@ -16,6 +16,8 @@ interface MessengerService {
 
     fun broadcastMessageExpired(conversationId: ConversationId, messageId: String): Promise<Unit, Exception>
 
+    fun broadcastMessagesRead(conversationId: ConversationId, messageIds: List<String>): Promise<Unit, Exception>
+
     /** Notify another user that you've added them as a contact. */
     fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception>
 

@@ -50,8 +50,6 @@ class MessageServiceImplTest {
         whenever(messagePersistenceManager.getConversationDisplayInfo(any())).thenResolve(conversationDisplayInfo)
     }
 
-    private fun randomMessageIds(): List<String> = (0..1).map { randomMessageId() }
-
     fun forEachConvType(body: (ConversationId) -> Unit) {
         body(randomUserConversationId())
         body(randomGroupConversationId())

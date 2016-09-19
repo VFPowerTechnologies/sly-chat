@@ -167,3 +167,5 @@ fun randomConversationDisplayInfo(): ConversationDisplayInfo =
         1,
         LastMessageData("speakerName", randomMessageText(), currentTimestamp())
     )
+
+fun randomMessageIds(n: Int = 2): List<String> = (1..n).map { randomMessageId() }
