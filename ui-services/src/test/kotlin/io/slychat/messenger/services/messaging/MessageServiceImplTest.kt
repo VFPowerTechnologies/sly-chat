@@ -35,6 +35,7 @@ class MessageServiceImplTest {
         whenever(messagePersistenceManager.addMessage(any(), any())).thenResolveUnit()
         whenever(messagePersistenceManager.markMessageAsDelivered(any(), any(), any())).thenResolve(null)
         whenever(messagePersistenceManager.markConversationAsRead(any())).thenResolve(emptyList())
+        whenever(messagePersistenceManager.markConversationMessagesAsRead(any(), any())).thenAnswerWithArg(1)
         whenever(messagePersistenceManager.setExpiration(any(), any(), any())).thenResolve(true)
         whenever(messagePersistenceManager.expireMessages(any())).thenResolveUnit()
         whenever(messagePersistenceManager.deleteAllMessages(any())).thenResolveUnit()
@@ -164,6 +165,24 @@ class MessageServiceImplTest {
     fun `it should emit a conversation info update when markConversationAsRead is called`() {
         testConversationInfoUpdate {
             messageService.markConversationAsRead(it).get()
+        }
+    }
+
+    @Test
+    fun `it should emit a conversation info update when markConversationMessagesAsRead is called`() {
+        testConversationInfoUpdate {
+            messageService.markConversationMessagesAsRead(it, (0..1).map { randomMessageId() }).get()
+        }
+    }
+
+    @Test
+    fun `it should mark the given message ids as read markConversationMessagesAsRead is called`() {
+        forEachConvType {
+            val messageIds = (0..1).map { randomMessageId() }
+
+            messageService.markConversationMessagesAsRead(it, messageIds).get()
+
+            verify(messagePersistenceManager).markConversationMessagesAsRead(it, messageIds)
         }
     }
 

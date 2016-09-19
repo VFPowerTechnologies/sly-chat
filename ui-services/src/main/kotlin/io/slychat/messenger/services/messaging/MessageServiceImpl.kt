@@ -56,6 +56,13 @@ class MessageServiceImpl(
         }
     }
 
+    override fun markConversationMessagesAsRead(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> {
+        return messagePersistenceManager.markConversationMessagesAsRead(conversationId, messageIds) success {
+            emitCurrentConversationDisplayInfo(conversationId)
+        } map { Unit }
+
+    }
+
     override fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception> {
         return messagePersistenceManager.markConversationAsRead(conversationId) success {
             emitCurrentConversationDisplayInfo(conversationId)
