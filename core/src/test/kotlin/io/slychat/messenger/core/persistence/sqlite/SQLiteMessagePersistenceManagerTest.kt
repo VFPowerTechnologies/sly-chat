@@ -108,6 +108,13 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         override val groupPersistenceManager = SQLiteGroupPersistenceManager(persistenceManager)
         val conversationInfoTestUtils = ConversationInfoTestUtils(persistenceManager)
 
+        fun getGroupNameForConversation(conversationId: ConversationId): String? {
+            return when (conversationId) {
+                is ConversationId.Group -> groupPersistenceManager.getInfo(conversationId.id).get()!!.name
+                else -> null
+            }
+        }
+
         fun addMessage(conversationId: ConversationId, speaker: UserId, isSent: Boolean, message: String, ttl: Long): ConversationMessageInfo {
             val conversationMessageInfo = if (isSent)
                 ConversationMessageInfo(null, randomSentMessageInfo().copy(message = message, ttlMs = ttl))
@@ -119,7 +126,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             return conversationMessageInfo
         }
 
-        fun addExpiringMessage(conversationId: ConversationId): ConversationMessageInfo {
+        fun addExpiringSentMessage(conversationId: ConversationId): ConversationMessageInfo {
             val sentMessage = randomSentConversationMessageInfo()
             val messageId = sentMessage.info.id
             val expiresAt = 10L
@@ -129,6 +136,20 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
             return ConversationMessageInfo(
                 null,
+                sentMessage.info.copy(expiresAt = expiresAt)
+            )
+        }
+
+        fun addExpiringReceivedMessage(conversationId: ConversationId, sender: UserId): ConversationMessageInfo {
+            val sentMessage = randomReceivedConversationMessageInfo(sender)
+            val messageId = sentMessage.info.id
+            val expiresAt = 10L
+
+            messagePersistenceManager.addMessage(conversationId, sentMessage).get()
+            messagePersistenceManager.setExpiration(conversationId, messageId, expiresAt).get()
+
+            return ConversationMessageInfo(
+                sender,
                 sentMessage.info.copy(expiresAt = expiresAt)
             )
         }
@@ -258,7 +279,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     fun `addMessage should log a message from yourself`() {
         withJoinedGroup { groupId, members ->
             val conversationId = ConversationId(groupId)
-            val groupMessageInfo = randomReceivedConversationMessageInfo(null)
+            val groupMessageInfo = randomSentConversationMessageInfo()
 
             messagePersistenceManager.addMessage(conversationId, groupMessageInfo).get()
 
@@ -959,7 +980,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `setExpiration should create an expiring_messages entry for the given message`() {
         foreachConvType { conversationId, participants ->
-            val conversationMessageInfo = addExpiringMessage(conversationId)
+            val conversationMessageInfo = addExpiringSentMessage(conversationId)
             val messageId = conversationMessageInfo.info.id
             val expiresAt = conversationMessageInfo.info.expiresAt
 
@@ -977,7 +998,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `setExpiration should do nothing for an already expiring message`() {
         foreachConvType { conversationId, participants ->
-            val conversationMessageInfo = addExpiringMessage(conversationId)
+            val conversationMessageInfo = addExpiringSentMessage(conversationId)
             val messageId = conversationMessageInfo.info.id
             val expiresAt = conversationMessageInfo.info.expiresAt
 
@@ -993,7 +1014,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `expireMessages should set all message entries to expired`() {
         foreachConvType { conversationId, participants ->
-            val conversationMessageInfo = addExpiringMessage(conversationId)
+            val conversationMessageInfo = addExpiringSentMessage(conversationId)
             val messageId = conversationMessageInfo.info.id
 
             val messages = mapOf(
@@ -1014,7 +1035,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `expireMessages should remove all message entries from expiring list`() {
         foreachConvType { conversationId, participants ->
-            val conversationMessageInfo = addExpiringMessage(conversationId)
+            val conversationMessageInfo = addExpiringSentMessage(conversationId)
             val messageId = conversationMessageInfo.info.id
 
             val messages = mapOf(
@@ -1031,6 +1052,31 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
+    fun `expireMessages should update the conversation info`() {
+        foreachConvType { conversationId, participants ->
+            val groupName = getGroupNameForConversation(conversationId)
+
+            val conversationMessageInfo = addExpiringReceivedMessage(conversationId, participants.first())
+            val messageId = conversationMessageInfo.info.id
+
+            val messages = mapOf(
+                conversationId to listOf(messageId)
+            )
+
+            messagePersistenceManager.expireMessages(messages).get()
+
+            val conversationDisplayInfo = messagePersistenceManager.getConversationDisplayInfo(conversationId).get()
+
+            assertEquals(ConversationDisplayInfo(
+                conversationId,
+                groupName,
+                0,
+                null
+            ), conversationDisplayInfo, "Conversation info not updated")
+        }
+    }
+
+    @Test
     fun `getConversationDisplayInfo should return data when last message data is available`() {
         foreachConvType { conversationId, participants ->
             val messageText = randomMessageText()
@@ -1038,10 +1084,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
             val conversationMessageInfo = addMessage(conversationId, speaker, false, messageText, 0)
 
-            val groupName = when (conversationId) {
-                is ConversationId.Group -> groupPersistenceManager.getInfo(conversationId.id).get()!!.name
-                else -> null
-            }
+            val groupName = getGroupNameForConversation(conversationId)
 
             val speakerName = contactsPersistenceManager.get(speaker).get()!!.name
 

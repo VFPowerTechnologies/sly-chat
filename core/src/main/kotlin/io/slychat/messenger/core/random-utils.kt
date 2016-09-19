@@ -145,7 +145,7 @@ fun randomMessageText(): String {
 }
 
 fun randomReceivedMessageInfo(isRead: Boolean = false, expiresAt: Long = 0): MessageInfo {
-    return MessageInfo.newReceived(randomMessageText(), currentTimestamp(), isRead)
+    return MessageInfo.newReceived(randomMessageText(), currentTimestamp(), isRead).copy(expiresAt = expiresAt)
 }
 
 fun randomSentMessageInfo(ttlMs: Long = 0): MessageInfo {

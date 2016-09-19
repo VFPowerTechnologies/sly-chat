@@ -27,11 +27,9 @@ class SQLiteMessagePersistenceManager(
 
         return sqlitePersistenceManager.runQuery { connection ->
             connection.withTransaction {
-                messages.map { insertMessage(connection, conversationId, it) }
-                val last = messages.last()
-                val unreadInc = messages.filter { !it.info.isRead }.size
+                messages.forEach { insertMessage(connection, conversationId, it) }
 
-                updateConversationInfo(connection, conversationId, last.speaker, last.info.message, last.info.timestamp, unreadInc)
+                updateConversationInfo(connection, conversationId)
             }
         }
     }
@@ -95,22 +93,45 @@ class SQLiteMessagePersistenceManager(
                     throw e
             }
 
-            val messageInfo = conversationMessageInfo.info
-
-            val unreadInc = if (messageInfo.isRead) 0 else 1
-            updateConversationInfo(connection, conversationId, conversationMessageInfo.speaker, messageInfo.message, messageInfo.timestamp, unreadInc)
+            updateConversationInfo(connection, conversationId)
         }
     }
 
-    private fun updateConversationInfo(connection: SQLiteConnection, conversationId: ConversationId, speaker: UserId?, lastMessage: String?, lastTimestamp: Long?, unreadIncrement: Int) {
-        val unreadCountFragment = if (unreadIncrement > 0) "unread_count=unread_count+$unreadIncrement," else ""
+    private fun getUnreadCount(connection: SQLiteConnection, conversationId: ConversationId): Int {
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql = """
+SELECT
+    count(is_read)
+FROM
+    $tableName
+WHERE
+    is_read=0
+"""
 
-        connection.withPrepared("UPDATE conversation_info SET $unreadCountFragment last_speaker_contact_id=?, last_message=?, last_timestamp=? WHERE conversation_id=?") { stmt ->
-            stmt.bind(1, speaker)
-            stmt.bind(2, lastMessage)
-            stmt.bind(3, lastTimestamp)
-            stmt.bind(4, conversationId)
+        return connection.withPrepared(sql) { stmt ->
             stmt.step()
+            stmt.columnInt(0)
+        }
+    }
+
+    private fun updateConversationInfo(connection: SQLiteConnection, conversationId: ConversationId) {
+        val unreadCount = getUnreadCount(connection, conversationId)
+        val lastMessageInfo = getLastConvoMessage(connection, conversationId)
+
+        if (lastMessageInfo == null)
+            insertOrReplaceNewConversationInfo(connection, conversationId)
+        else {
+            connection.withPrepared("UPDATE conversation_info SET last_speaker_contact_id=?, last_message=?, last_timestamp=?, unread_count=? WHERE conversation_id=?") { stmt ->
+                val info = lastMessageInfo.info
+
+                stmt.bind(1, lastMessageInfo.speaker)
+                stmt.bind(2, info.message)
+                stmt.bind(3, info.timestamp)
+                stmt.bind(4, unreadCount)
+                stmt.bind(5, conversationId)
+
+                stmt.step()
+            }
         }
     }
 
@@ -165,13 +186,7 @@ VALUES
 
             deleteExpiringMessages(connection, conversationId, messageIds)
 
-            val lastMessage = getLastConvoMessage(connection, conversationId)
-            if (lastMessage == null)
-                insertOrReplaceNewConversationInfo(connection, conversationId)
-            else {
-                val info = lastMessage.info
-                updateConversationInfo(connection, conversationId, lastMessage.speaker, info.message, info.timestamp, 0)
-            }
+            updateConversationInfo(connection, conversationId)
         }
     }
 
@@ -193,6 +208,8 @@ SELECT
     message
 FROM
     $tableName
+WHERE
+    is_expired = 0
 ORDER BY
     timestamp DESC, n DESC
 LIMIT
@@ -423,6 +440,7 @@ AND
                 for ((conversationId, messageIds) in messages) {
                     updateMessageSetExpired(connection, conversationId, messageIds)
                     deleteExpiringMessages(connection, conversationId, messageIds)
+                    updateConversationInfo(connection, conversationId)
                 }
             }
         }

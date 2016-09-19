@@ -25,8 +25,7 @@ class MessageServiceImpl(
         get() = messageUpdatesSubject
 
     private val conversationInfoUpdatesSubject = PublishSubject.create<ConversationDisplayInfo>()
-    override val conversationInfoUpdates: Observable<ConversationDisplayInfo>
-        get() = conversationInfoUpdatesSubject
+    override val conversationInfoUpdates: Observable<ConversationDisplayInfo> = conversationInfoUpdatesSubject.distinctUntilChanged()
 
     override fun markMessageAsDelivered(conversationId: ConversationId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception> {
         return messagePersistenceManager.markMessageAsDelivered(conversationId, messageId, timestamp) successUi {
@@ -65,6 +64,7 @@ class MessageServiceImpl(
     override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> {
         return messagePersistenceManager.deleteMessages(conversationId, messageIds) successUi {
             messageUpdatesSubject.onNext(MessageUpdateEvent.Deleted(conversationId, messageIds))
+            emitCurrentConversationDisplayInfo(conversationId)
         }
     }
 
@@ -116,6 +116,8 @@ class MessageServiceImpl(
                 messageIds.forEach {
                     messageUpdatesSubject.onNext(MessageUpdateEvent.Expired(conversationId, it, fromSync))
                 }
+
+                emitCurrentConversationDisplayInfo(conversationId)
             }
         }
     }
