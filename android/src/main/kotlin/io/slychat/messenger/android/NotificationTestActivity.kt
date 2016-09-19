@@ -7,10 +7,9 @@ import android.widget.Button
 import android.widget.Spinner
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
-import io.slychat.messenger.core.persistence.ConversationDisplayInfo
-import io.slychat.messenger.core.persistence.ConversationId
-import io.slychat.messenger.core.persistence.GroupId
-import io.slychat.messenger.core.persistence.LastMessageData
+import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.services.NotificationConversationInfo
+import io.slychat.messenger.services.NotificationState
 import java.util.*
 
 /** Used to test notification display for various configurations. */
@@ -45,31 +44,77 @@ class NotificationTestActivity : AppCompatActivity() {
 
     private var messageCounter = 0
 
+    private var currentNotificationState = HashMap<ConversationId, NotificationConversationInfo>()
+
+    private val unreadCounts = HashMap<ConversationId, Int>()
+
+    private fun pushState() {
+        notificationService.updateNotificationState(NotificationState(currentNotificationState.values.toList()))
+    }
+
+    private fun incUnreadCount(conversationId: ConversationId, amount: Int) {
+        val current = unreadCounts[conversationId] ?: 0
+        unreadCounts[conversationId] = current + amount
+    }
+
+    private fun addToState(conversationDisplayInfo: ConversationDisplayInfo) {
+        currentNotificationState[conversationDisplayInfo.conversationId] = NotificationConversationInfo(conversationDisplayInfo, true)
+        pushState()
+    }
+
+    private fun removeAllFromState() {
+        notificationService.clearAllMessageNotifications()
+        currentNotificationState = HashMap()
+        unreadCounts.clear()
+        pushState()
+    }
+
+    private fun removeConvoFromState(conversationId: ConversationId) {
+        currentNotificationState.remove(conversationId)
+        unreadCounts.remove(conversationId)
+        pushState()
+    }
+
     private fun getCurrentSelectedUserPos(): Int {
         return userSpinner.selectedItemPosition
     }
 
-    private fun getCurrentConversationDisplayInfo(userPos: Int, unreadCount: Int): ConversationDisplayInfo {
-        val userId = UserId(userPos.toLong())
-
+    private fun getCurrentConversationId(): ConversationId {
         val groupPos = groupSpinner.selectedItemPosition
-        val (conversationId, groupName) = if (groupPos != 0) {
-            val groupName = dummyGroups[groupPos-1]
-            val id = GroupId(groupPos.toString().repeat(32))
-            val key = ConversationId.Group(id)
-            key to groupName
+
+        return if (groupPos != 0) {
+            GroupId(groupPos.toString().repeat(32)).toConversationId()
         }
         else {
-            val key = ConversationId.User(userId)
-            key to null
+            UserId(getCurrentSelectedUserPos().toLong()).toConversationId()
         }
+    }
+
+    private fun getCurrentConversationDisplayInfo(conversationId: ConversationId): ConversationDisplayInfo {
+        val groupName = when (conversationId) {
+            is ConversationId.Group -> {
+                val groupPos = groupSpinner.selectedItemPosition
+                dummyGroups[groupPos - 1]
+            }
+            else -> null
+        }
+
+        val speakerPos = when (conversationId) {
+            is ConversationId.User -> conversationId.id.long
+            is ConversationId.Group -> getCurrentSelectedUserPos().toLong()
+        }
+
+        val speakerName = dummyUsers[speakerPos.toInt()]
+        val speakerId = UserId(speakerPos)
+
+        val unreadCount = unreadCounts[conversationId] ?: 0
 
         val message = if (unreadCount == 0)
             getCurrentMessageText()
         else
             getNextMessageText()
 
-        val lastMessageData = LastMessageData(dummyUsers[userPos], userId, message, currentTimestamp())
+        val lastMessageData = LastMessageData(speakerName, speakerId, message, currentTimestamp())
 
         return ConversationDisplayInfo(
             conversationId,
@@ -95,13 +140,13 @@ class NotificationTestActivity : AppCompatActivity() {
         return low + Math.abs(Random().nextInt()) % (high - low + 1)
     }
 
-    private fun randomUsers(): List<Int> {
+    private fun randomUsers(): List<UserId> {
         val nUsers = randomInt(1, dummyUsers.size)
 
         val randomized = (0..dummyUsers.size-1).toMutableList()
         Collections.shuffle(randomized)
         return (0..nUsers-1).map {
-            randomized[it]
+            UserId(randomized[it].toLong())
         }
     }
 
@@ -126,27 +171,33 @@ class NotificationTestActivity : AppCompatActivity() {
 
         val triggerBtn = findViewById(R.id.triggerNotificationBtn) as Button
         triggerBtn.setOnClickListener {
-            val displayInfo = getCurrentConversationDisplayInfo(getCurrentSelectedUserPos(), 1)
-            notificationService.updateConversationNotification(displayInfo)
+            val conversationId = getCurrentConversationId()
+
+            incUnreadCount(conversationId, 1)
+
+            val conversationDisplayInfo = getCurrentConversationDisplayInfo(conversationId)
+            addToState(conversationDisplayInfo)
         }
 
         val clearCurrentBtn = findViewById(R.id.clearCurrentBtn)
         clearCurrentBtn.setOnClickListener {
-            val conversationInfo = getCurrentConversationDisplayInfo(getCurrentSelectedUserPos(), 0)
-            notificationService.updateConversationNotification(conversationInfo)
+            removeConvoFromState(getCurrentConversationId())
         }
 
         val clearAllBtn = findViewById(R.id.clearAllBtn) as Button
         clearAllBtn.setOnClickListener {
-            notificationService.clearAllMessageNotifications()
+            removeAllFromState()
         }
 
         //presets
         val multipleUsersBtn = findViewById(R.id.multipleUsersBtn) as Button
         multipleUsersBtn.setOnClickListener {
             randomUsers().forEach {
-                val conversationInfo = getCurrentConversationDisplayInfo(it, randomInt(1, 10))
-                notificationService.updateConversationNotification(conversationInfo)
+                val conversationId = it.toConversationId()
+                incUnreadCount(conversationId, randomInt(1, 10))
+
+                val conversationDisplayInfo = getCurrentConversationDisplayInfo(conversationId)
+                addToState(conversationDisplayInfo)
             }
         }
 
@@ -164,7 +215,7 @@ class NotificationTestActivity : AppCompatActivity() {
                     LastMessageData(userName, userId, getNextMessageText(), currentTimestamp())
                 )
 
-                notificationService.updateConversationNotification(conversationDisplayInfo)
+                addToState(conversationDisplayInfo)
             }
         }
     }
