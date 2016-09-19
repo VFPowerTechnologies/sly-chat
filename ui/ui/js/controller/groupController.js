@@ -745,7 +745,7 @@ GroupController.prototype = {
             }
             else {
                 this.groupDetailsCache[info.groupId].info = {
-                    lastSpeaker: info.lastMessageData.lastSpeakeId,
+                    lastSpeaker: info.lastMessageData.speakerId,
                     unreadMessageCount: info.unreadCount,
                     lastMessage: info.lastMessageData.message,
                     lastTimestamp: info.lastMessageData.timestamp

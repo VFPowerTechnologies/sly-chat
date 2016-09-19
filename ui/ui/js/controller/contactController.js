@@ -352,29 +352,6 @@ ContactController.prototype  = {
         return recentDiv;
     },
 
-    updateMessageBadge : function (node, messageInfo) {
-        var receivedCount = messageInfo.messages.reduce(function (v, message) {
-            if (!message.sent)
-                return v + 1;
-            else
-                return v;
-        }, 0);
-
-        if(receivedCount == 0)
-            return;
-
-        node.addClass("new");
-
-        var badge = node.find(".new-message-badge");
-        if(badge.length <= 0) {
-            node.append('<div class="right new-message-badge">' + receivedCount + '</div>');
-        }
-        else {
-            var newAmount = badge.html();
-            badge.html(parseInt(newAmount) + receivedCount);
-        }
-    },
-
     updateRecentChatNode : function (contact, messageInfo) {
         var message = messageInfo.messages[messageInfo.messages.length - 1];
         var node = $("#recentChat_" + contact.id);
@@ -383,7 +360,6 @@ ContactController.prototype  = {
 
         if (node.length > 0) {
             var time = new Date(message.timestamp - window.relayTimeDifference).toISOString();
-            this.updateMessageBadge(node, messageInfo);
             node.find(".left").html(this.formatLastMessage(message.message));
             node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
 
@@ -415,7 +391,6 @@ ContactController.prototype  = {
 
         if (node.length > 0) {
             var time = new Date(message.timestamp - window.relayTimeDifference).toISOString();
-            this.updateMessageBadge(node, messageInfo);
             node.find(".group-contact-name").html(contact.name);
             node.find(".left").html(this.formatLastMessage(message.message));
             node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
@@ -937,18 +912,40 @@ ContactController.prototype  = {
     },
 
     addConversationInfoUpdateListener : function () {
-        messengerService.addConversationInfoUpdateListener(function (ev) {
-            this.handleConversationUpdate(ev);
-        }.bind(this));
+        messengerService.addConversationInfoUpdateListener(this.handleConversationUpdate.bind(this));
+    },
+
+    updateNewMessageBadge : function (id, count) {
+        var node = $("#recentChat_" + id);
+        if (count > 0) {
+            node.addClass("new");
+
+            var badge = node.find(".new-message-badge");
+            if (badge.length <= 0)
+                node.append('<div class="right new-message-badge">' + count + '</div>');
+            else
+                badge.html(count);
+
+            chatController.leftMenuAddNewMessageBadge(id);
+        }
+        else {
+            node.find(".new-message-badge").remove();
+            node.removeClass("new");
+
+            chatController.leftMenuRemoveNewMessageBadge(id);
+        }
     },
 
     handleConversationUpdate : function (info) {
         var isGroup = info.groupId != null;
         if (isGroup) {
+            this.updateNewMessageBadge(info.groupId, info.unreadCount);
             groupController.updateConversationInfo(info);
         }
-        else
+        else {
+            this.updateNewMessageBadge(info.userId, info.unreadCount);
             this.updateConversationInfo(info);
+        }
     },
 
     updateConversationInfo : function (info) {

@@ -232,6 +232,10 @@ ChatController.prototype = {
         }
     },
 
+    leftMenuRemoveNewMessageBadge : function (id) {
+        $("#leftContact_" + id).find(".left-menu-new-badge").remove();
+    },
+
     openGroupMessageMenu : function (message, groupId) {
         var contact = contactController.getContact($('#contact-id').html());
 
