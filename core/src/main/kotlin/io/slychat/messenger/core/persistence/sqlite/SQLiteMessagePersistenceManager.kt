@@ -271,7 +271,17 @@ LIMIT
             null
     }
 
-    override fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun markConversationAsRead(conversationId: ConversationId): Promise<List<String>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        val unreadMessageIds =  try {
+            getUnreadMessageIds(connection, conversationId)
+        }
+        catch (e: SQLiteException) {
+            if (isMissingConvTableError(e))
+                throw InvalidConversationException(conversationId)
+
+            throw e
+        }
+
         connection.withTransaction {
             connection.withPrepared("UPDATE conversation_info set unread_count=0 WHERE conversation_id=?") { stmt ->
                 stmt.bind(1, conversationId)
@@ -285,7 +295,7 @@ LIMIT
             connection.exec("UPDATE $tableName SET is_read=1 WHERE is_read=0")
         }
 
-        Unit
+        unreadMessageIds
     }
 
     private fun getUnreadMessageIds(connection: SQLiteConnection, conversationId: ConversationId): List<String> {

@@ -6,6 +6,7 @@ import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
+import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -58,7 +59,7 @@ class MessageServiceImpl(
     override fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception> {
         return messagePersistenceManager.markConversationAsRead(conversationId) success {
             emitCurrentConversationDisplayInfo(conversationId)
-        }
+        } map { Unit }
     }
 
     override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> {
