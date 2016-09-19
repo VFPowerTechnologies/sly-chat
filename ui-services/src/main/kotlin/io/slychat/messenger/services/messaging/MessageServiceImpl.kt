@@ -72,6 +72,9 @@ class MessageServiceImpl(
     }
 
     private fun emitMessagesReadEvent(conversationId: ConversationId, messageIds: List<String>, fromSync: Boolean) {
+        if (messageIds.isEmpty())
+            return
+
         val event = MessageUpdateEvent.Read(conversationId, messageIds, fromSync)
         messageUpdatesSubject.onNext(event)
     }

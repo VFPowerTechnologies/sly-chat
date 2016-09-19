@@ -158,7 +158,6 @@ class MessageServiceImplTest {
                 containsOnly(conversationDisplayInfo)
             }
         }
-
     }
 
     @Test
@@ -199,7 +198,6 @@ class MessageServiceImplTest {
                 assertEquals(expected, it, "Invalid event contents")
             }
         }
-
     }
 
     @Test
@@ -216,6 +214,32 @@ class MessageServiceImplTest {
             whenever(messagePersistenceManager.markConversationMessagesAsRead(conversationId, messageIds)).thenResolve(messageIds)
 
             messageService.markConversationMessagesAsRead(conversationId, messageIds).get()
+        }
+    }
+
+    private fun testEmptyMarkRead(body: (ConversationId, List<String>) -> Unit) {
+        forEachConvType { conversationId ->
+            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Read>()
+
+            body(conversationId, randomMessageIds())
+
+            assertNoEventsEmitted(testSubscriber)
+        }
+    }
+
+    @Test
+    fun `it should not emit Read events if no messages were marked as read when markConversationMessagesAsRead is called`() {
+        testEmptyMarkRead { conversationId, messageIds ->
+            whenever(messagePersistenceManager.markConversationMessagesAsRead(conversationId, messageIds)).thenResolve(emptyList())
+            messageService.markConversationMessagesAsRead(conversationId, messageIds).get()
+        }
+    }
+
+    @Test
+    fun `it should not emit Read events if no messages were marked as read when markConversation is called`() {
+        testEmptyMarkRead { conversationId, messageIds ->
+            whenever(messagePersistenceManager.markConversationAsRead(conversationId)).thenResolve(emptyList())
+            messageService.markConversationAsRead(conversationId).get()
         }
     }
 
