@@ -18,6 +18,7 @@ interface MessageService {
 
     //we still need the return value here to broadcast sent messages, so keep it
     fun markMessageAsDelivered(conversationId: ConversationId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception>
+    fun markConversationMessagesAsRead(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception>
     fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception>
     fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception>
 

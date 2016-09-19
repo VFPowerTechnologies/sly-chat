@@ -14,6 +14,7 @@ import io.slychat.messenger.testutils.thenReject
 import io.slychat.messenger.testutils.thenResolve
 import io.slychat.messenger.testutils.thenResolveUnit
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import rx.subjects.BehaviorSubject
@@ -57,8 +58,10 @@ class MessageProcessorImplTest {
     fun wrap(m: SyncMessage): SlyMessage = SlyMessage.Sync(m)
     fun wrap(m: ControlMessage): SlyMessage = SlyMessage.Control(m)
 
-    fun createProcessor(): MessageProcessorImpl {
-        whenever(messageService.addMessage(any(), any())).thenResolve(Unit)
+    @Before
+    fun before() {
+        whenever(messageService.addMessage(any(), any())).thenResolveUnit()
+        whenever(messageService.markConversationMessagesAsRead(any(), any())).thenResolveUnit()
 
         whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
         whenever(contactsService.addById(any())).thenResolve(true)
@@ -72,7 +75,9 @@ class MessageProcessorImplTest {
         whenever(messageCipherService.addSelfDevice(any())).thenResolve(Unit)
 
         whenever(relayClock.currentTime()).thenReturn(currentTimestamp())
+    }
 
+    fun createProcessor(): MessageProcessorImpl {
         return MessageProcessorImpl(
             selfId,
             contactsService,
@@ -782,5 +787,29 @@ class MessageProcessorImplTest {
         assertFailsWith(SyncMessageFromOtherSecurityException::class) {
             processor.processMessage(randomUserId(), wrap(m)).get()
         }
+    }
+
+    @Test
+    fun `it should drop MessagesRead where the sender is not yourself`() {
+        val processor = createProcessor()
+
+        val m = SyncMessage.MessagesRead(randomUserConversationId(), randomMessageIds().map { MessageId(it) })
+
+        assertFailsWith(SyncMessageFromOtherSecurityException::class) {
+            processor.processMessage(randomUserId(), wrap(m)).get()
+        }
+    }
+
+    @Test
+    fun `it should mark messages as read when receiving a MessagesRead message`() {
+        val processor = createProcessor()
+
+        val messageIds = randomMessageIds()
+        val conversationId = randomUserConversationId()
+        val m = SyncMessage.MessagesRead(conversationId, messageIds.map { MessageId(it) })
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        verify(messageService).markConversationMessagesAsRead(conversationId, messageIds)
     }
 }

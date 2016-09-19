@@ -791,47 +791,6 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
-    fun `markConversationAsRead should reset the unread count`() {
-        withJoinedGroup { groupId, members ->
-            val conversationInfo = ConversationInfo(
-                members.first(),
-                1,
-                randomMessageText(),
-                currentTimestamp()
-            )
-            val conversationId = groupId.toConversationId()
-
-            conversationInfoTestUtils.setConversationInfo(conversationId, conversationInfo)
-
-            messagePersistenceManager.markConversationAsRead(conversationId).get()
-
-            val got = conversationInfoTestUtils.getConversationInfo(groupId)
-
-            assertEquals(0, got.unreadMessageCount, "Unread count not reset")
-        }
-    }
-
-    @Test
-    fun `markConversationAsRead should throw InvalidConversationException for a non-existent group`() {
-        assertFailsWithInvalidConversation { messagePersistenceManager.markConversationAsRead(randomGroupConversationId()).get() }
-    }
-
-    @Test
-    fun `markConversationAsRead should mark all isRead messages as true`() {
-        foreachConvType { conversationId, participants ->
-            val messages = insertRandomReceivedMessagesFull(messagePersistenceManager, conversationId, participants)
-
-            messagePersistenceManager.markConversationAsRead(conversationId).get()
-
-            messages.forEach {
-                val messageId = it.info.id
-                val conversationMessageInfo = getMessage(conversationId, messageId)
-                assertTrue(conversationMessageInfo.info.isRead, "Message $messageId not marked as read")
-            }
-        }
-    }
-
-    @Test
     fun `getLastMessages should return the asked for message range`() {
         withJoinedGroup { groupId, members ->
             val ids = insertRandomReceivedMessages(groupId, members)
@@ -949,24 +908,54 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
-    fun `markConversationAsRead should mark all unread messages as read`() {
-        val userId = addRandomContact()
-        val conversationId = ConversationId(userId)
+    fun `markConversationAsRead should reset the unread count`() {
+        foreachConvType { conversationId, participants ->
+            conversationInfoTestUtils.setConversationInfo(conversationId, ConversationInfo(null, 2, randomMessageText(), currentTimestamp()))
 
-        conversationInfoTestUtils.setConversationInfo(conversationId, ConversationInfo(null, 2, randomMessageText(), currentTimestamp()))
+            messagePersistenceManager.markConversationAsRead(conversationId).get()
 
-        messagePersistenceManager.markConversationAsRead(conversationId).get()
-
-        val got = assertNotNull(messagePersistenceManager.getConversationInfo(conversationId).get(), "Missing conversation info")
-        assertEquals(0, got.unreadMessageCount, "Unread count should be 0")
+            val got = assertNotNull(messagePersistenceManager.getConversationInfo(conversationId).get(), "Missing conversation info")
+            assertEquals(0, got.unreadMessageCount, "Unread count should be 0")
+        }
     }
 
     @Test
-    fun `markConversationAsRead should throw InvalidConversationException if the given conversation doesn't exist`() {
-        assertFailsWith(InvalidConversationException::class) {
-            messagePersistenceManager.markConversationAsRead(randomUserConversationId()).get()
+    fun `markConversationAsRead should return message ids for messages marked as read`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+            val messageIds = (0..1).map { addMessage(conversationId, speaker, false, randomMessageText(), 0).info.id }
+
+            val got = messagePersistenceManager.markConversationAsRead(conversationId).get()
+
+            assertThat(got).apply {
+                `as`("Should return read message ids")
+                containsOnlyElementsOf(messageIds)
+            }
         }
     }
+
+    @Test
+    fun `markConversationAsRead should throw InvalidConversationException for a non-existent group`() {
+        listOf(randomUserConversationId(), randomGroupConversationId()).forEach {
+            assertFailsWithInvalidConversation { messagePersistenceManager.markConversationAsRead(it).get() }
+        }
+    }
+
+    @Test
+    fun `markConversationAsRead should mark all isRead messages as true`() {
+        foreachConvType { conversationId, participants ->
+            val messages = insertRandomReceivedMessagesFull(messagePersistenceManager, conversationId, participants)
+
+            messagePersistenceManager.markConversationAsRead(conversationId).get()
+
+            messages.forEach {
+                val messageId = it.info.id
+                val conversationMessageInfo = getMessage(conversationId, messageId)
+                assertTrue(conversationMessageInfo.info.isRead, "Message $messageId not marked as read")
+            }
+        }
+    }
+
 
     @Test
     fun `setExpiration should throw InvalidConversationMessageException if the message does not exists`() {
@@ -1099,6 +1088,41 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val conversationDisplayInfo = messagePersistenceManager.getConversationDisplayInfo(conversationId).get()
 
             assertEquals(expected, conversationDisplayInfo, "Invalid display info")
+        }
+    }
+
+    @Test
+    fun `markConversationMessagesAsRead should return message ids which are marked as read`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+            val messageIds = (0..1).map {
+                addMessage(conversationId, speaker, false, randomMessageText(), 0).info.id
+            }
+
+            val got = messagePersistenceManager.markConversationMessagesAsRead(conversationId, messageIds + listOf(randomMessageId())).get()
+
+            assertThat(got).apply {
+                `as`("Should only returned ids marked as read")
+                containsOnlyElementsOf(messageIds)
+            }
+        }
+    }
+
+    @Test
+    fun `markConversationMessagesAsRead should update the conversation info unread count`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            addMessage(conversationId, speaker, false, randomMessageText(), 0).info.id
+
+            val messageIds = listOf(
+                addMessage(conversationId, speaker, false, randomMessageText(), 0).info.id
+            )
+
+            messagePersistenceManager.markConversationMessagesAsRead(conversationId, messageIds + listOf(randomMessageId())).get()
+
+            val unreadCount = conversationInfoTestUtils.getConversationInfo(conversationId).unreadMessageCount
+            assertEquals(1, unreadCount)
         }
     }
 }

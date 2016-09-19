@@ -376,6 +376,13 @@ class MessengerServiceImpl(
         return sendSyncMessage(SyncMessage.MessageExpired(conversationId, MessageId(messageId)))
     }
 
+    override fun broadcastMessagesRead(conversationId: ConversationId, messageIds: List<String>): Promise<Unit, Exception> {
+        if (messageIds.isEmpty())
+            return Promise.ofSuccess(Unit)
+
+        return sendSyncMessage(SyncMessage.MessagesRead(conversationId, messageIds.map { MessageId(it) }))
+    }
+
     override fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception> {
         val serialized = objectMapper.writeValueAsBytes(SlyMessage.Control(ControlMessage.WasAdded()))
 

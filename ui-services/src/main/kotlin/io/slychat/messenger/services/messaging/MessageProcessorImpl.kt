@@ -110,6 +110,11 @@ class MessageProcessorImpl(
                     log.info("Received message expired for {}/{}", m.conversationId, m.messageId)
                     messageService.expireMessages(mapOf(m.conversationId to listOf(m.messageId.string)), true)
                 }
+
+                is SyncMessage.MessagesRead -> {
+                    log.info("Messages read for {}: {}", m.conversationId, m.messageIds)
+                    messageService.markConversationMessagesAsRead(m.conversationId, m.messageIds.map { it.string })
+                }
             }
         }
     }
