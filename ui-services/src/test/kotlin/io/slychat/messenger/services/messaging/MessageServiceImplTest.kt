@@ -41,12 +41,7 @@ class MessageServiceImplTest {
         whenever(messagePersistenceManager.deleteAllMessages(any())).thenResolveUnit()
         whenever(messagePersistenceManager.deleteMessages(any(), any())).thenResolveUnit()
 
-        val conversationDisplayInfo = ConversationDisplayInfo(
-            randomGroupConversationId(),
-            randomGroupName(),
-            0,
-            LastMessageData("contact", randomMessageText(), currentTimestamp())
-        )
+        val conversationDisplayInfo = randomConversationDisplayInfo()
         whenever(messagePersistenceManager.getConversationDisplayInfo(any())).thenResolve(conversationDisplayInfo)
     }
 
@@ -146,7 +141,7 @@ class MessageServiceImplTest {
                 conversationId,
                 randomGroupName(),
                 1,
-                LastMessageData("contact", randomMessageText(), currentTimestamp())
+                randomLastMessageData()
             )
 
             whenever(messagePersistenceManager.getConversationDisplayInfo(conversationId)).thenResolve(conversationDisplayInfo)

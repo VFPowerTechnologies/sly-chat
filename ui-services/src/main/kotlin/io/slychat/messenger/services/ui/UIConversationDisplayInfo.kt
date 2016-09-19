@@ -13,6 +13,7 @@ data class UIConversationDisplayInfo(
 
 data class UILastMessageData(
     val speakerName: String,
+    val speakerId: UserId,
     val message: String,
     val timestamp: Long
 )

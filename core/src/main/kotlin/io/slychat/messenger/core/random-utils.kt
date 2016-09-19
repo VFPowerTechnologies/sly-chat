@@ -160,12 +160,15 @@ fun randomSentConversationMessageInfo(ttlMs: Long = 0): ConversationMessageInfo 
     return ConversationMessageInfo(null, randomSentMessageInfo(ttlMs))
 }
 
+fun randomLastMessageData(): LastMessageData =
+    LastMessageData("speakerName", randomUserId(), randomMessageText(), currentTimestamp())
+
 fun randomConversationDisplayInfo(): ConversationDisplayInfo =
     ConversationDisplayInfo(
         randomGroupConversationId(),
         randomGroupName(),
         1,
-        LastMessageData("speakerName", randomMessageText(), currentTimestamp())
+        randomLastMessageData()
     )
 
 fun randomMessageIds(n: Int = 2): List<String> = (1..n).map { randomMessageId() }

@@ -1079,6 +1079,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
             val lastMessageData = LastMessageData(
                 speakerName,
+                speaker,
                 conversationMessageInfo.info.message,
                 conversationMessageInfo.info.timestamp
             )

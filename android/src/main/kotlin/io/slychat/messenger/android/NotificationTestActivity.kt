@@ -69,7 +69,7 @@ class NotificationTestActivity : AppCompatActivity() {
         else
             getNextMessageText()
 
-        val lastMessageData = LastMessageData(dummyUsers[userPos], message, currentTimestamp())
+        val lastMessageData = LastMessageData(dummyUsers[userPos], userId, message, currentTimestamp())
 
         return ConversationDisplayInfo(
             conversationId,
@@ -154,13 +154,14 @@ class NotificationTestActivity : AppCompatActivity() {
         summaryBtn.setOnClickListener {
             (0..AndroidNotificationService.MAX_NOTIFICATION_LINES).forEach {
                 val userName = dummyUsers[it]
-                val conversationId = ConversationId(UserId(it.toLong()))
+                val userId = UserId(it.toLong())
+                val conversationId = ConversationId(userId)
 
                 val conversationDisplayInfo = ConversationDisplayInfo(
                     conversationId,
                     null,
                     1,
-                    LastMessageData(userName, getNextMessageText(), currentTimestamp())
+                    LastMessageData(userName, userId, getNextMessageText(), currentTimestamp())
                 )
 
                 notificationService.updateConversationNotification(conversationDisplayInfo)

@@ -645,9 +645,11 @@ WHERE
             else -> null
         }
 
-        val lastMessageData = if (conversationInfo.lastSpeaker != null) {
-            val speakerName = getUserName(connection, conversationInfo.lastSpeaker)
-            LastMessageData(speakerName, conversationInfo.lastMessage!!, conversationInfo.lastTimestamp!!)
+        val speakerId = conversationInfo.lastSpeaker
+
+        val lastMessageData = if (speakerId != null) {
+            val speakerName = getUserName(connection, speakerId)
+            LastMessageData(speakerName, speakerId, conversationInfo.lastMessage!!, conversationInfo.lastTimestamp!!)
         }
         else
             null
