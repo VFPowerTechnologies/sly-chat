@@ -210,15 +210,11 @@ ChatController.prototype = {
                 return;
             }
 
-            contactController.updateRecentChatNode(cachedContact, messageInfo);
             this.updateChatPageNewMessage(messages, cachedContact.name, contactId);
-            this.leftMenuAddNewMessageBadge(contactId);
         }
         else {
-            contactController.updateRecentGroupChatNode(cachedContact, messageInfo);
             this.updateGroupChatPageNewMessage(messageInfo);
             groupController.updateConversationWithNewMessage(messageInfo.groupId, messageInfo);
-            this.leftMenuAddNewMessageBadge(messageInfo.groupId);
         }
 
         $(".timeago").timeago();

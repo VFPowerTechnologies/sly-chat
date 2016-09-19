@@ -352,67 +352,75 @@ ContactController.prototype  = {
         return recentDiv;
     },
 
-    updateRecentChatNode : function (contact, messageInfo) {
-        var message = messageInfo.messages[messageInfo.messages.length - 1];
-        var node = $("#recentChat_" + contact.id);
+    updateRecentChatNode : function (contactId) {
+        if (this.conversations[contactId] === undefined)
+            return;
+
+        var conversation = this.conversations[contactId];
 
         var recentChatList = $("#recentChatList");
+        if (recentChatList.length > 0) {
+            var node = $("#recentChat_" + contactId);
+            if (conversation.status.lastMessage != null) {
+                if (node.length > 0) {
+                    var time = new Date(conversation.status.lastTimestamp - window.relayTimeDifference).toISOString();
+                    node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
+                    node.find(".left").html(this.formatLastMessage(conversation.status.lastMessage));
 
-        if (node.length > 0) {
-            var time = new Date(message.timestamp - window.relayTimeDifference).toISOString();
-            node.find(".left").html(this.formatLastMessage(message.message));
-            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
-
-            recentChatList.prepend(node);
-        }
-        else {
-            var conversation = {
-                contact: contact,
-                status: {
-                    lastTimestamp: message.timestamp,
-                    lastMessage: message.message,
-                    unreadMessageCount: 1
+                    recentChatList.prepend(node);
                 }
-            };
-
-            if (recentChatList.find(".recent-contact-link").length <= 0)
-                recentChatList.html("");
-
-            recentChatList.prepend(this.createSingleRecentChatNode(conversation));
+                else {
+                    var newChat = this.createSingleRecentChatNode(conversation);
+                    if (recentChatList.find(".recent-contact-link").length > 0)
+                        recentChatList.prepend(newChat);
+                    else
+                        recentChatList.html(newChat);
+                }
+            }
+            else {
+                node.remove();
+            }
         }
     },
 
-    updateRecentGroupChatNode : function (contact, messageInfo) {
-        var message = messageInfo.messages[messageInfo.messages.length - 1];
-
-        var node = $("#recentChat_" + messageInfo.groupId);
+    updateRecentGroupChatNode : function (groupId) {
+        var groupDetails = groupController.groupDetailsCache[groupId];
+        if (groupDetails === undefined || groupDetails.info === undefined)
+            return;
 
         var recentChatList = $("#recentChatList");
+        if (recentChatList.length > 0) {
+            var node = $("#recentChat_" + groupId);
+            if (groupDetails.info.lastMessage != null) {
+                if (node.length > 0) {
+                    var time = new Date(groupDetails.info.lastTimestamp - window.relayTimeDifference).toISOString();
+                    node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
+                    node.find(".left").html(this.formatLastMessage(groupDetails.info.lastMessage));
 
-        if (node.length > 0) {
-            var time = new Date(message.timestamp - window.relayTimeDifference).toISOString();
-            node.find(".group-contact-name").html(contact.name);
-            node.find(".left").html(this.formatLastMessage(message.message));
-            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
+                    var contactName;
+                    if (groupDetails.info.lastSpeaker != null) {
+                        var contact = this.getContact(groupDetails.info.lastSpeaker);
+                        if (contact != false)
+                            contactName = contact.name;
+                    }
+                    else
+                        contactName = "You";
 
-            recentChatList.prepend(node);
-        }
-        else {
-            var conversation = {
-                contact: contact,
-                group: groupController.getGroup(messageInfo.groupId),
-                info: {
-                    lastSpeaker: messageInfo.contact,
-                    lastTimestamp: message.timestamp,
-                    lastMessage: message.message,
-                    unreadMessageCount: 1
+                    node.find('.group-contact-name').html(contactName);
+
+                    recentChatList.prepend(node);
                 }
-            };
-
-            if (recentChatList.find(".recent-contact-link").length <= 0)
-                recentChatList.html("");
-
-            recentChatList.prepend(this.createGroupRecentChatNode(conversation));
+                else {
+                    var newChat = this.createGroupRecentChatNode(groupDetails);
+                    if (recentChatList.find(".recent-contact-link").length > 0)
+                        recentChatList.prepend(newChat);
+                    else
+                        recentChatList.html(newChat);
+                }
+            }
+            else {
+                node.remove();
+            }
         }
     },
 
@@ -939,12 +947,14 @@ ContactController.prototype  = {
     handleConversationUpdate : function (info) {
         var isGroup = info.groupId != null;
         if (isGroup) {
-            this.updateNewMessageBadge(info.groupId, info.unreadCount);
             groupController.updateConversationInfo(info);
+            this.updateRecentGroupChatNode(info.groupId);
+            this.updateNewMessageBadge(info.groupId, info.unreadCount);
         }
         else {
-            this.updateNewMessageBadge(info.userId, info.unreadCount);
             this.updateConversationInfo(info);
+            this.updateRecentChatNode(info.userId, info);
+            this.updateNewMessageBadge(info.userId, info.unreadCount);
         }
     },
 
