@@ -18,8 +18,8 @@ data class ConversationDisplayInfo(
 }
 
 data class LastMessageData(
-    val speakerName: String,
-    val speakerId: UserId,
+    val speakerName: String?,
+    val speakerId: UserId?,
     val message: String,
     val timestamp: Long
 )
