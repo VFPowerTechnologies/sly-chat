@@ -66,4 +66,6 @@ interface UserComponent {
     val messageService: MessageService
 
     val messageExpirationWatcher: MessageExpirationWatcher
+
+    val messageReadWatcher: MessageReadWatcher
 }

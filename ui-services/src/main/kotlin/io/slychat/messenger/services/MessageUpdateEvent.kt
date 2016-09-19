@@ -127,4 +127,30 @@ sealed class MessageUpdateEvent {
             return "DeletedAll(conversationId=$conversationId)"
         }
     }
+
+    class Read(val conversationId: ConversationId, val messageIds: List<String>, val fromSync: Boolean) : MessageUpdateEvent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as Read
+
+            if (conversationId != other.conversationId) return false
+            if (messageIds != other.messageIds) return false
+            if (fromSync != other.fromSync) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = conversationId.hashCode()
+            result = 31 * result + messageIds.hashCode()
+            result = 31 * result + fromSync.hashCode()
+            return result
+        }
+
+        override fun toString(): String {
+            return "Read(conversationId=$conversationId, messageIds=$messageIds, fromSync=$fromSync)"
+        }
+    }
 }

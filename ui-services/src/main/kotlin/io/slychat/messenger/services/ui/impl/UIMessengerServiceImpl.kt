@@ -73,7 +73,7 @@ class UIMessengerServiceImpl(
         }
 
         val uiLastMessageData = conversationDisplayInfo.lastMessageData?.let {
-            UILastMessageData(it.speakerName, it.message, it.timestamp)
+            UILastMessageData(it.speakerName, it.speakerId, it.message, it.timestamp)
         }
 
         val uiConversationDisplayInfo = UIConversationDisplayInfo(

@@ -417,4 +417,13 @@ class UserModule(
             messengerService
         )
     }
+
+    @UserScope
+    @Provides
+    fun providesMessageReadWatcher(
+        messageService: MessageService,
+        messengerService: MessengerService
+    ): MessageReadWatcher {
+        return MessageReadWatcherImpl(messageService, messengerService)
+    }
 }
