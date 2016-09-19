@@ -51,8 +51,7 @@ class MessageServiceImpl(
 
             newMessagesSubject.onNext(conversationMessage)
         } success {
-            if (!conversationMessageInfo.info.isSent)
-                emitCurrentConversationDisplayInfo(conversationId)
+            emitCurrentConversationDisplayInfo(conversationId)
         }
     }
 

@@ -253,16 +253,9 @@ class MessageServiceImplTest {
     }
 
     @Test
-    fun `it should not emit a conversation info update when addMessage is called for a sent message`() {
-        forEachConvType { conversationId ->
-            val testSubscriber = messageService.conversationInfoUpdates.testSubscriber()
-
-            messageService.addMessage(conversationId, randomSentConversationMessageInfo()).get()
-
-            assertThat(testSubscriber.onNextEvents).apply {
-                `as`("Should not emit an update")
-                isEmpty()
-            }
+    fun `it should emit a conversation info update when addMessage is called for a sent message`() {
+        testConversationInfoUpdate {
+            messageService.addMessage(it, randomSentConversationMessageInfo()).get()
         }
     }
 
