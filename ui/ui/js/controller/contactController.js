@@ -929,6 +929,37 @@ ContactController.prototype  = {
         slychat.actions(buttons);
     },
 
+    resetUnreadCount : function (id) {
+        $('#leftContact_' + id).find(".left-menu-new-badge").remove();
+        var recentDiv = $("#recentChat_" + id);
+        recentDiv.find(".new-message-badge").remove();
+        recentDiv.removeClass("new");
+    },
+
+    addConversationInfoUpdateListener : function () {
+        messengerService.addConversationInfoUpdateListener(function (ev) {
+            this.handleConversationUpdate(ev);
+        }.bind(this));
+    },
+
+    handleConversationUpdate : function (info) {
+        var isGroup = info.groupId != null;
+        if (isGroup) {
+            groupController.updateConversationInfo(info);
+        }
+        else
+            this.updateConversationInfo(info);
+    },
+
+    updateConversationInfo : function (info) {
+        this.conversations[info.userId].status = {
+            unreadMessageCount: info.unreadCount,
+            lastMessage: info.lastMessageData.message,
+            lastTimestamp: info.lastMessageData.timestamp,
+            online: true
+        }
+    },
+
     clearCache : function () {
         this.conversations = [];
         this.sync = false;

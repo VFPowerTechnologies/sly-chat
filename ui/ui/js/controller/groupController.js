@@ -733,6 +733,16 @@ GroupController.prototype = {
         }
     },
 
+    updateConversationInfo : function (info) {
+        this.groupDetailsCache[info.groupId].info = {
+            // lastSpeaker: info.lastMessageData.lastSpeakeId,
+            lastSpeaker: this.groupDetailsCache[info.groupId].info.lastSpeaker,
+            unreadMessageCount: info.unreadCount,
+            lastMessage: info.lastMessageData.message,
+            lastTimestamp: info.lastMessageData.timestamp
+        }
+    },
+
     clearCache : function () {
         this.groups = [];
         this.groupDetailsCache = [];
