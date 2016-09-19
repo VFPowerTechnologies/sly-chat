@@ -33,7 +33,7 @@ class NewMessagesNotification {
             val lastMessageData = conversationDisplayInfo.lastMessageData!!
             contents[conversationDisplayInfo.conversationId] = NewMessageData(
                 conversationDisplayInfo.groupName,
-                lastMessageData.speakerName,
+                lastMessageData.speakerName ?: "Me",
                 lastMessageData.message,
                 lastMessageData.timestamp,
                 conversationDisplayInfo.unreadCount
