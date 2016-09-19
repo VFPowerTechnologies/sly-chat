@@ -873,4 +873,27 @@ class MessengerServiceImplTest {
 
         assertEquals(SyncMessage.MessageExpired(conversationId, MessageId(messageId)), message, "Invalid sync message")
     }
+
+    @Test
+    fun `it should not generate a MessagesRead message when broadcastMessagesRead is called with an empty list`() {
+        val messengerService = createService()
+
+        messengerService.broadcastMessagesRead(randomGroupConversationId(), emptyList()).get()
+
+        verify(messageSender, never()).addToQueue(any<SenderMessageEntry>())
+    }
+
+    @Test
+    fun `it should generate a MessagesRead message when broadcastMessagesRead is called with a non-empty list`() {
+        val messengerService = createService()
+
+        val conversationId = randomGroupConversationId()
+        val messageIds = randomMessageIds()
+
+        messengerService.broadcastMessagesRead(conversationId, messageIds).get()
+
+        val message = retrieveSyncMessage<SyncMessage.MessagesRead>()
+
+        assertEquals(SyncMessage.MessagesRead(conversationId, messageIds.map { MessageId(it) }), message, "Invalid sync message")
+    }
 }

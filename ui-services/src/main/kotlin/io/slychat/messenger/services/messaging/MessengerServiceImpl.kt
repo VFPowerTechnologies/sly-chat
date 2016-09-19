@@ -377,7 +377,10 @@ class MessengerServiceImpl(
     }
 
     override fun broadcastMessagesRead(conversationId: ConversationId, messageIds: List<String>): Promise<Unit, Exception> {
-        TODO()
+        if (messageIds.isEmpty())
+            return Promise.ofSuccess(Unit)
+
+        return sendSyncMessage(SyncMessage.MessagesRead(conversationId, messageIds.map { MessageId(it) }))
     }
 
     override fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception> {
