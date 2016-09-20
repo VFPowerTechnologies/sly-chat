@@ -8,6 +8,7 @@ import android.widget.Spinner
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.randomMessageIds
 import io.slychat.messenger.services.NotificationConversationInfo
 import io.slychat.messenger.services.NotificationState
 import java.util.*
@@ -119,6 +120,7 @@ class NotificationTestActivity : AppCompatActivity() {
             conversationId,
             groupName,
             unreadCount,
+            randomMessageIds(unreadCount),
             lastMessageData
         )
     }
@@ -211,6 +213,7 @@ class NotificationTestActivity : AppCompatActivity() {
                     conversationId,
                     null,
                     1,
+                    randomMessageIds(1),
                     LastMessageData(userName, userId, getNextMessageText(), currentTimestamp())
                 )
 

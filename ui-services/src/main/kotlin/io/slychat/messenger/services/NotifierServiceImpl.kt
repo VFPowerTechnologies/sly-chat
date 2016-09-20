@@ -19,6 +19,9 @@ data class NotificationState(
     }
 }
 
+/**
+ * @property hasNew This indicates whether or not new messages have appeared since the last modification.
+ */
 data class NotificationConversationInfo(
     val conversationDisplayInfo: ConversationDisplayInfo,
     val hasNew: Boolean
@@ -41,26 +44,30 @@ class NotifierServiceImpl(
             previousState: Map<ConversationId, NotificationConversationInfo>,
             bufferedInfo: List<ConversationDisplayInfo>
         ): Map<ConversationId, NotificationConversationInfo> {
-            val r = HashMap(previousState)
+            val compressed = HashMap<ConversationId, ConversationDisplayInfo>()
 
-            for (info in bufferedInfo) {
-                val conversationId = info.conversationId
+            for (info in bufferedInfo)
+                compressed[info.conversationId] = info
 
-                val cached = r[conversationId]
+            val r = HashMap<ConversationId, NotificationConversationInfo>()
 
-                val unreadCount = info.unreadCount
+            previousState.mapValuesTo(r) {
+                it.value.copy(hasNew = false)
+            }
 
-                //if the unread count never drops to 0, we still have some unread messages
-                if (unreadCount <= 0) {
+            compressed.forEach {
+                val (conversationId, conversationDisplayInfo) = it
+
+                val previousIds = previousState[conversationId]?.let { it.conversationDisplayInfo.latestUnreadMessageIds } ?: emptySet<String>()
+
+                val currentIds = HashSet(conversationDisplayInfo.latestUnreadMessageIds)
+
+                val newIds = currentIds - previousIds
+
+                if (currentIds.isEmpty())
                     r.remove(conversationId)
-                    continue
-                }
-
-                val prevUnreadCount = cached?.let { it.conversationDisplayInfo.unreadCount } ?: 0
-
-                val hasNew = unreadCount > prevUnreadCount
-
-                r[conversationId] = NotificationConversationInfo(info, hasNew)
+                else
+                    r[conversationId] = NotificationConversationInfo(conversationDisplayInfo, newIds.isNotEmpty())
             }
 
             return r
@@ -79,7 +86,7 @@ class NotifierServiceImpl(
 
     private val subscriptions = CompositeSubscription()
 
-    private var currentNotificationState: Map<ConversationId, NotificationConversationInfo> = HashMap()
+    private var currentNotificationState: Map<ConversationId, NotificationConversationInfo> = emptyMap()
 
     init {
         require(bufferMs >= 0) { "bufferMs must be >= 0, got $bufferMs" }
@@ -107,15 +114,14 @@ class NotifierServiceImpl(
             return
 
         val newNotificationState = mergeNotificationConversationInfo(currentNotificationState, conversationDisplayInfo)
-        setNewState(newNotificationState)
+        updateState(newNotificationState)
     }
 
-    private fun setNewState(newNotificationState: Map<ConversationId, NotificationConversationInfo>) {
+    private fun updateState(newNotificationState: Map<ConversationId, NotificationConversationInfo>) {
         currentNotificationState = newNotificationState
 
         val notificationState = NotificationState(newNotificationState.values.toList())
         platformNotificationService.updateNotificationState(notificationState)
-
     }
 
     private fun onUiVisibilityChange(isVisible: Boolean) {
@@ -124,7 +130,7 @@ class NotifierServiceImpl(
         isUiVisible = isVisible
 
         if (isVisible && currentPage == PageType.CONTACTS)
-            setNewState(emptyMap())
+            updateState(emptyMap())
     }
 
     override fun init() {
@@ -151,7 +157,7 @@ class NotifierServiceImpl(
 
                 when (event.page) {
                     PageType.CONTACTS ->
-                        setNewState(emptyMap())
+                        updateState(emptyMap())
 
                     else -> {}
                 }

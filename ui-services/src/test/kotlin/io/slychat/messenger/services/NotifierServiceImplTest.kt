@@ -1,17 +1,16 @@
 package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.randomConversationDisplayInfo
-import io.slychat.messenger.core.randomGroupId
-import io.slychat.messenger.core.randomReceivedMessageInfo
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.messaging.MessageBundle
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
 import nl.komponents.kovenant.Promise
+import org.assertj.core.api.Assertions
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -225,7 +224,154 @@ class NotifierServiceImplTest {
         verify(platformNotificationsService).updateNotificationState(any())
     }
 
+    private fun generateConversationDisplayInfo(conversationId: ConversationId, vararg messageIds: String): ConversationDisplayInfo {
+        return ConversationDisplayInfo(
+            conversationId,
+            null,
+            messageIds.size,
+            messageIds.toList(),
+            randomLastMessageData()
+        )
+    }
+
+    private fun testMergeNotificationConversationInfo(expectedHasNew: Boolean, body: (ConversationId) -> Pair<Set<String>, List<ConversationDisplayInfo>>) {
+        val conversationId: ConversationId = randomUserConversationId()
+        val (previousMessageIds, inputs) = body(conversationId)
+
+        val previousState = mapOf(
+            conversationId to NotificationConversationInfo(
+                ConversationDisplayInfo(
+                    conversationId,
+                    null,
+                    previousMessageIds.size,
+                    previousMessageIds.toList(),
+                    randomLastMessageData()
+                ),
+                //this value doesn't matter
+                false
+            )
+        )
+
+        val output = NotifierServiceImpl.mergeNotificationConversationInfo(previousState, inputs)
+
+        val expected = mapOf(
+            conversationId to NotificationConversationInfo(inputs.last(), expectedHasNew)
+        )
+    }
+
     @Test
-    fun `mergeNotificationConversationInfo should do stuff`() { TODO() }
+    fun `mergeNotificationConversationInfo should set hasNew=true if new messages are present`() {
+        testMergeNotificationConversationInfo(true) { conversationId ->
+            val previousState = setOf(randomMessageId())
+
+            val inputs = listOf(generateConversationDisplayInfo(conversationId, randomMessageId()))
+
+            previousState to inputs
+        }
+    }
+
+    @Test
+    fun `mergeNotificationConversationInfo should set hasNew=false if no new messages are present`() {
+        testMergeNotificationConversationInfo(false) { conversationId ->
+            val messageId = randomMessageId()
+            val previousState = setOf(messageId)
+
+            val inputs = listOf(generateConversationDisplayInfo(conversationId, messageId))
+
+            previousState to inputs
+        }
+    }
+
+    @Test
+    fun `mergeNotificationConversationInfo should set hasNew=false if no messages are present as the last input and not previous state is available`() {
+        testMergeNotificationConversationInfo(false) {
+            val inputs = listOf(generateConversationDisplayInfo(it))
+
+            emptySet<String>() to inputs
+        }
+    }
+
+    @Test
+    fun `mergeNotificationConversationInfo should set hasNew=false if no messages are present as the last input and a previous state is available`() {
+        testMergeNotificationConversationInfo(false) { conversationId ->
+            val previousState = setOf(randomMessageId())
+
+            val inputs = listOf(
+                generateConversationDisplayInfo(conversationId, randomMessageId()),
+                generateConversationDisplayInfo(conversationId)
+            )
+
+            previousState to inputs
+        }
+    }
+
+    @Test
+    fun `mergeNotificationConversationInfo should set hasNew=false for previous conversation data`() {
+        val conversationId: ConversationId = randomUserConversationId()
+
+        val conversationDisplayInfo = ConversationDisplayInfo(
+            conversationId,
+            null,
+            1,
+            randomMessageIds(1),
+            randomLastMessageData()
+        )
+
+        val notificationConversationInfo = NotificationConversationInfo(
+            conversationDisplayInfo,
+            true
+        )
+
+        val expectedNotificationConversationInfo = NotificationConversationInfo(
+            conversationDisplayInfo,
+            false
+        )
+
+        val previousState = mapOf(
+            conversationId to notificationConversationInfo
+        )
+
+        val inputs = listOf(
+            randomConversationDisplayInfo()
+        )
+
+        val output = NotifierServiceImpl.mergeNotificationConversationInfo(previousState, inputs)
+
+        Assertions.assertThat(output).apply {
+            `as`("It should update hasNew for older entries")
+            containsEntry(conversationId, expectedNotificationConversationInfo)
+        }
+    }
+
+    @Test
+    fun `mergeNotificationConversationInfo should remove entries with no unread messages`() {
+        val conversationId: ConversationId = randomUserConversationId()
+
+        val notificationConversationInfo = NotificationConversationInfo(
+            ConversationDisplayInfo(
+                conversationId,
+                null,
+                1,
+                randomMessageIds(1),
+                randomLastMessageData()
+            ),
+            false
+        )
+
+        val previousState = mapOf(
+            conversationId to notificationConversationInfo
+        )
+
+        val inputs = listOf(
+            notificationConversationInfo.conversationDisplayInfo.copy(unreadCount = 0, latestUnreadMessageIds = emptyList())
+        )
+
+        val output = NotifierServiceImpl.mergeNotificationConversationInfo(previousState, inputs)
+
+        Assertions.assertThat(output).apply {
+            `as`("It should remove empty entries")
+            doesNotContainKey(conversationId)
+        }
+    }
 }
 
