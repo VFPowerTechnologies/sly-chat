@@ -634,6 +634,7 @@ ContactController.prototype  = {
                 title: "Contact has been blocked",
                 hold: 2000
             });
+            navigationController.loadPage("contacts.html", false)
         }.bind(this)).catch(function (e) {
             slychat.addNotification({
                 title: "An error occured",
@@ -720,7 +721,17 @@ ContactController.prototype  = {
             }
         };
 
+        chatController.currentContact = {
+            isGroup: group,
+            id: contact.id,
+            name: contact.name
+        };
+
         if (group === false) {
+            chatController.currentContact.email = contact.email;
+            chatController.currentContact.publicKey = contact.publicKey;
+            chatController.currentContact.phoneNumber = contact.phoneNumber;
+
             options.query.email = contact.email;
             options.query.publicKey = contact.publicKey;
             options.query.phoneNumber = contact.phoneNumber;

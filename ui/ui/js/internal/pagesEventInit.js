@@ -82,6 +82,14 @@ slychat.onPageInit('chat', function (page) {
         groupController.fetchGroupMessage(0, 100, page.query.id);
     }
 
+    $(".chat-page-contact-menu").click(function (e) {
+        e.preventDefault();
+        if (isGroup)
+            chatController.openGroupPageMenu(page.query.id);
+        else
+            chatController.openContactPageMenu(page.query.id);
+    });
+
     $$('#contact-name').html(page.query.name);
     $$('#contact-id').html(page.query.id);
 

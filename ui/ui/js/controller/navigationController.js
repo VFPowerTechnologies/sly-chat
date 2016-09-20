@@ -119,8 +119,29 @@ NavigationController.prototype = {
 
     load : function (url, options) {
         var currentContatctId = null;
-        if(url === "chat.html" && options !== undefined && options.query !== undefined && options.query.id !== undefined)
-            currentContatctId = options.query.id;
+        if(url === "chat.html") {
+            if(options !== undefined && options.query !== undefined && options.query.id !== undefined)
+                currentContatctId = options.query.id;
+            else if (chatController.currentContact !== null) {
+                // if loading chat from back button press.
+                var currentContact = chatController.currentContact;
+                currentContatctId = currentContact.id;
+                options = {
+                    url: "chat.html",
+                    query: {
+                        name: currentContact.name,
+                        id: currentContatctId
+                    },
+                    group: currentContact.isGroup
+                };
+
+                if (!currentContact.isGroup) {
+                    options.query.email = currentContact.email;
+                    options.query.publicKey = currentContact.publicKey;
+                    options.query.phoneNumber = currentContact.phoneNumber;
+                }
+            }
+        }
 
         var currentState = {
             "currentPage" : url,
@@ -138,7 +159,7 @@ NavigationController.prototype = {
             page = "CONTACTS"
         }
         else if(/chat.html$/.test(url)) {
-            if(options.group === true)
+            if(options !== undefined && options.group !== undefined && options.group === true)
                 page = "GROUP";
             else
                 page = "CONVO";

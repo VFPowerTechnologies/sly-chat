@@ -1,5 +1,6 @@
 var ChatController = function () {
     this.lastMessage = null;
+    this.currentContact = null;
 };
 
 ChatController.prototype = {
@@ -265,6 +266,115 @@ ChatController.prototype = {
         slychat.actions(buttons);
     },
 
+    openGroupPageMenu : function (groupId) {
+        var group = groupController.getGroup(groupId);
+        var buttons = [
+            {
+                text: 'Group Info',
+                onClick: function () {
+                    groupController.loadGroupInfo(groupId);
+                }
+            },
+            {
+                text: 'Delete messages',
+                onClick: function () {
+                    slychat.confirm("Are you sure you want to delete all messages?", function () {
+                        groupController.deleteAllMessages(groupId);
+                    }.bind(this))
+                }
+            },
+            {
+                text: "Invite Contacts",
+                onClick: function () {
+                    groupController.openInviteUsersModal(groupId);
+                }
+            },
+            {
+                text: 'Leave Group',
+                onClick: function () {
+                    slychat.confirm("Are you sure you want to leave the group?", function () {
+                        groupController.leaveGroup(groupId);
+                    });
+                }
+            },
+            {
+                text: 'Block Group',
+                onClick: function () {
+                    slychat.confirm("Are you sure you want to block this group? </br> You won't receive any more messages.", function () {
+                        groupController.blockGroup(groupId);
+                    }.bind(this));
+                }
+            },
+            {
+                text: 'Cancel',
+                color: 'red',
+                onClick: function () {
+                }
+            }
+        ];
+        slychat.actions(buttons);
+    },
+
+    openContactPageMenu : function (contactId) {
+        var contact = contactController.getContact(contactId);
+        var buttons = [];
+
+        if (contact.publicKey == profileController.publicKey) {
+            buttons.push({
+                text: 'Profile',
+                onClick: function () {
+                    navigationController.loadPage('profile.html', true);
+                }.bind(this)
+            });
+        }
+        else {
+            buttons.push({
+                text: 'Contact Info',
+                onClick: function () {
+                    contactController.loadContactInfo(contact);
+                }.bind(this)
+            });
+
+            if (contact.allowedMessageLevel == "BLOCKED") {
+                buttons.push({
+                    text: 'Unblock',
+                    onClick: function () {
+                        slychat.confirm("Are you sure you want to unblock " + contact.name, function () {
+                            contactController.unblockContact(contact.id);
+                        }.bind(this));
+                    }.bind(this)
+                });
+            }
+            else {
+                buttons.push({
+                    text: 'Block',
+                    onClick: function () {
+                        slychat.confirm("Are you sure you want to block " + contact.name, function () {
+                            contactController.blockContact(contact.id);
+                        }.bind(this));
+                    }.bind(this)
+                });
+            }
+        }
+
+        buttons.push({
+            text: 'Delete Conversation',
+            onClick: function () {
+                slychat.confirm("Are you sure you want to delete this conversation?", function () {
+                    chatController.deleteConversation(contact);
+                })
+            }
+        },
+        {
+            text: 'Cancel',
+            color: 'red',
+            onClick: function () {
+            }
+        });
+
+        slychat.actions(buttons);
+    },
+
     openMessageMenu : function (message) {
         var contact = contactController.getContact($('#contact-id').html());
 
@@ -449,9 +559,12 @@ ChatController.prototype = {
         openInfoPopup(content, "Message Info");
     },
 
-    submitNewMessage : function (contact, message) {
+    submitNewMessage : function (contact, message, ttl) {
+        if (ttl === undefined)
+            ttl = 0;
+
         if (contact.email === undefined) {
-            messengerService.sendGroupMessageTo(contact.id, message, 0).then(function () {
+            messengerService.sendGroupMessageTo(contact.id, message, ttl).then(function () {
                 var input = $("#newMessageInput");
                 input.val("");
                 input.click();
@@ -461,7 +574,7 @@ ChatController.prototype = {
             })
         }
         else {
-            messengerService.sendMessageTo(contact.id, message, 0).then(function () {
+            messengerService.sendMessageTo(contact.id, message, ttl).then(function () {
                 var input = $("#newMessageInput");
                 input.val("");
                 input.click();
