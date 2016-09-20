@@ -352,92 +352,75 @@ ContactController.prototype  = {
         return recentDiv;
     },
 
-    updateMessageBadge : function (node, messageInfo) {
-        var receivedCount = messageInfo.messages.reduce(function (v, message) {
-            if (!message.sent)
-                return v + 1;
-            else
-                return v;
-        }, 0);
-
-        if(receivedCount == 0)
+    updateRecentChatNode : function (contactId) {
+        if (this.conversations[contactId] === undefined)
             return;
 
-        node.addClass("new");
+        var conversation = this.conversations[contactId];
 
-        var badge = node.find(".new-message-badge");
-        if(badge.length <= 0) {
-            node.append('<div class="right new-message-badge">' + receivedCount + '</div>');
-        }
-        else {
-            var newAmount = badge.html();
-            badge.html(parseInt(newAmount) + receivedCount);
+        var recentChatList = $("#recentChatList");
+        if (recentChatList.length > 0) {
+            var node = $("#recentChat_" + contactId);
+            if (conversation.status.lastMessage != null) {
+                if (node.length > 0) {
+                    var time = new Date(conversation.status.lastTimestamp - window.relayTimeDifference).toISOString();
+                    node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
+                    node.find(".left").html(this.formatLastMessage(conversation.status.lastMessage));
+
+                    recentChatList.prepend(node);
+                }
+                else {
+                    var newChat = this.createSingleRecentChatNode(conversation);
+                    if (recentChatList.find(".recent-contact-link").length > 0)
+                        recentChatList.prepend(newChat);
+                    else
+                        recentChatList.html(newChat);
+                }
+            }
+            else {
+                node.remove();
+            }
         }
     },
 
-    updateRecentChatNode : function (contact, messageInfo) {
-        var message = messageInfo.messages[messageInfo.messages.length - 1];
-        var node = $("#recentChat_" + contact.id);
+    updateRecentGroupChatNode : function (groupId) {
+        var groupDetails = groupController.groupDetailsCache[groupId];
+        if (groupDetails === undefined || groupDetails.info === undefined)
+            return;
 
         var recentChatList = $("#recentChatList");
+        if (recentChatList.length > 0) {
+            var node = $("#recentChat_" + groupId);
+            if (groupDetails.info.lastMessage != null) {
+                if (node.length > 0) {
+                    var time = new Date(groupDetails.info.lastTimestamp - window.relayTimeDifference).toISOString();
+                    node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
+                    node.find(".left").html(this.formatLastMessage(groupDetails.info.lastMessage));
 
-        if (node.length > 0) {
-            var time = new Date(message.timestamp - window.relayTimeDifference).toISOString();
-            this.updateMessageBadge(node, messageInfo);
-            node.find(".left").html(this.formatLastMessage(message.message));
-            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
+                    var contactName;
+                    if (groupDetails.info.lastSpeaker != null) {
+                        var contact = this.getContact(groupDetails.info.lastSpeaker);
+                        if (contact != false)
+                            contactName = contact.name;
+                    }
+                    else
+                        contactName = "You";
 
-            recentChatList.prepend(node);
-        }
-        else {
-            var conversation = {
-                contact: contact,
-                status: {
-                    lastTimestamp: message.timestamp,
-                    lastMessage: message.message,
-                    unreadMessageCount: 1
+                    node.find('.group-contact-name').html(contactName);
+
+                    recentChatList.prepend(node);
                 }
-            };
-
-            if (recentChatList.find(".recent-contact-link").length <= 0)
-                recentChatList.html("");
-
-            recentChatList.prepend(this.createSingleRecentChatNode(conversation));
-        }
-    },
-
-    updateRecentGroupChatNode : function (contact, messageInfo) {
-        var message = messageInfo.messages[messageInfo.messages.length - 1];
-
-        var node = $("#recentChat_" + messageInfo.groupId);
-
-        var recentChatList = $("#recentChatList");
-
-        if (node.length > 0) {
-            var time = new Date(message.timestamp - window.relayTimeDifference).toISOString();
-            this.updateMessageBadge(node, messageInfo);
-            node.find(".group-contact-name").html(contact.name);
-            node.find(".left").html(this.formatLastMessage(message.message));
-            node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
-
-            recentChatList.prepend(node);
-        }
-        else {
-            var conversation = {
-                contact: contact,
-                group: groupController.getGroup(messageInfo.groupId),
-                info: {
-                    lastSpeaker: messageInfo.contact,
-                    lastTimestamp: message.timestamp,
-                    lastMessage: message.message,
-                    unreadMessageCount: 1
+                else {
+                    var newChat = this.createGroupRecentChatNode(groupDetails);
+                    if (recentChatList.find(".recent-contact-link").length > 0)
+                        recentChatList.prepend(newChat);
+                    else
+                        recentChatList.html(newChat);
                 }
-            };
-
-            if (recentChatList.find(".recent-contact-link").length <= 0)
-                recentChatList.html("");
-
-            recentChatList.prepend(this.createGroupRecentChatNode(conversation));
+            }
+            else {
+                node.remove();
+            }
         }
     },
 
@@ -927,6 +910,73 @@ ContactController.prototype  = {
             }
         });
         slychat.actions(buttons);
+    },
+
+    resetUnreadCount : function (id) {
+        $('#leftContact_' + id).find(".left-menu-new-badge").remove();
+        var recentDiv = $("#recentChat_" + id);
+        recentDiv.find(".new-message-badge").remove();
+        recentDiv.removeClass("new");
+    },
+
+    addConversationInfoUpdateListener : function () {
+        messengerService.addConversationInfoUpdateListener(this.handleConversationUpdate.bind(this));
+    },
+
+    updateNewMessageBadge : function (id, count) {
+        var node = $("#recentChat_" + id);
+        if (count > 0) {
+            node.addClass("new");
+
+            var badge = node.find(".new-message-badge");
+            if (badge.length <= 0)
+                node.append('<div class="right new-message-badge">' + count + '</div>');
+            else
+                badge.html(count);
+
+            chatController.leftMenuAddNewMessageBadge(id);
+        }
+        else {
+            node.find(".new-message-badge").remove();
+            node.removeClass("new");
+
+            chatController.leftMenuRemoveNewMessageBadge(id);
+        }
+    },
+
+    handleConversationUpdate : function (info) {
+        var isGroup = info.groupId != null;
+        if (isGroup) {
+            groupController.updateConversationInfo(info);
+            this.updateRecentGroupChatNode(info.groupId);
+            this.updateNewMessageBadge(info.groupId, info.unreadCount);
+        }
+        else {
+            this.updateConversationInfo(info);
+            this.updateRecentChatNode(info.userId, info);
+            this.updateNewMessageBadge(info.userId, info.unreadCount);
+        }
+    },
+
+    updateConversationInfo : function (info) {
+        if (this.conversations[info.userId] !== undefined && this.conversations[info.userId].status !== undefined) {
+            if (info.lastMessageData == null) {
+                this.conversations[info.userId].status = {
+                    unreadMessageCount: 0,
+                    lastMessage: null,
+                    lastTimestamp: null,
+                    online: true
+                };
+            }
+            else {
+                this.conversations[info.userId].status = {
+                    unreadMessageCount: info.unreadCount,
+                    lastMessage: info.lastMessageData.message,
+                    lastTimestamp: info.lastMessageData.timestamp,
+                    online: true
+                };
+            }
+        }
     },
 
     clearCache : function () {

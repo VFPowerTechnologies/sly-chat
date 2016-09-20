@@ -6,6 +6,7 @@ import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
+import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -25,8 +26,7 @@ class MessageServiceImpl(
         get() = messageUpdatesSubject
 
     private val conversationInfoUpdatesSubject = PublishSubject.create<ConversationDisplayInfo>()
-    override val conversationInfoUpdates: Observable<ConversationDisplayInfo>
-        get() = conversationInfoUpdatesSubject
+    override val conversationInfoUpdates: Observable<ConversationDisplayInfo> = conversationInfoUpdatesSubject.distinctUntilChanged()
 
     override fun markMessageAsDelivered(conversationId: ConversationId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception> {
         return messagePersistenceManager.markMessageAsDelivered(conversationId, messageId, timestamp) successUi {
@@ -51,20 +51,40 @@ class MessageServiceImpl(
 
             newMessagesSubject.onNext(conversationMessage)
         } success {
-            if (!conversationMessageInfo.info.isSent)
-                emitCurrentConversationDisplayInfo(conversationId)
+            emitCurrentConversationDisplayInfo(conversationId)
         }
     }
 
+    override fun markConversationMessagesAsRead(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> {
+        return messagePersistenceManager.markConversationMessagesAsRead(conversationId, messageIds) success { messageIds ->
+            if (messageIds.isNotEmpty()) {
+                emitCurrentConversationDisplayInfo(conversationId)
+                emitMessagesReadEvent(conversationId, messageIds, true)
+            }
+        } map { Unit }
+    }
+
     override fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception> {
-        return messagePersistenceManager.markConversationAsRead(conversationId) success {
-            emitCurrentConversationDisplayInfo(conversationId)
-        }
+        return messagePersistenceManager.markConversationAsRead(conversationId) success { messageIds ->
+            if (messageIds.isNotEmpty()) {
+                emitCurrentConversationDisplayInfo(conversationId)
+                emitMessagesReadEvent(conversationId, messageIds, false)
+            }
+        } map { Unit }
+    }
+
+    private fun emitMessagesReadEvent(conversationId: ConversationId, messageIds: List<String>, fromSync: Boolean) {
+        if (messageIds.isEmpty())
+            return
+
+        val event = MessageUpdateEvent.Read(conversationId, messageIds, fromSync)
+        messageUpdatesSubject.onNext(event)
     }
 
     override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> {
         return messagePersistenceManager.deleteMessages(conversationId, messageIds) successUi {
             messageUpdatesSubject.onNext(MessageUpdateEvent.Deleted(conversationId, messageIds))
+            emitCurrentConversationDisplayInfo(conversationId)
         }
     }
 
@@ -116,6 +136,8 @@ class MessageServiceImpl(
                 messageIds.forEach {
                     messageUpdatesSubject.onNext(MessageUpdateEvent.Expired(conversationId, it, fromSync))
                 }
+
+                emitCurrentConversationDisplayInfo(conversationId)
             }
         }
     }

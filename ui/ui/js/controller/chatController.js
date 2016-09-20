@@ -210,15 +210,10 @@ ChatController.prototype = {
                 return;
             }
 
-            contactController.updateRecentChatNode(cachedContact, messageInfo);
             this.updateChatPageNewMessage(messages, cachedContact.name, contactId);
-            this.leftMenuAddNewMessageBadge(contactId);
         }
         else {
-            contactController.updateRecentGroupChatNode(cachedContact, messageInfo);
             this.updateGroupChatPageNewMessage(messageInfo);
-            groupController.updateConversationWithNewMessage(messageInfo.groupId, messageInfo);
-            this.leftMenuAddNewMessageBadge(messageInfo.groupId);
         }
 
         $(".timeago").timeago();
@@ -230,6 +225,10 @@ ChatController.prototype = {
             if (node.find(".left-menu-new-badge").length <= 0)
                 node.append('<span class="left-menu-new-badge" style="color: red; font-size: 12px; margin-left: 5px;">new</span>');
         }
+    },
+
+    leftMenuRemoveNewMessageBadge : function (id) {
+        $("#leftContact_" + id).find(".left-menu-new-badge").remove();
     },
 
     openGroupMessageMenu : function (message, groupId) {
@@ -453,11 +452,6 @@ ChatController.prototype = {
     submitNewMessage : function (contact, message) {
         if (contact.email === undefined) {
             messengerService.sendGroupMessageTo(contact.id, message, 0).then(function () {
-                var groupMessageDetails = {
-                    info: messageDetails,
-                    speaker: null
-                };
-
                 var input = $("#newMessageInput");
                 input.val("");
                 input.click();

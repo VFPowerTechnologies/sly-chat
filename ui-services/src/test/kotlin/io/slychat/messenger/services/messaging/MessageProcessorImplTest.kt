@@ -6,10 +6,7 @@ import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
-import io.slychat.messenger.services.GroupService
-import io.slychat.messenger.services.PageType
-import io.slychat.messenger.services.SyncMessageFromOtherSecurityException
-import io.slychat.messenger.services.UIEvent
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.testutils.KovenantTestModeRule
@@ -17,6 +14,7 @@ import io.slychat.messenger.testutils.thenReject
 import io.slychat.messenger.testutils.thenResolve
 import io.slychat.messenger.testutils.thenResolveUnit
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import rx.subjects.BehaviorSubject
@@ -41,6 +39,7 @@ class MessageProcessorImplTest {
     val messageService: MessageService = mock()
     val messageCipherService: MessageCipherService = mock()
     val groupService: GroupService = mock()
+    val relayClock: RelayClock = mock()
     val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(true)
     val uiEvents: PublishSubject<UIEvent> = PublishSubject.create()
 
@@ -59,8 +58,10 @@ class MessageProcessorImplTest {
     fun wrap(m: SyncMessage): SlyMessage = SlyMessage.Sync(m)
     fun wrap(m: ControlMessage): SlyMessage = SlyMessage.Control(m)
 
-    fun createProcessor(): MessageProcessorImpl {
-        whenever(messageService.addMessage(any(), any())).thenResolve(Unit)
+    @Before
+    fun before() {
+        whenever(messageService.addMessage(any(), any())).thenResolveUnit()
+        whenever(messageService.markConversationMessagesAsRead(any(), any())).thenResolveUnit()
 
         whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
         whenever(contactsService.addById(any())).thenResolve(true)
@@ -73,12 +74,17 @@ class MessageProcessorImplTest {
 
         whenever(messageCipherService.addSelfDevice(any())).thenResolve(Unit)
 
+        whenever(relayClock.currentTime()).thenReturn(currentTimestamp())
+    }
+
+    fun createProcessor(): MessageProcessorImpl {
         return MessageProcessorImpl(
             selfId,
             contactsService,
             messageService,
             messageCipherService,
             groupService,
+            relayClock,
             uiVisibility,
             uiEvents
         )
@@ -94,6 +100,9 @@ class MessageProcessorImplTest {
 
         val sender = UserId(1)
 
+        val relayTime = 1L
+        whenever(relayClock.currentTime()).thenReturn(relayTime)
+
         processor.processMessage(sender, message).get()
 
         verify(messageService).addMessage(eq(sender.toConversationId()), capture {
@@ -101,6 +110,7 @@ class MessageProcessorImplTest {
             assertEquals(m.ttlMs, info.ttlMs, "Invalid TTL")
             assertFalse(info.isRead, "Message should not be marked as read")
             assertEquals(m.message, info.message, "Invalid message text")
+            assertEquals(relayTime, info.receivedTimestamp, "Invalid received timestamp")
         })
     }
 
@@ -777,5 +787,29 @@ class MessageProcessorImplTest {
         assertFailsWith(SyncMessageFromOtherSecurityException::class) {
             processor.processMessage(randomUserId(), wrap(m)).get()
         }
+    }
+
+    @Test
+    fun `it should drop MessagesRead where the sender is not yourself`() {
+        val processor = createProcessor()
+
+        val m = SyncMessage.MessagesRead(randomUserConversationId(), randomMessageIds().map { MessageId(it) })
+
+        assertFailsWith(SyncMessageFromOtherSecurityException::class) {
+            processor.processMessage(randomUserId(), wrap(m)).get()
+        }
+    }
+
+    @Test
+    fun `it should mark messages as read when receiving a MessagesRead message`() {
+        val processor = createProcessor()
+
+        val messageIds = randomMessageIds()
+        val conversationId = randomUserConversationId()
+        val m = SyncMessage.MessagesRead(conversationId, messageIds.map { MessageId(it) })
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        verify(messageService).markConversationMessagesAsRead(conversationId, messageIds)
     }
 }

@@ -32,7 +32,9 @@ interface MessagePersistenceManager {
     fun markMessageAsDelivered(conversationId: ConversationId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception>
 
     /** Resets unread message count for the given contact's conversation. */
-    fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception>
+    fun markConversationAsRead(conversationId: ConversationId): Promise<List<String>, Exception>
+
+    fun markConversationMessagesAsRead(conversationId: ConversationId, messageIds: Collection<String>): Promise<List<String>, Exception>
 
     //FIXME
     /** Returns all undelivered messages for a given group. */

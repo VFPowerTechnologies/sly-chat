@@ -1,7 +1,6 @@
 package io.slychat.messenger.services.messaging
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
 import io.slychat.messenger.services.*
@@ -20,6 +19,7 @@ class MessageProcessorImpl(
     private val messageService: MessageService,
     private val messageCipherService: MessageCipherService,
     private val groupService: GroupService,
+    private val relayClock: RelayClock,
     uiVisibility: Observable<Boolean>,
     uiEvents: Observable<UIEvent>
 ) : MessageProcessor {
@@ -110,6 +110,11 @@ class MessageProcessorImpl(
                     log.info("Received message expired for {}/{}", m.conversationId, m.messageId)
                     messageService.expireMessages(mapOf(m.conversationId to listOf(m.messageId.string)), true)
                 }
+
+                is SyncMessage.MessagesRead -> {
+                    log.info("Messages read for {}: {}", m.conversationId, m.messageIds)
+                    messageService.markConversationMessagesAsRead(m.conversationId, m.messageIds.map { it.string })
+                }
             }
         }
     }
@@ -157,7 +162,7 @@ class MessageProcessorImpl(
         else
             false
 
-        val messageInfo = MessageInfo.newReceived(m.id.string, m.message, m.timestamp, currentTimestamp(), isRead, m.ttlMs)
+        val messageInfo = MessageInfo.newReceived(m.id.string, m.message, m.timestamp, relayClock.currentTime(), isRead, m.ttlMs)
         val conversationInfo = ConversationMessageInfo(sender, messageInfo)
 
         return if (groupId == null) {

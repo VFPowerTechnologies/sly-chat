@@ -19,7 +19,7 @@ buildscript {
             rxjava: '1.1.8',
             rxjavafx: '0.1.4',
             rxandroid: '1.2.1',
-            jfxGradlePlugin: '8.5.2',
+            jfxGradlePlugin: '8.7.0',
             appcompatv7: '23.1.1',
             playServices: '8.3.0',
             libphonenumber: '7.1.1',

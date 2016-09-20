@@ -72,9 +72,10 @@ slychat.onPageInit('register', function (page) {
 });
 
 slychat.onPageInit('chat', function (page) {
-    $('#leftContact_' + page.query.id).find(".left-menu-new-badge").remove();
+    var isGroup = page.query.email === undefined;
+    contactController.resetUnreadCount(page.query.id, isGroup);
 
-    if (page.query.email !== undefined) {
+    if (!isGroup) {
         chatController.fetchMessageFor(0, 100, page.query);
     }
     else {

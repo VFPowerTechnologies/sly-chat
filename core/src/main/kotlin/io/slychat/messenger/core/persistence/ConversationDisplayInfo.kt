@@ -1,5 +1,7 @@
 package io.slychat.messenger.core.persistence
 
+import io.slychat.messenger.core.UserId
+
 data class ConversationDisplayInfo(
     val conversationId: ConversationId,
     val groupName: String?,
@@ -16,7 +18,8 @@ data class ConversationDisplayInfo(
 }
 
 data class LastMessageData(
-    val speakerName: String,
+    val speakerName: String?,
+    val speakerId: UserId?,
     val message: String,
     val timestamp: Long
 )

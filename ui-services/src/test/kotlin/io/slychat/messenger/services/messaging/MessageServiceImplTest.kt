@@ -34,18 +34,14 @@ class MessageServiceImplTest {
     fun before() {
         whenever(messagePersistenceManager.addMessage(any(), any())).thenResolveUnit()
         whenever(messagePersistenceManager.markMessageAsDelivered(any(), any(), any())).thenResolve(null)
-        whenever(messagePersistenceManager.markConversationAsRead(any())).thenResolveUnit()
+        whenever(messagePersistenceManager.markConversationAsRead(any())).thenResolve(randomMessageIds())
+        whenever(messagePersistenceManager.markConversationMessagesAsRead(any(), any())).thenAnswerWithArg(1)
         whenever(messagePersistenceManager.setExpiration(any(), any(), any())).thenResolve(true)
         whenever(messagePersistenceManager.expireMessages(any())).thenResolveUnit()
         whenever(messagePersistenceManager.deleteAllMessages(any())).thenResolveUnit()
         whenever(messagePersistenceManager.deleteMessages(any(), any())).thenResolveUnit()
 
-        val conversationDisplayInfo = ConversationDisplayInfo(
-            randomGroupConversationId(),
-            randomGroupName(),
-            0,
-            LastMessageData("contact", randomMessageText(), currentTimestamp())
-        )
+        val conversationDisplayInfo = randomConversationDisplayInfo()
         whenever(messagePersistenceManager.getConversationDisplayInfo(any())).thenResolve(conversationDisplayInfo)
     }
 
@@ -145,7 +141,7 @@ class MessageServiceImplTest {
                 conversationId,
                 randomGroupName(),
                 1,
-                LastMessageData("contact", randomMessageText(), currentTimestamp())
+                randomLastMessageData()
             )
 
             whenever(messagePersistenceManager.getConversationDisplayInfo(conversationId)).thenResolve(conversationDisplayInfo)
@@ -157,13 +153,88 @@ class MessageServiceImplTest {
                 containsOnly(conversationDisplayInfo)
             }
         }
-
     }
 
     @Test
     fun `it should emit a conversation info update when markConversationAsRead is called`() {
         testConversationInfoUpdate {
             messageService.markConversationAsRead(it).get()
+        }
+    }
+
+    @Test
+    fun `it should emit a conversation info update when markConversationMessagesAsRead is called`() {
+        testConversationInfoUpdate {
+            messageService.markConversationMessagesAsRead(it, randomMessageIds()).get()
+        }
+    }
+
+    @Test
+    fun `it should mark the given message ids as read markConversationMessagesAsRead is called`() {
+        forEachConvType {
+            val messageIds = randomMessageIds()
+
+            messageService.markConversationMessagesAsRead(it, messageIds).get()
+
+            verify(messagePersistenceManager).markConversationMessagesAsRead(it, messageIds)
+        }
+    }
+
+    private fun testReadEvent(fromSync: Boolean, body: (ConversationId, List<String>) -> Unit) {
+        forEachConvType { conversationId ->
+            val messageIds = randomMessageIds()
+
+            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Read>()
+
+            body(conversationId, messageIds)
+
+            assertEventEmitted(testSubscriber) {
+                val expected = MessageUpdateEvent.Read(conversationId, messageIds, fromSync)
+                assertEquals(expected, it, "Invalid event contents")
+            }
+        }
+    }
+
+    @Test
+    fun `it should emit Read events when markConversationAsRead is called`() {
+        testReadEvent(false) { conversationId, messageIds ->
+            whenever(messagePersistenceManager.markConversationAsRead(conversationId)).thenResolve(messageIds)
+            messageService.markConversationAsRead(conversationId).get()
+        }
+    }
+
+    @Test
+    fun `it should emit Read events when markConversationMessagesAsRead is called`() {
+        testReadEvent(true) { conversationId, messageIds ->
+            whenever(messagePersistenceManager.markConversationMessagesAsRead(conversationId, messageIds)).thenResolve(messageIds)
+
+            messageService.markConversationMessagesAsRead(conversationId, messageIds).get()
+        }
+    }
+
+    private fun testEmptyMarkRead(body: (ConversationId, List<String>) -> Unit) {
+        forEachConvType { conversationId ->
+            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Read>()
+
+            body(conversationId, randomMessageIds())
+
+            assertNoEventsEmitted(testSubscriber)
+        }
+    }
+
+    @Test
+    fun `it should not emit Read events if no messages were marked as read when markConversationMessagesAsRead is called`() {
+        testEmptyMarkRead { conversationId, messageIds ->
+            whenever(messagePersistenceManager.markConversationMessagesAsRead(conversationId, messageIds)).thenResolve(emptyList())
+            messageService.markConversationMessagesAsRead(conversationId, messageIds).get()
+        }
+    }
+
+    @Test
+    fun `it should not emit Read events if no messages were marked as read when markConversation is called`() {
+        testEmptyMarkRead { conversationId, messageIds ->
+            whenever(messagePersistenceManager.markConversationAsRead(conversationId)).thenResolve(emptyList())
+            messageService.markConversationAsRead(conversationId).get()
         }
     }
 
@@ -177,16 +248,9 @@ class MessageServiceImplTest {
     }
 
     @Test
-    fun `it should not emit a conversation info update when addMessage is called for a sent message`() {
-        forEachConvType { conversationId ->
-            val testSubscriber = messageService.conversationInfoUpdates.testSubscriber()
-
-            messageService.addMessage(conversationId, randomSentConversationMessageInfo()).get()
-
-            assertThat(testSubscriber.onNextEvents).apply {
-                `as`("Should not emit an update")
-                isEmpty()
-            }
+    fun `it should emit a conversation info update when addMessage is called for a sent message`() {
+        testConversationInfoUpdate {
+            messageService.addMessage(it, randomSentConversationMessageInfo()).get()
         }
     }
 
@@ -194,6 +258,13 @@ class MessageServiceImplTest {
     fun `it should emit a conversation info update when deleteAllMessages is called`() {
         testConversationInfoUpdate { conversationId ->
             messageService.deleteAllMessages(conversationId)
+        }
+    }
+
+    @Test
+    fun `it should emit a conversation info update when deleteMessages is called`() {
+        testConversationInfoUpdate { conversationId ->
+            messageService.deleteMessages(conversationId, listOf(randomMessageId()))
         }
     }
 
@@ -287,6 +358,17 @@ class MessageServiceImplTest {
     }
 
     @Test
+    fun `it should emit a conversation info update when expireMessages is called`() {
+        testConversationInfoUpdate { conversationId ->
+            val messages = mapOf(
+                conversationId to listOf(randomMessageId())
+            )
+
+            messageService.expireMessages(messages, false).get()
+        }
+    }
+
+    @Test
     fun `it should emit expired events with the given fromSync value when expiredMessages is called`() {
         val conversationId = randomUserConversationId()
         val messageId = randomMessageId()
@@ -314,7 +396,7 @@ class MessageServiceImplTest {
     fun `it should emit a Deleted event when deleteMessages is called`() {
         forEachConvType { conversationId ->
             val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Deleted>()
-            val messageIds = (0..1).map { randomMessageId() }
+            val messageIds = randomMessageIds()
 
             messageService.deleteMessages(conversationId, messageIds).get()
 

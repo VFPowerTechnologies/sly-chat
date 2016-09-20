@@ -666,70 +666,24 @@ GroupController.prototype = {
         slychat.actions(buttons);
     },
 
-    showGroupInfo : function (groupId) {
-        var group = this.groupDetailsCache[groupId].group;
-        var members = this.groupDetailsCache[groupId].members;
-        var memberList = "";
-
-        members.forEach(function (member) {
-            memberList += "<div class='member'>" +
-                "<span>" + member.name + "</span>" +
-                "<span>" + member.email + "</span>" +
-                "</div>";
-        });
-
-        var content = "<div class='group-info'>" +
-            "<p class='group-info-title'>Group Name:</p>" +
-            "<p class='group-info-details'>" + group.name + "</p>" +
-            "</div>" +
-            "<div class='group-info'>" +
-            "<p class='group-info-title'>Group Id:</p>" +
-            "<p class='group-info-details'>" + group.id + "</p>" +
-            "</div>" +
-            '<div class="group-info">' +
-            '<p class="group-info-title">Members:</p>'+
-            '<div class="group-info-details"><div class="members">' + memberList + '</div></div>' +
-            '</div>';
-
-        openInfoPopup(content, "Group Info");
-    },
-
-    updateConversationWithNewMessage : function (groupId, messageInfo) {
-        var lastMessageInfo;
-        if (messageInfo.sent === true) {
-            lastMessageInfo = {
-                lastSpeaker: null,
-                unreadMessageCount: 0,
-                lastMessage: messageInfo.message,
-                lastTimestamp: messageInfo.timestamp
-            };
-        }
-        else {
-            var messages = messageInfo.messages;
-            var unreadCount;
-            if (this.groupDetailsCache[groupId] !== undefined && this.groupDetailsCache[groupId].info !== undefined) {
-                unreadCount = this.groupDetailsCache[groupId].info.unreadMessageCount + messages.length;
-            }
-            lastMessageInfo = {
-                lastSpeaker: messageInfo.contact,
-                unreadMessageCount: unreadCount,
-                lastMessage: messages[messages.length - 1].message,
-                lastTimestamp: messages[messages.length - 1].timestamp
-            };
-        }
-
-        if (this.groupDetailsCache[groupId] !== undefined) {
-            this.groupDetailsCache[groupId].info = lastMessageInfo;
-        }
-        else {
-            groupService.getInfo(groupId).then(function (info) {
-                this.groupDetailsCache[groupId] = {
-                    group: info,
-                    info: lastMessageInfo
+    updateConversationInfo : function (info) {
+        if (this.groupDetailsCache[info.groupId] !== undefined && this.groupDetailsCache[info.groupId].info !== undefined) {
+            if (info.lastMessageData == null) {
+                this.groupDetailsCache[info.groupId].info = {
+                    lastSpeaker: null,
+                    unreadMessageCount: 0,
+                    lastMessage: null,
+                    lastTimestamp: null
                 }
-            }.bind(this)).catch(function (e) {
-                exceptionController.handleError(e);
-            });
+            }
+            else {
+                this.groupDetailsCache[info.groupId].info = {
+                    lastSpeaker: info.lastMessageData.speakerId,
+                    unreadMessageCount: info.unreadCount,
+                    lastMessage: info.lastMessageData.message,
+                    lastTimestamp: info.lastMessageData.timestamp
+                }
+            }
         }
     },
 

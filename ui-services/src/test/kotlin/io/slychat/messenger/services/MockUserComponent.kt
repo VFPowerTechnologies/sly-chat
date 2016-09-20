@@ -79,4 +79,6 @@ class MockUserComponent : UserComponent {
     override val messageService: MessageService = mock()
 
     override val messageExpirationWatcher: MessageExpirationWatcher = mock()
+
+    override val messageReadWatcher: MessageReadWatcher = mock()
 }

@@ -226,7 +226,8 @@ sealed class GroupEventMessage {
     JsonSubTypes.Type(SyncMessage.NewDevice::class, name = "d"),
     JsonSubTypes.Type(SyncMessage.SelfMessage::class, name = "m"),
     JsonSubTypes.Type(SyncMessage.AddressBookSync::class, name = "s"),
-    JsonSubTypes.Type(SyncMessage.MessageExpired::class, name = "e")
+    JsonSubTypes.Type(SyncMessage.MessageExpired::class, name = "e"),
+    JsonSubTypes.Type(SyncMessage.MessagesRead::class, name = "r")
 )
 sealed class SyncMessage {
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -323,6 +324,36 @@ sealed class SyncMessage {
 
         override fun toString(): String {
             return "AddressBookSync()"
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    class MessagesRead(
+        @JsonProperty("conversationId")
+        val conversationId: ConversationId,
+        @JsonProperty("messageIds")
+        val messageIds: List<MessageId>
+    ) : SyncMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as MessagesRead
+
+            if (conversationId != other.conversationId) return false
+            if (messageIds != other.messageIds) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = conversationId.hashCode()
+            result = 31 * result + messageIds.hashCode()
+            return result
+        }
+
+        override fun toString(): String {
+            return "MessagesRead(conversationId=$conversationId, messageIds=$messageIds)"
         }
     }
 }

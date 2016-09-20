@@ -140,7 +140,7 @@ class MessengerServiceImpl(
     /** Writes the received message and then fires the new messages subject. */
     private fun writeReceivedSelfMessage(from: UserId, messageText: String): Promise<Unit, Exception> {
         //we mark the message as already read as well to avoid notifications (FIXME)
-        val messageInfo = MessageInfo.newReceived(messageText, currentTimestamp(), true)
+        val messageInfo = MessageInfo.newReceived(messageText, relayClock.currentTime(), true)
         val conversationMessageInfo = ConversationMessageInfo(from, messageInfo)
         return messageService.addMessage(from.toConversationId(), conversationMessageInfo)
     }
@@ -198,8 +198,10 @@ class MessengerServiceImpl(
 
         //HACK
         //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
+        val timestamp = relayClock.currentTime()
+
         return if (!isSelfMessage) {
-            val messageInfo = MessageInfo.newSent(message, relayClock.currentTime(), 0)
+            val messageInfo = MessageInfo.newSent(message, timestamp, 0)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
             val m = TextMessage(MessageId(messageInfo.id), messageInfo.timestamp, message, null, ttlMs)
             val wrapper = SlyMessage.Text(m)
@@ -212,7 +214,7 @@ class MessengerServiceImpl(
             }
         }
         else {
-            val messageInfo = MessageInfo.newSelfSent(message, 0)
+            val messageInfo = MessageInfo.newSelfSent(message, timestamp, 0)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
             //we need to insure that the send message info is sent back to the ui before the ServerReceivedMessage is fired
             messageService.addMessage(userId.toConversationId(), conversationMessageInfo) successUi {
@@ -250,12 +252,14 @@ class MessengerServiceImpl(
     }
 
     override fun sendGroupMessageTo(groupId: GroupId, message: String, ttlMs: Long): Promise<Unit, Exception> {
-        val m = SlyMessage.Text(TextMessage(MessageId(randomMessageId()), currentTimestamp(), message, groupId, ttlMs))
+        val timestamp = relayClock.currentTime()
+
+        val m = SlyMessage.Text(TextMessage(MessageId(randomMessageId()), timestamp, message, groupId, ttlMs))
 
         val messageId = randomUUID()
 
         return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bindUi {
-            val messageInfo = MessageInfo.newSent(message, 0).copy(id = messageId)
+            val messageInfo = MessageInfo.newSent(message, timestamp, ttlMs).copy(id = messageId)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
             messageService.addMessage(groupId.toConversationId(), conversationMessageInfo)
         }
@@ -370,6 +374,13 @@ class MessengerServiceImpl(
 
     override fun broadcastMessageExpired(conversationId: ConversationId, messageId: String): Promise<Unit, Exception> {
         return sendSyncMessage(SyncMessage.MessageExpired(conversationId, MessageId(messageId)))
+    }
+
+    override fun broadcastMessagesRead(conversationId: ConversationId, messageIds: List<String>): Promise<Unit, Exception> {
+        if (messageIds.isEmpty())
+            return Promise.ofSuccess(Unit)
+
+        return sendSyncMessage(SyncMessage.MessagesRead(conversationId, messageIds.map { MessageId(it) }))
     }
 
     override fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception> {

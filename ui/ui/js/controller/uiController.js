@@ -68,6 +68,7 @@ UIController.prototype = {
         loginController.init();
         chatController.init();
         contactController.addContactEventListener();
+        contactController.addConversationInfoUpdateListener();
         connectionController.init();
         groupController.addGroupEventListener();
     },
