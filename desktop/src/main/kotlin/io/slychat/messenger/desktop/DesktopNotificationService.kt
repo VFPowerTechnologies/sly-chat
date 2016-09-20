@@ -1,6 +1,7 @@
 package io.slychat.messenger.desktop
 
 import io.slychat.messenger.core.persistence.ConversationDisplayInfo
+import io.slychat.messenger.services.NotificationState
 import io.slychat.messenger.services.PlatformNotificationService
 import org.controlsfx.control.Notifications
 import org.slf4j.LoggerFactory
@@ -8,11 +9,15 @@ import org.slf4j.LoggerFactory
 class DesktopNotificationService : PlatformNotificationService {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun clearAllMessageNotifications() {
-        log.debug("Clearing all notifications")
+
+    override fun updateNotificationState(notificationState: NotificationState) {
+        notificationState.state.forEach {
+            if (it.hasNew)
+                displayNotification(it.conversationDisplayInfo)
+        }
     }
 
-    override fun updateConversationNotification(conversationDisplayInfo: ConversationDisplayInfo) {
+    private fun displayNotification(conversationDisplayInfo: ConversationDisplayInfo) {
         if (conversationDisplayInfo.unreadCount == 0)
             return
 

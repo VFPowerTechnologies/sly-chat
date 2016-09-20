@@ -168,6 +168,7 @@ fun randomConversationDisplayInfo(): ConversationDisplayInfo =
         randomGroupConversationId(),
         randomGroupName(),
         1,
+        randomMessageIds(1),
         randomLastMessageData()
     )
 

@@ -5,7 +5,7 @@ import rx.Scheduler
 import rx.subjects.PublishSubject
 import java.util.concurrent.TimeUnit
 
-class DebounceScheduler(
+class DebounceSyncScheduler(
     timeout: Long,
     timeUnit: TimeUnit,
     scheduler: Scheduler

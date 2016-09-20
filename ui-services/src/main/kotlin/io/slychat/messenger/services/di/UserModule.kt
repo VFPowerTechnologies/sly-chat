@@ -99,7 +99,7 @@ class UserModule(
     ): AddressBookOperationManager = AddressBookOperationManagerImpl(
         application.networkAvailable,
         addressBookJobFactory,
-        DebounceScheduler(5, TimeUnit.SECONDS, scheduler)
+        DebounceSyncScheduler(5, TimeUnit.SECONDS, scheduler)
     )
 
     @UserScope
@@ -218,6 +218,8 @@ class UserModule(
             uiEventService.events,
             messageService.conversationInfoUpdates,
             uiVisibility,
+            scheduler,
+            400,
             platformNotificationService,
             userConfigService
         )

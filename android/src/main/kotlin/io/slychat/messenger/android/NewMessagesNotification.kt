@@ -2,6 +2,7 @@ package io.slychat.messenger.android
 
 import io.slychat.messenger.core.persistence.ConversationDisplayInfo
 import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.services.NotificationState
 import java.util.*
 
 /** The latest available message for a conversation. */
@@ -20,12 +21,10 @@ class NewMessagesNotification {
     fun hasNewMessages(): Boolean = contents.isNotEmpty()
     fun userCount(): Int = contents.size
 
-    fun clear() {
-        contents.clear()
-    }
+    var hasNew: Boolean = false
+        private set
 
-    /** Increases the unread count by the amount given in newMessageData. */
-    fun update(conversationDisplayInfo: ConversationDisplayInfo) {
+    private fun update(conversationDisplayInfo: ConversationDisplayInfo) {
         if (conversationDisplayInfo.unreadCount == 0)
             contents.remove(conversationDisplayInfo.conversationId)
         else {
@@ -38,6 +37,17 @@ class NewMessagesNotification {
                 lastMessageData.timestamp,
                 conversationDisplayInfo.unreadCount
             )
+        }
+    }
+
+    fun update(notificationState: NotificationState) {
+        contents.clear()
+        hasNew = false
+
+        notificationState.state.forEach {
+            hasNew = if (!hasNew) it.hasNew else true
+
+            update(it.conversationDisplayInfo)
         }
     }
 }
