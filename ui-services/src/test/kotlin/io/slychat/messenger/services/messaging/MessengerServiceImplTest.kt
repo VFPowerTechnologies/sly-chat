@@ -14,8 +14,8 @@ import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.thenAnswerWithArg
 import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenResolveUnit
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -65,7 +65,7 @@ class MessengerServiceImplTest {
         whenever(messageSender.addToQueue(anyList())).thenResolve(Unit)
 
         //some useful defaults
-        whenever(messageService.addMessage(any(), any())).thenAnswerWithArg(1)
+        whenever(messageService.addMessage(any(), any())).thenResolveUnit()
 
         whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
         whenever(messageReceiver.processPackages(any())).thenResolve(Unit)
@@ -325,6 +325,54 @@ class MessengerServiceImplTest {
         })
     }
 
+    @Test
+    fun `sendMessageTo should include the ttl when adding the message`() {
+        val messengerService = createService()
+
+        val ttl = 1000L
+        val userId = randomUserId()
+        messengerService.sendMessageTo(userId, randomMessageText(), ttl)
+
+        verify(messageService).addMessage(eq(userId.toConversationId()), capture {
+            assertEquals(ttl, it.info.ttlMs, "Invalid TTL value")
+        })
+    }
+
+    @Test
+    fun `sendGroupMessageTo should include the ttl when adding the message`() {
+        val messengerService = createService()
+
+        val ttl = 1000L
+        val groupId = randomGroupId()
+
+        whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(setOf(randomUserId()))
+
+        messengerService.sendGroupMessageTo(groupId, randomMessageText(), ttl)
+
+        verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
+            assertEquals(ttl, it.info.ttlMs, "Invalid TTL value")
+        })
+    }
+
+    @Test
+    fun `it should include the ttl in the generated TextMessage for a group convo`() {
+        val messengerService = createService()
+
+        val groupId = randomGroupId()
+
+        whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(setOf(randomUserId()))
+
+        val ttl = 1000L
+        messengerService.sendGroupMessageTo(groupId, randomMessageText(), ttl)
+
+        verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
+            val m = it.first()
+            val message = deserializeTextMessage(m.message)
+            assertEquals(ttl, message.ttlMs, "Invalid TTL")
+        })
+    }
+
+
     //also doubles as checking for mark as delivered
     @Test
     fun `it should emit a message updated event when receiving a message update for TEXT_SINGLE message`() {
@@ -433,24 +481,6 @@ class MessengerServiceImplTest {
 
         verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(sentMessageId!!, it.info.id, "Message IDs don't match")
-        })
-    }
-
-    @Test
-    fun `it should include the ttl in the generated TextMessage for a group convo`() {
-        val messengerService = createService()
-
-        val groupId = randomGroupId()
-
-        whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(setOf(randomUserId()))
-
-        val ttl = 1000L
-        messengerService.sendGroupMessageTo(groupId, randomMessageText(), ttl)
-
-        verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
-            val m = it.first()
-            val message = deserializeTextMessage(m.message)
-            assertEquals(ttl, message.ttlMs, "Invalid TTL")
         })
     }
 
