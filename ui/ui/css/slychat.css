@@ -256,12 +256,17 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     background-color: #6d6d72;
     color: #efeff4;
 }
+.expiring-message-toolbar {
+    height: 100px;
+}
 #newMessageInput {
     margin-top: 5px;
     border-left: 1px solid transparent;
     border-right: none;
     border-top: none;
     border-bottom: none;
+    box-sizing: border-box;
+    padding-right: 30px;
     width: 100%;
     padding-left: 0;
     resize: none;

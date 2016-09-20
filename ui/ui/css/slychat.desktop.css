@@ -11,6 +11,12 @@
     padding: 0;
     height: calc(100% - 56px);
 }
+#chat-content {
+    margin-bottom: 40px;
+}
+.expire-message-toggled #chat-content {
+    margin-bottom: 100px;
+}
 .bottom-chat-toolbar {
     width: calc(100% - 15px);
 }

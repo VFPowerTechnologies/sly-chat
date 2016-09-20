@@ -96,9 +96,19 @@ slychat.onPageInit('chat', function (page) {
     $$('#newMessageInput').on('keypress', function(e) {
         if  (e.keyCode === 13 && !e.ctrlKey && !e.shiftKey) {
             e.preventDefault();
+            var ttl = 0;
+            if ($("#mainView").hasClass('expire-message-toggled')) {
+                var slider = document.getElementById("delaySlider");
+                if (slider !== null){
+                    ttl = parseInt(slider.noUiSlider.get()) * 1000;
+                }
+            }
+
             var message = $$(this).val();
-            if(message !== "")
-                chatController.submitNewMessage(page.query, message);
+            if(message !== "") {
+                chatController.submitNewMessage(page.query, message, ttl);
+                chatController.toggleExpiringMessageDisplay();
+            }
         }
 
         if ($(this).val() == "")
@@ -118,6 +128,12 @@ slychat.onPageInit('chat', function (page) {
         }
         else
             $(this).removeClass("empty-textarea");
+    });
+
+    $("#inputChatExpireMessageBtn").click(function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        chatController.toggleExpiringMessageDisplay();
     });
 
     if (isDesktop) {

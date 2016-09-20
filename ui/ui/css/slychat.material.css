@@ -5,3 +5,10 @@
 .top-navbar {
     box-shadow: 0 5px 10px #c5c4c4;
 }
+
+#chatPageContent {
+    padding-bottom: 48px;
+}
+.expire-message-toggled #chatPageContent {
+    padding-bottom: 100px;
+}

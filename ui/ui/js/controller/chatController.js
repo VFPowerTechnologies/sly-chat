@@ -629,5 +629,48 @@ ChatController.prototype = {
                 this.scrollTop();
             }
         }
+    },
+
+    toggleExpiringMessageDisplay : function () {
+        var mainView = $("#mainView");
+        var bottomToolbar = $(".bottom-chat-toolbar");
+
+        if (mainView.hasClass("expire-message-toggled")) {
+            mainView.removeClass("expire-message-toggled");
+            bottomToolbar.removeClass("expiring-message-toolbar");
+            bottomToolbar.find("#delaySliderContainer").remove();
+        }
+        else {
+            mainView.addClass("expire-message-toggled");
+            bottomToolbar.addClass("expiring-message-toolbar");
+            this.createExpireDelaySlider();
+        }
+    },
+
+    createExpireDelaySlider : function () {
+        var sliderContainer = $('<div id="delaySliderContainer">' +
+            '<div id="delaySlider" style="margin: 0 10px;"></div>' +
+            '<div style="color: #a9a9a9; font-size: 10px; float: right;">' +
+            '<span>Delay: <span id="delayDisplay">30</span> seconds</span></div></div>');
+
+        $("#newMessageForm").prepend(sliderContainer);
+
+        var slider = document.getElementById('delaySlider');
+
+        noUiSlider.create(slider, {
+            start: [10],
+            step: 1,
+            range: {
+                min: [1],
+                max: [120]
+            },
+            format: wNumb({
+                decimals: 0
+            })
+        });
+
+        slider.noUiSlider.on('slide', function () {
+            $("#delayDisplay").html(slider.noUiSlider.get());
+        })
     }
 };
