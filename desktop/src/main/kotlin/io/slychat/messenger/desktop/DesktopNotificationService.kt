@@ -11,14 +11,13 @@ class DesktopNotificationService : PlatformNotificationService {
 
 
     override fun updateNotificationState(notificationState: NotificationState) {
-        //TODO()
+        notificationState.state.forEach {
+            if (it.hasNew)
+                displayNotification(it.conversationDisplayInfo)
+        }
     }
 
-    private fun clearAllMessageNotifications() {
-        log.debug("Clearing all notifications")
-    }
-
-    private fun updateConversationNotification(conversationDisplayInfo: ConversationDisplayInfo) {
+    private fun displayNotification(conversationDisplayInfo: ConversationDisplayInfo) {
         if (conversationDisplayInfo.unreadCount == 0)
             return
 
