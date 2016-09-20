@@ -267,10 +267,13 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     border-bottom: none;
     box-sizing: border-box;
     padding-right: 30px;
-    width: 100%;
+    margin-left: 10px;
     padding-left: 0;
+    width: 100%;
     resize: none;
-    height: 13px;
+    height: 15px;
+    font-size: 13px;
+    line-height: 13px;
     max-height: 45px;
     background-color: transparent;
     display: inline-block;
@@ -314,7 +317,6 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 @keyframes blink-empty {
     50% {border-left: 1px solid #333;}
 }
-
 
 /**
   * Add Contact page
