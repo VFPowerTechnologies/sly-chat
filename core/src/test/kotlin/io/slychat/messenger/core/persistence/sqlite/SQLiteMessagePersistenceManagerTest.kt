@@ -1040,6 +1040,25 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         }
     }
 
+    //technically this should be handled by message read sync, but for consistency
+    @Test
+    fun `expireMessages should mark messages as read`() {
+        foreachConvType { conversationId, participants ->
+            val conversationMessageInfo = addExpiringReceivedMessage(conversationId, participants.first())
+            val messageId = conversationMessageInfo.info.id
+
+            val messages = mapOf(
+                conversationId to listOf(messageId)
+            )
+
+            messagePersistenceManager.expireMessages(messages).get()
+
+            val messageInfo = getMessage(conversationId, messageId)
+
+            assertTrue(messageInfo.info.isRead, "Message not marked as read")
+        }
+    }
+
     @Test
     fun `expireMessages should update the conversation info`() {
         foreachConvType { conversationId, participants ->
@@ -1060,6 +1079,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
                 conversationId,
                 groupName,
                 0,
+                emptyList(),
                 null
             ), conversationDisplayInfo, "Conversation info not updated")
         }
@@ -1084,7 +1104,8 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
                 conversationMessageInfo.info.timestamp
             )
 
-            val expected = ConversationDisplayInfo(conversationId, groupName, 1, lastMessageData)
+            val messageIds = listOf(conversationMessageInfo.info.id)
+            val expected = ConversationDisplayInfo(conversationId, groupName, 1, messageIds, lastMessageData)
 
             val conversationDisplayInfo = messagePersistenceManager.getConversationDisplayInfo(conversationId).get()
 

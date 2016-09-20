@@ -272,7 +272,7 @@ LIMIT
     }
 
     override fun markConversationAsRead(conversationId: ConversationId): Promise<List<String>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        val unreadMessageIds =  try {
+        val unreadMessageIds = try {
             getUnreadMessageIds(connection, conversationId)
         }
         catch (e: SQLiteException) {
@@ -296,6 +296,25 @@ LIMIT
         }
 
         unreadMessageIds
+    }
+
+    private fun getUnreadMessageIdsOrderedLimit(connection: SQLiteConnection, conversationId: ConversationId, limit: Int): List<String> {
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql = """
+SELECT
+    id
+FROM
+    $tableName
+WHERE
+    is_read = 0
+ORDER BY
+    timestamp DESC, n DESC
+LIMIT
+    $limit
+"""
+        return connection.withPrepared(sql) { stmt ->
+            stmt.map { it.columnString(0) }
+        }
     }
 
     private fun getUnreadMessageIds(connection: SQLiteConnection, conversationId: ConversationId): List<String> {
@@ -466,7 +485,8 @@ SET
     message="",
     is_expired=1,
     ttl=0,
-    expires_at=0
+    expires_at=0,
+    is_read=1
 WHERE
     id=?
 """
@@ -654,7 +674,9 @@ WHERE
         else
             null
 
-        ConversationDisplayInfo(conversationId, groupName, conversationInfo.unreadMessageCount, lastMessageData)
+        val lastMessageIds = getUnreadMessageIdsOrderedLimit(connection, conversationId, 10)
+
+        ConversationDisplayInfo(conversationId, groupName, conversationInfo.unreadMessageCount, lastMessageIds, lastMessageData)
     }
 
     /* test use only */

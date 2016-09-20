@@ -5,7 +5,12 @@ import io.slychat.messenger.core.UserId
 data class ConversationDisplayInfo(
     val conversationId: ConversationId,
     val groupName: String?,
+    //the actual full unread count; may be larger than latestUnreadMessageIds
     val unreadCount: Int,
+    //this will actually contained a limited amount of ids
+    //this is for perf/mem usage reasons, since we don't need the full list for our use case
+    //this is simply for the notification system
+    val latestUnreadMessageIds: List<String>,
     //may be null if no one has spoke yet
     val lastMessageData: LastMessageData?
 ) {

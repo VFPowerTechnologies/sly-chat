@@ -10,7 +10,7 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.text.SpannableString
 import android.text.style.StyleSpan
-import io.slychat.messenger.core.persistence.ConversationDisplayInfo
+import io.slychat.messenger.services.NotificationState
 import io.slychat.messenger.services.PlatformNotificationService
 
 class AndroidNotificationService(private val context: Context) : PlatformNotificationService {
@@ -24,13 +24,8 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
     private val newMessagesNotification = NewMessagesNotification()
 
     /* PlatformNotificationService methods */
-    override fun updateConversationNotification(conversationDisplayInfo: ConversationDisplayInfo) {
-        newMessagesNotification.update(conversationDisplayInfo)
-        updateNewMessagesNotification()
-    }
-
-    override fun clearAllMessageNotifications() {
-        newMessagesNotification.clear()
+    override fun updateNotificationState(notificationState: NotificationState) {
+        newMessagesNotification.update(notificationState)
         updateNewMessagesNotification()
     }
 
@@ -160,16 +155,19 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
         val soundUri = getNotificationSound()
 
-        val notification = Notification.Builder(context)
+        val notificationBuilder = Notification.Builder(context)
             .setContentTitle(getNewMessagesNotificationTitle())
             .setContentText(getNewMessagesNotificationContentText())
             .setSmallIcon(R.drawable.notification)
-            .setSound(soundUri)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setDeleteIntent(deletePendingIntent)
             .setStyle(getLoggedInInboxStyle())
-            .build()
+
+        if (newMessagesNotification.hasNew)
+            notificationBuilder.setSound(soundUri)
+
+        val notification = notificationBuilder.build()
 
         notificationManager.notify(NOTIFICATION_ID_NEW_MESSAGES, notification)
     }

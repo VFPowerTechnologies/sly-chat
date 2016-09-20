@@ -141,6 +141,7 @@ class MessageServiceImplTest {
                 conversationId,
                 randomGroupName(),
                 1,
+                randomMessageIds(1),
                 randomLastMessageData()
             )
 
