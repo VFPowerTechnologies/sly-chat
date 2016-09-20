@@ -42,6 +42,7 @@ class NewMessagesNotification {
 
     fun update(notificationState: NotificationState) {
         contents.clear()
+        hasNew = false
 
         notificationState.state.forEach {
             hasNew = if (!hasNew) it.hasNew else true
