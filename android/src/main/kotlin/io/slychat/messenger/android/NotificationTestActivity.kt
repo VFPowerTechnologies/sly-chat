@@ -63,7 +63,6 @@ class NotificationTestActivity : AppCompatActivity() {
     }
 
     private fun removeAllFromState() {
-        notificationService.clearAllMessageNotifications()
         currentNotificationState = HashMap()
         unreadCounts.clear()
         pushState()

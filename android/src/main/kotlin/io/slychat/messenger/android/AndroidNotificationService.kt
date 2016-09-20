@@ -29,11 +29,6 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         updateNewMessagesNotification()
     }
 
-    override fun clearAllMessageNotifications() {
-        newMessagesNotification.clear()
-        updateNewMessagesNotification()
-    }
-
     /* Other */
 
     private fun getInboxStyle(adapter: InboxStyleAdapter): Notification.InboxStyle? {

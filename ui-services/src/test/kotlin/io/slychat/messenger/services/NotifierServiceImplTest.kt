@@ -77,7 +77,7 @@ class NotifierServiceImplTest {
         val pageChangeEvent = UIEvent.PageChange(PageType.CONTACTS, "")
         uiEventSubject.onNext(pageChangeEvent)
 
-        verify(platformNotificationsService, times(1)).clearAllMessageNotifications()
+        verify(platformNotificationsService, times(1)).updateNotificationState(NotificationState.empty)
     }
 
     fun setupContactInfo(id: Long): ContactInfo {
@@ -102,12 +102,13 @@ class NotifierServiceImplTest {
         val conversationDisplayInfo = randomConversationDisplayInfo()
         conversationInfoUpdates.onNext(conversationDisplayInfo)
 
-        if (shouldShow) {
-            val state = NotificationState(listOf(NotificationConversationInfo(conversationDisplayInfo, true)))
+        val state = NotificationState(listOf(NotificationConversationInfo(conversationDisplayInfo, true)))
+
+        if (shouldShow)
             verify(platformNotificationsService).updateNotificationState(state)
-        }
         else
-            verify(platformNotificationsService, never()).updateNotificationState(any())
+            //need to allow for empty state setting
+            verify(platformNotificationsService, never()).updateNotificationState(state)
     }
 
     @Test
@@ -173,7 +174,7 @@ class NotifierServiceImplTest {
         uiVisibility.onNext(false)
         uiVisibility.onNext(true)
 
-        verify(platformNotificationsService, times(2)).clearAllMessageNotifications()
+        verify(platformNotificationsService, times(2)).updateNotificationState(NotificationState.empty)
     }
 
     @Test

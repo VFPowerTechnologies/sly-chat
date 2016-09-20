@@ -24,10 +24,6 @@ class NewMessagesNotification {
     var hasNew: Boolean = false
         private set
 
-    fun clear() {
-        contents.clear()
-    }
-
     private fun update(conversationDisplayInfo: ConversationDisplayInfo) {
         if (conversationDisplayInfo.unreadCount == 0)
             contents.remove(conversationDisplayInfo.conversationId)
@@ -45,7 +41,7 @@ class NewMessagesNotification {
     }
 
     fun update(notificationState: NotificationState) {
-        clear()
+        contents.clear()
 
         notificationState.state.forEach {
             hasNew = if (!hasNew) it.hasNew else true

@@ -13,7 +13,11 @@ import java.util.concurrent.TimeUnit
 
 data class NotificationState(
     val state: List<NotificationConversationInfo>
-)
+) {
+    companion object {
+        val empty = NotificationState(emptyList())
+    }
+}
 
 data class NotificationConversationInfo(
     val conversationDisplayInfo: ConversationDisplayInfo,
@@ -46,6 +50,7 @@ class NotifierServiceImpl(
 
                 val unreadCount = info.unreadCount
 
+                //if the unread count never drops to 0, we still have some unread messages
                 if (unreadCount <= 0) {
                     r.remove(conversationId)
                     continue
@@ -102,10 +107,15 @@ class NotifierServiceImpl(
             return
 
         val newNotificationState = mergeNotificationConversationInfo(currentNotificationState, conversationDisplayInfo)
+        setNewState(newNotificationState)
+    }
+
+    private fun setNewState(newNotificationState: Map<ConversationId, NotificationConversationInfo>) {
         currentNotificationState = newNotificationState
 
         val notificationState = NotificationState(newNotificationState.values.toList())
         platformNotificationService.updateNotificationState(notificationState)
+
     }
 
     private fun onUiVisibilityChange(isVisible: Boolean) {
@@ -114,7 +124,7 @@ class NotifierServiceImpl(
         isUiVisible = isVisible
 
         if (isVisible && currentPage == PageType.CONTACTS)
-            platformNotificationService.clearAllMessageNotifications()
+            setNewState(emptyMap())
     }
 
     override fun init() {
@@ -141,7 +151,7 @@ class NotifierServiceImpl(
 
                 when (event.page) {
                     PageType.CONTACTS ->
-                        platformNotificationService.clearAllMessageNotifications()
+                        setNewState(emptyMap())
 
                     else -> {}
                 }
