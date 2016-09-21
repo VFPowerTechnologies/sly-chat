@@ -122,11 +122,26 @@ WHERE
         if (lastMessageInfo == null)
             insertOrReplaceNewConversationInfo(connection, conversationId)
         else {
-            connection.withPrepared("UPDATE conversation_info SET last_speaker_contact_id=?, last_message=?, last_timestamp=?, unread_count=? WHERE conversation_id=?") { stmt ->
+            val sql = """
+UPDATE
+    conversation_info
+SET
+    last_speaker_contact_id=?,
+    last_message=?,
+    last_timestamp=?,
+    unread_count=?
+WHERE
+    conversation_id=?
+"""
+            connection.withPrepared(sql) { stmt ->
                 val info = lastMessageInfo.info
+                val message = if (info.ttlMs <= 0)
+                    info.message
+                else
+                    null
 
                 stmt.bind(1, lastMessageInfo.speaker)
-                stmt.bind(2, info.message)
+                stmt.bind(2, message)
                 stmt.bind(3, info.timestamp)
                 stmt.bind(4, unreadCount)
                 stmt.bind(5, conversationId)
@@ -667,9 +682,9 @@ WHERE
 
         val speakerId = conversationInfo.lastSpeaker
 
-        val lastMessageData = if (conversationInfo.lastMessage != null) {
+        val lastMessageData = if (conversationInfo.lastTimestamp != null) {
             val speakerName = speakerId?.let { getUserName(connection, speakerId) }
-            LastMessageData(speakerName, speakerId, conversationInfo.lastMessage, conversationInfo.lastTimestamp!!)
+            LastMessageData(speakerName, speakerId, conversationInfo.lastMessage, conversationInfo.lastTimestamp)
         }
         else
             null
