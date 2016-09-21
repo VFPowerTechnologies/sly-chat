@@ -29,8 +29,13 @@ class DesktopNotificationService : PlatformNotificationService {
             conversationDisplayInfo.unreadCount
         )
 
-        if (lastMessageData != null)
-            openNotification("Sly Chat", "You have a new message from ${lastMessageData.speakerName}")
+        if (lastMessageData != null) {
+            val isExpirable = lastMessageData.message == null
+
+            val extra = if (isExpirable) "secret " else ""
+
+            openNotification("Sly Chat", "You have a new ${extra}message from ${lastMessageData.speakerName}")
+        }
     }
 
     private fun openNotification(title: String, text: String) {

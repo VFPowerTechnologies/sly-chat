@@ -33,7 +33,7 @@ class NewMessagesNotification {
             contents[conversationDisplayInfo.conversationId] = NewMessageData(
                 conversationDisplayInfo.groupName,
                 lastMessageData.speakerName ?: "Me",
-                lastMessageData.message,
+                lastMessageData.message ?: "<Secret message>",
                 lastMessageData.timestamp,
                 conversationDisplayInfo.unreadCount
             )
