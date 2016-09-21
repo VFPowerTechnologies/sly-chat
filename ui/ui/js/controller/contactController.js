@@ -119,7 +119,7 @@ ContactController.prototype  = {
         var actualGroupConvo = [];
         for(var k in groupDetails) {
             if (groupDetails.hasOwnProperty(k)) {
-                if (groupDetails[k].info.lastMessage != null)
+                if (groupDetails[k].info.lastTimestamp != null)
                     actualGroupConvo.push(groupDetails[k]);
             }
         }
@@ -290,11 +290,13 @@ ContactController.prototype  = {
             newBadge = '<div class="right new-message-badge">' + conversation.status.unreadMessageCount + '</div>';
         }
 
+        var messageString = conversation.status.lastMessage == null ? "Hidden Message" : conversation.status.lastMessage;
+
         var time = new Date(conversation.status.lastTimestamp - window.relayTimeDifference).toISOString();
         var recentDiv = $("<div id='recentChat_" + conversation.contact.id + "' class='item-link recent-contact-link row " + newClass + "'>" +
             "<div class='recent-chat-name'><span>" + conversation.contact.name + "</span></div>" +
             "<div class='right'><span><small class='last-message-time'><time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time></small></span></div>" +
-            "<div class='left'>" + this.formatLastMessage(conversation.status.lastMessage) + "</div>" +
+            "<div class='left'>" + this.formatLastMessage(messageString) + "</div>" +
             newBadge +
             "</div>");
 
@@ -330,11 +332,13 @@ ContactController.prototype  = {
         else
             contactName = "You";
 
+        var messageString = conversation.info.lastMessage == null ? "Hidden Message" : conversation.info.lastMessage;
+
 
         var recentDiv = $("<div id='recentChat_" + conversation.group.id + "' class='item-link recent-contact-link row " + newClass + "'>" +
             "<div class='recent-chat-name'><span><span class='group-contact-name' style='display: inline;'>" + contactName + "</span> (" + conversation.group.name + ")</span></div>" +
             "<div class='right'><span><small class='last-message-time'><time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time></small></span></div>" +
-            "<div class='left'>" + this.formatLastMessage(conversation.info.lastMessage) + "</div>" +
+            "<div class='left'>" + this.formatLastMessage(messageString) + "</div>" +
             newBadge +
             "</div>");
 
@@ -361,11 +365,13 @@ ContactController.prototype  = {
         var recentChatList = $("#recentChatList");
         if (recentChatList.length > 0) {
             var node = $("#recentChat_" + contactId);
-            if (conversation.status.lastMessage != null) {
+            if (conversation.status.lastTimestamp != null) {
                 if (node.length > 0) {
+                    var messageString = conversation.status.lastMessage == null ? "Hidden Message" : conversation.status.lastMessage;
+
                     var time = new Date(conversation.status.lastTimestamp - window.relayTimeDifference).toISOString();
                     node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
-                    node.find(".left").html(this.formatLastMessage(conversation.status.lastMessage));
+                    node.find(".left").html(this.formatLastMessage(messageString));
 
                     recentChatList.prepend(node);
                 }
@@ -391,11 +397,13 @@ ContactController.prototype  = {
         var recentChatList = $("#recentChatList");
         if (recentChatList.length > 0) {
             var node = $("#recentChat_" + groupId);
-            if (groupDetails.info.lastMessage != null) {
+            if (groupDetails.info.lastTimestamp != null) {
                 if (node.length > 0) {
+                    var messageString = groupDetails.info.lastMessage == null ? "Hidden Message" : groupDetails.info.lastMessage;
+
                     var time = new Date(groupDetails.info.lastTimestamp - window.relayTimeDifference).toISOString();
                     node.find(".last-message-time").html("<time class='timeago' datetime='" + time + "'>" + $.timeago(time) + "</time>");
-                    node.find(".left").html(this.formatLastMessage(groupDetails.info.lastMessage));
+                    node.find(".left").html(this.formatLastMessage(messageString));
 
                     var contactName;
                     if (groupDetails.info.lastSpeaker != null) {
@@ -680,7 +688,7 @@ ContactController.prototype  = {
         var actualConversation = [];
 
         conversations.forEach(function (conversation) {
-            if(conversation.status.lastMessage != null)
+            if(conversation.status.lastTimestamp !== null)
                 actualConversation.push(conversation);
         });
 

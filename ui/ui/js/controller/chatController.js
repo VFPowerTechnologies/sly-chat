@@ -18,7 +18,14 @@ ChatController.prototype = {
                         var time = new Date(event.deliveredTimestamp - window.relayTimeDifference).toISOString();
                         messageBlock.find(".timespan").html("<time class='timeago' datetime='" + time + "' title='" + $.timeago(time) + "'>" + $.timeago(time) + "</time>");
                     }
+                    break;
 
+                case 'EXPIRING':
+                    this.startExpiringMessageCountdown(event);
+                    break;
+
+                case 'EXPIRED':
+                    this.destroyExpiringMessage(event.userId, event.groupId, event.messageId);
                     break;
             }
 
@@ -34,59 +41,18 @@ ChatController.prototype = {
         this.lastMessage = null;
     },
 
-    createGroupMessageNode : function (message, group) {
-        var classes = "";
-
-        if(this.lastMessage == null)
-            classes += " firstMessage";
-        else {
-            if ((message.info.sent && this.lastMessage.info.sent) || (!message.info.sent && !this.lastMessage.info.sent))
-                classes += " followingMessage";
-            else
-                classes += " firstMessage";
-        }
-
-
-        if (message.info.sent === true)
-            classes += " messageSent";
-        else
-            classes += " messageReceived";
-
-        var timespan = "";
-        if(message.info.sent && message.info.receivedTimestamp == 0){
-            timespan = "Delivering...";
+    createMessageNode : function (messageInfo, contact) {
+        var message;
+        var isGroup;
+        if (messageInfo.info === undefined) {
+            message = messageInfo;
+            isGroup = false;
         }
         else {
-            var time = new Date(message.info.timestamp - window.relayTimeDifference).toISOString();
-            timespan = "<time class='timeago' datetime='" + time + "' title='" + $.timeago(time) + "'>" + $.timeago(time) + "</time>";
+            message = messageInfo.info;
+            isGroup = true;
         }
 
-        this.lastMessage = message;
-
-        var contactName = "";
-        if(message.speaker !== null) {
-            var contact = contactController.getContact(message.speaker);
-            if(contact !== false)
-                contactName = "<p style='font-size: 10px; color: #9e9e9e;'>" + contact.name + "</p>";
-        }
-
-        var messageNode = $("<li id='message_" + message.info.id + "' class='" + classes + "'><div class='message'>" +
-            contactName +
-            "<p>" + formatTextForHTML(createTextNode(message.info.message)) + "</p>" +
-            "<span class='timespan'>" + timespan + "</span>" +
-            "</div></li>");
-
-        messageNode.on("mouseheld", function () {
-            vibrate(50);
-            this.openGroupMessageMenu(message, group);
-        }.bind(this));
-
-        messageNode.find(".timeago").timeago();
-
-        return messageNode;
-    },
-
-    createMessageNode : function (message, contact) {
         var classes = "";
 
         if(this.lastMessage == null)
@@ -115,19 +81,174 @@ ChatController.prototype = {
 
         this.lastMessage = message;
 
-        var messageNode = $("<li id='message_" + message.id + "' class='" + classes + "'><div class='message'>" +
-            "<p>" + formatTextForHTML(createTextNode(message.message)) + "</p>" +
-            "<span class='timespan'>" + timespan + "</span>" +
-            "</div></li>");
+        var contactName = "";
+        if(isGroup && messageInfo.speaker !== null) {
+            var groupContact = contactController.getContact(messageInfo.speaker);
+            if(groupContact !== false)
+                contactName = "<p style='font-size: 10px; color: #9e9e9e;'>" + groupContact.name + "</p>";
+        }
 
-        messageNode.on("mouseheld", function () {
-            vibrate(50);
-            this.openMessageMenu(message);
-        }.bind(this));
+        var expired = this.handleAutoDeleteMessage(message, contact);
+        var messageCore;
+        if (expired === true) {
+            messageCore = $("<div class='message'>" + contactName +
+                "<p>" + formatTextForHTML(createTextNode("Message has expired.")) + "</p>" +
+                "</div>");
+        }
+        else if (expired instanceof jQuery) {
+            messageCore = $("<div class='message message-hidden'>" +
+                "</div>");
+            messageCore.html(expired);
+        }
+        else {
+            messageCore = $("<div class='message'>" + contactName +
+                "<p>" + formatTextForHTML(createTextNode(message.message)) + "</p>" +
+                "<span class='timespan'>" + timespan + "</span>" +
+                "</div>");
+            if (message.expiresAt > 0) {
+                var secondsLeft = parseInt((new Date(message.expiresAt).getTime() - new Date().getTime()) / 1000);
+                messageCore.append("<span class='expiring-timer'><span class='current-count'>" + secondsLeft + "</span> seconds</span>");
 
-        messageNode.find(".timeago").timeago();
+                function countdown () {
+                    setTimeout(function () {
+                        if (secondsLeft >= 1) {
+                            secondsLeft -= 1;
+                            messageCore.find('.current-count').html(secondsLeft);
+                            countdown();
+                        }
+                    }, 1000);
+                }
+                countdown();
+            }
+        }
+
+        var messageNode = $("<li id='message_" + message.id + "' class='" + classes + "'></li>");
+        messageNode.html(messageCore);
+
+        if (!(expired instanceof jQuery)) {
+            messageNode.on("mouseheld", function () {
+                vibrate(50);
+                if (isGroup)
+                    this.openGroupMessageMenu(messageInfo, contact);
+                else
+                    this.openMessageMenu(message);
+            }.bind(this));
+            messageNode.find(".timeago").timeago();
+        }
 
         return messageNode;
+    },
+
+    handleAutoDeleteMessage : function (message, contact) {
+        if (message.expired === true) {
+            return true;
+        }
+
+        if (message.ttl == 0) {
+            return false;
+        }
+
+        if (message.expiresAt == 0 && message.sent !== true) {
+            return this.createShowExpiringMessageButton(message, contact);
+        }
+
+        return false;
+    },
+
+    createShowExpiringMessageButton : function (message, contact) {
+        var button = $('<div style="width: 45px; height: 45px;"><i class="fa fa-bomb fa-2x" style="font-size: 45px;"></i></div>');
+
+        button.on('mouseheld', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            vibrate(100);
+            var isGroup = contact.email === undefined;
+
+            if (isGroup) {
+                groupService.startMessageExpiration(contact, message.id).then(function () {
+                    this.displayExpiringMessage(message);
+                }.bind(this)).catch(function (e) {
+                    exceptionController.handleError(e);
+                });
+            }
+            else {
+                messengerService.startMessageExpiration(contact.id, message.id).then(function () {
+                    this.displayExpiringMessage(message);
+                }.bind(this)).catch(function (e) {
+                    exceptionController.handleError(e);
+                });
+            }
+
+        }.bind(this));
+
+        return button;
+    },
+
+    displayExpiringMessage : function (message) {
+        var messageNode = $("#message_" + message.id);
+        if (messageNode.length > 0) {
+
+            var time = new Date(message.timestamp - window.relayTimeDifference).toISOString();
+            var timespan = "<time class='timeago' datetime='" + time + "' title='" + $.timeago(time) + "'>" + $.timeago(time) + "</time>";
+            var currentCount = parseInt(message.ttl / 1000);
+
+            var messageHtml = $("<p>" + formatTextForHTML(createTextNode(message.message)) + "</p>" +
+                "<span class='timespan'>" + timespan + "</span>" +
+                "<span class='expiring-timer'><span class='current-count'>" + currentCount + "</span> seconds</span>");
+
+            function countdown () {
+                setTimeout(function () {
+                    if (currentCount >= 1) {
+                        currentCount -= 1;
+                        messageHtml.find('.current-count').html(currentCount);
+                        countdown();
+                    }
+                }, 1000);
+            }
+            countdown();
+
+            messageNode.on("mouseheld", function () {
+                vibrate(50);
+                this.openMessageMenu(message);
+            }.bind(this));
+            messageNode.find(".timeago").timeago();
+
+            var messageCore = messageNode.find('.message');
+            messageCore.html(messageHtml);
+            messageCore.removeClass('message-hidden');
+        }
+    },
+
+    destroyExpiringMessage : function (userId, groupId, messageId) {
+        var contactId = $("#contact-id").html();
+        var messageNode = $("#message_" + messageId);
+
+        if (messageNode.length > 0 && (groupId == contactId || userId == contactId)) {
+            messageNode.find('.message').html("<p>" + formatTextForHTML(createTextNode("Message has expired.")) + "</p>");
+        }
+    },
+
+    startExpiringMessageCountdown : function (event) {
+        var ttl = event.ttl;
+        var contactId = $("#contact-id").html();
+        var messageNode = $("#message_" + event.messageId);
+
+        if (messageNode.length > 0 && messageNode.find('.expiring-timer').length <= 0 && (event.groupId == contactId || event.userId == contactId)) {
+            var currentCount = parseInt(ttl/1000);
+            var timer = $("<span class='expiring-timer'><span class='current-count'>" + currentCount + "</span> seconds</span>");
+            messageNode.find('.message').append(timer);
+
+            function countdown () {
+                setTimeout(function () {
+                    if (currentCount >= 1) {
+                        currentCount -= 1;
+                        timer.find('.current-count').html(currentCount);
+                        countdown();
+                    }
+                }, 1000);
+            }
+            countdown();
+        }
     },
 
     deleteConversation : function (contact) {
@@ -159,18 +280,9 @@ ChatController.prototype = {
         this.lastMessage = null;
         var frag = $(document.createDocumentFragment());
 
-        if (isGroup === true) {
-            for(var g in messages) {
-                if (messages.hasOwnProperty(g)) {
-                    frag.append(this.createGroupMessageNode(messages[g], contact));
-                }
-            }
-        }
-        else {
-            for (var s in messages) {
-                if (messages.hasOwnProperty(s)) {
-                    frag.append(this.createMessageNode(messages[s], contact));
-                }
+        for(var k in messages) {
+            if (messages.hasOwnProperty(k)) {
+                frag.append(this.createMessageNode(messages[k], contact));
             }
         }
 
@@ -612,7 +724,6 @@ ChatController.prototype = {
             var messageDiv = $("#chat-content");
 
             if(messageDiv.length){
-                var contact = contactController.getContact(messagesInfo.contact);
                 vibrate(100);
                 var fragment = $(document.createDocumentFragment());
 
@@ -621,7 +732,7 @@ ChatController.prototype = {
                         info: message,
                         speaker: messagesInfo.contact
                     };
-                    fragment.append(this.createGroupMessageNode(messageInfo, contact));
+                    fragment.append(this.createMessageNode(messageInfo, messagesInfo.groupId));
                 }, this);
 
                 messageDiv.append(fragment);
@@ -634,24 +745,27 @@ ChatController.prototype = {
     toggleExpiringMessageDisplay : function () {
         var mainView = $("#mainView");
         var bottomToolbar = $(".bottom-chat-toolbar");
+        var newMessageInput = $("#newMessageInput");
 
         if (mainView.hasClass("expire-message-toggled")) {
             mainView.removeClass("expire-message-toggled");
             bottomToolbar.removeClass("expiring-message-toolbar");
             bottomToolbar.find("#delaySliderContainer").remove();
+            newMessageInput.attr("placeholder", "Type your secured message");
         }
         else {
             mainView.addClass("expire-message-toggled");
             bottomToolbar.addClass("expiring-message-toolbar");
             this.createExpireDelaySlider();
+            newMessageInput.attr("placeholder", "Type your expiring secured message");
         }
     },
 
     createExpireDelaySlider : function () {
         var sliderContainer = $('<div id="delaySliderContainer">' +
             '<div id="delaySlider" style="margin: 0 10px;"></div>' +
-            '<div style="color: #a9a9a9; font-size: 10px; float: right;">' +
-            '<span>Delay: <span id="delayDisplay">30</span> seconds</span></div></div>');
+            '<div style="color: #a9a9a9; font-size: 10px; float: right; padding-right: 5px;">' +
+            '<span>Delay: <span id="delayDisplay">10</span> seconds</span></div></div>');
 
         $("#newMessageForm").prepend(sliderContainer);
 

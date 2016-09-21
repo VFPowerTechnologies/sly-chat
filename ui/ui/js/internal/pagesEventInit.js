@@ -107,7 +107,8 @@ slychat.onPageInit('chat', function (page) {
             var message = $$(this).val();
             if(message !== "") {
                 chatController.submitNewMessage(page.query, message, ttl);
-                chatController.toggleExpiringMessageDisplay();
+                if ($("#mainView").hasClass('expire-message-toggled'))
+                    chatController.toggleExpiringMessageDisplay();
             }
         }
 
@@ -285,10 +286,6 @@ $$(document).on('click', '#logoutBtn', function (e) {
     loginController.logout();
 });
 
-$$(document).on('click', '#profileBtn', function () {
-    navigationController.loadPage('profile.html', true);
-});
-
 $$(document).on('click', '.chatLink', function (e) {
     e.preventDefault();
     e.stopPropagation();
@@ -346,10 +343,6 @@ $$(document).on("click", "#createGroupButton", function (e) {
 
 $$(document).on("click", "#loadProfileBtn", function (e) {
     navigationController.loadPage('profile.html', true);
-});
-
-$$(document).on("click", "#logoutBtn", function (e) {
-    loginController.logout();
 });
 
 $$(document).on("click", ".custom-dropdown", function (e) {
