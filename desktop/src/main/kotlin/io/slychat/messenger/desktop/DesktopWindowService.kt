@@ -4,6 +4,7 @@ import io.slychat.messenger.services.ui.UIWindowService
 import javafx.scene.input.Clipboard
 import javafx.scene.input.ClipboardContent
 import javafx.stage.Stage
+import nl.komponents.kovenant.Promise
 
 class DesktopWindowService(private val stage: Stage) : UIWindowService {
     override fun copyTextToClipboard(text: String) {
@@ -24,4 +25,7 @@ class DesktopWindowService(private val stage: Stage) : UIWindowService {
 
     override fun closeSoftKeyboard() {}
 
+    override fun selectNotificationSound(): Promise<String?, Exception> {
+        return Promise.of(null)
+    }
 }

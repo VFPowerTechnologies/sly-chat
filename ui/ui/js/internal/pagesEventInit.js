@@ -237,10 +237,14 @@ slychat.onPageInit('groupInfo', function (page) {
 });
 
 slychat.onPageInit('settings', function (page) {
-    $('#notifications-enabled').on('change', function (e) {
+    $('#notifications-enabled-checkbox').on('change', function (e) {
         e.preventDefault();
 
         settingsController.setNotificationsEnabled(e.target.checked);
+    });
+
+    $('#notification-sound-select-btn').on('click', function (e) {
+        settingsController.selectNotificationSound();
     });
 });
 

@@ -19,13 +19,21 @@ SettingsController.prototype = {
     refreshNotificationConfig : function () {
         var c = this.notificationConfig;
 
-        $('#notifications-enabled').prop('checked', c.enabled);
+        $('#notifications-enabled-checkbox').prop('checked', c.enabled);
     },
 
-    setNotificationsEnabled : function(isEnabled) {
+    setNotificationsEnabled : function (isEnabled) {
         this.notificationConfig.enabled = isEnabled;
 
         configService.setNotificationConfig(this.notificationConfig).catch(function (e) {
+            exceptionController.handleError(e);
+        });
+    },
+
+    selectNotificationSound : function () {
+        windowService.selectNotificationSound().then(function (sound) {
+            console.log('Notification sound: ' + sound);
+        }).catch(function (e) {
             exceptionController.handleError(e);
         });
     }
