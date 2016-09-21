@@ -22,9 +22,12 @@ data class ConversationDisplayInfo(
     }
 }
 
+/**
+ * @property message If the last message is expirable, then message will be null. Otherwise it will contain the message.
+ */
 data class LastMessageData(
     val speakerName: String?,
     val speakerId: UserId?,
-    val message: String,
+    val message: String?,
     val timestamp: Long
 )

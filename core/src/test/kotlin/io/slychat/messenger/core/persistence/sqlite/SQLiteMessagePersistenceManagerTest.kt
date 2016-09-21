@@ -1085,22 +1085,27 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         }
     }
 
-    @Test
-    fun `getConversationDisplayInfo should return data when last message data is available`() {
+    fun testConversationDisplayInfo(withTtl: Boolean) {
         foreachConvType { conversationId, participants ->
             val messageText = randomMessageText()
             val speaker = participants.first()
+            val ttl: Long = if (withTtl) 1 else 0
 
-            val conversationMessageInfo = addMessage(conversationId, speaker, false, messageText, 0)
+            val conversationMessageInfo = addMessage(conversationId, speaker, false, messageText, ttl)
 
             val groupName = getGroupNameForConversation(conversationId)
 
             val speakerName = contactsPersistenceManager.get(speaker).get()!!.name
 
+            val message = if (!withTtl)
+                conversationMessageInfo.info.message
+            else
+                null
+
             val lastMessageData = LastMessageData(
                 speakerName,
                 speaker,
-                conversationMessageInfo.info.message,
+                message,
                 conversationMessageInfo.info.timestamp
             )
 
@@ -1111,6 +1116,16 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
             assertEquals(expected, conversationDisplayInfo, "Invalid display info")
         }
+    }
+
+    @Test
+    fun `getConversationDisplayInfo should return data when last message data is available`() {
+        testConversationDisplayInfo(false)
+    }
+
+    @Test
+    fun `getConversationDisplayInfo should return a null message when the most recent message is expirable`() {
+        testConversationDisplayInfo(true)
     }
 
     @Test

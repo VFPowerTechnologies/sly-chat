@@ -138,8 +138,10 @@ class NotifierServiceImpl(
 
         userConfigService.updates.subscribe { keys ->
             keys.forEach {
-                if (it == UserConfig.NOTIFICATIONS_ENABLED)
+                if (it == UserConfig.NOTIFICATIONS_ENABLED) {
                     enableNotificationDisplay = userConfigService.notificationsEnabled
+                    updateState(emptyMap())
+                }
             }
         }
     }

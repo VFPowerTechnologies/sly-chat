@@ -186,6 +186,15 @@ class NotifierServiceImplTest {
     }
 
     @Test
+    fun `it should clear all notifications when notifications become disabled`() {
+        val notifierService = createNotifierService()
+
+        userConfigService.withEditor { notificationsEnabled = false }
+
+        verify(platformNotificationsService).updateNotificationState(NotificationState.empty)
+    }
+
+    @Test
     fun `it should unsubscribe from UI events on shutdown`() {
         uiVisibility.onNext(false)
 
