@@ -1,5 +1,6 @@
 package io.slychat.messenger.desktop
 
+import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
 import javafx.scene.input.Clipboard
 import javafx.scene.input.ClipboardContent
@@ -25,7 +26,7 @@ class DesktopWindowService(private val stage: Stage) : UIWindowService {
 
     override fun closeSoftKeyboard() {}
 
-    override fun selectNotificationSound(previous: String?): Promise<String?, Exception> {
-        return Promise.of(null)
+    override fun selectNotificationSound(previous: String?): Promise<UISelectionDialogResult<String?>, Exception> {
+        return Promise.of(UISelectionDialogResult(false, null))
     }
 }

@@ -48,8 +48,9 @@ SettingsController.prototype = {
     },
 
     selectNotificationSound : function () {
-        windowService.selectNotificationSound(this.notificationConfig.sound).then(function (sound) {
-            this.setNotificationSound(sound);
+        windowService.selectNotificationSound(this.notificationConfig.sound).then(function (result) {
+            if(result.ok)
+                this.setNotificationSound(result.value);
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         });

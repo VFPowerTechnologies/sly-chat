@@ -1,5 +1,6 @@
 package io.slychat.messenger.android
 
+import android.app.Activity
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Intent
@@ -24,6 +25,7 @@ import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.js.NavigationService
 import io.slychat.messenger.services.ui.js.javatojs.NavigationServiceToJSProxy
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
@@ -64,7 +66,7 @@ class MainActivity : AppCompatActivity() {
     private val permRequestCodeToDeferred = SparseArray<Deferred<Boolean, Exception>>()
 
     //only one can run at once
-    private var ringtonePickerDeferred: Deferred<String?, Exception>? = null
+    private var ringtonePickerDeferred: Deferred<UISelectionDialogResult<String?>, Exception>? = null
 
     /** Returns the initial page to launch after login, if any. Used when invoked via a notification intent. */
     private fun getInitialPage(intent: Intent): String? {
@@ -373,7 +375,7 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    fun openRingtonePicker(previousUriString: String?): Promise<String?, Exception> {
+    fun openRingtonePicker(previousUriString: String?): Promise<UISelectionDialogResult<String?>, Exception> {
         if (ringtonePickerDeferred != null)
             error("Deferred still pending")
 
@@ -393,7 +395,7 @@ class MainActivity : AppCompatActivity() {
 
         startActivityForResult(intent, RINGTONE_PICKER_REQUEST_CODE)
 
-        val deferred = deferred<String?, Exception>()
+        val deferred = deferred<UISelectionDialogResult<String?>, Exception>()
 
         ringtonePickerDeferred = deferred
 
@@ -411,16 +413,21 @@ class MainActivity : AppCompatActivity() {
 
                 ringtonePickerDeferred = null
 
+                if (resultCode != Activity.RESULT_OK) {
+                    deferred.resolve(UISelectionDialogResult(false, null))
+                    return
+                }
+
                 //should never occur
                 if (data == null) {
                     log.error("No data returned for ringtone picker")
-                    deferred.resolve(null)
+                    deferred.resolve(UISelectionDialogResult(false, null))
                     return
                 }
 
                 val uri = data.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
 
-                deferred.resolve(uri?.toString())
+                deferred.resolve(UISelectionDialogResult(true, uri?.toString()))
             }
 
             else -> {

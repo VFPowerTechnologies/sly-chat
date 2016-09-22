@@ -14,5 +14,5 @@ interface UIWindowService {
 
     fun getTextFromClipboard(): String?
 
-    fun selectNotificationSound(previous: String?): Promise<String?, Exception>
+    fun selectNotificationSound(previous: String?): Promise<UISelectionDialogResult<String?>, Exception>
 }
