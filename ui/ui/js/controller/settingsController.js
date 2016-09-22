@@ -13,9 +13,13 @@ SettingsController.prototype = {
         this.addConfigListeners();
     },
 
+    onPageInit : function () {
+        settingsController.initEventHandlers();
+        settingsController.displaySettings();
+    },
+
     addConfigListeners : function () {
         configService.addNotificationConfigChangeListener(function (newConfig) {
-            console.log('Notification updated to: ' + JSON.stringify(newConfig, null, 2));
             this.notificationConfig = newConfig;
             this.refreshNotificationConfig();
         }.bind(this));
@@ -40,8 +44,6 @@ SettingsController.prototype = {
     },
 
     setNotificationSound : function (sound) {
-        console.log('Notification sound: ' + sound);
-
         this.notificationConfig.sound = sound;
 
         this.updateNotificationConfig();
@@ -70,10 +72,5 @@ SettingsController.prototype = {
         $(SettingsController.ids.notificationsSound).on('click', function (e) {
             settingsController.selectNotificationSound();
         });
-    },
-
-    onPageInit : function () {
-        settingsController.initEventHandlers();
-        settingsController.displaySettings();
     }
 };
