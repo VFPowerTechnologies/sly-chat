@@ -3,12 +3,71 @@ package io.slychat.messenger.desktop
 import io.slychat.messenger.core.persistence.ConversationDisplayInfo
 import io.slychat.messenger.services.NotificationState
 import io.slychat.messenger.services.PlatformNotificationService
-import org.controlsfx.control.Notifications
+import io.slychat.messenger.services.config.UserConfig
+import io.slychat.messenger.services.config.UserConfigService
+import io.slychat.messenger.services.di.UserComponent
+import javafx.scene.media.AudioClip
 import org.slf4j.LoggerFactory
+import rx.Observable
+import rx.subscriptions.CompositeSubscription
 
-class DesktopNotificationService : PlatformNotificationService {
+class DesktopNotificationService(
+    private val audioPlayback: AudioPlayback,
+    private val notificationDisplay: NotificationDisplay
+) : PlatformNotificationService {
     private val log = LoggerFactory.getLogger(javaClass)
 
+    private var userConfigService: UserConfigService? = null
+
+    private val subscriptions = CompositeSubscription()
+
+    private var messageNotificationAudioClip: AudioClip? = null
+
+    fun init(userSessionAvailable: Observable<UserComponent?>) {
+        userSessionAvailable.subscribe { onUserSessionAvailabilityChanged(it) }
+    }
+
+    private fun onUserSessionAvailabilityChanged(userComponent: UserComponent?) {
+        if (userComponent == null) {
+            subscriptions.clear()
+            userConfigService = null
+            refreshClipCache()
+        }
+        else {
+            userConfigService = userComponent.userConfigService
+
+            subscriptions.add(userComponent.userConfigService.updates.subscribe { onUserConfigUpdate(it) })
+
+            refreshClipCache()
+        }
+    }
+
+    private fun refreshClipCache() {
+        messageNotificationAudioClip = null
+
+        val userConfigService = this.userConfigService ?: return
+
+        val soundPath = userConfigService.notificationsSound ?: return
+
+        val pathUri = soundPath
+
+        val audioClip = try {
+            AudioClip(pathUri)
+        }
+        catch (e: Exception) {
+            log.warn("Invalid notification path: {}", pathUri)
+            return
+        }
+
+        messageNotificationAudioClip = audioClip
+    }
+
+    private fun onUserConfigUpdate(keys: Collection<String>) {
+        val doRefresh = keys.contains(UserConfig.NOTIFICATIONS_SOUND)
+
+        if (doRefresh)
+            refreshClipCache()
+    }
 
     override fun updateNotificationState(notificationState: NotificationState) {
         notificationState.state.forEach {
@@ -34,15 +93,14 @@ class DesktopNotificationService : PlatformNotificationService {
 
             val extra = if (isExpirable) "secret " else ""
 
-            openNotification("Sly Chat", "You have a new ${extra}message from ${lastMessageData.speakerName}")
+            playNotificationSound()
+
+            notificationDisplay.displayNotification("Sly Chat", "You have a new ${extra}message from ${lastMessageData.speakerName}")
         }
     }
 
-    private fun openNotification(title: String, text: String) {
-        Notifications.create()
-                .darkStyle()
-                .title(title)
-                .text(text)
-                .show()
+    private fun playNotificationSound() {
+        val audioClip = messageNotificationAudioClip ?: return
+        audioPlayback.play(audioClip)
     }
 }
