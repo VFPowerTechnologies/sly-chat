@@ -1,6 +1,7 @@
 var ChatController = function () {
     this.lastMessage = null;
     this.currentContact = null;
+    this.lastMessageTtl = 0;
 };
 
 ChatController.prototype = {
@@ -684,6 +685,10 @@ ChatController.prototype = {
             var slider = document.getElementById("delaySlider");
             if (slider !== null) {
                 ttl = parseInt(slider.noUiSlider.get()) * 1000;
+                if (ttl !== 0) {
+                    this.lastMessageTtl = ttl;
+                    configService.setLastMessageTtl(ttl);
+                }
             }
         }
 
@@ -796,7 +801,7 @@ ChatController.prototype = {
         var slider = document.getElementById('delaySlider');
 
         noUiSlider.create(slider, {
-            start: [10],
+            start: [Math.floor(this.lastMessageTtl / 1000)],
             step: 1,
             range: {
                 min: [1],
@@ -806,6 +811,8 @@ ChatController.prototype = {
                 decimals: 0
             })
         });
+
+        $("#delayDisplay").html(slider.noUiSlider.get());
 
         slider.noUiSlider.on('slide', function () {
             $("#delayDisplay").html(slider.noUiSlider.get());

@@ -15,6 +15,9 @@ interface UIConfigService {
     fun getLoginRememberMe(): Boolean
     fun setLoginRememberMe(v: Boolean)
 
+    fun getLastMessageTtl(): Long
+    fun setLastMessageTtl(v: Long)
+
     fun setNotificationConfig(config: UINotificationConfig)
 
     fun addNotificationConfigChangeListener(listener: (UINotificationConfig) -> Unit)

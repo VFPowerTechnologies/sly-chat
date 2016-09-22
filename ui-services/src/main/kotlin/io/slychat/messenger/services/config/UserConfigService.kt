@@ -2,6 +2,7 @@ package io.slychat.messenger.services.config
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 //paths are strings because android uses android.net.Uri for representing files (not all of which are convertable to
 //real paths, eg content://settings/system/ringtone)
@@ -10,6 +11,7 @@ data class UserConfig(
     val formatVersion: Int = 1,
     val notificationsEnabled: Boolean = true,
     val notificationsSound: String? = null,
+    val messagingLastTtl: Long = TimeUnit.SECONDS.toMillis(10),
     val profileAvatar: String? = null
 ) {
     companion object {
@@ -19,6 +21,14 @@ data class UserConfig(
 
         val NOTIFICATIONS_SOUND = join(NOTIFICATIONS, "sound")
         val NOTIFICATIONS_ENABLED = join(NOTIFICATIONS, "enabled")
+
+        val MESSAGING = "user.messaging"
+
+        val MESSAGING_LAST_TTL = join(MESSAGING, "lastTtl")
+    }
+
+    init {
+        require(messagingLastTtl >= 0) { "messagingLastTtl must be >= 0, got $messagingLastTtl" }
     }
 }
 
@@ -38,6 +48,13 @@ class UserEditorInterface(override var config: UserConfig) : ConfigServiceBase.E
             modifiedKeys.add(UserConfig.NOTIFICATIONS_SOUND)
             config = config.copy(notificationsSound = value)
         }
+
+    var messagingLastTtl: Long
+        get() = config.messagingLastTtl
+        set(value) {
+            modifiedKeys.add(UserConfig.MESSAGING_LAST_TTL)
+            config = config.copy(messagingLastTtl = value)
+        }
 }
 
 class UserConfigService(
@@ -53,4 +70,7 @@ class UserConfigService(
 
     val notificationsEnabled: Boolean
         get() = config.notificationsEnabled
+
+    val messagingLastTtl: Long
+        get() = config.messagingLastTtl
 }
