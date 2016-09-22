@@ -373,20 +373,21 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    fun openRingtonePicker(): Promise<String?, Exception> {
+    fun openRingtonePicker(previousUriString: String?): Promise<String?, Exception> {
         if (ringtonePickerDeferred != null)
             error("Deferred still pending")
 
         val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
 
+        val previousRingtoneUri = previousUriString?.let { Uri.parse(previousUriString) }
+
         intent.apply {
-            putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Notification sound")
+            putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Message notification sound")
             putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
             putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
             putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
 
-            //FIXME
-            //putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, lastRingtoneUri)
+            putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, previousRingtoneUri)
         }
 
         startActivityForResult(intent, RINGTONE_PICKER_REQUEST_CODE)

@@ -25,7 +25,7 @@ class DesktopWindowService(private val stage: Stage) : UIWindowService {
 
     override fun closeSoftKeyboard() {}
 
-    override fun selectNotificationSound(): Promise<String?, Exception> {
+    override fun selectNotificationSound(previous: String?): Promise<String?, Exception> {
         return Promise.of(null)
     }
 }

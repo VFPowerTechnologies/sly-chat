@@ -39,11 +39,11 @@ class AndroidWindowService(private val context: Context) : UIWindowService {
         return clipboardManager.primaryClip?.getItemAt(0)?.text?.toString()
     }
 
-    override fun selectNotificationSound(): Promise<String?, Exception> {
+    override fun selectNotificationSound(previous: String?): Promise<String?, Exception> {
         val app = AndroidApp.get(context)
 
         val activity = app.currentActivity ?: return Promise.ofFail(IllegalStateException("No activity currently available"))
 
-        return activity.openRingtonePicker()
+        return activity.openRingtonePicker(previous)
     }
 }

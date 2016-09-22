@@ -14,6 +14,5 @@ interface UIWindowService {
 
     fun getTextFromClipboard(): String?
 
-    //TODO pass in the current value
-    fun selectNotificationSound(): Promise<String?, Exception>
+    fun selectNotificationSound(previous: String?): Promise<String?, Exception>
 }
