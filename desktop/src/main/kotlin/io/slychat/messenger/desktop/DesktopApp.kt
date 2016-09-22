@@ -11,6 +11,7 @@ import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResourc
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
 import io.slychat.messenger.desktop.services.*
 import io.slychat.messenger.services.SlyApplication
+import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.ui.createAppDirectories
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
@@ -174,7 +175,8 @@ class DesktopApp : Application() {
             DesktopUILoadService(this),
             uiVisibility,
             BehaviorSubject.create(true),
-            JavaFxScheduler.getInstance()
+            JavaFxScheduler.getInstance(),
+            UserConfig()
         )
 
         app.init(platformModule)
