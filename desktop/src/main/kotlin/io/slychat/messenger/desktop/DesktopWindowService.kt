@@ -1,9 +1,13 @@
 package io.slychat.messenger.desktop
 
+import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
 import javafx.scene.input.Clipboard
 import javafx.scene.input.ClipboardContent
+import javafx.stage.FileChooser
 import javafx.stage.Stage
+import nl.komponents.kovenant.Promise
+import java.io.File
 
 class DesktopWindowService(private val stage: Stage) : UIWindowService {
     override fun copyTextToClipboard(text: String) {
@@ -24,4 +28,30 @@ class DesktopWindowService(private val stage: Stage) : UIWindowService {
 
     override fun closeSoftKeyboard() {}
 
+    //this returns a URI (as a string); this is so we can use jar paths for default notifications (and testing)
+    override fun selectNotificationSound(previous: String?): Promise<UISelectionDialogResult<String?>, Exception> {
+        val fileChooser = FileChooser()
+
+        fileChooser.title = "Message notification sound"
+
+        fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("Audio Files", "*.wav", "*.mp3", "*.aac"))
+
+        if (previous != null) {
+            val file = File(previous)
+
+            fileChooser.initialDirectory = file.parentFile
+            //for some reason this doesn't work on linux; nfi why since gtk does support doing this
+            fileChooser.initialFileName = previous
+        }
+
+        val selectedFile = fileChooser.showOpenDialog(stage)
+
+        //TODO allow silence somehow
+        val (ok, value) = if (selectedFile == null)
+            false to null
+        else
+            true to selectedFile.toURI().toString()
+
+        return Promise.of(UISelectionDialogResult(ok, value))
+    }
 }

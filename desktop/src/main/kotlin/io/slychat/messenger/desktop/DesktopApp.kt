@@ -11,6 +11,7 @@ import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResourc
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
 import io.slychat.messenger.desktop.services.*
 import io.slychat.messenger.services.SlyApplication
+import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.ui.createAppDirectories
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
@@ -162,6 +163,11 @@ class DesktopApp : Application() {
             uiVisibility.onNext(!newV)
         }
 
+        val desktopNotificationService = DesktopNotificationService(
+            JfxAudioPlayback(),
+            JfxNotificationDisplay()
+        )
+
         val platformModule = PlatformModule(
             DesktopUIPlatformInfoService(),
             BuildConfig.DESKTOP_SERVER_URLS,
@@ -169,15 +175,17 @@ class DesktopApp : Application() {
             DesktopTelephonyService(),
             DesktopWindowService(primaryStage),
             DesktopPlatformContacts(),
-            DesktopNotificationService(),
+            desktopNotificationService,
             DesktopUIPlatformService(browser),
             DesktopUILoadService(this),
             uiVisibility,
             BehaviorSubject.create(true),
-            JavaFxScheduler.getInstance()
+            JavaFxScheduler.getInstance(),
+            UserConfig()
         )
 
         app.init(platformModule)
+        desktopNotificationService.init(app.userSessionAvailable)
         app.isInBackground = false
 
         val appComponent = app.appComponent

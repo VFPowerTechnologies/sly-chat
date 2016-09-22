@@ -132,9 +132,10 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun provideUIConfigService(
+        app: SlyApplication,
        appConfigService: AppConfigService
     ): UIConfigService {
-        return UIConfigServiceImpl(appConfigService)
+        return UIConfigServiceImpl(app.userSessionAvailable, appConfigService)
     }
 
     @Singleton

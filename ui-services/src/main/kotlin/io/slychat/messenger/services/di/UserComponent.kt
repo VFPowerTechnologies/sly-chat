@@ -47,7 +47,7 @@ interface UserComponent {
 
     val authTokenManager: AuthTokenManager
 
-    val configService: UserConfigService
+    val userConfigService: UserConfigService
 
     val addressBookOperationManager: AddressBookOperationManager
 

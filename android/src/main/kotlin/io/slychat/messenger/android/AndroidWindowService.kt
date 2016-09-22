@@ -4,7 +4,9 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.view.inputmethod.InputMethodManager
+import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
+import nl.komponents.kovenant.Promise
 
 class AndroidWindowService(private val context: Context) : UIWindowService {
     override fun minimize() {
@@ -19,7 +21,7 @@ class AndroidWindowService(private val context: Context) : UIWindowService {
 
         val currentFocus = androidApp.currentActivity?.currentFocus
 
-        if(currentFocus != null) {
+        if (currentFocus != null) {
             val inputManager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             inputManager.hideSoftInputFromWindow(currentFocus.windowToken, 0)
         }
@@ -36,5 +38,13 @@ class AndroidWindowService(private val context: Context) : UIWindowService {
     override fun getTextFromClipboard(): String? {
         val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         return clipboardManager.primaryClip?.getItemAt(0)?.text?.toString()
+    }
+
+    override fun selectNotificationSound(previous: String?): Promise<UISelectionDialogResult<String?>, Exception> {
+        val app = AndroidApp.get(context)
+
+        val activity = app.currentActivity ?: return Promise.ofFail(IllegalStateException("No activity currently available"))
+
+        return activity.openRingtonePicker(previous)
     }
 }

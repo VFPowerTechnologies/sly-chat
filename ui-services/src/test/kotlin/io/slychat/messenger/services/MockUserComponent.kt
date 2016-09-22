@@ -64,7 +64,7 @@ class MockUserComponent : UserComponent {
     override val authTokenManager: AuthTokenManager
         get() = mockAuthTokenManager
 
-    override val configService: UserConfigService = UserConfigService(DummyConfigBackend())
+    override val userConfigService: UserConfigService = UserConfigService(DummyConfigBackend())
 
     override val addressBookOperationManager: AddressBookOperationManager = mock()
 

@@ -1,9 +1,12 @@
 package io.slychat.messenger.android
 
+import android.app.Activity
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
@@ -22,6 +25,7 @@ import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.js.NavigationService
 import io.slychat.messenger.services.ui.js.javatojs.NavigationServiceToJSProxy
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
@@ -41,6 +45,8 @@ class MainActivity : AppCompatActivity() {
         val EXTRA_PENDING_MESSAGES_TYPE_MULTI = "multi"
 
         val EXTRA_CONVO_KEY = "conversationKey"
+
+        val RINGTONE_PICKER_REQUEST_CODE = 1
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -58,6 +64,9 @@ class MainActivity : AppCompatActivity() {
 
     private var nextPermRequestCode = 0
     private val permRequestCodeToDeferred = SparseArray<Deferred<Boolean, Exception>>()
+
+    //only one can run at once
+    private var ringtonePickerDeferred: Deferred<UISelectionDialogResult<String?>, Exception>? = null
 
     /** Returns the initial page to launch after login, if any. Used when invoked via a notification intent. */
     private fun getInitialPage(intent: Intent): String? {
@@ -364,5 +373,66 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
         })
+    }
+
+    fun openRingtonePicker(previousUriString: String?): Promise<UISelectionDialogResult<String?>, Exception> {
+        if (ringtonePickerDeferred != null)
+            error("Deferred still pending")
+
+        val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
+
+        val previousRingtoneUri = previousUriString?.let { Uri.parse(previousUriString) }
+
+        intent.apply {
+            putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Message notification sound")
+            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
+            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+            putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
+            putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
+
+            putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, previousRingtoneUri)
+        }
+
+        startActivityForResult(intent, RINGTONE_PICKER_REQUEST_CODE)
+
+        val deferred = deferred<UISelectionDialogResult<String?>, Exception>()
+
+        ringtonePickerDeferred = deferred
+
+        return deferred.promise
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        when (requestCode) {
+            RINGTONE_PICKER_REQUEST_CODE -> {
+                val deferred = ringtonePickerDeferred
+                if (deferred == null) {
+                    log.error("No deferred pending for ringtone picker")
+                    return
+                }
+
+                ringtonePickerDeferred = null
+
+                if (resultCode != Activity.RESULT_OK) {
+                    deferred.resolve(UISelectionDialogResult(false, null))
+                    return
+                }
+
+                //should never occur
+                if (data == null) {
+                    log.error("No data returned for ringtone picker")
+                    deferred.resolve(UISelectionDialogResult(false, null))
+                    return
+                }
+
+                val uri = data.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+
+                deferred.resolve(UISelectionDialogResult(true, uri?.toString()))
+            }
+
+            else -> {
+                log.error("Unknown request code: {}", requestCode)
+            }
+        }
     }
 }

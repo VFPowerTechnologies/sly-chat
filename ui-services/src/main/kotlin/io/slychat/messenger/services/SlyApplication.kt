@@ -392,7 +392,7 @@ class SlyApplication {
         rememberMe: Boolean
     ): Promise<Unit, Exception> {
         val persistenceManager = userComponent.persistenceManager
-        val userConfigService = userComponent.configService
+        val userConfigService = userComponent.userConfigService
         val userLoginData = userComponent.userLoginData
         val keyVault = userLoginData.keyVault
         val userId = userLoginData.userId

@@ -249,6 +249,10 @@ slychat.onPageInit('groupInfo', function (page) {
 
 });
 
+slychat.onPageInit('settings', function (page) {
+    settingsController.onPageInit();
+});
+
 $("#contactPopupNewBtn").on("click", function (e) {
     e.preventDefault();
     if ($("#contact-tab").hasClass("active")) {
@@ -339,6 +343,10 @@ $$(document).on("click", "#createGroupButton", function (e) {
 
 $$(document).on("click", "#loadProfileBtn", function (e) {
     navigationController.loadPage('profile.html', true);
+});
+
+$$(document).on("click", "#loadSettingsBtn", function (e) {
+    navigationController.loadPage('settings.html', true);
 });
 
 $$(document).on("click", ".custom-dropdown", function (e) {

@@ -1,0 +1,37 @@
+{{#if @global.ios}}
+<!-- Top Navbar -->
+<div class="navbar top-navbar">
+    <div class="navbar-inner">
+        <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
+        <div class="center sliding">Settings</div>
+    </div>
+</div>
+{{/if}}
+
+<div class="pages">
+    <div data-page="settings" class="page">
+        {{#if @global.android}}
+        <!-- Top Navbar -->
+        <div class="navbar top-navbar">
+            <div class="navbar-inner">
+                <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
+                <div class="center sliding">Settings</div>
+            </div>
+        </div>
+        {{/if}}
+
+        {{#if @global.isDesktop}}
+        <div class="page-content" style="padding: 0;">
+        {{/if}}
+        {{#unless @global.isDesktop}}
+        <div class="page-content">
+        {{/unless}}
+            <div>
+                Enable Notifications: <input id="notifications-enabled-checkbox" type="checkbox">
+            </div>
+            <div>
+                Notification sound: <button id="notification-sound-select-btn">Pick</button>
+            </div>
+        </div>
+    </div>
+</div>
