@@ -242,6 +242,9 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     overflow-wrap: break-word;
     word-wrap: break-word;
 }
+.message-hidden {
+    animation: pulse 1s linear infinite;
+}
 .message span {
     margin-top: 5px;
     color: #9e9e9e;
@@ -256,16 +259,24 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     background-color: #6d6d72;
     color: #efeff4;
 }
+.expiring-message-toolbar {
+    height: 100px;
+}
 #newMessageInput {
     margin-top: 5px;
     border-left: 1px solid transparent;
     border-right: none;
     border-top: none;
     border-bottom: none;
-    width: 100%;
+    box-sizing: border-box;
+    padding-right: 30px;
+    margin-left: 10px;
     padding-left: 0;
+    width: 100%;
     resize: none;
-    height: 13px;
+    height: 15px;
+    font-size: 13px;
+    line-height: 13px;
     max-height: 45px;
     background-color: transparent;
     display: inline-block;
@@ -309,7 +320,19 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 @keyframes blink-empty {
     50% {border-left: 1px solid #333;}
 }
+@keyframes pulse {
+    0% {
+        transform: scale(1, 1);
+    }
 
+    50% {
+        transform: scale(1.1, 1.1);
+    }
+
+    100% {
+        transform: scale(1, 1);
+    }
+}
 
 /**
   * Add Contact page

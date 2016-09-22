@@ -96,9 +96,20 @@ slychat.onPageInit('chat', function (page) {
     $$('#newMessageInput').on('keypress', function(e) {
         if  (e.keyCode === 13 && !e.ctrlKey && !e.shiftKey) {
             e.preventDefault();
+            var ttl = 0;
+            if ($("#mainView").hasClass('expire-message-toggled')) {
+                var slider = document.getElementById("delaySlider");
+                if (slider !== null){
+                    ttl = parseInt(slider.noUiSlider.get()) * 1000;
+                }
+            }
+
             var message = $$(this).val();
-            if(message !== "")
-                chatController.submitNewMessage(page.query, message);
+            if(message !== "") {
+                chatController.submitNewMessage(page.query, message, ttl);
+                if ($("#mainView").hasClass('expire-message-toggled'))
+                    chatController.toggleExpiringMessageDisplay();
+            }
         }
 
         if ($(this).val() == "")
@@ -118,6 +129,12 @@ slychat.onPageInit('chat', function (page) {
         }
         else
             $(this).removeClass("empty-textarea");
+    });
+
+    $("#inputChatExpireMessageBtn").click(function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        chatController.toggleExpiringMessageDisplay();
     });
 
     if (isDesktop) {
@@ -273,10 +290,6 @@ $$(document).on('click', '#logoutBtn', function (e) {
     loginController.logout();
 });
 
-$$(document).on('click', '#profileBtn', function () {
-    navigationController.loadPage('profile.html', true);
-});
-
 $$(document).on('click', '.chatLink', function (e) {
     e.preventDefault();
     e.stopPropagation();
@@ -338,10 +351,6 @@ $$(document).on("click", "#loadProfileBtn", function (e) {
 
 $$(document).on("click", "#loadSettingsBtn", function (e) {
     navigationController.loadPage('settings.html', true);
-});
-
-$$(document).on("click", "#logoutBtn", function (e) {
-    loginController.logout();
 });
 
 $$(document).on("click", ".custom-dropdown", function (e) {

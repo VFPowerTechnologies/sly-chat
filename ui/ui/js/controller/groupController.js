@@ -195,7 +195,7 @@ GroupController.prototype = {
     fetchGroupMessage : function (start, count, id) {
         groupService.getLastMessages(id, start, count).then(function (messagesInfo) {
             var organizedMessages = chatController.organizeGroupMessages(messagesInfo);
-            chatController.displayMessage(organizedMessages, id, true);
+            chatController.displayMessage(organizedMessages, id);
         }).catch(function (e) {
             exceptionController.handleError(e);
         });
