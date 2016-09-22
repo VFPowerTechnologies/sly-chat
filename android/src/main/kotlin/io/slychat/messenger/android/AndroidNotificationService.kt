@@ -45,6 +45,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
     private fun onUserSessionAvailabilityChanged(userComponent: UserComponent?) {
         if (userComponent == null) {
+            userConfigService = null
             subscriptions.clear()
         }
         else {
