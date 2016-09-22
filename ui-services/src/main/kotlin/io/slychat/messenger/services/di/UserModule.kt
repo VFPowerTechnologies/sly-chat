@@ -20,10 +20,7 @@ import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.auth.AuthTokenManagerImpl
 import io.slychat.messenger.services.auth.TokenProvider
 import io.slychat.messenger.services.auth.TokenRefresherTokenProvider
-import io.slychat.messenger.services.config.CipherConfigStorageFilter
-import io.slychat.messenger.services.config.FileConfigStorage
-import io.slychat.messenger.services.config.JsonConfigBackend
-import io.slychat.messenger.services.config.UserConfigService
+import io.slychat.messenger.services.config.*
 import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageCipherServiceImpl
@@ -300,7 +297,8 @@ class UserModule(
     @Provides
     fun providesConfigService(
         userLoginData: UserData,
-        userPaths: UserPaths
+        userPaths: UserPaths,
+        defaultUserConfig: UserConfig
     ): UserConfigService {
         val fileStorage = FileConfigStorage(userPaths.configPath)
         val storage = if (BuildConfig.ENABLE_CONFIG_ENCRYPTION) {
@@ -315,7 +313,7 @@ class UserModule(
             fileStorage
 
         val backend = JsonConfigBackend("user-config", storage)
-        return UserConfigService(backend)
+        return UserConfigService(backend, defaultUserConfig)
     }
 
     @UserScope

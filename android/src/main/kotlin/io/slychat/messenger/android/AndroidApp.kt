@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.media.RingtoneManager
 import android.net.ConnectivityManager
 import android.support.v4.content.ContextCompat
 import com.almworks.sqlite4java.SQLite
@@ -27,6 +28,7 @@ import io.slychat.messenger.core.http.api.gcm.RegisterResponse
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication
+import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.ui.createAppDirectories
@@ -159,6 +161,10 @@ class AndroidApp : Application() {
 
         notificationService = AndroidNotificationService(this)
 
+        val defaultUserConfig = UserConfig().copy(
+            notificationsSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION).toString()
+        )
+
         val platformModule = PlatformModule(
             AndroidUIPlatformInfoService(),
             BuildConfig.ANDROID_SERVER_URLS,
@@ -171,10 +177,13 @@ class AndroidApp : Application() {
             AndroidUILoadService(this),
             uiVisibility,
             networkStatus,
-            AndroidSchedulers.mainThread()
+            AndroidSchedulers.mainThread(),
+            defaultUserConfig
         )
 
         app.init(platformModule)
+        notificationService.init(app.userSessionAvailable)
+
         appComponent = app.appComponent
 
         gcmClient = GcmAsyncClient(appComponent.serverUrls.API_SERVER, appComponent.slyHttpClientFactory)

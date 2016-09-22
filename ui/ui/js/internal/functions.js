@@ -18,6 +18,7 @@ function createDesktopMenu () {
                         '<div class="list-block">' +
                             '<ul>' +
                                 '<li><a id="loadProfileBtn" href="#">Profile</a></li>' +
+                                '<li><a id="loadSettingsBtn" href="#">Settings</a></li>' +
                                 '<li><a id="logoutBtn" href="#">Logout</a></li>' +
                             '</ul>' +
                         '</div>' +

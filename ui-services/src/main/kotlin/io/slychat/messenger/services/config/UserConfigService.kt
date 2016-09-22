@@ -1,16 +1,16 @@
 package io.slychat.messenger.services.config
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import java.io.File
 import java.util.*
 
+//paths are strings because android uses android.net.Uri for representing files (not all of which are convertable to
+//real paths, eg content://settings/system/ringtone)
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class UserConfig(
     val formatVersion: Int = 1,
     val notificationsEnabled: Boolean = true,
-    val notificationsSound: File = File("/sound"),
-    val notificationsDndMode: Boolean = false,
-    val profileAvatar: File = File("/avatar")
+    val notificationsSound: String? = null,
+    val profileAvatar: String? = null
 ) {
     companion object {
         private fun join(parent: String, child: String): String = "$parent.$child"
@@ -19,7 +19,6 @@ data class UserConfig(
 
         val NOTIFICATIONS_SOUND = join(NOTIFICATIONS, "sound")
         val NOTIFICATIONS_ENABLED = join(NOTIFICATIONS, "enabled")
-        val NOTIFICATIONS_DNDMODE = join(NOTIFICATIONS, "dndMode")
     }
 }
 
@@ -33,18 +32,11 @@ class UserEditorInterface(override var config: UserConfig) : ConfigServiceBase.E
             config = config.copy(notificationsEnabled = value)
         }
 
-    var notificationsSound: File
+    var notificationsSound: String?
         get() = config.notificationsSound
         set(value) {
             modifiedKeys.add(UserConfig.NOTIFICATIONS_SOUND)
             config = config.copy(notificationsSound = value)
-        }
-
-    var notificationsDndMode: Boolean
-        get() = config.notificationsDndMode
-        set(value) {
-            modifiedKeys.add(UserConfig.NOTIFICATIONS_DNDMODE)
-            config = config.copy(notificationsDndMode = value)
         }
 }
 
@@ -56,12 +48,9 @@ class UserConfigService(
 
     override val configClass: Class<UserConfig> = UserConfig::class.java
 
-    val notificationsSound: File
+    val notificationsSound: String?
         get() = config.notificationsSound
 
     val notificationsEnabled: Boolean
         get() = config.notificationsEnabled
-
-    val notificationsDndMode: Boolean
-        get() = config.notificationsDndMode
 }

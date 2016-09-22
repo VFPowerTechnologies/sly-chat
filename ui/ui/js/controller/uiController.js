@@ -29,6 +29,7 @@ var UIController = function () {
     window.connectionController = new ConnectionController();
     window.groupController = new GroupController();
     window.exceptionController = new ExceptionController();
+    window.settingsController = new SettingsController();
 
     window.relayTimeDifference = 0;
 
@@ -71,6 +72,7 @@ UIController.prototype = {
         contactController.addConversationInfoUpdateListener();
         connectionController.init();
         groupController.addGroupEventListener();
+        settingsController.init();
     },
 
     initApplication : function () {

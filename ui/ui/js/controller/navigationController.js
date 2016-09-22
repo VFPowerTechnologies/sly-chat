@@ -202,6 +202,12 @@ NavigationController.prototype = {
                 }
             },
             {
+                text: 'Settings',
+                onClick: function () {
+                    navigationController.loadPage('settings.html', true);
+                }
+            },
+            {
                 text: 'Logout',
                 onClick: function () {
                     loginController.logout();
