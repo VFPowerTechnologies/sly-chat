@@ -479,20 +479,27 @@ ContactController.prototype  = {
                     break;
                 case "SYNC":
                     this.sync = ev.running;
-                    this.handleContactSyncNotification(ev.running);
+                    this.handleContactSyncNotification();
                     break;
             }
         }.bind(this));
     },
 
-    handleContactSyncNotification : function (running) {
-        if (running == true) {
-            if($(".contact-sync-notification").length <= 0) {
-                this.contactSyncNotification = slychat.addNotification({
-                    title: "Address book is syncing",
-                    closeOnClick: true
-                });
-            }
+    handleContactSyncNotification : function () {
+        if (this.sync == true) {
+            this.contactSyncTimer = new Date().getTime();
+
+            setTimeout(function () {
+                if (this.sync === true && new Date().getTime() - this.contactSyncTimer > 60000) {
+                    if ($(".contact-sync-notification").length <= 0) {
+                        this.contactSyncNotification = slychat.addNotification({
+                            title: "Address book is syncing",
+                            closeOnClick: true
+                        });
+                    }
+                }
+            }.bind(this), 60000);
+
         }
         else {
             if(this.contactSyncNotification !== null) {
