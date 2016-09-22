@@ -28,8 +28,6 @@ ChatController.prototype = {
                     this.destroyExpiringMessage(event.userId, event.groupId, event.messageId);
                     break;
             }
-
-            contactController.resetCachedConversation();
         }.bind(this));
     },
 
