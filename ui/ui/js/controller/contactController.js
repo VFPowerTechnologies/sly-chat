@@ -519,19 +519,6 @@ ContactController.prototype  = {
         }
     },
 
-    openNotification : function (message, hold) {
-        var options = {
-            title: message,
-            closeOnClick: true
-        };
-
-        if(typeof hold !== "undefined") {
-            options.hold = hold;
-        }
-
-        this.contactSyncNotification = slychat.addNotification(options);
-    },
-
     newContactSearch : function () {
         var form = $("#addContactForm");
         //remove previous error
