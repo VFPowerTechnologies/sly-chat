@@ -12,6 +12,10 @@ import android.text.SpannableString
 import android.text.style.StyleSpan
 import io.slychat.messenger.services.NotificationState
 import io.slychat.messenger.services.PlatformNotificationService
+import io.slychat.messenger.services.config.UserConfigService
+import io.slychat.messenger.services.di.UserComponent
+import rx.Observable
+import rx.subscriptions.CompositeSubscription
 
 class AndroidNotificationService(private val context: Context) : PlatformNotificationService {
     companion object {
@@ -23,6 +27,10 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
     private val newMessagesNotification = NewMessagesNotification()
 
+    private var userConfigService: UserConfigService? = null
+
+    private val subscriptions = CompositeSubscription()
+
     /* PlatformNotificationService methods */
     override fun updateNotificationState(notificationState: NotificationState) {
         newMessagesNotification.update(notificationState)
@@ -30,6 +38,19 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
     }
 
     /* Other */
+
+    fun init(userSessionAvailable: Observable<UserComponent?>) {
+        userSessionAvailable.subscribe { onUserSessionAvailabilityChanged(it) }
+    }
+
+    private fun onUserSessionAvailabilityChanged(userComponent: UserComponent?) {
+        if (userComponent == null) {
+            subscriptions.clear()
+        }
+        else {
+            userConfigService = userComponent.userConfigService
+        }
+    }
 
     private fun getInboxStyle(adapter: InboxStyleAdapter): Notification.InboxStyle? {
         val userCount = adapter.userCount
@@ -153,7 +174,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         val pendingIntent = getNewMessagesNotificationIntent()
         val deletePendingIntent = getNewMessagesNotificationDeleteIntent()
 
-        val soundUri = getNotificationSound()
+        val soundUri = getMessageNotificationSound()
 
         val notificationBuilder = Notification.Builder(context)
             .setContentTitle(getNewMessagesNotificationTitle())
@@ -164,7 +185,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
             .setDeleteIntent(deletePendingIntent)
             .setStyle(getLoggedInInboxStyle())
 
-        if (newMessagesNotification.hasNew)
+        if (newMessagesNotification.hasNew && soundUri != null)
             notificationBuilder.setSound(soundUri)
 
         val notification = notificationBuilder.build()
@@ -184,8 +205,10 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         return getPendingIntentForService(intent)
     }
 
-    private fun getNotificationSound(): Uri {
-       return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+    private fun getMessageNotificationSound(): Uri? {
+        val userConfigService = userConfigService ?: return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+
+        return userConfigService.notificationsSound?.let { Uri.parse(it) }
     }
 
     //XXX this shares a decent bit of code with getInboxStyle, maybe find a way to centralize it
@@ -198,7 +221,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
     fun showLoggedOutNotification(accountName: String, info: List<OfflineMessageInfo>) {
         val pendingIntent = getLoggedOffNotificationIntent()
 
-        val soundUri = getNotificationSound()
+        val soundUri = getMessageNotificationSound()
 
         val notificationTitle = if (info.size == 1) {
             "New messages from ${info[0].name}"
@@ -222,17 +245,20 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
             "New messages for $accountName"
         }
 
-        val notification = Notification.Builder(context)
+        val notificationBuilder = Notification.Builder(context)
             .setContentTitle(notificationTitle)
             .setContentText(notificationText)
             .setSmallIcon(R.drawable.notification)
-            .setSound(soundUri)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setStyle(getLoggedOutInboxStyle(info))
             //FIXME icon
             .addAction(R.drawable.notification, "Stop receiving notifications", getStopMessagesIntent())
-            .build()
+
+        if (soundUri != null)
+            notificationBuilder.setSound(soundUri)
+
+        val notification = notificationBuilder.build()
 
         //just reuse the same notification id, as both of these don't currently coexist
         notificationManager.notify(NOTIFICATION_ID_NEW_MESSAGES, notification)

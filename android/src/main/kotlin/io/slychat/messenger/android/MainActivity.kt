@@ -385,6 +385,7 @@ class MainActivity : AppCompatActivity() {
             putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Message notification sound")
             putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
             putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+            putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
             putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
 
             putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, previousRingtoneUri)

@@ -175,6 +175,8 @@ class AndroidApp : Application() {
         )
 
         app.init(platformModule)
+        notificationService.init(app.userSessionAvailable)
+
         appComponent = app.appComponent
 
         gcmClient = GcmAsyncClient(appComponent.serverUrls.API_SERVER, appComponent.slyHttpClientFactory)

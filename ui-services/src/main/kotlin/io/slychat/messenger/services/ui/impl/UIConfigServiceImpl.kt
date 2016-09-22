@@ -34,9 +34,9 @@ class UIConfigServiceImpl(
             subscriptions.clear()
         }
         else {
-            userConfigService = userComponent.configService
+            userConfigService = userComponent.userConfigService
 
-            subscriptions.add(userComponent.configService.updates.subscribe { onUserConfigUpdate(it) })
+            subscriptions.add(userComponent.userConfigService.updates.subscribe { onUserConfigUpdate(it) })
 
             pushInitialConfigs()
         }
