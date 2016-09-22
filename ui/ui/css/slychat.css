@@ -260,7 +260,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     color: #efeff4;
 }
 .expiring-message-toolbar {
-    height: 100px;
+    height: 80px;
 }
 #newMessageInput {
     margin-top: 5px;
@@ -270,7 +270,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     border-bottom: none;
     box-sizing: border-box;
     padding-right: 30px;
-    margin-left: 10px;
+    margin-left: 40px;
     padding-left: 0;
     width: 100%;
     resize: none;
@@ -414,4 +414,19 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     display: none;
     margin-bottom: 10px;
     margin-left: 10px;
+}
+
+/* NoUi-slide overrides */
+.noUi-horizontal {
+    height: 10px;
+}
+.noUi-horizontal .noUi-handle {
+    width: 10px;
+    height: 30px;
+    left: -5px;
+    top: -10px;
+}
+.noUi-handle:before,
+.noUi-handle:after {
+    display: none;
 }

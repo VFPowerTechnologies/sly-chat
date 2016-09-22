@@ -9,7 +9,7 @@
 #chatPageContent {
     top: 56px;
     padding: 0;
-    height: calc(100% - 56px);
+    height: calc(100% - 103px); /* Bottom toolbar (47px) + top navbar (56px) */
 }
 #chat-content {
     margin-bottom: 40px;
@@ -18,7 +18,7 @@
     margin-bottom: 100px;
 }
 .bottom-chat-toolbar {
-    width: calc(100% - 15px);
+    width: 100%;
 }
 .top-navbar .open-action-menu {
     display: none !important;

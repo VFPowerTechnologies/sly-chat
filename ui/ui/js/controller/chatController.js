@@ -679,6 +679,24 @@ ChatController.prototype = {
         openInfoPopup(content, "Message Info");
     },
 
+    handleSubmitMessage : function (contact) {
+        var ttl = 0;
+        var mainView = $("#mainView");
+        if (mainView.hasClass('expire-message-toggled')) {
+            var slider = document.getElementById("delaySlider");
+            if (slider !== null) {
+                ttl = parseInt(slider.noUiSlider.get()) * 1000;
+            }
+        }
+
+        var message = $("#newMessageInput").val();
+        if (message !== "") {
+            this.submitNewMessage(contact, message, ttl);
+            if (mainView.hasClass('expire-message-toggled'))
+                chatController.toggleExpiringMessageDisplay();
+        }
+    },
+
     submitNewMessage : function (contact, message, ttl) {
         if (ttl === undefined)
             ttl = 0;
@@ -764,18 +782,18 @@ ChatController.prototype = {
         else {
             mainView.addClass("expire-message-toggled");
             bottomToolbar.addClass("expiring-message-toolbar");
-            this.createExpireDelaySlider();
+            this.createExpireDelaySlider(bottomToolbar);
             newMessageInput.attr("placeholder", "Type your expiring secured message");
         }
     },
 
-    createExpireDelaySlider : function () {
+    createExpireDelaySlider : function (toolbar) {
         var sliderContainer = $('<div id="delaySliderContainer">' +
             '<div id="delaySlider" style="margin: 0 10px;"></div>' +
             '<div style="color: #a9a9a9; font-size: 10px; float: right; padding-right: 5px;">' +
             '<span>Delay: <span id="delayDisplay">10</span> seconds</span></div></div>');
 
-        $("#newMessageForm").prepend(sliderContainer);
+        toolbar.prepend(sliderContainer);
 
         var slider = document.getElementById('delaySlider');
 
