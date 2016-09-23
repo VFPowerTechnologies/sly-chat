@@ -135,7 +135,7 @@ class UIGroupServiceImpl(
     }
 
     override fun deleteMessagesFor(groupId: GroupId, messageIds: List<String>): Promise<Unit, Exception> {
-        return getMessageServiceOrThrow().deleteMessages(groupId.toConversationId(), messageIds)
+        return getMessageServiceOrThrow().deleteMessages(groupId.toConversationId(), messageIds, false)
     }
 
     override fun getInfo(groupId: GroupId): Promise<UIGroupInfo?, Exception> {

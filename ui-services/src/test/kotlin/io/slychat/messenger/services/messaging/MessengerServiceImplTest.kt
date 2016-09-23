@@ -1004,4 +1004,41 @@ class MessengerServiceImplTest {
 
         assertEquals(messageText, selfMessage.sentMessageInfo.message, "Invalid message text")
     }
+
+    @Test
+    fun `it should generate a Deleted message when broadcastDeleted is called with a non-empty list`() {
+        val messengerService = createService()
+
+        val conversationId = randomGroupConversationId()
+        val messageIds = randomMessageIds()
+
+        messengerService.broadcastDeleted(conversationId, messageIds).get()
+
+        val message = retrieveSyncMessage<SyncMessage.MessagesDeleted>()
+
+        assertEquals(SyncMessage.MessagesDeleted(conversationId, messageIds.map(::MessageId)), message, "Invalid sync message")
+    }
+
+    @Test
+    fun `it should generate a Deleted message when broadcastDeleted is called with an empty list`() {
+        val messengerService = createService()
+
+        messengerService.broadcastDeleted(randomGroupConversationId(), emptyList()).get()
+
+        verify(messageSender, never()).addToQueue(any<SenderMessageEntry>())
+    }
+
+    @Test
+    fun `it should generate a DeletedAll message when broadcastDeletedAll is called`() {
+        val messengerService = createService()
+
+        val conversationId = randomGroupConversationId()
+        val lastMessageTimestamp = 10L
+
+        messengerService.broadcastDeletedAll(conversationId, lastMessageTimestamp).get()
+
+        val message = retrieveSyncMessage<SyncMessage.MessagesDeletedAll>()
+
+        assertEquals(SyncMessage.MessagesDeletedAll(conversationId, lastMessageTimestamp), message, "Invalid sync message")
+    }
 }

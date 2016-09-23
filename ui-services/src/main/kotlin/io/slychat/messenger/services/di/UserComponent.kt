@@ -8,10 +8,7 @@ import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.contacts.AddressBookOperationManager
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
-import io.slychat.messenger.services.messaging.MessageExpirationWatcher
-import io.slychat.messenger.services.messaging.MessageProcessor
-import io.slychat.messenger.services.messaging.MessageService
-import io.slychat.messenger.services.messaging.MessengerService
+import io.slychat.messenger.services.messaging.*
 
 /** Scoped to a user's login session. */
 @UserScope
@@ -68,4 +65,6 @@ interface UserComponent {
     val messageExpirationWatcher: MessageExpirationWatcher
 
     val messageReadWatcher: MessageReadWatcher
+
+    val messageDeletionWatcher: MessageDeletionWatcher
 }

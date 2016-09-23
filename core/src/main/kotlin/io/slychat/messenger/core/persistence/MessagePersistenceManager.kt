@@ -25,8 +25,11 @@ interface MessagePersistenceManager {
     /** Removes a set of messages from the group log. This also removes an expiring messages, as well as any queued send entries for this message. */
     fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception>
 
-    /** Clears a group log. */
-    fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception>
+    /** Clears a conversation log. Returns the last message id before deletion, or null if log was empty. */
+    fun deleteAllMessages(conversationId: ConversationId): Promise<Long?, Exception>
+
+    /** Deletes all messages up to and including the given message id. */
+    fun deleteAllMessagesUntil(conversationId: ConversationId, timestamp: Long): Promise<Unit, Exception>
 
     /** Marks the given group message as delivered, and updates its sent timestamp. If the message has already been marked as delievered, returns null. */
     fun markMessageAsDelivered(conversationId: ConversationId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception>

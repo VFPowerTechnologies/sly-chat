@@ -81,17 +81,30 @@ class MessageServiceImpl(
         messageUpdatesSubject.onNext(event)
     }
 
-    override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> {
+    override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>, fromSync: Boolean): Promise<Unit, Exception> {
         return messagePersistenceManager.deleteMessages(conversationId, messageIds) successUi {
-            messageUpdatesSubject.onNext(MessageUpdateEvent.Deleted(conversationId, messageIds))
+            messageUpdatesSubject.onNext(MessageUpdateEvent.Deleted(conversationId, messageIds.toList(), fromSync))
             emitCurrentConversationDisplayInfo(conversationId)
         }
     }
 
     //this can be called without opening the conversation, so we might have unread messages
     override fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception> {
-        return messagePersistenceManager.deleteAllMessages(conversationId) successUi {
-            messageUpdatesSubject.onNext(MessageUpdateEvent.DeletedAll(conversationId))
+        val p = messagePersistenceManager.deleteAllMessages(conversationId)
+
+        p successUi { lastMessageTimestamp ->
+            if (lastMessageTimestamp != null) {
+                messageUpdatesSubject.onNext(MessageUpdateEvent.DeletedAll(conversationId, lastMessageTimestamp, false))
+                emitCurrentConversationDisplayInfo(conversationId)
+            }
+        }
+
+        return p map { Unit }
+    }
+
+    override fun deleteAllMessagesUntil(conversationId: ConversationId, timestamp: Long): Promise<Unit, Exception> {
+        return messagePersistenceManager.deleteAllMessagesUntil(conversationId, timestamp) successUi {
+            messageUpdatesSubject.onNext(MessageUpdateEvent.DeletedAll(conversationId, timestamp, true))
             emitCurrentConversationDisplayInfo(conversationId)
         }
     }

@@ -407,7 +407,7 @@ class MessageSenderImplTest {
             val conversationId = entry.metadata.getConversationId()
             sender.addToQueue(entry).get()
 
-            val event = MessageUpdateEvent.Deleted(conversationId, listOf(messageId))
+            val event = MessageUpdateEvent.Deleted(conversationId, listOf(messageId), false)
             messageUpdateEvents.onNext(event)
         }
 
@@ -427,7 +427,7 @@ class MessageSenderImplTest {
         runWhileSending(sender) {
             sender.addToQueue(entry).get()
 
-            val event = MessageUpdateEvent.Deleted(conversationId, messageIds)
+            val event = MessageUpdateEvent.Deleted(conversationId, messageIds, false)
             messageUpdateEvents.onNext(event)
         }
 
@@ -444,7 +444,7 @@ class MessageSenderImplTest {
 
         val messageIds = listOf(messageId)
 
-        val event = MessageUpdateEvent.Deleted(conversationId, messageIds)
+        val event = MessageUpdateEvent.Deleted(conversationId, messageIds, false)
         messageUpdateEvents.onNext(event)
 
         verify(messageQueuePersistenceManager).removeAll(conversationId, messageIds)
@@ -466,7 +466,7 @@ class MessageSenderImplTest {
             val conversationId = entry.metadata.getConversationId()
             sender.addToQueue(entry).get()
 
-            val event = MessageUpdateEvent.DeletedAll(conversationId)
+            val event = MessageUpdateEvent.DeletedAll(conversationId, 1, false)
             messageUpdateEvents.onNext(event)
         }
 
@@ -483,7 +483,7 @@ class MessageSenderImplTest {
         runWhileSending(sender) {
             sender.addToQueue(entry).get()
 
-            val event = MessageUpdateEvent.DeletedAll(conversationId)
+            val event = MessageUpdateEvent.DeletedAll(conversationId, 1, false)
             messageUpdateEvents.onNext(event)
         }
 
@@ -496,7 +496,7 @@ class MessageSenderImplTest {
 
         val conversationId = randomUserConversationId()
 
-        val event = MessageUpdateEvent.DeletedAll(conversationId)
+        val event = MessageUpdateEvent.DeletedAll(conversationId, 1, false)
         messageUpdateEvents.onNext(event)
 
         verify(messageQueuePersistenceManager).removeAllForConversation(conversationId)

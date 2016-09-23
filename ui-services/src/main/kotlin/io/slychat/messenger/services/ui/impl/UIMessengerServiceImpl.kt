@@ -207,7 +207,7 @@ class UIMessengerServiceImpl(
     }
 
     override fun deleteMessagesFor(userId: UserId, messages: List<String>): Promise<Unit, Exception> {
-        return getMessageServiceOrThrow().deleteMessages(userId.toConversationId(), messages)
+        return getMessageServiceOrThrow().deleteMessages(userId.toConversationId(), messages, false)
     }
 
     override fun startMessageExpiration(userId: UserId, messageId: String): Promise<Unit, Exception> {

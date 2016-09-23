@@ -239,16 +239,97 @@ LIMIT
         }
     }
 
-    override fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    private fun getLastConvoTimestamp(connection: SQLiteConnection, conversationId: ConversationId): Long? {
+        val tableName = ConversationTable.getTablename(conversationId)
+
+        val sql = """
+SELECT
+    timestamp
+FROM
+    $tableName
+ORDER BY
+    timestamp DESC, n DESC
+LIMIT
+    1
+"""
+
+        return connection.withPrepared(sql) { stmt ->
+            if (!stmt.step())
+                null
+            else
+                stmt.columnLong(0)
+        }
+
+    }
+
+    override fun deleteAllMessages(conversationId: ConversationId): Promise<Long?, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
-            val tableName = ConversationTable.getTablename(conversationId)
-            connection.withPrepared("DELETE FROM $tableName") { stmt ->
-                stmt.step()
+            val lastMessageTimestamp = getLastConvoTimestamp(connection, conversationId)
+
+            //no last message
+            if (lastMessageTimestamp == null) {
+                null
             }
+            else {
+                val tableName = ConversationTable.getTablename(conversationId)
+                connection.withPrepared("DELETE FROM $tableName", SQLiteStatement::step)
 
-            deleteExpiringMessagesForConversation(connection, conversationId)
+                deleteExpiringMessagesForConversation(connection, conversationId)
 
-            insertOrReplaceNewConversationInfo(connection, conversationId)
+                insertOrReplaceNewConversationInfo(connection, conversationId)
+
+                lastMessageTimestamp
+            }
+        }
+    }
+
+    private fun deleteExpiringEntriesUntil(connection: SQLiteConnection, conversationId: ConversationId, timestamp: Long) {
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql = """
+DELETE FROM
+    expiring_messages
+WHERE message_id IN (
+    SELECT
+        e.message_id
+    FROM
+        expiring_messages e
+    JOIN
+        $tableName c
+    ON
+        e.message_id=c.id
+    WHERE
+        e.conversation_id=?
+    AND
+        c.timestamp <= ?
+)
+"""
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, conversationId)
+            stmt.bind(2, timestamp)
+            stmt.step()
+        }
+    }
+
+    private fun deleteAllConvoMessagesUntil(connection: SQLiteConnection, conversationId: ConversationId, timestamp: Long) {
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql = """
+DELETE FROM
+    $tableName
+WHERE
+    timestamp <= ?
+"""
+
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, timestamp)
+            stmt.step()
+        }
+    }
+
+    override fun deleteAllMessagesUntil(conversationId: ConversationId, timestamp: Long): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            deleteExpiringEntriesUntil(connection, conversationId, timestamp)
+            deleteAllConvoMessagesUntil(connection, conversationId, timestamp)
+            updateConversationInfo(connection, conversationId)
         }
     }
 
@@ -444,7 +525,7 @@ OFFSET
 """
         try {
             connection.withPrepared(sql) { stmt ->
-                stmt.map { rowToConversationMessageInfo(it) }
+                stmt.map(::rowToConversationMessageInfo)
             }
         }
         catch (e: SQLiteException) {
@@ -723,7 +804,7 @@ ORDER BY
     timestamp, n
 """
         connection.withPrepared(sql) { stmt ->
-            stmt.map { rowToConversationMessageInfo(it) }
+            stmt.map(::rowToConversationMessageInfo)
         }
     }
 }
