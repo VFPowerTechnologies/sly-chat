@@ -83,7 +83,7 @@ sealed class MessageUpdateEvent {
         }
     }
 
-    class Deleted(val conversationId: ConversationId, val messageIds: Collection<String>, val fromSync: Boolean) : MessageUpdateEvent() {
+    class Deleted(val conversationId: ConversationId, val messageIds: List<String>, val fromSync: Boolean) : MessageUpdateEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false

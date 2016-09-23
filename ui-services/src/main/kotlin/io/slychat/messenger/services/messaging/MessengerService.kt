@@ -18,6 +18,10 @@ interface MessengerService {
 
     fun broadcastMessagesRead(conversationId: ConversationId, messageIds: List<String>): Promise<Unit, Exception>
 
+    fun broadcastDeleted(conversationId: ConversationId, messageIds: List<String>): Promise<Unit, Exception>
+
+    fun broadcastDeletedAll(conversationId: ConversationId, lastMessageTimestamp: Long): Promise<Unit, Exception>
+
     /** Notify another user that you've added them as a contact. */
     fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception>
 

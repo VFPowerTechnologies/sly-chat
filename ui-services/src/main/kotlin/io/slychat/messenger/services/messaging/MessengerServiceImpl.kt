@@ -9,10 +9,7 @@ import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
-import io.slychat.messenger.services.GroupService
-import io.slychat.messenger.services.RelayClientManager
-import io.slychat.messenger.services.RelayClock
-import io.slychat.messenger.services.bindUi
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.AddressBookOperationManager
 import io.slychat.messenger.services.contacts.AddressBookSyncEvent
 import io.slychat.messenger.services.contacts.ContactsService
@@ -377,6 +374,17 @@ class MessengerServiceImpl(
             return Promise.ofSuccess(Unit)
 
         return sendSyncMessage(SyncMessage.MessagesRead(conversationId, messageIds.map(::MessageId)))
+    }
+
+    override fun broadcastDeleted(conversationId: ConversationId, messageIds: List<String>): Promise<Unit, Exception> {
+        if (messageIds.isEmpty())
+            return Promise.ofSuccess(Unit)
+
+        return sendSyncMessage(SyncMessage.MessagesDeleted(conversationId, messageIds.map(::MessageId)))
+    }
+
+    override fun broadcastDeletedAll(conversationId: ConversationId, lastMessageTimestamp: Long): Promise<Unit, Exception> {
+        return sendSyncMessage(SyncMessage.MessagesDeletedAll(conversationId, lastMessageTimestamp))
     }
 
     override fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception> {

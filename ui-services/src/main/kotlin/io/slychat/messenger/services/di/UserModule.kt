@@ -429,4 +429,13 @@ class UserModule(
     ): MessageReadWatcher {
         return MessageReadWatcherImpl(messageService, messengerService)
     }
+
+    @UserScope
+    @Provides
+    fun providesMessageDeletionWatcher(
+        messageService: MessageService,
+        messengerService: MessengerService
+    ): MessageDeletionWatcher {
+        return MessageDeletionWatcherImpl(messageService.messageUpdates, messengerService)
+    }
 }

@@ -83,7 +83,7 @@ class MessageServiceImpl(
 
     override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>, fromSync: Boolean): Promise<Unit, Exception> {
         return messagePersistenceManager.deleteMessages(conversationId, messageIds) successUi {
-            messageUpdatesSubject.onNext(MessageUpdateEvent.Deleted(conversationId, messageIds, fromSync))
+            messageUpdatesSubject.onNext(MessageUpdateEvent.Deleted(conversationId, messageIds.toList(), fromSync))
             emitCurrentConversationDisplayInfo(conversationId)
         }
     }
