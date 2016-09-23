@@ -261,6 +261,8 @@ ChatController.prototype = {
     deleteConversation : function (contact) {
         messengerService.deleteAllMessagesFor(contact.id).then(function () {
             contactController.resetCachedConversation();
+            if(this.getCurrentContactId() == contact.id)
+                navigationController.loadPage("contacts.html", false);
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         }.bind(this));
