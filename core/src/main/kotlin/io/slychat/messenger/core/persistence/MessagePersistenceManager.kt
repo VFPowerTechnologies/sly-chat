@@ -26,7 +26,7 @@ interface MessagePersistenceManager {
     fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception>
 
     /** Clears a conversation log. Returns the last message id before deletion, or null if log was empty. */
-    fun deleteAllMessages(conversationId: ConversationId): Promise<String?, Exception>
+    fun deleteAllMessages(conversationId: ConversationId): Promise<Long?, Exception>
 
     /** Deletes all messages up to and including the given message id. */
     fun deleteAllMessagesUntil(conversationId: ConversationId, timestamp: Long): Promise<Unit, Exception>

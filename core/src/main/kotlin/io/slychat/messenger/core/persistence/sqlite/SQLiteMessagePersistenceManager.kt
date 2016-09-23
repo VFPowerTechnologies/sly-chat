@@ -239,12 +239,12 @@ LIMIT
         }
     }
 
-    private fun getLastConvoMessageId(connection: SQLiteConnection, conversationId: ConversationId): String? {
+    private fun getLastConvoTimestamp(connection: SQLiteConnection, conversationId: ConversationId): Long? {
         val tableName = ConversationTable.getTablename(conversationId)
 
         val sql = """
 SELECT
-    id
+    timestamp
 FROM
     $tableName
 ORDER BY
@@ -257,17 +257,17 @@ LIMIT
             if (!stmt.step())
                 null
             else
-                stmt.columnString(0)
+                stmt.columnLong(0)
         }
 
     }
 
-    override fun deleteAllMessages(conversationId: ConversationId): Promise<String?, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun deleteAllMessages(conversationId: ConversationId): Promise<Long?, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
-            val lastMessageId = getLastConvoMessageId(connection, conversationId)
+            val lastMessageTimestamp = getLastConvoTimestamp(connection, conversationId)
 
             //no last message
-            if (lastMessageId == null) {
+            if (lastMessageTimestamp == null) {
                 null
             }
             else {
@@ -278,7 +278,7 @@ LIMIT
 
                 insertOrReplaceNewConversationInfo(connection, conversationId)
 
-                lastMessageId
+                lastMessageTimestamp
             }
         }
     }
