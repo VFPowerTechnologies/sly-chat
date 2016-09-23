@@ -283,6 +283,56 @@ LIMIT
         }
     }
 
+    private fun deleteExpiringEntriesUntil(connection: SQLiteConnection, conversationId: ConversationId, timestamp: Long) {
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql = """
+DELETE FROM
+    expiring_messages
+WHERE message_id IN (
+    SELECT
+        e.message_id
+    FROM
+        expiring_messages e
+    JOIN
+        $tableName c
+    ON
+        e.message_id=c.id
+    WHERE
+        e.conversation_id=?
+    AND
+        c.timestamp <= ?
+)
+"""
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, conversationId)
+            stmt.bind(2, timestamp)
+            stmt.step()
+        }
+    }
+
+    private fun deleteAllConvoMessagesUntil(connection: SQLiteConnection, conversationId: ConversationId, timestamp: Long) {
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql = """
+DELETE FROM
+    $tableName
+WHERE
+    timestamp <= ?
+"""
+
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, timestamp)
+            stmt.step()
+        }
+    }
+
+    override fun deleteAllMessagesUntil(conversationId: ConversationId, timestamp: Long): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            deleteExpiringEntriesUntil(connection, conversationId, timestamp)
+            deleteAllConvoMessagesUntil(connection, conversationId, timestamp)
+            updateConversationInfo(connection, conversationId)
+        }
+    }
+
     override fun markMessageAsDelivered(conversationId: ConversationId, messageId: String, timestamp: Long): Promise<ConversationMessageInfo?, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val tableName = ConversationTable.getTablename(conversationId)
 
@@ -475,7 +525,7 @@ OFFSET
 """
         try {
             connection.withPrepared(sql) { stmt ->
-                stmt.map { rowToConversationMessageInfo(it) }
+                stmt.map(::rowToConversationMessageInfo)
             }
         }
         catch (e: SQLiteException) {
@@ -754,7 +804,7 @@ ORDER BY
     timestamp, n
 """
         connection.withPrepared(sql) { stmt ->
-            stmt.map { rowToConversationMessageInfo(it) }
+            stmt.map(::rowToConversationMessageInfo)
         }
     }
 }
