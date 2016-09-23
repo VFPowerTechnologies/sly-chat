@@ -6,7 +6,9 @@ import io.slychat.messenger.core.persistence.GroupId
 enum class UIMessageUpdateEventType {
     DELIVERED,
     EXPIRING,
-    EXPIRED
+    EXPIRED,
+    DELETED,
+    DELETED_ALL
 }
 
 sealed class UIMessageUpdateEvent {
@@ -25,5 +27,15 @@ sealed class UIMessageUpdateEvent {
     class Expired(val userId: UserId?, val groupId: GroupId?, val messageId: String) : UIMessageUpdateEvent() {
         override val type: UIMessageUpdateEventType
             get() = UIMessageUpdateEventType.EXPIRED
+    }
+
+    class Deleted(val userId: UserId?, val groupId: GroupId?, val messageIds: List<String>) : UIMessageUpdateEvent() {
+        override val type: UIMessageUpdateEventType
+            get() = UIMessageUpdateEventType.DELETED
+    }
+
+    class DeletedAll(val userId: UserId?, val groupId: GroupId?) : UIMessageUpdateEvent() {
+        override val type: UIMessageUpdateEventType
+            get() = UIMessageUpdateEventType.DELETED_ALL
     }
 }

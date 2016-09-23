@@ -142,6 +142,18 @@ class UIMessengerServiceImpl(
                 UIMessageUpdateEvent.Expired(userId, groupId, event.messageId)
             }
 
+            is MessageUpdateEvent.Deleted -> {
+                val (userId, groupId) = conversationIdToUserGroupPair(event.conversationId)
+
+                UIMessageUpdateEvent.Deleted(userId, groupId, event.messageIds)
+            }
+
+            is MessageUpdateEvent.DeletedAll -> {
+                val (userId, groupId) = conversationIdToUserGroupPair(event.conversationId)
+
+                UIMessageUpdateEvent.DeletedAll(userId, groupId)
+            }
+
             else -> null
         }
 
