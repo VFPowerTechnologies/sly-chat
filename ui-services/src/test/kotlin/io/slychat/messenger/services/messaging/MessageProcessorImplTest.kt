@@ -62,6 +62,8 @@ class MessageProcessorImplTest {
     fun before() {
         whenever(messageService.addMessage(any(), any())).thenResolveUnit()
         whenever(messageService.markConversationMessagesAsRead(any(), any())).thenResolveUnit()
+        whenever(messageService.deleteMessages(any(), any(), any())).thenResolveUnit()
+        whenever(messageService.deleteAllMessagesUntil(any(), any())).thenResolveUnit()
 
         whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
         whenever(contactsService.addById(any())).thenResolve(true)
@@ -88,6 +90,10 @@ class MessageProcessorImplTest {
             uiVisibility,
             uiEvents
         )
+    }
+
+    fun assertFailsWithSyncMessageFromOtherSecurityException(body: () -> Unit) {
+        assertFailsWith(SyncMessageFromOtherSecurityException::class, body)
     }
 
     @Test
@@ -795,7 +801,7 @@ class MessageProcessorImplTest {
 
         val m = SyncMessage.MessagesRead(randomUserConversationId(), randomMessageIds().map { MessageId(it) })
 
-        assertFailsWith(SyncMessageFromOtherSecurityException::class) {
+        assertFailsWithSyncMessageFromOtherSecurityException {
             processor.processMessage(randomUserId(), wrap(m)).get()
         }
     }
@@ -806,10 +812,60 @@ class MessageProcessorImplTest {
 
         val messageIds = randomMessageIds()
         val conversationId = randomUserConversationId()
-        val m = SyncMessage.MessagesRead(conversationId, messageIds.map { MessageId(it) })
+        val m = SyncMessage.MessagesRead(conversationId, messageIds.map(::MessageId))
 
         processor.processMessage(selfId, wrap(m)).get()
 
         verify(messageService).markConversationMessagesAsRead(conversationId, messageIds)
+    }
+
+    @Test
+    fun `it should call deleteMessages when receiving a MessagesDeleted message`() {
+        val conversationId = randomUserConversationId()
+        val processor = createProcessor()
+
+        val messageIds = randomMessageIds()
+
+        val m = SyncMessage.MessagesDeleted(conversationId, messageIds.map(::MessageId))
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        verify(messageService).deleteMessages(conversationId, messageIds, true)
+    }
+
+    @Test
+    fun `it should call deleteMessagesUntil when receiving a MessagesDeletedAll message`() {
+        val conversationId = randomUserConversationId()
+        val processor = createProcessor()
+
+        val lastMessageTimestamp = 1L
+
+        val m = SyncMessage.MessagesDeletedAll(conversationId, lastMessageTimestamp)
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        verify(messageService).deleteAllMessagesUntil(conversationId, lastMessageTimestamp)
+    }
+
+    @Test
+    fun `it should drop MessagesDeleted where the sender is not yourself`() {
+        val processor = createProcessor()
+
+        val m = SyncMessage.MessagesDeleted(randomUserConversationId(), randomMessageIds().map(::MessageId))
+
+        assertFailsWithSyncMessageFromOtherSecurityException {
+            processor.processMessage(randomUserId(), wrap(m)).get()
+        }
+    }
+
+    @Test
+    fun `it should drop MessagesDeletedAll where the sender is not yourself`() {
+        val processor = createProcessor()
+
+        val m = SyncMessage.MessagesDeletedAll(randomUserConversationId(), 0)
+
+        assertFailsWithSyncMessageFromOtherSecurityException {
+            processor.processMessage(randomUserId(), wrap(m)).get()
+        }
     }
 }

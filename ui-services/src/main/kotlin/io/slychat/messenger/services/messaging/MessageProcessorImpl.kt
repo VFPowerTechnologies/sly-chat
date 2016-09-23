@@ -116,9 +116,15 @@ class MessageProcessorImpl(
                     messageService.markConversationMessagesAsRead(m.conversationId, m.messageIds.map { it.string })
                 }
 
-                is SyncMessage.MessagesDeleted -> TODO()
+                is SyncMessage.MessagesDeleted -> {
+                    log.info("Messages deleted for {}: {}", m.conversationId, m.messageIds)
+                    messageService.deleteMessages(m.conversationId, m.messageIds.map { it.string }, true)
+                }
 
-                is SyncMessage.MessagesDeletedAll -> TODO()
+                is SyncMessage.MessagesDeletedAll -> {
+                    log.info("Messages until {} deleted for {}", m.lastMessageTimestamp, m.conversationId)
+                    messageService.deleteAllMessagesUntil(m.conversationId, m.lastMessageTimestamp)
+                }
             }
         }
     }

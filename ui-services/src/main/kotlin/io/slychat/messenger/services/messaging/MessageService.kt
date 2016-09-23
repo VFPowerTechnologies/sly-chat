@@ -24,6 +24,7 @@ interface MessageService {
 
     fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>, fromSync: Boolean): Promise<Unit, Exception>
     fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception>
+    fun deleteAllMessagesUntil(conversationId: ConversationId, timestamp: Long): Promise<Unit, Exception>
     fun getAllUserConversations(): Promise<List<UserConversation>, Exception>
     fun getAllGroupConversations(): Promise<List<GroupConversation>, Exception>
     fun getLastMessages(conversationId: ConversationId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception>

@@ -102,6 +102,13 @@ class MessageServiceImpl(
         return p map { Unit }
     }
 
+    override fun deleteAllMessagesUntil(conversationId: ConversationId, timestamp: Long): Promise<Unit, Exception> {
+        return messagePersistenceManager.deleteAllMessagesUntil(conversationId, timestamp) successUi {
+            messageUpdatesSubject.onNext(MessageUpdateEvent.DeletedAll(conversationId, timestamp, true))
+            emitCurrentConversationDisplayInfo(conversationId)
+        }
+    }
+
     override fun getAllUserConversations(): Promise<List<UserConversation>, Exception> {
         return messagePersistenceManager.getAllUserConversations()
     }
