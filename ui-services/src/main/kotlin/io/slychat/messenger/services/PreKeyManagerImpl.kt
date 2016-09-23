@@ -15,12 +15,14 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import org.whispersystems.libsignal.state.PreKeyRecord
+import rx.Observable
 import rx.Subscription
 
 //TODO right now this only regens new keys on online
 //should also check after processing a prekey from a received message
 class PreKeyManagerImpl(
-    private val application: SlyApplication,
+    networkAvailable: Observable<Boolean>,
+    private val registrationId: Int,
     private val userLoginData: UserData,
     private val preKeyAsyncClient: PreKeyAsyncClient,
     private val preKeyPersistenceManager: PreKeyPersistenceManager,
@@ -37,7 +39,7 @@ class PreKeyManagerImpl(
     private val networkAvailableSubscription: Subscription
 
     init {
-        networkAvailableSubscription = application.networkAvailable.subscribe { status ->
+        networkAvailableSubscription = networkAvailable.subscribe { status ->
             isOnline = status
             if (status && scheduledKeyCount > 0)
                 scheduleUpload(scheduledKeyCount)
@@ -101,7 +103,7 @@ class PreKeyManagerImpl(
         authTokenManager.bind { userCredentials ->
             generate(keyRegenCount) bind { r ->
                 val (generatedPreKeys, lastResortPreKey) = r
-                val request = preKeyStorageRequestFromGeneratedPreKeys(application.installationData.registrationId, keyVault, generatedPreKeys, lastResortPreKey)
+                val request = preKeyStorageRequestFromGeneratedPreKeys(registrationId, keyVault, generatedPreKeys, lastResortPreKey)
                 preKeyAsyncClient.store(userCredentials, request)
             }
         } successUi { response ->
