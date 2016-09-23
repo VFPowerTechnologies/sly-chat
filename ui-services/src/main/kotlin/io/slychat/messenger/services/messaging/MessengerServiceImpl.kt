@@ -3,13 +3,16 @@ package io.slychat.messenger.services.messaging
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.randomMessageId
+import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
-import io.slychat.messenger.services.*
+import io.slychat.messenger.services.GroupService
+import io.slychat.messenger.services.RelayClientManager
+import io.slychat.messenger.services.RelayClock
+import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.contacts.AddressBookOperationManager
 import io.slychat.messenger.services.contacts.AddressBookSyncEvent
 import io.slychat.messenger.services.contacts.ContactsService
@@ -18,8 +21,6 @@ import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
-import rx.Observable
-import rx.subjects.PublishSubject
 import rx.subscriptions.CompositeSubscription
 import java.util.*
 
@@ -137,14 +138,6 @@ class MessengerServiceImpl(
         }
     }
 
-    /** Writes the received message and then fires the new messages subject. */
-    private fun writeReceivedSelfMessage(from: UserId, messageText: String): Promise<Unit, Exception> {
-        //we mark the message as already read as well to avoid notifications (FIXME)
-        val messageInfo = MessageInfo.newReceived(messageText, relayClock.currentTime(), true)
-        val conversationMessageInfo = ConversationMessageInfo(from, messageInfo)
-        return messageService.addMessage(from.toConversationId(), conversationMessageInfo)
-    }
-
     private fun usersFromPackages(packages: List<Package>): Set<UserId> = packages.mapTo(HashSet()) { it.userId }
 
     /** Filter out packages which belong to blocked users, etc. */
@@ -196,29 +189,32 @@ class MessengerServiceImpl(
     override fun sendMessageTo(userId: UserId, message: String, ttlMs: Long): Promise<Unit, Exception> {
         val isSelfMessage = userId == selfId
 
-        //HACK
-        //trying to send to yourself tries to use the same session for both ends, which ends up failing with a bad mac exception
         val timestamp = relayClock.currentTime()
 
+        val messageInfo = MessageInfo.newSent(message, timestamp, ttlMs)
+        val conversationMessageInfo = ConversationMessageInfo(null, messageInfo.copy(
+            isDelivered = isSelfMessage,
+            receivedTimestamp = if (!isSelfMessage) 0 else relayClock.currentTime()
+        ))
+
+        val metadata = MessageMetadata(userId, null, MessageCategory.TEXT_SINGLE, messageInfo.id)
+
         return if (!isSelfMessage) {
-            val messageInfo = MessageInfo.newSent(message, timestamp, ttlMs)
-            val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
             val m = TextMessage(MessageId(messageInfo.id), messageInfo.timestamp, message, null, ttlMs)
             val wrapper = SlyMessage.Text(m)
 
             val serialized = objectMapper.writeValueAsBytes(wrapper)
 
-            val metadata = MessageMetadata(userId, null, MessageCategory.TEXT_SINGLE, messageInfo.id)
             messageSender.addToQueue(SenderMessageEntry(metadata, serialized)) bind {
                 messageService.addMessage(userId.toConversationId(), conversationMessageInfo)
             }
         }
         else {
-            val messageInfo = MessageInfo.newSelfSent(message, timestamp, ttlMs)
-            val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
-            //we need to insure that the send message info is sent back to the ui before the ServerReceivedMessage is fired
-            messageService.addMessage(userId.toConversationId(), conversationMessageInfo) successUi {
-                writeReceivedSelfMessage(userId, messageInfo.message)
+            //we don't actually wanna send a text message to ourselves; mostly because both the sent and received ids would be the same
+            //so we just add a new sent message, then broadcast the sync message to other devices
+
+            messageService.addMessage(userId.toConversationId(), conversationMessageInfo) bindUi {
+                broadcastSentMessage(metadata, conversationMessageInfo) map { Unit }
             }
         }
     }
@@ -380,7 +376,7 @@ class MessengerServiceImpl(
         if (messageIds.isEmpty())
             return Promise.ofSuccess(Unit)
 
-        return sendSyncMessage(SyncMessage.MessagesRead(conversationId, messageIds.map { MessageId(it) }))
+        return sendSyncMessage(SyncMessage.MessagesRead(conversationId, messageIds.map(::MessageId)))
     }
 
     override fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception> {
