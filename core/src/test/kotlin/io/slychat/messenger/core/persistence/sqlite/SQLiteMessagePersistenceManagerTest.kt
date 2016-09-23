@@ -473,6 +473,43 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
+    fun `deleteAllMessages should return the last message id if the conversation log is non-empty`() {
+        foreachConvType { conversationId, participants ->
+            addMessage(conversationId, participants.first(), false, randomMessageText(), 0)
+
+            val conversationMessageInfo = addMessage(conversationId, participants.first(), false, randomMessageText(), 0)
+
+            val messageId = messagePersistenceManager.deleteAllMessages(conversationId).get()
+
+            assertEquals(conversationMessageInfo.info.id, messageId, "Invalid message id returned")
+        }
+    }
+
+    //here as a precaution because I actually made this mistake
+    @Test
+    fun `deleteAllMessages should return the last message id if the last message expired`() {
+        foreachConvType { conversationId, participants ->
+            val conversationMessageInfo = addMessage(conversationId, participants.first(), false, randomMessageText(), 0)
+            val messageId = conversationMessageInfo.info.id
+
+            messagePersistenceManager.expireMessages(mapOf(conversationId to listOf(messageId))).get()
+
+            val lastMessageId = messagePersistenceManager.deleteAllMessages(conversationId).get()
+
+            assertEquals(messageId, lastMessageId, "Invalid message id returned")
+        }
+    }
+
+    @Test
+    fun `deleteAllMessages should return null if the conversation log is empty`() {
+        foreachConvType { conversationId, participants ->
+            val messageId = messagePersistenceManager.deleteAllMessages(conversationId).get()
+
+            assertNull(messageId, "Should return null if no messages are present")
+        }
+    }
+
+    @Test
     fun `deleteMessages should do nothing if the message list is empty`() {
         val userId = addRandomContact()
 

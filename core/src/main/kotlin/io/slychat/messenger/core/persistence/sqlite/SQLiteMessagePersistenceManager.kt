@@ -239,16 +239,47 @@ LIMIT
         }
     }
 
-    override fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    private fun getLastConvoMessageId(connection: SQLiteConnection, conversationId: ConversationId): String? {
+        val tableName = ConversationTable.getTablename(conversationId)
+
+        val sql = """
+SELECT
+    id
+FROM
+    $tableName
+ORDER BY
+    timestamp DESC, n DESC
+LIMIT
+    1
+"""
+
+        return connection.withPrepared(sql) { stmt ->
+            if (!stmt.step())
+                null
+            else
+                stmt.columnString(0)
+        }
+
+    }
+
+    override fun deleteAllMessages(conversationId: ConversationId): Promise<String?, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
-            val tableName = ConversationTable.getTablename(conversationId)
-            connection.withPrepared("DELETE FROM $tableName") { stmt ->
-                stmt.step()
+            val lastMessageId = getLastConvoMessageId(connection, conversationId)
+
+            //no last message
+            if (lastMessageId == null) {
+                null
             }
+            else {
+                val tableName = ConversationTable.getTablename(conversationId)
+                connection.withPrepared("DELETE FROM $tableName", SQLiteStatement::step)
 
-            deleteExpiringMessagesForConversation(connection, conversationId)
+                deleteExpiringMessagesForConversation(connection, conversationId)
 
-            insertOrReplaceNewConversationInfo(connection, conversationId)
+                insertOrReplaceNewConversationInfo(connection, conversationId)
+
+                lastMessageId
+            }
         }
     }
 
