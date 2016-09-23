@@ -155,9 +155,9 @@ ChatController.prototype = {
     },
 
     createShowExpiringMessageButton : function (message, contact, speaker) {
-        var button = $('<div style="width: 45px; height: 45px;"><i class="fa fa-bomb fa-2x" style="font-size: 45px;"></i></div>');
+        var button = $('<div style="width: auto; height: auto; font-size: 12px; text-align: center;"><i class="fa fa-bomb fa-2x" style="font-size: 35px;"></i>Tap to view message</div>');
 
-        button.on('mouseheld', function (e) {
+        button.on('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
             vibrate(100);
@@ -231,7 +231,7 @@ ChatController.prototype = {
         var messageNode = $("#message_" + messageId);
 
         if (messageNode.length > 0 && (groupId == contactId || userId == contactId)) {
-            messageNode.find('.message').html("<p>" + formatTextForHTML(createTextNode("Message has expired.")) + "</p>");
+            messageNode.find('.message').removeClass("message-hidden").html("<p>" + formatTextForHTML(createTextNode("Message has expired.")) + "</p>");
         }
     },
 
