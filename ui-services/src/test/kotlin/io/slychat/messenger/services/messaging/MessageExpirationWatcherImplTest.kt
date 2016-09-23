@@ -303,7 +303,7 @@ class MessageExpirationWatcherImplTest {
 
         val toDelete = messages.first()
 
-        messageUpdates.onNext(MessageUpdateEvent.Deleted(toDelete.conversationId, listOf(toDelete.messageId)))
+        messageUpdates.onNext(MessageUpdateEvent.Deleted(toDelete.conversationId, listOf(toDelete.messageId), false))
 
         withTimeAs(expiresAt) {
             testScheduler.advanceTimeTo(expiresAt, TimeUnit.MILLISECONDS)
@@ -335,7 +335,7 @@ class MessageExpirationWatcherImplTest {
             watcher.init()
         }
 
-        messageUpdates.onNext(MessageUpdateEvent.Deleted(conversationId, listOf(randomMessageId())))
+        messageUpdates.onNext(MessageUpdateEvent.Deleted(conversationId, listOf(randomMessageId()), false))
 
         withTimeAs(expiresAt) {
             testScheduler.advanceTimeTo(expiresAt, TimeUnit.MILLISECONDS)
@@ -369,7 +369,7 @@ class MessageExpirationWatcherImplTest {
             watcher.init()
         }
 
-        messageUpdates.onNext(MessageUpdateEvent.DeletedAll(deletedConversationId, 1))
+        messageUpdates.onNext(MessageUpdateEvent.DeletedAll(deletedConversationId, 1, false))
 
         withTimeAs(expiresAt) {
             testScheduler.advanceTimeTo(expiresAt, TimeUnit.MILLISECONDS)
@@ -401,7 +401,7 @@ class MessageExpirationWatcherImplTest {
             watcher.init()
         }
 
-        messageUpdates.onNext(MessageUpdateEvent.DeletedAll(randomUserConversationId(), 1))
+        messageUpdates.onNext(MessageUpdateEvent.DeletedAll(randomUserConversationId(), 1, false))
 
         withTimeAs(expiresAt) {
             testScheduler.advanceTimeTo(expiresAt, TimeUnit.MILLISECONDS)

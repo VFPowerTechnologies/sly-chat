@@ -81,9 +81,9 @@ class MessageServiceImpl(
         messageUpdatesSubject.onNext(event)
     }
 
-    override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> {
+    override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>, fromSync: Boolean): Promise<Unit, Exception> {
         return messagePersistenceManager.deleteMessages(conversationId, messageIds) successUi {
-            messageUpdatesSubject.onNext(MessageUpdateEvent.Deleted(conversationId, messageIds))
+            messageUpdatesSubject.onNext(MessageUpdateEvent.Deleted(conversationId, messageIds, fromSync))
             emitCurrentConversationDisplayInfo(conversationId)
         }
     }
@@ -94,7 +94,7 @@ class MessageServiceImpl(
 
         p successUi { lastMessageTimestamp ->
             if (lastMessageTimestamp != null) {
-                messageUpdatesSubject.onNext(MessageUpdateEvent.DeletedAll(conversationId, lastMessageTimestamp))
+                messageUpdatesSubject.onNext(MessageUpdateEvent.DeletedAll(conversationId, lastMessageTimestamp, false))
                 emitCurrentConversationDisplayInfo(conversationId)
             }
         }

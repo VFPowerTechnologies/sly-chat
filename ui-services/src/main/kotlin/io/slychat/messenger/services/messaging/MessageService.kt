@@ -22,7 +22,7 @@ interface MessageService {
     fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception>
     fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception>
 
-    fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception>
+    fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>, fromSync: Boolean): Promise<Unit, Exception>
     fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception>
     fun getAllUserConversations(): Promise<List<UserConversation>, Exception>
     fun getAllGroupConversations(): Promise<List<GroupConversation>, Exception>

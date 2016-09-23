@@ -83,7 +83,7 @@ sealed class MessageUpdateEvent {
         }
     }
 
-    class Deleted(val conversationId: ConversationId, val messageIds: Collection<String>) : MessageUpdateEvent() {
+    class Deleted(val conversationId: ConversationId, val messageIds: Collection<String>, val fromSync: Boolean) : MessageUpdateEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
@@ -92,6 +92,7 @@ sealed class MessageUpdateEvent {
 
             if (conversationId != other.conversationId) return false
             if (messageIds != other.messageIds) return false
+            if (fromSync != other.fromSync) return false
 
             return true
         }
@@ -99,15 +100,16 @@ sealed class MessageUpdateEvent {
         override fun hashCode(): Int {
             var result = conversationId.hashCode()
             result = 31 * result + messageIds.hashCode()
+            result = 31 * result + fromSync.hashCode()
             return result
         }
 
         override fun toString(): String {
-            return "Deleted(conversationId=$conversationId, messageIds=$messageIds)"
+            return "Deleted(conversationId=$conversationId, messageIds=$messageIds, fromSync=$fromSync)"
         }
     }
 
-    class DeletedAll(val conversationId: ConversationId, val lastMessageTimestamp: Long) : MessageUpdateEvent() {
+    class DeletedAll(val conversationId: ConversationId, val lastMessageTimestamp: Long, val fromSync: Boolean) : MessageUpdateEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
@@ -116,6 +118,7 @@ sealed class MessageUpdateEvent {
 
             if (conversationId != other.conversationId) return false
             if (lastMessageTimestamp != other.lastMessageTimestamp) return false
+            if (fromSync != other.fromSync) return false
 
             return true
         }
@@ -123,11 +126,12 @@ sealed class MessageUpdateEvent {
         override fun hashCode(): Int {
             var result = conversationId.hashCode()
             result = 31 * result + lastMessageTimestamp.hashCode()
+            result = 31 * result + fromSync.hashCode()
             return result
         }
 
         override fun toString(): String {
-            return "DeletedAll(conversationId=$conversationId, lastMessageTimestamp=$lastMessageTimestamp)"
+            return "DeletedAll(conversationId=$conversationId, lastMessageTimestamp=$lastMessageTimestamp, fromSync=$fromSync)"
         }
     }
 

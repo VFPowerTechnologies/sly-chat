@@ -265,7 +265,7 @@ class MessageServiceImplTest {
     @Test
     fun `it should emit a conversation info update when deleteMessages is called`() {
         testConversationInfoUpdate { conversationId ->
-            messageService.deleteMessages(conversationId, listOf(randomMessageId()))
+            messageService.deleteMessages(conversationId, listOf(randomMessageId()), false)
         }
     }
 
@@ -399,9 +399,9 @@ class MessageServiceImplTest {
             val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.Deleted>()
             val messageIds = randomMessageIds()
 
-            messageService.deleteMessages(conversationId, messageIds).get()
+            messageService.deleteMessages(conversationId, messageIds, false).get()
 
-            val expected = MessageUpdateEvent.Deleted(conversationId, messageIds)
+            val expected = MessageUpdateEvent.Deleted(conversationId, messageIds, false)
 
             assertEventEmitted(testSubscriber) {
                 assertEquals(expected, it, "Invalid event")
@@ -420,7 +420,7 @@ class MessageServiceImplTest {
 
             messageService.deleteAllMessages(conversationId).get()
 
-            val expected = MessageUpdateEvent.DeletedAll(conversationId, lastMessageTimestamp)
+            val expected = MessageUpdateEvent.DeletedAll(conversationId, lastMessageTimestamp, false)
 
             assertEventEmitted(testSubscriber) {
                 assertEquals(expected, it, "Invalid event")
