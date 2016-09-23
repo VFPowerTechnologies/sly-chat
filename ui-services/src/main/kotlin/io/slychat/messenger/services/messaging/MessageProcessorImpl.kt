@@ -115,6 +115,10 @@ class MessageProcessorImpl(
                     log.info("Messages read for {}: {}", m.conversationId, m.messageIds)
                     messageService.markConversationMessagesAsRead(m.conversationId, m.messageIds.map { it.string })
                 }
+
+                is SyncMessage.MessagesDeleted -> TODO()
+
+                is SyncMessage.MessagesDeletedAll -> TODO()
             }
         }
     }
