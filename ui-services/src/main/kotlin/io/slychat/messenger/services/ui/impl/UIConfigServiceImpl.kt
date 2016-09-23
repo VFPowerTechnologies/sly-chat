@@ -104,4 +104,14 @@ class UIConfigServiceImpl(
             loginRememberMe = v
         }
     }
+
+    override fun getLastMessageTtl(): Long {
+        return getUserConfigServiceOrThrow().messagingLastTtl
+    }
+
+    override fun setLastMessageTtl(v: Long) {
+        getUserConfigServiceOrThrow().withEditor {
+            messagingLastTtl = v
+        }
+    }
 }

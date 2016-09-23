@@ -82,6 +82,12 @@ slychat.onPageInit('chat', function (page) {
         groupController.fetchGroupMessage(0, 100, page.query.id);
     }
 
+    configService.getLastMessageTtl().then(function (v) {
+        chatController.lastMessageTtl = v;
+    }).catch(function (e) {
+        exceptionController.handleError(e);
+    });
+
     $(".chat-page-contact-menu").click(function (e) {
         e.preventDefault();
         if (isGroup)
@@ -108,7 +114,7 @@ slychat.onPageInit('chat', function (page) {
         else
             $(this).removeClass("empty-textarea");
     });
-    
+
     $("#submitNewChatMessage").click(function (e) {
         e.preventDefault();
         chatController.handleSubmitMessage(page.query);
