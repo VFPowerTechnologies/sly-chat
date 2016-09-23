@@ -107,7 +107,7 @@ sealed class MessageUpdateEvent {
         }
     }
 
-    class DeletedAll(val conversationId: ConversationId) : MessageUpdateEvent() {
+    class DeletedAll(val conversationId: ConversationId, val lastMessageTimestamp: Long) : MessageUpdateEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
@@ -115,16 +115,19 @@ sealed class MessageUpdateEvent {
             other as DeletedAll
 
             if (conversationId != other.conversationId) return false
+            if (lastMessageTimestamp != other.lastMessageTimestamp) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            return conversationId.hashCode()
+            var result = conversationId.hashCode()
+            result = 31 * result + lastMessageTimestamp.hashCode()
+            return result
         }
 
         override fun toString(): String {
-            return "DeletedAll(conversationId=$conversationId)"
+            return "DeletedAll(conversationId=$conversationId, lastMessageTimestamp=$lastMessageTimestamp)"
         }
     }
 

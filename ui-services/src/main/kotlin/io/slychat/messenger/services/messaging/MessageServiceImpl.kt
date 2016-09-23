@@ -90,10 +90,16 @@ class MessageServiceImpl(
 
     //this can be called without opening the conversation, so we might have unread messages
     override fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception> {
-        return messagePersistenceManager.deleteAllMessages(conversationId) successUi {
-            messageUpdatesSubject.onNext(MessageUpdateEvent.DeletedAll(conversationId))
-            emitCurrentConversationDisplayInfo(conversationId)
+        val p = messagePersistenceManager.deleteAllMessages(conversationId)
+
+        p successUi { lastMessageTimestamp ->
+            if (lastMessageTimestamp != null) {
+                messageUpdatesSubject.onNext(MessageUpdateEvent.DeletedAll(conversationId, lastMessageTimestamp))
+                emitCurrentConversationDisplayInfo(conversationId)
+            }
         }
+
+        return p map { Unit }
     }
 
     override fun getAllUserConversations(): Promise<List<UserConversation>, Exception> {

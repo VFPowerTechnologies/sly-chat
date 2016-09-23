@@ -38,7 +38,7 @@ class MessageServiceImplTest {
         whenever(messagePersistenceManager.markConversationMessagesAsRead(any(), any())).thenAnswerWithArg(1)
         whenever(messagePersistenceManager.setExpiration(any(), any(), any())).thenResolve(true)
         whenever(messagePersistenceManager.expireMessages(any())).thenResolveUnit()
-        whenever(messagePersistenceManager.deleteAllMessages(any())).thenResolveUnit()
+        whenever(messagePersistenceManager.deleteAllMessages(any())).thenResolve(10)
         whenever(messagePersistenceManager.deleteMessages(any(), any())).thenResolveUnit()
 
         val conversationDisplayInfo = randomConversationDisplayInfo()
@@ -412,15 +412,32 @@ class MessageServiceImplTest {
     @Test
     fun `it should emit a DeletedAll event when deleteAllMessages is called`() {
         forEachConvType { conversationId ->
+            val lastMessageTimestamp = 10L
+
             val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.DeletedAll>()
+
+            whenever(messagePersistenceManager.deleteAllMessages(any())).thenResolve(lastMessageTimestamp)
 
             messageService.deleteAllMessages(conversationId).get()
 
-            val expected = MessageUpdateEvent.DeletedAll(conversationId)
+            val expected = MessageUpdateEvent.DeletedAll(conversationId, lastMessageTimestamp)
 
             assertEventEmitted(testSubscriber) {
                 assertEquals(expected, it, "Invalid event")
             }
+        }
+    }
+
+    @Test
+    fun `it should not emit a DeletedAll event when deleteAllMessages returns null`() {
+        forEachConvType { conversationId ->
+            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.DeletedAll>()
+
+            whenever(messagePersistenceManager.deleteAllMessages(any())).thenResolve(null)
+
+            messageService.deleteAllMessages(conversationId).get()
+
+            assertNoEventsEmitted(testSubscriber)
         }
     }
 }

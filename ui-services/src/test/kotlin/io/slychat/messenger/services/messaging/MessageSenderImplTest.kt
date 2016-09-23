@@ -466,7 +466,7 @@ class MessageSenderImplTest {
             val conversationId = entry.metadata.getConversationId()
             sender.addToQueue(entry).get()
 
-            val event = MessageUpdateEvent.DeletedAll(conversationId)
+            val event = MessageUpdateEvent.DeletedAll(conversationId, 1)
             messageUpdateEvents.onNext(event)
         }
 
@@ -483,7 +483,7 @@ class MessageSenderImplTest {
         runWhileSending(sender) {
             sender.addToQueue(entry).get()
 
-            val event = MessageUpdateEvent.DeletedAll(conversationId)
+            val event = MessageUpdateEvent.DeletedAll(conversationId, 1)
             messageUpdateEvents.onNext(event)
         }
 
@@ -496,7 +496,7 @@ class MessageSenderImplTest {
 
         val conversationId = randomUserConversationId()
 
-        val event = MessageUpdateEvent.DeletedAll(conversationId)
+        val event = MessageUpdateEvent.DeletedAll(conversationId, 1)
         messageUpdateEvents.onNext(event)
 
         verify(messageQueuePersistenceManager).removeAllForConversation(conversationId)

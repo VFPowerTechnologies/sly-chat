@@ -369,7 +369,7 @@ class MessageExpirationWatcherImplTest {
             watcher.init()
         }
 
-        messageUpdates.onNext(MessageUpdateEvent.DeletedAll(deletedConversationId))
+        messageUpdates.onNext(MessageUpdateEvent.DeletedAll(deletedConversationId, 1))
 
         withTimeAs(expiresAt) {
             testScheduler.advanceTimeTo(expiresAt, TimeUnit.MILLISECONDS)
@@ -401,7 +401,7 @@ class MessageExpirationWatcherImplTest {
             watcher.init()
         }
 
-        messageUpdates.onNext(MessageUpdateEvent.DeletedAll(randomUserConversationId()))
+        messageUpdates.onNext(MessageUpdateEvent.DeletedAll(randomUserConversationId(), 1))
 
         withTimeAs(expiresAt) {
             testScheduler.advanceTimeTo(expiresAt, TimeUnit.MILLISECONDS)
