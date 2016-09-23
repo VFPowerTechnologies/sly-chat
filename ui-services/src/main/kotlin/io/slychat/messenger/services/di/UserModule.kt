@@ -159,12 +159,14 @@ class UserModule(
         relayClientManager: RelayClientManager,
         messageCipherService: MessageCipherService,
         messageQueuePersistenceManager: MessageQueuePersistenceManager,
-        messageService: MessageService
+        messageService: MessageService,
+        relayClock: RelayClock
     ): MessageSender =
         MessageSenderImpl(
             messageCipherService,
             relayClientManager,
             messageQueuePersistenceManager,
+            relayClock,
             messageService.messageUpdates
         )
 
