@@ -262,6 +262,12 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .expiring-message-toolbar {
     height: 80px;
 }
+.bomb-button-icon i {
+    color: #a9a9a9;
+}
+.expiring-message-toolbar .bomb-button-icon i {
+    color: black;
+}
 #newMessageInput {
     margin-top: 5px;
     border-left: 1px solid transparent;

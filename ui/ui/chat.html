@@ -44,11 +44,16 @@
                         <div id='newMessageInputDiv' style="position: absolute; bottom: 0; width: 100%; display: inline-block; min-height: 47px; border-top: 1px solid #b9b9b9;">
                             <textarea class='empty-textarea resizable' placeholder='Type your secured message'
                                       id="newMessageInput" name="newMessageInput" style="height: 15px;"></textarea>
-                            <button id='inputChatExpireMessageBtn' style="position: absolute; bottom: 0; left: 0; background-color: transparent; border: none; height: 47px; line-height: 47px;">
-                                <i class="fa fa-bomb fa-2x" style="color: #a9a9a9"></i>
+                            <button id='inputChatExpireMessageBtn' class='bomb-button-icon' style="position: absolute; bottom: 0; left: 0; background-color: transparent; border: none; height: 47px;">
+                                <i class="fa fa-bomb fa-2x"></i>
                             </button>
-                            <button id='submitNewChatMessage' style="position: absolute; bottom: 0; right: 0; background-color: transparent; border: none; height: 47px; line-height: 47px;">
-                                <i class="fa fa-play fa-2x" style="color: #ff5722;"></i>
+                            <button id='submitNewChatMessage' style="position: absolute; bottom: 0; right: 0; background-color: transparent; border: none; height: 47px;">
+                                {{if @global.isDesktop}}
+                                <i class="material-icons md-36">&#xE163;</i>
+                                {{/if}}
+                                {{unless @global.isDesktop}}
+                                <i class="material-icons md-36">send</i>
+                                {{/unless]]
                             </button>
                             <div id="contact-id" style="display: none;"></div>
                         </div>
