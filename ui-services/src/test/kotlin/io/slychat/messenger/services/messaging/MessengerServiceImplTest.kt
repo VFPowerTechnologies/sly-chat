@@ -24,6 +24,8 @@ import org.junit.Test
 import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 //only downside of this api design is having to deserialize messages in tests
@@ -78,7 +80,7 @@ class MessengerServiceImplTest {
 
         whenever(addressBookOperationManager.syncEvents).thenReturn(syncEvents)
 
-        whenever(relayClock.currentTime()).thenAnswer { currentTimestamp() }
+        whenever(relayClock.currentTime()).thenReturn(1)
     }
 
     fun randomTextSingleRecord(): MessageSendRecord {
@@ -253,6 +255,36 @@ class MessengerServiceImplTest {
         verify(messageSender).addToQueue(capture<SenderMessageEntry> {
             assertEquals(recipient, it.metadata.userId, "Invalid recipient")
             assertEquals(MessageCategory.TEXT_SINGLE, it.metadata.category, "Invalid category")
+        })
+    }
+
+    @Test
+    fun `it should add an undelivered sent message when sendMessageTo is called`() {
+        val messengerService = createService()
+
+        val userId = randomUserId()
+
+        messengerService.sendMessageTo(userId, randomMessageText(), 0)
+
+        verify(messageService).addMessage(eq(userId.toConversationId()), capture {
+            assertFalse(it.info.isDelivered, "Should not be marked as delivered")
+            assertEquals(0, it.info.receivedTimestamp, "Received timestamp should not be set")
+        })
+    }
+
+    @Test
+    fun `it should add an undelivered sent message when sendGroupMessageTo is called`() {
+        val messengerService = createService()
+
+        val groupId = randomGroupId()
+
+        whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(setOf(randomUserId()))
+        
+        messengerService.sendGroupMessageTo(groupId, randomMessageText(), 0)
+
+        verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
+            assertFalse(it.info.isDelivered, "Should not be marked as delivered")
+            assertEquals(0, it.info.receivedTimestamp, "Received timestamp should not be set")
         })
     }
 
@@ -924,6 +956,52 @@ class MessengerServiceImplTest {
 
         val message = retrieveSyncMessage<SyncMessage.MessagesRead>()
 
-        assertEquals(SyncMessage.MessagesRead(conversationId, messageIds.map { MessageId(it) }), message, "Invalid sync message")
+        assertEquals(SyncMessage.MessagesRead(conversationId, messageIds.map(::MessageId)), message, "Invalid sync message")
+    }
+
+    @Test
+    fun `it should send a text message to yourself when sendMessageTo is called for yourself`() {
+        val messengerService = createService()
+
+        val recipient = selfId
+
+        messengerService.sendMessageTo(recipient, randomMessageText(), 0)
+
+        verify(messageSender).addToQueue(capture<SenderMessageEntry> {
+            assertNotEquals(MessageCategory.TEXT_SINGLE, it.metadata.category, "Invalid category")
+        })
+    }
+
+    @Test
+    fun `it should add a new already-delivered message to yourself when sendMessageTo is called for yourself`() {
+        val messengerService = createService()
+
+        val recipient = selfId
+
+        val messageText = randomMessageText()
+
+        messengerService.sendMessageTo(recipient, messageText, 0)
+
+        verify(messageService).addMessage(eq(recipient.toConversationId()), capture {
+            assertTrue(it.info.isDelivered, "Not marked as delivered")
+            assertEquals(messageText, it.info.message, "Invalid message")
+            assertTrue(it.info.isSent, "Not marked as sent")
+            assertEquals(it.info.receivedTimestamp, relayClock.currentTime(), "Invalid received timestamp")
+        })
+    }
+
+    @Test
+    fun `it should broadcast a sent message message to yourself when sendMessageTo is called for yourself`() {
+        val messengerService = createService()
+
+        val recipient = selfId
+
+        val messageText = randomMessageText()
+
+        messengerService.sendMessageTo(recipient, messageText, 0)
+
+        val selfMessage = retrieveSyncMessage<SyncMessage.SelfMessage>()
+
+        assertEquals(messageText, selfMessage.sentMessageInfo.message, "Invalid message text")
     }
 }

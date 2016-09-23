@@ -7,6 +7,7 @@ import io.slychat.messenger.core.persistence.SenderMessageEntry
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.RelayClientManager
+import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
@@ -23,6 +24,7 @@ class MessageSenderImpl(
     private val messageCipherService: MessageCipherService,
     private val relayClientManager: RelayClientManager,
     private val messageQueuePersistenceManager: MessageQueuePersistenceManager,
+    private val relayClock: RelayClock,
     messageUpdates: Observable<MessageUpdateEvent>
 ) : MessageSender {
     private class QueuedSendMessage(
@@ -311,8 +313,7 @@ class MessageSenderImpl(
         else {
             //if we have no encryptedMessages and didn't get an error, it was a message to self
             //so just act as if it was sent successfully
-            //XXX since this isn't used in the ui display, we just use the normal timestamp
-            handleServerRecievedMessage(ServerReceivedMessage(userId, messageId, currentTimestamp()))
+            handleServerRecievedMessage(ServerReceivedMessage(userId, messageId, relayClock.currentTime()))
         }
     }
 }

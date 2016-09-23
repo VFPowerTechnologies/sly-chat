@@ -10,6 +10,7 @@ import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.RelayClientManager
+import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
@@ -41,6 +42,7 @@ class MessageSenderImplTest {
     val messageCipherService: MessageCipherService = mock()
     val relayClientManager: RelayClientManager = mock()
     val messageQueuePersistenceManager: MessageQueuePersistenceManager = mock()
+    val relayClock: RelayClock = mock()
 
     val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
     val relayOnlineStatus: BehaviorSubject<Boolean> = BehaviorSubject.create()
@@ -74,6 +76,8 @@ class MessageSenderImplTest {
         whenever(relayClientManager.connectionTag).thenReturn(defaultConnectionTag)
 
         whenever(messageCipherService.encrypt(any(), any(), any())).thenResolve(randomEncryptionResult())
+
+        whenever(relayClock.currentTime()).thenReturn(currentTimestamp())
     }
 
     fun createSender(
@@ -88,12 +92,25 @@ class MessageSenderImplTest {
             messageCipherService,
             relayClientManager,
             messageQueuePersistenceManager,
+            relayClock,
             messageUpdateEvents
         )
     }
 
     fun randomEncryptedPayload(): EncryptedPackagePayloadV0 =
         EncryptedPackagePayloadV0(true, ByteArray(0))
+
+    fun runWhileSending(sender: MessageSenderImpl, body: (SenderMessageEntry) -> Unit) {
+        //have something occupy the current send slot
+        val pendingEntry = randomSenderMessageEntry()
+        sender.addToQueue(pendingEntry).get()
+
+        body(pendingEntry)
+
+        //complete send
+        relayEvents.onNext(ServerReceivedMessage(pendingEntry.metadata.userId, pendingEntry.metadata.messageId, currentTimestamp()))
+    }
+
 
     @Test
     fun `it should read all queued messages when a relay connection is available on startup`() {
@@ -246,6 +263,9 @@ class MessageSenderImplTest {
 
         val testSubscriber = sender.messageSent.testSubscriber()
 
+        val relayTimestamp = currentTimestamp()
+        whenever(relayClock.currentTime()).thenReturn(relayTimestamp)
+
         val result = EncryptionResult(
             emptyList(),
             defaultConnectionTag
@@ -259,6 +279,7 @@ class MessageSenderImplTest {
 
         assertEventEmitted(testSubscriber) {
             assertEquals(record.metadata, it.metadata, "Invalid message metadata")
+            assertEquals(relayTimestamp, it.serverReceivedTimestamp, "Invalid received timestamp")
         }
     }
 
@@ -374,17 +395,6 @@ class MessageSenderImplTest {
         sender.addToQueue(emptyList()).get()
 
         verify(messageQueuePersistenceManager, never()).add(any<Collection<SenderMessageEntry>>())
-    }
-
-    fun runWhileSending(sender: MessageSenderImpl, body: (SenderMessageEntry) -> Unit) {
-        //have something occupy the current send slot
-        val pendingEntry = randomSenderMessageEntry()
-        sender.addToQueue(pendingEntry).get()
-
-        body(pendingEntry)
-
-        //complete send
-        relayEvents.onNext(ServerReceivedMessage(pendingEntry.metadata.userId, pendingEntry.metadata.messageId, currentTimestamp()))
     }
 
     @Test
