@@ -11,7 +11,7 @@ import io.slychat.messenger.core.relay.base.headerToByteArray
 class ClientMessageHandler : ChannelHandlerAdapter() {
     override fun write(ctx: ChannelHandlerContext, msg: Any, promise: ChannelPromise) {
         msg as RelayMessage
-        val buf = ctx.alloc().buffer(HEADER_SIZE +msg.header.contentLength)
+        val buf = ctx.alloc().buffer(HEADER_SIZE + msg.header.contentLength)
 
         val headerData = headerToByteArray(msg.header)
         buf.writeBytes(headerData)
