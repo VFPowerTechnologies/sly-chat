@@ -17,7 +17,7 @@
 
 -keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
 
--keep class !kotlin.**,!io.netty.**,!com.fasterxml.jackson.**,!org.spongycastle.**,!com.google.** { *; }
+-keep class !kotlin.**,!io.netty.**,!com.fasterxml.jackson.**,!org.spongycastle.**,!com.google.**,!android.** { *; }
 
 #android-logger doesn't implement certain optional things
 -dontwarn org.slf4j.impl.**
