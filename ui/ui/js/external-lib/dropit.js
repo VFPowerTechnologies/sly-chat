@@ -49,9 +49,10 @@
                     });
 
                     // Close if outside click
-                    $(document).on('click', function(){
+                    $(document).on('click', function(e){
                         settings.beforeHide.call(this);
-                        $('.dropit-open').removeClass('dropit-open').find('.dropit-submenu').hide();
+                        if (!$(e.target).hasClass('no-close'))
+                            $('.dropit-open').removeClass('dropit-open').find('.dropit-submenu').hide();
                         settings.afterHide.call(this);
                     });
 

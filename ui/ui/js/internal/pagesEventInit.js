@@ -116,6 +116,7 @@ slychat.onPageInit('chat', function (page) {
 
     $("#submitNewChatMessage").click(function (e) {
         e.preventDefault();
+        event.stopImmediatePropagation();
         newMessageInput.focus();
         chatController.handleSubmitMessage(page.query);
     });

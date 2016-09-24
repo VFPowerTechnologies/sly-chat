@@ -27,5 +27,9 @@
         );
 
         $('.views').prepend(createDesktopMenu());
+
+        $(document).ready(function() {
+            $('.dropdown-menu').dropit();
+        });
     }
 })();

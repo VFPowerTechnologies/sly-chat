@@ -1,65 +1,45 @@
 function createDesktopMenu () {
     return '<div class="panel-overlay"></div>' +
         '<div id="leftMenuPanel" class="panel panel-left panel-cover">' +
-        '<div class="view view-left navbar-through">' +
+        '<div class="view view-left">' +
         '<div class="pages">' +
         '<div data-page="contact-left" class="page" style="background-color: #861E00;">' +
-        '<div class="navbar" style="background-color: #861E00;"><div class="navbar-inner"><a href="#" onclick="navigationController.loadPage(\'contacts.html\');"><div class="left" style="color: #ff5722;"><img style="height: 40px; width: 40px; margin-right: 10px; padding-left: 10px;" src="img/fox_40x40.png"> Sly Chat </div></a></div></div>' +
         '<div class="page-content">' +
         '<div class="list-block" style="margin-top: 5px;">' +
-        '<ul>' +
-            '<li class="custom-dropdown">' +
-                '<a href="#" class="list-button item-link item-content">' +
-                '<div class="item-inner">' +
-                    '<div id="leftDesktopProfileName" class="item-title"></div>' +
-                '</div></a>' +
-                '<div class="custom-dropdown-content">' +
-                    '<div class="content-block">' +
-                        '<div class="list-block">' +
-                            '<ul>' +
-                                '<li><a id="loadProfileBtn" href="#">Profile</a></li>' +
-                                '<li><a id="loadSettingsBtn" href="#">Settings</a></li>' +
-                                '<li><a id="logoutBtn" href="#">Logout</a></li>' +
+                '<ul class="dropdown-menu no-close">' +
+                    '<li>' +
+                        '<a href="#" id="leftDesktopProfileName" style="height: 50px; line-height: 50px; font-size: 20px; padding-left: 16px;"></a>' +
+                        '<ul style="box-sizing: border-box; padding: 10px; margin-left: 20px; width: 225px;">' +
+                            '<li id="leftMenuUserInfo" style="font-size: 20px; font-weight: 200; border-bottom: 1px solid #eeeeee; padding-bottom: 5px;" class="no-close">Guillaume Reeves</li>' +
+                            '<li><a href="#" onclick="navigationController.loadPage(\'contacts.html\');">Home</a></li>' +
+                            '<li><a id="loadProfileBtn" href="#">Profile</a></li>' +
+                            '<li><a id="loadSettingsBtn" href="#">Settings</a></li>' +
+                            '<li><a id="logoutBtn" href="#">Logout</a></li>' +
+                        '</ul>' +
+                    '</li>' +
+                '</ul>' +
+                '<ul>' +
+                    '<li style="margin-bottom: 25px;">' +
+                        '<div class="content-title" style="padding-left: 16px; margin-bottom: 5px; color: #fff;">Contacts' +
+                            '<a href="#" id="addContactButton" style="float: right; margin-right: 10px;"><i class="fa fa-plus-circle"></i></a>' +
+                        '</div>' +
+                        '<div>' +
+                            '<ul id="leftContactList" style="padding-left: 21px; font-size: 14px;">' +
                             '</ul>' +
                         '</div>' +
-                    '</div>' +
-                '</div>' +
-            '</li>' +
-            '<li class="custom-dropdown custom-dropdown-toggled">' +
-                '<a href="#" class="list-button item-content item-link">' +
-                '<div class="item-inner">' +
-                    '<div class="item-title">Contacts</div>' +
-                '</div></a>' +
-                '<div class="custom-dropdown-content">' +
-                    '<div class="content-block">' +
-                        '<div class="list-block">' +
-                            '<div style="position: fixed; right: 10px; top: 30px;">' +
-                                '<a href="#" id="addContactButton"><i class="fa fa-plus-circle"></i></a>' +
-                            '</div>' +
-                            '<ul id="leftContactList">' +
+                    '</li>' +
+                    '<li style="margin-bottom: 25px;">' +
+                        '<div class="content-title" style="padding-left: 16px; margin-bottom: 5px; color: #fff;">Groups' +
+                            '<a href="#" id="createGroupButton" style="float: right; margin-right: 10px;"><i class="fa fa-plus-circle"></i></a>' +
+                        '</div>' +
+                        '<div>' +
+                            '<ul id="leftGroupList" style="padding-left: 21px; font-size: 14px;">' +
                             '</ul>' +
                         '</div>' +
-                    '</div>' +
-                '</div>' +
-            '</li>' +
-            '<li class="custom-dropdown custom-dropdown-toggled">' +
-                '<a href="#" class="list-button item-content item-link">' +
-                '<div class="item-inner">' +
-                    '<div class="item-title">Groups</div>' +
-                '</div></a>' +
-                '<div class="custom-dropdown-content">' +
-                    '<div class="content-block">' +
-                        '<div class="list-block">' +
-                            '<div style="position: fixed; right: 10px; top: 30px;">' +
-                                '<a href="#" id="createGroupButton"><i class="fa fa-plus-circle"></i></a>' +
-                            '</div>' +
-                            '<ul id="leftGroupList"></ul>' +
-                        '</div>' +
-                    '</div>' +
-                '</div>' +
-            '</li>' +
-        '</ul>' +
-        '</div></div></div></div></div></div>';
+                    '</li>' +
+                '</ul>' +
+            '</div>' +
+        '</div></div></div></div></div>';
 }
 
 function createMobileContactPopup() {

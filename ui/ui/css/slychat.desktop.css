@@ -57,7 +57,9 @@
 #leftMenuPanel .item-title, #leftMenuPanel a {
     color: #fff;
 }
-
+.dropit-submenu li {
+    padding: 5px 0;
+}
 .notifications {
     top: 0 !important;
     bottom: auto !important;
