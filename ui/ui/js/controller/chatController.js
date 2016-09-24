@@ -28,6 +28,14 @@ ChatController.prototype = {
                 case 'EXPIRED':
                     this.destroyExpiringMessage(event.userId, event.groupId, event.messageId);
                     break;
+
+                case 'DELETED':
+                    this.handleDeletedMessage(event.userId, event.groupId, event.messageIds);
+                    break;
+
+                case 'DELETED_ALL':
+                    this.handleDeletedMessage(event.userId, event.groupId);
+                    break;
             }
         }.bind(this));
     },
@@ -152,6 +160,21 @@ ChatController.prototype = {
         }
 
         return false;
+    },
+
+    handleDeletedMessage : function (userId, groupId, messageIds) {
+        var id = userId == null ? groupId : userId;
+
+        if (this.getCurrentContactId() == id) {
+            if (messageIds === undefined) {
+                navigationController.loadPage("contacts.html", false);
+            }
+            else {
+                messageIds.forEach(function (messageId) {
+                    $("#message_" + messageId).remove();
+                });
+            }
+        }
     },
 
     createShowExpiringMessageButton : function (message, contact, speaker) {
