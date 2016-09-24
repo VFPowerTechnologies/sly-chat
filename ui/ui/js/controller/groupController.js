@@ -450,7 +450,10 @@ GroupController.prototype = {
                 lastTimestamp: null
             };
 
-            mainView.router.refreshPage();
+            if (chatController.getCurrentContactId() == groupId)
+                navigationController.loadPage("contacts.html", false);
+            else
+                mainView.router.refreshPage();
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         })
@@ -471,6 +474,8 @@ GroupController.prototype = {
                     hold: 3000
                 });
                 this.deleteGroupFromCache(groupId);
+                if (chatController.getCurrentContactId() == groupId)
+                    navigationController.loadPage("contacts.html", false);
             }
             else {
                 slychat.addNotification({
@@ -490,6 +495,8 @@ GroupController.prototype = {
                 title: "Group has been blocked successfully",
                 hold: 3000
             });
+            if (chatController.getCurrentContactId() == groupId)
+                navigationController.loadPage("contacts.html", false);
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         });
