@@ -1,6 +1,5 @@
 package io.slychat.messenger.desktop
 
-import com.sun.jndi.toolkit.url.Uri
 import io.slychat.messenger.services.config.SoundFilePath
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
@@ -10,6 +9,7 @@ import javafx.stage.FileChooser
 import javafx.stage.Stage
 import nl.komponents.kovenant.Promise
 import java.io.File
+import java.net.URI
 
 class DesktopWindowService(private val stage: Stage) : UIWindowService {
     override fun copyTextToClipboard(text: String) {
@@ -39,7 +39,7 @@ class DesktopWindowService(private val stage: Stage) : UIWindowService {
         fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("Audio Files", "*.wav", "*.mp3", "*.aac"))
 
         if (previous != null) {
-            val file = File(Uri(previous.uri).path)
+            val file = File(URI(previous.uri).path)
 
             fileChooser.initialDirectory = file.parentFile
             //for some reason this doesn't work on linux; nfi why since gtk does support doing this
