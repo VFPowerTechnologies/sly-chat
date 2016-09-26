@@ -46,10 +46,10 @@ class AndroidWindowService(private val context: Context) : UIWindowService {
     override fun selectNotificationSound(previous: SoundFilePath?): Promise<UISelectionDialogResult<SoundFilePath?>, Exception> {
         val app = AndroidApp.get(context)
 
-        //XXX this is weird, because we can access the builtin sounds and stuff in builtin storage,
-        //but if we choose some other sound we might get an error after...
+        //this is weird, because we can access the builtin sounds and stuff in builtin storage,
+        //but if we choose some other sound we might get an error when trying to retrieve metadata later
         //so we can actually continue without permissions, but for anything on external storage an error'll be generated
-        //outside the app when trying to deliver the result
+        //when trying to retrieve the display name
         return app.requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE) bindUi {
             val activity = app.currentActivity
 

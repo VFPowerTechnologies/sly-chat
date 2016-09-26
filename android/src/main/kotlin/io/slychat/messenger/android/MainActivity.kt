@@ -447,6 +447,8 @@ class MainActivity : AppCompatActivity() {
                     }
                     //this can occur if the user refused external storage read permission but selected a ringer on external storage
                     //the selection dialog still displays these anyways even without permissions and there's no way to filter these out
+                    //since NotificationManager handles accessing the content itself we can still play the sound, so we just return a null
+                    //display name here
                     catch (e: SecurityException) {
                         null
                     }
