@@ -408,7 +408,7 @@ class MainActivity : AppCompatActivity() {
         return deferred.promise
     }
 
-    private fun getRingtoneName(uri: Uri): String? {
+    private fun getRingtoneName(uri: Uri): String {
         val ringtone = RingtoneManager.getRingtone(this, uri)
         return ringtone.getTitle(this)
     }
@@ -438,9 +438,10 @@ class MainActivity : AppCompatActivity() {
 
                 val uri = data.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
 
-                val displayName = uri?.let { getRingtoneName(it) }
-
-                val value = SoundFilePath(displayName, uri?.toString())
+                val value = uri?.let {
+                    val displayName = getRingtoneName(it)
+                    SoundFilePath(displayName, uri.toString())
+                }
 
                 deferred.resolve(UISelectionDialogResult(true, value))
             }
