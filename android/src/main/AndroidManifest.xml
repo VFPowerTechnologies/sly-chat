@@ -32,9 +32,6 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".NotificationTestActivity" android:exported="true">
-        </activity>
-
         <receiver
                 android:name=".NetworkStatusReceiver"
                 android:enabled="false"
