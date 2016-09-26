@@ -6,6 +6,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.media.RingtoneManager
 import android.net.ConnectivityManager
+import android.os.StrictMode
 import android.support.v4.content.ContextCompat
 import com.almworks.sqlite4java.SQLite
 import com.google.android.gms.common.ConnectionResult
@@ -137,6 +138,15 @@ class AndroidApp : Application() {
         SQLite.loadLibrary()
         KovenantUi.uiContext {
             dispatcher = androidUiDispatcher()
+        }
+
+        if (BuildConfig.DEBUG) {
+            val policy = StrictMode.ThreadPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .build()
+
+            StrictMode.setThreadPolicy(policy)
         }
 
         runGcmInit()
