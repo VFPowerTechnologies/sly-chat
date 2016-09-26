@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Bundle
-import android.provider.OpenableColumns
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.SparseArray
@@ -409,11 +408,9 @@ class MainActivity : AppCompatActivity() {
         return deferred.promise
     }
 
-    private fun getUriDisplayName(uri: Uri): String {
-        return contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null).use { cursor ->
-            cursor.moveToFirst()
-            cursor.getString(0)
-        }
+    private fun getRingtoneName(uri: Uri): String? {
+        val ringtone = RingtoneManager.getRingtone(this, uri)
+        return ringtone.getTitle(this)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -441,18 +438,7 @@ class MainActivity : AppCompatActivity() {
 
                 val uri = data.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
 
-                val displayName = uri?.let {
-                    try {
-                        getUriDisplayName(it)
-                    }
-                    //this can occur if the user refused external storage read permission but selected a ringer on external storage
-                    //the selection dialog still displays these anyways even without permissions and there's no way to filter these out
-                    //since NotificationManager handles accessing the content itself we can still play the sound, so we just return a null
-                    //display name here
-                    catch (e: SecurityException) {
-                        null
-                    }
-                }
+                val displayName = uri?.let { getRingtoneName(it) }
 
                 val value = SoundFilePath(displayName, uri?.toString())
 
