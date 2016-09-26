@@ -54,7 +54,12 @@ class DesktopWindowService(private val stage: Stage) : UIWindowService {
         }
         else {
             val uri = selectedFile.toURI().toString()
-            val displayName = selectedFile.name
+            val name = selectedFile.name
+            val displayName = if (name.contains('.'))
+                name.substring(0, name.lastIndexOf('.'))
+            else
+                name
+
             true to SoundFilePath(displayName, uri)
         }
 
