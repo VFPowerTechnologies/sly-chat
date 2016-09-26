@@ -4,6 +4,7 @@ UserSessionController.prototype = {
     startUserSession : function (accountInfo, publicKey) {
         profileController.setUserInfo(accountInfo, publicKey);
         $("#leftDesktopProfileName").html(accountInfo.name);
+        $("#leftMenuUserInfo").html(accountInfo.name);
     },
 
     clearUserSession : function () {
@@ -28,5 +29,6 @@ UserSessionController.prototype = {
         $("#groupList").html("");
         $("#leftContactList").html("");
         $("#leftGroupList").html("");
+        $("#leftMenuUserInfo").html("");
     }
 };
