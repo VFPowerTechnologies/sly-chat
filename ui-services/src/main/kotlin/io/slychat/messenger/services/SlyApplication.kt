@@ -7,6 +7,7 @@ import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
+import io.slychat.messenger.core.kovenant.recover
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
@@ -423,7 +424,9 @@ class SlyApplication {
             persistenceManager.initAsync()
         } bind {
             //FIXME this can be performed in parallel
-            userConfigService.init()
+            userConfigService.init() recover {
+                log.warn("Unable to read user config file: {}", it.message, it)
+            }
         } mapUi {
             //need to do this here so we can use messageCipherService afterwards
             startUserComponents(userComponent)
