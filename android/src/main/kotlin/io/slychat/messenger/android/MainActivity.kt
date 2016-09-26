@@ -26,6 +26,7 @@ import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.services.ui.UISelectionDialogResult
+import io.slychat.messenger.services.ui.clearAllListenersOnDispatcher
 import io.slychat.messenger.services.ui.js.NavigationService
 import io.slychat.messenger.services.ui.js.javatojs.NavigationServiceToJSProxy
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
@@ -302,7 +303,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         log.debug("onDestroy")
+
         clearAppActivity()
+
+        clearAllListenersOnDispatcher(AndroidApp.get(this).appComponent)
+
         super.onDestroy()
     }
 

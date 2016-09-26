@@ -49,4 +49,9 @@ class UINetworkStatusServiceImpl(
         relayStatusListeners.add(listener)
         listener(getCurrentRelayStatus())
     }
+
+    override fun clearListeners() {
+        networkStatusListeners.clear()
+        relayStatusListeners.clear()
+    }
 }

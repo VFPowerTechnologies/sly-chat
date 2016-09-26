@@ -4,6 +4,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
 import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
+import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.contacts.ContactEvent
 import io.slychat.messenger.services.contacts.ContactsService
@@ -112,9 +113,7 @@ class UIContactsServiceImpl(
 
     override fun getContacts(): Promise<List<UIContactInfo>, Exception> {
         val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
-        return contactsPersistenceManager.getAll() map { contacts ->
-            contacts.toUI()
-        }
+        return contactsPersistenceManager.getAll() map List<ContactInfo>::toUI
     }
 
     override fun addNewContact(uiContactInfo: UIContactInfo): Promise<UIContactInfo, Exception> {
@@ -143,7 +142,7 @@ class UIContactsServiceImpl(
         //PhoneNumberUtil.parse actually accepts letters, but since this tends to go unused anyways, we just reject
         //phone numbers with letters in them
         if (phoneNumber != null) {
-            if (phoneNumber.any { it.isLetter() })
+            if (phoneNumber.any(Char::isLetter))
                 return Promise.ofSuccess(UINewContactResult(false, "Not a valid phone number", null))
         }
 
@@ -177,5 +176,9 @@ class UIContactsServiceImpl(
 
     override fun unblock(userId: UserId): Promise<Unit, Exception> {
         return getContactsServiceOrThrow().unblock(userId)
+    }
+
+    override fun clearListeners() {
+        contactEventListeners.clear()
     }
 }

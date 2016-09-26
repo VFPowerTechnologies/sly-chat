@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.ui
 
+import com.vfpowertech.jsbridge.processor.annotations.Exclude
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 import io.slychat.messenger.core.persistence.GroupId
 import nl.komponents.kovenant.Promise
@@ -35,4 +36,7 @@ interface UIGroupService {
     fun getInfo(groupId: GroupId): Promise<UIGroupInfo?, Exception>
 
     fun startMessageExpiration(groupId: GroupId, messageId: String): Promise<Unit, Exception>
+
+    @Exclude
+    fun clearListeners()
 }

@@ -147,4 +147,8 @@ class UIGroupServiceImpl(
     override fun startMessageExpiration(groupId: GroupId, messageId: String): Promise<Unit, Exception> {
         return getMessageServiceOrThrow().startMessageExpiration(groupId.toConversationId(), messageId)
     }
+
+    override fun clearListeners() {
+        groupEventListeners.clear()
+    }
 }

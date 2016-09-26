@@ -25,4 +25,8 @@ class UIClientInfoServiceImpl(
         if (versionOutOfDate)
             listener()
     }
+
+    override fun clearListeners() {
+        versionOutOfDateListeners.clear()
+    }
 }

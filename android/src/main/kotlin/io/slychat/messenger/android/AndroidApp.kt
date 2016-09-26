@@ -44,55 +44,41 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
 import java.util.*
 
-enum class LoadErrorType {
-    SSL_PROVIDER_INSTALLATION_FAILURE,
-    NO_PLAY_SERVICES,
-    UNKNOWN
-}
-
-//only one of errorCode or cause will be provided
-data class LoadError(
-    val type: LoadErrorType,
-    //0 if not provided
-    val errorCode: Int,
-    val cause: Throwable?
-)
-
-/** Will never leak any exceptions. */
-fun gcmInit(context: Context): LoadError? {
-    try {
-        val apiAvailability = GoogleApiAvailability.getInstance()
-
-        val resultCode = apiAvailability.isGooglePlayServicesAvailable(context)
-
-        if (resultCode != ConnectionResult.SUCCESS)
-            return LoadError(LoadErrorType.NO_PLAY_SERVICES, resultCode, null)
-
-        try {
-            ProviderInstaller.installIfNeeded(context)
-        }
-        catch (e: GooglePlayServicesRepairableException) {
-            return LoadError(LoadErrorType.SSL_PROVIDER_INSTALLATION_FAILURE, e.connectionStatusCode, null)
-
-        }
-        catch (e: GooglePlayServicesNotAvailableException) {
-            //shouldn't happen?
-            return LoadError(LoadErrorType.NO_PLAY_SERVICES, e.errorCode, null)
-        }
-
-        return null
-    }
-    catch (t: Throwable) {
-        return LoadError(LoadErrorType.UNKNOWN, 0, t)
-    }
-}
-
-fun gcmInitAsync(context: Context): Promise<LoadError?, Exception> = task { gcmInit(context) }
-
 class AndroidApp : Application() {
     companion object {
         fun get(context: Context): AndroidApp =
             context.applicationContext as AndroidApp
+
+        /** Will never leak any exceptions. */
+        private fun gcmInit(context: Context): LoadError? {
+            try {
+                val apiAvailability = GoogleApiAvailability.getInstance()
+
+                val resultCode = apiAvailability.isGooglePlayServicesAvailable(context)
+
+                if (resultCode != ConnectionResult.SUCCESS)
+                    return LoadError(LoadErrorType.NO_PLAY_SERVICES, resultCode, null)
+
+                try {
+                    ProviderInstaller.installIfNeeded(context)
+                }
+                catch (e: GooglePlayServicesRepairableException) {
+                    return LoadError(LoadErrorType.SSL_PROVIDER_INSTALLATION_FAILURE, e.connectionStatusCode, null)
+
+                }
+                catch (e: GooglePlayServicesNotAvailableException) {
+                    //shouldn't happen?
+                    return LoadError(LoadErrorType.NO_PLAY_SERVICES, e.errorCode, null)
+                }
+
+                return null
+            }
+            catch (t: Throwable) {
+                return LoadError(LoadErrorType.UNKNOWN, 0, t)
+            }
+        }
+
+        private fun gcmInitAsync(context: Context): Promise<LoadError?, Exception> = task { gcmInit(context) }
     }
 
     private var gcmInitRunning = false
@@ -236,8 +222,6 @@ class AndroidApp : Application() {
             }
         }
     }
-
-    fun isFocusedActivity(): Boolean = currentActivity != null
 
     //this serves to also handle any issues where somehow the settings get out of sync and multiple users
     //have tokenSent=true

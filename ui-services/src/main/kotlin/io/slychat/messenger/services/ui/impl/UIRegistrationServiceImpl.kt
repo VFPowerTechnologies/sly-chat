@@ -85,4 +85,8 @@ class UIRegistrationServiceImpl(
             }
         }
     }
+
+    override fun clearListeners() {
+        listeners.clear()
+    }
 }
