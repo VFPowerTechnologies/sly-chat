@@ -1,9 +1,11 @@
 package io.slychat.messenger.android
 
+import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.view.inputmethod.InputMethodManager
+import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.config.SoundFilePath
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
@@ -44,8 +46,17 @@ class AndroidWindowService(private val context: Context) : UIWindowService {
     override fun selectNotificationSound(previous: SoundFilePath?): Promise<UISelectionDialogResult<SoundFilePath?>, Exception> {
         val app = AndroidApp.get(context)
 
-        val activity = app.currentActivity ?: return Promise.ofFail(IllegalStateException("No activity currently available"))
+        //XXX this is weird, because we can access the builtin sounds and stuff in builtin storage,
+        //but if we choose some other sound we might get an error after...
+        //so we can actually continue without permissions, but for anything on external storage an error'll be generated
+        //outside the app when trying to deliver the result
+        return app.requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE) bindUi {
+            val activity = app.currentActivity
 
-        return activity.openRingtonePicker(previous)
+            if (activity == null)
+                Promise.ofFail(IllegalStateException("No activity currently available"))
+            else
+                activity.openRingtonePicker(previous)
+        }
     }
 }

@@ -409,6 +409,13 @@ class MainActivity : AppCompatActivity() {
         return deferred.promise
     }
 
+    private fun getUriDisplayName(uri: Uri): String {
+        return contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null).use { cursor ->
+            cursor.moveToFirst()
+            cursor.getString(0)
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {
             RINGTONE_PICKER_REQUEST_CODE -> {
@@ -435,9 +442,13 @@ class MainActivity : AppCompatActivity() {
                 val uri = data.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
 
                 val displayName = uri?.let {
-                    contentResolver.query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null).use { cursor ->
-                        cursor.moveToFirst()
-                        cursor.getString(0)
+                    try {
+                        getUriDisplayName(it)
+                    }
+                    //this can occur if the user refused external storage read permission but selected a ringer on external storage
+                    //the selection dialog still displays these anyways even without permissions and there's no way to filter these out
+                    catch (e: SecurityException) {
+                        null
                     }
                 }
 
