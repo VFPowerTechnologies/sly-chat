@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.ui
 
+import com.vfpowertech.jsbridge.processor.annotations.Exclude
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 import io.slychat.messenger.core.UserId
 import nl.komponents.kovenant.Promise
@@ -48,4 +49,7 @@ interface UIContactsService {
     fun block(userId: UserId): Promise<Unit, Exception>
 
     fun unblock(userId: UserId): Promise<Unit, Exception>
+
+    @Exclude
+    fun clearListeners()
 }

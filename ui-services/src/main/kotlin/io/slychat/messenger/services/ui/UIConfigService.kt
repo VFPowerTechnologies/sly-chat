@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.vfpowertech.jsbridge.processor.annotations.Exclude
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 
 data class UINotificationConfig(
@@ -21,4 +22,7 @@ interface UIConfigService {
     fun setNotificationConfig(config: UINotificationConfig)
 
     fun addNotificationConfigChangeListener(listener: (UINotificationConfig) -> Unit)
+
+    @Exclude
+    fun clearListeners()
 }

@@ -95,6 +95,10 @@ class UIConfigServiceImpl(
         notificationConfigChangeListeners.forEach { it(uiNotificationConfig) }
     }
 
+    override fun clearListeners() {
+        notificationConfigChangeListeners.clear()
+    }
+
     override fun getLoginRememberMe(): Boolean {
         return appConfigService.loginRememberMe
     }

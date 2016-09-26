@@ -49,4 +49,8 @@ class UILoginServiceImpl(
     override fun login(emailOrPhoneNumber: String, password: String, rememberMe: Boolean) {
         app.login(emailOrPhoneNumber, password, rememberMe)
     }
+
+    override fun clearListeners() {
+        listeners.clear()
+    }
 }

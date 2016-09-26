@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.ui
 
+import com.vfpowertech.jsbridge.processor.annotations.Exclude
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 import nl.komponents.kovenant.Promise
 
@@ -19,4 +20,7 @@ interface UIRegistrationService {
 
     /** Update phone with the given info */
     fun updatePhone(info: UIUpdatePhoneInfo): Promise<UIUpdatePhoneResult, Exception>
+
+    @Exclude
+    fun clearListeners()
 }

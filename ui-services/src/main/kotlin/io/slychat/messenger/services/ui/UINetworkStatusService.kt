@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.ui
 
+import com.vfpowertech.jsbridge.processor.annotations.Exclude
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 
 /**
@@ -8,5 +9,9 @@ import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 @JSToJavaGenerate("NetworkStatusService")
 interface UINetworkStatusService {
     fun addNetworkStatusChangeListener(listener: (UINetworkStatus) -> Unit)
+
     fun addRelayStatusChangeListener(listener: (UIRelayStatus) -> Unit)
+
+    @Exclude
+    fun clearListeners()
 }

@@ -225,4 +225,11 @@ class UIMessengerServiceImpl(
     override fun startMessageExpiration(userId: UserId, messageId: String): Promise<Unit, Exception> {
         return getMessageServiceOrThrow().startMessageExpiration(userId.toConversationId(), messageId)
     }
+
+    override fun clearListeners() {
+        newMessageListeners.clear()
+        messageStatusUpdateListeners.clear()
+        conversationInfoUpdateListeners.clear()
+        clockDifferenceUpdateListeners.clear()
+    }
 }
