@@ -39,9 +39,9 @@ jfx {
 
     mainClass = mainClassName
 
-    jfxMainAppJarName = 'sly-messenger.jar'
+    jfxMainAppJarName = 'sly-chat.jar'
 
-    appName = 'sly-messenger'
+    appName = 'sly-chat'
 
     vendor = 'Keystream Information Systems'
 }
