@@ -4,7 +4,8 @@ var SettingsController = function () {
 
 SettingsController.ids = {
     notificationsEnabled : '#notifications-enabled-checkbox',
-    notificationsSound : '#notification-sound-select-btn'
+    notificationsSound : '#notification-sound-select-btn',
+    notificationSoundName : '#notification-sound-name'
 };
 
 //TODO prevent user from editing until we've received the initial config
@@ -27,8 +28,10 @@ SettingsController.prototype = {
 
     refreshNotificationConfig : function () {
         var c = this.notificationConfig;
+        var soundName = c.sound == null ? "No Notification Sound Selected" : c.sound.displayName;
 
         $(SettingsController.ids.notificationsEnabled).prop('checked', c.enabled);
+        $(SettingsController.ids.notificationSoundName).html(soundName);
     },
 
     updateNotificationConfig : function () {
