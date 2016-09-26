@@ -10,6 +10,8 @@ import javafx.scene.media.AudioClip
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subscriptions.CompositeSubscription
+import java.io.File
+import java.net.URI
 
 class DesktopNotificationService(
     private val audioPlayback: AudioPlayback,
@@ -49,7 +51,7 @@ class DesktopNotificationService(
 
         val soundPath = userConfigService.notificationsSound ?: return
 
-        val pathUri = soundPath.uri
+        val pathUri = soundPath
 
         val audioClip = try {
             AudioClip(pathUri)
@@ -74,6 +76,15 @@ class DesktopNotificationService(
             if (it.hasNew)
                 displayNotification(it.conversationDisplayInfo)
         }
+    }
+
+    override fun getNotificationSoundDisplayName(soundUri: String): String {
+        val name = File(URI(soundUri).path).name
+
+        return if (name.contains('.'))
+            name.substring(0, name.lastIndexOf('.'))
+        else
+            name
     }
 
     private fun displayNotification(conversationDisplayInfo: ConversationDisplayInfo) {

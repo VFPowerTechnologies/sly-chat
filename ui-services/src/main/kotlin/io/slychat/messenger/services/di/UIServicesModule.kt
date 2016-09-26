@@ -10,6 +10,7 @@ import io.slychat.messenger.core.http.api.accountupdate.AccountUpdateAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
 import io.slychat.messenger.core.http.api.infoservice.InfoServiceAsyncClient
 import io.slychat.messenger.core.http.api.registration.RegistrationAsyncClient
+import io.slychat.messenger.services.PlatformNotificationService
 import io.slychat.messenger.services.PlatformTelephonyService
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.VersionChecker
@@ -133,9 +134,14 @@ class UIServicesModule {
     @Provides
     fun provideUIConfigService(
         app: SlyApplication,
-       appConfigService: AppConfigService
+        appConfigService: AppConfigService,
+        platformNotificationService: PlatformNotificationService
     ): UIConfigService {
-        return UIConfigServiceImpl(app.userSessionAvailable, appConfigService)
+        return UIConfigServiceImpl(
+            app.userSessionAvailable,
+            appConfigService,
+            platformNotificationService
+        )
     }
 
     @Singleton

@@ -29,7 +29,6 @@ import io.slychat.messenger.core.http.api.gcm.RegisterResponse
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication
-import io.slychat.messenger.services.config.SoundFilePath
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
@@ -160,7 +159,7 @@ class AndroidApp : Application() {
 
         val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val defaultUserConfig = UserConfig().copy(
-            notificationsSound = SoundFilePath("Default", defaultUri.toString())
+            notificationsSound = defaultUri.toString()
         )
 
         val platformModule = PlatformModule(

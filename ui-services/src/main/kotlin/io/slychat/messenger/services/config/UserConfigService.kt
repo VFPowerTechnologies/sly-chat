@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 data class UserConfig(
     val formatVersion: Int = 1,
     val notificationsEnabled: Boolean = true,
-    val notificationsSound: SoundFilePath? = null,
+    val notificationsSound: String? = null,
     val messagingLastTtl: Long = TimeUnit.SECONDS.toMillis(10)
 ) {
     companion object {
@@ -41,7 +41,7 @@ class UserEditorInterface(override var config: UserConfig) : ConfigServiceBase.E
             config = config.copy(notificationsEnabled = value)
         }
 
-    var notificationsSound: SoundFilePath?
+    var notificationsSound: String?
         get() = config.notificationsSound
         set(value) {
             modifiedKeys.add(UserConfig.NOTIFICATIONS_SOUND)
@@ -64,7 +64,7 @@ class UserConfigService(
 
     override val configClass: Class<UserConfig> = UserConfig::class.java
 
-    val notificationsSound: SoundFilePath?
+    val notificationsSound: String?
         get() = config.notificationsSound
 
     val notificationsEnabled: Boolean

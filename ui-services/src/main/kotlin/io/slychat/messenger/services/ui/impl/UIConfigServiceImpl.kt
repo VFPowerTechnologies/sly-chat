@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.ui.impl
 
+import io.slychat.messenger.services.PlatformNotificationService
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
@@ -11,10 +12,10 @@ import rx.Observable
 import rx.subscriptions.CompositeSubscription
 import java.util.*
 
-//TODO hook session init/deinit to fetch UserConfigService
 class UIConfigServiceImpl(
     userSessionAvailable: Observable<UserComponent?>,
-    private val appConfigService: AppConfigService
+    private val appConfigService: AppConfigService,
+    private val platformNotificationService: PlatformNotificationService
 ) : UIConfigService {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -67,9 +68,14 @@ class UIConfigServiceImpl(
     private fun getUINotificationConfig(): UINotificationConfig {
         val userConfigService = getUserConfigServiceOrThrow()
 
+        val soundName = userConfigService.notificationsSound?.let {
+            platformNotificationService.getNotificationSoundDisplayName(it)
+        }
+
         return UINotificationConfig(
             userConfigService.notificationsEnabled,
-            userConfigService.notificationsSound
+            userConfigService.notificationsSound,
+            soundName
         )
     }
 

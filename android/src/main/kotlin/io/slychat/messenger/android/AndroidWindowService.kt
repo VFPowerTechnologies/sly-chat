@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.view.inputmethod.InputMethodManager
-import io.slychat.messenger.services.config.SoundFilePath
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
 import nl.komponents.kovenant.Promise
@@ -41,11 +40,11 @@ class AndroidWindowService(private val context: Context) : UIWindowService {
         return clipboardManager.primaryClip?.getItemAt(0)?.text?.toString()
     }
 
-    override fun selectNotificationSound(previous: SoundFilePath?): Promise<UISelectionDialogResult<SoundFilePath?>, Exception> {
+    override fun selectNotificationSound(previousUri: String?): Promise<UISelectionDialogResult<String?>, Exception> {
         val app = AndroidApp.get(context)
 
         val activity = app.currentActivity ?: return Promise.ofFail(IllegalStateException("No activity currently available"))
 
-        return activity.openRingtonePicker(previous)
+        return activity.openRingtonePicker(previousUri)
     }
 }

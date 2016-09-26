@@ -6,7 +6,6 @@ import io.slychat.messenger.core.randomConversationDisplayInfo
 import io.slychat.messenger.services.NotificationConversationInfo
 import io.slychat.messenger.services.NotificationState
 import io.slychat.messenger.services.config.DummyConfigBackend
-import io.slychat.messenger.services.config.SoundFilePath
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.di.UserComponent
 import javafx.scene.media.AudioClip
@@ -36,7 +35,7 @@ class DesktopNotificationServiceTest {
 
     private fun useDummyAudio() {
         userConfigService.withEditor {
-            notificationsSound = SoundFilePath("Dummy", dummyAudioUri)
+            notificationsSound = dummyAudioUri
         }
     }
 
@@ -118,7 +117,7 @@ class DesktopNotificationServiceTest {
         val notificationService = createNotificationService(doInit = true)
 
         userConfigService.withEditor {
-            notificationsSound = SoundFilePath("bad", "bad")
+            notificationsSound = "bad"
         }
 
         userSessionAvailable.onNext(userComponent)
@@ -135,7 +134,7 @@ class DesktopNotificationServiceTest {
         userConfigService.withEditor {
             val noSuchFile = File(System.getProperty("java.io.tmpdir"), randomUUID())
 
-            notificationsSound = SoundFilePath("missing", noSuchFile.toString())
+            notificationsSound = noSuchFile.toString()
         }
 
         userSessionAvailable.onNext(userComponent)

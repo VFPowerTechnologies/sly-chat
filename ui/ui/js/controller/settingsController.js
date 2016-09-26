@@ -28,7 +28,7 @@ SettingsController.prototype = {
 
     refreshNotificationConfig : function () {
         var c = this.notificationConfig;
-        var soundName = c.sound == null ? "No Notification Sound Selected" : c.sound.displayName;
+        var soundName = c.sound == null ? "No Notification Sound Selected" : c.soundName;
 
         $(SettingsController.ids.notificationsEnabled).prop('checked', c.enabled);
         $(SettingsController.ids.notificationSoundName).html(soundName);
