@@ -209,7 +209,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
     private fun getMessageNotificationSound(): Uri? {
         val userConfigService = userConfigService ?: return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
-        return userConfigService.notificationsSound?.let { Uri.parse(it) }
+        return userConfigService.notificationsSound?.uri?.let { Uri.parse(it) }
     }
 
     //XXX this shares a decent bit of code with getInboxStyle, maybe find a way to centralize it

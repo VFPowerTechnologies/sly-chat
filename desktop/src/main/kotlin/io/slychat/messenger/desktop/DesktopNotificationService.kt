@@ -49,7 +49,7 @@ class DesktopNotificationService(
 
         val soundPath = userConfigService.notificationsSound ?: return
 
-        val pathUri = soundPath
+        val pathUri = soundPath.uri
 
         val audioClip = try {
             AudioClip(pathUri)

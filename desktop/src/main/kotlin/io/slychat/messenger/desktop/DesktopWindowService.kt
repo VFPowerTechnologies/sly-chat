@@ -1,5 +1,7 @@
 package io.slychat.messenger.desktop
 
+import com.sun.jndi.toolkit.url.Uri
+import io.slychat.messenger.services.config.SoundFilePath
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
 import javafx.scene.input.Clipboard
@@ -29,7 +31,7 @@ class DesktopWindowService(private val stage: Stage) : UIWindowService {
     override fun closeSoftKeyboard() {}
 
     //this returns a URI (as a string); this is so we can use jar paths for default notifications (and testing)
-    override fun selectNotificationSound(previous: String?): Promise<UISelectionDialogResult<String?>, Exception> {
+    override fun selectNotificationSound(previous: SoundFilePath?): Promise<UISelectionDialogResult<SoundFilePath?>, Exception> {
         val fileChooser = FileChooser()
 
         fileChooser.title = "Message notification sound"
@@ -37,20 +39,24 @@ class DesktopWindowService(private val stage: Stage) : UIWindowService {
         fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("Audio Files", "*.wav", "*.mp3", "*.aac"))
 
         if (previous != null) {
-            val file = File(previous)
+            val file = File(Uri(previous.uri).path)
 
             fileChooser.initialDirectory = file.parentFile
             //for some reason this doesn't work on linux; nfi why since gtk does support doing this
-            fileChooser.initialFileName = previous
+            fileChooser.initialFileName = file.name
         }
 
         val selectedFile = fileChooser.showOpenDialog(stage)
 
         //TODO allow silence somehow
-        val (ok, value) = if (selectedFile == null)
+        val (ok, value) = if (selectedFile == null) {
             false to null
-        else
-            true to selectedFile.toURI().toString()
+        }
+        else {
+            val uri = selectedFile.toURI().toString()
+            val displayName = selectedFile.name
+            true to SoundFilePath(displayName, uri)
+        }
 
         return Promise.of(UISelectionDialogResult(ok, value))
     }

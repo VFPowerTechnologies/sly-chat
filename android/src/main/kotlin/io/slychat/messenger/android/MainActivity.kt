@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.SparseArray
@@ -25,6 +26,7 @@ import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.services.config.SoundFilePath
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.clearAllListenersOnDispatcher
 import io.slychat.messenger.services.ui.js.NavigationService
@@ -67,7 +69,7 @@ class MainActivity : AppCompatActivity() {
     private val permRequestCodeToDeferred = SparseArray<Deferred<Boolean, Exception>>()
 
     //only one can run at once
-    private var ringtonePickerDeferred: Deferred<UISelectionDialogResult<String?>, Exception>? = null
+    private var ringtonePickerDeferred: Deferred<UISelectionDialogResult<SoundFilePath?>, Exception>? = null
 
     /** Returns the initial page to launch after login, if any. Used when invoked via a notification intent. */
     private fun getInitialPage(intent: Intent): String? {
@@ -380,13 +382,13 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    fun openRingtonePicker(previousUriString: String?): Promise<UISelectionDialogResult<String?>, Exception> {
+    fun openRingtonePicker(previous: SoundFilePath?): Promise<UISelectionDialogResult<SoundFilePath?>, Exception> {
         if (ringtonePickerDeferred != null)
             error("Deferred still pending")
 
         val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
 
-        val previousRingtoneUri = previousUriString?.let { Uri.parse(previousUriString) }
+        val previousRingtoneUri = previous?.uri?.let { Uri.parse(it) }
 
         intent.apply {
             putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Message notification sound")
@@ -400,7 +402,7 @@ class MainActivity : AppCompatActivity() {
 
         startActivityForResult(intent, RINGTONE_PICKER_REQUEST_CODE)
 
-        val deferred = deferred<UISelectionDialogResult<String?>, Exception>()
+        val deferred = deferred<UISelectionDialogResult<SoundFilePath?>, Exception>()
 
         ringtonePickerDeferred = deferred
 
@@ -432,7 +434,16 @@ class MainActivity : AppCompatActivity() {
 
                 val uri = data.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
 
-                deferred.resolve(UISelectionDialogResult(true, uri?.toString()))
+                val displayName = uri?.let {
+                    contentResolver.query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null).use { cursor ->
+                        cursor.moveToFirst()
+                        cursor.getString(0)
+                    }
+                }
+
+                val value = SoundFilePath(displayName, uri?.toString())
+
+                deferred.resolve(UISelectionDialogResult(true, value))
             }
 
             else -> {
