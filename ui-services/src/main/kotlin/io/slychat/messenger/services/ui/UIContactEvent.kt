@@ -7,8 +7,8 @@ enum class UIContactEventType {
     REMOVE,
     UPDATE,
     SYNC,
-    BLOCKED,
-    UNBLOCKED
+    BLOCK,
+    UNBLOCK
 }
 
 sealed class UIContactEvent {
@@ -36,11 +36,11 @@ sealed class UIContactEvent {
 
     class Blocked(val userId: UserId) : UIContactEvent() {
         override val type: UIContactEventType
-            get() = UIContactEventType.BLOCKED
+            get() = UIContactEventType.BLOCK
     }
 
     class Unblocked(val userId: UserId) : UIContactEvent() {
         override val type: UIContactEventType
-            get() = UIContactEventType.UNBLOCKED
+            get() = UIContactEventType.UNBLOCK
     }
 }
