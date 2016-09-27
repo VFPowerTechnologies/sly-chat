@@ -525,7 +525,8 @@ class SQLiteContactsPersistenceManagerTest {
     fun testBlock(contact: ContactInfo) {
         contactsPersistenceManager.add(contact).get()
 
-        contactsPersistenceManager.block(contact.id).get()
+        val r = contactsPersistenceManager.block(contact.id).get()
+        assertTrue(r, "Contact should be marked as updated")
 
         val info = assertNotNull(contactsPersistenceManager.get(contact.id).get(), "Missing contact")
 
@@ -595,9 +596,12 @@ class SQLiteContactsPersistenceManagerTest {
 
     @Test
     fun `block should do nothing for an already blocked user`() {
-        testBlock(createDummyContact(AllowedMessageLevel.GROUP_ONLY))
-    }
+        val contact = createDummyContact(AllowedMessageLevel.GROUP_ONLY)
 
+        testBlock(contact)
+
+        assertFalse(contactsPersistenceManager.block(contact.id).get(), "Contact should not be marked as updated")
+    }
 
     @Test
     fun `block should do nothing for a non-existent user`() {

@@ -111,14 +111,12 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         deleteExpiringMessagesForConversation(connection, id)
     }
 
-    override fun block(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun block(userId: UserId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
         updateContactMessageLevel(connection, userId, AllowedMessageLevel.BLOCKED)
-        Unit
     }
 
-    override fun unblock(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun unblock(userId: UserId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
         updateContactMessageLevel(connection, userId, AllowedMessageLevel.GROUP_ONLY)
-        Unit
     }
 
     override fun allowAll(userId: UserId): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->

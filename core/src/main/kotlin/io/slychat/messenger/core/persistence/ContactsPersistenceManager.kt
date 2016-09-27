@@ -25,8 +25,8 @@ interface ContactsPersistenceManager {
     fun getBlockList(): Promise<Set<UserId>, Exception>
     fun filterBlocked(users: Collection<UserId>): Promise<Set<UserId>, Exception>
 
-    fun block(userId: UserId): Promise<Unit, Exception>
-    fun unblock(userId: UserId): Promise<Unit, Exception>
+    fun block(userId: UserId): Promise<Boolean, Exception>
+    fun unblock(userId: UserId): Promise<Boolean, Exception>
 
     fun allowAll(userId: UserId): Promise<Unit, Exception>
 
