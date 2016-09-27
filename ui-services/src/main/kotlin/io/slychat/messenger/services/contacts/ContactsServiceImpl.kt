@@ -10,6 +10,7 @@ import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
+import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -150,19 +151,23 @@ class ContactsServiceImpl(
     override fun block(userId: UserId): Promise<Unit, Exception> {
         return addressBookOperationManager.runOperation {
             contactsPersistenceManager.block(userId)
-        } successUi {
-            //FIXME
-            doAddressBookPush()
-        }
+        } successUi { wasBlocked ->
+            if (wasBlocked) {
+                doAddressBookPush()
+                contactEventsSubject.onNext(ContactEvent.Blocked(userId))
+            }
+        } map { Unit }
     }
 
     override fun unblock(userId: UserId): Promise<Unit, Exception> {
         return addressBookOperationManager.run {
             contactsPersistenceManager.unblock(userId)
-        } successUi {
-            //FIXME
-            doAddressBookPush()
-        }
+        } successUi { wasUnblocked ->
+            if (wasUnblocked) {
+                doAddressBookPush()
+                contactEventsSubject.onNext(ContactEvent.Unblocked(userId))
+            }
+        } map { Unit }
     }
 
     override fun allowAll(userId: UserId): Promise<Unit, Exception> {

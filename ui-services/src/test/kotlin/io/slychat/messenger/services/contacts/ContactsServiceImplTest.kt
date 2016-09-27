@@ -635,4 +635,62 @@ class ContactsServiceImplTest {
 
         assertNoEventsEmitted(testSubscriber)
     }
+
+    private fun testBlockEmit(wasBlocked: Boolean) {
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Blocked>(contactsService)
+
+        val userId = randomUserId()
+        whenever(contactsPersistenceManager.block(userId)).thenResolve(wasBlocked)
+
+        contactsService.block(userId).get()
+
+        if (wasBlocked) {
+            assertEventEmitted(testSubscriber) { event ->
+                assertEquals(userId, event.userId, "Invalid user id")
+            }
+        }
+        else
+            assertNoEventsEmitted(testSubscriber)
+    }
+
+    @Test
+    fun `it should emit a Blocked event when a user is blocked`() {
+        testBlockEmit(true)
+    }
+
+    @Test
+    fun `it should not emit a Blocked event when a user is not blocked`() {
+        testBlockEmit(false)
+    }
+
+    private fun testUnblockEmit(wasUnblocked: Boolean) {
+        val contactsService = createService()
+
+        val testSubscriber = contactEventCollectorFor<ContactEvent.Unblocked>(contactsService)
+
+        val userId = randomUserId()
+        whenever(contactsPersistenceManager.unblock(userId)).thenResolve(wasUnblocked)
+
+        contactsService.unblock(userId).get()
+
+        if (wasUnblocked) {
+            assertEventEmitted(testSubscriber) { event ->
+                assertEquals(userId, event.userId, "Invalid user id")
+            }
+        }
+        else
+            assertNoEventsEmitted(testSubscriber)
+    }
+
+    @Test
+    fun `it should emit an Unblocked event when a user is unblocked`() {
+        testUnblockEmit(true)
+    }
+
+    @Test
+    fun `it should not emit an Unblocked event when a user is not unblocked`() {
+        testUnblockEmit(false)
+    }
 }
