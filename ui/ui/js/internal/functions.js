@@ -8,7 +8,7 @@ function createDesktopMenu () {
         '<div class="list-block" style="margin-top: 5px;">' +
                 '<ul class="dropdown-menu no-close">' +
                     '<li>' +
-                        '<a href="#" id="leftDesktopProfileName" style="height: 50px; line-height: 50px; font-size: 20px; padding-left: 16px;"></a>' +
+                        '<a href="#" id="leftMenuProfileName" style="height: 50px; line-height: 50px; font-size: 20px; padding-left: 16px;"></a>' +
                         '<ul style="box-sizing: border-box; padding: 10px; margin-left: 20px; width: 225px;">' +
                             '<li id="leftMenuUserInfo" style="font-size: 20px; font-weight: 200; border-bottom: 1px solid #eeeeee; padding-bottom: 5px;" class="no-close"></li>' +
                             '<li><a href="#" onclick="navigationController.loadPage(\'contacts.html\');">Home</a></li>' +
@@ -93,10 +93,6 @@ function formatPublicKey(publicKey) {
     });
 
     return formated;
-}
-
-function parseFormatedTimeString (timestamp) {
-    return new Date(timestamp);
 }
 
 Object.size = function (obj) {

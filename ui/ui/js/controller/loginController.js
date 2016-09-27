@@ -3,6 +3,13 @@ var LoginController = function () {
     this.password = '';
 };
 
+LoginController.ids = {
+    loginForm : "#loginForm",
+    loginPasswordInput : "#login-psw",
+    loginUsernameInput : "#login",
+    loginRememberMeInput : "#rememberMe"
+};
+
 LoginController.prototype = {
     init : function () {
         loginService.addLoginEventListener(this.onLoginEvent.bind(this));
@@ -62,28 +69,28 @@ LoginController.prototype = {
             }
             else {
                 this.resetLoginInfo();
-                $("#login-psw").val("");
-                $("#loginForm").find(".error-block").html("<li>" + errorMessage +"</li>");
+                $(LoginController.ids.loginPasswordInput).val("");
+                $(LoginController.ids.loginForm).find(".error-block").html("<li>" + errorMessage +"</li>");
             }
         }
         else {
             this.resetLoginInfo();
-            $("#loginForm").find(".error-block").html("<li>An unexpected error occurred</li>");
+            $(LoginController.ids.loginForm).find(".error-block").html("<li>An unexpected error occurred</li>");
             exceptionController.handleError(e);
         }
     },
 
     login : function (rememberMe) {
-        var valid = slychat.validateForm($("#loginForm"));
+        var valid = slychat.validateForm($(LoginController.ids.loginForm));
         
         if(!valid)
             return;
 
         if(typeof rememberMe === "undefined")
-            rememberMe = $("#rememberMe").is(':checked');
+            rememberMe = $(LoginController.ids.loginRememberMeInput).is(':checked');
 
-        var username = $$('#login').val();
-        var password = $$('#login-psw').val();
+        var username = $$(LoginController.ids.loginUsernameInput).val();
+        var password = $$(LoginController.ids.loginPasswordInput).val();
 
 
         this.email = username;

@@ -6,6 +6,22 @@ var ProfileController = function () {
     this.requestedPhone = '';
 };
 
+ProfileController.ids = {
+    emailDisplay : '#profileEmail',
+    nameDisplay : '#profileName',
+    phoneDisplay : '#profilePhone',
+    pubKeyDisplay : '#profilePubKey',
+    updateProfileForm : '#updateProfileForm',
+    updatePhoneForm : '#updatePhoneForm',
+    updateProfileNameInput : '#profileUpdateNameInput',
+    updateProfileEmailInput : '#profileUpdateEmailInput',
+    saveProfileUpdateBtn : '#saveProfileUpdateBtn',
+    countryInput : '#countrySelect',
+    phoneInput : '#phone',
+    requestPhoneUpdateBtn : '#requestPhoneUpdateBtn',
+    smsCodeInput : '#smsCodeInput'
+};
+
 ProfileController.prototype = {
     setUserInfo : function (userInfo, publicKey) {
         this.username = userInfo.email;
@@ -22,10 +38,10 @@ ProfileController.prototype = {
     },
 
     displayInfo : function () {
-        $("#profileEmail").html(this.username);
-        $("#profileName").html(this.name);
-        $("#profilePhone").html(this.phoneNumber);
-        $("#profilePubKey").html(formatPublicKey(this.publicKey));
+        $(ProfileController.ids.emailDisplay).html(this.username);
+        $(ProfileController.ids.nameDisplay).html(this.name);
+        $(ProfileController.ids.phoneDisplay).html(this.phoneNumber);
+        $(ProfileController.ids.pubKeyDisplay).html(formatPublicKey(this.publicKey));
     },
 
     openProfileEditPopup : function () {
@@ -63,17 +79,17 @@ ProfileController.prototype = {
 
         updatePhoneWithIntl();
 
-        $("#saveProfileUpdateBtn").click(function (e){
+        $(ProfileController.ids.saveProfileUpdateBtn).click(function (e){
             e.preventDefault();
             this.submitProfileUpdateForm();
         }.bind(this));
 
-        $("#requestPhoneUpdateBtn").click(function (e){
+        $(ProfileController.ids.requestPhoneUpdateBtn).click(function (e){
             e.preventDefault();
             this.requestPhoneUpdate();
         }.bind(this));
 
-        $$('#countrySelect').on("change", function(e) {
+        $$(ProfileController.ids.countryInput).on("change", function(e) {
             var ext = $("#countrySelect :selected").text().split("+")[1];
             setPhoneExt(ext);
             // TODO Validate Phone Input
@@ -81,18 +97,18 @@ ProfileController.prototype = {
     },
 
     submitProfileUpdateForm : function () {
-        var valid = slychat.validateForm($("updateProfileForm"));
+        var valid = slychat.validateForm($(ProfileController.ids.updateProfileForm));
         if (valid) {
             var total = 0;
-            var newName = $("#profileUpdateNameInput").val();
-            var newEmail = $("#profileUpdateEmailInput").val();
+            var newName = $(ProfileController.ids.updateProfileNameInput).val();
+            var newEmail = $(ProfileController.ids.updateProfileEmailInput).val();
             if (this.name !== newName) {
                 total += 1;
                 accountModifictationService.updateName(newName).then(function (result) {
                     if (result.successful === true) {
                         total--;
                         this.name = newName;
-                        $("#profileName").html(this.name);
+                        $(ProfileController.ids.nameDisplay).html(this.name);
                         if (total == 0) {
                             slychat.closeModal();
                             this.openNotification("Updates has been saved", "custom-notification", 2000);
@@ -112,7 +128,7 @@ ProfileController.prototype = {
                     if (result.successful === true) {
                         total--;
                         this.username = newEmail;
-                        $("#profileEmail").html(newEmail);
+                        $(ProfileController.ids.emailDisplay).html(newEmail);
                         if (total == 0) {
                             slychat.closeModal();
                             this.openNotification("Updates has been saved", "custom-notification", 2000);
@@ -130,8 +146,8 @@ ProfileController.prototype = {
     },
 
     requestPhoneUpdate : function () {
-        var phoneValue = $("#phone").val();
-        var selectedCountry = $("#countrySelect").val();
+        var phoneValue = $(ProfileController.ids.phoneInput).val();
+        var selectedCountry = $(ProfileController.ids.countryInput).val();
         var phone = getFormatedPhoneNumber(phoneValue, selectedCountry);
 
         var phoneValid = validatePhone(phoneValue, selectedCountry);
@@ -154,7 +170,7 @@ ProfileController.prototype = {
     },
 
     submitSmsVerification : function () {
-        var code = $('#smsCodeInput').val();
+        var code = $(ProfileController.ids.smsCodeInput).val();
         if (code === '')
             return;
 
@@ -165,7 +181,7 @@ ProfileController.prototype = {
                 $('smsCodeInput').val('');
                 this.phoneNumber = this.requestedPhone;
                 this.requestedPhone = '';
-                $('#profilePhone').html(this.phoneNumber);
+                $(ProfileController.ids.phoneDisplay).html(this.phoneNumber);
                 slychat.closeModal();
                 this.openNotification("Your phone number has been updated", "custom-notification", 2000);
             }
