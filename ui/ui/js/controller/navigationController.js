@@ -208,6 +208,12 @@ NavigationController.prototype = {
                 }
             },
             {
+                text: 'Blocked Contacts',
+                onClick: function () {
+                    navigationController.loadPage('blockedContacts.html', true);
+                }
+            },
+            {
                 text: 'Logout',
                 onClick: function () {
                     loginController.logout();
