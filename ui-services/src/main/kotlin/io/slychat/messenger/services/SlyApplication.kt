@@ -238,7 +238,7 @@ class SlyApplication {
                 emitLoginEvent(LoggedOut())
             autoLoginComplete()
         } failUi { e ->
-            log.error("Unable to read startup info: {}", e.message, e)
+            log.warn("Unable to read startup info: {}", e.message, e)
             emitLoginEvent(LoggedOut())
             autoLoginComplete()
         }
