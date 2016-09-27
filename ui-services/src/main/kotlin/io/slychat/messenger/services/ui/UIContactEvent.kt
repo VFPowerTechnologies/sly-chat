@@ -1,11 +1,14 @@
 package io.slychat.messenger.services.ui
 
+import io.slychat.messenger.core.UserId
+
 enum class UIContactEventType {
     ADD,
     REMOVE,
     UPDATE,
-    REQUEST,
-    SYNC
+    SYNC,
+    BLOCKED,
+    UNBLOCKED
 }
 
 sealed class UIContactEvent {
@@ -29,5 +32,15 @@ sealed class UIContactEvent {
     class Sync(val isRunning: Boolean) : UIContactEvent() {
         override val type: UIContactEventType
             get() = UIContactEventType.SYNC
+    }
+
+    class Blocked(val userId: UserId) : UIContactEvent() {
+        override val type: UIContactEventType
+            get() = UIContactEventType.BLOCKED
+    }
+
+    class Unblocked(val userId: UserId) : UIContactEvent() {
+        override val type: UIContactEventType
+            get() = UIContactEventType.UNBLOCKED
     }
 }

@@ -89,6 +89,12 @@ class UIContactsServiceImpl(
                 UIContactEvent.Sync(event.isRunning)
             }
 
+            is ContactEvent.Blocked ->
+                UIContactEvent.Blocked(event.userId)
+
+            is ContactEvent.Unblocked ->
+                UIContactEvent.Unblocked(event.userId)
+
             else -> null
         }
 
