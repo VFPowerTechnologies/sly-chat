@@ -1,0 +1,36 @@
+{{#if @global.ios}}
+<div class="navbar top-navbar">
+    <div class="navbar-inner">
+        <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a>Blocked Contacts</div>
+        <div class="center sliding"></div>
+        <div class="right">
+            <a href="#" class="link icon-only open-action-menu"> <i class="icon icon-bars"></i></a>
+        </div>
+    </div>
+</div>
+{{/if}}
+
+<div class="pages">
+    <div data-page="blockedContacts" class="page">
+        {{#unless @global.ios}}
+        <div class="navbar top-navbar">
+            <div class="navbar-inner">
+                <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a>
+                </div>
+                <div class="center sliding">Blocked Contacts</div>
+            </div>
+        </div>
+        {{/unless}}
+
+        <div class="page-content">
+            <div class="list-block" style="margin-top: 0;">
+                <!-- Blocked Contacts -->
+                <div class="list-group">
+                    <ul id="blockedContactsList">
+
+                    </ul>
+                </div> <!-- Blocked Contacts End -->
+            </div>
+        </div>
+    </div>
+</div>

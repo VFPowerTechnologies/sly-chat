@@ -481,6 +481,12 @@ ContactController.prototype  = {
                     this.sync = ev.running;
                     this.handleContactSyncNotification();
                     break;
+                case "BLOCK":
+                    this.handleContactBlocked(ev.userId);
+                    break;
+                case "UNBLOCK":
+                    this.handleContactUnblocked(ev.userId);
+                    break;
             }
         }.bind(this));
     },
@@ -630,14 +636,7 @@ ContactController.prototype  = {
     },
 
     blockContact : function (contactId) {
-        contactService.block(contactId).then(function () {
-            this.resetCachedConversation();
-            slychat.addNotification({
-                title: "Contact has been blocked",
-                hold: 2000
-            });
-            navigationController.loadPage("contacts.html", false)
-        }.bind(this)).catch(function (e) {
+        contactService.block(contactId).catch(function (e) {
             slychat.addNotification({
                 title: "An error occured",
                 hold: 2000
@@ -647,13 +646,7 @@ ContactController.prototype  = {
     },
 
     unblockContact : function (contactId) {
-        contactService.unblock(contactId).then(function () {
-            this.resetCachedConversation();
-            slychat.addNotification({
-                title: "Contact has been unblocked",
-                hold: 2000
-            });
-        }.bind(this)).catch(function (e) {
+        contactService.unblock(contactId).catch(function (e) {
             slychat.addNotification({
                 title: "An error occured",
                 hold: 2000
@@ -761,6 +754,77 @@ ContactController.prototype  = {
             return this.contacts[id];
         else
             return false;
+    },
+
+    getBlockedContact : function () {
+        var blocked = [];
+
+        this.contacts.forEach(function (contact) {
+            if (contact.allowedMessageLevel === "BLOCKED")
+                blocked.push(contact);
+        });
+
+        return blocked;
+    },
+
+    blockedContactPageInit : function () {
+        var blocked = this.getBlockedContact();
+
+        $("#blockedContactsList").html(this.createBlockedContactsHtml(blocked));
+    },
+
+    createBlockedContactsHtml : function (contacts) {
+        var frag = $(document.createDocumentFragment());
+
+        if (contacts.length < 1)
+            frag.html("No Blocked Contacts");
+        else {
+            contacts.forEach(function (contact) {
+                frag.append(contactController.createBlockedContactNode(contact));
+            });
+        }
+
+        return frag;
+    },
+
+    createBlockedContactNode : function (contact) {
+        var html = $("<li id='blocked_" + contact.id + "' class='item-content'>" +
+            "<div class='item-inner'>" +
+            "<div class='item-title'>" + contact.email + "</div>" +
+            "<div class='item-after'><a class='unblock-contact-button' type='button' style='cursor: pointer;'>Unblock</a></div>" +
+            "</div>" +
+            "</li>");
+
+        html.find(".unblock-contact-button").click(function (e) {
+            e.preventDefault();
+            contactController.unblockContact(contact.id);
+        });
+
+        return html;
+    },
+
+    handleContactBlocked : function (contactId) {
+        this.resetCachedConversation();
+        slychat.addNotification({
+            title: "Contact has been blocked",
+            hold: 2000
+        });
+
+        if (chatController.getCurrentContactId() == contactId) {
+            navigationController.loadPage("contacts.html", false);
+        }
+    },
+
+    handleContactUnblocked : function (contactId) {
+        this.resetCachedConversation();
+        slychat.addNotification({
+            title: "Contact has been unblocked",
+            hold: 2000
+        });
+
+        if (navigationController.getCurrentPage() === "blockedContacts.html") {
+            $("#blocked_" + contactId).remove();
+        }
     },
 
     deleteContact : function (contact) {

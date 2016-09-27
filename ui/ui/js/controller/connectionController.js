@@ -8,7 +8,9 @@ var ConnectionController = function () {
         "addContact",
         "profile",
         'createGroup',
-        'contactInfo'
+        'contactInfo',
+        'settings',
+        'blockedContacts'
     ];
 };
 

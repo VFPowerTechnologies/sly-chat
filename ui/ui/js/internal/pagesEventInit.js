@@ -266,6 +266,10 @@ slychat.onPageInit('settings', function (page) {
     settingsController.onPageInit();
 });
 
+slychat.onPageInit('blockedContacts', function () {
+    contactController.blockedContactPageInit();
+});
+
 $("#contactPopupNewBtn").on("click", function (e) {
     e.preventDefault();
     if ($("#contact-tab").hasClass("active")) {
