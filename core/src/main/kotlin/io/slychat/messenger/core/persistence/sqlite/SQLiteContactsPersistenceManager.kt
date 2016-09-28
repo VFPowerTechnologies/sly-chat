@@ -4,8 +4,8 @@ import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.crypto.hexify
-import io.slychat.messenger.core.crypto.unhexify
+import io.slychat.messenger.core.hexify
+import io.slychat.messenger.core.unhexify
 import io.slychat.messenger.core.http.api.contacts.md5
 import io.slychat.messenger.core.http.api.contacts.md5Fold
 import io.slychat.messenger.core.persistence.*

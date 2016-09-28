@@ -2,6 +2,8 @@ package io.slychat.messenger.core.crypto
 
 import io.slychat.messenger.core.crypto.ciphers.CipherParams
 import io.slychat.messenger.core.crypto.hashes.HashParams
+import io.slychat.messenger.core.hexify
+import io.slychat.messenger.core.unhexify
 import org.spongycastle.crypto.InvalidCipherTextException
 import org.whispersystems.libsignal.IdentityKeyPair
 

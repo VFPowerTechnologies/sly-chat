@@ -182,3 +182,19 @@ val currentOs: Os = osFromProperties(
 )
 
 fun emptyByteArray(): ByteArray = ByteArray(0)
+
+fun ByteArray.hexify(): String =
+    this.joinToString("") { "%02x".format(it) }
+
+fun String.unhexify(): ByteArray {
+    require((length % 2) == 0, "String length must be a multiple of 2")
+
+    val bytes = ByteArray(length / 2)
+
+    for (i in 0..bytes.size-1) {
+        val v = this.subSequence(i*2, (i*2)+2).toString()
+        bytes[i] = Integer.parseInt(v, 16).toByte()
+    }
+
+    return bytes
+}

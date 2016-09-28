@@ -9,6 +9,7 @@ import io.slychat.messenger.core.crypto.hashes.HashParams
 import io.slychat.messenger.core.crypto.hashes.SCryptParams
 import io.slychat.messenger.core.crypto.hashes.SHA256Params
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
+import io.slychat.messenger.core.hexify
 import org.spongycastle.crypto.Digest
 import org.spongycastle.crypto.digests.SHA256Digest
 import org.spongycastle.crypto.engines.AESFastEngine
@@ -25,22 +26,6 @@ import org.whispersystems.libsignal.state.SignalProtocolStore
 import org.whispersystems.libsignal.util.KeyHelper
 import org.whispersystems.libsignal.util.Medium
 import java.security.SecureRandom
-
-fun ByteArray.hexify(): String =
-    this.joinToString("") { "%02x".format(it) }
-
-fun String.unhexify(): ByteArray {
-    io.slychat.messenger.core.require((length % 2) == 0, "String length must be a multiple of 2")
-
-    val bytes = ByteArray(length / 2)
-
-    for (i in 0..bytes.size-1) {
-        val v = this.subSequence(i*2, (i*2)+2).toString()
-        bytes[i] = Integer.parseInt(v, 16).toByte()
-    }
-
-    return bytes
-}
 
 /** Default parameters for local data encryption. */
 fun defaultDataEncryptionParams(): CipherParams =

@@ -4,6 +4,7 @@ package io.slychat.messenger.core.http.api.contacts
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.*
+import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.RemoteAddressBookEntry

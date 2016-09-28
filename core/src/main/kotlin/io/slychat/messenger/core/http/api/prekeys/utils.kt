@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.crypto.KeyVault
-import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
-import io.slychat.messenger.core.crypto.unhexify
+import io.slychat.messenger.core.unhexify
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.ecc.Curve
 import org.whispersystems.libsignal.ecc.ECPublicKey

@@ -2,7 +2,7 @@ package io.slychat.messenger.core.http.api.registration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.crypto.KeyVault
-import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.hexify
 
 fun registrationRequestFromKeyVault(registrationInfo: RegistrationInfo, keyVault: KeyVault): RegisterRequest {
     val objectMapper = ObjectMapper()

@@ -1,7 +1,7 @@
 package io.slychat.messenger.core.crypto.signal
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.persistence.PreKeyPersistenceManager
 import io.slychat.messenger.core.persistence.SignalSessionPersistenceManager

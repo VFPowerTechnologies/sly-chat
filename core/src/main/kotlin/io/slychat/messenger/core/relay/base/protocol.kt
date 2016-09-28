@@ -4,7 +4,7 @@ package io.slychat.messenger.core.relay.base
 
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.relay.RelayMessageBundle
 import io.slychat.messenger.core.relay.base.CommandCode.*
 import java.util.*

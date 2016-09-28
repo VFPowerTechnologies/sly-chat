@@ -2,8 +2,8 @@ package io.slychat.messenger.core.crypto.hashes
 
 import io.slychat.messenger.core.crypto.Deserializer
 import io.slychat.messenger.core.crypto.SerializedCryptoParams
-import io.slychat.messenger.core.crypto.hexify
-import io.slychat.messenger.core.crypto.unhexify
+import io.slychat.messenger.core.hexify
+import io.slychat.messenger.core.unhexify
 
 class SCryptParams(
     val salt: ByteArray,

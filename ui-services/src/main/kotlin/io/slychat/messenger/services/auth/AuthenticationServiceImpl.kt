@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.auth
 
 import io.slychat.messenger.core.crypto.*
+import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
 import io.slychat.messenger.core.persistence.SessionData

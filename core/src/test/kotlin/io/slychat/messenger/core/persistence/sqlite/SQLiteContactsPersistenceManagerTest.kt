@@ -1,7 +1,7 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.*
-import io.slychat.messenger.core.crypto.unhexify
+import io.slychat.messenger.core.unhexify
 import io.slychat.messenger.core.persistence.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After

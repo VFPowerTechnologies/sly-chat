@@ -3,7 +3,7 @@ package io.slychat.messenger.core.http.api.prekeys
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.crypto.generateNewKeyVault
 import io.slychat.messenger.core.crypto.generatePrekeys
-import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.hexify
 import org.junit.Test
 import org.whispersystems.libsignal.state.PreKeyBundle
 import java.util.*

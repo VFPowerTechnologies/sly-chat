@@ -4,7 +4,7 @@ import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteJob
 import com.almworks.sqlite4java.SQLiteQueue
 import io.slychat.messenger.core.crypto.ciphers.CipherParams
-import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.persistence.PersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.migrations.DatabaseMigrationInitial
 import nl.komponents.kovenant.Promise
