@@ -1,7 +1,7 @@
 package io.slychat.messenger.core.persistence.sqlite.migrations
 
 import com.almworks.sqlite4java.SQLiteConnection
-import io.slychat.messenger.core.crypto.randomPreKeyId
+import io.slychat.messenger.core.crypto.signal.randomPreKeyId
 import io.slychat.messenger.core.persistence.sqlite.DatabaseMigration
 import io.slychat.messenger.core.persistence.sqlite.TableCreationFailedException
 import io.slychat.messenger.core.readResourceFileText
