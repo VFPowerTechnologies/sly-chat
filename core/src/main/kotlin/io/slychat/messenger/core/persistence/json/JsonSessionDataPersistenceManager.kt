@@ -1,9 +1,9 @@
 package io.slychat.messenger.core.persistence.json
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.slychat.messenger.core.crypto.EncryptionSpec
-import io.slychat.messenger.core.crypto.decryptData
-import io.slychat.messenger.core.crypto.encryptDataWithParams
+import io.slychat.messenger.core.crypto.ciphers.EncryptionSpec
+import io.slychat.messenger.core.crypto.ciphers.decryptData
+import io.slychat.messenger.core.crypto.ciphers.encryptDataWithParams
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.SessionDataPersistenceManager
 import nl.komponents.kovenant.Promise

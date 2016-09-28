@@ -4,7 +4,7 @@ import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.ServerUrls
-import io.slychat.messenger.core.crypto.EncryptionSpec
+import io.slychat.messenger.core.crypto.ciphers.EncryptionSpec
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl

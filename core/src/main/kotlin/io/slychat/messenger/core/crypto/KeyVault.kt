@@ -1,7 +1,12 @@
 package io.slychat.messenger.core.crypto
 
 import io.slychat.messenger.core.crypto.ciphers.CipherParams
+import io.slychat.messenger.core.crypto.ciphers.EncryptionSpec
+import io.slychat.messenger.core.crypto.ciphers.decryptData
+import io.slychat.messenger.core.crypto.ciphers.encryptDataWithParams
 import io.slychat.messenger.core.crypto.hashes.HashParams
+import io.slychat.messenger.core.crypto.hashes.hashDataWithParams
+import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.unhexify
 import org.spongycastle.crypto.InvalidCipherTextException

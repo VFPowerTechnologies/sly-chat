@@ -1,8 +1,8 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.crypto.EncryptionSpec
 import io.slychat.messenger.core.crypto.ciphers.CipherParams
+import io.slychat.messenger.core.crypto.ciphers.EncryptionSpec
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonKeyVaultPersistenceManager

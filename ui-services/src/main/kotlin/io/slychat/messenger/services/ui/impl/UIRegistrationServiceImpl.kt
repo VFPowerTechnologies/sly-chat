@@ -1,7 +1,7 @@
 package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.crypto.HashDeserializers
-import io.slychat.messenger.core.crypto.hashPasswordWithParams
+import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.accountupdate.UpdatePhoneRequest

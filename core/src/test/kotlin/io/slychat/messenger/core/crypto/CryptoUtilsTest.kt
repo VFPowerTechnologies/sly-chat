@@ -1,6 +1,7 @@
 package io.slychat.messenger.core.crypto
 
 import io.slychat.messenger.core.crypto.hashes.BCryptParams
+import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertFalse

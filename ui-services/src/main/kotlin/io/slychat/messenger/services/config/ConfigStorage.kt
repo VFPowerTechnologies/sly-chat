@@ -1,8 +1,8 @@
 package io.slychat.messenger.services.config
 
-import io.slychat.messenger.core.crypto.EncryptionSpec
-import io.slychat.messenger.core.crypto.decryptData
-import io.slychat.messenger.core.crypto.encryptDataWithParams
+import io.slychat.messenger.core.crypto.ciphers.EncryptionSpec
+import io.slychat.messenger.core.crypto.ciphers.decryptData
+import io.slychat.messenger.core.crypto.ciphers.encryptDataWithParams
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileNotFoundException

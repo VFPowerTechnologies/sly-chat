@@ -1,6 +1,6 @@
 package io.slychat.messenger.services.config
 
-import io.slychat.messenger.core.crypto.EncryptionSpec
+import io.slychat.messenger.core.crypto.ciphers.EncryptionSpec
 import io.slychat.messenger.core.crypto.ciphers.AESGCMParams
 import io.slychat.messenger.core.crypto.getRandomBits
 import org.junit.Test
