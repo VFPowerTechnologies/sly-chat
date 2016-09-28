@@ -1,8 +1,8 @@
 package io.slychat.messenger.services
 
-import io.slychat.messenger.core.crypto.LAST_RESORT_PREKEY_ID
-import io.slychat.messenger.core.crypto.generateLastResortPreKey
-import io.slychat.messenger.core.crypto.generatePrekeys
+import io.slychat.messenger.core.crypto.signal.LAST_RESORT_PREKEY_ID
+import io.slychat.messenger.core.crypto.signal.generateLastResortPreKey
+import io.slychat.messenger.core.crypto.signal.generatePrekeys
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
 import io.slychat.messenger.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys

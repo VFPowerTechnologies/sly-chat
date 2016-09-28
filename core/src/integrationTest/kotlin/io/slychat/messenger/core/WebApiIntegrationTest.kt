@@ -2,6 +2,8 @@ package io.slychat.messenger.core
 
 import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
+import io.slychat.messenger.core.crypto.signal.generateLastResortPreKey
+import io.slychat.messenger.core.crypto.signal.generatePrekeys
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.ApiException
 import io.slychat.messenger.core.http.api.accountupdate.*

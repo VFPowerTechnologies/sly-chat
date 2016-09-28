@@ -1,8 +1,8 @@
 package io.slychat.messenger.core.persistence.sqlite
 
-import io.slychat.messenger.core.crypto.generateLastResortPreKey
+import io.slychat.messenger.core.crypto.signal.generateLastResortPreKey
 import io.slychat.messenger.core.crypto.generateNewKeyVault
-import io.slychat.messenger.core.crypto.generatePrekeys
+import io.slychat.messenger.core.crypto.signal.generatePrekeys
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass

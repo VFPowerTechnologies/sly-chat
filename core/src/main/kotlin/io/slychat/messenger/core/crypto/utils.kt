@@ -7,7 +7,6 @@ import io.slychat.messenger.core.crypto.hashes.BCryptParams
 import io.slychat.messenger.core.crypto.hashes.HashParams
 import io.slychat.messenger.core.crypto.hashes.SCryptParams
 import io.slychat.messenger.core.crypto.hashes.SHA256Params
-import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
 import io.slychat.messenger.core.hexify
 import org.spongycastle.crypto.Digest
 import org.spongycastle.crypto.digests.SHA256Digest
@@ -21,10 +20,7 @@ import org.spongycastle.crypto.params.KeyParameter
 import org.spongycastle.util.encoders.Base64
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
-import org.whispersystems.libsignal.state.PreKeyRecord
-import org.whispersystems.libsignal.state.SignalProtocolStore
 import org.whispersystems.libsignal.util.KeyHelper
-import org.whispersystems.libsignal.util.Medium
 import java.security.SecureRandom
 
 /** Default parameters for local data encryption. */
@@ -203,37 +199,6 @@ fun decryptData(encryptionSpec: EncryptionSpec, ciphertext: ByteArray): ByteArra
         cipher.processInput(ciphertext)
     }
     else -> throw IllegalArgumentException("Unknown cipher: ${encryptionSpec.params.algorithmName}")
-}
-
-val LAST_RESORT_PREKEY_ID = Medium.MAX_VALUE
-
-/** Generates a last resort prekey. Should only be generated once. This key will always have id set to Medium.MAX_VALUE. */
-fun generateLastResortPreKey(): PreKeyRecord =
-    KeyHelper.generateLastResortPreKey()
-
-/** Generate a new batch of prekeys */
-fun generatePrekeys(identityKeyPair: IdentityKeyPair, nextSignedPreKeyId: Int, nextPreKeyId: Int, count: Int): GeneratedPreKeys {
-    io.slychat.messenger.core.require(nextSignedPreKeyId > 0, "nextSignedPreKeyId must be > 0")
-    io.slychat.messenger.core.require(nextPreKeyId > 0, "nextPreKeyId must be > 0")
-    io.slychat.messenger.core.require(count > 0, "count must be > 0")
-
-    val signedPrekey = KeyHelper.generateSignedPreKey(identityKeyPair, nextSignedPreKeyId)
-    val oneTimePreKeys = KeyHelper.generatePreKeys(nextPreKeyId, count)
-
-    return GeneratedPreKeys(signedPrekey, oneTimePreKeys)
-}
-
-/** Add the prekeys into the given store */
-fun addPreKeysToStore(signalStore: SignalProtocolStore, generatedPreKeys: GeneratedPreKeys) {
-    signalStore.storeSignedPreKey(generatedPreKeys.signedPreKey.id, generatedPreKeys.signedPreKey)
-
-    for (k in generatedPreKeys.oneTimePreKeys)
-        signalStore.storePreKey(k.id, k)
-}
-
-/** Should only be done once. */
-fun addLastResortPreKeyToStore(signalStore: SignalProtocolStore, lastResortPreKey: PreKeyRecord) {
-    signalStore.storePreKey(lastResortPreKey.id, lastResortPreKey)
 }
 
 /** Generates a new key vault for a new user. For use during registration. */

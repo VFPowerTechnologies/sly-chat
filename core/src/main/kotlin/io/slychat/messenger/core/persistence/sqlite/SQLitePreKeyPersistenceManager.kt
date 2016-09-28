@@ -1,7 +1,7 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
-import io.slychat.messenger.core.crypto.LAST_RESORT_PREKEY_ID
+import io.slychat.messenger.core.crypto.signal.LAST_RESORT_PREKEY_ID
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
 import io.slychat.messenger.core.persistence.PreKeyIds
 import io.slychat.messenger.core.persistence.PreKeyPersistenceManager

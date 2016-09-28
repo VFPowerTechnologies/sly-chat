@@ -5,9 +5,9 @@ import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
 import io.slychat.messenger.core.*
-import io.slychat.messenger.core.crypto.generateLastResortPreKey
+import io.slychat.messenger.core.crypto.signal.generateLastResortPreKey
 import io.slychat.messenger.core.crypto.generateNewKeyVault
-import io.slychat.messenger.core.crypto.generatePrekeys
+import io.slychat.messenger.core.crypto.signal.generatePrekeys
 import io.slychat.messenger.core.http.HttpClient
 import io.slychat.messenger.core.http.HttpResponse
 import io.slychat.messenger.core.http.api.ApiResult
