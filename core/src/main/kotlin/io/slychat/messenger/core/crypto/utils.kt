@@ -1,7 +1,6 @@
 @file:JvmName("CryptoUtils")
 package io.slychat.messenger.core.crypto
 
-import io.slychat.messenger.core.base64encode
 import io.slychat.messenger.core.crypto.ciphers.AESGCMParams
 import io.slychat.messenger.core.crypto.ciphers.CipherParams
 import io.slychat.messenger.core.crypto.hashes.BCryptParams
@@ -19,6 +18,7 @@ import org.spongycastle.crypto.modes.AEADBlockCipher
 import org.spongycastle.crypto.modes.GCMBlockCipher
 import org.spongycastle.crypto.params.AEADParameters
 import org.spongycastle.crypto.params.KeyParameter
+import org.spongycastle.util.encoders.Base64
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.state.PreKeyRecord
@@ -91,7 +91,7 @@ fun hashPasswordWithParams(password: String, params: HashParams): ByteArray = wh
         val hash = digester.processInput(password.toByteArray(Charsets.UTF_8))
 
         //44b string
-        val encoded = base64encode(hash).toByteArray(Charsets.US_ASCII)
+        val encoded = Base64.encode(hash)
 
         //password must be nul-terminated to prevent collisions in repeated passwords (eg: test and testtest)
         val input = ByteArray(encoded.size+1)
