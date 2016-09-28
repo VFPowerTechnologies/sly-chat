@@ -45,11 +45,6 @@ class KeyVault(
         return encryptDataWithParams(EncryptionSpec(key, keyPairCipherParams), identityKeyPair.serialize()).data
     }
 
-    private fun getEncryptedRemotePasswordHash(): ByteArray {
-        val key = localDataEncryptionKey
-        return encryptDataWithParams(EncryptionSpec(key, localDataEncryptionParams), remotePasswordHash).data
-    }
-
     /** Returns the public key encoded as a hex string. */
     val fingerprint: String
         get() {
@@ -66,7 +61,6 @@ class KeyVault(
             keyPairCipherParams.serialize(),
             privateKeyHashParams.serialize(),
             localDataEncryptionParams.serialize(),
-            getEncryptedRemotePasswordHash().hexify(),
             remotePasswordHashParams.serialize())
     }
 
@@ -107,11 +101,9 @@ class KeyVault(
             val localDataEncryptionParams = CipherDeserializers.deserialize(
                 serialized.localDataEncryptionParams)
 
-            val dataKey = localEncryptionKey
-
-            val remotePasswordHash = decryptData(EncryptionSpec(dataKey, localDataEncryptionParams), serialized.encryptedRemotePasswordHash.unhexify())
-
             val remotePasswordHashParams = HashDeserializers.deserialize(serialized.remotePasswordHashParams)
+
+            val remotePasswordHash = hashPasswordWithParams(password, remotePasswordHashParams)
 
             return KeyVault(
                 identityKeyPair,
