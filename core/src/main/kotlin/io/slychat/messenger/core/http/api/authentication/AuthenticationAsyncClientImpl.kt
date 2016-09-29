@@ -1,5 +1,6 @@
 package io.slychat.messenger.core.http.api.authentication
 
+import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.http.HttpClientFactory
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
@@ -13,5 +14,9 @@ class AuthenticationAsyncClientImpl(private val serverUrl: String, private val f
 
     override fun auth(request: AuthenticationRequest): Promise<AuthenticationResponse, Exception> = task {
         newClient().auth(request)
+    }
+
+    override fun refreshToken(userCredentials: UserCredentials): Promise<AuthenticationRefreshResponse, Exception> = task {
+        newClient().refreshToken(userCredentials)
     }
 }

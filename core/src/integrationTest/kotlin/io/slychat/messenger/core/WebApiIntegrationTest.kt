@@ -1,6 +1,9 @@
 package io.slychat.messenger.core
 
-import io.slychat.messenger.core.crypto.*
+import io.slychat.messenger.core.crypto.KeyVault
+import io.slychat.messenger.core.crypto.generateNewKeyVault
+import io.slychat.messenger.core.crypto.randomRegistrationId
+import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
 import io.slychat.messenger.core.crypto.signal.generateLastResortPreKey
 import io.slychat.messenger.core.crypto.signal.generatePrekeys
@@ -355,6 +358,37 @@ class WebApiIntegrationTest {
     @Test
     fun `attempting to authenticate with pending devices maxed out should fail`() {
         runMaxDeviceTest(DeviceState.PENDING)
+    }
+
+    @Test
+    fun `token refresh should succeed if the token is still valid`() {
+        val siteUser = injectNewSiteUser()
+        val username = siteUser.user.username
+
+        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+        val authToken = devClient.createAuthToken(siteUser.user.username, deviceId)
+
+        val client = AuthenticationClient(serverBaseUrl, JavaHttpClient())
+
+        val response = client.refreshToken(siteUser.getUserCredentials(authToken))
+
+        val serverSideToken = devClient.getAuthToken(username, deviceId)
+
+        assertEquals(response.authToken, serverSideToken, "Invalid token returned")
+    }
+
+    @Test
+    fun `token refresh should fail if the token is invalid or expired`() {
+        val siteUser = injectNewSiteUser()
+        val username = siteUser.user.username
+
+        devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+
+        val client = AuthenticationClient(serverBaseUrl, JavaHttpClient())
+
+        assertFailsWith(UnauthorizedException::class) {
+            client.refreshToken(siteUser.getUserCredentials(randomAuthToken()))
+        }
     }
 
     @Test
