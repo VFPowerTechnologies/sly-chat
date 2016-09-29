@@ -31,7 +31,7 @@ class DatabaseMigrationTest {
                 file.outputStream().use { inputStream.copyTo(it) }
             }
 
-            val persistenceManager = SQLitePersistenceManager(file, null, null)
+            val persistenceManager = SQLitePersistenceManager(file, null)
             try {
                 persistenceManager.init(to)
                 assertEquals(to, persistenceManager.currentDatabaseVersionSync(), "Invalid database version after init")

@@ -1,7 +1,7 @@
 package io.slychat.messenger.services.config
 
 import io.slychat.messenger.core.crypto.ciphers.EncryptionSpec
-import io.slychat.messenger.core.crypto.ciphers.decryptData
+import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
 import io.slychat.messenger.core.crypto.ciphers.encryptDataWithParams
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -57,7 +57,7 @@ class CipherConfigStorageFilter(
     override fun read(): ByteArray? {
         val cipherText = underlying.read()
         return if (cipherText != null)
-            decryptData(encryptionSpec, cipherText)
+            decryptBulkData(encryptionSpec, cipherText)
         else
             null
     }

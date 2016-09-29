@@ -1,14 +1,10 @@
 package io.slychat.messenger.core.crypto
 
-import io.slychat.messenger.core.crypto.ciphers.CipherParams
-import io.slychat.messenger.core.crypto.ciphers.EncryptionSpec
-import io.slychat.messenger.core.crypto.ciphers.decryptData
-import io.slychat.messenger.core.crypto.ciphers.encryptDataWithParams
+import io.slychat.messenger.core.crypto.ciphers.CipherList
+import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
+import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
 import io.slychat.messenger.core.crypto.hashes.HashParams
-import io.slychat.messenger.core.crypto.hashes.hashDataWithParams
 import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
-import io.slychat.messenger.core.hexify
-import io.slychat.messenger.core.unhexify
 import org.spongycastle.crypto.InvalidCipherTextException
 import org.whispersystems.libsignal.IdentityKeyPair
 
@@ -16,30 +12,24 @@ import org.whispersystems.libsignal.IdentityKeyPair
  * Interface for accessing a user's identity keypair and hashes.
  *
  * @property identityKeyPair
- * @property keyPasswordHash Hash for encrypting/decrypting the identity key pair.
- * @property localDataEncryptionKey Key used for local data encryption. Derived from the user's private key via a KDF.
- * @property keyPasswordHashParams How to hash the password to use as a key for encrypting/decrypting the encrypted key pair.
- * @property keyPairCipherParams How the key itself is encrypted.
- * @property privateKeyHashParams How to derive a symmetric encryption key from a private key for local encryption.
- * @property localDataEncryptionParams How local data is encrypted/decrypted.
+ * @property masterKey Used to derive other keys on-demand via HKDF.
+ * @property keyPasswordHashParams How to hash the password to use as a key for encrypting/decrypting the master key and encrypted key pair.
  *
  */
 class KeyVault(
+    //encrypted using password-derived key
     val identityKeyPair: IdentityKeyPair,
+    //encrypted by password-derived key
+    //all other keys are derived from this one
+    val masterKey: ByteArray,
+    //used when creating hashes of things to upload remotely to allow the hashes to match across devices, but not be identifiable to others
+    val anonymizingData: ByteArray,
+    //PBKDF params for key to decrypt masterKey and identityKeyPair
+    val localPasswordHashParams: HashParams,
 
-    val keyPasswordHash: ByteArray,
-
-    val keyPasswordHashParams: HashParams,
-    val keyPairCipherParams: CipherParams,
-    val privateKeyHashParams: HashParams,
-
-    val localDataEncryptionKey: ByteArray,
-    val localDataEncryptionParams: CipherParams
+    //kept so we can serialize
+    private val localPasswordHash: ByteArray
 ) {
-    private fun getEncryptedPrivateKey(): ByteArray {
-        val key = keyPasswordHash
-        return encryptDataWithParams(EncryptionSpec(key, keyPairCipherParams), identityKeyPair.serialize()).data
-    }
 
     /** Returns the public key encoded as a hex string. */
     val fingerprint: String
@@ -49,14 +39,18 @@ class KeyVault(
         }
 
     fun serialize(): SerializedKeyVault {
-        val encryptedKeyPair = getEncryptedPrivateKey()
+        val cipher = CipherList.defaultDataEncryptionCipher
+        val key = localPasswordHash
+
+        val encryptedMasterKey = encryptBulkData(cipher, key, masterKey, HKDFInfo.keyVaultMasterKey())
+        val encryptedKeyPair = encryptBulkData(cipher, key, identityKeyPair.serialize(), HKDFInfo.keyVaultKeyPair())
+        val encryptedAnonymizingData = encryptBulkData(cipher, key, anonymizingData, HKDFInfo.keyVaultAnonymizingData())
 
         return SerializedKeyVault(
-            encryptedKeyPair.hexify(),
-            keyPasswordHashParams.serialize(),
-            keyPairCipherParams.serialize(),
-            privateKeyHashParams.serialize(),
-            localDataEncryptionParams.serialize()
+            encryptedKeyPair,
+            encryptedMasterKey,
+            encryptedAnonymizingData,
+            localPasswordHashParams
         )
     }
 
@@ -69,46 +63,26 @@ class KeyVault(
             keyVaultStorage.read()?.let { deserialize(it, password) }
 
         fun deserialize(serialized: SerializedKeyVault, password: String): KeyVault {
-            val encryptedKeyPairData = serialized.encryptedKeyPair
+            try {
+                val localPasswordHash = hashPasswordWithParams(password, serialized.localPasswordHashParams)
 
-            val keyPairCipherParams = CipherDeserializers.deserialize(
-                serialized.keyPairCipherParams)
+                val masterKey = decryptBulkData(localPasswordHash, serialized.encryptedMasterKey, HKDFInfo.keyVaultMasterKey())
+                val keyData = decryptBulkData(localPasswordHash, serialized.encryptedKeyPair, HKDFInfo.keyVaultKeyPair())
+                val anonymizingData = decryptBulkData(localPasswordHash, serialized.encryptedAnonymizingData, HKDFInfo.keyVaultAnonymizingData())
 
-            val keyPasswordHashParams = HashDeserializers.deserialize(
-                serialized.keyPasswordHashParams)
+                val identityKeyPair = IdentityKeyPair(keyData)
 
-            val keyPasswordHash = hashPasswordWithParams(password, keyPasswordHashParams)
-            val keyKey = keyPasswordHash
-
-            val decryptedKeyData = try {
-                decryptData(EncryptionSpec(keyKey, keyPairCipherParams), encryptedKeyPairData.unhexify())
+                return KeyVault(
+                    identityKeyPair,
+                    masterKey,
+                    anonymizingData,
+                    serialized.localPasswordHashParams,
+                    localPasswordHash
+                )
             }
             catch (e: InvalidCipherTextException) {
                 throw KeyVaultDecryptionFailedException()
             }
-
-            val identityKeyPair = IdentityKeyPair(decryptedKeyData)
-
-            val keyHashParams = HashDeserializers.deserialize(
-                serialized.privateKeyHashParams)
-
-            val localEncryptionKey = hashDataWithParams(identityKeyPair.privateKey.serialize(), keyHashParams)
-
-            val localDataEncryptionParams = CipherDeserializers.deserialize(
-                serialized.localDataEncryptionParams)
-
-            return KeyVault(
-                identityKeyPair,
-
-                keyPasswordHash,
-
-                keyPasswordHashParams,
-                keyPairCipherParams,
-
-                keyHashParams,
-                localEncryptionKey,
-                localDataEncryptionParams
-            )
         }
     }
 }

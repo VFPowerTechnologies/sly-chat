@@ -31,25 +31,10 @@ fun hashPasswordWithParams(password: String, params: HashParams): ByteArray = wh
 }
 
 fun hashDataWithParams(data: ByteArray, params: HashParams): ByteArray = when (params) {
-    is SHA256Params -> {
-        val digester = SHA256Digest()
-        val salt = params.salt
-        val toHash = if (salt.size > 0) {
-            val buffer = ByteArray(data.size+salt.size)
-            System.arraycopy(data, 0, buffer, 0, data.size)
-            System.arraycopy(salt, 0, buffer, data.size, salt.size)
-            buffer
-        }
-        else
-            data
-
-        digester.processInput(toHash)
-    }
-
     is SCryptParams ->
-        SCrypt.generate(data, params.salt, params.N, params.r, params.p, params.keyLength)
+        SCrypt.generate(data, params.salt, params.n, params.r, params.p, params.keyLength)
 
-    else -> throw IllegalArgumentException("Unknown data hash algorithm: ${params.algorithmName}")
+    else -> throw IllegalArgumentException("Unknown data hash algorithm")
 }
 
 private fun Digest.processInput(input: ByteArray): ByteArray {

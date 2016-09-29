@@ -54,7 +54,7 @@ class PersistenceUserModule {
             keyvault.localDataEncryptionKey
         else
             null
-        return SQLitePersistenceManager(userPaths.databasePath, key, keyvault.localDataEncryptionParams)
+        return SQLitePersistenceManager(userPaths.databasePath, key)
     }
 
     //this is hacky, but we wanna expose this to the app for init/shutdown, but we don't wanna expose its type directly

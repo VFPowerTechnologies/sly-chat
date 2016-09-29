@@ -27,7 +27,7 @@ class SQLitePersistenceManagerTest {
     }
 
     fun <R> withPersistenceManager(path: File?, key: ByteArray?, body: (SQLitePersistenceManager) -> R): R {
-        val persistenceManager = SQLitePersistenceManager(path, key, null)
+        val persistenceManager = SQLitePersistenceManager(path, key)
         return try {
             persistenceManager.init()
             body(persistenceManager)

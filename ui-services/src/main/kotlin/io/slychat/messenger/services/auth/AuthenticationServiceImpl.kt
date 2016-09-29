@@ -2,7 +2,7 @@ package io.slychat.messenger.services.auth
 
 import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.crypto.hashes.BCryptParams
-import io.slychat.messenger.core.crypto.hashes.BCryptParams2
+import io.slychat.messenger.core.crypto.hashes.BCryptParams
 import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
@@ -53,7 +53,7 @@ class AuthenticationServiceImpl(
                 hashParams as BCryptParams
                 val accountParams = AccountParams(
                     "aes-256-cbc",
-                    BCryptParams2(hashParams.salt, hashParams.cost)
+                    BCryptParams(hashParams.salt, hashParams.cost)
                 )
 
                 val data = response.data!!
@@ -94,7 +94,7 @@ class AuthenticationServiceImpl(
             return LocalAuthOutcome.NoLocalData()
 
         //FIXME
-        val params = accountParams.remoteHashParams as BCryptParams2
+        val params = accountParams.remoteHashParams as BCryptParams
         val hash = hashPasswordWithParams(password, BCryptParams(params.salt, params.cost))
 
         //this isn't important; just use a null token in the auth result if this isn't present, and then fetch one remotely by refreshing

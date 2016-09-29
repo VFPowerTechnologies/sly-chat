@@ -1,48 +1,41 @@
 package io.slychat.messenger.core.crypto.hashes
 
-import io.slychat.messenger.core.crypto.Deserializer
-import io.slychat.messenger.core.crypto.SerializedCryptoParams
-import io.slychat.messenger.core.hexify
-import io.slychat.messenger.core.unhexify
-import io.slychat.messenger.core.require
+import com.fasterxml.jackson.annotation.JsonProperty
+import java.util.*
 
-/**
- * BCrypt hash params.
- *
- * Note that bcrypt is "special", in that its salt, and the resulting hash are in a special string format, as opposed to raw bytes.
- * Due to this, the cost value is actually never used as its embedded into the hash.
- *
- * @property salt
- * @property cost A value of [0, 30], as restricted by the java bcrypt library.
- *
- * @constructor
- */
 class BCryptParams(
+    @JsonProperty("salt")
     val salt: ByteArray,
+    @JsonProperty("cost")
     val cost: Int
 ) : HashParams {
+    override val algorithmName: String
+        get() = "bcrypt"
+
     init {
-        require(salt.isNotEmpty(), "salt must not be empty")
-        require(cost >= 4 && cost <= 30, "cost must be within the range [4, 30]")
+        require(salt.isNotEmpty()) { "salt must not be empty" }
+        require(cost >= 4 && cost <= 30) { "cost must be within the range [4, 30]" }
     }
 
-    override val algorithmName: String = Companion.algorithmName
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != javaClass) return false
 
-    override fun serialize(): SerializedCryptoParams {
-        return SerializedCryptoParams(algorithmName, mapOf(
-            "salt" to salt.hexify(),
-            "cost" to cost.toString()
-        ))
+        other as BCryptParams
+
+        if (!Arrays.equals(salt, other.salt)) return false
+        if (cost != other.cost) return false
+
+        return true
     }
 
-    companion object : Deserializer<HashParams> {
-        override val algorithmName: String = "bcrypt-sha256"
+    override fun hashCode(): Int {
+        var result = Arrays.hashCode(salt)
+        result = 31 * result + cost
+        return result
+    }
 
-        override fun deserialize(params: Map<String, String>): HashParams {
-            return BCryptParams(
-                params["salt"]!!.unhexify(),
-                Integer.parseInt(params["cost"]!!)
-            )
-        }
+    override fun toString(): String {
+        return "BCryptParams(cost=$cost)"
     }
 }

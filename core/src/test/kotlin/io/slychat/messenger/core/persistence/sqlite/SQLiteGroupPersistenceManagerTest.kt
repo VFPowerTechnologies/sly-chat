@@ -26,7 +26,7 @@ class SQLiteGroupPersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
     @Before
     fun before() {
-        persistenceManager = SQLitePersistenceManager(null, null, null)
+        persistenceManager = SQLitePersistenceManager(null, null)
         persistenceManager.init()
         groupPersistenceManager = SQLiteGroupPersistenceManager(persistenceManager)
         contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)

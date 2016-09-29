@@ -3,7 +3,6 @@ package io.slychat.messenger.core.persistence.sqlite
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteJob
 import com.almworks.sqlite4java.SQLiteQueue
-import io.slychat.messenger.core.crypto.ciphers.CipherParams
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.persistence.PersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.migrations.DatabaseMigrationInitial
@@ -29,8 +28,8 @@ class SQLitePersistenceManagerErrorException(e: Error) : RuntimeException("Uncau
  */
 class SQLitePersistenceManager(
     private val path: File?,
-    private val localDataEncryptionKey: ByteArray?,
-    private val localDataEncryptionParams: CipherParams?
+    private val encryptionKey: ByteArray?
+//TODO cipher name
 ) : PersistenceManager {
     private data class InitializationResult(val initWasRequired: Boolean, val freshDatabase: Boolean)
 
@@ -39,8 +38,8 @@ class SQLitePersistenceManager(
     private val logger = LoggerFactory.getLogger(javaClass)
 
     init {
-        require(localDataEncryptionKey == null || localDataEncryptionKey.size == 256/8) {
-            "SQLCipher encryption key must be 256bit, got a ${localDataEncryptionKey!!.size*8}bit key instead"
+        require(encryptionKey == null || encryptionKey.size == 256/8) {
+            "SQLCipher encryption key must be 256bit, got a ${encryptionKey!!.size*8}bit key instead"
         }
     }
 
@@ -97,7 +96,7 @@ class SQLitePersistenceManager(
         sqliteQueue = SQLiteQueue(path)
         sqliteQueue.start()
 
-        val encryptionKey = localDataEncryptionKey
+        val encryptionKey = encryptionKey
         if (encryptionKey != null) {
             realRunQuery { connection ->
                 connection.exec("""PRAGMA key = "x'${encryptionKey.hexify()}'"""")

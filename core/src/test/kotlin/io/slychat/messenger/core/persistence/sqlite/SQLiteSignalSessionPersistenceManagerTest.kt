@@ -31,7 +31,7 @@ class SQLiteSignalSessionPersistenceManagerTest {
 
     @Before
     fun before() {
-        persistenceManager = SQLitePersistenceManager(null, null, null)
+        persistenceManager = SQLitePersistenceManager(null, null)
         persistenceManager.init()
         signalSessionsPersistenceManager = SQLiteSignalSessionPersistenceManager(persistenceManager)
         contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)

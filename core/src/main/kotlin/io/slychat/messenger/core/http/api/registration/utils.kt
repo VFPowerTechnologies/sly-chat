@@ -11,7 +11,7 @@ fun registrationRequestFromKeyVault(registrationInfo: RegistrationInfo, keyVault
     val objectMapper = ObjectMapper()
 
     val hash = remotePasswordHashInfo.hash.hexify()
-    val hashParams = objectMapper.writeValueAsString(remotePasswordHashInfo.params.serialize())
+    val hashParams = objectMapper.writeValueAsString(remotePasswordHashInfo.params)
 
     val publicKey = keyVault.fingerprint
     val serializedKeyVault = objectMapper.writeValueAsString(keyVault.serialize())

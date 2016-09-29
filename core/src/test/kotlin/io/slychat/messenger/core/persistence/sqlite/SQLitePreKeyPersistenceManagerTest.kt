@@ -29,7 +29,7 @@ class SQLitePreKeyPersistenceManagerTest {
 
     @Before
     fun before() {
-        persistenceManager = SQLitePersistenceManager(null, null, null)
+        persistenceManager = SQLitePersistenceManager(null, null)
         persistenceManager.init()
         keyPersistenceManager = SQLitePreKeyPersistenceManager(persistenceManager)
     }

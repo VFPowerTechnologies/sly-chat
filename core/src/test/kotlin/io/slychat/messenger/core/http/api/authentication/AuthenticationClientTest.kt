@@ -28,7 +28,7 @@ class AuthenticationClientTest {
     @Test
     fun `getParams should return a successful AuthenticationParamsResponse when receiving a 200 response`() {
         val httpClient = mock<HttpClient>()
-        val hashParams = BCryptParams(getRandomBits(128), 12).serialize()
+        val hashParams = BCryptParams(getRandomBits(128), 12)
         val response = AuthenticationParamsResponse(null, AuthenticationParams(csrfToken, hashParams))
         val apiResult = ApiResult(null, response)
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))

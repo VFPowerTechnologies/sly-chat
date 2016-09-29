@@ -21,7 +21,7 @@ class RegistrationClientTest {
     val keyVaultPassword = "test"
     val keyVault = generateNewKeyVault(keyVaultPassword)
     val registrationInfo = RegistrationInfo("a@a.com", "name", "000-000-0000")
-    val request = registrationRequestFromKeyVault(registrationInfo, keyVault)
+    val request = registrationRequestFromKeyVault(registrationInfo, keyVault, keyVaultPassword)
 
     @Test
     fun `register should return a successful RegisterResponse when receiving a 200 response`() {

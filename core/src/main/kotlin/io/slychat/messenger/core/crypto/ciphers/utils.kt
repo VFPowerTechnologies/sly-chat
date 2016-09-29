@@ -1,55 +1,67 @@
 package io.slychat.messenger.core.crypto.ciphers
 
-import org.spongycastle.crypto.engines.AESFastEngine
-import org.spongycastle.crypto.modes.AEADBlockCipher
-import org.spongycastle.crypto.modes.GCMBlockCipher
-import org.spongycastle.crypto.params.AEADParameters
-import org.spongycastle.crypto.params.KeyParameter
+import io.slychat.messenger.core.emptyByteArray
+import org.spongycastle.crypto.digests.SHA512Digest
+import org.spongycastle.crypto.generators.HKDFBytesGenerator
+import org.spongycastle.crypto.params.HKDFParameters
 
-private fun newGCMCipher(forEncryption: Boolean, params: AESGCMParams, key: ByteArray): AEADBlockCipher {
-    val cipher = GCMBlockCipher(AESFastEngine())
-    val aeadParams = params.toAEADParameters(key)
-    cipher.init(forEncryption, aeadParams)
-    return cipher
+fun deriveKey(masterKey: ByteArray, info: ByteArray, outputKeySizeBits: Int): ByteArray {
+    require(outputKeySizeBits > 0) { "outputKeySize should be >= 0, got $outputKeySizeBits" }
+
+    val hkdf = HKDFBytesGenerator(SHA512Digest())
+    val params = HKDFParameters.skipExtractParameters(masterKey, info)
+    hkdf.init(params)
+
+    val okm = ByteArray(outputKeySizeBits / 8)
+
+    hkdf.generateBytes(okm, 0, okm.size)
+
+    return okm
 }
 
-private fun getOutputArrayForCipher(cipher: AEADBlockCipher, input: ByteArray): ByteArray {
-    val outputLength = cipher.getOutputSize(input.size)
-    return ByteArray(outputLength)
+fun encryptBulkData(masterKey: ByteArray, data: ByteArray, info: ByteArray): ByteArray {
+    return encryptBulkData(CipherList.defaultDataEncryptionCipher, masterKey, data, info)
 }
 
-private fun AEADBlockCipher.processInput(input: ByteArray): ByteArray {
-    val output = getOutputArrayForCipher(this, input)
-    val outputLength = processBytes(input, 0, input.size, output, 0)
-    doFinal(output, outputLength)
+fun encryptBulkData(cipher: Cipher, derivedKey: ByteArray, data: ByteArray): ByteArray {
+    val cipherText = cipher.encrypt(derivedKey, data)
+
+    val output = ByteArray(1 + cipherText.size)
+    output[0] = cipher.id.short.toByte()
+
+    System.arraycopy(
+        cipherText,
+        0,
+        output,
+        1,
+        cipherText.size
+    )
+
     return output
 }
 
-private fun AESGCMParams.toAEADParameters(key: ByteArray): AEADParameters {
-    val keyParam = KeyParameter(key)
-    return AEADParameters(keyParam, authTagLength, iv)
+fun encryptBulkData(cipher: Cipher, masterKey: ByteArray, data: ByteArray, info: ByteArray): ByteArray {
+    if (data.isEmpty())
+        return emptyByteArray()
+
+    val derivedKey = deriveKey(masterKey, info, cipher.keySizeBits)
+
+    return encryptBulkData(cipher, derivedKey, data)
 }
 
-/** Encrypt data with the given parameters. */
-fun encryptDataWithParams(encryptionSpec: EncryptionSpec, plaintext: ByteArray): EncryptedData = when (encryptionSpec.params) {
-    is AESGCMParams -> {
-        val cipher = newGCMCipher(true, encryptionSpec.params, encryptionSpec.key)
-        val ciphertext = cipher.processInput(plaintext)
+//TODO add a no cipherId variant
+fun decryptBulkData(masterKey: ByteArray, ciphertext: ByteArray, info: ByteArray): ByteArray {
+    if (ciphertext.isEmpty())
+        return emptyByteArray()
 
-        EncryptedData(ciphertext, encryptionSpec.params)
-    }
-    else -> throw IllegalArgumentException("Unknown cipher: ${encryptionSpec.params.algorithmName}")
-}
+    if (ciphertext.size <= 0)
+        throw IllegalArgumentException("Malformed ciphertext")
 
-/**
- * Decrypt data with the given parameters.
- *
- * @throws InvalidCipherTextException If decryption fails.
- */
-fun decryptData(encryptionSpec: EncryptionSpec, ciphertext: ByteArray): ByteArray = when (encryptionSpec.params) {
-    is AESGCMParams -> {
-        val cipher = newGCMCipher(false, encryptionSpec.params, encryptionSpec.key)
-        cipher.processInput(ciphertext)
-    }
-    else -> throw IllegalArgumentException("Unknown cipher: ${encryptionSpec.params.algorithmName}")
+    val cipherId = CipherId(ciphertext[0].toShort())
+
+    val cipher = CipherList.getCipher(cipherId)
+
+    val derivedKey = deriveKey(masterKey, info, cipher.keySizeBits)
+
+    return cipher.decrypt(derivedKey, ciphertext.copyOfRange(1, ciphertext.size))
 }

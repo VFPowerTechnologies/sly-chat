@@ -3,10 +3,12 @@ package io.slychat.messenger.core.http.api.contacts
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.crypto.HKDFInfo
 import io.slychat.messenger.core.crypto.KeyVault
-import io.slychat.messenger.core.crypto.ciphers.EncryptionSpec
-import io.slychat.messenger.core.crypto.ciphers.decryptData
-import io.slychat.messenger.core.crypto.ciphers.encryptDataWithParams
+import io.slychat.messenger.core.crypto.ciphers.CipherList
+import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
+import io.slychat.messenger.core.crypto.ciphers.deriveKey
+import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.GroupId
@@ -22,8 +24,7 @@ private fun getEmailHash(keyVault: KeyVault, userId: UserId): String {
     val digester = SHA256Digest()
     val digest = ByteArray(digester.digestSize)
 
-    val key = keyVault.localDataEncryptionKey
-    digester.update(key, 0, key.size)
+    digester.update(keyVault.anonymizingData, 0, keyVault.anonymizingData.size)
     val b = userId.toByteArray()
     digester.update(b, 0, b.size)
 
@@ -36,8 +37,7 @@ private fun getGroupHash(keyVault: KeyVault, groupId: GroupId): String {
     val digester = SHA256Digest()
     val digest = ByteArray(digester.digestSize)
 
-    val key = keyVault.localDataEncryptionKey
-    digester.update(key, 0, key.size)
+    digester.update(keyVault.anonymizingData, 0, keyVault.anonymizingData.size)
     val b = groupId.string.toByteArray()
     digester.update(b, 0, b.size)
 
@@ -50,7 +50,8 @@ private fun getGroupHash(keyVault: KeyVault, groupId: GroupId): String {
 //first we create RemoteContactEntryData, then serialize them to json, and then encrypt them
 //afterwards we then store the encrypted value along with the user id hash in a RemoteContactEntry
 fun encryptRemoteAddressBookEntries(keyVault: KeyVault, updates: List<AddressBookUpdate>): List<RemoteAddressBookEntry> {
-    val encSpec = EncryptionSpec(keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams)
+    val cipher = CipherList.defaultDataEncryptionCipher
+    val derivedKey = deriveKey(keyVault.masterKey, HKDFInfo.addressBookEntries(), cipher.keySizeBits)
 
     val objectMapper = ObjectMapper()
 
@@ -60,18 +61,16 @@ fun encryptRemoteAddressBookEntries(keyVault: KeyVault, updates: List<AddressBoo
             is AddressBookUpdate.Group -> getGroupHash(keyVault, update.groupId)
         }
 
-        val encryptedData = encryptDataWithParams(encSpec, objectMapper.writeValueAsBytes(update)).data
+        val encryptedData = encryptBulkData(cipher, derivedKey, objectMapper.writeValueAsBytes(update))
         RemoteAddressBookEntry(hash, encryptedData)
     }
 }
 
 fun decryptRemoteAddressBookEntries(keyVault: KeyVault, entries: List<RemoteAddressBookEntry>): List<AddressBookUpdate> {
-    val encSpec = EncryptionSpec(keyVault.localDataEncryptionKey, keyVault.localDataEncryptionParams)
-
     val objectMapper = ObjectMapper()
 
     return entries.map { e ->
-        val raw = decryptData(encSpec, e.encryptedData)
+        val raw = decryptBulkData(keyVault.masterKey, e.encryptedData, HKDFInfo.addressBookEntries())
         objectMapper.readValue(raw, AddressBookUpdate::class.java)
     }
 }

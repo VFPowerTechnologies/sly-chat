@@ -1,45 +1,53 @@
 package io.slychat.messenger.core.crypto.hashes
 
-import io.slychat.messenger.core.crypto.Deserializer
-import io.slychat.messenger.core.crypto.SerializedCryptoParams
-import io.slychat.messenger.core.hexify
-import io.slychat.messenger.core.unhexify
+import com.fasterxml.jackson.annotation.JsonProperty
+import java.util.*
 
 class SCryptParams(
+    @JsonProperty("salt")
     val salt: ByteArray,
-    val N: Int,
+    //getN -> n
+    @JsonProperty("n")
+    val n: Int,
+    @JsonProperty("r")
     val r: Int,
+    @JsonProperty("p")
     val p: Int,
+    @JsonProperty("keyLength")
     val keyLength: Int
 ) : HashParams {
+    override val algorithmName: String
+        get() = "scrypt"
+
     init {
         require(salt.isNotEmpty()) { "salt must not be empty" }
-        //SCrypt.generate checks all the param invariants for us
     }
 
-    override val algorithmName: String = Companion.algorithmName
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != javaClass) return false
 
-    override fun serialize(): SerializedCryptoParams {
-        return SerializedCryptoParams(algorithmName, mapOf(
-            "salt" to salt.hexify(),
-            "N" to N.toString(),
-            "r" to r.toString(),
-            "p" to p.toString(),
-            "keyLength" to keyLength.toString()
-        ))
+        other as SCryptParams
+
+        if (!Arrays.equals(salt, other.salt)) return false
+        if (n != other.n) return false
+        if (r != other.r) return false
+        if (p != other.p) return false
+        if (keyLength != other.keyLength) return false
+
+        return true
     }
 
-    companion object : Deserializer<HashParams> {
-        override val algorithmName: String = "scrypt"
+    override fun hashCode(): Int {
+        var result = Arrays.hashCode(salt)
+        result = 31 * result + n
+        result = 31 * result + r
+        result = 31 * result + p
+        result = 31 * result + keyLength
+        return result
+    }
 
-        override fun deserialize(params: Map<String, String>): HashParams {
-            return SCryptParams(
-                params["salt"]!!.unhexify(),
-                Integer.parseInt(params["N"]!!),
-                Integer.parseInt(params["r"]!!),
-                Integer.parseInt(params["p"]!!),
-                Integer.parseInt(params["keyLength"]!!)
-            )
-        }
+    override fun toString(): String {
+        return "SCryptParams(n=$n, r=$r, p=$p, keyLength=$keyLength)"
     }
 }
