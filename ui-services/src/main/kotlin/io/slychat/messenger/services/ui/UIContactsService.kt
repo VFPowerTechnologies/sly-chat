@@ -21,6 +21,8 @@ interface UIContactsService {
      */
     fun addContactEventListener(listener: (UIContactEvent) -> Unit)
 
+    fun getContact(userId: UserId): Promise<UIContactInfo?, Exception>
+
     /** Retrieve list of contacts. UIContact.id will not be null. */
     fun getContacts(): Promise<List<UIContactInfo>, Exception>
 

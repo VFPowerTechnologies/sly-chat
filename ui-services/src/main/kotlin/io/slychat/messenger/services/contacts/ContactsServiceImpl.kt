@@ -39,6 +39,14 @@ class ContactsServiceImpl(
         addressBookOperationManager.syncEvents.subscribe { onAddressBookSyncStatusUpdate(it) }
     }
 
+    override fun get(userId: UserId): Promise<ContactInfo?, Exception> {
+        return contactsPersistenceManager.get(userId)
+    }
+
+    override fun getAll(): Promise<List<ContactInfo>, Exception> {
+        return contactsPersistenceManager.getAll()
+    }
+
     override fun addByInfo(contactInfo: ContactInfo): Promise<Boolean, Exception> {
         return addressBookOperationManager.runOperation {
             log.debug("Adding new contact: {}", contactInfo.id)

@@ -5,7 +5,6 @@ import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
 import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
-import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.contacts.ContactEvent
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.di.UserComponent
@@ -31,7 +30,6 @@ class UIContactsServiceImpl(
     private var isContactSyncActive = false
 
     private var contactsService: ContactsService? = null
-    private var contactsPersistenceManager: ContactsPersistenceManager? = null
     private var accountInfoSubscription: Subscription? = null
 
     private var currentRegionCode: String? = null
@@ -46,13 +44,11 @@ class UIContactsServiceImpl(
                 accountInfoSubscription = null
 
                 contactsService = null
-                contactsPersistenceManager = null
 
                 currentRegionCode = null
             }
             else {
                 contactsService = it.contactsService
-                contactsPersistenceManager = it.contactsPersistenceManager
 
                 contactEventSub = it.contactsService.contactEvents.subscribe { onContactEvent(it) }
 
@@ -109,17 +105,17 @@ class UIContactsServiceImpl(
         listener(UIContactEvent.Sync(isContactSyncActive))
     }
 
-    private fun getContactsPersistenceManagerOrThrow(): ContactsPersistenceManager =
-        contactsPersistenceManager ?: error("Not logged in")
-
     override fun updateContact(newContactInfo: UIContactInfo): Promise<UIContactInfo, Exception> {
         val contactsService = getContactsServiceOrThrow()
         return contactsService.updateContact(newContactInfo.toNative()) map { newContactInfo }
     }
 
+    override fun getContact(userId: UserId): Promise<UIContactInfo?, Exception> {
+        return getContactsServiceOrThrow().get(userId) map { it?.toUI() }
+    }
+
     override fun getContacts(): Promise<List<UIContactInfo>, Exception> {
-        val contactsPersistenceManager = getContactsPersistenceManagerOrThrow()
-        return contactsPersistenceManager.getAll() map List<ContactInfo>::toUI
+        return getContactsServiceOrThrow().getAll() map List<ContactInfo>::toUI
     }
 
     override fun addNewContact(uiContactInfo: UIContactInfo): Promise<UIContactInfo, Exception> {
