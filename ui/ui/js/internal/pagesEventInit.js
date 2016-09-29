@@ -167,6 +167,9 @@ slychat.onPageInit('smsVerification', function (page) {
     $$('#hiddenEmail').val(page.query.email);
     $$('#hiddenPassword').val(page.query.password);
 
+    if (isDesktop)
+        $("#smsCode").focus();
+
     $$('#submitVerificationCode').on('click', function (e) {
         e.preventDefault();
         registrationController.submitVerificationCode();
