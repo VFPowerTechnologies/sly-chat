@@ -1,6 +1,5 @@
 package io.slychat.messenger.services
 
-import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
@@ -28,7 +27,7 @@ class TokenRefresherImpl(
     override fun refreshAuthToken(): Promise<AuthTokenRefreshResult, Exception> {
         val deviceId = address.deviceId
 
-        val remotePasswordHash = userData.keyVault.remotePasswordHash
+        val remotePasswordHash = userData.remotePasswordHash
 
         return loginClient.getParams(email) map { resp ->
             if (resp.errorMessage != null)

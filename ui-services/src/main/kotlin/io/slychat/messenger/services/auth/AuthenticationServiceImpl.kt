@@ -1,10 +1,13 @@
 package io.slychat.messenger.services.auth
 
 import io.slychat.messenger.core.crypto.*
+import io.slychat.messenger.core.crypto.hashes.BCryptParams
+import io.slychat.messenger.core.crypto.hashes.BCryptParams2
 import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
+import io.slychat.messenger.core.persistence.AccountParams
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.services.LocalAccountDirectory
 import nl.komponents.kovenant.Promise
@@ -46,12 +49,19 @@ class AuthenticationServiceImpl(
                 if (response.errorMessage != null)
                     throw AuthApiResponseException(response.errorMessage)
 
+                //FIXME
+                hashParams as BCryptParams
+                val accountParams = AccountParams(
+                    "aes-256-cbc",
+                    BCryptParams2(hashParams.salt, hashParams.cost)
+                )
+
                 val data = response.data!!
                 val keyVault = KeyVault.deserialize(data.keyVault, password)
 
                 //we have no local session, so just use an empty SessionData
                 val sessionData = SessionData().copy(authToken = data.authToken)
-                AuthResult(sessionData, keyVault, data.accountInfo, data.otherDevices)
+                AuthResult(sessionData, keyVault, hash, data.accountInfo, accountParams, data.otherDevices)
             }
         }
     }
@@ -73,6 +83,20 @@ class AuthenticationServiceImpl(
         if (keyVault == null)
             return LocalAuthOutcome.NoLocalData()
 
+        val accountParamsPersistenceManager = localAccountDirectory.getAccountParamsPersistenceManager(
+            accountInfo.id,
+            keyVault.localDataEncryptionKey,
+            keyVault.localDataEncryptionParams
+        )
+
+        val accountParams = accountParamsPersistenceManager.retrieveSync()
+        if (accountParams == null)
+            return LocalAuthOutcome.NoLocalData()
+
+        //FIXME
+        val params = accountParams.remoteHashParams as BCryptParams2
+        val hash = hashPasswordWithParams(password, BCryptParams(params.salt, params.cost))
+
         //this isn't important; just use a null token in the auth result if this isn't present, and then fetch one remotely by refreshing
         val sessionDataPersistenceManager = localAccountDirectory.getSessionDataPersistenceManager(
             accountInfo.id,
@@ -82,7 +106,7 @@ class AuthenticationServiceImpl(
         //if we can't read it from disk, create an empty one
         val sessionData = sessionDataPersistenceManager.retrieveSync() ?: SessionData()
 
-        return LocalAuthOutcome.Successful(AuthResult(sessionData, keyVault, accountInfo, null))
+        return LocalAuthOutcome.Successful(AuthResult(sessionData, keyVault, hash, accountInfo, accountParams, null))
     }
 
     /** Attempts to authentication using a local session first, then falls back to remote authentication. */

@@ -78,17 +78,11 @@ fun getRandomBits(bits: Int): ByteArray {
 fun generateNewKeyVault(password: String): KeyVault {
     val identityKeyPair = generateKeyPair()
     val keyPasswordHashInfo = hashPasswordForLocalWithDefaults(password)
-    //on signup, the client can choose the algo
-    //this can be updated later
-    val remotePasswordHashInfo = hashPasswordForRemoteWithDefaults(password)
 
     val localEncryptionKeyInfo = privateKeyToSymmetricKey(identityKeyPair.privateKey.serialize())
 
-
     return KeyVault(
         identityKeyPair,
-        remotePasswordHashInfo.hash,
-        remotePasswordHashInfo.params,
         keyPasswordHashInfo.hash,
         keyPasswordHashInfo.params,
         defaultDataEncryptionParams(),

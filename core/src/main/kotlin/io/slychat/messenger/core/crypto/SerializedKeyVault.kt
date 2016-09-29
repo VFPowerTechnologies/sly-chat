@@ -9,6 +9,5 @@ data class SerializedKeyVault(
     @JsonProperty("keyPasswordHashParams") val keyPasswordHashParams: SerializedCryptoParams,
     @JsonProperty("keyPairCipherParams") val keyPairCipherParams: SerializedCryptoParams,
     @JsonProperty("privateKeyHashParams") val privateKeyHashParams: SerializedCryptoParams,
-    @JsonProperty("localDataEncryptionParams") val localDataEncryptionParams: SerializedCryptoParams,
-    @JsonProperty("remotePasswordHashParams") val remotePasswordHashParams: SerializedCryptoParams
+    @JsonProperty("localDataEncryptionParams") val localDataEncryptionParams: SerializedCryptoParams
 )

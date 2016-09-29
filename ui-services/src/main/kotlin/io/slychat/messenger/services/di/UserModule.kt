@@ -37,7 +37,9 @@ class UserModule(
     @get:UserScope
     @get:Provides val providesUserLoginData: UserData,
     //only used during construction of AccountInfoManager; never use this directly
-    private val accountInfo: AccountInfo
+    private val accountInfo: AccountInfo,
+    //ditto
+    private val accountParams: AccountParams
 ) {
     @UserScope
     @Provides

@@ -16,8 +16,6 @@ import org.whispersystems.libsignal.IdentityKeyPair
  * Interface for accessing a user's identity keypair and hashes.
  *
  * @property identityKeyPair
- * @property remotePasswordHash Password hash for authenticating to the chat service. Is set after receiving a challenge from a server.
- * @property remotePasswordHashParams Hash Params for authenticating to the chat server. Used to detect an algorithm change and re-prompt the user for a password
  * @property keyPasswordHash Hash for encrypting/decrypting the identity key pair.
  * @property localDataEncryptionKey Key used for local data encryption. Derived from the user's private key via a KDF.
  * @property keyPasswordHashParams How to hash the password to use as a key for encrypting/decrypting the encrypted key pair.
@@ -29,8 +27,6 @@ import org.whispersystems.libsignal.IdentityKeyPair
 class KeyVault(
     val identityKeyPair: IdentityKeyPair,
 
-    val remotePasswordHash: ByteArray,
-    val remotePasswordHashParams: HashParams,
     val keyPasswordHash: ByteArray,
 
     val keyPasswordHashParams: HashParams,
@@ -60,8 +56,8 @@ class KeyVault(
             keyPasswordHashParams.serialize(),
             keyPairCipherParams.serialize(),
             privateKeyHashParams.serialize(),
-            localDataEncryptionParams.serialize(),
-            remotePasswordHashParams.serialize())
+            localDataEncryptionParams.serialize()
+        )
     }
 
     fun toStorage(keyVaultStorage: KeyVaultStorage) {
@@ -101,15 +97,9 @@ class KeyVault(
             val localDataEncryptionParams = CipherDeserializers.deserialize(
                 serialized.localDataEncryptionParams)
 
-            val remotePasswordHashParams = HashDeserializers.deserialize(serialized.remotePasswordHashParams)
-
-            val remotePasswordHash = hashPasswordWithParams(password, remotePasswordHashParams)
-
             return KeyVault(
                 identityKeyPair,
 
-                remotePasswordHash,
-                remotePasswordHashParams,
                 keyPasswordHash,
 
                 keyPasswordHashParams,

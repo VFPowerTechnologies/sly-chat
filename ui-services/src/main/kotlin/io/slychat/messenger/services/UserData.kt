@@ -6,7 +6,8 @@ import io.slychat.messenger.core.crypto.KeyVault
 
 class UserData(
     val address: SlyAddress,
-    val keyVault: KeyVault
+    val keyVault: KeyVault,
+    val remotePasswordHash: ByteArray
 ) {
     val userId: UserId
         get() = address.id

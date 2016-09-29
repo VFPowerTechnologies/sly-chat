@@ -30,7 +30,7 @@ class UIRegistrationServiceImpl(
         return asyncGenerateNewKeyVault(password) bind { keyVault ->
             updateProgress("Connecting to server...")
             val registrationInfo = RegistrationInfo(username, info.name, info.phoneNumber)
-            val request = registrationRequestFromKeyVault(registrationInfo, keyVault)
+            val request = registrationRequestFromKeyVault(registrationInfo, keyVault, password)
             registrationClient.register(request)
         } map { result ->
             val uiResult = UIRegistrationResult(result.isSuccess, result.errorMessage, result.validationErrors)

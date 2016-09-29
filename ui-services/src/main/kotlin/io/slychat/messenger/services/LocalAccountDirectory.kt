@@ -20,6 +20,8 @@ interface LocalAccountDirectory {
 
     fun getSessionDataPersistenceManager(userId: UserId, localDataEncryptionKey: ByteArray, localDataEncryptionParams: CipherParams): SessionDataPersistenceManager
 
+    fun getAccountParamsPersistenceManager(userId: UserId, localDataEncryptionKey: ByteArray, localDataEncryptionParams: CipherParams): AccountParamsPersistenceManager
+
     fun getStartupInfoPersistenceManager(): StartupInfoPersistenceManager
 
     /** Create user account directory structure. */
