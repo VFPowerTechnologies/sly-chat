@@ -804,13 +804,13 @@ ChatController.prototype = {
             mainView.removeClass("expire-message-toggled");
             bottomToolbar.removeClass("expiring-message-toolbar");
             bottomToolbar.find("#delaySliderContainer").remove();
-            newMessageInput.attr("placeholder", "Type your secured message");
+            newMessageInput.attr("placeholder", "Type your secure message");
         }
         else {
             mainView.addClass("expire-message-toggled");
             bottomToolbar.addClass("expiring-message-toolbar");
             this.createExpireDelaySlider(bottomToolbar);
-            newMessageInput.attr("placeholder", "Type your expiring secured message");
+            newMessageInput.attr("placeholder", "Type your expiring secure message");
         }
     },
 
@@ -818,7 +818,7 @@ ChatController.prototype = {
         var sliderContainer = $('<div id="delaySliderContainer">' +
             '<div id="delaySlider" style="margin: 0 10px;"></div>' +
             '<div style="color: #a9a9a9; font-size: 10px; float: right; padding-right: 5px;">' +
-            '<span>Delay: <span id="delayDisplay">10</span> seconds</span></div></div>');
+            '<span>Self Destruct: <span id="delayDisplay">10</span> seconds</span></div></div>');
 
         toolbar.prepend(sliderContainer);
 
