@@ -268,7 +268,7 @@ class SlyApplication {
 
             val userLoginData = UserData(address, keyVault, response.remotePasswordHash)
 
-            val userComponent = createUserSession(userLoginData, accountInfo, accountParams)
+            val userComponent = createUserSession(userLoginData, accountInfo)
 
             val authTokenManager = userComponent.authTokenManager
             if (sessionData.authToken != null)
@@ -368,13 +368,13 @@ class SlyApplication {
         fetchOfflineMessages()
     }
 
-    fun createUserSession(userLoginData: UserData, accountInfo: AccountInfo, accountParams: AccountParams): UserComponent {
+    fun createUserSession(userLoginData: UserData, accountInfo: AccountInfo): UserComponent {
         if (userComponent != null)
             error("UserComponent already loaded")
 
         log.info("Creating user session")
 
-        val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo, accountParams))
+        val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo))
         this.userComponent = userComponent
 
         Sentry.setUserAddress(userComponent.userLoginData.address)
@@ -402,6 +402,7 @@ class SlyApplication {
         val localAccountDirectory = appComponent.localAccountDirectory
         val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager()
         val sessionDataManager = userComponent.sessionDataManager
+        val accountParamsManager = userComponent.accountParamsManager
 
         val sessionData = authResult.sessionData
         val accountInfo = authResult.accountInfo
@@ -410,6 +411,8 @@ class SlyApplication {
         //we could break this up into parts and emit progress events between stages
         return task {
             localAccountDirectory.createUserDirectories(userId)
+        } bind {
+            accountParamsManager.update(authResult.accountParams)
         } bind {
             sessionDataManager.update(sessionData)
         } bind {

@@ -67,4 +67,6 @@ interface UserComponent {
     val messageReadWatcher: MessageReadWatcher
 
     val messageDeletionWatcher: MessageDeletionWatcher
+
+    val accountParamsManager: AccountParamsManager
 }

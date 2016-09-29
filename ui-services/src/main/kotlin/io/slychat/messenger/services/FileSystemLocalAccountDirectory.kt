@@ -68,7 +68,7 @@ class FileSystemLocalAccountDirectory(
             localDataEncryptionKey,
             localDataEncryptionParams
         )
-        return JsonAccountParamsPersistenceManager(paths.sessionDataPath, spec)
+        return JsonAccountParamsPersistenceManager(paths.accountParamsPath, spec)
     }
 
     override fun getStartupInfoPersistenceManager(): StartupInfoPersistenceManager {

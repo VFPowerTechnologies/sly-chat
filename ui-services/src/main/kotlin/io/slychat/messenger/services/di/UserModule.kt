@@ -37,9 +37,7 @@ class UserModule(
     @get:UserScope
     @get:Provides val providesUserLoginData: UserData,
     //only used during construction of AccountInfoManager; never use this directly
-    private val accountInfo: AccountInfo,
-    //ditto
-    private val accountParams: AccountParams
+    private val accountInfo: AccountInfo
 ) {
     @UserScope
     @Provides
@@ -379,6 +377,13 @@ class UserModule(
         sessionDataPersistenceManager: SessionDataPersistenceManager
     ): SessionDataManager =
         SessionDataManagerImpl(sessionDataPersistenceManager)
+
+    @UserScope
+    @Provides
+    fun providesAccountParamsManager(
+        accountParamsPersistenceManager: AccountParamsPersistenceManager
+    ): AccountParamsManager =
+        AccountParamsManagerImpl(accountParamsPersistenceManager)
 
     @UserScope
     @Provides
