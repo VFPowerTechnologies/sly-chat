@@ -9,6 +9,9 @@ import rx.Observable
 interface ContactsService {
     val contactEvents: Observable<ContactEvent>
 
+    fun get(userId: UserId): Promise<ContactInfo?, Exception>
+    fun getAll(): Promise<List<ContactInfo>, Exception>
+
     fun shutdown()
 
     fun fetchRemoteContactInfo(email: String?, queryPhoneNumber: String?): Promise<FindContactResponse, Exception>
