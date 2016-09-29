@@ -14,7 +14,7 @@ class SCryptParams(
 ) : HashParams {
     init {
         require(salt.isNotEmpty()) { "salt must not be empty" }
-        //BCrypt.generate checks all the param invariants for us
+        //SCrypt.generate checks all the param invariants for us
     }
 
     override val algorithmName: String = Companion.algorithmName

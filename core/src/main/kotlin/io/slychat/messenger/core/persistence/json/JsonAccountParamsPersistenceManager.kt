@@ -4,33 +4,29 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.crypto.ciphers.EncryptionSpec
 import io.slychat.messenger.core.crypto.ciphers.decryptData
 import io.slychat.messenger.core.crypto.ciphers.encryptDataWithParams
-import io.slychat.messenger.core.persistence.SessionData
-import io.slychat.messenger.core.persistence.SessionDataPersistenceManager
+import io.slychat.messenger.core.persistence.AccountParams
+import io.slychat.messenger.core.persistence.AccountParamsPersistenceManager
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 import org.spongycastle.crypto.InvalidCipherTextException
 import java.io.File
 import java.io.FileNotFoundException
 
-class JsonSessionDataPersistenceManager(
+class JsonAccountParamsPersistenceManager(
     val path: File,
     private val encryptionSpec: EncryptionSpec
-) : SessionDataPersistenceManager {
+) : AccountParamsPersistenceManager {
     private val objectMapper = ObjectMapper()
 
-    override fun store(sessionData: SessionData): Promise<Unit, Exception> = task {
-        val serialized = objectMapper.writeValueAsBytes(sessionData)
+    override fun store(accountParams: AccountParams): Promise<Unit, Exception> = task {
+        val serialized = objectMapper.writeValueAsBytes(accountParams)
 
         val encrypted = encryptDataWithParams(encryptionSpec, serialized)
 
         path.writeBytes(encrypted.data)
     }
 
-    override fun retrieve(): Promise<SessionData?, Exception> = task {
-        retrieveSync()
-    }
-
-    override fun retrieveSync(): SessionData? {
+    override fun retrieveSync(): AccountParams? {
         val encrypted = try {
             path.readBytes()
         }
@@ -45,10 +41,6 @@ class JsonSessionDataPersistenceManager(
             return null
         }
 
-        return objectMapper.readValue(decrypted, SessionData::class.java)
-    }
-
-    override fun delete(): Promise<Boolean, Exception> = task {
-        path.delete()
+        return objectMapper.readValue(decrypted, AccountParams::class.java)
     }
 }
