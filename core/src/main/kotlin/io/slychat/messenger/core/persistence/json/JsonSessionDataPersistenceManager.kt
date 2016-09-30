@@ -1,7 +1,7 @@
 package io.slychat.messenger.core.persistence.json
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.slychat.messenger.core.crypto.HKDFInfo
+import io.slychat.messenger.core.crypto.HKDFInfoList
 import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
 import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
 import io.slychat.messenger.core.persistence.SessionData
@@ -21,7 +21,7 @@ class JsonSessionDataPersistenceManager(
     override fun store(sessionData: SessionData): Promise<Unit, Exception> = task {
         val serialized = objectMapper.writeValueAsBytes(sessionData)
 
-        val encrypted = encryptBulkData(masterKey, serialized, HKDFInfo.jsonSessionData())
+        val encrypted = encryptBulkData(masterKey, serialized, HKDFInfoList.jsonSessionData())
 
         path.writeBytes(encrypted)
     }
@@ -39,7 +39,7 @@ class JsonSessionDataPersistenceManager(
         }
 
         val decrypted = try {
-            decryptBulkData(masterKey, encrypted, HKDFInfo.jsonSessionData())
+            decryptBulkData(masterKey, encrypted, HKDFInfoList.jsonSessionData())
         }
         catch (e: InvalidCipherTextException) {
             return null

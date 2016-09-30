@@ -1,15 +1,16 @@
 package io.slychat.messenger.core.crypto.ciphers
 
+import io.slychat.messenger.core.crypto.HKDFInfo
 import io.slychat.messenger.core.emptyByteArray
 import org.spongycastle.crypto.digests.SHA512Digest
 import org.spongycastle.crypto.generators.HKDFBytesGenerator
 import org.spongycastle.crypto.params.HKDFParameters
 
-fun deriveKey(masterKey: ByteArray, info: ByteArray, outputKeySizeBits: Int): ByteArray {
+fun deriveKey(masterKey: ByteArray, info: HKDFInfo, outputKeySizeBits: Int): ByteArray {
     require(outputKeySizeBits > 0) { "outputKeySize should be >= 0, got $outputKeySizeBits" }
 
     val hkdf = HKDFBytesGenerator(SHA512Digest())
-    val params = HKDFParameters.skipExtractParameters(masterKey, info)
+    val params = HKDFParameters.skipExtractParameters(masterKey, info.raw)
     hkdf.init(params)
 
     val okm = ByteArray(outputKeySizeBits / 8)
@@ -19,7 +20,7 @@ fun deriveKey(masterKey: ByteArray, info: ByteArray, outputKeySizeBits: Int): By
     return okm
 }
 
-fun encryptBulkData(masterKey: ByteArray, data: ByteArray, info: ByteArray): ByteArray {
+fun encryptBulkData(masterKey: ByteArray, data: ByteArray, info: HKDFInfo): ByteArray {
     return encryptBulkData(CipherList.defaultDataEncryptionCipher, masterKey, data, info)
 }
 
@@ -40,7 +41,7 @@ fun encryptBulkData(cipher: Cipher, derivedKey: ByteArray, data: ByteArray): Byt
     return output
 }
 
-fun encryptBulkData(cipher: Cipher, masterKey: ByteArray, data: ByteArray, info: ByteArray): ByteArray {
+fun encryptBulkData(cipher: Cipher, masterKey: ByteArray, data: ByteArray, info: HKDFInfo): ByteArray {
     if (data.isEmpty())
         return emptyByteArray()
 
@@ -50,7 +51,7 @@ fun encryptBulkData(cipher: Cipher, masterKey: ByteArray, data: ByteArray, info:
 }
 
 //TODO add a no cipherId variant
-fun decryptBulkData(masterKey: ByteArray, ciphertext: ByteArray, info: ByteArray): ByteArray {
+fun decryptBulkData(masterKey: ByteArray, ciphertext: ByteArray, info: HKDFInfo): ByteArray {
     if (ciphertext.isEmpty())
         return emptyByteArray()
 

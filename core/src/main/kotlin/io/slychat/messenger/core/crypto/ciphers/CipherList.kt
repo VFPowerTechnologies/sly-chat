@@ -2,6 +2,7 @@ package io.slychat.messenger.core.crypto.ciphers
 
 import java.util.*
 
+/** List of known ciphers for use in bulk data encryption. */
 object CipherList {
     private val ciphers = HashMap<CipherId, Cipher>()
 

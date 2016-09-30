@@ -42,9 +42,9 @@ class KeyVault(
         val cipher = CipherList.defaultDataEncryptionCipher
         val key = localPasswordHash
 
-        val encryptedMasterKey = encryptBulkData(cipher, key, masterKey, HKDFInfo.keyVaultMasterKey())
-        val encryptedKeyPair = encryptBulkData(cipher, key, identityKeyPair.serialize(), HKDFInfo.keyVaultKeyPair())
-        val encryptedAnonymizingData = encryptBulkData(cipher, key, anonymizingData, HKDFInfo.keyVaultAnonymizingData())
+        val encryptedMasterKey = encryptBulkData(cipher, key, masterKey, HKDFInfoList.keyVaultMasterKey())
+        val encryptedKeyPair = encryptBulkData(cipher, key, identityKeyPair.serialize(), HKDFInfoList.keyVaultKeyPair())
+        val encryptedAnonymizingData = encryptBulkData(cipher, key, anonymizingData, HKDFInfoList.keyVaultAnonymizingData())
 
         return SerializedKeyVault(
             encryptedKeyPair,
@@ -66,9 +66,9 @@ class KeyVault(
             try {
                 val localPasswordHash = hashPasswordWithParams(password, serialized.localPasswordHashParams)
 
-                val masterKey = decryptBulkData(localPasswordHash, serialized.encryptedMasterKey, HKDFInfo.keyVaultMasterKey())
-                val keyData = decryptBulkData(localPasswordHash, serialized.encryptedKeyPair, HKDFInfo.keyVaultKeyPair())
-                val anonymizingData = decryptBulkData(localPasswordHash, serialized.encryptedAnonymizingData, HKDFInfo.keyVaultAnonymizingData())
+                val masterKey = decryptBulkData(localPasswordHash, serialized.encryptedMasterKey, HKDFInfoList.keyVaultMasterKey())
+                val keyData = decryptBulkData(localPasswordHash, serialized.encryptedKeyPair, HKDFInfoList.keyVaultKeyPair())
+                val anonymizingData = decryptBulkData(localPasswordHash, serialized.encryptedAnonymizingData, HKDFInfoList.keyVaultAnonymizingData())
 
                 val identityKeyPair = IdentityKeyPair(keyData)
 
