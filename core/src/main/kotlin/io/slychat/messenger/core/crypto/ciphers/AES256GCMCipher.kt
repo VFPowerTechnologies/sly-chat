@@ -48,13 +48,13 @@ class AES256GCMCipher : Cipher {
         return output
     }
 
-    private fun getAEADParameters(key: ByteArray, iv: ByteArray): AEADParameters {
-        val keyParam = KeyParameter(key)
+    private fun getAEADParameters(key: Key, iv: ByteArray): AEADParameters {
+        val keyParam = KeyParameter(key.raw)
 
         return AEADParameters(keyParam, authTagLengthBits, iv)
     }
 
-    override fun encrypt(key: ByteArray, plaintext: ByteArray): ByteArray {
+    override fun encrypt(key: Key, plaintext: ByteArray): ByteArray {
         val iv = getRandomBits(ivSizeBits)
         val cipher = newCipher(true, getAEADParameters(key, iv))
 
@@ -76,7 +76,7 @@ class AES256GCMCipher : Cipher {
         return output
     }
 
-    override fun decrypt(key: ByteArray, ciphertext: ByteArray): ByteArray {
+    override fun decrypt(key: Key, ciphertext: ByteArray): ByteArray {
         if (ciphertext.size < ivSizeBytes)
             throw IllegalArgumentException("Malformed encrypted data")
 

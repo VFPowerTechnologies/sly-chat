@@ -2,12 +2,12 @@ package io.slychat.messenger.core.crypto
 
 import java.util.*
 
-//just to provide a bit of type safety... don't wanna accidently swap info and key or something stupid
+/** Info paramater for HKDF expand stage. */
 class HKDFInfo(infoString: String) {
     val raw: ByteArray = infoString.toByteArray(Charsets.UTF_8)
 
     override fun toString(): String {
-        return "HKDFInfo(raw=${raw.toString(Charsets.UTF_8)})"
+        return "HKDFInfo(${raw.toString(Charsets.UTF_8)})"
     }
 
     override fun equals(other: Any?): Boolean {

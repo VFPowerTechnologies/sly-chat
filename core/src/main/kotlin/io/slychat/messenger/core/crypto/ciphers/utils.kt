@@ -6,25 +6,26 @@ import org.spongycastle.crypto.digests.SHA512Digest
 import org.spongycastle.crypto.generators.HKDFBytesGenerator
 import org.spongycastle.crypto.params.HKDFParameters
 
-fun deriveKey(masterKey: ByteArray, info: HKDFInfo, outputKeySizeBits: Int): ByteArray {
+fun deriveKey(masterKey: Key, info: HKDFInfo, outputKeySizeBits: Int): Key {
     require(outputKeySizeBits > 0) { "outputKeySize should be >= 0, got $outputKeySizeBits" }
 
     val hkdf = HKDFBytesGenerator(SHA512Digest())
-    val params = HKDFParameters.skipExtractParameters(masterKey, info.raw)
+    //the master key is directly from a PRNG, and the attacker has no knowledge of its structure so we don't require an extract stage
+    val params = HKDFParameters.skipExtractParameters(masterKey.raw, info.raw)
     hkdf.init(params)
 
     val okm = ByteArray(outputKeySizeBits / 8)
 
     hkdf.generateBytes(okm, 0, okm.size)
 
-    return okm
+    return Key(okm)
 }
 
-fun encryptBulkData(masterKey: ByteArray, data: ByteArray, info: HKDFInfo): ByteArray {
+fun encryptBulkData(masterKey: Key, data: ByteArray, info: HKDFInfo): ByteArray {
     return encryptBulkData(CipherList.defaultDataEncryptionCipher, masterKey, data, info)
 }
 
-fun encryptBulkData(cipher: Cipher, derivedKey: ByteArray, data: ByteArray): ByteArray {
+fun encryptBulkData(cipher: Cipher, derivedKey: Key, data: ByteArray): ByteArray {
     val cipherText = cipher.encrypt(derivedKey, data)
 
     val output = ByteArray(1 + cipherText.size)
@@ -41,7 +42,7 @@ fun encryptBulkData(cipher: Cipher, derivedKey: ByteArray, data: ByteArray): Byt
     return output
 }
 
-fun encryptBulkData(cipher: Cipher, masterKey: ByteArray, data: ByteArray, info: HKDFInfo): ByteArray {
+fun encryptBulkData(cipher: Cipher, masterKey: Key, data: ByteArray, info: HKDFInfo): ByteArray {
     if (data.isEmpty())
         return emptyByteArray()
 
@@ -51,7 +52,7 @@ fun encryptBulkData(cipher: Cipher, masterKey: ByteArray, data: ByteArray, info:
 }
 
 //TODO add a no cipherId variant
-fun decryptBulkData(masterKey: ByteArray, ciphertext: ByteArray, info: HKDFInfo): ByteArray {
+fun decryptBulkData(masterKey: Key, ciphertext: ByteArray, info: HKDFInfo): ByteArray {
     if (ciphertext.isEmpty())
         return emptyByteArray()
 

@@ -1,6 +1,6 @@
 package io.slychat.messenger.core.crypto.ciphers
 
-import io.slychat.messenger.core.crypto.getRandomBits
+import io.slychat.messenger.core.crypto.generateKey
 import org.junit.Test
 import kotlin.test.assertEquals
 
@@ -9,7 +9,7 @@ class AES256GCMCipherTest {
     fun `it should be able to encrypt and decrypt`() {
         val cipher = AES256GCMCipher()
 
-        val key = getRandomBits(cipher.keySizeBits)
+        val key = generateKey(cipher.keySizeBits)
 
         val plaintext = "test"
 

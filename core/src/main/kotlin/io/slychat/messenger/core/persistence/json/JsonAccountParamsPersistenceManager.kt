@@ -2,6 +2,7 @@ package io.slychat.messenger.core.persistence.json
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.crypto.HKDFInfoList
+import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
 import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
 import io.slychat.messenger.core.persistence.AccountParams
@@ -14,7 +15,7 @@ import java.io.FileNotFoundException
 
 class JsonAccountParamsPersistenceManager(
     val path: File,
-    private val masterKey: ByteArray
+    private val masterKey: Key
 ) : AccountParamsPersistenceManager {
     private val objectMapper = ObjectMapper()
 

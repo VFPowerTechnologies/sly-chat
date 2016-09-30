@@ -1,6 +1,7 @@
 package io.slychat.messenger.core.crypto
 
 import io.slychat.messenger.core.crypto.ciphers.CipherList
+import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
 import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
 import io.slychat.messenger.core.crypto.hashes.HashParams
@@ -13,7 +14,7 @@ import org.whispersystems.libsignal.IdentityKeyPair
  *
  * @property identityKeyPair
  * @property masterKey Used to derive other keys on-demand via HKDF.
- * @property keyPasswordHashParams How to hash the password to use as a key for encrypting/decrypting the master key and encrypted key pair.
+ * @property localPasswordHashParams How to hash the password to use as a key for encrypting/decrypting the key vault secrets.
  *
  */
 class KeyVault(
@@ -21,14 +22,13 @@ class KeyVault(
     val identityKeyPair: IdentityKeyPair,
     //encrypted by password-derived key
     //all other keys are derived from this one
-    val masterKey: ByteArray,
+    val masterKey: Key,
     //used when creating hashes of things to upload remotely to allow the hashes to match across devices, but not be identifiable to others
     val anonymizingData: ByteArray,
     //PBKDF params for key to decrypt masterKey and identityKeyPair
     val localPasswordHashParams: HashParams,
-
     //kept so we can serialize
-    private val localPasswordHash: ByteArray
+    private val localPasswordHash: Key
 ) {
 
     /** Returns the public key encoded as a hex string. */
@@ -42,7 +42,7 @@ class KeyVault(
         val cipher = CipherList.defaultDataEncryptionCipher
         val key = localPasswordHash
 
-        val encryptedMasterKey = encryptBulkData(cipher, key, masterKey, HKDFInfoList.keyVaultMasterKey())
+        val encryptedMasterKey = encryptBulkData(cipher, key, masterKey.raw, HKDFInfoList.keyVaultMasterKey())
         val encryptedKeyPair = encryptBulkData(cipher, key, identityKeyPair.serialize(), HKDFInfoList.keyVaultKeyPair())
         val encryptedAnonymizingData = encryptBulkData(cipher, key, anonymizingData, HKDFInfoList.keyVaultAnonymizingData())
 
@@ -64,9 +64,9 @@ class KeyVault(
 
         fun deserialize(serialized: SerializedKeyVault, password: String): KeyVault {
             try {
-                val localPasswordHash = hashPasswordWithParams(password, serialized.localPasswordHashParams)
+                val localPasswordHash = Key(hashPasswordWithParams(password, serialized.localPasswordHashParams))
 
-                val masterKey = decryptBulkData(localPasswordHash, serialized.encryptedMasterKey, HKDFInfoList.keyVaultMasterKey())
+                val masterKey = Key(decryptBulkData(localPasswordHash, serialized.encryptedMasterKey, HKDFInfoList.keyVaultMasterKey()))
                 val keyData = decryptBulkData(localPasswordHash, serialized.encryptedKeyPair, HKDFInfoList.keyVaultKeyPair())
                 val anonymizingData = decryptBulkData(localPasswordHash, serialized.encryptedAnonymizingData, HKDFInfoList.keyVaultAnonymizingData())
 

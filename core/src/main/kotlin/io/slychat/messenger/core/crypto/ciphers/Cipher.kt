@@ -7,6 +7,6 @@ interface Cipher {
 
     val keySizeBits: Int
 
-    fun encrypt(key: ByteArray, plaintext: ByteArray): ByteArray
-    fun decrypt(key: ByteArray, ciphertext: ByteArray): ByteArray
+    fun encrypt(key: Key, plaintext: ByteArray): ByteArray
+    fun decrypt(key: Key, ciphertext: ByteArray): ByteArray
 }
