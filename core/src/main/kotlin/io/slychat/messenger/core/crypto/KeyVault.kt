@@ -31,34 +31,6 @@ class KeyVault(
     //kept so we can serialize
     private val localPasswordHash: Key
 ) {
-
-    /** Returns the public key encoded as a hex string. */
-    val fingerprint: String
-        get() {
-            //this includes the prepended type byte
-            return identityKeyFingerprint(identityKeyPair.publicKey)
-        }
-
-    fun serialize(): SerializedKeyVault {
-        val cipher = CipherList.defaultDataEncryptionCipher
-        val key = localPasswordHash
-
-        val encryptedMasterKey = encryptBulkData(cipher, key, masterKey.raw, HKDFInfoList.keyVaultMasterKey())
-        val encryptedKeyPair = encryptBulkData(cipher, key, identityKeyPair.serialize(), HKDFInfoList.keyVaultKeyPair())
-        val encryptedAnonymizingData = encryptBulkData(cipher, key, anonymizingData, HKDFInfoList.keyVaultAnonymizingData())
-
-        return SerializedKeyVault(
-            encryptedKeyPair,
-            encryptedMasterKey,
-            encryptedAnonymizingData,
-            localPasswordHashParams
-        )
-    }
-
-    fun toStorage(keyVaultStorage: KeyVaultStorage) {
-        keyVaultStorage.write(serialize())
-    }
-
     companion object {
         fun fromStorage(keyVaultStorage: KeyVaultStorage, password: String): KeyVault? =
             keyVaultStorage.read()?.let { deserialize(it, password) }
@@ -67,9 +39,20 @@ class KeyVault(
             try {
                 val localPasswordHash = Key(hashPasswordWithParams(password, serialized.localPasswordHashParams, HashType.LOCAL))
 
-                val masterKey = Key(decryptBulkData(localPasswordHash, serialized.encryptedMasterKey, HKDFInfoList.keyVaultMasterKey()))
-                val keyData = decryptBulkData(localPasswordHash, serialized.encryptedKeyPair, HKDFInfoList.keyVaultKeyPair())
-                val anonymizingData = decryptBulkData(localPasswordHash, serialized.encryptedAnonymizingData, HKDFInfoList.keyVaultAnonymizingData())
+                val masterKey = Key(decryptBulkData(
+                    DerivedKeySpec(localPasswordHash, HKDFInfoList.keyVaultMasterKey()),
+                    serialized.encryptedMasterKey
+                ))
+
+                val keyData = decryptBulkData(
+                    DerivedKeySpec(localPasswordHash, HKDFInfoList.keyVaultKeyPair()),
+                    serialized.encryptedKeyPair
+                )
+
+                val anonymizingData = decryptBulkData(
+                    DerivedKeySpec(localPasswordHash, HKDFInfoList.keyVaultAnonymizingData()),
+                    serialized.encryptedAnonymizingData
+                )
 
                 val identityKeyPair = IdentityKeyPair(keyData)
 
@@ -85,5 +68,46 @@ class KeyVault(
                 throw KeyVaultDecryptionFailedException()
             }
         }
+    }
+
+    /** Returns the public key encoded as a hex string. */
+    val fingerprint: String
+        get() {
+            //this includes the prepended type byte
+            return identityKeyFingerprint(identityKeyPair.publicKey)
+        }
+
+    fun serialize(): SerializedKeyVault {
+        val cipher = CipherList.defaultDataEncryptionCipher
+        val key = localPasswordHash
+
+        val encryptedMasterKey = encryptBulkData(
+            cipher,
+            DerivedKeySpec(key, HKDFInfoList.keyVaultMasterKey()),
+            masterKey.raw
+        )
+
+        val encryptedKeyPair = encryptBulkData(
+            cipher,
+            DerivedKeySpec(key, HKDFInfoList.keyVaultKeyPair()),
+            identityKeyPair.serialize()
+        )
+
+        val encryptedAnonymizingData = encryptBulkData(
+            cipher,
+            DerivedKeySpec(key, HKDFInfoList.keyVaultAnonymizingData()),
+            anonymizingData
+        )
+
+        return SerializedKeyVault(
+            encryptedKeyPair,
+            encryptedMasterKey,
+            encryptedAnonymizingData,
+            localPasswordHashParams
+        )
+    }
+
+    fun toStorage(keyVaultStorage: KeyVaultStorage) {
+        keyVaultStorage.write(serialize())
     }
 }

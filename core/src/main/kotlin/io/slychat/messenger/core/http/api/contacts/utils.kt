@@ -3,6 +3,7 @@ package io.slychat.messenger.core.http.api.contacts
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.crypto.DerivedKeySpec
 import io.slychat.messenger.core.crypto.HKDFInfoList
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.ciphers.CipherList
@@ -69,8 +70,10 @@ fun encryptRemoteAddressBookEntries(keyVault: KeyVault, updates: List<AddressBoo
 fun decryptRemoteAddressBookEntries(keyVault: KeyVault, entries: List<RemoteAddressBookEntry>): List<AddressBookUpdate> {
     val objectMapper = ObjectMapper()
 
+    val derivedKeySpec = DerivedKeySpec(keyVault.masterKey, HKDFInfoList.addressBookEntries())
+
     return entries.map { e ->
-        val raw = decryptBulkData(keyVault.masterKey, e.encryptedData, HKDFInfoList.addressBookEntries())
+        val raw = decryptBulkData(derivedKeySpec, e.encryptedData)
         objectMapper.readValue(raw, AddressBookUpdate::class.java)
     }
 }

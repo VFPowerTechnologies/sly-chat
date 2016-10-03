@@ -1,5 +1,6 @@
 package io.slychat.messenger.core.crypto.ciphers
 
+import io.slychat.messenger.core.crypto.DerivedKeySpec
 import io.slychat.messenger.core.crypto.HKDFInfo
 import io.slychat.messenger.core.emptyByteArray
 import org.spongycastle.crypto.digests.SHA512Digest
@@ -21,8 +22,8 @@ fun deriveKey(masterKey: Key, info: HKDFInfo, outputKeySizeBits: Int): Key {
     return Key(okm)
 }
 
-fun encryptBulkData(masterKey: Key, data: ByteArray, info: HKDFInfo): ByteArray {
-    return encryptBulkData(CipherList.defaultDataEncryptionCipher, masterKey, data, info)
+fun encryptBulkData(derivedKeySpec: DerivedKeySpec, data: ByteArray): ByteArray {
+    return encryptBulkData(CipherList.defaultDataEncryptionCipher, derivedKeySpec, data)
 }
 
 fun encryptBulkData(cipher: Cipher, derivedKey: Key, data: ByteArray): ByteArray {
@@ -42,17 +43,17 @@ fun encryptBulkData(cipher: Cipher, derivedKey: Key, data: ByteArray): ByteArray
     return output
 }
 
-fun encryptBulkData(cipher: Cipher, masterKey: Key, data: ByteArray, info: HKDFInfo): ByteArray {
+fun encryptBulkData(cipher: Cipher, derivedKeySpec: DerivedKeySpec, data: ByteArray): ByteArray {
     if (data.isEmpty())
         return emptyByteArray()
 
-    val derivedKey = deriveKey(masterKey, info, cipher.keySizeBits)
+    val derivedKey = derivedKeySpec.derive(cipher.keySizeBits)
 
     return encryptBulkData(cipher, derivedKey, data)
 }
 
 //TODO add a no cipherId variant
-fun decryptBulkData(masterKey: Key, ciphertext: ByteArray, info: HKDFInfo): ByteArray {
+fun decryptBulkData(derivedKeySpec: DerivedKeySpec, ciphertext: ByteArray): ByteArray {
     if (ciphertext.isEmpty())
         return emptyByteArray()
 
@@ -63,7 +64,7 @@ fun decryptBulkData(masterKey: Key, ciphertext: ByteArray, info: HKDFInfo): Byte
 
     val cipher = CipherList.getCipher(cipherId)
 
-    val derivedKey = deriveKey(masterKey, info, cipher.keySizeBits)
+    val derivedKey = derivedKeySpec.derive(cipher.keySizeBits)
 
     return cipher.decrypt(derivedKey, ciphertext.copyOfRange(1, ciphertext.size))
 }

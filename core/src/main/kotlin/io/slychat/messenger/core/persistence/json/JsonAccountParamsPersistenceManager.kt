@@ -1,8 +1,7 @@
 package io.slychat.messenger.core.persistence.json
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.slychat.messenger.core.crypto.HKDFInfoList
-import io.slychat.messenger.core.crypto.ciphers.Key
+import io.slychat.messenger.core.crypto.DerivedKeySpec
 import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
 import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
 import io.slychat.messenger.core.persistence.AccountParams
@@ -15,14 +14,14 @@ import java.io.FileNotFoundException
 
 class JsonAccountParamsPersistenceManager(
     val path: File,
-    private val masterKey: Key
+    private val derivedKeySpec: DerivedKeySpec
 ) : AccountParamsPersistenceManager {
     private val objectMapper = ObjectMapper()
 
     override fun store(accountParams: AccountParams): Promise<Unit, Exception> = task {
         val serialized = objectMapper.writeValueAsBytes(accountParams)
 
-        val encrypted = encryptBulkData(masterKey, serialized, HKDFInfoList.jsonAccountParams())
+        val encrypted = encryptBulkData(derivedKeySpec, serialized)
 
         path.writeBytes(encrypted)
     }
@@ -36,7 +35,7 @@ class JsonAccountParamsPersistenceManager(
         }
 
         val decrypted = try {
-            decryptBulkData(masterKey, encrypted, HKDFInfoList.jsonAccountParams())
+            decryptBulkData(derivedKeySpec, encrypted)
         }
         catch (e: InvalidCipherTextException) {
             return null
