@@ -63,7 +63,7 @@ class AuthenticationServiceImplTest {
 
     //setup mocks for successful remote auth
     fun withSuccessfulRemoteAuth(body: (AuthToken) -> Unit) {
-        val authParams = AuthenticationParams(randomUUID(), authParams.serialize())
+        val authParams = AuthenticationParams(randomUUID(), authParams)
         val paramsResponse = AuthenticationParamsResponse(null, authParams)
         whenever(authenticationClient.getParams(email)).thenResolve(paramsResponse)
 

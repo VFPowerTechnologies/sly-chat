@@ -2,6 +2,7 @@ package io.slychat.messenger.services.contacts
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.generateNewKeyVault
 import io.slychat.messenger.core.http.api.ResourceConflictException
 import io.slychat.messenger.core.http.api.contacts.*
@@ -38,7 +39,7 @@ class AddressBookSyncJobImplTest {
     val addressBookAsyncClient: AddressBookAsyncClient = mock()
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val groupPersistenceManager:  GroupPersistenceManager = mock()
-    val userLoginData = UserData(SlyAddress(randomUserId(), 1), keyVault)
+    val userLoginData = UserData(SlyAddress(randomUserId(), 1), keyVault, emptyByteArray())
     val accountRegionCode = "1"
     val platformContacts: PlatformContacts = mock()
     val promiseTimerFactory: PromiseTimerFactory = mock()
@@ -340,9 +341,18 @@ class AddressBookSyncJobImplTest {
 
         runPush()
 
-        val request = updateRequestFromAddressBookUpdates(emptyMd5, keyVault, updates)
+        verify(addressBookAsyncClient).update(any(), capture {
+            assertRemoteEntriesEqual(keyVault, it.entries, updates)
+        })
+    }
 
-        verify(addressBookAsyncClient).update(any(), eq(request))
+    private fun assertRemoteEntriesEqual(keyVault: KeyVault, got: List<RemoteAddressBookEntry>, expected: List<AddressBookUpdate>) {
+        val sent = decryptRemoteAddressBookEntries(keyVault, got)
+
+        assertThat(sent).apply {
+            `as`("Should match the sent entries")
+            containsOnlyElementsOf(expected)
+        }
     }
 
     @Test
@@ -355,9 +365,9 @@ class AddressBookSyncJobImplTest {
 
         runPush()
 
-        val request = updateRequestFromAddressBookUpdates(emptyMd5, keyVault, updates)
-
-        verify(addressBookAsyncClient).update(any(), eq(request))
+        verify(addressBookAsyncClient).update(any(), capture {
+            assertRemoteEntriesEqual(keyVault, it.entries, updates)
+        })
     }
 
     @Test
@@ -394,13 +404,13 @@ class AddressBookSyncJobImplTest {
             AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL)
         )
 
-        val remoteEntries = encryptRemoteAddressBookEntries(keyVault, updates)
-
         whenever(contactsPersistenceManager.getRemoteUpdates()).thenResolve(updates)
 
         runPush()
 
-        verify(contactsPersistenceManager).addRemoteEntryHashes(remoteEntries)
+        verify(contactsPersistenceManager).addRemoteEntryHashes(capture {
+            assertRemoteEntriesEqual(keyVault, it.toList(), updates)
+        })
     }
 
     @Test

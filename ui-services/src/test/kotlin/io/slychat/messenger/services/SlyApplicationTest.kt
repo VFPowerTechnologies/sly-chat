@@ -1,11 +1,15 @@
 package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.*
+import io.slychat.messenger.core.crypto.defaultRemotePasswordHashParams
 import io.slychat.messenger.core.crypto.randomRegistrationId
+import io.slychat.messenger.core.emptyByteArray
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
+import io.slychat.messenger.core.persistence.AccountParams
 import io.slychat.messenger.core.persistence.InstallationData
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.StartupInfoPersistenceManager
+import io.slychat.messenger.core.persistence.sqlite.SQLCipherCipher
 import io.slychat.messenger.core.randomAccountInfo
 import io.slychat.messenger.core.randomAuthToken
 import io.slychat.messenger.core.randomDeviceId
@@ -14,6 +18,7 @@ import io.slychat.messenger.core.relay.RelayClientState
 import io.slychat.messenger.services.auth.AuthResult
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenResolveUnit
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Ignore
@@ -42,6 +47,9 @@ class SlyApplicationTest {
 
     val startupInfoPersistenceManager: StartupInfoPersistenceManager = mock()
 
+    val accountParams = AccountParams(SQLCipherCipher.defaultCipher, defaultRemotePasswordHashParams())
+    val remotePasswordHash = emptyByteArray()
+
     @Before
     fun before() {
         whenever(appComponent.installationDataPersistenceManager.retrieve()).thenResolve(InstallationData.generate())
@@ -65,6 +73,7 @@ class SlyApplicationTest {
         whenever(userComponent.messengerService.broadcastNewDevice(any())).thenResolve(Unit)
         whenever(userComponent.sessionDataManager.delete()).thenResolve(true)
         whenever(userComponent.relayClock.clockDiffUpdates).thenReturn(clockDiffUpdates)
+        whenever(userComponent.accountParamsManager.update(any())).thenResolveUnit()
 
         //used in finalizeInitialization
 
@@ -138,19 +147,19 @@ class SlyApplicationTest {
     }
 
     fun authWithOtherDevices(otherDevices: List<DeviceInfo>?): SlyApplication {
-        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, accountInfo, otherDevices)
+        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, remotePasswordHash, accountInfo, accountParams, otherDevices)
 
         return auth(authResult)
     }
 
     fun authWithSessionData(sessionData: SessionData): SlyApplication {
-        val authResult = AuthResult(sessionData, MockUserComponent.keyVault, accountInfo, null)
+        val authResult = AuthResult(sessionData, MockUserComponent.keyVault, remotePasswordHash, accountInfo, accountParams, null)
 
         return auth(authResult)
     }
 
     fun auth(): SlyApplication {
-        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, accountInfo, null)
+        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, remotePasswordHash, accountInfo, accountParams, null)
 
         return auth(authResult)
     }
