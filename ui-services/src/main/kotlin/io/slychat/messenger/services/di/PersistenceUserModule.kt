@@ -80,8 +80,7 @@ class PersistenceUserModule {
         val keyvault = userLoginData.keyVault
         return localAccountDirectory.getSessionDataPersistenceManager(
             userLoginData.userId,
-            keyvault.localDataEncryptionKey,
-            keyvault.localDataEncryptionParams
+            keyvault.localDataEncryptionKey
         )
     }
 

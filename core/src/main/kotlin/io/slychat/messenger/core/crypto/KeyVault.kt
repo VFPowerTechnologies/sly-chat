@@ -1,73 +1,32 @@
 package io.slychat.messenger.core.crypto
 
-import io.slychat.messenger.core.crypto.ciphers.CipherList
-import io.slychat.messenger.core.crypto.ciphers.Key
-import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
-import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
+import com.fasterxml.jackson.databind.ObjectMapper
+import io.slychat.messenger.core.crypto.ciphers.*
 import io.slychat.messenger.core.crypto.hashes.HashParams
-import io.slychat.messenger.core.crypto.hashes.HashType
-import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
-import org.spongycastle.crypto.InvalidCipherTextException
 import org.whispersystems.libsignal.IdentityKeyPair
 
 /**
- * Interface for accessing a user's identity keypair and hashes.
+ * Interface for accessing a user's identity keypair and other secrets.
  *
  * @property identityKeyPair
  * @property masterKey Used to derive other keys on-demand via HKDF.
- * @property localPasswordHashParams How to hash the password to use as a key for encrypting/decrypting the key vault secrets.
+ * @property localPasswordHashParams How to derive a key from the password to use for encrypting/decrypting the key vault secrets.
  *
  */
 class KeyVault(
-    //encrypted using password-derived key
     val identityKeyPair: IdentityKeyPair,
-    //encrypted by password-derived key
     //all other keys are derived from this one
     val masterKey: Key,
     //used when creating hashes of things to upload remotely to allow the hashes to match across devices, but not be identifiable to others
     val anonymizingData: ByteArray,
-    //PBKDF params for key to decrypt masterKey and identityKeyPair
+    //PBKDF params for key to decrypt secrets during deserialization
     val localPasswordHashParams: HashParams,
     //kept so we can serialize
     private val localPasswordHash: Key
 ) {
     companion object {
         fun fromStorage(keyVaultStorage: KeyVaultStorage, password: String): KeyVault? =
-            keyVaultStorage.read()?.let { deserialize(it, password) }
-
-        fun deserialize(serialized: SerializedKeyVault, password: String): KeyVault {
-            try {
-                val localPasswordHash = Key(hashPasswordWithParams(password, serialized.localPasswordHashParams, HashType.LOCAL))
-
-                val masterKey = Key(decryptBulkData(
-                    DerivedKeySpec(localPasswordHash, HKDFInfoList.keyVaultMasterKey()),
-                    serialized.encryptedMasterKey
-                ))
-
-                val keyData = decryptBulkData(
-                    DerivedKeySpec(localPasswordHash, HKDFInfoList.keyVaultKeyPair()),
-                    serialized.encryptedKeyPair
-                )
-
-                val anonymizingData = decryptBulkData(
-                    DerivedKeySpec(localPasswordHash, HKDFInfoList.keyVaultAnonymizingData()),
-                    serialized.encryptedAnonymizingData
-                )
-
-                val identityKeyPair = IdentityKeyPair(keyData)
-
-                return KeyVault(
-                    identityKeyPair,
-                    masterKey,
-                    anonymizingData,
-                    serialized.localPasswordHashParams,
-                    localPasswordHash
-                )
-            }
-            catch (e: InvalidCipherTextException) {
-                throw KeyVaultDecryptionFailedException()
-            }
-        }
+            keyVaultStorage.read()?.let { it.deserialize(password) }
     }
 
     /** Returns the public key encoded as a hex string. */
@@ -81,33 +40,43 @@ class KeyVault(
         val cipher = CipherList.defaultDataEncryptionCipher
         val key = localPasswordHash
 
-        val encryptedMasterKey = encryptBulkData(
-            cipher,
-            DerivedKeySpec(key, HKDFInfoList.keyVaultMasterKey()),
-            masterKey.raw
-        )
+        val derivedKey = deriveKey(key, HKDFInfoList.keyVault(), cipher.keySizeBits)
 
-        val encryptedKeyPair = encryptBulkData(
-            cipher,
-            DerivedKeySpec(key, HKDFInfoList.keyVaultKeyPair()),
-            identityKeyPair.serialize()
-        )
-
-        val encryptedAnonymizingData = encryptBulkData(
-            cipher,
-            DerivedKeySpec(key, HKDFInfoList.keyVaultAnonymizingData()),
+        val secrets = SerializedKeyVaultSecrets(
+            identityKeyPair.serialize(),
+            masterKey.raw,
             anonymizingData
         )
 
+        val objectMapper = ObjectMapper()
+
+        val encryptedSecrets = encryptBulkData(
+            cipher,
+            derivedKey,
+            objectMapper.writeValueAsBytes(secrets)
+        )
+
         return SerializedKeyVault(
-            encryptedKeyPair,
-            encryptedMasterKey,
-            encryptedAnonymizingData,
-            localPasswordHashParams
+            1,
+            localPasswordHashParams,
+            encryptedSecrets
         )
     }
 
     fun toStorage(keyVaultStorage: KeyVaultStorage) {
         keyVaultStorage.write(serialize())
+    }
+
+    private fun infoForType(type: DerivedKeyType): HKDFInfo = when (type) {
+        DerivedKeyType.LOCAL_DATA -> HKDFInfoList.localData()
+        DerivedKeyType.REMOTE_ADDRESS_BOOK_ENTRIES -> HKDFInfoList.remoteAddressBookEntries()
+    }
+
+    fun getDerivedKeySpec(type: DerivedKeyType): DerivedKeySpec {
+        return DerivedKeySpec(masterKey, infoForType(type))
+    }
+
+    fun deriveKeyFor(type: DerivedKeyType, cipher: Cipher): Key {
+        return deriveKey(masterKey, infoForType(type), cipher.keySizeBits)
     }
 }

@@ -57,7 +57,7 @@ class AuthenticationServiceImplTest {
     fun before() {
         whenever(localAccountDirectory.findAccountFor(any<UserId>())).thenReturn(null)
         whenever(localAccountDirectory.findAccountFor(any<String>())).thenReturn(null)
-        whenever(localAccountDirectory.getSessionDataPersistenceManager(any(), any(), any())).thenReturn(sessionDataPersistenceManager)
+        whenever(localAccountDirectory.getSessionDataPersistenceManager(any(), any())).thenReturn(sessionDataPersistenceManager)
         whenever(localAccountDirectory.getKeyVaultPersistenceManager(any())).thenReturn(keyVaultPersistenceManager)
     }
 

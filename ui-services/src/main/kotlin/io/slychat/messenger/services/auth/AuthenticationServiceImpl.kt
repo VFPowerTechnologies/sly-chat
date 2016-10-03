@@ -1,8 +1,7 @@
 package io.slychat.messenger.services.auth
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.crypto.*
-import io.slychat.messenger.core.crypto.hashes.BCryptParams
-import io.slychat.messenger.core.crypto.hashes.BCryptParams
 import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
@@ -40,7 +39,7 @@ class AuthenticationServiceImpl(
 
             val authParams = paramsResponse.params!!
 
-            val hashParams = HashDeserializers.deserialize(authParams.hashParams)
+            val hashParams = authParams.hashParams
             val hash = hashPasswordWithParams(password, hashParams)
 
             val request = AuthenticationRequest(emailOrPhoneNumber, hash.hexify(), authParams.csrfToken, registrationId, deviceId)
@@ -49,11 +48,9 @@ class AuthenticationServiceImpl(
                 if (response.errorMessage != null)
                     throw AuthApiResponseException(response.errorMessage)
 
-                //FIXME
-                hashParams as BCryptParams
                 val accountParams = AccountParams(
                     "aes-256-cbc",
-                    BCryptParams(hashParams.salt, hashParams.cost)
+                    hashParams
                 )
 
                 val data = response.data!!
@@ -86,7 +83,6 @@ class AuthenticationServiceImpl(
         val accountParamsPersistenceManager = localAccountDirectory.getAccountParamsPersistenceManager(
             accountInfo.id,
             keyVault.localDataEncryptionKey,
-            keyVault.localDataEncryptionParams
         )
 
         val accountParams = accountParamsPersistenceManager.retrieveSync()
@@ -94,14 +90,13 @@ class AuthenticationServiceImpl(
             return LocalAuthOutcome.NoLocalData()
 
         //FIXME
-        val params = accountParams.remoteHashParams as BCryptParams
-        val hash = hashPasswordWithParams(password, BCryptParams(params.salt, params.cost))
+        val params = accountParams.remoteHashParams
+        val hash = hashPasswordWithParams(password, params)
 
         //this isn't important; just use a null token in the auth result if this isn't present, and then fetch one remotely by refreshing
         val sessionDataPersistenceManager = localAccountDirectory.getSessionDataPersistenceManager(
             accountInfo.id,
-            keyVault.localDataEncryptionKey,
-            keyVault.localDataEncryptionParams
+            keyVault.localDataEncryptionKey
         )
         //if we can't read it from disk, create an empty one
         val sessionData = sessionDataPersistenceManager.retrieveSync() ?: SessionData()

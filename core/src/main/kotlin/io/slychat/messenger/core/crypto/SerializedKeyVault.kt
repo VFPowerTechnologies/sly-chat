@@ -2,22 +2,26 @@ package io.slychat.messenger.core.crypto
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.ObjectMapper
+import io.slychat.messenger.core.crypto.ciphers.Key
+import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
 import io.slychat.messenger.core.crypto.hashes.HashParams
+import io.slychat.messenger.core.crypto.hashes.HashType
+import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
+import org.spongycastle.crypto.InvalidCipherTextException
+import org.whispersystems.libsignal.IdentityKeyPair
 import java.util.*
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 class SerializedKeyVault(
-    @JsonProperty("encryptedKeyPair")
-    val encryptedKeyPair: ByteArray,
-
-    @JsonProperty("encryptedMasterKey")
-    val encryptedMasterKey: ByteArray,
-
-    @JsonProperty("encryptedAnonymizingData")
-    val encryptedAnonymizingData: ByteArray,
+    @JsonProperty("version")
+    val version: Int,
 
     @JsonProperty("localPasswordHashParams")
-    val localPasswordHashParams: HashParams
+    val localPasswordHashParams: HashParams,
+
+    @JsonProperty("encryptedSecrets")
+    val encryptedSecrets: ByteArray
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -25,19 +29,44 @@ class SerializedKeyVault(
 
         other as SerializedKeyVault
 
-        if (!Arrays.equals(encryptedKeyPair, other.encryptedKeyPair)) return false
-        if (!Arrays.equals(encryptedMasterKey, other.encryptedMasterKey)) return false
-        if (!Arrays.equals(encryptedAnonymizingData, other.encryptedAnonymizingData)) return false
+        if (version != other.version) return false
         if (localPasswordHashParams != other.localPasswordHashParams) return false
+        if (!Arrays.equals(encryptedSecrets, other.encryptedSecrets)) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = Arrays.hashCode(encryptedKeyPair)
-        result = 31 * result + Arrays.hashCode(encryptedMasterKey)
-        result = 31 * result + Arrays.hashCode(encryptedAnonymizingData)
+        var result = version
         result = 31 * result + localPasswordHashParams.hashCode()
+        result = 31 * result + Arrays.hashCode(encryptedSecrets)
         return result
+    }
+
+    fun deserialize(password: String): KeyVault {
+        val objectMapper = ObjectMapper()
+        try {
+            val localPasswordHash = Key(hashPasswordWithParams(password, localPasswordHashParams, HashType.LOCAL))
+
+            val derivedKeySpec = DerivedKeySpec(localPasswordHash, HKDFInfoList.keyVault())
+
+            val contents = objectMapper.readValue(
+                decryptBulkData(derivedKeySpec, encryptedSecrets),
+                SerializedKeyVaultSecrets::class.java
+            )
+
+            val identityKeyPair = IdentityKeyPair(contents.serializedIdentityKeyPair)
+
+            return KeyVault(
+                identityKeyPair,
+                Key(contents.masterKey),
+                contents.anonymizingData,
+                localPasswordHashParams,
+                localPasswordHash
+            )
+        }
+        catch (e: InvalidCipherTextException) {
+            throw KeyVaultDecryptionFailedException()
+        }
     }
 }

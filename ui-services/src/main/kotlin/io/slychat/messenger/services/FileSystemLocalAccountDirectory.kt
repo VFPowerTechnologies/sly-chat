@@ -1,8 +1,7 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.crypto.ciphers.CipherParams
-import io.slychat.messenger.core.crypto.ciphers.EncryptionSpec
+import io.slychat.messenger.core.crypto.DerivedKeySpec
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.json.*
 
@@ -53,22 +52,14 @@ class FileSystemLocalAccountDirectory(
         return JsonKeyVaultPersistenceManager(paths.keyVaultPath)
     }
 
-    override fun getSessionDataPersistenceManager(userId: UserId, localDataEncryptionKey: ByteArray, localDataEncryptionParams: CipherParams): SessionDataPersistenceManager {
+    override fun getSessionDataPersistenceManager(userId: UserId, derivedKeySpec: DerivedKeySpec): SessionDataPersistenceManager {
         val paths = userPathsGenerator.getPaths(userId)
-        val spec = EncryptionSpec(
-            localDataEncryptionKey,
-            localDataEncryptionParams
-        )
-        return JsonSessionDataPersistenceManager(paths.sessionDataPath, spec)
+        return JsonSessionDataPersistenceManager(paths.sessionDataPath, derivedKeySpec)
     }
 
-    override fun getAccountParamsPersistenceManager(userId: UserId, localDataEncryptionKey: ByteArray, localDataEncryptionParams: CipherParams): AccountParamsPersistenceManager {
+    override fun getAccountParamsPersistenceManager(userId: UserId, derivedKeySpec: DerivedKeySpec): AccountParamsPersistenceManager {
         val paths = userPathsGenerator.getPaths(userId)
-        val spec = EncryptionSpec(
-            localDataEncryptionKey,
-            localDataEncryptionParams
-        )
-        return JsonAccountParamsPersistenceManager(paths.accountParamsPath, spec)
+        return JsonAccountParamsPersistenceManager(paths.accountParamsPath, derivedKeySpec)
     }
 
     override fun getStartupInfoPersistenceManager(): StartupInfoPersistenceManager {

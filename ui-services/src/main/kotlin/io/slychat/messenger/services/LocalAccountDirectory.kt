@@ -1,7 +1,7 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.crypto.ciphers.CipherParams
+import io.slychat.messenger.core.crypto.DerivedKeySpec
 import io.slychat.messenger.core.persistence.*
 
 /**
@@ -18,9 +18,9 @@ interface LocalAccountDirectory {
 
     fun getKeyVaultPersistenceManager(userId: UserId): KeyVaultPersistenceManager
 
-    fun getSessionDataPersistenceManager(userId: UserId, localDataEncryptionKey: ByteArray, localDataEncryptionParams: CipherParams): SessionDataPersistenceManager
+    fun getSessionDataPersistenceManager(userId: UserId, derivedKeySpec: DerivedKeySpec): SessionDataPersistenceManager
 
-    fun getAccountParamsPersistenceManager(userId: UserId, localDataEncryptionKey: ByteArray, localDataEncryptionParams: CipherParams): AccountParamsPersistenceManager
+    fun getAccountParamsPersistenceManager(userId: UserId, derivedKeySpec: DerivedKeySpec): AccountParamsPersistenceManager
 
     fun getStartupInfoPersistenceManager(): StartupInfoPersistenceManager
 

@@ -4,11 +4,11 @@ package io.slychat.messenger.core.http.api.contacts
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.DerivedKeySpec
+import io.slychat.messenger.core.crypto.DerivedKeyType
 import io.slychat.messenger.core.crypto.HKDFInfoList
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
-import io.slychat.messenger.core.crypto.ciphers.deriveKey
 import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.persistence.AddressBookUpdate
@@ -52,7 +52,7 @@ private fun getGroupHash(keyVault: KeyVault, groupId: GroupId): String {
 //afterwards we then store the encrypted value along with the user id hash in a RemoteContactEntry
 fun encryptRemoteAddressBookEntries(keyVault: KeyVault, updates: List<AddressBookUpdate>): List<RemoteAddressBookEntry> {
     val cipher = CipherList.defaultDataEncryptionCipher
-    val derivedKey = deriveKey(keyVault.masterKey, HKDFInfoList.addressBookEntries(), cipher.keySizeBits)
+    val derivedKey = keyVault.deriveKeyFor(DerivedKeyType.REMOTE_ADDRESS_BOOK_ENTRIES, cipher)
 
     val objectMapper = ObjectMapper()
 
@@ -70,7 +70,7 @@ fun encryptRemoteAddressBookEntries(keyVault: KeyVault, updates: List<AddressBoo
 fun decryptRemoteAddressBookEntries(keyVault: KeyVault, entries: List<RemoteAddressBookEntry>): List<AddressBookUpdate> {
     val objectMapper = ObjectMapper()
 
-    val derivedKeySpec = DerivedKeySpec(keyVault.masterKey, HKDFInfoList.addressBookEntries())
+    val derivedKeySpec = DerivedKeySpec(keyVault.masterKey, HKDFInfoList.remoteAddressBookEntries())
 
     return entries.map { e ->
         val raw = decryptBulkData(derivedKeySpec, e.encryptedData)
