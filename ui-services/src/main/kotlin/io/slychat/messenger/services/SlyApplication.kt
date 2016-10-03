@@ -217,7 +217,7 @@ class SlyApplication {
 
         val localAccountDirectory = appComponent.localAccountDirectory
 
-        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager()
+        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager(installationData.startupInfoKey)
 
         //XXX this is kinda inefficient, since we already have the userid, then we fetch the email to pass to the normal login functions
         startupInfoPersistenceManager.retrieve() map { startupInfo ->
@@ -328,7 +328,7 @@ class SlyApplication {
      * Emits LoggedOut.
      */
     fun logout() {
-        val startupInfoPersistenceManager = appComponent.localAccountDirectory.getStartupInfoPersistenceManager()
+        val startupInfoPersistenceManager = appComponent.localAccountDirectory.getStartupInfoPersistenceManager(installationData.startupInfoKey)
         val sessionDataManager = userComponent?.sessionDataManager
 
         if (destroyUserSession()) {
@@ -400,7 +400,7 @@ class SlyApplication {
         val userId = userLoginData.userId
 
         val localAccountDirectory = appComponent.localAccountDirectory
-        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager()
+        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager(installationData.startupInfoKey)
         val sessionDataManager = userComponent.sessionDataManager
         val accountParamsManager = userComponent.accountParamsManager
 

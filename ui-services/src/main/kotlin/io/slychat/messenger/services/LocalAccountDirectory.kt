@@ -2,6 +2,7 @@ package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.DerivedKeySpec
+import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.persistence.*
 
 /**
@@ -22,7 +23,7 @@ interface LocalAccountDirectory {
 
     fun getAccountParamsPersistenceManager(userId: UserId, derivedKeySpec: DerivedKeySpec): AccountParamsPersistenceManager
 
-    fun getStartupInfoPersistenceManager(): StartupInfoPersistenceManager
+    fun getStartupInfoPersistenceManager(encryptionKey: Key?): StartupInfoPersistenceManager
 
     /** Create user account directory structure. */
     fun createUserDirectories(userId: UserId)

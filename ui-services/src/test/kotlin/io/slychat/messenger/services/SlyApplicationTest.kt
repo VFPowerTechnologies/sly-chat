@@ -56,7 +56,7 @@ class SlyApplicationTest {
 
         whenever(appComponent.platformContacts.contactsUpdated).thenReturn(platformContactsUpdated)
 
-        whenever(appComponent.localAccountDirectory.getStartupInfoPersistenceManager()).thenReturn(startupInfoPersistenceManager)
+        whenever(appComponent.localAccountDirectory.getStartupInfoPersistenceManager(any())).thenReturn(startupInfoPersistenceManager)
 
         val userComponent = appComponent.userComponent
 

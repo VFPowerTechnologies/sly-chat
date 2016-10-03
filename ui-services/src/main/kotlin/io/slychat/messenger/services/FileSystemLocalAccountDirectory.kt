@@ -2,6 +2,7 @@ package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.DerivedKeySpec
+import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.json.*
 
@@ -62,9 +63,9 @@ class FileSystemLocalAccountDirectory(
         return JsonAccountParamsPersistenceManager(paths.accountParamsPath, derivedKeySpec)
     }
 
-    override fun getStartupInfoPersistenceManager(): StartupInfoPersistenceManager {
+    override fun getStartupInfoPersistenceManager(encryptionKey: Key?): StartupInfoPersistenceManager {
         val startupInfoPath = userPathsGenerator.startupInfoPath
-        return JsonStartupInfoPersistenceManager(startupInfoPath)
+        return JsonStartupInfoPersistenceManager(startupInfoPath, encryptionKey)
     }
 
     override fun createUserDirectories(userId: UserId) {
