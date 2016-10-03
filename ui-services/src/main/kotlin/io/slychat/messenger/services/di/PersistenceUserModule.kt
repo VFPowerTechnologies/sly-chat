@@ -48,13 +48,22 @@ class PersistenceUserModule {
 
     @UserScope
     @Provides
-    fun providesSQLitePersistenceManager(userPaths: UserPaths, userLoginData: UserData): SQLitePersistenceManager {
-        val keyvault = userLoginData.keyVault
-        val key = if (BuildConfig.ENABLE_DATABASE_ENCRYPTION)
-            keyvault.localDataEncryptionKey
+    fun providesSQLitePersistenceManager(
+        userPaths: UserPaths,
+        userLoginData: UserData,
+        accountParams: AccountParams
+    ): SQLitePersistenceManager {
+        val sqlCipherParams = if (BuildConfig.ENABLE_DATABASE_ENCRYPTION) {
+            val keyvault = userLoginData.keyVault
+
+            SQLCipherParams(
+                keyvault.getDerivedKeySpec(DerivedKeyType.LOCAL_DATA),
+                accountParams.sqlCipherCipher
+            )
+        }
         else
             null
-        return SQLitePersistenceManager(userPaths.databasePath, key)
+        return SQLitePersistenceManager(userPaths.databasePath, sqlCipherParams)
     }
 
     //this is hacky, but we wanna expose this to the app for init/shutdown, but we don't wanna expose its type directly

@@ -9,6 +9,7 @@ import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClie
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
 import io.slychat.messenger.core.persistence.AccountParams
 import io.slychat.messenger.core.persistence.SessionData
+import io.slychat.messenger.core.persistence.sqlite.SQLCipherCipher
 import io.slychat.messenger.services.LocalAccountDirectory
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -50,7 +51,7 @@ class AuthenticationServiceImpl(
                     throw AuthApiResponseException(response.errorMessage)
 
                 val accountParams = AccountParams(
-                    "aes-256-cbc",
+                    SQLCipherCipher.defaultCipher,
                     hashParams
                 )
 

@@ -17,10 +17,6 @@ private val LATEST_DATABASE_VERSION = 13
 /** Just used to wrap Errors thrown when running SQLite jobs. */
 class SQLitePersistenceManagerErrorException(e: Error) : RuntimeException("Uncaught Error in job", e)
 
-//localDataEncryptionParams don't work too well... they contain an IV, which wouldn't be reused
-//for the db, we also can't control cipher params anyways
-//for storing files, the iv would be per-block (no chaining blocks else we can't provide seek; is this an issue?)
-
 /**
  * Must be initialized prior to use. Once initialized, methods may be called from any thread.
  *
@@ -28,20 +24,13 @@ class SQLitePersistenceManagerErrorException(e: Error) : RuntimeException("Uncau
  */
 class SQLitePersistenceManager(
     private val path: File?,
-    private val encryptionKey: ByteArray?
-//TODO cipher name
+    private val cipherParams: SQLCipherParams?
 ) : PersistenceManager {
     private data class InitializationResult(val initWasRequired: Boolean, val freshDatabase: Boolean)
 
     private lateinit var sqliteQueue: SQLiteQueue
     private var initialized = false
     private val logger = LoggerFactory.getLogger(javaClass)
-
-    init {
-        require(encryptionKey == null || encryptionKey.size == 256/8) {
-            "SQLCipher encryption key must be 256bit, got a ${encryptionKey!!.size*8}bit key instead"
-        }
-    }
 
     /**
      * Responsible for initial database creation.
@@ -96,10 +85,13 @@ class SQLitePersistenceManager(
         sqliteQueue = SQLiteQueue(path)
         sqliteQueue.start()
 
-        val encryptionKey = encryptionKey
-        if (encryptionKey != null) {
+        if (cipherParams != null) {
+            val encryptionKey = cipherParams.derivedKeySpec.derive(cipherParams.cipher.keySizeBits)
+
             realRunQuery { connection ->
-                connection.exec("""PRAGMA key = "x'${encryptionKey.hexify()}'"""")
+                //order here matters; don't swap this around
+                connection.exec("""PRAGMA key = "x'${encryptionKey.raw.hexify()}'"""")
+                connection.exec("PRAGMA cipher = '${cipherParams.cipher.s}'")
             }.get()
         }
 

@@ -35,9 +35,15 @@ import java.util.concurrent.TimeUnit
 @Module
 class UserModule(
     @get:UserScope
-    @get:Provides val providesUserLoginData: UserData,
+    @get:Provides
+    val providesUserLoginData: UserData,
+
     //only used during construction of AccountInfoManager; never use this directly
-    private val accountInfo: AccountInfo
+    private val accountInfo: AccountInfo,
+
+    @get:UserScope
+    @get:Provides
+    val providesAccountParams: AccountParams
 ) {
     @UserScope
     @Provides

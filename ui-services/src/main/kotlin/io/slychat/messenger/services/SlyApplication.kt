@@ -268,7 +268,7 @@ class SlyApplication {
 
             val userLoginData = UserData(address, keyVault, response.remotePasswordHash)
 
-            val userComponent = createUserSession(userLoginData, accountInfo)
+            val userComponent = createUserSession(userLoginData, accountInfo, accountParams)
 
             val authTokenManager = userComponent.authTokenManager
             if (sessionData.authToken != null)
@@ -368,13 +368,13 @@ class SlyApplication {
         fetchOfflineMessages()
     }
 
-    fun createUserSession(userLoginData: UserData, accountInfo: AccountInfo): UserComponent {
+    fun createUserSession(userLoginData: UserData, accountInfo: AccountInfo, accountParams: AccountParams): UserComponent {
         if (userComponent != null)
             error("UserComponent already loaded")
 
         log.info("Creating user session")
 
-        val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo))
+        val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo, accountParams))
         this.userComponent = userComponent
 
         Sentry.setUserAddress(userComponent.userLoginData.address)
