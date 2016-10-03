@@ -36,6 +36,10 @@ sealed class HashParams {
             require(salt.isNotEmpty()) { "salt must not be empty" }
         }
 
+        override fun toString(): String {
+            return "SCrypt(n=$n, r=$r, p=$p, keyLength=$keyLength)"
+        }
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
@@ -58,10 +62,6 @@ sealed class HashParams {
             result = 31 * result + p
             result = 31 * result + keyLength
             return result
-        }
-
-        override fun toString(): String {
-            return "SCryptParams(n=$n, r=$r, p=$p, keyLength=$keyLength)"
         }
     }
 }

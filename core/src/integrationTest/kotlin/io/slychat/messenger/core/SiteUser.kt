@@ -1,8 +1,8 @@
 package io.slychat.messenger.core
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import io.slychat.messenger.core.crypto.SerializedCryptoParams
 import io.slychat.messenger.core.crypto.SerializedKeyVault
+import io.slychat.messenger.core.crypto.hashes.HashParams
 
 data class SiteUser(
     @JsonProperty("id")
@@ -12,7 +12,7 @@ data class SiteUser(
     val username: String,
 
     @JsonProperty("hashParams")
-    val hashParams: SerializedCryptoParams,
+    val hashParams: HashParams,
 
     @JsonProperty("publicKey")
     val publicKey: String,

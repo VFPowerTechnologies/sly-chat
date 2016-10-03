@@ -1,9 +1,8 @@
 package io.slychat.messenger.core
 
-import io.slychat.messenger.core.crypto.KeyVault
-import io.slychat.messenger.core.crypto.generateNewKeyVault
-import io.slychat.messenger.core.crypto.randomRegistrationId
-import io.slychat.messenger.core.crypto.randomUUID
+import com.fasterxml.jackson.databind.ObjectMapper
+import io.slychat.messenger.core.crypto.*
+import io.slychat.messenger.core.crypto.hashes.HashParams
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
 import io.slychat.messenger.core.crypto.signal.generateLastResortPreKey
 import io.slychat.messenger.core.crypto.signal.generatePrekeys
@@ -28,18 +27,16 @@ import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.RemoteAddressBookEntry
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Assume
-import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.Test
+import org.junit.*
 import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
 import java.net.ConnectException
 import kotlin.test.*
 
-data class GeneratedSiteUser(
+class GeneratedSiteUser(
     val user: SiteUser,
-    val keyVault: KeyVault
+    val keyVault: KeyVault,
+    val remotePasswordHash: ByteArray
 )
 
 fun SiteUser.toContactInfo(): ContactInfo =
@@ -77,18 +74,19 @@ class WebApiIntegrationTest {
         fun newSiteUser(registrationInfo: RegistrationInfo, password: String): GeneratedSiteUser {
             val keyVault = generateNewKeyVault(password)
             val serializedKeyVault = keyVault.serialize()
+            val remotePasswordHashInfo = hashPasswordForRemoteWithDefaults(password)
 
             val user = SiteUser(
                 nextUserId(),
                 registrationInfo.email,
-                keyVault.remotePasswordHashParams.serialize(),
+                remotePasswordHashInfo.params,
                 keyVault.fingerprint,
                 registrationInfo.name,
                 registrationInfo.phoneNumber,
                 serializedKeyVault
             )
 
-            return GeneratedSiteUser(user, keyVault)
+            return GeneratedSiteUser(user, keyVault, remotePasswordHashInfo.hash)
         }
 
         /** Short test for server dev functionality sanity. */
@@ -109,6 +107,10 @@ class WebApiIntegrationTest {
 
             if (users != listOf(siteUser))
                 throw DevServerInsaneException("Register functionality failed")
+
+            val foundUser = assertNotNull(devClient.getUser(siteUser.username))
+
+            assertEquals(siteUser, foundUser, "getUser returned invalid user")
 
             //address book hash
             assertEquals(emptyMd5, devClient.getAddressBookHash(username), "Unable to fetch address book hash")
@@ -241,30 +243,33 @@ class WebApiIntegrationTest {
     @Test
     fun `register request should succeed when given a unique username`() {
         val keyVault = generateNewKeyVault(password)
-        val request = registrationRequestFromKeyVault(dummyRegistrationInfo, keyVault)
+        val request = registrationRequestFromKeyVault(dummyRegistrationInfo, keyVault, password)
 
         val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
         val result = client.register(request)
         assertNull(result.errorMessage)
         assertNull(result.validationErrors)
 
-        val users = devClient.getUsers()
+        val user = assertNotNull(devClient.getUser(dummyRegistrationInfo.email), "Missing user")
 
-        assertEquals(1, users.size)
-        val user = users[0]
+        val objectMapper = ObjectMapper()
+        val serializedKeyVault = objectMapper.readValue(request.serializedKeyVault, SerializedKeyVault::class.java)
+        val hashParams = objectMapper.readValue(request.hashParams, HashParams::class.java)
 
         val expected = SiteUser(
             //don't care about the id
             user.id,
             dummyRegistrationInfo.email,
-            keyVault.remotePasswordHashParams.serialize(),
+            hashParams,
             keyVault.fingerprint,
             dummyRegistrationInfo.name,
             dummyRegistrationInfo.phoneNumber,
-            keyVault.serialize()
+            serializedKeyVault
         )
 
-        assertEquals(expected, user)
+        assertThat(user).apply {
+            isEqualToComparingFieldByField(expected)
+        }
     }
 
     @Test
@@ -273,7 +278,7 @@ class WebApiIntegrationTest {
         val registrationInfo = RegistrationInfo(siteUser.username, "name", "0")
 
         val keyVault = generateNewKeyVault(password)
-        val request = registrationRequestFromKeyVault(registrationInfo, keyVault)
+        val request = registrationRequestFromKeyVault(registrationInfo, keyVault, password)
 
         val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
         val result = client.register(request)
@@ -292,7 +297,7 @@ class WebApiIntegrationTest {
         assertTrue(paramsApiResult.isSuccess, "Unable to fetch params")
 
         val csrfToken = paramsApiResult.params!!.csrfToken
-        val authRequest = AuthenticationRequest(username, userA.keyVault.remotePasswordHash.hexify(), csrfToken, defaultRegistrationId, deviceId)
+        val authRequest = AuthenticationRequest(username, userA.remotePasswordHash.hexify(), csrfToken, defaultRegistrationId, deviceId)
 
         return client.auth(authRequest)
     }
@@ -360,6 +365,7 @@ class WebApiIntegrationTest {
         runMaxDeviceTest(DeviceState.PENDING)
     }
 
+    @Ignore("disabled")
     @Test
     fun `token refresh should succeed if the token is still valid`() {
         val siteUser = injectNewSiteUser()
@@ -377,6 +383,7 @@ class WebApiIntegrationTest {
         assertEquals(response.authToken, serverSideToken, "Invalid token returned")
     }
 
+    @Ignore("disabled")
     @Test
     fun `token refresh should fail if the token is invalid or expired`() {
         val siteUser = injectNewSiteUser()
@@ -966,24 +973,16 @@ class WebApiIntegrationTest {
 
         val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
 
-        val newPhone = "123453456"
+        val newPhoneNumber = "123453456"
 
-        val request = UpdatePhoneRequest(user.user.username, user.keyVault.remotePasswordHash.hexify(), newPhone)
+        val request = UpdatePhoneRequest(user.user.username, user.remotePasswordHash.hexify(), newPhoneNumber)
         val response = client.updatePhone(request)
 
         assertTrue(response.isSuccess, "Update request failed: ${response.errorMessage}")
 
-        val expected = SiteUser(
-            user.user.id,
-            user.user.username,
-            user.keyVault.remotePasswordHashParams.serialize(),
-            user.keyVault.fingerprint,
-            user.user.name,
-            newPhone,
-            user.keyVault.serialize()
-        )
+        val remote = assertNotNull(devClient.getUser(user.user.username), "Missing user")
 
-        assertEquals(listOf(expected), devClient.getUsers())
+        assertEquals(newPhoneNumber, remote.phoneNumber, "Phone number should be updated on success")
     }
 
     @Test
@@ -997,17 +996,9 @@ class WebApiIntegrationTest {
 
         assertFalse(response.isSuccess)
 
-        val expected = SiteUser(
-            user.user.id,
-            user.user.username,
-            user.keyVault.remotePasswordHashParams.serialize(),
-            user.keyVault.fingerprint,
-            user.user.name,
-            user.user.phoneNumber,
-            user.keyVault.serialize()
-        )
+        val remote = assertNotNull(devClient.getUser(user.user.username), "Missing user")
 
-        assertEquals(listOf(expected), devClient.getUsers())
+        assertEquals(user.user.phoneNumber, remote.phoneNumber, "Phone number should not be updated on failure")
     }
 
     @Test

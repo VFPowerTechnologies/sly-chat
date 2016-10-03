@@ -4,9 +4,8 @@ import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.slychat.messenger.core.crypto.SerializedCryptoParams
 import io.slychat.messenger.core.crypto.SerializedKeyVault
-import io.slychat.messenger.core.hexify
+import io.slychat.messenger.core.crypto.hashes.HashParams
 import io.slychat.messenger.core.http.HttpClient
 import io.slychat.messenger.core.http.HttpResponse
 import io.slychat.messenger.core.http.get
@@ -43,7 +42,7 @@ data class RegisterSiteUserRequest(
     val id: UserId,
     val username: String,
     val passwordHash: String,
-    val hashParams: SerializedCryptoParams,
+    val hashParams: HashParams,
     val publicKey: String,
     val name: String,
     val phoneNumber: String,
@@ -104,12 +103,19 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         return objectMapper.readValue<List<SiteUser>>(response.body, typeRef<List<SiteUser>>())
     }
 
+    fun getUser(username: String): SiteUser? {
+        val response = httpClient.get("$serverBaseUrl/dev/users/$username")
+        throwOnFailure(response)
+
+        return objectMapper.readValue<SiteUser>(response.body, typeRef<SiteUser>())
+    }
+
     fun addUser(siteUser: GeneratedSiteUser) {
         val user = siteUser.user
         val request = RegisterSiteUserRequest(
             user.id,
             user.username,
-            siteUser.keyVault.remotePasswordHash.hexify(),
+            siteUser.remotePasswordHash.hexify(),
             user.hashParams,
             user.publicKey,
             user.name,
