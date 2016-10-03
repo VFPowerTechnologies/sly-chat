@@ -59,7 +59,7 @@ class SerializedKeyVault(
 
             return KeyVault(
                 identityKeyPair,
-                Key(contents.masterKey),
+                contents.masterKey,
                 contents.anonymizingData,
                 localPasswordHashParams,
                 localPasswordHash

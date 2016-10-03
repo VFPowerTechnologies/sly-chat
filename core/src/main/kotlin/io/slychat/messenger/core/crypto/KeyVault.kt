@@ -44,7 +44,7 @@ class KeyVault(
 
         val secrets = SerializedKeyVaultSecrets(
             identityKeyPair.serialize(),
-            masterKey.raw,
+            masterKey,
             anonymizingData
         )
 

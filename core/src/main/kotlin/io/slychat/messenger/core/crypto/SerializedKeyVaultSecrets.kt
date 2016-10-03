@@ -2,6 +2,7 @@ package io.slychat.messenger.core.crypto
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import io.slychat.messenger.core.crypto.ciphers.Key
 import java.util.*
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -10,7 +11,7 @@ class SerializedKeyVaultSecrets(
     val serializedIdentityKeyPair: ByteArray,
 
     @JsonProperty("masterKey")
-    val masterKey: ByteArray,
+    val masterKey: Key,
 
     @JsonProperty("anonymizingData")
     val anonymizingData: ByteArray
