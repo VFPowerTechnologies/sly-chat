@@ -1,16 +1,20 @@
-package io.slychat.messenger.core
+package io.slychat.messenger.core.integration.web
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.slychat.messenger.core.AuthToken
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.SerializedKeyVault
 import io.slychat.messenger.core.crypto.hashes.HashParams
+import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.HttpClient
 import io.slychat.messenger.core.http.HttpResponse
 import io.slychat.messenger.core.http.get
 import io.slychat.messenger.core.http.postJSON
 import io.slychat.messenger.core.persistence.RemoteAddressBookEntry
+import io.slychat.messenger.core.typeRef
 
 data class SiteAddressBook(
     @JsonProperty("entries")

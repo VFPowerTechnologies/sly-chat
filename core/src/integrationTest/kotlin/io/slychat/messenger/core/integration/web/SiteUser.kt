@@ -1,6 +1,7 @@
-package io.slychat.messenger.core
+package io.slychat.messenger.core.integration.web
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.SerializedKeyVault
 import io.slychat.messenger.core.crypto.hashes.HashParams
 
