@@ -16,7 +16,7 @@ private const val REMOTE_PASSWORD_INDICATOR: Byte = 0x22
  * @throws IllegalArgumentException If the type of CryptoParams is unknown
  */
 fun hashPasswordWithParams(password: String, params: HashParams, type: HashType): ByteArray {
-    //if two users share the same password, and the local for user A and the remote IV for user B are also equal,
+    //if two users share the same password, and the local IV for user A and the remote IV for user B are also equal,
     //we want the passwords to yield different keys
     val indicatorByte = when (type) {
         HashType.LOCAL -> LOCAL_PASSWORD_INDICATOR
