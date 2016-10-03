@@ -4,7 +4,7 @@ import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.ServerUrls
-import io.slychat.messenger.core.crypto.ciphers.EncryptionSpec
+import io.slychat.messenger.core.crypto.DerivedKeyType
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
@@ -306,11 +306,8 @@ class UserModule(
         val fileStorage = FileConfigStorage(userPaths.configPath)
         val storage = if (BuildConfig.ENABLE_CONFIG_ENCRYPTION) {
             val keyVault = userLoginData.keyVault
-            val key = keyVault.localDataEncryptionKey
-            val params = keyVault.localDataEncryptionParams
-            val spec = EncryptionSpec(key, params)
             //can't use Cipher*Stream since we're using bouncycastle to properly support stuff
-            CipherConfigStorageFilter(spec, fileStorage)
+            CipherConfigStorageFilter(keyVault.getDerivedKeySpec(DerivedKeyType.LOCAL_DATA), fileStorage)
         }
         else
             fileStorage

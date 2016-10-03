@@ -3,7 +3,7 @@ package io.slychat.messenger.services.di
 import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
-import io.slychat.messenger.core.crypto.ciphers.EncryptionSpec
+import io.slychat.messenger.core.crypto.DerivedKeyType
 import io.slychat.messenger.core.crypto.signal.SQLiteSignalProtocolStore
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.json.JsonAccountParamsPersistenceManager
@@ -77,10 +77,10 @@ class PersistenceUserModule {
         userLoginData: UserData,
         localAccountDirectory: LocalAccountDirectory
     ): SessionDataPersistenceManager {
-        val keyvault = userLoginData.keyVault
+        val keyVault = userLoginData.keyVault
         return localAccountDirectory.getSessionDataPersistenceManager(
             userLoginData.userId,
-            keyvault.localDataEncryptionKey
+            keyVault.getDerivedKeySpec(DerivedKeyType.LOCAL_DATA)
         )
     }
 
@@ -91,12 +91,9 @@ class PersistenceUserModule {
         userPaths: UserPaths
     ): AccountParamsPersistenceManager {
         val keyVault = userLoginData.keyVault
-        val key = keyVault.localDataEncryptionKey
-        val params = keyVault.localDataEncryptionParams
-        val spec = EncryptionSpec(key, params)
         return JsonAccountParamsPersistenceManager(
             userPaths.accountParamsPath,
-            spec
+            keyVault.getDerivedKeySpec(DerivedKeyType.LOCAL_DATA)
         )
     }
 
