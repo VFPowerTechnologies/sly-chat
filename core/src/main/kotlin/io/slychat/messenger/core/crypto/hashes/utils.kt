@@ -1,45 +1,42 @@
 package io.slychat.messenger.core.crypto.hashes
 
-import org.spongycastle.crypto.Digest
-import org.spongycastle.crypto.digests.SHA256Digest
-import org.spongycastle.crypto.generators.BCrypt
 import org.spongycastle.crypto.generators.SCrypt
-import org.spongycastle.util.encoders.Base64
+
+enum class HashType {
+    LOCAL,
+    REMOTE
+}
+
+private const val LOCAL_PASSWORD_INDICATOR: Byte = 0x11
+private const val REMOTE_PASSWORD_INDICATOR: Byte = 0x22
 
 /**
- * Used to hash a password for authentication with the remote server using the provided params.
+ * Derive a key from a password, either for remote authentication or local (key vault) encryption.
  *
  * @throws IllegalArgumentException If the type of CryptoParams is unknown
  */
-fun hashPasswordWithParams(password: String, params: HashParams): ByteArray = when (params) {
-    is BCryptParams -> {
-        //this design is from passlib, to get around the 72 password length limitation (incase)
-        //see https://pythonhosted.org/passlib/lib/passlib.hash.bcrypt_sha256.html
-        val digester = SHA256Digest()
-        val hash = digester.processInput(password.toByteArray(Charsets.UTF_8))
-
-        //44b string
-        val encoded = Base64.encode(hash)
-
-        //password must be nul-terminated to prevent collisions in repeated passwords (eg: test and testtest)
-        val input = ByteArray(encoded.size+1)
-        System.arraycopy(encoded, 0, input, 0, encoded.size)
-
-        BCrypt.generate(input, params.salt, params.cost)
+fun hashPasswordWithParams(password: String, params: HashParams, type: HashType): ByteArray {
+    //if two users share the same password, and the local for user A and the remote IV for user B are also equal,
+    //we want the passwords to yield different keys
+    val indicatorByte = when (type) {
+        HashType.LOCAL -> LOCAL_PASSWORD_INDICATOR
+        HashType.REMOTE -> REMOTE_PASSWORD_INDICATOR
     }
-    else -> hashDataWithParams(password.toByteArray(Charsets.UTF_8), params)
-}
 
-fun hashDataWithParams(data: ByteArray, params: HashParams): ByteArray = when (params) {
-    is SCryptParams ->
-        SCrypt.generate(data, params.salt, params.n, params.r, params.p, params.keyLength)
+    val data = password.toByteArray(Charsets.UTF_8)
+    val fullData = ByteArray(data.size + 1)
+    System.arraycopy(
+        data,
+        0,
+        fullData,
+        0,
+        data.size
+    )
 
-    else -> throw IllegalArgumentException("Unknown data hash algorithm")
-}
+    fullData[data.size] = indicatorByte
 
-private fun Digest.processInput(input: ByteArray): ByteArray {
-    val output = ByteArray(digestSize)
-    update(input, 0, input.size)
-    doFinal(output, 0)
-    return output
+    return when (params) {
+        is HashParams.SCrypt ->
+            SCrypt.generate(fullData, params.salt, params.n, params.r, params.p, params.keyLength)
+    }
 }

@@ -5,6 +5,7 @@ import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
 import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
 import io.slychat.messenger.core.crypto.hashes.HashParams
+import io.slychat.messenger.core.crypto.hashes.HashType
 import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
 import org.spongycastle.crypto.InvalidCipherTextException
 import org.whispersystems.libsignal.IdentityKeyPair
@@ -64,7 +65,7 @@ class KeyVault(
 
         fun deserialize(serialized: SerializedKeyVault, password: String): KeyVault {
             try {
-                val localPasswordHash = Key(hashPasswordWithParams(password, serialized.localPasswordHashParams))
+                val localPasswordHash = Key(hashPasswordWithParams(password, serialized.localPasswordHashParams, HashType.LOCAL))
 
                 val masterKey = Key(decryptBulkData(localPasswordHash, serialized.encryptedMasterKey, HKDFInfoList.keyVaultMasterKey()))
                 val keyData = decryptBulkData(localPasswordHash, serialized.encryptedKeyPair, HKDFInfoList.keyVaultKeyPair())
