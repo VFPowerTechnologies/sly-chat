@@ -4,12 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class FindContactResponse(
-    @param:JsonProperty("error-message")
-    @get:JsonProperty("error-message")
+    @JsonProperty("errorMessage")
     val errorMessage: String?,
 
-    @param:JsonProperty("contact-info")
-    @get:JsonProperty("contact-info")
+    @JsonProperty("contactInfo")
     val contactInfo: ApiContactInfo?
 ) {
     @get:JsonIgnore

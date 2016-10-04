@@ -4,12 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class RegisterResponse(
-    @param:JsonProperty("error-message")
-    @get:JsonProperty("error-message")
+    @JsonProperty("errorMessage")
     val errorMessage: String?,
 
-    @param:JsonProperty("validation-errors")
-    @get:JsonProperty("validation-errors")
+    @JsonProperty("validationErrors")
     val validationErrors: Map<String, List<String>>?
 ) {
     @get:JsonIgnore

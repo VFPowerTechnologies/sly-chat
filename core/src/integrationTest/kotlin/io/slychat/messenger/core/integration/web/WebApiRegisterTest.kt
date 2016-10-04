@@ -40,8 +40,8 @@ class WebApiRegisterTest {
 
         val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
         val result = client.register(request)
-        assertNull(result.errorMessage)
         assertNull(result.validationErrors)
+        assertNull(result.errorMessage)
 
         val user = assertNotNull(devClient.getUser(dummyRegistrationInfo.email), "Missing user")
 

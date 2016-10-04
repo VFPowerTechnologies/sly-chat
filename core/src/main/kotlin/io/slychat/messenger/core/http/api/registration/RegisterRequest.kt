@@ -3,28 +3,25 @@ package io.slychat.messenger.core.http.api.registration
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class RegisterRequest(
-    @JsonProperty("username")
-    val username: String,
+    @JsonProperty("email")
+    val email: String,
 
     @JsonProperty("name")
     val name: String,
 
-    @param:JsonProperty("phone-number")
-    @get:JsonProperty("phone-number")
+    @JsonProperty("phoneNumber")
     val phoneNumber: String,
 
     @JsonProperty("hash")
     val hash: String,
 
-    @param:JsonProperty("hash-params")
-    @get:JsonProperty("hash-params")
+    @JsonProperty("hashParams")
     val hashParams: String,
 
-    @param:JsonProperty("pubkey")
-    @get:JsonProperty("pubkey")
+    @JsonProperty("publicKey")
     val publicKey: String,
 
-    @param:JsonProperty("key-vault")
-    @get:JsonProperty("key-vault")
+    @param:JsonProperty("keyVault")
+    @get:JsonProperty("keyVault")
     val serializedKeyVault: String
 )

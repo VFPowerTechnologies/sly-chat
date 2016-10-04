@@ -61,7 +61,7 @@ class WebApiAuthenticationTest {
         val authApiResult = sendAuthRequestForUser(userA, deviceId)
         assertTrue(authApiResult.isSuccess, "auth failed: ${authApiResult.errorMessage}")
 
-        val receivedSerializedKeyVault = authApiResult.data!!.keyVault
+        val receivedSerializedKeyVault = authApiResult.authData!!.keyVault
 
         assertEquals(siteUser.keyVault, receivedSerializedKeyVault)
     }
@@ -81,7 +81,7 @@ class WebApiAuthenticationTest {
         val authApiResult = sendAuthRequestForUser(userA, deviceId)
         assertTrue(authApiResult.isSuccess, "auth failed: ${authApiResult.errorMessage}")
 
-        val authData = authApiResult.data!!
+        val authData = authApiResult.authData!!
 
         Assertions.assertThat(authData.otherDevices).apply {
             `as`("Should only list active devices")

@@ -55,7 +55,7 @@ class UIAccountModificationServiceImpl(
                     val newAccountInfo = AccountInfo(
                         UserId(response.accountInfo.id),
                         response.accountInfo.name,
-                        response.accountInfo.username,
+                        response.accountInfo.email,
                         response.accountInfo.phoneNumber,
                         oldAccountInfo.deviceId
                     )
@@ -91,7 +91,7 @@ class UIAccountModificationServiceImpl(
                     val newAccountInfo = AccountInfo(
                         UserId(response.accountInfo.id),
                         response.accountInfo.name,
-                        response.accountInfo.username,
+                        response.accountInfo.email,
                         response.accountInfo.phoneNumber,
                         oldAccountInfo.deviceId
                     )
@@ -117,7 +117,7 @@ class UIAccountModificationServiceImpl(
                     val newAccountInfo = AccountInfo(
                         UserId(response.accountInfo.id),
                         response.accountInfo.name,
-                        response.accountInfo.username,
+                        response.accountInfo.email,
                         response.accountInfo.phoneNumber,
                         oldAccountInfo.deviceId
                     )

@@ -75,7 +75,7 @@ class WebApiAccountUpdateTest {
         val response = client.updateEmail(userA.getUserCredentials(authToken), request)
 
         assertTrue(response.isSuccess)
-        assertEquals(response.accountInfo!!.username, newEmail)
+        assertEquals(response.accountInfo!!.email, newEmail)
     }
 
     @Test
@@ -128,7 +128,7 @@ class WebApiAccountUpdateTest {
 
         assertTrue(response.isSuccess)
 
-        val secondRequest = ConfirmPhoneNumberRequest("12345")
+        val secondRequest = ConfirmPhoneNumberRequest("1")
         val secondResponse = client.confirmPhoneNumber(userCredentials, secondRequest)
 
         assertTrue(secondResponse.isSuccess)

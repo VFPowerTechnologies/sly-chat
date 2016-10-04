@@ -55,7 +55,7 @@ class AuthenticationServiceImpl(
                     hashParams
                 )
 
-                val data = response.data!!
+                val data = response.authData!!
                 val keyVault = data.keyVault.deserialize(password)
 
                 //we have no local session, so just use an empty SessionData

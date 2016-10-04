@@ -3,16 +3,13 @@ package io.slychat.messenger.core.http.api.authentication
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class AuthenticationRequest(
-    @param:JsonProperty("username")
-    @get:JsonProperty("username")
+    @JsonProperty("username")
     val username: String,
 
-    @param:JsonProperty("hash")
-    @get:JsonProperty("hash")
+    @JsonProperty("hash")
     val hash: String,
 
-    @param:JsonProperty("csrf")
-    @get:JsonProperty("csrf")
+    @JsonProperty("csrf")
     val csrfToken: String,
 
     @JsonProperty("registrationId")

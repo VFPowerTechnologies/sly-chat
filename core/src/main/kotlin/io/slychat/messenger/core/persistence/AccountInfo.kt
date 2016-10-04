@@ -13,8 +13,7 @@ data class AccountInfo(
     @JsonProperty("email")
     val email: String,
 
-    @param:JsonProperty("phone-number")
-    @get:JsonProperty("phone-number")
+    @JsonProperty("phoneNumber")
     val phoneNumber: String,
 
     @JsonProperty("deviceId")

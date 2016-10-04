@@ -42,7 +42,7 @@ class TokenRefresherImpl(
             if (resp.errorMessage != null)
                 throw AuthApiResponseException(resp.errorMessage)
 
-            AuthTokenRefreshResult(resp.data!!.authToken)
+            AuthTokenRefreshResult(resp.authData!!.authToken)
         }
     }
 }

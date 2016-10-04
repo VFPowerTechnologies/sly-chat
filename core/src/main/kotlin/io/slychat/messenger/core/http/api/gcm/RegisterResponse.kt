@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class RegisterResponse(
-    @JsonProperty("error-message")
+    @JsonProperty("errorMessage")
     val errorMessage: String?
 ) {
     @JsonIgnore

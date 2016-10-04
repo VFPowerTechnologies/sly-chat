@@ -4,8 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class UpdatePhoneResponse(
-    @param:JsonProperty("error-message")
-    @get:com.fasterxml.jackson.annotation.JsonProperty("error-message")
+    @param:JsonProperty("errorMessage")
     val errorMessage: String?
 ) {
     @get:JsonIgnore

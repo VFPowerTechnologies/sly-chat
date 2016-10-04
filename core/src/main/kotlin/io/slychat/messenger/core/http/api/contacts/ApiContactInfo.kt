@@ -12,9 +12,9 @@ data class ApiContactInfo(
     val email: String,
     @JsonProperty("name")
     val name: String,
-    @JsonProperty("phone-number")
+    @JsonProperty("phoneNumber")
     val phoneNumber: String?,
-    @JsonProperty("public-key")
+    @JsonProperty("publicKey")
     val publicKey: String
 ) {
     fun toCore(allowedMessageLevel: AllowedMessageLevel): ContactInfo =
