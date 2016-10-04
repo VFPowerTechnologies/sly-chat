@@ -1,7 +1,7 @@
 package io.slychat.messenger.services.contacts
 
 import io.slychat.messenger.core.http.api.contacts.AddressBookAsyncClient
-import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
+import io.slychat.messenger.core.http.api.contacts.ContactLookupAsyncClient
 import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.persistence.GroupPersistenceManager
@@ -13,7 +13,7 @@ import rx.Observable
 
 class AddressBookSyncJobFactoryImpl(
     private val authTokenManager: AuthTokenManager,
-    private val contactClient: ContactAsyncClient,
+    private val contactLookupClient: ContactLookupAsyncClient,
     private val addressBookClient: AddressBookAsyncClient,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val groupPersistenceManager: GroupPersistenceManager,
@@ -33,7 +33,7 @@ class AddressBookSyncJobFactoryImpl(
     override fun create(): AddressBookSyncJob {
         return AddressBookSyncJobImpl(
             authTokenManager,
-            contactClient,
+            contactLookupClient,
             addressBookClient,
             contactsPersistenceManager,
             groupPersistenceManager,

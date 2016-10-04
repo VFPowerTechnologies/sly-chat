@@ -19,7 +19,7 @@ import java.util.*
 
 class ContactsServiceImpl(
     private val authTokenManager: AuthTokenManager,
-    private val contactClient: ContactAsyncClient,
+    private val contactLookupClient: ContactLookupAsyncClient,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val addressBookOperationManager: AddressBookOperationManager
 ) : ContactsService {
@@ -61,7 +61,7 @@ class ContactsServiceImpl(
 
     private fun addNewUserRemotely(userId: UserId): Promise<Boolean, Exception> {
         return authTokenManager.bind { userCredentials ->
-            contactClient.findById(userCredentials, userId)
+            contactLookupClient.findById(userCredentials, userId)
         } bind { response ->
             val contactInfo = response.contactInfo?.toCore(AllowedMessageLevel.ALL)
             if (contactInfo == null)
@@ -239,7 +239,7 @@ class ContactsServiceImpl(
         val request = FindAllByIdRequest(users.toList())
 
         return authTokenManager.bind { userCredentials ->
-            contactClient.findAllById(userCredentials, request) bindUi { response ->
+            contactLookupClient.findAllById(userCredentials, request) bindUi { response ->
                 handleContactLookupResponse(users, response)
             } fail { e ->
                 //the only recoverable error would be a network error; when the network is restored, this'll get called again
@@ -312,7 +312,7 @@ class ContactsServiceImpl(
         return authTokenManager.bind { userCredentials ->
             val request = FindContactRequest(email, queryPhoneNumber)
 
-            contactClient.find(userCredentials, request)
+            contactLookupClient.find(userCredentials, request)
         }
     }
 }

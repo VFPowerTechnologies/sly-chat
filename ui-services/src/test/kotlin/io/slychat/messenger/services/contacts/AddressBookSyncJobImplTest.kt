@@ -35,7 +35,7 @@ class AddressBookSyncJobImplTest {
     val emptyMd5 = "d41d8cd98f00b204e9800998ecf8427e"
     val updateMd5 = "d41d8cd98f00b204e9800998ecf8427f"
 
-    val contactAsyncClient: ContactAsyncClient = mock()
+    val contactLookupAsyncClient: ContactLookupAsyncClient = mock()
     val addressBookAsyncClient: AddressBookAsyncClient = mock()
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val groupPersistenceManager:  GroupPersistenceManager = mock()
@@ -63,8 +63,8 @@ class AddressBookSyncJobImplTest {
         whenever(groupPersistenceManager.getRemoteUpdates()).thenResolve(emptyList())
         whenever(groupPersistenceManager.removeRemoteUpdates(any())).thenResolve(Unit)
 
-        whenever(contactAsyncClient.findLocalContacts(any(), any())).thenResolve(FindLocalContactsResponse(emptyList()))
-        whenever(contactAsyncClient.findAllById(any(), any())).thenResolve(FindAllByIdResponse(emptyList()))
+        whenever(contactLookupAsyncClient.findLocalContacts(any(), any())).thenResolve(FindLocalContactsResponse(emptyList()))
+        whenever(contactLookupAsyncClient.findAllById(any(), any())).thenResolve(FindAllByIdResponse(emptyList()))
 
         whenever(contactsPersistenceManager.getAddressBookHash()).thenResolve(emptyMd5)
         whenever(contactsPersistenceManager.addRemoteEntryHashes(any())).thenResolve(emptyMd5)
@@ -78,7 +78,7 @@ class AddressBookSyncJobImplTest {
     fun newJob(): AddressBookSyncJobImpl {
         return AddressBookSyncJobImpl(
             MockAuthTokenManager(),
-            contactAsyncClient,
+            contactLookupAsyncClient,
             addressBookAsyncClient,
             contactsPersistenceManager,
             groupPersistenceManager,
@@ -125,7 +125,7 @@ class AddressBookSyncJobImplTest {
 
         runPull()
 
-        verify(contactAsyncClient).findAllById(any(), capture {
+        verify(contactLookupAsyncClient).findAllById(any(), capture {
             assertThat(it.ids).apply {
                 `as`("Missing ids should be looked up")
                 containsOnlyElementsOf(missing)
@@ -147,7 +147,7 @@ class AddressBookSyncJobImplTest {
 
         whenever(addressBookAsyncClient.get(any(), any())).thenResolve(GetAddressBookResponse(remoteEntries))
         whenever(contactsPersistenceManager.exists(missing)).thenResolve(emptySet())
-        whenever(contactAsyncClient.findAllById(any(), any())).thenResolve(FindAllByIdResponse(apiContacts))
+        whenever(contactLookupAsyncClient.findAllById(any(), any())).thenResolve(FindAllByIdResponse(apiContacts))
 
         runPull()
 
@@ -236,7 +236,7 @@ class AddressBookSyncJobImplTest {
         val remoteEntries = encryptRemoteAddressBookEntries(keyVault, remoteUpdates)
 
         whenever(addressBookAsyncClient.get(any(), any())).thenResolve(GetAddressBookResponse(remoteEntries))
-        whenever(contactAsyncClient.findAllById(any(), any())).thenResolve(FindAllByIdResponse(apiContacts))
+        whenever(contactLookupAsyncClient.findAllById(any(), any())).thenResolve(FindAllByIdResponse(apiContacts))
 
         runPull()
 
@@ -444,7 +444,7 @@ class AddressBookSyncJobImplTest {
 
         runPull()
 
-        verify(contactAsyncClient, never()).findAllById(any(), any())
+        verify(contactLookupAsyncClient, never()).findAllById(any(), any())
     }
 
     @Test
@@ -463,7 +463,7 @@ class AddressBookSyncJobImplTest {
 
         runFindPlatformContacts()
 
-        verify(contactAsyncClient, never()).findLocalContacts(any(), any())
+        verify(contactLookupAsyncClient, never()).findLocalContacts(any(), any())
     }
 
     @Test
@@ -474,7 +474,7 @@ class AddressBookSyncJobImplTest {
 
         runFindPlatformContacts()
 
-        verify(contactAsyncClient, never()).findLocalContacts(any(), any())
+        verify(contactLookupAsyncClient, never()).findLocalContacts(any(), any())
     }
 
     @Test
@@ -487,7 +487,7 @@ class AddressBookSyncJobImplTest {
 
         runFindPlatformContacts()
 
-        verify(contactAsyncClient).findLocalContacts(any(), eq(FindLocalContactsRequest(missingContacts)))
+        verify(contactLookupAsyncClient).findLocalContacts(any(), eq(FindLocalContactsRequest(missingContacts)))
     }
 
     fun testFindPlatformAdd(): Pair<AddressBookSyncResult, ContactInfo> {
@@ -507,7 +507,7 @@ class AddressBookSyncJobImplTest {
         whenever(platformContacts.fetchContacts()).thenResolve(missingContacts)
         whenever(contactsPersistenceManager.findMissing(anyList())).thenResolve(missingContacts)
         whenever(contactsPersistenceManager.add(anyCollection())).thenResolve(setOf(contactInfo))
-        whenever(contactAsyncClient.findLocalContacts(any(), any())).thenResolve(FindLocalContactsResponse(apiContacts))
+        whenever(contactLookupAsyncClient.findLocalContacts(any(), any())).thenResolve(FindLocalContactsResponse(apiContacts))
 
         val result = runFindPlatformContacts()
 

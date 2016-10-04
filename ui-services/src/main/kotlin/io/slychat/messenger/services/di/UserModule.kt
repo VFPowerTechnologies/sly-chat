@@ -9,7 +9,7 @@ import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
 import io.slychat.messenger.core.http.api.contacts.AddressBookAsyncClientImpl
-import io.slychat.messenger.core.http.api.contacts.ContactAsyncClientImpl
+import io.slychat.messenger.core.http.api.contacts.ContactLookupAsyncClientImpl
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClientImpl
 import io.slychat.messenger.core.http.api.prekeys.HttpPreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
@@ -77,7 +77,7 @@ class UserModule(
         promiseTimerFactory: PromiseTimerFactory
     ): AddressBookSyncJobFactory {
         val serverUrl = serverUrls.API_SERVER
-        val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
+        val contactClient = ContactLookupAsyncClientImpl(serverUrl, httpClientFactory)
         val contactListClient = AddressBookAsyncClientImpl(serverUrl, httpClientFactory)
 
         return AddressBookSyncJobFactoryImpl(
@@ -115,7 +115,7 @@ class UserModule(
         @SlyHttp httpClientFactory: HttpClientFactory
     ): ContactsService {
         val serverUrl = serverUrls.API_SERVER
-        val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
+        val contactClient = ContactLookupAsyncClientImpl(serverUrl, httpClientFactory)
 
         return ContactsServiceImpl(
             authTokenManager,

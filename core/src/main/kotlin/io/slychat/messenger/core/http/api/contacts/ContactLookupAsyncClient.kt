@@ -4,7 +4,7 @@ import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
 import nl.komponents.kovenant.Promise
 
-interface ContactAsyncClient {
+interface ContactLookupAsyncClient {
     fun find(userCredentials: UserCredentials, request: FindContactRequest): Promise<FindContactResponse, Exception>
 
     fun findLocalContacts(userCredentials: UserCredentials, request: FindLocalContactsRequest): Promise<FindLocalContactsResponse, Exception>

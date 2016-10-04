@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit
 
 class AddressBookSyncJobImpl(
     private val authTokenManager: AuthTokenManager,
-    private val contactClient: ContactAsyncClient,
+    private val contactLookupClient: ContactLookupAsyncClient,
     private val addressBookClient: AddressBookAsyncClient,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val groupPersistenceManager: GroupPersistenceManager,
@@ -55,7 +55,7 @@ class AddressBookSyncJobImpl(
 
     private fun queryAndAddNewContacts(userCredentials: UserCredentials, missingContacts: List<PlatformContact>): Promise<Set<ContactInfo>, Exception> {
         return if (missingContacts.isNotEmpty()) {
-            contactClient.findLocalContacts(userCredentials, FindLocalContactsRequest(missingContacts)) bind { foundContacts ->
+            contactLookupClient.findLocalContacts(userCredentials, FindLocalContactsRequest(missingContacts)) bind { foundContacts ->
                 log.debug("Found platform contacts: {}", foundContacts)
 
                 contactsPersistenceManager.add(foundContacts.contacts.map { it.toCore(AllowedMessageLevel.ALL) })
@@ -101,7 +101,7 @@ class AddressBookSyncJobImpl(
 
             val p = if (missing.isNotEmpty()) {
                 val request = FindAllByIdRequest(missing.toList())
-                contactClient.findAllById(userCredentials, request) map { response ->
+                contactLookupClient.findAllById(userCredentials, request) map { response ->
                     response.contacts.map { it.toCore(messageLevelByUserId[it.id]!!) }
                 }
             }

@@ -3,12 +3,11 @@ package io.slychat.messenger.core.http.api.contacts
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.HttpClientFactory
-import io.slychat.messenger.core.persistence.ContactInfo
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
-class ContactAsyncClientImpl(private val serverUrl: String, private val factory: HttpClientFactory) : ContactAsyncClient {
-    private fun newClient() = ContactClient(serverUrl, factory.create())
+class ContactLookupAsyncClientImpl(private val serverUrl: String, private val factory: HttpClientFactory) : ContactLookupAsyncClient {
+    private fun newClient() = ContactLookupClient(serverUrl, factory.create())
 
     override fun find(userCredentials: UserCredentials, request: FindContactRequest): Promise<FindContactResponse, Exception> = task {
          newClient().find(userCredentials, request)

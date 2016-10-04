@@ -2,7 +2,7 @@ package io.slychat.messenger.core.integration.web
 
 import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.core.http.JavaHttpClient
-import io.slychat.messenger.core.http.api.contacts.ContactClient
+import io.slychat.messenger.core.http.api.contacts.ContactLookupClient
 import io.slychat.messenger.core.http.api.contacts.FindAllByIdRequest
 import io.slychat.messenger.core.http.api.contacts.FindContactRequest
 import io.slychat.messenger.core.http.api.contacts.FindLocalContactsRequest
@@ -41,7 +41,7 @@ class WebApiContactLookupTest {
 
         val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, AllowedMessageLevel.ALL, siteUser.user.phoneNumber, siteUser.user.publicKey)
 
-        val client = ContactClient(serverBaseUrl, JavaHttpClient())
+        val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 
         val contactResponseEmail = client.find(siteUser.getUserCredentials(authToken), FindContactRequest(siteUser.user.username, null))
         assertTrue(contactResponseEmail.isSuccess)
@@ -58,7 +58,7 @@ class WebApiContactLookupTest {
 
         val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, AllowedMessageLevel.ALL, siteUser.user.phoneNumber, siteUser.user.publicKey)
 
-        val client = ContactClient(serverBaseUrl, JavaHttpClient())
+        val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 
         val contactResponse = client.find(siteUser.getUserCredentials(authToken), FindContactRequest(null, siteUser.user.phoneNumber))
         assertTrue(contactResponse.isSuccess)
@@ -77,7 +77,7 @@ class WebApiContactLookupTest {
 
         val authToken = devClient.createAuthToken(userA.username)
 
-        val client = ContactClient(serverBaseUrl, JavaHttpClient())
+        val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 
         val platformContacts = listOf(
             PlatformContact("B", listOf(userC.username), listOf()),
@@ -102,7 +102,7 @@ class WebApiContactLookupTest {
 
         val authToken = devClient.createAuthToken(userA.username)
 
-        val client = ContactClient(serverBaseUrl, JavaHttpClient())
+        val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 
         val request = FindAllByIdRequest(listOf(userB.id, userC.id))
         val response = client.findAllById(userA.getUserCredentials(authToken), request)
@@ -122,7 +122,7 @@ class WebApiContactLookupTest {
 
         val authToken = devClient.createAuthToken(userA.username)
 
-        val client = ContactClient(serverBaseUrl, JavaHttpClient())
+        val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.findById(userA.getUserCredentials(authToken), userB.id)
 
@@ -135,7 +135,7 @@ class WebApiContactLookupTest {
 
         val authToken = devClient.createAuthToken(userA.username)
 
-        val client = ContactClient(serverBaseUrl, JavaHttpClient())
+        val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 
         val response = client.findById(userA.getUserCredentials(authToken), randomUserId())
 
