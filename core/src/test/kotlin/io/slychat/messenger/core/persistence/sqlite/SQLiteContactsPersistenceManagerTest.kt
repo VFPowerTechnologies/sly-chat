@@ -806,8 +806,8 @@ class SQLiteContactsPersistenceManagerTest {
     @Test
     fun `addAddressBookHashes should return the final hash`() {
         val hashes = listOf(
-            RemoteAddressBookEntry("a250a891b058c5a8c91cebff812a2ab1f866b7f6824d088f580e157e94e7fba9".unhexify(), "ee911dea678371e370ebc42632df1c1c".unhexify(), emptyByteArray()),
-            RemoteAddressBookEntry("e92e18352e6048789e121d27c18d506d1b696690e952a51ab3b45ccb5347261c".unhexify(), "83143059939f058ba774c338245734a1".unhexify(), emptyByteArray())
+            RemoteAddressBookEntry("a250a891b058c5a8c91cebff812a2ab1f866b7f6824d088f580e157e94e7fba9", "ee911dea678371e370ebc42632df1c1c", emptyByteArray()),
+            RemoteAddressBookEntry("e92e18352e6048789e121d27c18d506d1b696690e952a51ab3b45ccb5347261c", "83143059939f058ba774c338245734a1", emptyByteArray())
         )
 
         val hash = contactsPersistenceManager.addRemoteEntryHashes(hashes).get()
@@ -817,15 +817,15 @@ class SQLiteContactsPersistenceManagerTest {
 
     @Test
     fun `addAddressBookHashes should replace existing entries`() {
-        val idHash = "e92e18352e6048789e121d27c18d506d1b696690e952a51ab3b45ccb5347261c".unhexify()
+        val idHash = "e92e18352e6048789e121d27c18d506d1b696690e952a51ab3b45ccb5347261c"
 
         val hashes = listOf(
-            RemoteAddressBookEntry("a250a891b058c5a8c91cebff812a2ab1f866b7f6824d088f580e157e94e7fba9".unhexify(), "ee911dea678371e370ebc42632df1c1c".unhexify(), emptyByteArray()),
-            RemoteAddressBookEntry(idHash, "83143059939f058ba774c338245734a1".unhexify(), emptyByteArray())
+            RemoteAddressBookEntry("a250a891b058c5a8c91cebff812a2ab1f866b7f6824d088f580e157e94e7fba9", "ee911dea678371e370ebc42632df1c1c", emptyByteArray()),
+            RemoteAddressBookEntry(idHash, "83143059939f058ba774c338245734a1", emptyByteArray())
         )
 
         val newHashes = listOf(
-            RemoteAddressBookEntry(idHash, "f8bcb5d28ee9560a1742050fa442eb8b".unhexify(), emptyByteArray())
+            RemoteAddressBookEntry(idHash, "f8bcb5d28ee9560a1742050fa442eb8b", emptyByteArray())
         )
 
         contactsPersistenceManager.addRemoteEntryHashes(hashes).get()

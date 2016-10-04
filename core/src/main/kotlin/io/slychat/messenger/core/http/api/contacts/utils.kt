@@ -12,6 +12,7 @@ import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.RemoteAddressBookEntry
+import io.slychat.messenger.core.unhexify
 import org.spongycastle.crypto.digests.MD5Digest
 import org.spongycastle.crypto.digests.SHA256Digest
 
@@ -57,10 +58,10 @@ fun encryptRemoteAddressBookEntries(keyVault: KeyVault, updates: List<AddressBoo
         val hash = when (update) {
             is AddressBookUpdate.Contact -> getEmailHash(keyVault, update.userId)
             is AddressBookUpdate.Group -> getGroupHash(keyVault, update.groupId)
-        }
+        }.hexify()
 
         val serialized = objectMapper.writeValueAsBytes(update)
-        val dataHash = md5(keyVault.anonymizingData, serialized)
+        val dataHash = md5(keyVault.anonymizingData, serialized).hexify()
         val encryptedData = encryptBulkData(cipher, derivedKey, serialized)
         RemoteAddressBookEntry(hash, dataHash, encryptedData)
     }
@@ -107,8 +108,8 @@ inline fun md5Fold(body: ((ByteArray) -> Unit) -> Unit): ByteArray {
 
 fun hashFromRemoteAddressBookEntries(remoteAddressBookEntries: Collection<RemoteAddressBookEntry>): String {
     return md5Fold { updater ->
-        remoteAddressBookEntries.forEach {
-            updater(md5(it.encryptedData))
+        remoteAddressBookEntries.sortedBy { it.idHash }.forEach {
+            updater(it.dataHash.unhexify())
         }
     }.hexify()
 }

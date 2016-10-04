@@ -7,6 +7,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.api.contacts.md5Fold
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.unhexify
 import nl.komponents.kovenant.Promise
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -422,8 +423,8 @@ VALUES
     (?, ?)
 """
         connection.batchInsertWithinTransaction(sql, remoteEntries) { stmt, entry ->
-            stmt.bind(1, entry.idHash)
-            stmt.bind(2, entry.dataHash)
+            stmt.bind(1, entry.idHash.unhexify())
+            stmt.bind(2, entry.dataHash.unhexify())
         }
 
         calculateAddressBookHash(connection)

@@ -1,19 +1,18 @@
 package io.slychat.messenger.core.persistence
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import io.slychat.messenger.core.hexify
 import java.util.*
 
 /**
  * @property encryptedData An encrypted, serialized AddressBookUpdate
  */
 class RemoteAddressBookEntry(
-    @JsonProperty("hash") val idHash: ByteArray,
-    @JsonProperty("dataHash") val dataHash: ByteArray,
+    @JsonProperty("idHash") val idHash: String,
+    @JsonProperty("dataHash") val dataHash: String,
     @JsonProperty("encryptedData") val encryptedData: ByteArray
 ) {
     override fun toString(): String {
-        return "RemoteAddressBookEntry(hash='${idHash.hexify()}', encryptedData=[${encryptedData.size}b], dataHash='${dataHash.hexify()}')"
+        return "RemoteAddressBookEntry(hash='$idHash', encryptedData=[${encryptedData.size}b], dataHash='$dataHash')"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -22,17 +21,18 @@ class RemoteAddressBookEntry(
 
         other as RemoteAddressBookEntry
 
-        if (!Arrays.equals(idHash, other.idHash)) return false
+        if (idHash != other.idHash) return false
+        if (dataHash != other.dataHash) return false
         if (!Arrays.equals(encryptedData, other.encryptedData)) return false
-        if (!Arrays.equals(dataHash, other.dataHash)) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = Arrays.hashCode(idHash)
+        var result = idHash.hashCode()
+        result = 31 * result + dataHash.hashCode()
         result = 31 * result + Arrays.hashCode(encryptedData)
-        result = 31 * result + Arrays.hashCode(dataHash)
         return result
     }
+
 }
