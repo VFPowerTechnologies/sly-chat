@@ -17,6 +17,7 @@ import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.core.relay.RelayClientState
 import io.slychat.messenger.services.auth.AuthResult
 import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.thenReject
 import io.slychat.messenger.testutils.thenResolve
 import io.slychat.messenger.testutils.thenResolveUnit
 import org.junit.Before
@@ -27,6 +28,9 @@ import org.mockito.exceptions.verification.NeverWantedButInvoked
 import rx.observers.TestSubscriber
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
+import java.io.IOException
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class SlyApplicationTest {
     companion object {
@@ -119,17 +123,41 @@ class SlyApplicationTest {
         }
     }
 
-    @Ignore
     @Test
-    fun `it should create new installation data during initialization if no data exists`() { TODO() }
+    fun `it should create new installation data during initialization if no data exists`() {
+        whenever(appComponent.installationDataPersistenceManager.store(any())).thenResolveUnit()
+        whenever(appComponent.installationDataPersistenceManager.retrieve()).thenResolve(null)
 
-    @Ignore
-    @Test
-    fun `it should create new installation data during initialization if data is corrupted`() { TODO() }
+        val app = createApp()
+        app.init(appComponent)
 
-    @Ignore
+        verify(appComponent.installationDataPersistenceManager).store(app.installationData)
+    }
+
     @Test
-    fun `it should use existing installation data during initialization if data is present`() { TODO() }
+    fun `it should create new installation data during initialization if data is corrupted`() {
+        whenever(appComponent.installationDataPersistenceManager.retrieve()).thenReject(IOException("corrupt"))
+        whenever(appComponent.installationDataPersistenceManager.store(any())).thenResolveUnit()
+
+        val app = createApp()
+        app.init(appComponent)
+
+        assertTrue(app.isInitialized, "App didn't complete initialization")
+
+        //accessing this will throw if it's unset
+        verify(appComponent.installationDataPersistenceManager).store(app.installationData)
+    }
+
+    @Test
+    fun `it should use existing installation data during initialization if data is present`() {
+        val installationData = InstallationData.generate()
+        whenever(appComponent.installationDataPersistenceManager.retrieve()).thenResolve(installationData)
+
+        val app = createApp()
+        app.init(appComponent)
+
+        assertEquals(installationData, app.installationData, "Installation data doesn't match")
+    }
 
     @Ignore
     @Test

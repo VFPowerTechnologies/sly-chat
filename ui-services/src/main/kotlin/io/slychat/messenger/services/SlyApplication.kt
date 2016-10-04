@@ -27,6 +27,7 @@ import rx.Observable
 import rx.Subscription
 import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
+import java.io.IOException
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -45,7 +46,7 @@ class SlyApplication {
     var userComponent: UserComponent? = null
         private set
 
-    private var isInitialized = false
+    internal var isInitialized = false
     private val onInitListeners = ArrayList<(SlyApplication) -> Unit>()
 
     private var isAutoLoginComplete = false
@@ -172,7 +173,8 @@ class SlyApplication {
         val maybeInstallationData = try {
             persistenceManager.retrieve().get()
         }
-        catch (e: JsonParseException) {
+        //all of jackson's json deserialization errors are subclasses of IOException
+        catch (e: IOException) {
             log.error("Installation data is corrupted: {}", e.message, e)
             null
         }
