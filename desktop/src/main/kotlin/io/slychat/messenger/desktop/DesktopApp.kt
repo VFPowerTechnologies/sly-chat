@@ -9,6 +9,7 @@ import io.slychat.messenger.core.Os
 import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
+import io.slychat.messenger.desktop.jna.CLibrary
 import io.slychat.messenger.desktop.services.*
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.config.UserConfig
@@ -263,6 +264,12 @@ class DesktopApp : Application() {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
+            if (currentOs.type.isPosix) {
+                val libc = CLibrary.INSTANCE
+                //077, kotlin doesn't support octal literals
+                libc.umask(63)
+            }
+
             launch(DesktopApp::class.java, *args)
         }
 
