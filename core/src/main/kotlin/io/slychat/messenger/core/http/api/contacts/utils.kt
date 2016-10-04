@@ -19,7 +19,7 @@ private fun UserId.toByteArray(): ByteArray =
     long.toString().toByteArray(Charsets.UTF_8)
 
 /** Returns the SHA256 hash of the local encryption key and the given user id as a hex string. */
-private fun getEmailHash(keyVault: KeyVault, userId: UserId): String {
+private fun getEmailHash(keyVault: KeyVault, userId: UserId): ByteArray {
     val digester = SHA256Digest()
     val digest = ByteArray(digester.digestSize)
 
@@ -29,10 +29,10 @@ private fun getEmailHash(keyVault: KeyVault, userId: UserId): String {
 
     digester.doFinal(digest, 0)
 
-    return digest.hexify()
+    return digest
 }
 
-private fun getGroupHash(keyVault: KeyVault, groupId: GroupId): String {
+private fun getGroupHash(keyVault: KeyVault, groupId: GroupId): ByteArray {
     val digester = SHA256Digest()
     val digest = ByteArray(digester.digestSize)
 
@@ -42,11 +42,11 @@ private fun getGroupHash(keyVault: KeyVault, groupId: GroupId): String {
 
     digester.doFinal(digest, 0)
 
-    return digest.hexify()
+    return digest
 }
 
 //first we create RemoteContactEntryData, then serialize them to json, and then encrypt them
-//afterwards we then store the encrypted value along with the user id hash in a RemoteContactEntry
+//afterwards we then store the encrypted value along with the address book id hash in a RemoteContactEntry
 fun encryptRemoteAddressBookEntries(keyVault: KeyVault, updates: List<AddressBookUpdate>): List<RemoteAddressBookEntry> {
     val cipher = CipherList.defaultDataEncryptionCipher
     val derivedKey = keyVault.deriveKeyFor(DerivedKeyType.REMOTE_ADDRESS_BOOK_ENTRIES, cipher)
@@ -59,8 +59,10 @@ fun encryptRemoteAddressBookEntries(keyVault: KeyVault, updates: List<AddressBoo
             is AddressBookUpdate.Group -> getGroupHash(keyVault, update.groupId)
         }
 
-        val encryptedData = encryptBulkData(cipher, derivedKey, objectMapper.writeValueAsBytes(update))
-        RemoteAddressBookEntry(hash, encryptedData)
+        val serialized = objectMapper.writeValueAsBytes(update)
+        val dataHash = md5(keyVault.anonymizingData, serialized)
+        val encryptedData = encryptBulkData(cipher, derivedKey, serialized)
+        RemoteAddressBookEntry(hash, dataHash, encryptedData)
     }
 }
 
@@ -75,11 +77,13 @@ fun decryptRemoteAddressBookEntries(keyVault: KeyVault, entries: List<RemoteAddr
     }
 }
 
-fun md5(data: ByteArray): ByteArray {
+fun md5(vararg byteArrays: ByteArray): ByteArray {
     val digester = MD5Digest()
     val digest = ByteArray(digester.digestSize)
 
-    digester.update(data, 0, data.size)
+    byteArrays.forEach { data ->
+        digester.update(data, 0, data.size)
+    }
 
     digester.doFinal(digest, 0)
 

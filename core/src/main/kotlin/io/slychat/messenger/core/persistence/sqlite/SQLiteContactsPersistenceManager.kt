@@ -5,8 +5,6 @@ import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.hexify
-import io.slychat.messenger.core.unhexify
-import io.slychat.messenger.core.http.api.contacts.md5
 import io.slychat.messenger.core.http.api.contacts.md5Fold
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
@@ -424,8 +422,8 @@ VALUES
     (?, ?)
 """
         connection.batchInsertWithinTransaction(sql, remoteEntries) { stmt, entry ->
-            stmt.bind(1, entry.hash.unhexify())
-            stmt.bind(2, md5(entry.encryptedData))
+            stmt.bind(1, entry.idHash)
+            stmt.bind(2, entry.dataHash)
         }
 
         calculateAddressBookHash(connection)
