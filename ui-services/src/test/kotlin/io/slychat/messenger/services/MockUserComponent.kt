@@ -25,7 +25,7 @@ class MockUserComponent : UserComponent {
 
     val keyVault: KeyVault = MockUserComponent.keyVault
 
-    override val accountParamsManager: AccountParamsManager = mock()
+    override val accountLocalInfoManager: AccountLocalInfoManager = mock()
 
     override val keyVaultPersistenceManager: KeyVaultPersistenceManager = mock()
 

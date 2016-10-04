@@ -7,7 +7,7 @@ import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
-import io.slychat.messenger.core.persistence.AccountParams
+import io.slychat.messenger.core.persistence.AccountLocalInfo
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.sqlite.SQLCipherCipher
 import io.slychat.messenger.services.LocalAccountDirectory
@@ -50,7 +50,7 @@ class AuthenticationServiceImpl(
                 if (response.errorMessage != null)
                     throw AuthApiResponseException(response.errorMessage)
 
-                val accountParams = AccountParams(
+                val accountParams = AccountLocalInfo(
                     SQLCipherCipher.defaultCipher,
                     hashParams
                 )

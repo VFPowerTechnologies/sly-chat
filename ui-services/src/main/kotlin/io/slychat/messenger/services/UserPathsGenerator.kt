@@ -30,7 +30,7 @@ class UserPathsGenerator(platformInfo: PlatformInfo) {
             userAccountDir,
             userAccountDir / "keyvault.json",
             userAccountDir / ACCOUNT_INFO_FILENAME,
-            userAccountDir / "account-params.json",
+            userAccountDir / "local-info.json",
             userAccountDir / "session-data.json",
             userAccountDir / "db.sqlite3",
             userAccountDir / "user-conf.json"

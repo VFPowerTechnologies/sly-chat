@@ -37,7 +37,7 @@ class AuthenticationServiceImplTest {
 
     val authenticationClient: AuthenticationAsyncClient = mock()
     val localAccountDirectory: LocalAccountDirectory = mock()
-    val accountParamsPersistenceManager: AccountParamsPersistenceManager = mock()
+    val accountLocalInfoPersistenceManager: AccountLocalInfoPersistenceManager = mock()
 
     val sessionDataPersistenceManager: SessionDataPersistenceManager = mock()
     val keyVaultPersistenceManager: KeyVaultPersistenceManager = mock()
@@ -58,9 +58,9 @@ class AuthenticationServiceImplTest {
         whenever(localAccountDirectory.findAccountFor(any<String>())).thenReturn(null)
         whenever(localAccountDirectory.getSessionDataPersistenceManager(any(), any())).thenReturn(sessionDataPersistenceManager)
         whenever(localAccountDirectory.getKeyVaultPersistenceManager(any())).thenReturn(keyVaultPersistenceManager)
-        whenever(localAccountDirectory.getAccountParamsPersistenceManager(any(), any())).thenReturn(accountParamsPersistenceManager)
+        whenever(localAccountDirectory.getAccountParamsPersistenceManager(any(), any())).thenReturn(accountLocalInfoPersistenceManager)
 
-        whenever(accountParamsPersistenceManager.retrieveSync()).thenReturn(AccountParams(SQLCipherCipher.defaultCipher, defaultRemotePasswordHashParams()))
+        whenever(accountLocalInfoPersistenceManager.retrieveSync()).thenReturn(AccountLocalInfo(SQLCipherCipher.defaultCipher, defaultRemotePasswordHashParams()))
     }
 
     //setup mocks for successful remote auth

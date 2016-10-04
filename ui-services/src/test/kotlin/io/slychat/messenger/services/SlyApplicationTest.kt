@@ -5,7 +5,7 @@ import io.slychat.messenger.core.crypto.defaultRemotePasswordHashParams
 import io.slychat.messenger.core.crypto.randomRegistrationId
 import io.slychat.messenger.core.emptyByteArray
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
-import io.slychat.messenger.core.persistence.AccountParams
+import io.slychat.messenger.core.persistence.AccountLocalInfo
 import io.slychat.messenger.core.persistence.InstallationData
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.StartupInfoPersistenceManager
@@ -47,7 +47,7 @@ class SlyApplicationTest {
 
     val startupInfoPersistenceManager: StartupInfoPersistenceManager = mock()
 
-    val accountParams = AccountParams(SQLCipherCipher.defaultCipher, defaultRemotePasswordHashParams())
+    val accountParams = AccountLocalInfo(SQLCipherCipher.defaultCipher, defaultRemotePasswordHashParams())
     val remotePasswordHash = emptyByteArray()
 
     @Before
@@ -73,7 +73,7 @@ class SlyApplicationTest {
         whenever(userComponent.messengerService.broadcastNewDevice(any())).thenResolve(Unit)
         whenever(userComponent.sessionDataManager.delete()).thenResolve(true)
         whenever(userComponent.relayClock.clockDiffUpdates).thenReturn(clockDiffUpdates)
-        whenever(userComponent.accountParamsManager.update(any())).thenResolveUnit()
+        whenever(userComponent.accountLocalInfoManager.update(any())).thenResolveUnit()
 
         //used in finalizeInitialization
 

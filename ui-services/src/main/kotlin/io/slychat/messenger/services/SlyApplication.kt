@@ -262,7 +262,7 @@ class SlyApplication {
             val keyVault = response.keyVault
 
             val accountInfo = response.accountInfo
-            val accountParams = response.accountParams
+            val accountParams = response.accountLocalInfo
             val sessionData = response.sessionData
             val address = SlyAddress(accountInfo.id, accountInfo.deviceId)
 
@@ -368,13 +368,13 @@ class SlyApplication {
         fetchOfflineMessages()
     }
 
-    fun createUserSession(userLoginData: UserData, accountInfo: AccountInfo, accountParams: AccountParams): UserComponent {
+    fun createUserSession(userLoginData: UserData, accountInfo: AccountInfo, accountLocalInfo: AccountLocalInfo): UserComponent {
         if (userComponent != null)
             error("UserComponent already loaded")
 
         log.info("Creating user session")
 
-        val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo, accountParams))
+        val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo, accountLocalInfo))
         this.userComponent = userComponent
 
         Sentry.setUserAddress(userComponent.userLoginData.address)
@@ -402,7 +402,7 @@ class SlyApplication {
         val localAccountDirectory = appComponent.localAccountDirectory
         val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager(installationData.startupInfoKey)
         val sessionDataManager = userComponent.sessionDataManager
-        val accountParamsManager = userComponent.accountParamsManager
+        val accountParamsManager = userComponent.accountLocalInfoManager
 
         val sessionData = authResult.sessionData
         val accountInfo = authResult.accountInfo
@@ -412,7 +412,7 @@ class SlyApplication {
         return task {
             localAccountDirectory.createUserDirectories(userId)
         } bind {
-            accountParamsManager.update(authResult.accountParams)
+            accountParamsManager.update(authResult.accountLocalInfo)
         } bind {
             sessionDataManager.update(sessionData)
         } bind {

@@ -6,7 +6,7 @@ import io.slychat.messenger.core.crypto.hashes.HashParams
 import io.slychat.messenger.core.persistence.sqlite.SQLCipherCipher
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class AccountParams(
+data class AccountLocalInfo(
     @JsonProperty("sqlCipherCipher")
     val sqlCipherCipher: SQLCipherCipher,
     @JsonProperty("remoteHashParams")

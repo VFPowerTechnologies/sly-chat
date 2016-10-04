@@ -43,7 +43,7 @@ class UserModule(
 
     @get:UserScope
     @get:Provides
-    val providesAccountParams: AccountParams
+    val providesAccountLocalInfo: AccountLocalInfo
 ) {
     @UserScope
     @Provides
@@ -384,9 +384,9 @@ class UserModule(
     @UserScope
     @Provides
     fun providesAccountParamsManager(
-        accountParamsPersistenceManager: AccountParamsPersistenceManager
-    ): AccountParamsManager =
-        AccountParamsManagerImpl(accountParamsPersistenceManager)
+        accountLocalInfoPersistenceManager: AccountLocalInfoPersistenceManager
+    ): AccountLocalInfoManager =
+        AccountLocalInfoManagerImpl(accountLocalInfoPersistenceManager)
 
     @UserScope
     @Provides

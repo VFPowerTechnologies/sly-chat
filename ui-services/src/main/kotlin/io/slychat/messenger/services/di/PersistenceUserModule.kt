@@ -6,7 +6,7 @@ import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.crypto.DerivedKeyType
 import io.slychat.messenger.core.crypto.signal.SQLiteSignalProtocolStore
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.persistence.json.JsonAccountParamsPersistenceManager
+import io.slychat.messenger.core.persistence.json.JsonAccountLocalInfoPersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.*
 import io.slychat.messenger.services.LocalAccountDirectory
 import io.slychat.messenger.services.SlyApplication
@@ -51,14 +51,14 @@ class PersistenceUserModule {
     fun providesSQLitePersistenceManager(
         userPaths: UserPaths,
         userLoginData: UserData,
-        accountParams: AccountParams
+        accountLocalInfo: AccountLocalInfo
     ): SQLitePersistenceManager {
         val sqlCipherParams = if (BuildConfig.ENABLE_DATABASE_ENCRYPTION) {
             val keyvault = userLoginData.keyVault
 
             SQLCipherParams(
                 keyvault.getDerivedKeySpec(DerivedKeyType.LOCAL_DATA),
-                accountParams.sqlCipherCipher
+                accountLocalInfo.sqlCipherCipher
             )
         }
         else
@@ -98,9 +98,9 @@ class PersistenceUserModule {
     fun providesAccountParamsManager(
         userLoginData: UserData,
         userPaths: UserPaths
-    ): AccountParamsPersistenceManager {
+    ): AccountLocalInfoPersistenceManager {
         val keyVault = userLoginData.keyVault
-        return JsonAccountParamsPersistenceManager(
+        return JsonAccountLocalInfoPersistenceManager(
             userPaths.accountParamsPath,
             keyVault.getDerivedKeySpec(DerivedKeyType.LOCAL_DATA)
         )
