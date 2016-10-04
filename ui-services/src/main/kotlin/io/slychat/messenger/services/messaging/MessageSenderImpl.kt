@@ -51,6 +51,9 @@ class MessageSenderImpl(
         subscriptions.add(messageUpdates.subscribe { onMessageUpdateEvent(it) })
     }
 
+    internal val currentRelayMessageId: String?
+        get() = currentSendMessage?.relayMessageId
+
     private fun onMessageUpdateEvent(event: MessageUpdateEvent) = when (event) {
         is MessageUpdateEvent.Deleted -> onMessagesDeleted(event)
         is MessageUpdateEvent.DeletedAll -> onAllMessagesDeleted(event)
