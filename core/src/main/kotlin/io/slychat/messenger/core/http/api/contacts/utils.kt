@@ -3,9 +3,7 @@ package io.slychat.messenger.core.http.api.contacts
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.crypto.DerivedKeySpec
 import io.slychat.messenger.core.crypto.DerivedKeyType
-import io.slychat.messenger.core.crypto.HKDFInfoList
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
@@ -45,7 +43,6 @@ private fun getGroupHash(keyVault: KeyVault, groupId: GroupId): String {
     digester.doFinal(digest, 0)
 
     return digest.hexify()
-
 }
 
 //first we create RemoteContactEntryData, then serialize them to json, and then encrypt them
@@ -70,18 +67,12 @@ fun encryptRemoteAddressBookEntries(keyVault: KeyVault, updates: List<AddressBoo
 fun decryptRemoteAddressBookEntries(keyVault: KeyVault, entries: List<RemoteAddressBookEntry>): List<AddressBookUpdate> {
     val objectMapper = ObjectMapper()
 
-    val derivedKeySpec = DerivedKeySpec(keyVault.masterKey, HKDFInfoList.remoteAddressBookEntries())
+    val derivedKeySpec = keyVault.getDerivedKeySpec(DerivedKeyType.REMOTE_ADDRESS_BOOK_ENTRIES)
 
     return entries.map { e ->
         val raw = decryptBulkData(derivedKeySpec, e.encryptedData)
         objectMapper.readValue(raw, AddressBookUpdate::class.java)
     }
-}
-
-fun updateRequestFromAddressBookUpdates(addressBookHash: String, keyVault: KeyVault, addressBookUpdates: List<AddressBookUpdate>): UpdateAddressBookRequest {
-    val updates = encryptRemoteAddressBookEntries(keyVault, addressBookUpdates)
-
-    return UpdateAddressBookRequest(addressBookHash, updates)
 }
 
 fun md5(data: ByteArray): ByteArray {
