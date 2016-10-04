@@ -1,4 +1,1 @@
-CREATE TABLE IF NOT EXISTS remote_contact_updates (
-    contact_id INTEGER PRIMARY KEY NOT NULL,
-    type TEXT NOT NULL
-);
+ALTER TABLE contacts ADD COLUMN is_pending INTEGER NOT NULL DEFAULT 0;

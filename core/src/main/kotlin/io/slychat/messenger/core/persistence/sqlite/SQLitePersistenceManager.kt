@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 /** The latest database version number. */
-private val LATEST_DATABASE_VERSION = 13
+private val LATEST_DATABASE_VERSION = 14
 
 /** Just used to wrap Errors thrown when running SQLite jobs. */
 class SQLitePersistenceManagerErrorException(e: Error) : RuntimeException("Uncaught Error in job", e)
@@ -71,17 +71,6 @@ class SQLitePersistenceManager(
         if (initialized)
             return InitializationResult(false, false)
 
-        //this is here because I'm an idiot and shoulda set the initial database version to 1 from zero; when using
-        //temp files, the path exists but it still needs to create the contents
-        val created = if (path == null)
-            true
-        else {
-            if (path.exists())
-                path.length() == 0L
-            else
-                true
-        }
-
         sqliteQueue = SQLiteQueue(path)
         sqliteQueue.start()
 
@@ -94,6 +83,8 @@ class SQLitePersistenceManager(
                 connection.exec("PRAGMA cipher = '${cipherParams.cipher.s}'")
             }.get()
         }
+
+        val created = currentDatabaseVersionSync() == 0
 
         initialized = true
         return InitializationResult(true, created)
