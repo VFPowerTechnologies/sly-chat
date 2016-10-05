@@ -9,4 +9,6 @@ object HKDFInfoList {
 
     /** Used to derive subkeys from the local master key. */
     fun localData(): HKDFInfo = HKDFInfo("local-data")
+
+    fun sqlcipher(): HKDFInfo = HKDFInfo("sqlcipher")
 }

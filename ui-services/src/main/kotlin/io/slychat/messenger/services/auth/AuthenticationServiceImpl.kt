@@ -7,6 +7,7 @@ import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
 import io.slychat.messenger.core.persistence.AccountLocalInfo
+import io.slychat.messenger.core.persistence.LocalDerivedKeyType
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.sqlite.SQLCipherCipher
 import io.slychat.messenger.services.LocalAccountDirectory
@@ -89,7 +90,7 @@ class AuthenticationServiceImpl(
         val params = accountLocalInfo.remoteHashParams
         val remotePasswordHash = hashPasswordWithParams(password, params, HashType.REMOTE)
 
-        val localDerivedKeySpec = DerivedKeySpec(accountLocalInfo.localMasterKey, HKDFInfoList.localData())
+        val localDerivedKeySpec = accountLocalInfo.getDerivedKeySpec(LocalDerivedKeyType.GENERIC)
 
         //this isn't important; just use a null token in the auth result if this isn't present, and then fetch one remotely by refreshing
         val sessionDataPersistenceManager = localAccountDirectory.getSessionDataPersistenceManager(

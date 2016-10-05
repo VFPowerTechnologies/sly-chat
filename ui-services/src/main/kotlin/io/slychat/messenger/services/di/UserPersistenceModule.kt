@@ -3,9 +3,7 @@ package io.slychat.messenger.services.di
 import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
-import io.slychat.messenger.core.crypto.DerivedKeySpec
 import io.slychat.messenger.core.crypto.DerivedKeyType
-import io.slychat.messenger.core.crypto.HKDFInfoList
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.signal.SQLiteSignalProtocolStore
 import io.slychat.messenger.core.persistence.*
@@ -57,7 +55,7 @@ class UserPersistenceModule {
     ): SQLitePersistenceManager {
         val sqlCipherParams = if (BuildConfig.ENABLE_DATABASE_ENCRYPTION) {
             SQLCipherParams(
-                DerivedKeySpec(accountLocalInfo.localMasterKey, HKDFInfoList.localData()),
+                accountLocalInfo.getDerivedKeySpec(LocalDerivedKeyType.SQLCIPHER),
                 accountLocalInfo.sqlCipherCipher
             )
         }
@@ -90,7 +88,7 @@ class UserPersistenceModule {
     ): SessionDataPersistenceManager {
         return localAccountDirectory.getSessionDataPersistenceManager(
             userLoginData.userId,
-            DerivedKeySpec(accountLocalInfo.localMasterKey, HKDFInfoList.localData())
+            accountLocalInfo.getDerivedKeySpec(LocalDerivedKeyType.GENERIC)
         )
     }
 
