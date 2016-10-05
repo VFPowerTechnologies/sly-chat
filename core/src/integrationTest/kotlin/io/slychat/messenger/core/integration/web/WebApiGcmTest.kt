@@ -25,7 +25,7 @@ class WebApiGcmTest {
     fun checkGCMTokenStatus(user: SiteUser, exists: Boolean) {
         val client = GcmClient(serverBaseUrl, JavaHttpClient())
 
-        val authToken = devClient.createAuthToken(user.username)
+        val authToken = devClient.createAuthToken(user.email)
 
         val response = client.isRegistered(user.getUserCredentials(authToken))
 
@@ -38,9 +38,9 @@ class WebApiGcmTest {
 
         val token = "gcm"
 
-        val deviceId = devClient.addDevice(userA.username, defaultRegistrationId, DeviceState.ACTIVE)
+        val deviceId = devClient.addDevice(userA.email, defaultRegistrationId, DeviceState.ACTIVE)
 
-        devClient.registerGcmToken(userA.username, deviceId, token)
+        devClient.registerGcmToken(userA.email, deviceId, token)
 
         checkGCMTokenStatus(userA, true)
     }
@@ -57,11 +57,11 @@ class WebApiGcmTest {
         val user = userManagement.injectNamedSiteUser("a@a.com").user
         val token = "gcm"
 
-        val deviceId = devClient.addDevice(user.username, defaultRegistrationId, DeviceState.ACTIVE)
+        val deviceId = devClient.addDevice(user.email, defaultRegistrationId, DeviceState.ACTIVE)
 
-        devClient.registerGcmToken(user.username, deviceId, token)
+        devClient.registerGcmToken(user.email, deviceId, token)
 
-        val authToken = devClient.createAuthToken(user.username)
+        val authToken = devClient.createAuthToken(user.email)
 
         val client = GcmClient(serverBaseUrl, JavaHttpClient())
         client.unregister(user.getUserCredentials(authToken))

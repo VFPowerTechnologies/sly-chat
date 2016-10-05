@@ -9,8 +9,8 @@ data class SiteUser(
     @JsonProperty("id")
     val id: UserId,
 
-    @JsonProperty("username")
-    val username: String,
+    @JsonProperty("email")
+    val email: String,
 
     @JsonProperty("hashParams")
     val hashParams: HashParams,

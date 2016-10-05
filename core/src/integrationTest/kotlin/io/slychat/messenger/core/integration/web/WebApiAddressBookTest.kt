@@ -42,11 +42,11 @@ class WebApiAddressBookTest {
 
         val contactList = encryptRemoteAddressBookEntries(userA.keyVault, listOf(userB).map { AddressBookUpdate.Contact(it.user.id, AllowedMessageLevel.ALL) })
 
-        devClient.addAddressBookEntries(userA.user.username, contactList)
+        devClient.addAddressBookEntries(userA.user.email, contactList)
 
         val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
 
-        val authToken = devClient.createAuthToken(userA.user.username)
+        val authToken = devClient.createAuthToken(userA.user.email)
 
         val updates = listOf(
             AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)
@@ -67,7 +67,7 @@ class WebApiAddressBookTest {
         val userA = userManagement.injectNamedSiteUser("a@a.com")
         val userB = userManagement.injectNamedSiteUser("b@a.com")
 
-        val authToken = devClient.createAuthToken(userA.user.username)
+        val authToken = devClient.createAuthToken(userA.user.email)
         val aContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)))
         val localHash = hashFromRemoteAddressBookEntries(aContacts)
 
@@ -75,7 +75,7 @@ class WebApiAddressBookTest {
         val userCredentials = userA.getUserCredentials(authToken)
         client.update(userCredentials, UpdateAddressBookRequest(localHash, aContacts))
 
-        val contacts = devClient.getAddressBook(userA.user.username)
+        val contacts = devClient.getAddressBook(userA.user.email)
 
         assertAddressBookEquals(aContacts, contacts)
     }
@@ -89,12 +89,12 @@ class WebApiAddressBookTest {
         val aContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)))
         val bContacts = encryptRemoteAddressBookEntries(userB.keyVault, listOf(AddressBookUpdate.Contact(userC.user.id, AllowedMessageLevel.ALL)))
 
-        devClient.addAddressBookEntries(userA.user.username, aContacts)
-        devClient.addAddressBookEntries(userB.user.username, bContacts)
+        devClient.addAddressBookEntries(userA.user.email, aContacts)
+        devClient.addAddressBookEntries(userB.user.email, bContacts)
 
         val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
 
-        val authToken = devClient.createAuthToken(userA.user.username)
+        val authToken = devClient.createAuthToken(userA.user.email)
         val response = client.get(userA.getUserCredentials(authToken), GetAddressBookRequest(emptyMd5))
 
         assertAddressBookEquals(aContacts, response.entries)
@@ -104,7 +104,7 @@ class WebApiAddressBookTest {
     fun `Fetching the address book when hash has not changed should return an empty list`() {
         val userA = userManagement.injectNamedSiteUser("a@a.com")
         val userB = userManagement.injectNamedSiteUser("b@a.com")
-        val username = userA.user.username
+        val username = userA.user.email
 
         val contacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)))
 
@@ -131,7 +131,7 @@ class WebApiAddressBookTest {
 
         val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
 
-        val authToken = devClient.createAuthToken(userA.user.username)
+        val authToken = devClient.createAuthToken(userA.user.email)
 
         val updates = listOf(
             AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.GROUP_ONLY),
@@ -157,11 +157,11 @@ class WebApiAddressBookTest {
 
         val contactList = encryptRemoteAddressBookEntries(userA.keyVault, listOf(userB, userC, userD).map { AddressBookUpdate.Contact(it.user.id, AllowedMessageLevel.ALL) })
 
-        devClient.addAddressBookEntries(userA.user.username, contactList.subList(0, contactList.size))
+        devClient.addAddressBookEntries(userA.user.email, contactList.subList(0, contactList.size))
 
         val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
 
-        val authToken = devClient.createAuthToken(userA.user.username)
+        val authToken = devClient.createAuthToken(userA.user.email)
 
         val updates = listOf(
             AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.GROUP_ONLY),
@@ -177,7 +177,7 @@ class WebApiAddressBookTest {
 
         assertTrue(response.updated, "Server says updates had no effect")
 
-        val addressBook = devClient.getAddressBook(userA.user.username)
+        val addressBook = devClient.getAddressBook(userA.user.email)
 
         val expected = listOf(
             updated[0],

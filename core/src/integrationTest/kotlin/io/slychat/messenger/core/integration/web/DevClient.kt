@@ -44,7 +44,7 @@ data class Device(
 
 data class RegisterSiteUserRequest(
     val id: UserId,
-    val username: String,
+    val email: String,
     val passwordHash: String,
     val hashParams: HashParams,
     val publicKey: String,
@@ -107,8 +107,8 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         return objectMapper.readValue<List<SiteUser>>(response.body, typeRef<List<SiteUser>>())
     }
 
-    fun getUser(username: String): SiteUser? {
-        val response = httpClient.get("$serverBaseUrl/dev/users/$username")
+    fun getUser(email: String): SiteUser? {
+        val response = httpClient.get("$serverBaseUrl/dev/users/$email")
         throwOnFailure(response)
 
         return objectMapper.readValue<SiteUser>(response.body, typeRef<SiteUser>())
@@ -118,7 +118,7 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         val user = siteUser.user
         val request = RegisterSiteUserRequest(
             user.id,
-            user.username,
+            user.email,
             siteUser.remotePasswordHash.hexify(),
             user.hashParams,
             user.publicKey,
@@ -136,88 +136,88 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         throwOnFailure(response)
     }
 
-    fun createAuthToken(username: String, deviceId: Int = DEFAULT_DEVICE_ID): AuthToken {
-        val response = httpClient.postJSON("$serverBaseUrl/dev/auth/$username/$deviceId", ByteArray(0))
+    fun createAuthToken(email: String, deviceId: Int = DEFAULT_DEVICE_ID): AuthToken {
+        val response = httpClient.postJSON("$serverBaseUrl/dev/auth/$email/$deviceId", ByteArray(0))
         throwOnFailure(response)
 
         return objectMapper.readValue(response.body, SiteAuthTokenData::class.java).authToken
     }
 
-    fun getAuthToken(username: String, deviceId: Int = DEFAULT_DEVICE_ID): AuthToken {
-        return getRequest("/dev/auth/$username/$deviceId", SiteAuthTokenData::class.java).authToken
+    fun getAuthToken(email: String, deviceId: Int = DEFAULT_DEVICE_ID): AuthToken {
+        return getRequest("/dev/auth/$email/$deviceId", SiteAuthTokenData::class.java).authToken
     }
 
-    fun getPreKeys(username: String, deviceId: Int = DEFAULT_DEVICE_ID): SitePreKeyData {
-        return getRequest("/dev/prekeys/one-time/$username/$deviceId", SitePreKeyData::class.java)
+    fun getPreKeys(email: String, deviceId: Int = DEFAULT_DEVICE_ID): SitePreKeyData {
+        return getRequest("/dev/prekeys/one-time/$email/$deviceId", SitePreKeyData::class.java)
     }
 
-    fun addOneTimePreKeys(username: String, preKeys: List<String>, deviceId: Int = DEFAULT_DEVICE_ID) {
+    fun addOneTimePreKeys(email: String, preKeys: List<String>, deviceId: Int = DEFAULT_DEVICE_ID) {
         val request = mapOf(
             "oneTimePreKeys" to preKeys
         )
 
-        postRequestNoResponse(request, "/dev/prekeys/one-time/$username/$deviceId")
+        postRequestNoResponse(request, "/dev/prekeys/one-time/$email/$deviceId")
     }
 
-    fun getSignedPreKey(username: String, deviceId: Int = DEFAULT_DEVICE_ID): String? {
-        return getRequest("/dev/prekeys/signed/$username/$deviceId", SiteSignedPreKeyData::class.java).signedPreKey
+    fun getSignedPreKey(email: String, deviceId: Int = DEFAULT_DEVICE_ID): String? {
+        return getRequest("/dev/prekeys/signed/$email/$deviceId", SiteSignedPreKeyData::class.java).signedPreKey
     }
 
-    fun setSignedPreKey(username: String, signedPreKey: String, deviceId: Int = DEFAULT_DEVICE_ID) {
+    fun setSignedPreKey(email: String, signedPreKey: String, deviceId: Int = DEFAULT_DEVICE_ID) {
         val request = mapOf(
             "signedPreKey" to signedPreKey
         )
 
-        postRequestNoResponse(request, "/dev/prekeys/signed/$username/$deviceId")
+        postRequestNoResponse(request, "/dev/prekeys/signed/$email/$deviceId")
     }
 
-    fun getLastResortPreKey(username: String, deviceId: Int = DEFAULT_DEVICE_ID): String? {
-        return getRequest("/dev/prekeys/last-resort/$username/$deviceId", SiteLastResortPreKeyData::class.java).lastResortPreKey
+    fun getLastResortPreKey(email: String, deviceId: Int = DEFAULT_DEVICE_ID): String? {
+        return getRequest("/dev/prekeys/last-resort/$email/$deviceId", SiteLastResortPreKeyData::class.java).lastResortPreKey
     }
 
-    fun setLastResortPreKey(username: String, lastResortPreKey: String, deviceId: Int = DEFAULT_DEVICE_ID) {
+    fun setLastResortPreKey(email: String, lastResortPreKey: String, deviceId: Int = DEFAULT_DEVICE_ID) {
         val request = mapOf(
             "lastResortPreKey" to lastResortPreKey
         )
 
-        postRequestNoResponse(request, "/dev/prekeys/last-resort/$username/$deviceId")
+        postRequestNoResponse(request, "/dev/prekeys/last-resort/$email/$deviceId")
     }
 
-    fun getAddressBook(username: String): List<RemoteAddressBookEntry> {
-        return getRequest("/dev/address-book/$username", SiteAddressBook::class.java).entries
+    fun getAddressBook(email: String): List<RemoteAddressBookEntry> {
+        return getRequest("/dev/address-book/$email", SiteAddressBook::class.java).entries
     }
 
-    fun addAddressBookEntries(username: String, entries: List<RemoteAddressBookEntry>) {
+    fun addAddressBookEntries(email: String, entries: List<RemoteAddressBookEntry>) {
         val request = mapOf(
             "entries" to entries
         )
 
-        postRequestNoResponse(request, "/dev/address-book/$username")
+        postRequestNoResponse(request, "/dev/address-book/$email")
     }
 
-    fun registerGcmToken(username: String, deviceId: Int, token: String) {
+    fun registerGcmToken(email: String, deviceId: Int, token: String) {
         val request = mapOf(
             "deviceId" to deviceId,
             "token" to token
         )
 
-        postRequestNoResponse(request, "/dev/gcm/register/$username")
+        postRequestNoResponse(request, "/dev/gcm/register/$email")
     }
 
-    fun unregisterGcmToken(username: String, deviceId: Int) {
+    fun unregisterGcmToken(email: String, deviceId: Int) {
         val request = mapOf(
             "deviceId" to deviceId
         )
 
-        postRequestNoResponse(request, "/dev/gcm/unregister/$username")
+        postRequestNoResponse(request, "/dev/gcm/unregister/$email")
     }
 
-    fun getGcmTokens(username: String): List<UserGcmTokenInfo> {
-        return getRequest("/dev/gcm/$username", UserGcmTokenList::class.java).tokens
+    fun getGcmTokens(email: String): List<UserGcmTokenInfo> {
+        return getRequest("/dev/gcm/$email", UserGcmTokenList::class.java).tokens
     }
 
-    fun getDevices(username: String): List<Device> {
-        return getRequest("/dev/users/$username/devices", typeRef<List<Device>>())
+    fun getDevices(email: String): List<Device> {
+        return getRequest("/dev/users/$email/devices", typeRef<List<Device>>())
     }
 
     fun getMaxDevices(): Int {
@@ -228,17 +228,17 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         return getRequest("/dev/prekeys/max-count", Int::class.java)
     }
 
-    fun addDevice(username: String, registrationId: Int, state: DeviceState): Int {
+    fun addDevice(email: String, registrationId: Int, state: DeviceState): Int {
         val request = mapOf(
             "registrationId" to registrationId,
             "state" to state
         )
 
-        return postRequest(request, "/dev/users/$username/devices", Int::class.java)
+        return postRequest(request, "/dev/users/$email/devices", Int::class.java)
     }
 
-    fun getAddressBookHash(username: String): String {
-        return getRequest("/dev/address-book/hash/$username", String::class.java)
+    fun getAddressBookHash(email: String): String {
+        return getRequest("/dev/address-book/hash/$email", String::class.java)
     }
 
     fun getLatestVersion(): String {

@@ -35,12 +35,12 @@ class WebApiAccountUpdateTest {
 
         val newPhoneNumber = "123453456"
 
-        val request = UpdatePhoneRequest(user.user.username, user.remotePasswordHash.hexify(), newPhoneNumber)
+        val request = UpdatePhoneRequest(user.user.email, user.remotePasswordHash.hexify(), newPhoneNumber)
         val response = client.updatePhone(request)
 
         assertTrue(response.isSuccess, "Update request failed: ${response.errorMessage}")
 
-        val remote = assertNotNull(devClient.getUser(user.user.username), "Missing user")
+        val remote = assertNotNull(devClient.getUser(user.user.email), "Missing user")
 
         assertEquals(newPhoneNumber, remote.phoneNumber, "Phone number should be updated on success")
     }
@@ -51,12 +51,12 @@ class WebApiAccountUpdateTest {
 
         val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
 
-        val request = UpdatePhoneRequest(user.user.username, "wrongPassword", "1111111111")
+        val request = UpdatePhoneRequest(user.user.email, "wrongPassword", "1111111111")
         val response = client.updatePhone(request)
 
         assertFalse(response.isSuccess)
 
-        val remote = assertNotNull(devClient.getUser(user.user.username), "Missing user")
+        val remote = assertNotNull(devClient.getUser(user.user.email), "Missing user")
 
         assertEquals(user.user.phoneNumber, remote.phoneNumber, "Phone number should not be updated on failure")
     }
@@ -65,7 +65,7 @@ class WebApiAccountUpdateTest {
     fun `Update Email should succeed when email is available`() {
         val userA = userManagement.injectNamedSiteUser("a@a.com").user
 
-        val authToken = devClient.createAuthToken(userA.username)
+        val authToken = devClient.createAuthToken(userA.email)
 
         val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
 
@@ -83,7 +83,7 @@ class WebApiAccountUpdateTest {
         val userA = userManagement.injectNamedSiteUser("a@a.com").user
         userManagement.injectNamedSiteUser("b@b.com").user
 
-        val authToken = devClient.createAuthToken(userA.username)
+        val authToken = devClient.createAuthToken(userA.email)
 
         val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
 
@@ -99,7 +99,7 @@ class WebApiAccountUpdateTest {
     fun `Update Name should succeed`() {
         val userA = userManagement.injectNamedSiteUser("a@a.com").user
 
-        val authToken = devClient.createAuthToken(userA.username)
+        val authToken = devClient.createAuthToken(userA.email)
 
         val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
 
@@ -116,7 +116,7 @@ class WebApiAccountUpdateTest {
     fun `Update Phone should succeed when phone is available`() {
         val userA = userManagement.injectNamedSiteUser("a@a.com").user
 
-        val authToken = devClient.createAuthToken(userA.username)
+        val authToken = devClient.createAuthToken(userA.email)
 
         val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
 
@@ -140,7 +140,7 @@ class WebApiAccountUpdateTest {
         val userA = userManagement.injectNamedSiteUser("a@a.com").user
         userManagement.injectNamedSiteUser("b@b.com", "2222222222").user
 
-        val authToken = devClient.createAuthToken(userA.username)
+        val authToken = devClient.createAuthToken(userA.email)
 
         val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
 

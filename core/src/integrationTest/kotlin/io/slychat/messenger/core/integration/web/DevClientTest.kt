@@ -43,7 +43,7 @@ class DevClientTest {
         if (users != listOf(siteUser))
             throw DevServerInsaneException("Register functionality failed")
 
-        val foundUser = assertNotNull(devClient.getUser(siteUser.username))
+        val foundUser = assertNotNull(devClient.getUser(siteUser.email))
 
         assertEquals(siteUser, foundUser, "getUser returned invalid user")
     }

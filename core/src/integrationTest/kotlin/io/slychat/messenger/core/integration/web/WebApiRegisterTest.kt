@@ -68,7 +68,7 @@ class WebApiRegisterTest {
     @Test
     fun `register request should fail when a duplicate username is used`() {
         val siteUser = userManagement.injectNewSiteUser().user
-        val registrationInfo = RegistrationInfo(siteUser.username, "name", "0")
+        val registrationInfo = RegistrationInfo(siteUser.email, "name", "0")
 
         val keyVault = generateNewKeyVault(password)
         val request = registrationRequestFromKeyVault(registrationInfo, keyVault, password)

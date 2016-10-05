@@ -44,11 +44,11 @@ class WebApiPreKeysTest {
     @Test
     fun `prekey info should reflect the current server prekey count`() {
         val siteUser = userManagement.injectNewSiteUser()
-        val username = siteUser.user.username
+        val username = siteUser.user.email
 
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
-        val authToken = devClient.createAuthToken(siteUser.user.username, deviceId)
+        val authToken = devClient.createAuthToken(siteUser.user.email, deviceId)
 
         val maxCount = devClient.getPreKeyMaxCount()
 
@@ -105,7 +105,7 @@ class WebApiPreKeysTest {
     fun `prekey storage request should store keys on the server when a valid auth token and device id is used`() {
         val siteUser = userManagement.injectNewSiteUser()
         val keyVault = siteUser.keyVault
-        val username = siteUser.user.username
+        val username = siteUser.user.email
 
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
@@ -126,7 +126,7 @@ class WebApiPreKeysTest {
     fun `attempting to push prekeys to a non-registered device should fail`() {
         val siteUser = userManagement.injectNewSiteUser()
         val keyVault = siteUser.keyVault
-        val username = siteUser.user.username
+        val username = siteUser.user.email
 
         val authToken = devClient.createAuthToken(username)
         val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
@@ -143,7 +143,7 @@ class WebApiPreKeysTest {
     fun `attempting to push prekeys to an inactive device should fail`() {
         val siteUser = userManagement.injectNewSiteUser()
         val keyVault = siteUser.keyVault
-        val username = siteUser.user.username
+        val username = siteUser.user.email
 
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.INACTIVE)
 
@@ -162,7 +162,7 @@ class WebApiPreKeysTest {
     fun `attempting to push prekeys to an pending device should success and update device state`() {
         val siteUser = userManagement.injectNewSiteUser()
         val keyVault = siteUser.keyVault
-        val username = siteUser.user.username
+        val username = siteUser.user.email
         val registrationId = defaultRegistrationId
 
         val deviceId = devClient.addDevice(username, registrationId, DeviceState.PENDING)
@@ -185,11 +185,11 @@ class WebApiPreKeysTest {
     @Test
     fun `prekey storage should fail when too many keys are uploaded`() {
         val siteUser = userManagement.injectNewSiteUser()
-        val username = siteUser.user.username
+        val username = siteUser.user.email
 
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
-        val authToken = devClient.createAuthToken(siteUser.user.username, deviceId)
+        val authToken = devClient.createAuthToken(siteUser.user.email, deviceId)
 
         val maxCount = devClient.getPreKeyMaxCount()
 
@@ -220,10 +220,10 @@ class WebApiPreKeysTest {
     @Test
     fun `prekey retrieval should return data only for asked devices`() {
         val siteUser = userManagement.injectNewSiteUser()
-        val username = siteUser.user.username
+        val username = siteUser.user.email
 
         val requestingSiteUser = userManagement.injectNamedSiteUser("b@a.com")
-        val requestingUsername = requestingSiteUser.user.username
+        val requestingUsername = requestingSiteUser.user.email
 
         val deviceIds = (0..2).map { devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE) }
 
@@ -245,10 +245,10 @@ class WebApiPreKeysTest {
     @Test
     fun `prekey retrieval should fail when the target user has no active devices`() {
         val siteUser = userManagement.injectNewSiteUser()
-        val username = siteUser.user.username
+        val username = siteUser.user.email
 
         val requestingSiteUser = userManagement.injectNamedSiteUser("b@a.com")
-        val requestingUsername = requestingSiteUser.user.username
+        val requestingUsername = requestingSiteUser.user.email
 
         devClient.addDevice(username, defaultRegistrationId, DeviceState.PENDING)
         devClient.addDevice(username, defaultRegistrationId, DeviceState.INACTIVE)
@@ -267,10 +267,10 @@ class WebApiPreKeysTest {
     @Test
     fun `prekey retrieval should return the next available prekey when a valid auth token is used`() {
         val siteUser = userManagement.injectNewSiteUser()
-        val username = siteUser.user.username
+        val username = siteUser.user.email
 
         val requestingSiteUser = userManagement.injectNamedSiteUser("b@a.com")
-        val requestingUsername = requestingSiteUser.user.username
+        val requestingUsername = requestingSiteUser.user.email
 
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
@@ -328,12 +328,12 @@ class WebApiPreKeysTest {
     @Test
     fun `prekey retrieval should return the last resort key once no other keys are available`() {
         val siteUser = userManagement.injectNewSiteUser()
-        val username = siteUser.user.username
+        val username = siteUser.user.email
         val userId = siteUser.user.id
 
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
-        val authToken = devClient.createAuthToken(siteUser.user.username, deviceId)
+        val authToken = devClient.createAuthToken(siteUser.user.email, deviceId)
 
         val generatedPreKeys = injectPreKeys(username, siteUser.keyVault, deviceId)
         val lastResortPreKey = injectLastResortPreKey(username, deviceId)

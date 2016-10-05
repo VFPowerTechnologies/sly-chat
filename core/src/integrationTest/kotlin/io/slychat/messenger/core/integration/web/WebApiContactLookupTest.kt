@@ -32,18 +32,18 @@ class WebApiContactLookupTest {
     }
 
     private fun SiteUser.toContactInfo(): ContactInfo =
-        ContactInfo(id, username, name, AllowedMessageLevel.ALL, phoneNumber, publicKey)
+        ContactInfo(id, email, name, AllowedMessageLevel.ALL, phoneNumber, publicKey)
 
     @Test
     fun `new contact fetch from email should return the contact information`() {
         val siteUser = userManagement.injectNewSiteUser()
-        val authToken = devClient.createAuthToken(siteUser.user.username)
+        val authToken = devClient.createAuthToken(siteUser.user.email)
 
-        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, AllowedMessageLevel.ALL, siteUser.user.phoneNumber, siteUser.user.publicKey)
+        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.email, siteUser.user.name, AllowedMessageLevel.ALL, siteUser.user.phoneNumber, siteUser.user.publicKey)
 
         val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 
-        val contactResponseEmail = client.find(siteUser.getUserCredentials(authToken), FindContactRequest(siteUser.user.username, null))
+        val contactResponseEmail = client.find(siteUser.getUserCredentials(authToken), FindContactRequest(siteUser.user.email, null))
         assertTrue(contactResponseEmail.isSuccess)
 
         val receivedEmailContactInfo = contactResponseEmail.contactInfo!!
@@ -54,9 +54,9 @@ class WebApiContactLookupTest {
     @Test
     fun `new contact fetch from phone should return the contact information`() {
         val siteUser = userManagement.injectNewSiteUser()
-        val authToken = devClient.createAuthToken(siteUser.user.username)
+        val authToken = devClient.createAuthToken(siteUser.user.email)
 
-        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.username, siteUser.user.name, AllowedMessageLevel.ALL, siteUser.user.phoneNumber, siteUser.user.publicKey)
+        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.email, siteUser.user.name, AllowedMessageLevel.ALL, siteUser.user.phoneNumber, siteUser.user.publicKey)
 
         val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 
@@ -75,12 +75,12 @@ class WebApiContactLookupTest {
         val userB = userManagement.injectNamedSiteUser("b@a.com", bPhoneNumber).user
         val userC = userManagement.injectNamedSiteUser("c@a.com").user
 
-        val authToken = devClient.createAuthToken(userA.username)
+        val authToken = devClient.createAuthToken(userA.email)
 
         val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 
         val platformContacts = listOf(
-            PlatformContact("B", listOf(userC.username), listOf()),
+            PlatformContact("B", listOf(userC.email), listOf()),
             PlatformContact("C", listOf(), listOf(bPhoneNumber))
         )
         val request = FindLocalContactsRequest(platformContacts)
@@ -100,7 +100,7 @@ class WebApiContactLookupTest {
         val userB = userManagement.injectNamedSiteUser("b@a.com").user
         val userC = userManagement.injectNamedSiteUser("c@a.com").user
 
-        val authToken = devClient.createAuthToken(userA.username)
+        val authToken = devClient.createAuthToken(userA.email)
 
         val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 
@@ -120,7 +120,7 @@ class WebApiContactLookupTest {
         val userA = userManagement.injectNamedSiteUser("a@a.com").user
         val userB = userManagement.injectNamedSiteUser("b@a.com").user
 
-        val authToken = devClient.createAuthToken(userA.username)
+        val authToken = devClient.createAuthToken(userA.email)
 
         val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 
@@ -133,7 +133,7 @@ class WebApiContactLookupTest {
     fun `fetchContactInfoById should return null for a non-existent user`() {
         val userA = userManagement.injectNamedSiteUser("a@a.com").user
 
-        val authToken = devClient.createAuthToken(userA.username)
+        val authToken = devClient.createAuthToken(userA.email)
 
         val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 

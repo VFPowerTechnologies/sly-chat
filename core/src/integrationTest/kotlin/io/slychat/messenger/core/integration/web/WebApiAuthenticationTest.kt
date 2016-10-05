@@ -37,7 +37,7 @@ class WebApiAuthenticationTest {
     }
 
     fun sendAuthRequestForUser(userA: GeneratedSiteUser, deviceId: Int): AuthenticationResponse {
-        val username = userA.user.username
+        val username = userA.user.email
 
         val client = AuthenticationClient(serverBaseUrl, JavaHttpClient())
 
@@ -54,7 +54,7 @@ class WebApiAuthenticationTest {
     fun `authentication request should succeed when given a valid username and password hash for an existing device`() {
         val userA = userManagement.injectNewSiteUser()
         val siteUser = userA.user
-        val username = siteUser.username
+        val username = siteUser.email
 
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
@@ -70,7 +70,7 @@ class WebApiAuthenticationTest {
     fun `authentication request should return other active devices for the current user`() {
         val userA = userManagement.injectNewSiteUser()
         val siteUser = userA.user
-        val username = siteUser.username
+        val username = siteUser.email
 
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
         devClient.addDevice(username, defaultRegistrationId, DeviceState.INACTIVE)
@@ -91,7 +91,7 @@ class WebApiAuthenticationTest {
 
     fun runMaxDeviceTest(state: DeviceState) {
         val userA = userManagement.injectNewSiteUser()
-        val username = userA.user.username
+        val username = userA.user.email
         val maxDevices = devClient.getMaxDevices()
 
         for (i in 0..maxDevices-1)
@@ -117,10 +117,10 @@ class WebApiAuthenticationTest {
     @Test
     fun `token refresh should succeed if the token is still valid`() {
         val siteUser = userManagement.injectNewSiteUser()
-        val username = siteUser.user.username
+        val username = siteUser.user.email
 
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
-        val authToken = devClient.createAuthToken(siteUser.user.username, deviceId)
+        val authToken = devClient.createAuthToken(siteUser.user.email, deviceId)
 
         val client = AuthenticationClient(serverBaseUrl, JavaHttpClient())
 
@@ -135,7 +135,7 @@ class WebApiAuthenticationTest {
     @Test
     fun `token refresh should fail if the token is invalid or expired`() {
         val siteUser = userManagement.injectNewSiteUser()
-        val username = siteUser.user.username
+        val username = siteUser.user.email
 
         devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
