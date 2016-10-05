@@ -37,6 +37,6 @@ fun hashPasswordWithParams(password: String, params: HashParams, type: HashType)
 
     return when (params) {
         is HashParams.SCrypt ->
-            SCrypt.generate(fullData, params.salt, params.n, params.r, params.p, params.keyLength)
+            SCrypt.generate(fullData, params.salt, params.n, params.r, params.p, params.keyLengthBits * 8)
     }
 }

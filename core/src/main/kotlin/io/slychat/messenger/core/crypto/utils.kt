@@ -16,8 +16,9 @@ private const val MASTER_KEY_SIZE_BITS = 256
 private const val ANONYMIZING_DATA_SIZE_BITS = 128
 
 private fun defaultScryptParams(): HashParams.SCrypt {
-    val keyLength = 32
-    val salt = getRandomBits(keyLength * 8)
+    val keyLengthBits = 256
+
+    val salt = getRandomBits(256)
 
     //default recommendations from: https://www.tarsnap.com/scrypt/scrypt-slides.pdf
     //due to the performance on android we currently can't bump these up, as it already takes 3s/call on a nexus 5
@@ -30,7 +31,7 @@ private fun defaultScryptParams(): HashParams.SCrypt {
         N,
         r,
         p,
-        keyLength
+        keyLengthBits
     )
 }
 

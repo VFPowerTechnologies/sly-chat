@@ -26,8 +26,8 @@ sealed class HashParams {
         val r: Int,
         @JsonProperty("p")
         val p: Int,
-        @JsonProperty("keyLength")
-        val keyLength: Int
+        @JsonProperty("keyLengthBits")
+        val keyLengthBits: Int
     ) : HashParams() {
         override val algorithmName: String
             get() = "scrypt"
@@ -37,7 +37,7 @@ sealed class HashParams {
         }
 
         override fun toString(): String {
-            return "SCrypt(n=$n, r=$r, p=$p, keyLength=$keyLength)"
+            return "SCrypt(n=$n, r=$r, p=$p, keyLength=$keyLengthBits)"
         }
 
         override fun equals(other: Any?): Boolean {
@@ -50,7 +50,7 @@ sealed class HashParams {
             if (n != other.n) return false
             if (r != other.r) return false
             if (p != other.p) return false
-            if (keyLength != other.keyLength) return false
+            if (keyLengthBits != other.keyLengthBits) return false
 
             return true
         }
@@ -60,7 +60,7 @@ sealed class HashParams {
             result = 31 * result + n
             result = 31 * result + r
             result = 31 * result + p
-            result = 31 * result + keyLength
+            result = 31 * result + keyLengthBits
             return result
         }
     }
