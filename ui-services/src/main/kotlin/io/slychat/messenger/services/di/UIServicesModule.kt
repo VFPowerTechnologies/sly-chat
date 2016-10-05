@@ -8,6 +8,7 @@ import io.slychat.messenger.core.BuildConfig.UIServiceType
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.accountupdate.AccountUpdateAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
+import io.slychat.messenger.core.http.api.feedback.FeedbackAsyncClientImpl
 import io.slychat.messenger.core.http.api.infoservice.InfoServiceAsyncClient
 import io.slychat.messenger.core.http.api.registration.RegistrationAsyncClient
 import io.slychat.messenger.services.PlatformNotificationService
@@ -158,5 +159,16 @@ class UIServicesModule {
         versionChecker: VersionChecker
     ): UIClientInfoService {
         return UIClientInfoServiceImpl(versionChecker.versionOutOfDate)
+    }
+
+    @Singleton
+    @Provides
+    fun providesUIFeedbackService(
+        app: SlyApplication,
+        serverUrls: BuildConfig.ServerUrls,
+        @SlyHttp httpClientFactory: HttpClientFactory
+    ): UIFeedbackService {
+        val feedbackClient = FeedbackAsyncClientImpl(serverUrls.API_SERVER, httpClientFactory)
+        return UIFeedbackServiceImpl(app.userSessionAvailable, feedbackClient)
     }
 }

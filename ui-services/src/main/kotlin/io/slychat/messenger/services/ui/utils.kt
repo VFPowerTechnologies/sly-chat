@@ -69,6 +69,9 @@ fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponen
 
     val clientInfoService = applicationComponent.uiClientInfoService
     dispatcher.registerService("ClientInfoService", UIClientInfoServiceToJavaProxy(clientInfoService, dispatcher))
+
+    val feedbackService = applicationComponent.uiFeedbackService
+    dispatcher.registerService("FeedbackService", UIFeedbackServiceToJavaProxy(feedbackService, dispatcher))
 }
 
 fun clearAllListenersOnDispatcher(applicationComponent: ApplicationComponent) {

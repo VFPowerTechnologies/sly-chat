@@ -55,6 +55,8 @@ class MockApplicationComponent : ApplicationComponent {
     override val uiInfoService: UIInfoService = mock()
 
     override val uiAccountModificationService: UIAccountModificationService = mock()
+    
+    override val uiFeedbackService: UIFeedbackService = mock()
 
     override val uiPlatformService: UIPlatformService = mock()
 
