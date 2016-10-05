@@ -164,7 +164,9 @@ class RelayClientImpl(
 
                 val content = readMessageContent(message.content)
 
-                emitEvent(ReceivedMessage(SlyAddress.fromString(from)!!, content, messageId, message.header.timestamp))
+                val address = SlyAddress.fromString(from) ?: throw RelayException("Received malformed address from relay: $from")
+
+                emitEvent(ReceivedMessage(address, content, messageId, message.header.timestamp))
             }
 
             CommandCode.SERVER_USER_OFFLINE -> {
