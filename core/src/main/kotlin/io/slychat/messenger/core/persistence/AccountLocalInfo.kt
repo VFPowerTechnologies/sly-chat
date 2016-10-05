@@ -8,7 +8,7 @@ import io.slychat.messenger.core.crypto.hashes.HashParams
 import io.slychat.messenger.core.persistence.sqlite.SQLCipherCipher
 
 /**
- * @property localMasterKey Used as the root key for all local data encryption.
+ * @property localMasterKey Used as the root key for all device local data encryption.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class AccountLocalInfo(
