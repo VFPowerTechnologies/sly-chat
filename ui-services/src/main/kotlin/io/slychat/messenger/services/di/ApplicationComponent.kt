@@ -60,6 +60,8 @@ interface ApplicationComponent {
 
     val uiClientInfoService: UIClientInfoService
 
+    val uiFeedbackService: UIFeedbackService
+
     val platformContacts: PlatformContacts
 
     //FIXME only used for gcm client in AndroidApp

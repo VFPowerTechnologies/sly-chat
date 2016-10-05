@@ -23,7 +23,10 @@ FeedbackController.prototype = {
 
         if (input == null || input == '') {
             this.displayError("Feedback must not be empty");
+            return;
         }
+
+        this.submitFeedback(input);
     },
 
     displayError : function (error) {
@@ -31,10 +34,10 @@ FeedbackController.prototype = {
     },
 
     submitFeedback : function (feedback) {
-        // feedbackService.submitFeedback(feedback).then(function () {
-        //     //handleSuccess
-        // }).catch(function (e) {
-        //     exceptionController.handleError(e);
-        // });
+        feedbackService.submitFeedback(feedback).then(function () {
+            //handleSuccess
+        }).catch(function (e) {
+            exceptionController.handleError(e);
+        });
     }
 };
