@@ -87,7 +87,7 @@ class UserModule(
             contactListClient,
             contactsPersistenceManager,
             groupPersistenceManager,
-            userLoginData,
+            userLoginData.keyVault,
             accountInfoManager.accountInfo,
             platformContacts,
             promiseTimerFactory

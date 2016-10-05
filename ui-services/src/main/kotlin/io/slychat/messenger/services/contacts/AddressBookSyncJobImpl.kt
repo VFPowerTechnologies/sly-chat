@@ -2,12 +2,12 @@ package io.slychat.messenger.services.contacts
 
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.http.api.ResourceConflictException
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.kovenant.bindRecoverFor
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.PlatformContacts
-import io.slychat.messenger.services.UserData
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.parsePhoneNumber
@@ -24,7 +24,7 @@ class AddressBookSyncJobImpl(
     private val addressBookClient: AddressBookAsyncClient,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val groupPersistenceManager: GroupPersistenceManager,
-    private val userLoginData: UserData,
+    private val keyVault: KeyVault,
     private val accountRegionCode: String,
     private val platformContacts: PlatformContacts,
     private val promiseTimerFactory: PromiseTimerFactory
@@ -125,8 +125,6 @@ class AddressBookSyncJobImpl(
     private fun pullRemoteUpdates(): Promise<Boolean, Exception> {
         log.debug("Beginning remote update pull")
 
-        val keyVault = userLoginData.keyVault
-
         return authTokenManager.bind { userCredentials ->
             contactsPersistenceManager.getAddressBookHash() bind { addressBookHash ->
                 log.debug("Local address book hash: {}", addressBookHash)
@@ -205,7 +203,6 @@ class AddressBookSyncJobImpl(
         else {
             log.info("Remote updates: {}", allUpdates)
 
-            val keyVault = userLoginData.keyVault
             val entries = encryptRemoteAddressBookEntries(keyVault, allUpdates)
 
             contactsPersistenceManager.addRemoteEntryHashes(entries) bind { localHash ->

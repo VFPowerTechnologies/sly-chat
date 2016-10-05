@@ -8,7 +8,6 @@ import io.slychat.messenger.core.http.api.ResourceConflictException
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.PlatformContacts
-import io.slychat.messenger.services.UserData
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenAnswerSuccess
@@ -39,7 +38,6 @@ class AddressBookSyncJobImplTest {
     val addressBookAsyncClient: AddressBookAsyncClient = mock()
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
     val groupPersistenceManager:  GroupPersistenceManager = mock()
-    val userLoginData = UserData(SlyAddress(randomUserId(), 1), keyVault, emptyByteArray())
     val accountRegionCode = "1"
     val platformContacts: PlatformContacts = mock()
     val promiseTimerFactory: PromiseTimerFactory = mock()
@@ -82,7 +80,7 @@ class AddressBookSyncJobImplTest {
             addressBookAsyncClient,
             contactsPersistenceManager,
             groupPersistenceManager,
-            userLoginData,
+            keyVault,
             accountRegionCode,
             platformContacts,
             promiseTimerFactory
@@ -108,11 +106,6 @@ class AddressBookSyncJobImplTest {
 
     fun runPull(): AddressBookSyncResult {
         return runJobWithDescription { doPull() }
-    }
-
-    fun randomRemoteEntries(): List<RemoteAddressBookEntry> {
-        val missing = randomUserIds()
-        return encryptRemoteAddressBookEntries(keyVault, missing.map { AddressBookUpdate.Contact(it, AllowedMessageLevel.ALL) })
     }
 
     @Test
