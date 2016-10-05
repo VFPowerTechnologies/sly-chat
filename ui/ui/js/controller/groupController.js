@@ -2,32 +2,6 @@ var GroupController = function () {
     this.groups = [];
     this.groupDetailsCache = [];
     this.lastGroupId = null;
-
-    /*
-        this.groupDetailsCache = [
-            groupId: {
-                group: {
-                    name:  'groupName',
-                    id: 'groupId'
-                },
-                info: {
-                    lastSpeaker: 'userId',
-                    unreadMessageCount: 0,
-                    lastMessage: 'Hey!',
-                    lastTimestamp: timestamp
-                },
-                members: [
-                    {
-                        id: 'user id',
-                        name: 'user name',
-                        email: 'user email',
-                        phoneNumber: 'user phoneNumber',
-                        publicKey: 'user publicKey'
-                    }
-                ]
-            }
-        ]
-     */
 };
 
 GroupController.prototype = {
@@ -35,56 +9,50 @@ GroupController.prototype = {
         this.fetchGroupDetails();
     },
 
+    refreshCache : function () {
+        groupController.fetchGroupDetails();
+    },
+
     fetchGroupDetails : function () {
         if (Object.size(this.groupDetailsCache) <= 0) {
-            //Fetch all group and conversation details
             groupService.getGroupConversations().then(function (groupConversations) {
                 this.cacheGroupDetails(groupConversations);
-
-                // Create group list
                 this.createGroupList();
+                contactController.createContactHtml();
             }.bind(this)).catch(function (e) {
                 exceptionController.handleError(e);
             });
+        }
+        else {
+            this.createGroupList();
+            contactController.createContactHtml();
         }
     },
 
     cacheGroupDetails : function (groupConversations) {
         groupConversations.forEach(function (conversation) {
-            var id = conversation.group.id;
-            this.groupDetailsCache[id] = conversation;
+            var groupDetails = new GroupDetails(conversation);
+            var id = groupDetails.group.id;
+            this.groupDetailsCache[id] = groupDetails;
 
-            // Fetch each group members
-            groupService.getMembers(id).then(function (members) {
-                this.groupDetailsCache[id].members = members;
-                this.createGroupNodeMembers(id, members);
-            }.bind(this)).catch(function (e) {
-                exceptionController.handleError(e);
-            });
-
+            this.fetchMembers(id);
         }.bind(this));
     },
 
     fetchAndLoadGroupChat : function (groupId) {
-        groupService.getGroupConversations().then(function (groupConversations) {
-            groupConversations.forEach(function (conversation) {
-                var id = conversation.group.id;
-                this.groupDetailsCache[id] = conversation;
+        groupService.getInfo(groupId).then(function (group) {
+            if (group !== null) {
+                var g = new Group(group);
+                var isGroup = true;
+                contactController.loadChatPage(g, false, isGroup);
+                uiController.hideSplashScreen();
+            }
+            else {
+                navigationController.loadPage("contacts.html", false);
+            }
 
-                // Fetch each group members
-                groupService.getMembers(id).then(function (members) {
-                    this.groupDetailsCache[id].members = members;
-                    this.createGroupNodeMembers(id, members);
-                }.bind(this)).catch(function (e) {
-                    exceptionController.handleError(e);
-                });
-            }.bind(this));
-
-            contactController.loadChatPage(this.groupDetailsCache[groupId].group, false, true);
-            uiController.hideSplashScreen();
-            contactController.init();
-
-            this.createGroupList();
+            this.refreshCache();
+            contactController.refreshCache();
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         });
@@ -94,7 +62,7 @@ GroupController.prototype = {
         groupService.getInfo(groupId).then(function (info) {
             if (info !== null) {
                 groupService.getMembers(groupId).then(function (members) {
-                    var groupDetails = {
+                    var groupDetails = new GroupDetails({
                         group: info,
                         members: members,
                         info: {
@@ -103,7 +71,7 @@ GroupController.prototype = {
                             lastMessage: null,
                             lastTimestamp: null
                         }
-                    };
+                    });
                     this.groupDetailsCache[groupId] = groupDetails;
 
                     if ($("#groupNode_" + groupId).length <= 0) {
@@ -129,18 +97,11 @@ GroupController.prototype = {
 
     fetchMembers : function (groupId) {
         groupService.getMembers(groupId).then(function (members) {
-            console.log("fetching member");
-            this.groupDetailsCache[groupId].members = members;
+            this.groupDetailsCache[groupId].setMembers(members);
+            this.createGroupNodeMembers(groupId, members);
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         })
-    },
-
-    getGroupDetails: function () {
-        if (Object.size(this.groupDetailsCache) <= 0)
-            return false;
-        else
-            return this.groupDetailsCache;
     },
 
     createGroupList : function () {
@@ -167,15 +128,16 @@ GroupController.prototype = {
                     frag.append(this.createLeftGroupNode(this.groupDetailsCache[g]));
                 }
             }
-            $("#leftGroupList").html(frag);
         }
+        else {
+            frag.append($("<div style='text-align: center; color: #fff;'><a href='#' onclick='navigationController.loadPage(\"createGroup.html\", true)'>Create a group</a></div>"));
+        }
+
+        $("#leftGroupList").html(frag);
     },
 
     getGroupConversations : function () {
-        if (Object.size(this.groupDetailsCache) <= 0)
-            return false;
-        else
-            return this.groupDetailsCache;
+        return this.groupDetailsCache;
     },
 
     getGroup : function (id) {
@@ -220,46 +182,62 @@ GroupController.prototype = {
             "</label></li>");
     },
 
-    createGroupNode : function (group) {
-        var node = $("<div id='groupNode_" + group.group.id + "' class='group-node col-50 tablet-25 close-popup'>" +
+    createGroupNode : function (groupDetails) {
+        var node = $("<div id='groupNode_" + groupDetails.group.id + "' class='group-node col-50 tablet-25 close-popup'>" +
                 "<div class='group-details'>" +
-                    "<div class='avatar'>" + group.group.name.substring(0, 3) + "</div>" +
-                    "<span style='text-align: center;'>" + group.group.name + "</span>" +
+                    "<div class='avatar'>" + groupDetails.group.name.substring(0, 3) + "</div>" +
+                    "<span style='text-align: center;'>" + groupDetails.group.name + "</span>" +
                 "</div>" +
                 "<div class='group-members'>" +
                 "</div>" +
             "</div>");
 
+        if (groupDetails.members.length > 0) {
+            node.find('.group-members').html(this.createGroupMembers(groupDetails.members));
+        }
+
         node.click(function (e) {
-            contactController.loadChatPage(group.group, true, true);
+            contactController.loadChatPage(groupDetails.group, true, true);
         });
 
         node.on("mouseheld", function () {
             vibrate(50);
-            this.openGroupNodeMenu(group.group.id);
+            this.openGroupNodeMenu(groupDetails.group.id);
         }.bind(this));
 
         return node;
     },
 
-    createLeftGroupNode : function (group) {
+    createLeftGroupNode : function (groupDetails) {
         var newBadge = "";
-        if (group.info.unreadMessageCount > 0) {
+        if (groupDetails.groupInfo.unreadMessageCount > 0) {
             newBadge = '<span class="left-menu-new-badge" style="color: red; font-size: 12px; margin-left: 5px;">new</span>';
         }
 
-        var node = $("<li id='leftContact_" + group.group.id + "'><a class='left-contact-link' href='#'>" + group.group.name + "</a>" + newBadge + "</li>");
+        var node = $("<li id='leftContact_" + groupDetails.group.id + "'><a class='left-contact-link' href='#'>" + groupDetails.group.name + "</a>" + newBadge + "</li>");
 
         node.find('.left-contact-link').click(function (e) {
-            contactController.loadChatPage(group.group, true, true);
+            contactController.loadChatPage(groupDetails.group, true, true);
         });
 
         node.find('.left-contact-link').on("mouseheld", function () {
             vibrate(50);
-            this.openGroupNodeMenu(group.group.id);
+            this.openGroupNodeMenu(groupDetails.group.id);
         }.bind(this));
 
         return node;
+    },
+
+    createGroupMembers : function (members) {
+        var groupMembers = "";
+        members.forEach(function (member) {
+            groupMembers += member.name + ", ";
+        });
+
+        if(groupMembers.length > 0)
+            groupMembers = groupMembers.substring(0, groupMembers.length - 2);
+
+        return "<span>" + groupMembers + "</span>";
     },
 
     createGroupNodeMembers : function (groupId, members) {
@@ -287,7 +265,7 @@ GroupController.prototype = {
                 case "PARTED":
                     if(this.groupDetailsCache[event.groupId] !== undefined) {
                         groupService.getMembers(event.groupId).then(function (members) {
-                            this.groupDetailsCache[event.groupId].members = members;
+                            this.groupDetailsCache[event.groupId].setMembers(members);
                             this.createGroupNodeMembers(event.groupId, members);
                         }.bind(this)).catch(function (e) {
                             exceptionController.handleError(e);
@@ -298,7 +276,7 @@ GroupController.prototype = {
                 case "JOINED":
                     if(this.groupDetailsCache[event.groupId] !== undefined) {
                         groupService.getMembers(event.groupId).then(function (members) {
-                            this.groupDetailsCache[event.groupId].members = members;
+                            this.groupDetailsCache[event.groupId].setMembers(members);
                             this.createGroupNodeMembers(event.groupId, members);
                         }.bind(this)).catch(function (e) {
                             exceptionController.handleError(e);
@@ -443,12 +421,7 @@ GroupController.prototype = {
                 hold: 3000
             });
 
-            this.groupDetailsCache[groupId].info = {
-                lastSpeaker: null,
-                lastMessage: null,
-                unreadMessageCount: 0,
-                lastTimestamp: null
-            };
+            this.groupDetailsCache[groupId].resetGroupInfo();
 
             if (chatController.getCurrentContactId() == groupId)
                 navigationController.loadPage("contacts.html", false);
@@ -674,22 +647,17 @@ GroupController.prototype = {
     },
 
     updateConversationInfo : function (info) {
-        if (this.groupDetailsCache[info.groupId] !== undefined && this.groupDetailsCache[info.groupId].info !== undefined) {
+        if (this.groupDetailsCache[info.groupId] !== undefined && this.groupDetailsCache[info.groupId].groupInfo !== undefined) {
             if (info.lastMessageData == null) {
-                this.groupDetailsCache[info.groupId].info = {
-                    lastSpeaker: null,
-                    unreadMessageCount: 0,
-                    lastMessage: null,
-                    lastTimestamp: null
-                }
+                this.groupDetailsCache[info.groupId].resetGroupInfo();
             }
             else {
-                this.groupDetailsCache[info.groupId].info = {
+                this.groupDetailsCache[info.groupId].setGroupInfo({
                     lastSpeaker: info.lastMessageData.speakerId,
                     unreadMessageCount: info.unreadCount,
                     lastMessage: info.lastMessageData.message,
                     lastTimestamp: info.lastMessageData.timestamp
-                }
+                });
             }
         }
     },
