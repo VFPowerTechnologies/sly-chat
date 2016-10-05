@@ -57,7 +57,7 @@ class UserPersistenceModule {
             val keyvault = userLoginData.keyVault
 
             SQLCipherParams(
-                keyvault.getDerivedKeySpec(DerivedKeyType.LOCAL_DATA),
+                keyvault.getDerivedKeySpec(DerivedKeyType.ACCOUNT_LOCAL_INFO),
                 accountLocalInfo.sqlCipherCipher
             )
         }
@@ -89,7 +89,7 @@ class UserPersistenceModule {
         val keyVault = userLoginData.keyVault
         return localAccountDirectory.getSessionDataPersistenceManager(
             userLoginData.userId,
-            keyVault.getDerivedKeySpec(DerivedKeyType.LOCAL_DATA)
+            keyVault.getDerivedKeySpec(DerivedKeyType.ACCOUNT_LOCAL_INFO)
         )
     }
 
@@ -102,7 +102,7 @@ class UserPersistenceModule {
         val keyVault = userLoginData.keyVault
         return JsonAccountLocalInfoPersistenceManager(
             userPaths.accountParamsPath,
-            keyVault.getDerivedKeySpec(DerivedKeyType.LOCAL_DATA)
+            keyVault.getDerivedKeySpec(DerivedKeyType.ACCOUNT_LOCAL_INFO)
         )
     }
 

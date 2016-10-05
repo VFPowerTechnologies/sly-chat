@@ -313,7 +313,7 @@ class UserModule(
         val storage = if (BuildConfig.ENABLE_CONFIG_ENCRYPTION) {
             val keyVault = userLoginData.keyVault
             //can't use Cipher*Stream since we're using bouncycastle to properly support stuff
-            CipherConfigStorageFilter(keyVault.getDerivedKeySpec(DerivedKeyType.LOCAL_DATA), fileStorage)
+            CipherConfigStorageFilter(keyVault.getDerivedKeySpec(DerivedKeyType.ACCOUNT_LOCAL_INFO), fileStorage)
         }
         else
             fileStorage
