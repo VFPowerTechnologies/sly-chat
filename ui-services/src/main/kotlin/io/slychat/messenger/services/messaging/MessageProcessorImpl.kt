@@ -62,6 +62,8 @@ class MessageProcessorImpl(
                         val groupId = GroupId(event.extra)
                         currentlySelectedGroup = groupId
                     }
+
+                    else -> {}
                 }
             }
         }
