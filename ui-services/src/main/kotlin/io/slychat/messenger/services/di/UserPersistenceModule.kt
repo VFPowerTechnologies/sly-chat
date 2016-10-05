@@ -90,7 +90,7 @@ class UserPersistenceModule {
     ): SessionDataPersistenceManager {
         return localAccountDirectory.getSessionDataPersistenceManager(
             userLoginData.userId,
-            DerivedKeySpec(accountLocalInfo.localMasterKey, HKDFInfoList.accountLocalInfo())
+            DerivedKeySpec(accountLocalInfo.localMasterKey, HKDFInfoList.localData())
         )
     }
 
