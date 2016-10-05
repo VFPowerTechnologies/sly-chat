@@ -26,7 +26,18 @@ FeedbackController.prototype = {
             return;
         }
 
+        $(FeedbackController.ids.feedbackErrorsBlock).html('');
+
         this.submitFeedback(input);
+    },
+
+    handleSubmitSuccess : function () {
+        slychat.addNotification({
+            title: "Feedback has been submitted",
+            hold: 2000
+        });
+
+        $(FeedbackController.ids.userInputFeedback).val('');
     },
 
     displayError : function (error) {
@@ -35,8 +46,8 @@ FeedbackController.prototype = {
 
     submitFeedback : function (feedback) {
         feedbackService.submitFeedback(feedback).then(function () {
-            //handleSuccess
-        }).catch(function (e) {
+            this.handleSubmitSuccess();
+        }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         });
     }
