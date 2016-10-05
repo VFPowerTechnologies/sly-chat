@@ -76,9 +76,9 @@ class UIRegistrationServiceImpl(
 
             val authParams = response.params!!
 
-            val hash = hashPasswordWithParams(info.password, authParams.hashParams, HashType.REMOTE)
+            val remotePasswordHash = hashPasswordWithParams(info.password, authParams.hashParams, HashType.REMOTE)
 
-            registrationClient.updatePhone(UpdatePhoneRequest(info.email, hash.hexify(), info.phoneNumber)) map { response ->
+            registrationClient.updatePhone(UpdatePhoneRequest(info.email, remotePasswordHash.hexify(), info.phoneNumber)) map { response ->
                 UIUpdatePhoneResult(response.isSuccess, response.errorMessage)
             }
         }
