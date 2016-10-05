@@ -78,10 +78,10 @@ class AuthenticationServiceImpl(
         if (keyVault == null)
             return LocalAuthOutcome.NoLocalData()
 
-        val derivedKeySpec = keyVault.getDerivedKeySpec(DerivedKeyType.ACCOUNT_LOCAL_INFO)
+        val accountLocalDerivedKeySpec = keyVault.getDerivedKeySpec(DerivedKeyType.ACCOUNT_LOCAL_INFO)
         val accountLocalInfoPersistenceManager = localAccountDirectory.getAccountLocalInfoPersistenceManager(
             accountInfo.id,
-            derivedKeySpec
+            accountLocalDerivedKeySpec
         )
 
         val accountLocalInfo = accountLocalInfoPersistenceManager.retrieveSync() ?: return LocalAuthOutcome.NoLocalData()
