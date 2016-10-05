@@ -16,11 +16,11 @@ import org.whispersystems.libsignal.IdentityKeyPair
 class KeyVault(
     val identityKeyPair: IdentityKeyPair,
     //all other keys are derived from this one
-    val masterKey: Key,
+    private val masterKey: Key,
     //used when creating hashes of things to upload remotely to allow the hashes to match across devices, but not be identifiable to others
     val anonymizingData: ByteArray,
     //PBKDF params for key to decrypt secrets during deserialization
-    val localPasswordHashParams: HashParams,
+    private val localPasswordHashParams: HashParams,
     //kept so we can serialize
     private val localPasswordHash: Key
 ) {
