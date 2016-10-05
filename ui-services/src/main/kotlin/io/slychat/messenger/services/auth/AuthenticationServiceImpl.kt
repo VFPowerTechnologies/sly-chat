@@ -83,14 +83,14 @@ class AuthenticationServiceImpl(
             return LocalAuthOutcome.NoLocalData()
 
         val derivedKeySpec = keyVault.getDerivedKeySpec(DerivedKeyType.LOCAL_DATA)
-        val accountParamsPersistenceManager = localAccountDirectory.getAccountParamsPersistenceManager(
+        val accountLocalInfoPersistenceManager = localAccountDirectory.getAccountLocalInfoPersistenceManager(
             accountInfo.id,
             derivedKeySpec
         )
 
-        val accountParams = accountParamsPersistenceManager.retrieveSync() ?: return LocalAuthOutcome.NoLocalData()
+        val accountLocalInfo = accountLocalInfoPersistenceManager.retrieveSync() ?: return LocalAuthOutcome.NoLocalData()
 
-        val params = accountParams.remoteHashParams
+        val params = accountLocalInfo.remoteHashParams
         val remotePasswordHash = hashPasswordWithParams(password, params, HashType.REMOTE)
 
         //this isn't important; just use a null token in the auth result if this isn't present, and then fetch one remotely by refreshing
@@ -102,7 +102,7 @@ class AuthenticationServiceImpl(
         //if we can't read it from disk, create an empty one
         val sessionData = sessionDataPersistenceManager.retrieveSync() ?: SessionData()
 
-        return LocalAuthOutcome.Successful(AuthResult(sessionData, keyVault, remotePasswordHash, accountInfo, accountParams, null))
+        return LocalAuthOutcome.Successful(AuthResult(sessionData, keyVault, remotePasswordHash, accountInfo, accountLocalInfo, null))
     }
 
     /** Attempts to authentication using a local session first, then falls back to remote authentication. */

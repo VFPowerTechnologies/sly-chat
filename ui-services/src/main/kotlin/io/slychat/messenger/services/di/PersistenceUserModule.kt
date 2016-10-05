@@ -95,7 +95,7 @@ class PersistenceUserModule {
 
     @UserScope
     @Provides
-    fun providesAccountParamsManager(
+    fun providesAccountLocalInfoManager(
         userLoginData: UserData,
         userPaths: UserPaths
     ): AccountLocalInfoPersistenceManager {

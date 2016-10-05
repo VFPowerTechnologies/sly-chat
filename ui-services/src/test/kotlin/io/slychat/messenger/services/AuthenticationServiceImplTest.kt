@@ -58,7 +58,7 @@ class AuthenticationServiceImplTest {
         whenever(localAccountDirectory.findAccountFor(any<String>())).thenReturn(null)
         whenever(localAccountDirectory.getSessionDataPersistenceManager(any(), any())).thenReturn(sessionDataPersistenceManager)
         whenever(localAccountDirectory.getKeyVaultPersistenceManager(any())).thenReturn(keyVaultPersistenceManager)
-        whenever(localAccountDirectory.getAccountParamsPersistenceManager(any(), any())).thenReturn(accountLocalInfoPersistenceManager)
+        whenever(localAccountDirectory.getAccountLocalInfoPersistenceManager(any(), any())).thenReturn(accountLocalInfoPersistenceManager)
 
         whenever(accountLocalInfoPersistenceManager.retrieveSync()).thenReturn(AccountLocalInfo(SQLCipherCipher.defaultCipher, defaultRemotePasswordHashParams()))
     }

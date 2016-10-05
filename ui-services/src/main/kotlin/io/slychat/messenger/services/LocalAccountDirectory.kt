@@ -21,7 +21,7 @@ interface LocalAccountDirectory {
 
     fun getSessionDataPersistenceManager(userId: UserId, derivedKeySpec: DerivedKeySpec): SessionDataPersistenceManager
 
-    fun getAccountParamsPersistenceManager(userId: UserId, derivedKeySpec: DerivedKeySpec): AccountLocalInfoPersistenceManager
+    fun getAccountLocalInfoPersistenceManager(userId: UserId, derivedKeySpec: DerivedKeySpec): AccountLocalInfoPersistenceManager
 
     fun getStartupInfoPersistenceManager(encryptionKey: Key?): StartupInfoPersistenceManager
 

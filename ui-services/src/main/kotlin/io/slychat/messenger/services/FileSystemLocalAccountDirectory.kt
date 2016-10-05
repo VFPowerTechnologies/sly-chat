@@ -58,7 +58,7 @@ class FileSystemLocalAccountDirectory(
         return JsonSessionDataPersistenceManager(paths.sessionDataPath, derivedKeySpec)
     }
 
-    override fun getAccountParamsPersistenceManager(userId: UserId, derivedKeySpec: DerivedKeySpec): AccountLocalInfoPersistenceManager {
+    override fun getAccountLocalInfoPersistenceManager(userId: UserId, derivedKeySpec: DerivedKeySpec): AccountLocalInfoPersistenceManager {
         val paths = userPathsGenerator.getPaths(userId)
         return JsonAccountLocalInfoPersistenceManager(paths.accountParamsPath, derivedKeySpec)
     }
