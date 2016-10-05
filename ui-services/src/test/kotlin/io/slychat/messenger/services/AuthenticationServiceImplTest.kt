@@ -11,7 +11,6 @@ import io.slychat.messenger.core.crypto.generateNewKeyVault
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.http.api.authentication.*
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.persistence.sqlite.SQLCipherCipher
 import io.slychat.messenger.services.auth.AuthenticationServiceImpl
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
@@ -33,6 +32,8 @@ class AuthenticationServiceImplTest {
         val keyVault = generateNewKeyVault(password)
 
         val authParams = defaultRemotePasswordHashParams()
+
+        val accountLocalInfo = AccountLocalInfo.generate(authParams)
     }
 
     val authenticationClient: AuthenticationAsyncClient = mock()
@@ -60,7 +61,7 @@ class AuthenticationServiceImplTest {
         whenever(localAccountDirectory.getKeyVaultPersistenceManager(any())).thenReturn(keyVaultPersistenceManager)
         whenever(localAccountDirectory.getAccountLocalInfoPersistenceManager(any(), any())).thenReturn(accountLocalInfoPersistenceManager)
 
-        whenever(accountLocalInfoPersistenceManager.retrieveSync()).thenReturn(AccountLocalInfo(SQLCipherCipher.defaultCipher, defaultRemotePasswordHashParams()))
+        whenever(accountLocalInfoPersistenceManager.retrieveSync()).thenReturn(accountLocalInfo)
     }
 
     //setup mocks for successful remote auth

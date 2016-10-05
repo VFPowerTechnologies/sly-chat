@@ -68,7 +68,7 @@ class KeyVault(
     }
 
     private fun infoForType(type: DerivedKeyType): HKDFInfo = when (type) {
-        DerivedKeyType.ACCOUNT_LOCAL_INFO -> HKDFInfoList.localData()
+        DerivedKeyType.ACCOUNT_LOCAL_INFO -> HKDFInfoList.accountLocalInfo()
         DerivedKeyType.REMOTE_ADDRESS_BOOK_ENTRIES -> HKDFInfoList.remoteAddressBookEntries()
     }
 

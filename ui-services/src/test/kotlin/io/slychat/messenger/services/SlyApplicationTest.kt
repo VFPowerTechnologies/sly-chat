@@ -9,7 +9,6 @@ import io.slychat.messenger.core.persistence.AccountLocalInfo
 import io.slychat.messenger.core.persistence.InstallationData
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.StartupInfoPersistenceManager
-import io.slychat.messenger.core.persistence.sqlite.SQLCipherCipher
 import io.slychat.messenger.core.randomAccountInfo
 import io.slychat.messenger.core.randomAuthToken
 import io.slychat.messenger.core.randomDeviceId
@@ -37,6 +36,8 @@ class SlyApplicationTest {
         @ClassRule
         @JvmField
         val kovenantRule = KovenantTestModeRule()
+
+        val accountLocalInfo = AccountLocalInfo.generate(defaultRemotePasswordHashParams())
     }
 
     val accountInfo = randomAccountInfo()
@@ -51,7 +52,6 @@ class SlyApplicationTest {
 
     val startupInfoPersistenceManager: StartupInfoPersistenceManager = mock()
 
-    val accountParams = AccountLocalInfo(SQLCipherCipher.defaultCipher, defaultRemotePasswordHashParams())
     val remotePasswordHash = emptyByteArray()
 
     @Before
@@ -175,19 +175,19 @@ class SlyApplicationTest {
     }
 
     fun authWithOtherDevices(otherDevices: List<DeviceInfo>?): SlyApplication {
-        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, remotePasswordHash, accountInfo, accountParams, otherDevices)
+        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, remotePasswordHash, accountInfo, accountLocalInfo, otherDevices)
 
         return auth(authResult)
     }
 
     fun authWithSessionData(sessionData: SessionData): SlyApplication {
-        val authResult = AuthResult(sessionData, MockUserComponent.keyVault, remotePasswordHash, accountInfo, accountParams, null)
+        val authResult = AuthResult(sessionData, MockUserComponent.keyVault, remotePasswordHash, accountInfo, accountLocalInfo, null)
 
         return auth(authResult)
     }
 
     fun auth(): SlyApplication {
-        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, remotePasswordHash, accountInfo, accountParams, null)
+        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, remotePasswordHash, accountInfo, accountLocalInfo, null)
 
         return auth(authResult)
     }

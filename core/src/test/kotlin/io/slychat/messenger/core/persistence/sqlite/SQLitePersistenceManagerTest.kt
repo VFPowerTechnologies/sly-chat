@@ -44,11 +44,11 @@ class SQLitePersistenceManagerTest {
         val query = "CREATE TABLE IF NOT EXISTS t (i NUMBER)"
 
         val params1 = key1?.let {
-            SQLCipherParams(DerivedKeySpec(it, HKDFInfoList.localData()), SQLCipherCipher.defaultCipher)
+            SQLCipherParams(DerivedKeySpec(it, HKDFInfoList.accountLocalInfo()), SQLCipherCipher.defaultCipher)
         }
 
         val params2 = key2?.let {
-            SQLCipherParams(DerivedKeySpec(it, HKDFInfoList.localData()), SQLCipherCipher.defaultCipher)
+            SQLCipherParams(DerivedKeySpec(it, HKDFInfoList.accountLocalInfo()), SQLCipherCipher.defaultCipher)
         }
 
         withTempFile { dbPath ->

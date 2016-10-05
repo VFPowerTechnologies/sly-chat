@@ -3,7 +3,9 @@ package io.slychat.messenger.services.di
 import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.crypto.DerivedKeySpec
 import io.slychat.messenger.core.crypto.DerivedKeyType
+import io.slychat.messenger.core.crypto.HKDFInfoList
 import io.slychat.messenger.core.crypto.signal.SQLiteSignalProtocolStore
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.json.JsonAccountLocalInfoPersistenceManager
@@ -50,19 +52,17 @@ class UserPersistenceModule {
     @Provides
     fun providesSQLitePersistenceManager(
         userPaths: UserPaths,
-        userLoginData: UserData,
         accountLocalInfo: AccountLocalInfo
     ): SQLitePersistenceManager {
         val sqlCipherParams = if (BuildConfig.ENABLE_DATABASE_ENCRYPTION) {
-            val keyvault = userLoginData.keyVault
-
             SQLCipherParams(
-                keyvault.getDerivedKeySpec(DerivedKeyType.ACCOUNT_LOCAL_INFO),
+                DerivedKeySpec(accountLocalInfo.localMasterKey, HKDFInfoList.localData()),
                 accountLocalInfo.sqlCipherCipher
             )
         }
         else
             null
+
         return SQLitePersistenceManager(userPaths.databasePath, sqlCipherParams)
     }
 
@@ -84,12 +84,12 @@ class UserPersistenceModule {
     @Provides
     fun providesSessionDataPersistenceManager(
         userLoginData: UserData,
+        accountLocalInfo: AccountLocalInfo,
         localAccountDirectory: LocalAccountDirectory
     ): SessionDataPersistenceManager {
-        val keyVault = userLoginData.keyVault
         return localAccountDirectory.getSessionDataPersistenceManager(
             userLoginData.userId,
-            keyVault.getDerivedKeySpec(DerivedKeyType.ACCOUNT_LOCAL_INFO)
+            DerivedKeySpec(accountLocalInfo.localMasterKey, HKDFInfoList.accountLocalInfo())
         )
     }
 

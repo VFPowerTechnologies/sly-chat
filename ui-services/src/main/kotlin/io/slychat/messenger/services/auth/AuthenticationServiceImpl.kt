@@ -1,6 +1,5 @@
 package io.slychat.messenger.services.auth
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.crypto.hashes.HashType
 import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
@@ -50,10 +49,7 @@ class AuthenticationServiceImpl(
                 if (response.errorMessage != null)
                     throw AuthApiResponseException(response.errorMessage)
 
-                val accountParams = AccountLocalInfo(
-                    SQLCipherCipher.defaultCipher,
-                    hashParams
-                )
+                val accountParams = AccountLocalInfo.generate(hashParams)
 
                 val data = response.authData!!
                 val keyVault = data.keyVault.deserialize(password)
@@ -93,10 +89,12 @@ class AuthenticationServiceImpl(
         val params = accountLocalInfo.remoteHashParams
         val remotePasswordHash = hashPasswordWithParams(password, params, HashType.REMOTE)
 
+        val localDerivedKeySpec = DerivedKeySpec(accountLocalInfo.localMasterKey, HKDFInfoList.localData())
+
         //this isn't important; just use a null token in the auth result if this isn't present, and then fetch one remotely by refreshing
         val sessionDataPersistenceManager = localAccountDirectory.getSessionDataPersistenceManager(
             accountInfo.id,
-            derivedKeySpec
+            localDerivedKeySpec
         )
 
         //if we can't read it from disk, create an empty one

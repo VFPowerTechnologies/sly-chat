@@ -24,7 +24,7 @@ class CipherConfigStorageFilterTest {
     @Test
     fun `it should be able to encrypt and decrypt data`() {
         val masterKey = getRandomBits(256)
-        val spec = DerivedKeySpec(Key(masterKey), HKDFInfoList.localData())
+        val spec = DerivedKeySpec(Key(masterKey), HKDFInfoList.accountLocalInfo())
 
         val storage = MockPlaybackStorage()
         val cipherStorage = CipherConfigStorageFilter(spec, storage)

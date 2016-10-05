@@ -13,6 +13,7 @@ import org.whispersystems.libsignal.util.KeyHelper
 import java.security.SecureRandom
 
 private const val MASTER_KEY_SIZE_BITS = 256
+private const val LOCAL_MASTER_KEY_SIZE_BITS = 256
 private const val ANONYMIZING_DATA_SIZE_BITS = 128
 
 private fun defaultScryptParams(): HashParams.SCrypt {
@@ -74,6 +75,10 @@ fun generateAnonymizingData(): ByteArray {
 /** Generate a new master key. */
 fun generateMasterKey(): Key {
     return generateKey(MASTER_KEY_SIZE_BITS)
+}
+
+fun generateLocalMasterKey(): Key {
+    return generateKey(LOCAL_MASTER_KEY_SIZE_BITS)
 }
 
 /** Generate a key of the given key size (in bits). */
