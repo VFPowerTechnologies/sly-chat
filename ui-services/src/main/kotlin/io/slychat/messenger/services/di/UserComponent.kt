@@ -12,7 +12,7 @@ import io.slychat.messenger.services.messaging.*
 
 /** Scoped to a user's login session. */
 @UserScope
-@Subcomponent(modules = arrayOf(UserModule::class, PersistenceUserModule::class))
+@Subcomponent(modules = arrayOf(UserModule::class, UserPersistenceModule::class))
 interface UserComponent {
     val keyVaultPersistenceManager: KeyVaultPersistenceManager
 

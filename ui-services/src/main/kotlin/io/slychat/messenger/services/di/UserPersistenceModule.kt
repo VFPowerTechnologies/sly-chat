@@ -15,7 +15,7 @@ import io.slychat.messenger.services.UserPaths
 import org.whispersystems.libsignal.state.SignalProtocolStore
 
 @Module
-class PersistenceUserModule {
+class UserPersistenceModule {
     @UserScope
     @Provides
     fun providesConversationPersistenceManager(sqlitePersistenceManager: SQLitePersistenceManager): MessagePersistenceManager =
