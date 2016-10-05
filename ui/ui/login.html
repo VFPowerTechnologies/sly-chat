@@ -5,13 +5,13 @@
         <form id="loginForm">
           <div class="content-block-title">Login</div>
           <div class="list-block">
-            <ul>
+            <ul class="form-list-input">
               <li>
                 <div class="item-content">
                   <div class="item-media"><i class="icon icon-form-name"></i></div>
                   <div class="item-inner">
                     <div class="item-input">
-                      <input id='login' type="text" name='username' placeholder="Phone or E-mail" autocorrect="off" autocapitalize="off" required/>
+                      <input id='login' class='form-input-validate' type="text" name='username' placeholder="Phone or E-mail" autocorrect="off" autocapitalize="off" data-errorName="Username" data-rules="required"/>
                     </div>
                   </div>
                 </div>
@@ -21,7 +21,7 @@
                   <div class="item-media"><i class="icon icon-form-password"></i></div>
                   <div class="item-inner">
                     <div class="item-input">
-                      <input id='login-psw' name='password' type="password" placeholder="Password" required/>
+                      <input id='login-psw' class='form-input-validate' name='password' type="password" placeholder="Password" data-errorName="Password" data-rules="required"/>
                     </div>
                   </div>
                 </div>

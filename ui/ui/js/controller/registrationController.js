@@ -32,14 +32,7 @@ RegistrationController.prototype = {
         if(!formValid)
             return;
 
-        var passwordConfirm = $$(RegistrationController.ids.registrationPassConfirmInput).val();
         var password = $$(RegistrationController.ids.registrationPasswordInput).val();
-
-        if (password !== '' && password !== passwordConfirm) {
-            form.find(".error-block").html("<li>Passwords does not match</li>");
-            return;
-        }
-
         var email = $$(RegistrationController.ids.registrationEmailInput).val();
         var name = $$(RegistrationController.ids.registrationNameInput).val();
         var phoneValue = $(RegistrationController.ids.phoneInput).val();
@@ -48,9 +41,7 @@ RegistrationController.prototype = {
 
         this.setRegistrationInfo(name, email, phone, password);
 
-        var phoneValid = validatePhone(phoneValue, selectedCountry);
-
-        if(formValid === true && phoneValid === true) {
+        if(formValid === true) {
             slychat.showPreloader();
             registrationService.doRegistration(this.registrationInfo).then(function (result) {
                 slychat.hidePreloader();
@@ -65,14 +56,30 @@ RegistrationController.prototype = {
                     navigationController.loadPage("smsVerification.html", true, options);
                 }
                 else {
-                    form.find(".error-block").html("<li>" + result.errorMessage +"</li>");
-                    console.log(result);
+                    this.handleRegistrationError(result.errorMessage);
                 }
             }.bind(this)).catch(function (e) {
                 slychat.hidePreloader();
                 form.find(".error-block").html("<li>An unexpected error occurred</li>");
                 exceptionController.handleError(e);
             }.bind(this));
+        }
+    },
+
+    handleRegistrationError : function (error) {
+        switch (error) {
+            case "email is taken":
+                var input = $(RegistrationController.ids.registrationEmailInput);
+                var parent = input.parents("li");
+                parent.addClass("invalid");
+                if (parent.find(".invalid-details").length <= 0)
+                    parent.append("<div class='invalid-details'>Email is already in use</div>");
+                else
+                    parent.find('.invalid-details').html("Email is already in use");
+                break;
+            default:
+                $(RegistrationController.ids.registrationForm).find(".error-block").html("<li>" + result.errorMessage +"</li>");
+                break;
         }
     },
 

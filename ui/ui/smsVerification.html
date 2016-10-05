@@ -5,13 +5,13 @@
                 <form id="smsVerificationForm">
                     <div class="content-block-title">Sms Verification</div>
                     <div class="list-block">
-                        <ul>
+                        <ul class="form-list-input">
                             <li>
                                 <div class="item-content">
                                     <div class="item-media"><i class="fa fa-key smsCodeIcon"></i></div>
                                     <div class="item-inner">
                                         <div class="item-input">
-                                            <input id="smsCode" type="text" placeholder="Verification Code" autocapitalize="off" autocorrect="off" required/>
+                                            <input id="smsCode" type="number" placeholder="Verification Code" autocapitalize="off" autocorrect="off" class='form-input-validate' data-errorName="Verification Code" data-rules="required"/>
                                             <input id="hiddenEmail" type="hidden">
                                             <input id="hiddenPassword" type="hidden">
                                         </div>

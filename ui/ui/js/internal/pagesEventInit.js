@@ -184,7 +184,8 @@ slychat.onPageInit('smsVerification', function (page) {
         var options = {
             url: 'updatePhone.html',
             query: {
-                email: $$('#hiddenEmail').val()
+                email: page.query.email,
+                password: page.query.password
             }
         };
 
@@ -206,6 +207,18 @@ slychat.onPageInit('updatePhone', function (page) {
         e.preventDefault();
         registrationController.updatePhone();
     });
+
+    $$("#backToSmsVerificationLink").on('click', function () {
+        var options = {
+            url: 'smsVerification.html',
+            query: {
+                email: page.query.email,
+                password: page.query.password
+            }
+        };
+
+        navigationController.loadPage("smsVerification.html", true, options);
+    })
 });
 
 slychat.onPageInit('profile', function (page) {

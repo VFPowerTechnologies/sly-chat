@@ -5,13 +5,13 @@
                 <form id="phoneUpdateForm">
                     <div class="content-block-title">Phone Number Update</div>
                     <div class="list-block">
-                        <ul>
+                        <ul class="form-list-input">
                             <li>
                                 <div class="item-content">
                                     <div class="item-media"><i class="icon icon-form-password"></i></div>
                                     <div class="item-inner">
                                         <div class="item-input">
-                                            <input id="phone-update-password" type="password" placeholder="Password" required/>
+                                            <input id="phone-update-password" type="password" placeholder="Password" class='form-input-validate' data-errorName="Password" data-rules="required"/>
                                         </div>
                                     </div>
                                 </div>
@@ -21,7 +21,7 @@
                                     <div class="item-media"><i class="icon icon-form-comment"></i></div>
                                     <div class="item-inner">
                                         <div class="item-input">
-                                            <select id="countrySelect" style="color: #aaaaaa;" required>
+                                            <select id="countrySelect" style="color: #aaaaaa;" class='form-input-validate' data-errorName="Country" data-rules="required">
                                                 <option selected disabled>Country</option>
                                             </select>
                                         </div>
@@ -33,7 +33,7 @@
                                     <div class="item-media"><i id='phoneInputIcon' class="icon icon-form-tel"></i><span id='phoneIntlExt' style="display: none; text-align: center; min-width: 29px; height: 29px; line-height: 29px; color: #ffffff; background-color: #8e8e93; border-radius: 5px;"></span></div>
                                     <div class="item-inner">
                                         <div class="item-input">
-                                            <input id='phone' type="tel" placeholder="Phone Number" required/>
+                                            <input id='phone' type="tel" placeholder="Phone Number" class='form-input-validate' data-errorName="Phone Number" data-rules="required|phone"/>
                                         </div>
                                     </div>
                                 </div>

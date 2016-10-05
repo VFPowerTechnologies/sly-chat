@@ -25,7 +25,7 @@ ProfileController.ids = {
 ProfileController.prototype = {
     setUserInfo : function (userInfo, publicKey) {
         this.username = userInfo.email;
-        this.phoneNumber = userInfo['phone-number'];
+        this.phoneNumber = userInfo.phoneNumber;
         this.name = userInfo.name;
         this.publicKey = publicKey;
     },
@@ -47,27 +47,27 @@ ProfileController.prototype = {
     openProfileEditPopup : function () {
         var content = '<div style="max-width: 800px; margin: 0 auto;"><form id="updateProfileForm">' +
             '<div class="list-block">' +
-            '<ul><li><div class="item-content"><div class="item-media"><i class="icon icon-form-name"></i></div>' +
-            '<div class="item-inner"><div class="item-input"><input id="profileUpdateNameInput" type="text" placeholder="Name" required autocorrect="off" value="' + this.name + '"/> </div>' +
+            '<ul class="form-list-input"><li><div class="item-content"><div class="item-media"><i class="icon icon-form-name"></i></div>' +
+            '<div class="item-inner"><div class="item-input"><input id="profileUpdateNameInput" type="text" placeholder="Name" class="form-input-validate" data-errorName="Name" data-rules="required" autocorrect="off" value="' + this.name + '"/> </div>' +
             '</div></div></li><li><div class="item-content">' +
             '<div class="item-media"><i class="icon icon-form-email"></i></div>' +
             '<div class="item-inner"><div class="item-input">' +
-            '<input id="profileUpdateEmailInput" type="email" placeholder="E-mail" required autocorrect="off" autocapitalize="off" value="' + this.username + '" />' +
+            '<input id="profileUpdateEmailInput" type="email" placeholder="E-mail" class="form-input-validate" data-errorName="Email" data-rules="required|email" autocorrect="off" autocapitalize="off" value="' + this.username + '" />' +
             '</div></div></div></li></ul></div>' +
             '<div class="list-block list-error-block"><ul class="error-block"></ul></div>' +
             '<div class="content-block">' +
             '<input id="saveProfileUpdateBtn" type="submit" value="Save" class="button button-big button-fill" style="width: 100px; margin: 0 auto; display: block;"/>' +
             '</div></form>' +
-            '<form id="updatePhoneForm"><div class="content-block-title">Phone Update Request</div><div class="list-block"><ul>' +
+            '<form id="updatePhoneForm"><div class="content-block-title">Phone Update Request</div><div class="list-block"><ul class="form-list-input">' +
             '<li>' +
             '<div class="item-content"><div class="item-media"><i class="icon icon-form-comment"></i></div>' +
             '<div class="item-inner"><div class="item-input">' +
-            '<select id="countrySelect" style="color: #aaaaaa;" required>' +
+            '<select id="countrySelect" style="color: #aaaaaa;" class="form-input-validate" data-errorName="Country" data-rules="required">' +
             '<option selected disabled>Country</option></select></div></div></div></li><li>' +
             '<div class="item-content">' +
             '<div class="item-media"><i id="phoneInputIcon" class="icon icon-form-tel"></i><span id="phoneIntlExt" style="display: none; text-align: center; min-width: 29px; height: 29px; line-height: 29px; color: #ffffff; background-color: #8e8e93; border-radius: 5px;"></span></div>' +
             '<div class="item-inner"><div class="item-input">' +
-            '<input id="phone" type="tel" placeholder="Phone Number" required value="' + this.phoneNumber + '"/>' +
+            '<input id="phone" type="tel" placeholder="Phone Number" class="form-input-validate" data-errorName="Phone Number" data-rules="required|phone" value="' + this.phoneNumber + '"/>' +
             '</div></div></div></li>' +
             '</ul></div>' +
             '<div class="list-block list-error-block"><ul class="error-block"></ul></div>' +
@@ -146,12 +146,9 @@ ProfileController.prototype = {
     },
 
     requestPhoneUpdate : function () {
-        var phoneValue = $(ProfileController.ids.phoneInput).val();
-        var selectedCountry = $(ProfileController.ids.countryInput).val();
-        var phone = getFormatedPhoneNumber(phoneValue, selectedCountry);
+        var phone = getFormatedPhoneNumber($(ProfileController.ids.phoneInput).val(), $(ProfileController.ids.countryInput).val());
 
-        var phoneValid = validatePhone(phoneValue, selectedCountry);
-        if (phoneValid && this.phoneNumber !== phone) {
+        if (this.phoneNumber !== phone && slychat.validateForm($(ProfileController.ids.updatePhoneForm))) {
             this.requestedPhone = phone;
             accountModifictationService.requestPhoneUpdate(phone).then(function (result) {
                 if (result.successful === true) {
@@ -201,7 +198,7 @@ ProfileController.prototype = {
                     '<div class="item-media"><i class="icon icon-form-email"></i></div>' +
                     '<div class="item-inner">' +
                         '<div class="item-input">' +
-                            '<input id="smsCodeInput" type="text" style="border-bottom: 1px solid #eeeeee;" placeholder="Sms Code"/>' +
+                            '<input id="smsCodeInput" type="number" style="border-bottom: 1px solid #eeeeee;" placeholder="Sms Code"/>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +

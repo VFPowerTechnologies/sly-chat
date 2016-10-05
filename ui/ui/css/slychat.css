@@ -75,6 +75,18 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .invalid-required {
     border-bottom: 1px solid red !important;
 }
+.form-list-input li.invalid {
+    margin-bottom: 10px;
+}
+.form-list-input .invalid-details {
+    display: none;
+}
+.form-list-input li.invalid .invalid-details {
+    display: block;
+    text-align: right;
+    color: red;
+    font-size: 15px;
+}
 
 /* Notification */
 .custom-notification {
