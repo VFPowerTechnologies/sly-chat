@@ -63,6 +63,7 @@ class RelayClientManagerImpl(
     }
 
     private fun onClientError(e: Throwable) {
+        log.error("Client error occured: {}", e.message, e)
         setOnlineStatus(false)
     }
 
