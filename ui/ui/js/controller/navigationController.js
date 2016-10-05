@@ -214,12 +214,6 @@ NavigationController.prototype = {
                 }
             },
             {
-                text: 'Logout',
-                onClick: function () {
-                    loginController.logout();
-                }
-            },
-            {
                 text: 'Add Contact',
                 onClick: function () {
                     navigationController.loadPage("addContact.html", true);
@@ -229,6 +223,18 @@ NavigationController.prototype = {
                 text: 'Create Group',
                 onClick: function () {
                     navigationController.loadPage('createGroup.html', true);
+                }
+            },
+            {
+                text: 'Send Feedback',
+                onClick: function () {
+                    navigationController.loadPage("feedback.html", true);
+                }
+            },
+            {
+                text: 'Logout',
+                onClick: function () {
+                    loginController.logout();
                 }
             },
             {

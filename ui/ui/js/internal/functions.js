@@ -15,6 +15,7 @@ function createDesktopMenu () {
                             '<li><a onclick="navigationController.loadPage(\'blockedContacts.html\');" href="#">Blocked Contacts</a></li>' +
                             '<li><a id="loadProfileBtn" href="#">Profile</a></li>' +
                             '<li><a id="loadSettingsBtn" href="#">Settings</a></li>' +
+                            '<li><a id="loadSettingsBtn" href="#" onclick="navigationController.loadPage(\'feedback.html\', true);">Send Feedback</a></li>' +
                             '<li><a id="logoutBtn" href="#">Logout</a></li>' +
                         '</ul>' +
                     '</li>' +

@@ -138,10 +138,10 @@ slychat.onPageInit('chat', function (page) {
     });
 
     $("#inputChatExpireMessageBtn").click(function (e) {
-        e.preventDefault();
-        e.stopPropagation();
         if (newMessageInput.hasClass("focused"))
             newMessageInput.focus();
+        e.preventDefault();
+        e.stopPropagation();
 
         chatController.toggleExpiringMessageDisplay();
     });
@@ -271,6 +271,10 @@ slychat.onPageInit('settings', function (page) {
 
 slychat.onPageInit('blockedContacts', function () {
     contactController.blockedContactPageInit();
+});
+
+slychat.onPageInit('feedback', function () {
+    feedbackController.pageInit();
 });
 
 $("#contactPopupNewBtn").on("click", function (e) {

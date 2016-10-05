@@ -30,6 +30,7 @@ var UIController = function () {
     window.groupController = new GroupController();
     window.exceptionController = new ExceptionController();
     window.settingsController = new SettingsController();
+    window.feedbackController = new FeedbackController();
 
     window.relayTimeDifference = 0;
 
