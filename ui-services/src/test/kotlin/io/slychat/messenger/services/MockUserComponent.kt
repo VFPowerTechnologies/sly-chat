@@ -23,7 +23,7 @@ class MockUserComponent : UserComponent {
         val keyVault = generateNewKeyVault(keyVaultPassword)
     }
 
-    val keyVault: KeyVault = MockUserComponent.keyVault
+    override val keyVault: KeyVault = MockUserComponent.keyVault
 
     override val accountLocalInfoManager: AccountLocalInfoManager = mock()
 
@@ -49,7 +49,7 @@ class MockUserComponent : UserComponent {
 
     override val notifierService: NotifierService = mock()
 
-    override val userLoginData: UserData = UserData(randomSlyAddress(), keyVault, emptyByteArray())
+    override val userLoginData: UserData = UserData(randomSlyAddress(), emptyByteArray())
 
     override val relayClock: RelayClock = mock()
 

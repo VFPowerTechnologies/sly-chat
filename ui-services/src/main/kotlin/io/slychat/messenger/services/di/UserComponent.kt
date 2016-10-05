@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.di
 
 import dagger.Subcomponent
+import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
@@ -69,4 +70,6 @@ interface UserComponent {
     val messageDeletionWatcher: MessageDeletionWatcher
 
     val accountLocalInfoManager: AccountLocalInfoManager
+
+    val keyVault: KeyVault
 }

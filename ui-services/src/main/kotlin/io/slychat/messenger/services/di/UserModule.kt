@@ -6,6 +6,7 @@ import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.ServerUrls
 import io.slychat.messenger.core.crypto.DerivedKeySpec
 import io.slychat.messenger.core.crypto.HKDFInfoList
+import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
@@ -38,6 +39,10 @@ class UserModule(
     @get:UserScope
     @get:Provides
     val providesUserLoginData: UserData,
+
+    @get:UserScope
+    @get:Provides
+    val providesKeyVault: KeyVault,
 
     //only used during construction of AccountInfoManager; never use this directly
     private val accountInfo: AccountInfo,
@@ -73,7 +78,7 @@ class UserModule(
         groupPersistenceManager: GroupPersistenceManager,
         accountInfoManager: AccountInfoManager,
         @SlyHttp httpClientFactory: HttpClientFactory,
-        userLoginData: UserData,
+        keyVault: KeyVault,
         platformContacts: PlatformContacts,
         promiseTimerFactory: PromiseTimerFactory
     ): AddressBookSyncJobFactory {
@@ -87,7 +92,7 @@ class UserModule(
             contactListClient,
             contactsPersistenceManager,
             groupPersistenceManager,
-            userLoginData.keyVault,
+            keyVault,
             accountInfoManager.accountInfo,
             platformContacts,
             promiseTimerFactory
@@ -249,7 +254,7 @@ class UserModule(
     fun providesPreKeyManager(
         application: SlyApplication,
         serverUrls: ServerUrls,
-        userLoginData: UserData,
+        keyVault: KeyVault,
         preKeyPersistenceManager: PreKeyPersistenceManager,
         @SlyHttp httpClientFactory: HttpClientFactory,
         authTokenManager: AuthTokenManager
@@ -260,7 +265,7 @@ class UserModule(
         return PreKeyManagerImpl(
             application.networkAvailable,
             application.installationData.registrationId,
-            userLoginData,
+            keyVault,
             preKeyAsyncClient,
             preKeyPersistenceManager,
             authTokenManager

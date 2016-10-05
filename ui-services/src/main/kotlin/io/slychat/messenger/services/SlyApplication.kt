@@ -268,9 +268,9 @@ class SlyApplication {
             val sessionData = response.sessionData
             val address = SlyAddress(accountInfo.id, accountInfo.deviceId)
 
-            val userLoginData = UserData(address, keyVault, response.remotePasswordHash)
+            val userLoginData = UserData(address, response.remotePasswordHash)
 
-            val userComponent = createUserSession(userLoginData, accountInfo, accountParams)
+            val userComponent = createUserSession(userLoginData, keyVault, accountInfo, accountParams)
 
             val authTokenManager = userComponent.authTokenManager
             if (sessionData.authToken != null)
@@ -370,13 +370,13 @@ class SlyApplication {
         fetchOfflineMessages()
     }
 
-    fun createUserSession(userLoginData: UserData, accountInfo: AccountInfo, accountLocalInfo: AccountLocalInfo): UserComponent {
+    fun createUserSession(userLoginData: UserData, keyVault: KeyVault, accountInfo: AccountInfo, accountLocalInfo: AccountLocalInfo): UserComponent {
         if (userComponent != null)
             error("UserComponent already loaded")
 
         log.info("Creating user session")
 
-        val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo, accountLocalInfo))
+        val userComponent = appComponent.plus(UserModule(userLoginData, keyVault, accountInfo, accountLocalInfo))
         this.userComponent = userComponent
 
         Sentry.setUserAddress(userComponent.userLoginData.address)
@@ -397,9 +397,9 @@ class SlyApplication {
     ): Promise<Unit, Exception> {
         val persistenceManager = userComponent.persistenceManager
         val userConfigService = userComponent.userConfigService
-        val userLoginData = userComponent.userLoginData
-        val keyVault = userLoginData.keyVault
-        val userId = userLoginData.userId
+        val userData = userComponent.userLoginData
+        val keyVault = userComponent.keyVault
+        val userId = userData.userId
 
         val localAccountDirectory = appComponent.localAccountDirectory
         val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager(installationData.startupInfoKey)
@@ -525,7 +525,7 @@ class SlyApplication {
         //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
         fetchOfflineMessages()
 
-        val publicKey = userComponent.userLoginData.keyVault.fingerprint
+        val publicKey = userComponent.keyVault.fingerprint
 
         emitLoginEvent(LoggedIn(accountInfo, publicKey))
     }

@@ -1,9 +1,10 @@
 package io.slychat.messenger.services
 
+import io.slychat.messenger.core.crypto.KeyVault
+import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
 import io.slychat.messenger.core.crypto.signal.LAST_RESORT_PREKEY_ID
 import io.slychat.messenger.core.crypto.signal.generateLastResortPreKey
 import io.slychat.messenger.core.crypto.signal.generatePrekeys
-import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
 import io.slychat.messenger.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
 import io.slychat.messenger.core.persistence.PreKeyPersistenceManager
@@ -23,7 +24,7 @@ import rx.Subscription
 class PreKeyManagerImpl(
     networkAvailable: Observable<Boolean>,
     private val registrationId: Int,
-    private val userLoginData: UserData,
+    private val keyVault: KeyVault,
     private val preKeyAsyncClient: PreKeyAsyncClient,
     private val preKeyPersistenceManager: PreKeyPersistenceManager,
     private val authTokenManager: AuthTokenManager
@@ -47,8 +48,6 @@ class PreKeyManagerImpl(
     }
 
     private fun generate(count: Int): Promise<Pair<GeneratedPreKeys, PreKeyRecord>, Exception> {
-        val keyVault = userLoginData.keyVault
-
         return preKeyPersistenceManager.getNextPreKeyIds() bind { preKeyIds ->
             val generatedPreKeys = generatePrekeys(keyVault.identityKeyPair, preKeyIds.nextSignedId, preKeyIds.nextUnsignedId, count)
             preKeyPersistenceManager.putGeneratedPreKeys(generatedPreKeys) map { generatedPreKeys }
@@ -91,8 +90,6 @@ class PreKeyManagerImpl(
             return
 
         log.info("Requested to generate {} new prekeys", keyRegenCount)
-
-        val keyVault = userLoginData.keyVault
 
         scheduledKeyCount = 0
         running = true

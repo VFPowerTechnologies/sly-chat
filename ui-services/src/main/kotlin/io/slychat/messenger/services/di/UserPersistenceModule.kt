@@ -6,6 +6,7 @@ import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.crypto.DerivedKeySpec
 import io.slychat.messenger.core.crypto.DerivedKeyType
 import io.slychat.messenger.core.crypto.HKDFInfoList
+import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.signal.SQLiteSignalProtocolStore
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.json.JsonAccountLocalInfoPersistenceManager
@@ -96,10 +97,9 @@ class UserPersistenceModule {
     @UserScope
     @Provides
     fun providesAccountLocalInfoManager(
-        userLoginData: UserData,
+        keyVault: KeyVault,
         userPaths: UserPaths
     ): AccountLocalInfoPersistenceManager {
-        val keyVault = userLoginData.keyVault
         return JsonAccountLocalInfoPersistenceManager(
             userPaths.accountParamsPath,
             keyVault.getDerivedKeySpec(DerivedKeyType.ACCOUNT_LOCAL_INFO)
@@ -126,13 +126,13 @@ class UserPersistenceModule {
     @Provides
     fun providesSignalProtocolStore(
         slyApplication: SlyApplication,
-        userLoginData: UserData,
+        keyVault: KeyVault,
         signalSessionPersistenceManager: SignalSessionPersistenceManager,
         preKeyPersistenceManager: PreKeyPersistenceManager,
         contactsPersistenceManager: ContactsPersistenceManager
     ): SignalProtocolStore =
         SQLiteSignalProtocolStore(
-            userLoginData.keyVault.identityKeyPair,
+            keyVault.identityKeyPair,
             slyApplication.installationData.registrationId,
             signalSessionPersistenceManager,
             preKeyPersistenceManager,
