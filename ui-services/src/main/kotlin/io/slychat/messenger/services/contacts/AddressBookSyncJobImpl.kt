@@ -2,12 +2,12 @@ package io.slychat.messenger.services.contacts
 
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.http.api.ResourceConflictException
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.kovenant.bindRecoverFor
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.PlatformContacts
-import io.slychat.messenger.services.UserData
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.parsePhoneNumber
@@ -20,11 +20,11 @@ import java.util.concurrent.TimeUnit
 
 class AddressBookSyncJobImpl(
     private val authTokenManager: AuthTokenManager,
-    private val contactClient: ContactAsyncClient,
+    private val contactLookupClient: ContactLookupAsyncClient,
     private val addressBookClient: AddressBookAsyncClient,
     private val contactsPersistenceManager: ContactsPersistenceManager,
     private val groupPersistenceManager: GroupPersistenceManager,
-    private val userLoginData: UserData,
+    private val keyVault: KeyVault,
     private val accountRegionCode: String,
     private val platformContacts: PlatformContacts,
     private val promiseTimerFactory: PromiseTimerFactory
@@ -55,7 +55,7 @@ class AddressBookSyncJobImpl(
 
     private fun queryAndAddNewContacts(userCredentials: UserCredentials, missingContacts: List<PlatformContact>): Promise<Set<ContactInfo>, Exception> {
         return if (missingContacts.isNotEmpty()) {
-            contactClient.findLocalContacts(userCredentials, FindLocalContactsRequest(missingContacts)) bind { foundContacts ->
+            contactLookupClient.findLocalContacts(userCredentials, FindLocalContactsRequest(missingContacts)) bind { foundContacts ->
                 log.debug("Found platform contacts: {}", foundContacts)
 
                 contactsPersistenceManager.add(foundContacts.contacts.map { it.toCore(AllowedMessageLevel.ALL) })
@@ -101,7 +101,7 @@ class AddressBookSyncJobImpl(
 
             val p = if (missing.isNotEmpty()) {
                 val request = FindAllByIdRequest(missing.toList())
-                contactClient.findAllById(userCredentials, request) map { response ->
+                contactLookupClient.findAllById(userCredentials, request) map { response ->
                     response.contacts.map { it.toCore(messageLevelByUserId[it.id]!!) }
                 }
             }
@@ -124,8 +124,6 @@ class AddressBookSyncJobImpl(
     /** Syncs the local address book with the remote address book. */
     private fun pullRemoteUpdates(): Promise<Boolean, Exception> {
         log.debug("Beginning remote update pull")
-
-        val keyVault = userLoginData.keyVault
 
         return authTokenManager.bind { userCredentials ->
             contactsPersistenceManager.getAddressBookHash() bind { addressBookHash ->
@@ -205,7 +203,6 @@ class AddressBookSyncJobImpl(
         else {
             log.info("Remote updates: {}", allUpdates)
 
-            val keyVault = userLoginData.keyVault
             val entries = encryptRemoteAddressBookEntries(keyVault, allUpdates)
 
             contactsPersistenceManager.addRemoteEntryHashes(entries) bind { localHash ->

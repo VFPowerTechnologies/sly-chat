@@ -1,9 +1,15 @@
 package io.slychat.messenger.services.auth
 
 import io.slychat.messenger.core.crypto.*
+import io.slychat.messenger.core.crypto.hashes.HashType
+import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
+import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
+import io.slychat.messenger.core.persistence.AccountLocalInfo
+import io.slychat.messenger.core.persistence.LocalDerivedKeyType
 import io.slychat.messenger.core.persistence.SessionData
+import io.slychat.messenger.core.persistence.sqlite.SQLCipherCipher
 import io.slychat.messenger.services.LocalAccountDirectory
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -35,21 +41,23 @@ class AuthenticationServiceImpl(
 
             val authParams = paramsResponse.params!!
 
-            val hashParams = HashDeserializers.deserialize(authParams.hashParams)
-            val hash = hashPasswordWithParams(password, hashParams)
+            val hashParams = authParams.hashParams
+            val remotePasswordHash = hashPasswordWithParams(password, hashParams, HashType.REMOTE)
 
-            val request = AuthenticationRequest(emailOrPhoneNumber, hash.hexify(), authParams.csrfToken, registrationId, deviceId)
+            val request = AuthenticationRequest(emailOrPhoneNumber, remotePasswordHash.hexify(), authParams.csrfToken, registrationId, deviceId)
 
             authenticationClient.auth(request) map { response ->
                 if (response.errorMessage != null)
                     throw AuthApiResponseException(response.errorMessage)
 
-                val data = response.data!!
-                val keyVault = KeyVault.deserialize(data.keyVault, password)
+                val accountParams = AccountLocalInfo.generate(hashParams)
+
+                val data = response.authData!!
+                val keyVault = data.keyVault.deserialize(password)
 
                 //we have no local session, so just use an empty SessionData
                 val sessionData = SessionData().copy(authToken = data.authToken)
-                AuthResult(sessionData, keyVault, data.accountInfo, data.otherDevices)
+                AuthResult(sessionData, keyVault, remotePasswordHash, data.accountInfo, accountParams, data.otherDevices)
             }
         }
     }
@@ -71,16 +79,29 @@ class AuthenticationServiceImpl(
         if (keyVault == null)
             return LocalAuthOutcome.NoLocalData()
 
+        val accountLocalDerivedKeySpec = keyVault.getDerivedKeySpec(DerivedKeyType.ACCOUNT_LOCAL_INFO)
+        val accountLocalInfoPersistenceManager = localAccountDirectory.getAccountLocalInfoPersistenceManager(
+            accountInfo.id,
+            accountLocalDerivedKeySpec
+        )
+
+        val accountLocalInfo = accountLocalInfoPersistenceManager.retrieveSync() ?: return LocalAuthOutcome.NoLocalData()
+
+        val params = accountLocalInfo.remoteHashParams
+        val remotePasswordHash = hashPasswordWithParams(password, params, HashType.REMOTE)
+
+        val localDerivedKeySpec = accountLocalInfo.getDerivedKeySpec(LocalDerivedKeyType.GENERIC)
+
         //this isn't important; just use a null token in the auth result if this isn't present, and then fetch one remotely by refreshing
         val sessionDataPersistenceManager = localAccountDirectory.getSessionDataPersistenceManager(
             accountInfo.id,
-            keyVault.localDataEncryptionKey,
-            keyVault.localDataEncryptionParams
+            localDerivedKeySpec
         )
+
         //if we can't read it from disk, create an empty one
         val sessionData = sessionDataPersistenceManager.retrieveSync() ?: SessionData()
 
-        return LocalAuthOutcome.Successful(AuthResult(sessionData, keyVault, accountInfo, null))
+        return LocalAuthOutcome.Successful(AuthResult(sessionData, keyVault, remotePasswordHash, accountInfo, accountLocalInfo, null))
     }
 
     /** Attempts to authentication using a local session first, then falls back to remote authentication. */

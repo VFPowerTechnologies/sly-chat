@@ -9,7 +9,6 @@ import io.slychat.messenger.services.ui.jstojava.*
 /** Create required directory structure. */
 fun createAppDirectories(platformInfo: PlatformInfo) {
     platformInfo.appFileStorageDirectory.mkdirs()
-    platformInfo.dataFileStorageDirectory.mkdirs()
 }
 
 /** Registers all available UI services to the given Dispatcher. */

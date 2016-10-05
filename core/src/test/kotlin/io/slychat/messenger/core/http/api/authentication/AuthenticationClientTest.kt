@@ -6,9 +6,8 @@ import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
 import io.slychat.messenger.core.AuthToken
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.crypto.defaultRemotePasswordHashParams
 import io.slychat.messenger.core.crypto.generateNewKeyVault
-import io.slychat.messenger.core.crypto.getRandomBits
-import io.slychat.messenger.core.crypto.hashes.BCryptParams
 import io.slychat.messenger.core.http.HttpClient
 import io.slychat.messenger.core.http.HttpResponse
 import io.slychat.messenger.core.http.api.ApiResult
@@ -28,7 +27,7 @@ class AuthenticationClientTest {
     @Test
     fun `getParams should return a successful AuthenticationParamsResponse when receiving a 200 response`() {
         val httpClient = mock<HttpClient>()
-        val hashParams = BCryptParams(getRandomBits(128), 12).serialize()
+        val hashParams = defaultRemotePasswordHashParams()
         val response = AuthenticationParamsResponse(null, AuthenticationParams(csrfToken, hashParams))
         val apiResult = ApiResult(null, response)
         val httpResponse = HttpResponse(200, HashMap(), objectMapper.writeValueAsString(apiResult))

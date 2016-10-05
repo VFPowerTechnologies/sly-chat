@@ -1,9 +1,9 @@
 package io.slychat.messenger.core.persistence.json
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.slychat.messenger.core.crypto.EncryptionSpec
-import io.slychat.messenger.core.crypto.decryptData
-import io.slychat.messenger.core.crypto.encryptDataWithParams
+import io.slychat.messenger.core.crypto.DerivedKeySpec
+import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
+import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.SessionDataPersistenceManager
 import nl.komponents.kovenant.Promise
@@ -14,16 +14,16 @@ import java.io.FileNotFoundException
 
 class JsonSessionDataPersistenceManager(
     val path: File,
-    private val encryptionSpec: EncryptionSpec
+    private val derivedKeySpec: DerivedKeySpec
 ) : SessionDataPersistenceManager {
-    val objectMapper = ObjectMapper()
+    private val objectMapper = ObjectMapper()
 
     override fun store(sessionData: SessionData): Promise<Unit, Exception> = task {
         val serialized = objectMapper.writeValueAsBytes(sessionData)
 
-        val encrypted = encryptDataWithParams(encryptionSpec, serialized)
+        val encrypted = encryptBulkData(derivedKeySpec, serialized)
 
-        path.writeBytes(encrypted.data)
+        path.writeBytes(encrypted)
     }
 
     override fun retrieve(): Promise<SessionData?, Exception> = task {
@@ -39,7 +39,7 @@ class JsonSessionDataPersistenceManager(
         }
 
         val decrypted = try {
-            decryptData(encryptionSpec, encrypted)
+            decryptBulkData(derivedKeySpec, encrypted)
         }
         catch (e: InvalidCipherTextException) {
             return null

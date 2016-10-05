@@ -6,7 +6,4 @@ import java.io.File
 interface PlatformInfo {
     /** Location for the app to store its data */
     val appFileStorageDirectory: File
-
-    /** Location for storing user files */
-    val dataFileStorageDirectory: File
 }

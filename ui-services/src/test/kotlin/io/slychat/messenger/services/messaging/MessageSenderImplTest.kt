@@ -27,6 +27,7 @@ import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 
 class MessageSenderImplTest {
     companion object {
@@ -80,6 +81,10 @@ class MessageSenderImplTest {
         whenever(relayClock.currentTime()).thenReturn(currentTimestamp())
     }
 
+    fun getCurrentRelayMessageId(sender: MessageSenderImpl): String {
+        return assertNotNull(sender.currentRelayMessageId, "No queued message")
+    }
+
     fun createSender(
         relayIsOnline: Boolean = false,
         initialEntries: List<SenderMessageEntry> = emptyList()
@@ -108,7 +113,7 @@ class MessageSenderImplTest {
         body(pendingEntry)
 
         //complete send
-        relayEvents.onNext(ServerReceivedMessage(pendingEntry.metadata.userId, pendingEntry.metadata.messageId, currentTimestamp()))
+        relayEvents.onNext(ServerReceivedMessage(pendingEntry.metadata.userId, getCurrentRelayMessageId(sender), currentTimestamp()))
     }
 
 
@@ -185,7 +190,7 @@ class MessageSenderImplTest {
 
         sender.addToQueue(metadata, entry.message).get()
 
-        relayEvents.onNext(ServerReceivedMessage(metadata.userId, metadata.messageId, currentTimestamp()))
+        relayEvents.onNext(ServerReceivedMessage(metadata.userId, getCurrentRelayMessageId(sender), currentTimestamp()))
 
         verify(messageQueuePersistenceManager).remove(metadata.userId, metadata.messageId)
     }
@@ -229,7 +234,7 @@ class MessageSenderImplTest {
         val relayUserMessage = RelayUserMessage(messageData.deviceId, messageData.registrationId, messageData.payload)
         val relayMessageBundle = RelayMessageBundle(listOf(relayUserMessage))
 
-        verify(relayClientManager).sendMessage(defaultConnectionTag, recipient, relayMessageBundle, metadata.messageId)
+        verify(relayClientManager).sendMessage(defaultConnectionTag, recipient, relayMessageBundle, getCurrentRelayMessageId(sender))
     }
 
     @Test
@@ -246,7 +251,7 @@ class MessageSenderImplTest {
 
         val timestamp = currentTimestamp()
         val record = MessageSendRecord(metadata, timestamp)
-        relayEvents.onNext(ServerReceivedMessage(recipient, metadata.messageId, timestamp))
+        relayEvents.onNext(ServerReceivedMessage(recipient, getCurrentRelayMessageId(sender), timestamp))
 
         assertEventEmitted(testSubscriber) {
             assertEquals(record, it, "Invalid message send record")

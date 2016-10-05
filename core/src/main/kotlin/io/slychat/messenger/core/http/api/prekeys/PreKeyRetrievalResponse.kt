@@ -5,8 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 /** Lack of keyData indicates a non-registered user. */
 data class PreKeyRetrievalResponse(
-    @param:JsonProperty("error-message")
-    @get:JsonProperty("error-message")
+    @JsonProperty("errorMessage")
     val errorMessage: String?,
 
     //empty bundle: no active devices

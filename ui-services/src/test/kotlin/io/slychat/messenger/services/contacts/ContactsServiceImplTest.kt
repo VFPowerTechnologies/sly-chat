@@ -3,7 +3,7 @@ package io.slychat.messenger.services.contacts
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
-import io.slychat.messenger.core.http.api.contacts.ContactAsyncClient
+import io.slychat.messenger.core.http.api.contacts.ContactLookupAsyncClient
 import io.slychat.messenger.core.http.api.contacts.FindAllByIdResponse
 import io.slychat.messenger.core.http.api.contacts.FindByIdResponse
 import io.slychat.messenger.core.mapToSet
@@ -35,7 +35,7 @@ class ContactsServiceImplTest {
     }
 
     val contactsPersistenceManager: ContactsPersistenceManager = mock()
-    val contactClient: ContactAsyncClient = mock()
+    val contactLookupClient: ContactLookupAsyncClient = mock()
     val addressBookOperationManager = MockAddressBookOperationManager()
 
     fun randomApiContactInfo(): ApiContactInfo {
@@ -53,7 +53,7 @@ class ContactsServiceImplTest {
     fun createService(): ContactsServiceImpl {
         return ContactsServiceImpl(
             MockAuthTokenManager(),
-            contactClient,
+            contactLookupClient,
             contactsPersistenceManager,
             addressBookOperationManager
         )
@@ -227,7 +227,7 @@ class ContactsServiceImplTest {
 
         val response = FindAllByIdResponse(apiContacts)
 
-        whenever(contactClient.findAllById(any(), any())).thenResolve(response)
+        whenever(contactLookupClient.findAllById(any(), any())).thenResolve(response)
 
         return contactsService.addMissingContacts(ids).get()
     }
@@ -455,7 +455,7 @@ class ContactsServiceImplTest {
         val apiContactInfo = randomApiContactInfo()
         val userId = apiContactInfo.id
 
-        whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(apiContactInfo))
+        whenever(contactLookupClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(apiContactInfo))
         whenever(contactsPersistenceManager.add(any<ContactInfo>())).thenResolve(true)
         whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
 
@@ -539,7 +539,7 @@ class ContactsServiceImplTest {
         val contactsService = createService()
 
         whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
-        whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(null))
+        whenever(contactLookupClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(null))
 
         assertFalse(contactsService.addById(userId).get(), "Seen as added")
 
@@ -555,7 +555,7 @@ class ContactsServiceImplTest {
         val apiContactInfo = randomApiContactInfo()
         val userId = apiContactInfo.id
 
-        whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(apiContactInfo))
+        whenever(contactLookupClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(apiContactInfo))
         whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
         whenever(contactsPersistenceManager.add(any<ContactInfo>())).thenResolve(true)
 
@@ -576,7 +576,7 @@ class ContactsServiceImplTest {
 
         val userId = randomUserId()
 
-        whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(null))
+        whenever(contactLookupClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(null))
         whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
 
         contactsService.addById(userId).get()
@@ -593,7 +593,7 @@ class ContactsServiceImplTest {
         val apiContactInfo = randomApiContactInfo()
         val userId = apiContactInfo.id
 
-        whenever(contactClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(apiContactInfo))
+        whenever(contactLookupClient.findById(any(), eq(userId))).thenResolve(FindByIdResponse(apiContactInfo))
         whenever(contactsPersistenceManager.get(userId)).thenResolve(null)
         whenever(contactsPersistenceManager.add(any<ContactInfo>())).thenResolve(false)
 

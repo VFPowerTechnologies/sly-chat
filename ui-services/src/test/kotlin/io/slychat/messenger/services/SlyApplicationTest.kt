@@ -1,8 +1,11 @@
 package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.*
+import io.slychat.messenger.core.crypto.defaultRemotePasswordHashParams
 import io.slychat.messenger.core.crypto.randomRegistrationId
+import io.slychat.messenger.core.emptyByteArray
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
+import io.slychat.messenger.core.persistence.AccountLocalInfo
 import io.slychat.messenger.core.persistence.InstallationData
 import io.slychat.messenger.core.persistence.SessionData
 import io.slychat.messenger.core.persistence.StartupInfoPersistenceManager
@@ -13,7 +16,9 @@ import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.core.relay.RelayClientState
 import io.slychat.messenger.services.auth.AuthResult
 import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.thenReject
 import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenResolveUnit
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Ignore
@@ -22,12 +27,17 @@ import org.mockito.exceptions.verification.NeverWantedButInvoked
 import rx.observers.TestSubscriber
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
+import java.io.IOException
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class SlyApplicationTest {
     companion object {
         @ClassRule
         @JvmField
         val kovenantRule = KovenantTestModeRule()
+
+        val accountLocalInfo = AccountLocalInfo.generate(defaultRemotePasswordHashParams())
     }
 
     val accountInfo = randomAccountInfo()
@@ -42,13 +52,15 @@ class SlyApplicationTest {
 
     val startupInfoPersistenceManager: StartupInfoPersistenceManager = mock()
 
+    val remotePasswordHash = emptyByteArray()
+
     @Before
     fun before() {
         whenever(appComponent.installationDataPersistenceManager.retrieve()).thenResolve(InstallationData.generate())
 
         whenever(appComponent.platformContacts.contactsUpdated).thenReturn(platformContactsUpdated)
 
-        whenever(appComponent.localAccountDirectory.getStartupInfoPersistenceManager()).thenReturn(startupInfoPersistenceManager)
+        whenever(appComponent.localAccountDirectory.getStartupInfoPersistenceManager(any())).thenReturn(startupInfoPersistenceManager)
 
         val userComponent = appComponent.userComponent
 
@@ -65,6 +77,7 @@ class SlyApplicationTest {
         whenever(userComponent.messengerService.broadcastNewDevice(any())).thenResolve(Unit)
         whenever(userComponent.sessionDataManager.delete()).thenResolve(true)
         whenever(userComponent.relayClock.clockDiffUpdates).thenReturn(clockDiffUpdates)
+        whenever(userComponent.accountLocalInfoManager.update(any())).thenResolveUnit()
 
         //used in finalizeInitialization
 
@@ -110,17 +123,41 @@ class SlyApplicationTest {
         }
     }
 
-    @Ignore
     @Test
-    fun `it should create new installation data during initialization if no data exists`() { TODO() }
+    fun `it should create new installation data during initialization if no data exists`() {
+        whenever(appComponent.installationDataPersistenceManager.store(any())).thenResolveUnit()
+        whenever(appComponent.installationDataPersistenceManager.retrieve()).thenResolve(null)
 
-    @Ignore
-    @Test
-    fun `it should create new installation data during initialization if data is corrupted`() { TODO() }
+        val app = createApp()
+        app.init(appComponent)
 
-    @Ignore
+        verify(appComponent.installationDataPersistenceManager).store(app.installationData)
+    }
+
     @Test
-    fun `it should use existing installation data during initialization if data is present`() { TODO() }
+    fun `it should create new installation data during initialization if data is corrupted`() {
+        whenever(appComponent.installationDataPersistenceManager.retrieve()).thenReject(IOException("corrupt"))
+        whenever(appComponent.installationDataPersistenceManager.store(any())).thenResolveUnit()
+
+        val app = createApp()
+        app.init(appComponent)
+
+        assertTrue(app.isInitialized, "App didn't complete initialization")
+
+        //accessing this will throw if it's unset
+        verify(appComponent.installationDataPersistenceManager).store(app.installationData)
+    }
+
+    @Test
+    fun `it should use existing installation data during initialization if data is present`() {
+        val installationData = InstallationData.generate()
+        whenever(appComponent.installationDataPersistenceManager.retrieve()).thenResolve(installationData)
+
+        val app = createApp()
+        app.init(appComponent)
+
+        assertEquals(installationData, app.installationData, "Installation data doesn't match")
+    }
 
     @Ignore
     @Test
@@ -138,19 +175,19 @@ class SlyApplicationTest {
     }
 
     fun authWithOtherDevices(otherDevices: List<DeviceInfo>?): SlyApplication {
-        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, accountInfo, otherDevices)
+        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, remotePasswordHash, accountInfo, accountLocalInfo, otherDevices)
 
         return auth(authResult)
     }
 
     fun authWithSessionData(sessionData: SessionData): SlyApplication {
-        val authResult = AuthResult(sessionData, MockUserComponent.keyVault, accountInfo, null)
+        val authResult = AuthResult(sessionData, MockUserComponent.keyVault, remotePasswordHash, accountInfo, accountLocalInfo, null)
 
         return auth(authResult)
     }
 
     fun auth(): SlyApplication {
-        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, accountInfo, null)
+        val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, remotePasswordHash, accountInfo, accountLocalInfo, null)
 
         return auth(authResult)
     }

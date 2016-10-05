@@ -11,25 +11,25 @@ import io.slychat.messenger.core.typeRef
  */
 class RegistrationClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     fun register(request: RegisterRequest): RegisterResponse {
-        val url = "$serverBaseUrl/v1/register"
+        val url = "$serverBaseUrl/v1/registration"
 
         return apiPostRequest(httpClient, url, null, request, typeRef())
     }
 
     fun verifySmsCode(request: SmsVerificationRequest): SmsVerificationResponse {
-        val url = "$serverBaseUrl/v1/sms/verification"
+        val url = "$serverBaseUrl/v1/registration/verification"
 
         return apiPostRequest(httpClient, url, null, request, typeRef())
     }
 
     fun resendSmsCode(request: SmsResendRequest): SmsVerificationResponse {
-        val url = "$serverBaseUrl/v1/sms/resend"
+        val url = "$serverBaseUrl/v1/registration/verification/resend"
 
         return apiPostRequest(httpClient, url, null, request, typeRef())
     }
 
     fun updatePhone(request: UpdatePhoneRequest): UpdatePhoneResponse {
-        val url = "$serverBaseUrl/v1/account/update/phone"
+        val url = "$serverBaseUrl/v1/registration/phone-number"
 
         return apiPostRequest(httpClient, url, null, request, typeRef())
     }

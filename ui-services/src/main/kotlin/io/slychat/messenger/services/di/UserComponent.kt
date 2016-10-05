@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.di
 
 import dagger.Subcomponent
+import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
@@ -12,7 +13,7 @@ import io.slychat.messenger.services.messaging.*
 
 /** Scoped to a user's login session. */
 @UserScope
-@Subcomponent(modules = arrayOf(UserModule::class, PersistenceUserModule::class))
+@Subcomponent(modules = arrayOf(UserModule::class, UserPersistenceModule::class))
 interface UserComponent {
     val keyVaultPersistenceManager: KeyVaultPersistenceManager
 
@@ -67,4 +68,8 @@ interface UserComponent {
     val messageReadWatcher: MessageReadWatcher
 
     val messageDeletionWatcher: MessageDeletionWatcher
+
+    val accountLocalInfoManager: AccountLocalInfoManager
+
+    val keyVault: KeyVault
 }

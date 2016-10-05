@@ -5,29 +5,23 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 data class AccountInfo(
     @param:JsonProperty("id")
-    @get:JsonProperty("id")
     val id: Long,
 
     @param:JsonProperty("name")
-    @get:JsonProperty("name")
     val name: String,
 
-    @param:JsonProperty("username")
-    @get:JsonProperty("username")
-    val username: String,
+    @param:JsonProperty("email")
+    val email: String,
 
-    @param:JsonProperty("phone-number")
-    @get:JsonProperty("phone-number")
+    @param:JsonProperty("phoneNumber")
     val phoneNumber: String
 )
 
 data class AccountUpdateResponse(
-    @param:JsonProperty("error-message")
-    @get:JsonProperty("error-message")
+    @param:JsonProperty("errorMessage")
     val errorMessage: String?,
 
-    @param:JsonProperty("account-info")
-    @get:JsonProperty("account-info")
+    @param:JsonProperty("accountInfo")
     val accountInfo: AccountInfo?
 ) {
     @get:JsonIgnore

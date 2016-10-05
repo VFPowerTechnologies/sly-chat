@@ -3,6 +3,7 @@ package io.slychat.messenger.services
 import com.nhaarman.mockito_kotlin.mock
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.generateNewKeyVault
+import io.slychat.messenger.core.emptyByteArray
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomSlyAddress
 import io.slychat.messenger.services.auth.AuthTokenManager
@@ -22,7 +23,9 @@ class MockUserComponent : UserComponent {
         val keyVault = generateNewKeyVault(keyVaultPassword)
     }
 
-    val keyVault: KeyVault = MockUserComponent.keyVault
+    override val keyVault: KeyVault = MockUserComponent.keyVault
+
+    override val accountLocalInfoManager: AccountLocalInfoManager = mock()
 
     override val keyVaultPersistenceManager: KeyVaultPersistenceManager = mock()
 
@@ -46,7 +49,7 @@ class MockUserComponent : UserComponent {
 
     override val notifierService: NotifierService = mock()
 
-    override val userLoginData: UserData = UserData(randomSlyAddress(), keyVault)
+    override val userLoginData: UserData = UserData(randomSlyAddress(), emptyByteArray())
 
     override val relayClock: RelayClock = mock()
 

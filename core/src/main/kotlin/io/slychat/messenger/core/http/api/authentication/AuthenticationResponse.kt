@@ -22,31 +22,25 @@ data class DeviceInfo(
  * pending devices, as we can't send messages to devices without registered prekeys.
  */
 data class AuthenticationData(
-    @param:JsonProperty("auth-token")
-    @get:JsonProperty("auth-token")
+    @JsonProperty("authToken")
     val authToken: AuthToken,
 
-    @param:JsonProperty("key-vault")
-    @get:JsonProperty("key-vault")
+    @JsonProperty("keyVault")
     val keyVault: SerializedKeyVault,
 
-    @param:JsonProperty("account-info")
-    @get:JsonProperty("account-info")
+    @JsonProperty("accountInfo")
     val accountInfo: AccountInfo,
 
-    @param:JsonProperty("otherDevices")
-    @get:JsonProperty("otherDevices")
+    @JsonProperty("otherDevices")
     val otherDevices: List<DeviceInfo>
 )
 
 data class AuthenticationResponse(
-    @param:JsonProperty("error-message")
-    @get:JsonProperty("error-message")
+    @JsonProperty("errorMessage")
     val errorMessage: String?,
 
-    @param:JsonProperty("data")
-    @get:JsonProperty("data")
-    val data: AuthenticationData?
+    @JsonProperty("data")
+    val authData: AuthenticationData?
 ) {
     @get:JsonIgnore
     val isSuccess: Boolean = errorMessage == null

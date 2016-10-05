@@ -12,4 +12,8 @@ data class SessionData(
     val relayClockDifference: Long
 ) {
     constructor() : this(null, 0)
+
+    override fun toString(): String {
+        return "SessionData(authToken=..., relayClockDifference=$relayClockDifference)"
+    }
 }

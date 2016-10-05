@@ -6,10 +6,10 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UnauthorizedException
 import io.slychat.messenger.core.UserCredentials
-import io.slychat.messenger.core.base64encode
 import io.slychat.messenger.core.http.HttpClient
 import io.slychat.messenger.core.http.HttpResponse
 import io.slychat.messenger.core.http.get
+import org.spongycastle.util.encoders.Base64
 
 fun <T> getValueFromApiResult(apiResult: ApiResult<T>, response: HttpResponse): T {
     //should never happen as ApiResult has checks in its constructor for this stuff
@@ -55,7 +55,8 @@ private fun userCredentialsToHeaders(userCredentials: UserCredentials?): List<Pa
     return if (userCredentials != null) {
         val username = userCredentials.address.asString()
         val creds = "$username:${userCredentials.authToken.string}".toByteArray(Charsets.UTF_8)
-        listOf("Authorization" to "Basic ${base64encode(creds)}")
+        val encoded = Base64.encode(creds).toString(Charsets.US_ASCII)
+        listOf("Authorization" to "Basic $encoded")
     }
     else
         listOf()

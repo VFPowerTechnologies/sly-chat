@@ -1,13 +1,13 @@
 package io.slychat.messenger.core.persistence.sqlite.migrations
 
 import com.almworks.sqlite4java.SQLiteConnection
-import io.slychat.messenger.core.crypto.randomPreKeyId
+import io.slychat.messenger.core.crypto.signal.randomPreKeyId
 import io.slychat.messenger.core.persistence.sqlite.DatabaseMigration
 import io.slychat.messenger.core.persistence.sqlite.TableCreationFailedException
 import io.slychat.messenger.core.readResourceFileText
 
 /** Initial database setup. */
-class DatabaseMigrationInitial : DatabaseMigration(0) {
+class DatabaseMigrationInitial : DatabaseMigration(1) {
     companion object {
         /** Table names in creation order. */
         private val TABLE_NAMES = arrayListOf(

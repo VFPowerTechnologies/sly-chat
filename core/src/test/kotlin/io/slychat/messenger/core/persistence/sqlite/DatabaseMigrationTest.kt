@@ -2,6 +2,7 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteException
+import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.testutils.withTempFile
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.BeforeClass
@@ -31,7 +32,7 @@ class DatabaseMigrationTest {
                 file.outputStream().use { inputStream.copyTo(it) }
             }
 
-            val persistenceManager = SQLitePersistenceManager(file, null, null)
+            val persistenceManager = SQLitePersistenceManager(file, null)
             try {
                 persistenceManager.init(to)
                 assertEquals(to, persistenceManager.currentDatabaseVersionSync(), "Invalid database version after init")
@@ -86,9 +87,7 @@ class DatabaseMigrationTest {
 
     fun assertTableNotExists(connection: SQLiteConnection, tableName: String) {
         try {
-            connection.prepare("SELECT 1 FROM $tableName").use { stmt ->
-                stmt.step()
-            }
+            connection.prepare("SELECT 1 FROM $tableName").use(SQLiteStatement::step)
             throw AssertionError("Table $tableName exists")
         }
         catch (e: SQLiteException) {
@@ -109,7 +108,7 @@ class DatabaseMigrationTest {
         }
     }
 
-    fun check0To1(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+    fun check1to2(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         ConversationTable.getConversationTableNames(connection).forEach { tableName ->
             assertColDef(connection, tableName, "received_timestamp INTEGER NOT NULL")
 
@@ -127,46 +126,46 @@ class DatabaseMigrationTest {
 
     @Ignore("Broke since I merged conversation tables for groups and users")
     @Test
-    fun `migration 0 to 1`() {
-        withTestDatabase(0, 1) { persistenceManager, connection ->
-            check0To1(persistenceManager, connection)
-        }
-    }
-
-    fun check1To2(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
-        assertTableExists(connection, "package_queue")
-    }
-
-    @Test
     fun `migration 1 to 2`() {
         withTestDatabase(1, 2) { persistenceManager, connection ->
-            check1To2(persistenceManager, connection)
+            check1to2(persistenceManager, connection)
         }
     }
 
-    fun check2To3(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
-        assertColDef(connection, "contacts", "is_pending INTEGER NOT NULL")
+    fun check2to3(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertTableExists(connection, "package_queue")
     }
 
     @Test
     fun `migration 2 to 3`() {
         withTestDatabase(2, 3) { persistenceManager, connection ->
-            check2To3(persistenceManager, connection)
+            check2to3(persistenceManager, connection)
         }
     }
 
-    fun check3To4(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
-        assertTableExists(connection, "remote_contact_updates")
+    fun check3to4(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertColDef(connection, "contacts", "is_pending INTEGER NOT NULL")
     }
 
     @Test
     fun `migration 3 to 4`() {
         withTestDatabase(3, 4) { persistenceManager, connection ->
-            check3To4(persistenceManager, connection)
+            check3to4(persistenceManager, connection)
         }
     }
 
-    fun check4To5(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+    fun check4to5(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertTableExists(connection, "remote_contact_updates")
+    }
+
+    @Test
+    fun `migration 4 to 5`() {
+        withTestDatabase(4, 5) { persistenceManager, connection ->
+            check4to5(persistenceManager, connection)
+        }
+    }
+
+    fun check5to6(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         //check conversion + old table drop
         assertTableNotExists(connection, "signal_sessions_old")
 
@@ -182,13 +181,13 @@ class DatabaseMigrationTest {
     }
 
     @Test
-    fun `migration 4 to 5`() {
-        withTestDatabase(4, 5) { persistenceManager, connection ->
-            check4To5(persistenceManager, connection)
+    fun `migration 5 to 6`() {
+        withTestDatabase(5, 6) { persistenceManager, connection ->
+            check5to6(persistenceManager, connection)
         }
     }
 
-    fun check5To6(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+    fun check6to7(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         assertTableRowCount(connection, "conversation_info", 1)
         assertColDef(connection, "conversation_info", "FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE")
 
@@ -205,9 +204,9 @@ class DatabaseMigrationTest {
     }
 
     @Test
-    fun `migration 5 to 6`() {
-        withTestDatabase(5, 6) { persistenceManager, connection ->
-            check5To6(persistenceManager, connection)
+    fun `migration 6 to 7`() {
+        withTestDatabase(6, 7) { persistenceManager, connection ->
+            check6to7(persistenceManager, connection)
         }
     }
 
@@ -230,7 +229,7 @@ class DatabaseMigrationTest {
      *  +group_members
      *  +group_conversation_info
      */
-    private fun check6To7(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+    private fun check7to8(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         assertColDef(connection, "contacts", "allowed_message_level INTEGER NOT NULL")
         assertNoColDef(connection, "contacts", "is_pending INTEGER NOT NULL")
         assertColDef(connection, "contacts", "public_key TEXT NOT NULL")
@@ -272,22 +271,22 @@ class DatabaseMigrationTest {
     }
 
     @Test
-    fun `migration 6 to 7`() {
-        withTestDatabase(6, 7) { persistenceManager, connection ->
-            check6To7(persistenceManager, connection)
+    fun `migration 7 to 8`() {
+        withTestDatabase(7, 8) { persistenceManager, connection ->
+            check7to8(persistenceManager, connection)
         }
     }
 
     @Test
-    fun `migration 7 to 8`() {
-        withTestDatabase(7, 8) { persistenceManager, connection ->
-            check7To8(persistenceManager, connection)
+    fun `migration 8 to 9`() {
+        withTestDatabase(8, 9) { persistenceManager, connection ->
+            check8to9(persistenceManager, connection)
         }
     }
 
     private data class RemoteContactUpdateV7(val userId: Long, val allowedMessageLevel: Int)
 
-    private fun check7To8(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+    private fun check8to9(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         assertColDef(connection, "remote_contact_updates",  "allowed_message_level INTEGER NOT NULL")
         assertNoColDef(connection, "remote_contact_updates", "type TEXT NOT NULL")
 
@@ -307,13 +306,13 @@ class DatabaseMigrationTest {
     }
 
     @Test
-    fun `migration 8 to 9`() {
-        withTestDatabase(8, 9) { persistenceManager, connection ->
-            check8To9(persistenceManager, connection)
+    fun `migration 9 to 10`() {
+        withTestDatabase(9, 10) { persistenceManager, connection ->
+            check9to10(persistenceManager, connection)
         }
     }
 
-    private fun check8To9(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+    private fun check9to10(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         assertNoColDef(connection, "remote_contact_updates", "allowed_message_level INTEGER NOT NULL")
         assertTableExists(connection, "remote_group_updates")
 
@@ -328,13 +327,13 @@ class DatabaseMigrationTest {
     }
 
     @Test
-    fun `migration 9 to 10`() {
-        withTestDatabase(9, 10) { persistenceManager, connection ->
-            check9to10(persistenceManager, connection)
+    fun `migration 10 to 11`() {
+        withTestDatabase(10, 11) { persistenceManager, connection ->
+            check10to11(persistenceManager, connection)
         }
     }
 
-    private fun check9to10(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+    private fun check10to11(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         assertTableExists(connection, "address_book_version")
         val version = connection.withPrepared("SELECT version FROM address_book_version") { stmt ->
             stmt.step()
@@ -346,18 +345,6 @@ class DatabaseMigrationTest {
     }
 
     @Test
-    fun `migration 10 to 11`() {
-        withTestDatabase(10, 11) { persistenceManager, connection ->
-            check10to11(persistenceManager, connection)
-        }
-    }
-
-    private fun check10to11(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
-        assertTableNotExists(connection, "address_book_version")
-        assertTableExists(connection, "address_book_hashes")
-    }
-
-    @Test
     fun `migration 11 to 12`() {
         withTestDatabase(11, 12) { persistenceManager, connection ->
             check11to12(persistenceManager, connection)
@@ -365,6 +352,18 @@ class DatabaseMigrationTest {
     }
 
     private fun check11to12(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertTableNotExists(connection, "address_book_version")
+        assertTableExists(connection, "address_book_hashes")
+    }
+
+    @Test
+    fun `migration 12 to 13`() {
+        withTestDatabase(12, 13) { persistenceManager, connection ->
+            check12to13(persistenceManager, connection)
+        }
+    }
+
+    private fun check12to13(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         assertNoColDef(connection, "send_message_queue", "timestamp INTEGER NOT NULL")
 
         assertNoColDef(connection, "send_message_queue", "user_id INTEGER NOT NULL")

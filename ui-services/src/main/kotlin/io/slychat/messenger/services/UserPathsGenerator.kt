@@ -7,7 +7,7 @@ import java.io.File
 
 class UserPathsGenerator(platformInfo: PlatformInfo) {
     companion object {
-        val ACCOUNT_INFO_FILENAME = "account-info.json"
+        private val ACCOUNT_INFO_FILENAME = "account-info.json"
     }
 
     val accountsDir = platformInfo.appFileStorageDirectory / "accounts"
@@ -30,6 +30,7 @@ class UserPathsGenerator(platformInfo: PlatformInfo) {
             userAccountDir,
             userAccountDir / "keyvault.json",
             userAccountDir / ACCOUNT_INFO_FILENAME,
+            userAccountDir / "local-info.json",
             userAccountDir / "session-data.json",
             userAccountDir / "db.sqlite3",
             userAccountDir / "user-conf.json"

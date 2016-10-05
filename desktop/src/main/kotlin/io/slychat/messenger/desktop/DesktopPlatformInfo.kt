@@ -3,10 +3,10 @@ package io.slychat.messenger.desktop
 import io.slychat.messenger.core.*
 import java.io.File
 
-fun getUserHome(): File =
+private fun getUserHome(): File =
     File(System.getProperty("user.home"))
 
-fun getUserConfigDir(appName: String): File {
+private fun getUserAppDataDir(appName: String): File {
     val configDirOverride = System.getenv("SLY_CONFIG_DIR")
     if (configDirOverride != null)
         return File(configDirOverride)
@@ -14,16 +14,14 @@ fun getUserConfigDir(appName: String): File {
     val home = getUserHome()
 
     return when (currentOs.type) {
-        Os.Type.LINUX -> {
-            val configHome = System.getenv("XDG_CONFIG_HOME")?.let { File(it) } ?: File(home, ".config")
-            File(configHome, appName)
-        }
+        Os.Type.LINUX ->
+            File(home, ".$appName")
 
         Os.Type.WINDOWS ->
             File(System.getenv("LOCALAPPDATA"), appName)
 
         Os.Type.OSX ->
-            home / "Library" / "Preferences" / appName
+            home / "Library" / "Application Support" / appName
 
         //TODO *BSD?
 
@@ -33,7 +31,5 @@ fun getUserConfigDir(appName: String): File {
 }
 
 class DesktopPlatformInfo : PlatformInfo {
-    override val appFileStorageDirectory: File = getUserConfigDir("sly")
-
-    override val dataFileStorageDirectory: File = File(appFileStorageDirectory, "data")
+    override val appFileStorageDirectory: File = getUserAppDataDir("sly")
 }

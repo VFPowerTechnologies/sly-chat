@@ -1,8 +1,7 @@
--- -address_book_version
+-- +address_book_version
 
-DROP TABLE IF EXISTS address_book_version;
-
-CREATE TABLE IF NOT EXISTS address_book_hashes (
-    id_hash BLOB PRIMARY KEY NOT NULL,
-    data_hash BLOB NOT NULL
+CREATE TABLE IF NOT EXISTS address_book_version (
+    version INTEGER NOT NULL
 );
+
+INSERT INTO address_book_version (version) VALUES (0);

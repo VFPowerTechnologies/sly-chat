@@ -4,12 +4,12 @@ import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.BuildConfig.ServerUrls
-import io.slychat.messenger.core.crypto.EncryptionSpec
+import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
 import io.slychat.messenger.core.http.api.contacts.AddressBookAsyncClientImpl
-import io.slychat.messenger.core.http.api.contacts.ContactAsyncClientImpl
+import io.slychat.messenger.core.http.api.contacts.ContactLookupAsyncClientImpl
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClientImpl
 import io.slychat.messenger.core.http.api.prekeys.HttpPreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
@@ -35,9 +35,19 @@ import java.util.concurrent.TimeUnit
 @Module
 class UserModule(
     @get:UserScope
-    @get:Provides val providesUserLoginData: UserData,
+    @get:Provides
+    val providesUserLoginData: UserData,
+
+    @get:UserScope
+    @get:Provides
+    val providesKeyVault: KeyVault,
+
     //only used during construction of AccountInfoManager; never use this directly
-    private val accountInfo: AccountInfo
+    private val accountInfo: AccountInfo,
+
+    @get:UserScope
+    @get:Provides
+    val providesAccountLocalInfo: AccountLocalInfo
 ) {
     @UserScope
     @Provides
@@ -66,12 +76,12 @@ class UserModule(
         groupPersistenceManager: GroupPersistenceManager,
         accountInfoManager: AccountInfoManager,
         @SlyHttp httpClientFactory: HttpClientFactory,
-        userLoginData: UserData,
+        keyVault: KeyVault,
         platformContacts: PlatformContacts,
         promiseTimerFactory: PromiseTimerFactory
     ): AddressBookSyncJobFactory {
         val serverUrl = serverUrls.API_SERVER
-        val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
+        val contactClient = ContactLookupAsyncClientImpl(serverUrl, httpClientFactory)
         val contactListClient = AddressBookAsyncClientImpl(serverUrl, httpClientFactory)
 
         return AddressBookSyncJobFactoryImpl(
@@ -80,7 +90,7 @@ class UserModule(
             contactListClient,
             contactsPersistenceManager,
             groupPersistenceManager,
-            userLoginData,
+            keyVault,
             accountInfoManager.accountInfo,
             platformContacts,
             promiseTimerFactory
@@ -109,7 +119,7 @@ class UserModule(
         @SlyHttp httpClientFactory: HttpClientFactory
     ): ContactsService {
         val serverUrl = serverUrls.API_SERVER
-        val contactClient = ContactAsyncClientImpl(serverUrl, httpClientFactory)
+        val contactClient = ContactLookupAsyncClientImpl(serverUrl, httpClientFactory)
 
         return ContactsServiceImpl(
             authTokenManager,
@@ -242,7 +252,7 @@ class UserModule(
     fun providesPreKeyManager(
         application: SlyApplication,
         serverUrls: ServerUrls,
-        userLoginData: UserData,
+        keyVault: KeyVault,
         preKeyPersistenceManager: PreKeyPersistenceManager,
         @SlyHttp httpClientFactory: HttpClientFactory,
         authTokenManager: AuthTokenManager
@@ -253,7 +263,7 @@ class UserModule(
         return PreKeyManagerImpl(
             application.networkAvailable,
             application.installationData.registrationId,
-            userLoginData,
+            keyVault,
             preKeyAsyncClient,
             preKeyPersistenceManager,
             authTokenManager
@@ -299,18 +309,15 @@ class UserModule(
     @UserScope
     @Provides
     fun providesConfigService(
-        userLoginData: UserData,
         userPaths: UserPaths,
+        accountLocalInfo: AccountLocalInfo,
         defaultUserConfig: UserConfig
     ): UserConfigService {
         val fileStorage = FileConfigStorage(userPaths.configPath)
         val storage = if (BuildConfig.ENABLE_CONFIG_ENCRYPTION) {
-            val keyVault = userLoginData.keyVault
-            val key = keyVault.localDataEncryptionKey
-            val params = keyVault.localDataEncryptionParams
-            val spec = EncryptionSpec(key, params)
             //can't use Cipher*Stream since we're using bouncycastle to properly support stuff
-            CipherConfigStorageFilter(spec, fileStorage)
+            val derivedKeySpec = accountLocalInfo.getDerivedKeySpec(LocalDerivedKeyType.GENERIC)
+            CipherConfigStorageFilter(derivedKeySpec, fileStorage)
         }
         else
             fileStorage
@@ -377,6 +384,13 @@ class UserModule(
         sessionDataPersistenceManager: SessionDataPersistenceManager
     ): SessionDataManager =
         SessionDataManagerImpl(sessionDataPersistenceManager)
+
+    @UserScope
+    @Provides
+    fun providesAccountParamsManager(
+        accountLocalInfoPersistenceManager: AccountLocalInfoPersistenceManager
+    ): AccountLocalInfoManager =
+        AccountLocalInfoManagerImpl(accountLocalInfoPersistenceManager)
 
     @UserScope
     @Provides

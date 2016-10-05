@@ -1,7 +1,8 @@
 package io.slychat.messenger.services.config
 
-import io.slychat.messenger.core.crypto.EncryptionSpec
-import io.slychat.messenger.core.crypto.ciphers.AESGCMParams
+import io.slychat.messenger.core.crypto.DerivedKeySpec
+import io.slychat.messenger.core.crypto.HKDFInfoList
+import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.crypto.getRandomBits
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -22,9 +23,8 @@ class CipherConfigStorageFilterTest {
 
     @Test
     fun `it should be able to encrypt and decrypt data`() {
-        val params = AESGCMParams(getRandomBits(96), 128)
-        val key = getRandomBits(256)
-        val spec = EncryptionSpec(key, params)
+        val masterKey = getRandomBits(256)
+        val spec = DerivedKeySpec(Key(masterKey), HKDFInfoList.localData())
 
         val storage = MockPlaybackStorage()
         val cipherStorage = CipherConfigStorageFilter(spec, storage)

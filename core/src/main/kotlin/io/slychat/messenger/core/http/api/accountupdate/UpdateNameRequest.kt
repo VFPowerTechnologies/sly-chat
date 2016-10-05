@@ -4,6 +4,5 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 data class UpdateNameRequest(
     @param:JsonProperty("name")
-    @get:JsonProperty("name")
     val name: String
 )

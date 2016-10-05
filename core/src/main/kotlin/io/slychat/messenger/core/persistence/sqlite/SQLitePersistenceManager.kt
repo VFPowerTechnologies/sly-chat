@@ -3,8 +3,7 @@ package io.slychat.messenger.core.persistence.sqlite
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteJob
 import com.almworks.sqlite4java.SQLiteQueue
-import io.slychat.messenger.core.crypto.ciphers.CipherParams
-import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.persistence.PersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.migrations.DatabaseMigrationInitial
 import nl.komponents.kovenant.Promise
@@ -13,14 +12,10 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 /** The latest database version number. */
-private val LATEST_DATABASE_VERSION = 13
+private val LATEST_DATABASE_VERSION = 14
 
 /** Just used to wrap Errors thrown when running SQLite jobs. */
 class SQLitePersistenceManagerErrorException(e: Error) : RuntimeException("Uncaught Error in job", e)
-
-//localDataEncryptionParams don't work too well... they contain an IV, which wouldn't be reused
-//for the db, we also can't control cipher params anyways
-//for storing files, the iv would be per-block (no chaining blocks else we can't provide seek; is this an issue?)
 
 /**
  * Must be initialized prior to use. Once initialized, methods may be called from any thread.
@@ -29,20 +24,13 @@ class SQLitePersistenceManagerErrorException(e: Error) : RuntimeException("Uncau
  */
 class SQLitePersistenceManager(
     private val path: File?,
-    private val localDataEncryptionKey: ByteArray?,
-    private val localDataEncryptionParams: CipherParams?
+    private val cipherParams: SQLCipherParams?
 ) : PersistenceManager {
     private data class InitializationResult(val initWasRequired: Boolean, val freshDatabase: Boolean)
 
     private lateinit var sqliteQueue: SQLiteQueue
     private var initialized = false
     private val logger = LoggerFactory.getLogger(javaClass)
-
-    init {
-        require(localDataEncryptionKey == null || localDataEncryptionKey.size == 256/8) {
-            "SQLCipher encryption key must be 256bit, got a ${localDataEncryptionKey!!.size*8}bit key instead"
-        }
-    }
 
     /**
      * Responsible for initial database creation.
@@ -83,26 +71,20 @@ class SQLitePersistenceManager(
         if (initialized)
             return InitializationResult(false, false)
 
-        //this is here because I'm an idiot and shoulda set the initial database version to 1 from zero; when using
-        //temp files, the path exists but it still needs to create the contents
-        val created = if (path == null)
-            true
-        else {
-            if (path.exists())
-                path.length() == 0L
-            else
-                true
-        }
-
         sqliteQueue = SQLiteQueue(path)
         sqliteQueue.start()
 
-        val encryptionKey = localDataEncryptionKey
-        if (encryptionKey != null) {
+        if (cipherParams != null) {
+            val encryptionKey = cipherParams.derivedKeySpec.derive(cipherParams.cipher.keySizeBits)
+
             realRunQuery { connection ->
-                connection.exec("""PRAGMA key = "x'${encryptionKey.hexify()}'"""")
+                //order here matters; don't swap this around
+                connection.exec("""PRAGMA key = "x'${encryptionKey.raw.hexify()}'"""")
+                connection.exec("PRAGMA cipher = '${cipherParams.cipher.s}'")
             }.get()
         }
+
+        val created = currentDatabaseVersionSync() == 0
 
         initialized = true
         return InitializationResult(true, created)

@@ -21,5 +21,4 @@ class JsonKeyVaultPersistenceManager(path: File) : KeyVaultPersistenceManager {
     override fun store(keyVault: KeyVault): Promise<Unit, Exception> = task {
         keyVault.toStorage(keyVaultStorage)
     }
-
 }

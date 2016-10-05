@@ -4,8 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class PreKeyStoreResponse(
-    @param:JsonProperty("error-message")
-    @get:JsonProperty("error-message")
+    @JsonProperty("errorMessage")
     val errorMessage: String?
 ) {
     @get:JsonIgnore

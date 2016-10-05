@@ -27,6 +27,7 @@ import rx.Observable
 import rx.Subscription
 import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
+import java.io.IOException
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -45,7 +46,7 @@ class SlyApplication {
     var userComponent: UserComponent? = null
         private set
 
-    private var isInitialized = false
+    internal var isInitialized = false
     private val onInitListeners = ArrayList<(SlyApplication) -> Unit>()
 
     private var isAutoLoginComplete = false
@@ -172,7 +173,8 @@ class SlyApplication {
         val maybeInstallationData = try {
             persistenceManager.retrieve().get()
         }
-        catch (e: JsonParseException) {
+        //all of jackson's json deserialization errors are subclasses of IOException
+        catch (e: IOException) {
             log.error("Installation data is corrupted: {}", e.message, e)
             null
         }
@@ -217,7 +219,7 @@ class SlyApplication {
 
         val localAccountDirectory = appComponent.localAccountDirectory
 
-        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager()
+        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager(installationData.startupInfoKey)
 
         //XXX this is kinda inefficient, since we already have the userid, then we fetch the email to pass to the normal login functions
         startupInfoPersistenceManager.retrieve() map { startupInfo ->
@@ -262,12 +264,13 @@ class SlyApplication {
             val keyVault = response.keyVault
 
             val accountInfo = response.accountInfo
+            val accountParams = response.accountLocalInfo
             val sessionData = response.sessionData
             val address = SlyAddress(accountInfo.id, accountInfo.deviceId)
 
-            val userLoginData = UserData(address, keyVault)
+            val userLoginData = UserData(address, response.remotePasswordHash)
 
-            val userComponent = createUserSession(userLoginData, accountInfo)
+            val userComponent = createUserSession(userLoginData, keyVault, accountInfo, accountParams)
 
             val authTokenManager = userComponent.authTokenManager
             if (sessionData.authToken != null)
@@ -327,7 +330,7 @@ class SlyApplication {
      * Emits LoggedOut.
      */
     fun logout() {
-        val startupInfoPersistenceManager = appComponent.localAccountDirectory.getStartupInfoPersistenceManager()
+        val startupInfoPersistenceManager = appComponent.localAccountDirectory.getStartupInfoPersistenceManager(installationData.startupInfoKey)
         val sessionDataManager = userComponent?.sessionDataManager
 
         if (destroyUserSession()) {
@@ -367,13 +370,13 @@ class SlyApplication {
         fetchOfflineMessages()
     }
 
-    fun createUserSession(userLoginData: UserData, accountInfo: AccountInfo): UserComponent {
+    fun createUserSession(userLoginData: UserData, keyVault: KeyVault, accountInfo: AccountInfo, accountLocalInfo: AccountLocalInfo): UserComponent {
         if (userComponent != null)
             error("UserComponent already loaded")
 
         log.info("Creating user session")
 
-        val userComponent = appComponent.plus(UserModule(userLoginData, accountInfo))
+        val userComponent = appComponent.plus(UserModule(userLoginData, keyVault, accountInfo, accountLocalInfo))
         this.userComponent = userComponent
 
         Sentry.setUserAddress(userComponent.userLoginData.address)
@@ -394,13 +397,14 @@ class SlyApplication {
     ): Promise<Unit, Exception> {
         val persistenceManager = userComponent.persistenceManager
         val userConfigService = userComponent.userConfigService
-        val userLoginData = userComponent.userLoginData
-        val keyVault = userLoginData.keyVault
-        val userId = userLoginData.userId
+        val userData = userComponent.userLoginData
+        val keyVault = userComponent.keyVault
+        val userId = userData.userId
 
         val localAccountDirectory = appComponent.localAccountDirectory
-        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager()
+        val startupInfoPersistenceManager = localAccountDirectory.getStartupInfoPersistenceManager(installationData.startupInfoKey)
         val sessionDataManager = userComponent.sessionDataManager
+        val accountParamsManager = userComponent.accountLocalInfoManager
 
         val sessionData = authResult.sessionData
         val accountInfo = authResult.accountInfo
@@ -409,6 +413,8 @@ class SlyApplication {
         //we could break this up into parts and emit progress events between stages
         return task {
             localAccountDirectory.createUserDirectories(userId)
+        } bind {
+            accountParamsManager.update(authResult.accountLocalInfo)
         } bind {
             sessionDataManager.update(sessionData)
         } bind {
@@ -519,7 +525,7 @@ class SlyApplication {
         //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
         fetchOfflineMessages()
 
-        val publicKey = userComponent.userLoginData.keyVault.fingerprint
+        val publicKey = userComponent.keyVault.fingerprint
 
         emitLoginEvent(LoggedIn(accountInfo, publicKey))
     }

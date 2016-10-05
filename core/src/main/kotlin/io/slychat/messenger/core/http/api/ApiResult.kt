@@ -5,12 +5,10 @@ import io.slychat.messenger.core.require
 
 /** A API result union. May either contain an error or a value, but not both. */
 data class ApiResult<out T>(
-    @param:JsonProperty("error")
-    @get:JsonProperty("error")
+    @JsonProperty("error")
     val error: ApiError?,
 
-    @param:JsonProperty("value")
-    @get:JsonProperty("value")
+    @JsonProperty("value")
     val value: T?
 ) {
     init {

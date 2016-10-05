@@ -1,6 +1,6 @@
 package io.slychat.messenger.services.messaging
 
-import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
 import io.slychat.messenger.core.persistence.SenderMessageEntry
@@ -28,6 +28,7 @@ class MessageSenderImpl(
     messageUpdates: Observable<MessageUpdateEvent>
 ) : MessageSender {
     private class QueuedSendMessage(
+        val relayMessageId: String,
         val metadata: MessageMetadata,
         val serialized: ByteArray,
         val connectionTag: Int
@@ -49,6 +50,9 @@ class MessageSenderImpl(
         subscriptions.add(relayClientManager.onlineStatus.subscribe { onRelayOnlineStatus(it) })
         subscriptions.add(messageUpdates.subscribe { onMessageUpdateEvent(it) })
     }
+
+    internal val currentRelayMessageId: String?
+        get() = currentSendMessage?.relayMessageId
 
     private fun onMessageUpdateEvent(event: MessageUpdateEvent) = when (event) {
         is MessageUpdateEvent.Deleted -> onMessagesDeleted(event)
@@ -178,13 +182,13 @@ class MessageSenderImpl(
         val message = currentSendMessage
 
         if (message != null) {
-            val messageId = message.metadata.messageId
+            val relayMessageId = message.relayMessageId
 
             when (result) {
                 is MessageSendOk -> {
                     //this should never happen; nfi what to do if it does? try to send again?
                     //no idea what would cause this either
-                    if (result.messageId != messageId) {
+                    if (result.relayMessageId != relayMessageId) {
                         log.error("Message mismatch")
                     }
                     else {
@@ -197,7 +201,7 @@ class MessageSenderImpl(
                 }
 
                 is MessageSendDeviceMismatch -> {
-                    log.info("Got device mismatch for user={}, messageId={}", result.to, result.messageId)
+                    log.info("Got device mismatch for user={}, relayMessageId={}", result.to, result.relayMessageId)
 
                     messageCipherService.updateDevices(result.to, result.info) successUi {
                         processDeviceUpdateSuccess()
@@ -228,7 +232,7 @@ class MessageSenderImpl(
             return
 
         messages.forEach {
-            val queuedSendMessage = QueuedSendMessage(it.metadata, it.message, relayClientManager.connectionTag)
+            val queuedSendMessage = QueuedSendMessage(randomUUID(), it.metadata, it.message, relayClientManager.connectionTag)
 
             sendMessageQueue.add(queuedSendMessage)
         }
@@ -298,7 +302,7 @@ class MessageSenderImpl(
         val userId = message.metadata.userId
         //we don't check this against the current id as even during a disconnect the last message could also be
         //the first message to resend
-        val messageId = message.metadata.messageId
+        val relayMessageId = message.relayMessageId
 
         val messages = result.encryptedMessages.map { e ->
             RelayUserMessage(e.deviceId, e.registrationId, e.payload)
@@ -308,12 +312,12 @@ class MessageSenderImpl(
             val content = RelayMessageBundle(messages)
             //if we got disconnected while we were encrypting, just ignore the message as it'll just be encrypted again
             //sendMessage'll ignore any message without a matching connectionTag
-            relayClientManager.sendMessage(result.connectionTag, userId, content, messageId)
+            relayClientManager.sendMessage(result.connectionTag, userId, content, relayMessageId)
         }
         else {
             //if we have no encryptedMessages and didn't get an error, it was a message to self
             //so just act as if it was sent successfully
-            handleServerRecievedMessage(ServerReceivedMessage(userId, messageId, relayClock.currentTime()))
+            handleServerRecievedMessage(ServerReceivedMessage(userId, relayMessageId, relayClock.currentTime()))
         }
     }
 }

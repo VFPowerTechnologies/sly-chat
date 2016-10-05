@@ -1,5 +1,6 @@
 package io.slychat.messenger.core.persistence
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
@@ -16,6 +17,7 @@ import io.slychat.messenger.core.UserId
     JsonSubTypes.Type(AddressBookUpdate.Group::class, name = "g")
 )
 sealed class AddressBookUpdate {
+    @JsonIgnoreProperties(ignoreUnknown = true)
     class Group(
         @JsonProperty("groupId")
         val groupId: GroupId,
@@ -53,6 +55,7 @@ sealed class AddressBookUpdate {
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     class Contact(
         @JsonProperty("userId")
         val userId: UserId,

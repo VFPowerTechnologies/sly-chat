@@ -25,7 +25,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
     @Before
     fun before() {
-        persistenceManager = SQLitePersistenceManager(null, null, null)
+        persistenceManager = SQLitePersistenceManager(null, null)
         persistenceManager.init()
         contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)
         groupPersistenceManager = SQLiteGroupPersistenceManager(persistenceManager)
@@ -101,7 +101,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     //TODO we should clean up all these tests to use this instead, since due to the merge the majority of behavior is
     //identical between conversation types
     class MessageTestFixture() : GroupPersistenceManagerTestUtils {
-        private val persistenceManager = SQLitePersistenceManager(null, null, null)
+        private val persistenceManager = SQLitePersistenceManager(null, null)
 
         val messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
         override val contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)

@@ -2,13 +2,16 @@ package io.slychat.messenger.core.http.api.registration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.crypto.KeyVault
-import io.slychat.messenger.core.crypto.hexify
+import io.slychat.messenger.core.crypto.hashPasswordForRemoteWithDefaults
+import io.slychat.messenger.core.hexify
 
-fun registrationRequestFromKeyVault(registrationInfo: RegistrationInfo, keyVault: KeyVault): RegisterRequest {
+fun registrationRequestFromKeyVault(registrationInfo: RegistrationInfo, keyVault: KeyVault, password: String): RegisterRequest {
+    val remotePasswordHashInfo = hashPasswordForRemoteWithDefaults(password)
+
     val objectMapper = ObjectMapper()
 
-    val hash = keyVault.remotePasswordHash.hexify()
-    val hashParams = objectMapper.writeValueAsString(keyVault.remotePasswordHashParams.serialize())
+    val hash = remotePasswordHashInfo.hash.hexify()
+    val hashParams = objectMapper.writeValueAsString(remotePasswordHashInfo.params)
 
     val publicKey = keyVault.fingerprint
     val serializedKeyVault = objectMapper.writeValueAsString(keyVault.serialize())

@@ -29,6 +29,8 @@ dependencies {
 
     compile "org.controlsfx:controlsfx:$versions.controlsFx"
 
+    compile "net.java.dev.jna:jna:$versions.jna"
+
     //required on osx only
     compile "de.codecentric.centerdevice:centerdevice-nsmenufx:$versions.nsMenuFx"
 }

@@ -10,10 +10,7 @@ import io.slychat.messenger.core.crypto.defaultRemotePasswordHashParams
 import io.slychat.messenger.core.crypto.generateNewKeyVault
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.http.api.authentication.*
-import io.slychat.messenger.core.persistence.AccountInfo
-import io.slychat.messenger.core.persistence.KeyVaultPersistenceManager
-import io.slychat.messenger.core.persistence.SessionData
-import io.slychat.messenger.core.persistence.SessionDataPersistenceManager
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.auth.AuthenticationServiceImpl
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
@@ -35,10 +32,13 @@ class AuthenticationServiceImplTest {
         val keyVault = generateNewKeyVault(password)
 
         val authParams = defaultRemotePasswordHashParams()
+
+        val accountLocalInfo = AccountLocalInfo.generate(authParams)
     }
 
     val authenticationClient: AuthenticationAsyncClient = mock()
     val localAccountDirectory: LocalAccountDirectory = mock()
+    val accountLocalInfoPersistenceManager: AccountLocalInfoPersistenceManager = mock()
 
     val sessionDataPersistenceManager: SessionDataPersistenceManager = mock()
     val keyVaultPersistenceManager: KeyVaultPersistenceManager = mock()
@@ -57,13 +57,16 @@ class AuthenticationServiceImplTest {
     fun before() {
         whenever(localAccountDirectory.findAccountFor(any<UserId>())).thenReturn(null)
         whenever(localAccountDirectory.findAccountFor(any<String>())).thenReturn(null)
-        whenever(localAccountDirectory.getSessionDataPersistenceManager(any(), any(), any())).thenReturn(sessionDataPersistenceManager)
+        whenever(localAccountDirectory.getSessionDataPersistenceManager(any(), any())).thenReturn(sessionDataPersistenceManager)
         whenever(localAccountDirectory.getKeyVaultPersistenceManager(any())).thenReturn(keyVaultPersistenceManager)
+        whenever(localAccountDirectory.getAccountLocalInfoPersistenceManager(any(), any())).thenReturn(accountLocalInfoPersistenceManager)
+
+        whenever(accountLocalInfoPersistenceManager.retrieveSync()).thenReturn(accountLocalInfo)
     }
 
     //setup mocks for successful remote auth
     fun withSuccessfulRemoteAuth(body: (AuthToken) -> Unit) {
-        val authParams = AuthenticationParams(randomUUID(), authParams.serialize())
+        val authParams = AuthenticationParams(randomUUID(), authParams)
         val paramsResponse = AuthenticationParamsResponse(null, authParams)
         whenever(authenticationClient.getParams(email)).thenResolve(paramsResponse)
 

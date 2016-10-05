@@ -1,8 +1,8 @@
 package io.slychat.messenger.services.config
 
-import io.slychat.messenger.core.crypto.EncryptionSpec
-import io.slychat.messenger.core.crypto.decryptData
-import io.slychat.messenger.core.crypto.encryptDataWithParams
+import io.slychat.messenger.core.crypto.DerivedKeySpec
+import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
+import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileNotFoundException
@@ -47,17 +47,17 @@ class FileConfigStorage(private val path: File) : ConfigStorage {
 }
 
 class CipherConfigStorageFilter(
-    private val encryptionSpec: EncryptionSpec,
+    private val derivedKeySpec: DerivedKeySpec,
     private val underlying: ConfigStorage
 ) : ConfigStorage {
     override fun write(data: ByteArray) {
-        underlying.write(encryptDataWithParams(encryptionSpec, data).data)
+        underlying.write(encryptBulkData(derivedKeySpec, data))
     }
 
     override fun read(): ByteArray? {
         val cipherText = underlying.read()
         return if (cipherText != null)
-            decryptData(encryptionSpec, cipherText)
+            decryptBulkData(derivedKeySpec, cipherText)
         else
             null
     }

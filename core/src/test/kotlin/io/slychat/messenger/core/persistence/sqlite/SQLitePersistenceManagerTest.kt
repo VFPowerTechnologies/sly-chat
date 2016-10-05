@@ -2,6 +2,9 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConstants
 import com.almworks.sqlite4java.SQLiteException
+import io.slychat.messenger.core.crypto.DerivedKeySpec
+import io.slychat.messenger.core.crypto.HKDFInfoList
+import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.testutils.withTempFile
 import org.junit.BeforeClass
@@ -20,14 +23,14 @@ class SQLitePersistenceManagerTest {
         }
     }
 
-    fun getRandomKey(): ByteArray {
+    fun getRandomKey(): Key {
         val key = ByteArray(256/8)
         SecureRandom().nextBytes(key)
-        return key
+        return Key(key)
     }
 
-    fun <R> withPersistenceManager(path: File?, key: ByteArray?, body: (SQLitePersistenceManager) -> R): R {
-        val persistenceManager = SQLitePersistenceManager(path, key, null)
+    fun <R> withPersistenceManager(path: File?, params: SQLCipherParams?, body: (SQLitePersistenceManager) -> R): R {
+        val persistenceManager = SQLitePersistenceManager(path, params)
         return try {
             persistenceManager.init()
             body(persistenceManager)
@@ -37,11 +40,19 @@ class SQLitePersistenceManagerTest {
         }
     }
 
-    fun testDecryption(key1: ByteArray?, key2: ByteArray?, shouldFail: Boolean) {
+    fun testDecryption(key1: Key?, key2: Key?, shouldFail: Boolean) {
         val query = "CREATE TABLE IF NOT EXISTS t (i NUMBER)"
 
+        val params1 = key1?.let {
+            SQLCipherParams(DerivedKeySpec(it, HKDFInfoList.localData()), SQLCipherCipher.defaultCipher)
+        }
+
+        val params2 = key2?.let {
+            SQLCipherParams(DerivedKeySpec(it, HKDFInfoList.localData()), SQLCipherCipher.defaultCipher)
+        }
+
         withTempFile { dbPath ->
-            withPersistenceManager(dbPath, key1) { persistenceManager ->
+            withPersistenceManager(dbPath, params1) { persistenceManager ->
                 persistenceManager.syncRunQuery { connection ->
                     connection.exec(query)
                 }
@@ -49,7 +60,7 @@ class SQLitePersistenceManagerTest {
 
             val body: () -> Unit = {
                 //getCurrentDatabaseVersion will throw
-                withPersistenceManager(dbPath, key2) { persistenceManager ->
+                withPersistenceManager(dbPath, params2) { persistenceManager ->
                     persistenceManager.syncRunQuery { connection ->
                         connection.exec(query)
                     }

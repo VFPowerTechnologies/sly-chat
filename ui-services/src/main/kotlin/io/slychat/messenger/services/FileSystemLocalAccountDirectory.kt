@@ -1,13 +1,10 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.crypto.EncryptionSpec
-import io.slychat.messenger.core.crypto.ciphers.CipherParams
+import io.slychat.messenger.core.crypto.DerivedKeySpec
+import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.persistence.json.JsonAccountInfoPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonKeyVaultPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonSessionDataPersistenceManager
-import io.slychat.messenger.core.persistence.json.JsonStartupInfoPersistenceManager
+import io.slychat.messenger.core.persistence.json.*
 
 //FIXME externalize various persistence managers
 class FileSystemLocalAccountDirectory(
@@ -56,18 +53,19 @@ class FileSystemLocalAccountDirectory(
         return JsonKeyVaultPersistenceManager(paths.keyVaultPath)
     }
 
-    override fun getSessionDataPersistenceManager(userId: UserId, localDataEncryptionKey: ByteArray, localDataEncryptionParams: CipherParams): SessionDataPersistenceManager {
+    override fun getSessionDataPersistenceManager(userId: UserId, derivedKeySpec: DerivedKeySpec): SessionDataPersistenceManager {
         val paths = userPathsGenerator.getPaths(userId)
-        val spec = EncryptionSpec(
-            localDataEncryptionKey,
-            localDataEncryptionParams
-        )
-        return JsonSessionDataPersistenceManager(paths.sessionDataPath, spec)
+        return JsonSessionDataPersistenceManager(paths.sessionDataPath, derivedKeySpec)
     }
 
-    override fun getStartupInfoPersistenceManager(): StartupInfoPersistenceManager {
+    override fun getAccountLocalInfoPersistenceManager(userId: UserId, derivedKeySpec: DerivedKeySpec): AccountLocalInfoPersistenceManager {
+        val paths = userPathsGenerator.getPaths(userId)
+        return JsonAccountLocalInfoPersistenceManager(paths.accountParamsPath, derivedKeySpec)
+    }
+
+    override fun getStartupInfoPersistenceManager(encryptionKey: Key?): StartupInfoPersistenceManager {
         val startupInfoPath = userPathsGenerator.startupInfoPath
-        return JsonStartupInfoPersistenceManager(startupInfoPath)
+        return JsonStartupInfoPersistenceManager(startupInfoPath, encryptionKey)
     }
 
     override fun createUserDirectories(userId: UserId) {

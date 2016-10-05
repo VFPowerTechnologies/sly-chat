@@ -1,9 +1,8 @@
 package io.slychat.messenger.services.ui.impl
 
-import io.slychat.messenger.core.crypto.HashDeserializers
-import io.slychat.messenger.core.crypto.hashPasswordWithParams
-import io.slychat.messenger.core.crypto.hexify
-import io.slychat.messenger.core.http.HttpClientFactory
+import io.slychat.messenger.core.crypto.hashes.HashType
+import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
+import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.api.accountupdate.UpdatePhoneRequest
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
 import io.slychat.messenger.core.http.api.registration.*
@@ -30,7 +29,7 @@ class UIRegistrationServiceImpl(
         return asyncGenerateNewKeyVault(password) bind { keyVault ->
             updateProgress("Connecting to server...")
             val registrationInfo = RegistrationInfo(username, info.name, info.phoneNumber)
-            val request = registrationRequestFromKeyVault(registrationInfo, keyVault)
+            val request = registrationRequestFromKeyVault(registrationInfo, keyVault, password)
             registrationClient.register(request)
         } map { result ->
             val uiResult = UIRegistrationResult(result.isSuccess, result.errorMessage, result.validationErrors)
@@ -77,10 +76,9 @@ class UIRegistrationServiceImpl(
 
             val authParams = response.params!!
 
-            val hashParams = HashDeserializers.deserialize(authParams.hashParams)
-            val hash = hashPasswordWithParams(info.password, hashParams)
+            val remotePasswordHash = hashPasswordWithParams(info.password, authParams.hashParams, HashType.REMOTE)
 
-            registrationClient.updatePhone(UpdatePhoneRequest(info.email, hash.hexify(), info.phoneNumber)) map { response ->
+            registrationClient.updatePhone(UpdatePhoneRequest(info.email, remotePasswordHash.hexify(), info.phoneNumber)) map { response ->
                 UIUpdatePhoneResult(response.isSuccess, response.errorMessage)
             }
         }
