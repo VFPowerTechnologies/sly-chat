@@ -101,8 +101,9 @@ class UIContactsServiceImpl(
     override fun addContactEventListener(listener: (UIContactEvent) -> Unit) {
         contactEventListeners.add(listener)
 
-        //replay any status events
-        listener(UIContactEvent.Sync(isContactSyncActive))
+        //replay any status events if we're connected
+        if (contactsService != null)
+            listener(UIContactEvent.Sync(isContactSyncActive))
     }
 
     override fun updateContact(newContactInfo: UIContactInfo): Promise<UIContactInfo, Exception> {
