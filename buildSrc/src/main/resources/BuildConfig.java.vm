@@ -17,32 +17,6 @@ public class BuildConfig {
         }
     }
 
-    public enum UIServiceType {
-        DUMMY,
-        REAL
-    }
-
-    public enum UIServiceComponent {
-       #foreach($type in $componentEnumTypes)
-       $type#if($foreach.hasNext),#end
-       #end
-    }
-
-    public static class UIServiceMap {
-        private UIServiceMap() {}
-
-        public @NotNull UIServiceType get(@NotNull UIServiceComponent uiServiceComponent) {
-            switch (uiServiceComponent) {
-                #foreach($entry in $componentTypes)
-                case $entry.key:
-                    return UIServiceType.$entry.value;
-                #end
-                default:
-                    throw new IllegalStateException("Invalid UIServiceComponent");
-            }
-        }
-    }
-
     private BuildConfig() {}
 
     public static final boolean DEBUG = $debug;
@@ -57,8 +31,6 @@ public class BuildConfig {
 
     public static final ServerUrls DESKTOP_SERVER_URLS = new ServerUrls("$desktopHttpApiServer", $desktopRelayServer);
     public static final ServerUrls ANDROID_SERVER_URLS = new ServerUrls("$androidHttpApiServer", $androidRelayServer);
-
-    public static final UIServiceMap UI_SERVICE_MAP = new UIServiceMap();
 
     public static final long relayKeepAliveIntervalMs = $relayKeepAliveIntervalMs;
 

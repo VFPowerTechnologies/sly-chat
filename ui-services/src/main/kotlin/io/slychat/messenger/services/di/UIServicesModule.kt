@@ -3,8 +3,6 @@ package io.slychat.messenger.services.di
 import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.BuildConfig
-import io.slychat.messenger.core.BuildConfig.UIServiceComponent
-import io.slychat.messenger.core.BuildConfig.UIServiceType
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.accountupdate.AccountUpdateAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
@@ -17,67 +15,46 @@ import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.VersionChecker
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.ui.*
-import io.slychat.messenger.services.ui.dummy.UIDevelServiceImpl
 import io.slychat.messenger.services.ui.impl.*
 import javax.inject.Singleton
 
 @Module
 class UIServicesModule {
-    private inline fun <R> getImplementation(component: BuildConfig.UIServiceComponent, dummy: () -> R, real: () -> R) =
-        when (BuildConfig.UI_SERVICE_MAP[component]) {
-            UIServiceType.DUMMY -> dummy()
-            UIServiceType.REAL -> real()
-        }
-
-    private fun noDummyAvailable(serviceName: String): Nothing {
-        error("No dummy available for $serviceName")
-    }
-
     @Singleton
     @Provides
     fun provideRegistrationService(
         serverUrls: BuildConfig.ServerUrls,
         @SlyHttp httpClientFactory: HttpClientFactory
-    ): UIRegistrationService = getImplementation(
-        UIServiceComponent.REGISTRATION,
-        { noDummyAvailable("UIRegistrationService") },
-        {
+    ): UIRegistrationService {
             val serverUrl = serverUrls.API_SERVER
             val registrationClient = RegistrationAsyncClient(serverUrl, httpClientFactory)
             val loginClient = AuthenticationAsyncClientImpl(serverUrl, httpClientFactory)
-            UIRegistrationServiceImpl(registrationClient, loginClient)
-        }
-    )
+            return UIRegistrationServiceImpl(registrationClient, loginClient)
+    }
 
     @Singleton
     @Provides
     fun provideLoginService(
         app: SlyApplication
-    ): UILoginService = getImplementation(
-        UIServiceComponent.LOGIN,
-        { noDummyAvailable("UILoginService") },
-        { UILoginServiceImpl(app) }
-    )
+    ): UILoginService {
+        return UILoginServiceImpl(app)
+    }
 
     @Singleton
     @Provides
     fun provideContactsService(
         app: SlyApplication
-    ): UIContactsService = getImplementation(
-        UIServiceComponent.CONTACTS,
-        { noDummyAvailable("UIContactsService") },
-        { UIContactsServiceImpl(app.userSessionAvailable) }
-    )
+    ): UIContactsService {
+        return UIContactsServiceImpl(app.userSessionAvailable)
+    }
 
     @Singleton
     @Provides
     fun provideMessengerService(
         app: SlyApplication
-    ): UIMessengerService = getImplementation(
-        UIServiceComponent.MESSENGER,
-        { noDummyAvailable("UIMessengerService") },
-        { UIMessengerServiceImpl(app.userSessionAvailable) }
-    )
+    ): UIMessengerService {
+        return UIMessengerServiceImpl(app.userSessionAvailable)
+    }
 
     @Singleton
     @Provides
@@ -85,16 +62,9 @@ class UIServicesModule {
 
     @Singleton
     @Provides
-    fun provideDevelService(): UIDevelService =
-        UIDevelServiceImpl()
-
-    @Singleton
-    @Provides
-    fun provideNetworkStatusService(app: SlyApplication): UINetworkStatusService = getImplementation(
-        UIServiceComponent.NETWORK_STATUS,
-        { noDummyAvailable("UINetworkStatusService") },
-        { UINetworkStatusServiceImpl(app.networkAvailable, app.relayAvailable) }
-    )
+    fun provideNetworkStatusService(app: SlyApplication): UINetworkStatusService {
+        return UINetworkStatusServiceImpl(app.networkAvailable, app.relayAvailable)
+    }
 
     @Singleton
     @Provides

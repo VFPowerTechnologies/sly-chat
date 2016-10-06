@@ -31,9 +31,6 @@ fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponen
     val historyService = applicationComponent.uiHistoryService
     dispatcher.registerService("HistoryService", UIHistoryServiceToJavaProxy(historyService, dispatcher))
 
-    val develService = applicationComponent.uiDevelService
-    dispatcher.registerService("DevelService", UIDevelServiceToJavaProxy(develService, dispatcher))
-
     val networkStatusService = applicationComponent.uiNetworkStatusService
     dispatcher.registerService("NetworkStatusService", UINetworkStatusServiceToJavaProxy(networkStatusService, dispatcher))
 

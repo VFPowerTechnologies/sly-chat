@@ -220,7 +220,7 @@ open class GenBuildConfig : DefaultTask() {
     }
 
     private fun convertToByteArrayNotation(s: String): String {
-        return s.toByteArray().map { it.toString() }.joinToString(",", "{", "}")
+        return s.toByteArray().map(Byte::toString).joinToString(",", "{", "}")
     }
 
     @TaskAction
@@ -250,8 +250,6 @@ open class GenBuildConfig : DefaultTask() {
         val enableConfigEncryption = findBoolForKey(settings, "enableConfigEncryption", debug)
         vc.put("enableConfigEncryption", enableConfigEncryption)
 
-        vc.put("uiServiceType", getEnumValue(settings, debug, "uiServiceType", listOf("DUMMY", "REAL"), null))
-
         vc.put("relayKeepAliveIntervalMs", findMsForKey(settings, "relayServer.keepAlive", debug))
 
         vc.put("disableCertificateVerification", findBoolForKey(settings, "tls.disableCertificateVerification", debug))
@@ -276,24 +274,13 @@ open class GenBuildConfig : DefaultTask() {
                 }
 
                 keys.add("$platform.$setting")
-                keys.add("$setting")
+                keys.add(setting)
 
                 val url = findValueForKeys(settings, setting, keys)
 
                 vc.put("$platform${setting.capitalize()}", transform(url))
             }
         }
-
-        val componentTypeDefault = findValueForKey(settings, "uiServiceType", debug).toUpperCase()
-
-        val componentTypes = componentTypes.map { component ->
-            val value = getEnumValue(settings, debug, "uiServiceType.$component", listOf("DUMMY", "REAL"), componentTypeDefault)
-            val key = camelCaseToStaticConvention(component)
-            key to value.toUpperCase()
-        }.toMap()
-
-        vc.put("componentEnumTypes", componentEnumTypes)
-        vc.put("componentTypes", componentTypes.entries)
 
         val maybeSentryDsn = findValueForKey(settings, "sentryDsn", debug)
         val sentryDsn = if (maybeSentryDsn.isEmpty())

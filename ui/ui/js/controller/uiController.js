@@ -5,7 +5,6 @@ var UIController = function () {
     window.loginService = new LoginService();
     window.contactService = new ContactsService();
     window.historyService = new HistoryService();
-    window.develService = new DevelService();
     window.networkStatusService = new NetworkStatusService();
     window.stateService = new StateService();
     window.telephonyService = new TelephonyService();

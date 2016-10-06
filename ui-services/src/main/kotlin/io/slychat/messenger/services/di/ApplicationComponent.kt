@@ -34,8 +34,6 @@ interface ApplicationComponent {
 
     val uiHistoryService: UIHistoryService
 
-    val uiDevelService: UIDevelService
-
     val uiNetworkStatusService: UINetworkStatusService
 
     val uiStateService: UIStateService
