@@ -799,15 +799,29 @@ class SQLiteGroupPersistenceManagerTest : GroupPersistenceManagerTestUtils {
         )
 
         //insert previous group data
+        var previousMembers = emptySet<UserId>()
         if (previousLevel != null) {
-            val previousMembers = if (previousLevel == GroupMembershipLevel.JOINED)
-                insertRandomContacts()
-            else
-                emptySet()
+            if (previousLevel == GroupMembershipLevel.JOINED)
+                previousMembers = insertRandomContacts()
 
             val info = GroupInfo(groupId, groupName, previousLevel)
             groupPersistenceManager.internalAddInfo(info)
             groupPersistenceManager.internalAddMembers(groupId, previousMembers)
+        }
+
+        val transitionOccured = newLevel != previousLevel
+        val expectedDelta = if (transitionOccured) {
+            when (newLevel) {
+                GroupMembershipLevel.BLOCKED -> GroupDiffDelta.Blocked(groupId)
+                GroupMembershipLevel.PARTED -> GroupDiffDelta.Parted(groupId)
+                GroupMembershipLevel.JOINED -> GroupDiffDelta.Joined(groupId, members)
+            }
+        }
+        else {
+            if (newLevel == GroupMembershipLevel.JOINED)
+                GroupDiffDelta.MembershipChanged(groupId, members, previousMembers)
+            else
+                null
         }
 
         //if we're testing against a joined group, we don't want the conversation info to be reset during the sync
@@ -822,7 +836,7 @@ class SQLiteGroupPersistenceManagerTest : GroupPersistenceManagerTestUtils {
         else
             ConversationInfo(null, 0, null, null)
 
-        groupPersistenceManager.applyDiff(updates).get()
+        val deltas = groupPersistenceManager.applyDiff(updates).get()
 
         when (newLevel) {
             GroupMembershipLevel.JOINED -> {
@@ -846,6 +860,15 @@ class SQLiteGroupPersistenceManagerTest : GroupPersistenceManagerTestUtils {
         assertGroupInfo(groupId) { assertEquals(updatedInfo, it, "Invalid group info") }
 
         assertNoRemoteUpdates()
+
+        assertThat(deltas).apply {
+            `as`("Should return corresponding delta")
+
+            if (expectedDelta != null)
+                containsOnly(expectedDelta)
+            else
+                isEmpty()
+        }
     }
 
     private fun assertConversationInfo(groupId: GroupId, convoInfo: ConversationInfo) {

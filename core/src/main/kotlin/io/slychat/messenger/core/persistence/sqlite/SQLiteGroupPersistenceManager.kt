@@ -314,9 +314,9 @@ AND
     }
 
     //used by applyDiff
-    private fun doGroupTransition(connection: SQLiteConnection, groupId: GroupId, oldMembershipLevel: GroupMembershipLevel, newMembershipLevel: GroupMembershipLevel) {
+    private fun doGroupTransition(connection: SQLiteConnection, groupId: GroupId, oldMembershipLevel: GroupMembershipLevel, newMembershipLevel: GroupMembershipLevel): Boolean {
         if (oldMembershipLevel == newMembershipLevel)
-            return
+            return false
 
         when (oldMembershipLevel) {
             GroupMembershipLevel.JOINED -> when (newMembershipLevel) {
@@ -349,6 +349,8 @@ AND
                 GroupMembershipLevel.BLOCKED -> error("Can't happen")
             }
         }
+
+        return true
     }
 
     override fun part(groupId: GroupId): Promise<Boolean, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -416,35 +418,83 @@ AND
         }
     }
 
-    private fun applyDiff(connection: SQLiteConnection, update: AddressBookUpdate.Group) {
+    private fun getDiffDelta(
+        groupId: GroupId,
+        membershipLevel: GroupMembershipLevel,
+        oldMembers: Set<UserId>,
+        currentMembers: Set<UserId>,
+        transitionOccured: Boolean
+    ): GroupDiffDelta? {
+        //if we transitioned to a new state, just emit the corresponding delta
+        return if (transitionOccured) {
+            val transitionDelta = when (membershipLevel) {
+                GroupMembershipLevel.BLOCKED -> GroupDiffDelta.Blocked(groupId)
+                GroupMembershipLevel.PARTED -> GroupDiffDelta.Parted(groupId)
+                GroupMembershipLevel.JOINED -> GroupDiffDelta.Joined(groupId, currentMembers)
+            }
+
+            transitionDelta
+        }
+        //else if we've stayed in the same state, then just emit member diffs
+        else {
+            val newMembers = currentMembers - oldMembers
+            val partedMembers = oldMembers - currentMembers
+
+            if (newMembers.isNotEmpty() || partedMembers.isNotEmpty())
+                GroupDiffDelta.MembershipChanged(groupId, newMembers, partedMembers)
+            else
+                null
+        }
+    }
+
+    private fun applyDiff(connection: SQLiteConnection, update: AddressBookUpdate.Group): GroupDiffDelta? {
         val groupId = update.groupId
         val maybeInfo = queryGroupInfo(connection, groupId)
 
-        //new group, create it
-        if (maybeInfo == null) {
+        val transitionOccured = if (maybeInfo == null) {
             val newGroupInfo = GroupInfo(groupId, update.name, update.membershipLevel)
             insertOrReplaceGroupInfo(connection, newGroupInfo)
 
             if (update.membershipLevel == GroupMembershipLevel.JOINED)
                 createConversationData(connection, groupId)
+
+            true
         }
         //existing group, transition
         else
             doGroupTransition(connection, groupId, maybeInfo.membershipLevel, update.membershipLevel)
 
-        if (update.members.isNotEmpty())
+        //don't need member diffs for part/blocked since those have no members
+        val wantMemberDiffs = !transitionOccured && update.membershipLevel == GroupMembershipLevel.JOINED
+        val hasMembers = update.members.isNotEmpty()
+
+        val oldMembers = if (wantMemberDiffs && hasMembers)
+            queryGroupMembers(connection, groupId)
+        else
+            emptySet<UserId>()
+
+        //member lists are cleared for parts/blocks already
+        if (hasMembers)
             setGroupMembersTo(connection, groupId, update.members)
+
+        return getDiffDelta(groupId, update.membershipLevel, oldMembers, update.members, transitionOccured)
     }
 
-    override fun applyDiff(updates: Collection<AddressBookUpdate.Group>): Promise<Unit, Exception> {
+    override fun applyDiff(updates: Collection<AddressBookUpdate.Group>): Promise<List<GroupDiffDelta>, Exception> {
         return if (updates.isEmpty())
-            Promise.ofSuccess(Unit)
+            Promise.ofSuccess(emptyList())
         else sqlitePersistenceManager.runQuery { connection ->
+            val deltas = ArrayList<GroupDiffDelta>()
+
             connection.withTransaction {
                 updates.forEach { update ->
-                    applyDiff(connection, update)
+                    val delta = applyDiff(connection, update)
+                    if (delta != null)
+                        deltas.add(delta)
                 }
             }
+
+            deltas
         }
     }
 
