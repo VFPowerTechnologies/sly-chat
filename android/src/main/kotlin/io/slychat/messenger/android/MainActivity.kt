@@ -47,7 +47,7 @@ class MainActivity : AppCompatActivity() {
 
         val EXTRA_CONVO_KEY = "conversationKey"
 
-        val RINGTONE_PICKER_REQUEST_CODE = 1
+        private val RINGTONE_PICKER_REQUEST_CODE = 1
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -128,8 +128,6 @@ class MainActivity : AppCompatActivity() {
 
         webView = findViewById(R.id.webView) as WebView
 
-        hadSavedBundle = savedInstanceState != null
-
         setAppActivity()
     }
 
@@ -142,7 +140,7 @@ class MainActivity : AppCompatActivity() {
             isInitialized = true
 
             if (loadError == null)
-                init(hadSavedBundle)
+                init()
             else
                 handleLoadError(loadError)
         }
@@ -197,7 +195,7 @@ class MainActivity : AppCompatActivity() {
             getInitFailureDialog("Unsupported device")
     }
 
-    private fun init(hadSavedBundle: Boolean) {
+    private fun init() {
         val app = AndroidApp.get(this)
 
         val initialPage = getInitialPage(intent)
@@ -214,7 +212,7 @@ class MainActivity : AppCompatActivity() {
         webView.settings.javaScriptEnabled = true
         webView.settings.allowFileAccessFromFileURLs = true
         webView.settings.blockNetworkLoads = true
-        
+
         //Allow javascript to push history state to the webview
         webView.settings.allowUniversalAccessFromFileURLs = true
 
@@ -233,8 +231,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        if (!hadSavedBundle)
-            webView.loadUrl("file:///android_asset/ui/index.html")
+        webView.loadUrl("file:///android_asset/ui/index.html")
     }
 
     fun hideSplashImage() {
@@ -257,7 +254,7 @@ class MainActivity : AppCompatActivity() {
         splashView.startAnimation(animation)
     }
 
-    override fun onSaveInstanceState(outState: Bundle?) {
+    override fun onSaveInstanceState(outState: Bundle) {
         log.debug("onSaveInstanceState")
         super.onSaveInstanceState(outState)
         webView.saveState(outState)
