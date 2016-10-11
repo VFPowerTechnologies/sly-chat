@@ -25,8 +25,8 @@ class MutualContactNotifierImpl(
 
     private fun onContactEvent(event: ContactEvent) {
         when (event) {
-            is ContactEvent.Added -> processNewContacts(event.contacts)
-            is ContactEvent.Updated -> processUpdatedContacts(event.contacts)
+            is ContactEvent.Added -> if (event.fromSync == false) processNewContacts(event.contacts)
+            is ContactEvent.Updated -> if (event.fromSync == false) processUpdatedContacts(event.contacts)
         }
     }
 

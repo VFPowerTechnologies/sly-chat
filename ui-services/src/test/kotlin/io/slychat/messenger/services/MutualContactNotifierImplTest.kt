@@ -61,4 +61,24 @@ class MutualContactNotifierImplTest {
 
         verify(messengerService).notifyContactAdd(listOf(contactInfo.id))
     }
+
+    @Test
+    fun `it should ignore contact updates when fromSync is true`() {
+        val contactInfo = randomContactInfo(AllowedMessageLevel.GROUP_ONLY)
+
+        val contactUpdate = ContactUpdate(contactInfo, contactInfo.copy(allowedMessageLevel = AllowedMessageLevel.ALL))
+
+        contactEvents.onNext(ContactEvent.Updated(listOf(contactUpdate), true))
+
+        verify(messengerService, never()).notifyContactAdd(any())
+    }
+
+    @Test
+    fun `it should ignore contact adds when fromSync is true`() {
+        val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
+
+        contactEvents.onNext(ContactEvent.Added(listOf(contactInfo), true))
+
+        verify(messengerService, never()).notifyContactAdd(any())
+    }
 }
