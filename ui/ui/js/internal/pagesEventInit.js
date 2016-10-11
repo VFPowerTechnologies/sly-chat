@@ -114,41 +114,42 @@ slychat.onPageInit('chat', function (page) {
             $(this).removeClass("empty-textarea");
     });
 
-    $("#submitNewChatMessage").click(function (e) {
-        e.preventDefault();
-        event.stopImmediatePropagation();
+    if (isDesktop) {
         newMessageInput.focus();
-        chatController.handleSubmitMessage(page.query);
-    });
+        $("#submitNewChatMessage").click(function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            newMessageInput.focus();
+            chatController.handleSubmitMessage(page.query);
+        });
+
+        $("#inputChatExpireMessageBtn").click(function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            chatController.toggleExpiringMessageDisplay();
+        });
+    }
+    else {
+        $("#submitNewChatMessage").on('touchstart', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("touchstart");
+            chatController.handleSubmitMessage(page.query);
+        });
+
+        $("#inputChatExpireMessageBtn").on('touchstart', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            chatController.toggleExpiringMessageDisplay();
+        })
+    }
+
 
     $("#newMessageInputDiv").click(function () {
         newMessageInput.focus();
     });
-
-    newMessageInput.focusout(function () {
-        setTimeout(function () {
-            $(this).removeClass("focused");
-        }.bind(this), 200);
-    });
-
-    newMessageInput.focusin(function () {
-        setTimeout(function () {
-            $(this).addClass("focused");
-        }.bind(this), 200);
-    });
-
-    $("#inputChatExpireMessageBtn").click(function (e) {
-        if (newMessageInput.hasClass("focused"))
-            newMessageInput.focus();
-        e.preventDefault();
-        e.stopPropagation();
-
-        chatController.toggleExpiringMessageDisplay();
-    });
-
-    if (isDesktop) {
-        newMessageInput.focus();
-    }
 });
 
 slychat.onPageInit('addContact', function (page) {
