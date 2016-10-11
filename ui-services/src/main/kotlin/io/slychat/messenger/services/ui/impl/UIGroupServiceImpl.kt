@@ -50,9 +50,10 @@ class UIGroupServiceImpl(
 
     private fun onGroupEvent(ev: GroupEvent) {
         val uiEv = when (ev) {
-            is GroupEvent.NewGroup -> UIGroupEvent.NewGroup(ev.id, ev.members)
-            is GroupEvent.Joined -> UIGroupEvent.Joined(ev.id, ev.newMembers)
-            is GroupEvent.Parted -> UIGroupEvent.Parted(ev.id, ev.member)
+            is GroupEvent.Joined -> UIGroupEvent.Joined(ev.id, ev.members)
+            is GroupEvent.Parted -> UIGroupEvent.Parted(ev.id)
+            is GroupEvent.Blocked -> UIGroupEvent.Blocked(ev.id)
+            is GroupEvent.MembershipChanged -> UIGroupEvent.MembershipChanged(ev.id, ev.newMembers, ev.partedMembers)
         }
 
         groupEventListeners.forEach { it(uiEv) }
