@@ -1,0 +1,60 @@
+{{#if @global.ios}}
+<div class="navbar top-navbar">
+    <div class="navbar-inner">
+        <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
+        <div id='contact-name' class="center sliding"></div>
+        <div class="right">
+            <a href="#" class="link icon-only open-action-menu"> <i class="icon icon-bars"></i></a>
+        </div>
+    </div>
+</div>
+{{/if}}
+
+<div class="pages">
+    <div data-page="chat" class="page">
+
+        {{#unless @global.ios}}
+        <div class="navbar top-navbar">
+            <div class="navbar-inner">
+                <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a>
+                </div>
+                <div id='contact-name' class="center sliding"></div>
+                <div class="right">
+                    {{#if @global.android}}
+                    <a href="#" class="link icon-only chat-page-contact-menu" style="color: black;"> <i class="icon icon-bars"></i></a>
+                    {{/if}}
+                    {{#if @global.isDesktop}}
+                    <a href="#" class="link icon-only chat-page-contact-menu" style="color: black;"> <i class="fa fa-bars"></i></a>
+                    {{/if}}
+                </div>
+            </div>
+        </div>
+        {{/unless}}
+
+        <div id="chatPageContent" class="page-content infinite-scroll-top row">
+            <div class="col-100 list-block" style="margin-bottom: 0;">
+                <ul id='chat-content'>
+                </ul>
+            </div>
+        </div>
+        <div class="toolbar toolbar-bottom bottom-chat-toolbar" style="background-color: #fff;">
+            <div class="toolbar-inner">
+                <div class="form-content" style="width: inherit;">
+                    <form id="newMessageForm" style="width: inherit;">
+                        <div id='newMessageInputDiv' style="position: absolute; bottom: 0; width: 100%; display: inline-block; min-height: 47px; border-top: 1px solid #b9b9b9;">
+                            <textarea placeholder='Type your secure message'
+                                      id="newMessageInput" name="newMessageInput" rows="2"></textarea>
+                            <button id='inputChatExpireMessageBtn' class='bomb-button-icon' style="position: absolute; bottom: 0; left: 0; background-color: transparent; border: none; height: 47px;">
+                                <i class="fa fa-bomb fa-2x"></i>
+                            </button>
+                            <button id='submitNewChatMessage' style="position: absolute; bottom: 0; right: 0; background-color: transparent; border: none; height: 47px;">
+                                <i class="material-icons md-24">&#xE163;</i>
+                            </button>
+                            <div id="contact-id" style="display: none;"></div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

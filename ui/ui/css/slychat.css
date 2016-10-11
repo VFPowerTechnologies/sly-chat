@@ -1,0 +1,434 @@
+/** General Style **/
+html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
+    -webkit-user-select: none;
+}
+.navbar:after, .toolbar:before {
+    display: none;
+}
+.navbar .backBtn {
+    margin-left: 10px;
+}
+.list-block ul:before, .list-block ul:after {
+    display: none;
+}
+.list-block ul {
+    background-color: transparent;
+}
+.vertical-centered-content {
+    display: flex; flex-direction: column; justify-content: center;
+}
+.vertical-centered-content .content-block-title {
+    margin: 10px 15px 0 15px;
+}
+.vertical-centered-content .content-block {
+    margin: 5px 0 15px 0;
+}
+.notifications {
+    overflow: hidden;
+    z-index: 12001;
+}
+.custom-dropdown .list-block {
+    margin: 0;
+}
+.custom-dropdown .content-block {
+    margin: 0;
+}
+.custom-dropdown .custom-dropdown-content {
+    display: none;
+}
+.custom-dropdown.custom-dropdown-toggled .custom-dropdown-content {
+    display: block;
+}
+.custom-dropdown .item-inner {
+    background-image: url("data:image/svg+xml;charset=utf-8,<svg%20viewBox%3D'0%200%2060%20120'%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'><path%20d%3D'm60%2061.5-38.25%2038.25-9.75-9.75%2029.25-28.5-29.25-28.5%209.75-9.75z'%20fill%3D'%23c7c7cc'%2F><%2Fsvg>");
+    background-size: 10px 20px;
+}
+.custom-dropdown.custom-dropdown-toggled .item-inner {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20viewBox%3D'0%200%2060%20120'%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%3E%3Cpath%20d%3D'm60%2061.5-38.25%2038.25-9.75-9.75%2029.25-28.5-29.25-28.5%209.75-9.75z'%20transform%3D'translate(115%2C%2030)%20rotate(90)'%20fill%3D'%23c7c7cc'%2F%3E%3C%2Fsvg%3E");
+    background-size: 20px 20px;
+}
+.custom-dropdown-content .list-block ul {
+    padding-left: 0;
+    margin-left: 5px;
+}
+.custom-dropdown-toggled .item-inner:after {
+    display: none;
+}
+.custom-dropdown a {
+    font-size: 12px;
+}
+.custom-dropdown .list-button {
+    min-height: 24px !important;
+    line-height: 24px !important;
+}
+
+/* Form style */
+.list-error-block {
+    margin-top: -35px;
+    margin-bottom: 0;
+}
+.error-block {
+    text-align: right;
+    font-size: 13px;
+    color: red;
+}
+.invalid-required {
+    border-bottom: 1px solid red !important;
+}
+.form-list-input li.invalid {
+    margin-bottom: 10px;
+}
+.form-list-input .invalid-details {
+    display: none;
+}
+.form-list-input li.invalid .invalid-details {
+    display: block;
+    text-align: right;
+    color: red;
+    font-size: 15px;
+}
+
+/* Notification */
+.custom-notification {
+    height: 44px;
+    line-height: 44px;
+    margin-top: 0;
+}
+.custom-notification .item-content {
+    padding: 0;
+}
+.custom-notification .item-text {
+    width: 100%;
+    text-align: center;
+}
+.custom-notification.completed .item-text {
+    color: green;
+}
+.custom-notification.fail .item-text {
+    color: red;
+}
+.connection-notification .item-title {
+    width: 100%;
+    text-align: center;
+}
+
+/** Contact page **/
+.contact-list a {
+    color: #6d6d72;
+}
+.popup-contact {
+    background-color: #efeff4;
+}
+#openContactPopupBtn {
+    margin-left: 10px;
+}
+#recentContactList {
+    max-height: 60px;
+    text-align: center;
+    padding: 0;
+}
+.recent-contact-list .contact-link {
+    height: 60px;
+    text-align: center;
+    width: 24%;
+    vertical-align: top;
+    display: inline-block;
+    cursor: pointer;
+}
+#contact-list {
+    margin: 0 10px;
+}
+#recentChatList {
+    padding-top: 10px;
+    height: 100%;
+    overflow-x: auto;
+    color: #38383a;
+}
+.recent-chat-name {
+    font-size: 16px;
+    font-weight: 600;
+    width: 70%;
+    color: #4e4e4e;
+}
+.recent-chat-name span {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.recent-contact-link {
+    padding: 10px 10px;
+    border-bottom: 1px solid #eeeeee;
+    height: 50px;
+    color: #b9b9b9;
+    font-weight: 600;
+    cursor: pointer;
+}
+.recent-contact-link.new time {
+    color: red;
+}
+.recent-contact-link .left {
+    font-size: 12px;
+    width: 70%;
+}
+.recent-contact-link .right {
+    font-size: 16px;
+}
+.recent-contact-link .left span {
+    width: 100%;
+    display: inline-block;
+    font-size: smaller;
+    white-space: nowrap;
+    overflow: hidden;
+}
+#contact-list p {
+    margin: 0;
+    font-size: 14px;
+}
+#contact-list span {
+    font-size: 12px;
+}
+#contact-list .contact-link {
+    margin-bottom: 15px;
+    cursor: pointer;
+}
+.new-message-badge {
+    width: 25px;
+    height: 25px;
+    background-color: red;
+    color: #fff;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 25px;
+}
+.group-node {
+    height: 121px;
+    text-align: center;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+.group-details {
+    height: 70px;
+    border-bottom: 1px solid #EEEEEE;
+}
+.group-members {
+    height: 40px;
+    font-size: 10px;
+    overflow: hidden;
+}
+
+/** Chat Page **/
+#chat-content {
+    margin-bottom: 10px;
+}
+#chat-content li {
+    position: relative;
+    display: inline-block;
+    min-width: 100px;
+    min-height: 56px;
+    width: 100%;
+    cursor: pointer;
+}
+#chat-content li.followingMessage {
+    margin-top: -15px;
+}
+#chat-content li .message {
+    margin-bottom: 5px;
+    position: relative;
+    padding: 8px 15px;
+    border-radius: 10px;
+    max-width: 85%;
+}
+#chat-content li.messageSent .message {
+    background-color: #c8deff;
+    float: right;
+}
+#chat-content li.messageReceived .message {
+    background-color: #f1efef ;
+    float: left;
+}
+#chat-content .message p {
+    font-size: 14px;
+    color: #444;
+    margin-bottom: 0;
+    margin-top: 0;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+.message-hidden {
+    animation: pulse 1s linear infinite;
+}
+.message span {
+    margin-top: 5px;
+    color: #9e9e9e;
+    font-size: 12px;
+}
+.avatar {
+    height: 40px;
+    width: 40px;
+    line-height: 40px;
+    margin: 0 auto 5px auto;
+    border-radius: 50%;
+    background-color: #6d6d72;
+    color: #efeff4;
+}
+.expiring-message-toolbar {
+    height: 80px;
+}
+.bomb-button-icon i {
+    color: #a9a9a9;
+}
+.expiring-message-toolbar .bomb-button-icon i {
+    color: black;
+}
+#newMessageInput {
+    overflow-x: hidden;
+    margin-top: 5px;
+    border-left: 1px solid transparent;
+    border-right: none;
+    border-top: none;
+    border-bottom: none;
+    box-sizing: border-box;
+    padding-right: 48px;
+    padding-left: 35px;
+    width: 100%;
+    resize: none;
+    font-size: 13px;
+    line-height: 13px;
+    max-height: 45px;
+    background-color: transparent;
+    display: inline-block;
+    outline: none;
+}
+.info-popup {
+    background-color: #efeff4;
+}
+.message-info, .contact-info, .group-info {
+    margin-left: 10px;
+}
+.message-info-title, .contact-info-title, .group-info-title {
+    font-size: 16px;
+    text-decoration: underline;
+    margin-bottom: 0;
+    color: #4c4646;
+}
+.message-info-details, .contact-info-details, .group-info-details {
+    margin-top: 2px;
+    margin-left: 10px;
+    word-wrap: break-word;
+}
+.group-info .member {
+    margin-bottom: 5px;
+}
+.group-info .members span {
+    display: block;
+}
+@keyframes pulse {
+    0% {
+        transform: scale(1, 1);
+    }
+
+    50% {
+        transform: scale(1.1, 1.1);
+    }
+
+    100% {
+        transform: scale(1, 1);
+    }
+}
+
+/**
+  * Add Contact page
+**/
+.new-contact-link {
+    min-height: 45px;
+    font-size: 14px;
+    cursor: pointer;
+}
+.new-contact-link p {
+    margin: 0;
+}
+.new-contact-link .avatar {
+    display: inline-block;
+    position: relative;
+    bottom: 10px;
+    margin: 0 10px;
+    text-align: center;
+}
+.new-contact-link .details {
+    display: inline-block;
+    height: 45px;
+    padding-right: 50px;
+}
+.confirm-add-contact-hidden {
+    display: none;
+}
+.confirm-add-contact-hidden.new-contact-button {
+    margin-right: 10px;
+    height: 45px;
+    line-height: 45px;
+}
+.confirm-add-contact-hidden.pubkey {
+    font-size: 12px;
+    margin: -10px 5px 0 5px;
+    word-wrap: break-word;
+}
+
+/** Verification Page **/
+.smsCodeIcon {
+    width: 29px;
+    height: 29px;
+    background-color: #8e8e93;
+    color: #ffffff;
+    line-height: 29px;
+    text-align: center;
+    border-radius: 6px;
+}
+
+/* Profile Page */
+.profile-info-link {
+    cursor: pointer;
+}
+.info-link {
+    margin: 0 15px;
+    display: inline-block;
+    text-decoration: underline;
+    color: #0000ff;
+}
+.profile-update-modal {
+    border-top: 1px solid #eeeeee;
+}
+.profile-update-modal .button-container {
+    text-align: center;
+}
+.profile-update-modal button{
+    width: 45%;
+    display: inline-block;
+    margin: 5px;
+}
+
+/* Group info */
+.member-blocked {
+    color: red;
+    margin-left: 10px;
+    font-size: 10px;
+}
+.group-info-member-hidden {
+    display: none;
+    margin-bottom: 10px;
+    margin-left: 10px;
+}
+
+/* NoUi-slide overrides */
+.noUi-horizontal {
+    height: 10px;
+}
+.noUi-horizontal .noUi-handle {
+    width: 10px;
+    height: 30px;
+    left: -5px;
+    top: -10px;
+}
+.noUi-handle:before,
+.noUi-handle:after {
+    display: none;
+}

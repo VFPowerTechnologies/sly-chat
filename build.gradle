@@ -1,0 +1,123 @@
+group 'com.vfpowertech'
+version '0.1.0'
+
+buildscript {
+    ext {
+        versions = [
+            kotlin: '1.0.3',
+            slf4j: '1.7.15',
+            logbackClassic: '1.1.3',
+            roboVM: '1.13.0',
+            jackson: '2.8.1',
+            kovenant: '3.3.0',
+            libsignal: '2.2.0',
+            jodaTime: '2.9.2',
+            sqlite4java: '1.0.392',
+            spongycastle: '1.54.0.0',
+            dagger: '2.6',
+            netty: '5.0.0.Alpha2',
+            rxjava: '1.1.8',
+            rxjavafx: '0.1.4',
+            rxandroid: '1.2.1',
+            jfxGradlePlugin: '8.7.0',
+            appcompatv7: '23.1.1',
+            playServices: '8.3.0',
+            libphonenumber: '7.1.1',
+            dokka: '0.9.9',
+            junit: '4.11',
+            assertJ: '3.5.1',
+            mockitoKotlin: '0.5.2',
+            androidGradle: '2.1.0',
+            androidBuildTools: '23.0.3',
+            androidCompileSdk: 23,
+            jsbridge: '0.2.0',
+            controlsFx: '8.40.11',
+            nsMenuFx: '2.1.4',
+            jna: '4.2.2',
+        ]
+    }
+
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.dokka:dokka-gradle-plugin:$versions.dokka"
+    }
+}
+
+subprojects {
+    apply plugin: 'org.jetbrains.dokka'
+
+    dokka {
+        outputDirectory = 'build/docs'
+    }
+
+    repositories {
+        mavenLocal()
+        jcenter()
+    }
+
+    project.afterEvaluate { p ->
+        p.dependencies {
+            compile "org.jetbrains.kotlin:kotlin-stdlib:$versions.kotlin"
+            testCompile "org.jetbrains.kotlin:kotlin-test:$versions.kotlin"
+            //android doesn't support testRuntime (since there is no such concept there)
+            //so just put it as a compile-time dep
+            testCompile "org.jetbrains.kotlin:kotlin-reflect:$versions.kotlin"
+            testCompile "junit:junit:$versions.junit"
+            testCompile "org.assertj:assertj-core:$versions.assertJ"
+            testCompile "com.nhaarman:mockito-kotlin:$versions.mockitoKotlin"
+        }
+    }
+}
+
+task generateBuildConfig(type: GenBuildConfig) {
+}
+
+task clean {
+    doFirst {
+        delete generateBuildConfig.generateRoot
+        delete generateBuildConfig.jsOutputFile
+    }
+
+    group = 'build'
+}
+
+project(':core') {
+    apply plugin: 'idea'
+
+    idea {
+        module {
+            sourceDirs += generateBuildConfig.srcRoot
+            generatedSourceDirs += generateBuildConfig.srcRoot
+        }
+    }
+
+    afterEvaluate { p ->
+        p.sourceSets.main.java.srcDirs += generateBuildConfig.srcRoot
+        p.compileJava.dependsOn generateBuildConfig
+    }
+}
+
+import java.nio.file.*
+
+project(':ui-services') {
+    apply plugin: 'idea'
+
+    //hack to give IDE access to generated files
+    if (!System.getProperty('os.name').toLowerCase(Locale.ROOT).startsWith('windows')) {
+        Path linkLocation = new File("$projectDir/generated").toPath()
+        Path linkTarget = new File("$buildDir/generated/source/kapt/main").toPath()
+        if (!Files.exists(linkLocation, LinkOption.NOFOLLOW_LINKS)) {
+            Files.createSymbolicLink(linkLocation, linkTarget)
+        }
+
+        idea {
+            module {
+                sourceDirs += file('generated')
+                generatedSourceDirs += file('generated')
+            }
+        }
+    }
+}

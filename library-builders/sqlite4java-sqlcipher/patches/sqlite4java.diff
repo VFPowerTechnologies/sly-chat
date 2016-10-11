@@ -1,0 +1,160 @@
+diff --git a/ant/Android.mk.template b/ant/Android.mk.template
+index 9c75434..35b4860 100644
+--- a/ant/Android.mk.template
++++ b/ant/Android.mk.template
+@@ -13,13 +13,25 @@
+ # limitations under the License.
+ #
+ LOCAL_PATH := $(call my-dir)
++
++include $(CLEAR_VARS)
++LOCAL_MODULE := libcrypto
++LOCAL_SRC_FILES := {{root_prefix}}/android-$(TARGET_ARCH_ABI)/lib/libcrypto.a
++include $(PREBUILT_STATIC_LIBRARY)
++
++include $(CLEAR_VARS)
++LOCAL_MODULE := libsqlcipher
++LOCAL_SRC_FILES := {{root_prefix}}/android-$(TARGET_ARCH_ABI)/lib/libsqlcipher.a
++include $(PREBUILT_STATIC_LIBRARY)
++
+ BASE := ../../../..
+
+ include $(CLEAR_VARS)
+
+ LOCAL_LDLIBS:=-llog
+ LOCAL_MODULE    	:= sqlite4java-android
+-LOCAL_SRC_FILES 	:= $(BASE)/sqlite/sqlite3.c $(BASE)/build/swig/sqlite_wrap.c $(BASE)/native/sqlite3_wrap_manual.c $(BASE)/native/intarray.c
+-LOCAL_CFLAGS		:= -O2 -DNDEBUG -Dfdatasync=fsync -fno-omit-frame-pointer -fno-strict-aliasing -static-libgcc -I../../../sqlite -I../../../native -DSQLITE_ENABLE_COLUMN_METADATA -DSQLITE_ENABLE_FTS3 -DSQLITE_ENABLE_FTS3_PARENTHESIS -DSQLITE_ENABLE_MEMORY_MANAGEMENT -DSQLITE_ENABLE_STAT2 -DHAVE_READLINE=0 -DSQLITE_THREADSAFE=1 -DSQLITE_THREAD_OVERRIDE_LOCK=-1 -DTEMP_STORE=1  -DSQLITE_OMIT_DEPRECATED -DSQLITE_OS_UNIX=1 -DSQLITE_ENABLE_RTREE=1 -DHAVE_STRCHRNUL=0
++LOCAL_WHOLE_STATIC_LIBRARIES := libcrypto libsqlcipher
++LOCAL_SRC_FILES    := $(BASE)/build/swig/sqlite_wrap.c $(BASE)/native/sqlite3_wrap_manual.c $(BASE)/native/intarray.c
++LOCAL_CFLAGS       := -O2 -DNDEBUG -fno-omit-frame-pointer -fno-strict-aliasing -static-libgcc -I../../../sqlite -I../../../native -fPIC
+
+-include $(BUILD_SHARED_LIBRARY)
+\ No newline at end of file
++include $(BUILD_SHARED_LIBRARY)
+diff --git a/ant/Application.mk.template b/ant/Application.mk.template
+index bb4d034..93528bc 100644
+--- a/ant/Application.mk.template
++++ b/ant/Application.mk.template
+@@ -1 +1 @@
+-APP_ABI := armeabi-v7a armeabi x86
++APP_ABI := {{abi_list}}
+diff --git a/ant/build.gant b/ant/build.gant
+index 1e4e4ab..fd2cc36 100644
+--- a/ant/build.gant
++++ b/ant/build.gant
+@@ -522,3 +522,114 @@ target(name: 'android') {
+   ant.delete(dir: androidDir)
+   ant.delete(dir: "$target/project")
+ }
++
++Properties loadProperties(String path) {
++    def properties = new Properties()
++    new File(path).withInputStream { properties.load(it) }
++    return properties
++}
++
++target(name: 'sqlcipher-android') {
++    depends(['init', 'lib.swig'])
++    checkProp("ndk.home", "NDK_HOME")
++    def ndkHome = antProp("ndk.home")
++    def target = "$build/android"
++    ant.delete(dir: target)
++    ant.mkdir(dir: target)
++    def template = new File("$mod/ant/Android.mk.template")
++    if (!template.isFile()) ant.fail(message: "cannot open file $template")
++    ant.mkdir(dir: "$target/project")
++    ant.mkdir(dir: "$target/project/jni")
++    ant.copy(file: "Android.mk.template", tofile: "$target/project/jni/Android.mk")
++    ant.copy(file: "Application.mk.template", tofile: "$target/project/jni/Application.mk")
++
++    ant.exec(failonerror: true, dir: "$target/project", executable: "$ndkHome/ndk-build")
++}
++
++target(name: "sqlcipher-desktop") {
++    ant.echo(message: "Generating swig bindings")
++    String outDir = "$build/java/${antProp('java.package.dir')}"
++
++    ant.mkdir(dir: "$build/swig")
++    ant.mkdir(dir: outDir)
++
++    ant.exec(failonerror: true, dir: mod, executable: "swig") {
++        def swigArgs = [
++            "-java",
++            "-package",
++            "${antProp('java.package')}",
++            "-outdir",
++            "$outDir",
++            "-o",
++            "$build/swig/sqlite_wrap.c",
++            "$mod/swig/sqlite.i"
++        ]
++
++        swigArgs.each { arg(value: it) }
++    }
++
++    def buildTypes = ['release']
++    def buildPlatforms = [{{platforms}}]
++
++    buildPlatforms.each { String platform ->
++        buildTypes.each { String buildType ->
++            ant.echo("Compiling for $platform/$buildType")
++
++            String out = "$build/lib.$buildType.$platform"
++            String objects = "$build/cc.$buildType.$platform"
++
++            ant.mkdir(dir: out)
++            ant.mkdir(dir: objects)
++
++            def platformProperties = loadProperties(rel("build-${platform}.properties"))
++            def cc = platformProperties["cc"]
++
++            def libPrefix = platformProperties['lib.prefix']
++            def libSuffix = platformProperties['lib.suffix']
++            def debugSuffix = ("debug".equals(buildType) ? "-d" : "")
++            def libName = "${libPrefix}sqlite4java${debugSuffix}$libSuffix"
++
++            def linkArgs = platformProperties["cc.link"]
++
++            def jdkHome = platformProperties["jdk.home"]
++            def jniIncludes = ["-I${jdkHome}/include"]
++
++            def platformOs = platform.split("-", 2)[0]
++
++            if (platformOs == "osx")
++                jniIncludes.add("-I${jdkHome}/Headers")
++            else
++                jniIncludes.add("-I${jdkHome}/include")
++
++            if (platformOs == "win32" || platformOs == "linux")
++                jniIncludes.add("-I${jdkHome}/include/$platformOs")
++
++            ant.echo(message: "Compiling object files")
++
++            def clargs = platformProperties["${buildType}.cc.args"] + " " + platformProperties["cc.paranoid"] + " " + jniIncludes.join(" ")
++
++            def compile = { inputFilePath, outputFileName ->
++                def outputFilePath = "$objects/$outputFileName"
++
++                ant.echo("$inputFilePath -> $outputFilePath")
++
++                ant.exec(failonerror: true, dir: mod, executable: cc) {
++                    arg(line: "$clargs -c $inputFilePath -o $outputFilePath")
++                }
++            }
++
++            compile("$build/swig/sqlite_wrap.c", "sqlite_wrap.o")
++            compile("native/sqlite3_wrap_manual.c", "sqlite3_wrap_manual.o")
++            compile("native/intarray.c", "intarray.o")
++
++            def rootDir = platformProperties["root"]
++            def archives = "$rootDir/lib/libsqlcipher.a $rootDir/lib/libcrypto.a"
++
++            ant.echo("Linking $libName")
++
++            ant.exec(failonerror: true, dir: mod, executable: cc) {
++                arg(line: "$linkArgs -o $out/$libName $objects/sqlite_wrap.o $objects/sqlite3_wrap_manual.o $objects/intarray.o $archives")
++            }
++        }
++    }
++}

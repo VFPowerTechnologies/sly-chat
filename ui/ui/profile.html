@@ -1,0 +1,60 @@
+{{#if @global.ios}}
+<!-- Top Navbar -->
+<div class="navbar top-navbar">
+    <div class="navbar-inner">
+        <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
+        <div class="center sliding">Profile</div>
+    </div>
+</div>
+{{/if}}
+
+<div class="pages">
+    <div data-page="profile" class="page">
+
+        {{#if @global.android}}
+        <!-- Top Navbar -->
+        <div class="navbar top-navbar">
+            <div class="navbar-inner">
+                <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
+                <div class="center sliding">Profile</div>
+            </div>
+        </div>
+        {{/if}}
+
+        {{#if @global.isDesktop}}
+        <div class="page-content" style="padding: 0;">
+        {{/if}}
+        {{#unless @global.isDesktop}}
+        <div class="page-content">
+        {{/unless}}
+
+            <div class="profile-info" style="text-align: center; margin-top: 20px;">
+                <img src="img/sly_logo_transparent_bg.png" style="width: 256px; height: 256px; border: 1px solid #eee;">
+                <div class="profile-name">
+                    <p id="profileName" style="font-size: 25px;"></p>
+                </div>
+            </div>
+            <div class="profile-control" style="align-items: center">
+                <p class="buttons-row" style="margin: 0 30%;">
+                    <a id="openProfileUpdatePopup" href="#" class="button button-round button-fill">Update Profile</a>
+                </p>
+            </div>
+            <div class="profile-details" style="margin-left: 10px;">
+                <div class="content-block profile-email">
+                    <p style="font-size: 20px;">Email:</p>
+                    <p id='profileEmail' class='profile-details-node' style="margin-left: 20px;"></p>
+                </div>
+                <div class="content-block profile-phone">
+                    <p style="font-size: 20px;">Phone Number:</p>
+                    <p id='profilePhone' class='profile-details-node' style="margin-left: 20px;"></p>
+                </div>
+                <div class="content-block profile-pubKey">
+                    <p style="font-size: 20px;">Public Key: </p>
+                    <p id='profilePubKey' class='profile-details-node' style="margin-left: 20px;"></p>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>

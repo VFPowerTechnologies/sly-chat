@@ -1,0 +1,68 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:$versions.androidGradle"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
+        classpath "com.google.gms:google-services:$versions.androidGradle"
+    }
+}
+
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+android {
+    compileSdkVersion versions.androidCompileSdk
+    buildToolsVersion versions.androidBuildTools
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+        }
+        debug {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    defaultConfig {
+        applicationId 'io.slychat.messenger'
+        minSdkVersion 19
+        targetSdkVersion 23
+        versionCode 16
+        versionName rootProject.version
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+        debug.java.srcDirs += 'src/debug/kotlin'
+        main.assets.srcDirs += "$rootProject.projectDir/ui"
+    }
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+        //no support for wildcards; so just ignore this one since it clashes
+        exclude 'META-INF/core-compileKotlin.kotlin_module'
+        exclude 'META-INF/io.netty.versions.properties'
+        exclude 'META-INF/INDEX.LIST'
+    }
+}
+
+dependencies {
+    compile "com.android.support:appcompat-v7:$versions.appcompatv7"
+    //pure-java curve25519 is broken: https://github.com/WhisperSystems/curve25519-java/pull/4
+    compile "org.whispersystems:signal-protocol-android:$versions.libsignal"
+    compile project(':ui-services')
+    compile "com.vfpowertech:jsbridge-android-webengine:$versions.jsbridge"
+    compile "nl.komponents.kovenant:kovenant-android:$versions.kovenant"
+    compile "io.reactivex:rxandroid:$versions.rxandroid"
+    compile "com.google.android.gms:play-services-gcm:$versions.playServices"
+}
+
+apply plugin: 'com.google.gms.google-services'

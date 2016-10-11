@@ -1,0 +1,89 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
+        classpath "de.dynamicfiles.projects.gradle.plugins:javafx-gradle-plugin:$versions.jfxGradlePlugin"
+    }
+}
+
+apply plugin: 'kotlin'
+apply plugin: 'application'
+apply plugin: 'javafx-gradle-plugin'
+
+mainClassName = 'io.slychat.messenger.desktop.DesktopApp'
+applicationName = "sly-chat"
+
+sourceSets.main.resources.srcDirs += "$rootProject.projectDir/ui"
+sourceSets.main.resources.srcDirs += "$rootProject.projectDir/desktop-libraries"
+
+dependencies {
+    compile project(':ui-services')
+
+    compile "com.vfpowertech:jsbridge-desktop-webengine:$versions.jsbridge"
+    compile "nl.komponents.kovenant:kovenant-jfx:$versions.kovenant"
+    compile "io.reactivex:rxjavafx:$versions.rxjavafx"
+
+    compile "ch.qos.logback:logback-classic:$versions.logbackClassic"
+
+    compile "org.controlsfx:controlsfx:$versions.controlsFx"
+
+    compile "net.java.dev.jna:jna:$versions.jna"
+
+    //required on osx only
+    compile "de.codecentric.centerdevice:centerdevice-nsmenufx:$versions.nsMenuFx"
+}
+
+//jna currently doesn't work on linux when using javapacker (segfaults when attempting to load any libraries)
+//so we package the linux version this way for now
+task copyJRE {
+    ext.javaHome = '/usr/lib/jvm/java-8-openjdk'
+    ext.destRoot = "$buildDir/jre"
+
+    inputs.dir javaHome
+    outputs.dir destRoot
+
+    doLast {
+        copy {
+            from "$javaHome/jre/lib"
+            into "$destRoot/lib"
+        }
+
+        copy {
+            from "$javaHome/jre/bin/java"
+            into "$destRoot/bin"
+        }
+    }
+}
+
+distributions {
+    main {
+        contents {
+            from(copyJRE) {
+                into "jre"
+            }
+
+            from "sly-chat"
+        }
+    }
+}
+
+distTar {
+    compression = Compression.BZIP2
+    extension = 'tar.bz2'
+}
+
+jfx {
+    //don't disable this, otherwise errors won't be displayed at all
+    verbose = true
+
+    mainClass = mainClassName
+
+    jfxMainAppJarName = 'sly-chat.jar'
+
+    appName = 'sly-chat'
+
+    vendor = 'Keystream Information Systems'
+}

@@ -1,0 +1,14 @@
+.gradle/
+.idea/
+build/
+robovm-build/
+*.iml
+local.properties
+build/docs/
+ui/ui/js/jvm-service
+ui/ui/js/dispatcher.js
+ui/ui/js/build-config.js
+generated/
+ui-services/generated
+__pycache__/
+*.old

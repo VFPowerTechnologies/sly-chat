@@ -1,0 +1,90 @@
+<div class="pages">
+  <div data-page="register" class="page">
+    <div class="page-content vertical-centered-content">
+      <div style="margin: 0 10px 0 10px;">
+        <form id="registrationForm">
+          <div class="content-block-title">Registration</div>
+          <div class="list-block">
+            <ul class="form-list-input">
+              <li>
+                <div class="item-content">
+                  <div class="item-media"><i class="icon icon-form-name"></i></div>
+                  <div class="item-inner">
+                    <div class="item-input">
+                      <input id="registration-name" class='form-input-validate' type="text" placeholder="Name" data-rules="required" data-errorName="Name" autocorrect="off"/>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li>
+                <div class="item-content">
+                  <div class="item-media"><i class="icon icon-form-email"></i></div>
+                  <div class="item-inner">
+                    <div class="item-input">
+                      <input id='registration-email' class='form-input-validate' type="email" placeholder="E-mail" data-errorName="Email" data-rules="required|email" autocorrect="off" autocapitalize="off" />
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li>
+                <div class="item-content">
+                  <div class="item-media"><i class="icon icon-form-password"></i></div>
+                  <div class="item-inner">
+                    <div class="item-input">
+                      <input id="registration-password" class='form-input-validate' type="password" placeholder="Password" data-errorName="Password" data-confirmationId="registration-password-confirm" data-rules="required|confirmed|min-6"/>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li>
+                <div class="item-content">
+                  <div class="item-media"><i class="icon icon-form-password"></i></div>
+                  <div class="item-inner">
+                    <div class="item-input">
+                      <input id="registration-password-confirm" class='form-input-validate' type="password" placeholder="Password Confirmation" data-errorName="Password Confirmation" data-rules="required|min-6"/>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li>
+                <div class="item-content">
+                  <div class="item-media"><i class="icon icon-form-comment"></i></div>
+                  <div class="item-inner">
+                    <div class="item-input">
+                      <select id="countrySelect" style="color: #aaaaaa;" class='form-input-validate' data-rules="required" data-errorName="Country">
+                        <option selected disabled>Country</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li>
+                <div class="item-content">
+                  <div class="item-media"><i id='phoneInputIcon' class="icon icon-form-tel"></i><span id='phoneIntlExt' style="display: none; text-align: center; min-width: 29px; height: 29px; line-height: 29px; color: #ffffff; background-color: #8e8e93; border-radius: 5px;"></span></div>
+                  <div class="item-inner">
+                    <div class="item-input">
+                      <input id='phone' class='form-input-validate' type="tel" placeholder="Phone Number" data-rules="required|phone" data-errorName="Phone Number"/>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="list-block list-error-block">
+            <ul class="error-block"></ul>
+          </div>
+          <div class="content-block">
+            <div class="row">
+              <div class="col-100">
+                <input id="registration-submit-button" type="submit" value="Submit" class="button button-big button-fill"/>
+              </div>
+            </div>
+          </div>
+        </form>
+        <div class="content-block">
+          <p>Already have an account? <a id='loginGoBtn' href="#">Sign In</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

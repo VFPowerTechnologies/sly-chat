@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="io.slychat.messenger.android"
+          android:versionCode="1"
+          android:versionName="1.0">
+
+    <android:uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <android:uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <android:uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <android:uses-permission android:name="android.permission.INTERNET"/>
+    <android:uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <android:uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <android:uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <android:uses-permission android:name="android.permission.VIBRATE"/>
+    <android:uses-permission android:name="com.google.android.c2dm.permission.RECEIVE"/>
+
+    <application
+            android:name=".AndroidApp"
+            android:allowBackup="false"
+            android:icon="@drawable/ic_launcher"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.AppCompat.NoActionBar">
+        <activity
+                android:name=".MainActivity"
+                android:configChanges="orientation|screenSize"
+                android:label="@string/title_activity_main"
+                android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <receiver
+                android:name=".NetworkStatusReceiver"
+                android:enabled="false"
+                android:exported="false"
+                android:label="Network Status Receiver">
+        </receiver>
+
+        <!-- begin GCM section -->
+        <receiver
+                android:name="com.google.android.gms.gcm.GcmReceiver"
+                android:exported="true"
+                android:permission="com.google.android.c2dm.permission.SEND">
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE"/>
+
+                <category android:name="com.vfpowertech.keytap.android"/>
+            </intent-filter>
+        </receiver>
+
+        <service
+                android:name=".SlyGcmListenerService"
+                android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE"/>
+            </intent-filter>
+        </service>
+        <service
+                android:name=".TokenRefreshListenerService"
+                android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.android.gms.iid.InstanceID"/>
+            </intent-filter>
+        </service>
+        <!-- end GCM section -->
+
+        <service
+                android:name=".NotificationDeletionService"
+                android:exported="false"/>
+        <service
+                android:name=".NotificationStopService"
+                android:exported="false"/>
+    </application>
+
+</manifest>

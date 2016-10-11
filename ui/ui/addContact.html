@@ -1,0 +1,63 @@
+{{#if @global.ios}}
+<div class="navbar">
+    <div class="navbar-inner">
+        <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a> New Contact</div>
+        <div class="right">
+        </div>
+    </div>
+</div>
+{{/if}}
+
+<div class="pages">
+    <div data-page="addContact" class="page page-on-center">
+
+        {{#unless @global.ios}}
+        <div class="navbar">
+            <div class="navbar-inner">
+                <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
+                <div class="center sliding">New Contact</div>
+                <div class="right">
+                </div>
+            </div>
+        </div>
+        {{/unless}}
+
+        <div class="page-content">
+            <div>
+                <form id="addContactForm">
+                    <div class="content-block-title">Add Contact</div>
+                    <div class="list-block">
+                        <ul>
+                            <li>
+                                <div class="item-content">
+                                    <div class="item-media"><i class="icon icon-form-name"></i></div>
+                                    <div class="item-inner">
+                                        <div class="item-input">
+                                            <input id="new-contact-username" type="text" placeholder="Phone or E-mail" autocorrect="off" autocapitalize="off"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="list-block list-error-block">
+                        <ul class="error-block"></ul>
+                    </div>
+                    <div class="content-block">
+                        <div class="row">
+                            <div class="col-100">
+                                <input id='newContactSearchSubmit' type="submit" value="Submit" class="button button-big button-fill"/>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div class="content-block-title">Search Results</div>
+                <div class="list-block">
+                    <ul id="newContactSearchResult">
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

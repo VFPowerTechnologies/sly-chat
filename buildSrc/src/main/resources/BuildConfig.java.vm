@@ -1,0 +1,41 @@
+package io.slychat.messenger.core;
+
+import java.net.InetSocketAddress;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import io.slychat.messenger.core.sentry.DSN;
+
+public class BuildConfig {
+    public static class ServerUrls {
+        public final String API_SERVER;
+        public final InetSocketAddress RELAY_SERVER;
+
+        public ServerUrls(final String apiServer, final InetSocketAddress relayServer) {
+            this.API_SERVER = apiServer;
+            this.RELAY_SERVER = relayServer;
+        }
+    }
+
+    private BuildConfig() {}
+
+    public static final boolean DEBUG = $debug;
+    public static final String VERSION = "$version";
+
+    public static final boolean ENABLE_DATABASE_ENCRYPTION = $enableDatabaseEncryption;
+    public static final boolean ENABLE_CONFIG_ENCRYPTION = $enableConfigEncryption;
+
+    public static final boolean TLS_DISABLE_CERTIFICATE_VERIFICATION = $disableCertificateVerification;
+    public static final boolean TLS_DISABLE_HOSTNAME_VERIFICATION = $disableHostnameVerification;
+    public static final boolean TLS_DISABLE_CRL_VERIFICATION = $disableCRLVerification;
+
+    public static final ServerUrls DESKTOP_SERVER_URLS = new ServerUrls("$desktopHttpApiServer", $desktopRelayServer);
+    public static final ServerUrls ANDROID_SERVER_URLS = new ServerUrls("$androidHttpApiServer", $androidRelayServer);
+
+    public static final long relayKeepAliveIntervalMs = $relayKeepAliveIntervalMs;
+
+    @Nullable
+    public static final DSN sentryDsn = $sentryDsn;
+
+    public static final byte[] caCert = $caCert;
+}

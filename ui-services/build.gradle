@@ -1,0 +1,48 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
+    }
+}
+
+apply plugin: 'kotlin'
+
+sourceCompatibility = JavaVersion.VERSION_1_7
+
+def jsOutputDir = "$rootProject.projectDir/ui/ui/js/jvm-service"
+
+kapt {
+    generateStubs = true
+
+    arguments {
+        arg('jsOutputDir', jsOutputDir)
+        arg('jsCallbackPackage', 'io.slychat.messenger.core.services.jscallback')
+        arg('jsAddModuleExports', 'false')
+    }
+}
+
+clean.doFirst {
+    delete jsOutputDir
+}
+
+dependencies {
+    compile project(':core')
+
+    kapt "com.vfpowertech:jsbridge-processor:$versions.jsbridge"
+    kapt "com.google.dagger:dagger-compiler:$versions.dagger"
+
+    compile "com.vfpowertech:jsbridge-core:$versions.jsbridge"
+    compile "com.vfpowertech:jsbridge-processor-annotations:$versions.jsbridge"
+    compile "nl.komponents.kovenant:kovenant-core:$versions.kovenant"
+    compile "nl.komponents.kovenant:kovenant-functional:$versions.kovenant"
+    compile "nl.komponents.kovenant:kovenant-ui:$versions.kovenant"
+    compile "org.slf4j:slf4j-api:$versions.slf4j"
+    compile "com.fasterxml.jackson.core:jackson-databind:$versions.jackson"
+    compile "com.google.dagger:dagger:$versions.dagger"
+    compile "com.googlecode.libphonenumber:libphonenumber:$versions.libphonenumber"
+
+    testCompile project(':test-utils')
+}

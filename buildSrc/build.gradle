@@ -1,0 +1,26 @@
+buildscript {
+    ext.versions = [
+        kotlin: '1.0.2',
+        velocity: '1.7',
+    ]
+
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
+    }
+}
+
+apply plugin: 'kotlin'
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile gradleApi()
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$versions.kotlin"
+    compile "org.apache.velocity:velocity:$versions.velocity"
+}

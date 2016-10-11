@@ -1,0 +1,35 @@
+{
+  "project_info": {
+    "project_number": "557760577781",
+    "project_id": "sly-dev"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:557760577781:android:25ef4b2c59ae108d",
+        "android_client_info": {
+          "package_name": "io.slychat.messenger"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDwnaW_D-aRcXc4U_WhchHggFra_X5FQ-I"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
