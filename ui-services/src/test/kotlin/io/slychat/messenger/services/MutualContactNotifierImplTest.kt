@@ -26,7 +26,7 @@ class MutualContactNotifierImplTest {
     fun `it should process added contacts where the message level is ALL`() {
         val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
 
-        contactEvents.onNext(ContactEvent.Added(setOf(contactInfo)))
+        contactEvents.onNext(ContactEvent.Added(listOf(contactInfo), false))
 
         verify(messengerService).notifyContactAdd(listOf(contactInfo.id))
     }
@@ -35,7 +35,7 @@ class MutualContactNotifierImplTest {
     fun `it should ignore added contacts where the message level is not ALL`() {
         val contactInfo = randomContactInfo(AllowedMessageLevel.GROUP_ONLY)
 
-        contactEvents.onNext(ContactEvent.Added(setOf(contactInfo)))
+        contactEvents.onNext(ContactEvent.Added(listOf(contactInfo), false))
 
         verify(messengerService, never()).notifyContactAdd(any())
     }
@@ -46,7 +46,7 @@ class MutualContactNotifierImplTest {
 
         val contactUpdate = ContactUpdate(contactInfo, contactInfo)
 
-        contactEvents.onNext(ContactEvent.Updated(setOf(contactUpdate)))
+        contactEvents.onNext(ContactEvent.Updated(listOf(contactUpdate), false))
 
         verify(messengerService, never()).notifyContactAdd(any())
     }
@@ -57,7 +57,7 @@ class MutualContactNotifierImplTest {
 
         val contactUpdate = ContactUpdate(contactInfo, contactInfo.copy(allowedMessageLevel = AllowedMessageLevel.ALL))
 
-        contactEvents.onNext(ContactEvent.Updated(setOf(contactUpdate)))
+        contactEvents.onNext(ContactEvent.Updated(listOf(contactUpdate), false))
 
         verify(messengerService).notifyContactAdd(listOf(contactInfo.id))
     }

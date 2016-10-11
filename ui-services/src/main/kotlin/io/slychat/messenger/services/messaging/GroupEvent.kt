@@ -21,4 +21,6 @@ sealed class GroupEvent {
             return "Parted(id=$id, member=$member)"
         }
     }
+    //TODO fix these events
+    //class MembershipChanged(val groupId: GroupId, val newMembers: Set<UserId>, val partedMembers: Set<UserId>) : GroupEvent
 }

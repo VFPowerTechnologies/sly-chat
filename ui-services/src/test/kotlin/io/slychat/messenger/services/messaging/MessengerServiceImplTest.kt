@@ -891,7 +891,7 @@ class MessengerServiceImplTest {
         val messengerService = createService()
 
         val info = AddressBookSyncJobInfo(true, true, true)
-        val result = AddressBookSyncResult(true, 1, false)
+        val result = AddressBookSyncResult(true, 1, PullResults(false))
 
         syncEvents.onNext(AddressBookSyncEvent.End(info, result))
 
@@ -903,7 +903,7 @@ class MessengerServiceImplTest {
         val messengerService = createService()
 
         val info = AddressBookSyncJobInfo(true, true, true)
-        val result = AddressBookSyncResult(true, 0, false)
+        val result = AddressBookSyncResult(true, 0, PullResults(false))
 
         syncEvents.onNext(AddressBookSyncEvent.End(info, result))
 
