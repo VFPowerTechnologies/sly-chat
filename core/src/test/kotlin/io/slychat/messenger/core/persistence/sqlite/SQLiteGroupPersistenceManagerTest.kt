@@ -814,7 +814,7 @@ class SQLiteGroupPersistenceManagerTest : GroupPersistenceManagerTestUtils {
             when (newLevel) {
                 GroupMembershipLevel.BLOCKED -> GroupDiffDelta.Blocked(groupId)
                 GroupMembershipLevel.PARTED -> GroupDiffDelta.Parted(groupId)
-                GroupMembershipLevel.JOINED -> GroupDiffDelta.Joined(groupId, members)
+                GroupMembershipLevel.JOINED -> GroupDiffDelta.Joined(groupId, groupName, members)
             }
         }
         else {

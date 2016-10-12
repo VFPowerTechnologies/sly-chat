@@ -420,6 +420,7 @@ AND
 
     private fun getDiffDelta(
         groupId: GroupId,
+        name: String,
         membershipLevel: GroupMembershipLevel,
         oldMembers: Set<UserId>,
         currentMembers: Set<UserId>,
@@ -430,7 +431,7 @@ AND
             val transitionDelta = when (membershipLevel) {
                 GroupMembershipLevel.BLOCKED -> GroupDiffDelta.Blocked(groupId)
                 GroupMembershipLevel.PARTED -> GroupDiffDelta.Parted(groupId)
-                GroupMembershipLevel.JOINED -> GroupDiffDelta.Joined(groupId, currentMembers)
+                GroupMembershipLevel.JOINED -> GroupDiffDelta.Joined(groupId, name, currentMembers)
             }
 
             transitionDelta
@@ -477,7 +478,7 @@ AND
         if (hasMembers)
             setGroupMembersTo(connection, groupId, update.members)
 
-        return getDiffDelta(groupId, update.membershipLevel, oldMembers, update.members, transitionOccured)
+        return getDiffDelta(groupId, update.name, update.membershipLevel, oldMembers, update.members, transitionOccured)
     }
 
     override fun applyDiff(updates: Collection<AddressBookUpdate.Group>): Promise<List<GroupDiffDelta>, Exception> {

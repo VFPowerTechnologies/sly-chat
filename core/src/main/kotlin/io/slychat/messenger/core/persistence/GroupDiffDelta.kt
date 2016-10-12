@@ -3,7 +3,7 @@ package io.slychat.messenger.core.persistence
 import io.slychat.messenger.core.UserId
 
 sealed class GroupDiffDelta {
-    class Joined(val groupId: GroupId, val members: Set<UserId>) : GroupDiffDelta() {
+    class Joined(val groupId: GroupId, val name: String, val members: Set<UserId>) : GroupDiffDelta() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
@@ -11,6 +11,7 @@ sealed class GroupDiffDelta {
             other as Joined
 
             if (groupId != other.groupId) return false
+            if (name != other.name) return false
             if (members != other.members) return false
 
             return true
@@ -18,12 +19,13 @@ sealed class GroupDiffDelta {
 
         override fun hashCode(): Int {
             var result = groupId.hashCode()
+            result = 31 * result + name.hashCode()
             result = 31 * result + members.hashCode()
             return result
         }
 
         override fun toString(): String {
-            return "Joined(groupId=$groupId, members=$members)"
+            return "Joined(groupId=$groupId, name='$name', members=$members)"
         }
     }
 
