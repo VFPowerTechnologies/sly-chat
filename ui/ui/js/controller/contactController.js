@@ -476,7 +476,7 @@ ContactController.prototype  = {
 
             setTimeout(function () {
                 if (this.eventsSize == this.events.length) {
-                    this.events.filter(function (event) {
+                    this.events = this.events.filter(function (event) {
                         switch(event.type) {
                             case "ADD":
                             case "UPDATE":
@@ -816,6 +816,8 @@ ContactController.prototype  = {
 
     handleContactBlocked : function (contactId) {
         delete this.conversations[contactId];
+        this.contacts[contactId].block();
+
         slychat.addNotification({
             title: "Contact has been blocked",
             hold: 2000
@@ -827,7 +829,7 @@ ContactController.prototype  = {
     },
 
     handleContactUnblocked : function (contactId) {
-        messengerService.getConversation(contatId).then(function (conversation) {
+        messengerService.getConversation(contactId).then(function (conversation) {
             if (conversation != null) {
                 this.conversations[contactId] = new Conversation(conversation);
             }
