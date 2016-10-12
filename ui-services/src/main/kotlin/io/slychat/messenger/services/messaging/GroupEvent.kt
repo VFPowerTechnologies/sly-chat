@@ -4,7 +4,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
 
 sealed class GroupEvent {
-    class Joined(val id: GroupId, val members: Set<UserId>, val fromSync: Boolean) : GroupEvent() {
+    class Joined(val id: GroupId, val name: String, val members: Set<UserId>, val fromSync: Boolean) : GroupEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
@@ -12,19 +12,23 @@ sealed class GroupEvent {
             other as Joined
 
             if (id != other.id) return false
+            if (name != other.name) return false
             if (members != other.members) return false
+            if (fromSync != other.fromSync) return false
 
             return true
         }
 
         override fun hashCode(): Int {
             var result = id.hashCode()
+            result = 31 * result + name.hashCode()
             result = 31 * result + members.hashCode()
+            result = 31 * result + fromSync.hashCode()
             return result
         }
 
         override fun toString(): String {
-            return "Joined(groupId=$id, members=$members)"
+            return "Joined(id=$id, name='$name', members=$members, fromSync=$fromSync)"
         }
     }
 

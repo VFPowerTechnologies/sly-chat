@@ -46,7 +46,7 @@ class GroupServiceImpl(
 
         groupDeltas.forEach {
             events.add(when (it) {
-                is GroupDiffDelta.Joined -> GroupEvent.Joined(it.groupId, it.members, true)
+                is GroupDiffDelta.Joined -> GroupEvent.Joined(it.groupId, it.name, it.members, true)
                 is GroupDiffDelta.Blocked -> GroupEvent.Blocked(it.groupId, true)
                 is GroupDiffDelta.Parted -> GroupEvent.Parted(it.groupId, true)
                 is GroupDiffDelta.MembershipChanged -> GroupEvent.MembershipChanged(it.groupId, it.newMembers, it.partedMembers, true)
@@ -93,7 +93,7 @@ class GroupServiceImpl(
             groupPersistenceManager.join(groupInfo, members) mapUi { wasJoined ->
                 if (wasJoined) {
                     log.info("Joined new group {} with members={}", groupInfo.id, members)
-                    groupEventSubject.onNext(GroupEvent.Joined(groupInfo.id, members, false))
+                    groupEventSubject.onNext(GroupEvent.Joined(groupInfo.id, groupInfo.name, members, false))
                     triggerRemoteSync()
                 }
                 else

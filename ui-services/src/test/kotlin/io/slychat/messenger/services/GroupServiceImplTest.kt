@@ -4,14 +4,11 @@ import com.nhaarman.mockito_kotlin.MockitoKotlin
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.persistence.GroupDiffDelta
 import io.slychat.messenger.core.persistence.GroupMembershipLevel
 import io.slychat.messenger.core.persistence.GroupPersistenceManager
-import io.slychat.messenger.core.randomGroupId
-import io.slychat.messenger.core.randomGroupInfo
-import io.slychat.messenger.core.randomUserId
-import io.slychat.messenger.core.randomUserIds
 import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.messaging.GroupEvent
 import io.slychat.messenger.services.messaging.MessageService
@@ -330,7 +327,7 @@ class GroupServiceImplTest {
     fun `it should emit events when a sync finishes`() {
         val info = AddressBookSyncJobInfo(false, false, true)
         val groupDeltas = listOf(
-            GroupDiffDelta.Joined(randomGroupId(), randomUserIds()),
+            GroupDiffDelta.Joined(randomGroupId(), randomGroupName(), randomUserIds()),
             GroupDiffDelta.Parted(randomGroupId()),
             GroupDiffDelta.Blocked(randomGroupId()),
             GroupDiffDelta.MembershipChanged(randomGroupId(), randomUserIds(), randomUserIds())
@@ -338,7 +335,7 @@ class GroupServiceImplTest {
 
         val events = groupDeltas.map {
             when (it) {
-                is GroupDiffDelta.Joined -> GroupEvent.Joined(it.groupId, it.members, true)
+                is GroupDiffDelta.Joined -> GroupEvent.Joined(it.groupId, it.name, it.members, true)
                 is GroupDiffDelta.Blocked -> GroupEvent.Blocked(it.groupId, true)
                 is GroupDiffDelta.Parted -> GroupEvent.Parted(it.groupId, true)
                 is GroupDiffDelta.MembershipChanged -> GroupEvent.MembershipChanged(it.groupId, it.newMembers, it.partedMembers, true)

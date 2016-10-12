@@ -562,8 +562,4 @@ ON
             stmt.bind(1, item)
         }
     }
-
-    internal fun internalClearRemoteUpdates() = sqlitePersistenceManager.syncRunQuery {
-        it.withPrepared("DELETE FROM remote_group_updates") { it.step() }
-    }
 }
