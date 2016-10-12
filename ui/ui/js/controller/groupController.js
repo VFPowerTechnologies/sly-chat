@@ -290,7 +290,7 @@ GroupController.prototype = {
                 this.eventsSize = this.events.length;
                 this.refreshCache();
             }
-        }.bind(this), 1000);
+        }.bind(this), 500);
     },
 
     handleMembershipEvent : function (groupId, newMembers, partedMembers) {
