@@ -72,6 +72,10 @@ class GroupServiceImpl(
         return messageService.getAllGroupConversations()
     }
 
+    override fun getGroupConversation(groupId: GroupId): Promise<GroupConversation?, Exception> {
+        return messageService.getGroupConversation(groupId)
+    }
+
     override fun getInfo(groupId: GroupId): Promise<GroupInfo?, Exception> {
         return groupPersistenceManager.getInfo(groupId)
     }

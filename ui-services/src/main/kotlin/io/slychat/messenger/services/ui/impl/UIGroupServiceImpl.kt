@@ -94,6 +94,10 @@ class UIGroupServiceImpl(
         }
     }
 
+    override fun getGroupConversation(groupId: GroupId): Promise<UIGroupConversation?, Exception> {
+        return getMessageServiceOrThrow().getGroupConversation(groupId) map { it?.toUi() }
+    }
+
     override fun inviteUsers(groupId: GroupId, contacts: List<UIContactInfo>): Promise<Unit, Exception> {
         val ids = contacts.mapToSet { it.id }
         return getMessengerServiceOrThrow().inviteUsersToGroup(groupId, ids)

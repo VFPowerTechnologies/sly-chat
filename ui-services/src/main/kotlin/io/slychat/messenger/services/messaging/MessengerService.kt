@@ -2,7 +2,10 @@ package io.slychat.messenger.services.messaging
 
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
-import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.core.persistence.ConversationMessageInfo
+import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.core.persistence.Package
 import nl.komponents.kovenant.Promise
 
 interface MessengerService {
@@ -33,6 +36,5 @@ interface MessengerService {
     fun partGroup(groupId: GroupId): Promise<Boolean, Exception>
     fun blockGroup(groupId: GroupId): Promise<Unit, Exception>
     fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception>
-    fun getConversations(): Promise<List<UserConversation>, Exception>
     fun markConversationAsRead(userId: UserId): Promise<Unit, Exception>
 }

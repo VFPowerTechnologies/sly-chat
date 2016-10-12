@@ -13,6 +13,8 @@ interface UIGroupService {
 
     fun getGroupConversations(): Promise<List<UIGroupConversation>, Exception>
 
+    fun getGroupConversation(groupId: GroupId): Promise<UIGroupConversation?, Exception>
+
     fun inviteUsers(groupId: GroupId, contacts: List<UIContactInfo>): Promise<Unit, Exception>
 
     fun createNewGroup(name: String, initialMembers: List<UIContactInfo>): Promise<GroupId, Exception>

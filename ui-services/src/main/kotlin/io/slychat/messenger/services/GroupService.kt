@@ -29,6 +29,8 @@ interface GroupService {
 
     fun getGroupConversations(): Promise<List<GroupConversation>, Exception>
 
+    fun getGroupConversation(groupId: GroupId): Promise<GroupConversation?, Exception>
+
     fun getMembersWithInfo(groupId: GroupId): Promise<List<ContactInfo>, Exception>
 
     fun join(groupInfo: GroupInfo, members: Set<UserId>): Promise<Unit, Exception>
