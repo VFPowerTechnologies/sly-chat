@@ -180,6 +180,16 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         }
     }
 
+    fun forUserConvType(allowedMessageLevel: AllowedMessageLevel, body: MessageTestFixture.(ContactInfo) -> Unit) {
+        MessageTestFixture().run {
+            val contactInfo = randomContactInfo(allowedMessageLevel)
+
+            contactsPersistenceManager.add(contactInfo).get()
+
+            this.body(contactInfo)
+        }
+    }
+
     fun foreachConvType(body: MessageTestFixture.(ConversationId, Set<UserId>) -> Unit) {
         MessageTestFixture().run {
             val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
@@ -1275,6 +1285,54 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
             val unreadCount = conversationInfoTestUtils.getConversationInfo(conversationId).unreadMessageCount
             assertEquals(1, unreadCount)
+        }
+    }
+
+    @Test
+    fun `getUserConversation should return a conversation for an ALL user`() {
+        forUserConvType(AllowedMessageLevel.ALL) {
+            assertNotNull(messagePersistenceManager.getUserConversation(it.id).get(), "Expected conversation info")
+        }
+    }
+
+    @Test
+    fun `getUserConversation should return null for a GROUP_ONLY user`() {
+        forUserConvType(AllowedMessageLevel.GROUP_ONLY) {
+            assertNull(messagePersistenceManager.getUserConversation(it.id).get(), "Expected no conversation info")
+        }
+    }
+
+    @Test
+    fun `getUserConversation should return null for a BLOCKED user`() {
+        forUserConvType(AllowedMessageLevel.BLOCKED) {
+            assertNull(messagePersistenceManager.getUserConversation(it.id).get(), "Expected no conversation info")
+        }
+    }
+
+    @Test
+    fun `getGroupConversation should return a conversation for a joined group`() {
+        MessageTestFixture().run {
+            withJoinedGroup { groupId, members ->
+                assertNotNull(messagePersistenceManager.getGroupConversation(groupId).get(), "Expected conversation info")
+            }
+        }
+    }
+
+    @Test
+    fun `getGroupConversation should return null for a parted group`() {
+        MessageTestFixture().run {
+            withPartedGroup {
+                assertNull(messagePersistenceManager.getGroupConversation(it).get(), "Expected no conversation info")
+            }
+        }
+    }
+
+    @Test
+    fun `getGroupConversation should return null for a blocked group`() {
+        MessageTestFixture().run {
+            withBlockedGroup {
+                assertNull(messagePersistenceManager.getGroupConversation(it).get(), "Expected no conversation info")
+            }
         }
     }
 }

@@ -2,6 +2,8 @@ var GroupController = function () {
     this.groups = [];
     this.groupDetailsCache = [];
     this.lastGroupId = null;
+    this.events = [];
+    this.eventsSize = this.events.length;
 };
 
 GroupController.prototype = {
@@ -256,42 +258,77 @@ GroupController.prototype = {
     },
 
     addGroupEventListener : function () {
-        groupService.addGroupEventListener(function (event) {
-            switch(event.type) {
-                case "NEW":
-                    this.newGroupCreatedEvent(event);
-                    break;
-
-                case "PARTED":
-                    if(this.groupDetailsCache[event.groupId] !== undefined) {
-                        groupService.getMembers(event.groupId).then(function (members) {
-                            this.groupDetailsCache[event.groupId].setMembers(members);
-                            this.createGroupNodeMembers(event.groupId, members);
-                        }.bind(this)).catch(function (e) {
-                            exceptionController.handleError(e);
-                        });
-                    }
-                    break;
-
-                case "JOINED":
-                    if(this.groupDetailsCache[event.groupId] !== undefined) {
-                        groupService.getMembers(event.groupId).then(function (members) {
-                            this.groupDetailsCache[event.groupId].setMembers(members);
-                            this.createGroupNodeMembers(event.groupId, members);
-                        }.bind(this)).catch(function (e) {
-                            exceptionController.handleError(e);
-                        });
-                    }
-                    break;
-            }
-
-        }.bind(this));
+        groupService.addGroupEventListener(this.handleGroupEvents.bind(this));
     },
 
-    newGroupCreatedEvent : function (event) {
-        if(this.groupDetailsCache[event.groupId] === undefined) {
-            this.fetchGroup(event.groupId);
+    handleGroupEvents : function (event) {
+        this.events.push(event);
+        this.eventsSize = this.events.length;
+
+        setTimeout(function () {
+            // if there was no more group event in the last second run all event
+            if (this.events.length == this.eventsSize) {
+                this.events = this.events.filter(function (event) {
+                    switch(event.type) {
+                        case "PARTED":
+                            this.handlePartedEvent(event.groupId);
+                            break;
+
+                        case "JOINED":
+                            this.handleJoinedEvent(event.groupInfo, event.members);
+                            break;
+
+                        case "MEMBERSHIP":
+                            this.handleMembershipEvent(event.groupId, event.newMembers, event.partedMembers);
+                            break;
+
+                        case "BLOCKED":
+                            this.handleBlockedGroup(event.groupId);
+                            break;
+                    }
+                }.bind(this));
+                this.eventsSize = this.events.length;
+                this.refreshCache();
+            }
+        }.bind(this), 500);
+    },
+
+    handleMembershipEvent : function (groupId, newMembers, partedMembers) {
+        if (this.groupDetailsCache[groupId] !== undefined) {
+            newMembers.forEach(function (memberId) {
+                this.groupDetailsCache[groupId].addMemberFromId(memberId);
+            }.bind(this));
+
+            partedMembers.forEach(function (memberId) {
+                this.groupDetailsCache[groupId].removeMember(memberId);
+            }.bind(this));
         }
+    },
+
+    handleJoinedEvent : function (groupInfo, memberIds) {
+        var groupDetails = new GroupDetails({
+            group: groupInfo,
+            info: {
+                lastSpeaker: null,
+                unreadMessageCount: 0,
+                lastMessage: null,
+                lastTimestamp: null
+            }
+        });
+
+        memberIds.forEach(function (memberId) {
+            groupDetails.addMemberFromId(memberId);
+        });
+
+        this.groupDetailsCache[groupInfo.id] = groupDetails;
+    },
+
+    handlePartedEvent : function (groupId) {
+        delete this.groupDetailsCache[groupId];
+    },
+
+    handleBlockedGroup : function (groupId) {
+        delete this.groupDetailsCache[groupId];
     },
 
     createGroup : function () {
@@ -335,24 +372,15 @@ GroupController.prototype = {
     openInviteUsersModal : function (groupId) {
         var contactList = "";
 
-        var members = [];
-
-        this.getGroupMembers(groupId).forEach(function (member) {
-            members[member.id] = member;
-        });
-
         var conversations = contactController.conversations;
         conversations.forEach(function (conversation) {
             var contact = conversation.contact;
-            if(!(contact.id in members)) {
-                contactList += "<li><label class='label-checkbox item-content'>" +
-                    "<input class='new-group-contact' type='checkbox' name='" + contact.name + "' value='" + contact.id + "'>" +
-                    "<div class='item-media'><i class='icon icon-form-checkbox'></i></div> " +
-                    "<div class='item-inner'><div class='item-title'>" + contact.name + "</div></div>" +
-                    "</label></li>";
-            }
+            contactList += "<li><label class='label-checkbox item-content'>" +
+                "<input class='new-group-contact' type='checkbox' name='" + contact.name + "' value='" + contact.id + "'>" +
+                "<div class='item-media'><i class='icon icon-form-checkbox'></i></div> " +
+                "<div class='item-inner'><div class='item-title'>" + contact.name + "</div></div>" +
+                "</label></li>";
         });
-
 
         var content = "<div><a id='submitInviteContactButton' href='#' class='button button-big button-raised button-fill'>Invite</a>" +
             "<div class='list-block'>" +

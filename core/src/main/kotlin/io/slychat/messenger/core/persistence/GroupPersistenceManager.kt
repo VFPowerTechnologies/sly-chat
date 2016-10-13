@@ -45,8 +45,9 @@ interface GroupPersistenceManager {
     /** Unblock the given group. */
     fun unblock(groupId: GroupId): Promise<Boolean, Exception>
 
-    fun applyDiff(updates: Collection<AddressBookUpdate.Group>): Promise<Unit, Exception>
+    fun applyDiff(updates: Collection<AddressBookUpdate.Group>): Promise<List<GroupDiffDelta>, Exception>
 
     fun getRemoteUpdates(): Promise<List<AddressBookUpdate.Group>, Exception>
+
     fun removeRemoteUpdates(remoteUpdates: Collection<GroupId>): Promise<Unit, Exception>
 }

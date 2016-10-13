@@ -340,10 +340,6 @@ class MessengerServiceImpl(
         return messageService.getLastMessages(userId.toConversationId(), startingAt, count)
     }
 
-    override fun getConversations(): Promise<List<UserConversation>, Exception> {
-        return messageService.getAllUserConversations()
-    }
-
     override fun markConversationAsRead(userId: UserId): Promise<Unit, Exception> {
         return messageService.markConversationAsRead(userId.toConversationId())
     }

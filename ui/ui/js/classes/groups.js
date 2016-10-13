@@ -28,6 +28,16 @@ GroupDetails.prototype = {
 
     isActualConversation : function () {
         return this.groupInfo.lastTimestamp !== null;
+    },
+
+    removeMember : function (memberId) {
+        delete this.members[memberId];
+    },
+
+    addMemberFromId : function (memberId) {
+        var member = contactController.getContact(memberId);
+        if (member)
+            this.addMember(member);
     }
 };
 

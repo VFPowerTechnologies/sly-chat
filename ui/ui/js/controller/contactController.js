@@ -4,6 +4,8 @@ var ContactController = function () {
     this.contactSyncNotification = null;
     this.contacts = [];
     this.lastContactInfoId = null;
+    this.events = [];
+    this.eventsSize = this.events.length;
 };
 
 ContactController.prototype  = {
@@ -81,20 +83,12 @@ ContactController.prototype  = {
                 }
             });
         }
-
-        this.refreshCache();
-        groupController.refreshCache();
     },
 
     removeContactFromCache : function (contact) {
         var id = contact.id;
         delete this.contacts[id];
         delete this.conversations[id];
-
-        $("#contact-list").find("#contactLink_" + id).remove();
-        $("#recentContactList").find("#recentContactLink_" + id).remove();
-        $("#recentChatList").find("#recentChat_" + id).remove();
-        $("#leftContact_" + id).remove();
 
         if (chatController.getCurrentContactId() == id) {
             navigationController.loadPage("contacts.html", false);
@@ -468,31 +462,47 @@ ContactController.prototype  = {
     },
 
     addContactEventListener : function () {
-        contactService.addContactEventListener(function (ev) {
-            switch(ev.type) {
-                case "ADD":
-                case "UPDATE":
-                    ev.contacts.forEach(function (contact) {
-                        this.addNewContactToCache(contact);
+        contactService.addContactEventListener(this.handleContactEvents.bind(this));
+    },
+
+    handleContactEvents : function (event) {
+        if (event.type === "SYNC") {
+            this.sync = event.running;
+            this.handleContactSyncNotification();
+        }
+        else {
+            this.events.push(event);
+            this.eventsSize = this.events.length;
+
+            setTimeout(function () {
+                if (this.eventsSize == this.events.length) {
+                    this.events = this.events.filter(function (event) {
+                        switch(event.type) {
+                            case "ADD":
+                            case "UPDATE":
+                                event.contacts.forEach(function (contact) {
+                                    this.addNewContactToCache(contact);
+                                }.bind(this));
+                                break;
+                            case 'REMOVE':
+                                event.contacts.forEach(function (contact) {
+                                    this.removeContactFromCache(contact);
+                                }.bind(this));
+                                break;
+                            case "BLOCK":
+                                this.handleContactBlocked(event.userId);
+                                break;
+                            case "UNBLOCK":
+                                this.handleContactUnblocked(event.userId);
+                                break;
+                        }
                     }.bind(this));
-                    break;
-                case 'REMOVE':
-                    ev.contacts.forEach(function (contact) {
-                        this.removeContactFromCache(contact);
-                    }.bind(this));
-                    break;
-                case "SYNC":
-                    this.sync = ev.running;
-                    this.handleContactSyncNotification();
-                    break;
-                case "BLOCK":
-                    this.handleContactBlocked(ev.userId);
-                    break;
-                case "UNBLOCK":
-                    this.handleContactUnblocked(ev.userId);
-                    break;
-            }
-        }.bind(this));
+
+                    this.refreshCache();
+                    this.eventsSize = this.events.length;
+                }
+            }.bind(this), 500);
+        }
     },
 
     handleContactSyncNotification : function () {
@@ -629,7 +639,6 @@ ContactController.prototype  = {
                 hold: 3000
             });
 
-            this.addNewContactToCache(contactInfo);
             this.loadChatPage(contact, false);
         }.bind(this)).catch(function (e) {
             form.find(".error-block").html("<li>An error occurred</li>");
@@ -806,7 +815,9 @@ ContactController.prototype  = {
     },
 
     handleContactBlocked : function (contactId) {
-        this.resetCachedConversation();
+        delete this.conversations[contactId];
+        this.contacts[contactId].block();
+
         slychat.addNotification({
             title: "Contact has been blocked",
             hold: 2000
@@ -818,25 +829,28 @@ ContactController.prototype  = {
     },
 
     handleContactUnblocked : function (contactId) {
-        this.resetCachedConversation();
-        slychat.addNotification({
-            title: "Contact has been unblocked",
-            hold: 2000
+        messengerService.getConversation(contactId).then(function (conversation) {
+            if (conversation != null) {
+                this.conversations[contactId] = new Conversation(conversation);
+            }
+            this.refreshCache();
+
+            slychat.addNotification({
+                title: "Contact has been unblocked",
+                hold: 2000
+            });
+
+            if (navigationController.getCurrentPage() === "blockedContacts.html") {
+                $("#blocked_" + contactId).remove();
+            }
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
         });
 
-        if (navigationController.getCurrentPage() === "blockedContacts.html") {
-            $("#blocked_" + contactId).remove();
-        }
     },
 
     deleteContact : function (contact) {
-        contactService.removeContact(contact).then(function () {
-            this.removeContactFromCache(contact);
-            slychat.addNotification({
-                title: "Contact has been deleted",
-                hold: 3000
-            });
-        }.bind(this)).catch(function (e) {
+        contactService.removeContact(contact).catch(function (e) {
             exceptionController.handleError(e);
         })
     },

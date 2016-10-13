@@ -3,6 +3,7 @@ package io.slychat.messenger.services.contacts
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.contacts.*
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
+import io.slychat.messenger.core.persistence.ContactDiffDelta
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.services.auth.AuthTokenManager
@@ -54,7 +55,7 @@ class ContactsServiceImpl(
         } successUi { wasAdded ->
             if (wasAdded) {
                 doAddressBookPush()
-                contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
+                contactEventsSubject.onNext(ContactEvent.Added(listOf(contactInfo), false))
             }
         }
     }
@@ -69,7 +70,7 @@ class ContactsServiceImpl(
             else {
                 contactsPersistenceManager.add(contactInfo) successUi {
                     if (it)
-                        contactEventsSubject.onNext(ContactEvent.Added(setOf(contactInfo)))
+                        contactEventsSubject.onNext(ContactEvent.Added(listOf(contactInfo), false))
                 }
             }
         }
@@ -85,7 +86,7 @@ class ContactsServiceImpl(
                 contactInfo.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
             )
 
-            contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactUpdate)))
+            contactEventsSubject.onNext(ContactEvent.Updated(listOf(contactUpdate), false))
             true
         }
     }
@@ -118,7 +119,7 @@ class ContactsServiceImpl(
         } successUi { wasRemoved ->
             if (wasRemoved) {
                 doAddressBookPush()
-                contactEventsSubject.onNext(ContactEvent.Removed(setOf(contactInfo)))
+                contactEventsSubject.onNext(ContactEvent.Removed(listOf(contactInfo)))
             }
         }
     }
@@ -133,7 +134,7 @@ class ContactsServiceImpl(
 
                 contactsPersistenceManager.update(contactInfo) successUi {
                     val contactUpdate = ContactUpdate(oldInfo, contactInfo)
-                    contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactUpdate)))
+                    contactEventsSubject.onNext(ContactEvent.Updated(listOf(contactUpdate), false))
                 }
             }
         }
@@ -194,7 +195,7 @@ class ContactsServiceImpl(
                         oldInfo.copy(allowedMessageLevel = AllowedMessageLevel.ALL)
                     )
 
-                    contactEventsSubject.onNext(ContactEvent.Updated(setOf(contactUpdate)))
+                    contactEventsSubject.onNext(ContactEvent.Updated(listOf(contactUpdate), false))
                 }
             }
         }
@@ -225,8 +226,31 @@ class ContactsServiceImpl(
 
         if (event is AddressBookSyncEvent.End) {
             if (event.result.addedLocalContacts.isNotEmpty())
-                contactEventsSubject.onNext(ContactEvent.Added(event.result.addedLocalContacts))
+                contactEventsSubject.onNext(ContactEvent.Added(event.result.addedLocalContacts, false))
+
+            handleContactDeltas(event.result.pullResults.contactDeltas)
         }
+    }
+
+    private fun handleContactDeltas(contactDeltas: List<ContactDiffDelta>) {
+        if (contactDeltas.isEmpty())
+            return
+
+        val added = ArrayList<ContactInfo>()
+        val updated = ArrayList<ContactUpdate>()
+
+        contactDeltas.forEach {
+            when (it) {
+                is ContactDiffDelta.Added -> added.add(it.contactInfo)
+                is ContactDiffDelta.Updated -> updated.add(ContactUpdate(it.old, it.new))
+            }
+        }
+
+        if (added.isNotEmpty())
+            contactEventsSubject.onNext(ContactEvent.Added(added, true))
+
+        if (updated.isNotEmpty())
+            contactEventsSubject.onNext(ContactEvent.Updated(updated, true))
     }
 
     /** Process the given unadded users. */
@@ -268,7 +292,7 @@ class ContactsServiceImpl(
             val added = newContacts.isNotEmpty()
 
             if (added) {
-                val ev = ContactEvent.Added(newContacts)
+                val ev = ContactEvent.Added(newContacts.toList(), false)
                 contactEventsSubject.onNext(ev)
             }
 

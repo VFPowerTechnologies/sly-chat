@@ -8,6 +8,7 @@ import io.slychat.messenger.core.http.api.contacts.FindAllByIdResponse
 import io.slychat.messenger.core.http.api.contacts.FindByIdResponse
 import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
+import io.slychat.messenger.core.persistence.ContactDiffDelta
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.randomContactInfo
@@ -17,6 +18,7 @@ import io.slychat.messenger.services.assertNoEventsEmitted
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.services.subclassFilterTestSubscriber
 import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenResolve
 import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
@@ -169,7 +171,7 @@ class ContactsServiceImplTest {
     fun `filterBlocked should filter out blocked contacts`() {
         val contactsService = createService()
 
-        val ids = (1..3L).map { UserId(it) }
+        val ids = (1..3L).map(::UserId)
         val allowed = ids.subList(1, ids.size).toSet()
         val idSet = ids.toSet()
 
@@ -205,7 +207,7 @@ class ContactsServiceImplTest {
         remoteExists: (Set<UserId>) -> Set<UserId>,
         added: Boolean
     ): Set<UserId> {
-        val ids = inputs.map { UserId(it) }.toSet()
+        val ids = inputs.map(::UserId).toSet()
 
         val presentContacts = localExists(ids)
 
@@ -376,7 +378,7 @@ class ContactsServiceImplTest {
         val event = if (isRunning)
             AddressBookSyncEvent.Begin(info)
         else
-            AddressBookSyncEvent.End(info, AddressBookSyncResult(true, 0, false))
+            AddressBookSyncEvent.End(info, AddressBookSyncResult(true, 0, PullResults(false)))
 
         val testSubscriber = contactEventCollectorFor<ContactEvent.Sync>(contactsService)
 
@@ -564,7 +566,7 @@ class ContactsServiceImplTest {
         contactsService.addById(userId).get()
 
         assertEventEmitted(testSubscriber) { event ->
-            assertEquals(setOf(contactInfo), event.contacts)
+            assertEquals(listOf(contactInfo), event.contacts)
         }
     }
 
@@ -610,8 +612,8 @@ class ContactsServiceImplTest {
         val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
 
         val info = AddressBookSyncJobInfo(false, true, false)
-        val addedLocalContacts = setOf(randomContactInfo(AllowedMessageLevel.ALL))
-        val result = AddressBookSyncResult(true, 0, false, addedLocalContacts)
+        val addedLocalContacts = listOf(randomContactInfo(AllowedMessageLevel.ALL))
+        val result = AddressBookSyncResult(true, 0, PullResults(false), addedLocalContacts)
         val event = AddressBookSyncEvent.End(info, result)
 
         addressBookOperationManager.syncEventsSubject.onNext(event)
@@ -628,12 +630,58 @@ class ContactsServiceImplTest {
         val testSubscriber = contactEventCollectorFor<ContactEvent.Added>(contactsService)
 
         val info = AddressBookSyncJobInfo(false, true, false)
-        val result = AddressBookSyncResult(true, 0, false, emptySet())
+        val result = AddressBookSyncResult(true, 0, PullResults(false), emptyList())
         val event = AddressBookSyncEvent.End(info, result)
 
         addressBookOperationManager.syncEventsSubject.onNext(event)
 
         assertNoEventsEmitted(testSubscriber)
+    }
+
+    @Test
+    fun `it should emit the proper contact events when receiving PullResults from a sync`() {
+        val contactsService = createService()
+
+        val testSubscriber = contactsService.contactEvents.testSubscriber()
+
+        val info = AddressBookSyncJobInfo(false, false, true)
+
+        val addedContactInfo = randomContactInfo()
+        val oldBlockedContactInfo = randomContactInfo(AllowedMessageLevel.BLOCKED)
+        val oldGroupOnlyContactInfo = randomContactInfo(AllowedMessageLevel.GROUP_ONLY)
+
+        val updatedList = listOf(
+            ContactUpdate(
+                oldBlockedContactInfo.copy(allowedMessageLevel = AllowedMessageLevel.ALL),
+                oldBlockedContactInfo
+            ),
+            ContactUpdate(
+                oldGroupOnlyContactInfo.copy(allowedMessageLevel = AllowedMessageLevel.ALL),
+                oldGroupOnlyContactInfo
+            )
+        )
+
+        val contactDeltas = mutableListOf<ContactDiffDelta>(
+            ContactDiffDelta.Added(addedContactInfo)
+        )
+
+        updatedList.forEach {
+            contactDeltas.add(ContactDiffDelta.Updated(it.old, it.new))
+        }
+
+        val result = AddressBookSyncResult(pullResults = PullResults(true, contactDeltas))
+
+        val expectedEvents = mutableListOf(
+            ContactEvent.Added(listOf(addedContactInfo), true),
+            ContactEvent.Updated(updatedList, true)
+        )
+
+        addressBookOperationManager.syncEventsSubject.onNext(AddressBookSyncEvent.End(info, result))
+
+        assertThat(testSubscriber.onNextEvents).apply {
+            `as`("Should contain contact events")
+            containsAll(expectedEvents)
+        }
     }
 
     private fun testBlockEmit(wasBlocked: Boolean) {

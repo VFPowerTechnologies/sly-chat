@@ -25,8 +25,8 @@ class MutualContactNotifierImpl(
 
     private fun onContactEvent(event: ContactEvent) {
         when (event) {
-            is ContactEvent.Added -> processNewContacts(event.contacts)
-            is ContactEvent.Updated -> processUpdatedContacts(event.contacts)
+            is ContactEvent.Added -> if (event.fromSync == false) processNewContacts(event.contacts)
+            is ContactEvent.Updated -> if (event.fromSync == false) processUpdatedContacts(event.contacts)
         }
     }
 
@@ -38,7 +38,7 @@ class MutualContactNotifierImpl(
         }
     }
 
-    private fun processUpdatedContacts(contacts: Set<ContactUpdate>) {
+    private fun processUpdatedContacts(contacts: List<ContactUpdate>) {
         val added = contacts.filter { it.new.allowedMessageLevel == AllowedMessageLevel.ALL && it.old.allowedMessageLevel != AllowedMessageLevel.ALL }
         if (added.isEmpty())
             return
@@ -46,7 +46,7 @@ class MutualContactNotifierImpl(
         notifyContacts(added.map { it.new.id })
     }
 
-    private fun processNewContacts(contacts: Set<ContactInfo>) {
+    private fun processNewContacts(contacts: List<ContactInfo>) {
         val added = contacts.filter { it.allowedMessageLevel == AllowedMessageLevel.ALL }
         if (added.isEmpty())
             return

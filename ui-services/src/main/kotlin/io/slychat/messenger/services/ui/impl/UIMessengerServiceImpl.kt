@@ -196,13 +196,13 @@ class UIMessengerServiceImpl(
     }
 
     override fun getConversations(): Promise<List<UIConversation>, Exception> {
-        return getMessengerServiceOrThrow().getConversations() map { convos ->
-            convos.map {
-                val contact = it.contact
-                val info = it.info
-                UIConversation(contact.toUI(), UIConversationInfo(true, info.unreadMessageCount, info.lastMessage, info.lastTimestamp))
-            }
+        return getMessageServiceOrThrow().getAllUserConversations() map { convos ->
+            convos.map { it.toUI() }
         }
+    }
+
+    override fun getConversation(userId: UserId): Promise<UIConversation?, Exception> {
+        return getMessageServiceOrThrow().getUserConversation(userId) map { it?.toUI() }
     }
 
     private fun notifyNewMessageListeners(messageInfo: UIMessageInfo) {

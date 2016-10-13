@@ -50,9 +50,10 @@ class UIGroupServiceImpl(
 
     private fun onGroupEvent(ev: GroupEvent) {
         val uiEv = when (ev) {
-            is GroupEvent.NewGroup -> UIGroupEvent.NewGroup(ev.id, ev.members)
-            is GroupEvent.Joined -> UIGroupEvent.Joined(ev.id, ev.newMembers)
-            is GroupEvent.Parted -> UIGroupEvent.Parted(ev.id, ev.member)
+            is GroupEvent.Joined -> UIGroupEvent.Joined(UIGroupInfo(ev.id, ev.name), ev.members)
+            is GroupEvent.Parted -> UIGroupEvent.Parted(ev.id)
+            is GroupEvent.Blocked -> UIGroupEvent.Blocked(ev.id)
+            is GroupEvent.MembershipChanged -> UIGroupEvent.MembershipChanged(ev.id, ev.newMembers, ev.partedMembers)
         }
 
         groupEventListeners.forEach { it(uiEv) }
@@ -91,6 +92,10 @@ class UIGroupServiceImpl(
         return getGroupServiceOrThrow().getGroupConversations() map {
             it.map { it.toUi() }
         }
+    }
+
+    override fun getGroupConversation(groupId: GroupId): Promise<UIGroupConversation?, Exception> {
+        return getMessageServiceOrThrow().getGroupConversation(groupId) map { it?.toUi() }
     }
 
     override fun inviteUsers(groupId: GroupId, contacts: List<UIContactInfo>): Promise<Unit, Exception> {

@@ -134,7 +134,7 @@ class AddressBookOperationManagerImplTest {
 
         doLocalSync(runner)
 
-        jobDeferred.resolve(AddressBookSyncResult(true, 0, false, emptySet()))
+        jobDeferred.resolve(AddressBookSyncResult(true, 0, PullResults(false), emptyList()))
 
         var wasRun = false
         runner.runOperation {
@@ -301,7 +301,7 @@ class AddressBookOperationManagerImplTest {
 
         doLocalSync(runner)
 
-        factory.deferreds[0].resolve(AddressBookSyncResult(true, 0, false))
+        factory.deferreds[0].resolve(AddressBookSyncResult(true, 0, PullResults(false)))
 
         val events = testSubscriber.onNextEvents
 

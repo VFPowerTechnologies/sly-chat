@@ -50,14 +50,14 @@ class AddressBookSyncJobImplTest {
         whenever(contactsPersistenceManager.add(any<Collection<ContactInfo>>())).thenResolve(emptySet())
         whenever(contactsPersistenceManager.getRemoteUpdates()).thenResolve(emptyList())
         whenever(contactsPersistenceManager.removeRemoteUpdates(any())).thenResolve(Unit)
-        whenever(contactsPersistenceManager.applyDiff(any(), any())).thenResolve(Unit)
+        whenever(contactsPersistenceManager.applyDiff(any(), any())).thenResolve(emptyList())
         whenever(contactsPersistenceManager.exists(anySet())).thenAnswerSuccess {
             val a = it.arguments[0]
             @Suppress("UNCHECKED_CAST")
             (a as Set<UserId>)
         }
 
-        whenever(groupPersistenceManager.applyDiff(any())).thenResolve(Unit)
+        whenever(groupPersistenceManager.applyDiff(any())).thenResolve(emptyList())
         whenever(groupPersistenceManager.getRemoteUpdates()).thenResolve(emptyList())
         whenever(groupPersistenceManager.removeRemoteUpdates(any())).thenResolve(Unit)
 
@@ -191,7 +191,7 @@ class AddressBookSyncJobImplTest {
 
         val result = runPull()
 
-        assertTrue(result.fullPull, "Indicates a full pull wasn't done")
+        assertTrue(result.pullResults.fullPull, "Indicates a full pull wasn't done")
     }
 
     @Test
@@ -200,7 +200,7 @@ class AddressBookSyncJobImplTest {
 
         val result = runPull()
 
-        assertFalse(result.fullPull, "Indicates a full pull was done")
+        assertFalse(result.pullResults.fullPull, "Indicates a full pull was done")
     }
 
     @Test

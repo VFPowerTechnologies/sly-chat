@@ -4,19 +4,19 @@ import com.nhaarman.mockito_kotlin.MockitoKotlin
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
+import io.slychat.messenger.core.persistence.GroupDiffDelta
 import io.slychat.messenger.core.persistence.GroupMembershipLevel
 import io.slychat.messenger.core.persistence.GroupPersistenceManager
-import io.slychat.messenger.core.randomGroupId
-import io.slychat.messenger.core.randomGroupInfo
-import io.slychat.messenger.core.randomUserId
-import io.slychat.messenger.core.randomUserIds
-import io.slychat.messenger.services.contacts.MockAddressBookOperationManager
+import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.messaging.GroupEvent
 import io.slychat.messenger.services.messaging.MessageService
 import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenAnswerWithArg
 import io.slychat.messenger.testutils.thenResolve
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -66,11 +66,11 @@ class GroupServiceImplTest {
     }
 
     @Test
-    fun `it should emit a NewGroup event when joining a new group`() {
+    fun `it should emit a Joined event when joining a new group`() {
         val groupInfo = randomGroupInfo()
         val members = randomUserIds()
 
-        val testSubscriber = groupEventCollectorFor<GroupEvent.NewGroup>()
+        val testSubscriber = groupEventCollectorFor<GroupEvent.Joined>()
 
         groupService.join(groupInfo, members).get()
 
@@ -80,11 +80,11 @@ class GroupServiceImplTest {
         }
     }
 
-    fun testJoinEvent(shouldEventBeEmitted: Boolean) {
+    fun testMembershipNewMembersEvent(shouldEventBeEmitted: Boolean) {
         val newMember = randomUserId()
         val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 
-        val testSubscriber = groupEventCollectorFor<GroupEvent.Joined>()
+        val testSubscriber = groupEventCollectorFor<GroupEvent.MembershipChanged>()
 
         groupService.addMembers(groupInfo.id, setOf(newMember))
 
@@ -99,29 +99,29 @@ class GroupServiceImplTest {
     }
 
     @Test
-    fun `it should emit a Joined event when adding a new member`() {
+    fun `it should emit a MembershipChanged event when adding a new member`() {
         whenever(groupPersistenceManager.addMembers(any(), any())).thenAnswerWithArg(1)
-        testJoinEvent(true)
+        testMembershipNewMembersEvent(true)
     }
 
     @Test
-    fun `it should emit a Joined event when adding a duplicate member`() {
+    fun `it should not emit a MembershipChanged event when adding a duplicate member`() {
         whenever(groupPersistenceManager.addMembers(any(), any())).thenResolve(emptySet())
-        testJoinEvent(false)
+        testMembershipNewMembersEvent(false)
     }
 
-    fun testPartEvent(shouldEventBeEmitted: Boolean) {
+    fun testMembershipChangePartedMembersEvent(shouldEventBeEmitted: Boolean) {
         val sender = randomUserId()
         val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 
-        val testSubscriber = groupEventCollectorFor<GroupEvent.Parted>()
+        val testSubscriber = groupEventCollectorFor<GroupEvent.MembershipChanged>()
 
         groupService.removeMember(groupInfo.id, sender)
 
         if (shouldEventBeEmitted) {
             assertEventEmitted(testSubscriber) { event ->
                 assertEquals(groupInfo.id, event.id, "Invalid group id")
-                assertEquals(sender, event.member, "Invalid new member id")
+                assertEquals(setOf(sender), event.partedMembers, "Invalid new member id")
             }
         }
         else
@@ -131,13 +131,13 @@ class GroupServiceImplTest {
     @Test
     fun `it should emit a Parted event when removing a member`() {
         whenever(groupPersistenceManager.removeMember(any(), any())).thenResolve(true)
-        testPartEvent(true)
+        testMembershipChangePartedMembersEvent(true)
     }
 
     @Test
     fun `it not should emit a Parted event when removing a non-existent member`() {
         whenever(groupPersistenceManager.removeMember(any(), any())).thenResolve(false)
-        testPartEvent(false)
+        testMembershipChangePartedMembersEvent(false)
     }
 
     @Test
@@ -321,5 +321,36 @@ class GroupServiceImplTest {
     @Test
     fun `unblock should not trigger a remote update if a user was not blocked`() {
         testUnblockRemoteUpdate(false)
+    }
+
+    @Test
+    fun `it should emit events when a sync finishes`() {
+        val info = AddressBookSyncJobInfo(false, false, true)
+        val groupDeltas = listOf(
+            GroupDiffDelta.Joined(randomGroupId(), randomGroupName(), randomUserIds()),
+            GroupDiffDelta.Parted(randomGroupId()),
+            GroupDiffDelta.Blocked(randomGroupId()),
+            GroupDiffDelta.MembershipChanged(randomGroupId(), randomUserIds(), randomUserIds())
+        )
+
+        val events = groupDeltas.map {
+            when (it) {
+                is GroupDiffDelta.Joined -> GroupEvent.Joined(it.groupId, it.name, it.members, true)
+                is GroupDiffDelta.Blocked -> GroupEvent.Blocked(it.groupId, true)
+                is GroupDiffDelta.Parted -> GroupEvent.Parted(it.groupId, true)
+                is GroupDiffDelta.MembershipChanged -> GroupEvent.MembershipChanged(it.groupId, it.newMembers, it.partedMembers, true)
+            }
+        }
+
+        val result = AddressBookSyncResult(pullResults = PullResults(true, groupDeltas = groupDeltas))
+
+        val testSubscriber = groupService.groupEvents.testSubscriber()
+
+        addressBookOperationManager.syncEventsSubject.onNext(AddressBookSyncEvent.End(info, result))
+
+        assertThat(testSubscriber.onNextEvents).apply {
+            `as`("Should emit group events")
+            containsAll(events)
+        }
     }
 }

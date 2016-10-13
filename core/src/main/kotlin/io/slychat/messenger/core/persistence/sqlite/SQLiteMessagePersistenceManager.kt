@@ -70,6 +70,14 @@ class SQLiteMessagePersistenceManager(
         conversationInfoUtils.getConversationInfo(connection, conversationId)
     }
 
+    override fun getUserConversation(userId: UserId): Promise<UserConversation?, Exception> = sqlitePersistenceManager.runQuery {
+        conversationInfoUtils.getUserConversation(it, userId)
+    }
+
+    override fun getGroupConversation(groupId: GroupId): Promise<GroupConversation?, Exception> = sqlitePersistenceManager.runQuery {
+        conversationInfoUtils.getGroupConversation(it, groupId)
+    }
+
     override fun getAllGroupConversations(): Promise<List<GroupConversation>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         conversationInfoUtils.getAllGroupConversations(connection)
     }

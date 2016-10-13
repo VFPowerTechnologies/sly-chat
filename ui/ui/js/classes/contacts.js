@@ -3,15 +3,6 @@ var Conversation = function (conversation) {
     this.info = new ConversationInfo(conversation.status);
 };
 
-var Contact = function (contact) {
-    this.id = contact.id || null;
-    this.name = contact.name || null;
-    this.email = contact.email || null;
-    this.phoneNumber = contact.phoneNumber;
-    this.publicKey = contact.publicKey;
-    this.allowedMessageLevel = contact.allowedMessageLevel;
-};
-
 Conversation.prototype = {
     isActualConversation : function () {
         return this.info.lastTimestamp !== null;
@@ -23,6 +14,21 @@ Conversation.prototype = {
 
     resetInfo : function () {
         this.info.reset();
+    }
+};
+
+var Contact = function (contact) {
+    this.id = contact.id || null;
+    this.name = contact.name || null;
+    this.email = contact.email || null;
+    this.phoneNumber = contact.phoneNumber;
+    this.publicKey = contact.publicKey;
+    this.allowedMessageLevel = contact.allowedMessageLevel;
+};
+
+Contact.prototype = {
+    block : function () {
+        this.allowedMessageLevel = "BLOCKED";
     }
 };
 
