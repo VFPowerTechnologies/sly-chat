@@ -257,6 +257,45 @@ GroupController.prototype = {
         }
     },
 
+    createBlockedGroupsHtml : function () {
+        groupService.getBlockList().then(function (blocked) {
+            var groupListNode = $("#blockedGroupList");
+            if (blocked.length < 1) {
+                groupListNode.addClass("empty-blocked-list");
+                groupListNode.html("No blocked groups");
+                return;
+            }
+
+            blocked.forEach(function (groupId) {
+                groupService.getInfo(groupId).then(function (groupInfo) {
+                    groupListNode.append(this.createBlockedGroupNode(groupInfo));
+                    groupListNode.removeClass("empty-blocked-list");
+                }.bind(this)).catch(function (e) {
+                    exceptionController.handleError(e);
+                });
+            }.bind(this));
+
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        });
+    },
+
+    createBlockedGroupNode : function (group) {
+        var html = $("<li id='blocked_" + group.id + "' class='item-content'>" +
+            "<div class='item-inner'>" +
+            "<div class='item-title'>" + group.name + "</div>" +
+            "<div class='item-after'><a class='unblock-contact-button' type='button' style='cursor: pointer;'>Unblock</a></div>" +
+            "</div>" +
+            "</li>");
+
+        html.find(".unblock-contact-button").click(function (e) {
+            e.preventDefault();
+            groupController.unblockGroup(group.id);
+        });
+
+        return html;
+    },
+
     addGroupEventListener : function () {
         groupService.addGroupEventListener(this.handleGroupEvents.bind(this));
     },
@@ -505,10 +544,15 @@ GroupController.prototype = {
 
     unblockGroup : function (groupId) {
         groupService.unblock(groupId).then(function () {
-            this.fetchGroup(groupId);
+            $("#blocked_" + groupId).remove();
+            var list = $("#blockedGroupList");
+            if (list.find('li').length <= 0) {
+                list.addClass("empty-blocked-list");
+                list.html("No blocked groups");
+            }
             slychat.addNotification({
                 title: "Group has been unblocked successfully",
-                hold: 3000
+                hold: 2000
             });
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);

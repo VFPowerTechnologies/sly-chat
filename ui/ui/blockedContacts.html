@@ -22,15 +22,36 @@
         </div>
         {{/unless}}
 
-        <div class="page-content">
-            <div class="list-block" style="margin-top: 0;">
-                <!-- Blocked Contacts -->
-                <div class="list-group">
-                    <ul id="blockedContactsList" style="margin-top: 10px;">
 
-                    </ul>
-                </div> <!-- Blocked Contacts End -->
+        <div class="tabs-swipeable-wrap">
+            <div class="tabs">
+                <div id="contactTab" class="page-content tab active" style="padding-bottom: 48px;">
+                    <div class="list-block" style="margin-top: 0;">
+                        <div class="list-group">
+                            <ul id="blockedContactsList" style="margin-top: 10px;">
+
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div id="groupTab" class="page-content tab" style="padding-bottom: 48px;">
+                    <div class="list-block" style="margin-top: 0;">
+                        <div class="list-group">
+                            <ul id="blockedGroupList" style="margin-top: 10px;">
+
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <div class="toolbar toolbar-bottom tabbar" style="color:  #fff; line-height: 48px;">
+            <div class="toolbar-inner">
+                <a href="#contactTab" class="button active tab-link">Contacts</a>
+                <a href="#groupTab" class="button tab-link">Groups</a>
+            </div>
+        </div>
+
     </div>
 </div>

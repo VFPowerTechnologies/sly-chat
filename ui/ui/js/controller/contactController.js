@@ -779,23 +779,29 @@ ContactController.prototype  = {
     },
 
     blockedContactPageInit : function () {
-        var blocked = this.getBlockedContact();
-
-        $("#blockedContactsList").html(this.createBlockedContactsHtml(blocked));
+        this.createBlockedContactsHtml();
+        groupController.createBlockedGroupsHtml();
     },
 
-    createBlockedContactsHtml : function (contacts) {
-        var frag = $(document.createDocumentFragment());
+    createBlockedContactsHtml : function () {
+        var blocked = this.getBlockedContact();
 
-        if (contacts.length < 1)
-            frag.html("No Blocked Contacts");
-        else {
-            contacts.forEach(function (contact) {
-                frag.append(contactController.createBlockedContactNode(contact));
-            });
+        var contactListNode = $("#blockedContactsList");
+
+        if (blocked.length < 1) {
+            contactListNode.addClass("empty-blocked-list");
+            contactListNode.html("No Blocked Contacts");
+            return;
         }
 
-        return frag;
+        var frag = $(document.createDocumentFragment());
+
+        blocked.forEach(function (contact) {
+            frag.append(contactController.createBlockedContactNode(contact));
+        });
+
+        contactListNode.removeClass("empty-blocked-list");
+        contactListNode.html(frag);
     },
 
     createBlockedContactNode : function (contact) {

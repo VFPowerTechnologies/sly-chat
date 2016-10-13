@@ -373,6 +373,11 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     word-wrap: break-word;
 }
 
+/** Blocked page **/
+.empty-blocked-list {
+    text-align: center;
+}
+
 /** Verification Page **/
 .smsCodeIcon {
     width: 29px;
