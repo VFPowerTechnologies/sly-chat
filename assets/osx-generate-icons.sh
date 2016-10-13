@@ -5,8 +5,8 @@ set -eu
 INPUT_ICON=icon_512x512.png
 ICONSET_DIR=SlyChat.iconset
 OUTPUT_DIR="$(dirname $(pwd))/desktop/src/main/deploy/package/macosx"
-OUTPUT_FILENAME="$OUTPUT_DIR/sly-messenger.icns"
-VOLUME_OUTPUT_FILENAME="$OUTPUT_DIR/sly-messenger-volume.icns"
+OUTPUT_FILENAME="$OUTPUT_DIR/sly-chat.icns"
+VOLUME_OUTPUT_FILENAME="$OUTPUT_DIR/sly-chat-volume.icns"
 
 if [ ! -d $OUTPUT_DIR ]; then
     mkdir -p "$OUTPUT_DIR"
