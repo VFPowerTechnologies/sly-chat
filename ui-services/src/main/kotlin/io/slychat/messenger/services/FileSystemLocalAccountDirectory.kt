@@ -5,16 +5,20 @@ import io.slychat.messenger.core.crypto.DerivedKeySpec
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.json.*
+import java.io.File
+import java.util.*
 
 //FIXME externalize various persistence managers
 class FileSystemLocalAccountDirectory(
     private val userPathsGenerator: UserPathsGenerator
 ) : LocalAccountDirectory {
-    override fun findAccountFor(emailOrPhoneNumber: String): AccountInfo? {
+    private fun getAccountDirs(): List<File> {
         val accountsDir = userPathsGenerator.accountsDir
 
         if (!accountsDir.exists())
-            return null
+            return emptyList()
+
+        val r = ArrayList<File>()
 
         for (accountDir in accountsDir.listFiles()) {
             if (!accountDir.isDirectory)
@@ -28,6 +32,18 @@ class FileSystemLocalAccountDirectory(
                 continue
             }
 
+            r.add(accountDir)
+        }
+
+        return r
+    }
+
+    override fun areAccountsPresent(): Boolean {
+        return getAccountDirs().isNotEmpty()
+    }
+
+    override fun findAccountFor(emailOrPhoneNumber: String): AccountInfo? {
+        for (accountDir in getAccountDirs()) {
             val accountInfoFile = userPathsGenerator.getAccountInfoPath(accountDir)
             val accountInfo = JsonAccountInfoPersistenceManager(accountInfoFile).retrieveSync() ?: continue
 

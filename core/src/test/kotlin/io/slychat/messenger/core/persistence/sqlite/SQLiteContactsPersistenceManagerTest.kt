@@ -687,23 +687,36 @@ class SQLiteContactsPersistenceManagerTest {
     fun `applyDiff should add all given new contacts`() {
         val newContacts = randomContactInfoList()
 
-        contactsPersistenceManager.applyDiff(newContacts, emptyList()).get()
+        val deltas = contactsPersistenceManager.applyDiff(newContacts, emptyList()).get()
 
         newContacts.forEach {
             assertNotNull(contactsPersistenceManager.get(it.id), "Missing user")
+        }
+
+        assertThat(deltas).apply {
+            `as`("Should contain all added members")
+            containsOnlyElementsOf(newContacts.map { ContactDiffDelta.Added(it) })
         }
     }
 
     @Test
     fun `applyDiff should update message levels for existing contacts`() {
-        val userId = insertDummyContact(AllowedMessageLevel.ALL).id
+        val contactInfo = insertDummyContact(AllowedMessageLevel.ALL)
+        val userId = contactInfo.id
         val updatedMessageLevel = AllowedMessageLevel.GROUP_ONLY
 
-        contactsPersistenceManager.applyDiff(emptyList(), listOf(AddressBookUpdate.Contact(userId, updatedMessageLevel))).get()
+        val expectedUpdated = contactInfo.copy(allowedMessageLevel = updatedMessageLevel)
 
-        val contactInfo = fetchContactInfo(userId)
+        val deltas = contactsPersistenceManager.applyDiff(emptyList(), listOf(AddressBookUpdate.Contact(userId, updatedMessageLevel))).get()
 
-        assertEquals(updatedMessageLevel, contactInfo.allowedMessageLevel, "Message level not updated")
+        val updated = fetchContactInfo(userId)
+
+        assertEquals(updatedMessageLevel, updated.allowedMessageLevel, "Message level not updated")
+
+        assertThat(deltas).apply {
+            `as`("Should contain update records")
+            containsOnly(ContactDiffDelta.Updated(contactInfo, expectedUpdated))
+        }
     }
 
     @Test
@@ -777,6 +790,7 @@ class SQLiteContactsPersistenceManagerTest {
         }
     }
 
+    //XXX wtf was I doing this for again?
     @Test
     fun `applyDiff should create remote updates for updated contacts`() {
         val userId = insertDummyContact(AllowedMessageLevel.ALL).id

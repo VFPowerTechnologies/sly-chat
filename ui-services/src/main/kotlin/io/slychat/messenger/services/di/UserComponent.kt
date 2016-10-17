@@ -59,6 +59,8 @@ interface UserComponent {
 
     val conversationWatcher: ConversationWatcher
 
+    val addressBookSyncWatcher: AddressBookSyncWatcher
+
     val messageProcessor: MessageProcessor
 
     val messageService: MessageService

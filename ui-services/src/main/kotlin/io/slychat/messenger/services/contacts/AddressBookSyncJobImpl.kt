@@ -18,6 +18,9 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.TimeUnit
 
+//we can't access contacts/groupservice methods during a sync, so we just persistence managers directly
+//this is kinda annoying, since we need to return info to the ui from applyDiff by including them in the result instead
+//of adding appropriate methods on the services
 class AddressBookSyncJobImpl(
     private val authTokenManager: AuthTokenManager,
     private val contactLookupClient: ContactLookupAsyncClient,
@@ -80,9 +83,9 @@ class AddressBookSyncJobImpl(
         }
     }
 
-    private fun updateContacts(userCredentials: UserCredentials, updates: Collection<AddressBookUpdate.Contact>): Promise<Unit, Exception> {
+    private fun updateContacts(userCredentials: UserCredentials, updates: Collection<AddressBookUpdate.Contact>): Promise<List<ContactDiffDelta>, Exception> {
         if (updates.isEmpty())
-            return Promise.ofSuccess(Unit)
+            return Promise.ofSuccess(emptyList())
 
         val messageLevelByUserId = updates.mapToMap {
             it.userId to it.allowedMessageLevel
@@ -112,17 +115,17 @@ class AddressBookSyncJobImpl(
         }
     }
 
-    private fun updateGroups(updates: Collection<AddressBookUpdate.Group>): Promise<Unit, Exception> {
+    private fun updateGroups(updates: Collection<AddressBookUpdate.Group>): Promise<List<GroupDiffDelta>, Exception> {
         return if (updates.isNotEmpty()) {
             log.debug("Updating groups: {}", updates.map { it.groupId })
             groupPersistenceManager.applyDiff(updates)
         }
         else
-            Promise.ofSuccess(Unit)
+            Promise.ofSuccess(emptyList())
     }
 
     /** Syncs the local address book with the remote address book. */
-    private fun pullRemoteUpdates(): Promise<Boolean, Exception> {
+    private fun pullRemoteUpdates(): Promise<PullResults, Exception> {
         log.debug("Beginning remote update pull")
 
         return authTokenManager.bind { userCredentials ->
@@ -147,16 +150,18 @@ class AddressBookSyncJobImpl(
                         }
 
                         //order is important
-                        updateContacts(userCredentials, contactUpdates) bind {
-                            updateGroups(groupUpdates) bind {
-                                contactsPersistenceManager.addRemoteEntryHashes(remoteEntries)
-                            } map { true }
+                        updateContacts(userCredentials, contactUpdates) bind { contactDeltas ->
+                            updateGroups(groupUpdates) bind { groupDeltas ->
+                                contactsPersistenceManager.addRemoteEntryHashes(remoteEntries) map {
+                                    PullResults(true, contactDeltas, groupDeltas)
+                                }
+                            }
                         }
                     }
                     else {
                         log.debug("No address book updates")
 
-                        Promise.ofSuccess(false)
+                        Promise.ofSuccess(PullResults(false, emptyList(), emptyList()))
                     }
                 }
             }
@@ -243,15 +248,15 @@ class AddressBookSyncJobImpl(
         val jobRunners = ArrayList<(AddressBookSyncResult) -> Promise<AddressBookSyncResult, Exception>>()
 
         if (jobDescription.findPlatformContacts)
-            jobRunners.add { result -> findPlatformContacts() map { result.copy(addedLocalContacts = it) } }
+            jobRunners.add { result -> findPlatformContacts() map { result.copy(addedLocalContacts = it.toList()) } }
 
         if (jobDescription.push)
             jobRunners.add { result -> pushRemoteUpdates() map { result.copy(updateCount = it) } }
 
         if (jobDescription.pull)
-            jobRunners.add { result -> pullRemoteUpdates() map { result.copy(fullPull = it) } }
+            jobRunners.add { result -> pullRemoteUpdates() map { result.copy(pullResults = it) } }
 
-        return jobRunners.fold(Promise.ofSuccess(AddressBookSyncResult(true, 0, false, emptySet()))) { z, v ->
+        return jobRunners.fold(Promise.ofSuccess(AddressBookSyncResult(true, 0, PullResults(), emptyList()))) { z, v ->
             z bindUi v
         }
     }

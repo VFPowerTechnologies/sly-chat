@@ -1,87 +1,84 @@
-package io.slychat.messenger.services.messaging
+package io.slychat.messenger.core.persistence
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.GroupId
 
-sealed class GroupEvent {
-    class Joined(val id: GroupId, val name: String, val members: Set<UserId>, val fromSync: Boolean) : GroupEvent() {
+sealed class GroupDiffDelta {
+    class Joined(val groupId: GroupId, val name: String, val members: Set<UserId>) : GroupDiffDelta() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
             other as Joined
 
-            if (id != other.id) return false
+            if (groupId != other.groupId) return false
             if (name != other.name) return false
             if (members != other.members) return false
-            if (fromSync != other.fromSync) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = id.hashCode()
+            var result = groupId.hashCode()
             result = 31 * result + name.hashCode()
             result = 31 * result + members.hashCode()
-            result = 31 * result + fromSync.hashCode()
             return result
         }
 
         override fun toString(): String {
-            return "Joined(id=$id, name='$name', members=$members, fromSync=$fromSync)"
+            return "Joined(groupId=$groupId, name='$name', members=$members)"
         }
     }
 
-    class Blocked(val id: GroupId, val fromSync: Boolean) : GroupEvent() {
+    class Blocked(val groupId: GroupId) : GroupDiffDelta() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
             other as Blocked
 
-            if (id != other.id) return false
+            if (groupId != other.groupId) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            return id.hashCode()
+            return groupId.hashCode()
         }
 
         override fun toString(): String {
-            return "Blocked(groupId=$id)"
+            return "Blocked(groupId=$groupId)"
         }
     }
 
-    class Parted(val id: GroupId, val fromSync: Boolean) : GroupEvent() {
+    class Parted(val groupId: GroupId) : GroupDiffDelta() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
             other as Parted
 
-            if (id != other.id) return false
+            if (groupId != other.groupId) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            return id.hashCode()
+            return groupId.hashCode()
         }
 
         override fun toString(): String {
-            return "Parted(groupId=$id)"
+            return "Parted(groupId=$groupId)"
         }
     }
 
-    class MembershipChanged(val id: GroupId, val newMembers: Set<UserId>, val partedMembers: Set<UserId>, val fromSync: Boolean) : GroupEvent() {
+    class MembershipChanged(val groupId: GroupId, val newMembers: Set<UserId>, val partedMembers: Set<UserId>) : GroupDiffDelta() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
             other as MembershipChanged
 
-            if (id != other.id) return false
+            if (groupId != other.groupId) return false
             if (newMembers != other.newMembers) return false
             if (partedMembers != other.partedMembers) return false
 
@@ -89,14 +86,14 @@ sealed class GroupEvent {
         }
 
         override fun hashCode(): Int {
-            var result = id.hashCode()
+            var result = groupId.hashCode()
             result = 31 * result + newMembers.hashCode()
             result = 31 * result + partedMembers.hashCode()
             return result
         }
 
         override fun toString(): String {
-            return "MembershipChanged(groupId=$id, newMembers=$newMembers, partedMembers=$partedMembers)"
+            return "MembershipChanged(groupId=$groupId, newMembers=$newMembers, partedMembers=$partedMembers)"
         }
     }
 }

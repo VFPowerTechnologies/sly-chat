@@ -720,8 +720,6 @@ ChatController.prototype = {
         var message = $("#newMessageInput").val();
         if (message !== "") {
             this.submitNewMessage(contact, message, ttl);
-            if (mainView.hasClass('expire-message-toggled'))
-                chatController.toggleExpiringMessageDisplay();
         }
     },
 

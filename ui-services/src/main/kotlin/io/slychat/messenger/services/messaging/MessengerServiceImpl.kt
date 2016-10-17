@@ -10,8 +10,6 @@ import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.services.*
-import io.slychat.messenger.services.contacts.AddressBookOperationManager
-import io.slychat.messenger.services.contacts.AddressBookSyncEvent
 import io.slychat.messenger.services.contacts.ContactsService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -31,7 +29,6 @@ import java.util.*
  */
 class MessengerServiceImpl(
     private val contactsService: ContactsService,
-    addressBookOperationManager: AddressBookOperationManager,
     private val messageService: MessageService,
     private val groupService: GroupService,
     private val relayClientManager: RelayClientManager,
@@ -50,8 +47,6 @@ class MessengerServiceImpl(
         subscriptions.add(relayClientManager.events.subscribe { onRelayEvent(it) })
 
         subscriptions.add(messageSender.messageSent.subscribe { onMessageSent(it) })
-
-        subscriptions.add(addressBookOperationManager.syncEvents.subscribe { onSyncEvent(it) })
     }
 
     override fun init() {
@@ -59,17 +54,6 @@ class MessengerServiceImpl(
 
     override fun shutdown() {
         subscriptions.clear()
-    }
-
-    private fun onSyncEvent(event: AddressBookSyncEvent) {
-        when (event) {
-            is AddressBookSyncEvent.Begin -> {}
-
-            is AddressBookSyncEvent.End -> {
-                if (event.result.updateCount > 0)
-                    broadcastSync()
-            }
-        }
     }
 
     private fun onMessageSent(record: MessageSendRecord) {
@@ -340,10 +324,6 @@ class MessengerServiceImpl(
         return messageService.getLastMessages(userId.toConversationId(), startingAt, count)
     }
 
-    override fun getConversations(): Promise<List<UserConversation>, Exception> {
-        return messageService.getAllUserConversations()
-    }
-
     override fun markConversationAsRead(userId: UserId): Promise<Unit, Exception> {
         return messageService.markConversationAsRead(userId.toConversationId())
     }
@@ -419,7 +399,7 @@ class MessengerServiceImpl(
         return sendSyncMessage(SyncMessage.SelfMessage(sentMessageInfo)) map { messageInfo }
     }
 
-    private fun broadcastSync() {
+    override fun broadcastSync() {
         sendSyncMessage(SyncMessage.AddressBookSync()) fail {
             log.error("Failed to send SelfSync message: {}", it.message, it)
         }

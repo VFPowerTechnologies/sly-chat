@@ -61,7 +61,7 @@ interface ContactsPersistenceManager {
     fun findMissing(platformContacts: List<PlatformContact>): Promise<List<PlatformContact>, Exception>
 
     /** Used to apply remote updates. Does not generate any remote updates. */
-    fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<AddressBookUpdate.Contact>): Promise<Unit, Exception>
+    fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<AddressBookUpdate.Contact>): Promise<List<ContactDiffDelta>, Exception>
 
     fun getRemoteUpdates(): Promise<List<AddressBookUpdate.Contact>, Exception>
     fun removeRemoteUpdates(remoteUpdates: Collection<UserId>): Promise<Unit, Exception>

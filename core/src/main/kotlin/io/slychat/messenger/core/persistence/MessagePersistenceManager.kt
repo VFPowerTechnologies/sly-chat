@@ -1,5 +1,6 @@
 package io.slychat.messenger.core.persistence
 
+import io.slychat.messenger.core.UserId
 import nl.komponents.kovenant.Promise
 
 interface MessagePersistenceManager {
@@ -13,8 +14,12 @@ interface MessagePersistenceManager {
     /** Retrieve the last n messages for the given contact starting backwards at the given index. */
     fun getLastMessages(conversationId: ConversationId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception>
 
-    /** Return conversation info for the specified group. */
+    /** Return conversation info for the specified conversation. */
     fun getConversationInfo(conversationId: ConversationId): Promise<ConversationInfo?, Exception>
+
+    fun getUserConversation(userId: UserId): Promise<UserConversation?, Exception>
+
+    fun getGroupConversation(groupId: GroupId): Promise<GroupConversation?, Exception>
 
     /** Returns info for all available conversations. */
     fun getAllUserConversations(): Promise<List<UserConversation>, Exception>

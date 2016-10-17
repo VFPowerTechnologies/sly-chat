@@ -258,18 +258,34 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         }
     }
 
-    override fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<AddressBookUpdate.Contact>): Promise<Unit, Exception> {
+    override fun applyDiff(newContacts: Collection<ContactInfo>, updated: Collection<AddressBookUpdate.Contact>): Promise<List<ContactDiffDelta>, Exception> {
         return if (newContacts.isNotEmpty() || updated.isNotEmpty())
             sqlitePersistenceManager.runQuery { connection ->
                 connection.withTransaction {
-                    newContacts.forEach { addContactNoTransaction(connection, it) }
-                    updated.forEach {
-                        updateContactMessageLevel(connection, it.userId, it.allowedMessageLevel)
+                    val deltas = ArrayList<ContactDiffDelta>()
+
+                    newContacts.forEach {
+                        val wasAdded = addContactNoTransaction(connection, it)
+                        if (wasAdded)
+                            deltas.add(ContactDiffDelta.Added(it))
                     }
+
+                    updated.forEach {
+                        val userId = it.userId
+
+                        val old = queryContactInfo(connection, userId)!!
+                        val wasUpdated = updateContactMessageLevel(connection, userId, it.allowedMessageLevel)
+                        if (wasUpdated) {
+                            val new = queryContactInfo(connection, userId)!!
+                            deltas.add(ContactDiffDelta.Updated(old, new))
+                        }
+                    }
+
+                    deltas
                 }
             }
         else
-            Promise.ofSuccess(Unit)
+            Promise.ofSuccess(emptyList())
     }
 
     override fun findMissing(platformContacts: List<PlatformContact>): Promise<List<PlatformContact>, Exception> {

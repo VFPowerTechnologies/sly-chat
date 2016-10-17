@@ -26,6 +26,43 @@ class ConversationInfoUtils {
         }
     }
 
+    private fun userConversationFromRow(stmt: SQLiteStatement): UserConversation {
+        val contact = contactInfoFromRow(stmt)
+        val lastTimestamp = stmt.columnNullableLong(8)
+        val info = ConversationInfo(contact.id, stmt.columnInt(6), stmt.columnString(7), lastTimestamp)
+        return UserConversation(contact, info)
+    }
+
+    fun getUserConversation(connection: SQLiteConnection, userId: UserId): UserConversation? {
+        val sql = """
+SELECT
+    id,
+    email,
+    name,
+    allowed_message_level,
+    phone_number,
+    public_key,
+    unread_count,
+    last_message,
+    last_timestamp
+FROM
+    contacts
+JOIN
+    conversation_info
+ON
+    contacts.id=substr(conversation_info.conversation_id, 2)
+WHERE
+    conversation_info.conversation_id = 'U$userId'
+        """
+        return connection.withPrepared(sql) { stmt ->
+            if (stmt.step())
+                userConversationFromRow(stmt)
+            else
+                null
+        }
+
+    }
+
     fun getAllUserConversations(connection: SQLiteConnection): List<UserConversation> {
         val sql = """
 SELECT
@@ -49,12 +86,47 @@ WHERE
         """
 
         return connection.withPrepared(sql) { stmt ->
-            stmt.map { stmt ->
-                val contact = contactInfoFromRow(stmt)
-                val lastTimestamp = stmt.columnNullableLong(8)
-                val info = ConversationInfo(contact.id, stmt.columnInt(6), stmt.columnString(7), lastTimestamp)
-                UserConversation(contact, info)
-            }
+            stmt.map { userConversationFromRow(it) }
+        }
+    }
+
+    private fun groupConversationFromRow(stmt: SQLiteStatement): GroupConversation {
+        val groupInfo = rowToGroupInfo(stmt, 4)
+        val convoInfo = rowToConversationInfo(stmt)
+
+        return GroupConversation(groupInfo, convoInfo)
+    }
+
+    fun getGroupConversation(connection: SQLiteConnection, groupId: GroupId): GroupConversation? {
+        val sql =
+            """
+SELECT
+    c.last_speaker_contact_id,
+    c.unread_count,
+    c.last_message,
+    c.last_timestamp,
+    g.id,
+    g.name,
+    g.membership_level
+FROM
+    conversation_info
+AS
+    c
+JOIN
+    groups
+AS
+    g
+ON
+    g.id=substr(c.conversation_id, 2)
+WHERE
+    c.conversation_id = 'G$groupId'
+"""
+
+        return connection.withPrepared(sql) { stmt ->
+            if (stmt.step())
+                groupConversationFromRow(stmt)
+            else
+                null
         }
     }
 
@@ -86,12 +158,7 @@ AND
 """
         return connection.withPrepared(sql) { stmt ->
             stmt.bind(1, GroupMembershipLevel.JOINED)
-            stmt.map {
-                val groupInfo = rowToGroupInfo(stmt, 4)
-                val convoInfo = rowToConversationInfo(it)
-
-                GroupConversation(groupInfo, convoInfo)
-            }
+            stmt.map { groupConversationFromRow(it) }
         }
     }
 }

@@ -146,11 +146,12 @@ class AddressBookOperationManagerImpl(
         runningSubject.onNext(AddressBookSyncEvent.Begin(info))
 
         p successUi {
-            log.info("Address book sync completed successfully: {} remote updates; full pull: {}; added local contacts: {}", it.updateCount, it.fullPull, it.addedLocalContacts)
+            log.info("Address book sync completed successfully: {} remote updates; full pull: {}; added local contacts: {}", it.updateCount, it.pullResults.fullPull, it.addedLocalContacts)
             syncCompleted(info, it)
         } failUi { e ->
             log.error("Address book sync job failed: {}", e.message, e)
-            syncCompleted(info, AddressBookSyncResult(false, 0, false, emptySet()))
+            //FIXME none of this runs inside a transaction, so this is inaccurate
+            syncCompleted(info, AddressBookSyncResult(false, 0, PullResults(), emptyList()))
         }
 
         return
