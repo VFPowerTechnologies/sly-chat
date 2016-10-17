@@ -5,6 +5,8 @@ import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.api.accountupdate.UpdatePhoneRequest
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
+import io.slychat.messenger.core.http.api.availability.AvailabilityAsyncClient
+import io.slychat.messenger.core.http.api.availability.AvailabilityClient
 import io.slychat.messenger.core.http.api.registration.*
 import io.slychat.messenger.services.auth.AuthApiResponseException
 import io.slychat.messenger.services.ui.*
@@ -15,7 +17,8 @@ import java.util.*
 
 class UIRegistrationServiceImpl(
     private val registrationClient: RegistrationAsyncClient,
-    private val loginClient: AuthenticationAsyncClient
+    private val loginClient: AuthenticationAsyncClient,
+    private val availabilityClient: AvailabilityAsyncClient
 ) : UIRegistrationService {
     private val listeners = ArrayList<(String) -> Unit>()
 
@@ -67,6 +70,14 @@ class UIRegistrationServiceImpl(
         return registrationClient.resendSmsCode(SmsResendRequest(username)) map { response ->
             UISmsVerificationStatus(response.isSuccess, response.errorMessage)
         }
+    }
+
+    override fun checkEmailAvailability(email: String): Promise<Boolean, Exception> {
+        return availabilityClient.checkEmailAvailability(email)
+    }
+
+    override fun checkPhoneNumberAvailability(phoneNumber: String): Promise<Boolean, Exception> {
+        return availabilityClient.checkPhoneNumberAvailability(phoneNumber)
     }
 
     override fun updatePhone(info: UIUpdatePhoneInfo): Promise<UIUpdatePhoneResult, Exception> {
