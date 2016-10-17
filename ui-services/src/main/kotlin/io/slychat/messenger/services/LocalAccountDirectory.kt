@@ -11,6 +11,8 @@ import io.slychat.messenger.core.persistence.*
  * Must be thread-safe.
  */
 interface LocalAccountDirectory {
+    fun areAccountsPresent(): Boolean
+
     fun findAccountFor(emailOrPhoneNumber: String): AccountInfo?
 
     fun findAccountFor(userId: UserId): AccountInfo?

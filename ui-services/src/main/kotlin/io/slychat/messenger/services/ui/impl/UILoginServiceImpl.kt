@@ -3,6 +3,8 @@ package io.slychat.messenger.services.ui.impl
 import io.slychat.messenger.services.LoginEvent
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.ui.UILoginService
+import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.task
 import java.util.*
 
 class UILoginServiceImpl(
@@ -11,6 +13,10 @@ class UILoginServiceImpl(
     private val listeners = ArrayList<(UILoginEvent) -> Unit>()
     //cached value; is null until initialized
     private var lastLoginEvent: UILoginEvent? = null
+
+    override fun areAccountsPresent(): Promise<Boolean, Exception> {
+        return task { app.appComponent.localAccountDirectory.areAccountsPresent() }
+    }
 
     init {
         app.loginEvents.subscribe { updateLoginEvent(it) }
