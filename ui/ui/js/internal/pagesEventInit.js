@@ -134,7 +134,6 @@ slychat.onPageInit('chat', function (page) {
         $("#submitNewChatMessage").on('touchstart', function (e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log("touchstart");
             chatController.handleSubmitMessage(page.query);
         });
 
