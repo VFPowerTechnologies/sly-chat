@@ -74,6 +74,8 @@ class MockUserComponent : UserComponent {
 
     override val conversationWatcher: ConversationWatcher = mock()
 
+    override val addressBookSyncWatcher: AddressBookSyncWatcher = mock()
+
     override val messageProcessor: MessageProcessor = mock()
 
     override val messageService: MessageService = mock()

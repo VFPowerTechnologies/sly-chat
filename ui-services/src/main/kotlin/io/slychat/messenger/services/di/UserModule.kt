@@ -184,7 +184,6 @@ class UserModule(
     @Provides
     fun providesMessengerService(
         contactsService: ContactsService,
-        addressBookOperationManager: AddressBookOperationManager,
         messageService: MessageService,
         groupService: GroupService,
         relayClientManager: RelayClientManager,
@@ -195,7 +194,6 @@ class UserModule(
     ): MessengerService =
         MessengerServiceImpl(
             contactsService,
-            addressBookOperationManager,
             messageService,
             groupService,
             relayClientManager,
@@ -409,6 +407,15 @@ class UserModule(
         messageService: MessageService
     ): ConversationWatcher {
         return ConversationWatcherImpl(uiEventService.events, uiVisibility, messageService)
+    }
+
+    @UserScope
+    @Provides
+    fun providesAddressBookSyncWatcher(
+        addressBookOperationManager: AddressBookOperationManager,
+        messengerService: MessengerService
+    ): AddressBookSyncWatcher {
+        return AddressBookSyncWatcherImpl(addressBookOperationManager.syncEvents, messengerService)
     }
 
     @UserScope
