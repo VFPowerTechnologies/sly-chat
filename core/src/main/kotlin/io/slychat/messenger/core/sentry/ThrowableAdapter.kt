@@ -59,7 +59,7 @@ fun extractStacktrace(throwableAdapter: ThrowableAdapter): StacktraceInterface {
         val module = st.className
         val inApp = !ignoreTracesFrom.any { module.startsWith(it) }
         SentryStackFrame(
-            st.fileName,
+            st.fileName ?: "-",
             module,
             inApp,
             st.methodName,
