@@ -18,6 +18,10 @@ interface UIRegistrationService {
 
     fun resendVerificationCode(username: String): Promise<UISmsVerificationStatus, Exception>
 
+    fun checkEmailAvailability(email: String): Promise<Boolean, Exception>
+
+    fun checkPhoneNumberAvailability(phoneNumber: String): Promise<Boolean, Exception>
+
     /** Update phone with the given info */
     fun updatePhone(info: UIUpdatePhoneInfo): Promise<UIUpdatePhoneResult, Exception>
 
