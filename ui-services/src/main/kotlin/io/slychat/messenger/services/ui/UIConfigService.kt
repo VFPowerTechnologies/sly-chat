@@ -15,17 +15,28 @@ data class UINotificationConfig(
     val soundName: String?
 )
 
+data class UIAppearanceConfig(
+    @JsonProperty("theme")
+    val theme: String?
+)
+
 @JSToJavaGenerate("ConfigService")
 interface UIConfigService {
     fun getLoginRememberMe(): Boolean
+
     fun setLoginRememberMe(v: Boolean)
 
     fun getLastMessageTtl(): Long
+
     fun setLastMessageTtl(v: Long)
 
     fun setNotificationConfig(config: UINotificationConfig)
 
     fun addNotificationConfigChangeListener(listener: (UINotificationConfig) -> Unit)
+
+    fun setAppearanceConfig(config: UIAppearanceConfig)
+
+    fun addAppearanceConfigChangeListener(listener: (UIAppearanceConfig) -> Unit)
 
     @Exclude
     fun clearListeners()
