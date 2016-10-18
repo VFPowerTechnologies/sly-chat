@@ -6,10 +6,15 @@ import java.util.*
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class AppConfig(
     val formatVersion: Int = 1,
-    val loginRememberMe: Boolean = true
+    val loginRememberMe: Boolean = true,
+    val appearanceTheme: String? = null
 ) {
     companion object {
         val LOGIN_REMEMBER_ME = "app.login.rememberMe"
+
+        val APPEARANCE = "app.appearance"
+
+        val APPEARANCE_THEME = "app.appearance.theme"
     }
 }
 
@@ -21,6 +26,13 @@ class AppEditorInterface(override var config: AppConfig) : ConfigServiceBase.Edi
         set(value) {
             modifiedKeys.add(AppConfig.LOGIN_REMEMBER_ME)
             config = config.copy(loginRememberMe = value)
+        }
+
+    var appearanceTheme: String?
+        get() = config.appearanceTheme
+        set(value) {
+            modifiedKeys.add(AppConfig.APPEARANCE_THEME)
+            config = config.copy(appearanceTheme = value)
         }
 }
 
@@ -34,4 +46,7 @@ class AppConfigService(
 
     val loginRememberMe: Boolean
         get() = config.loginRememberMe
+
+    val appearanceTheme: String?
+        get() = config.appearanceTheme
 }
