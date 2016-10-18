@@ -26,6 +26,61 @@ $$(document).on('pageBeforeInit', function (e) {
     }
 });
 
+slychat.onPageInit('registerStepOne', function () {
+    $("#submitStepOne").click(function () {
+        registrationController.handleFirstStep();
+    });
+
+    if (registrationController.name !== "")
+        $("#name").val(navigationController.name);
+});
+
+slychat.onPageInit('registerStepTwo', function () {
+    $("#submitStepTwo").click(function () {
+        registrationController.handleSecondStep();
+    });
+
+    $("#first-step-name").html(registrationController.name);
+
+    if (registrationController.email !== "")
+        $("#name").val(navigationController.email);
+});
+
+slychat.onPageInit('registerStepThree', function () {
+    $("#submitStepThree").click(function () {
+        registrationController.handleThirdStep();
+    });
+
+    $("#first-step-name").html(registrationController.name);
+});
+
+slychat.onPageInit('registerStepFour', function () {
+    $("#submitStepFour").click(function () {
+        registrationController.handleFourthStep();
+    });
+
+    updatePhoneWithIntl();
+
+    $$('#countrySelect').on("change", function() {
+        var ext = $("#countrySelect :selected").text().split("+")[1];
+        setPhoneExt(ext);
+        // TODO Validate Phone Input
+    });
+
+    $("#first-step-name").html(registrationController.name);
+});
+
+slychat.onPageInit('registerStepFive', function (page) {
+    $("#submitStepFive").click(function () {
+        registrationController.handleFinalStep(page.query.email, page.query.password);
+    });
+
+    $("#first-step-name").html(registrationController.name);
+});
+
+
+
+
 slychat.onPageInit('login', function (page) {
     uiController.hideSplashScreen();
 

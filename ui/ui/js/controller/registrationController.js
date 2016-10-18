@@ -191,5 +191,87 @@ RegistrationController.prototype = {
             password : '',
             phoneNumber : ''
         };
+    },
+
+    handleFirstStep : function () {
+        if (!slychat.validateForm($("#stepOneContent")))
+            return;
+
+        this.name = $("#name").val();
+
+        navigationController.loadPage('registerStepTwo.html')
+    },
+
+    handleSecondStep : function () {
+        if (!slychat.validateForm($("#stepTwoContent")))
+            return;
+
+        this.email = $("#email").val();
+        navigationController.loadPage('registerStepThree.html')
+    },
+
+    handleThirdStep : function () {
+        if (!slychat.validateForm($("#stepThreeContent")))
+            return;
+
+        this.password = $("#password").val();
+
+        updatePhoneWithIntl();
+
+        $$('#countrySelect').on("change", function(e) {
+            var ext = $("#countrySelect :selected").text().split("+")[1];
+            setPhoneExt(ext);
+            // TODO Validate Phone Input
+        });
+        navigationController.loadPage('registerStepFour.html')
+    },
+
+    handleFourthStep : function () {
+        if (!slychat.validateForm($("#stepFourContent")))
+            return;
+
+        this.phoneNumber = getFormatedPhoneNumber($("#phone").val(), $(RegistrationController.ids.countryInput).val());
+
+        this.setRegistrationInfo(this.name, this.email, this.phoneNumber, this.password);
+
+        slychat.showPreloader();
+        registrationService.doRegistration(this.registrationInfo).then(function (result) {
+            slychat.hidePreloader();
+            if (result.successful == true) {
+                var options = {
+                    url: 'smsVerification.html',
+                    query: {
+                        email: this.registrationInfo.email,
+                        password: this.registrationInfo.password
+                    }
+                };
+                navigationController.loadPage("smsVerification.html", true, options);
+            }
+        }.bind(this)).catch(function (e) {
+            slychat.hidePreloader();
+            exceptionController.handleError(e);
+        }.bind(this));
+    },
+
+    handleFinalStep : function (email, password) {
+        var code = $("#smsVerificationCode").val();
+
+        if (code == '')
+            return "Code is required";
+
+        slychat.showPreloader();
+        registrationService.submitVerificationCode(email, code).then(function (result) {
+            if(result.successful == true) {
+                loginService.login(email, password, true);
+            }
+            else {
+                slychat.hidePreloader();
+                console.log(result.errorMessage);
+            }
+        }.bind(this)).catch(function (e) {
+            slychat.hidePreloader();
+            exceptionController.handleError(e);
+        });
+        
     }
 };
