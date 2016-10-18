@@ -46,6 +46,9 @@ class SlyApplication {
     var userComponent: UserComponent? = null
         private set
 
+    var isFirstRun: Boolean = false
+        private set
+
     internal var isInitialized = false
     private val onInitListeners = ArrayList<(SlyApplication) -> Unit>()
 
@@ -178,6 +181,9 @@ class SlyApplication {
             log.error("Installation data is corrupted: {}", e.message, e)
             null
         }
+
+        isFirstRun = maybeInstallationData == null
+        appComponent.uiClientInfoService.isFirstRun = isFirstRun
 
         installationData = if (maybeInstallationData != null) {
             maybeInstallationData
