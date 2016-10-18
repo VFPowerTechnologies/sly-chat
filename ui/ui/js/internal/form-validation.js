@@ -53,7 +53,7 @@ slychat.validateForm = function (form) {
             if (parent.find(".invalid-details").length <= 0)
                 parent.append("<div class='invalid-details'>" + error + "</div>");
             else
-                parent.find(".invalid-details").append($(this).attr("data-errorName") + " is required");
+                parent.find(".invalid-details").append("<br>" + error);
         },
 
         phone : function (input) {
