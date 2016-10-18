@@ -100,7 +100,10 @@ slychat.onPageInit('login', function (page) {
     });
 
     $$('#registrationGoBtn').on('click', function () {
-        navigationController.loadPage('register.html', true);
+        if (isDesktop)
+            navigationController.loadPage('register.html', true);
+        else
+            navigationController.loadPage("registerStepOne.html", true);
     });
 
     if (isDesktop) {

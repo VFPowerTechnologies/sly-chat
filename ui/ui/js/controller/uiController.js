@@ -44,6 +44,7 @@ UIController.prototype = {
         this.initMainView();
         this.handlePlatformUpdate();
         this.initController();
+        this.loadInitialPage();
         this.addTimeDifferenceListener();
         this.addOutdatedVersionListener();
         this.count = 0;

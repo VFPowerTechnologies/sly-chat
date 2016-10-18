@@ -1,6 +1,7 @@
 var LoginController = function () {
     this.email = '';
     this.password = '';
+    this.loggedIn = false;
 };
 
 LoginController.ids = {
@@ -35,17 +36,18 @@ LoginController.prototype = {
     },
 
     onLogout : function () {
+        this.loggedIn = false;
+        this.loadInitialPage();
         userSessionController.clearUserSession();
-
-        navigationController.loadPage("login.html", false);
         navigationController.clearHistory();
     },
 
     isLoggedIn : function () {
-        return profileController.name !== '';
+        return this.loggedIn;
     },
 
     onLoginSuccessful : function (e) {
+        this.loggedIn = true;
         slychat.hidePreloader();
         this.resetLoginInfo();
 
@@ -54,6 +56,7 @@ LoginController.prototype = {
     },
 
     onLoginFailure : function (e) {
+        this.loggedIn = false;
         slychat.hidePreloader();
         var errorMessage = e.errorMessage;
         if(errorMessage !== null) {
@@ -105,6 +108,21 @@ LoginController.prototype = {
 
     logout : function () {
         loginService.logout();
+    },
+
+    loadInitialPage : function () {
+        loginService.areAccountsPresent().then(function (present) {
+            if (present)
+                navigationController.loadPage("login.html", false);
+            else {
+                if (isDesktop)
+                    navigationController.loadPage("register.html", false);
+                else
+                    navigationController.loadPage("registerStepOne.html", false);
+            }
+        }).catch(function (e) {
+            exceptionController.handleError(e);
+        })
     },
 
     resetLoginInfo : function () {
