@@ -301,6 +301,9 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .expiring-message-toolbar .bomb-button-icon i {
     color: black;
 }
+.layout-dark .expiring-message-toolbar .bomb-button-icon i {
+    color: #fff;
+}
 #newMessageInput {
     overflow-x: hidden;
     margin-top: 5px;
@@ -319,6 +322,9 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     background-color: transparent;
     display: inline-block;
     outline: none;
+}
+.layout-dark #newMessageInput {
+    color: #a9a9a9;
 }
 .layout-dark .bottom-chat-toolbar {
     background-color: #222 !important;
