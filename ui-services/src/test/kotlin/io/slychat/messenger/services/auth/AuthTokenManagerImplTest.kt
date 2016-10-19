@@ -9,7 +9,6 @@ import io.slychat.messenger.services.contacts.PromiseTimerFactory
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.TestException
 import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenReject
 import nl.komponents.kovenant.Promise
 import org.junit.ClassRule
 import org.junit.Rule
@@ -38,7 +37,7 @@ class AuthTokenManagerImplTest {
     val tokenProvider: TokenProvider = mock()
     val promiseTimerFactory: PromiseTimerFactory = mock()
 
-    lateinit var tokenManager: AuthTokenManagerImpl
+    val tokenManager: AuthTokenManagerImpl
 
     init {
         whenever(tokenProvider.events).thenReturn(tokenEvents)
