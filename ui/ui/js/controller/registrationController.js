@@ -78,7 +78,7 @@ RegistrationController.prototype = {
                     parent.find('.invalid-details').html("Email is already in use");
                 break;
             default:
-                $(RegistrationController.ids.registrationForm).find(".error-block").html("<li>" + result.errorMessage +"</li>");
+                $(RegistrationController.ids.registrationForm).find(".error-block").html("<li>" + error +"</li>");
                 break;
         }
     },
