@@ -62,7 +62,44 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     line-height: 24px !important;
 }
 .layout-dark .top-navbar {
-    box-shadow: 0 5px 10px #4C4C4C;
+    box-shadow: none;
+}
+.layout-dark .label-switch input[type=checkbox]:checked+.checkbox {
+    background-color: #fff;
+}
+.layout-dark .label-switch input[type=checkbox]:checked+.checkbox:after {
+    background-color: #fff;
+}
+.layout-dark .label-switch .checkbox {
+    background-color: #b0afaf;
+}
+.layout-dark .label-switch .checkbox:after {
+    background-color: #b0afaf;
+}
+.layout-dark a {
+    color: #3f51b5;
+}
+
+/* Modal */
+.layout-dark .actions-modal {
+    background-color: #444;
+    color: #fff;
+}
+.layout-dark .actions-modal-button {
+    color: #fff;
+}
+.layout-dark .modal.modal-in {
+    background-color: #444;
+    color: #fff;
+}
+.layout-dark .modal.modal-in .modal-title {
+    color: #fff;
+}
+.layout-dark .modal.modal-in .modal-button {
+    color: #fff;
+}
+.layout-dark .notifications .notification-item {
+    background-color: rgba(130, 130, 130, 0.8);
 }
 
 /* Form style */
@@ -364,16 +401,25 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     margin-bottom: 0;
     color: #4c4646;
 }
+.layout-dark .message-info-title, .layout-dark .contact-info-title, .layout-dark .group-info-title {
+    color: #fff;
+}
 .message-info-details, .contact-info-details, .group-info-details {
     margin-top: 2px;
     margin-left: 10px;
     word-wrap: break-word;
+}
+.layout-dark .message-info-details, .layout-dark .contact-info-details, .layout-dark .group-info-details {
+    color: #ababab;
 }
 .group-info .member {
     margin-bottom: 5px;
 }
 .group-info .members span {
     display: block;
+}
+.layout-dark #groupInfoMemberList a {
+    color: #ababab;
 }
 @keyframes pulse {
     0% {
@@ -478,15 +524,25 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 
 /* NoUi-slide overrides */
 .noUi-horizontal {
-    height: 10px;
+    height: 6px;
 }
 .noUi-horizontal .noUi-handle {
     width: 10px;
     height: 30px;
     left: -5px;
-    top: -10px;
+    top: -12px;
 }
 .noUi-handle:before,
 .noUi-handle:after {
     display: none;
+}
+.layout-dark .noUi-background {
+    background-color: #a9a9a9;
+    border-color: #a9a9a9;
+    box-shadow: inset 0 1px 1px #a9a9a9, 0 3px 6px -5px #BBB;
+}
+.layout-dark .noUi-handle {
+    background-color: #a9a9a9;
+    border-color: #a9a9a9;
+    box-shadow: inset 0 0 1px #a9a9a9,     inset 0 1px 7px #EBEBEB,     0 3px 6px -3px #BBB;
 }
