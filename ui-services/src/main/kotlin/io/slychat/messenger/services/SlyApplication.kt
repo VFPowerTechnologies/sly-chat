@@ -46,6 +46,9 @@ class SlyApplication {
     var userComponent: UserComponent? = null
         private set
 
+    var isFirstRun: Boolean = false
+        private set
+
     internal var isInitialized = false
     private val onInitListeners = ArrayList<(SlyApplication) -> Unit>()
 
@@ -178,6 +181,9 @@ class SlyApplication {
             log.error("Installation data is corrupted: {}", e.message, e)
             null
         }
+
+        isFirstRun = maybeInstallationData == null
+        appComponent.uiClientInfoService.isFirstRun = isFirstRun
 
         installationData = if (maybeInstallationData != null) {
             maybeInstallationData
@@ -315,7 +321,6 @@ class SlyApplication {
         sessionDataManager.updateAuthToken(authToken)
 
         connectToRelay()
-        userComponent.preKeyManager.checkForUpload()
     }
 
     private fun onClockDiffUpdate(diff: Long) {
@@ -368,6 +373,8 @@ class SlyApplication {
         forceAddressBookSync()
 
         fetchOfflineMessages()
+
+        checkPreKeys()
     }
 
     fun createUserSession(userLoginData: UserData, keyVault: KeyVault, accountInfo: AccountInfo, accountLocalInfo: AccountLocalInfo): UserComponent {
@@ -527,6 +534,8 @@ class SlyApplication {
         //TODO rerun this a second time after a certain amount of time to pick up any messages that get added between this fetch
         fetchOfflineMessages()
 
+        checkPreKeys()
+
         val publicKey = userComponent.keyVault.fingerprint
 
         emitLoginEvent(LoggedIn(accountInfo, publicKey))
@@ -534,6 +543,10 @@ class SlyApplication {
 
     fun fetchOfflineMessages() {
         userComponent?.offlineMessageManager?.fetch()
+    }
+
+    private fun checkPreKeys() {
+        userComponent?.preKeyManager?.checkForUpload()
     }
 
     /** Subscribe to events, connect to relay (if network available). */

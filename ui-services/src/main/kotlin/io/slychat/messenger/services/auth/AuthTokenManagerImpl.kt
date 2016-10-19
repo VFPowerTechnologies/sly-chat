@@ -36,6 +36,7 @@ class AuthTokenManagerImpl(
     override val newToken: Observable<AuthToken?>
         get() = newTokenSubject
 
+    //queued and currentToken are synchronized as they can end up being access from any thread
     private var queued = ArrayList<Deferred<AuthToken, Exception>>()
 
     private var currentToken: AuthToken? = null
@@ -45,8 +46,10 @@ class AuthTokenManagerImpl(
     }
 
     private fun updateCachedToken(authToken: AuthToken?) {
-        currentToken = authToken
-        newTokenSubject.onNext(authToken)
+        synchronized(this) {
+            currentToken = authToken
+            newTokenSubject.onNext(authToken)
+        }
     }
 
     override fun setToken(authToken: AuthToken) {
@@ -74,30 +77,38 @@ class AuthTokenManagerImpl(
     }
 
     private fun processQueue() {
-        val token = currentToken ?: return
+        synchronized(this) {
+            val token = currentToken ?: return
 
-        //for testing in sync mode, need to prevent concurrent modification to the queue
-        val old = queued
-        queued = ArrayList()
+            //for testing in sync mode, need to prevent concurrent modification to the queue
+            val old = queued
+            queued = ArrayList()
 
-        old.forEach { it.resolve(token) }
+            old.forEach { it.resolve(token) }
+        }
     }
 
     private fun failQueue(reason: Exception) {
-        val old = queued
-        queued = ArrayList()
+        synchronized(this) {
+            val old = queued
+            queued = ArrayList()
 
-        old.forEach { it.reject(reason) }
+            old.forEach { it.reject(reason) }
+        }
     }
 
     override fun invalidateToken() {
-        currentToken = null
+        synchronized(this) {
+            currentToken = null
+        }
         tokenProvider.invalidateToken()
     }
 
     private fun addToQueue(d: Deferred<AuthToken, Exception>) {
-        queued.add(d)
-        processQueue()
+        synchronized(this) {
+            queued.add(d)
+            processQueue()
+        }
     }
 
     private fun nextRetryTimeout(attemptN: Int): Promise<Unit, Exception> {

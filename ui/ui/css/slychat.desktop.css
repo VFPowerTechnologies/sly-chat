@@ -1,10 +1,18 @@
 #contactPopup .floating-button {
     top: 5px;
 }
+.layout-dark .top-navbar {
+    box-shadow: none;
+}
 #mainView .navbar {
     background-color: #fff !important;
     color: black !important;
     border-bottom: 1px solid #eee;
+}
+.layout-dark #mainView .navbar {
+    background-color: #000000 !important;
+    color: #fff !important;
+    border-bottom: 1px solid #222;
 }
 #chatPageContent {
     top: 56px;
@@ -27,6 +35,12 @@
     left: 0;
     width: 250px;
     display: block;
+}
+#leftMenuPanel .page {
+    background-color: #861E00;
+}
+.layout-dark #leftMenuPanel .page {
+    background-color: #424242;
 }
 .view-main {
     float: right;

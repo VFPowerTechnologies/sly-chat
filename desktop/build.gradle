@@ -70,9 +70,21 @@ distributions {
     }
 }
 
+//the distribution plugin is retarded and causes distTar and distZip to be run even for the assemble task
+//so we disable distTar unless it's explicitly being run
 distTar {
     compression = Compression.BZIP2
     extension = 'tar.bz2'
+
+    //don't want a GString, else contains() fails due to GString.class not being String.class
+    String taskName = "${project.name}:distTar"
+
+    enabled = gradle.startParameter.taskNames.contains(taskName)
+}
+
+//don't use the zip on windows since we use the jfxnative plugin
+distZip {
+    enabled = false
 }
 
 jfx {

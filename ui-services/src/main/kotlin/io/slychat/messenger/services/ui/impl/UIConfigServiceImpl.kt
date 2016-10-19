@@ -1,10 +1,12 @@
 package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.services.PlatformNotificationService
+import io.slychat.messenger.services.config.AppConfig
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.ui.UIAppearanceConfig
 import io.slychat.messenger.services.ui.UIConfigService
 import io.slychat.messenger.services.ui.UINotificationConfig
 import org.slf4j.LoggerFactory
@@ -20,6 +22,7 @@ class UIConfigServiceImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val notificationConfigChangeListeners = ArrayList<(UINotificationConfig) -> Unit>()
+    private val appearanceConfigChangeListeners = ArrayList<(UIAppearanceConfig) -> Unit>()
 
     private val subscriptions = CompositeSubscription()
 
@@ -43,6 +46,32 @@ class UIConfigServiceImpl(
         }
     }
 
+    private fun onAppConfigUpdate(updates: Collection<String>) {
+        var updateAppearance = false
+
+        log.debug("App configuration updated: {}", updates)
+
+        updates.forEach { key ->
+            if (key.startsWith(AppConfig.APPEARANCE))
+                updateAppearance = true
+        }
+
+        if (updateAppearance)
+            notifyAppearanceConfigChangeListeners()
+    }
+
+    private fun getUIAppearanceConfig(): UIAppearanceConfig {
+        return UIAppearanceConfig(
+            appConfigService.appearanceTheme
+        )
+    }
+
+    private fun notifyAppearanceConfigChangeListeners() {
+        val uiAppearanceConfig = getUIAppearanceConfig()
+
+        appearanceConfigChangeListeners.forEach { it(uiAppearanceConfig) }
+    }
+
     private fun onUserConfigUpdate(updates: Collection<String>) {
         var updateNotifications = false
 
@@ -59,6 +88,7 @@ class UIConfigServiceImpl(
 
     private fun pushInitialConfigs() {
         notifyNotificationConfigChangeListeners()
+        notifyAppearanceConfigChangeListeners()
     }
 
     private fun getUserConfigServiceOrThrow(): UserConfigService {
@@ -101,8 +131,21 @@ class UIConfigServiceImpl(
         notificationConfigChangeListeners.forEach { it(uiNotificationConfig) }
     }
 
+    override fun setAppearanceConfig(config: UIAppearanceConfig) {
+        appConfigService.withEditor {
+            appearanceTheme = config.theme
+        }
+    }
+
+    override fun addAppearanceConfigChangeListener(listener: (UIAppearanceConfig) -> Unit) {
+        appearanceConfigChangeListeners.add(listener)
+
+        listener(getUIAppearanceConfig())
+    }
+
     override fun clearListeners() {
         notificationConfigChangeListeners.clear()
+        appearanceConfigChangeListeners.clear()
     }
 
     override fun getLoginRememberMe(): Boolean {

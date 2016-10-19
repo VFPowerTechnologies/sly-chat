@@ -66,6 +66,7 @@ UIController.prototype = {
     },
 
     initController : function () {
+        settingsController.init();
         navigationController.init();
         loginController.init();
         chatController.init();
@@ -73,7 +74,6 @@ UIController.prototype = {
         contactController.addConversationInfoUpdateListener();
         connectionController.init();
         groupController.addGroupEventListener();
-        settingsController.init();
     },
 
     initApplication : function () {
@@ -163,5 +163,21 @@ UIController.prototype = {
                 ]
             });
         }, 3000);
+    },
+
+    setAppTheme : function (theme) {
+        var body = $("body");
+        if (theme === null) {
+            body.removeClass();
+            if(!isIos)
+                body.addClass("theme-deeporange");
+            else
+                body.addClass("theme-orange");
+        }
+        else {
+            body.removeClass();
+            body.addClass("layout-dark");
+            body.addClass("theme-black");
+        }
     }
 };

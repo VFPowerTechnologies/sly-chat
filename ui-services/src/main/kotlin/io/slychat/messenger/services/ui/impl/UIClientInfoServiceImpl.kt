@@ -14,6 +14,8 @@ class UIClientInfoServiceImpl(
         versionOutOfDate.subscribe { onVersionOutOfDate() }
     }
 
+    override var isFirstRun: Boolean = false
+
     private fun onVersionOutOfDate() {
         versionOutOfDate = true
         versionOutOfDateListeners.forEach { it() }
