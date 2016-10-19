@@ -77,6 +77,8 @@ class PreKeyManagerImpl(
                 log.debug("Remaining prekeys: {}, requested to upload {}", response.remaining, response.uploadCount)
                 scheduleUpload(response.uploadCount)
             }
+        } fail {
+            log.error("Failed to check for prekey count: {}", it.message, it)
         }
     }
 
