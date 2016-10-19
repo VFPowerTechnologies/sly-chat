@@ -372,4 +372,11 @@ class SlyApplicationTest {
 
         verify(appComponent.versionChecker).init()
     }
+
+    @Test
+    fun `it should check prekeys after login initialization`() {
+        val app = auth()
+
+        verify(userComponent.preKeyManager).checkForUpload()
+    }
 }
