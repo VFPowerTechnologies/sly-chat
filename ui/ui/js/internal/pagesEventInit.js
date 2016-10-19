@@ -27,31 +27,34 @@ $$(document).on('pageBeforeInit', function (e) {
 });
 
 slychat.onPageInit('registerStepOne', function () {
+    uiController.hideSplashScreen();
+    var nameInput = $("#name");
+    nameInput.focus();
     $("#submitStepOne").click(function () {
         registrationController.handleFirstStep();
     });
 
     if (registrationController.name !== "")
-        $("#name").val(navigationController.name);
+        nameInput.val(registrationController.name);
 });
 
 slychat.onPageInit('registerStepTwo', function () {
+    var emailInput = $("#email");
+    emailInput.focus();
     $("#submitStepTwo").click(function () {
         registrationController.handleSecondStep();
     });
 
-    $("#first-step-name").html(registrationController.name);
-
     if (registrationController.email !== "")
-        $("#name").val(navigationController.email);
+        emailInput.val(registrationController.email);
 });
 
 slychat.onPageInit('registerStepThree', function () {
+    $("#password").focus();
+
     $("#submitStepThree").click(function () {
         registrationController.handleThirdStep();
     });
-
-    $("#first-step-name").html(registrationController.name);
 });
 
 slychat.onPageInit('registerStepFour', function () {
@@ -66,16 +69,13 @@ slychat.onPageInit('registerStepFour', function () {
         setPhoneExt(ext);
         // TODO Validate Phone Input
     });
-
-    $("#first-step-name").html(registrationController.name);
 });
 
 slychat.onPageInit('registerStepFive', function (page) {
+    $("#smsVerificationCode").focus();
     $("#submitStepFive").click(function () {
         registrationController.handleFinalStep(page.query.email, page.query.password);
     });
-
-    $("#first-step-name").html(registrationController.name);
 });
 
 
@@ -112,6 +112,7 @@ slychat.onPageInit('login', function (page) {
 });
 
 slychat.onPageInit('register', function (page) {
+    uiController.hideSplashScreen();
     updatePhoneWithIntl();
     $$('#countrySelect').on("change", function(e) {
         var ext = $("#countrySelect :selected").text().split("+")[1];

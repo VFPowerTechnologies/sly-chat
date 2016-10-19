@@ -206,8 +206,19 @@ RegistrationController.prototype = {
         if (!slychat.validateForm($("#stepTwoContent")))
             return;
 
-        this.email = $("#email").val();
-        navigationController.loadPage('registerStepThree.html')
+        var email = $("#email").val();
+
+        registrationService.checkEmailAvailability(email).then(function (available) {
+            if (available) {
+                this.email = email;
+                navigationController.loadPage('registerStepThree.html');
+            }
+            else {
+                this.displayError($("#email"), "The email is taken");
+            }
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        });
     },
 
     handleThirdStep : function () {
@@ -230,27 +241,38 @@ RegistrationController.prototype = {
         if (!slychat.validateForm($("#stepFourContent")))
             return;
 
-        this.phoneNumber = getFormatedPhoneNumber($("#phone").val(), $(RegistrationController.ids.countryInput).val());
+        var phoneNumber = getFormatedPhoneNumber($("#phone").val(), $(RegistrationController.ids.countryInput).val());
 
-        this.setRegistrationInfo(this.name, this.email, this.phoneNumber, this.password);
+        registrationService.checkPhoneNumberAvailability(phoneNumber).then(function (available) {
+            if (available) {
+                this.phoneNumber = phoneNumber;
+                this.setRegistrationInfo(this.name, this.email, this.phoneNumber, this.password);
 
-        slychat.showPreloader();
-        registrationService.doRegistration(this.registrationInfo).then(function (result) {
-            slychat.hidePreloader();
-            if (result.successful == true) {
-                var options = {
-                    url: 'smsVerification.html',
-                    query: {
-                        email: this.registrationInfo.email,
-                        password: this.registrationInfo.password
+                slychat.showPreloader();
+                registrationService.doRegistration(this.registrationInfo).then(function (result) {
+                    slychat.hidePreloader();
+                    if (result.successful == true) {
+                        var options = {
+                            url: 'smsVerification.html',
+                            query: {
+                                email: this.registrationInfo.email,
+                                password: this.registrationInfo.password
+                            }
+                        };
+                        navigationController.loadPage("registerStepFive.html", true, options);
+                        navigationController.replaceHistory(["updatePhone.html"]);
                     }
-                };
-                navigationController.loadPage("smsVerification.html", true, options);
+                }.bind(this)).catch(function (e) {
+                    slychat.hidePreloader();
+                    exceptionController.handleError(e);
+                }.bind(this));
+            }
+            else {
+                this.displayError($("#phone"), "The phone number is taken");
             }
         }.bind(this)).catch(function (e) {
-            slychat.hidePreloader();
             exceptionController.handleError(e);
-        }.bind(this));
+        });
     },
 
     handleFinalStep : function (email, password) {
@@ -273,5 +295,15 @@ RegistrationController.prototype = {
             exceptionController.handleError(e);
         });
         
+    },
+
+    displayError : function (input, error) {
+        var parent = input.parents("li");
+        if (parent.find(".invalid-details").length <= 0)
+            parent.append("<div class='invalid-details'>" + error + "</div>");
+        else
+            parent.find(".invalid-details").append("<br>" + error);
+
+        parent.addClass("invalid");
     }
 };

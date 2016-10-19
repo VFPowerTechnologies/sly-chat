@@ -285,5 +285,11 @@ NavigationController.prototype = {
                 navigationController.goTo(initialPage);
             }
         });
+    },
+
+    replaceHistory : function (list) {
+        historyService.replace(list).catch(function (e) {
+            exceptionController.handleError(e);
+        })
     }
 };

@@ -490,3 +490,37 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .noUi-handle:after {
     display: none;
 }
+
+/* Registration */
+.five-step-progress {
+    display: flex;
+    width: 295px;
+    margin: 65px auto 0 auto;
+}
+.step {
+    background-color: #fff;
+    width: 15px;
+    height: 15px;
+    display: inline-block;
+    border-radius: 50%;
+    box-shadow: 0 0 5px #888888;
+    margin-right: 55px;
+}
+.layout-dark .step {
+    background-color: #fff;
+}
+.step-active {
+    background-color: red;
+    animation-name: completeStep;
+    animation-duration: 1s;
+}
+.layout-dark .step-active {
+    background-color: red;
+}
+.last-step {
+    margin-right: 0;
+}
+@keyframes completeStep {
+    from {background-color: #fff}
+    to {background-color: red}
+}

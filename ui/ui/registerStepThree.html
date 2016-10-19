@@ -3,11 +3,13 @@
         <div class="page-content vertical-centered-content" style="padding: 0;">
             <div style="margin: 0 10px 0 10px;">
                 <div class="content-block">
-                    <p>Thanks <span id="first-step-name"></span>, We now need your password.</p>
                     <div class="list-block">
+                        <p>Enter a password</p>
+                        <p style="font-size: 12px; margin-top: -15px; font-weight: 200;">This is for data encryption</p>
                         <ul id="stepThreeContent" class="form-list-input">
                             <li>
                                 <div class="item-content">
+                                    <div class="item-media"><i class="icon icon-form-password"></i></div>
                                     <div class="item-inner">
                                         <div class="item-input">
                                             <input id="password" type="password" placeholder="Password" class='form-input-validate' data-errorName="Password" data-confirmationId="passwordConfirmation" data-rules="required|confirmed|min-6"><br>
@@ -17,6 +19,7 @@
                             </li>
                             <li>
                                 <div class="item-content">
+                                    <div class="item-media"><i class="icon icon-form-password"></i></div>
                                     <div class="item-inner">
                                         <div class="item-input">
                                             <input id="passwordConfirmation" type="password" placeholder="Confirm Password" class='form-input-validate' data-errorName="Password Confirmation" data-rules="required|min-6"><br>
@@ -32,6 +35,13 @@
                                 </div>
                             </li>
                         </ul>
+                    </div>
+                    <div class='five-step-progress'>
+                        <span class='step'></span>
+                        <span class='step'></span>
+                        <span class='step step-active'></span>
+                        <span class='step'></span>
+                        <span class='step last-step'></span>
                     </div>
                 </div>
             </div>
