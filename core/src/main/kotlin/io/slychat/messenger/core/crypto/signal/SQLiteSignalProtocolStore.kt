@@ -7,6 +7,7 @@ import io.slychat.messenger.core.persistence.PreKeyPersistenceManager
 import io.slychat.messenger.core.persistence.SignalSessionPersistenceManager
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
+import org.whispersystems.libsignal.InvalidKeyIdException
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SessionRecord
@@ -50,8 +51,8 @@ class SQLiteSignalProtocolStore(
         preKeyPersistenceManager.putSignedPreKey(record).get()
     }
 
-    override fun loadSignedPreKey(signedPreKeyId: Int): SignedPreKeyRecord? {
-        return preKeyPersistenceManager.getSignedPreKey(signedPreKeyId).get()
+    override fun loadSignedPreKey(signedPreKeyId: Int): SignedPreKeyRecord {
+        return preKeyPersistenceManager.getSignedPreKey(signedPreKeyId).get() ?: throw InvalidKeyIdException("Invalid signed prekey id: $signedPreKeyId")
     }
 
     override fun loadSignedPreKeys(): List<SignedPreKeyRecord> {
@@ -62,8 +63,8 @@ class SQLiteSignalProtocolStore(
         preKeyPersistenceManager.removeUnsignedPreKey(preKeyId).get()
     }
 
-    override fun loadPreKey(preKeyId: Int): PreKeyRecord? {
-        return preKeyPersistenceManager.getUnsignedPreKey(preKeyId).get()
+    override fun loadPreKey(preKeyId: Int): PreKeyRecord {
+        return preKeyPersistenceManager.getUnsignedPreKey(preKeyId).get() ?: throw InvalidKeyIdException("Invalid prekey id: $preKeyId")
     }
 
     override fun storePreKey(preKeyId: Int, record: PreKeyRecord) {
