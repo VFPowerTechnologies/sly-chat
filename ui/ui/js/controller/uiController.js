@@ -167,17 +167,23 @@ UIController.prototype = {
 
     setAppTheme : function (theme) {
         var body = $("body");
-        if (theme === null) {
-            body.removeClass();
-            if(!isIos)
-                body.addClass("theme-deeporange");
-            else
-                body.addClass("theme-orange");
-        }
-        else {
-            body.removeClass();
-            body.addClass("layout-dark");
-            body.addClass("theme-black");
+        body.removeClass();
+
+        switch (theme) {
+            case null:
+                body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.dafaultTheme]);
+            break;
+
+            case SettingsController.themesConfigName.darkTheme:
+                body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.darkTheme]);
+            break;
+
+            case SettingsController.themesConfigName.whiteTheme:
+                if(!isIos)
+                    body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.whiteTheme]);
+                else
+                    body.addClass("theme-orange");
+            break;
         }
     }
 };

@@ -2,6 +2,17 @@ var SettingsController = function () {
     this.notificationConfig = null;
 };
 
+SettingsController.themesConfigName = {
+    dafaultTheme: "dark",
+    whiteTheme: "white",
+    darkTheme: "dark"
+};
+
+SettingsController.themesClassName = {
+    dark: "layout-dark theme-black",
+    white: "theme-deeporange"
+};
+
 SettingsController.ids = {
     notificationsEnabled : '#notifications-enabled-checkbox',
     notificationsSound : '#notification-sound-select-btn',
@@ -42,10 +53,14 @@ SettingsController.prototype = {
 
     refreshAppearanceConfig : function () {
         if (this.themeConfig.theme === null) {
-            $(SettingsController.ids.darkThemeCheckBox).prop('checked', false);
-        }
-        else {
+            //no theme selected, choose default
             $(SettingsController.ids.darkThemeCheckBox).prop('checked', true);
+        }
+        else if (this.themeConfig.theme == SettingsController.themesConfigName.darkTheme) {
+            $(SettingsController.ids.darkThemeCheckBox).prop('checked', true);
+        }
+        else if (this.themeConfig.theme == SettingsController.themesConfigName.whiteTheme) {
+            $(SettingsController.ids.darkThemeCheckBox).prop('checked', false);
         }
 
         uiController.setAppTheme(this.themeConfig.theme);
@@ -59,11 +74,11 @@ SettingsController.prototype = {
 
     setAppearanceConfig : function (checked) {
         if (checked) {
-            this.themeConfig = {theme: "dark"};
+            this.themeConfig = {theme: SettingsController.themesConfigName.darkTheme};
             configService.setAppearanceConfig(this.themeConfig);
         }
         else {
-            this.themeConfig = {theme: null};
+            this.themeConfig = {theme: SettingsController.themesConfigName.whiteTheme};
             configService.setAppearanceConfig(this.themeConfig);
         }
 
