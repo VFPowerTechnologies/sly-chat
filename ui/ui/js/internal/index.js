@@ -33,3 +33,6 @@
         });
     }
 })();
+
+if (typeof Promise === 'undefined')
+    $("body").prepend("<script src='js/external-lib/promise.min.js'></script>");
