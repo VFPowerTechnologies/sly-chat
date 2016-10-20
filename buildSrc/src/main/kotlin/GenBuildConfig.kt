@@ -4,6 +4,7 @@ import org.apache.velocity.runtime.RuntimeConstants
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader
 import org.gradle.api.DefaultTask
 import org.gradle.api.InvalidUserDataException
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
@@ -54,20 +55,8 @@ open class GenBuildConfig : DefaultTask() {
             return null
         }
 
-        private fun getEnumValue(settings: Properties, debug: Boolean, setting: String, validValues: List<String>, defaultValue: String?): String {
-            val keys = ArrayList<String>()
-            if (debug)
-                keys.add("debug.$setting")
-
-            keys.add(setting)
-
-            val value = getSetting(settings, keys)?.toUpperCase()
-
-            if (value == null) {
-                if (defaultValue == null)
-                    throw InvalidUserDataException("No $setting setting found in properties file")
-                return defaultValue
-            }
+        private fun getEnumValue(settings: Properties, setting: String, validValues: List<String>, debug: Boolean): String {
+            val value = findValueForKey(settings, setting, debug)
 
             if (value !in validValues)
                 throw InvalidUserDataException("Invalid value for $setting: $value")
@@ -188,6 +177,18 @@ open class GenBuildConfig : DefaultTask() {
     @InputFile
     val buildConfigJSTemplate = File(projectRoot, "buildSrc/src/main/resources/build-config.js.vm")
 
+    @Input
+    val releaseAndroidLogSettings = File(projectRoot, "buildSrc/src/main/resources/release-sly-logger.properties")
+
+    @Input
+    val debugAndroidLogSettings = File(projectRoot, "buildSrc/src/main/resources/debug-sly-logger.properties")
+
+    @Input
+    val releaseDesktopLogSettings = File(projectRoot, "buildSrc/src/main/resources/release-logback.xml")
+
+    @Input
+    val debugDesktopLogSettings = File(projectRoot, "buildSrc/src/main/resources/debug-logback.xml")
+
     //TODO maybe let these be overriden as settings (or set as relative paths to the project root)
     val generateRoot = File(projectRoot, "generated")
 
@@ -202,6 +203,12 @@ open class GenBuildConfig : DefaultTask() {
 
     @OutputFile
     val jsOutputFile = File(projectRoot, "ui/ui/js/build-config.js")
+
+    @OutputFile
+    val androidLogSettings = File(projectRoot, "android/src/main/resources/sly-logger.properties")
+
+    @OutputFile
+    val desktopLogSettings = File(projectRoot, "desktop/src/main/resources/logback.xml")
 
     private fun getSettingProperties(): Properties {
         val props = Properties()
@@ -306,5 +313,15 @@ open class GenBuildConfig : DefaultTask() {
 
             vt.merge(vc, it)
         }
+
+        val logSettingsType = getEnumValue(settings, "logSettings", listOf("release", "debug"), debug)
+
+        val (selectedAndroidLogSettings, selectedDesktopLogSettings) = if (logSettingsType == "release")
+            releaseAndroidLogSettings to releaseDesktopLogSettings
+        else
+            debugAndroidLogSettings to debugDesktopLogSettings
+
+        selectedAndroidLogSettings.copyTo(androidLogSettings, overwrite = true)
+        selectedDesktopLogSettings.copyTo(desktopLogSettings, overwrite = true)
     }
 }
