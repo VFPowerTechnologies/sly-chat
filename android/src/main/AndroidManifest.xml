@@ -12,7 +12,6 @@
     <android:uses-permission android:name="android.permission.READ_CONTACTS"/>
     <android:uses-permission android:name="android.permission.WAKE_LOCK"/>
     <android:uses-permission android:name="android.permission.VIBRATE"/>
-    <android:uses-permission android:name="android.permission.CALL_PHONE"/>
     <android:uses-permission android:name="com.google.android.c2dm.permission.RECEIVE"/>
 
     <application
