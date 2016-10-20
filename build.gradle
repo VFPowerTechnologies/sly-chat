@@ -1,5 +1,6 @@
 group 'com.vfpowertech'
 version '0.4.0-SNAPSHOT'
+ext.androidVersionCode = 18
 
 buildscript {
     ext {

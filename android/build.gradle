@@ -32,7 +32,7 @@ android {
         applicationId 'io.slychat.messenger'
         minSdkVersion 19
         targetSdkVersion 23
-        versionCode 18
+        versionCode androidVersionCode
         versionName rootProject.version
     }
 
