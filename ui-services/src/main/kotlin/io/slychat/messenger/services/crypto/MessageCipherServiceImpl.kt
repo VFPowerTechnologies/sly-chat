@@ -227,12 +227,6 @@ class MessageCipherServiceImpl(
                 signalStore.deleteSession(address.toSignalAddress())
             }
 
-            //remove any stale entries
-            info.stale.map { deviceId ->
-                val addr = SlyAddress(userId, deviceId)
-                signalStore.deleteSession(addr.toSignalAddress())
-            }
-
             val toAdd = HashSet(info.missing)
             toAdd.addAll(info.stale)
 
