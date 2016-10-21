@@ -602,3 +602,24 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
         background-color: red
     }
 }
+/* Password Strength */
+.pwstrength_viewport_progress .progress {
+    margin-bottom: 5px;
+    height: 15px;
+}
+.layout-dark .pwstrength_viewport_progress .progress {
+    background-color: #838386;
+    background-image: none;
+}
+.pwstrength_viewport_progress .progress-bar {
+    line-height: 15px;
+}
+.pwstrength_viewport_progress .progress-bar.progress-bar-danger .password-verdict {
+    position: absolute;
+}
+.pwstrength_viewport_progress .password-verdict {
+    color: black;
+}
+.layout-dark .pwstrength_viewport_progress .password-verdict {
+    color: #fff;
+}

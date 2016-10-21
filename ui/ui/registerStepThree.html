@@ -6,37 +6,43 @@
                     <div class="list-block">
                         <p>Enter a password</p>
                         <p style="font-size: 12px; margin-top: -15px; font-weight: 200;">This is for data encryption</p>
-                        <ul id="stepThreeContent" class="form-list-input">
-                            <li>
-                                <div class="item-content">
-                                    <div class="item-media"><i class="icon icon-form-password"></i></div>
-                                    <div class="item-inner">
-                                        <div class="item-input">
-                                            <input id="password" type="password" placeholder="Password" class='form-input-validate' data-errorName="Password" data-confirmationId="passwordConfirmation" data-rules="required|confirmed|min-6"><br>
+                        <form id="stepThreeForm">
+                            <ul class="form-list-input">
+                                <li id='pwd-container' class="row">
+                                    <div class="item-content col-100">
+                                        <div class="item-media"><i class="icon icon-form-password"></i></div>
+                                        <div class="item-inner">
+                                            <div class="item-input">
+                                                <input id="password" type="password" placeholder="Password" class='form-input-validate' data-errorName="Password" data-rules="required|min-6"><br>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </li>
-                            <li>
-                                <div class="item-content">
-                                    <div class="item-media"><i class="icon icon-form-password"></i></div>
-                                    <div class="item-inner">
-                                        <div class="item-input">
-                                            <input id="passwordConfirmation" type="password" placeholder="Confirm Password" class='form-input-validate' data-errorName="Password Confirmation" data-rules="required|min-6"><br>
-                                        </div>
-                                    </div>
-                                </div>
-                            </li>
-                            <li>
-                                <div class="row" style="margin-top: 10px;">
+                                    <div class="col-30"></div>
                                     <div class="col-70">
+                                        <div class="pwstrength_viewport_progress"></div>
                                     </div>
-                                    <div class="col-30">
-                                        <input type="submit" id="submitStepThree" value="Next" class="button button-fill">
+                                </li>
+                                <li>
+                                    <div class="item-content">
+                                        <div class="item-media"><i class="icon icon-form-password"></i></div>
+                                        <div class="item-inner">
+                                            <div class="item-input">
+                                                <input id="passwordConfirmation" type="password" placeholder="Confirm Password" class='form-input-validate' data-confirmationId="#password" data-errorName="Password Confirmation" data-rules="required|confirmed|min-6"><br>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </li>
-                        </ul>
+                                </li>
+                                <li>
+                                    <div class="row" style="margin-top: 10px;">
+                                        <div class="col-70">
+                                        </div>
+                                        <div class="col-30">
+                                            <input type="submit" id="submitStepThree" value="Next" class="button button-fill">
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </form>
                     </div>
                     <div class='five-step-progress'>
                         <span class='step'></span>

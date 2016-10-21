@@ -4,36 +4,37 @@
             <div style="margin: 0 10px 0 10px;">
                 <div class="content-block">
                     <div class="list-block">
-                        <p>Your account has been created</p>
-                        <p style="font-size: 12px; margin-top: -15px; font-weight: 200;">You must confirm your account to be able to login</p>
-                        <p style="font-size: 12px; margin-top: -15px; font-weight: 200;">You should receive a sms shortly</p>
-                        <ul id="stepFiveContent" class="form-list-input">
-                            <li>
-                                <div class="item-content">
-                                    <div class="item-media"><i class="fa fa-key smsCodeIcon"></i></div>
-                                    <div class="item-inner">
-                                        <div class="item-input">
-                                            <input id="smsVerificationCode" type="number" placeholder="Verification Code" class='form-input-validate' data-rules="required" data-errorName="Verification Code">
+                        <p>Verify your phone number</p>
+                        <p style="font-size: 12px; margin-top: -15px; font-weight: 200;">Last step! Enter the code we're sending you via SMS</p>
+                        <form id="stepFiveForm">
+                            <ul class="form-list-input">
+                                <li>
+                                    <div class="item-content">
+                                        <div class="item-media"><i class="fa fa-key smsCodeIcon"></i></div>
+                                        <div class="item-inner">
+                                            <div class="item-input">
+                                                <input id="smsVerificationCode" type="number" placeholder="Verification Code" class='form-input-validate' data-rules="required" data-errorName="Verification Code">
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </li>
-                            <li>
-                                <div class="row" style="margin-top: 10px;">
-                                    <div class="col-70">
+                                </li>
+                                <li>
+                                    <div class="row" style="margin-top: 10px;">
+                                        <div class="col-70">
+                                        </div>
+                                        <div class="col-30">
+                                            <input type="submit" id="submitStepFive" value="Next" class="button button-fill">
+                                        </div>
                                     </div>
-                                    <div class="col-30">
-                                        <input type="submit" id="submitStepFive" value="Next" class="button button-fill">
-                                    </div>
-                                </div>
-                            </li>
-                            <li>
-                                <p>Didn't receive your verification code?
-                                    <a id='resendVerificationCode' href="#">Resend</a> <br>
-                                    <a id='updatePhoneNumberLink' href="#">Update Phone</a>
-                                </p>
-                            </li>
-                        </ul>
+                                </li>
+                                <li>
+                                    <p>Didn't receive your verification code?
+                                        <a id='resendVerificationCode' href="#">Resend</a> <br>
+                                        <a id='updatePhoneNumberLink' href="#">Update phone number </a>
+                                    </p>
+                                </li>
+                            </ul>
+                        </form>
                     </div>
                     <div class='five-step-progress'>
                         <span class='step'></span>

@@ -30,7 +30,8 @@ slychat.onPageInit('registerStepOne', function () {
     uiController.hideSplashScreen();
     var nameInput = $("#name");
     nameInput.focus();
-    $("#submitStepOne").click(function () {
+    $("#stepOneForm").submit(function (e) {
+        e.preventDefault();
         registrationController.handleFirstStep();
     });
 
@@ -41,7 +42,8 @@ slychat.onPageInit('registerStepOne', function () {
 slychat.onPageInit('registerStepTwo', function () {
     var emailInput = $("#email");
     emailInput.focus();
-    $("#submitStepTwo").click(function () {
+    $("#stepTwoForm").submit(function (e) {
+        e.preventDefault();
         registrationController.handleSecondStep();
     });
 
@@ -52,13 +54,25 @@ slychat.onPageInit('registerStepTwo', function () {
 slychat.onPageInit('registerStepThree', function () {
     $("#password").focus();
 
-    $("#submitStepThree").click(function () {
+    $("#stepThreeForm").submit(function (e) {
+        e.preventDefault();
         registrationController.handleThirdStep();
     });
+
+    var options = {};
+    options.ui = {
+        container: "#pwd-container",
+        showVerdictsInsideProgressBar: true,
+        viewports: {
+            progress: ".pwstrength_viewport_progress"
+        }
+    };
+    $('#password').pwstrength(options);
 });
 
 slychat.onPageInit('registerStepFour', function () {
-    $("#submitStepFour").click(function () {
+    $("#stepFourForm").submit(function (e) {
+        e.preventDefault();
         registrationController.handleFourthStep();
     });
 
@@ -72,11 +86,12 @@ slychat.onPageInit('registerStepFour', function () {
 });
 
 slychat.onPageInit('registerStepFive', function (page) {
-    var email = page.query.email !== undefined ? page.query.email : registrationController.email;
-    var password = page.query.password !== undefined ? page.query.password : registrationController.password;
+    var email = page.query.email !== undefined ? page.query.email : registrationController.registrationInfo.email;
+    var password = page.query.password !== undefined ? page.query.password : registrationController.registrationInfo.password;
 
     $("#smsVerificationCode").focus();
-    $("#submitStepFive").click(function () {
+    $("#stepFiveForm").submit(function (e) {
+        e.preventDefault();
         registrationController.handleFinalStep(email, password);
     });
 
@@ -148,6 +163,16 @@ slychat.onPageInit('register', function (page) {
     $$("#loginGoBtn").on('click', function (e) {
         navigationController.loadPage('login.html', true);
     });
+
+    var options = {};
+    options.ui = {
+        container: "#pwd-container",
+        showVerdictsInsideProgressBar: true,
+        viewports: {
+            progress: ".pwstrength_viewport_progress"
+        }
+    };
+    $('#registration-password').pwstrength(options);
 });
 
 slychat.onPageInit('chat', function (page) {

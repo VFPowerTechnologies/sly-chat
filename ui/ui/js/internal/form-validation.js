@@ -14,7 +14,7 @@ slychat.validateForm = function (form) {
         },
 
         confirmed : function (input) {
-            var confInput = $("#" + input.attr("data-confirmationId"));
+            var confInput = $(input.attr("data-confirmationId"));
             if (confInput.length > 0) {
                 if (confInput.val() != input.val()) {
                     functions.displayError(input, "Password does not match");
@@ -51,7 +51,7 @@ slychat.validateForm = function (form) {
         displayError : function (input, error) {
             var parent = input.parents("li");
             if (parent.find(".invalid-details").length <= 0)
-                parent.append("<div class='invalid-details'>" + error + "</div>");
+                parent.append("<div class='invalid-details col-100'>" + error + "</div>");
             else
                 parent.find(".invalid-details").append("<br>" + error);
         },

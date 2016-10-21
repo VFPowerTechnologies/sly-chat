@@ -61,14 +61,20 @@ LoginController.prototype = {
         var errorMessage = e.errorMessage;
         if(errorMessage !== null) {
             if(errorMessage == "Phone confirmation needed") {
+                var url;
+                if (isDesktop)
+                    url = "smsVerification.html";
+                else
+                    url = "registerStepFive.html";
+
                 var options = {
-                    url : 'smsVerification.html',
+                    url : url,
                     query: {
                         password: this.password,
                         email: this.email
                     }
                 };
-                navigationController.loadPage("smsVerification.html", false, options);
+                navigationController.loadPage(url, false, options);
             }
             else {
                 this.resetLoginInfo();

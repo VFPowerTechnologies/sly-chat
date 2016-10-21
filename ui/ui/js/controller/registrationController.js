@@ -200,7 +200,7 @@ RegistrationController.prototype = {
     },
 
     handleFirstStep : function () {
-        if (!slychat.validateForm($("#stepOneContent")))
+        if (!slychat.validateForm($("#stepOneForm")))
             return;
 
         this.name = $("#name").val();
@@ -209,7 +209,7 @@ RegistrationController.prototype = {
     },
 
     handleSecondStep : function () {
-        if (!slychat.validateForm($("#stepTwoContent")))
+        if (!slychat.validateForm($("#stepTwoForm")))
             return;
 
         var email = $("#email").val();
@@ -228,7 +228,7 @@ RegistrationController.prototype = {
     },
 
     handleThirdStep : function () {
-        if (!slychat.validateForm($("#stepThreeContent")))
+        if (!slychat.validateForm($("#stepThreeForm")))
             return;
 
         this.password = $("#password").val();
@@ -244,7 +244,7 @@ RegistrationController.prototype = {
     },
 
     handleFourthStep : function () {
-        if (!slychat.validateForm($("#stepFourContent")))
+        if (!slychat.validateForm($("#stepFourForm")))
             return;
 
         var phoneNumber = getFormatedPhoneNumber($("#phone").val(), $(RegistrationController.ids.countryInput).val());
@@ -258,6 +258,7 @@ RegistrationController.prototype = {
                 registrationService.doRegistration(this.registrationInfo).then(function (result) {
                     slychat.hidePreloader();
                     if (result.successful == true) {
+                        this.clearMobileRegistrationCache();
                         var options = {
                             url: 'registerStepFive.html',
                             query: {
@@ -282,14 +283,14 @@ RegistrationController.prototype = {
     },
 
     handleFinalStep : function (email, password) {
+        if (!slychat.validateForm($("#stepFiveForm")))
+            return;
+
         var code = $("#smsVerificationCode").val();
-        if (code == '')
-            return "Code is required";
 
         slychat.showPreloader();
         registrationService.submitVerificationCode(email, code).then(function (result) {
             if(result.successful == true) {
-                this.clearMobileRegistrationCache();
                 loginService.login(email, password, true);
             }
             else {
@@ -306,7 +307,7 @@ RegistrationController.prototype = {
     displayError : function (input, error) {
         var parent = input.parents("li");
         if (parent.find(".invalid-details").length <= 0)
-            parent.append("<div class='invalid-details'>" + error + "</div>");
+            parent.append("<div class='invalid-details col-100'>" + error + "</div>");
         else
             parent.find(".invalid-details").append("<br>" + error);
 
