@@ -5,7 +5,7 @@ slychat.validateForm = function (form) {
         },
 
         required : function (input) {
-            if (input.val().trim() === "") {
+            if (input.val() === null || input.val().trim() === "") {
                 functions.displayError(input, input.attr("data-errorName") + " is required");
                 return false;
             }
