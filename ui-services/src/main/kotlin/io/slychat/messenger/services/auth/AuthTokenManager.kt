@@ -5,6 +5,11 @@ import io.slychat.messenger.core.UserCredentials
 import nl.komponents.kovenant.Promise
 import rx.Observable
 
+/**
+ * Manages the current auth token.
+ *
+ * Must be thread-safe, as bind/map/bindUi/mapUi may be called on any thread. Other methods are only called on the main thread.
+ */
 interface AuthTokenManager {
     val newToken: Observable<AuthToken?>
 

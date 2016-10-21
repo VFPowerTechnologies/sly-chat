@@ -29,6 +29,7 @@ import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import java.io.IOException
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SlyApplicationTest {
@@ -157,6 +158,31 @@ class SlyApplicationTest {
         app.init(appComponent)
 
         assertEquals(installationData, app.installationData, "Installation data doesn't match")
+    }
+
+    @Test
+    fun `it should set isFirstRun to true if no installation data is present`() {
+        whenever(appComponent.installationDataPersistenceManager.retrieve()).thenResolve(null)
+        whenever(appComponent.installationDataPersistenceManager.store(any())).thenResolveUnit()
+
+        val app = createApp()
+        app.init(appComponent)
+
+        assertTrue(app.isFirstRun)
+
+        verify(appComponent.uiClientInfoService).isFirstRun = true
+    }
+
+    @Test
+    fun `it should set isFirstRun to false if installation data is present`() {
+        whenever(appComponent.installationDataPersistenceManager.retrieve()).thenResolve(InstallationData.generate())
+
+        val app = createApp()
+        app.init(appComponent)
+
+        assertFalse(app.isFirstRun)
+
+        verify(appComponent.uiClientInfoService).isFirstRun = false
     }
 
     @Ignore
@@ -345,5 +371,12 @@ class SlyApplicationTest {
         app.init(appComponent)
 
         verify(appComponent.versionChecker).init()
+    }
+
+    @Test
+    fun `it should check prekeys after login initialization`() {
+        val app = auth()
+
+        verify(userComponent.preKeyManager).checkForUpload()
     }
 }

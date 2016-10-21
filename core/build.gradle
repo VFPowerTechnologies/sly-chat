@@ -45,7 +45,6 @@ integrationTest {
     }
 }
 
-
 integrationTest.mustRunAfter test
 
 tasks.withType(Test) {
