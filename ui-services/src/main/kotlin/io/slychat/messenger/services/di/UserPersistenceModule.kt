@@ -136,4 +136,12 @@ class UserPersistenceModule {
             preKeyPersistenceManager,
             contactsPersistenceManager
         )
+
+    @UserScope
+    @Provides
+    fun providesEventLog(
+        sqlitePersistenceManager: SQLitePersistenceManager
+    ): EventLog {
+        return SQLiteEventLog(sqlitePersistenceManager)
+    }
 }

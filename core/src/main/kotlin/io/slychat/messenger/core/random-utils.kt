@@ -173,3 +173,11 @@ fun randomConversationDisplayInfo(): ConversationDisplayInfo =
     )
 
 fun randomMessageIds(n: Int = 2): List<String> = (1..n).map { randomMessageId() }
+
+fun randomSecurityEvent(target: LogTarget? = null): LogEvent.Security {
+    return LogEvent.Security(
+        target ?: LogTarget.Conversation(randomUserConversationId()),
+        1,
+        SecurityEventData.InvalidKey()
+    )
+}

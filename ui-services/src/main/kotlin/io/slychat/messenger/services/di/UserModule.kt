@@ -459,4 +459,12 @@ class UserModule(
     ): MessageDeletionWatcher {
         return MessageDeletionWatcherImpl(messageService.messageUpdates, messengerService)
     }
+
+    @UserScope
+    @Provides
+    fun providesEventLogService(
+        eventLog: EventLog
+    ): EventLogService {
+        return EventLogServiceImpl(eventLog)
+    }
 }
