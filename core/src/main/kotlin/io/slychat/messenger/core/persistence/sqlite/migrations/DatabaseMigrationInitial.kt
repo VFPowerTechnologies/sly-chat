@@ -24,7 +24,8 @@ class DatabaseMigrationInitial : DatabaseMigration(1) {
             "groups",
             "group_members",
             "address_book_hashes",
-            "expiring_messages"
+            "expiring_messages",
+            "event_log"
         )
     }
 

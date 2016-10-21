@@ -381,4 +381,15 @@ class DatabaseMigrationTest {
             containsExactly(1, 2, 3)
         }
     }
+
+    @Test
+    fun `migration 14 to 15`() {
+        withTestDatabase(14, 15) { persistenceManager, connection ->
+            check14to15(persistenceManager, connection)
+        }
+    }
+
+    private fun check14to15(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertTableExists(connection, "event_log")
+    }
 }
