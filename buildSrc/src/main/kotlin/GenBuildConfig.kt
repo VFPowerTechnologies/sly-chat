@@ -170,6 +170,10 @@ open class GenBuildConfig : DefaultTask() {
     @InputFile
     val localPropertiesPath = File(projectRoot, "local.properties")
 
+    //for version
+    @InputFile
+    val gradlePropertiesPath = File(project.rootDir, "gradle.properties")
+
     //this is kinda hacky...
     @InputFile
     val buildConfigJavaTemplate = File(projectRoot, "buildSrc/src/main/resources/BuildConfig.java.vm")
