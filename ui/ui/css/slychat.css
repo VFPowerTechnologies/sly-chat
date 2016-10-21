@@ -487,6 +487,24 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     text-align: center;
     border-radius: 6px;
 }
+.layout-dark .smsCodeIcon {
+    background-color: transparent;
+    color: #838386;
+}
+#phoneIntlExt {
+    display: none;
+    text-align: center;
+    min-width: 29px;
+    height: 29px;
+    line-height: 29px;
+    color: #ffffff;
+    background-color: #8e8e93;
+    border-radius: 5px;
+}
+.layout-dark #phoneIntlExt {
+    background-color: transparent;
+    color: #838386;
+}
 
 /* Profile Page */
 .profile-info-link {
@@ -545,4 +563,63 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     background-color: #a9a9a9;
     border-color: #a9a9a9;
     box-shadow: inset 0 0 1px #a9a9a9,     inset 0 1px 7px #EBEBEB,     0 3px 6px -3px #BBB;
+}
+
+/* Registration */
+.five-step-progress {
+    display: flex;
+    width: 295px;
+    margin: 0 auto;
+}
+.step {
+    background-color: #fff;
+    width: 15px;
+    height: 15px;
+    display: inline-block;
+    border-radius: 50%;
+    box-shadow: 0 0 5px #888888;
+    margin-right: 55px;
+}
+.layout-dark .step {
+    background-color: #fff;
+}
+.step-active {
+    background-color: red;
+    animation-name: completeStep;
+    animation-duration: 1s;
+}
+.layout-dark .step-active {
+    background-color: red;
+}
+.last-step {
+    margin-right: 0;
+}
+@keyframes completeStep {
+    from {
+        background-color: #fff
+    }
+    to {
+        background-color: red
+    }
+}
+/* Password Strength */
+.pwstrength_viewport_progress .progress {
+    margin-bottom: 5px;
+    height: 15px;
+}
+.layout-dark .pwstrength_viewport_progress .progress {
+    background-color: #838386;
+    background-image: none;
+}
+.pwstrength_viewport_progress .progress-bar {
+    line-height: 15px;
+}
+.pwstrength_viewport_progress .progress-bar.progress-bar-danger .password-verdict {
+    position: absolute;
+}
+.pwstrength_viewport_progress .password-verdict {
+    color: black;
+}
+.layout-dark .pwstrength_viewport_progress .password-verdict {
+    color: #fff;
 }
