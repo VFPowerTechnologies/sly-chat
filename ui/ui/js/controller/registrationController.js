@@ -113,14 +113,19 @@ RegistrationController.prototype = {
             }).then(function (result) {
                 slychat.hidePreloader();
                 if (result.successful == true) {
+                    var url;
+                    if (isDesktop)
+                        url = 'smsVerification.html';
+                    else
+                        url = 'registerStepFive.html';
                     var options = {
-                        url: "smsVerification.html",
+                        url: url,
                         query: {
                             email: email,
                             password: password
                         }
                     };
-                    navigationController.loadPage("smsVerification.html", false, options);
+                    navigationController.loadPage(url, false, options);
                 }
                 else {
                     form.find(".error-block").html("<li>" + result.errorMessage +"</li>");
@@ -191,6 +196,7 @@ RegistrationController.prototype = {
             password : '',
             phoneNumber : ''
         };
+        this.clearMobileRegistrationCache();
     },
 
     handleFirstStep : function () {
@@ -253,14 +259,14 @@ RegistrationController.prototype = {
                     slychat.hidePreloader();
                     if (result.successful == true) {
                         var options = {
-                            url: 'smsVerification.html',
+                            url: 'registerStepFive.html',
                             query: {
                                 email: this.registrationInfo.email,
                                 password: this.registrationInfo.password
                             }
                         };
                         navigationController.loadPage("registerStepFive.html", true, options);
-                        navigationController.replaceHistory(["updatePhone.html"]);
+                        navigationController.replaceHistory(["login.html"]);
                     }
                 }.bind(this)).catch(function (e) {
                     slychat.hidePreloader();
@@ -277,13 +283,13 @@ RegistrationController.prototype = {
 
     handleFinalStep : function (email, password) {
         var code = $("#smsVerificationCode").val();
-
         if (code == '')
             return "Code is required";
 
         slychat.showPreloader();
         registrationService.submitVerificationCode(email, code).then(function (result) {
             if(result.successful == true) {
+                this.clearMobileRegistrationCache();
                 loginService.login(email, password, true);
             }
             else {
@@ -305,5 +311,12 @@ RegistrationController.prototype = {
             parent.find(".invalid-details").append("<br>" + error);
 
         parent.addClass("invalid");
+    },
+
+    clearMobileRegistrationCache : function () {
+        this.name = '';
+        this.email = '';
+        this.phoneNumber = '';
+        this.password = '';
     }
 };

@@ -248,7 +248,17 @@ NavigationController.prototype = {
     },
 
     loadInitialPage : function () {
-        var noStateLoad = ["register.html", "login.html", "smsVerification.html", "updatePhone.html"];
+        var noStateLoad = [
+            "register.html",
+            "login.html",
+            "smsVerification.html",
+            "updatePhone.html",
+            "registerStepOne.html",
+            "registerStepTwo.html",
+            "registerStepThree.html",
+            "registerStepFour.html",
+            "registerStepFive.html"
+        ];
 
         stateService.getInitialPage().then(function (initialPage) {
             if(initialPage === null) {

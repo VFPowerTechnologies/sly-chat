@@ -72,9 +72,29 @@ slychat.onPageInit('registerStepFour', function () {
 });
 
 slychat.onPageInit('registerStepFive', function (page) {
+    var email = page.query.email !== undefined ? page.query.email : registrationController.email;
+    var password = page.query.password !== undefined ? page.query.password : registrationController.password;
+
     $("#smsVerificationCode").focus();
     $("#submitStepFive").click(function () {
-        registrationController.handleFinalStep(page.query.email, page.query.password);
+        registrationController.handleFinalStep(email, password);
+    });
+
+    $$('#resendVerificationCode').on('click', function () {
+        $$('#resendVerificationCode').prop('disabled', true);
+        registrationController.resendVerificationCode();
+    });
+
+    $$('#updatePhoneNumberLink').on('click', function () {
+        var options = {
+            url: 'updatePhone.html',
+            query: {
+                email: email,
+                password: password
+            }
+        };
+
+        navigationController.loadPage("updatePhone.html", true, options);
     });
 });
 
@@ -268,15 +288,21 @@ slychat.onPageInit('updatePhone', function (page) {
     });
 
     $$("#backToSmsVerificationLink").on('click', function () {
+        var url;
+        if (isDesktop)
+            url = 'smsVerification.html';
+        else
+            url = 'registerStepFive.html';
+
         var options = {
-            url: 'smsVerification.html',
+            url: url,
             query: {
                 email: page.query.email,
                 password: page.query.password
             }
         };
 
-        navigationController.loadPage("smsVerification.html", true, options);
+        navigationController.loadPage(url, true, options);
     })
 });
 
