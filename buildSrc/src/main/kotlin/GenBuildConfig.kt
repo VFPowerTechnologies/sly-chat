@@ -15,23 +15,6 @@ import java.util.*
 
 open class GenBuildConfig : DefaultTask() {
     companion object {
-        private val componentTypes = listOf(
-            "registration",
-            "platformInfo",
-            "login",
-            "contacts",
-            "messenger",
-            "history",
-            "networkStatus"
-        )
-
-        private val componentEnumTypes = componentTypes.map { camelCaseToStaticConvention(it) }
-
-        private fun camelCaseToStaticConvention(s: String): String =
-            "(?<!^)([A-Z])".toRegex().replace(s) { m ->
-                "_" + m.groups[1]!!.value
-            }.toUpperCase()
-
         /**
          * Converts the given string to a boolean.
          *
@@ -164,6 +147,14 @@ open class GenBuildConfig : DefaultTask() {
 
     private val projectRoot = project.projectDir
 
+    private val debugAndroidLogSettings = "/debug-sly-logger.properties"
+
+    private val releaseAndroidLogSettings = "/release-sly-logger.properties"
+
+    private val releaseDesktopLogSettings = "/release-logback.xml"
+
+    private val debugDesktopLogSettings = "/debug-logback.xml"
+
     @InputFile
     val defaultPropertiesPath = File(projectRoot, "default.properties")
 
@@ -182,16 +173,16 @@ open class GenBuildConfig : DefaultTask() {
     val buildConfigJSTemplate = File(projectRoot, "buildSrc/src/main/resources/build-config.js.vm")
 
     @Input
-    val releaseAndroidLogSettings = File(projectRoot, "buildSrc/src/main/resources/release-sly-logger.properties")
+    val releaseAndroidLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/release-sly-logger.properties")
 
     @Input
-    val debugAndroidLogSettings = File(projectRoot, "buildSrc/src/main/resources/debug-sly-logger.properties")
+    val debugAndroidLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/debug-sly-logger.properties")
 
     @Input
-    val releaseDesktopLogSettings = File(projectRoot, "buildSrc/src/main/resources/release-logback.xml")
+    val releaseDesktopLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/release-logback.xml")
 
     @Input
-    val debugDesktopLogSettings = File(projectRoot, "buildSrc/src/main/resources/debug-logback.xml")
+    val debugDesktopLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/debug-logback.xml")
 
     //TODO maybe let these be overriden as settings (or set as relative paths to the project root)
     val generateRoot = File(projectRoot, "generated")
@@ -232,6 +223,14 @@ open class GenBuildConfig : DefaultTask() {
 
     private fun convertToByteArrayNotation(s: String): String {
         return s.toByteArray().map(Byte::toString).joinToString(",", "{", "}")
+    }
+
+    private fun writeTemplate(ve: VelocityEngine, vc: VelocityContext, templatePath: String, outputPath: File) {
+        outputPath.writer().use {
+            val vt = ve.getTemplate(templatePath)
+
+            vt.merge(vc, it)
+        }
     }
 
     @TaskAction
@@ -306,26 +305,25 @@ open class GenBuildConfig : DefaultTask() {
         val inline = convertToByteArrayNotation(cert)
         vc.put("caCert", inline)
 
-        outputFile.writer().use {
-            val vt = ve.getTemplate("/BuildConfig.java.vm")
+        writeTemplate(ve, vc, "/BuildConfig.java.vm", outputFile)
+        writeTemplate(ve, vc, "/build-config.js.vm", jsOutputFile)
 
-            vt.merge(vc, it)
-        }
+        writeLogSettings(ve, settings, debug)
+    }
 
-        jsOutputFile.writer().use {
-            val vt = ve.getTemplate("/build-config.js.vm")
-
-            vt.merge(vc, it)
-        }
-
+    private fun writeLogSettings(ve: VelocityEngine, settings: Properties, debug: Boolean) {
         val logSettingsType = getEnumValue(settings, "logSettings", listOf("release", "debug"), debug)
+
+        val logVc = VelocityContext()
+        val dispatcherLogLevel = findValueForKey(settings, "dispatcherLogLevel", debug)
+        logVc.put("dispatcherLogLevel", dispatcherLogLevel)
 
         val (selectedAndroidLogSettings, selectedDesktopLogSettings) = if (logSettingsType == "release")
             releaseAndroidLogSettings to releaseDesktopLogSettings
         else
             debugAndroidLogSettings to debugDesktopLogSettings
 
-        selectedAndroidLogSettings.copyTo(androidLogSettings, overwrite = true)
-        selectedDesktopLogSettings.copyTo(desktopLogSettings, overwrite = true)
+        writeTemplate(ve, logVc, selectedAndroidLogSettings, androidLogSettings)
+        writeTemplate(ve, logVc, selectedDesktopLogSettings, desktopLogSettings)
     }
 }

@@ -3,7 +3,7 @@
     <property name="MSG_PATTERN" value="[%.-1level] [%d{ISO8601}] [%logger{0}] %msg%n" />
     <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>${MSG_PATTERN}</pattern>
+            <pattern>#[[${MSG_PATTERN}]]#</pattern>
         </encoder>
     </appender>
 
@@ -15,7 +15,7 @@
         </filter>
     </appender>
 
-    <logger name="com.vfpowertech.jsbridge.core.dispatcher.Dispatcher" level="INFO" />
+    <logger name="com.vfpowertech.jsbridge.core.dispatcher.Dispatcher" level="${dispatcherLogLevel}" />
     <logger name="io.netty" level="INFO" />
     <root level="trace">
         <appender-ref ref="stdout" />
