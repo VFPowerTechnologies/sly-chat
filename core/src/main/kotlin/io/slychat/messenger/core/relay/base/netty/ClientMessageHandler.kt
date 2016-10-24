@@ -12,6 +12,6 @@ class ClientMessageHandler : ChannelHandlerAdapter() {
 
         val buf = msg.toByteBuf(ctx.alloc())
 
-        ctx.writeAndFlush(buf)
+        ctx.writeAndFlush(buf, promise)
     }
 }
