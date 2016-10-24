@@ -61,15 +61,15 @@ class SentryEventBuilder(
     }
 
     fun build(): SentryEvent {
-        val tags = mutableMapOf(
-            "arch" to System.getProperty("os.arch")
-        )
+        val effectiveTags = HashMap(tags)
+
+        effectiveTags["arch"] = System.getProperty("os.arch")
 
         if (osName != null) {
-            tags["osName"] = osName
+            effectiveTags["osName"] = osName
 
             if (osVersion != null)
-                tags["osVersion"] = osVersion
+                effectiveTags["osVersion"] = osVersion
         }
 
         return SentryEvent(
@@ -82,7 +82,7 @@ class SentryEventBuilder(
             messageInterface,
             exceptionInterface,
             userInterface,
-            tags,
+            effectiveTags,
             mapOf(
                 "Thread Name" to threadName
             )
