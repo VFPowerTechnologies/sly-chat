@@ -37,6 +37,10 @@ slychat.onPageInit('registerStepOne', function () {
 
     if (registrationController.name !== "")
         nameInput.val(registrationController.name);
+
+    $("#loginGoBtn").click(function () {
+        navigationController.loadPage("login.html", true);
+    });
 });
 
 slychat.onPageInit('registerStepTwo', function () {
@@ -112,9 +116,6 @@ slychat.onPageInit('registerStepFive', function (page) {
         navigationController.loadPage("updatePhone.html", true, options);
     });
 });
-
-
-
 
 slychat.onPageInit('login', function (page) {
     uiController.hideSplashScreen();
@@ -360,7 +361,6 @@ slychat.onPageInit('contactInfo', function (page) {
     if (contact !== false) {
         $("#contactName").html(contact.name);
         $("#contactEmail").html(contact.email);
-        $("#contactPhone").html(contact.phoneNumber);
         $("#contactPubKey").html(formatPublicKey(contact.publicKey));
     }
 });
