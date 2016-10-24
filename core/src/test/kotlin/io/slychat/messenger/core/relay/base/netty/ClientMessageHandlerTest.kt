@@ -11,7 +11,7 @@ class ClientMessageHandlerTest {
 
     @Test
     fun `it should properly serialize a relay message`() {
-        val inputMessage = randomRelayMessage()
+        val inputMessage = randomOutboundRelayMessage()
 
         ec.writeOutbound(inputMessage)
 

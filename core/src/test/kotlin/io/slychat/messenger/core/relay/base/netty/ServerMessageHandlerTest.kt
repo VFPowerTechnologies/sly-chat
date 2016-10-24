@@ -22,7 +22,7 @@ class ServerMessageHandlerTest {
 
     @Test
     fun `it should properly piece together unfragmented input`() {
-        val inputMessage = randomRelayMessage()
+        val inputMessage = randomInboundRelayMessage()
         val buf = inputMessage.toByteBuf(allocator)
 
         ec.writeInbound(buf)
@@ -33,7 +33,7 @@ class ServerMessageHandlerTest {
 
     @Test
     fun `it should properly piece together fragmented input`() {
-        val inputMessage = randomRelayMessage()
+        val inputMessage = randomInboundRelayMessage()
         val buf = inputMessage.toByteBuf(allocator)
 
         (0..buf.capacity()-1).forEach {

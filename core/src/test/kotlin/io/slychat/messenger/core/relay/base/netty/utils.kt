@@ -4,11 +4,11 @@ import io.netty.buffer.ByteBuf
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.randomAuthToken
-import io.slychat.messenger.core.randomUserId
+import io.slychat.messenger.core.randomSlyAddress
 import io.slychat.messenger.core.relay.base.*
 import org.assertj.core.api.Assertions.assertThat
 
-internal fun randomRelayMessage(): RelayMessage {
+internal fun randomInboundRelayMessage(): RelayMessage {
     val content = "testing".toByteArray()
     val contentLength = content.size
 
@@ -17,8 +17,29 @@ internal fun randomRelayMessage(): RelayMessage {
             PROTOCOL_VERSION_1,
             contentLength,
             randomAuthToken().string,
-            randomUserId().toString(),
-            randomUserId().toString(),
+            randomSlyAddress().asString(),
+            "",
+            randomMessageId(),
+            0,
+            1,
+            currentTimestamp(),
+            CommandCode.CLIENT_SEND_MESSAGE
+        ),
+        content
+    )
+}
+
+internal fun randomOutboundRelayMessage(): RelayMessage {
+    val content = "testing".toByteArray()
+    val contentLength = content.size
+
+    return RelayMessage(
+        Header(
+            PROTOCOL_VERSION_1,
+            contentLength,
+            randomAuthToken().string,
+            randomSlyAddress().asString(),
+            randomSlyAddress().asString(),
             randomMessageId(),
             0,
             1,
