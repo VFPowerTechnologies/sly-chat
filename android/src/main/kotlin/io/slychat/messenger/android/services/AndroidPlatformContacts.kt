@@ -91,10 +91,11 @@ class AndroidPlatformContacts(private val context: Context) : PlatformContacts {
                         builders[id] = builder
                     }
 
+                    //I've gotten an error report where phoneNumber was null here, so check for that (and email for good measure)
                     when (mimetype) {
                         CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE -> builder.name = name
-                        CommonDataKinds.Email.CONTENT_ITEM_TYPE -> builder.emails.add(email)
-                        CommonDataKinds.Phone.CONTENT_ITEM_TYPE -> builder.phoneNumbers.add(phoneNumber)
+                        CommonDataKinds.Email.CONTENT_ITEM_TYPE -> if (email != null) builder.emails.add(email)
+                        CommonDataKinds.Phone.CONTENT_ITEM_TYPE -> if (phoneNumber != null) builder.phoneNumbers.add(phoneNumber)
                     }
                 }
 
