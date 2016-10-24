@@ -19,10 +19,6 @@ import io.slychat.messenger.android.services.AndroidPlatformContacts
 import io.slychat.messenger.android.services.AndroidUILoadService
 import io.slychat.messenger.android.services.AndroidUIPlatformInfoService
 import io.slychat.messenger.android.services.AndroidUIPlatformService
-import io.slychat.messenger.core.BuildConfig
-import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.UserCredentials
-import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.gcm.GcmAsyncClient
 import io.slychat.messenger.core.http.api.gcm.RegisterRequest
 import io.slychat.messenger.core.http.api.gcm.RegisterResponse
@@ -45,6 +41,7 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
 import java.util.*
 import com.jaredrummler.android.device.DeviceName
+import io.slychat.messenger.core.*
 
 class AndroidApp : Application() {
     companion object {
@@ -275,7 +272,7 @@ class AndroidApp : Application() {
 
             hasCheckedGcmTokenStatus = true
         } fail { e ->
-            log.error("Unable to check GCM token status: {}", e.message, e)
+            log.condError(isNotNetworkError(e), "Unable to check GCM token status: {}", e.message, e)
         }
     }
 

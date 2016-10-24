@@ -1,6 +1,8 @@
 package io.slychat.messenger.services.messaging
 
+import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.crypto.randomUUID
+import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
 import io.slychat.messenger.core.persistence.SenderMessageEntry
@@ -292,7 +294,7 @@ class MessageSenderImpl(
     }
 
     private fun processEncryptionFailure(cause: Exception) {
-        log.error("Unknown error during encryption: {}", cause.message, cause)
+        log.condError(isNotNetworkError(cause), "Unknown error during encryption: {}", cause.message, cause)
         nextSendMessage()
     }
 

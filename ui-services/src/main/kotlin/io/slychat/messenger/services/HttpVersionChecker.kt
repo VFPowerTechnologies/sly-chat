@@ -1,5 +1,7 @@
 package io.slychat.messenger.services
 
+import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.isNotNetworkError
 import nl.komponents.kovenant.ui.failUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -54,7 +56,7 @@ class HttpVersionChecker(
             isRunning = false
             updateResult(isUpToDate)
         } failUi { e ->
-            log.error("Version check failed: {}", e.message, e)
+            log.condError(isNotNetworkError(e), "Version check failed: {}", e.message, e)
             isRunning = false
         }
     }
