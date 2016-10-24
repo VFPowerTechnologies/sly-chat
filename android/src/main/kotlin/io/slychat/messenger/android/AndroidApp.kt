@@ -22,6 +22,7 @@ import io.slychat.messenger.android.services.AndroidUIPlatformService
 import io.slychat.messenger.core.http.api.gcm.GcmAsyncClient
 import io.slychat.messenger.core.http.api.gcm.RegisterRequest
 import io.slychat.messenger.core.http.api.gcm.RegisterResponse
+import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication
