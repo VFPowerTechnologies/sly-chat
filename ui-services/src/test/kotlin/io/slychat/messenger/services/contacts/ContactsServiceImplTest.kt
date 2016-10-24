@@ -1,18 +1,15 @@
 package io.slychat.messenger.services.contacts
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
 import io.slychat.messenger.core.http.api.contacts.ContactLookupAsyncClient
 import io.slychat.messenger.core.http.api.contacts.FindAllByIdResponse
 import io.slychat.messenger.core.http.api.contacts.FindByIdResponse
-import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactDiffDelta
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
-import io.slychat.messenger.core.randomContactInfo
-import io.slychat.messenger.core.randomUserId
 import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.assertNoEventsEmitted
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
@@ -40,18 +37,6 @@ class ContactsServiceImplTest {
     val contactLookupClient: ContactLookupAsyncClient = mock()
     val addressBookOperationManager = MockAddressBookOperationManager()
 
-    fun randomApiContactInfo(): ApiContactInfo {
-        val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
-
-        return ApiContactInfo(
-            contactInfo.id,
-            contactInfo.email,
-            contactInfo.name,
-            contactInfo.phoneNumber,
-            contactInfo.publicKey
-        )
-    }
-
     fun createService(): ContactsServiceImpl {
         return ContactsServiceImpl(
             MockAuthTokenManager(),
@@ -78,7 +63,7 @@ class ContactsServiceImplTest {
     fun `adding a new contact should return true if the contact was added`() {
         val contactsService = createService()
 
-        val contactInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
+        val contactInfo = randomContactInfo()
 
         whenever(contactsPersistenceManager.add(contactInfo)).thenResolve(true)
 
@@ -91,11 +76,9 @@ class ContactsServiceImplTest {
     fun `removing a new contact should return true if the contact was removed`() {
         val contactsService = createService()
 
-        val userId = UserId(1)
+        val contactInfo = randomContactInfo()
 
-        val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
-
-        whenever(contactsPersistenceManager.remove(userId)).thenResolve(true)
+        whenever(contactsPersistenceManager.remove(contactInfo.id)).thenResolve(true)
 
         assertTrue(contactsService.removeContact(contactInfo).get(), "Contact not seen as removed")
 
@@ -106,10 +89,9 @@ class ContactsServiceImplTest {
     fun `updating a contact should complete`() {
         val contactsService = createService()
 
-        val userId = UserId(1)
+        val contactInfo = randomContactInfo()
 
-        val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
-        whenever(contactsPersistenceManager.get(userId)).thenResolve(contactInfo)
+        whenever(contactsPersistenceManager.get(contactInfo.id)).thenResolve(contactInfo)
 
         whenever(contactsPersistenceManager.update(contactInfo)).thenResolve(Unit)
 
@@ -123,7 +105,7 @@ class ContactsServiceImplTest {
     fun `adding a new contact should emit an update event if the contact is new`() {
         val contactsService = createService()
 
-        val contactInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
+        val contactInfo = randomContactInfo()
 
         whenever(contactsPersistenceManager.add(contactInfo)).thenResolve(true)
 
@@ -143,7 +125,7 @@ class ContactsServiceImplTest {
     fun `adding a new contact should not emit an update event if the contact is already added`() {
         val contactsService = createService()
 
-        val contactInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
+        val contactInfo = randomContactInfo()
 
         whenever(contactsPersistenceManager.add(contactInfo)).thenResolve(false)
 
@@ -158,7 +140,7 @@ class ContactsServiceImplTest {
     fun `adding self info should not generate a push`() {
         val contactsService = createService()
 
-        val selfInfo = ContactInfo(UserId(1), "email", "name", AllowedMessageLevel.ALL, "", "pubkey")
+        val selfInfo = randomContactInfo()
 
         whenever(contactsPersistenceManager.addSelf(selfInfo)).thenResolve(Unit)
 

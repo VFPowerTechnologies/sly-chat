@@ -81,7 +81,7 @@ class NotifierServiceImplTest {
 
     fun setupContactInfo(id: Long): ContactInfo {
         val userId = UserId(id)
-        val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, "", "")
+        val contactInfo = ContactInfo(userId, "email", "name", AllowedMessageLevel.ALL, "")
         whenever(contactsPersistenceManager.get(userId)).thenReturn(Promise.ofSuccess(contactInfo))
         return contactInfo
     }

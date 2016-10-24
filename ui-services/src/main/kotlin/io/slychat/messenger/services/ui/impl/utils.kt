@@ -22,13 +22,13 @@ fun MessageInfo.toUI(): UIMessage {
 }
 
 fun ContactInfo.toUI(): UIContactInfo =
-    UIContactInfo(id, name, phoneNumber, email, publicKey, allowedMessageLevel)
+    UIContactInfo(id, name, email, publicKey, allowedMessageLevel)
 
 fun Iterable<ContactInfo>.toUI(): List<UIContactInfo> =
     map { it.toUI() }
 
 fun UIContactInfo.toNative(): ContactInfo =
-    ContactInfo(id, email, name, allowedMessageLevel, phoneNumber, publicKey)
+    ContactInfo(id, email, name, allowedMessageLevel, publicKey)
 
 fun UserConversation.toUI(): UIConversation {
     return UIConversation(contact.toUI(), UIConversationInfo(true, info.unreadMessageCount, info.lastMessage, info.lastTimestamp))

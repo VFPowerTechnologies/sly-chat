@@ -454,7 +454,6 @@ class SlyApplication {
                     accountInfo.name,
                     //we don't wanna be visible by default
                     AllowedMessageLevel.GROUP_ONLY,
-                    accountInfo.phoneNumber,
                     publicKey
                 )
 
