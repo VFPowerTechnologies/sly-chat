@@ -3,6 +3,9 @@ package io.slychat.messenger.core.persistence.sqlite
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
+import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
+import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.testutils.withTempFile
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.BeforeClass
@@ -379,6 +382,29 @@ class DatabaseMigrationTest {
         assertThat(messageIds).apply {
             `as`("Message order should be retained")
             containsExactly(1, 2, 3)
+        }
+    }
+
+    @Test
+    fun `migration 14 to 15`() {
+        withTestDatabase(14, 15) { persistenceManager, connection ->
+            check14to15(persistenceManager, connection)
+        }
+    }
+
+    private fun check14to15(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertNoColDef(connection, "contacts", "phone_number TEXT")
+        assertTableNotExists(connection, "contacts_old")
+
+        val contacts = connection.withPrepared("SELECT id, email, name, allowed_message_level, public_key FROM contacts") { stmt ->
+            stmt.map(::contactInfoFromRow)
+        }
+
+        val expected = ContactInfo(UserId(9), "d@a.com", "Desktop", AllowedMessageLevel.ALL, "05d63542822cf604bf53c086a52cb5eaff3dc71d57a76a3e74baf7ff72a4943608")
+
+        assertThat(contacts).apply {
+            `as`("Should convert existing contacts")
+            containsOnly(expected)
         }
     }
 }
