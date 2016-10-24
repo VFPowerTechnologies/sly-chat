@@ -10,7 +10,6 @@ import io.slychat.messenger.core.sentry.serialize
 object Sentry {
     private var communicator: ReportSubmitterCommunicator<ByteArray>? = null
     private var webViewVersion: String? = null
-    private var installationId: String? = null
     private var userAddress: SlyAddress? = null
     private var androidDeviceName: String? = null
 
@@ -20,10 +19,6 @@ object Sentry {
 
     fun setWebViewInfo(version: String) = synchronized(this) {
         webViewVersion = version
-    }
-
-    fun setInstallationId(installationId: String) = synchronized(this) {
-        this.installationId = installationId
     }
 
     fun setUserAddress(userAddress: SlyAddress?) = synchronized(this) {
@@ -47,10 +42,6 @@ object Sentry {
     private fun generateEvent(builder: SentryEventBuilder): SentryEvent {
         webViewVersion?.apply {
             builder.withTag("webViewVersion", this)
-        }
-
-        installationId?.apply {
-            builder.withTag("installationId", this)
         }
 
         androidDeviceName?.apply {

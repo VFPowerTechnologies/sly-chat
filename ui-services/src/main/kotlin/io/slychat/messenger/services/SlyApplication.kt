@@ -111,8 +111,6 @@ class SlyApplication {
 
         initInstallationData()
 
-        Sentry.setInstallationId(installationData.installationId)
-
         val interval = BuildConfig.relayKeepAliveIntervalMs
         keepAliveObservable = Observable.interval(interval, interval, TimeUnit.MILLISECONDS, appComponent.rxScheduler)
 
