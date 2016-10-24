@@ -736,11 +736,9 @@ ContactController.prototype  = {
         if (group === false) {
             chatController.currentContact.email = contact.email;
             chatController.currentContact.publicKey = contact.publicKey;
-            chatController.currentContact.phoneNumber = contact.phoneNumber;
 
             options.query.email = contact.email;
             options.query.publicKey = contact.publicKey;
-            options.query.phoneNumber = contact.phoneNumber;
         }
 
         navigationController.loadPage('chat.html', pushCurrenPage, options);
