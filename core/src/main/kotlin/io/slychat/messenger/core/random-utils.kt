@@ -5,6 +5,7 @@ import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.randomRegistrationId
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
+import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
 import io.slychat.messenger.core.persistence.*
 import org.whispersystems.libsignal.SignalProtocolAddress
 import java.util.*
@@ -102,6 +103,18 @@ fun randomContactInfo(allowedMessageLevel: AllowedMessageLevel = AllowedMessageL
         userId.toString(),
         allowedMessageLevel,
         "pubkey"
+    )
+}
+
+fun randomApiContactInfo(): ApiContactInfo {
+    val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
+
+    return ApiContactInfo(
+        contactInfo.id,
+        contactInfo.email,
+        contactInfo.name,
+        null,
+        contactInfo.publicKey
     )
 }
 
