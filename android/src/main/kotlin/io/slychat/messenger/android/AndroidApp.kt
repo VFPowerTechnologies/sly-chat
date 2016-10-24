@@ -44,6 +44,7 @@ import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
 import java.util.*
+import com.jaredrummler.android.device.DeviceName
 
 class AndroidApp : Application() {
     companion object {
@@ -192,6 +193,13 @@ class AndroidApp : Application() {
         }
         catch (e: PackageManager.NameNotFoundException) {
             //do nothing
+        }
+
+        try {
+            Sentry.setAndroidDeviceName(DeviceName.getDeviceName())
+        }
+        catch (e: Exception) {
+            log.error("setAndroidDeviceInfo failed: {}", e.message, e)
         }
 
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)

@@ -35,6 +35,7 @@ buildscript {
             controlsFx: '8.40.11',
             nsMenuFx: '2.1.4',
             jna: '4.2.2',
+            androidDeviceNames: '1.1.2',
         ]
     }
 

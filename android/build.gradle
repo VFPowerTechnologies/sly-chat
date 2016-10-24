@@ -62,6 +62,7 @@ dependencies {
     compile "com.vfpowertech:jsbridge-android-webengine:$versions.jsbridge"
     compile "nl.komponents.kovenant:kovenant-android:$versions.kovenant"
     compile "io.reactivex:rxandroid:$versions.rxandroid"
+    compile "com.jaredrummler:android-device-names:$versions.androidDeviceNames"
     compile "com.google.android.gms:play-services-gcm:$versions.playServices"
 }
 
