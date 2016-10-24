@@ -101,7 +101,6 @@ fun randomContactInfo(allowedMessageLevel: AllowedMessageLevel = AllowedMessageL
         "$userId@domain.com",
         userId.toString(),
         allowedMessageLevel,
-        null,
         "pubkey"
     )
 }

@@ -21,9 +21,9 @@ class SQLiteContactsPersistenceManagerTest {
 
     val contactId = UserId(1)
 
-    val contactA = ContactInfo(contactId, "a@a.com", "a", AllowedMessageLevel.ALL, "000-0000", "pubkey")
-    val contactA2 = ContactInfo(UserId(2), "a2@a.com", "a2", AllowedMessageLevel.ALL, "001-0000", "pubkey")
-    val contactC = ContactInfo(UserId(3), "c@c.com", "c", AllowedMessageLevel.ALL, "222-2222", "pubkey")
+    val contactA = ContactInfo(contactId, "a@a.com", "a", AllowedMessageLevel.ALL, "pubkey")
+    val contactA2 = ContactInfo(UserId(2), "a2@a.com", "a2", AllowedMessageLevel.ALL, "pubkey")
+    val contactC = ContactInfo(UserId(3), "c@c.com", "c", AllowedMessageLevel.ALL, "pubkey")
     val contactList = arrayListOf(
         contactA,
         contactA2,
@@ -42,7 +42,7 @@ class SQLiteContactsPersistenceManagerTest {
         dummyContactCounter += 1
         val id = UserId(v)
 
-        return ContactInfo(id, "$v@a.com", "$v", allowedMessageLevel, "$v", "$v")
+        return ContactInfo(id, "$v@a.com", "$v", allowedMessageLevel, "$v")
     }
 
     fun insertDummyContact(
@@ -236,8 +236,8 @@ class SQLiteContactsPersistenceManagerTest {
     @Test
     fun `getAll should return all stored contacts`() {
         val contacts = arrayListOf(
-            ContactInfo(UserId(0), "a@a.com", "a", AllowedMessageLevel.ALL, "000-0000", "pubkey"),
-            ContactInfo(UserId(1), "b@b.com", "b", AllowedMessageLevel.ALL, "000-0000", "pubkey")
+            ContactInfo(UserId(0), "a@a.com", "a", AllowedMessageLevel.ALL, "pubkey"),
+            ContactInfo(UserId(1), "b@b.com", "b", AllowedMessageLevel.ALL, "pubkey")
         )
 
         for (contact in contacts)
@@ -252,7 +252,7 @@ class SQLiteContactsPersistenceManagerTest {
     fun `update should update an existing contact`() {
         val original = contactA
         contactsPersistenceManager.add(original).get()
-        val updated = original.copy(name = "b", phoneNumber = "111-1111", publicKey = "pubkey2")
+        val updated = original.copy(name = "b", publicKey = "pubkey2")
         contactsPersistenceManager.update(updated).get()
 
         val got = contactsPersistenceManager.get(updated.id).get()
@@ -294,22 +294,6 @@ class SQLiteContactsPersistenceManagerTest {
         val expected = arrayListOf(contactA, contactA2)
 
         val got = contactsPersistenceManager.searchByEmail("a.com").get()
-
-        assertEquals(expected, got)
-    }
-
-    @Test
-    fun `searchByPhoneNumber should return nothing when no matching contacts exist`() {
-        assertEquals(0, contactsPersistenceManager.searchByPhoneNumber("000-0000").get().size)
-    }
-
-    @Test
-    fun `searchByPhoneNumber should return all matching contacts`() {
-        loadContactList()
-
-        val expected = arrayListOf(contactA, contactA2)
-
-        val got = contactsPersistenceManager.searchByPhoneNumber("0000").get()
 
         assertEquals(expected, got)
     }
@@ -394,31 +378,6 @@ class SQLiteContactsPersistenceManagerTest {
         val contacts = arrayListOf(pcontactA, pcontactD)
         val got = contactsPersistenceManager.findMissing(contacts).get()
         assertEquals(listOf(pcontactD), got)
-    }
-
-    @Test
-    fun `findMissing should ignore contacts with found phone numbers`() {
-        loadContactList()
-
-        val pcontactA = PlatformContact(contactA.name, listOf(), listOf(contactA.phoneNumber!!))
-        val pcontactD = PlatformContact("D", listOf("d@a.com"), listOf())
-
-        val contacts = arrayListOf(pcontactA, pcontactD)
-        val got = contactsPersistenceManager.findMissing(contacts).get()
-        assertEquals(listOf(pcontactD), got)
-    }
-
-    @Test
-    fun `findMissing should ignore contacts with found emails or phone numbers`() {
-        loadContactList()
-
-        val pcontactA = PlatformContact(contactA.name, listOf(contactA.email), listOf(contactA.phoneNumber!!))
-        val pcontactD = PlatformContact("D", listOf("d@a.com"), listOf())
-
-        val contacts = arrayListOf(pcontactA, pcontactD)
-        val got = contactsPersistenceManager.findMissing(contacts).get()
-        assertEquals(listOf(pcontactD), got)
-
     }
 
     @Test
