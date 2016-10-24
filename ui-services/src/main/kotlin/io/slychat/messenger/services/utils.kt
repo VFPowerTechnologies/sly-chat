@@ -4,7 +4,7 @@ package io.slychat.messenger.services
 import com.google.i18n.phonenumbers.NumberParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.Phonenumber
-import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.div
 import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.sentry.*
@@ -114,7 +114,7 @@ infix inline fun <reified E : Exception, T> Promise<T, Exception>.bindRecoverFor
 
 
 fun initSentry(applicationComponent: ApplicationComponent): ReportSubmitterCommunicator<ByteArray>? {
-    val dsn = BuildConfig.sentryDsn ?: return null
+    val dsn = SlyBuildConfig.sentryDsn ?: return null
 
     val bugReportsPath = applicationComponent.platformInfo.appFileStorageDirectory / "bug-reports.bin"
 

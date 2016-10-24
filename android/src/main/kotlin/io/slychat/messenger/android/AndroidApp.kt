@@ -15,14 +15,15 @@ import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.iid.InstanceID
 import com.google.android.gms.security.ProviderInstaller
+import com.jaredrummler.android.device.DeviceName
 import io.slychat.messenger.android.services.AndroidPlatformContacts
 import io.slychat.messenger.android.services.AndroidUILoadService
 import io.slychat.messenger.android.services.AndroidUIPlatformInfoService
 import io.slychat.messenger.android.services.AndroidUIPlatformService
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.http.api.gcm.GcmAsyncClient
 import io.slychat.messenger.core.http.api.gcm.RegisterRequest
 import io.slychat.messenger.core.http.api.gcm.RegisterResponse
-import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication
@@ -41,8 +42,6 @@ import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
 import java.util.*
-import com.jaredrummler.android.device.DeviceName
-import io.slychat.messenger.core.*
 
 class AndroidApp : Application() {
     companion object {
@@ -138,7 +137,7 @@ class AndroidApp : Application() {
             dispatcher = androidUiDispatcher()
         }
 
-        if (BuildConfig.DEBUG) {
+        if (SlyBuildConfig.DEBUG) {
             val policy = StrictMode.ThreadPolicy.Builder()
                 .detectAll()
                 .penaltyLog()
@@ -163,7 +162,7 @@ class AndroidApp : Application() {
 
         val platformModule = PlatformModule(
             AndroidUIPlatformInfoService(),
-            BuildConfig.ANDROID_SERVER_URLS,
+            SlyBuildConfig.ANDROID_SERVER_URLS,
             platformInfo,
             AndroidTelephonyService(this),
             AndroidWindowService(this),

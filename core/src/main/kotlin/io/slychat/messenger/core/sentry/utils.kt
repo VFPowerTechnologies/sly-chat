@@ -3,7 +3,7 @@ package io.slychat.messenger.core.sentry
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import java.io.ByteArrayOutputStream
 import java.util.zip.DeflaterOutputStream
@@ -34,7 +34,7 @@ fun postEvent(dsn: DSN, httpClientFactory: HttpClientFactory, bytes: ByteArray) 
 
     val headers = listOf(
         "Content-Encoding" to "deflate",
-        "User-Agent" to "Sly-Raven/${BuildConfig.VERSION}",
+        "User-Agent" to "Sly-Raven/${SlyBuildConfig.VERSION}",
         "X-Sentry-Auth" to authHeader
     )
 

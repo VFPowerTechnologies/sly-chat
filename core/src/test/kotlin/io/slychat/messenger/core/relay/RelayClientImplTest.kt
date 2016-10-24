@@ -3,7 +3,7 @@ package io.slychat.messenger.core.relay
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
-import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.currentTimestamp
@@ -24,7 +24,7 @@ import java.security.cert.X509Certificate
 
 class RelayClientImplTest {
     companion object {
-        val caCert = CertificateFactory.getInstance("X.509").generateCertificate(ByteArrayInputStream(BuildConfig.caCert)) as X509Certificate
+        val caCert = CertificateFactory.getInstance("X.509").generateCertificate(ByteArrayInputStream(SlyBuildConfig.caCert)) as X509Certificate
 
         //not actually used
         val dummySslConfigurator = SSLConfigurator(

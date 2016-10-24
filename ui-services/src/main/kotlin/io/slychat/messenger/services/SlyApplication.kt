@@ -2,7 +2,7 @@ package io.slychat.messenger.services
 
 import com.fasterxml.jackson.core.JsonParseException
 import io.slychat.messenger.core.AuthToken
-import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.currentOs
@@ -111,7 +111,7 @@ class SlyApplication {
 
         initInstallationData()
 
-        val interval = BuildConfig.relayKeepAliveIntervalMs
+        val interval = SlyBuildConfig.relayKeepAliveIntervalMs
         keepAliveObservable = Observable.interval(interval, interval, TimeUnit.MILLISECONDS, appComponent.rxScheduler)
 
         bugReportSubmitter = initSentry(appComponent)

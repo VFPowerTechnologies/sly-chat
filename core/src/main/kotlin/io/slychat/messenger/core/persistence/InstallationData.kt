@@ -1,7 +1,7 @@
 package io.slychat.messenger.core.persistence
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.crypto.generateKey
 import io.slychat.messenger.core.crypto.randomRegistrationId
@@ -22,7 +22,7 @@ class InstallationData(
 
         /** Generate new installation data. */
         fun generate(): InstallationData =
-            InstallationData(generateInstallationId(), randomRegistrationId(), generateKey(256), BuildConfig.VERSION)
+            InstallationData(generateInstallationId(), randomRegistrationId(), generateKey(256), SlyBuildConfig.VERSION)
     }
 
     override fun equals(other: Any?): Boolean {
