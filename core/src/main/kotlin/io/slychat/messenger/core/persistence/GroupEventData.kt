@@ -1,8 +1,15 @@
 package io.slychat.messenger.core.persistence
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.slychat.messenger.core.UserId
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
+@JsonSubTypes(
+    JsonSubTypes.Type(GroupEventData.MembershipLevelChange::class),
+    JsonSubTypes.Type(GroupEventData.MemberChange::class)
+)
 sealed class GroupEventData : EventData {
     class MembershipLevelChange(
         @JsonProperty("groupId")
