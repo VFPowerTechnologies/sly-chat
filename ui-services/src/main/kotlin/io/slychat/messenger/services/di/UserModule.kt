@@ -156,11 +156,13 @@ class UserModule(
     fun providesMessageReceiver(
         messageProcessor: MessageProcessor,
         packageQueuePersistenceManager: PackageQueuePersistenceManager,
-        messageCipherService: MessageCipherService
+        messageCipherService: MessageCipherService,
+        eventLogService: EventLogService
     ): MessageReceiver = MessageReceiverImpl(
         messageProcessor,
         packageQueuePersistenceManager,
-        messageCipherService
+        messageCipherService,
+        eventLogService
     )
 
     @UserScope

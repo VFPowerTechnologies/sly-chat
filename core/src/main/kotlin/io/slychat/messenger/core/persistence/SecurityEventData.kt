@@ -53,7 +53,9 @@ sealed class SecurityEventData : EventData {
 
     class InvalidMessage(
         @JsonProperty("sender")
-        val sender: SlyAddress
+        val sender: SlyAddress,
+        @JsonProperty("issue")
+        val issue: String
     ) : SecurityEventData() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -62,20 +64,23 @@ sealed class SecurityEventData : EventData {
             other as InvalidMessage
 
             if (sender != other.sender) return false
+            if (issue != other.issue) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            return sender.hashCode()
+            var result = sender.hashCode()
+            result = 31 * result + issue.hashCode()
+            return result
         }
 
         override fun toString(): String {
-            return "InvalidMessage(sender=$sender)"
+            return "InvalidMessage(sender=$sender, issue='$issue')"
         }
 
         override fun toDisplayString(): String {
-            return "An invalid message was received from ${sender.asString()}"
+            return "An invalid message was received from ${sender.asString()}: $issue"
         }
     }
 
