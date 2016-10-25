@@ -1,7 +1,7 @@
 package io.slychat.messenger.services.di
 
 import dagger.Component
-import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
@@ -63,7 +63,7 @@ interface ApplicationComponent {
     val platformContacts: PlatformContacts
 
     //FIXME only used for gcm client in AndroidApp
-    val serverUrls: BuildConfig.ServerUrls
+    val serverUrls: SlyBuildConfig.ServerUrls
 
     val appConfigService: AppConfigService
 

@@ -1,3 +1,5 @@
+import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.security.MessageDigest
 
 buildscript {
@@ -127,9 +129,23 @@ task distLinux(dependsOn: distTar) << {
      generateChecksumFile(distTar.archivePath)
 }
 
-task distOSX(dependsOn: jfxNative) << {
+task distOSX(dependsOn: jfxNative) {
+    //annoyingly we can't make jfxNative not append the version to the dmg file name
+    //so we just symlink, since this makes this more consistent with the windows/linux releases
     File dmgPath = new File("$project.projectDir/$jfx.nativeOutputDir/$jfx.appName-${jfx.nativeReleaseVersion}.dmg")
-    generateChecksumFile(dmgPath)
+    File outputDir = new File("$project.buildDir/distributions")
+    File outputPath = new File("$outputDir/${jfx.appName}.dmg")
+
+    outputs.file outputPath
+
+    doLast {
+        outputDir.mkdirs()
+
+        if (!Files.exists(outputPath.toPath(), LinkOption.NOFOLLOW_LINKS))
+            Files.createSymbolicLink(outputPath.toPath(), dmgPath.toPath())
+
+        generateChecksumFile(outputPath)
+    }
 }
 
 task zipWindows(type: Zip, dependsOn: jfxNative) {

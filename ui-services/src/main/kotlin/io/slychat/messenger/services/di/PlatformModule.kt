@@ -2,7 +2,7 @@ package io.slychat.messenger.services.di
 
 import dagger.Module
 import dagger.Provides
-import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.services.PlatformContacts
 import io.slychat.messenger.services.PlatformNotificationService
@@ -23,7 +23,7 @@ class PlatformModule(
     val providesPlatformInfoService: UIPlatformInfoService,
 
     @get:Provides
-    val providesServerUrls: BuildConfig.ServerUrls,
+    val providesServerUrls: SlyBuildConfig.ServerUrls,
 
     @get:Singleton
     @get:Provides

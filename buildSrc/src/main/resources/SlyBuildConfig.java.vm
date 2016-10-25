@@ -6,7 +6,7 @@ import org.jetbrains.annotations.Nullable;
 
 import io.slychat.messenger.core.sentry.DSN;
 
-public class BuildConfig {
+public class SlyBuildConfig {
     public static class ServerUrls {
         public final String API_SERVER;
         public final InetSocketAddress RELAY_SERVER;
@@ -17,7 +17,7 @@ public class BuildConfig {
         }
     }
 
-    private BuildConfig() {}
+    private SlyBuildConfig() {}
 
     public static final boolean DEBUG = $debug;
     public static final String VERSION = "$version";

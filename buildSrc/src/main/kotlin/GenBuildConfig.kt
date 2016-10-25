@@ -167,7 +167,7 @@ open class GenBuildConfig : DefaultTask() {
 
     //this is kinda hacky...
     @InputFile
-    val buildConfigJavaTemplate = File(projectRoot, "buildSrc/src/main/resources/BuildConfig.java.vm")
+    val buildConfigJavaTemplate = File(projectRoot, "buildSrc/src/main/resources/SlyBuildConfig.java.vm")
 
     @InputFile
     val buildConfigJSTemplate = File(projectRoot, "buildSrc/src/main/resources/build-config.js.vm")
@@ -194,7 +194,7 @@ open class GenBuildConfig : DefaultTask() {
     val outputDirectory = File(srcRoot, "io/slychat/messenger/core")
 
     @OutputFile
-    val outputFile = File(outputDirectory, "BuildConfig.java")
+    val outputFile = File(outputDirectory, "SlyBuildConfig.java")
 
     @OutputFile
     val jsOutputFile = File(projectRoot, "ui/ui/js/build-config.js")
@@ -305,7 +305,7 @@ open class GenBuildConfig : DefaultTask() {
         val inline = convertToByteArrayNotation(cert)
         vc.put("caCert", inline)
 
-        writeTemplate(ve, vc, "/BuildConfig.java.vm", outputFile)
+        writeTemplate(ve, vc, "/SlyBuildConfig.java.vm", outputFile)
         writeTemplate(ve, vc, "/build-config.js.vm", jsOutputFile)
 
         writeLogSettings(ve, settings, debug)

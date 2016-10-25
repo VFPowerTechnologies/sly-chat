@@ -1,5 +1,7 @@
 package io.slychat.messenger.services.contacts
 
+import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.isNotNetworkError
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
@@ -149,7 +151,7 @@ class AddressBookOperationManagerImpl(
             log.info("Address book sync completed successfully: {} remote updates; full pull: {}; added local contacts: {}", it.updateCount, it.pullResults.fullPull, it.addedLocalContacts)
             syncCompleted(info, it)
         } failUi { e ->
-            log.error("Address book sync job failed: {}", e.message, e)
+            log.condError(isNotNetworkError(e), "Address book sync job failed: {}", e.message, e)
             //FIXME none of this runs inside a transaction, so this is inaccurate
             syncCompleted(info, AddressBookSyncResult(false, 0, PullResults(), emptyList()))
         }

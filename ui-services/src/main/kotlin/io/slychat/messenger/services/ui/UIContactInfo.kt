@@ -10,7 +10,6 @@ import io.slychat.messenger.core.persistence.AllowedMessageLevel
 data class UIContactInfo(
     @JsonProperty("id") val id: UserId,
     @JsonProperty("name") val name: String,
-    @JsonProperty("phoneNumber") val phoneNumber: String?,
     @JsonProperty("email") val email: String,
     @JsonProperty("publicKey") val publicKey: String,
     @JsonProperty("allowedMessageLevel") val allowedMessageLevel: AllowedMessageLevel

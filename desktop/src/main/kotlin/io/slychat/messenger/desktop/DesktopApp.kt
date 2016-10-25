@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import de.codecentric.centerdevice.MenuToolkit
-import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.Os
 import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
@@ -171,7 +171,7 @@ class DesktopApp : Application() {
 
         val platformModule = PlatformModule(
             DesktopUIPlatformInfoService(),
-            BuildConfig.DESKTOP_SERVER_URLS,
+            SlyBuildConfig.DESKTOP_SERVER_URLS,
             platformInfo,
             DesktopTelephonyService(),
             DesktopWindowService(primaryStage),

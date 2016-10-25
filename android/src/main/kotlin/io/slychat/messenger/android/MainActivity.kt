@@ -23,7 +23,7 @@ import android.widget.FrameLayout
 import com.google.android.gms.common.GoogleApiAvailability
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
-import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.clearAllListenersOnDispatcher
@@ -206,7 +206,7 @@ class MainActivity : AppCompatActivity() {
         loadCompleteSubscription?.unsubscribe()
         loadCompleteSubscription = null
 
-        if (BuildConfig.DEBUG)
+        if (SlyBuildConfig.DEBUG)
             WebView.setWebContentsDebuggingEnabled(true)
 
         webView.settings.javaScriptEnabled = true

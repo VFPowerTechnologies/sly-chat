@@ -1,10 +1,12 @@
 package io.slychat.messenger.services
 
+import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClient
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesClearRequest
+import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.Package
 import io.slychat.messenger.core.persistence.PackageId
-import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.messaging.MessengerService
 import nl.komponents.kovenant.Promise
@@ -66,7 +68,7 @@ class OfflineMessageManagerImpl(
                     Promise.ofSuccess(Unit)
             }
         } fail { e ->
-            log.error("Unable to fetch offline messages: {}", e.message, e)
+            log.condError(isNotNetworkError(e), "Unable to fetch offline messages: {}", e.message, e)
         } alwaysUi {
             running = false
         }

@@ -59,7 +59,7 @@ class UIContactsServiceImpl(
 
     //return AllowedMessageLevel.ALL since this is used when adding contacts
     private fun ApiContactInfo.toUI(): UIContactInfo =
-        UIContactInfo(id, name, phoneNumber, email, publicKey, AllowedMessageLevel.ALL)
+        UIContactInfo(id, name, email, publicKey, AllowedMessageLevel.ALL)
 
     private fun onAccountInfoUpdate(accountInfo: AccountInfo) {
         currentRegionCode = getAccountRegionCode(accountInfo)

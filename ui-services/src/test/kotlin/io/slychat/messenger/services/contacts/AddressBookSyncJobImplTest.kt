@@ -487,15 +487,14 @@ class AddressBookSyncJobImplTest {
         val userId = randomUserId()
         val email = randomEmailAddress()
         val name = randomName()
-        val phoneNumber = randomPhoneNumber()
         val publicKey = "pubkey"
         val platformContact = randomPlatformContact()
 
         val missingContacts = listOf(platformContact)
         val apiContacts =  listOf(
-            ApiContactInfo(userId, email, name, phoneNumber, publicKey)
+            ApiContactInfo(userId, email, name, null, publicKey)
         )
-        val contactInfo = ContactInfo(userId, email, name, AllowedMessageLevel.ALL, phoneNumber, publicKey)
+        val contactInfo = ContactInfo(userId, email, name, AllowedMessageLevel.ALL, publicKey)
 
         whenever(platformContacts.fetchContacts()).thenResolve(missingContacts)
         whenever(contactsPersistenceManager.findMissing(anyList())).thenResolve(missingContacts)

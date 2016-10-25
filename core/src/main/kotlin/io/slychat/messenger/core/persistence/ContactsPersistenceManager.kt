@@ -53,7 +53,6 @@ interface ContactsPersistenceManager {
     /** Sets a contact's message level to group-only, and removes their associated conversation. */
     fun remove(userId: UserId): Promise<Boolean, Exception>
 
-    fun searchByPhoneNumber(phoneNumber: String): Promise<List<ContactInfo>, Exception>
     fun searchByName(name: String): Promise<List<ContactInfo>, Exception>
     fun searchByEmail(email: String): Promise<List<ContactInfo>, Exception>
 

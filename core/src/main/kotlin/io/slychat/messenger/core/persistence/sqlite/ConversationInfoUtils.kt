@@ -28,8 +28,8 @@ class ConversationInfoUtils {
 
     private fun userConversationFromRow(stmt: SQLiteStatement): UserConversation {
         val contact = contactInfoFromRow(stmt)
-        val lastTimestamp = stmt.columnNullableLong(8)
-        val info = ConversationInfo(contact.id, stmt.columnInt(6), stmt.columnString(7), lastTimestamp)
+        val lastTimestamp = stmt.columnNullableLong(7)
+        val info = ConversationInfo(contact.id, stmt.columnInt(5), stmt.columnString(6), lastTimestamp)
         return UserConversation(contact, info)
     }
 
@@ -40,7 +40,6 @@ SELECT
     email,
     name,
     allowed_message_level,
-    phone_number,
     public_key,
     unread_count,
     last_message,
@@ -70,7 +69,6 @@ SELECT
     email,
     name,
     allowed_message_level,
-    phone_number,
     public_key,
     unread_count,
     last_message,

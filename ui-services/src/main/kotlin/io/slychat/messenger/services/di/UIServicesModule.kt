@@ -2,7 +2,7 @@ package io.slychat.messenger.services.di
 
 import dagger.Module
 import dagger.Provides
-import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.accountupdate.AccountUpdateAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
@@ -24,7 +24,7 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun provideRegistrationService(
-        serverUrls: BuildConfig.ServerUrls,
+        serverUrls: SlyBuildConfig.ServerUrls,
         @SlyHttp httpClientFactory: HttpClientFactory
     ): UIRegistrationService {
             val serverUrl = serverUrls.API_SERVER
@@ -87,7 +87,7 @@ class UIServicesModule {
     fun provideAccountModificationService(
         app: SlyApplication,
         @SlyHttp httpClientFactory: HttpClientFactory,
-        serverUrls: BuildConfig.ServerUrls
+        serverUrls: SlyBuildConfig.ServerUrls
     ): UIAccountModificationService {
         val serverUrl = serverUrls.API_SERVER
         val accountUpdateClient = AccountUpdateAsyncClient(serverUrl, httpClientFactory)
@@ -137,7 +137,7 @@ class UIServicesModule {
     @Provides
     fun providesUIFeedbackService(
         app: SlyApplication,
-        serverUrls: BuildConfig.ServerUrls,
+        serverUrls: SlyBuildConfig.ServerUrls,
         @SlyHttp httpClientFactory: HttpClientFactory
     ): UIFeedbackService {
         val feedbackClient = FeedbackAsyncClientImpl(serverUrls.API_SERVER, httpClientFactory)
