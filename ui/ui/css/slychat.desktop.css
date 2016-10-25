@@ -63,14 +63,31 @@
     width: 250px;
     left: -250px;
 }
+#leftMenuPanel a:hover {
+    background-image: none;
+    background-color: transparent;
+}
 
 #leftContactList, #leftGroupList {
     width: 80%;
 }
-
 #leftMenuPanel .item-title, #leftMenuPanel a {
     color: #fff;
 }
+#leftMenuProfileName {
+    height: 50px;
+    line-height: 50px;
+    font-size: 20px;
+    padding-left: 16px;
+}
+#leftMenuUserInfo {
+    font-size: 20px;
+    font-weight: 200;
+    border-bottom: 1px solid #eeeeee;
+    padding-bottom: 5px;
+    color: #000000;
+}
+
 .dropit-submenu li {
     padding: 5px 0;
 }

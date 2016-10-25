@@ -8,9 +8,9 @@ function createDesktopMenu () {
         '<div class="list-block" style="margin-top: 5px;">' +
                 '<ul class="dropdown-menu no-close">' +
                     '<li>' +
-                        '<a href="#" id="leftMenuProfileName" style="height: 50px; line-height: 50px; font-size: 20px; padding-left: 16px;"></a>' +
+                        '<a href="#" id="leftMenuProfileName"></a>' +
                         '<ul style="box-sizing: border-box; padding: 10px; margin-left: 20px; width: 225px;">' +
-                            '<li id="leftMenuUserInfo" style="font-size: 20px; font-weight: 200; border-bottom: 1px solid #eeeeee; padding-bottom: 5px; color: #000000;" class="no-close"></li>' +
+                            '<li id="leftMenuUserInfo" class="no-close"></li>' +
                             '<li><a href="#" onclick="navigationController.loadPage(\'contacts.html\');">Home</a></li>' +
                             '<li><a onclick="navigationController.loadPage(\'blockedContacts.html\');" href="#">Blocked Contacts</a></li>' +
                             '<li><a id="loadProfileBtn" href="#">Profile</a></li>' +
