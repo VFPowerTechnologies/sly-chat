@@ -8,12 +8,20 @@ import io.slychat.messenger.core.persistence.EventLog
 import io.slychat.messenger.core.persistence.LogEventType
 import io.slychat.messenger.core.persistence.LogTarget
 import io.slychat.messenger.core.randomSecurityEvent
+import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolveUnit
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.ClassRule
 import org.junit.Test
 import rx.observers.TestSubscriber
 
 class EventLogServiceImplTest {
+    companion object {
+        @JvmField
+        @ClassRule
+        val kovenantTestMode = KovenantTestModeRule()
+    }
+
     private val eventLog: EventLog = mock()
     private val eventLogService = EventLogServiceImpl(eventLog)
 
