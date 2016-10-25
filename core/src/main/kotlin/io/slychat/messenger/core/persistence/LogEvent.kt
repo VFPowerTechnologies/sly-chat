@@ -45,4 +45,41 @@ sealed class LogEvent {
             return "Security(target=$target, timestamp=$timestamp, data=$data)"
         }
     }
+
+    class Group(
+        @JsonProperty("target")
+        override val target: LogTarget,
+        @JsonProperty("timestamp")
+        override val timestamp: Long,
+        @JsonProperty("data")
+        override val data: GroupEventData
+    ) : LogEvent() {
+        @get:JsonIgnore
+        override val type: LogEventType
+            get() = LogEventType.GROUP
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as Group
+
+            if (target != other.target) return false
+            if (timestamp != other.timestamp) return false
+            if (data != other.data) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = target.hashCode()
+            result = 31 * result + timestamp.hashCode()
+            result = 31 * result + data.hashCode()
+            return result
+        }
+
+        override fun toString(): String {
+            return "Group(target=$target, timestamp=$timestamp, data=$data)"
+        }
+    }
 }

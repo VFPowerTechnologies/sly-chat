@@ -483,9 +483,11 @@ class SlyApplication {
         userComponent.messageExpirationWatcher.init()
         userComponent.messageReadWatcher.init()
         userComponent.messageDeletionWatcher.init()
+        userComponent.groupEventLoggerWatcher.init()
     }
 
     private fun shutdownUserComponents(userComponent: UserComponent) {
+        userComponent.groupEventLoggerWatcher.shutdown()
         userComponent.messageDeletionWatcher.shutdown()
         userComponent.messageReadWatcher.shutdown()
         userComponent.messageExpirationWatcher.shutdown()

@@ -73,5 +73,7 @@ interface UserComponent {
 
     val accountLocalInfoManager: AccountLocalInfoManager
 
+    val groupEventLoggerWatcher: GroupEventLoggerWatcher
+
     val keyVault: KeyVault
 }

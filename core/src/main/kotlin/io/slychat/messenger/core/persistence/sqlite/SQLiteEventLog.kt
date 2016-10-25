@@ -109,6 +109,11 @@ OFFSET
                 val data = objectMapper.readValue(rawData, SecurityEventData::class.java)
                 LogEvent.Security(target, timestamp, data)
             }
+
+            LogEventType.GROUP -> {
+                val data = objectMapper.readValue(rawData, GroupEventData::class.java)
+                LogEvent.Group(target, timestamp, data)
+            }
         }
     }
 

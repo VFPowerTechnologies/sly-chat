@@ -476,4 +476,13 @@ class UserModule(
     ): EventLogService {
         return EventLogServiceImpl(eventLog)
     }
+
+    @UserScope
+    @Provides
+    fun providesGroupEventLoggerWatcher(
+        groupService: GroupService,
+        eventLogService: EventLogService
+    ): GroupEventLoggerWatcher {
+        return GroupEventLoggerWatcherImpl(groupService.groupEvents, eventLogService)
+    }
 }
