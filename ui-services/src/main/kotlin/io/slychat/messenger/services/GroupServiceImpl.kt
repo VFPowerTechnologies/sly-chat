@@ -113,6 +113,7 @@ class GroupServiceImpl(
             groupPersistenceManager.part(groupId) successUi { wasParted ->
                 if (wasParted) {
                     log.info("Parted group {}", groupId)
+                    groupEventSubject.onNext(GroupEvent.Parted(groupId, false))
                     triggerRemoteSync()
                 }
                 else
@@ -128,11 +129,11 @@ class GroupServiceImpl(
             groupPersistenceManager.block(groupId) mapUi { wasBlocked ->
                 if (wasBlocked) {
                     log.info("Group {} was blocked", groupId)
+                    groupEventSubject.onNext(GroupEvent.Blocked(groupId, false))
                     triggerRemoteSync()
                 }
                 else
                     log.info("Group {} was already blocked", groupId)
-
             }
         }
     }
@@ -144,6 +145,7 @@ class GroupServiceImpl(
             groupPersistenceManager.unblock(groupId) mapUi { wasUnblocked ->
                 if (wasUnblocked) {
                     log.info("Group {} was unblocked", groupId)
+                    groupEventSubject.onNext(GroupEvent.Parted(groupId, false))
                     triggerRemoteSync()
                 }
                 else
