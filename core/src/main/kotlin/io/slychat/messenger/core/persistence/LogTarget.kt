@@ -1,7 +1,12 @@
 package io.slychat.messenger.core.persistence
 
+import io.slychat.messenger.core.UserId
+
 sealed class LogTarget {
     class Conversation(val id: ConversationId) : LogTarget() {
+        constructor(userId: UserId) : this(userId.toConversationId())
+        constructor(groupId: GroupId) : this(groupId.toConversationId())
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false

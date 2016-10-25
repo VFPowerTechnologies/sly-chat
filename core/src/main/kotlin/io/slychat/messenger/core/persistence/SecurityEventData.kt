@@ -274,9 +274,7 @@ sealed class SecurityEventData : EventData {
 
     class SessionRemoved(
         @JsonProperty("address")
-        val address: SlyAddress,
-        @JsonProperty("remoteRegistrationId")
-        val remoteRegistrationId: Int
+        val address: SlyAddress
     ) : SecurityEventData() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -285,23 +283,20 @@ sealed class SecurityEventData : EventData {
             other as SessionRemoved
 
             if (address != other.address) return false
-            if (remoteRegistrationId != other.remoteRegistrationId) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = address.hashCode()
-            result = 31 * result + remoteRegistrationId
-            return result
+            return address.hashCode()
         }
 
         override fun toString(): String {
-            return "SessionRemoved(address=$address, remoteRegistrationId=$remoteRegistrationId)"
+            return "SessionRemoved(address=$address)"
         }
 
         override fun toDisplayString(): String {
-            return "Removed signal session for ${address.asString()}, registrationId=$remoteRegistrationId"
+            return "Removed signal session for ${address.asString()}"
         }
     }
 }

@@ -241,10 +241,17 @@ class UserModule(
         authTokenManager: AuthTokenManager,
         serverUrls: ServerUrls,
         signalProtocolStore: SignalProtocolStore,
-        @SlyHttp httpClientFactory: HttpClientFactory
+        @SlyHttp httpClientFactory: HttpClientFactory,
+        eventLogService: EventLogService
     ): MessageCipherService {
         val preKeyClient = HttpPreKeyClient(serverUrls.API_SERVER, httpClientFactory.create())
-        return MessageCipherServiceImpl(userData.userId, authTokenManager, preKeyClient, signalProtocolStore)
+        return MessageCipherServiceImpl(
+            userData.userId,
+            authTokenManager,
+            preKeyClient,
+            signalProtocolStore,
+            eventLogService
+        )
     }
 
     @UserScope

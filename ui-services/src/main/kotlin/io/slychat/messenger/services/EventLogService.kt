@@ -6,6 +6,7 @@ import io.slychat.messenger.core.persistence.LogTarget
 import nl.komponents.kovenant.Promise
 import rx.Observable
 
+/** Implementations must be thread-safe; eventLogEvents must only emit on the main thread. */
 interface EventLogService {
     val eventLogEvents: Observable<EventLogEvent>
 
