@@ -190,6 +190,6 @@ fun randomSecurityEvent(target: LogTarget? = null): LogEvent.Security {
     return LogEvent.Security(
         target ?: LogTarget.Conversation(randomUserConversationId()),
         1,
-        SecurityEventData.InvalidKey()
+        SecurityEventData.InvalidKey(randomSlyAddress(), "invalid signature on device key!")
     )
 }

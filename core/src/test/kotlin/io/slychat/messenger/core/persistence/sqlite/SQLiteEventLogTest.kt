@@ -4,6 +4,7 @@ import io.slychat.messenger.core.persistence.LogEvent
 import io.slychat.messenger.core.persistence.LogEventType
 import io.slychat.messenger.core.persistence.LogTarget
 import io.slychat.messenger.core.persistence.SecurityEventData
+import io.slychat.messenger.core.randomSlyAddress
 import io.slychat.messenger.core.randomUserConversationId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -44,7 +45,7 @@ class SQLiteEventLogTest {
         return LogEvent.Security(
             target ?: LogTarget.Conversation(randomUserConversationId()),
             ++currentTime,
-            SecurityEventData.InvalidKey()
+            SecurityEventData.InvalidKey(randomSlyAddress(), "invalid signature on device key!")
         )
     }
 

@@ -2,13 +2,12 @@ package io.slychat.messenger.core.persistence
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
-import io.slychat.messenger.core.currentTimestamp
 
 sealed class LogEvent {
     abstract val target: LogTarget
     abstract val timestamp: Long
     abstract val type: LogEventType
-    abstract val data: Any
+    abstract val data: EventData
 
     class Security(
         @JsonProperty("target")
@@ -18,9 +17,6 @@ sealed class LogEvent {
         @JsonProperty("data")
         override val data: SecurityEventData
     ) : LogEvent() {
-        constructor(target: LogTarget, data: SecurityEventData) :
-            this(target, currentTimestamp(), data)
-
         @get:JsonIgnore
         override val type: LogEventType
             get() = LogEventType.SECURITY

@@ -1,7 +1,9 @@
 package io.slychat.messenger.core.persistence
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import io.slychat.messenger.core.SlyAddress
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
@@ -11,172 +13,290 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
     JsonSubTypes.Type(SecurityEventData.InvalidPreKeyId::class),
     JsonSubTypes.Type(SecurityEventData.InvalidSignedPreKeyId::class),
     JsonSubTypes.Type(SecurityEventData.UntrustedIdentity::class),
+    JsonSubTypes.Type(SecurityEventData.DuplicateMessage::class),
     JsonSubTypes.Type(SecurityEventData.SessionCreated::class),
     JsonSubTypes.Type(SecurityEventData.SessionRemoved::class)
 )
-sealed class SecurityEventData {
-    class InvalidKey() : SecurityEventData() {
-        override fun hashCode(): Int {
-            return 0
-        }
-
+sealed class SecurityEventData : EventData {
+    class InvalidKey(
+        @JsonProperty("sender")
+        val sender: SlyAddress,
+        @JsonProperty("issue")
+        val issue: String
+    ) : SecurityEventData() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
-            return other?.javaClass == javaClass
+            if (other?.javaClass != javaClass) return false
+
+            other as InvalidKey
+
+            if (sender != other.sender) return false
+            if (issue != other.issue) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = sender.hashCode()
+            result = 31 * result + issue.hashCode()
+            return result
         }
 
         override fun toString(): String {
-            return "InvalidKey()"
+            return "InvalidKey(sender=$sender, issue='$issue')"
+        }
+
+        override fun toDisplayString(): String {
+            return "An invalid key was received from ${sender.asString()}: $issue"
         }
     }
 
-    class InvalidMessage() : SecurityEventData() {
-        override fun hashCode(): Int {
-            return 0
-        }
-
+    class InvalidMessage(
+        @JsonProperty("sender")
+        val sender: SlyAddress
+    ) : SecurityEventData() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
-            return other?.javaClass == javaClass
+            if (other?.javaClass != javaClass) return false
+
+            other as InvalidMessage
+
+            if (sender != other.sender) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return sender.hashCode()
         }
 
         override fun toString(): String {
-            return "InvalidMessage()"
+            return "InvalidMessage(sender=$sender)"
+        }
+
+        override fun toDisplayString(): String {
+            return "An invalid message was received from ${sender.asString()}"
         }
     }
 
-    class NoSession() : SecurityEventData() {
-        override fun hashCode(): Int {
-            return 0
-        }
-
+    class NoSession(
+        @JsonProperty("sender")
+        val sender: SlyAddress
+    ) : SecurityEventData() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
-            return other?.javaClass == javaClass
+            if (other?.javaClass != javaClass) return false
+
+            other as NoSession
+
+            if (sender != other.sender) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return sender.hashCode()
         }
 
         override fun toString(): String {
-            return "NoSession()"
+            return "NoSession(sender=$sender)"
+        }
+
+        override fun toDisplayString(): String {
+            return "No session found for ${sender.asString()}"
         }
     }
 
-    class InvalidPreKeyId(val deviceId: Int, val id: Int) : SecurityEventData() {
+    class InvalidPreKeyId(
+        @JsonProperty("sender")
+        val sender: SlyAddress,
+        @JsonProperty("id")
+        val id: Int
+    ) : SecurityEventData() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
             other as InvalidPreKeyId
 
-            if (deviceId != other.deviceId) return false
+            if (sender != other.sender) return false
             if (id != other.id) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = deviceId
+            var result = sender.hashCode()
             result = 31 * result + id
             return result
         }
 
         override fun toString(): String {
-            return "InvalidPreKeyId(deviceId=$deviceId, id=$id)"
+            return "InvalidPreKeyId(sender=$sender, id=$id)"
+        }
+
+        override fun toDisplayString(): String {
+            return "Invalid PreKey ID from ${sender.asString()}: $id"
         }
     }
 
-    class InvalidSignedPreKeyId(val deviceId: Int, val id: Int) : SecurityEventData() {
+    class InvalidSignedPreKeyId(
+        @JsonProperty("sender")
+        val sender: SlyAddress,
+        @JsonProperty("id")
+        val id: Int
+    ) : SecurityEventData() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
             other as InvalidSignedPreKeyId
 
-            if (deviceId != other.deviceId) return false
+            if (sender != other.sender) return false
             if (id != other.id) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = deviceId
+            var result = sender.hashCode()
             result = 31 * result + id
             return result
         }
 
         override fun toString(): String {
-            return "InvalidSignedPreKeyId(deviceId=$deviceId, id=$id)"
+            return "InvalidSignedPreKeyId(sender=$sender, id=$id)"
+        }
+
+        override fun toDisplayString(): String {
+            return "Invalid signed PreKey ID from ${sender.asString()}: $id"
         }
     }
 
-    class UntrustedIdentity(val identityKey: String, val receivedIdentityKey: String) : SecurityEventData() {
+    class UntrustedIdentity(
+        @JsonProperty("sender")
+        val sender: SlyAddress,
+        @JsonProperty("receivedIdentityKey")
+        val receivedIdentityKey: String
+    ) : SecurityEventData() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
             other as UntrustedIdentity
 
-            if (identityKey != other.identityKey) return false
+            if (sender != other.sender) return false
             if (receivedIdentityKey != other.receivedIdentityKey) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = identityKey.hashCode()
+            var result = sender.hashCode()
             result = 31 * result + receivedIdentityKey.hashCode()
             return result
         }
 
         override fun toString(): String {
-            return "UntrustedIdentity(identityKey='$identityKey', receivedIdentityKey='$receivedIdentityKey')"
+            return "UntrustedIdentity(sender=$sender, receivedIdentityKey='$receivedIdentityKey')"
+        }
+
+        override fun toDisplayString(): String {
+            return "Received message from ${sender.asString()}, but $receivedIdentityKey doesn't match recorded identity key"
         }
     }
 
-    class SessionCreated(val deviceId: Int, val remoteRegistrationId: Int) {
+    class DuplicateMessage(
+        @JsonProperty("sender")
+        val sender: SlyAddress
+    ) : SecurityEventData() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as DuplicateMessage
+
+            if (sender != other.sender) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return sender.hashCode()
+        }
+
+        override fun toString(): String {
+            return "DuplicateMessage(sender=$sender)"
+        }
+
+        override fun toDisplayString(): String {
+            return "Duplicate message from ${sender.asString()}"
+        }
+    }
+
+    class SessionCreated(
+        @JsonProperty("address")
+        val address: SlyAddress,
+        @JsonProperty("remoteRegistrationId")
+        val remoteRegistrationId: Int
+    ) : SecurityEventData() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
             other as SessionCreated
 
-            if (deviceId != other.deviceId) return false
+            if (address != other.address) return false
             if (remoteRegistrationId != other.remoteRegistrationId) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = deviceId
+            var result = address.hashCode()
             result = 31 * result + remoteRegistrationId
             return result
         }
 
         override fun toString(): String {
-            return "SessionCreated(deviceId=$deviceId, remoteRegistrationId=$remoteRegistrationId)"
+            return "SessionCreated(address=$address, remoteRegistrationId=$remoteRegistrationId)"
+        }
+
+        override fun toDisplayString(): String {
+            return "Created new signal session for ${address.asString()}, registrationId=$remoteRegistrationId"
         }
     }
 
-    class SessionRemoved(val deviceId: Int, val remoteRegistrationId: Int) {
+    class SessionRemoved(
+        @JsonProperty("address")
+        val address: SlyAddress,
+        @JsonProperty("remoteRegistrationId")
+        val remoteRegistrationId: Int
+    ) : SecurityEventData() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
             other as SessionRemoved
 
-            if (deviceId != other.deviceId) return false
+            if (address != other.address) return false
             if (remoteRegistrationId != other.remoteRegistrationId) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = deviceId
+            var result = address.hashCode()
             result = 31 * result + remoteRegistrationId
             return result
         }
 
         override fun toString(): String {
-            return "SessionRemoved(deviceId=$deviceId, remoteRegistrationId=$remoteRegistrationId)"
+            return "SessionRemoved(address=$address, remoteRegistrationId=$remoteRegistrationId)"
+        }
+
+        override fun toDisplayString(): String {
+            return "Removed signal session for ${address.asString()}, registrationId=$remoteRegistrationId"
         }
     }
 }
