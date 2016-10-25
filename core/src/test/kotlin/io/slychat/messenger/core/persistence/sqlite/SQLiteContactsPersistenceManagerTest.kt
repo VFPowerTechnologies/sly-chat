@@ -393,6 +393,15 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
+    fun `findMissing should ignore phone numbers`() {
+        val pcontactA = PlatformContact(contactA.name, emptyList(), listOf(randomPhoneNumber()))
+
+        val contacts = arrayListOf(pcontactA)
+
+        contactsPersistenceManager.findMissing(contacts).get()
+    }
+
+    @Test
     fun `exists(UserId) should return true if a user exists`() {
         contactsPersistenceManager.add(contactA).get()
 

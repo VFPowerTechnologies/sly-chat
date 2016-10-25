@@ -288,15 +288,11 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
                 for (contact in platformContacts) {
                     val emails = contact.emails
-                    val phoneNumbers = contact.phoneNumbers
 
                     val selection = ArrayList<String>()
 
                     if (emails.isNotEmpty())
                         selection.add("email IN (${getPlaceholders(emails.size)})")
-
-                    if (phoneNumbers.isNotEmpty())
-                        selection.add("phone_number IN (${getPlaceholders(phoneNumbers.size)})")
 
                     if (selection.isEmpty())
                         continue
@@ -308,11 +304,6 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
                         for (email in emails) {
                             stmt.bind(i, email)
-                            i += 1
-                        }
-
-                        for (phoneNumber in phoneNumbers) {
-                            stmt.bind(i, phoneNumber)
                             i += 1
                         }
 

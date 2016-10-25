@@ -32,7 +32,7 @@ class WebApiContactLookupTest {
     }
 
     private fun SiteUser.toContactInfo(): ContactInfo =
-        ContactInfo(id, email, name, AllowedMessageLevel.ALL, null, publicKey)
+        ContactInfo(id, email, name, AllowedMessageLevel.ALL, publicKey)
 
     @Test
     fun `new contact fetch from email should return the contact information`() {

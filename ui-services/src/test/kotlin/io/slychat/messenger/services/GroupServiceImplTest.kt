@@ -35,12 +35,12 @@ class GroupServiceImplTest {
         }
     }
 
-    val groupPersistenceManager: GroupPersistenceManager = mock()
-    val contactPersistenceManager: ContactsPersistenceManager = mock()
-    val addressBookOperationManager = MockAddressBookOperationManager()
-    val messageService: MessageService = mock()
+    private val groupPersistenceManager: GroupPersistenceManager = mock()
+    private val contactPersistenceManager: ContactsPersistenceManager = mock()
+    private val addressBookOperationManager = MockAddressBookOperationManager()
+    private val messageService: MessageService = mock()
 
-    val groupService = GroupServiceImpl(
+    private val groupService = GroupServiceImpl(
         groupPersistenceManager,
         contactPersistenceManager,
         addressBookOperationManager,
@@ -57,11 +57,11 @@ class GroupServiceImplTest {
         whenever(groupPersistenceManager.unblock(any())).thenResolve(true)
     }
 
-    fun assertOperationManagerUsed() {
+    private fun assertOperationManagerUsed() {
         assertTrue(addressBookOperationManager.runOperationCallCount == 1, "Didn't go through AddressBookOperationManager")
     }
 
-    inline fun <reified T : GroupEvent> groupEventCollectorFor(): TestSubscriber<T> {
+    private inline fun <reified T : GroupEvent> groupEventCollectorFor(): TestSubscriber<T> {
         return groupService.groupEvents.subclassFilterTestSubscriber()
     }
 
@@ -80,7 +80,7 @@ class GroupServiceImplTest {
         }
     }
 
-    fun testMembershipNewMembersEvent(shouldEventBeEmitted: Boolean) {
+    private fun testMembershipNewMembersEvent(shouldEventBeEmitted: Boolean) {
         val newMember = randomUserId()
         val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 
@@ -110,7 +110,7 @@ class GroupServiceImplTest {
         testMembershipNewMembersEvent(false)
     }
 
-    fun testMembershipChangePartedMembersEvent(shouldEventBeEmitted: Boolean) {
+    private fun testMembershipChangePartedMembersEvent(shouldEventBeEmitted: Boolean) {
         val sender = randomUserId()
         val groupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 
@@ -176,8 +176,7 @@ class GroupServiceImplTest {
         assertOperationManagerUsed()
     }
 
-    fun testAddMembersRemoteUpdate(wasAdded: Boolean) {
-
+    private fun testAddMembersRemoteUpdate(wasAdded: Boolean) {
         val groupId = randomGroupId()
         val users = randomUserIds()
 
@@ -216,7 +215,6 @@ class GroupServiceImplTest {
             addressBookOperationManager.assertPushTriggered()
         else
             addressBookOperationManager.assertPushNotTriggered()
-
     }
 
     @Test
@@ -229,7 +227,7 @@ class GroupServiceImplTest {
         testRemoveMemberRemoteUpdate(false)
     }
 
-    fun testJoinRemoteUpdate(wasJoined: Boolean) {
+    private fun testJoinRemoteUpdate(wasJoined: Boolean) {
         val groupInfo = randomGroupInfo()
         val invited = randomUserIds()
 
@@ -254,7 +252,7 @@ class GroupServiceImplTest {
         testJoinRemoteUpdate(false)
     }
 
-    fun testPartRemoteUpdate(wasParted: Boolean) {
+    private fun testPartRemoteUpdate(wasParted: Boolean) {
         val groupId = randomGroupId()
 
         whenever(groupPersistenceManager.part(groupId)).thenResolve(wasParted)
@@ -277,7 +275,7 @@ class GroupServiceImplTest {
         testPartRemoteUpdate(false)
     }
 
-    fun testBlockRemoteUpdate(wasBlocked: Boolean) {
+    private fun testBlockRemoteUpdate(wasBlocked: Boolean) {
         val groupId = randomGroupId()
 
         whenever(groupPersistenceManager.block(groupId)).thenResolve(wasBlocked)
@@ -300,7 +298,7 @@ class GroupServiceImplTest {
         testBlockRemoteUpdate(false)
     }
 
-    fun testUnblockRemoteUpdate(wasUnblocked: Boolean) {
+    private fun testUnblockRemoteUpdate(wasUnblocked: Boolean) {
         val groupId = randomGroupId()
 
         whenever(groupPersistenceManager.unblock(groupId)).thenResolve(wasUnblocked)
@@ -351,6 +349,60 @@ class GroupServiceImplTest {
         assertThat(testSubscriber.onNextEvents).apply {
             `as`("Should emit group events")
             containsAll(events)
+        }
+    }
+
+    @Test
+    fun `part should emit a Parted event if group was parted`() {
+        val testSubscriber = groupEventCollectorFor<GroupEvent.Parted>()
+
+        val groupId = randomGroupId()
+
+        val expected = GroupEvent.Parted(groupId, false)
+
+        whenever(groupPersistenceManager.part(groupId)).thenResolve(true)
+
+        groupService.part(groupId).get()
+
+        assertThat(testSubscriber.onNextEvents).apply {
+            `as`("Should emit a Parted event")
+            containsOnly(expected)
+        }
+    }
+
+    @Test
+    fun `block should emit a Blocked event if group was blocked`() {
+        val testSubscriber = groupEventCollectorFor<GroupEvent.Blocked>()
+
+        val groupId = randomGroupId()
+
+        val expected = GroupEvent.Blocked(groupId, false)
+
+        whenever(groupPersistenceManager.block(groupId)).thenResolve(true)
+
+        groupService.block(groupId).get()
+
+        assertThat(testSubscriber.onNextEvents).apply {
+            `as`("Should emit a Blocked event")
+            containsOnly(expected)
+        }
+    }
+
+    @Test
+    fun `unblock should emit a Parted event if the group was unblocked`() {
+        val testSubscriber = groupEventCollectorFor<GroupEvent.Parted>()
+
+        val groupId = randomGroupId()
+
+        val expected = GroupEvent.Parted(groupId, false)
+
+        whenever(groupPersistenceManager.unblock(groupId)).thenResolve(true)
+
+        groupService.unblock(groupId).get()
+
+        assertThat(testSubscriber.onNextEvents).apply {
+            `as`("Should emit a Parted event")
+            containsOnly(expected)
         }
     }
 }
