@@ -174,7 +174,7 @@ class DesktopApp : Application() {
             SlyBuildConfig.DESKTOP_SERVER_URLS,
             platformInfo,
             DesktopTelephonyService(),
-            DesktopWindowService(primaryStage),
+            DesktopUIWindowService(primaryStage),
             DesktopPlatformContacts(),
             desktopNotificationService,
             DesktopUIShareService(),

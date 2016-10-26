@@ -8,7 +8,7 @@ import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
 import nl.komponents.kovenant.Promise
 
-class AndroidWindowService(private val context: Context) : UIWindowService {
+class AndroidUIWindowService(private val context: Context) : UIWindowService {
     override fun minimize() {
         val androidApp = AndroidApp.get(context)
 

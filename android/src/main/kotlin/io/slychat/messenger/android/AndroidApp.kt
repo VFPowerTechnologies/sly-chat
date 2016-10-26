@@ -165,7 +165,7 @@ class AndroidApp : Application() {
             SlyBuildConfig.ANDROID_SERVER_URLS,
             platformInfo,
             AndroidTelephonyService(this),
-            AndroidWindowService(this),
+            AndroidUIWindowService(this),
             AndroidPlatformContacts(this),
             notificationService,
             AndroidUIShareService(this),
