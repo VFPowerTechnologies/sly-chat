@@ -226,6 +226,16 @@ NavigationController.prototype = {
                 }
             },
             {
+                text: 'Invite a friend',
+                onClick: function () {
+                    shareService.inviteToSly(
+                        'Join Sly Now!',
+                        'Get Sly @ https://slychat.io/',
+                        'Get <a href="https://slychat.io">Sly</a>'
+                    ).catch(exceptionController.handleError);
+                }
+            },
+            {
                 text: 'Send Feedback',
                 onClick: function () {
                     navigationController.loadPage("feedback.html", true);

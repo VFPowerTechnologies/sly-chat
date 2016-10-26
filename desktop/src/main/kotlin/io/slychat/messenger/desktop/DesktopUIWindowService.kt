@@ -10,7 +10,7 @@ import nl.komponents.kovenant.Promise
 import java.io.File
 import java.net.URI
 
-class DesktopWindowService(private val stage: Stage) : UIWindowService {
+class DesktopUIWindowService(private val stage: Stage) : UIWindowService {
     override fun copyTextToClipboard(text: String) {
         val clipboard = Clipboard.getSystemClipboard()
         val content = ClipboardContent()

@@ -444,4 +444,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    fun inviteToSly(subject: String, text: String, htmlText: String) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+
+            putExtra(Intent.EXTRA_SUBJECT, subject)
+            putExtra(Intent.EXTRA_TEXT, text)
+            putExtra(Intent.EXTRA_HTML_TEXT, htmlText)
+        }
+
+        val chooserIntent = Intent.createChooser(intent, "Invite a friend to Sly").apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        startActivity(chooserIntent)
+    }
 }
