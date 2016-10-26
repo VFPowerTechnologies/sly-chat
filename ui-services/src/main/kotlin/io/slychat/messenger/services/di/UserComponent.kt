@@ -75,5 +75,7 @@ interface UserComponent {
 
     val groupEventLoggerWatcher: GroupEventLoggerWatcher
 
+    val eventLogService: EventLogService
+
     val keyVault: KeyVault
 }

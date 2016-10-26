@@ -86,5 +86,7 @@ class MockUserComponent : UserComponent {
 
     override val groupEventLoggerWatcher: GroupEventLoggerWatcher = mock()
 
+    override val eventLogService: EventLogService = mock()
+
     override val messageDeletionWatcher: MessageDeletionWatcher = mock()
 }

@@ -18,6 +18,7 @@ var UIController = function () {
     window.groupService = new GroupService();
     window.clientInfoService = new ClientInfoService();
     window.feedbackService = new FeedbackService();
+    window.eventLogService = new EventLogService();
 
     window.navigationController = new NavigationController();
     window.userSessionController = new UserSessionController();

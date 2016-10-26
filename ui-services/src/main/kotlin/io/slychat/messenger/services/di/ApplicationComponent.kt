@@ -1,8 +1,8 @@
 package io.slychat.messenger.services.di
 
 import dagger.Component
-import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.PlatformInfo
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
 import io.slychat.messenger.services.LocalAccountDirectory
@@ -59,6 +59,8 @@ interface ApplicationComponent {
     val uiClientInfoService: UIClientInfoService
 
     val uiFeedbackService: UIFeedbackService
+
+    val uiEventLogService: UIEventLogService
 
     val platformContacts: PlatformContacts
 
