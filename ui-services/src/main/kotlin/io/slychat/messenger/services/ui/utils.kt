@@ -83,4 +83,5 @@ fun clearAllListenersOnDispatcher(applicationComponent: ApplicationComponent) {
     applicationComponent.uiMessengerService.clearListeners()
     applicationComponent.uiNetworkStatusService.clearListeners()
     applicationComponent.uiRegistrationService.clearListeners()
+    applicationComponent.uiWindowService.clearListeners()
 }

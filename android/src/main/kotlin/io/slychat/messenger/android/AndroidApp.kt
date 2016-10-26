@@ -112,6 +112,7 @@ class AndroidApp : Application() {
 
     private val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
     private val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
+    private val softKeyboardVisibility = BehaviorSubject.create(false)
 
     /** Points to the current activity, if one is set. Used to request permissions from various services. */
     var currentActivity: MainActivity? = null
@@ -165,7 +166,7 @@ class AndroidApp : Application() {
             SlyBuildConfig.ANDROID_SERVER_URLS,
             platformInfo,
             AndroidTelephonyService(this),
-            AndroidUIWindowService(this),
+            AndroidUIWindowService(this, softKeyboardVisibility),
             AndroidPlatformContacts(this),
             notificationService,
             AndroidUIShareService(this),
@@ -477,6 +478,10 @@ class AndroidApp : Application() {
             onSuccessfulInitListeners.forEach { it() }
             onSuccessfulInitListeners.clear()
         }
+    }
+
+    fun updateSoftKeyboardVisibility(isVisible: Boolean) {
+        softKeyboardVisibility.onNext(isVisible)
     }
 
     /** Fires only if GCM services and SlyApplication have successfully completed initialization. Used by services. */

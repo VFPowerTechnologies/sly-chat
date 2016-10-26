@@ -55,4 +55,8 @@ class DesktopUIWindowService(private val stage: Stage) : UIWindowService {
 
         return Promise.of(UISelectionDialogResult(ok, value))
     }
+
+    override fun setSoftKeyboardVisibilityListener(listener: (Boolean) -> Unit) {}
+
+    override fun clearListeners() {}
 }

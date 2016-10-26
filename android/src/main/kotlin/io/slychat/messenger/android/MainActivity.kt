@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Rect
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Bundle
@@ -128,6 +129,27 @@ class MainActivity : AppCompatActivity() {
         webView = findViewById(R.id.webView) as WebView
 
         setAppActivity()
+
+        addSoftKeyboardVisibilityListener()
+    }
+
+    private fun addSoftKeyboardVisibilityListener() {
+        val activityRootView = findViewById(android.R.id.content)!!
+
+        //derived from https://stackoverflow.com/questions/2150078/how-to-check-visibility-of-software-keyboard-in-android
+        activityRootView.viewTreeObserver.addOnGlobalLayoutListener {
+            val visibleArea = Rect()
+            activityRootView.getWindowVisibleDisplayFrame(visibleArea)
+
+            val rootViewHeight = activityRootView.rootView.height
+            val heightDiff = rootViewHeight - (visibleArea.bottom - visibleArea.top)
+            val diffPercent = heightDiff / rootViewHeight.toFloat()
+
+            //this is usually ~0.50%, but I haven't tested it on tablets yet, so this may need tweaking
+            val isVisible = diffPercent >= 0.30
+
+            AndroidApp.get(this).updateSoftKeyboardVisibility(isVisible)
+        }
     }
 
     private fun subToLoadComplete() {

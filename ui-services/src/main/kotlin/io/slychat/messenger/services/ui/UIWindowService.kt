@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.ui
 
+import com.vfpowertech.jsbridge.processor.annotations.Exclude
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 import nl.komponents.kovenant.Promise
 
@@ -15,4 +16,9 @@ interface UIWindowService {
     fun getTextFromClipboard(): String?
 
     fun selectNotificationSound(previousUri: String?): Promise<UISelectionDialogResult<String?>, Exception>
+
+    fun setSoftKeyboardVisibilityListener(listener: (isVisible: Boolean) -> Unit)
+
+    @Exclude
+    fun clearListeners()
 }

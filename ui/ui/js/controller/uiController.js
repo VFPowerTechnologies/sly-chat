@@ -46,9 +46,15 @@ UIController.prototype = {
         this.handlePlatformUpdate();
         this.initController();
         this.addTimeDifferenceListener();
+        this.setSoftKeyboardVisibilityListener();
         this.addOutdatedVersionListener();
         this.setEmojione();
         this.count = 0;
+    },
+
+    setSoftKeyboardVisibilityListener : function () {
+        windowService.setSoftKeyboardVisibilityListener(function (isVisible) {
+        });
     },
 
     addTimeDifferenceListener : function () {

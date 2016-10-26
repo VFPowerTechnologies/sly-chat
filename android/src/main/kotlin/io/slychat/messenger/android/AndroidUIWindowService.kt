@@ -7,8 +7,19 @@ import android.view.inputmethod.InputMethodManager
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
 import nl.komponents.kovenant.Promise
+import rx.Observable
 
-class AndroidUIWindowService(private val context: Context) : UIWindowService {
+class AndroidUIWindowService(
+    private val context: Context,
+    softKeyboardVisibility: Observable<Boolean>
+) : UIWindowService {
+    private var isSoftKeyboardVisible = false
+    private var softKeyboardVisibilityListener: ((Boolean) -> Unit)? = null
+
+    init {
+        softKeyboardVisibility.subscribe { onSoftKeyboardVisiblityChange(it) }
+    }
+
     override fun minimize() {
         val androidApp = AndroidApp.get(context)
 
@@ -43,5 +54,28 @@ class AndroidUIWindowService(private val context: Context) : UIWindowService {
         val activity = app.currentActivity ?: return Promise.ofFail(IllegalStateException("No activity currently available"))
 
         return activity.openRingtonePicker(previousUri)
+    }
+
+    private fun onSoftKeyboardVisiblityChange(isVisible: Boolean) {
+        if (isVisible == isSoftKeyboardVisible)
+            return
+
+        isSoftKeyboardVisible = isVisible
+        notifySoftKeyboardStateListener()
+    }
+
+    override fun setSoftKeyboardVisibilityListener(listener: (isVisible: Boolean) -> Unit) {
+        softKeyboardVisibilityListener = listener
+        notifySoftKeyboardStateListener()
+    }
+
+    private fun notifySoftKeyboardStateListener() {
+        val listener = softKeyboardVisibilityListener
+        if (listener != null)
+            listener(isSoftKeyboardVisible)
+    }
+
+    override fun clearListeners() {
+        softKeyboardVisibilityListener = null
     }
 }
