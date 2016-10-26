@@ -201,7 +201,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .recent-contact-link {
     padding: 10px 10px;
     border-bottom: 1px solid #eeeeee;
-    height: 50px;
+    min-height: 50px;
     color: #b9b9b9;
     font-weight: 600;
     cursor: pointer;
