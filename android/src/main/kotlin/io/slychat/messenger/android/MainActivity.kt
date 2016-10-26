@@ -56,7 +56,6 @@ class MainActivity : AppCompatActivity() {
     //since we always quit the application on successful init, there's no need to retry it
     private var isInitialized = false
     private var isActive = false
-    private var hadSavedBundle: Boolean = false
 
     private var loadCompleteSubscription: Subscription? = null
 
