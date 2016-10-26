@@ -191,5 +191,6 @@ UIController.prototype = {
     setEmojione : function () {
         emojione.ascii = true;
         emojione.imagePathPNG = 'img/emojione/png/';
+        emojione.cacheBustParam = '';
     }
 };
