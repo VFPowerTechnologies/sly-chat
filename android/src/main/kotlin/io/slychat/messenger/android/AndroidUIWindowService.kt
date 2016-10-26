@@ -12,19 +12,16 @@ class AndroidUIWindowService(private val context: Context) : UIWindowService {
     override fun minimize() {
         val androidApp = AndroidApp.get(context)
 
-        val activity = androidApp.currentActivity ?: return
-        activity.moveTaskToBack(true)
+        androidApp.currentActivity?.moveTaskToBack(true)
     }
 
     override fun closeSoftKeyboard() {
         val androidApp = AndroidApp.get(context)
 
-        val currentFocus = androidApp.currentActivity?.currentFocus
+        val currentFocus = androidApp.currentActivity?.currentFocus ?: return
 
-        if (currentFocus != null) {
-            val inputManager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            inputManager.hideSoftInputFromWindow(currentFocus.windowToken, 0)
-        }
+        val inputManager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        inputManager.hideSoftInputFromWindow(currentFocus.windowToken, 0)
     }
 
     override fun copyTextToClipboard(text: String) {
