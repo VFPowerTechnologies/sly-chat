@@ -168,6 +168,7 @@ class AndroidApp : Application() {
             AndroidWindowService(this),
             AndroidPlatformContacts(this),
             notificationService,
+            AndroidUIShareService(this),
             AndroidUIPlatformService(this),
             AndroidUILoadService(this),
             uiVisibility,
