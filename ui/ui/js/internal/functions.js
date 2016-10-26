@@ -159,7 +159,11 @@ function linkify(content) {
 function formatTextForHTML(content) {
     var safeContent = linkify(content);
     safeContent = safeContent.replace(/\n/g, '<br/>');
-    return safeContent;
+    return formatEmoji(safeContent);
+}
+
+function formatEmoji(text) {
+    return emojione.toImage(text);
 }
 
 function createTextNode (string) {

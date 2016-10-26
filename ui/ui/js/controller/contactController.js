@@ -456,9 +456,9 @@ ContactController.prototype  = {
 
     formatLastMessage : function (message) {
         if(message.length > 40)
-            return message.substring(0, 40) + "...";
+            return formatEmoji(message.substring(0, 40) + "...");
         else
-            return message;
+            return formatEmoji(message);
     },
 
     addContactEventListener : function () {

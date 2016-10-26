@@ -46,6 +46,7 @@ UIController.prototype = {
         this.initController();
         this.addTimeDifferenceListener();
         this.addOutdatedVersionListener();
+        this.setEmojione();
         this.count = 0;
     },
 
@@ -185,5 +186,10 @@ UIController.prototype = {
                     body.addClass("theme-orange");
             break;
         }
+    },
+
+    setEmojione : function () {
+        emojione.ascii = true;
+        emojione.imagePathPNG = 'img/emojione/png/';
     }
 };
