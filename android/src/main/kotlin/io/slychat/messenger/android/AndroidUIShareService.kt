@@ -10,7 +10,7 @@ class AndroidUIShareService(
         return true
     }
 
-    override fun inviteToSly(subject: String, text: String, htmlText: String) {
+    override fun inviteToSly(subject: String, text: String, htmlText: String?) {
         val androidApp = AndroidApp.get(context)
         androidApp.currentActivity?.inviteToSly(subject, text, htmlText)
     }

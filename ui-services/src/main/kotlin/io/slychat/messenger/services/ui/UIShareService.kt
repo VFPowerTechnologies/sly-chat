@@ -6,5 +6,5 @@ import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
 interface UIShareService {
     fun isSupported(): Boolean
 
-    fun inviteToSly(subject: String, text: String, htmlText: String)
+    fun inviteToSly(subject: String, text: String, htmlText: String?)
 }

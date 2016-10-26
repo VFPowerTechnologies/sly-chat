@@ -7,7 +7,7 @@ class DesktopUIShareService : UIShareService {
         return false
     }
 
-    override fun inviteToSly(subject: String, text: String, htmlText: String) {
+    override fun inviteToSly(subject: String, text: String, htmlText: String?) {
         throw NotImplementedError()
     }
 }
