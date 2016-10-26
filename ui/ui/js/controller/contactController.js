@@ -553,7 +553,7 @@ ContactController.prototype  = {
         var phone = null;
         var username = null;
         if (validateEmail(input)){
-            username = input;
+            username = input.toLowerCase();
         }
         else{
             phone = input;

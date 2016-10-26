@@ -101,7 +101,7 @@ ProfileController.prototype = {
         if (valid) {
             var total = 0;
             var newName = $(ProfileController.ids.updateProfileNameInput).val();
-            var newEmail = $(ProfileController.ids.updateProfileEmailInput).val();
+            var newEmail = $(ProfileController.ids.updateProfileEmailInput).val().toLowerCase();
             if (this.name !== newName) {
                 total += 1;
                 accountModifictationService.updateName(newName).then(function (result) {

@@ -33,7 +33,7 @@ RegistrationController.prototype = {
             return;
 
         var password = $$(RegistrationController.ids.registrationPasswordInput).val();
-        var email = $$(RegistrationController.ids.registrationEmailInput).val();
+        var email = $$(RegistrationController.ids.registrationEmailInput).val().toLowerCase();
         var name = $$(RegistrationController.ids.registrationNameInput).val();
         var phoneValue = $(RegistrationController.ids.phoneInput).val();
         var selectedCountry = $(RegistrationController.ids.countryInput).val();
@@ -212,7 +212,7 @@ RegistrationController.prototype = {
         if (!slychat.validateForm($("#stepTwoForm")))
             return;
 
-        var email = $("#email").val();
+        var email = $("#email").val().toLowerCase();
 
         registrationService.checkEmailAvailability(email).then(function (available) {
             if (available) {
