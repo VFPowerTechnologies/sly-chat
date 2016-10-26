@@ -232,7 +232,7 @@ NavigationController.prototype = {
                         'Join Sly Now!',
                         'Get Sly @ https://slychat.io/',
                         'Get <a href="https://slychat.io">Sly</a>'
-                    );
+                    ).catch(exceptionController.handleError);
                 }
             },
             {

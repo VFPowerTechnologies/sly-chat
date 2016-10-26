@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import de.codecentric.centerdevice.MenuToolkit
-import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.Os
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
@@ -177,6 +177,7 @@ class DesktopApp : Application() {
             DesktopWindowService(primaryStage),
             DesktopPlatformContacts(),
             desktopNotificationService,
+            DesktopUIShareService(),
             DesktopUIPlatformService(browser),
             DesktopUILoadService(this),
             uiVisibility,
