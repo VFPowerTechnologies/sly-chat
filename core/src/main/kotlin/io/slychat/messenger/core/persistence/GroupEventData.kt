@@ -7,8 +7,8 @@ import io.slychat.messenger.core.UserId
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
-    JsonSubTypes.Type(GroupEventData.MembershipLevelChange::class),
-    JsonSubTypes.Type(GroupEventData.MemberChange::class)
+    JsonSubTypes.Type(GroupEventData.MembershipLevelChange::class, name = "membershipLevelChanged"),
+    JsonSubTypes.Type(GroupEventData.MemberChange::class, name = "memberChange")
 )
 sealed class GroupEventData : EventData {
     class MembershipLevelChange(

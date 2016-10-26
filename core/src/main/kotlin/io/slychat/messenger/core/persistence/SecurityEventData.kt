@@ -7,15 +7,15 @@ import io.slychat.messenger.core.SlyAddress
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
-    JsonSubTypes.Type(SecurityEventData.InvalidKey::class),
-    JsonSubTypes.Type(SecurityEventData.InvalidMessage::class),
-    JsonSubTypes.Type(SecurityEventData.NoSession::class),
-    JsonSubTypes.Type(SecurityEventData.InvalidPreKeyId::class),
-    JsonSubTypes.Type(SecurityEventData.InvalidSignedPreKeyId::class),
-    JsonSubTypes.Type(SecurityEventData.UntrustedIdentity::class),
-    JsonSubTypes.Type(SecurityEventData.DuplicateMessage::class),
-    JsonSubTypes.Type(SecurityEventData.SessionCreated::class),
-    JsonSubTypes.Type(SecurityEventData.SessionRemoved::class)
+    JsonSubTypes.Type(SecurityEventData.InvalidKey::class, name = "invalidKey"),
+    JsonSubTypes.Type(SecurityEventData.InvalidMessage::class, name = "invalidMessage"),
+    JsonSubTypes.Type(SecurityEventData.NoSession::class, name = "noSession"),
+    JsonSubTypes.Type(SecurityEventData.InvalidPreKeyId::class, name = "invalidPreKeyId"),
+    JsonSubTypes.Type(SecurityEventData.InvalidSignedPreKeyId::class, name = "invalidSignedPreKeyId"),
+    JsonSubTypes.Type(SecurityEventData.UntrustedIdentity::class, name = "untrustedIdentity"),
+    JsonSubTypes.Type(SecurityEventData.DuplicateMessage::class, name = "duplicatedMessage"),
+    JsonSubTypes.Type(SecurityEventData.SessionCreated::class, name = "sessionCreated"),
+    JsonSubTypes.Type(SecurityEventData.SessionRemoved::class, name = "sessionRemoved")
 )
 sealed class SecurityEventData : EventData {
     class InvalidKey(
