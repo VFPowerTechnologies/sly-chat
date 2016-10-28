@@ -1,4 +1,6 @@
-var NavigationController = function () {};
+var NavigationController = function () {
+    this.menu = [];
+};
 
 NavigationController.prototype = {
     init : function () {
@@ -193,68 +195,82 @@ NavigationController.prototype = {
         return page + ".html";
     },
 
-    openMenu : function () {
-        var buttons = [
-            {
-                text: 'Profile',
-                onClick: function () {
-                    navigationController.loadPage('profile.html', true);
+    createMenu : function () {
+        shareService.isSupported().then(function (isSupported) {
+            this.menu = [
+                {
+                    text: 'Profile',
+                    onClick: function () {
+                        navigationController.loadPage('profile.html', true);
+                    }
+                },
+                {
+                    text: 'Settings',
+                    onClick: function () {
+                        navigationController.loadPage('settings.html', true);
+                    }
+                },
+                {
+                    text: 'Blocked Contacts',
+                    onClick: function () {
+                        navigationController.loadPage('blockedContacts.html', true);
+                    }
+                },
+                {
+                    text: 'Add Contact',
+                    onClick: function () {
+                        navigationController.loadPage("addContact.html", true);
+                    }
+                },
+                {
+                    text: 'Create Group',
+                    onClick: function () {
+                        navigationController.loadPage('createGroup.html', true);
+                    }
                 }
-            },
-            {
-                text: 'Settings',
-                onClick: function () {
-                    navigationController.loadPage('settings.html', true);
-                }
-            },
-            {
-                text: 'Blocked Contacts',
-                onClick: function () {
-                    navigationController.loadPage('blockedContacts.html', true);
-                }
-            },
-            {
-                text: 'Add Contact',
-                onClick: function () {
-                    navigationController.loadPage("addContact.html", true);
-                }
-            },
-            {
-                text: 'Create Group',
-                onClick: function () {
-                    navigationController.loadPage('createGroup.html', true);
-                }
-            },
-            {
-                text: 'Invite a friend',
-                onClick: function () {
-                    shareService.inviteToSly(
-                        'Join Sly Now!',
-                        'Get Sly @ https://slychat.io/',
-                        'Get <a href="https://slychat.io">Sly</a>'
-                    ).catch(exceptionController.handleError);
-                }
-            },
-            {
-                text: 'Send Feedback',
-                onClick: function () {
-                    navigationController.loadPage("feedback.html", true);
-                }
-            },
-            {
-                text: 'Logout',
-                onClick: function () {
-                    loginController.logout();
-                }
-            },
-            {
-                text: 'Cancel',
-                color: 'red',
-                onClick: function () {
-                }
+            ];
+            if (isSupported) {
+                this.menu.push({
+                    text: 'Invite a friend',
+                    onClick: function () {
+                        navigationController.loadPage("inviteFriends.html", true);
+                        //
+                        // shareService.inviteToSly(
+                        //     'Join Sly Now!',
+                        //     'Get Sly @ https://slychat.io/',
+                        //     'Get <a href="https://slychat.io">Sly</a>'
+                        // ).catch(exceptionController.handleError);
+                    }
+                })
             }
-        ];
-        slychat.actions(buttons);
+
+            this.menu.push(
+                {
+                    text: 'Send Feedback',
+                    onClick: function () {
+                        navigationController.loadPage("feedback.html", true);
+                    }
+                },
+                {
+                    text: 'Logout',
+                    onClick: function () {
+                        loginController.logout();
+                    }
+                },
+                {
+                    text: 'Cancel',
+                    color: 'red',
+                    onClick: function () {
+                    }
+                }
+            );
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        });
+    },
+
+    openMenu : function () {
+        slychat.actions(this.menu);
     },
 
     loadInitialPage : function () {

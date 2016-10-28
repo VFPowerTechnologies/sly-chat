@@ -43,6 +43,7 @@ UIController.prototype = {
     startUI : function () {
         this.initApplication();
         this.initMainView();
+        this.createMobileMenu();
         this.handlePlatformUpdate();
         this.initController();
         this.addTimeDifferenceListener();
@@ -117,6 +118,11 @@ UIController.prototype = {
             dynamicNavbar: true,
             reloadPages: true
         });
+    },
+
+    createMobileMenu : function () {
+        if (!isDesktop)
+            navigationController.createMenu();
     },
 
     handlePlatformUpdate : function () {

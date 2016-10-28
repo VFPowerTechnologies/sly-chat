@@ -400,6 +400,17 @@ slychat.onPageInit('feedback', function () {
     feedbackController.pageInit();
 });
 
+slychat.onPageInit("inviteFriends", function () {
+    $("#submitInviteFriends").click(function (e) {
+        e.preventDefault();
+        $("#inviteFriendsError").html();
+        var text = $("#inviteFriendsText").val();
+
+        if (text.length <= 0)
+            $("#inviteFriendsError").html("Invite message is needed");
+    })
+});
+
 $("#contactPopupNewBtn").on("click", function (e) {
     e.preventDefault();
     if ($("#contact-tab").hasClass("active")) {
