@@ -43,6 +43,7 @@ UIController.prototype = {
     startUI : function () {
         this.initApplication();
         this.initMainView();
+        this.createMobileMenu();
         this.handlePlatformUpdate();
         this.initController();
         this.addTimeDifferenceListener();
@@ -116,6 +117,16 @@ UIController.prototype = {
         window.mainView = window.slychat.addView('.view-main', {
             dynamicNavbar: true,
             reloadPages: true
+        });
+    },
+
+    createMobileMenu : function () {
+        shareService.isSupported().then(function (isSupported) {
+            window.shareSupported = isSupported;
+            if (!isDesktop)
+                navigationController.createMenu();
+        }).catch(function (e) {
+            exceptionController.handleError(e);
         });
     },
 
