@@ -17,7 +17,7 @@ interface UIWindowService {
 
     fun selectNotificationSound(previousUri: String?): Promise<UISelectionDialogResult<String?>, Exception>
 
-    fun setSoftKeyboardVisibilityListener(listener: (isVisible: Boolean) -> Unit)
+    fun setSoftKeyboardInfoListener(listener: (info: SoftKeyboardInfo) -> Unit)
 
     @Exclude
     fun clearListeners()
