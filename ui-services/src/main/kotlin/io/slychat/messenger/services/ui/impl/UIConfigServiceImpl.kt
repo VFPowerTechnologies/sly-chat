@@ -8,6 +8,7 @@ import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.ui.UIAppearanceConfig
 import io.slychat.messenger.services.ui.UIConfigService
+import io.slychat.messenger.services.ui.UIMarketingConfig
 import io.slychat.messenger.services.ui.UINotificationConfig
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -23,6 +24,7 @@ class UIConfigServiceImpl(
 
     private val notificationConfigChangeListeners = ArrayList<(UINotificationConfig) -> Unit>()
     private val appearanceConfigChangeListeners = ArrayList<(UIAppearanceConfig) -> Unit>()
+    private val marketingConfigChangeListeners = ArrayList<(UIMarketingConfig) -> Unit>()
 
     private val subscriptions = CompositeSubscription()
 
@@ -143,9 +145,28 @@ class UIConfigServiceImpl(
         listener(getUIAppearanceConfig())
     }
 
+    private fun getUIMarketingConfg(): UIMarketingConfig {
+        val userConfigService = getUserConfigServiceOrThrow()
+
+        return UIMarketingConfig(userConfigService.marketingShowInviteFriends)
+    }
+
+    override fun setMarketingConfig(config: UIMarketingConfig) {
+        getUserConfigServiceOrThrow().withEditor {
+            marketingShowInviteFriends = config.showInviteFriends
+        }
+    }
+
+    override fun addMarketingConfigChangeListener(listener: (UIMarketingConfig) -> Unit) {
+        marketingConfigChangeListeners.add(listener)
+        if (userConfigService != null)
+            listener(getUIMarketingConfg())
+    }
+
     override fun clearListeners() {
         notificationConfigChangeListeners.clear()
         appearanceConfigChangeListeners.clear()
+        marketingConfigChangeListeners.clear()
     }
 
     override fun getLoginRememberMe(): Boolean {

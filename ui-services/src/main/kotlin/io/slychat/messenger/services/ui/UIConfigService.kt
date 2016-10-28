@@ -20,6 +20,11 @@ data class UIAppearanceConfig(
     val theme: String?
 )
 
+data class UIMarketingConfig(
+    @JsonProperty("showInviteFriends")
+    val showInviteFriends: Boolean
+)
+
 @JSToJavaGenerate("ConfigService")
 interface UIConfigService {
     fun getLoginRememberMe(): Boolean
@@ -37,6 +42,10 @@ interface UIConfigService {
     fun setAppearanceConfig(config: UIAppearanceConfig)
 
     fun addAppearanceConfigChangeListener(listener: (UIAppearanceConfig) -> Unit)
+
+    fun setMarketingConfig(config: UIMarketingConfig)
+
+    fun addMarketingConfigChangeListener(listener: (UIMarketingConfig) -> Unit)
 
     @Exclude
     fun clearListeners()
