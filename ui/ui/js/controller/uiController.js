@@ -121,8 +121,13 @@ UIController.prototype = {
     },
 
     createMobileMenu : function () {
-        if (!isDesktop)
-            navigationController.createMenu();
+        shareService.isSupported().then(function (isSupported) {
+            window.shareSupported = isSupported;
+            if (!isDesktop)
+                navigationController.createMenu();
+        }).catch(function (e) {
+            exceptionController.handleError(e);
+        });
     },
 
     handlePlatformUpdate : function () {

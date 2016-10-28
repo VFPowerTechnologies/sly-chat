@@ -408,6 +408,13 @@ slychat.onPageInit("inviteFriends", function () {
 
         if (text.length <= 0)
             $("#inviteFriendsError").html("Invite message is needed");
+        else {
+            shareService.inviteToSly(
+                'Join Sly Now!',
+                text,
+                'Get <a href="https://slychat.io">Sly</a>'
+            ).catch(exceptionController.handleError);
+        }
     })
 });
 
