@@ -276,16 +276,27 @@ ContactController.prototype  = {
     },
 
     createRecentChatInvite : function (message) {
+        var hideBtn = "";
+        var lessMessage = "";
+        if (Object.size(this.conversations) >= 5) {
+            hideBtn = '' +
+                '<div class="right">' +
+                    '<span>' +
+                        '<a class="btn hide-link">Hide</a>' +
+                    '</span>' +
+                '</div>';
+        }
+        else {
+            lessMessage = "<div class='left'>You currently have less than 5 contacts!</div>";
+        }
+
         var link = $('' +
             '<div id="inviteFriendsRecentButton" class="item-link recent-contact-link row ">' +
                 '<div class="recent-chat-name">' +
                     '<span>' + message + '</span>' +
                 '</div>' +
-                '<div class="right">' +
-                    '<span>' +
-                        '<a class="btn hide-link">Hide</a>' +
-                    '</span>' +
-                '</div>' +
+                hideBtn +
+                lessMessage +
             '</div>'
         );
 
