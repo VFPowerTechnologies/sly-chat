@@ -42,29 +42,37 @@ class UserEditorInterface(override var config: UserConfig) : ConfigServiceBase.E
     var notificationsEnabled: Boolean
         get() = config.notificationsEnabled
         set(value) {
-            modifiedKeys.add(UserConfig.NOTIFICATIONS_ENABLED)
-            config = config.copy(notificationsEnabled = value)
+            if (value != notificationsEnabled) {
+                modifiedKeys.add(UserConfig.NOTIFICATIONS_ENABLED)
+                config = config.copy(notificationsEnabled = value)
+            }
         }
 
     var notificationsSound: String?
         get() = config.notificationsSound
         set(value) {
-            modifiedKeys.add(UserConfig.NOTIFICATIONS_SOUND)
-            config = config.copy(notificationsSound = value)
+            if (value != notificationsSound) {
+                modifiedKeys.add(UserConfig.NOTIFICATIONS_SOUND)
+                config = config.copy(notificationsSound = value)
+            }
         }
 
     var messagingLastTtl: Long
         get() = config.messagingLastTtl
         set(value) {
-            modifiedKeys.add(UserConfig.MESSAGING_LAST_TTL)
-            config = config.copy(messagingLastTtl = value)
+            if (value != messagingLastTtl) {
+                modifiedKeys.add(UserConfig.MESSAGING_LAST_TTL)
+                config = config.copy(messagingLastTtl = value)
+            }
         }
 
     var marketingShowInviteFriends: Boolean
         get() = config.marketingShowInviteFriends
         set(value) {
-            modifiedKeys.add(UserConfig.MARKETING_SHOW_INVITE_FRIENDS)
-            config = config.copy(marketingShowInviteFriends = value)
+            if (value != marketingShowInviteFriends) {
+                modifiedKeys.add(UserConfig.MARKETING_SHOW_INVITE_FRIENDS)
+                config = config.copy(marketingShowInviteFriends = value)
+            }
         }
 }
 
