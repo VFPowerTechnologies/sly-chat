@@ -17,7 +17,8 @@ SettingsController.ids = {
     notificationsEnabled : '#notifications-enabled-checkbox',
     notificationsSound : '#notification-sound-select-btn',
     notificationSoundName : '#notification-sound-name',
-    darkThemeCheckBox : '#darkThemeCheckBox'
+    darkThemeCheckBox : '#darkThemeCheckBox',
+    inviteFriendOption : '#inviteFriendOption'
 };
 
 //TODO prevent user from editing until we've received the initial config
@@ -41,6 +42,11 @@ SettingsController.prototype = {
             this.themeConfig = config;
             this.refreshAppearanceConfig();
         }.bind(this));
+
+        configService.addMarketingConfigChangeListener(function (config) {
+            this.marketingConfig = config;
+            this.refreshMarketingConfig();
+        }.bind(this));
     },
 
     refreshNotificationConfig : function () {
@@ -49,6 +55,12 @@ SettingsController.prototype = {
 
         $(SettingsController.ids.notificationsEnabled).prop('checked', c.enabled);
         $(SettingsController.ids.notificationSoundName).html(soundName);
+    },
+
+    refreshMarketingConfig : function () {
+        var c = this.marketingConfig;
+
+        $(SettingsController.ids.inviteFriendOption).prop('checked', c.showInviteFriends);
     },
 
     refreshAppearanceConfig : function () {
@@ -72,6 +84,12 @@ SettingsController.prototype = {
         });
     },
 
+    updateMarketingConfig : function () {
+        configService.setMarketingConfig(this.marketingConfig).catch(function (e) {
+            exceptionController.handleError(e);
+        });
+    },
+
     setAppearanceConfig : function (checked) {
         if (checked) {
             this.themeConfig = {theme: SettingsController.themesConfigName.darkTheme};
@@ -89,6 +107,12 @@ SettingsController.prototype = {
         this.notificationConfig.enabled = isEnabled;
 
         this.updateNotificationConfig();
+    },
+
+    setMarketingInviteDisabled : function (isEnabled) {
+        this.marketingConfig.showInviteFriends = isEnabled;
+
+        this.updateMarketingConfig();
     },
 
     setNotificationSound : function (sound) {
@@ -109,6 +133,7 @@ SettingsController.prototype = {
     displaySettings : function () {
         this.refreshNotificationConfig();
         this.refreshAppearanceConfig();
+        this.refreshMarketingConfig();
     },
 
     initEventHandlers : function () {
@@ -125,6 +150,11 @@ SettingsController.prototype = {
         $(SettingsController.ids.darkThemeCheckBox).on('change', function (e) {
             e.preventDefault();
             settingsController.setAppearanceConfig(e.target.checked);
+        });
+
+        $(SettingsController.ids.inviteFriendOption).on('change', function (e) {
+            e.preventDefault();
+            settingsController.setMarketingInviteDisabled(e.target.checked);
         });
     }
 };

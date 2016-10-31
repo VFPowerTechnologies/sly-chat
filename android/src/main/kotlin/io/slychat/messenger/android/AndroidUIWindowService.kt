@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.view.inputmethod.InputMethodManager
+import io.slychat.messenger.services.ui.SoftKeyboardInfo
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
 import nl.komponents.kovenant.Promise
@@ -11,13 +12,13 @@ import rx.Observable
 
 class AndroidUIWindowService(
     private val context: Context,
-    softKeyboardVisibility: Observable<Boolean>
+    softKeyboardVisibility: Observable<SoftKeyboardInfo>
 ) : UIWindowService {
-    private var isSoftKeyboardVisible = false
-    private var softKeyboardVisibilityListener: ((Boolean) -> Unit)? = null
+    private var softKeyboardInfo = SoftKeyboardInfo(false, 0)
+    private var softKeyboardVisibilityListener: ((SoftKeyboardInfo) -> Unit)? = null
 
     init {
-        softKeyboardVisibility.subscribe { onSoftKeyboardVisiblityChange(it) }
+        softKeyboardVisibility.subscribe { onSoftKeyboardInfoChange(it) }
     }
 
     override fun minimize() {
@@ -56,15 +57,12 @@ class AndroidUIWindowService(
         return activity.openRingtonePicker(previousUri)
     }
 
-    private fun onSoftKeyboardVisiblityChange(isVisible: Boolean) {
-        if (isVisible == isSoftKeyboardVisible)
-            return
-
-        isSoftKeyboardVisible = isVisible
+    private fun onSoftKeyboardInfoChange(isVisible: SoftKeyboardInfo) {
+        softKeyboardInfo = isVisible
         notifySoftKeyboardStateListener()
     }
 
-    override fun setSoftKeyboardVisibilityListener(listener: (isVisible: Boolean) -> Unit) {
+    override fun setSoftKeyboardInfoListener(listener: (SoftKeyboardInfo) -> Unit) {
         softKeyboardVisibilityListener = listener
         notifySoftKeyboardStateListener()
     }
@@ -72,7 +70,7 @@ class AndroidUIWindowService(
     private fun notifySoftKeyboardStateListener() {
         val listener = softKeyboardVisibilityListener
         if (listener != null)
-            listener(isSoftKeyboardVisible)
+            listener(softKeyboardInfo)
     }
 
     override fun clearListeners() {

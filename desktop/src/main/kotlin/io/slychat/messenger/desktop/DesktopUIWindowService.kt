@@ -1,5 +1,6 @@
 package io.slychat.messenger.desktop
 
+import io.slychat.messenger.services.ui.SoftKeyboardInfo
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
 import javafx.scene.input.Clipboard
@@ -56,7 +57,7 @@ class DesktopUIWindowService(private val stage: Stage) : UIWindowService {
         return Promise.of(UISelectionDialogResult(ok, value))
     }
 
-    override fun setSoftKeyboardVisibilityListener(listener: (Boolean) -> Unit) {}
+    override fun setSoftKeyboardInfoListener(listener: (SoftKeyboardInfo) -> Unit) {}
 
     override fun clearListeners() {}
 }

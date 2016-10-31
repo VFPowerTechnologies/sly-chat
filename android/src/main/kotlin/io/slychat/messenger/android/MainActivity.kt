@@ -13,6 +13,7 @@ import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.SparseArray
 import android.view.KeyEvent
+import android.view.Surface
 import android.view.WindowManager
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
@@ -50,6 +51,9 @@ class MainActivity : AppCompatActivity() {
 
         private val RINGTONE_PICKER_REQUEST_CODE = 1
     }
+
+    private var lastOrientation = Surface.ROTATION_0
+    private var lastActivityHeight = 0
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -142,13 +146,33 @@ class MainActivity : AppCompatActivity() {
             activityRootView.getWindowVisibleDisplayFrame(visibleArea)
 
             val rootViewHeight = activityRootView.rootView.height
-            val heightDiff = rootViewHeight - (visibleArea.bottom - visibleArea.top)
+            val activityVisibleHeight = visibleArea.bottom - visibleArea.top
+            val heightDiff = rootViewHeight - activityVisibleHeight
             val diffPercent = heightDiff / rootViewHeight.toFloat()
 
             //this is usually ~0.50%, but I haven't tested it on tablets yet, so this may need tweaking
             val isVisible = diffPercent >= 0.30
 
-            AndroidApp.get(this).updateSoftKeyboardVisibility(isVisible)
+            val currentOrientation = getOrientation()
+
+            //on rotation, reset the last recorded activity height
+            //the keyboard will always be shown after resize has complete, so this is safe
+            if (currentOrientation != lastOrientation) {
+                lastActivityHeight = 0
+                lastOrientation = currentOrientation
+            }
+
+            //we may be called multiple times during rotation for resizes
+            //so we just keep the largest activity height
+            if (activityVisibleHeight > lastActivityHeight)
+                lastActivityHeight = activityVisibleHeight
+
+            val keyboardHeight = if (lastActivityHeight > activityVisibleHeight)
+                lastActivityHeight - activityVisibleHeight
+            else
+                activityVisibleHeight - lastActivityHeight
+
+            AndroidApp.get(this).updateSoftKeyboardVisibility(isVisible, keyboardHeight)
         }
     }
 
@@ -481,5 +505,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         startActivity(chooserIntent)
+    }
+
+    private fun getOrientation(): Int {
+        return windowManager.defaultDisplay.rotation
+    }
+
+    private fun isLandscape(): Boolean {
+        val rotation = getOrientation()
+        return rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
     }
 }
