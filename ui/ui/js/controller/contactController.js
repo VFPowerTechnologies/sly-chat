@@ -253,7 +253,7 @@ ContactController.prototype  = {
     createRecentChatList : function (jointedRecentChat) {
         var frag =  $(document.createDocumentFragment());
 
-        if (window.shareSupported)
+        if (window.shareSupported && !settingsController.marketingConfig.showInviteFriends)
             frag.prepend(this.createRecentChatInvite("Invite Your Friends"));
 
         if(jointedRecentChat.length > 0) {
@@ -302,6 +302,7 @@ ContactController.prototype  = {
 
         link.find(".hide-link").click(function () {
             $("#inviteFriendsRecentButton").remove();
+            settingsController.setMarketingInviteDisabled(true);
         });
 
         link.click(function (e) {
