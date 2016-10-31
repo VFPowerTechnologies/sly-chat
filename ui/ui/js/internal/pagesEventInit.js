@@ -176,6 +176,10 @@ slychat.onPageInit('register', function (page) {
     $('#registration-password').pwstrength(options);
 });
 
+slychat.onPageBeforeInit("chat", function () {
+    slychat.emojiPicker();
+});
+
 slychat.onPageInit('chat', function (page) {
     var isGroup = page.query.email === undefined;
     var newMessageInput = $("#newMessageInput");
@@ -234,6 +238,22 @@ slychat.onPageInit('chat', function (page) {
 
             chatController.toggleExpiringMessageDisplay();
         });
+
+        $("#emojiPickerBtn").on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            slychat.popover(".popover-emoji", this);
+        });
+
+        $(".emoticone-link").click(function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            slychat.closeModal(".popover-emoji");
+            var emoji = $(this).attr("data-emoji");
+            newMessageInput.val(newMessageInput.val() + emoji);
+        });
     }
     else {
         $("#submitNewChatMessage").on('touchstart', function (e) {
@@ -247,7 +267,25 @@ slychat.onPageInit('chat', function (page) {
             e.stopPropagation();
 
             chatController.toggleExpiringMessageDisplay();
-        })
+        });
+
+        $("#emojiPickerBtn").on('touchstart', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMobileEmoji();
+        });
+
+        $(".emoticone-link").on("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var emoji = $(this).attr("data-emoji");
+            newMessageInput.val(newMessageInput.val() + emoji);
+            if (slychat.keyboardWasVisible)
+                $("#newMessageInput").focus();
+            else
+                closeMobileEmoji();
+        });
     }
 
 

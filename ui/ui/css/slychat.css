@@ -623,3 +623,16 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .layout-dark .pwstrength_viewport_progress .password-verdict {
     color: #fff;
 }
+
+/* emotiji */
+.emoticone-link img {
+    height: 30px;
+    width: 30px;
+    margin: 5px;
+}
+.mobile-emoji-picker-opened {
+    height: 365px;
+}
+#emojiPickerBtn:focus {
+    outline: 0;
+}

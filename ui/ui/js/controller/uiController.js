@@ -54,6 +54,10 @@ UIController.prototype = {
 
     setSoftKeyboardVisibilityListener : function () {
         windowService.setSoftKeyboardVisibilityListener(function (isVisible) {
+            window.isSoftKeyboardVisible = isVisible;
+            if (isVisible && $(".mobile-emoji-picker-opened").length > 0) {
+                closeMobileEmoji();
+            }
         });
     },
 
