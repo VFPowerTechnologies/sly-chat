@@ -76,21 +76,28 @@ class UIConfigServiceImpl(
 
     private fun onUserConfigUpdate(updates: Collection<String>) {
         var updateNotifications = false
+        var updateMarketing = false
 
         log.debug("User configuration updated: {}", updates)
 
         updates.forEach { key ->
             if (key.startsWith(UserConfig.NOTIFICATIONS))
                 updateNotifications = true
+            else if (key.startsWith(UserConfig.MARKETING))
+                updateMarketing = true
         }
 
         if (updateNotifications)
             notifyNotificationConfigChangeListeners()
+
+        if (updateMarketing)
+            notifyMarketingConfigChangeListeners()
     }
 
     private fun pushInitialConfigs() {
         notifyNotificationConfigChangeListeners()
         notifyAppearanceConfigChangeListeners()
+        notifyMarketingConfigChangeListeners()
     }
 
     private fun getUserConfigServiceOrThrow(): UserConfigService {
@@ -131,6 +138,12 @@ class UIConfigServiceImpl(
         val uiNotificationConfig = getUINotificationConfig()
 
         notificationConfigChangeListeners.forEach { it(uiNotificationConfig) }
+    }
+
+    private fun notifyMarketingConfigChangeListeners() {
+        val uiMarketingConfig = getUIMarketingConfg()
+
+        marketingConfigChangeListeners.forEach { it(uiMarketingConfig) }
     }
 
     override fun setAppearanceConfig(config: UIAppearanceConfig) {
