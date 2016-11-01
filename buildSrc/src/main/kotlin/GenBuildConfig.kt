@@ -4,6 +4,7 @@ import org.apache.velocity.runtime.RuntimeConstants
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader
 import org.gradle.api.DefaultTask
 import org.gradle.api.InvalidUserDataException
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
@@ -14,23 +15,6 @@ import java.util.*
 
 open class GenBuildConfig : DefaultTask() {
     companion object {
-        private val componentTypes = listOf(
-            "registration",
-            "platformInfo",
-            "login",
-            "contacts",
-            "messenger",
-            "history",
-            "networkStatus"
-        )
-
-        private val componentEnumTypes = componentTypes.map { camelCaseToStaticConvention(it) }
-
-        private fun camelCaseToStaticConvention(s: String): String =
-            "(?<!^)([A-Z])".toRegex().replace(s) { m ->
-                "_" + m.groups[1]!!.value
-            }.toUpperCase()
-
         /**
          * Converts the given string to a boolean.
          *
@@ -54,20 +38,8 @@ open class GenBuildConfig : DefaultTask() {
             return null
         }
 
-        private fun getEnumValue(settings: Properties, debug: Boolean, setting: String, validValues: List<String>, defaultValue: String?): String {
-            val keys = ArrayList<String>()
-            if (debug)
-                keys.add("debug.$setting")
-
-            keys.add(setting)
-
-            val value = getSetting(settings, keys)?.toUpperCase()
-
-            if (value == null) {
-                if (defaultValue == null)
-                    throw InvalidUserDataException("No $setting setting found in properties file")
-                return defaultValue
-            }
+        private fun getEnumValue(settings: Properties, setting: String, validValues: List<String>, debug: Boolean): String {
+            val value = findValueForKey(settings, setting, debug)
 
             if (value !in validValues)
                 throw InvalidUserDataException("Invalid value for $setting: $value")
@@ -175,18 +147,42 @@ open class GenBuildConfig : DefaultTask() {
 
     private val projectRoot = project.projectDir
 
+    private val debugAndroidLogSettings = "/debug-sly-logger.properties"
+
+    private val releaseAndroidLogSettings = "/release-sly-logger.properties"
+
+    private val releaseDesktopLogSettings = "/release-logback.xml"
+
+    private val debugDesktopLogSettings = "/debug-logback.xml"
+
     @InputFile
     val defaultPropertiesPath = File(projectRoot, "default.properties")
 
     @InputFile
     val localPropertiesPath = File(projectRoot, "local.properties")
 
+    //for version
+    @InputFile
+    val gradlePropertiesPath = File(project.rootDir, "gradle.properties")
+
     //this is kinda hacky...
     @InputFile
-    val buildConfigJavaTemplate = File(projectRoot, "buildSrc/src/main/resources/BuildConfig.java.vm")
+    val buildConfigJavaTemplate = File(projectRoot, "buildSrc/src/main/resources/SlyBuildConfig.java.vm")
 
     @InputFile
     val buildConfigJSTemplate = File(projectRoot, "buildSrc/src/main/resources/build-config.js.vm")
+
+    @Input
+    val releaseAndroidLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/release-sly-logger.properties")
+
+    @Input
+    val debugAndroidLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/debug-sly-logger.properties")
+
+    @Input
+    val releaseDesktopLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/release-logback.xml")
+
+    @Input
+    val debugDesktopLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/debug-logback.xml")
 
     //TODO maybe let these be overriden as settings (or set as relative paths to the project root)
     val generateRoot = File(projectRoot, "generated")
@@ -198,10 +194,16 @@ open class GenBuildConfig : DefaultTask() {
     val outputDirectory = File(srcRoot, "io/slychat/messenger/core")
 
     @OutputFile
-    val outputFile = File(outputDirectory, "BuildConfig.java")
+    val outputFile = File(outputDirectory, "SlyBuildConfig.java")
 
     @OutputFile
     val jsOutputFile = File(projectRoot, "ui/ui/js/build-config.js")
+
+    @OutputFile
+    val androidLogSettings = File(projectRoot, "android/src/main/resources/sly-logger.properties")
+
+    @OutputFile
+    val desktopLogSettings = File(projectRoot, "desktop/src/main/resources/logback.xml")
 
     private fun getSettingProperties(): Properties {
         val props = Properties()
@@ -221,6 +223,14 @@ open class GenBuildConfig : DefaultTask() {
 
     private fun convertToByteArrayNotation(s: String): String {
         return s.toByteArray().map(Byte::toString).joinToString(",", "{", "}")
+    }
+
+    private fun writeTemplate(ve: VelocityEngine, vc: VelocityContext, templatePath: String, outputPath: File) {
+        outputPath.writer().use {
+            val vt = ve.getTemplate(templatePath)
+
+            vt.merge(vc, it)
+        }
     }
 
     @TaskAction
@@ -295,16 +305,25 @@ open class GenBuildConfig : DefaultTask() {
         val inline = convertToByteArrayNotation(cert)
         vc.put("caCert", inline)
 
-        outputFile.writer().use {
-            val vt = ve.getTemplate("/BuildConfig.java.vm")
+        writeTemplate(ve, vc, "/SlyBuildConfig.java.vm", outputFile)
+        writeTemplate(ve, vc, "/build-config.js.vm", jsOutputFile)
 
-            vt.merge(vc, it)
-        }
+        writeLogSettings(ve, settings, debug)
+    }
 
-        jsOutputFile.writer().use {
-            val vt = ve.getTemplate("/build-config.js.vm")
+    private fun writeLogSettings(ve: VelocityEngine, settings: Properties, debug: Boolean) {
+        val logSettingsType = getEnumValue(settings, "logSettings", listOf("release", "debug"), debug)
 
-            vt.merge(vc, it)
-        }
+        val logVc = VelocityContext()
+        val dispatcherLogLevel = findValueForKey(settings, "dispatcherLogLevel", debug)
+        logVc.put("dispatcherLogLevel", dispatcherLogLevel)
+
+        val (selectedAndroidLogSettings, selectedDesktopLogSettings) = if (logSettingsType == "release")
+            releaseAndroidLogSettings to releaseDesktopLogSettings
+        else
+            debugAndroidLogSettings to debugDesktopLogSettings
+
+        writeTemplate(ve, logVc, selectedAndroidLogSettings, androidLogSettings)
+        writeTemplate(ve, logVc, selectedDesktopLogSettings, desktopLogSettings)
     }
 }

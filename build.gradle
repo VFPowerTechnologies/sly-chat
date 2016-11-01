@@ -1,6 +1,6 @@
 group 'com.vfpowertech'
-version '0.4.1'
-ext.androidVersionCode = 20
+version project.VERSION
+ext.androidVersionCode = project.ANDROID_VERSION_CODE.toInteger()
 
 buildscript {
     ext {
@@ -35,6 +35,7 @@ buildscript {
             controlsFx: '8.40.11',
             nsMenuFx: '2.1.4',
             jna: '4.2.2',
+            androidDeviceNames: '1.1.2',
         ]
     }
 
@@ -74,6 +75,23 @@ subprojects {
 }
 
 task generateBuildConfig(type: GenBuildConfig) {
+}
+
+task nextRelease(type: UpdateVersion) {
+    versionType = VersionType.MINOR
+}
+
+task nextHotfix(type: UpdateVersion) {
+    versionType = VersionType.PATCH
+}
+
+task nextSnapshot(type: UpdateVersion) {
+    versionType = VersionType.SNAPSHOT
+}
+
+task printVersionInfo << {
+    println("Version: $project.version")
+    println("Android version code: $project.androidVersionCode")
 }
 
 task clean {

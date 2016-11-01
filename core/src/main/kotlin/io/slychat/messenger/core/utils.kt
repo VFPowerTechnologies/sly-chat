@@ -4,7 +4,11 @@ package io.slychat.messenger.core
 import com.fasterxml.jackson.core.type.TypeReference
 import org.joda.time.DateTime
 import java.io.File
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.*
+import javax.net.ssl.SSLHandshakeException
 
 /**
  * Throw an IllegalArgumentException with the given message if the predicate is false.
@@ -154,4 +158,22 @@ fun String.unhexify(): ByteArray {
     }
 
     return bytes
+}
+
+/** Returns true if given exception is not a network error. */
+fun isNotNetworkError(e: Exception): Boolean = !when (e) {
+    is SocketTimeoutException -> true
+    is UnknownHostException -> true
+    is SSLHandshakeException -> true
+    //not really sure if I should ignore all of these; just ignoring timeouts for now, but should probably ignore others
+    is SocketException -> e.message?.contains("ETIMEDOUT") ?: false
+    else -> false
+}
+
+/** Logs at error level only if isError is true; otherwise logs at warning level. */
+fun org.slf4j.Logger.condError(isError: Boolean, format: String, vararg args: Any?) {
+    if (isError)
+        this.error(format, *args)
+    else
+        this.warn(format, *args)
 }

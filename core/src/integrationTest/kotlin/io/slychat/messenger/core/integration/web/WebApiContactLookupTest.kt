@@ -32,14 +32,14 @@ class WebApiContactLookupTest {
     }
 
     private fun SiteUser.toContactInfo(): ContactInfo =
-        ContactInfo(id, email, name, AllowedMessageLevel.ALL, phoneNumber, publicKey)
+        ContactInfo(id, email, name, AllowedMessageLevel.ALL, publicKey)
 
     @Test
     fun `new contact fetch from email should return the contact information`() {
         val siteUser = userManagement.injectNewSiteUser()
         val authToken = devClient.createAuthToken(siteUser.user.email)
 
-        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.email, siteUser.user.name, AllowedMessageLevel.ALL, siteUser.user.phoneNumber, siteUser.user.publicKey)
+        val contactDetails = siteUser.user.toContactInfo()
 
         val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 
@@ -56,7 +56,7 @@ class WebApiContactLookupTest {
         val siteUser = userManagement.injectNewSiteUser()
         val authToken = devClient.createAuthToken(siteUser.user.email)
 
-        val contactDetails = ContactInfo(siteUser.user.id, siteUser.user.email, siteUser.user.name, AllowedMessageLevel.ALL, siteUser.user.phoneNumber, siteUser.user.publicKey)
+        val contactDetails = siteUser.user.toContactInfo()
 
         val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
 

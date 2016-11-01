@@ -69,6 +69,9 @@ fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponen
 
     val feedbackService = applicationComponent.uiFeedbackService
     dispatcher.registerService("FeedbackService", UIFeedbackServiceToJavaProxy(feedbackService, dispatcher))
+
+    val shareService = applicationComponent.uiShareService
+    dispatcher.registerService("ShareService", UIShareServiceToJavaProxy(shareService, dispatcher))
 }
 
 fun clearAllListenersOnDispatcher(applicationComponent: ApplicationComponent) {
@@ -80,4 +83,5 @@ fun clearAllListenersOnDispatcher(applicationComponent: ApplicationComponent) {
     applicationComponent.uiMessengerService.clearListeners()
     applicationComponent.uiNetworkStatusService.clearListeners()
     applicationComponent.uiRegistrationService.clearListeners()
+    applicationComponent.uiWindowService.clearListeners()
 }

@@ -14,7 +14,7 @@ val HEADER_SIZE = 608
 private val SIGNATURE = "CSP"
 private val SIGNATURE_BYTES = SIGNATURE.toByteArray(Charsets.US_ASCII)
 
-private val PROTOCOL_VERSION_1 = 1
+internal val PROTOCOL_VERSION_1 = 1
 
 //CLIENT_ indicates a client->server command, SERVER_ server->client
 enum class CommandCode(val code: Int) {
@@ -104,7 +104,7 @@ data class Header(
     }
 }
 
-class StringReader(private val s: String) {
+internal class StringReader(private val s: String) {
     private var position = 0
 
     val remaining: Int
@@ -199,11 +199,11 @@ fun headerToString(header: Header): String {
     return builder.toString()
 }
 
-fun headerToByteArray(header: Header): ByteArray =
+internal fun headerToByteArray(header: Header): ByteArray =
     headerToString(header).toByteArray(Charsets.UTF_8)
 
 /** Create a new auth request. */
-fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
+internal fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
     val header = Header(
         PROTOCOL_VERSION_1,
         0,
@@ -220,7 +220,7 @@ fun createAuthRequest(userCredentials: UserCredentials): RelayMessage {
     return RelayMessage(header, ByteArray(0))
 }
 
-fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, messageBundle: RelayMessageBundle, messageId: String): RelayMessage {
+internal fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, messageBundle: RelayMessageBundle, messageId: String): RelayMessage {
     val content = writeSendMessageContent(messageBundle)
     val header = Header(
         PROTOCOL_VERSION_1,
@@ -238,7 +238,7 @@ fun createSendMessageMessage(userCredentials: UserCredentials, to: UserId, messa
     return RelayMessage(header, content)
 }
 
-fun createPingMessage(): RelayMessage {
+internal fun createPingMessage(): RelayMessage {
     val header = Header(
         PROTOCOL_VERSION_1,
         0,
@@ -255,7 +255,7 @@ fun createPingMessage(): RelayMessage {
     return RelayMessage(header, ByteArray(0))
 }
 
-fun createMessageReceivedMessage(userCredentials: UserCredentials, messageId: String): RelayMessage {
+internal fun createMessageReceivedMessage(userCredentials: UserCredentials, messageId: String): RelayMessage {
     val content = messageId.toByteArray(Charsets.UTF_8)
 
     val header = Header(

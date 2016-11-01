@@ -1,5 +1,6 @@
 package io.slychat.messenger.services
 
+import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.signal.GeneratedPreKeys
 import io.slychat.messenger.core.crypto.signal.LAST_RESORT_PREKEY_ID
@@ -7,6 +8,7 @@ import io.slychat.messenger.core.crypto.signal.generateLastResortPreKey
 import io.slychat.messenger.core.crypto.signal.generatePrekeys
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
 import io.slychat.messenger.core.http.api.prekeys.preKeyStorageRequestFromGeneratedPreKeys
+import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.PreKeyPersistenceManager
 import io.slychat.messenger.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Promise
@@ -78,7 +80,7 @@ class PreKeyManagerImpl(
                 scheduleUpload(response.uploadCount)
             }
         } fail {
-            log.error("Failed to check for prekey count: {}", it.message, it)
+            log.condError(isNotNetworkError(it), "Failed to check for prekey count: {}", it.message, it)
         }
     }
 
@@ -115,7 +117,7 @@ class PreKeyManagerImpl(
         } failUi { e ->
             running = false
 
-            log.error("PreKey push failed: {}", e.message, e)
+            log.condError(isNotNetworkError(e), "PreKey push failed: {}", e.message, e)
         }
     }
 

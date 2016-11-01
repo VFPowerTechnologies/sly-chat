@@ -18,5 +18,5 @@ data class ApiContactInfo(
     val publicKey: String
 ) {
     fun toCore(allowedMessageLevel: AllowedMessageLevel): ContactInfo =
-        ContactInfo(id, email, name, allowedMessageLevel, phoneNumber, publicKey)
+        ContactInfo(id, email, name, allowedMessageLevel, publicKey)
 }

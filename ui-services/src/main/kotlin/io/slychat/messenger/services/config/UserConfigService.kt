@@ -11,7 +11,8 @@ data class UserConfig(
     val formatVersion: Int = 1,
     val notificationsEnabled: Boolean = true,
     val notificationsSound: String? = null,
-    val messagingLastTtl: Long = TimeUnit.SECONDS.toMillis(10)
+    val messagingLastTtl: Long = TimeUnit.SECONDS.toMillis(10),
+    val marketingShowInviteFriends: Boolean = false
 ) {
     companion object {
         private fun join(parent: String, child: String): String = "$parent.$child"
@@ -24,6 +25,10 @@ data class UserConfig(
         val MESSAGING = "user.messaging"
 
         val MESSAGING_LAST_TTL = join(MESSAGING, "lastTtl")
+
+        val MARKETING = "user.marketing"
+
+        val MARKETING_SHOW_INVITE_FRIENDS = join(MARKETING, "showInviteFriends")
     }
 
     init {
@@ -37,22 +42,37 @@ class UserEditorInterface(override var config: UserConfig) : ConfigServiceBase.E
     var notificationsEnabled: Boolean
         get() = config.notificationsEnabled
         set(value) {
-            modifiedKeys.add(UserConfig.NOTIFICATIONS_ENABLED)
-            config = config.copy(notificationsEnabled = value)
+            if (value != notificationsEnabled) {
+                modifiedKeys.add(UserConfig.NOTIFICATIONS_ENABLED)
+                config = config.copy(notificationsEnabled = value)
+            }
         }
 
     var notificationsSound: String?
         get() = config.notificationsSound
         set(value) {
-            modifiedKeys.add(UserConfig.NOTIFICATIONS_SOUND)
-            config = config.copy(notificationsSound = value)
+            if (value != notificationsSound) {
+                modifiedKeys.add(UserConfig.NOTIFICATIONS_SOUND)
+                config = config.copy(notificationsSound = value)
+            }
         }
 
     var messagingLastTtl: Long
         get() = config.messagingLastTtl
         set(value) {
-            modifiedKeys.add(UserConfig.MESSAGING_LAST_TTL)
-            config = config.copy(messagingLastTtl = value)
+            if (value != messagingLastTtl) {
+                modifiedKeys.add(UserConfig.MESSAGING_LAST_TTL)
+                config = config.copy(messagingLastTtl = value)
+            }
+        }
+
+    var marketingShowInviteFriends: Boolean
+        get() = config.marketingShowInviteFriends
+        set(value) {
+            if (value != marketingShowInviteFriends) {
+                modifiedKeys.add(UserConfig.MARKETING_SHOW_INVITE_FRIENDS)
+                config = config.copy(marketingShowInviteFriends = value)
+            }
         }
 }
 
@@ -72,4 +92,7 @@ class UserConfigService(
 
     val messagingLastTtl: Long
         get() = config.messagingLastTtl
+
+    val marketingShowInviteFriends: Boolean
+        get() = config.marketingShowInviteFriends
 }

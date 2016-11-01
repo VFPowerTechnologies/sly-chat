@@ -65,7 +65,7 @@ ProfileController.prototype = {
             '<select id="countrySelect" style="color: #aaaaaa;" class="form-input-validate" data-errorName="Country" data-rules="required">' +
             '<option selected disabled>Country</option></select></div></div></div></li><li>' +
             '<div class="item-content">' +
-            '<div class="item-media"><i id="phoneInputIcon" class="icon icon-form-tel"></i><span id="phoneIntlExt" style="display: none; text-align: center; min-width: 29px; height: 29px; line-height: 29px; color: #ffffff; background-color: #8e8e93; border-radius: 5px;"></span></div>' +
+            '<div class="item-media"><i id="phoneInputIcon" class="icon icon-form-tel"></i><span id="phoneIntlExt"></span></div>' +
             '<div class="item-inner"><div class="item-input">' +
             '<input id="phone" type="tel" placeholder="Phone Number" class="form-input-validate" data-errorName="Phone Number" data-rules="required|phone" value="' + this.phoneNumber + '"/>' +
             '</div></div></div></li>' +
@@ -101,7 +101,7 @@ ProfileController.prototype = {
         if (valid) {
             var total = 0;
             var newName = $(ProfileController.ids.updateProfileNameInput).val();
-            var newEmail = $(ProfileController.ids.updateProfileEmailInput).val();
+            var newEmail = $(ProfileController.ids.updateProfileEmailInput).val().toLowerCase();
             if (this.name !== newName) {
                 total += 1;
                 accountModifictationService.updateName(newName).then(function (result) {

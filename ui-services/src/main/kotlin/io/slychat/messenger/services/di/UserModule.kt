@@ -2,8 +2,8 @@ package io.slychat.messenger.services.di
 
 import dagger.Module
 import dagger.Provides
-import io.slychat.messenger.core.BuildConfig
-import io.slychat.messenger.core.BuildConfig.ServerUrls
+import io.slychat.messenger.core.SlyBuildConfig
+import io.slychat.messenger.core.SlyBuildConfig.ServerUrls
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.http.HttpClientFactory
@@ -71,7 +71,7 @@ class UserModule(
     @Provides
     fun providesContactJobFactory(
         authTokenManager: AuthTokenManager,
-        serverUrls: BuildConfig.ServerUrls,
+        serverUrls: SlyBuildConfig.ServerUrls,
         contactsPersistenceManager: ContactsPersistenceManager,
         groupPersistenceManager: GroupPersistenceManager,
         accountInfoManager: AccountInfoManager,
@@ -113,7 +113,7 @@ class UserModule(
     @Provides
     fun providesContactsService(
         authTokenManager: AuthTokenManager,
-        serverUrls: BuildConfig.ServerUrls,
+        serverUrls: SlyBuildConfig.ServerUrls,
         contactsPersistenceManager: ContactsPersistenceManager,
         addressBookOperationManager: AddressBookOperationManager,
         @SlyHttp httpClientFactory: HttpClientFactory
@@ -312,7 +312,7 @@ class UserModule(
         defaultUserConfig: UserConfig
     ): UserConfigService {
         val fileStorage = FileConfigStorage(userPaths.configPath)
-        val storage = if (BuildConfig.ENABLE_CONFIG_ENCRYPTION) {
+        val storage = if (SlyBuildConfig.ENABLE_CONFIG_ENCRYPTION) {
             //can't use Cipher*Stream since we're using bouncycastle to properly support stuff
             val derivedKeySpec = accountLocalInfo.getDerivedKeySpec(LocalDerivedKeyType.GENERIC)
             CipherConfigStorageFilter(derivedKeySpec, fileStorage)

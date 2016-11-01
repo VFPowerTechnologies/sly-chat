@@ -1,3 +1,7 @@
+import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.security.MessageDigest
+
 buildscript {
     repositories {
         jcenter()
@@ -76,10 +80,7 @@ distTar {
     compression = Compression.BZIP2
     extension = 'tar.bz2'
 
-    //don't want a GString, else contains() fails due to GString.class not being String.class
-    String taskName = "${project.name}:distTar"
-
-    enabled = gradle.startParameter.taskNames.contains(taskName)
+    enabled = gradle.startParameter.taskNames.contains(project.name + ':distLinux')
 }
 
 //don't use the zip on windows since we use the jfxnative plugin
@@ -98,4 +99,63 @@ jfx {
     appName = 'sly-chat'
 
     vendor = 'Keystream Information Systems'
+}
+
+String sha256(File path) {
+    path.withInputStream {
+        byte[] buffer = new byte[8192];
+
+        MessageDigest digest = MessageDigest.getInstance("SHA-256")
+
+        while (true) {
+            int read = it.read(buffer)
+            if (read <= 0)
+                break
+
+            digest.update(buffer, 0, read)
+        }
+
+        digest.digest().encodeHex().toString()
+    }
+}
+
+void generateChecksumFile(File path) {
+    String digest = sha256(path)
+    File sha256Path = new File(path.toString() + ".sha256")
+    sha256Path.withWriter { it.write(digest) }
+}
+
+task distLinux(dependsOn: distTar) << {
+     generateChecksumFile(distTar.archivePath)
+}
+
+task distOSX(dependsOn: jfxNative) {
+    //annoyingly we can't make jfxNative not append the version to the dmg file name
+    //so we just symlink, since this makes this more consistent with the windows/linux releases
+    File dmgPath = new File("$project.projectDir/$jfx.nativeOutputDir/$jfx.appName-${jfx.nativeReleaseVersion}.dmg")
+    File outputDir = new File("$project.buildDir/distributions")
+    File outputPath = new File("$outputDir/${jfx.appName}.dmg")
+
+    outputs.file outputPath
+
+    doLast {
+        outputDir.mkdirs()
+
+        if (!Files.exists(outputPath.toPath(), LinkOption.NOFOLLOW_LINKS))
+            Files.createSymbolicLink(outputPath.toPath(), dmgPath.toPath())
+
+        generateChecksumFile(outputPath)
+    }
+}
+
+task zipWindows(type: Zip, dependsOn: jfxNative) {
+    archiveName = jfx.appName + '.zip'
+
+    File dirPath = new File("$project.projectDir/$jfx.nativeOutputDir/$jfx.appName")
+
+    from dirPath
+}
+
+task distWindows(dependsOn: zipWindows) << {
+    generateChecksumFile(zipWindows.archivePath)
 }

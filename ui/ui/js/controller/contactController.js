@@ -253,6 +253,9 @@ ContactController.prototype  = {
     createRecentChatList : function (jointedRecentChat) {
         var frag =  $(document.createDocumentFragment());
 
+        if (window.shareSupported && !settingsController.marketingConfig.showInviteFriends)
+            frag.prepend(this.createRecentChatInvite("Invite Your Friends"));
+
         if(jointedRecentChat.length > 0) {
             jointedRecentChat.forEach(function (conversation) {
                 if(conversation.type == 'single')
@@ -260,15 +263,53 @@ ContactController.prototype  = {
                 else
                     frag.append(this.createGroupRecentChatNode(conversation.conversation));
             }.bind(this));
-            $("#recentChatList").html(frag);
         }
         else {
-            $("#recentChatList").html(this.emptyRecentChatHtml());
+            frag.append(this.emptyRecentChatHtml());
         }
+
+        $("#recentChatList").html(frag);
     },
 
     emptyRecentChatHtml : function () {
         return "<div style='text-align: center'>No recent chats</div>";
+    },
+
+    createRecentChatInvite : function (message) {
+        var hideBtn = "";
+        var lessMessage = "";
+        if (Object.size(this.conversations) >= 5) {
+            hideBtn = '' +
+                '<div class="right">' +
+                    '<span>' +
+                        '<a class="btn hide-link">Hide</a>' +
+                    '</span>' +
+                '</div>';
+        }
+        else {
+            lessMessage = "<div class='left'>You currently have less than 5 contacts!</div>";
+        }
+
+        var link = $('' +
+            '<div id="inviteFriendsRecentButton" class="item-link recent-contact-link row ">' +
+                '<div class="recent-chat-name">' +
+                    '<span>' + message + '</span>' +
+                '</div>' +
+                hideBtn +
+                lessMessage +
+            '</div>'
+        );
+
+        link.find(".hide-link").click(function () {
+            $("#inviteFriendsRecentButton").remove();
+            settingsController.setMarketingInviteDisabled(true);
+        });
+
+        link.click(function (e) {
+            navigationController.loadPage("inviteFriends.html", true);
+        });
+
+        return link;
     },
 
     createSingleRecentChatNode : function (conversation) {
@@ -456,9 +497,9 @@ ContactController.prototype  = {
 
     formatLastMessage : function (message) {
         if(message.length > 40)
-            return message.substring(0, 40) + "...";
+            return formatEmoji(message.substring(0, 40) + "...");
         else
-            return message;
+            return formatEmoji(message);
     },
 
     addContactEventListener : function () {
@@ -553,7 +594,7 @@ ContactController.prototype  = {
         var phone = null;
         var username = null;
         if (validateEmail(input)){
-            username = input;
+            username = input.toLowerCase();
         }
         else{
             phone = input;
@@ -736,11 +777,9 @@ ContactController.prototype  = {
         if (group === false) {
             chatController.currentContact.email = contact.email;
             chatController.currentContact.publicKey = contact.publicKey;
-            chatController.currentContact.phoneNumber = contact.phoneNumber;
 
             options.query.email = contact.email;
             options.query.publicKey = contact.publicKey;
-            options.query.phoneNumber = contact.phoneNumber;
         }
 
         navigationController.loadPage('chat.html', pushCurrenPage, options);

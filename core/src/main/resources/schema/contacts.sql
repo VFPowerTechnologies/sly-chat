@@ -9,6 +9,5 @@ CREATE TABLE IF NOT EXISTS contacts (
     -- 1: group-only (default for auto-add)
     -- 2: all
     allowed_message_level INTEGER NOT NULL,
-    phone_number TEXT,
     public_key TEXT NOT NULL
 )

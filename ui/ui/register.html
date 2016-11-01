@@ -26,14 +26,18 @@
                   </div>
                 </div>
               </li>
-              <li>
-                <div class="item-content">
+              <li id='pwd-container' class="row">
+                <div class="item-content col-100">
                   <div class="item-media"><i class="icon icon-form-password"></i></div>
                   <div class="item-inner">
                     <div class="item-input">
-                      <input id="registration-password" class='form-input-validate' type="password" placeholder="Password" data-errorName="Password" data-confirmationId="registration-password-confirm" data-rules="required|confirmed|min-6"/>
+                      <input id="registration-password" class='form-input-validate' type="password" placeholder="Password" data-errorName="Password" data-rules="required|min-6"/>
                     </div>
                   </div>
+                </div>
+                <div class="col-50"></div>
+                <div class="col-50">
+                  <div class="pwstrength_viewport_progress"></div>
                 </div>
               </li>
               <li>
@@ -41,7 +45,7 @@
                   <div class="item-media"><i class="icon icon-form-password"></i></div>
                   <div class="item-inner">
                     <div class="item-input">
-                      <input id="registration-password-confirm" class='form-input-validate' type="password" placeholder="Password Confirmation" data-errorName="Password Confirmation" data-rules="required|min-6"/>
+                      <input id="registration-password-confirm" class='form-input-validate' type="password" placeholder="Password Confirmation" data-confirmationId="#registration-password" data-errorName="Password Confirmation" data-rules="required|confirmed|min-6"/>
                     </div>
                   </div>
                 </div>
@@ -60,7 +64,7 @@
               </li>
               <li>
                 <div class="item-content">
-                  <div class="item-media"><i id='phoneInputIcon' class="icon icon-form-tel"></i><span id='phoneIntlExt' style="display: none; text-align: center; min-width: 29px; height: 29px; line-height: 29px; color: #ffffff; background-color: #8e8e93; border-radius: 5px;"></span></div>
+                  <div class="item-media"><i id='phoneInputIcon' class="icon icon-form-tel"></i><span id='phoneIntlExt'></span></div>
                   <div class="item-inner">
                     <div class="item-input">
                       <input id='phone' class='form-input-validate' type="tel" placeholder="Phone Number" data-rules="required|phone" data-errorName="Phone Number"/>

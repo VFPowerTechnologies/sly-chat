@@ -1,8 +1,8 @@
 package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.mock
-import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.PlatformInfo
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
 import io.slychat.messenger.services.auth.AuthenticationService
@@ -27,6 +27,8 @@ class MockApplicationComponent : ApplicationComponent {
     override val uiLoginService: UILoginService = mock()
 
     override val uiContactsService: UIContactsService = mock()
+
+    override val uiShareService: UIShareService = mock()
 
     override val uiMessengerService: UIMessengerService = mock()
 
@@ -60,7 +62,7 @@ class MockApplicationComponent : ApplicationComponent {
 
     override val platformContacts: PlatformContacts = mock()
 
-    override val serverUrls: BuildConfig.ServerUrls = mock()
+    override val serverUrls: SlyBuildConfig.ServerUrls = mock()
 
     override val appConfigService: AppConfigService = AppConfigService(DummyConfigBackend())
 

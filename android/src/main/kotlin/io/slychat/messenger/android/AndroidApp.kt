@@ -15,14 +15,12 @@ import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.iid.InstanceID
 import com.google.android.gms.security.ProviderInstaller
+import com.jaredrummler.android.device.DeviceName
 import io.slychat.messenger.android.services.AndroidPlatformContacts
 import io.slychat.messenger.android.services.AndroidUILoadService
 import io.slychat.messenger.android.services.AndroidUIPlatformInfoService
 import io.slychat.messenger.android.services.AndroidUIPlatformService
-import io.slychat.messenger.core.BuildConfig
-import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.UserCredentials
-import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.http.api.gcm.GcmAsyncClient
 import io.slychat.messenger.core.http.api.gcm.RegisterRequest
 import io.slychat.messenger.core.http.api.gcm.RegisterResponse
@@ -32,6 +30,7 @@ import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
+import io.slychat.messenger.services.ui.SoftKeyboardInfo
 import io.slychat.messenger.services.ui.createAppDirectories
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.android.androidUiDispatcher
@@ -114,6 +113,7 @@ class AndroidApp : Application() {
 
     private val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
     private val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
+    private val softKeyboardVisibility = BehaviorSubject.create(SoftKeyboardInfo(false, 0))
 
     /** Points to the current activity, if one is set. Used to request permissions from various services. */
     var currentActivity: MainActivity? = null
@@ -139,7 +139,7 @@ class AndroidApp : Application() {
             dispatcher = androidUiDispatcher()
         }
 
-        if (BuildConfig.DEBUG) {
+        if (SlyBuildConfig.DEBUG) {
             val policy = StrictMode.ThreadPolicy.Builder()
                 .detectAll()
                 .penaltyLog()
@@ -164,12 +164,13 @@ class AndroidApp : Application() {
 
         val platformModule = PlatformModule(
             AndroidUIPlatformInfoService(),
-            BuildConfig.ANDROID_SERVER_URLS,
+            SlyBuildConfig.ANDROID_SERVER_URLS,
             platformInfo,
             AndroidTelephonyService(this),
-            AndroidWindowService(this),
+            AndroidUIWindowService(this, softKeyboardVisibility),
             AndroidPlatformContacts(this),
             notificationService,
+            AndroidUIShareService(this),
             AndroidUIPlatformService(this),
             AndroidUILoadService(this),
             uiVisibility,
@@ -192,6 +193,13 @@ class AndroidApp : Application() {
         }
         catch (e: PackageManager.NameNotFoundException) {
             //do nothing
+        }
+
+        try {
+            Sentry.setAndroidDeviceName(DeviceName.getDeviceName())
+        }
+        catch (e: Exception) {
+            log.error("setAndroidDeviceInfo failed: {}", e.message, e)
         }
 
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
@@ -267,7 +275,7 @@ class AndroidApp : Application() {
 
             hasCheckedGcmTokenStatus = true
         } fail { e ->
-            log.error("Unable to check GCM token status: {}", e.message, e)
+            log.condError(isNotNetworkError(e), "Unable to check GCM token status: {}", e.message, e)
         }
     }
 
@@ -471,6 +479,10 @@ class AndroidApp : Application() {
             onSuccessfulInitListeners.forEach { it() }
             onSuccessfulInitListeners.clear()
         }
+    }
+
+    fun updateSoftKeyboardVisibility(isVisible: Boolean, keyboardHeight: Int) {
+        softKeyboardVisibility.onNext(SoftKeyboardInfo(isVisible, keyboardHeight))
     }
 
     /** Fires only if GCM services and SlyApplication have successfully completed initialization. Used by services. */

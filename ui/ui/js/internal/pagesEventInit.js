@@ -26,6 +26,97 @@ $$(document).on('pageBeforeInit', function (e) {
     }
 });
 
+slychat.onPageInit('registerStepOne', function () {
+    uiController.hideSplashScreen();
+    var nameInput = $("#name");
+    nameInput.focus();
+    $("#stepOneForm").submit(function (e) {
+        e.preventDefault();
+        registrationController.handleFirstStep();
+    });
+
+    if (registrationController.name !== "")
+        nameInput.val(registrationController.name);
+
+    $("#loginGoBtn").click(function () {
+        navigationController.loadPage("login.html", true);
+    });
+});
+
+slychat.onPageInit('registerStepTwo', function () {
+    var emailInput = $("#email");
+    emailInput.focus();
+    $("#stepTwoForm").submit(function (e) {
+        e.preventDefault();
+        registrationController.handleSecondStep();
+    });
+
+    if (registrationController.email !== "")
+        emailInput.val(registrationController.email);
+});
+
+slychat.onPageInit('registerStepThree', function () {
+    $("#password").focus();
+
+    $("#stepThreeForm").submit(function (e) {
+        e.preventDefault();
+        registrationController.handleThirdStep();
+    });
+
+    var options = {};
+    options.ui = {
+        container: "#pwd-container",
+        showVerdictsInsideProgressBar: true,
+        viewports: {
+            progress: ".pwstrength_viewport_progress"
+        }
+    };
+    $('#password').pwstrength(options);
+});
+
+slychat.onPageInit('registerStepFour', function () {
+    $("#stepFourForm").submit(function (e) {
+        e.preventDefault();
+        registrationController.handleFourthStep();
+    });
+
+    updatePhoneWithIntl();
+
+    $$('#countrySelect').on("change", function() {
+        var ext = $("#countrySelect :selected").text().split("+")[1];
+        setPhoneExt(ext);
+        // TODO Validate Phone Input
+    });
+});
+
+slychat.onPageInit('registerStepFive', function (page) {
+    var email = page.query.email !== undefined ? page.query.email : registrationController.registrationInfo.email;
+    var password = page.query.password !== undefined ? page.query.password : registrationController.registrationInfo.password;
+
+    $("#smsVerificationCode").focus();
+    $("#stepFiveForm").submit(function (e) {
+        e.preventDefault();
+        registrationController.handleFinalStep(email, password);
+    });
+
+    $$('#resendVerificationCode').on('click', function () {
+        $$('#resendVerificationCode').prop('disabled', true);
+        registrationController.resendVerificationCode();
+    });
+
+    $$('#updatePhoneNumberLink').on('click', function () {
+        var options = {
+            url: 'updatePhone.html',
+            query: {
+                email: email,
+                password: password
+            }
+        };
+
+        navigationController.loadPage("updatePhone.html", true, options);
+    });
+});
+
 slychat.onPageInit('login', function (page) {
     uiController.hideSplashScreen();
 
@@ -45,7 +136,10 @@ slychat.onPageInit('login', function (page) {
     });
 
     $$('#registrationGoBtn').on('click', function () {
-        navigationController.loadPage('register.html', true);
+        if (isDesktop)
+            navigationController.loadPage('register.html', true);
+        else
+            navigationController.loadPage("registerStepOne.html", true);
     });
 
     if (isDesktop) {
@@ -54,6 +148,7 @@ slychat.onPageInit('login', function (page) {
 });
 
 slychat.onPageInit('register', function (page) {
+    uiController.hideSplashScreen();
     updatePhoneWithIntl();
     $$('#countrySelect').on("change", function(e) {
         var ext = $("#countrySelect :selected").text().split("+")[1];
@@ -69,6 +164,16 @@ slychat.onPageInit('register', function (page) {
     $$("#loginGoBtn").on('click', function (e) {
         navigationController.loadPage('login.html', true);
     });
+
+    var options = {};
+    options.ui = {
+        container: "#pwd-container",
+        showVerdictsInsideProgressBar: true,
+        viewports: {
+            progress: ".pwstrength_viewport_progress"
+        }
+    };
+    $('#registration-password').pwstrength(options);
 });
 
 slychat.onPageInit('chat', function (page) {
@@ -209,15 +314,21 @@ slychat.onPageInit('updatePhone', function (page) {
     });
 
     $$("#backToSmsVerificationLink").on('click', function () {
+        var url;
+        if (isDesktop)
+            url = 'smsVerification.html';
+        else
+            url = 'registerStepFive.html';
+
         var options = {
-            url: 'smsVerification.html',
+            url: url,
             query: {
                 email: page.query.email,
                 password: page.query.password
             }
         };
 
-        navigationController.loadPage("smsVerification.html", true, options);
+        navigationController.loadPage(url, true, options);
     })
 });
 
@@ -250,7 +361,6 @@ slychat.onPageInit('contactInfo', function (page) {
     if (contact !== false) {
         $("#contactName").html(contact.name);
         $("#contactEmail").html(contact.email);
-        $("#contactPhone").html(contact.phoneNumber);
         $("#contactPubKey").html(formatPublicKey(contact.publicKey));
     }
 });
@@ -288,6 +398,24 @@ slychat.onPageInit('blockedContacts', function () {
 
 slychat.onPageInit('feedback', function () {
     feedbackController.pageInit();
+});
+
+slychat.onPageInit("inviteFriends", function () {
+    $("#submitInviteFriends").click(function (e) {
+        e.preventDefault();
+        $("#inviteFriendsError").html();
+        var text = $("#inviteFriendsText").val();
+
+        if (text.length <= 0)
+            $("#inviteFriendsError").html("Invite message is needed");
+        else {
+            shareService.inviteToSly(
+                'Join Sly Now!',
+                text,
+                'Get <a href="https://slychat.io">Sly</a>'
+            ).catch(exceptionController.handleError);
+        }
+    })
 });
 
 $("#contactPopupNewBtn").on("click", function (e) {

@@ -18,8 +18,7 @@ internal fun contactInfoFromRow(stmt: SQLiteStatement) =
         stmt.columnString(1),
         stmt.columnString(2),
         stmt.columnAllowedMessageLevel(3),
-        stmt.columnString(4),
-        stmt.columnString(5)
+        stmt.columnString(4)
     )
 
 /** A contact is made up of an entry in the contacts table and an associated conv_ table containing their message log. */
@@ -31,12 +30,11 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         stmt.bind(2, contactInfo.email)
         stmt.bind(3, contactInfo.name)
         stmt.bind(4, contactInfo.allowedMessageLevel)
-        stmt.bind(5, contactInfo.phoneNumber)
-        stmt.bind(6, contactInfo.publicKey)
+        stmt.bind(5, contactInfo.publicKey)
     }
 
     private fun queryContactInfo(connection: SQLiteConnection, userId: UserId): ContactInfo? {
-        return connection.prepare("SELECT id, email, name, allowed_message_level, phone_number, public_key FROM contacts WHERE id=?").use { stmt ->
+        return connection.prepare("SELECT id, email, name, allowed_message_level, public_key FROM contacts WHERE id=?").use { stmt ->
             stmt.bind(1, userId.long)
             if (!stmt.step())
                 null
@@ -50,14 +48,14 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     }
 
     override fun get(ids: Collection<UserId>): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.withPrepared("SELECT id, email, name, allowed_message_level, phone_number, public_key FROM contacts WHERE id IN (${getPlaceholders(ids.size)})") { stmt ->
+        connection.withPrepared("SELECT id, email, name, allowed_message_level, public_key FROM contacts WHERE id IN (${getPlaceholders(ids.size)})") { stmt ->
             ids.forEachIndexed { i, userId -> stmt.bind(i+1, userId) }
             stmt.map { contactInfoFromRow(stmt) }
         }
     }
 
     override fun getAll(): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("SELECT id, email, name, allowed_message_level, phone_number, public_key FROM contacts").use { stmt ->
+        connection.prepare("SELECT id, email, name, allowed_message_level, public_key FROM contacts").use { stmt ->
             val r = ArrayList<ContactInfo>()
             while (stmt.step()) {
                 r.add(contactInfoFromRow(stmt))
@@ -124,7 +122,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     }
 
     private fun searchByLikeField(connection: SQLiteConnection, fieldName: String, searchValue: String): List<ContactInfo> =
-        connection.prepare("SELECT id, email, name, allowed_message_level, phone_number, public_key FROM contacts WHERE $fieldName LIKE ? ESCAPE '!'").use { stmt ->
+        connection.prepare("SELECT id, email, name, allowed_message_level, public_key FROM contacts WHERE $fieldName LIKE ? ESCAPE '!'").use { stmt ->
             val escaped = escapeLikeString(searchValue, '!')
             stmt.bind(1, "%$escaped%")
             val r = ArrayList<ContactInfo>()
@@ -136,10 +134,6 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
     override fun searchByEmail(email: String): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery {
         searchByLikeField(it, "email", email)
-    }
-
-    override fun searchByPhoneNumber(phoneNumber: String): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery {
-        searchByLikeField(it, "phone_number", phoneNumber)
     }
 
     override fun searchByName(name: String): Promise<List<ContactInfo>, Exception> = sqlitePersistenceManager.runQuery {
@@ -166,7 +160,7 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
         val newMessageLevel = contactInfo.allowedMessageLevel
 
         return if (currentInfo == null) {
-            connection.prepare("INSERT INTO contacts (id, email, name, allowed_message_level, phone_number, public_key) VALUES (?, ?, ?, ?, ?, ?)").use { stmt ->
+            connection.prepare("INSERT INTO contacts (id, email, name, allowed_message_level, public_key) VALUES (?, ?, ?, ?, ?)").use { stmt ->
                 contactInfoToRow(contactInfo, stmt)
                 stmt.step()
             }
@@ -234,11 +228,10 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
     }
 
     override fun update(contactInfo: ContactInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        connection.prepare("UPDATE contacts SET name=?, phone_number=?, public_key=? WHERE email=?").use { stmt ->
+        connection.prepare("UPDATE contacts SET name=?, public_key=? WHERE email=?").use { stmt ->
             stmt.bind(1, contactInfo.name)
-            stmt.bind(2, contactInfo.phoneNumber)
-            stmt.bind(3, contactInfo.publicKey)
-            stmt.bind(4, contactInfo.email)
+            stmt.bind(2, contactInfo.publicKey)
+            stmt.bind(3, contactInfo.email)
 
             stmt.step()
             if (connection.changes <= 0)
@@ -295,15 +288,11 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
                 for (contact in platformContacts) {
                     val emails = contact.emails
-                    val phoneNumbers = contact.phoneNumbers
 
                     val selection = ArrayList<String>()
 
                     if (emails.isNotEmpty())
                         selection.add("email IN (${getPlaceholders(emails.size)})")
-
-                    if (phoneNumbers.isNotEmpty())
-                        selection.add("phone_number IN (${getPlaceholders(phoneNumbers.size)})")
 
                     if (selection.isEmpty())
                         continue
@@ -315,11 +304,6 @@ class SQLiteContactsPersistenceManager(private val sqlitePersistenceManager: SQL
 
                         for (email in emails) {
                             stmt.bind(i, email)
-                            i += 1
-                        }
-
-                        for (phoneNumber in phoneNumbers) {
-                            stmt.bind(i, phoneNumber)
                             i += 1
                         }
 

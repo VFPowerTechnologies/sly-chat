@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Rect
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Bundle
@@ -12,6 +13,7 @@ import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.SparseArray
 import android.view.KeyEvent
+import android.view.Surface
 import android.view.WindowManager
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
@@ -23,7 +25,7 @@ import android.widget.FrameLayout
 import com.google.android.gms.common.GoogleApiAvailability
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
-import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.clearAllListenersOnDispatcher
@@ -50,13 +52,15 @@ class MainActivity : AppCompatActivity() {
         private val RINGTONE_PICKER_REQUEST_CODE = 1
     }
 
+    private var lastOrientation = Surface.ROTATION_0
+    private var lastActivityHeight = 0
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     //this is set whether or not initialization was successful
     //since we always quit the application on successful init, there's no need to retry it
     private var isInitialized = false
     private var isActive = false
-    private var hadSavedBundle: Boolean = false
 
     private var loadCompleteSubscription: Subscription? = null
 
@@ -129,6 +133,47 @@ class MainActivity : AppCompatActivity() {
         webView = findViewById(R.id.webView) as WebView
 
         setAppActivity()
+
+        addSoftKeyboardVisibilityListener()
+    }
+
+    private fun addSoftKeyboardVisibilityListener() {
+        val activityRootView = findViewById(android.R.id.content)!!
+
+        //derived from https://stackoverflow.com/questions/2150078/how-to-check-visibility-of-software-keyboard-in-android
+        activityRootView.viewTreeObserver.addOnGlobalLayoutListener {
+            val visibleArea = Rect()
+            activityRootView.getWindowVisibleDisplayFrame(visibleArea)
+
+            val rootViewHeight = activityRootView.rootView.height
+            val activityVisibleHeight = visibleArea.bottom - visibleArea.top
+            val heightDiff = rootViewHeight - activityVisibleHeight
+            val diffPercent = heightDiff / rootViewHeight.toFloat()
+
+            //this is usually ~0.50%, but I haven't tested it on tablets yet, so this may need tweaking
+            val isVisible = diffPercent >= 0.30
+
+            val currentOrientation = getOrientation()
+
+            //on rotation, reset the last recorded activity height
+            //the keyboard will always be shown after resize has complete, so this is safe
+            if (currentOrientation != lastOrientation) {
+                lastActivityHeight = 0
+                lastOrientation = currentOrientation
+            }
+
+            //we may be called multiple times during rotation for resizes
+            //so we just keep the largest activity height
+            if (activityVisibleHeight > lastActivityHeight)
+                lastActivityHeight = activityVisibleHeight
+
+            val keyboardHeight = if (lastActivityHeight > activityVisibleHeight)
+                lastActivityHeight - activityVisibleHeight
+            else
+                activityVisibleHeight - lastActivityHeight
+
+            AndroidApp.get(this).updateSoftKeyboardVisibility(isVisible, keyboardHeight)
+        }
     }
 
     private fun subToLoadComplete() {
@@ -206,7 +251,7 @@ class MainActivity : AppCompatActivity() {
         loadCompleteSubscription?.unsubscribe()
         loadCompleteSubscription = null
 
-        if (BuildConfig.DEBUG)
+        if (SlyBuildConfig.DEBUG)
             WebView.setWebContentsDebuggingEnabled(true)
 
         webView.settings.javaScriptEnabled = true
@@ -443,5 +488,31 @@ class MainActivity : AppCompatActivity() {
                 log.error("Unknown request code: {}", requestCode)
             }
         }
+    }
+
+    fun inviteToSly(subject: String, text: String, htmlText: String?) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+
+            putExtra(Intent.EXTRA_SUBJECT, subject)
+            putExtra(Intent.EXTRA_TEXT, text)
+            if (htmlText != null)
+                putExtra(Intent.EXTRA_HTML_TEXT, htmlText)
+        }
+
+        val chooserIntent = Intent.createChooser(intent, "Invite a friend to Sly").apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        startActivity(chooserIntent)
+    }
+
+    private fun getOrientation(): Int {
+        return windowManager.defaultDisplay.rotation
+    }
+
+    private fun isLandscape(): Boolean {
+        val rotation = getOrientation()
+        return rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
     }
 }

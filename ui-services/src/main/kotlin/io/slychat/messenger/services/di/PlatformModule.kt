@@ -2,16 +2,13 @@ package io.slychat.messenger.services.di
 
 import dagger.Module
 import dagger.Provides
-import io.slychat.messenger.core.BuildConfig
 import io.slychat.messenger.core.PlatformInfo
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.services.PlatformContacts
 import io.slychat.messenger.services.PlatformNotificationService
 import io.slychat.messenger.services.PlatformTelephonyService
 import io.slychat.messenger.services.config.UserConfig
-import io.slychat.messenger.services.ui.UILoadService
-import io.slychat.messenger.services.ui.UIPlatformInfoService
-import io.slychat.messenger.services.ui.UIPlatformService
-import io.slychat.messenger.services.ui.UIWindowService
+import io.slychat.messenger.services.ui.*
 import rx.Observable
 import rx.Scheduler
 import javax.inject.Singleton
@@ -23,7 +20,7 @@ class PlatformModule(
     val providesPlatformInfoService: UIPlatformInfoService,
 
     @get:Provides
-    val providesServerUrls: BuildConfig.ServerUrls,
+    val providesServerUrls: SlyBuildConfig.ServerUrls,
 
     @get:Singleton
     @get:Provides
@@ -44,6 +41,10 @@ class PlatformModule(
     @get:Singleton
     @get:Provides
     val providesPlatformNotificationService: PlatformNotificationService,
+
+    @get:Singleton
+    @get:Provides
+    val providesShareService: UIShareService,
 
     @get:Singleton
     @get:Provides

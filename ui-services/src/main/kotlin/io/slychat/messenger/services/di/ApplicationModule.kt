@@ -2,7 +2,7 @@ package io.slychat.messenger.services.di
 
 import dagger.Module
 import dagger.Provides
-import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.crypto.tls.CachingCRLFetcher
 import io.slychat.messenger.core.crypto.tls.JavaHttpCRLFetcher
@@ -45,7 +45,7 @@ class ApplicationModule(
     @Singleton
     @Provides
     fun providesAuthenticationService(
-        serverUrls: BuildConfig.ServerUrls,
+        serverUrls: SlyBuildConfig.ServerUrls,
         @SlyHttp httpClientFactory: HttpClientFactory,
         localAccountDirectory: LocalAccountDirectory
     ): AuthenticationService {
@@ -60,13 +60,13 @@ class ApplicationModule(
     @Provides
     fun providesSSLConfigurator(): SSLConfigurator {
         val crlFetcher = CachingCRLFetcher(JavaHttpCRLFetcher())
-        val cert = CertificateFactory.getInstance("X.509").generateCertificate(ByteArrayInputStream(BuildConfig.caCert)) as X509Certificate
+        val cert = CertificateFactory.getInstance("X.509").generateCertificate(ByteArrayInputStream(SlyBuildConfig.caCert)) as X509Certificate
         return SSLConfigurator(
             cert,
             crlFetcher,
-            BuildConfig.TLS_DISABLE_HOSTNAME_VERIFICATION,
-            BuildConfig.TLS_DISABLE_CRL_VERIFICATION,
-            BuildConfig.TLS_DISABLE_CERTIFICATE_VERIFICATION
+            SlyBuildConfig.TLS_DISABLE_HOSTNAME_VERIFICATION,
+            SlyBuildConfig.TLS_DISABLE_CRL_VERIFICATION,
+            SlyBuildConfig.TLS_DISABLE_CERTIFICATE_VERIFICATION
         )
     }
 
@@ -120,14 +120,14 @@ class ApplicationModule(
     @Singleton
     @Provides
     fun providesVersionChecker(
-        serverUrls: BuildConfig.ServerUrls,
+        serverUrls: SlyBuildConfig.ServerUrls,
         @SlyHttp httpClientFactory: HttpClientFactory,
         @NetworkStatus networkAvailable: Observable<Boolean>
     ): VersionChecker {
         val factory = HttpClientVersionAsyncClientFactory(serverUrls.API_SERVER, httpClientFactory)
 
         return HttpVersionChecker(
-            BuildConfig.VERSION,
+            SlyBuildConfig.VERSION,
             networkAvailable,
             factory
         )

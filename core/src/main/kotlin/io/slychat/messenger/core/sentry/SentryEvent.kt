@@ -2,7 +2,7 @@ package io.slychat.messenger.core.sentry
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-import io.slychat.messenger.core.BuildConfig
+import io.slychat.messenger.core.SlyBuildConfig
 
 //https://docs.getsentry.com/hosted/clientdev/ for general client info
 //https://docs.getsentry.com/hosted/clientdev/interfaces/ for interface documentation
@@ -64,5 +64,5 @@ data class SentryEvent(
 ) {
     val platform = "java"
 
-    val release: String? = BuildConfig.VERSION
+    val release: String? = SlyBuildConfig.VERSION
 }

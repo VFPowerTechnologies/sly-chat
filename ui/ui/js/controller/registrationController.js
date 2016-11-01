@@ -33,7 +33,7 @@ RegistrationController.prototype = {
             return;
 
         var password = $$(RegistrationController.ids.registrationPasswordInput).val();
-        var email = $$(RegistrationController.ids.registrationEmailInput).val();
+        var email = $$(RegistrationController.ids.registrationEmailInput).val().toLowerCase();
         var name = $$(RegistrationController.ids.registrationNameInput).val();
         var phoneValue = $(RegistrationController.ids.phoneInput).val();
         var selectedCountry = $(RegistrationController.ids.countryInput).val();
@@ -113,14 +113,19 @@ RegistrationController.prototype = {
             }).then(function (result) {
                 slychat.hidePreloader();
                 if (result.successful == true) {
+                    var url;
+                    if (isDesktop)
+                        url = 'smsVerification.html';
+                    else
+                        url = 'registerStepFive.html';
                     var options = {
-                        url: "smsVerification.html",
+                        url: url,
                         query: {
                             email: email,
                             password: password
                         }
                     };
-                    navigationController.loadPage("smsVerification.html", false, options);
+                    navigationController.loadPage(url, false, options);
                 }
                 else {
                     form.find(".error-block").html("<li>" + result.errorMessage +"</li>");
@@ -191,5 +196,128 @@ RegistrationController.prototype = {
             password : '',
             phoneNumber : ''
         };
+        this.clearMobileRegistrationCache();
+    },
+
+    handleFirstStep : function () {
+        if (!slychat.validateForm($("#stepOneForm")))
+            return;
+
+        this.name = $("#name").val();
+
+        navigationController.loadPage('registerStepTwo.html')
+    },
+
+    handleSecondStep : function () {
+        if (!slychat.validateForm($("#stepTwoForm")))
+            return;
+
+        var email = $("#email").val().toLowerCase();
+
+        registrationService.checkEmailAvailability(email).then(function (available) {
+            if (available) {
+                this.email = email;
+                navigationController.loadPage('registerStepThree.html');
+            }
+            else {
+                this.displayError($("#email"), "The email is taken");
+            }
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        });
+    },
+
+    handleThirdStep : function () {
+        if (!slychat.validateForm($("#stepThreeForm")))
+            return;
+
+        this.password = $("#password").val();
+
+        updatePhoneWithIntl();
+
+        $$('#countrySelect').on("change", function(e) {
+            var ext = $("#countrySelect :selected").text().split("+")[1];
+            setPhoneExt(ext);
+            // TODO Validate Phone Input
+        });
+        navigationController.loadPage('registerStepFour.html')
+    },
+
+    handleFourthStep : function () {
+        if (!slychat.validateForm($("#stepFourForm")))
+            return;
+
+        var phoneNumber = getFormatedPhoneNumber($("#phone").val(), $(RegistrationController.ids.countryInput).val());
+
+        registrationService.checkPhoneNumberAvailability(phoneNumber).then(function (available) {
+            if (available) {
+                this.phoneNumber = phoneNumber;
+                this.setRegistrationInfo(this.name, this.email, this.phoneNumber, this.password);
+
+                slychat.showPreloader();
+                registrationService.doRegistration(this.registrationInfo).then(function (result) {
+                    slychat.hidePreloader();
+                    if (result.successful == true) {
+                        this.clearMobileRegistrationCache();
+                        var options = {
+                            url: 'registerStepFive.html',
+                            query: {
+                                email: this.registrationInfo.email,
+                                password: this.registrationInfo.password
+                            }
+                        };
+                        navigationController.loadPage("registerStepFive.html", true, options);
+                        navigationController.replaceHistory(["login.html"]);
+                    }
+                }.bind(this)).catch(function (e) {
+                    slychat.hidePreloader();
+                    exceptionController.handleError(e);
+                }.bind(this));
+            }
+            else {
+                this.displayError($("#phone"), "The phone number is taken");
+            }
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e);
+        });
+    },
+
+    handleFinalStep : function (email, password) {
+        if (!slychat.validateForm($("#stepFiveForm")))
+            return;
+
+        var code = $("#smsVerificationCode").val();
+
+        slychat.showPreloader();
+        registrationService.submitVerificationCode(email, code).then(function (result) {
+            if(result.successful == true) {
+                loginService.login(email, password, true);
+            }
+            else {
+                slychat.hidePreloader();
+                console.log(result.errorMessage);
+            }
+        }.bind(this)).catch(function (e) {
+            slychat.hidePreloader();
+            exceptionController.handleError(e);
+        });
+        
+    },
+
+    displayError : function (input, error) {
+        var parent = input.parents("li");
+        if (parent.find(".invalid-details").length <= 0)
+            parent.append("<div class='invalid-details col-100'>" + error + "</div>");
+        else
+            parent.find(".invalid-details").append("<br>" + error);
+
+        parent.addClass("invalid");
+    },
+
+    clearMobileRegistrationCache : function () {
+        this.name = '';
+        this.email = '';
+        this.phoneNumber = '';
+        this.password = '';
     }
 };

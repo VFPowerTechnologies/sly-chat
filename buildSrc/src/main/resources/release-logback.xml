@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <property name="MSG_PATTERN" value="[%.-1level] [%d{ISO8601}] [%logger{0}] %msg%n" />
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>#[[${MSG_PATTERN}]]#</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="sentry" class="io.slychat.messenger.desktop.sentry.SentryAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <root level="error">
+        <appender-ref ref="stdout" />
+        <appender-ref ref="sentry" />
+    </root>
+</configuration>

@@ -10,8 +10,8 @@ import io.slychat.messenger.core.sentry.serialize
 object Sentry {
     private var communicator: ReportSubmitterCommunicator<ByteArray>? = null
     private var webViewVersion: String? = null
-    private var installationId: String? = null
-    private var userAddress : SlyAddress? = null
+    private var userAddress: SlyAddress? = null
+    private var androidDeviceName: String? = null
 
     fun setCommunicator(communicator: ReportSubmitterCommunicator<ByteArray>) = synchronized(this) {
         this.communicator = communicator
@@ -21,12 +21,12 @@ object Sentry {
         webViewVersion = version
     }
 
-    fun setInstallationId(installationId: String) = synchronized(this) {
-        this.installationId = installationId
-    }
-
     fun setUserAddress(userAddress: SlyAddress?) = synchronized(this) {
         this.userAddress = userAddress
+    }
+
+    fun setAndroidDeviceName(androidDeviceName: String) = synchronized(this) {
+        this.androidDeviceName = androidDeviceName
     }
 
     fun submit(builder: SentryEventBuilder) = synchronized(this) {
@@ -40,17 +40,17 @@ object Sentry {
     }
 
     private fun generateEvent(builder: SentryEventBuilder): SentryEvent {
-        val webViewVersion = this.webViewVersion
-        if (webViewVersion != null)
-            builder.withTag("webViewVersion", webViewVersion)
+        webViewVersion?.apply {
+            builder.withTag("webViewVersion", this)
+        }
 
-        val installationId = this.installationId
-        if (installationId != null)
-            builder.withTag("Installation ID", installationId)
+        androidDeviceName?.apply {
+            builder.withTag("androidDeviceName", this)
+        }
 
-        val userAddress = this.userAddress
-        if (userAddress != null)
-            builder.withUserInterface(userAddress.asString(), userAddress.id.long.toString())
+        userAddress?.apply {
+            builder.withUserInterface(this.asString(), this.id.long.toString())
+        }
 
         return builder.build()
     }

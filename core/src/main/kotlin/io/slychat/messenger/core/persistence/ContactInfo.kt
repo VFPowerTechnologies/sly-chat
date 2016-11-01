@@ -7,6 +7,5 @@ data class ContactInfo(
     val email: String,
     val name: String,
     val allowedMessageLevel: AllowedMessageLevel,
-    val phoneNumber: String?,
     val publicKey: String
 )
