@@ -19,6 +19,7 @@ var UIController = function () {
     window.clientInfoService = new ClientInfoService();
     window.feedbackService = new FeedbackService();
     window.eventLogService = new EventLogService();
+    window.shareService = new ShareService();
 
     window.navigationController = new NavigationController();
     window.userSessionController = new UserSessionController();
@@ -43,11 +44,19 @@ UIController.prototype = {
     startUI : function () {
         this.initApplication();
         this.initMainView();
+        this.createMobileMenu();
         this.handlePlatformUpdate();
         this.initController();
         this.addTimeDifferenceListener();
+        this.setSoftKeyboardInfoListener();
         this.addOutdatedVersionListener();
+        this.setEmojione();
         this.count = 0;
+    },
+
+    setSoftKeyboardInfoListener : function () {
+        windowService.setSoftKeyboardInfoListener(function (info) {
+        });
     },
 
     addTimeDifferenceListener : function () {
@@ -109,6 +118,16 @@ UIController.prototype = {
         window.mainView = window.slychat.addView('.view-main', {
             dynamicNavbar: true,
             reloadPages: true
+        });
+    },
+
+    createMobileMenu : function () {
+        shareService.isSupported().then(function (isSupported) {
+            window.shareSupported = isSupported;
+            if (!isDesktop)
+                navigationController.createMenu();
+        }).catch(function (e) {
+            exceptionController.handleError(e);
         });
     },
 
@@ -186,5 +205,11 @@ UIController.prototype = {
                     body.addClass("theme-orange");
             break;
         }
+    },
+
+    setEmojione : function () {
+        emojione.ascii = true;
+        emojione.imagePathPNG = 'img/emojione/png/';
+        emojione.cacheBustParam = '';
     }
 };

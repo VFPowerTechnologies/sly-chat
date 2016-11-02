@@ -8,6 +8,7 @@ import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.ui.UIAppearanceConfig
 import io.slychat.messenger.services.ui.UIConfigService
+import io.slychat.messenger.services.ui.UIMarketingConfig
 import io.slychat.messenger.services.ui.UINotificationConfig
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -23,6 +24,7 @@ class UIConfigServiceImpl(
 
     private val notificationConfigChangeListeners = ArrayList<(UINotificationConfig) -> Unit>()
     private val appearanceConfigChangeListeners = ArrayList<(UIAppearanceConfig) -> Unit>()
+    private val marketingConfigChangeListeners = ArrayList<(UIMarketingConfig) -> Unit>()
 
     private val subscriptions = CompositeSubscription()
 
@@ -74,21 +76,28 @@ class UIConfigServiceImpl(
 
     private fun onUserConfigUpdate(updates: Collection<String>) {
         var updateNotifications = false
+        var updateMarketing = false
 
         log.debug("User configuration updated: {}", updates)
 
         updates.forEach { key ->
             if (key.startsWith(UserConfig.NOTIFICATIONS))
                 updateNotifications = true
+            else if (key.startsWith(UserConfig.MARKETING))
+                updateMarketing = true
         }
 
         if (updateNotifications)
             notifyNotificationConfigChangeListeners()
+
+        if (updateMarketing)
+            notifyMarketingConfigChangeListeners()
     }
 
     private fun pushInitialConfigs() {
         notifyNotificationConfigChangeListeners()
         notifyAppearanceConfigChangeListeners()
+        notifyMarketingConfigChangeListeners()
     }
 
     private fun getUserConfigServiceOrThrow(): UserConfigService {
@@ -131,6 +140,12 @@ class UIConfigServiceImpl(
         notificationConfigChangeListeners.forEach { it(uiNotificationConfig) }
     }
 
+    private fun notifyMarketingConfigChangeListeners() {
+        val uiMarketingConfig = getUIMarketingConfg()
+
+        marketingConfigChangeListeners.forEach { it(uiMarketingConfig) }
+    }
+
     override fun setAppearanceConfig(config: UIAppearanceConfig) {
         appConfigService.withEditor {
             appearanceTheme = config.theme
@@ -143,9 +158,28 @@ class UIConfigServiceImpl(
         listener(getUIAppearanceConfig())
     }
 
+    private fun getUIMarketingConfg(): UIMarketingConfig {
+        val userConfigService = getUserConfigServiceOrThrow()
+
+        return UIMarketingConfig(userConfigService.marketingShowInviteFriends)
+    }
+
+    override fun setMarketingConfig(config: UIMarketingConfig) {
+        getUserConfigServiceOrThrow().withEditor {
+            marketingShowInviteFriends = config.showInviteFriends
+        }
+    }
+
+    override fun addMarketingConfigChangeListener(listener: (UIMarketingConfig) -> Unit) {
+        marketingConfigChangeListeners.add(listener)
+        if (userConfigService != null)
+            listener(getUIMarketingConfg())
+    }
+
     override fun clearListeners() {
         notificationConfigChangeListeners.clear()
         appearanceConfigChangeListeners.clear()
+        marketingConfigChangeListeners.clear()
     }
 
     override fun getLoginRememberMe(): Boolean {

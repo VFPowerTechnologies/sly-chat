@@ -28,6 +28,8 @@ class MockApplicationComponent : ApplicationComponent {
 
     override val uiContactsService: UIContactsService = mock()
 
+    override val uiShareService: UIShareService = mock()
+
     override val uiMessengerService: UIMessengerService = mock()
 
     override val uiEventLogService: UIEventLogService = mock()

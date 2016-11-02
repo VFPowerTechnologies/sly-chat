@@ -30,6 +30,7 @@ import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
+import io.slychat.messenger.services.ui.SoftKeyboardInfo
 import io.slychat.messenger.services.ui.createAppDirectories
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.android.androidUiDispatcher
@@ -112,6 +113,7 @@ class AndroidApp : Application() {
 
     private val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
     private val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
+    private val softKeyboardVisibility = BehaviorSubject.create(SoftKeyboardInfo(false, 0))
 
     /** Points to the current activity, if one is set. Used to request permissions from various services. */
     var currentActivity: MainActivity? = null
@@ -165,9 +167,10 @@ class AndroidApp : Application() {
             SlyBuildConfig.ANDROID_SERVER_URLS,
             platformInfo,
             AndroidTelephonyService(this),
-            AndroidWindowService(this),
+            AndroidUIWindowService(this, softKeyboardVisibility),
             AndroidPlatformContacts(this),
             notificationService,
+            AndroidUIShareService(this),
             AndroidUIPlatformService(this),
             AndroidUILoadService(this),
             uiVisibility,
@@ -476,6 +479,10 @@ class AndroidApp : Application() {
             onSuccessfulInitListeners.forEach { it() }
             onSuccessfulInitListeners.clear()
         }
+    }
+
+    fun updateSoftKeyboardVisibility(isVisible: Boolean, keyboardHeight: Int) {
+        softKeyboardVisibility.onNext(SoftKeyboardInfo(isVisible, keyboardHeight))
     }
 
     /** Fires only if GCM services and SlyApplication have successfully completed initialization. Used by services. */

@@ -1,4 +1,6 @@
-var NavigationController = function () {};
+var NavigationController = function () {
+    this.menu = [];
+};
 
 NavigationController.prototype = {
     init : function () {
@@ -193,8 +195,8 @@ NavigationController.prototype = {
         return page + ".html";
     },
 
-    openMenu : function () {
-        var buttons = [
+    createMenu : function () {
+        this.menu = [
             {
                 text: 'Profile',
                 onClick: function () {
@@ -224,7 +226,18 @@ NavigationController.prototype = {
                 onClick: function () {
                     navigationController.loadPage('createGroup.html', true);
                 }
-            },
+            }
+        ];
+        if (window.shareSupported) {
+            this.menu.push({
+                text: 'Invite a friend',
+                onClick: function () {
+                    navigationController.loadPage("inviteFriends.html", true);
+                }
+            })
+        }
+
+        this.menu.push(
             {
                 text: 'Send Feedback',
                 onClick: function () {
@@ -243,8 +256,11 @@ NavigationController.prototype = {
                 onClick: function () {
                 }
             }
-        ];
-        slychat.actions(buttons);
+        );
+    },
+
+    openMenu : function () {
+        slychat.actions(this.menu);
     },
 
     loadInitialPage : function () {

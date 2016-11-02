@@ -24,15 +24,19 @@ class AppEditorInterface(override var config: AppConfig) : ConfigServiceBase.Edi
     var loginRememberMe: Boolean
         get() = config.loginRememberMe
         set(value) {
-            modifiedKeys.add(AppConfig.LOGIN_REMEMBER_ME)
-            config = config.copy(loginRememberMe = value)
+            if (value != loginRememberMe) {
+                modifiedKeys.add(AppConfig.LOGIN_REMEMBER_ME)
+                config = config.copy(loginRememberMe = value)
+            }
         }
 
     var appearanceTheme: String?
         get() = config.appearanceTheme
         set(value) {
-            modifiedKeys.add(AppConfig.APPEARANCE_THEME)
-            config = config.copy(appearanceTheme = value)
+            if (value != appearanceTheme) {
+                modifiedKeys.add(AppConfig.APPEARANCE_THEME)
+                config = config.copy(appearanceTheme = value)
+            }
         }
 }
 

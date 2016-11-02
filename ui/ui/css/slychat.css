@@ -179,7 +179,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     margin: 0 10px;
 }
 #recentChatList {
-    padding-top: 10px;
+    padding-top: 0;
     height: 100%;
     overflow-x: auto;
     color: #38383a;
@@ -622,4 +622,9 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 }
 .layout-dark .pwstrength_viewport_progress .password-verdict {
     color: #fff;
+}
+
+/* Invite Friends */
+.layout-dark #inviteTextContainer:after {
+    background: transparent !important;
 }

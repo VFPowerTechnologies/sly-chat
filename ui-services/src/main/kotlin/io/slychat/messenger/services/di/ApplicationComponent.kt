@@ -77,6 +77,8 @@ interface ApplicationComponent {
 
     val uiGroupService: UIGroupService
 
+    val uiShareService: UIShareService
+
     val localAccountDirectory: LocalAccountDirectory
 
     val installationDataPersistenceManager: InstallationDataPersistenceManager
