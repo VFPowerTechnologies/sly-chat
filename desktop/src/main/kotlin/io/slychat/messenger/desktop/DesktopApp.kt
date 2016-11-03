@@ -50,6 +50,7 @@ class DesktopApp : Application() {
     private lateinit var stage: Stage
     private lateinit var webView: WebView
     private lateinit var stackPane: StackPane
+    private var loadingScreen: Rectangle? = null
 
     /** Enable the (hidden) debugger WebEngine feature */
     private fun enableDebugger(engine: WebEngine) {
@@ -215,6 +216,7 @@ class DesktopApp : Application() {
         loadingScreen.heightProperty().bind(primaryStage.heightProperty())
         loadingScreen.widthProperty().bind(primaryStage.widthProperty())
         stackPane.children.add(loadingScreen)
+        this.loadingScreen = loadingScreen
 
         app.addOnInitListener {
             engine.load(javaClass.getResource("/ui/index.html").toExternalForm())
@@ -280,7 +282,12 @@ class DesktopApp : Application() {
     }
 
     fun uiLoadComplete() {
-        val node = stackPane.children[1]
+        val node = loadingScreen
+        if (loadingScreen == null) {
+            log.warn("Attempted to hide splash screen twice!")
+            return
+        }
+
         val fade = FadeTransition(Duration.millis(1000.0), node)
         fade.fromValue = 1.0
         fade.toValue = 0.0
