@@ -54,7 +54,7 @@ class HttpVersionChecker(
 
         client.check(clientVersion) mapUi { isUpToDate ->
             isRunning = false
-            updateResult(isUpToDate)
+            updateResult(isUpToDate.isLatest)
         } failUi { e ->
             log.condError(isNotNetworkError(e), "Version check failed: {}", e.message, e)
             isRunning = false
