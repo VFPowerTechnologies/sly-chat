@@ -1,45 +1,74 @@
 package io.slychat.messenger.services.ui.impl
 
+import io.slychat.messenger.services.VersionCheckResult
 import org.junit.Test
 import rx.subjects.PublishSubject
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class UIClientInfoServiceImplTest {
-    class Listener : () -> Unit {
-        private var wasCalled = false
+    private class Listener : (VersionCheckResult) -> Unit {
+        var result: VersionCheckResult? = null
 
-        override fun invoke() {
-            wasCalled = true
+        override fun invoke(result: VersionCheckResult) {
+            this.result = result
         }
 
-        fun assertCalled() {
-            assertTrue(wasCalled, "Listener not called")
+        fun assertOutdated() {
+            val r = assertNotNull(result, "Listener not called")
+
+            assertFalse(r.isLatest, "Not marked as outdated")
         }
 
-        fun assertNotCalled() {
-            assertFalse(wasCalled, "Listener called")
+        fun assertUpToDate() {
+            val r = assertNotNull(result, "Listener not called")
+
+            assertTrue(r.isLatest, "Marked as outdated")
+        }
+
+        fun assertCalledWith(result: VersionCheckResult) {
+            val r = assertNotNull(result, "Listener not called")
+
+            assertEquals(result, r, "Listener received invalid result")
         }
     }
 
-    @Test
-    fun `it should call a listener if the version is marked as being outdated`() {
-        val subject = PublishSubject.create<Unit>()
+    private val dummyVersion = "0.0.0"
+    private val outdatedResult = VersionCheckResult(false, dummyVersion)
+    private val isUpToDateResult = VersionCheckResult(true, dummyVersion)
+
+    private fun testImmediateCall(result: VersionCheckResult) {
+        val subject = PublishSubject.create<VersionCheckResult>()
 
         val uiClientInfoService = UIClientInfoServiceImpl(subject)
 
-        subject.onNext(Unit)
+        subject.onNext(result)
 
         val listener = Listener()
 
         uiClientInfoService.addVersionOutdatedListener(listener)
 
-        listener.assertCalled()
+        if (result.isLatest)
+            listener.assertUpToDate()
+        else
+            listener.assertOutdated()
     }
 
     @Test
-    fun `it should not call a listener if the version is not outdated`() {
-        val subject = PublishSubject.create<Unit>()
+    fun `it should immediately notify a new listener if the version is marked as being outdated`() {
+        testImmediateCall(outdatedResult)
+    }
+
+    @Test
+    fun `it should immediately notify a new listener if the version is marked as being up to date`() {
+        testImmediateCall(isUpToDateResult)
+    }
+
+    @Test
+    fun `it should notify registered listeners when receiving a result`() {
+        val subject = PublishSubject.create<VersionCheckResult>()
 
         val uiClientInfoService = UIClientInfoServiceImpl(subject)
 
@@ -47,6 +76,8 @@ class UIClientInfoServiceImplTest {
 
         uiClientInfoService.addVersionOutdatedListener(listener)
 
-        listener.assertNotCalled()
+        subject.onNext(outdatedResult)
+
+        listener.assertCalledWith(outdatedResult)
     }
 }

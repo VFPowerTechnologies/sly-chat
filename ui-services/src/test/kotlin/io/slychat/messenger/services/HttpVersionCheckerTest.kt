@@ -30,6 +30,8 @@ class HttpVersionCheckerTest {
     }
 
     private val dummyVersion = "0.0.0"
+    private val outdatedResult = VersionCheckResult(false, dummyVersion)
+    private val isUpToDateResult = VersionCheckResult(true, dummyVersion)
 
     private val versionChecker = HttpVersionChecker("0.0.0", networkAvailable, clientVersionAsyncClientFactory)
 
@@ -111,8 +113,8 @@ class HttpVersionCheckerTest {
     }
 
     @Test
-    fun `it must not emit an event when the client version is up to date`() {
-        val testSubscriber = versionChecker.versionOutOfDate.testSubscriber()
+    fun `it should emit an event when the client version is up to date`() {
+        val testSubscriber = versionChecker.versionCheckResult.testSubscriber()
 
         clientVersionIsOk(true)
 
@@ -121,14 +123,14 @@ class HttpVersionCheckerTest {
         versionChecker.init()
 
         Assertions.assertThat(testSubscriber.onNextEvents).apply {
-            `as`("Should not emit an event")
-            isEmpty()
+            `as`("Should emit an event")
+            containsOnly(isUpToDateResult)
         }
     }
 
     @Test
     fun `it must emit an event when the client version is out of date`() {
-        val testSubscriber = versionChecker.versionOutOfDate.testSubscriber()
+        val testSubscriber = versionChecker.versionCheckResult.testSubscriber()
 
         clientVersionIsOk(false)
 
@@ -138,7 +140,7 @@ class HttpVersionCheckerTest {
 
         Assertions.assertThat(testSubscriber.onNextEvents).apply {
             `as`("Should emit an event")
-            containsOnly(Unit)
+            containsOnly(outdatedResult)
         }
     }
 

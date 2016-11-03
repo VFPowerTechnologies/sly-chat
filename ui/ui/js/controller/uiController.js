@@ -68,8 +68,9 @@ UIController.prototype = {
     },
 
     addOutdatedVersionListener : function () {
-        clientInfoService.addVersionOutdatedListener(function () {
-            this.createOutOfDatePopup();
+        clientInfoService.addVersionOutdatedListener(function (result) {
+            if (!result.latest)
+                this.createOutOfDatePopup(result.latestVersion);
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
         });
@@ -152,20 +153,20 @@ UIController.prototype = {
         }
     },
 
-    createOutOfDatePopup : function () {
+    createOutOfDatePopup : function (latestVersion) {
         setTimeout(function () {
             var url;
 
             if (isDesktop === true)
                 url = "http://slychat.io";
-            else if (isAndroid === true && isDesktop === false)
+            else if (isAndroid === true)
                 url = "http://slychat.io";
             else if (isIos === true)
                 url = "http://slychat.io";
 
             slychat.modal({
                 title:  'Application out of date',
-                text: 'Your application is out of date, please update for a better experience.',
+                text: 'Your application is out of date, please update for a better experience. Your version is ' + buildConfig.VERSION + ', the latest available version is ' + latestVersion + '.',
                 buttons: [
                     {
                         text: 'Update',

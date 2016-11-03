@@ -6,8 +6,8 @@ import rx.Observable
  * Checks the
  */
 interface VersionChecker {
-    /** Emitted whenever a version check is performed, if the version is out of date. */
-    val versionOutOfDate: Observable<Unit>
+    /** Emitted whenever a version check is performed. */
+    val versionCheckResult: Observable<VersionCheckResult>
 
     fun init()
 

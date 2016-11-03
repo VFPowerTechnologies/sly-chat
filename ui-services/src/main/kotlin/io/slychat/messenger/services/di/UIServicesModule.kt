@@ -130,7 +130,7 @@ class UIServicesModule {
     fun providesUIClientInfoService(
         versionChecker: VersionChecker
     ): UIClientInfoService {
-        return UIClientInfoServiceImpl(versionChecker.versionOutOfDate)
+        return UIClientInfoServiceImpl(versionChecker.versionCheckResult)
     }
 
     @Singleton
