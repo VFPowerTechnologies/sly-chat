@@ -5,6 +5,7 @@ import io.slychat.messenger.core.http.api.versioncheck.ClientVersionClientImpl
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -26,14 +27,14 @@ class WebApiVersionCheckTest {
     fun `version check should ignore SNAPSHOT versions`() {
         val client = ClientVersionClientImpl(serverBaseUrl, JavaHttpClient())
 
-        assertTrue(client.check("0.0.0-SNAPSHOT"), "SNAPSHOT versions should always be valid")
+        assertTrue(client.check("0.0.0-SNAPSHOT").isLatest, "SNAPSHOT versions should always be valid")
     }
 
     @Test
     fun `version check should return false for an older version`() {
         val client = ClientVersionClientImpl(serverBaseUrl, JavaHttpClient())
 
-        assertFalse(client.check("0.0.0"), "Version should be outdated")
+        assertFalse(client.check("0.0.0").isLatest, "Version should be outdated")
     }
 
     @Test
@@ -42,6 +43,24 @@ class WebApiVersionCheckTest {
 
         val client = ClientVersionClientImpl(serverBaseUrl, JavaHttpClient())
 
-        assertTrue(client.check(latestVersion), "Latest version not accepted as up to date")
+        assertTrue(client.check(latestVersion).isLatest, "Latest version not accepted as up to date")
+    }
+
+    @Test
+    fun `version check should always return latest version in outdated response`() {
+        val latestVersion = devClient.getLatestVersion()
+
+        val client = ClientVersionClientImpl(serverBaseUrl, JavaHttpClient())
+
+        assertEquals(latestVersion, client.check("0.0.0").latestVersion, "Version should be included in response")
+    }
+
+    @Test
+    fun `version check should always return latest version in up to date response`() {
+        val latestVersion = devClient.getLatestVersion()
+
+        val client = ClientVersionClientImpl(serverBaseUrl, JavaHttpClient())
+
+        assertEquals(latestVersion, client.check(latestVersion).latestVersion, "Version should be included in response")
     }
 }
