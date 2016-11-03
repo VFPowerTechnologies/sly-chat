@@ -385,7 +385,6 @@ class DatabaseMigrationTest {
         }
     }
 
-    @Test
     fun `migration 14 to 15`() {
         withTestDatabase(14, 15) { persistenceManager, connection ->
             check14to15(persistenceManager, connection)
@@ -406,5 +405,16 @@ class DatabaseMigrationTest {
             `as`("Should convert existing contacts")
             containsOnly(expected)
         }
+    }
+
+    @Test
+    fun `migration 15 to 16`() {
+        withTestDatabase(15, 16) { persistenceManager, connection ->
+            check15to16(persistenceManager, connection)
+        }
+    }
+
+    private fun check15to16(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertTableExists(connection, "event_log")
     }
 }

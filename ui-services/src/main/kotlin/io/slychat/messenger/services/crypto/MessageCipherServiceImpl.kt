@@ -2,12 +2,18 @@ package io.slychat.messenger.services.crypto
 
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.http.api.prekeys.PreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyRetrievalRequest
 import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
 import io.slychat.messenger.core.mapToSet
+import io.slychat.messenger.core.persistence.LogEvent
+import io.slychat.messenger.core.persistence.LogTarget
+import io.slychat.messenger.core.persistence.SecurityEventData
+import io.slychat.messenger.core.persistence.toConversationId
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
+import io.slychat.messenger.services.EventLogService
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.messaging.EncryptedMessageInfo
 import io.slychat.messenger.services.messaging.EncryptionResult
@@ -29,7 +35,8 @@ class MessageCipherServiceImpl(
     private val authTokenManager: AuthTokenManager,
     private val preKeyClient: PreKeyClient,
     //the store is only ever used in the work thread, so no locking is done
-    private val signalStore: SignalProtocolStore
+    private val signalStore: SignalProtocolStore,
+    private val eventLogService: EventLogService
 ) : MessageCipherService, Runnable {
     companion object {
         fun deviceDiff(currentDeviceIds: List<Int>, receivedDevices: List<DeviceInfo>, getRegistrationId: (Int) -> Int): DeviceMismatchContent {
@@ -225,6 +232,10 @@ class MessageCipherServiceImpl(
             toRemove.forEach { deviceId ->
                 val address = SlyAddress(userId, deviceId)
                 signalStore.deleteSession(address.toSignalAddress())
+
+                val data = SecurityEventData.SessionRemoved(address)
+                val event = LogEvent.Security(LogTarget.Conversation(userId), currentTimestamp(), data)
+                eventLogService.addEvent(event)
             }
 
             val toAdd = HashSet(info.missing)
@@ -323,10 +334,16 @@ class MessageCipherServiceImpl(
 
     private fun processPreKeyBundles(userId: UserId, bundles: Collection<PreKeyBundle>): List<Pair<Int, SessionCipher>> {
         return bundles.map { bundle ->
-            val address = SlyAddress(userId, bundle.deviceId).toSignalAddress()
+            val slyAddress = SlyAddress(userId, bundle.deviceId)
+            val address = slyAddress.toSignalAddress()
             val builder = SessionBuilder(signalStore, address)
             //this can fail with an InvalidKeyException if the signed key signature doesn't match
             builder.process(bundle)
+
+            val data = SecurityEventData.SessionCreated(slyAddress, bundle.registrationId)
+            val event = LogEvent.Security(LogTarget.Conversation(userId.toConversationId()), currentTimestamp(), data)
+            eventLogService.addEvent(event)
+
             bundle.deviceId to SessionCipher(signalStore, address)
         }
     }

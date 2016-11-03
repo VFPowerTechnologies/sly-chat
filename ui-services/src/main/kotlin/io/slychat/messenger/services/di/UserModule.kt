@@ -156,11 +156,13 @@ class UserModule(
     fun providesMessageReceiver(
         messageProcessor: MessageProcessor,
         packageQueuePersistenceManager: PackageQueuePersistenceManager,
-        messageCipherService: MessageCipherService
+        messageCipherService: MessageCipherService,
+        eventLogService: EventLogService
     ): MessageReceiver = MessageReceiverImpl(
         messageProcessor,
         packageQueuePersistenceManager,
-        messageCipherService
+        messageCipherService,
+        eventLogService
     )
 
     @UserScope
@@ -239,10 +241,17 @@ class UserModule(
         authTokenManager: AuthTokenManager,
         serverUrls: ServerUrls,
         signalProtocolStore: SignalProtocolStore,
-        @SlyHttp httpClientFactory: HttpClientFactory
+        @SlyHttp httpClientFactory: HttpClientFactory,
+        eventLogService: EventLogService
     ): MessageCipherService {
         val preKeyClient = HttpPreKeyClient(serverUrls.API_SERVER, httpClientFactory.create())
-        return MessageCipherServiceImpl(userData.userId, authTokenManager, preKeyClient, signalProtocolStore)
+        return MessageCipherServiceImpl(
+            userData.userId,
+            authTokenManager,
+            preKeyClient,
+            signalProtocolStore,
+            eventLogService
+        )
     }
 
     @UserScope
@@ -458,5 +467,22 @@ class UserModule(
         messengerService: MessengerService
     ): MessageDeletionWatcher {
         return MessageDeletionWatcherImpl(messageService.messageUpdates, messengerService)
+    }
+
+    @UserScope
+    @Provides
+    fun providesEventLogService(
+        eventLog: EventLog
+    ): EventLogService {
+        return EventLogServiceImpl(eventLog)
+    }
+
+    @UserScope
+    @Provides
+    fun providesGroupEventLoggerWatcher(
+        groupService: GroupService,
+        eventLogService: EventLogService
+    ): GroupEventLoggerWatcher {
+        return GroupEventLoggerWatcherImpl(groupService.groupEvents, eventLogService)
     }
 }

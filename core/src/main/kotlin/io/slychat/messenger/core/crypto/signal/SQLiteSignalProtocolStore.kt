@@ -14,6 +14,10 @@ import org.whispersystems.libsignal.state.SessionRecord
 import org.whispersystems.libsignal.state.SignalProtocolStore
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
 
+class InvalidSignedPreKeyIdException(val id: Int) : InvalidKeyIdException("Invalid signed prekey id: $id")
+
+class InvalidPreKeyIdException(val id: Int) : InvalidKeyIdException("Invalid prekey id: $id")
+
 class SQLiteSignalProtocolStore(
     private val identityKeyPair: IdentityKeyPair,
     private val registrationId: Int,
@@ -52,7 +56,7 @@ class SQLiteSignalProtocolStore(
     }
 
     override fun loadSignedPreKey(signedPreKeyId: Int): SignedPreKeyRecord {
-        return preKeyPersistenceManager.getSignedPreKey(signedPreKeyId).get() ?: throw InvalidKeyIdException("Invalid signed prekey id: $signedPreKeyId")
+        return preKeyPersistenceManager.getSignedPreKey(signedPreKeyId).get() ?: throw InvalidSignedPreKeyIdException(signedPreKeyId)
     }
 
     override fun loadSignedPreKeys(): List<SignedPreKeyRecord> {
@@ -64,7 +68,7 @@ class SQLiteSignalProtocolStore(
     }
 
     override fun loadPreKey(preKeyId: Int): PreKeyRecord {
-        return preKeyPersistenceManager.getUnsignedPreKey(preKeyId).get() ?: throw InvalidKeyIdException("Invalid prekey id: $preKeyId")
+        return preKeyPersistenceManager.getUnsignedPreKey(preKeyId).get() ?: throw InvalidPreKeyIdException(preKeyId)
     }
 
     override fun storePreKey(preKeyId: Int, record: PreKeyRecord) {
