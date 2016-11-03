@@ -281,6 +281,10 @@ class MainActivity : AppCompatActivity() {
 
     fun hideSplashImage() {
         val splashView = findViewById(R.id.splashImageView)
+        if (splashView == null) {
+            log.warn("Attempted to hide splash screen twice!")
+            return
+        }
 
         val animation = AlphaAnimation(1f, 0f)
         animation.duration = 500
