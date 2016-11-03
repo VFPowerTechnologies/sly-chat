@@ -1,6 +1,7 @@
 package io.slychat.messenger.core
 
 import org.junit.Test
+import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -22,6 +23,11 @@ class CoreUtilsTest {
     @Test
     fun `isNotNetworkError should return false for SSLHandshakeException`() {
         assertFalse(isNotNetworkError(SSLHandshakeException("SSL handshake aborted: ssl=0x942d9800: I/O error during system call, Connection timed out")))
+    }
+
+    @Test
+    fun `isNotNetworkError should return false for ConnectException`() {
+        assertFalse(isNotNetworkError(ConnectException()))
     }
 
     @Test

@@ -4,6 +4,7 @@ package io.slychat.messenger.core
 import com.fasterxml.jackson.core.type.TypeReference
 import org.joda.time.DateTime
 import java.io.File
+import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -160,14 +161,31 @@ fun String.unhexify(): ByteArray {
     return bytes
 }
 
+private fun isInterestingSocketError(e: SocketException): Boolean {
+    val ignore = listOf(
+       "ENETUNREACH",
+       "ETIMEDOUT"
+    )
+
+    val message = e.message ?: return true
+
+    ignore.forEach {
+        if (message.contains(it))
+            return false
+    }
+
+    return true
+}
+
 /** Returns true if given exception is not a network error. */
-fun isNotNetworkError(e: Exception): Boolean = !when (e) {
-    is SocketTimeoutException -> true
-    is UnknownHostException -> true
-    is SSLHandshakeException -> true
-    //not really sure if I should ignore all of these; just ignoring timeouts for now, but should probably ignore others
-    is SocketException -> e.message?.contains("ETIMEDOUT") ?: false
-    else -> false
+fun isNotNetworkError(e: Exception): Boolean = when (e) {
+    is SocketTimeoutException -> false
+    is UnknownHostException -> false
+    is SSLHandshakeException -> false
+    is ConnectException -> false
+    //not really sure if I should ignore all of these; just ignoring some for now, but should probably ignore others
+    is SocketException -> isInterestingSocketError(e)
+    else -> true
 }
 
 /** Logs at error level only if isError is true; otherwise logs at warning level. */
