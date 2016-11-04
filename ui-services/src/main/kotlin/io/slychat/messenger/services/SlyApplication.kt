@@ -101,6 +101,10 @@ class SlyApplication {
 
     /** Only called directly when used for testing. */
     internal fun init(applicationComponent: ApplicationComponent, doAutoLogin: Boolean = false) {
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            log.error("Uncaught exception in thread <{}>: {}", thread.name, throwable.message, throwable)
+        }
+
         appComponent = applicationComponent
 
         initializeApplicationServices()
