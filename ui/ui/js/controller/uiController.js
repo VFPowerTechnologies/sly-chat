@@ -32,6 +32,7 @@ var UIController = function () {
     window.exceptionController = new ExceptionController();
     window.settingsController = new SettingsController();
     window.feedbackController = new FeedbackController();
+    window.emojiController = new EmojiController();
 
     window.relayTimeDifference = 0;
 
@@ -49,16 +50,73 @@ UIController.prototype = {
         this.addTimeDifferenceListener();
         this.setSoftKeyboardInfoListener();
         this.addOutdatedVersionListener();
-        this.setEmojione();
         this.count = 0;
     },
 
-    setSoftKeyboardVisibilityListener : function () {
-        windowService.setSoftKeyboardVisibilityListener(function (isVisible) {
-            window.isSoftKeyboardVisible = isVisible;
-            if (isVisible && $(".mobile-emoji-picker-opened").length > 0) {
-                closeMobileEmoji();
+    setSoftKeyboardInfoListener : function () {
+        windowService.setSoftKeyboardInfoListener(function (info) {
+            if (typeof slychat.keyboardInfo === "undefined") {
+                slychat.keyboardInfo = {
+                    height: {
+                        portrait: 0,
+                        landscape: 0
+                    },
+                    window: {
+                        portrait: {
+                            height: 0,
+                            width: 0
+                        },
+                        landscape: {
+                            height: 0,
+                            width: 0
+                        }
+                    },
+                    container: {
+                        portrait: 0,
+                        landscape: 0
+                    },
+                    isVisible: info.isVisible
+                };
             }
+
+
+            slychat.keyboardInfo.isVisible = info.visible;
+            if (info.visible) {
+                if ($(".mobile-emoji-picker-opened").length > 0)
+                    emojiController.closeMobileEmoji();
+
+                var keyboardHeight;
+                if (window.orientation === 0) {
+                    if (slychat.keyboardInfo.height.portrait === 0) {
+                        keyboardHeight = emojiController.getKeyboardPortraitHeight();
+                        slychat.keyboardInfo.height.portrait = keyboardHeight;
+                        slychat.keyboardInfo.container.portrait = emojiController.calcContainerSize(keyboardHeight, slychat.keyboardInfo.window.portrait.height);
+                    }
+                }
+                else {
+                    if (slychat.keyboardInfo.height.landscape === 0) {
+                        keyboardHeight = emojiController.getKeyboardLandscapeHeight();
+                        slychat.keyboardInfo.height.landscape = keyboardHeight;
+                        slychat.keyboardInfo.container.landscape = emojiController.calcContainerSize(keyboardHeight, slychat.keyboardInfo.window.landscape.height);
+                    }
+                }
+            }
+            else {
+                if (slychat.keyboardInfo.window.portrait.height === 0) {
+                    if (Math.abs(window.orientation) === 0) {
+                        slychat.keyboardInfo.window.portrait.height = window.innerHeight;
+                        slychat.keyboardInfo.window.portrait.width = window.innerWidth;
+                    }
+                }
+                if (slychat.keyboardInfo.window.landscape.height === 0) {
+                    if (Math.abs(window.orientation) !== 0) {
+                        slychat.keyboardInfo.window.landscape.height = window.innerHeight;
+                        slychat.keyboardInfo.window.landscape.width = window.innerWidth;
+                    }
+                }
+            }
+        }).catch(function (e) {
+            exceptionController.handleError(e);
         });
     },
 
@@ -87,6 +145,8 @@ UIController.prototype = {
         contactController.addConversationInfoUpdateListener();
         connectionController.init();
         groupController.addGroupEventListener();
+        emojiController.setEmojione();
+        emojiController.setWindowRotationListener();
     },
 
     initApplication : function () {
@@ -208,11 +268,5 @@ UIController.prototype = {
                     body.addClass("theme-orange");
             break;
         }
-    },
-
-    setEmojione : function () {
-        emojione.ascii = true;
-        emojione.imagePathPNG = 'img/emojione/png/';
-        emojione.cacheBustParam = '';
     }
 };

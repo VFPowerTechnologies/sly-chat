@@ -71,7 +71,7 @@ NavigationController.prototype = {
             slychat.closeModal();
         }
         else if ($(".mobile-emoji-picker-opened").length > 0) {
-            closeMobileEmoji();
+            emojiController.closeMobileEmoji();
         }
         else {
             historyService.pop().then(function (url) {

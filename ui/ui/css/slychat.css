@@ -624,17 +624,75 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     color: #fff;
 }
 
-/* emotiji */
-.emoticone-link img {
+/* emoji */
+.mobile-emoji-picker {
+    width: 100%;
+    position: relative;
+    bottom: 0;
+    top: initial;
+}
+.layout-dark .mobile-emoji-picker {
+    background-color: black;
+}
+.emoticon-link img {
     height: 30px;
     width: 30px;
     margin: 5px;
 }
-.mobile-emoji-picker-opened {
-    height: 365px;
-}
 #emojiPickerBtn:focus {
     outline: 0;
+}
+.emoji-category-btn {
+    display: inline-block;
+    font-size: 14px;
+}
+.emoji-picker-toolbar {
+    /*width: calc(100% - 50px);*/
+    width: 100%;
+    height: 40px;
+    position: relative;
+    top: 0;
+    overflow-y: auto;
+    display: inline-block;
+    line-height: 40px;
+}
+.emoji-picker-backspace-container {
+    height: 40px;
+    width: 50px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: black;
+    text-align: center;
+}
+.emoji-picker-backspace-container .material-icons {
+    color: rgba(0, 0, 0, 0.54);
+}
+.layout-dark .emoji-picker-backspace-container .material-icons {
+    color: rgba(255, 255, 255, 1);
+}
+.emoji-picker-backspace-container button {
+    border: none;
+    background-color: black;
+    width: 50px;
+    height: 40px;
+    padding-top: 8px;
+}
+.emoji-picker-backspace-container button:focus {
+    outline: none;
+}
+.mobile-emoji-picker .swiper-container {
+    background-color: #fff;
+    top: -7px;
+}
+.emoji-picker-toolbar .toolbar-inner {
+    overflow: initial;
+}
+.layout-dark .emoji-picker-toolbar {
+    background-color: black;
+}
+.layout-dark .emoji-category-btn.active {
+    background-color: #fff;
 }
 
 /* Invite Friends */
