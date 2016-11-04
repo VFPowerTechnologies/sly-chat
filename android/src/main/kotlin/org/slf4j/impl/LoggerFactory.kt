@@ -6,7 +6,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 class LoggerFactory(
     private val defaultPriority: LogPriority,
-    private val loggerPriorities: List<Pair<String, LogPriority>>
+    private val loggerPriorities: List<Pair<String, LogPriority>>,
+    private val platformLogger: PlatformLogger
 ) : ILoggerFactory {
     private val loggerMap = ConcurrentHashMap<String, Logger>()
 
@@ -24,7 +25,7 @@ class LoggerFactory(
         //TODO generate shorter tag
         val logger = loggerMap[name]
         return if (logger == null) {
-            val l = LoggerAdapter(name, getPriorityFor(name), AndroidPlatformLogger())
+            val l = LoggerAdapter(name, getPriorityFor(name), platformLogger)
             loggerMap.putIfAbsent(name, l) ?: l
         }
         else
