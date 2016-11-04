@@ -120,7 +120,7 @@ class ReportSubmitterTest {
         )
     }
 
-    private fun launchWorkerThread() {
+    fun launchWorkerThread() {
         throwableQueue = ArrayBlockingQueue<Throwable?>(1)
         val queue = throwableQueue
 
@@ -139,7 +139,7 @@ class ReportSubmitterTest {
         thread.start()
     }
 
-    private fun waitForWorkerThreadShutdown(sendShutdown: Boolean = true, timeout: Long = 200) {
+    fun waitForWorkerThreadShutdown(sendShutdown: Boolean = true, timeout: Long = 200) {
         if (sendShutdown)
             sendShutdown()
 

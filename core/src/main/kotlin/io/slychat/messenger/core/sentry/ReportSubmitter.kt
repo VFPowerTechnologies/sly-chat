@@ -78,7 +78,7 @@ class ReportSubmitter<ReportType>(
     //read from queue/etc
     fun run() {
         getReports()
-        submitReports()
+        submitReports(true)
 
         while (!shutdown) {
             val message = if (delayUntil != 0L) {
@@ -152,9 +152,12 @@ class ReportSubmitter<ReportType>(
         delayUntil = currentTimeMs() + currentWaitTimeMs
     }
 
-    private fun submitReports() {
+    private fun submitReports(noWrite: Boolean = false) {
         if (!isNetworkAvailable || delayUntil != 0L) {
-            storeReports()
+            //just a hack for the initial run so we don't pointlessly rewrite the reports we just read
+            if (!noWrite)
+                storeReports()
+
             return
         }
 
