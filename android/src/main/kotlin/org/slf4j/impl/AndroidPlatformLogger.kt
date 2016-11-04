@@ -3,8 +3,10 @@ package org.slf4j.impl
 import android.os.Build
 import android.util.Log
 import io.slychat.messenger.core.sentry.SentryEventBuilder
+import io.slychat.messenger.logger.LogPriority
+import io.slychat.messenger.logger.PlatformLogger
 
-class AndroidPlatformLogger : PlatformLogger {
+internal class AndroidPlatformLogger : PlatformLogger {
     override fun log(priority: LogPriority, loggerName: String, message: String) {
         val pri = when (priority) {
             LogPriority.TRACE -> Log.VERBOSE

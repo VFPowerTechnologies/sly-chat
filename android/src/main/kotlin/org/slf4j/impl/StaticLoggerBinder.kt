@@ -1,5 +1,8 @@
 package org.slf4j.impl
 
+import io.slychat.messenger.logger.BaseStaticLoggerBinder
+import io.slychat.messenger.logger.PlatformLogger
+
 @Suppress("unused")
 object StaticLoggerBinder : BaseStaticLoggerBinder() {
     //required; else you get a warning at runtime that your binding only supports <= 1.5.5

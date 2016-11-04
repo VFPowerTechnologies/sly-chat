@@ -1,4 +1,4 @@
-package org.slf4j.impl
+package io.slychat.messenger.logger
 
 import org.slf4j.ILoggerFactory
 import org.slf4j.Logger

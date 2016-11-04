@@ -1,6 +1,9 @@
-package org.slf4j.impl
+package io.slychat.messenger.logger
 
 import org.slf4j.ILoggerFactory
+import io.slychat.messenger.logger.LogPriority
+import io.slychat.messenger.logger.LoggerFactory
+import io.slychat.messenger.logger.PlatformLogger
 import org.slf4j.spi.LoggerFactoryBinder
 import java.util.*
 
