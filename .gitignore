@@ -12,4 +12,4 @@ ui-services/generated
 __pycache__/
 *.old
 android/src/main/resources/sly-logger.properties
-desktop/src/main/resources/logback.xml
+desktop/src/main/resources/sly-logger.properties
