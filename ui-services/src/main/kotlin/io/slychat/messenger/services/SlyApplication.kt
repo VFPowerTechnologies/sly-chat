@@ -1,16 +1,13 @@
 package io.slychat.messenger.services
 
 import com.fasterxml.jackson.core.JsonParseException
-import io.slychat.messenger.core.AuthToken
-import io.slychat.messenger.core.SlyBuildConfig
-import io.slychat.messenger.core.SlyAddress
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.KeyVault
-import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.kovenant.recover
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.*
-import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
+import io.slychat.messenger.core.sentry.*
 import io.slychat.messenger.services.LoginEvent.*
 import io.slychat.messenger.services.auth.AuthApiResponseException
 import io.slychat.messenger.services.auth.AuthResult
@@ -29,6 +26,7 @@ import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
 import java.io.IOException
 import java.util.*
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 
 class SlyApplication {
@@ -129,6 +127,41 @@ class SlyApplication {
         }
 
         applicationComponent.versionChecker.init()
+    }
+
+    private fun initSentry(applicationComponent: ApplicationComponent): ReportSubmitterCommunicator<ByteArray>? {
+        val dsn = SlyBuildConfig.sentryDsn ?: return null
+
+        val bugReportsPath = applicationComponent.platformInfo.appFileStorageDirectory / "bug-reports.bin"
+
+        val storage = FileReportStorage(bugReportsPath)
+
+        val client = RavenReportSubmitClient(dsn, applicationComponent.slyHttpClientFactory)
+
+        val queue = ArrayBlockingQueue<ReporterMessage<ByteArray>>(10)
+
+        val reporter = ReportSubmitter(storage, client, queue)
+
+        val thread = Thread({
+            try {
+                reporter.run()
+            }
+            catch (t: Throwable) {
+                log.error("ReportSubmitter terminated with error: {}", t.message, t)
+            }
+        })
+
+        thread.isDaemon = true
+        thread.name = "Bug Report Submitter"
+        thread.priority = Thread.MIN_PRIORITY
+
+        thread.start()
+
+        val communicator = ReportSubmitterCommunicator(queue)
+
+        Sentry.setCommunicator(communicator)
+
+        return communicator
     }
 
     /** Starts background initialization; use addOnInitListener to be notified when app has finished initializing. Once finalized, will trigger auto-login. */
