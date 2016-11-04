@@ -78,6 +78,7 @@ class ReportSubmitter<ReportType>(
     //read from queue/etc
     fun run() {
         getReports()
+        submitReports()
 
         while (!shutdown) {
             val message = if (delayUntil != 0L) {

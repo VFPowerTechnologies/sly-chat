@@ -15,7 +15,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class ReportSubmitterTest {
-    companion object {
+    private companion object {
         class WorkerStopped() : Throwable()
 
         class CollectionWith<E>(private val expectedItems: Collection<E>) : ArgumentMatcher<Collection<E>> {
@@ -39,21 +39,21 @@ class ReportSubmitterTest {
         }
     }
 
-    inline fun <reified T : Any> argThat(argumentMatcher: ArgumentMatcher<T>) = Matchers.argThat<T>(argumentMatcher) ?: createInstance(T::class)
+    private inline fun <reified T : Any> argThat(argumentMatcher: ArgumentMatcher<T>) = Matchers.argThat<T>(argumentMatcher) ?: createInstance(T::class)
 
-    val dummyReport = 0
-    val dummyReports = listOf(1, 2)
+    private val dummyReport = 0
+    private val dummyReports = listOf(1, 2)
 
-    val dummyFatalError = ReportSubmitError.Fatal("FATAL", RuntimeException("Fatal exception"))
-    val dummyRecoverableError = ReportSubmitError.Recoverable("RECOVERABLE", RuntimeException("Recoverable exception"))
+    private val dummyFatalError = ReportSubmitError.Fatal("FATAL", RuntimeException("Fatal exception"))
+    private val dummyRecoverableError = ReportSubmitError.Recoverable("RECOVERABLE", RuntimeException("Recoverable exception"))
 
-    lateinit var mockClient: ReportSubmitClient<Int>
-    lateinit var mockStorage : ReportStorage<Int>
-    lateinit var messageQueue: BlockingQueue<ReporterMessage<Int>>
-    lateinit var reporter: ReportSubmitter<Int>
-    lateinit var throwableQueue: BlockingQueue<Throwable?>
+    private lateinit var mockClient: ReportSubmitClient<Int>
+    private lateinit var mockStorage : ReportStorage<Int>
+    private lateinit var messageQueue: BlockingQueue<ReporterMessage<Int>>
+    private lateinit var reporter: ReportSubmitter<Int>
+    private lateinit var throwableQueue: BlockingQueue<Throwable?>
 
-    fun <R> withFixedMillis(millis: Long, body: () -> R): R {
+    private fun <R> withFixedMillis(millis: Long, body: () -> R): R {
         DateTimeUtils.setCurrentMillisFixed(millis)
         return try {
             body()
@@ -63,42 +63,42 @@ class ReportSubmitterTest {
         }
     }
 
-    fun sendReport(report: Int) {
+    private fun sendReport(report: Int) {
         messageQueue.put(ReporterMessage.BugReport(report))
     }
 
-    fun sendReports(n: Int) {
+    private fun sendReports(n: Int) {
         (1..n).forEach { i ->
             messageQueue.put(ReporterMessage.BugReport(i))
         }
 
     }
 
-    fun processReport(report: Int) {
+    private fun processReport(report: Int) {
          processReports(listOf(report))
     }
 
-    fun processReports(n: Int) {
+    private fun processReports(n: Int) {
         (1..n).forEach { processReport(dummyReport) }
     }
 
-    fun processReports(reports: Iterable<Int>) {
+    private fun processReports(reports: Iterable<Int>) {
         reports.forEach { reporter.processMessage(ReporterMessage.BugReport(it)) }
     }
 
-    fun processNetworkStatus(isAvailable: Boolean) {
+    private fun processNetworkStatus(isAvailable: Boolean) {
         reporter.processMessage(ReporterMessage.NetworkStatus(isAvailable))
     }
 
-    fun sendShutdown() {
+    private fun sendShutdown() {
         messageQueue.put(ReporterMessage.Shutdown())
     }
 
-    fun processShutdown() {
+    private fun processShutdown() {
         reporter.processMessage(ReporterMessage.Shutdown())
     }
 
-    fun initReporter(
+    private fun initReporter(
         isNetworkAvailable: Boolean = false,
         isFatal: Boolean = false,
         initialWaitTimeMs: Long = ReportSubmitter.DEFAULT_INITIAL_WAIT_TIME_MS,
@@ -120,7 +120,7 @@ class ReportSubmitterTest {
         )
     }
 
-    fun launchWorkerThread() {
+    private fun launchWorkerThread() {
         throwableQueue = ArrayBlockingQueue<Throwable?>(1)
         val queue = throwableQueue
 
@@ -139,7 +139,7 @@ class ReportSubmitterTest {
         thread.start()
     }
 
-    fun waitForWorkerThreadShutdown(sendShutdown: Boolean = true, timeout: Long = 200) {
+    private fun waitForWorkerThreadShutdown(sendShutdown: Boolean = true, timeout: Long = 200) {
         if (sendShutdown)
             sendShutdown()
 
@@ -373,6 +373,23 @@ class ReportSubmitterTest {
         waitForWorkerThreadShutdown()
 
         verify(mockStorage, times(1)).get()
+    }
+
+    @Test
+    fun `should send pending reports on startup if network is available`() {
+        initReporter(isNetworkAvailable = true)
+
+        val reports = listOf(1)
+
+        whenever(mockStorage.get()).thenReturn(reports)
+
+        whenever(mockClient.submit(any())).thenReturn(null)
+
+        launchWorkerThread()
+
+        waitForWorkerThreadShutdown()
+
+        verify(mockClient).submit(1)
     }
 
     @Test
