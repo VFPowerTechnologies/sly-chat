@@ -16,7 +16,9 @@ internal class AndroidPlatformLogger : PlatformLogger {
             LogPriority.ERROR -> Log.ERROR
         }
 
-        Log.println(pri, loggerName, message)
+        val l = loggerName.split('.').last()
+
+        Log.println(pri, l, message)
     }
 
     override fun wtf(message: String) {
