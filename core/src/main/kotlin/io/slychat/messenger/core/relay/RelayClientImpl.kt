@@ -1,10 +1,7 @@
 package io.slychat.messenger.core.relay
 
-import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.UserCredentials
-import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
-import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.relay.base.*
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -249,7 +246,7 @@ class RelayClientImpl(
         if (relayConnection == null)
             emitEvent(ConnectionFailure(e))
         else {
-            log.error("Relay error", e)
+            log.condError(isNotNetworkError(e), "Relay error: {}", e.message, e)
             emitEvent(ConnectionLost(wasDisconnectRequested, e))
         }
 

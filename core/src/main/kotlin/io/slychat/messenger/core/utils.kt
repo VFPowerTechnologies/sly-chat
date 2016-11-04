@@ -178,13 +178,13 @@ private fun isInterestingSocketError(e: SocketException): Boolean {
 }
 
 /** Returns true if given exception is not a network error. */
-fun isNotNetworkError(e: Exception): Boolean = when (e) {
+fun isNotNetworkError(t: Throwable): Boolean = when (t) {
     is SocketTimeoutException -> false
     is UnknownHostException -> false
     is SSLHandshakeException -> false
     is ConnectException -> false
     //not really sure if I should ignore all of these; just ignoring some for now, but should probably ignore others
-    is SocketException -> isInterestingSocketError(e)
+    is SocketException -> isInterestingSocketError(t)
     else -> true
 }
 
