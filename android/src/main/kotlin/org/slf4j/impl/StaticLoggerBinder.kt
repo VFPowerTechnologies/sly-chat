@@ -1,6 +1,5 @@
 package org.slf4j.impl
 
-import android.util.Log
 import org.slf4j.ILoggerFactory
 import org.slf4j.spi.LoggerFactoryBinder
 import java.util.*
@@ -17,20 +16,20 @@ object StaticLoggerBinder : LoggerFactoryBinder {
     private val loggerFactoryClassStr = javaClass.name
     private var loggerFactory: LoggerFactory? = null
 
-    private var defaultPriority = Log.INFO
-    private var loggerPriorities: List<Pair<String, Int>> = emptyList()
+    private var defaultPriority = LogPriority.INFO
+    private var loggerPriorities: List<Pair<String, LogPriority>> = emptyList()
 
     init {
         loadConfigFromProperties()
     }
 
-    private fun logLevelFromString(s: String): Int? {
+    private fun logLevelFromString(s: String): LogPriority? {
         return when (s.toLowerCase()) {
-            "trace" -> Log.VERBOSE
-            "debug" -> Log.DEBUG
-            "info" -> Log.INFO
-            "warn" -> Log.WARN
-            "error" -> Log.ERROR
+            "trace" -> LogPriority.TRACE
+            "debug" -> LogPriority.DEBUG
+            "info" -> LogPriority.INFO
+            "warn" -> LogPriority.WARN
+            "error" -> LogPriority.ERROR
             else -> null
         }
     }
@@ -42,7 +41,7 @@ object StaticLoggerBinder : LoggerFactoryBinder {
         }
 
         //this is obviously fairly inefficient, but for a small number of items it's fine
-        val priorities = ArrayList<Pair<String, Int>>()
+        val priorities = ArrayList<Pair<String, LogPriority>>()
 
         properties.stringPropertyNames().forEach { k ->
             val v = properties.getProperty(k)

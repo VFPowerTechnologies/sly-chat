@@ -1,7 +1,5 @@
 package org.slf4j.impl
 
-import android.os.Build
-import android.util.Log
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.sentry.LoggerLevel
 import io.slychat.messenger.core.sentry.SentryEventBuilder
@@ -10,148 +8,151 @@ import io.slychat.messenger.core.sentry.extractCulprit
 import io.slychat.messenger.services.Sentry
 import org.slf4j.helpers.MarkerIgnoringBase
 import org.slf4j.helpers.MessageFormatter
+import java.io.PrintWriter
+import java.io.StringWriter
 
 class LoggerAdapter(
     private val loggerName: String,
-    private val allowedPriority: Int
+    private val allowedPriority: LogPriority,
+    private val platformLogger: PlatformLogger
 ) : MarkerIgnoringBase() {
     override fun getName(): String? {
         return loggerName
     }
 
     override fun warn(msg: String) {
-        log(Log.WARN, msg, null)
+        log(LogPriority.WARN, msg, null)
     }
 
     override fun warn(format: String, arg: Any?) {
-        formatAndLog(Log.WARN, format, arg)
+        formatAndLog(LogPriority.WARN, format, arg)
     }
 
     override fun warn(format: String, vararg arguments: Any?) {
-        formatAndLog(Log.WARN, format, *arguments)
+        formatAndLog(LogPriority.WARN, format, *arguments)
     }
 
     override fun warn(format: String, arg1: Any?, arg2: Any?) {
-        formatAndLog(Log.WARN, format, arg1, arg2)
+        formatAndLog(LogPriority.WARN, format, arg1, arg2)
     }
 
     override fun warn(msg: String, t: Throwable) {
-        log(Log.WARN, msg, t)
+        log(LogPriority.WARN, msg, t)
     }
 
     override fun info(msg: String) {
-        log(Log.INFO, msg, null)
+        log(LogPriority.INFO, msg, null)
     }
 
     override fun info(format: String, arg: Any?) {
-        formatAndLog(Log.INFO, format, arg)
+        formatAndLog(LogPriority.INFO, format, arg)
     }
 
     override fun info(format: String, arg1: Any?, arg2: Any?) {
-        formatAndLog(Log.INFO, format, arg1, arg2)
+        formatAndLog(LogPriority.INFO, format, arg1, arg2)
     }
 
     override fun info(format: String, vararg arguments: Any?) {
-        formatAndLog(Log.INFO, format, *arguments)
+        formatAndLog(LogPriority.INFO, format, *arguments)
     }
 
     override fun info(msg: String, t: Throwable) {
-        log(Log.INFO, msg, t)
+        log(LogPriority.INFO, msg, t)
     }
 
     override fun error(msg: String) {
-        log(Log.ERROR, msg, null)
+        log(LogPriority.ERROR, msg, null)
     }
 
     override fun error(format: String, arg: Any?) {
-        formatAndLog(Log.ERROR, format, arg)
+        formatAndLog(LogPriority.ERROR, format, arg)
     }
 
     override fun error(format: String, arg1: Any?, arg2: Any?) {
-        formatAndLog(Log.ERROR, format, arg1, arg2)
+        formatAndLog(LogPriority.ERROR, format, arg1, arg2)
     }
 
     override fun error(format: String, vararg arguments: Any?) {
-        formatAndLog(Log.ERROR, format, *arguments)
+        formatAndLog(LogPriority.ERROR, format, *arguments)
     }
 
     override fun error(msg: String, t: Throwable) {
-        log(Log.ERROR, msg, t)
+        log(LogPriority.ERROR, msg, t)
     }
 
     override fun debug(msg: String) {
-        log(Log.DEBUG, msg, null)
+        log(LogPriority.DEBUG, msg, null)
     }
 
     override fun debug(format: String, arg: Any?) {
-        formatAndLog(Log.DEBUG, format, arg)
+        formatAndLog(LogPriority.DEBUG, format, arg)
     }
 
     override fun debug(format: String, arg1: Any?, arg2: Any?) {
-        formatAndLog(Log.DEBUG, format, arg1, arg2)
+        formatAndLog(LogPriority.DEBUG, format, arg1, arg2)
     }
 
     override fun debug(format: String, vararg arguments: Any?) {
-        formatAndLog(Log.DEBUG, format, *arguments)
+        formatAndLog(LogPriority.DEBUG, format, *arguments)
     }
 
     override fun debug(msg: String, t: Throwable) {
-        log(Log.DEBUG, msg, t)
+        log(LogPriority.DEBUG, msg, t)
     }
 
     override fun trace(msg: String) {
-        log(Log.VERBOSE, msg, null)
+        log(LogPriority.TRACE, msg, null)
     }
 
     override fun trace(format: String, arg: Any?) {
-        formatAndLog(Log.VERBOSE, format, arg)
+        formatAndLog(LogPriority.TRACE, format, arg)
     }
 
     override fun trace(format: String, arg1: Any?, arg2: Any?) {
-        formatAndLog(Log.VERBOSE, format, arg1, arg2)
+        formatAndLog(LogPriority.TRACE, format, arg1, arg2)
     }
 
     override fun trace(format: String, vararg arguments: Any?) {
-        formatAndLog(Log.VERBOSE, format, *arguments)
+        formatAndLog(LogPriority.TRACE, format, *arguments)
     }
 
     override fun trace(msg: String, t: Throwable) {
-        log(Log.VERBOSE, msg, t)
+        log(LogPriority.TRACE, msg, t)
     }
 
     override fun isErrorEnabled(): Boolean {
-        return isLoggable(Log.ERROR)
+        return isLoggable(LogPriority.ERROR)
     }
 
     override fun isDebugEnabled(): Boolean {
-        return isLoggable(Log.DEBUG)
+        return isLoggable(LogPriority.DEBUG)
     }
 
     override fun isInfoEnabled(): Boolean {
-        return isLoggable(Log.INFO)
+        return isLoggable(LogPriority.INFO)
     }
 
     override fun isWarnEnabled(): Boolean {
-        return isLoggable(Log.WARN)
+        return isLoggable(LogPriority.WARN)
     }
 
     override fun isTraceEnabled(): Boolean {
-        return isLoggable(Log.VERBOSE)
+        return isLoggable(LogPriority.TRACE)
     }
 
-    //on android, checks Log.isLoggable
-    private fun isLoggable(priority: Int): Boolean {
+    //on android, checks LogPriority.isLoggable
+    private fun isLoggable(priority: LogPriority): Boolean {
         return priority >= allowedPriority
     }
 
-    private fun formatAndLog(priority: Int, format: String, vararg arguments: Any?) {
+    private fun formatAndLog(priority: LogPriority, format: String, vararg arguments: Any?) {
         if (!isLoggable(priority))
             return
         val ft = MessageFormatter.arrayFormat(format, arguments)
         logInternal(priority, ft.message, ft.throwable)
     }
 
-    private fun log(priority: Int, message: String, throwable: Throwable?) {
+    private fun log(priority: LogPriority, message: String, throwable: Throwable?) {
         if (isLoggable(priority)) {
             logInternal(priority, message, throwable)
         }
@@ -174,34 +175,41 @@ class LoggerAdapter(
         return extractCulprit(caller)
     }
 
-    private fun androidLevelToSentryLevel(level: Int): LoggerLevel = when (level) {
-        Log.VERBOSE -> LoggerLevel.TRACE
-        Log.DEBUG -> LoggerLevel.DEBUG
-        Log.INFO -> LoggerLevel.INFO
-        Log.WARN -> LoggerLevel.WARN
-        Log.ERROR -> LoggerLevel.ERROR
-        else -> throw IllegalArgumentException("Invalid log level: $level")
+    private fun logPriorityToSentryLevel(priority: LogPriority): LoggerLevel = when (priority) {
+        LogPriority.TRACE -> LoggerLevel.TRACE
+        LogPriority.DEBUG -> LoggerLevel.DEBUG
+        LogPriority.INFO -> LoggerLevel.INFO
+        LogPriority.WARN -> LoggerLevel.WARN
+        LogPriority.ERROR -> LoggerLevel.ERROR
     }
 
-    private fun logInternal(priority: Int, message: String, throwable: Throwable?) {
+    private fun getStackTraceAsString(throwable: Throwable): String {
+        val sw = StringWriter()
+        val pw = PrintWriter(sw)
+        throwable.printStackTrace(pw)
+        pw.flush()
+        return sw.toString()
+    }
+
+    private fun logInternal(priority: LogPriority, message: String, throwable: Throwable?) {
         val m = if (throwable != null) {
-            val s = Log.getStackTraceString(throwable)
+            val s = getStackTraceAsString(throwable)
             message + "\n" + s
         }
         else
             message
 
-        Log.println(priority, loggerName, m)
+        platformLogger.log(priority, loggerName, m)
 
         //hacky
-        if (priority == Log.ERROR) {
+        if (priority == LogPriority.ERROR) {
             val currentThread = Thread.currentThread()
 
             val threadName = currentThread.name
             val timestamp = currentTimestamp()
             //WARNING don't move this into another function call without editting the stacktrace logic in the function
             val culprit = getCulpritFromStacktrace()
-            val level = androidLevelToSentryLevel(priority)
+            val level = logPriorityToSentryLevel(priority)
 
             val builder = SentryEventBuilder(
                 loggerName,
@@ -215,13 +223,13 @@ class LoggerAdapter(
             if (throwable != null)
                 builder.withExceptionInterface(ThrowableThrowableAdapter(throwable))
 
-            builder.withOs("Android", Build.VERSION.RELEASE)
+            platformLogger.addBuilderProperties(builder)
 
             try {
                 Sentry.submit(builder)
             }
             catch (t: Throwable) {
-                Log.wtf("LoggerAdapter", "Failed to submit bug report: ${t.message}")
+                platformLogger.wtf("Failed to submit bug report: ${t.message}")
             }
         }
     }
