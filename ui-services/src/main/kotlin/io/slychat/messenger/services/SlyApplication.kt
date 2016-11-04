@@ -105,8 +105,6 @@ class SlyApplication {
     internal fun init(applicationComponent: ApplicationComponent, doAutoLogin: Boolean = false) {
         appComponent = applicationComponent
 
-        appComponent.networkStatus.subscribe { updateNetworkStatus(it) }
-
         initializeApplicationServices()
 
         initInstallationData()
@@ -115,6 +113,9 @@ class SlyApplication {
         keepAliveObservable = Observable.interval(interval, interval, TimeUnit.MILLISECONDS, appComponent.rxScheduler)
 
         bugReportSubmitter = initSentry(appComponent)
+
+        //must be done after bugReportSubmitter is set, so that it can receive the initial network status
+        appComponent.networkStatus.subscribe { updateNetworkStatus(it) }
 
         //android can fire these events multiple time in succession (eg: when google account sync is occuring)
         //so we clamp down the number of events we process
