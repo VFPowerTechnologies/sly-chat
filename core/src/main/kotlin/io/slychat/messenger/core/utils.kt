@@ -161,31 +161,16 @@ fun String.unhexify(): ByteArray {
     return bytes
 }
 
-private fun isInterestingSocketError(e: SocketException): Boolean {
-    val ignore = listOf(
-       "ENETUNREACH",
-       "ETIMEDOUT"
-    )
-
-    val message = e.message ?: return true
-
-    ignore.forEach {
-        if (message.contains(it))
-            return false
-    }
-
-    return true
-}
-
 /** Returns true if given exception is not a network error. */
 fun isNotNetworkError(t: Throwable): Boolean = when (t) {
     is SocketTimeoutException -> false
     is UnknownHostException -> false
     is SSLHandshakeException -> false
     is ConnectException -> false
-    //not really sure if I should ignore all of these; just ignoring some for now, but should probably ignore others
-    is SocketException -> isInterestingSocketError(t)
-    else -> true
+    //not really sure if I should ignore all of these; haven't seen any that were of any value
+    is SocketException -> false
+    //android throws this from HttpURLConnection, wrapping the underlying ConnectException, etc
+    else -> false
 }
 
 /** Logs at error level only if isError is true; otherwise logs at warning level. */
