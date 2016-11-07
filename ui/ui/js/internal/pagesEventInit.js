@@ -177,6 +177,7 @@ slychat.onPageInit('register', function (page) {
 });
 
 slychat.onPageInit('chat', function (page) {
+    emojiController.createPicker();
     var isGroup = page.query.email === undefined;
     var newMessageInput = $("#newMessageInput");
     contactController.resetUnreadCount(page.query.id, isGroup);
@@ -234,6 +235,13 @@ slychat.onPageInit('chat', function (page) {
 
             chatController.toggleExpiringMessageDisplay();
         });
+
+        $("#emojiPickerBtn").on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            slychat.popover(".popover-emoji", this);
+        });
     }
     else {
         $("#submitNewChatMessage").on('touchstart', function (e) {
@@ -247,9 +255,14 @@ slychat.onPageInit('chat', function (page) {
             e.stopPropagation();
 
             chatController.toggleExpiringMessageDisplay();
-        })
-    }
+        });
 
+        $("#emojiPickerBtn").on('touchstart', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            emojiController.toggleMobileEmoji();
+        });
+    }
 
     $("#newMessageInputDiv").click(function () {
         newMessageInput.focus();

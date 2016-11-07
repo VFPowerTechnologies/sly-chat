@@ -67,11 +67,11 @@ NavigationController.prototype = {
         if($$('.popup.modal-in').length > 0) {
             $$('.popup.modal-in').find('.close-popup-btn').trigger('click');
         }
-        else if ($$('.picker-modal.modal-in').length > 0) {
+        else if ($$('.picker-modal.modal-in').length > 0 || $$(".actions-modal.modal-in").length > 0 || $$(".popover.modal-in").length > 0) {
             slychat.closeModal();
         }
-        else if ($$(".actions-modal.modal-in").length > 0 ) {
-            slychat.closeModal();
+        else if ($(".mobile-emoji-picker-opened").length > 0) {
+            emojiController.closeMobileEmoji();
         }
         else {
             historyService.pop().then(function (url) {
