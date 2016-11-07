@@ -43,8 +43,6 @@ Dispatcher.prototype.handleCallFromNative = function (serviceName, methodName, m
     var args = methodArgs;
     this._logInfo(serviceName + "." + methodName + "(" + args + ") (" + callbackId + ")");
 
-    console.log('serviceInfo: ' + serviceInfo);
-
     //TODO maybe have variants for sync and async fns
     //for sync, just run the fun and send data back
     var resolve = function (v) {
