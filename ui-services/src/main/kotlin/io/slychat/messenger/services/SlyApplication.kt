@@ -328,7 +328,8 @@ class SlyApplication {
             //incase session initialization failed we need to clean up the user session here
             destroyUserSession()
 
-            log.warn("Login failed: {}", e.message, e)
+            val isError = (e !is AuthApiResponseException) && isNotNetworkError(e)
+            log.condError(isError, "Login failed: {}", e.message, e)
 
             val ev = when (e) {
                 is AuthApiResponseException ->
