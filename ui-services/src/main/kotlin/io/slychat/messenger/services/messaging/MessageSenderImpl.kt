@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.messaging
 
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.isNotNetworkError
@@ -7,6 +8,7 @@ import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
 import io.slychat.messenger.core.persistence.SenderMessageEntry
 import io.slychat.messenger.core.relay.*
+import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.RelayClock
@@ -29,6 +31,15 @@ class MessageSenderImpl(
     private val relayClock: RelayClock,
     messageUpdates: Observable<MessageUpdateEvent>
 ) : MessageSender {
+    /** Result of sending a message via the relay. */
+    private sealed class MessageSendResult {
+        abstract val relayMessageId: String
+
+        class Ok(val to: UserId, override val relayMessageId: String, val timestamp: Long) : MessageSendResult()
+        class DeviceMismatch(val to: UserId, override val relayMessageId: String, val info: DeviceMismatchContent) : MessageSendResult()
+        class InactiveUser(val to: UserId, override val relayMessageId: String) : MessageSendResult()
+    }
+
     private class QueuedSendMessage(
         val relayMessageId: String,
         val metadata: MessageMetadata,
@@ -60,23 +71,6 @@ class MessageSenderImpl(
         is MessageUpdateEvent.Deleted -> onMessagesDeleted(event)
         is MessageUpdateEvent.DeletedAll -> onAllMessagesDeleted(event)
         else -> {}
-    }
-
-    //basicly a copy of kotlin's filterInPlace, but with returning the removed items
-    private fun <T> removeAll(collection: MutableCollection<T>, predicate: (T) -> Boolean): List<T> {
-        val found = ArrayList<T>()
-
-        with(collection.iterator()) {
-            while (hasNext()) {
-                val nextItem = next()
-                if (predicate(nextItem)) {
-                    remove()
-                    found.add(nextItem)
-                }
-            }
-        }
-
-        return found
     }
 
     private fun onMessagesDeleted(event: MessageUpdateEvent.Deleted) {
@@ -124,6 +118,8 @@ class MessageSenderImpl(
             is ServerReceivedMessage -> handleServerRecievedMessage(event)
 
             is DeviceMismatch -> handleDeviceMismatch(event)
+
+            is InactiveUser -> handleInactiveUser(event)
         }
     }
 
@@ -174,9 +170,9 @@ class MessageSenderImpl(
         }
     }
 
-    private fun markMessageAsDelivered(metadata: MessageMetadata, timestamp: Long): Promise<Unit, Exception> {
-        return messageQueuePersistenceManager.remove(metadata.userId, metadata.messageId) map { Unit } successUi {
-            messageSentSubject.onNext(MessageSendRecord(metadata, timestamp))
+    private fun removeMessageFromQueue(metadata: MessageMetadata): Promise<Unit, Exception> {
+        return messageQueuePersistenceManager.remove(metadata.userId, metadata.messageId) map { Unit } fail { e ->
+            log.error("Unable to remove message from send queue: {}", e.message, e)
         }
     }
 
@@ -184,25 +180,16 @@ class MessageSenderImpl(
         val message = currentSendMessage
 
         if (message != null) {
-            val relayMessageId = message.relayMessageId
-
             when (result) {
-                is MessageSendOk -> {
-                    //this should never happen; nfi what to do if it does? try to send again?
-                    //no idea what would cause this either
-                    if (result.relayMessageId != relayMessageId) {
-                        log.error("Message mismatch")
-                    }
-                    else {
-                        markMessageAsDelivered(message.metadata, result.timestamp) fail { e ->
-                            log.error("Unable to mark message as delivered: {}", e.message, e)
-                        }
+                is MessageSendResult.Ok -> {
+                    removeMessageFromQueue(message.metadata) successUi {
+                        messageSentSubject.onNext(MessageSendRecord(message.metadata, result.timestamp))
                     }
 
                     nextSendMessage()
                 }
 
-                is MessageSendDeviceMismatch -> {
+                is MessageSendResult.DeviceMismatch -> {
                     log.info("Got device mismatch for user={}, relayMessageId={}", result.to, result.relayMessageId)
 
                     messageCipherService.updateDevices(result.to, result.info) successUi {
@@ -212,8 +199,15 @@ class MessageSenderImpl(
                     }
                 }
 
-            //TODO failures
-                else -> throw RuntimeException("Unknown message send result: $result")
+                is MessageSendResult.InactiveUser -> {
+                    log.info("User {} is no longer active", result.to)
+
+                    removeMessageFromQueue(message.metadata) successUi {
+                        //TODO
+                    }
+
+                    nextSendMessage()
+                }
             }
         }
         else {
@@ -259,12 +253,16 @@ class MessageSenderImpl(
         }
     }
 
+    private fun handleInactiveUser(event: InactiveUser) {
+        processMessageSendResult(MessageSendResult.InactiveUser(event.to, event.messageId))
+    }
+
     private fun handleServerRecievedMessage(event: ServerReceivedMessage) {
-        processMessageSendResult(MessageSendOk(event.to, event.messageId, event.timestamp))
+        processMessageSendResult(MessageSendResult.Ok(event.to, event.messageId, event.timestamp))
     }
 
     private fun handleDeviceMismatch(event: DeviceMismatch) {
-        processMessageSendResult(MessageSendDeviceMismatch(event.to, event.messageId, event.info))
+        processMessageSendResult(MessageSendResult.DeviceMismatch(event.to, event.messageId, event.info))
     }
 
     private fun processDeviceUpdateFailure(cause: Exception) {

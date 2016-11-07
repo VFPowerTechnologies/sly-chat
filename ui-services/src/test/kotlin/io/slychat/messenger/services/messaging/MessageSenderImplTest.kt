@@ -40,24 +40,24 @@ class MessageSenderImplTest {
         return addToQueue(SenderMessageEntry(metadata, message))
     }
 
-    val messageCipherService: MessageCipherService = mock()
-    val relayClientManager: RelayClientManager = mock()
-    val messageQueuePersistenceManager: MessageQueuePersistenceManager = mock()
-    val relayClock: RelayClock = mock()
+    private val messageCipherService: MessageCipherService = mock()
+    private val relayClientManager: RelayClientManager = mock()
+    private val messageQueuePersistenceManager: MessageQueuePersistenceManager = mock()
+    private val relayClock: RelayClock = mock()
 
-    val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
-    val relayOnlineStatus: BehaviorSubject<Boolean> = BehaviorSubject.create()
+    private val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
+    private val relayOnlineStatus: BehaviorSubject<Boolean> = BehaviorSubject.create()
 
-    val messageUpdateEvents: PublishSubject<MessageUpdateEvent> = PublishSubject.create()
+    private val messageUpdateEvents: PublishSubject<MessageUpdateEvent> = PublishSubject.create()
 
-    val defaultConnectionTag = Random().nextInt(Int.MAX_VALUE)
+    private val defaultConnectionTag = Random().nextInt(Int.MAX_VALUE)
 
-    fun setRelayOnlineStatus(isOnline: Boolean) {
+    private fun setRelayOnlineStatus(isOnline: Boolean) {
         relayOnlineStatus.onNext(isOnline)
         whenever(relayClientManager.isOnline).thenReturn(isOnline)
     }
 
-    fun randomEncryptionResult(): EncryptionResult {
+    private fun randomEncryptionResult(): EncryptionResult {
         val dummyMessageData = MessageData(randomDeviceId(), 0, randomEncryptedPayload())
         return EncryptionResult(listOf(dummyMessageData), defaultConnectionTag)
     }
@@ -81,11 +81,11 @@ class MessageSenderImplTest {
         whenever(relayClock.currentTime()).thenReturn(currentTimestamp())
     }
 
-    fun getCurrentRelayMessageId(sender: MessageSenderImpl): String {
+    private fun getCurrentRelayMessageId(sender: MessageSenderImpl): String {
         return assertNotNull(sender.currentRelayMessageId, "No queued message")
     }
 
-    fun createSender(
+    private fun createSender(
         relayIsOnline: Boolean = false,
         initialEntries: List<SenderMessageEntry> = emptyList()
     ): MessageSenderImpl {
@@ -102,10 +102,10 @@ class MessageSenderImplTest {
         )
     }
 
-    fun randomEncryptedPayload(): EncryptedPackagePayloadV0 =
+    private fun randomEncryptedPayload(): EncryptedPackagePayloadV0 =
         EncryptedPackagePayloadV0(true, ByteArray(0))
 
-    fun runWhileSending(sender: MessageSenderImpl, body: (SenderMessageEntry) -> Unit) {
+    private fun runWhileSending(sender: MessageSenderImpl, body: (SenderMessageEntry) -> Unit) {
         //have something occupy the current send slot
         val pendingEntry = randomSenderMessageEntry()
         sender.addToQueue(pendingEntry).get()
@@ -115,7 +115,6 @@ class MessageSenderImplTest {
         //complete send
         relayEvents.onNext(ServerReceivedMessage(pendingEntry.metadata.userId, getCurrentRelayMessageId(sender), currentTimestamp()))
     }
-
 
     @Test
     fun `it should read all queued messages when a relay connection is available on startup`() {
@@ -193,6 +192,36 @@ class MessageSenderImplTest {
         relayEvents.onNext(ServerReceivedMessage(metadata.userId, getCurrentRelayMessageId(sender), currentTimestamp()))
 
         verify(messageQueuePersistenceManager).remove(metadata.userId, metadata.messageId)
+    }
+
+    @Test
+    fun `it should remove the package from the send queue if an InactiveUser error is received from the relay`() {
+        val sender = createSender(true)
+
+        val entry = randomSenderMessageEntry()
+
+        val metadata = entry.metadata
+
+        sender.addToQueue(metadata, entry.message).get()
+
+        relayEvents.onNext(InactiveUser(metadata.userId, getCurrentRelayMessageId(sender)))
+
+        verify(messageQueuePersistenceManager).remove(metadata.userId, metadata.messageId)
+    }
+
+    @Test
+    fun `it should remove the package emit SendFailure if an InactiveUser error is received from the relay`() {
+        val sender = createSender(true)
+
+        val entry = randomSenderMessageEntry()
+
+        val metadata = entry.metadata
+
+        sender.addToQueue(metadata, entry.message).get()
+
+        relayEvents.onNext(InactiveUser(metadata.userId, getCurrentRelayMessageId(sender)))
+
+        TODO()
     }
 
     @Test
