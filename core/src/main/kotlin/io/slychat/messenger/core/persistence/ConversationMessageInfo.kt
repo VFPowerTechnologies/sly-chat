@@ -7,5 +7,9 @@ import io.slychat.messenger.core.UserId
  */
 data class ConversationMessageInfo(
     val speaker: UserId?,
-    val info: MessageInfo
-)
+    val info: MessageInfo,
+    val failures: Map<UserId, MessageSendFailure> = emptyMap()
+) {
+    val hasFailures: Boolean
+        get() = failures.isNotEmpty()
+}

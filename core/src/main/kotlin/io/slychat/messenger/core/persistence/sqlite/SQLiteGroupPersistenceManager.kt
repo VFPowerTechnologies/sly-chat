@@ -31,35 +31,6 @@ internal fun rowToGroupInfo(stmt: SQLiteStatement, startIndex: Int = 0): GroupIn
     )
 }
 
-internal fun rowToConversationMessageInfo(stmt: SQLiteStatement): ConversationMessageInfo {
-    val id = stmt.columnString(0)
-    val speaker = stmt.columnNullableLong(1)?.let { UserId(it) }
-    val timestamp = stmt.columnLong(2)
-    val receivedTimestamp = stmt.columnLong(3)
-    val isRead = stmt.columnBool(4)
-    val isDestroyed = stmt.columnBool(5)
-    val ttl = stmt.columnLong(6)
-    val expiresAt = stmt.columnLong(7)
-    val isDelivered = stmt.columnBool(8)
-    val message = stmt.columnString(9)
-
-    return ConversationMessageInfo(
-        speaker,
-        MessageInfo(
-            id,
-            message,
-            timestamp,
-            receivedTimestamp,
-            speaker == null,
-            isDelivered,
-            isRead,
-            isDestroyed,
-            ttl,
-            expiresAt
-        )
-    )
-}
-
 internal fun queryGroupInfo(connection: SQLiteConnection, id: GroupId): GroupInfo? {
     return connection.withPrepared("SELECT id, name, membership_level FROM groups WHERE id=?") { stmt ->
         stmt.bind(1, id)
