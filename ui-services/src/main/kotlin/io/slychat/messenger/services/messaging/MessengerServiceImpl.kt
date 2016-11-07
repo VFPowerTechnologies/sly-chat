@@ -75,11 +75,7 @@ class MessengerServiceImpl(
 
         val conversationId = metadata.userId.toConversationId()
 
-        messageService.markMessageAsDelivered(conversationId, messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
-            broadcastSentMessage(metadata, conversationMessageInfo)
-        } fail { e ->
-            log.error("Unable to mark convo message <<{}>> to {} as delivered: {}", messageId, metadata.userId, e.message, e)
-        }
+        markMessageAsDelivered(conversationId, metadata, messageId, serverReceivedTimestamp)
     }
 
     private fun processGroupUpdate(metadata: MessageMetadata, serverReceivedTimestamp: Long) {
@@ -92,10 +88,14 @@ class MessengerServiceImpl(
 
         val conversationId = groupId.toConversationId()
 
+        markMessageAsDelivered(conversationId, metadata, messageId, serverReceivedTimestamp)
+    }
+
+    private fun markMessageAsDelivered(conversationId: ConversationId, metadata: MessageMetadata, messageId: String, serverReceivedTimestamp: Long) {
         messageService.markMessageAsDelivered(conversationId, messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
             broadcastSentMessage(metadata, conversationMessageInfo)
         } fail { e ->
-            log.error("Unable to mark group message <<{}/{}>> as delivered: {}", groupId, messageId, e.message, e)
+            log.error("Unable to mark message for conversation <<{}>> as delivered: {}", conversationId, messageId, e.message, e)
         }
     }
 
