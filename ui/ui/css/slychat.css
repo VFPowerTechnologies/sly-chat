@@ -332,7 +332,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .expiring-message-toolbar {
     height: 80px;
 }
-.bomb-button-icon i {
+.toggle-options-btn i {
     color: #a9a9a9;
 }
 .expiring-message-toolbar .bomb-button-icon i {
@@ -359,6 +359,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     background-color: transparent;
     display: inline-block;
     outline: none;
+    color: black;
 }
 .layout-dark #newMessageInput {
     color: #a9a9a9;
@@ -631,7 +632,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     bottom: 0;
     top: initial;
 }
-.layout-dark .mobile-emoji-picker {
+.mobile-emoji-picker {
     background-color: black;
 }
 .emoticon-link img {
@@ -666,9 +667,6 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     text-align: center;
 }
 .emoji-picker-backspace-container .material-icons {
-    color: rgba(0, 0, 0, 0.54);
-}
-.layout-dark .emoji-picker-backspace-container .material-icons {
     color: rgba(255, 255, 255, 1);
 }
 .emoji-picker-backspace-container button {
@@ -688,10 +686,10 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .emoji-picker-toolbar .toolbar-inner {
     overflow: initial;
 }
-.layout-dark .emoji-picker-toolbar {
+.emoji-picker-toolbar {
     background-color: black;
 }
-.layout-dark .emoji-category-btn.active {
+.emoji-category-btn.active {
     background-color: #fff;
 }
 

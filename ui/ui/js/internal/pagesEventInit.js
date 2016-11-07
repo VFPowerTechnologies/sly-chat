@@ -264,7 +264,6 @@ slychat.onPageInit('chat', function (page) {
         });
     }
 
-
     $("#newMessageInputDiv").click(function () {
         newMessageInput.focus();
     });

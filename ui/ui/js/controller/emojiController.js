@@ -163,7 +163,7 @@ var EmojiController = function () {
 
         8: {
             id: "flags",
-            icon: "flag_gb",
+            icon: "ca",
             title: "Flags",
             emoji: "ac af al dz ad ao ai ag ar am aw au at az bs bh bd bb by be bz bj bm bt bo ba bw br bn bg bf bi " +
             "cv kh cm ca ky cf td flag_cl cn co km cg flag_cd cr hr cu cy cz dk dj dm do ec eg sv gq er ee et fk fo " +
@@ -200,7 +200,7 @@ EmojiController.prototype = {
             if (typeof this.picker === "undefined") {
                 this.picker = this.createDesktopEmojiPicker(navbar, tabs);
                 $("body").append(this.picker);
-                this.createTabEvent();
+                this.createPopoverEvent();
             }
         }
         else {
@@ -211,25 +211,31 @@ EmojiController.prototype = {
 
     createNavbarButton : function (icon, id, index) {
         var img = emojione.toImage(':' + icon + ':');
-        var c = '';
+        var classes = '';
         if (index == 0)
-            c = 'active';
+            classes = 'active';
 
-        return '<a href="#' + id + '" class="button emoji-category-btn ' + c + '" style="display: inline;" data-index="' + index + '">' + img + '</a>';
+        if (isDesktop)
+            classes += " tab-link ";
+
+        return '<a href="#' + id + '" class="button emoji-category-btn ' + classes + '" style="display: inline;" data-index="' + index + '">' + img + '</a>';
     },
 
     createTabs : function (icons, id, index) {
-        var c = '';
+        var classes = '';
         var links = '';
 
         if (index == 0) {
-            c = 'active';
+            classes = 'active';
             icons.split(" ").forEach(function (icon) {
                 links += '<a class="emoticon-link" data-emoji=":' + icon + ':" href="#">' + emojione.toImage(":" + icon + ":") + '</a>';
             });
         }
 
-        return '<div id="' + id + '" class="swiper-slide emoji-swiper-slide ' + c + '" style="overflow-x: auto; padding-bottom: 15px;" data-index="' + index + '">' +
+        if (isDesktop)
+            classes += " tab";
+
+        return '<div id="' + id + '" class="swiper-slide emoji-swiper-slide ' + classes + '" style="overflow-x: auto; padding-bottom: 15px;" data-index="' + index + '">' +
                 '<div class="content-block" style="margin-top: 5px; padding: 0;">' +
                     links +
                 '</div>' +
@@ -253,12 +259,23 @@ EmojiController.prototype = {
         return '' +
             '<div class="popover popover-emoji popover-on-top" style="height: 200px;">' +
                 '<div class="popover-inner">' +
+                    '<div style="position: absolute; top: -20px; width: 30px; right: 0; height: 20px; background-color: black; color: #fff;">' +
+                        '<button class="btn close-emoji-popover" style="background-color: transparent; border: none; outline: none; text-align: center; width: 100%;"><i class="fa fa-close"></i></button>' +
+                    '</div>' +
                     '<div class="emoji-picker-header toolbar tabbar" style="height: 40px; width: 100%;">' +
-                        '<div class="toolbar-inner">' +
-                            navbar +
+                        '<div class="emoji-toolbar-scroll-container" style="position: absolute; top: 0; left: 0;">' +
+                            "<button id='emojiBackBtn' class='btn' style='border: none; width: 30px; height: 40px;'> <i class='fa fa-caret-left'></i> </button>" +
+                        '</div>' +
+                        '<div class="emoji-toolbar-scroll-container" style="position: absolute; top: 0; right: 0;">' +
+                            "<button id='emojiForwardBtn' class='btn' style='border: none; width: 30px; height: 40px;'> <i class='fa fa-caret-right'></i> </button>" +
+                        '</div>' +
+                        '<div style="overflow: hidden; height: 100%;">' +
+                            "<div class='toolbar-inner' style='width: calc(100% - 60px); left: 30px; height: 100%;'>" +
+                                navbar +
+                            "</div>" +
                         '</div>' +
                     '</div>' +
-                    '<div id="emojiTabs" class="tabs" style="height: 160px; overflow-x: auto;">' +
+                    '<div id="emojiTabs" class="tabs" style="height: 160px; overflow: hidden;">' +
                         tabs +
                     '</div>' +
                 '</div>' +
@@ -300,15 +317,40 @@ EmojiController.prototype = {
         return link;
     },
 
-    createTabEvent : function () {
-        var tabs = $("#emojiTabs").find('.tab');
-        tabs.each(function () {
-            $(this).on('show', function () {
-                if ($(this).find('.content-block').html() == "") {
-                    var index = $(this).attr("data-index");
-                    emojiController.addEmojiToTab($(this), this.filters[index].emoji);
-                }
-            });
+    createPopoverEvent : function () {
+        $(".emoticon-link").each(function () {
+            emojiController.createIconLinkEvent($(this));
+        });
+
+        $("#emojiTabs").find('.tab').on("show", function () {
+            if ($(this).find('.emoticon-link').length <= 0) {
+                var index = $(this).attr("data-index");
+                emojiController.addEmojiToTab($(this), emojiController.filters[index].emoji);
+            }
+        });
+
+        $("#emojiBackBtn").click(function () {
+            var index = $(".emoji-category-btn.active").attr("data-index") - 1;
+            var prevBtn = $(".emoji-category-btn[data-index=" + index + "]");
+            if (prevBtn.length <= 0)
+                return;
+
+            slychat.showTab(prevBtn.attr("href"));
+            emojiController.desktopScrollIfNeeded($(".popover-emoji").find(".toolbar-inner"), prevBtn);
+        });
+
+        $("#emojiForwardBtn").click(function () {
+            var index = parseInt($(".emoji-category-btn.active").attr("data-index")) + 1;
+            var nextBtn = $(".emoji-category-btn[data-index=" + index + "]");
+            if (nextBtn.length <= 0)
+                return;
+
+            slychat.showTab(nextBtn.attr("href"));
+            emojiController.desktopScrollIfNeeded($(".popover-emoji").find(".toolbar-inner"), nextBtn);
+        });
+
+        $(".close-emoji-popover").click(function () {
+            slychat.closeModal();
         });
     },
 
@@ -319,14 +361,14 @@ EmojiController.prototype = {
         else {
             if (slychat.keyboardInfo.isVisible) {
                 this.openMobileEmoji(window.orientation);
-                $("#emojiPickerBtn").focus();
+                $("#newMessageInput").blur();
             }
             else {
                 if (window.orientation === 0){
                     if (slychat.keyboardInfo.container.portrait === 0) {
                         $("#newMessageInput").focus();
                         setTimeout(function () {
-                            $("#emojiPickerBtn").focus();
+                            $("#newMessageInput").blur();
                             emojiController.openMobileEmoji(window.orientation);
                         }, 500);
                     }
@@ -337,7 +379,7 @@ EmojiController.prototype = {
                     if (slychat.keyboardInfo.container.landscape === 0) {
                         $("#newMessageInput").focus();
                         setTimeout(function () {
-                            $("#emojiPickerBtn").focus();
+                            $("#newMessageInput").blur();
                             emojiController.openMobileEmoji(window.orientation);
                         }, 500);
                     }
@@ -445,12 +487,29 @@ EmojiController.prototype = {
         }
     },
 
-    scrollToTabIconIfNeeded : function (container, element) {
+    desktopScrollIfNeeded : function (container, element) {
         var curPos = element.offset();
         var curLeft = curPos.left + element.outerWidth();
+        var conMin = container.offset().left + element.outerWidth();
+        var conMax = container.width() + container.offset().left;
+
+        if (curLeft > conMax)
+            container.scrollTo(element);
+
+        if (curLeft < conMin)
+            container.scrollTo(element);
+    },
+
+    scrollToTabIconIfNeeded : function (container, element) {
+        var curPos = element.offset();
+        var curLeft = curPos.left;
+        var curRight = curLeft + element.outerWidth();
         var screenWidth = $(window).width();
 
-        if (curLeft > screenWidth || curLeft < 0)
+        if (curRight > screenWidth)
+            container.scrollTo(element);
+
+        if (curLeft < 0)
             container.scrollTo(element);
     },
 
@@ -478,5 +537,5 @@ EmojiController.prototype = {
                 }
             });
         }
-    },
+    }
 };
