@@ -52,6 +52,8 @@ class MainActivity : AppCompatActivity() {
         private val RINGTONE_PICKER_REQUEST_CODE = 1
     }
 
+    private lateinit var dispatcher: Dispatcher
+
     private var lastOrientation = Surface.ROTATION_0
     private var lastActivityHeight = 0
 
@@ -265,7 +267,7 @@ class MainActivity : AppCompatActivity() {
 
         val webEngineInterface = AndroidWebEngineInterface(webView)
 
-        val dispatcher = Dispatcher(webEngineInterface)
+        dispatcher = Dispatcher(webEngineInterface)
 
         registerCoreServicesOnDispatcher(dispatcher, AndroidApp.get(this).appComponent)
 
@@ -281,6 +283,10 @@ class MainActivity : AppCompatActivity() {
 
     fun hideSplashImage() {
         val splashView = findViewById(R.id.splashImageView)
+        if (splashView == null) {
+            log.warn("Attempted to hide splash screen twice!")
+            return
+        }
 
         val animation = AlphaAnimation(1f, 0f)
         animation.duration = 500
@@ -347,6 +353,8 @@ class MainActivity : AppCompatActivity() {
         log.debug("onDestroy")
 
         clearAppActivity()
+
+        dispatcher.resetState()
 
         clearAllListenersOnDispatcher(AndroidApp.get(this).appComponent)
 
@@ -449,11 +457,6 @@ class MainActivity : AppCompatActivity() {
         return deferred.promise
     }
 
-    private fun getRingtoneName(uri: Uri): String {
-        val ringtone = RingtoneManager.getRingtone(this, uri)
-        return ringtone.getTitle(this)
-    }
-
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {
             RINGTONE_PICKER_REQUEST_CODE -> {
@@ -511,8 +514,4 @@ class MainActivity : AppCompatActivity() {
         return windowManager.defaultDisplay.rotation
     }
 
-    private fun isLandscape(): Boolean {
-        val rotation = getOrientation()
-        return rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
-    }
 }

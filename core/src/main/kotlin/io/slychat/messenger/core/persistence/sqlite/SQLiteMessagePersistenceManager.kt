@@ -598,6 +598,7 @@ WHERE
             messageIds.forEach { messageId ->
                 stmt.bind(1, messageId)
                 stmt.step()
+                stmt.reset(false)
             }
         }
     }

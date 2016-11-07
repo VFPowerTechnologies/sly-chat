@@ -379,4 +379,11 @@ class SlyApplicationTest {
 
         verify(userComponent.preKeyManager).checkForUpload()
     }
+
+    //FIXME need to refactor to make this possible
+    @Ignore
+    @Test
+    fun `it should notify the bug submitter of the initial network status`() {
+        TODO()
+    }
 }

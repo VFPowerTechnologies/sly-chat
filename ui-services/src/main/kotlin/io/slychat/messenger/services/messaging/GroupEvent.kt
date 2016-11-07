@@ -4,7 +4,9 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
 
 sealed class GroupEvent {
-    class Joined(val id: GroupId, val name: String, val members: Set<UserId>, val fromSync: Boolean) : GroupEvent() {
+    abstract val id: GroupId
+
+    class Joined(override val id: GroupId, val name: String, val members: Set<UserId>, val fromSync: Boolean) : GroupEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
@@ -32,7 +34,7 @@ sealed class GroupEvent {
         }
     }
 
-    class Blocked(val id: GroupId, val fromSync: Boolean) : GroupEvent() {
+    class Blocked(override val id: GroupId, val fromSync: Boolean) : GroupEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
@@ -53,7 +55,7 @@ sealed class GroupEvent {
         }
     }
 
-    class Parted(val id: GroupId, val fromSync: Boolean) : GroupEvent() {
+    class Parted(override val id: GroupId, val fromSync: Boolean) : GroupEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
@@ -74,7 +76,7 @@ sealed class GroupEvent {
         }
     }
 
-    class MembershipChanged(val id: GroupId, val newMembers: Set<UserId>, val partedMembers: Set<UserId>, val fromSync: Boolean) : GroupEvent() {
+    class MembershipChanged(override val id: GroupId, val newMembers: Set<UserId>, val partedMembers: Set<UserId>, val fromSync: Boolean) : GroupEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false

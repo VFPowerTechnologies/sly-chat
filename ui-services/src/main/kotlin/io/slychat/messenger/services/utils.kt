@@ -4,16 +4,11 @@ package io.slychat.messenger.services
 import com.google.i18n.phonenumbers.NumberParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.Phonenumber
-import io.slychat.messenger.core.SlyBuildConfig
-import io.slychat.messenger.core.div
 import io.slychat.messenger.core.persistence.AccountInfo
-import io.slychat.messenger.core.sentry.*
-import io.slychat.messenger.services.di.ApplicationComponent
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
-import java.util.concurrent.ArrayBlockingQueue
 
 fun parsePhoneNumber(s: String, defaultRegion: String): Phonenumber.PhoneNumber? {
     val phoneNumberUtil = PhoneNumberUtil.getInstance()
@@ -111,34 +106,3 @@ infix inline fun <reified E : Exception, T> Promise<T, Exception>.bindRecoverFor
         if (e is E) body(e)
         else throw e
     }
-
-
-fun initSentry(applicationComponent: ApplicationComponent): ReportSubmitterCommunicator<ByteArray>? {
-    val dsn = SlyBuildConfig.sentryDsn ?: return null
-
-    val bugReportsPath = applicationComponent.platformInfo.appFileStorageDirectory / "bug-reports.bin"
-
-    val storage = FileReportStorage(bugReportsPath)
-
-    val client = RavenReportSubmitClient(dsn, applicationComponent.slyHttpClientFactory)
-
-    val queue = ArrayBlockingQueue<ReporterMessage<ByteArray>>(10)
-
-    val reporter = ReportSubmitter(storage, client, queue)
-
-    val thread = Thread({
-        reporter.run()
-    })
-
-    thread.isDaemon = true
-    thread.name = "Bug Report Submitter"
-    thread.priority = Thread.MIN_PRIORITY
-
-    thread.start()
-
-    val communicator = ReportSubmitterCommunicator(queue)
-
-    Sentry.setCommunicator(communicator)
-
-    return communicator
-}

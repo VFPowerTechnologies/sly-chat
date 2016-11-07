@@ -6,10 +6,7 @@ import io.slychat.messenger.core.Os
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.loadSharedLibFromResource
-import io.slychat.messenger.core.persistence.AllowedMessageLevel
-import io.slychat.messenger.core.persistence.ConversationId
-import io.slychat.messenger.core.persistence.GroupId
-import io.slychat.messenger.core.persistence.GroupMembershipLevel
+import io.slychat.messenger.core.persistence.*
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -87,8 +84,17 @@ fun SQLiteStatement.columnConversationId(index: Int): ConversationId {
     return ConversationId.fromString(columnString(index))
 }
 
+fun SQLiteStatement.columnNullableConversationId(index: Int): ConversationId? {
+    val string = columnString(index)
+    return string?.let { ConversationId.fromString(it) }
+}
+
 fun SQLiteStatement.columnGroupMembershipLevel(index: Int): GroupMembershipLevel {
     return columnInt(index).toGroupMembershipLevel()
+}
+
+fun SQLiteStatement.columnLogEventType(index: Int): LogEventType {
+    return LogEventType.valueOf(columnString(index))
 }
 
 private fun AllowedMessageLevel.toInt(): Int = when (this) {
@@ -117,8 +123,12 @@ private fun Int.toGroupMembershipLevel(): GroupMembershipLevel = when (this) {
     else -> throw IllegalArgumentException("Invalid integer value for MembershipLevel: $this")
 }
 
-fun SQLiteStatement.bind(index: Int, conversationId: ConversationId) {
-    bind(index, conversationId.asString())
+fun SQLiteStatement.bind(index: Int, conversationId: ConversationId?) {
+    bind(index, conversationId?.asString())
+}
+
+fun SQLiteStatement.bind(index: Int, logEventType: LogEventType) {
+    bind(index, logEventType.toString())
 }
 
 inline fun <R> SQLiteConnection.withPrepared(sql: String, body: (SQLiteStatement) -> R): R {

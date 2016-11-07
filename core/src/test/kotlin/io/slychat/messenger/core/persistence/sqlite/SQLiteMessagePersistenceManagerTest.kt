@@ -136,6 +136,18 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             return addMessage(conversationId, speaker, messageInfo)
         }
 
+        fun generateExpiringMessages(conversationId: ConversationId): Map<ConversationId, List<String>> {
+            val info = (0..1).map {
+                addExpiringSentMessage(conversationId)
+            }
+
+            val messageIds = info.map { it.info.id }
+
+            return mapOf(
+                conversationId to messageIds
+            )
+        }
+
         fun addExpiringSentMessage(conversationId: ConversationId): ConversationMessageInfo {
             val sentMessage = randomSentConversationMessageInfo()
             val messageId = sentMessage.info.id
@@ -1128,33 +1140,26 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `expireMessages should set all message entries to expired`() {
         foreachConvType { conversationId, participants ->
-            val conversationMessageInfo = addExpiringSentMessage(conversationId)
-            val messageId = conversationMessageInfo.info.id
-
-            val messages = mapOf(
-                conversationId to listOf(messageId)
-            )
+            val messages = generateExpiringMessages(conversationId)
+            val messageIds = messages[conversationId]!!
 
             messagePersistenceManager.expireMessages(messages).get()
 
-            val got = getMessage(conversationId, messageId)
+            messageIds.forEach { messageId ->
+                val got = getMessage(conversationId, messageId)
 
-            assertTrue(got.info.isExpired, "Message should be marked as expired")
-            assertEquals(0, got.info.ttlMs, "TTL not reset")
-            assertEquals(0, got.info.expiresAt, "expiresAt not reset")
-            assertEquals("", got.info.message, "Message text not deleted")
+                assertTrue(got.info.isExpired, "Message should be marked as expired")
+                assertEquals(0, got.info.ttlMs, "TTL not reset")
+                assertEquals(0, got.info.expiresAt, "expiresAt not reset")
+                assertEquals("", got.info.message, "Message text not deleted")
+            }
         }
     }
 
     @Test
     fun `expireMessages should remove all message entries from expiring list`() {
         foreachConvType { conversationId, participants ->
-            val conversationMessageInfo = addExpiringSentMessage(conversationId)
-            val messageId = conversationMessageInfo.info.id
-
-            val messages = mapOf(
-                conversationId to listOf(messageId)
-            )
+            val messages = generateExpiringMessages(conversationId)
 
             messagePersistenceManager.expireMessages(messages).get()
 
@@ -1169,18 +1174,16 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `expireMessages should mark messages as read`() {
         foreachConvType { conversationId, participants ->
-            val conversationMessageInfo = addExpiringReceivedMessage(conversationId, participants.first())
-            val messageId = conversationMessageInfo.info.id
-
-            val messages = mapOf(
-                conversationId to listOf(messageId)
-            )
+            val messages = generateExpiringMessages(conversationId)
+            val messageIds = messages[conversationId]!!
 
             messagePersistenceManager.expireMessages(messages).get()
 
-            val messageInfo = getMessage(conversationId, messageId)
+            messageIds.forEach{ messageId ->
+                val messageInfo = getMessage(conversationId, messageId)
 
-            assertTrue(messageInfo.info.isRead, "Message not marked as read")
+                assertTrue(messageInfo.info.isRead, "Message not marked as read")
+            }
         }
     }
 

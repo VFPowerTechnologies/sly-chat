@@ -7,7 +7,7 @@ import nl.komponents.kovenant.task
 class ClientVersionAsyncClientImpl(private val serverBaseUrl: String, private val factory: HttpClientFactory) : ClientVersionAsyncClient {
     private fun newClient() = ClientVersionClientImpl(serverBaseUrl, factory.create())
 
-    override fun check(version: String): Promise<Boolean, Exception> = task {
+    override fun check(version: String): Promise<CheckResponse, Exception> = task {
         newClient().check(version)
     }
 }

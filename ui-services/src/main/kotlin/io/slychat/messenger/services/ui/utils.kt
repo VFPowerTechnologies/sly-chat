@@ -13,65 +13,49 @@ fun createAppDirectories(platformInfo: PlatformInfo) {
 
 /** Registers all available UI services to the given Dispatcher. */
 fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponent: ApplicationComponent) {
-    val registrationService = applicationComponent.uiRegistrationService
-    dispatcher.registerService("RegistrationService", UIRegistrationServiceToJavaProxy(registrationService, dispatcher))
+    applicationComponent.apply {
+        dispatcher.registerService(UIRegistrationServiceToJavaProxy(uiRegistrationService, dispatcher))
 
-    val platformInfoService = applicationComponent.uiPlatformInfoService
-    dispatcher.registerService("PlatformInfoService", UIPlatformInfoServiceToJavaProxy(platformInfoService, dispatcher))
+        dispatcher.registerService(UIPlatformInfoServiceToJavaProxy(uiPlatformInfoService, dispatcher))
 
-    val loginService = applicationComponent.uiLoginService
-    dispatcher.registerService("LoginService", UILoginServiceToJavaProxy(loginService, dispatcher))
+        dispatcher.registerService(UILoginServiceToJavaProxy(uiLoginService, dispatcher))
 
-    val contactsService = applicationComponent.uiContactsService
-    dispatcher.registerService("ContactsService", UIContactsServiceToJavaProxy(contactsService, dispatcher))
+        dispatcher.registerService(UIContactsServiceToJavaProxy(uiContactsService, dispatcher))
 
-    val messengerService = applicationComponent.uiMessengerService
-    dispatcher.registerService("MessengerService", UIMessengerServiceToJavaProxy(messengerService, dispatcher))
+        dispatcher.registerService(UIMessengerServiceToJavaProxy(uiMessengerService, dispatcher))
 
-    val historyService = applicationComponent.uiHistoryService
-    dispatcher.registerService("HistoryService", UIHistoryServiceToJavaProxy(historyService, dispatcher))
+        dispatcher.registerService(UIHistoryServiceToJavaProxy(uiHistoryService, dispatcher))
 
-    val networkStatusService = applicationComponent.uiNetworkStatusService
-    dispatcher.registerService("NetworkStatusService", UINetworkStatusServiceToJavaProxy(networkStatusService, dispatcher))
+        dispatcher.registerService(UINetworkStatusServiceToJavaProxy(uiNetworkStatusService, dispatcher))
 
-    val stateService = applicationComponent.uiStateService
-    dispatcher.registerService("StateService", UIStateServiceToJavaProxy(stateService, dispatcher))
+        dispatcher.registerService(UIStateServiceToJavaProxy(uiStateService, dispatcher))
 
-    val telephonyService = applicationComponent.uiTelephonyService
-    dispatcher.registerService("TelephonyService", UITelephonyServiceToJavaProxy(telephonyService, dispatcher))
+        dispatcher.registerService(UITelephonyServiceToJavaProxy(uiTelephonyService, dispatcher))
 
-    val windowService = applicationComponent.uiWindowService
-    dispatcher.registerService("WindowService", UIWindowServiceToJavaProxy(windowService, dispatcher))
+        dispatcher.registerService(UIWindowServiceToJavaProxy(uiWindowService, dispatcher))
 
-    val eventService = applicationComponent.uiEventService
-    dispatcher.registerService("EventService", UIEventServiceToJavaProxy(eventService, dispatcher))
+        dispatcher.registerService(UIEventServiceToJavaProxy(uiEventService, dispatcher))
 
-    val accountModificationService = applicationComponent.uiAccountModificationService
-    dispatcher.registerService("AccountModificationService", UIAccountModificationServiceToJavaProxy(accountModificationService, dispatcher))
+        dispatcher.registerService(UIAccountModificationServiceToJavaProxy(uiAccountModificationService, dispatcher))
 
-    val platformService = applicationComponent.uiPlatformService
-    dispatcher.registerService("PlatformService", UIPlatformServiceToJavaProxy(platformService, dispatcher))
+        dispatcher.registerService(UIPlatformServiceToJavaProxy(uiPlatformService, dispatcher))
 
-    val loadService = applicationComponent.uiLoadService
-    dispatcher.registerService("LoadService", UILoadServiceToJavaProxy(loadService, dispatcher))
+        dispatcher.registerService(UILoadServiceToJavaProxy(uiLoadService, dispatcher))
 
-    val infoService = applicationComponent.uiInfoService
-    dispatcher.registerService("InfoService", UIInfoServiceToJavaProxy(infoService, dispatcher))
+        dispatcher.registerService(UIInfoServiceToJavaProxy(uiInfoService, dispatcher))
 
-    val configService = applicationComponent.uiConfigService
-    dispatcher.registerService("ConfigService", UIConfigServiceToJavaProxy(configService, dispatcher))
+        dispatcher.registerService(UIConfigServiceToJavaProxy(uiConfigService, dispatcher))
 
-    val groupService = applicationComponent.uiGroupService
-    dispatcher.registerService("GroupService", UIGroupServiceToJavaProxy(groupService, dispatcher))
+        dispatcher.registerService(UIGroupServiceToJavaProxy(uiGroupService, dispatcher))
 
-    val clientInfoService = applicationComponent.uiClientInfoService
-    dispatcher.registerService("ClientInfoService", UIClientInfoServiceToJavaProxy(clientInfoService, dispatcher))
+        dispatcher.registerService(UIClientInfoServiceToJavaProxy(uiClientInfoService, dispatcher))
 
-    val feedbackService = applicationComponent.uiFeedbackService
-    dispatcher.registerService("FeedbackService", UIFeedbackServiceToJavaProxy(feedbackService, dispatcher))
+        dispatcher.registerService(UIFeedbackServiceToJavaProxy(uiFeedbackService, dispatcher))
 
-    val shareService = applicationComponent.uiShareService
-    dispatcher.registerService("ShareService", UIShareServiceToJavaProxy(shareService, dispatcher))
+        dispatcher.registerService(UIEventLogServiceToJavaProxy(uiEventLogService, dispatcher))
+
+        dispatcher.registerService(UIShareServiceToJavaProxy(uiShareService, dispatcher))
+    }
 }
 
 fun clearAllListenersOnDispatcher(applicationComponent: ApplicationComponent) {

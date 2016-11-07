@@ -1,6 +1,7 @@
 package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.*
+import io.slychat.messenger.core.http.api.versioncheck.CheckResponse
 import io.slychat.messenger.core.http.api.versioncheck.ClientVersionAsyncClient
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.testSubscriber
@@ -19,24 +20,28 @@ class HttpVersionCheckerTest {
         val kovenantRule = KovenantTestModeRule()
     }
 
-    val networkAvailable: BehaviorSubject<Boolean> = BehaviorSubject.create()
-    val clientVersionAsyncClient: ClientVersionAsyncClient = mock()
+    private val networkAvailable: BehaviorSubject<Boolean> = BehaviorSubject.create()
+    private val clientVersionAsyncClient: ClientVersionAsyncClient = mock()
 
-    val clientVersionAsyncClientFactory = object : ClientVersionAsyncClientFactory {
+    private val clientVersionAsyncClientFactory = object : ClientVersionAsyncClientFactory {
         override fun create(): ClientVersionAsyncClient {
             return clientVersionAsyncClient
         }
     }
 
-    val versionChecker = HttpVersionChecker("0.0.0", networkAvailable, clientVersionAsyncClientFactory)
+    private val dummyVersion = "0.0.0"
+    private val outdatedResult = VersionCheckResult(false, dummyVersion)
+    private val isUpToDateResult = VersionCheckResult(true, dummyVersion)
+
+    private val versionChecker = HttpVersionChecker("0.0.0", networkAvailable, clientVersionAsyncClientFactory)
 
     @Before
     fun before() {
-        whenever(clientVersionAsyncClient.check(any())).thenResolve(true)
+        whenever(clientVersionAsyncClient.check(any())).thenResolve(CheckResponse(true, dummyVersion))
     }
 
     fun clientVersionIsOk(ok: Boolean) {
-        whenever(clientVersionAsyncClient.check(any())).thenResolve(ok)
+        whenever(clientVersionAsyncClient.check(any())).thenResolve(CheckResponse(ok, dummyVersion))
     }
 
     fun assertSingleCheck() {
@@ -72,7 +77,7 @@ class HttpVersionCheckerTest {
     //eg: network comes up, request is issued, then network goes down and back up
     @Test
     fun `it must not perform a version check while one is still running`() {
-        val d = deferred<Boolean, Exception>()
+        val d = deferred<CheckResponse, Exception>()
 
         whenever(clientVersionAsyncClient.check(any())).thenReturn(d.promise)
 
@@ -108,8 +113,8 @@ class HttpVersionCheckerTest {
     }
 
     @Test
-    fun `it must not emit an event when the client version is up to date`() {
-        val testSubscriber = versionChecker.versionOutOfDate.testSubscriber()
+    fun `it should emit an event when the client version is up to date`() {
+        val testSubscriber = versionChecker.versionCheckResult.testSubscriber()
 
         clientVersionIsOk(true)
 
@@ -118,14 +123,14 @@ class HttpVersionCheckerTest {
         versionChecker.init()
 
         Assertions.assertThat(testSubscriber.onNextEvents).apply {
-            `as`("Should not emit an event")
-            isEmpty()
+            `as`("Should emit an event")
+            containsOnly(isUpToDateResult)
         }
     }
 
     @Test
     fun `it must emit an event when the client version is out of date`() {
-        val testSubscriber = versionChecker.versionOutOfDate.testSubscriber()
+        val testSubscriber = versionChecker.versionCheckResult.testSubscriber()
 
         clientVersionIsOk(false)
 
@@ -135,7 +140,7 @@ class HttpVersionCheckerTest {
 
         Assertions.assertThat(testSubscriber.onNextEvents).apply {
             `as`("Should emit an event")
-            containsOnly(Unit)
+            containsOnly(outdatedResult)
         }
     }
 

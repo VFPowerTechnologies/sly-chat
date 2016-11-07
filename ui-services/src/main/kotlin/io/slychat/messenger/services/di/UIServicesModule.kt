@@ -130,7 +130,7 @@ class UIServicesModule {
     fun providesUIClientInfoService(
         versionChecker: VersionChecker
     ): UIClientInfoService {
-        return UIClientInfoServiceImpl(versionChecker.versionOutOfDate)
+        return UIClientInfoServiceImpl(versionChecker.versionCheckResult)
     }
 
     @Singleton
@@ -142,5 +142,13 @@ class UIServicesModule {
     ): UIFeedbackService {
         val feedbackClient = FeedbackAsyncClientImpl(serverUrls.API_SERVER, httpClientFactory)
         return UIFeedbackServiceImpl(app.userSessionAvailable, feedbackClient)
+    }
+
+    @Singleton
+    @Provides
+    fun providesUIEventLogService(
+        slyApplication: SlyApplication
+    ): UIEventLogService {
+        return UIEventLogServiceImpl(slyApplication.userSessionAvailable)
     }
 }

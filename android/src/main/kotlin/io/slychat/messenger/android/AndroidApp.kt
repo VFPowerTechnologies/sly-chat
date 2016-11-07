@@ -310,7 +310,15 @@ class AndroidApp : Application() {
                 gcmRegistering = false
                 onGCMTokenRefresh(it.userId, it.token)
             } failUi { e ->
-                log.error("GCM token registration failed: {}", e.message, e)
+                val isInteresting = when (e.message) {
+                    InstanceID.ERROR_BACKOFF -> false
+                    InstanceID.ERROR_SERVICE_NOT_AVAILABLE -> false
+                    InstanceID.ERROR_TIMEOUT -> false
+                    //shouldn't occur, but even if it did we have no info to go on anyways
+                    null -> false
+                    else -> true
+                }
+                log.condError(isInteresting, "GCM token registration failed: {}", e.message, e)
                 gcmRegistering = false
             }
         }
