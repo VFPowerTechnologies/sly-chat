@@ -131,7 +131,7 @@ class UIGroupServiceImpl(
 
     override fun getLastMessages(groupId: GroupId, startingAt: Int, count: Int): Promise<List<UIGroupMessage>, Exception> {
         return getMessageServiceOrThrow().getLastMessages(groupId.toConversationId(), startingAt, count) map {
-            it.map { UIGroupMessage(it.speaker, it.info.toUI()) }
+            it.map { UIGroupMessage(it.speaker, it.info.toUI(it.failures)) }
         }
     }
 
