@@ -21,19 +21,16 @@ import io.slychat.messenger.services.crypto.MessageCipherServiceImpl.Companion.d
 import io.slychat.messenger.services.messaging.EncryptedMessageInfo
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.withTimeAs
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.Timeout
-import org.whispersystems.libsignal.IdentityKeyPair
-import org.whispersystems.libsignal.SessionBuilder
-import org.whispersystems.libsignal.SessionCipher
-import org.whispersystems.libsignal.state.PreKeyBundle
-import org.whispersystems.libsignal.state.PreKeyRecord
-import org.whispersystems.libsignal.state.SignalProtocolStore
-import org.whispersystems.libsignal.state.impl.InMemorySignalProtocolStore
+import org.whispersystems.libsignal.*
+import org.whispersystems.libsignal.state.*
+import org.whispersystems.libsignal.state.impl.InMemoryIdentityKeyStore
+import org.whispersystems.libsignal.state.impl.InMemoryPreKeyStore
+import org.whispersystems.libsignal.state.impl.InMemorySignedPreKeyStore
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -53,6 +50,124 @@ class MessageCipherServiceImplTest {
     @Rule
     @JvmField
     val timeoutRule = Timeout(1000)
+
+    //InMemorySessionStore.deleteAllSessions is bugged in 2.2.0 since it attempts to remove items during iteration
+    private class FixedInMemorySessionStore : SessionStore {
+        private val sessions = HashMap<SignalProtocolAddress, ByteArray>()
+
+        override fun getSubDeviceSessions(name: String): List<Int> = synchronized(this) {
+            sessions.map { it.key.deviceId }
+        }
+
+        override fun deleteAllSessions(name: String) = synchronized(this) {
+            val iter = sessions.iterator()
+            while (iter.hasNext()) {
+                val addr = iter.next()
+                if (addr.key.name == name)
+                    iter.remove()
+            }
+        }
+
+        override fun containsSession(address: SignalProtocolAddress): Boolean = synchronized(this) {
+            address in sessions
+        }
+
+        override fun loadSession(address: SignalProtocolAddress): SessionRecord = synchronized(this) {
+            return sessions[address]?.let(::SessionRecord) ?: SessionRecord()
+        }
+
+        override fun deleteSession(address: SignalProtocolAddress) = synchronized(this) {
+            sessions.remove(address)
+            Unit
+        }
+
+        override fun storeSession(address: SignalProtocolAddress, record: SessionRecord) = synchronized(this) {
+            sessions[address] = record.serialize()
+        }
+    }
+
+    private class InMemorySignalProtocolStore(identityKeyPair: IdentityKeyPair, registrationId: Int) : SignalProtocolStore {
+        private val identityStore = InMemoryIdentityKeyStore(identityKeyPair, registrationId)
+        private val preKeyStore = InMemoryPreKeyStore()
+        private val signedPreKeyStore = InMemorySignedPreKeyStore()
+        private val sessionStore = FixedInMemorySessionStore()
+
+        override fun containsSession(address: SignalProtocolAddress): Boolean {
+            return sessionStore.containsSession(address)
+        }
+
+        override fun deleteSession(address: SignalProtocolAddress) {
+            return sessionStore.deleteSession(address)
+        }
+
+        override fun getSubDeviceSessions(name: String): List<Int> {
+            return sessionStore.getSubDeviceSessions(name)
+        }
+
+        override fun deleteAllSessions(name: String) {
+            return sessionStore.deleteAllSessions(name)
+        }
+
+        override fun loadSession(address: SignalProtocolAddress): SessionRecord {
+            return sessionStore.loadSession(address)
+        }
+
+        override fun storeSession(address: SignalProtocolAddress, record: SessionRecord) {
+            return sessionStore.storeSession(address, record)
+        }
+
+        override fun removeSignedPreKey(signedPreKeyId: Int) {
+            return signedPreKeyStore.removeSignedPreKey(signedPreKeyId)
+        }
+
+        override fun containsSignedPreKey(signedPreKeyId: Int): Boolean {
+            return signedPreKeyStore.containsSignedPreKey(signedPreKeyId)
+        }
+
+        override fun storeSignedPreKey(signedPreKeyId: Int, record: SignedPreKeyRecord) {
+            return signedPreKeyStore.storeSignedPreKey(signedPreKeyId, record)
+        }
+
+        override fun loadSignedPreKey(signedPreKeyId: Int): SignedPreKeyRecord {
+            return signedPreKeyStore.loadSignedPreKey(signedPreKeyId)
+        }
+
+        override fun loadSignedPreKeys(): MutableList<SignedPreKeyRecord> {
+            return signedPreKeyStore.loadSignedPreKeys()
+        }
+
+        override fun removePreKey(preKeyId: Int) {
+            return preKeyStore.removePreKey(preKeyId)
+        }
+
+        override fun loadPreKey(preKeyId: Int): PreKeyRecord {
+            return preKeyStore.loadPreKey(preKeyId)
+        }
+
+        override fun storePreKey(preKeyId: Int, record: PreKeyRecord) {
+            return preKeyStore.storePreKey(preKeyId, record)
+        }
+
+        override fun containsPreKey(preKeyId: Int): Boolean {
+            return preKeyStore.containsPreKey(preKeyId)
+        }
+
+        override fun saveIdentity(name: String, identityKey: IdentityKey) {
+            return identityStore.saveIdentity(name, identityKey)
+        }
+
+        override fun getIdentityKeyPair(): IdentityKeyPair {
+            return identityStore.identityKeyPair
+        }
+
+        override fun isTrustedIdentity(name: String, identityKey: IdentityKey): Boolean {
+            return identityStore.isTrustedIdentity(name, identityKey)
+        }
+
+        override fun getLocalRegistrationId(): Int {
+            return identityStore.localRegistrationId
+        }
+    }
 
     private class MockDevice(val identityKeyPair: IdentityKeyPair, val id: Int) {
         val registrationId = randomRegistrationId()
@@ -553,7 +668,7 @@ class MessageCipherServiceImplTest {
                     )
                 }
 
-                Assertions.assertThat(eventLogService.loggedEvents).apply {
+                assertThat(eventLogService.loggedEvents).apply {
                     `as`("Should log session creation")
                     containsAll(events)
                 }
@@ -577,7 +692,7 @@ class MessageCipherServiceImplTest {
                     )
                 }
 
-                Assertions.assertThat(eventLogService.loggedEvents).apply {
+                assertThat(eventLogService.loggedEvents).apply {
                     `as`("Should log session deletion")
                     containsAll(events)
                 }
@@ -610,11 +725,62 @@ class MessageCipherServiceImplTest {
                     ))
                 }
 
-                Assertions.assertThat(eventLogService.loggedEvents).apply {
+                assertThat(eventLogService.loggedEvents).apply {
                     `as`("Should log both session deletion and creation")
                     containsAll(events)
                 }
             }
+        }
+    }
+
+    private fun testClearDevices(body: (self: MockUser, target: MockUser) -> Unit) {
+        val self = MockUser(1)
+
+        val target = MockUser(2, 2)
+        self.addSessions(target, target.deviceIds)
+
+        val cipherService = createCipherService(mock(), self)
+
+        val p = cipherService.clearDevices(target.userId)
+
+        cipherService.processQueue(false)
+
+        p.get()
+
+        body(self, target)
+    }
+
+    @Test
+    fun `it should log device clears when clearDevices is called`() {
+        val currentTime = 1L
+
+        withTimeAs(currentTime) {
+            testClearDevices { self, target ->
+                val devices = target.deviceIds
+                val events = ArrayList<LogEvent.Security>()
+
+                devices.forEach {
+                    val addr = SlyAddress(target.userId, it)
+
+                    events.add(LogEvent.Security(
+                        LogTarget.Conversation(target.userId),
+                        currentTime,
+                        SecurityEventData.SessionRemoved(addr)
+                    ))
+                }
+
+                assertThat(eventLogService.loggedEvents).apply {
+                    `as`("Should log session deletetion events")
+                    containsAll(events)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `it should remove all devices for a user when clearDevices is called`() {
+        testClearDevices { self, target ->
+            assertSessionsNotExist(self, target, emptyList())
         }
     }
 

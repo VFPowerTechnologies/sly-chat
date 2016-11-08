@@ -9,11 +9,8 @@ import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
 import io.slychat.messenger.core.persistence.SenderMessageEntry
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
-import io.slychat.messenger.services.MessageUpdateEvent
-import io.slychat.messenger.services.RelayClientManager
-import io.slychat.messenger.services.RelayClock
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.crypto.MessageCipherService
-import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.failUi
@@ -202,8 +199,10 @@ class MessageSenderImpl(
                 is MessageSendResult.InactiveUser -> {
                     log.info("User {} is no longer active", result.to)
 
-                    removeMessageFromQueue(message.metadata) successUi {
-                        //TODO
+                    removeMessageFromQueue(message.metadata) bindUi {
+                        messageCipherService.clearDevices(result.to)
+                    } fail {
+                        log.error("Failed to clear devices for {}: {}", result.to, it.message, it)
                     }
 
                     nextSendMessage()

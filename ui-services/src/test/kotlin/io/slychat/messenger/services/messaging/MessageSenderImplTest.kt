@@ -77,6 +77,7 @@ class MessageSenderImplTest {
         whenever(relayClientManager.connectionTag).thenReturn(defaultConnectionTag)
 
         whenever(messageCipherService.encrypt(any(), any(), any())).thenResolve(randomEncryptionResult())
+        whenever(messageCipherService.clearDevices(any())).thenResolveUnit()
 
         whenever(relayClock.currentTime()).thenReturn(currentTimestamp())
     }
@@ -222,6 +223,21 @@ class MessageSenderImplTest {
         relayEvents.onNext(InactiveUser(metadata.userId, getCurrentRelayMessageId(sender)))
 
         TODO()
+    }
+
+    @Test
+    fun `it should remove all devices for a user when receiving InactiveUser`() {
+        val sender = createSender(true)
+
+        val entry = randomSenderMessageEntry()
+
+        val metadata = entry.metadata
+
+        sender.addToQueue(metadata, entry.message).get()
+
+        relayEvents.onNext(InactiveUser(metadata.userId, getCurrentRelayMessageId(sender)))
+
+        verify(messageCipherService).clearDevices(metadata.userId)
     }
 
     @Test
