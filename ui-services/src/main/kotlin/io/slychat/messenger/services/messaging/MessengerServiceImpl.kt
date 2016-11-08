@@ -5,6 +5,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.core.enforceExhaustive
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
@@ -61,13 +62,27 @@ class MessengerServiceImpl(
 
         log.debug("Processing sent message {} (category: {})", metadata.messageId, metadata.category)
 
-        //FIXME
-        record as MessageSendRecord.Ok
+        when (record) {
+            is MessageSendRecord.Ok -> {
+                when (metadata.category) {
+                    MessageCategory.TEXT_SINGLE -> processSuccessfulSend(metadata, record.serverReceivedTimestamp)
+                    MessageCategory.TEXT_GROUP -> processSuccessfulSend(metadata, record.serverReceivedTimestamp)
+                    MessageCategory.OTHER -> {}
+                }
+            }
 
-        when (metadata.category) {
-            MessageCategory.TEXT_SINGLE -> processSuccessfulSend(metadata, record.serverReceivedTimestamp)
-            MessageCategory.TEXT_GROUP -> processSuccessfulSend(metadata, record.serverReceivedTimestamp)
-            MessageCategory.OTHER -> {}
+            is MessageSendRecord.Failure -> processDeliveryFailure(metadata, record.failure)
+        }.enforceExhaustive()
+    }
+
+    private fun processDeliveryFailure(metadata: MessageMetadata, failure: MessageSendFailure) {
+        val userId = metadata.userId
+        val messageId = metadata.messageId
+
+        log.info("Delivery of {} to {} failed: {}", messageId, userId, failure)
+
+        messageService.addFailures(metadata.getConversationId(), messageId, mapOf(userId to failure)) fail {
+            log.error("Unable to log delivery failure: {}", it.message, it)
         }
     }
 

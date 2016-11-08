@@ -3,6 +3,7 @@ package io.slychat.messenger.services.messaging
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.crypto.randomUUID
+import io.slychat.messenger.core.enforceExhaustive
 import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
@@ -180,43 +181,47 @@ class MessageSenderImpl(
 
         if (message != null) {
             when (result) {
-                is MessageSendResult.Ok -> {
-                    removeMessageFromQueue(message.metadata) successUi {
-                        messageSentSubject.onNext(MessageSendRecord.Ok(message.metadata, result.timestamp))
-                    }
-
-                    nextSendMessage()
-                }
-
-                is MessageSendResult.DeviceMismatch -> {
-                    log.info("Got device mismatch for user={}, relayMessageId={}", result.to, result.relayMessageId)
-
-                    messageCipherService.updateDevices(result.to, result.info) successUi {
-                        processDeviceUpdateSuccess()
-                    } failUi {
-                        processDeviceUpdateFailure(it)
-                    }
-                }
-
-                is MessageSendResult.InactiveUser -> {
-                    log.info("User {} is no longer active", result.to)
-
-                    removeMessageFromQueue(message.metadata) bindUi {
-                        messageCipherService.clearDevices(result.to)
-                    } successUi {
-                        messageSentSubject.onNext(MessageSendRecord.Failure(message.metadata, MessageSendFailure.InactiveUser()))
-                    } fail {
-                        log.error("Failed to clear devices for {}: {}", result.to, it.message, it)
-                    }
-
-                    nextSendMessage()
-                }
-            }
+                is MessageSendResult.Ok -> handleSendOk(message, result)
+                is MessageSendResult.DeviceMismatch -> handleDeviceMismatch(result)
+                is MessageSendResult.InactiveUser -> handleInactiveUser(message, result)
+            }.enforceExhaustive()
         }
         else {
             log.error("ProcessMessageSendResult called but currentMessage was null")
             processSendMessageQueue()
         }
+    }
+
+    private fun handleInactiveUser(message: QueuedSendMessage, result: MessageSendResult.InactiveUser) {
+        log.info("User {} is no longer active", result.to)
+
+        removeMessageFromQueue(message.metadata) bindUi {
+            messageCipherService.clearDevices(result.to)
+        } successUi {
+            messageSentSubject.onNext(MessageSendRecord.Failure(message.metadata, MessageSendFailure.InactiveUser()))
+        } fail {
+            log.error("Failed to clear devices for {}: {}", result.to, it.message, it)
+        }
+
+        nextSendMessage()
+    }
+
+    private fun handleDeviceMismatch(result: MessageSendResult.DeviceMismatch) {
+        log.info("Got device mismatch for user={}, relayMessageId={}", result.to, result.relayMessageId)
+
+        messageCipherService.updateDevices(result.to, result.info) successUi {
+            processDeviceUpdateSuccess()
+        } failUi {
+            processDeviceUpdateFailure(it)
+        }
+    }
+
+    private fun handleSendOk(message: QueuedSendMessage, result: MessageSendResult.Ok) {
+        removeMessageFromQueue(message.metadata) successUi {
+            messageSentSubject.onNext(MessageSendRecord.Ok(message.metadata, result.timestamp))
+        }
+
+        nextSendMessage()
     }
 
     private fun addToQueueReal(metadata: MessageMetadata, message: ByteArray) {

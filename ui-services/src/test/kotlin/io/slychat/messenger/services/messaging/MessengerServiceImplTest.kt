@@ -409,7 +409,7 @@ class MessengerServiceImplTest {
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
         val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
 
-        val conversationId = update.userId.toConversationId()
+        val conversationId = update.getConversationId()
         whenever(messageService.markMessageAsDelivered(any(), any(), any())).thenResolve(conversationMessageInfo)
 
         messageSent.onNext(record)
@@ -425,7 +425,7 @@ class MessengerServiceImplTest {
         val update = record.metadata
         val messageInfo = MessageInfo.newSent(update.messageId, 0).copy(isDelivered = true)
 
-        val conversationId = update.groupId!!.toConversationId()
+        val conversationId = update.getConversationId()
 
         whenever(messageService.markMessageAsDelivered(any(), any(), any()))
             .thenResolve(ConversationMessageInfo(update.userId, messageInfo))
@@ -433,6 +433,23 @@ class MessengerServiceImplTest {
         messageSent.onNext(record)
 
         verify(messageService).markMessageAsDelivered(conversationId, update.messageId, record.serverReceivedTimestamp)
+    }
+
+    @Test
+    fun `it should call MessageService addFailures when receiving a MessageSendRecord Failure`() {
+        val messengerService = createService()
+        val metadata = randomTextSingleMetadata()
+        val failure = MessageSendFailure.InactiveUser()
+        val record = MessageSendRecord.Failure(metadata, failure)
+        val failures = mapOf(
+            metadata.userId to failure
+        )
+
+        whenever(messageService.addFailures(any(), any(), any())).thenResolveUnit()
+
+        messageSent.onNext(record)
+
+        verify(messageService).addFailures(metadata.getConversationId(), metadata.messageId, failures)
     }
 
     @Test
