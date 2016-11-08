@@ -1,8 +1,11 @@
 package io.slychat.messenger.services
 
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.core.persistence.MessageSendFailure
 
 sealed class MessageUpdateEvent {
+    /** Emitted once per message. */
     class Delivered(val conversationId: ConversationId, val messageId: String, val deliveredTimestamp: Long) : MessageUpdateEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -26,6 +29,33 @@ sealed class MessageUpdateEvent {
 
         override fun toString(): String {
             return "Delivered(conversationId=$conversationId, messageId='$messageId', deliveredTimestamp=$deliveredTimestamp)"
+        }
+    }
+
+    /** May be emitted multiple times for a single message (eg: multiple group send failures). */
+    class DeliveryFailed(val conversationId: ConversationId, val messageId: String, val failures: Map<UserId, MessageSendFailure>) : MessageUpdateEvent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as DeliveryFailed
+
+            if (conversationId != other.conversationId) return false
+            if (messageId != other.messageId) return false
+            if (failures != other.failures) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = conversationId.hashCode()
+            result = 31 * result + messageId.hashCode()
+            result = 31 * result + failures.hashCode()
+            return result
+        }
+
+        override fun toString(): String {
+            return "DeliveryFailed(conversationId=$conversationId, messageId='$messageId', failures=$failures)"
         }
     }
 

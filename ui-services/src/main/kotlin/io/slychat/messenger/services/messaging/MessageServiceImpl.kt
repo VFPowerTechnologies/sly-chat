@@ -56,6 +56,12 @@ class MessageServiceImpl(
         }
     }
 
+    override fun addFailures(conversationId: ConversationId, messageId: String, failures: Map<UserId, MessageSendFailure>): Promise<Unit, Exception> {
+        return messagePersistenceManager.addFailures(conversationId, messageId, failures) mapUi {
+            messageUpdatesSubject.onNext(MessageUpdateEvent.DeliveryFailed(conversationId, messageId, it.failures))
+        }
+    }
+
     override fun markConversationMessagesAsRead(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> {
         return messagePersistenceManager.markConversationMessagesAsRead(conversationId, messageIds) success { messageIds ->
             if (messageIds.isNotEmpty()) {

@@ -467,4 +467,26 @@ class MessageServiceImplTest {
             assertNoEventsEmitted(testSubscriber)
         }
     }
+
+    @Test
+    fun `it should emit a DeliveryFailed when addFailures is called`() {
+        forEachConvType { conversationId ->
+            val testSubscriber = messageUpdateEventCollectorFor<MessageUpdateEvent.DeliveryFailed>()
+
+            val failures = mapOf(randomUserId() to MessageSendFailure.InactiveUser())
+
+            val conversationMessageInfo = randomSentConversationMessageInfo().copy(
+                failures = failures
+            )
+
+            whenever(messagePersistenceManager.addFailures(any(), any(), any())).thenResolve(conversationMessageInfo)
+
+            messageService.addFailures(conversationId, conversationMessageInfo.info.id, failures).get()
+
+            assertEventEmitted(testSubscriber) {
+                val expected = MessageUpdateEvent.DeliveryFailed(conversationId, conversationMessageInfo.info.id, failures)
+                assertEquals(expected, it, "Invalid event")
+            }
+        }
+    }
 }
