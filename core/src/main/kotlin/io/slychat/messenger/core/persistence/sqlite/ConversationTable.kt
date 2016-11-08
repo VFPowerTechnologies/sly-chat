@@ -2,8 +2,10 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.core.persistence.GroupMembershipLevel
 import io.slychat.messenger.core.readResourceFileText
 
 /**
@@ -43,12 +45,16 @@ object ConversationTable {
     }
 
     fun getConversationTableNames(connection: SQLiteConnection): List<String> {
-        val users = connection.prepare("SELECT id FROM contacts").use { stmt ->
+        val users = connection.withPrepared("SELECT id FROM contacts WHERE allowed_message_level=?") { stmt ->
+            stmt.bind(1, AllowedMessageLevel.ALL)
+
             stmt.map { UserId(it.columnLong(0)) }
                 .map { ConversationTable.getTablename(ConversationId.User(it)) }
         }
 
-        val groups = connection.prepare("SELECT id FROM groups").use { stmt ->
+        val groups = connection.withPrepared("SELECT id FROM groups WHERE membership_level=?") { stmt ->
+            stmt.bind(1, GroupMembershipLevel.JOINED)
+
             stmt.map { GroupId(it.columnString(0)) }
                 .map { ConversationTable.getTablename(ConversationId.Group(it)) }
         }
