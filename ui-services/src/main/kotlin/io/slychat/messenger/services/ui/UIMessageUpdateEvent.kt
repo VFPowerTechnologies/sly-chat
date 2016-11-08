@@ -2,9 +2,11 @@ package io.slychat.messenger.services.ui
 
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.core.persistence.MessageSendFailure
 
 enum class UIMessageUpdateEventType {
     DELIVERED,
+    DELIVERY_FAILED,
     EXPIRING,
     EXPIRED,
     DELETED,
@@ -17,6 +19,11 @@ sealed class UIMessageUpdateEvent {
     class Delivered(val userId: UserId?, val groupId: GroupId?, val messageId: String, val deliveredTimestamp: Long) : UIMessageUpdateEvent() {
         override val type: UIMessageUpdateEventType
             get() = UIMessageUpdateEventType.DELIVERED
+    }
+
+    class DeliveryFailed(val userId: UserId?, val groupId: GroupId?, val messageId: String, val failures: Map<UserId, MessageSendFailure>) : UIMessageUpdateEvent() {
+        override val type: UIMessageUpdateEventType
+            get() = UIMessageUpdateEventType.DELIVERY_FAILED
     }
 
     class Expiring(val userId: UserId?, val groupId: GroupId?, val messageId: String, val ttl: Long, val expiresAt: Long) : UIMessageUpdateEvent() {

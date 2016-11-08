@@ -130,6 +130,12 @@ class UIMessengerServiceImpl(
                 UIMessageUpdateEvent.Delivered(userId, groupId, event.messageId, event.deliveredTimestamp)
             }
 
+            is MessageUpdateEvent.DeliveryFailed -> {
+                val (userId, groupId) = conversationIdToUserGroupPair(event.conversationId)
+
+                UIMessageUpdateEvent.DeliveryFailed(userId, groupId, event.messageId, event.failures)
+            }
+
             is MessageUpdateEvent.Expiring -> {
                 val (userId, groupId) = conversationIdToUserGroupPair(event.conversationId)
 
