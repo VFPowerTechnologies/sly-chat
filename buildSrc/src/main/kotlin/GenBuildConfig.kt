@@ -170,16 +170,10 @@ open class GenBuildConfig : DefaultTask() {
     val buildConfigJSTemplate = File(projectRoot, "buildSrc/src/main/resources/build-config.js.vm")
 
     @Input
-    val releaseAndroidLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/release-sly-logger.properties")
+    val releaseSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/release-sly-logger.properties")
 
     @Input
-    val debugAndroidLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/debug-sly-logger.properties")
-
-    @Input
-    val releaseDesktopLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/release-logback.xml")
-
-    @Input
-    val debugDesktopLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/debug-logback.xml")
+    val debugLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/debug-sly-logger.properties")
 
     //TODO maybe let these be overriden as settings (or set as relative paths to the project root)
     val generateRoot = File(projectRoot, "generated")
