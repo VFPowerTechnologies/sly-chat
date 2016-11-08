@@ -16,6 +16,7 @@ import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageData
+import io.slychat.messenger.services.crypto.NoKeyDataException
 import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
@@ -52,6 +53,8 @@ class MessageSenderImplTest {
     private val messageUpdateEvents: PublishSubject<MessageUpdateEvent> = PublishSubject.create()
 
     private val defaultConnectionTag = Random().nextInt(Int.MAX_VALUE)
+
+    private val selfId = randomUserId()
 
     private fun setRelayOnlineStatus(isOnline: Boolean) {
         relayOnlineStatus.onNext(isOnline)
@@ -212,7 +215,7 @@ class MessageSenderImplTest {
     }
 
     @Test
-    fun `it should emit SendFailure if an InactiveUser error is received from the relay`() {
+    fun `it should emit MessageSendRecord Failure if an InactiveUser error is received from the relay`() {
         val sender = createSender(true)
 
         val entry = randomSenderMessageEntry()
@@ -229,6 +232,57 @@ class MessageSenderImplTest {
             val expected = MessageSendRecord.Failure(metadata, MessageSendFailure.InactiveUser())
             assertEquals(expected, it, "Expected InactiveUser failure")
         }
+    }
+
+    @Test
+    fun `it should emit MessageSendRecord Failure if a NoKeyDataException is thrown during encryption`() {
+        val sender = createSender(true)
+
+        val entry = randomSenderMessageEntry()
+        val metadata = entry.metadata
+        val recipient = metadata.userId
+
+        val testSubscriber = sender.messageSent.testSubscriber()
+
+        whenever(messageCipherService.encrypt(any(), any(), any())).thenReject(NoKeyDataException(recipient))
+
+        sender.addToQueue(metadata, entry.message).get()
+
+        val expected = MessageSendRecord.Failure(metadata, MessageSendFailure.InactiveUser())
+
+        assertEventEmitted(testSubscriber) {
+            assertEquals(expected, it, "Expected InactiveUser")
+        }
+    }
+
+    @Test
+    fun `it should remove the package from the send queue if NoKeyDataException is thrown during encryption`() {
+        val sender = createSender(true)
+
+        val entry = randomSenderMessageEntry()
+
+        val metadata = entry.metadata
+
+        whenever(messageCipherService.encrypt(any(), any(), any())).thenReject(NoKeyDataException(metadata.userId))
+
+        sender.addToQueue(metadata, entry.message).get()
+
+        verify(messageQueuePersistenceManager).remove(metadata.userId, metadata.messageId)
+    }
+
+    @Test
+    fun `it should remove all devices for a user if NoKeyDataException is thrown during encryption`() {
+        val sender = createSender(true)
+
+        val entry = randomSenderMessageEntry()
+
+        val metadata = entry.metadata
+
+        whenever(messageCipherService.encrypt(any(), any(), any())).thenReject(NoKeyDataException(metadata.userId))
+
+        sender.addToQueue(metadata, entry.message).get()
+
+        verify(messageCipherService).clearDevices(metadata.userId)
     }
 
     @Test
@@ -338,13 +392,6 @@ class MessageSenderImplTest {
             assertEquals(record.metadata, it.metadata, "Invalid message metadata")
             assertEquals(relayTimestamp, it.serverReceivedTimestamp, "Invalid received timestamp")
         }
-    }
-
-    //TODO handle self case above as well
-    @Ignore("TODO")
-    @Test
-    fun `it should emit MessageSendRecord Failure if no encrypted messages are returned from MessageCipherService for a diff user`() {
-        TODO()
     }
 
     @Test

@@ -30,6 +30,8 @@ import org.whispersystems.libsignal.state.SignalProtocolStore
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 
+class NoKeyDataException(val userId: UserId) : RuntimeException("No key data found for $userId")
+
 class MessageCipherServiceImpl(
     private val selfId: UserId,
     private val authTokenManager: AuthTokenManager,
@@ -342,8 +344,9 @@ class MessageCipherServiceImpl(
         if (!response.isSuccess)
             throw RuntimeException(response.errorMessage)
         else {
+            //this occurs if we message a user with no more active devices
             if (response.bundles.isEmpty())
-                throw RuntimeException("No key data for $userId")
+                throw NoKeyDataException(userId)
 
             val bundles = ArrayList<PreKeyBundle>()
 

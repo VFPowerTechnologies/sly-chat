@@ -12,6 +12,7 @@ import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.crypto.MessageCipherService
+import io.slychat.messenger.services.crypto.NoKeyDataException
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.failUi
@@ -163,7 +164,7 @@ class MessageSenderImpl(
             messageCipherService.encrypt(message.metadata.userId, message.serialized, message.connectionTag) successUi {
                 processEncryptionSuccess(it)
             } failUi {
-                processEncryptionFailure(it)
+                processEncryptionFailure(message,it)
             }
         }
     }
@@ -293,9 +294,18 @@ class MessageSenderImpl(
         return message
     }
 
-    private fun processEncryptionFailure(cause: Exception) {
-        log.condError(isNotNetworkError(cause), "Unknown error during encryption: {}", cause.message, cause)
-        nextSendMessage()
+    private fun processEncryptionFailure(message: QueuedSendMessage, cause: Exception) {
+        when (cause) {
+            is NoKeyDataException -> {
+                log.info("No key data found for {}", message.metadata.userId)
+                handleInactiveUser(InactiveUser(message.metadata.userId, message.relayMessageId))
+            }
+
+            else -> {
+                log.condError(isNotNetworkError(cause), "Unknown error during encryption: {}", cause.message, cause)
+                nextSendMessage()
+            }
+        }
     }
 
     private fun processEncryptionSuccess(result: EncryptionResult) {
