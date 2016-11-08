@@ -21,6 +21,13 @@ ChatController.prototype = {
                     }
                     break;
 
+                case 'DELIVERY_FAILED':
+                    //TODO
+                    //this may be received multiple times for a message (eg:
+                    //group message failed to send to N recipients), but all
+                    //the current failures up to this point will be present
+                    break;
+
                 case 'EXPIRING':
                     this.startExpiringMessageCountdown(event);
                     break;

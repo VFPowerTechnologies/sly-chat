@@ -1,10 +1,12 @@
 @file:JvmName("ImplUtils")
 package io.slychat.messenger.services.ui.impl
 
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.generateNewKeyVault
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.MessageInfo
+import io.slychat.messenger.core.persistence.MessageSendFailure
 import io.slychat.messenger.core.persistence.UserConversation
 import io.slychat.messenger.services.ui.UIContactInfo
 import io.slychat.messenger.services.ui.UIConversation
@@ -17,8 +19,8 @@ fun asyncGenerateNewKeyVault(password: String): Promise<KeyVault, Exception> = t
     generateNewKeyVault(password)
 }
 
-fun MessageInfo.toUI(): UIMessage {
-    return UIMessage(id, isSent, timestamp, receivedTimestamp, message, ttlMs, expiresAt, isExpired)
+fun MessageInfo.toUI(failures: Map<UserId, MessageSendFailure>): UIMessage {
+    return UIMessage(id, isSent, timestamp, receivedTimestamp, message, ttlMs, expiresAt, isExpired, failures)
 }
 
 fun ContactInfo.toUI(): UIContactInfo =
