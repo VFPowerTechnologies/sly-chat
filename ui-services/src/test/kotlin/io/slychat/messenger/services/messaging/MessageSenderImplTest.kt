@@ -5,6 +5,7 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
+import io.slychat.messenger.core.persistence.MessageSendFailure
 import io.slychat.messenger.core.persistence.SenderMessageEntry
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
@@ -210,20 +211,24 @@ class MessageSenderImplTest {
         verify(messageQueuePersistenceManager).remove(metadata.userId, metadata.messageId)
     }
 
-    @Ignore("TODO")
     @Test
-    fun `it should remove the package emit SendFailure if an InactiveUser error is received from the relay`() {
+    fun `it should emit SendFailure if an InactiveUser error is received from the relay`() {
         val sender = createSender(true)
 
         val entry = randomSenderMessageEntry()
 
         val metadata = entry.metadata
 
+        val testSubscriber = sender.messageSent.testSubscriber()
+
         sender.addToQueue(metadata, entry.message).get()
 
         relayEvents.onNext(InactiveUser(metadata.userId, getCurrentRelayMessageId(sender)))
 
-        TODO()
+        assertEventEmitted(testSubscriber) {
+            val expected = MessageSendRecord.Failure(metadata, MessageSendFailure.InactiveUser())
+            assertEquals(expected, it, "Expected InactiveUser failure")
+        }
     }
 
     @Test
@@ -338,7 +343,7 @@ class MessageSenderImplTest {
     //TODO handle self case above as well
     @Ignore("TODO")
     @Test
-    fun `it should ??? when sending a message and no devices are available for a user`() {
+    fun `it should emit MessageSendRecord Failure if no encrypted messages are returned from MessageCipherService for a diff user`() {
         TODO()
     }
 

@@ -6,6 +6,7 @@ import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.MessageMetadata
 import io.slychat.messenger.core.persistence.MessageQueuePersistenceManager
+import io.slychat.messenger.core.persistence.MessageSendFailure
 import io.slychat.messenger.core.persistence.SenderMessageEntry
 import io.slychat.messenger.core.relay.*
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
@@ -201,7 +202,8 @@ class MessageSenderImpl(
 
                     removeMessageFromQueue(message.metadata) bindUi {
                         messageCipherService.clearDevices(result.to)
-                        //TODO wtf do we do for send record here?
+                    } successUi {
+                        messageSentSubject.onNext(MessageSendRecord.Failure(message.metadata, MessageSendFailure.InactiveUser()))
                     } fail {
                         log.error("Failed to clear devices for {}: {}", result.to, it.message, it)
                     }
