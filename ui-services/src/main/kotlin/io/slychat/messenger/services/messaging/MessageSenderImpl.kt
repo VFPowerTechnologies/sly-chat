@@ -180,7 +180,7 @@ class MessageSenderImpl(
             when (result) {
                 is MessageSendResult.Ok -> {
                     removeMessageFromQueue(message.metadata) successUi {
-                        messageSentSubject.onNext(MessageSendRecord(message.metadata, result.timestamp))
+                        messageSentSubject.onNext(MessageSendRecord.Ok(message.metadata, result.timestamp))
                     }
 
                     nextSendMessage()
@@ -201,6 +201,7 @@ class MessageSenderImpl(
 
                     removeMessageFromQueue(message.metadata) bindUi {
                         messageCipherService.clearDevices(result.to)
+                        //TODO wtf do we do for send record here?
                     } fail {
                         log.error("Failed to clear devices for {}: {}", result.to, it.message, it)
                     }

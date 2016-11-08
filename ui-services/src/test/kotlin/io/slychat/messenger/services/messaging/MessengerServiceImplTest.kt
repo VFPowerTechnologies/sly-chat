@@ -78,22 +78,22 @@ class MessengerServiceImplTest {
         whenever(relayClock.currentTime()).thenReturn(1)
     }
 
-    fun randomTextSingleRecord(): MessageSendRecord {
-        return MessageSendRecord(
+    fun randomTextSingleRecord(): MessageSendRecord.Ok {
+        return MessageSendRecord.Ok(
             randomTextSingleMetadata(),
             currentTimestamp()
         )
     }
 
-    fun randomTextGroupRecord(): MessageSendRecord {
-        return MessageSendRecord(
+    fun randomTextGroupRecord(): MessageSendRecord.Ok {
+        return MessageSendRecord.Ok(
             randomTextGroupMetadata(),
             currentTimestamp()
         )
     }
 
-    fun randomOtherRecord(): MessageSendRecord {
-        return MessageSendRecord(
+    fun randomOtherRecord(): MessageSendRecord.Ok {
+        return MessageSendRecord.Ok(
             randomOtherMetadata(),
             currentTimestamp()
         )

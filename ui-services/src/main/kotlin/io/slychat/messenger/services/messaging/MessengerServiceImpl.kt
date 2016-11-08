@@ -46,7 +46,7 @@ class MessengerServiceImpl(
     init {
         subscriptions.add(relayClientManager.events.subscribe { onRelayEvent(it) })
 
-        subscriptions.add(messageSender.messageSent.subscribe { onMessageSent(it) })
+        subscriptions.add(messageSender.messageSent.subscribe { onMessageSendRecord(it) })
     }
 
     override fun init() {
@@ -56,37 +56,27 @@ class MessengerServiceImpl(
         subscriptions.clear()
     }
 
-    private fun onMessageSent(record: MessageSendRecord) {
+    private fun onMessageSendRecord(record: MessageSendRecord) {
         val metadata = record.metadata
 
         log.debug("Processing sent message {} (category: {})", metadata.messageId, metadata.category)
 
+        //FIXME
+        record as MessageSendRecord.Ok
+
         when (metadata.category) {
-            MessageCategory.TEXT_SINGLE -> processSingleUpdate(metadata, record.serverReceivedTimestamp)
-            MessageCategory.TEXT_GROUP -> processGroupUpdate(metadata, record.serverReceivedTimestamp)
+            MessageCategory.TEXT_SINGLE -> processSuccessfulSend(metadata, record.serverReceivedTimestamp)
+            MessageCategory.TEXT_GROUP -> processSuccessfulSend(metadata, record.serverReceivedTimestamp)
             MessageCategory.OTHER -> {}
         }
     }
 
-    private fun processSingleUpdate(metadata: MessageMetadata, serverReceivedTimestamp: Long) {
+    private fun processSuccessfulSend(metadata: MessageMetadata, serverReceivedTimestamp: Long) {
         val messageId = metadata.messageId
 
-        log.debug("Processing sent convo message {} to {}", messageId, metadata.userId)
+        val conversationId = metadata.getConversationId()
 
-        val conversationId = metadata.userId.toConversationId()
-
-        markMessageAsDelivered(conversationId, metadata, messageId, serverReceivedTimestamp)
-    }
-
-    private fun processGroupUpdate(metadata: MessageMetadata, serverReceivedTimestamp: Long) {
-        //can't be null due to constructor checks
-        val groupId = metadata.groupId!!
-
-        val messageId = metadata.messageId
-
-        log.debug("Processing sent group message <<{}/{}>>", groupId, messageId)
-
-        val conversationId = groupId.toConversationId()
+        log.debug("Processing sent message {} to {}", messageId, conversationId)
 
         markMessageAsDelivered(conversationId, metadata, messageId, serverReceivedTimestamp)
     }
