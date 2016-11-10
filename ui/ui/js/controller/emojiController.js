@@ -285,9 +285,6 @@ EmojiController.prototype = {
     createMobileEmojiPicker : function (navbar, tabs) {
         return $("" +
             "<div class='mobile-emoji-picker'>" +
-                // "<div class='emoji-picker-backspace-container'>" +
-                //     "<button id='deleteEmojiBtn' class='btn'><i class='material-icons md-24'>backspace</i></button>" +
-                // "</div>" +
                 "<div class='emoji-picker-toolbar'>" +
                     "<div class='toolbar-inner'>" +
                         navbar +
@@ -305,13 +302,23 @@ EmojiController.prototype = {
         link.on("click", function (e) {
             e.preventDefault();
             e.stopPropagation();
-            var newMessageInput = $("#newMessageInput");
+            var input = $("#newMessageInput");
+            var emoji = $(link).attr("data-emoji");
 
-            var emoji = link.attr("data-emoji");
-            newMessageInput.val(newMessageInput.val() + emoji);
-
-            if (isDesktop)
+            if (isDesktop) {
+                input.val(input.val() + emojione.shortnameToUnicode(emoji));
+                input.focus();
                 slychat.closeModal(".popover-emoji");
+            }
+            else {
+                var area = input.emojioneArea();
+                if (area.length <= 0 || typeof area[0].emojioneArea === "undefined")
+                    input.val(input.val() + emojione.shortnameToUnicode(emoji));
+                else {
+                    emojiController.pasteHtmlAtCaret(emojiController.shortnameTo(emoji, area[0].emojioneArea.emojiTemplate));
+                    $(".emojionearea-editor").blur(); // Use .blur() to keep the picker open.
+                }
+            }
         });
 
         return link;
@@ -356,19 +363,19 @@ EmojiController.prototype = {
 
     toggleMobileEmoji : function () {
         if ($(".mobile-emoji-picker-opened").length > 0) {
-            $("#newMessageInput").focus();
+            $(".emojionearea-editor").focus();
         }
         else {
             if (slychat.keyboardInfo.isVisible) {
                 this.openMobileEmoji(window.orientation);
-                $("#newMessageInput").blur();
+                $(".emojionearea-editor").blur();
             }
             else {
                 if (window.orientation === 0){
                     if (slychat.keyboardInfo.container.portrait === 0) {
-                        $("#newMessageInput").focus();
+                        $(".emojionearea-editor").focus();
                         setTimeout(function () {
-                            $("#newMessageInput").blur();
+                            $(".emojionearea-editor").blur();
                             emojiController.openMobileEmoji(window.orientation);
                         }, 500);
                     }
@@ -377,9 +384,9 @@ EmojiController.prototype = {
                 }
                 else {
                     if (slychat.keyboardInfo.container.landscape === 0) {
-                        $("#newMessageInput").focus();
+                        $(".emojionearea-editor").focus();
                         setTimeout(function () {
-                            $("#newMessageInput").blur();
+                            $(".emojionearea-editor").blur();
                             emojiController.openMobileEmoji(window.orientation);
                         }, 500);
                     }
@@ -446,7 +453,7 @@ EmojiController.prototype = {
             });
         }, 200);
 
-        picker.find(".emoticon-link").each(function () {
+        $(".emoticon-link").each(function () {
             emojiController.createIconLinkEvent($(this));
         });
 
@@ -537,5 +544,58 @@ EmojiController.prototype = {
                 }
             });
         }
+    },
+
+    pasteHtmlAtCaret : function (html) {
+        var sel, range;
+        if (window.getSelection) {
+            sel = window.getSelection();
+            if (sel.getRangeAt && sel.rangeCount) {
+                range = sel.getRangeAt(0);
+                range.deleteContents();
+                var el = document.createElement("div");
+                el.innerHTML = html;
+                var frag = document.createDocumentFragment(), node, lastNode;
+                while ( (node = el.firstChild) ) {
+                    lastNode = frag.appendChild(node);
+                }
+                range.insertNode(frag);
+                if (lastNode) {
+                    range = range.cloneRange();
+                    range.setStartAfter(lastNode);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            }
+        } else if (document.selection && document.selection.type != "Control") {
+            document.selection.createRange().pasteHTML(html);
+        }
+    },
+
+    getTemplate : function (template, unicode, shortname) {
+        var imageType = emojione.imageType, imagePath;
+        if (imageType=='svg'){
+            imagePath = emojione.imagePathSVG;
+        } else {
+            imagePath = emojione.imagePathPNG;
+        }
+        return template
+            .replace('{name}', shortname || '')
+            .replace('{img}', imagePath + unicode + '.' + imageType)
+            .replace('{uni}', unicode)
+            .replace('{alt}', emojione.convert(unicode));
+    },
+
+    shortnameTo : function (str, template, clear) {
+        return str.replace(/:?\+?[\w_\-]+:?/g, function(shortname) {
+            shortname = ":" + shortname.replace(/:$/,'').replace(/^:/,'') + ":";
+            var unicode = emojione.emojioneList[shortname];
+            if (unicode) {
+                unicode = unicode.unicode;
+                return emojiController.getTemplate(template, unicode[unicode.length-1], shortname);
+            }
+            return clear ? '' : shortname;
+        });
     }
 };

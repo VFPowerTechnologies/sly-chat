@@ -256,17 +256,32 @@ slychat.onPageInit('chat', function (page) {
 
             chatController.toggleExpiringMessageDisplay();
         });
-
         $("#emojiPickerBtn").on('touchstart', function (e) {
             e.preventDefault();
             e.stopPropagation();
             emojiController.toggleMobileEmoji();
         });
-    }
 
-    $("#newMessageInputDiv").click(function () {
-        newMessageInput.focus();
-    });
+        newMessageInput.emojioneArea({
+            autoHideFilters: true,
+            useInternalCDN: false,
+            autocomplete: false,
+            recentEmojis: false,
+            attributes: {
+                autocomplete: 'on'
+            }
+        });
+
+        var editor = $(".emojionearea-editor");
+        editor.click(function (e) {
+            e.stopImmediatePropagation();
+            $(this).focus();
+        });
+
+        editor.on("touchstart", function (e) {
+            e.stopImmediatePropagation();
+        });
+    }
 });
 
 slychat.onPageInit('addContact', function (page) {
