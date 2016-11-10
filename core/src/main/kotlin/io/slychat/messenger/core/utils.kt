@@ -180,3 +180,7 @@ fun org.slf4j.Logger.condError(isError: Boolean, format: String, vararg args: An
     else
         this.warn(format, *args)
 }
+
+/** No-op used to enforce compile-time exhaustive matching of a side-effecting when expression. */
+@Suppress("NOTHING_TO_INLINE", "unused")
+inline fun Any?.enforceExhaustive() {}

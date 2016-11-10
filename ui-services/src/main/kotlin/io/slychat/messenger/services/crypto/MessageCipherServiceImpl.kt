@@ -30,6 +30,8 @@ import org.whispersystems.libsignal.state.SignalProtocolStore
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 
+class NoKeyDataException(val userId: UserId) : RuntimeException("No key data found for $userId")
+
 class MessageCipherServiceImpl(
     private val selfId: UserId,
     private val authTokenManager: AuthTokenManager,
@@ -96,6 +98,11 @@ class MessageCipherServiceImpl(
             val deferred: Deferred<Unit, Exception>
         ) : CipherWork()
 
+        class ClearDevices(
+            val userId: UserId,
+            val deferred: Deferred<Unit, Exception>
+        ) : CipherWork()
+
         class NoMoreWork : CipherWork()
     }
 
@@ -155,6 +162,12 @@ class MessageCipherServiceImpl(
         return d.promise
     }
 
+    override fun clearDevices(userId: UserId): Promise<Unit, Exception> {
+        val d = deferred<Unit, Exception>()
+        workQueue.add(CipherWork.ClearDevices(userId, d))
+        return d.promise
+    }
+
     override fun run() {
         processQueue(true)
     }
@@ -185,13 +198,30 @@ class MessageCipherServiceImpl(
             is CipherWork.UpdateDevices -> handleDeviceUpdate(work)
             is CipherWork.UpdateSelfDevices -> handleUpdateSelfDevices(work)
             is CipherWork.AddSelfDevice -> handleAddSelfDevice(work)
+            is CipherWork.ClearDevices -> handleClearDevices(work)
             is CipherWork.NoMoreWork -> return false
-            else -> {
-                log.error("Unknown work type: {}", work)
-            }
         }
 
         return true
+    }
+
+    private fun handleClearDevices(work: CipherWork.ClearDevices) {
+        val userId = work.userId
+
+        log.info("Clearing devices for {}", userId)
+
+        val signalName = userId.toString()
+        val currentDeviceIds = signalStore.getSubDeviceSessions(signalName)
+
+        signalStore.deleteAllSessions(signalName)
+
+        currentDeviceIds.forEach {
+            val data = SecurityEventData.SessionRemoved(SlyAddress(userId, it))
+            val event = LogEvent.Security(LogTarget.Conversation(userId), currentTimestamp(), data)
+            eventLogService.addEvent(event)
+        }
+
+        work.deferred.resolve(Unit)
     }
 
     private fun handleAddSelfDevice(work: CipherWork.AddSelfDevice) {
@@ -314,8 +344,9 @@ class MessageCipherServiceImpl(
         if (!response.isSuccess)
             throw RuntimeException(response.errorMessage)
         else {
+            //this occurs if we message a user with no more active devices
             if (response.bundles.isEmpty())
-                throw RuntimeException("No key data for $userId")
+                throw NoKeyDataException(userId)
 
             val bundles = ArrayList<PreKeyBundle>()
 

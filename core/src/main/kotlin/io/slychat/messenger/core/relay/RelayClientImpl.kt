@@ -166,17 +166,17 @@ class RelayClientImpl(
                 emitEvent(ReceivedMessage(address, content, messageId, message.header.timestamp))
             }
 
-            CommandCode.SERVER_USER_OFFLINE -> {
+            CommandCode.INVALID_OR_INACTIVE_USER -> {
                 val to = message.header.toUserId
                 val messageId = message.header.messageId
 
                 log.info(
-                    "User {} is offline, unable to send message <{}>",
+                    "User {} is invalid or inactive, unable to send message <{}>",
                     to,
                     messageId
                 )
 
-                emitEvent(UserOffline(to.toUserId(), messageId))
+                emitEvent(InactiveUser(to.toUserId(), messageId))
             }
 
             CommandCode.SERVER_PONG -> {

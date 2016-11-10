@@ -2,6 +2,7 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.randomMessageId
+import io.slychat.messenger.core.crypto.randomMessageSendFailures
 import io.slychat.messenger.core.persistence.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.*
@@ -17,11 +18,11 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         }
     }
 
-    lateinit var persistenceManager: SQLitePersistenceManager
+    private lateinit var persistenceManager: SQLitePersistenceManager
     lateinit override var contactsPersistenceManager: SQLiteContactsPersistenceManager
     lateinit override var groupPersistenceManager: SQLiteGroupPersistenceManager
-    lateinit var messagePersistenceManager: SQLiteMessagePersistenceManager
-    lateinit var conversationInfoTestUtils: ConversationInfoTestUtils
+    private lateinit var messagePersistenceManager: SQLiteMessagePersistenceManager
+    private lateinit var conversationInfoTestUtils: ConversationInfoTestUtils
 
     @Before
     fun before() {
@@ -38,14 +39,14 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         persistenceManager.shutdown()
     }
 
-    fun insertRandomReceivedMessagesFull(id: GroupId, members: Set<UserId>): List<ConversationMessageInfo> =
+    private fun insertRandomReceivedMessagesFull(id: GroupId, members: Set<UserId>): List<ConversationMessageInfo> =
         insertRandomReceivedMessagesFull(id.toConversationId(), members)
 
-    fun insertRandomReceivedMessagesFull(id: ConversationId, senders: Set<UserId>): List<ConversationMessageInfo> {
+    private fun insertRandomReceivedMessagesFull(id: ConversationId, senders: Set<UserId>): List<ConversationMessageInfo> {
         return insertRandomReceivedMessagesFull(messagePersistenceManager, id, senders)
     }
 
-    fun insertRandomReceivedMessagesFull(messagePersistenceManager: MessagePersistenceManager, id: ConversationId, senders: Set<UserId>): List<ConversationMessageInfo> {
+    private fun insertRandomReceivedMessagesFull(messagePersistenceManager: MessagePersistenceManager, id: ConversationId, senders: Set<UserId>): List<ConversationMessageInfo> {
         val info = ArrayList<ConversationMessageInfo>()
 
         senders.forEach { member ->
@@ -60,30 +61,30 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         return info
     }
 
-    fun insertRandomSentMessage(id: GroupId): String =
+    private fun insertRandomSentMessage(id: GroupId): String =
         insertRandomSentMessage(id.toConversationId())
 
-    fun insertRandomSentMessage(id: ConversationId): String {
+    private fun insertRandomSentMessage(id: ConversationId): String {
         val conversationMessageInfo = randomSentConversationMessageInfo()
         messagePersistenceManager.addMessage(id, conversationMessageInfo).get()
 
         return conversationMessageInfo.info.id
     }
 
-    fun insertRandomReceivedMessages(id: GroupId, members: Set<UserId>): List<String> =
+    private fun insertRandomReceivedMessages(id: GroupId, members: Set<UserId>): List<String> =
         insertRandomReceivedMessages(id.toConversationId(), members)
 
-    fun insertRandomReceivedMessages(id: ConversationId, senders: Set<UserId>): List<String> {
+    private fun insertRandomReceivedMessages(id: ConversationId, senders: Set<UserId>): List<String> {
         return insertRandomReceivedMessagesFull(id, senders).map { it.info.id }
     }
 
-    fun addRandomContact(allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL): UserId {
+    private fun addRandomContact(allowedMessageLevel: AllowedMessageLevel = AllowedMessageLevel.ALL): UserId {
         val contactInfo = randomContactInfo(allowedMessageLevel)
         contactsPersistenceManager.add(contactInfo).get()
         return contactInfo.id
     }
 
-    fun addMessage(userId: UserId, isSent: Boolean, message: String, ttl: Long): ConversationMessageInfo {
+    private fun addMessage(userId: UserId, isSent: Boolean, message: String, ttl: Long): ConversationMessageInfo {
         val conversationMessageInfo = if (isSent)
             ConversationMessageInfo(null, randomSentMessageInfo().copy(message = message, ttlMs = ttl))
         else
@@ -94,13 +95,13 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         return conversationMessageInfo
     }
 
-    fun getConversationInfo(conversationId: ConversationId): ConversationInfo {
+    private fun getConversationInfo(conversationId: ConversationId): ConversationInfo {
         return assertNotNull(messagePersistenceManager.getConversationInfo(conversationId).get(), "No last conversation info")
     }
 
     //TODO we should clean up all these tests to use this instead, since due to the merge the majority of behavior is
     //identical between conversation types
-    class MessageTestFixture() : GroupPersistenceManagerTestUtils {
+    private class MessageTestFixture() : GroupPersistenceManagerTestUtils {
         private val persistenceManager = SQLitePersistenceManager(null, null)
 
         val messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
@@ -119,9 +120,12 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             }
         }
 
-        fun addMessage(conversationId: ConversationId, speaker: UserId?, messageInfo: MessageInfo): ConversationMessageInfo {
-            val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
+        fun addMessage(conversationId: ConversationId, speaker: UserId?, messageInfo: MessageInfo, failures: Map<UserId, MessageSendFailure> = emptyMap()): ConversationMessageInfo {
+            val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo, failures)
+            return addMessage(conversationId, conversationMessageInfo)
+        }
 
+        fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): ConversationMessageInfo {
             messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
 
             return conversationMessageInfo
@@ -192,7 +196,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         }
     }
 
-    fun forUserConvType(allowedMessageLevel: AllowedMessageLevel, body: MessageTestFixture.(ContactInfo) -> Unit) {
+    private fun forUserConvType(allowedMessageLevel: AllowedMessageLevel, body: MessageTestFixture.(ContactInfo) -> Unit) {
         MessageTestFixture().run {
             val contactInfo = randomContactInfo(allowedMessageLevel)
 
@@ -202,7 +206,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         }
     }
 
-    fun foreachConvType(body: MessageTestFixture.(ConversationId, Set<UserId>) -> Unit) {
+    private fun foreachConvType(body: MessageTestFixture.(ConversationId, Set<UserId>) -> Unit) {
         MessageTestFixture().run {
             val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
             val userId = contactInfo.id
@@ -377,7 +381,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         }
     }
 
-    fun testSingleUnreadInc(isRead: Boolean) {
+    private fun testSingleUnreadInc(isRead: Boolean) {
         foreachConvType { conversationId, participants ->
             val speaker = participants.first()
 
@@ -395,7 +399,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         }
     }
 
-    fun testMultiUnreadInc(isRead: Boolean) {
+    private fun testMultiUnreadInc(isRead: Boolean) {
         foreachConvType { conversationId, participants ->
             val speaker = participants.first()
 
@@ -425,6 +429,28 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `addMessage should not inc the conversation info unread count if an inserted message is read`() {
         testSingleUnreadInc(true)
+    }
+
+    @Test
+    fun `addMessage should insert failures if present`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+            val failures = mapOf(
+                speaker to MessageSendFailure.InactiveUser()
+            )
+
+            val conversationMessageInfo = ConversationMessageInfo(speaker, randomReceivedMessageInfo(), failures)
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+
+            val messageId = conversationMessageInfo.info.id
+
+            val updatedInfo = assertNotNull(messagePersistenceManager.get(conversationId, messageId).get(), "Missing message")
+
+            assertThat(updatedInfo.failures).apply {
+                `as`("Updated value should contain the updated failures")
+                containsAllEntriesOf(failures)
+            }
+        }
     }
 
     @Test
@@ -610,6 +636,42 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
+    fun `deleteAllMessagesUntil should remove any associated message failures`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val conversationMessageInfo = addMessage(conversationId, speaker, randomReceivedMessageInfo(), randomMessageSendFailures(speaker))
+
+            val messageId = conversationMessageInfo.info.id
+
+            messagePersistenceManager.deleteAllMessagesUntil(conversationId, conversationMessageInfo.info.timestamp).get()
+
+            assertThat(messagePersistenceManager.internalGetFailures(conversationId, messageId)).apply {
+                `as`("deleteAllMessagesUntil should remove failures")
+                isEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun `deleteMessages should remove any associated message failures`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val conversationMessageInfo = addMessage(conversationId, speaker, randomReceivedMessageInfo(), randomMessageSendFailures(speaker))
+
+            val messageId = conversationMessageInfo.info.id
+
+            messagePersistenceManager.deleteMessages(conversationId, listOf(messageId)).get()
+
+            assertThat(messagePersistenceManager.internalGetFailures(conversationId, messageId)).apply {
+                `as`("deleteMessages should remove failures")
+                isEmpty()
+            }
+        }
+    }
+
+    @Test
     fun `deleteMessages should do nothing if the message list is empty`() {
         val userId = addRandomContact()
 
@@ -671,14 +733,14 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         assertEquals(lastMessage.info.timestamp, lastConversationInfo.lastTimestamp, "lastTimestamp doesn't match")
     }
 
-    fun assertValidConversationInfo(conversationMessageInfo: ConversationMessageInfo, conversationInfo: ConversationInfo, unreadCount: Int = 1) {
+    private fun assertValidConversationInfo(conversationMessageInfo: ConversationMessageInfo, conversationInfo: ConversationInfo, unreadCount: Int = 1) {
         assertEquals(conversationMessageInfo.speaker, conversationInfo.lastSpeaker, "Invalid speaker")
         assertEquals(conversationMessageInfo.info.message, conversationInfo.lastMessage, "Invalid last message")
         assertEquals(conversationMessageInfo.info.timestamp, conversationInfo.lastTimestamp, "Invalid last timestamp")
         assertEquals(unreadCount, conversationInfo.unreadMessageCount, "Invalid unread count")
     }
 
-    fun assertFailsWithInvalidConversation(body: () -> Unit) {
+    private fun assertFailsWithInvalidConversation(body: () -> Unit) {
         assertFailsWith(InvalidConversationException::class, body)
     }
 
@@ -833,6 +895,24 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
+    fun `deleteAllMessages should remove any associated message failures`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val conversationMessageInfo = addMessage(conversationId, speaker, randomReceivedMessageInfo(), randomMessageSendFailures(speaker))
+
+            val messageId = conversationMessageInfo.info.id
+
+            messagePersistenceManager.deleteAllMessages(conversationId).get()
+
+            assertThat(messagePersistenceManager.internalGetFailures(conversationId, messageId)).apply {
+                `as`("deleteAllMessages should remove failures")
+                isEmpty()
+            }
+        }
+    }
+
+    @Test
     fun `deleteAllMessages should remove expiring message entries`() {
         foreachConvType { conversationId, set ->
             val sentMessage = randomSentConversationMessageInfo()
@@ -975,7 +1055,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         assertEquals(3, got.size)
     }
 
-    fun testNoUserConversations() {
+    private fun testNoUserConversations() {
         val got = messagePersistenceManager.getAllUserConversations().get()
         assertThat(got).apply {
             `as`("There should be no conversations")
@@ -1213,7 +1293,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         }
     }
 
-    fun testConversationDisplayInfo(withTtl: Boolean) {
+    private fun testConversationDisplayInfo(withTtl: Boolean) {
         foreachConvType { conversationId, participants ->
             val messageText = randomMessageText()
             val speaker = participants.first()
@@ -1337,5 +1417,73 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
                 assertNull(messagePersistenceManager.getGroupConversation(it).get(), "Expected no conversation info")
             }
         }
+    }
+
+    @Test
+    fun `addFailures should add new failures`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val conversationMessageInfo = addMessage(conversationId, speaker, randomReceivedMessageInfo())
+            val failures = mapOf(
+                speaker to MessageSendFailure.InactiveUser()
+            )
+
+            val messageId = conversationMessageInfo.info.id
+
+            val updatedInfo = messagePersistenceManager.addFailures(conversationId, messageId, failures).get()
+
+            assertThat(updatedInfo.failures).apply {
+                `as`("Updated value should contain the new failures")
+                containsAllEntriesOf(failures)
+            }
+
+            assertEquals(messagePersistenceManager.get(conversationId, messageId).get(), updatedInfo, "Updated info doesn't match persisted info")
+        }
+    }
+
+    @Test
+    fun `addFailures should overwrite old failures for the same participant`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+            val failures = mapOf(
+                speaker to MessageSendFailure.InactiveUser()
+            )
+
+            val conversationMessageInfo = addMessage(conversationId, speaker, randomReceivedMessageInfo(), failures)
+            val messageId = conversationMessageInfo.info.id
+
+            val newFailures = mapOf(
+                speaker to MessageSendFailure.EncryptionFailure()
+            )
+
+            val updatedInfo = messagePersistenceManager.addFailures(conversationId, messageId, newFailures).get()
+            assertThat(updatedInfo.failures).apply {
+                `as`("Updated value should contain the updated failures")
+                containsAllEntriesOf(newFailures)
+            }
+        }
+    }
+
+    @Test
+    fun `addFailures should fail for invalid message ids`() {
+        foreachConvType { conversationId, participants ->
+            assertFailsWith(InvalidConversationMessageException::class) {
+                messagePersistenceManager.addFailures(conversationId, randomMessageId(), randomMessageSendFailures(participants.first())).get()
+            }
+        }
+    }
+
+    @Test
+    fun `addFailures should fail for invalid conversation ids`() {
+        assertFailsWithInvalidConversation {
+            messagePersistenceManager.addFailures(randomUserConversationId(), randomMessageId(), randomMessageSendFailures(randomUserId())).get()
+        }
+    }
+
+    @Ignore("maybe")
+    @Test
+    fun `addFailures should update conversation info`() {
+        TODO()
     }
 }

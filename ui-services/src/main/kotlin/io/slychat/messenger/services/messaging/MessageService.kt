@@ -28,6 +28,8 @@ interface MessageService {
 
     fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception>
 
+    fun addFailures(conversationId: ConversationId, messageId: String, failures: Map<UserId, MessageSendFailure>): Promise<Unit, Exception>
+
     fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>, fromSync: Boolean): Promise<Unit, Exception>
 
     fun deleteAllMessages(conversationId: ConversationId): Promise<Unit, Exception>

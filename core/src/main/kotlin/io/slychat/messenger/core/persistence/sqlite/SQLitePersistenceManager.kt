@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 /** The latest database version number. */
-private val LATEST_DATABASE_VERSION = 16
+private val LATEST_DATABASE_VERSION = 17
 
 /** Just used to wrap Errors thrown when running SQLite jobs. */
 class SQLitePersistenceManagerErrorException(e: Error) : RuntimeException("Uncaught Error in job", e)
