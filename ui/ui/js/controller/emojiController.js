@@ -315,8 +315,12 @@ EmojiController.prototype = {
                 if (area.length <= 0 || typeof area[0].emojioneArea === "undefined")
                     input.val(input.val() + emojione.shortnameToUnicode(emoji));
                 else {
+                    var editor = $(".emojionearea-editor");
+                    editor.focus();
+                    editor.blur();
+                    
                     emojiController.pasteHtmlAtCaret(emojiController.shortnameTo(emoji, area[0].emojioneArea.emojiTemplate));
-                    $(".emojionearea-editor").blur(); // Use .blur() to keep the picker open.
+                    editor.blur(); // Use .blur() to keep the picker open.
                 }
             }
         });
