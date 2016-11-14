@@ -7,7 +7,6 @@ buildscript {
         versions = [
             kotlin: '1.0.3',
             slf4j: '1.7.15',
-            logbackClassic: '1.1.3',
             roboVM: '1.13.0',
             jackson: '2.8.1',
             kovenant: '3.3.0',
@@ -31,7 +30,7 @@ buildscript {
             androidGradle: '2.1.0',
             androidBuildTools: '23.0.3',
             androidCompileSdk: 23,
-            jsbridge: '0.2.0',
+            jsbridge: '0.3.1',
             controlsFx: '8.40.11',
             nsMenuFx: '2.1.4',
             jna: '4.2.2',

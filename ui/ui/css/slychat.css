@@ -332,7 +332,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 .expiring-message-toolbar {
     height: 80px;
 }
-.bomb-button-icon i {
+.toggle-options-btn i {
     color: #a9a9a9;
 }
 .expiring-message-toolbar .bomb-button-icon i {
@@ -359,6 +359,7 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
     background-color: transparent;
     display: inline-block;
     outline: none;
+    color: black;
 }
 .layout-dark #newMessageInput {
     color: #a9a9a9;
@@ -622,6 +623,105 @@ html, body, div, p, a, ul, li, span, time, h1, h2, h3, h4, h5, h6 {
 }
 .layout-dark .pwstrength_viewport_progress .password-verdict {
     color: #fff;
+}
+
+/* emoji */
+.mobile-emoji-picker {
+    width: 100%;
+    position: relative;
+    bottom: 0;
+    top: initial;
+}
+.mobile-emoji-picker {
+    background-color: black;
+}
+.emoticon-link img {
+    height: 30px;
+    width: 30px;
+    margin: 5px;
+}
+#emojiPickerBtn:focus {
+    outline: 0;
+}
+.emoji-category-btn {
+    display: inline-block;
+    font-size: 14px;
+}
+.emoji-picker-toolbar {
+    width: 100%;
+    height: 40px;
+    position: relative;
+    top: 0;
+    overflow-y: auto;
+    display: inline-block;
+    line-height: 40px;
+}
+.emoji-picker-backspace-container {
+    height: 40px;
+    width: 50px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: black;
+    text-align: center;
+}
+.emoji-picker-backspace-container .material-icons {
+    color: rgba(255, 255, 255, 1);
+}
+.emoji-picker-backspace-container button {
+    border: none;
+    background-color: black;
+    width: 50px;
+    height: 40px;
+    padding-top: 8px;
+}
+.emoji-picker-backspace-container button:focus {
+    outline: none;
+}
+.mobile-emoji-picker .swiper-container {
+    background-color: #fff;
+    top: -7px;
+}
+.emoji-picker-toolbar .toolbar-inner {
+    overflow: initial;
+}
+.emoji-picker-toolbar {
+    background-color: black;
+}
+.emoji-category-btn.active {
+    background-color: #fff;
+}
+#emojiPickerBtn {
+    position: absolute;
+    bottom: 0;
+    right: 36px;
+    background-color: transparent;
+    border: none;
+    height: 47px;
+}
+
+.emojionearea-button {
+    display: none;
+}
+.emojionearea-picker {
+    display: none;
+}
+.emojionearea {
+    max-height: 47px;
+    padding-right: 64px;
+    padding-left: 30px;
+    border: none;
+    box-shadow: none !important;
+}
+.emojionearea-editor {
+    max-height: 47px !important;
+    min-height: 47px !important;
+}
+.layout-dark .emojionearea {
+    background-color: #222;
+}
+.layout-dark .emojionearea-editor {
+    color: #a9a9a9;
 }
 
 /* Invite Friends */

@@ -13,6 +13,7 @@ import java.net.URI
 import java.net.URISyntaxException
 import java.util.*
 
+@Suppress("unused")
 open class GenBuildConfig : DefaultTask() {
     companion object {
         /**
@@ -147,13 +148,9 @@ open class GenBuildConfig : DefaultTask() {
 
     private val projectRoot = project.projectDir
 
-    private val debugAndroidLogSettings = "/debug-sly-logger.properties"
+    private val debugLogSettings = "/debug-sly-logger.properties"
 
-    private val releaseAndroidLogSettings = "/release-sly-logger.properties"
-
-    private val releaseDesktopLogSettings = "/release-logback.xml"
-
-    private val debugDesktopLogSettings = "/debug-logback.xml"
+    private val releaseLogSettings = "/release-sly-logger.properties"
 
     @InputFile
     val defaultPropertiesPath = File(projectRoot, "default.properties")
@@ -173,16 +170,10 @@ open class GenBuildConfig : DefaultTask() {
     val buildConfigJSTemplate = File(projectRoot, "buildSrc/src/main/resources/build-config.js.vm")
 
     @Input
-    val releaseAndroidLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/release-sly-logger.properties")
+    val releaseSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/release-sly-logger.properties")
 
     @Input
-    val debugAndroidLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/debug-sly-logger.properties")
-
-    @Input
-    val releaseDesktopLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/release-logback.xml")
-
-    @Input
-    val debugDesktopLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/debug-logback.xml")
+    val debugLogSettingsTemplate = File(projectRoot, "buildSrc/src/main/resources/debug-sly-logger.properties")
 
     //TODO maybe let these be overriden as settings (or set as relative paths to the project root)
     val generateRoot = File(projectRoot, "generated")
@@ -203,7 +194,7 @@ open class GenBuildConfig : DefaultTask() {
     val androidLogSettings = File(projectRoot, "android/src/main/resources/sly-logger.properties")
 
     @OutputFile
-    val desktopLogSettings = File(projectRoot, "desktop/src/main/resources/logback.xml")
+    val desktopLogSettings = File(projectRoot, "desktop/src/main/resources/sly-logger.properties")
 
     private fun getSettingProperties(): Properties {
         val props = Properties()
@@ -318,12 +309,12 @@ open class GenBuildConfig : DefaultTask() {
         val dispatcherLogLevel = findValueForKey(settings, "dispatcherLogLevel", debug)
         logVc.put("dispatcherLogLevel", dispatcherLogLevel)
 
-        val (selectedAndroidLogSettings, selectedDesktopLogSettings) = if (logSettingsType == "release")
-            releaseAndroidLogSettings to releaseDesktopLogSettings
+        val selectedLogSettings = if (logSettingsType == "release")
+            releaseLogSettings
         else
-            debugAndroidLogSettings to debugDesktopLogSettings
+            debugLogSettings
 
-        writeTemplate(ve, logVc, selectedAndroidLogSettings, androidLogSettings)
-        writeTemplate(ve, logVc, selectedDesktopLogSettings, desktopLogSettings)
+        writeTemplate(ve, logVc, selectedLogSettings, androidLogSettings)
+        writeTemplate(ve, logVc, selectedLogSettings, desktopLogSettings)
     }
 }

@@ -40,19 +40,20 @@
         <div class="toolbar toolbar-bottom bottom-chat-toolbar" style="background-color: #fff;">
             <div class="toolbar-inner">
                 <div class="form-content" style="width: inherit;">
-                    <form id="newMessageForm" style="width: inherit;">
-                        <div id='newMessageInputDiv'>
-                            <textarea placeholder='Type your secure message'
-                                      id="newMessageInput" name="newMessageInput" rows="2"></textarea>
-                            <button id='inputChatExpireMessageBtn' class='bomb-button-icon' style="position: absolute; bottom: 0; left: 0; background-color: transparent; border: none; height: 47px;">
-                                <i class="fa fa-bomb fa-2x"></i>
-                            </button>
-                            <button id='submitNewChatMessage'>
-                                <i class="material-icons md-24">&#xE163;</i>
-                            </button>
-                            <div id="contact-id" style="display: none;"></div>
-                        </div>
-                    </form>
+                    <div id='newMessageInputDiv'>
+                        <textarea placeholder='Type your secure message'
+                                  id="newMessageInput" name="newMessageInput" rows="2"></textarea>
+                        <button id='inputChatExpireMessageBtn' class='bomb-button-icon toggle-options-btn' style="position: absolute; bottom: 0; left: 0; background-color: transparent; border: none; height: 47px;">
+                            <i class="fa fa-bomb fa-2x"></i>
+                        </button>
+                        <button id='emojiPickerBtn' class='toggle-options-btn'>
+                            <i class="fa fa-smile-o fa-2x"></i>
+                        </button>
+                        <button id='submitNewChatMessage'>
+                            <i class="material-icons md-24">&#xE163;</i>
+                        </button>
+                        <div id="contact-id" style="display: none;"></div>
+                    </div>
                 </div>
             </div>
         </div>

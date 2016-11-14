@@ -1,6 +1,7 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.http.api.versioncheck.CheckResponse
 import io.slychat.messenger.core.isNotNetworkError
 import nl.komponents.kovenant.ui.failUi
 import org.slf4j.LoggerFactory
@@ -20,11 +21,11 @@ class HttpVersionChecker(
     private var isNetworkAvailable = false
 
     private var isRunning = false
-    private var lastResult: Boolean? = null
+    private var lastResult: VersionCheckResult? = null
 
-    private val subject = BehaviorSubject.create<Unit>()
+    private val subject = BehaviorSubject.create<VersionCheckResult>()
 
-    override val versionOutOfDate: Observable<Unit>
+    override val versionCheckResult: Observable<VersionCheckResult>
         get() = subject
 
     private var subscription: Subscription? = null
@@ -52,22 +53,23 @@ class HttpVersionChecker(
 
         val client = clientVersionAsyncClientFactory.create()
 
-        client.check(clientVersion) mapUi { isUpToDate ->
+        client.check(clientVersion) mapUi { response ->
             isRunning = false
-            updateResult(isUpToDate)
+            updateResult(response)
         } failUi { e ->
             log.condError(isNotNetworkError(e), "Version check failed: {}", e.message, e)
             isRunning = false
         }
     }
 
-    private fun updateResult(isUpToDate: Boolean) {
-        log.debug("Version check complete: {}", isUpToDate)
+    private fun updateResult(response: CheckResponse) {
+        log.debug("Version check complete: {}", response.isLatest)
 
-        lastResult = isUpToDate
+        val result = VersionCheckResult(response.isLatest, response.latestVersion)
 
-        if (!isUpToDate)
-            subject.onNext(Unit)
+        lastResult = result
+
+        subject.onNext(result)
     }
 
     override fun init() {

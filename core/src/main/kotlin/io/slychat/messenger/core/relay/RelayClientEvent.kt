@@ -51,6 +51,6 @@ data class ServerReceivedMessage(val to: UserId, val messageId: String, val time
 
 data class MessageSentToUser(val to: UserId, val messageId: String) : RelayClientEvent
 
-data class UserOffline(val to: UserId, val messageId: String) : RelayClientEvent
+data class InactiveUser(val to: UserId, val messageId: String) : RelayClientEvent
 
 data class DeviceMismatch(val to: UserId, val messageId: String, val info: DeviceMismatchContent) : RelayClientEvent

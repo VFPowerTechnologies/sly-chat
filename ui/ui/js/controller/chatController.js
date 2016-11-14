@@ -21,6 +21,13 @@ ChatController.prototype = {
                     }
                     break;
 
+                case 'DELIVERY_FAILED':
+                    //TODO
+                    //this may be received multiple times for a message (eg:
+                    //group message failed to send to N recipients), but all
+                    //the current failures up to this point will be present
+                    break;
+
                 case 'EXPIRING':
                     this.startExpiringMessageCountdown(event);
                     break;
@@ -704,8 +711,7 @@ ChatController.prototype = {
     },
 
     handleSubmitMessage : function (contact) {
-        var ttl = 0;
-        var mainView = $("#mainView");
+        var ttl = 0, mainView = $("#mainView");
         if (mainView.hasClass('expire-message-toggled')) {
             var slider = document.getElementById("delaySlider");
             if (slider !== null) {
@@ -717,7 +723,18 @@ ChatController.prototype = {
             }
         }
 
-        var message = $("#newMessageInput").val();
+        var newMessageInput = $("#newMessageInput"), message;
+        if (isDesktop) {
+            message = newMessageInput.val();
+        }
+        else {
+            var area = newMessageInput.emojioneArea();
+            if (area.length <= 0 || typeof area[0].emojioneArea === "undefined")
+                message = newMessageInput.val();
+            else
+                message = area[0].emojioneArea.getText();
+        }
+
         if (message !== "") {
             this.submitNewMessage(contact, message, ttl);
         }
@@ -728,25 +745,33 @@ ChatController.prototype = {
             ttl = 0;
 
         if (contact.email === undefined) {
-            messengerService.sendGroupMessageTo(contact.id, message, ttl).then(function () {
-                var input = $("#newMessageInput");
-                input.val("");
-                input.click();
-                this.scrollTop();
-            }.bind(this)).catch(function (e) {
+            messengerService.sendGroupMessageTo(contact.id, message, ttl).then(this.handleSubmitMessageSuccess()).catch(function (e) {
                 exceptionController.handleError(e);
             })
         }
         else {
-            messengerService.sendMessageTo(contact.id, message, ttl).then(function () {
-                var input = $("#newMessageInput");
-                input.val("");
-                input.click();
-                this.scrollTop();
-            }.bind(this)).catch(function (e) {
+            messengerService.sendMessageTo(contact.id, message, ttl).then(this.handleSubmitMessageSuccess()).catch(function (e) {
                 console.log(e);
             });
         }
+    },
+
+    handleSubmitMessageSuccess : function () {
+        var input = $("#newMessageInput");
+        if (isDesktop) {
+            input.val("");
+            input.click();
+        }
+        else {
+            var area = input.emojioneArea();
+            if (area.length <= 0 || typeof area[0].emojioneArea === "undefined")
+                input.val("");
+            else {
+                area[0].emojioneArea.setText("");
+                area[0].emojioneArea.setFocus();
+            }
+        }
+        this.scrollTop();
     },
 
     updateChatPageNewMessage : function (messages, contactName, contactId) {
@@ -796,19 +821,19 @@ ChatController.prototype = {
     toggleExpiringMessageDisplay : function () {
         var mainView = $("#mainView");
         var bottomToolbar = $(".bottom-chat-toolbar");
-        var newMessageInput = $("#newMessageInput");
+        var editor = $(".emojionearea-editor");
 
         if (mainView.hasClass("expire-message-toggled")) {
             mainView.removeClass("expire-message-toggled");
             bottomToolbar.removeClass("expiring-message-toolbar");
             bottomToolbar.find("#delaySliderContainer").remove();
-            newMessageInput.attr("placeholder", "Type your secure message");
+            editor.attr("placeholder", "Type your secure message");
         }
         else {
             mainView.addClass("expire-message-toggled");
             bottomToolbar.addClass("expiring-message-toolbar");
             this.createExpireDelaySlider(bottomToolbar);
-            newMessageInput.attr("placeholder", "Type your expiring secure message");
+            editor.attr("placeholder", "Type your expiring secure message");
         }
     },
 

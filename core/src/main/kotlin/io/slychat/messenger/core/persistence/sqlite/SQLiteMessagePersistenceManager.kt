@@ -4,6 +4,7 @@ import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteConstants
 import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
@@ -21,6 +22,8 @@ class SQLiteMessagePersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
 ) : MessagePersistenceManager {
     private val conversationInfoUtils = ConversationInfoUtils()
+
+    private val objectMapper = ObjectMapper()
 
     override fun addMessages(conversationId: ConversationId, messages: Collection<ConversationMessageInfo>): Promise<Unit, Exception> {
         if (messages.isEmpty())
@@ -55,6 +58,7 @@ class SQLiteMessagePersistenceManager(
         stmt.bind(8, messageInfo.expiresAt)
         stmt.bind(9, messageInfo.isDelivered)
         stmt.bind(10, messageInfo.message)
+        stmt.bind(11, conversationMessageInfo.failures.isNotEmpty())
     }
 
     /** Throws InvalidGroupException if group_conv table was missing, else rethrows the given exception. */
@@ -159,23 +163,33 @@ WHERE
         }
     }
 
+    private fun isMessageIdValid(connection: SQLiteConnection, conversationId: ConversationId, messageId: String): Boolean {
+        val tableName = ConversationTable.getTablename(conversationId)
+        return connection.withPrepared("SELECT 1 FROM $tableName WHERE id=?") { stmt ->
+            stmt.bind(1, messageId)
+            stmt.step()
+        }
+    }
+
     private fun insertMessage(connection: SQLiteConnection, conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo) {
         val tableName = ConversationTable.getTablename(conversationId)
         val sql =
             """
 INSERT INTO $tableName
-    (id, speaker_contact_id, timestamp, received_timestamp, is_read, is_expired, ttl, expires_at, is_delivered, message, n)
+    (id, speaker_contact_id, timestamp, received_timestamp, is_read, is_expired, ttl, expires_at, is_delivered, message, has_failures, n)
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT count(n)
-                                    FROM   $tableName
-                                    WHERE  timestamp = ?)+1)
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT count(n)
+                                       FROM   $tableName
+                                       WHERE  timestamp = ?)+1)
 """
         try {
             connection.withPrepared(sql) { stmt ->
                 conversationMessageInfoToRow(conversationMessageInfo, stmt)
-                stmt.bind(11, conversationMessageInfo.info.timestamp)
+                stmt.bind(12, conversationMessageInfo.info.timestamp)
                 stmt.step()
             }
+
+            insertFailures(connection, conversationId, conversationMessageInfo.info.id, conversationMessageInfo.failures)
         }
         catch (e: SQLiteException) {
             val message = e.message
@@ -191,6 +205,18 @@ VALUES
         }
     }
 
+    private fun deleteFailures(connection: SQLiteConnection, conversationId: ConversationId, messageIds: Collection<String>) {
+        connection.prepare("DELETE FROM message_failures WHERE conversation_id=? AND message_id IN (${getPlaceholders(messageIds.size)})").use { stmt ->
+            stmt.bind(1, conversationId)
+
+            messageIds.forEachIndexed { i, messageId ->
+                stmt.bind(i + 2, messageId)
+            }
+
+            stmt.step()
+        }
+    }
+
     override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         if (messageIds.isNotEmpty()) {
             val tableName = ConversationTable.getTablename(conversationId)
@@ -203,6 +229,8 @@ VALUES
 
                     stmt.step()
                 }
+
+                deleteFailures(connection, conversationId, messageIds)
             }
             catch (e: SQLiteException) {
                 handleInvalidConversationException(e, conversationId)
@@ -229,7 +257,8 @@ SELECT
     ttl,
     expires_at,
     is_delivered,
-    message
+    message,
+    has_failures
 FROM
     $tableName
 WHERE
@@ -243,7 +272,7 @@ LIMIT
             if (!stmt.step())
                 null
             else
-                rowToConversationMessageInfo(stmt)
+                rowToConversationMessageInfo(connection, stmt, conversationId)
         }
     }
 
@@ -284,10 +313,19 @@ LIMIT
 
                 deleteExpiringMessagesForConversation(connection, conversationId)
 
+                deleteFailuresForConversation(connection, conversationId)
+
                 insertOrReplaceNewConversationInfo(connection, conversationId)
 
                 lastMessageTimestamp
             }
+        }
+    }
+
+    private fun deleteFailuresForConversation(connection: SQLiteConnection, conversationId: ConversationId) {
+        connection.withPrepared("DELETE FROM message_failures WHERE conversation_id=?") { stmt ->
+            stmt.bind(1, conversationId)
+            stmt.step()
         }
     }
 
@@ -336,8 +374,40 @@ WHERE
     override fun deleteAllMessagesUntil(conversationId: ConversationId, timestamp: Long): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             deleteExpiringEntriesUntil(connection, conversationId, timestamp)
+            deleteFailuresUntil(connection, conversationId, timestamp)
             deleteAllConvoMessagesUntil(connection, conversationId, timestamp)
             updateConversationInfo(connection, conversationId)
+        }
+    }
+
+    private fun deleteFailuresUntil(connection: SQLiteConnection, conversationId: ConversationId, timestamp: Long) {
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql = """
+DELETE FROM
+    message_failures
+WHERE
+    conversation_id = ?
+AND
+    message_id IN (
+        SELECT
+            f.message_id
+        FROM
+            message_failures f
+        JOIN
+            $tableName c
+        ON
+            f.message_id=c.id
+        WHERE
+            f.conversation_id=?
+        AND
+            c.timestamp <= ?
+    )
+"""
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, conversationId)
+            stmt.bind(2, conversationId)
+            stmt.bind(3, timestamp)
+            stmt.step()
         }
     }
 
@@ -492,7 +562,8 @@ SELECT
     ttl,
     expires_at,
     is_delivered,
-    message
+    message,
+    has_failures
 FROM
     $tableName
 WHERE
@@ -501,7 +572,7 @@ WHERE
         return connection.withPrepared(sql) { stmt ->
             stmt.bind(1, messageId)
             if (stmt.step())
-                rowToConversationMessageInfo(stmt)
+                rowToConversationMessageInfo(connection, stmt, conversationId)
             else
                 null
         }
@@ -521,7 +592,8 @@ SELECT
     ttl,
     expires_at,
     is_delivered,
-    message
+    message,
+    has_failures
 FROM
     $tableName
 ORDER BY
@@ -533,7 +605,9 @@ OFFSET
 """
         try {
             connection.withPrepared(sql) { stmt ->
-                stmt.map(::rowToConversationMessageInfo)
+                stmt.map{
+                    rowToConversationMessageInfo(connection, stmt, conversationId)
+                }
             }
         }
         catch (e: SQLiteException) {
@@ -556,7 +630,8 @@ SELECT
     ttl,
     expires_at,
     is_delivered,
-    message
+    message,
+    has_failures
 FROM
     $tableName
 WHERE
@@ -572,7 +647,7 @@ LIMIT
             if (!stmt.step())
                 null
             else
-                rowToConversationMessageInfo(stmt)
+                rowToConversationMessageInfo(connection, stmt, conversationId)
         }
     }
 
@@ -598,6 +673,7 @@ WHERE
             messageIds.forEach { messageId ->
                 stmt.bind(1, messageId)
                 stmt.step()
+                stmt.reset(false)
             }
         }
     }
@@ -783,6 +859,117 @@ WHERE
         ConversationDisplayInfo(conversationId, groupName, conversationInfo.unreadMessageCount, lastMessageIds, lastMessageData)
     }
 
+    private fun insertFailures(connection: SQLiteConnection, conversationId: ConversationId, messageId: String, failures: Map<UserId, MessageSendFailure>) {
+        if (failures.isEmpty())
+            return
+
+        val sql = """
+INSERT OR REPLACE INTO
+    message_failures
+    (conversation_id, message_id, contact_id, reason)
+VALUES
+    (?, ?, ?, ?)
+"""
+
+        connection.withPrepared(sql) { stmt ->
+            for ((userId, reason) in failures) {
+                stmt.bind(1, conversationId)
+                stmt.bind(2, messageId)
+                stmt.bind(3, userId)
+                stmt.bind(4, objectMapper.writeValueAsBytes(reason))
+                stmt.step()
+                stmt.reset()
+            }
+        }
+    }
+
+    private fun updateMessageFailureState(connection: SQLiteConnection, conversationId: ConversationId, messageId: String) {
+        connection.withPrepared("UPDATE ${ConversationTable.getTablename(conversationId)} SET has_failures=1 WHERE id=?") { stmt ->
+            stmt.bind(1, messageId)
+            stmt.step()
+        }
+    }
+
+    override fun addFailures(conversationId: ConversationId, messageId: String, failures: Map<UserId, MessageSendFailure>): Promise<ConversationMessageInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        try {
+            if (!isMessageIdValid(connection, conversationId, messageId))
+                throw InvalidConversationMessageException(conversationId, messageId)
+        }
+        catch (e: SQLiteException) {
+            handleInvalidConversationException(e, conversationId)
+        }
+
+        connection.withTransaction {
+            insertFailures(connection, conversationId, messageId, failures)
+            updateMessageFailureState(connection, conversationId, messageId)
+            queryMessageInfo(connection, conversationId, messageId)!!
+        }
+    }
+
+    private fun queryFailures(connection: SQLiteConnection, conversationId: ConversationId, messageId: String): Map<UserId, MessageSendFailure> {
+        val sql = """
+SELECT
+    contact_id,
+    reason
+FROM
+    message_failures
+WHERE
+    conversation_id=?
+AND
+    message_id=?
+"""
+
+        return connection.withPrepared(sql) { stmt ->
+            stmt.bind(1, conversationId)
+            stmt.bind(2, messageId)
+            val r = HashMap<UserId, MessageSendFailure>()
+
+            stmt.foreach {
+                val userId = UserId(stmt.columnLong(0))
+                val reason = objectMapper.readValue(stmt.columnBlob(1), MessageSendFailure::class.java)
+                r[userId] = reason
+            }
+
+            r
+        }
+    }
+
+    private fun rowToConversationMessageInfo(connection: SQLiteConnection, stmt: SQLiteStatement, conversationId: ConversationId): ConversationMessageInfo {
+        val id = stmt.columnString(0)
+        val speaker = stmt.columnNullableLong(1)?.let(::UserId)
+        val timestamp = stmt.columnLong(2)
+        val receivedTimestamp = stmt.columnLong(3)
+        val isRead = stmt.columnBool(4)
+        val isDestroyed = stmt.columnBool(5)
+        val ttl = stmt.columnLong(6)
+        val expiresAt = stmt.columnLong(7)
+        val isDelivered = stmt.columnBool(8)
+        val message = stmt.columnString(9)
+
+        val hasFailures = stmt.columnBool(10)
+        val failures = if (hasFailures)
+            queryFailures(connection, conversationId, id)
+        else
+            emptyMap()
+
+        return ConversationMessageInfo(
+            speaker,
+            MessageInfo(
+                id,
+                message,
+                timestamp,
+                receivedTimestamp,
+                speaker == null,
+                isDelivered,
+                isRead,
+                isDestroyed,
+                ttl,
+                expiresAt
+            ),
+            failures
+        )
+    }
+
     /* test use only */
     internal fun internalMessageExists(conversationId: ConversationId, messageId: String): Boolean = sqlitePersistenceManager.syncRunQuery { connection ->
         connection.withPrepared("SELECT 1 FROM ${ConversationTable.getTablename(conversationId)} WHERE id=?") { stmt ->
@@ -805,14 +992,21 @@ SELECT
     ttl,
     expires_at,
     is_delivered,
-    message
+    message,
+    has_failures
 FROM
     $tableName
 ORDER BY
     timestamp, n
 """
         connection.withPrepared(sql) { stmt ->
-            stmt.map(::rowToConversationMessageInfo)
+            stmt.map {
+                rowToConversationMessageInfo(connection, stmt, conversationId)
+            }
         }
+    }
+
+    internal fun internalGetFailures(conversationId: ConversationId, messageId: String): Map<UserId, MessageSendFailure> = sqlitePersistenceManager.syncRunQuery {
+        queryFailures(it, conversationId, messageId)
     }
 }

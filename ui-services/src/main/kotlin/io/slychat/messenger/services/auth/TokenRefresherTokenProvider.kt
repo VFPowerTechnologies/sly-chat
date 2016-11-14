@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.auth
 
-import io.slychat.messenger.services.auth.AuthApiResponseException
+import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.services.TokenRefresher
 import nl.komponents.kovenant.ui.alwaysUi
 import nl.komponents.kovenant.ui.failUi
@@ -33,9 +34,9 @@ class TokenRefresherTokenProvider(
             eventsSubject.onNext(TokenEvent.New(response.authToken))
         } failUi { e ->
             if (e is AuthApiResponseException)
-                log.warn("Unable to get new auth token: {}", e, e.message)
+                log.warn("Unable to get new auth token: {}", e.message, e)
             else
-                log.error("Unable to get new auth token: {}", e, e.message)
+                log.condError(isNotNetworkError(e), "Unable to get new auth token: {}", e.message, e)
 
             eventsSubject.onNext(TokenEvent.Error(e))
         } alwaysUi {

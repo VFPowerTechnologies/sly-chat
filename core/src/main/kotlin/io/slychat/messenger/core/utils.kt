@@ -4,6 +4,7 @@ package io.slychat.messenger.core
 import com.fasterxml.jackson.core.type.TypeReference
 import org.joda.time.DateTime
 import java.io.File
+import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -161,12 +162,14 @@ fun String.unhexify(): ByteArray {
 }
 
 /** Returns true if given exception is not a network error. */
-fun isNotNetworkError(e: Exception): Boolean = !when (e) {
-    is SocketTimeoutException -> true
-    is UnknownHostException -> true
-    is SSLHandshakeException -> true
-    //not really sure if I should ignore all of these; just ignoring timeouts for now, but should probably ignore others
-    is SocketException -> e.message?.contains("ETIMEDOUT") ?: false
+fun isNotNetworkError(t: Throwable): Boolean = when (t) {
+    is SocketTimeoutException -> false
+    is UnknownHostException -> false
+    is SSLHandshakeException -> false
+    is ConnectException -> false
+    //not really sure if I should ignore all of these; haven't seen any that were of any value
+    is SocketException -> false
+    //android throws this from HttpURLConnection, wrapping the underlying ConnectException, etc
     else -> false
 }
 
@@ -177,3 +180,7 @@ fun org.slf4j.Logger.condError(isError: Boolean, format: String, vararg args: An
     else
         this.warn(format, *args)
 }
+
+/** No-op used to enforce compile-time exhaustive matching of a side-effecting when expression. */
+@Suppress("NOTHING_TO_INLINE", "unused")
+inline fun Any?.enforceExhaustive() {}

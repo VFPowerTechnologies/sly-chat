@@ -2,12 +2,18 @@ package io.slychat.messenger.services.crypto
 
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.http.api.prekeys.PreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyRetrievalRequest
 import io.slychat.messenger.core.http.api.prekeys.toPreKeyBundle
 import io.slychat.messenger.core.mapToSet
+import io.slychat.messenger.core.persistence.LogEvent
+import io.slychat.messenger.core.persistence.LogTarget
+import io.slychat.messenger.core.persistence.SecurityEventData
+import io.slychat.messenger.core.persistence.toConversationId
 import io.slychat.messenger.core.relay.base.DeviceMismatchContent
+import io.slychat.messenger.services.EventLogService
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.messaging.EncryptedMessageInfo
 import io.slychat.messenger.services.messaging.EncryptionResult
@@ -24,12 +30,15 @@ import org.whispersystems.libsignal.state.SignalProtocolStore
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 
+class NoKeyDataException(val userId: UserId) : RuntimeException("No key data found for $userId")
+
 class MessageCipherServiceImpl(
     private val selfId: UserId,
     private val authTokenManager: AuthTokenManager,
     private val preKeyClient: PreKeyClient,
     //the store is only ever used in the work thread, so no locking is done
-    private val signalStore: SignalProtocolStore
+    private val signalStore: SignalProtocolStore,
+    private val eventLogService: EventLogService
 ) : MessageCipherService, Runnable {
     companion object {
         fun deviceDiff(currentDeviceIds: List<Int>, receivedDevices: List<DeviceInfo>, getRegistrationId: (Int) -> Int): DeviceMismatchContent {
@@ -86,6 +95,11 @@ class MessageCipherServiceImpl(
 
         class AddSelfDevice(
             val deviceInfo: DeviceInfo,
+            val deferred: Deferred<Unit, Exception>
+        ) : CipherWork()
+
+        class ClearDevices(
+            val userId: UserId,
             val deferred: Deferred<Unit, Exception>
         ) : CipherWork()
 
@@ -148,6 +162,12 @@ class MessageCipherServiceImpl(
         return d.promise
     }
 
+    override fun clearDevices(userId: UserId): Promise<Unit, Exception> {
+        val d = deferred<Unit, Exception>()
+        workQueue.add(CipherWork.ClearDevices(userId, d))
+        return d.promise
+    }
+
     override fun run() {
         processQueue(true)
     }
@@ -178,13 +198,30 @@ class MessageCipherServiceImpl(
             is CipherWork.UpdateDevices -> handleDeviceUpdate(work)
             is CipherWork.UpdateSelfDevices -> handleUpdateSelfDevices(work)
             is CipherWork.AddSelfDevice -> handleAddSelfDevice(work)
+            is CipherWork.ClearDevices -> handleClearDevices(work)
             is CipherWork.NoMoreWork -> return false
-            else -> {
-                log.error("Unknown work type: {}", work)
-            }
         }
 
         return true
+    }
+
+    private fun handleClearDevices(work: CipherWork.ClearDevices) {
+        val userId = work.userId
+
+        log.info("Clearing devices for {}", userId)
+
+        val signalName = userId.toString()
+        val currentDeviceIds = signalStore.getSubDeviceSessions(signalName)
+
+        signalStore.deleteAllSessions(signalName)
+
+        currentDeviceIds.forEach {
+            val data = SecurityEventData.SessionRemoved(SlyAddress(userId, it))
+            val event = LogEvent.Security(LogTarget.Conversation(userId), currentTimestamp(), data)
+            eventLogService.addEvent(event)
+        }
+
+        work.deferred.resolve(Unit)
     }
 
     private fun handleAddSelfDevice(work: CipherWork.AddSelfDevice) {
@@ -225,6 +262,10 @@ class MessageCipherServiceImpl(
             toRemove.forEach { deviceId ->
                 val address = SlyAddress(userId, deviceId)
                 signalStore.deleteSession(address.toSignalAddress())
+
+                val data = SecurityEventData.SessionRemoved(address)
+                val event = LogEvent.Security(LogTarget.Conversation(userId), currentTimestamp(), data)
+                eventLogService.addEvent(event)
             }
 
             val toAdd = HashSet(info.missing)
@@ -303,8 +344,9 @@ class MessageCipherServiceImpl(
         if (!response.isSuccess)
             throw RuntimeException(response.errorMessage)
         else {
+            //this occurs if we message a user with no more active devices
             if (response.bundles.isEmpty())
-                throw RuntimeException("No key data for $userId")
+                throw NoKeyDataException(userId)
 
             val bundles = ArrayList<PreKeyBundle>()
 
@@ -323,10 +365,16 @@ class MessageCipherServiceImpl(
 
     private fun processPreKeyBundles(userId: UserId, bundles: Collection<PreKeyBundle>): List<Pair<Int, SessionCipher>> {
         return bundles.map { bundle ->
-            val address = SlyAddress(userId, bundle.deviceId).toSignalAddress()
+            val slyAddress = SlyAddress(userId, bundle.deviceId)
+            val address = slyAddress.toSignalAddress()
             val builder = SessionBuilder(signalStore, address)
             //this can fail with an InvalidKeyException if the signed key signature doesn't match
             builder.process(bundle)
+
+            val data = SecurityEventData.SessionCreated(slyAddress, bundle.registrationId)
+            val event = LogEvent.Security(LogTarget.Conversation(userId.toConversationId()), currentTimestamp(), data)
+            eventLogService.addEvent(event)
+
             bundle.deviceId to SessionCipher(signalStore, address)
         }
     }

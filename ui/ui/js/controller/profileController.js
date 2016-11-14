@@ -4,6 +4,7 @@ var ProfileController = function () {
     this.name = '';
     this.publicKey = '';
     this.requestedPhone = '';
+    this.deviceId = '';
 };
 
 ProfileController.ids = {
@@ -11,6 +12,7 @@ ProfileController.ids = {
     nameDisplay : '#profileName',
     phoneDisplay : '#profilePhone',
     pubKeyDisplay : '#profilePubKey',
+    deviceIdDisplay : '#profileDeviceId',
     updateProfileForm : '#updateProfileForm',
     updatePhoneForm : '#updatePhoneForm',
     updateProfileNameInput : '#profileUpdateNameInput',
@@ -28,6 +30,7 @@ ProfileController.prototype = {
         this.phoneNumber = userInfo.phoneNumber;
         this.name = userInfo.name;
         this.publicKey = publicKey;
+        this.deviceId = userInfo.deviceId;
     },
 
     resetProfileInfo : function () {
@@ -35,6 +38,7 @@ ProfileController.prototype = {
         this.phoneNumber = '';
         this.name = '';
         this.publicKey = '';
+        this.deviceId = '';
     },
 
     displayInfo : function () {
@@ -42,6 +46,7 @@ ProfileController.prototype = {
         $(ProfileController.ids.nameDisplay).html(this.name);
         $(ProfileController.ids.phoneDisplay).html(this.phoneNumber);
         $(ProfileController.ids.pubKeyDisplay).html(formatPublicKey(this.publicKey));
+        $(ProfileController.ids.deviceIdDisplay).html(this.deviceId);
     },
 
     openProfileEditPopup : function () {

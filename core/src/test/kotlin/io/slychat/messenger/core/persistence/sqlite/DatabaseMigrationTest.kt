@@ -385,7 +385,6 @@ class DatabaseMigrationTest {
         }
     }
 
-    @Test
     fun `migration 14 to 15`() {
         withTestDatabase(14, 15) { persistenceManager, connection ->
             check14to15(persistenceManager, connection)
@@ -405,6 +404,64 @@ class DatabaseMigrationTest {
         assertThat(contacts).apply {
             `as`("Should convert existing contacts")
             containsOnly(expected)
+        }
+    }
+
+    @Test
+    fun `migration 15 to 16`() {
+        withTestDatabase(15, 16) { persistenceManager, connection ->
+            check15to16(persistenceManager, connection)
+        }
+    }
+
+    private fun check15to16(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertTableExists(connection, "event_log")
+    }
+
+    //+message_failures
+    //+conversation.has_failures
+    @Test
+    fun `migration 16 to 17`() {
+        withTestDatabase(16, 17) { persistenceManager, connection ->
+            check16to17(persistenceManager, connection)
+        }
+    }
+
+    private fun check16to17(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        assertTableExists(connection, "message_failures")
+        assertColDef(connection, "conv_U2", "has_failures INTEGER NOT NULL")
+
+        val sql = """
+SELECT
+    id,
+    speaker_contact_id,
+    timestamp,
+    received_timestamp,
+    n,
+    is_read,
+    is_expired,
+    ttl,
+    expires_at,
+    is_delivered,
+    message,
+    has_failures
+FROM conv_U2
+"""
+        connection.withPrepared(sql) { stmt ->
+            stmt.foreach {
+                assertEquals("123e4567e89b12d3a456426655440000", stmt.columnString(0), "Invalid id")
+                assertEquals(null, stmt.columnNullableLong(1), "Invalid speaker_contact_id")
+                assertEquals(1, stmt.columnLong(2), "Invalid timestamp")
+                assertEquals(2, stmt.columnLong(3), "Invalid received_timestamp")
+                assertEquals(0, stmt.columnLong(4), "Invalid n")
+                assertEquals(true, stmt.columnBool(5), "Invalid is_read")
+                assertEquals(false, stmt.columnBool(6), "Invalid is_expired")
+                assertEquals(5, stmt.columnLong(7), "Invalid ttl")
+                assertEquals(0, stmt.columnLong(8), "Invalid expires_at")
+                assertEquals(true, stmt.columnBool(9), "Invalid is_delivered")
+                assertEquals("testing", stmt.columnString(10), "Invalid message")
+                assertEquals(false, stmt.columnBool(11), "Invalid has_failures")
+            }
         }
     }
 }

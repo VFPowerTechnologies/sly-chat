@@ -14,6 +14,8 @@ interface MessagePersistenceManager {
     /** Retrieve the last n messages for the given contact starting backwards at the given index. */
     fun getLastMessages(conversationId: ConversationId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception>
 
+    fun addFailures(conversationId: ConversationId, messageId: String, failures: Map<UserId, MessageSendFailure>): Promise<ConversationMessageInfo, Exception>
+
     /** Return conversation info for the specified conversation. */
     fun getConversationInfo(conversationId: ConversationId): Promise<ConversationInfo?, Exception>
 

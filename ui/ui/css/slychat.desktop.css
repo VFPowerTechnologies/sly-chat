@@ -95,3 +95,22 @@
     top: 0 !important;
     bottom: auto !important;
 }
+
+/* emoji picker */
+.emoji-toolbar-scroll-container button {
+    background-color: #fff;
+    color: black;
+}
+.emoji-toolbar-scroll-container button:focus {
+    outline: none;
+}
+.emoji-toolbar-scroll-container button {
+    background-color: black;
+    color: #fff;
+}
+.popover-emoji .tab-link-highlight {
+    display: none;
+}
+.emoji-picker-header {
+    background-color: black !important;
+}

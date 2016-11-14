@@ -5,6 +5,7 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.currentTimestamp
+import io.slychat.messenger.core.enforceExhaustive
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
@@ -46,7 +47,7 @@ class MessengerServiceImpl(
     init {
         subscriptions.add(relayClientManager.events.subscribe { onRelayEvent(it) })
 
-        subscriptions.add(messageSender.messageSent.subscribe { onMessageSent(it) })
+        subscriptions.add(messageSender.messageSent.subscribe { onMessageSendRecord(it) })
     }
 
     override fun init() {
@@ -56,46 +57,50 @@ class MessengerServiceImpl(
         subscriptions.clear()
     }
 
-    private fun onMessageSent(record: MessageSendRecord) {
+    private fun onMessageSendRecord(record: MessageSendRecord) {
         val metadata = record.metadata
 
         log.debug("Processing sent message {} (category: {})", metadata.messageId, metadata.category)
 
-        when (metadata.category) {
-            MessageCategory.TEXT_SINGLE -> processSingleUpdate(metadata, record.serverReceivedTimestamp)
-            MessageCategory.TEXT_GROUP -> processGroupUpdate(metadata, record.serverReceivedTimestamp)
-            MessageCategory.OTHER -> {}
+        when (record) {
+            is MessageSendRecord.Ok -> {
+                when (metadata.category) {
+                    MessageCategory.TEXT_SINGLE -> processSuccessfulSend(metadata, record.serverReceivedTimestamp)
+                    MessageCategory.TEXT_GROUP -> processSuccessfulSend(metadata, record.serverReceivedTimestamp)
+                    MessageCategory.OTHER -> {}
+                }
+            }
+
+            is MessageSendRecord.Failure -> processDeliveryFailure(metadata, record.failure)
+        }.enforceExhaustive()
+    }
+
+    private fun processDeliveryFailure(metadata: MessageMetadata, failure: MessageSendFailure) {
+        val userId = metadata.userId
+        val messageId = metadata.messageId
+
+        log.info("Delivery of {} to {} failed: {}", messageId, userId, failure)
+
+        messageService.addFailures(metadata.getConversationId(), messageId, mapOf(userId to failure)) fail {
+            log.error("Unable to log delivery failure: {}", it.message, it)
         }
     }
 
-    private fun processSingleUpdate(metadata: MessageMetadata, serverReceivedTimestamp: Long) {
+    private fun processSuccessfulSend(metadata: MessageMetadata, serverReceivedTimestamp: Long) {
         val messageId = metadata.messageId
 
-        log.debug("Processing sent convo message {} to {}", messageId, metadata.userId)
+        val conversationId = metadata.getConversationId()
 
-        val conversationId = metadata.userId.toConversationId()
+        log.debug("Processing sent message {} to {}", messageId, conversationId)
 
-        messageService.markMessageAsDelivered(conversationId, messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
-            broadcastSentMessage(metadata, conversationMessageInfo)
-        } fail { e ->
-            log.error("Unable to mark convo message <<{}>> to {} as delivered: {}", messageId, metadata.userId, e.message, e)
-        }
+        markMessageAsDelivered(conversationId, metadata, messageId, serverReceivedTimestamp)
     }
 
-    private fun processGroupUpdate(metadata: MessageMetadata, serverReceivedTimestamp: Long) {
-        //can't be null due to constructor checks
-        val groupId = metadata.groupId!!
-
-        val messageId = metadata.messageId
-
-        log.debug("Processing sent group message <<{}/{}>>", groupId, messageId)
-
-        val conversationId = groupId.toConversationId()
-
+    private fun markMessageAsDelivered(conversationId: ConversationId, metadata: MessageMetadata, messageId: String, serverReceivedTimestamp: Long) {
         messageService.markMessageAsDelivered(conversationId, messageId, serverReceivedTimestamp) bindUi { conversationMessageInfo ->
             broadcastSentMessage(metadata, conversationMessageInfo)
         } fail { e ->
-            log.error("Unable to mark group message <<{}/{}>> as delivered: {}", groupId, messageId, e.message, e)
+            log.error("Unable to mark message for conversation <<{}>> as delivered: {}", conversationId, messageId, e.message, e)
         }
     }
 

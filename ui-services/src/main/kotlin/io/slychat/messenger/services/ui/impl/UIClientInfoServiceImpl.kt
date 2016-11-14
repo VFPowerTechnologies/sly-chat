@@ -1,31 +1,31 @@
 package io.slychat.messenger.services.ui.impl
 
+import io.slychat.messenger.services.VersionCheckResult
 import io.slychat.messenger.services.ui.UIClientInfoService
 import rx.Observable
 import java.util.*
 
 class UIClientInfoServiceImpl(
-    versionOutOfDate: Observable<Unit>
+    versionOutOfDate: Observable<VersionCheckResult>
 ) : UIClientInfoService {
-    private var versionOutOfDate: Boolean = false
-    private val versionOutOfDateListeners = ArrayList<() -> Unit>()
+    private var lastResult: VersionCheckResult? = null
+    private val versionOutOfDateListeners = ArrayList<(VersionCheckResult) -> Unit>()
 
     init {
-        versionOutOfDate.subscribe { onVersionOutOfDate() }
+        versionOutOfDate.subscribe { onVersionCheck(it) }
     }
 
     override var isFirstRun: Boolean = false
 
-    private fun onVersionOutOfDate() {
-        versionOutOfDate = true
-        versionOutOfDateListeners.forEach { it() }
+    private fun onVersionCheck(result: VersionCheckResult) {
+        lastResult = result
+        versionOutOfDateListeners.forEach { it(result) }
     }
 
-    override fun addVersionOutdatedListener(listener: () -> Unit) {
+    override fun addVersionOutdatedListener(listener: (VersionCheckResult) -> Unit) {
         versionOutOfDateListeners.add(listener)
 
-        if (versionOutOfDate)
-            listener()
+        lastResult?.apply { listener(this) }
     }
 
     override fun clearListeners() {

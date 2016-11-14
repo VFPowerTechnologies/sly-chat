@@ -1,3 +1,4 @@
 window.buildConfig = {
-    DEBUG: $debug
+    DEBUG: $debug,
+    VERSION: '$version',
 };

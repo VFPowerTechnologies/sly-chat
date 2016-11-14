@@ -104,7 +104,7 @@ class UIMessengerServiceImpl(
     /** First we add to the log, then we display it to the user. */
     private fun onNewMessages(message: ConversationMessage) {
         val conversationMessageInfo = message.conversationMessageInfo
-        val messages = listOf(conversationMessageInfo.info.toUI())
+        val messages = listOf(conversationMessageInfo.info.toUI(conversationMessageInfo.failures))
         val conversationId = message.conversationId
 
         val uiMessageInfo = when (conversationId) {
@@ -128,6 +128,12 @@ class UIMessengerServiceImpl(
                 val (userId, groupId) = conversationIdToUserGroupPair(event.conversationId)
 
                 UIMessageUpdateEvent.Delivered(userId, groupId, event.messageId, event.deliveredTimestamp)
+            }
+
+            is MessageUpdateEvent.DeliveryFailed -> {
+                val (userId, groupId) = conversationIdToUserGroupPair(event.conversationId)
+
+                UIMessageUpdateEvent.DeliveryFailed(userId, groupId, event.messageId, event.failures)
             }
 
             is MessageUpdateEvent.Expiring -> {
@@ -191,7 +197,7 @@ class UIMessengerServiceImpl(
 
     override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
         return getMessengerServiceOrThrow().getLastMessagesFor(userId, startingAt, count) map { messages ->
-            messages.map { it.info.toUI() }
+            messages.map { it.info.toUI(it.failures) }
         }
     }
 

@@ -1,5 +1,8 @@
 package io.slychat.messenger.services.ui
 
+import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.MessageSendFailure
+
 /**
  * Represents a sent or received message.
  *
@@ -22,6 +25,7 @@ data class UIMessage(
     val message: String,
     val ttl: Long,
     val expiresAt: Long,
-    val isExpired: Boolean
+    val isExpired: Boolean,
+    val failures: Map<UserId, MessageSendFailure>
 )
 

@@ -25,12 +25,11 @@ sourceSets.main.resources.srcDirs += "$rootProject.projectDir/desktop-libraries"
 
 dependencies {
     compile project(':ui-services')
+    compile project(':logger')
 
     compile "com.vfpowertech:jsbridge-desktop-webengine:$versions.jsbridge"
     compile "nl.komponents.kovenant:kovenant-jfx:$versions.kovenant"
     compile "io.reactivex:rxjavafx:$versions.rxjavafx"
-
-    compile "ch.qos.logback:logback-classic:$versions.logbackClassic"
 
     compile "org.controlsfx:controlsfx:$versions.controlsFx"
 

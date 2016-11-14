@@ -34,8 +34,7 @@ enum class CommandCode(val code: Int) {
     SERVER_MESSAGE_SENT(8),
     //message has been viewed on local device
     CLIENT_MESSAGE_VIEW(9),
-    //not used, as the server handles offline message stuff
-    SERVER_USER_OFFLINE(10),
+    INVALID_OR_INACTIVE_USER(10),
     CLIENT_FILE_TRANSFER_REQUEST(11),
     CLIENT_FILE_TRANSFER_ACCEPT(12),
     CLIENT_FILE_TRANSFER_DATA(13),
