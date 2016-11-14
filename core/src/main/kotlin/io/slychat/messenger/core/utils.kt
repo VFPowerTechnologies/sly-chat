@@ -174,7 +174,11 @@ fun isNotNetworkError(t: Throwable): Boolean = when (t) {
 }
 
 /** Logs at error level only if isError is true; otherwise logs at warning level. */
-fun org.slf4j.Logger.condError(isError: Boolean, format: String, vararg args: Any?) {
+//this is inlined as to not show up in stacktraces... however this clobbers the stacktrace for the call site
+//in this case we just get the offending file, even if the line number is invalid (function name is fine though)
+//this is still somewhat easier than just see `condError` as the result of a bunch of errors though
+@Suppress("NOTHING_TO_INLINE")
+inline fun org.slf4j.Logger.condError(isError: Boolean, format: String, vararg args: Any?) {
     if (isError)
         this.error(format, *args)
     else
