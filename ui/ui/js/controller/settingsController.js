@@ -1,5 +1,7 @@
 var SettingsController = function () {
     this.notificationConfig = null;
+    this.marketingConfig = null;
+    this.themeConfig = null;
 };
 
 SettingsController.themesConfigName = {
@@ -51,6 +53,9 @@ SettingsController.prototype = {
 
     refreshNotificationConfig : function () {
         var c = this.notificationConfig;
+        if (c === null)
+            return;
+
         var soundName = c.sound == null ? "No Notification Sound Selected" : c.soundName;
 
         $(SettingsController.ids.notificationsEnabled).prop('checked', c.enabled);
@@ -59,11 +64,16 @@ SettingsController.prototype = {
 
     refreshMarketingConfig : function () {
         var c = this.marketingConfig;
+        if (c === null)
+            return;
 
         $(SettingsController.ids.inviteFriendOption).prop('checked', c.showInviteFriends);
     },
 
     refreshAppearanceConfig : function () {
+        if (this.themeConfig === null)
+            return;
+
         if (this.themeConfig.theme === null) {
             //no theme selected, choose default
             $(SettingsController.ids.darkThemeCheckBox).prop('checked', true);
