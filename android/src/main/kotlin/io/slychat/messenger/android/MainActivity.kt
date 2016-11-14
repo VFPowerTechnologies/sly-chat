@@ -407,7 +407,7 @@ class MainActivity : AppCompatActivity() {
 
         permRequestCodeToDeferred.remove(requestCode)
 
-        val granted = grantResults[0] == PackageManager.PERMISSION_GRANTED
+        val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
 
         deferred.resolve(granted)
     }

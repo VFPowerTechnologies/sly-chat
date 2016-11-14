@@ -160,17 +160,24 @@ class LoggerAdapter(
 
     private fun getCulpritFromStacktrace(): String {
         val stackTraceElements = Thread.currentThread().stackTrace
-        if (stackTraceElements.size < 7)
+
+        var culpritOffset = 5
+
+        //adjustment for android
+        if (stackTraceElements[0].className == "dalvik.system.VMStack")
+            culpritOffset += 1
+
+        if (culpritOffset >= stackTraceElements.size)
             return loggerName
 
-        //VMSTack.getThreadStackTrace
+        //VMSTack.getThreadStackTrace (android only)
         //Thread.getStackTrace
         //getCulpritFromStacktrace
         //logInternal
         //log
         //error|info|etc
         //<actual caller>
-        val caller = stackTraceElements[6]
+        val caller = stackTraceElements[culpritOffset]
 
         return extractCulprit(caller)
     }
