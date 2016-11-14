@@ -17,11 +17,14 @@ import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.ui.successUi
+import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
 import java.util.*
 
 class AndroidPlatformContacts(private val context: Context) : PlatformContacts {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private val contactsUpdateSubject = PublishSubject.create<Unit>()
     override val contactsUpdated: Observable<Unit>
         get() = contactsUpdateSubject
@@ -59,8 +62,10 @@ class AndroidPlatformContacts(private val context: Context) : PlatformContacts {
     private fun createAsyncQueryHandler(deferred: Deferred<List<PlatformContact>, Exception>) {
         val asyncHandler = object : AsyncQueryHandler(context.contentResolver) {
             override fun onQueryComplete(token: Int, cookie: Any?, cursor: Cursor?) {
+                //this can happen due to some error we don't have access to, so just act like we lacked permission
                 if (cursor == null) {
-                    deferred.reject(RuntimeException("Null cursor"))
+                    log.warn("Null cursor from contacts content resolver")
+                    deferred.resolve(emptyList())
                     return
                 }
 
