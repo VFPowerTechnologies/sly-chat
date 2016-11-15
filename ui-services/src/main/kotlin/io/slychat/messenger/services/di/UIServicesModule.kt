@@ -5,15 +5,9 @@ import dagger.Provides
 import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.api.accountupdate.AccountUpdateAsyncClient
-import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
-import io.slychat.messenger.core.http.api.availability.AvailabilityAsyncClientImpl
 import io.slychat.messenger.core.http.api.feedback.FeedbackAsyncClientImpl
 import io.slychat.messenger.core.http.api.infoservice.InfoServiceAsyncClient
-import io.slychat.messenger.core.http.api.registration.RegistrationAsyncClient
-import io.slychat.messenger.services.PlatformNotificationService
-import io.slychat.messenger.services.PlatformTelephonyService
-import io.slychat.messenger.services.SlyApplication
-import io.slychat.messenger.services.VersionChecker
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.ui.*
 import io.slychat.messenger.services.ui.impl.*
@@ -24,14 +18,9 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun provideRegistrationService(
-        serverUrls: SlyBuildConfig.ServerUrls,
-        @SlyHttp httpClientFactory: HttpClientFactory
+        registrationService: RegistrationService
     ): UIRegistrationService {
-            val serverUrl = serverUrls.API_SERVER
-            val registrationClient = RegistrationAsyncClient(serverUrl, httpClientFactory)
-            val loginClient = AuthenticationAsyncClientImpl(serverUrl, httpClientFactory)
-            val availabilityClient = AvailabilityAsyncClientImpl(serverUrl, httpClientFactory)
-            return UIRegistrationServiceImpl(registrationClient, loginClient, availabilityClient)
+            return UIRegistrationServiceImpl(registrationService)
     }
 
     @Singleton

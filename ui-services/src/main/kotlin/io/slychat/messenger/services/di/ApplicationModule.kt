@@ -2,8 +2,8 @@ package io.slychat.messenger.services.di
 
 import dagger.Module
 import dagger.Provides
-import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.PlatformInfo
+import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.crypto.tls.CachingCRLFetcher
 import io.slychat.messenger.core.crypto.tls.JavaHttpCRLFetcher
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
@@ -12,6 +12,8 @@ import io.slychat.messenger.core.http.HttpClientConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.JavaHttpClientFactory
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
+import io.slychat.messenger.core.http.api.availability.AvailabilityAsyncClientImpl
+import io.slychat.messenger.core.http.api.registration.RegistrationAsyncClient
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenceManager
 import io.slychat.messenger.services.*
@@ -20,9 +22,10 @@ import io.slychat.messenger.services.auth.AuthenticationServiceImpl
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.FileConfigStorage
 import io.slychat.messenger.services.config.JsonConfigBackend
-import io.slychat.messenger.services.contacts.RxPromiseTimerFactory
 import io.slychat.messenger.services.contacts.PromiseTimerFactory
+import io.slychat.messenger.services.contacts.RxPromiseTimerFactory
 import rx.Observable
+import rx.Scheduler
 import java.io.ByteArrayInputStream
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -131,5 +134,19 @@ class ApplicationModule(
             networkAvailable,
             factory
         )
+    }
+
+    @Singleton
+    @Provides
+    fun providesRegistrationService(
+        scheduler: Scheduler,
+        serverUrls: SlyBuildConfig.ServerUrls,
+        @SlyHttp httpClientFactory: HttpClientFactory
+    ): RegistrationService {
+        val serverUrl = serverUrls.API_SERVER
+        val registrationClient = RegistrationAsyncClient(serverUrl, httpClientFactory)
+        val loginClient = AuthenticationAsyncClientImpl(serverUrl, httpClientFactory)
+        val availabilityClient = AvailabilityAsyncClientImpl(serverUrl, httpClientFactory)
+        return RegistrationServiceImpl(scheduler, registrationClient, loginClient, availabilityClient)
     }
 }
