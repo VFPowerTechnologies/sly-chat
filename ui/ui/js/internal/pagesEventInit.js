@@ -269,16 +269,15 @@ slychat.onPageInit('chat', function (page) {
             recentEmojis: false,
             attributes: {
                 autocomplete: 'on'
+            },
+            events: {
+                click: function (editor, event) {
+                    editor.focus();
+                }
             }
         });
 
-        var editor = $(".emojionearea-editor");
-        editor.click(function (e) {
-            e.stopImmediatePropagation();
-            $(this).focus();
-        });
-
-        editor.on("touchstart", function (e) {
+        $(".emojionearea-editor").on("touchstart", function (e) {
             e.stopImmediatePropagation();
         });
     }
