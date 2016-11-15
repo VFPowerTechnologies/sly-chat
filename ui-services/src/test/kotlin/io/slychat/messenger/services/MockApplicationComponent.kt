@@ -85,6 +85,8 @@ class MockApplicationComponent : ApplicationComponent {
 
     override val versionChecker: VersionChecker = mock()
 
+    override val registrationService: RegistrationService = mock()
+    
     val userComponent = MockUserComponent()
 
     override fun plus(userModule: UserModule): UserComponent {
