@@ -25,8 +25,11 @@ import android.widget.FrameLayout
 import com.google.android.gms.common.GoogleApiAvailability
 import com.vfpowertech.jsbridge.androidwebengine.AndroidWebEngineInterface
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
+import io.slychat.messenger.android.activites.LoginActivity
+import io.slychat.messenger.android.activites.RecentChatActivity
 import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.services.LoginEvent
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.clearAllListenersOnDispatcher
 import io.slychat.messenger.services.ui.js.NavigationService
@@ -52,7 +55,9 @@ class MainActivity : AppCompatActivity() {
         private val RINGTONE_PICKER_REQUEST_CODE = 1
     }
 
-    private lateinit var dispatcher: Dispatcher
+//    private lateinit var dispatcher: Dispatcher
+
+    private var loginListener : Subscription? = null
 
     private var lastOrientation = Surface.ROTATION_0
     private var lastActivityHeight = 0
@@ -66,8 +71,8 @@ class MainActivity : AppCompatActivity() {
 
     private var loadCompleteSubscription: Subscription? = null
 
-    var navigationService: NavigationService? = null
-    private lateinit var webView: WebView
+//    var navigationService: NavigationService? = null
+//    private lateinit var webView: WebView
 
     private var nextPermRequestCode = 0
     private val permRequestCodeToDeferred = SparseArray<Deferred<Boolean, Exception>>()
@@ -76,29 +81,29 @@ class MainActivity : AppCompatActivity() {
     private var ringtonePickerDeferred: Deferred<UISelectionDialogResult<String?>, Exception>? = null
 
     /** Returns the initial page to launch after login, if any. Used when invoked via a notification intent. */
-    private fun getInitialPage(intent: Intent): String? {
-        if (intent.action != ACTION_VIEW_MESSAGES)
-            return null
-
-        val messagesType = intent.getStringExtra(EXTRA_PENDING_MESSAGES_TYPE) ?: return null
-
-        val page = when (messagesType) {
-            EXTRA_PENDING_MESSAGES_TYPE_SINGLE -> {
-                val conversationKey = intent.getStringExtra(EXTRA_CONVO_KEY) ?: throw RuntimeException("Missing EXTRA_CONVO_KEY")
-                val notificationKey = ConversationId.fromString(conversationKey)
-                when (notificationKey) {
-                    is ConversationId.User -> "user/${notificationKey.id}"
-                    is ConversationId.Group -> "group/${notificationKey.id}"
-                }
-            }
-
-            EXTRA_PENDING_MESSAGES_TYPE_MULTI -> "contacts"
-
-            else -> throw RuntimeException("Unexpected value for EXTRA_PENDING_MESSAGES_TYPE: $messagesType")
-        }
-
-        return page
-    }
+//    private fun getInitialPage(intent: Intent): String? {
+//        if (intent.action != ACTION_VIEW_MESSAGES)
+//            return null
+//
+//        val messagesType = intent.getStringExtra(EXTRA_PENDING_MESSAGES_TYPE) ?: return null
+//
+//        val page = when (messagesType) {
+//            EXTRA_PENDING_MESSAGES_TYPE_SINGLE -> {
+//                val conversationKey = intent.getStringExtra(EXTRA_CONVO_KEY) ?: throw RuntimeException("Missing EXTRA_CONVO_KEY")
+//                val notificationKey = ConversationId.fromString(conversationKey)
+//                when (notificationKey) {
+//                    is ConversationId.User -> "user/${notificationKey.id}"
+//                    is ConversationId.Group -> "group/${notificationKey.id}"
+//                }
+//            }
+//
+//            EXTRA_PENDING_MESSAGES_TYPE_MULTI -> "contacts"
+//
+//            else -> throw RuntimeException("Unexpected value for EXTRA_PENDING_MESSAGES_TYPE: $messagesType")
+//        }
+//
+//        return page
+//    }
 
     override fun onNewIntent(intent: Intent) {
         log.debug("onNewIntent")
@@ -110,13 +115,13 @@ class MainActivity : AppCompatActivity() {
         if (!isInitialized)
             return
 
-        val page = getInitialPage(intent) ?: return
-
-        val navigationService = navigationService ?: return
-
-        navigationService.goTo(page) fail { e ->
-            log.error("navigationService.goTo failed: {}", e.message, e)
-        }
+//        val page = getInitialPage(intent) ?: return
+//
+//        val navigationService = navigationService ?: return
+//
+//        navigationService.goTo(page) fail { e ->
+//            log.error("navigationService.goTo failed: {}", e.message, e)
+//        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -132,51 +137,51 @@ class MainActivity : AppCompatActivity() {
         //display loading screen and wait for app to finish loading
         setContentView(R.layout.activity_main)
 
-        webView = findViewById(R.id.webView) as WebView
+//        webView = findViewById(R.id.webView) as WebView
 
         setAppActivity()
 
-        addSoftKeyboardVisibilityListener()
+//        addSoftKeyboardVisibilityListener()
     }
 
-    private fun addSoftKeyboardVisibilityListener() {
-        val activityRootView = findViewById(android.R.id.content)!!
-
-        //derived from https://stackoverflow.com/questions/2150078/how-to-check-visibility-of-software-keyboard-in-android
-        activityRootView.viewTreeObserver.addOnGlobalLayoutListener {
-            val visibleArea = Rect()
-            activityRootView.getWindowVisibleDisplayFrame(visibleArea)
-
-            val rootViewHeight = activityRootView.rootView.height
-            val activityVisibleHeight = visibleArea.bottom - visibleArea.top
-            val heightDiff = rootViewHeight - activityVisibleHeight
-            val diffPercent = heightDiff / rootViewHeight.toFloat()
-
-            //this is usually ~0.50%, but I haven't tested it on tablets yet, so this may need tweaking
-            val isVisible = diffPercent >= 0.30
-
-            val currentOrientation = getOrientation()
-
-            //on rotation, reset the last recorded activity height
-            //the keyboard will always be shown after resize has complete, so this is safe
-            if (currentOrientation != lastOrientation) {
-                lastActivityHeight = 0
-                lastOrientation = currentOrientation
-            }
-
-            //we may be called multiple times during rotation for resizes
-            //so we just keep the largest activity height
-            if (activityVisibleHeight > lastActivityHeight)
-                lastActivityHeight = activityVisibleHeight
-
-            val keyboardHeight = if (lastActivityHeight > activityVisibleHeight)
-                lastActivityHeight - activityVisibleHeight
-            else
-                activityVisibleHeight - lastActivityHeight
-
-            AndroidApp.get(this).updateSoftKeyboardVisibility(isVisible, keyboardHeight)
-        }
-    }
+//    private fun addSoftKeyboardVisibilityListener() {
+//        val activityRootView = findViewById(android.R.id.content)!!
+//
+//        //derived from https://stackoverflow.com/questions/2150078/how-to-check-visibility-of-software-keyboard-in-android
+//        activityRootView.viewTreeObserver.addOnGlobalLayoutListener {
+//            val visibleArea = Rect()
+//            activityRootView.getWindowVisibleDisplayFrame(visibleArea)
+//
+//            val rootViewHeight = activityRootView.rootView.height
+//            val activityVisibleHeight = visibleArea.bottom - visibleArea.top
+//            val heightDiff = rootViewHeight - activityVisibleHeight
+//            val diffPercent = heightDiff / rootViewHeight.toFloat()
+//
+//            //this is usually ~0.50%, but I haven't tested it on tablets yet, so this may need tweaking
+//            val isVisible = diffPercent >= 0.30
+//
+//            val currentOrientation = getOrientation()
+//
+//            //on rotation, reset the last recorded activity height
+//            //the keyboard will always be shown after resize has complete, so this is safe
+//            if (currentOrientation != lastOrientation) {
+//                lastActivityHeight = 0
+//                lastOrientation = currentOrientation
+//            }
+//
+//            //we may be called multiple times during rotation for resizes
+//            //so we just keep the largest activity height
+//            if (activityVisibleHeight > lastActivityHeight)
+//                lastActivityHeight = activityVisibleHeight
+//
+//            val keyboardHeight = if (lastActivityHeight > activityVisibleHeight)
+//                lastActivityHeight - activityVisibleHeight
+//            else
+//                activityVisibleHeight - lastActivityHeight
+//
+//            AndroidApp.get(this).updateSoftKeyboardVisibility(isVisible, keyboardHeight)
+//        }
+//    }
 
     private fun subToLoadComplete() {
         if (loadCompleteSubscription != null)
@@ -243,42 +248,80 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun init() {
+//        val app = AndroidApp.get(this)
+//
+//        val initialPage = getInitialPage(intent)
+//        app.appComponent.uiStateService.initialPage = initialPage
+//
+//        log.debug("UI initial page: {}", initialPage)
+//
+//        loadCompleteSubscription?.unsubscribe()
+//        loadCompleteSubscription = null
+//
+//        if (SlyBuildConfig.DEBUG)
+//            WebView.setWebContentsDebuggingEnabled(true)
+//
+//        webView.settings.javaScriptEnabled = true
+//        webView.settings.allowFileAccessFromFileURLs = true
+//        webView.settings.blockNetworkLoads = true
+//
+//        //Allow javascript to push history state to the webview
+//        webView.settings.allowUniversalAccessFromFileURLs = true
+//
+//        initJSLogging(webView)
+//
+//        val webEngineInterface = AndroidWebEngineInterface(webView)
+//
+//        dispatcher = Dispatcher(webEngineInterface)
+//
+//        registerCoreServicesOnDispatcher(dispatcher, AndroidApp.get(this).appComponent)
+//
+//        //TODO should init this only once the webview has loaded the page
+//        webView.setWebViewClient(object : WebViewClient() {
+//            override fun onPageFinished(view: WebView?, url: String?) {
+//                navigationService = NavigationServiceToJSProxy(dispatcher)
+//            }
+//        })
+//
+//        webView.loadUrl("file:///android_asset/ui/index.html")
+        setLoginListener()
+    }
+
+    private fun setLoginListener () {
         val app = AndroidApp.get(this)
+        loginListener?.unsubscribe()
+        loginListener = app.app.loginEvents.subscribe {
+            handleLoginEvent(it)
+        }
+    }
 
-        val initialPage = getInitialPage(intent)
-        app.appComponent.uiStateService.initialPage = initialPage
+    private fun unsubscribeListeners () {
+        loginListener?.unsubscribe()
+    }
 
-        log.debug("UI initial page: {}", initialPage)
-
-        loadCompleteSubscription?.unsubscribe()
-        loadCompleteSubscription = null
-
-        if (SlyBuildConfig.DEBUG)
-            WebView.setWebContentsDebuggingEnabled(true)
-
-        webView.settings.javaScriptEnabled = true
-        webView.settings.allowFileAccessFromFileURLs = true
-        webView.settings.blockNetworkLoads = true
-
-        //Allow javascript to push history state to the webview
-        webView.settings.allowUniversalAccessFromFileURLs = true
-
-        initJSLogging(webView)
-
-        val webEngineInterface = AndroidWebEngineInterface(webView)
-
-        dispatcher = Dispatcher(webEngineInterface)
-
-        registerCoreServicesOnDispatcher(dispatcher, AndroidApp.get(this).appComponent)
-
-        //TODO should init this only once the webview has loaded the page
-        webView.setWebViewClient(object : WebViewClient() {
-            override fun onPageFinished(view: WebView?, url: String?) {
-                navigationService = NavigationServiceToJSProxy(dispatcher)
+    private fun handleLoginEvent (event: LoginEvent) {
+        when (event) {
+            is LoginEvent.LoggedIn -> {
+                handleLoggedInEvent()
             }
-        })
+            is LoginEvent.LoggedOut -> { handleLoggedOutEvent() }
+            is LoginEvent.LoggingIn -> { log.debug("logging in") }
+            is LoginEvent.LoginFailed -> { log.debug("login failed") }
+        }
+    }
 
-        webView.loadUrl("file:///android_asset/ui/index.html")
+    private fun handleLoggedInEvent () {
+        log.debug("logged in")
+        val intent = Intent(baseContext, RecentChatActivity::class.java)
+        startActivity(intent)
+        finish()
+    }
+
+    private fun handleLoggedOutEvent () {
+        log.debug("logged out")
+        val intent = Intent(baseContext, LoginActivity::class.java)
+        startActivity(intent)
+        finish()
     }
 
     fun hideSplashImage() {
@@ -308,13 +351,13 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         log.debug("onSaveInstanceState")
         super.onSaveInstanceState(outState)
-        webView.saveState(outState)
+//        webView.saveState(outState)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
         log.debug("onRestoreInstanceState")
         super.onRestoreInstanceState(savedInstanceState)
-        webView.restoreState(savedInstanceState)
+//        webView.restoreState(savedInstanceState)
     }
 
     private fun setAppActivity() {
@@ -340,6 +383,7 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         log.debug("onPause")
         clearAppActivity()
+        unsubscribeListeners()
         super.onPause()
 
         val sub = loadCompleteSubscription
@@ -354,7 +398,7 @@ class MainActivity : AppCompatActivity() {
 
         clearAppActivity()
 
-        dispatcher.resetState()
+//        dispatcher.resetState()
 
         clearAllListenersOnDispatcher(AndroidApp.get(this).appComponent)
 
@@ -370,20 +414,20 @@ class MainActivity : AppCompatActivity() {
             subToLoadComplete()
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-            if (navigationService != null)
-                navigationService!!.goBack()
-            //if we haven't loaded the web ui, we're either still in the loading screen or on some error dialog that'll
-            //terminate the app anyways
-            else
-                finish()
-
-            return true
-        }
-
-        return super.onKeyDown(keyCode, event)
-    }
+//    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+//        if (keyCode == KeyEvent.KEYCODE_BACK) {
+//            if (navigationService != null)
+//                navigationService!!.goBack()
+//            //if we haven't loaded the web ui, we're either still in the loading screen or on some error dialog that'll
+//            //terminate the app anyways
+//            else
+//                finish()
+//
+//            return true
+//        }
+//
+//        return super.onKeyDown(keyCode, event)
+//    }
 
     fun requestPermission(permission: String): Promise<Boolean, Exception> {
         val requestCode = nextPermRequestCode
@@ -413,22 +457,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** Capture console.log output into android's log */
-    private fun initJSLogging(webView: WebView) {
-        val jsLog = LoggerFactory.getLogger("Javascript")
-        webView.setWebChromeClient(object : WebChromeClient() {
-            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                val msg = "[${consoleMessage.sourceId()}:${consoleMessage.lineNumber()}] ${consoleMessage.message()}"
-                when (consoleMessage.messageLevel()) {
-                    ConsoleMessage.MessageLevel.DEBUG -> jsLog.debug(msg)
-                    ConsoleMessage.MessageLevel.ERROR -> jsLog.error(msg)
-                    ConsoleMessage.MessageLevel.LOG -> jsLog.info(msg)
-                    ConsoleMessage.MessageLevel.TIP -> jsLog.info(msg)
-                    ConsoleMessage.MessageLevel.WARNING -> jsLog.warn(msg)
-                }
-                return true
-            }
-        })
-    }
+//    private fun initJSLogging(webView: WebView) {
+//        val jsLog = LoggerFactory.getLogger("Javascript")
+//        webView.setWebChromeClient(object : WebChromeClient() {
+//            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+//                val msg = "[${consoleMessage.sourceId()}:${consoleMessage.lineNumber()}] ${consoleMessage.message()}"
+//                when (consoleMessage.messageLevel()) {
+//                    ConsoleMessage.MessageLevel.DEBUG -> jsLog.debug(msg)
+//                    ConsoleMessage.MessageLevel.ERROR -> jsLog.error(msg)
+//                    ConsoleMessage.MessageLevel.LOG -> jsLog.info(msg)
+//                    ConsoleMessage.MessageLevel.TIP -> jsLog.info(msg)
+//                    ConsoleMessage.MessageLevel.WARNING -> jsLog.warn(msg)
+//                }
+//                return true
+//            }
+//        })
+//    }
 
     fun openRingtonePicker(previous: String?): Promise<UISelectionDialogResult<String?>, Exception> {
         if (ringtonePickerDeferred != null)
@@ -510,8 +554,8 @@ class MainActivity : AppCompatActivity() {
         startActivity(chooserIntent)
     }
 
-    private fun getOrientation(): Int {
-        return windowManager.defaultDisplay.rotation
-    }
+//    private fun getOrientation(): Int {
+//        return windowManager.defaultDisplay.rotation
+//    }
 
 }

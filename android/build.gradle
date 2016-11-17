@@ -66,6 +66,7 @@ dependencies {
     compile "io.reactivex:rxandroid:$versions.rxandroid"
     compile "com.jaredrummler:android-device-names:$versions.androidDeviceNames"
     compile "com.google.android.gms:play-services-gcm:$versions.playServices"
+    compile "com.android.support:design:$versions.appcompatv7"
 }
 
 apply plugin: 'com.google.gms.google-services'

@@ -73,6 +73,17 @@
         <service
                 android:name=".NotificationStopService"
                 android:exported="false"/>
+
+        <activity android:name=".activites.LoginActivity">
+        </activity>
+        <activity android:name=".activites.RegisterActivity">
+        </activity>
+        <activity android:name=".activites.RecentChatActivity">
+        </activity>
+        <activity android:name=".activites.SmsVerificationActivity">
+        </activity>
+        <activity android:name=".activites.UpdatePhoneActivity">
+        </activity>
     </application>
 
 </manifest>
