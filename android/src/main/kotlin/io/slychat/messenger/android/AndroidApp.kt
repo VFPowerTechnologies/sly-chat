@@ -115,18 +115,18 @@ class AndroidApp : Application() {
     private val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
     private val softKeyboardVisibility = BehaviorSubject.create(SoftKeyboardInfo(false, 0))
 
-    /** Points to the current activity, if one is set. Used to request permissions from various services. */
-    var currentActivity: MainActivity? = null
-        set(value) {
-            field = value
-
-            uiVisibility.onNext(value != null)
-
-            if (queuedLoadComplete)
-                queuedLoadComplete = hideSplashImage() == false
-
-            app.isInBackground = value == null
-        }
+//    /** Points to the current activity, if one is set. Used to request permissions from various services. */
+//    var currentActivity: MainActivity? = null
+//        set(value) {
+//            field = value
+//
+//            uiVisibility.onNext(value != null)
+//
+//            if (queuedLoadComplete)
+//                queuedLoadComplete = hideSplashImage() == false
+//
+//            app.isInBackground = value == null
+//        }
 
     lateinit var appComponent: ApplicationComponent
         private set
@@ -461,20 +461,21 @@ class AndroidApp : Application() {
         if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED)
             return Promise.ofSuccess(true)
 
-        val activity = currentActivity ?: return Promise.ofSuccess(false)
+//        val activity = currentActivity ?: return Promise.ofSuccess(false)
+        return Promise.ofSuccess(false)
 
-        return activity.requestPermission(permission)
+//        return activity.requestPermission(permission)
     }
 
-    private fun hideSplashImage(): Boolean {
-        val currentActivity = currentActivity as? MainActivity ?: return false
-
-        currentActivity.hideSplashImage()
-        return true
-    }
+//    private fun hideSplashImage(): Boolean {
+//        val currentActivity = currentActivity as? MainActivity ?: return false
+//
+//        currentActivity.hideSplashImage()
+//        return true
+//    }
 
     fun uiLoadCompleted() {
-        queuedLoadComplete = hideSplashImage() == false
+//        queuedLoadComplete = hideSplashImage() == false
     }
 
     private fun finishInitialization(loadError: LoadError?) {

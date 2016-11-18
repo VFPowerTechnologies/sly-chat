@@ -189,7 +189,7 @@ class DesktopApp : Application() {
 
         app.init(platformModule)
         desktopNotificationService.init(app.userSessionAvailable)
-        app.isInBackground = false
+//        app.isInBackground = false
 
         val appComponent = app.appComponent
 

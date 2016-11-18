@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
     //this is set whether or not initialization was successful
     //since we always quit the application on successful init, there's no need to retry it
     private var isInitialized = false
-    private var isActive = false
+//    private var isActive = false
 
     private var loadCompleteSubscription: Subscription? = null
 
@@ -139,7 +139,7 @@ class MainActivity : AppCompatActivity() {
 
 //        webView = findViewById(R.id.webView) as WebView
 
-        setAppActivity()
+//        setAppActivity()
 
 //        addSoftKeyboardVisibilityListener()
     }
@@ -360,15 +360,15 @@ class MainActivity : AppCompatActivity() {
 //        webView.restoreState(savedInstanceState)
     }
 
-    private fun setAppActivity() {
-        isActive = true
-        AndroidApp.get(this).currentActivity = this
-    }
-
-    private fun clearAppActivity() {
-        isActive = false
-        AndroidApp.get(this).currentActivity = null
-    }
+//    private fun setAppActivity() {
+//        isActive = true
+//        AndroidApp.get(this).currentActivity = this
+//    }
+//
+//    private fun clearAppActivity() {
+//        isActive = false
+//        AndroidApp.get(this).currentActivity = null
+//    }
 
     override fun onRestart() {
         log.debug("onRestart")
@@ -382,7 +382,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         log.debug("onPause")
-        clearAppActivity()
+//        clearAppActivity()
         unsubscribeListeners()
         super.onPause()
 
@@ -396,7 +396,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         log.debug("onDestroy")
 
-        clearAppActivity()
+//        clearAppActivity()
 
 //        dispatcher.resetState()
 
@@ -408,7 +408,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         log.debug("onResume")
         super.onResume()
-        setAppActivity()
+//        setAppActivity()
 
         if (!isInitialized)
             subToLoadComplete()

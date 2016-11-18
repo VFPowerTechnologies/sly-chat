@@ -1,10 +1,13 @@
 package io.slychat.messenger.android.activites
 
+import android.content.Intent
 import android.os.Bundle
+import android.support.design.widget.FloatingActionButton
 import android.support.v7.app.AppCompatActivity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
@@ -12,9 +15,11 @@ import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
+import io.slychat.messenger.services.LoginEvent
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
+import rx.Subscription
 import java.sql.Timestamp
 import java.util.*
 
@@ -26,8 +31,13 @@ class RecentChatActivity : AppCompatActivity() {
     private lateinit var contactService : UIContactsService
     private lateinit var messengerService : UIMessengerService
 
+    private var loginListener : Subscription? = null
+
     private lateinit var contacts : List<UIContactInfo>
     private lateinit var conversations : List<UIConversation>
+
+    private lateinit var logoutBtn : Button
+    private lateinit var contactFloatBtn : FloatingActionButton
 
     override fun onCreate (savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +54,9 @@ class RecentChatActivity : AppCompatActivity() {
         contactService = app.appComponent.uiContactsService
         messengerService = app.appComponent.uiMessengerService
 
+        contactFloatBtn = findViewById(R.id.contact_float_btn) as FloatingActionButton
+        logoutBtn = findViewById(R.id.logout_button) as Button
+
         fetchContacts()
         fetchConversations()
 
@@ -53,8 +66,6 @@ class RecentChatActivity : AppCompatActivity() {
 
     private fun fetchConversations () {
         messengerService.getConversations() successUi { c ->
-            log.debug("in get conversations")
-            log.debug(c.get(0).contact.email)
             conversations = c
             displayRecentChat()
         } fail {
@@ -107,15 +118,40 @@ class RecentChatActivity : AppCompatActivity() {
     }
 
     private fun createEventListeners () {
+        contactFloatBtn.setOnClickListener {
+            startActivity(Intent(baseContext, ContactActivity::class.java))
+        }
 
+        logoutBtn.setOnClickListener {
+            app.app.logout()
+        }
     }
 
     private fun setListeners () {
-
+        loginListener?.unsubscribe()
+        loginListener = app.app.loginEvents.subscribe {
+            handleLoginEvent(it)
+        }
     }
 
     private fun unsubscribeListener () {
 
+    }
+
+    private fun handleLoginEvent (event: LoginEvent) {
+        when (event) {
+            is LoginEvent.LoggedIn -> {
+                log.debug("logged in")
+            }
+            is LoginEvent.LoggedOut -> { processLogout() }
+            is LoginEvent.LoggingIn -> { log.debug("logging in") }
+            is LoginEvent.LoginFailed -> { log.debug("login failed")}
+        }
+    }
+
+    private fun processLogout () {
+        startActivity(Intent(baseContext, LoginActivity::class.java))
+        finish()
     }
 
     override fun onStart() {

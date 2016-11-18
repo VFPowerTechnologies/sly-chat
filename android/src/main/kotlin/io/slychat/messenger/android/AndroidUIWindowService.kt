@@ -22,18 +22,18 @@ class AndroidUIWindowService(
     }
 
     override fun minimize() {
-        val androidApp = AndroidApp.get(context)
-
-        androidApp.currentActivity?.moveTaskToBack(true)
+//        val androidApp = AndroidApp.get(context)
+//
+//        androidApp.currentActivity?.moveTaskToBack(true)
     }
 
     override fun closeSoftKeyboard() {
-        val androidApp = AndroidApp.get(context)
-
-        val currentFocus = androidApp.currentActivity?.currentFocus ?: return
-
-        val inputManager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        inputManager.hideSoftInputFromWindow(currentFocus.windowToken, 0)
+//        val androidApp = AndroidApp.get(context)
+//
+//        val currentFocus = androidApp.currentActivity?.currentFocus ?: return
+//
+//        val inputManager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+//        inputManager.hideSoftInputFromWindow(currentFocus.windowToken, 0)
     }
 
     override fun copyTextToClipboard(text: String) {
@@ -50,11 +50,12 @@ class AndroidUIWindowService(
     }
 
     override fun selectNotificationSound(previousUri: String?): Promise<UISelectionDialogResult<String?>, Exception> {
-        val app = AndroidApp.get(context)
-
-        val activity = app.currentActivity ?: return Promise.ofFail(IllegalStateException("No activity currently available"))
-
-        return activity.openRingtonePicker(previousUri)
+//        val app = AndroidApp.get(context)
+//
+//        val activity = app.currentActivity ?: return Promise.ofFail(IllegalStateException("No activity currently available"))
+////
+//        return activity.openRingtonePicker(previousUri)
+        throw Exception()
     }
 
     private fun onSoftKeyboardInfoChange(isVisible: SoftKeyboardInfo) {

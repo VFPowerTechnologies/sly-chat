@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:orientation="vertical"
+        tools:context="io.slychat.messenger.android.activites.ContactActivity">
+
+    <LinearLayout
+            android:id="@+id/contact_navbar"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="50dp" android:layout_gravity="center_horizontal" android:background="#000">
+        <android.support.v7.widget.AppCompatImageButton
+                android:id="@+id/back_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_arrow_back_white"
+        />
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:text="@string/contact_page_title"
+                android:id="@+id/contact_page_title"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="10dp"/>
+    </LinearLayout>
+        <android.support.design.widget.CoordinatorLayout
+                android:id="@+id/main_content"
+                xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+            <LinearLayout
+                    android:id="@+id/contact_content"
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                <LinearLayout
+                        android:orientation="vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp" android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="20dp">
+                    <LinearLayout
+                            android:orientation="horizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="30dp" android:layout_gravity="center_horizontal">
+                        <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="?android:attr/textAppearanceMedium"
+                                android:text="@string/contact_recent_title"
+                                android:id="@+id/textView3"
+                                android:layout_marginStart="15dp"/>
+                    </LinearLayout>
+                    <HorizontalScrollView android:layout_width="match_parent"
+                                          android:layout_height="match_parent"
+                                          android:scrollbars="none">
+                        <LinearLayout
+                                android:orientation="horizontal"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:id="@+id/recent_contact_list">
+                        </LinearLayout>
+                    </HorizontalScrollView>
+                </LinearLayout>
+                <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical" android:layout_marginTop="20dp">
+
+                    <LinearLayout
+                            android:orientation="horizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="40dp" android:layout_gravity="center_horizontal">
+                        <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="?android:attr/textAppearanceMedium"
+                                android:text="@string/contact_list_title"
+                                android:id="@+id/textView5" android:layout_gravity="bottom"
+                                android:layout_marginStart="15dp" android:layout_marginBottom="5dp"/>
+                    </LinearLayout>
+                    <ScrollView android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:scrollbars="none">
+                        <LinearLayout
+                                android:id="@+id/contact_list"
+                                android:orientation="vertical"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center_horizontal">
+
+                        </LinearLayout>
+                    </ScrollView>
+                </LinearLayout>
+            </LinearLayout>
+
+            <android.support.design.widget.FloatingActionButton
+                    android:id="@+id/create_contact_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="16dp"
+                    android:src="@drawable/ic_person_add_white_24dp"
+                    app:layout_anchor="@id/contact_content"
+                    app:layout_anchorGravity="top|right|end" />
+        </android.support.design.widget.CoordinatorLayout>
+</LinearLayout>

@@ -87,17 +87,17 @@ class SlyApplication {
 
     private var bugReportSubmitter: ReportSubmitterCommunicator<ByteArray>? = null
 
-    var isInBackground: Boolean = true
-        set(value) {
-            field = value
-
-            if (value)
-                disconnectFromRelay()
-            else
-                connectToRelay()
-        }
-
-        get() = field
+//    var isInBackground: Boolean = true
+//        set(value) {
+//            field = value
+//
+//            if (value)
+//                disconnectFromRelay()
+//            else
+//                connectToRelay()
+//        }
+//
+//        get() = field
 
     /** Only called directly when used for testing. */
     internal fun init(applicationComponent: ApplicationComponent, doAutoLogin: Boolean = false) {
@@ -718,8 +718,8 @@ class SlyApplication {
         if (connectingToRelay)
             return
 
-        if (isInBackground)
-            return
+//        if (isInBackground)
+//            return
 
         val userComponent = this.userComponent ?: return
 

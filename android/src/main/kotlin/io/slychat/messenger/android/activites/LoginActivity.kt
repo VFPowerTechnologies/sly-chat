@@ -86,7 +86,8 @@ class LoginActivity : AppCompatActivity() {
     private fun handleLoginEvent (event: LoginEvent) {
         when (event) {
             is LoginEvent.LoggedIn -> {
-                handleLoggedInEvent()
+                log.debug("logged in")
+                handleLoggedInEvent(event)
             }
             is LoginEvent.LoggedOut -> { log.debug("logged out") }
             is LoginEvent.LoggingIn -> { log.debug("logging in") }
@@ -113,7 +114,7 @@ class LoginActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun handleLoggedInEvent () {
+    private fun handleLoggedInEvent (state: LoginEvent) {
         progressDialog.dismiss()
         val intent = Intent(baseContext, RecentChatActivity::class.java)
         startActivity(intent)

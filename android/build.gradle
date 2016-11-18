@@ -40,7 +40,7 @@ android {
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
         debug.java.srcDirs += 'src/debug/kotlin'
-        main.assets.srcDirs += "$rootProject.projectDir/ui"
+//        main.assets.srcDirs += "$rootProject.projectDir/ui"
     }
 
     packagingOptions {

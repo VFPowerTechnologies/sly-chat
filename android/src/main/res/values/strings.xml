@@ -3,4 +3,12 @@
     <string name="title_activity_main">Sly</string>
 
     <string name="empty_recent_chat_text">No recent chats</string>
+    <string name="empty_contact_list_text">No contacts</string>
+
+    <string name="contact_page_title">Address Book</string>
+    <string name="contact_recent_title">Recent Contacts</string>
+    <string name="contact_list_title">Contacts</string>
+
+    <string name="chat_input_hint">Type your secure message</string>
+
 </resources>

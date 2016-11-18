@@ -73,7 +73,6 @@
         <service
                 android:name=".NotificationStopService"
                 android:exported="false"/>
-
         <activity android:name=".activites.LoginActivity">
         </activity>
         <activity android:name=".activites.RegisterActivity">
@@ -83,6 +82,12 @@
         <activity android:name=".activites.SmsVerificationActivity">
         </activity>
         <activity android:name=".activites.UpdatePhoneActivity">
+        </activity>
+        <activity android:name=".activites.ContactActivity">
+        </activity>
+        <activity
+                android:name=".activites.ChatActivity"
+                android:windowSoftInputMode="stateVisible|adjustResize">
         </activity>
     </application>
 
