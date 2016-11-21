@@ -11,9 +11,10 @@ from os.path import exists, join
 
 from tasks import Task
 from utils import (make_dirs, write_to_file, get_static_lib_name_for_platform,
-                   unpack_source, get_template, arch_to_setenv_info,
-                   platform_is_android, get_android_configure_host_type,
-                   apply_patch, get_sha256_checksum, get_os_from_platform,
+                   unpack_source, get_template, get_file_path,
+                   arch_to_setenv_info, platform_is_android,
+                   get_android_configure_host_type, apply_patch,
+                   get_sha256_checksum, get_os_from_platform,
                    get_dynamic_lib_name_for_platform)
 
 
@@ -52,7 +53,8 @@ class CreateWorkDirsTask(Task):
                     task_context['root-build-path'],
                     task_context['root-prefix-path'],
                     task_context['root-output-path'],
-                    task_context['root-android-output-path']]:
+                    task_context['root-android-output-path'],
+                    task_context['root-ios-output-path']]:
             make_dirs(dir)
 
 
@@ -217,8 +219,14 @@ class BuildOpenSSLTask(BuildOpenSSLTaskBase):
 class BuildSQLCipher(BuildTask):
     def __init__(self):
         super().__init__('build-sqlcipher', 'sqlcipher', 'sqlcipher')
-        self.add_dependency('build-openssl')
         self.add_dependency('download-sqlcipher')
+
+    def configure(self, context):
+        for platform in context['platforms']:
+            if platform == PLATFORM_IOS:
+                self.add_dependency('build-openssl-ios')
+            else:
+                self.add_dependency('build-openssl')
 
     def _get_android_template(self, task_context, prefix_dir, platform):
         template = get_template('sqlcipher-android-build.sh')
@@ -261,10 +269,11 @@ class BuildSQLCipher(BuildTask):
             self._apply_windows_patch(build_dir)
             subprocess.check_call(['autoreconf'], cwd=build_dir)
 
-        #need to copy more recent config.sub/guess scripts (for android)
-        libtool_dir = join(task_context['libtool-home'], 'build-aux')
-        for ext in ['sub', 'guess']:
-            shutil.copy(join(libtool_dir, 'config.' + ext), build_dir)
+        if platform_is_android(platform):
+            #need to copy more recent config.sub/guess scripts (for android)
+            libtool_dir = join(task_context['libtool-home'], 'build-aux')
+            for ext in ['sub', 'guess']:
+                shutil.copy(join(libtool_dir, 'config.' + ext), build_dir)
 
         self.run_build_script(build_dir, template)
 
@@ -314,6 +323,7 @@ class BuildSQLite4JavaTask(Task):
     def run(self, task_context):
         desktop_platforms = []
         android_abis = []
+        build_for_ios = False
 
         for platform in task_context['platforms']:
             if platform_is_android(platform):
@@ -325,8 +335,18 @@ class BuildSQLite4JavaTask(Task):
                     android_abis.append(abi)
                 else:
                     print('%s already present, not building' % abi)
+
+            elif platform == PLATFORM_IOS:
+                lib_name = 'libsqlite4java.a'
+
+                a_path = join(task_context['root-ios-output-path'], lib_name)
+                build_for_ios = not exists(a_path)
+                if not build_for_ios:
+                    print('%s already present, not building' % platform)
+
             else:
                 lib_name = get_dynamic_lib_name_for_platform(platform, 'sqlite4java')
+
                 so_path = join(task_context['root-output-path'], lib_name)
                 if not exists(so_path):
                     desktop_platforms.append(platform)
@@ -347,9 +367,19 @@ class BuildSQLite4JavaTask(Task):
         if len(android_abis) > 0:
             gant_targets.append('sqlcipher-android')
 
+        if build_for_ios:
+            gant_targets.append('sqlcipher-ios')
+
         if len(gant_targets) <= 0:
             print('Nothing to build')
             return
+
+        if build_for_ios:
+            print('Copying jni.h file for IOS build')
+            include_dir = join(build_dir, 'include')
+            make_dirs(include_dir)
+            jni_h_path = get_file_path('jni.h')
+            shutil.copy(jni_h_path, include_dir)
 
         self._apply_patch(
             android_abis,
@@ -385,6 +415,12 @@ class BuildSQLite4JavaTask(Task):
             output_path = task_context['root-output-path']
             print('Moving %s -> %s' % (so_path, output_path))
             shutil.move(so_path, output_path)
+
+        if build_for_ios:
+            a_path = join(build_dir, 'build', 'lib.ios', 'libsqlite4java.a')
+            output_path = task_context['root-ios-output-path']
+            print('Moving %s -> %s' % (a_path, output_path))
+            shutil.move(a_path, output_path)
 
 
 def create_download_task(key):

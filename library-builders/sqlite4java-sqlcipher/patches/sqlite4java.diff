@@ -43,7 +43,7 @@ diff --git a/ant/build.gant b/ant/build.gant
 index 1e4e4ab..fd2cc36 100644
 --- a/ant/build.gant
 +++ b/ant/build.gant
-@@ -522,3 +522,114 @@ target(name: 'android') {
+@@ -522,3 +522,221 @@ target(name: 'android') {
    ant.delete(dir: androidDir)
    ant.delete(dir: "$target/project")
  }
@@ -156,5 +156,112 @@ index 1e4e4ab..fd2cc36 100644
 +                arg(line: "$linkArgs -o $out/$libName $objects/sqlite_wrap.o $objects/sqlite3_wrap_manual.o $objects/intarray.o $archives")
 +            }
 +        }
++    }
++}
++
++String getCommandOutput(String... args) {
++    def proc = new ProcessBuilder(args).start()
++
++    int r = proc.waitFor()
++    if (r) {
++        throw RuntimeException("Command completed with error:\n" + proc.getErrorStream().getText("UTF-8"))
++    }
++
++    return proc.getInputStream().getText("UTF-8").trim()
++}
++
++String xcrunFind(String tool) {
++    return getCommandOutput(
++        'xcrun',
++        '--sdk',
++        'iphoneos',
++        '--find',
++        tool
++    )
++}
++
++String xcrunGetSDKPath() {
++    return getCommandOutput(
++        'xcrun',
++        '--sdk',
++        'iphoneos',
++        '--show-sdk-path'
++    )
++}
++
++target(name: 'sqlcipher-ios') {
++    ant.echo(message: "Generating swig bindings")
++    String outDir = "$build/java/${antProp('java.package.dir')}"
++
++    ant.mkdir(dir: "$build/swig")
++    ant.mkdir(dir: outDir)
++
++    ant.exec(failonerror: true, dir: mod, executable: "swig") {
++        def swigArgs = [
++            "-java",
++            "-package",
++            "${antProp('java.package')}",
++            "-outdir",
++            "$outDir",
++            "-o",
++            "$build/swig/sqlite_wrap.c",
++            "$mod/swig/sqlite.i"
++        ]
++
++        swigArgs.each { arg(value: it) }
++    }
++
++    String out = "$build/lib.ios"
++    String objects = "$build/cc.ios"
++
++    ant.mkdir(dir: out)
++    ant.mkdir(dir: objects)
++
++    def cc = xcrunFind('clang')
++    def libtool = xcrunFind('libtool')
++    def sdkPath = xcrunGetSDKPath()
++
++    def minIOSVersion = '7.0'
++
++    ant.echo("cc: $cc")
++    ant.echo("libtool: $libtool")
++    ant.echo("sdk path: $sdkPath")
++
++    def archs = [
++        'armv7',
++        'armv7s',
++        'arm64',
++    ].collect { "-arch $it" }.join(' ')
++
++    def include = rel('../include')
++    //technically this should ref the sqlcipher's sqlite3.h under our prefix but w/e
++    def sqliteInclude = rel('../sqlite')
++    def clargs = "-isysroot $sdkPath $archs -mios-version-min=$minIOSVersion -fembed-bitcode -I$include -I$sqliteInclude"
++
++    def buildType = 'release'
++
++    def debugSuffix = ("debug".equals(buildType) ? "-d" : "")
++    def libName = "libsqlite4java${debugSuffix}.a"
++
++    ant.echo(message: "Compiling object files")
++
++    def compile = { inputFilePath, outputFileName ->
++        def outputFilePath = "$objects/$outputFileName"
++
++        ant.echo("$inputFilePath -> $outputFilePath")
++
++        ant.exec(failonerror: true, dir: mod, executable: cc) {
++            arg(line: "$clargs -c $inputFilePath -o $outputFilePath")
++        }
++    }
++
++    compile("$build/swig/sqlite_wrap.c", "sqlite_wrap.o")
++    compile("native/sqlite3_wrap_manual.c", "sqlite3_wrap_manual.o")
++    compile("native/intarray.c", "intarray.o")
++
++    ant.echo("Generating $libName")
++
++    ant.exec(failonerror: true, dir: mod, executable: libtool) {
++        arg(line: "-static -o $out/$libName $objects/sqlite_wrap.o $objects/sqlite3_wrap_manual.o $objects/intarray.o")
 +    }
 +}

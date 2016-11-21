@@ -10,6 +10,7 @@ from os.path import exists, join, basename, dirname, abspath
 
 TEMPLATE_DIR = abspath(join(dirname(__file__), 'templates'))
 PATCH_DIR = abspath(join(dirname(__file__), 'patches'))
+FILES_DIR = abspath(join(dirname(__file__), 'files'))
 
 
 def get_os_from_platform(platform):
@@ -111,6 +112,13 @@ def get_patch_template(name):
 
     path = join(PATCH_DIR, name + '.diff')
     return Template.from_file(path)
+
+
+def get_file_path(name):
+    "Returns the path for a copyable task file"
+
+    path = join(FILES_DIR, name)
+    return path
 
 
 def write_to_file(path, text):
