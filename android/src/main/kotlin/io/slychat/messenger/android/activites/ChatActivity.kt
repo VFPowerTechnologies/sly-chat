@@ -14,6 +14,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
+import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.services.ui.UIMessengerService
 import io.slychat.messenger.services.ui.UIContactInfo
@@ -150,8 +151,15 @@ class ChatActivity : AppCompatActivity() {
         val message = messageNode.findViewById(R.id.message) as TextView
         val timespan = messageNode.findViewById(R.id.timespan) as TextView
 
+        val time: String
+
+        if (messageInfo.receivedTimestamp == 0L)
+            time = "Delivering..."
+        else
+            time = formatTimeStamp(messageInfo.receivedTimestamp)
+
+        timespan.text = time
         message.text = messageInfo.message
-        timespan.text = messageInfo.receivedTimestamp.toString()
 
         return messageNode
     }

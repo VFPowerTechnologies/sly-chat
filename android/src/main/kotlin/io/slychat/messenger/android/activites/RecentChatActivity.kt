@@ -16,6 +16,9 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Subscription
 import android.widget.AdapterView.OnItemClickListener
+import io.slychat.messenger.android.formatTimeStamp
+import org.ocpsoft.prettytime.PrettyTime
+import java.util.*
 
 class RecentChatActivity : AppCompatActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -27,8 +30,6 @@ class RecentChatActivity : AppCompatActivity() {
     private var loginListener : Subscription? = null
 
     private lateinit var contacts : List<UIContactInfo>
-    private lateinit var conversations : List<UIConversation>
-
     private lateinit var contactFloatBtn : FloatingActionButton
 
     private var arrayAdapter: ArrayAdapter<String>? = null
@@ -36,6 +37,8 @@ class RecentChatActivity : AppCompatActivity() {
 
     private lateinit var mDrawerLayout : DrawerLayout
     private lateinit var mDrawerList : ListView
+
+    private var prettyTime: PrettyTime? = null
 
     override fun onCreate (savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +56,8 @@ class RecentChatActivity : AppCompatActivity() {
         messengerService = app.appComponent.uiMessengerService
 
         contactFloatBtn = findViewById(R.id.contact_float_btn) as FloatingActionButton
+
+        prettyTime = PrettyTime()
 
         val actionBar = findViewById(R.id.my_toolbar) as Toolbar
         actionBar.title = "  Sly Chat"
@@ -130,8 +135,8 @@ class RecentChatActivity : AppCompatActivity() {
     }
 
     private fun fetchConversations () {
-        messengerService.getConversations() successUi { c ->
-            conversations = c
+        messengerService.getConversations() successUi { conversations ->
+            app.setConversationCache(conversations)
             displayRecentChat()
         } fail {
             log.debug(it.message, it.stackTrace)
@@ -150,9 +155,9 @@ class RecentChatActivity : AppCompatActivity() {
         val recentChatNodes : MutableList<View> = arrayListOf()
         val container = findViewById(R.id.recent_chat_container) as LinearLayout
 
-        conversations.forEach { conversation ->
-            if (conversation.status.lastMessage != null) {
-                recentChatNodes.add(createRecentChatNode(conversation))
+        app.conversationCache.forEach {
+            if (it.value.status.lastMessage != null) {
+                recentChatNodes.add(createRecentChatNode(it.value, container))
             }
         }
 
@@ -166,17 +171,29 @@ class RecentChatActivity : AppCompatActivity() {
         }
     }
 
-    private fun createRecentChatNode (conversation: UIConversation) : View {
-        val node = LayoutInflater.from(this).inflate(R.layout.recent_chat_node_layout, null, false)
+    private fun createRecentChatNode (conversation: UIConversation, container: LinearLayout) : View {
+        val node = LayoutInflater.from(this).inflate(R.layout.recent_chat_node_layout, container, false)
         val nameView = node.findViewById(R.id.recent_chat_contact_name) as TextView
         val messageView = node.findViewById(R.id.recent_chat_contact_message) as TextView
         val timespanView = node.findViewById(R.id.recent_chat_contact_time) as TextView
         nameView.text = conversation.contact.name
         messageView.text = conversation.status.lastMessage
-        timespanView.text = conversation.status.lastTimestamp.toString()
+
+        val time: String
+        time = formatTimeStamp(conversation.status.lastTimestamp!!)
+        timespanView.text = time
+
+        if (conversation.status.unreadMessageCount > 0) {
+            val badge = node.findViewById(R.id.new_message_badge) as LinearLayout
+            val amount = badge.findViewById(R.id.new_message_quantity) as TextView
+            badge.visibility = LinearLayout.VISIBLE
+            amount.text = conversation.status.unreadMessageCount.toString()
+        }
 
         node.setOnClickListener {
-            log.debug("Clicked node for user : ${conversation.contact.id}")
+            val intent = Intent(baseContext, ChatActivity::class.java)
+            intent.putExtra("EXTRA_USERID", conversation.contact.id.long)
+            startActivity(intent)
         }
 
         return node

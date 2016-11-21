@@ -9,6 +9,8 @@ import com.google.android.gms.iid.InstanceID
 import io.slychat.messenger.core.UserId
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
+import org.ocpsoft.prettytime.PrettyTime
+import java.util.*
 
 /** Run the given function in the main loop. */
 fun androidRunInMain(context: Context?, body: () -> Unit) {
@@ -44,4 +46,13 @@ fun gcmDeleteToken(context: Context): Promise<Unit, Exception> {
     return task {
         instanceId.deleteInstanceID()
     }
+}
+
+fun formatTimeStamp (time: Long): String {
+    val timestamp = PrettyTime().format(Date(time))
+
+    if (timestamp.isEmpty())
+        return ""
+
+    return timestamp
 }

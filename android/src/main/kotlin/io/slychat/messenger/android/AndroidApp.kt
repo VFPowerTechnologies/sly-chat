@@ -31,6 +31,7 @@ import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.ui.SoftKeyboardInfo
+import io.slychat.messenger.services.ui.UIConversation
 import io.slychat.messenger.services.ui.createAppDirectories
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.android.androidUiDispatcher
@@ -127,6 +128,14 @@ class AndroidApp : Application() {
 //
 //            app.isInBackground = value == null
 //        }
+
+    var conversationCache: MutableMap<UserId, UIConversation> = mutableMapOf()
+
+    fun setConversationCache (conversations: List<UIConversation>) {
+        conversations.forEach { conversation ->
+            conversationCache.put(conversation.contact.id, conversation)
+        }
+    }
 
     lateinit var appComponent: ApplicationComponent
         private set
@@ -421,6 +430,8 @@ class AndroidApp : Application() {
 
         //occurs on startup when we first register for events
         val userComponent = app.userComponent ?: return
+
+        conversationCache = mutableMapOf()
 
         if (noNotificationsOnLogout) {
             AndroidPreferences.setTokenSentToServer(this, userComponent.userLoginData.userId, false)

@@ -1,5 +1,6 @@
 package io.slychat.messenger.android.activites
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
@@ -12,6 +13,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.services.ui.UIContactInfo
 import io.slychat.messenger.services.ui.UINewContactResult
@@ -81,10 +83,12 @@ class AddContactActivity : AppCompatActivity() {
             return
 
         app.appComponent.uiContactsService.fetchNewContactInfo(username, null) successUi { result ->
-            mUsernameField.setText("")
             val contactInfo = result.contactInfo
             if (contactInfo != null)
                 createContactResultNode(contactInfo)
+            else {
+                log.debug("No contact found for $username")
+            }
         } failUi {
             log.debug("Failed To Fetch Contact Info", it.stackTrace)
         }
@@ -100,7 +104,23 @@ class AddContactActivity : AppCompatActivity() {
         contactEmailNode.text = contactInfo.email
         contactInitialNode.text = contactInfo.name[0].toString()
 
+        val btn = node.findViewById(R.id.add_contact_btn) as Button
+        btn.setOnClickListener {
+            addContact(contactInfo)
+        }
+
         mContactResultList.addView(node)
+    }
+
+    private fun addContact (contactInfo: UIContactInfo) {
+        app.appComponent.uiContactsService.addNewContact(contactInfo) successUi {
+            mUsernameField.setText("")
+            val intent = Intent(baseContext, ChatActivity::class.java)
+            intent.putExtra("EXTRA_USERID", contactInfo.id.long)
+            startActivity(intent)
+        } fail {
+            log.debug("Failed to add contact ${contactInfo.email}")
+        }
     }
 
     override fun onStart () {

@@ -4,11 +4,11 @@
                 android:layout_height="match_parent" android:clickable="false"
                 android:id="@+id/frameLayout">
 
-    <!--<WebView-->
-            <!--android:layout_width="fill_parent"-->
-            <!--android:layout_height="fill_parent"-->
-            <!--android:id="@+id/webView" android:layout_alignParentLeft="true" android:layout_marginLeft="0dp"-->
-            <!--android:layout_alignParentTop="true" android:layout_marginTop="0dp" android:visibility="visible"/>-->
+    <WebView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/webView" android:layout_alignParentLeft="true" android:layout_marginLeft="0dp"
+            android:layout_alignParentTop="true" android:layout_marginTop="0dp" android:visibility="visible"/>
 
     <LinearLayout
             android:id="@+id/splashImageView"
