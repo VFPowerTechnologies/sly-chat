@@ -3,7 +3,7 @@ Requirements:
         - python3: for build scripts
         - patch
         - bash
-        - autotools: for building sqlcipher
+        - autotools: for building sqlcipher and for more recent guess scripts
         - groovy (build.conf:groovy-home): required to run gant
         - gant (build.conf:gant-home): required to build sqlite4java
         - swig (for sqlite4java)

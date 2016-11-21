@@ -22,6 +22,7 @@ DOWNLOAD_URLS = {
     'openssl': 'https://www.openssl.org/source/openssl-1.0.2h.tar.gz',
     'sqlcipher': 'https://github.com/sqlcipher/sqlcipher/archive/v3.4.0.tar.gz',
     'sqlite4java': 'https://bitbucket.org/almworks/sqlite4java/get/fa4bb0fe7319a5f1afe008284146ac83e027de60.tar.gz',
+    'openssl-for-iphone': 'https://github.com/x2on/OpenSSL-for-iPhone/archive/f11efc9224c76b5c64a4d1b091743f2fd87f1435.tar.gz',
 }
 
 
@@ -30,12 +31,14 @@ DOWNLOAD_HASHES = {
     'openssl': '1d4007e53aad94a5b2002fe045ee7bb0b3d98f1a47f8b2bc851dcd1c74332919',
     'sqlcipher': '99b702ecf796de02bf7b7b35de4ceef145f0d62b4467a86707c2d59beea243d0',
     'sqlite4java': '24accb1c7abd9549bb28f85b35d519c87406a1dabc832772f85f6c787584f7d2',
+    'openssl-for-iphone': 'fc8733c5c99eb5a929bbd4d686fc9da9c6072789f53ecc741c919f71d8493af8',
 }
 
 
 PLATFORM_LINUX = 'linux-x86_64'
 PLATFORM_OSX = 'osx-x86_64'
 PLATFORM_WINDOWS = 'win32-x64'
+PLATFORM_IOS = 'ios'
 
 
 class CreateWorkDirsTask(Task):
@@ -144,13 +147,9 @@ class BuildTask(Task):
                 raise RuntimeError('%s build failed, unable to find lib at %s' % (self.build_item_name, lib_path))
 
 
-class BuildOpenSSLTask(BuildTask):
+class BuildOpenSSLTaskBase(BuildTask):
     #CAST causes some text relocations to be generated so we need to disable it
     _configure_options = 'no-ssl2 no-ssl3 no-cast no-comp no-dso no-hw no-engine no-shared'
-
-    def __init__(self):
-        super().__init__('build-openssl', 'openssl', 'crypto')
-        self.add_dependency('download-openssl')
 
     def _get_template_filename(self, platform):
         return 'openssl-%s-build.sh' % get_os_from_platform(platform)
@@ -162,6 +161,26 @@ class BuildOpenSSLTask(BuildTask):
             'configure-options': self._configure_options,
         }
         return template.substitute(**context)
+
+
+class IOSBuildOpenSSLTask(BuildOpenSSLTaskBase):
+    def __init__(self):
+        super().__init__('build-openssl-ios', 'openssl-for-iphone', 'crypto')
+        self.add_dependency('download-openssl-for-iphone')
+
+    def do_build(self, text_context, platform, prefix_dir, build_dir):
+        template = self._get_template(platform, prefix_dir)
+
+        self.run_build_script(build_dir, template)
+
+
+class BuildOpenSSLTask(BuildOpenSSLTaskBase):
+    #CAST causes some text relocations to be generated so we need to disable it
+    _configure_options = 'no-ssl2 no-ssl3 no-cast no-comp no-dso no-hw no-engine no-shared'
+
+    def __init__(self):
+        super().__init__('build-openssl', 'openssl', 'crypto')
+        self.add_dependency('download-openssl')
 
     def _get_android_template(self, task_context, prefix_dir, platform):
         template = get_template('openssl-android-build.sh')
