@@ -8,7 +8,10 @@ import android.support.design.widget.FloatingActionButton
 import android.support.v7.app.AppCompatActivity
 import android.view.WindowManager
 import android.support.v7.widget.AppCompatImageButton
+import android.support.v7.widget.Toolbar
+import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MenuItem
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
@@ -28,9 +31,9 @@ class ContactActivity : AppCompatActivity() {
 
     private lateinit var conversations : List<UIConversation>
 
-    private lateinit var backBtn : AppCompatImageButton
     private lateinit var recentContactList : LinearLayout
     private lateinit var contactList : LinearLayout
+    private lateinit var addContactBtn : FloatingActionButton
 
     override fun onCreate (savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,9 +49,15 @@ class ContactActivity : AppCompatActivity() {
     }
 
     private fun init () {
-        backBtn = findViewById(R.id.back_button) as AppCompatImageButton
         contactList = findViewById(R.id.contact_list) as LinearLayout
         recentContactList = findViewById(R.id.recent_contact_list) as LinearLayout
+        addContactBtn = findViewById(R.id.contacts_add_contact_btn) as FloatingActionButton
+
+        val actionBar = findViewById(R.id.my_toolbar) as Toolbar
+        actionBar.title = "Address Book"
+        setSupportActionBar(actionBar)
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         createEventListeners()
         setListeners()
@@ -56,9 +65,16 @@ class ContactActivity : AppCompatActivity() {
         fetchConversations()
     }
 
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        when (item?.itemId) {
+            android.R.id.home -> { finish() }
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
     private fun createEventListeners () {
-        backBtn.setOnClickListener {
-            finish()
+        addContactBtn.setOnClickListener {
+            startActivity(Intent(baseContext, AddContactActivity::class.java))
         }
     }
 
@@ -70,7 +86,7 @@ class ContactActivity : AppCompatActivity() {
     }
 
     private fun displayContacts () {
-        if (conversations.size > 0) {
+        if (conversations.isNotEmpty()) {
             conversations.forEach {
                 createContactNode(it)
                 if (it.status.lastMessage != null)

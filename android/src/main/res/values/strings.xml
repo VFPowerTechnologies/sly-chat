@@ -1,6 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Sly</string>
     <string name="title_activity_main">Sly</string>
+
+    <string name="username_field_hint">Email or Phone Number</string>
 
     <string name="empty_recent_chat_text">No recent chats</string>
     <string name="empty_contact_list_text">No contacts</string>
@@ -9,6 +12,25 @@
     <string name="contact_recent_title">Recent Contacts</string>
     <string name="contact_list_title">Contacts</string>
 
+    <string name="add_contact_header_text">Add Contact</string>
     <string name="chat_input_hint">Type your secure message</string>
+    <string name="chat_input_expire_hint">Type your expiring secure message</string>
+    <string name="search_result_header">Search Results</string>
+    <string name="search_contact_btn_text">Search</string>
+
+    <string name="action_menu">Action Menu</string>
+
+    <string name="add_button_text">Add</string>
+
+    <string-array name="main_menu_list">
+        <item>Profile</item>
+        <item>Settings</item>
+        <item>Add Contact</item>
+        <item>Blocked Contacts</item>
+        <item>Create Group</item>
+        <item>Invite Friends</item>
+        <item>Feedback</item>
+        <item>Logout</item>
+    </string-array>
 
 </resources>

@@ -3,26 +3,19 @@ package io.slychat.messenger.android.activites
 import android.content.Intent
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
+import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.AppCompatActivity
-import android.view.LayoutInflater
-import android.view.View
-import android.view.WindowManager
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.RelativeLayout
-import android.widget.TextView
+import android.support.v7.widget.Toolbar
+import android.view.*
+import android.widget.*
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.services.LoginEvent
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Subscription
-import java.sql.Timestamp
-import java.util.*
-
+import android.widget.AdapterView.OnItemClickListener
 
 class RecentChatActivity : AppCompatActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -36,8 +29,13 @@ class RecentChatActivity : AppCompatActivity() {
     private lateinit var contacts : List<UIContactInfo>
     private lateinit var conversations : List<UIConversation>
 
-    private lateinit var logoutBtn : Button
     private lateinit var contactFloatBtn : FloatingActionButton
+
+    private var arrayAdapter: ArrayAdapter<String>? = null
+    private lateinit var menuArray: Array<String>
+
+    private lateinit var mDrawerLayout : DrawerLayout
+    private lateinit var mDrawerList : ListView
 
     override fun onCreate (savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,13 +53,80 @@ class RecentChatActivity : AppCompatActivity() {
         messengerService = app.appComponent.uiMessengerService
 
         contactFloatBtn = findViewById(R.id.contact_float_btn) as FloatingActionButton
-        logoutBtn = findViewById(R.id.logout_button) as Button
+
+        val actionBar = findViewById(R.id.my_toolbar) as Toolbar
+        actionBar.title = "  Sly Chat"
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP)
+            actionBar.logo = getDrawable(R.drawable.ic_launcher)
+        else
+            actionBar.logo = resources.getDrawable(R.drawable.ic_launcher)
+
+        setSupportActionBar(actionBar)
+        createRightDrawerMenu()
 
         fetchContacts()
         fetchConversations()
 
         createEventListeners()
         setListeners()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.layout_menu, menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        when (item?.itemId) {
+            R.id.action_menu -> { mDrawerLayout.openDrawer(Gravity.END)}
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    private fun addDrawerItems() {
+        menuArray = resources.getStringArray(R.array.main_menu_list)
+        arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, menuArray)
+        mDrawerList.adapter = arrayAdapter
+    }
+
+    private fun createRightDrawerMenu () {
+        mDrawerList = findViewById(R.id.right_drawer) as ListView
+        mDrawerLayout = findViewById(R.id.drawer_layout) as DrawerLayout
+        addDrawerItems()
+
+        mDrawerList.onItemClickListener =
+            OnItemClickListener { adapterView, view, position, l ->
+                when (menuArray[position].toLowerCase()) {
+                    "profile" -> {
+                        log.debug("profile")
+                    }
+                    "settings" -> {
+                        log.debug("Settings")
+                    }
+                    "add contact" -> {
+                        startActivity(Intent(baseContext, AddContactActivity::class.java))
+                    }
+                    "blocked contacts" -> {
+                        log.debug("Blocked Contacts")
+                    }
+                    "create group" -> {
+                        log.debug("Create Group")
+                    }
+                    "invite friends" -> {
+                        log.debug("Invite Friends")
+                    }
+                    "feedback" -> {
+                        startActivity(Intent(baseContext, FeedbackActivity::class.java))
+                    }
+                    "logout" -> {
+                        app.app.logout()
+                    }
+                }
+
+                mDrawerLayout.closeDrawer(mDrawerList)
+            }
+
+
     }
 
     private fun fetchConversations () {
@@ -121,10 +186,6 @@ class RecentChatActivity : AppCompatActivity() {
         contactFloatBtn.setOnClickListener {
             startActivity(Intent(baseContext, ContactActivity::class.java))
         }
-
-        logoutBtn.setOnClickListener {
-            app.app.logout()
-        }
     }
 
     private fun setListeners () {
@@ -135,7 +196,7 @@ class RecentChatActivity : AppCompatActivity() {
     }
 
     private fun unsubscribeListener () {
-
+        loginListener?.unsubscribe()
     }
 
     private fun handleLoginEvent (event: LoginEvent) {

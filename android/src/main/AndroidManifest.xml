@@ -89,6 +89,10 @@
                 android:name=".activites.ChatActivity"
                 android:windowSoftInputMode="stateVisible|adjustResize">
         </activity>
+        <activity android:name=".activites.AddContactActivity">
+        </activity>
+        <activity android:name=".activites.FeedbackActivity">
+        </activity>
     </application>
 
 </manifest>

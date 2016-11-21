@@ -7,27 +7,14 @@
         android:orientation="vertical"
         tools:context="io.slychat.messenger.android.activites.ContactActivity">
 
-    <LinearLayout
-            android:id="@+id/contact_navbar"
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="50dp" android:layout_gravity="center_horizontal" android:background="#000">
-        <android.support.v7.widget.AppCompatImageButton
-                android:id="@+id/back_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_arrow_back_white"
-        />
-
-        <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceLarge"
-                android:text="@string/contact_page_title"
-                android:id="@+id/contact_page_title"
-                android:layout_gravity="center_vertical"
-                android:layout_marginStart="10dp"/>
-    </LinearLayout>
+        <android.support.v7.widget.Toolbar
+                android:id="@+id/my_toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="#000"
+                android:elevation="4dp"
+                android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+                app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
         <android.support.design.widget.CoordinatorLayout
                 android:id="@+id/main_content"
                 xmlns:android="http://schemas.android.com/apk/res/android"
@@ -101,13 +88,14 @@
             </LinearLayout>
 
             <android.support.design.widget.FloatingActionButton
-                    android:id="@+id/create_contact_btn"
+                    android:id="@+id/contacts_add_contact_btn"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="top|end"
                     android:layout_margin="16dp"
+                    app:backgroundTint="#000"
                     android:src="@drawable/ic_person_add_white_24dp"
                     app:layout_anchor="@id/contact_content"
-                    app:layout_anchorGravity="top|right|end" />
+                    app:layout_anchorGravity="top|end" />
         </android.support.design.widget.CoordinatorLayout>
 </LinearLayout>
