@@ -421,6 +421,11 @@ class BuildSQLite4JavaTask(Task):
             output_path = task_context['root-ios-output-path']
             print('Moving %s -> %s' % (a_path, output_path))
             shutil.move(a_path, output_path)
+            #XXX this is hacky; move into separate final copy task or something
+            lib_prefix = join(task_context['root-prefix-path'], 'ios', 'lib')
+            print('Moving secondary libs to output folder')
+            shutil.copy(join(lib_prefix, 'libsqlcipher.a'), output_path)
+            shutil.copy(join(lib_prefix, 'libcrypto.a'), output_path)
 
 
 def create_download_task(key):
