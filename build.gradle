@@ -35,6 +35,7 @@ buildscript {
             nsMenuFx: '2.1.4',
             jna: '4.2.2',
             androidDeviceNames: '1.1.2',
+            moeGradle: '1.2.4',
         ]
     }
 

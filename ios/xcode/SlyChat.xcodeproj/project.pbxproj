@@ -1,0 +1,480 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3F290959C1EBC7B183CF506A /* preregister.txt in Resources */ = {isa = PBXBuildFile; fileRef = B602E1E5E0A3D48832B802D5 /* preregister.txt */; };
+		4216D27E230039D473AE88D0 /* MOE.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 18B7135DA03A86786EE0B00A /* MOE.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		4942756FAF71C8FB5018B8F3 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = EFFC71CD9FB194BC85E07218 /* LaunchScreen.xib */; };
+		4D05852DCFE258D9B9FFAAE1 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6262965B25F645601E9986A7 /* main.cpp */; };
+		6D3E5179C2E5E50A26A778AB /* MainUI.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AE30A74574FD2623F59C3AA0 /* MainUI.storyboard */; };
+		84D65B0AEED9909E3989A27B /* MOE.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 18B7135DA03A86786EE0B00A /* MOE.framework */; };
+		8CC77DF9149A699ADB7C9560 /* application.jar in Resources */ = {isa = PBXBuildFile; fileRef = 3CE6A69449BEA934800EF985 /* application.jar */; };
+		A0666AD0B9FB6365357B68FD /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6262965B25F645601E9986A7 /* main.cpp */; };
+		A881963C5446510532D99F40 /* application.jar in Resources */ = {isa = PBXBuildFile; fileRef = EF844B6BB396794967D1D7E3 /* application.jar */; };
+		B7172DBAED0844E59106C213 /* classlist.txt in Resources */ = {isa = PBXBuildFile; fileRef = 806373BC6EB410BF4F808E28 /* classlist.txt */; };
+		B727F6D48DCE73F84B76D21E /* preregister.txt in Resources */ = {isa = PBXBuildFile; fileRef = C83BC1EAE58C1A6E40FBDC51 /* preregister.txt */; };
+		C0249FB2AA1D4B1889FFB3FA /* MOE.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 18B7135DA03A86786EE0B00A /* MOE.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C7597D541DD0B719829078CB /* MOE.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 18B7135DA03A86786EE0B00A /* MOE.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B4A69F322704FDC42390A4F4 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				4216D27E230039D473AE88D0 /* MOE.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C0F179472376373501AEA43D /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C0249FB2AA1D4B1889FFB3FA /* MOE.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		18B7135DA03A86786EE0B00A /* MOE.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = MOE.framework; sourceTree = MOE_FRAMEWORK_PATH; };
+		3CE6A69449BEA934800EF985 /* application.jar */ = {isa = PBXFileReference; lastKnownFileType = archive.jar; name = application.jar; path = ../build/moe/main/application.jar; sourceTree = SOURCE_ROOT; };
+		4F4FA97F6229291CAB03470D /* Info-Test.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Info-Test.plist"; path = "SlyChat-Test/Info-Test.plist"; sourceTree = SOURCE_ROOT; };
+		5DCDB00F667297D06AAF14A4 /* SlyChat-Test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SlyChat-Test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6262965B25F645601E9986A7 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		775BBFC0D851F1689C1406AD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = SlyChat/Info.plist; sourceTree = SOURCE_ROOT; };
+		806373BC6EB410BF4F808E28 /* classlist.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = classlist.txt; path = ../build/moe/test/classlist.txt; sourceTree = SOURCE_ROOT; };
+		A5EBD5A2460D5A3A43DC832F /* build.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = build.xcconfig; sourceTree = "<group>"; };
+		AA14B4467C1286E18E473F8A /* build.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = build.xcconfig; sourceTree = "<group>"; };
+		AE30A74574FD2623F59C3AA0 /* MainUI.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = MainUI.storyboard; path = ../src/main/resources/MainUI.storyboard; sourceTree = SOURCE_ROOT; };
+		B602E1E5E0A3D48832B802D5 /* preregister.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = preregister.txt; path = ../build/moe/test/preregister.txt; sourceTree = SOURCE_ROOT; };
+		B9AFA032EA94738DF9562B4B /* SlyChat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SlyChat.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C83BC1EAE58C1A6E40FBDC51 /* preregister.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = preregister.txt; path = ../build/moe/main/preregister.txt; sourceTree = SOURCE_ROOT; };
+		EF844B6BB396794967D1D7E3 /* application.jar */ = {isa = PBXFileReference; lastKnownFileType = archive.jar; name = application.jar; path = ../build/moe/test/application.jar; sourceTree = SOURCE_ROOT; };
+		EFFC71CD9FB194BC85E07218 /* LaunchScreen.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = LaunchScreen.xib; path = ../src/main/resources/LaunchScreen.xib; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		81A1FC54D85DF98407141D38 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				84D65B0AEED9909E3989A27B /* MOE.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D8E7DA6F1BAA7C8C99AFB421 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C7597D541DD0B719829078CB /* MOE.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		7A9A30082C1BD3D7B5063643 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				A5EBD5A2460D5A3A43DC832F /* build.xcconfig */,
+				4F4FA97F6229291CAB03470D /* Info-Test.plist */,
+				B602E1E5E0A3D48832B802D5 /* preregister.txt */,
+				EF844B6BB396794967D1D7E3 /* application.jar */,
+				806373BC6EB410BF4F808E28 /* classlist.txt */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		CFB237B30061FF27CEAD4242 /* SlyChat-Test */ = {
+			isa = PBXGroup;
+			children = (
+				7A9A30082C1BD3D7B5063643 /* Supporting Files */,
+			);
+			path = "SlyChat-Test";
+			sourceTree = "<group>";
+		};
+		E9B09DE2958AFC45E9088D39 = {
+			isa = PBXGroup;
+			children = (
+				EC139B36DEC1F69208FDF599 /* SlyChat */,
+				CFB237B30061FF27CEAD4242 /* SlyChat-Test */,
+				EF2278C6E0C963C221534D41 /* Frameworks */,
+				FD5DAB105875B3B331A67C44 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		EC139B36DEC1F69208FDF599 /* SlyChat */ = {
+			isa = PBXGroup;
+			children = (
+				F2BDF187468EA315B76A1525 /* Supporting Files */,
+			);
+			path = SlyChat;
+			sourceTree = "<group>";
+		};
+		EF2278C6E0C963C221534D41 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				18B7135DA03A86786EE0B00A /* MOE.framework */,
+			);
+			path = Frameworks;
+			sourceTree = "<group>";
+		};
+		F2BDF187468EA315B76A1525 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				6262965B25F645601E9986A7 /* main.cpp */,
+				AA14B4467C1286E18E473F8A /* build.xcconfig */,
+				775BBFC0D851F1689C1406AD /* Info.plist */,
+				C83BC1EAE58C1A6E40FBDC51 /* preregister.txt */,
+				3CE6A69449BEA934800EF985 /* application.jar */,
+				EFFC71CD9FB194BC85E07218 /* LaunchScreen.xib */,
+				AE30A74574FD2623F59C3AA0 /* MainUI.storyboard */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		FD5DAB105875B3B331A67C44 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B9AFA032EA94738DF9562B4B /* SlyChat.app */,
+				5DCDB00F667297D06AAF14A4 /* SlyChat-Test.app */,
+			);
+			path = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D4164C6563C97D1932E82AC1 /* SlyChat */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 07CD347D854D3740C0FE3100 /* Build configuration list for PBXNativeTarget "SlyChat" */;
+			buildPhases = (
+				AE6973A7B486301B7B4CE6D2 /* Compile Sources (MOE) */,
+				D8E7DA6F1BAA7C8C99AFB421 /* Frameworks */,
+				789B8BC06C4FFE53C08D9E37 /* Resources */,
+				432E12D8A41D9050BE3BE1FF /* Sources */,
+				B4A69F322704FDC42390A4F4 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			name = SlyChat;
+			productName = SlyChat;
+			productReference = B9AFA032EA94738DF9562B4B /* SlyChat.app */;
+			productType = "com.apple.product-type.application";
+		};
+		FF77211C96C1116F3FC44F3D /* SlyChat-Test */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0543A58735C527F4015B5F1F /* Build configuration list for PBXNativeTarget "SlyChat-Test" */;
+			buildPhases = (
+				4B65AFF7CB5DFB78EF9C78D1 /* Compile Sources (MOE) */,
+				81A1FC54D85DF98407141D38 /* Frameworks */,
+				4BF94F6B19FE1B5946AE261C /* Resources */,
+				5A25437B6C0CECEB0D7101F7 /* Sources */,
+				C0F179472376373501AEA43D /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			name = "SlyChat-Test";
+			productName = "SlyChat-Test";
+			productReference = 5DCDB00F667297D06AAF14A4 /* SlyChat-Test.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		EF2D07339116C16F5D7BEA00 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				ORGANIZATIONNAME = "My Company";
+			};
+			buildConfigurationList = 5311E7A441DEE013FA462F8D /* Build configuration list for PBXProject "SlyChat" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = E9B09DE2958AFC45E9088D39;
+			productRefGroup = FD5DAB105875B3B331A67C44 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D4164C6563C97D1932E82AC1 /* SlyChat */,
+				FF77211C96C1116F3FC44F3D /* SlyChat-Test */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4BF94F6B19FE1B5946AE261C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3F290959C1EBC7B183CF506A /* preregister.txt in Resources */,
+				A881963C5446510532D99F40 /* application.jar in Resources */,
+				B7172DBAED0844E59106C213 /* classlist.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		789B8BC06C4FFE53C08D9E37 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B727F6D48DCE73F84B76D21E /* preregister.txt in Resources */,
+				8CC77DF9149A699ADB7C9560 /* application.jar in Resources */,
+				4942756FAF71C8FB5018B8F3 /* LaunchScreen.xib in Resources */,
+				6D3E5179C2E5E50A26A778AB /* MainUI.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		4B65AFF7CB5DFB78EF9C78D1 /* Compile Sources (MOE) */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Compile Sources (MOE)";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "\n# Check directories set by xcconfigs\nif [ ! -d \"$MOE_PROJECT_DIR\" ]; then\n    echo \"$0:$LINENO:1: error: 'MOE_PROJECT_DIR' doesn't point to a directory!\"; exit 1;\nfi\nif [ ! -d \"$MOE_PROJECT_BUILD_DIR\" ]; then\n    echo \"$0:$LINENO:1: error: 'MOE_PROJECT_BUILD_DIR' doesn't point to a directory!\"; exit 1;\nfi\n\ncd \"$MOE_PROJECT_DIR/\"\n\nexport JAVA_HOME=$(/usr/libexec/java_home -v 1.8)\njava -version\n\n########################\n# Find Gradle\n########################\nfunction findGradle {\n\tCD=\"$PWD\"\n\twhile [ \"$CD\" != \"\" ]; do\n\t\techo \"Looking for gradlew in $CD\"\n\t\tif [ -x \"$CD/gradlew\" ]; then\n\t\t\tGRADLE_EXEC=$CD/gradlew\n\t\t\treturn 0\n\t\tfi\n\t\tCD=\"${CD%/*}\"\n\tdone\n\n\techo \"Checking with 'which'\"\n\tGRADLE_EXEC=$(which 'gradle')\n\n\tif [ \"$GRADLE_EXEC\" = \"\" ]; then\n\t\techo \"Failed to locate 'gradle' executable!\"\n\t\texit 1\n\tfi\n}\n########################\n# Execute Gradle build\n########################\nif [ -z \"$MOE_GRADLE_EXTERNAL_BUILD\" ]; then\n    findGradle\n\n    export MOE_BUILD_SOURCE_SET=test\n    \"$GRADLE_EXEC\" --daemon moeXcodeInternal\nfi\n";
+		};
+		AE6973A7B486301B7B4CE6D2 /* Compile Sources (MOE) */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Compile Sources (MOE)";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "\n# Check directories set by xcconfigs\nif [ ! -d \"$MOE_PROJECT_DIR\" ]; then\n    echo \"$0:$LINENO:1: error: 'MOE_PROJECT_DIR' doesn't point to a directory!\"; exit 1;\nfi\nif [ ! -d \"$MOE_PROJECT_BUILD_DIR\" ]; then\n    echo \"$0:$LINENO:1: error: 'MOE_PROJECT_BUILD_DIR' doesn't point to a directory!\"; exit 1;\nfi\n\ncd \"$MOE_PROJECT_DIR/\"\n\nexport JAVA_HOME=$(/usr/libexec/java_home -v 1.8)\njava -version\n\n########################\n# Find Gradle\n########################\nfunction findGradle {\n\tCD=\"$PWD\"\n\twhile [ \"$CD\" != \"\" ]; do\n\t\techo \"Looking for gradlew in $CD\"\n\t\tif [ -x \"$CD/gradlew\" ]; then\n\t\t\tGRADLE_EXEC=$CD/gradlew\n\t\t\treturn 0\n\t\tfi\n\t\tCD=\"${CD%/*}\"\n\tdone\n\n\techo \"Checking with 'which'\"\n\tGRADLE_EXEC=$(which 'gradle')\n\n\tif [ \"$GRADLE_EXEC\" = \"\" ]; then\n\t\techo \"Failed to locate 'gradle' executable!\"\n\t\texit 1\n\tfi\n}\n########################\n# Execute Gradle build\n########################\nif [ -z \"$MOE_GRADLE_EXTERNAL_BUILD\" ]; then\n    findGradle\n\n    \"$GRADLE_EXEC\" --daemon moeXcodeInternal\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		432E12D8A41D9050BE3BE1FF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A0666AD0B9FB6365357B68FD /* main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A25437B6C0CECEB0D7101F7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4D05852DCFE258D9B9FFAAE1 /* main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2F7BA28C4002B496CB0A7092 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"${MOE_FRAMEWORK_PATH}",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SYMROOT = "$(SRCROOT)/../build/moe/xcodebuild/sym";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3798FBBFF536D85A05F6DBBD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"${MOE_FRAMEWORK_PATH}",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MTL_ENABLE_DEBUG_INFO = YES;
+				SDKROOT = iphoneos;
+				SYMROOT = "$(SRCROOT)/../build/moe/xcodebuild/sym";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3A787DCC0D28AB61D807B76E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A5EBD5A2460D5A3A43DC832F /* build.xcconfig */;
+			buildSettings = {
+				DEAD_CODE_STRIPPING = NO;
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = NO;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = "SlyChat-Test/Info-Test.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				OTHER_LDFLAGS = "${MOE_OTHER_LDFLAGS}";
+				PRODUCT_NAME = "SlyChat-Test";
+				STRIP_STYLE = "non-global";
+			};
+			name = Debug;
+		};
+		5B485CAD65A5F0DB66A401AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA14B4467C1286E18E473F8A /* build.xcconfig */;
+			buildSettings = {
+				DEAD_CODE_STRIPPING = NO;
+				DEVELOPMENT_TEAM = "";
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = NO;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = SlyChat/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				OTHER_LDFLAGS = "${MOE_OTHER_LDFLAGS}";
+				PRODUCT_NAME = SlyChat;
+				STRIP_STYLE = "non-global";
+			};
+			name = Debug;
+		};
+		D55F89C32DD8A76A0801ADB3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA14B4467C1286E18E473F8A /* build.xcconfig */;
+			buildSettings = {
+				DEAD_CODE_STRIPPING = NO;
+				DEVELOPMENT_TEAM = "";
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = NO;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = SlyChat/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				OTHER_LDFLAGS = "${MOE_OTHER_LDFLAGS}";
+				PRODUCT_NAME = SlyChat;
+				STRIP_STYLE = "non-global";
+			};
+			name = Release;
+		};
+		F009DB97F74348CF33EA7C42 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A5EBD5A2460D5A3A43DC832F /* build.xcconfig */;
+			buildSettings = {
+				DEAD_CODE_STRIPPING = NO;
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = NO;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = "SlyChat-Test/Info-Test.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				OTHER_LDFLAGS = "${MOE_OTHER_LDFLAGS}";
+				PRODUCT_NAME = "SlyChat-Test";
+				STRIP_STYLE = "non-global";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0543A58735C527F4015B5F1F /* Build configuration list for PBXNativeTarget "SlyChat-Test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3A787DCC0D28AB61D807B76E /* Debug */,
+				F009DB97F74348CF33EA7C42 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		07CD347D854D3740C0FE3100 /* Build configuration list for PBXNativeTarget "SlyChat" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5B485CAD65A5F0DB66A401AB /* Debug */,
+				D55F89C32DD8A76A0801ADB3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5311E7A441DEE013FA462F8D /* Build configuration list for PBXProject "SlyChat" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3798FBBFF536D85A05F6DBBD /* Debug */,
+				2F7BA28C4002B496CB0A7092 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = EF2D07339116C16F5D7BEA00 /* Project object */;
+}

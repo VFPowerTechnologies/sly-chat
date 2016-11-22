@@ -1,0 +1,35 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.multi-os-engine:moe-gradle:$versions.moeGradle"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
+    }
+}
+
+apply plugin: 'moe'
+apply plugin: 'kotlin'
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+test { exclude '**' }
+
+moe {
+    xcode.mainTarget = 'SlyChat'
+    xcode.testTarget = 'SlyChat-Test'
+    xcode.packageName = 'io.slychat.messenger.ios'
+    xcode.launchScreenFilePath = 'src/main/resources/LaunchScreen.xib'
+    xcode.bundleID = 'io.slychat.SlyChat'
+    xcode.generateProject = false
+    xcode.xcodeProjectDirPath = 'xcode'
+}
+
+dependencies {
+    compile fileTree(dir: 'lib', include: '*.jar')
+
+    compile "com.vfpowertech:jsbridge-core:$versions.jsbridge"
+    compile "com.vfpowertech:jsbridge-processor-annotations:$versions.jsbridge"
+}
