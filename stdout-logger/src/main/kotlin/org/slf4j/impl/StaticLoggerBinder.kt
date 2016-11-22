@@ -18,5 +18,5 @@ object StaticLoggerBinder : BaseStaticLoggerBinder() {
     }
 
     override val platformLogger: PlatformLogger
-        get() = DesktopPlatformLogger()
+        get() = StdoutPlatformLogger()
 }

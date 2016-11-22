@@ -7,7 +7,7 @@ import io.slychat.messenger.logger.PlatformLogger
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 
-internal class DesktopPlatformLogger : PlatformLogger {
+internal class StdoutPlatformLogger : PlatformLogger {
     private val dateTimeFormatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss")
 
     private fun priorityToString(priority: LogPriority): String = when (priority) {
