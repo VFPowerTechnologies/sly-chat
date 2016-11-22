@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A1A009C1DE4D2F700C9EC7E /* libcrypto.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A1C9B7F1DE4CD6B008332C8 /* libcrypto.a */; };
+		0A1A009D1DE4D2F700C9EC7E /* libsqlcipher.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A1C9B801DE4CD6B008332C8 /* libsqlcipher.a */; };
 		3F290959C1EBC7B183CF506A /* preregister.txt in Resources */ = {isa = PBXBuildFile; fileRef = B602E1E5E0A3D48832B802D5 /* preregister.txt */; };
 		4216D27E230039D473AE88D0 /* MOE.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 18B7135DA03A86786EE0B00A /* MOE.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4942756FAF71C8FB5018B8F3 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = EFFC71CD9FB194BC85E07218 /* LaunchScreen.xib */; };
@@ -48,6 +50,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0A1C9B7F1DE4CD6B008332C8 /* libcrypto.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libcrypto.a; sourceTree = SOURCE_ROOT; };
+		0A1C9B801DE4CD6B008332C8 /* libsqlcipher.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libsqlcipher.a; sourceTree = SOURCE_ROOT; };
 		18B7135DA03A86786EE0B00A /* MOE.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = MOE.framework; sourceTree = MOE_FRAMEWORK_PATH; };
 		3CE6A69449BEA934800EF985 /* application.jar */ = {isa = PBXFileReference; lastKnownFileType = archive.jar; name = application.jar; path = ../build/moe/main/application.jar; sourceTree = SOURCE_ROOT; };
 		4F4FA97F6229291CAB03470D /* Info-Test.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Info-Test.plist"; path = "SlyChat-Test/Info-Test.plist"; sourceTree = SOURCE_ROOT; };
@@ -79,6 +83,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				C7597D541DD0B719829078CB /* MOE.framework in Frameworks */,
+				0A1A009D1DE4D2F700C9EC7E /* libsqlcipher.a in Frameworks */,
+				0A1A009C1DE4D2F700C9EC7E /* libcrypto.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -126,6 +132,8 @@
 		EF2278C6E0C963C221534D41 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				0A1C9B7F1DE4CD6B008332C8 /* libcrypto.a */,
+				0A1C9B801DE4CD6B008332C8 /* libsqlcipher.a */,
 				18B7135DA03A86786EE0B00A /* MOE.framework */,
 			);
 			path = Frameworks;
@@ -198,6 +206,11 @@
 			isa = PBXProject;
 			attributes = {
 				ORGANIZATIONNAME = "My Company";
+				TargetAttributes = {
+					D4164C6563C97D1932E82AC1 = {
+						DevelopmentTeam = S688KN2J4X;
+					};
+				};
 			};
 			buildConfigurationList = 5311E7A441DEE013FA462F8D /* Build configuration list for PBXProject "SlyChat" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -402,12 +415,20 @@
 			baseConfigurationReference = AA14B4467C1286E18E473F8A /* build.xcconfig */;
 			buildSettings = {
 				DEAD_CODE_STRIPPING = NO;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = S688KN2J4X;
 				EMBEDDED_CONTENT_CONTAINS_SWIFT = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = SlyChat/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				OTHER_LDFLAGS = "${MOE_OTHER_LDFLAGS}";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				OTHER_LDFLAGS = (
+					"${MOE_OTHER_LDFLAGS}",
+					"-force_load",
+					"$(SRCROOT)/libsqlite4java.a",
+				);
 				PRODUCT_NAME = SlyChat;
 				STRIP_STYLE = "non-global";
 			};
@@ -418,12 +439,20 @@
 			baseConfigurationReference = AA14B4467C1286E18E473F8A /* build.xcconfig */;
 			buildSettings = {
 				DEAD_CODE_STRIPPING = NO;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = S688KN2J4X;
 				EMBEDDED_CONTENT_CONTAINS_SWIFT = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = SlyChat/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				OTHER_LDFLAGS = "${MOE_OTHER_LDFLAGS}";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				OTHER_LDFLAGS = (
+					"${MOE_OTHER_LDFLAGS}",
+					"-force_load",
+					"$(SRCROOT)/libsqlite4java.a",
+				);
 				PRODUCT_NAME = SlyChat;
 				STRIP_STYLE = "non-global";
 			};

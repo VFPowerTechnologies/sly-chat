@@ -15,7 +15,7 @@ import org.moe.natj.objc.ann.Selector
 @org.moe.natj.general.ann.Runtime(ObjCRuntime::class)
 @ObjCClassName("AppViewController")
 @RegisterOnStartup
-class AppViewController protected constructor(peer: Pointer) : UIViewController(peer) {
+class AppViewController private constructor(peer: Pointer) : UIViewController(peer) {
 
     @Selector("init")
     override external fun init(): AppViewController

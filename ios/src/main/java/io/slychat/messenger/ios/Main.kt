@@ -13,10 +13,9 @@ import org.moe.natj.objc.ann.Selector
 
 @RegisterOnStartup
 class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDelegate {
-
     private var window: UIWindow? = null
 
-    override fun applicationDidFinishLaunchingWithOptions(application: UIApplication?, launchOptions: NSDictionary<*, *>?): Boolean {
+    override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
         return true
     }
 

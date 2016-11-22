@@ -30,6 +30,8 @@ moe {
 dependencies {
     compile fileTree(dir: 'lib', include: '*.jar')
 
+    compile project(':core')
+
     compile "com.vfpowertech:jsbridge-core:$versions.jsbridge"
     compile "com.vfpowertech:jsbridge-processor-annotations:$versions.jsbridge"
 }
