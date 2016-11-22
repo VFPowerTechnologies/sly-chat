@@ -28,7 +28,7 @@ internal class DesktopPlatformLogger : PlatformLogger {
     }
 
     override fun wtf(message: String) {
-        System.err.println("An unexpected error occured: $message")
+        System.err.println("An unexpected error occurred: $message")
     }
 
     override fun addBuilderProperties(builder: SentryEventBuilder) {
