@@ -31,4 +31,5 @@ dependencies {
     compile fileTree(dir: 'lib', include: '*.jar')
 
     compile project(':ui-services')
+    compile project(':stdout-logger')
 }

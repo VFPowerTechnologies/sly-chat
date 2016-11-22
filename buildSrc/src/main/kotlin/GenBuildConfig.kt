@@ -196,6 +196,10 @@ open class GenBuildConfig : DefaultTask() {
     @OutputFile
     val desktopLogSettings = File(projectRoot, "desktop/src/main/resources/sly-logger.properties")
 
+    //why
+    @OutputFile
+    val iosLogSettings = File(projectRoot, "ios/xcode/sly-logger.properties")
+
     private fun getSettingProperties(): Properties {
         val props = Properties()
 
@@ -316,5 +320,6 @@ open class GenBuildConfig : DefaultTask() {
 
         writeTemplate(ve, logVc, selectedLogSettings, androidLogSettings)
         writeTemplate(ve, logVc, selectedLogSettings, desktopLogSettings)
+        writeTemplate(ve, logVc, selectedLogSettings, iosLogSettings)
     }
 }

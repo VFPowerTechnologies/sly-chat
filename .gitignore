@@ -13,5 +13,6 @@ __pycache__/
 *.old
 android/src/main/resources/sly-logger.properties
 desktop/src/main/resources/sly-logger.properties
+ios/xcode/sly-logger.properties
 xcuserdata/
 .DS_Store
