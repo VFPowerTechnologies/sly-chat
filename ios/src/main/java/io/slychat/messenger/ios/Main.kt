@@ -7,7 +7,6 @@ import apple.uikit.c.UIKit
 import apple.uikit.protocol.UIApplicationDelegate
 import io.slychat.messenger.ios.ui.WebViewController
 import nl.komponents.kovenant.ui.KovenantUi
-
 import org.moe.natj.general.Pointer
 import org.moe.natj.general.ann.RegisterOnStartup
 import org.moe.natj.objc.ann.Selector

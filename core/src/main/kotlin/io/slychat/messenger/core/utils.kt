@@ -134,6 +134,9 @@ fun osFromProperties(osName: String, osVersion: String): Os {
 
         osName == "Mac OS X" -> Os(Os.Type.OSX, osVersion)
 
+        //FIXME: use reflection to get at UIDevice.currentDevice().systemVersion(), as os.version isn't the iOS version
+        osName == "Darwin" -> Os(Os.Type.IOS, osVersion)
+
         else -> Os(Os.Type.UNKNOWN, osVersion)
     }
 }
