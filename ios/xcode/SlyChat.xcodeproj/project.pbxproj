@@ -13,7 +13,6 @@
 		4216D27E230039D473AE88D0 /* MOE.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 18B7135DA03A86786EE0B00A /* MOE.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4942756FAF71C8FB5018B8F3 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = EFFC71CD9FB194BC85E07218 /* LaunchScreen.xib */; };
 		4D05852DCFE258D9B9FFAAE1 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6262965B25F645601E9986A7 /* main.cpp */; };
-		6D3E5179C2E5E50A26A778AB /* MainUI.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AE30A74574FD2623F59C3AA0 /* MainUI.storyboard */; };
 		84D65B0AEED9909E3989A27B /* MOE.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 18B7135DA03A86786EE0B00A /* MOE.framework */; };
 		8CC77DF9149A699ADB7C9560 /* application.jar in Resources */ = {isa = PBXBuildFile; fileRef = 3CE6A69449BEA934800EF985 /* application.jar */; };
 		A0666AD0B9FB6365357B68FD /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6262965B25F645601E9986A7 /* main.cpp */; };
@@ -61,7 +60,6 @@
 		806373BC6EB410BF4F808E28 /* classlist.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = classlist.txt; path = ../build/moe/test/classlist.txt; sourceTree = SOURCE_ROOT; };
 		A5EBD5A2460D5A3A43DC832F /* build.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = build.xcconfig; sourceTree = "<group>"; };
 		AA14B4467C1286E18E473F8A /* build.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = build.xcconfig; sourceTree = "<group>"; };
-		AE30A74574FD2623F59C3AA0 /* MainUI.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = MainUI.storyboard; path = ../src/main/resources/MainUI.storyboard; sourceTree = SOURCE_ROOT; };
 		B602E1E5E0A3D48832B802D5 /* preregister.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = preregister.txt; path = ../build/moe/test/preregister.txt; sourceTree = SOURCE_ROOT; };
 		B9AFA032EA94738DF9562B4B /* SlyChat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SlyChat.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C83BC1EAE58C1A6E40FBDC51 /* preregister.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = preregister.txt; path = ../build/moe/main/preregister.txt; sourceTree = SOURCE_ROOT; };
@@ -148,7 +146,6 @@
 				C83BC1EAE58C1A6E40FBDC51 /* preregister.txt */,
 				3CE6A69449BEA934800EF985 /* application.jar */,
 				EFFC71CD9FB194BC85E07218 /* LaunchScreen.xib */,
-				AE30A74574FD2623F59C3AA0 /* MainUI.storyboard */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -249,7 +246,6 @@
 				B727F6D48DCE73F84B76D21E /* preregister.txt in Resources */,
 				8CC77DF9149A699ADB7C9560 /* application.jar in Resources */,
 				4942756FAF71C8FB5018B8F3 /* LaunchScreen.xib in Resources */,
-				6D3E5179C2E5E50A26A778AB /* MainUI.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

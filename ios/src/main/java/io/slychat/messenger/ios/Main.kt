@@ -2,10 +2,11 @@ package io.slychat.messenger.ios
 
 import apple.NSObject
 import apple.foundation.NSDictionary
-import apple.uikit.UIApplication
-import apple.uikit.UIWindow
+import apple.uikit.*
 import apple.uikit.c.UIKit
 import apple.uikit.protocol.UIApplicationDelegate
+import io.slychat.messenger.ios.ui.WebViewController
+import nl.komponents.kovenant.ui.KovenantUi
 
 import org.moe.natj.general.Pointer
 import org.moe.natj.general.ann.RegisterOnStartup
@@ -16,6 +17,22 @@ class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDel
     private var window: UIWindow? = null
 
     override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
+        KovenantUi.uiContext {
+            dispatcher = IOSDispatcher.instance
+        }
+
+        val screen = UIScreen.mainScreen()
+        val window = UIWindow.alloc().initWithFrame(screen.bounds())
+
+        val vc = WebViewController.alloc().init()
+        val navigationController = UINavigationController.alloc().initWithRootViewController(vc)
+
+        window.setRootViewController(navigationController)
+
+        window.setBackgroundColor(UIColor.blackColor())
+
+        window.makeKeyAndVisible()
+
         return true
     }
 
