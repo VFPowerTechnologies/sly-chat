@@ -24,9 +24,7 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.http.api.gcm.GcmAsyncClient
 import io.slychat.messenger.core.http.api.gcm.RegisterRequest
 import io.slychat.messenger.core.http.api.gcm.RegisterResponse
-import io.slychat.messenger.services.LoginState
-import io.slychat.messenger.services.Sentry
-import io.slychat.messenger.services.SlyApplication
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
@@ -513,5 +511,11 @@ class AndroidApp : Application() {
         else if (!isInitialized) {
             onSuccessfulInitListeners.add(listener)
         }
+    }
+
+    fun dispatchEvent (type: String, page: PageType, extra: String) {
+        val event = UIEvent.PageChange(page, extra)
+
+        this.appComponent.uiEventService.dispatchEvent(event)
     }
 }

@@ -6,50 +6,51 @@
                 android:layout_gravity="center_horizontal" android:gravity="center_vertical"
                 android:layout_marginBottom="10dp">
 
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text=""
+            android:id="@+id/recent_chat_contact_name"
+            android:layout_marginStart="5dp"
+            android:textSize="15sp"/>
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text=""
+            android:id="@+id/recent_chat_contact_message"
+            android:layout_below="@+id/recent_chat_contact_name"
+            android:layout_alignParentTop="false"
+            android:layout_marginStart="15dp"
+            android:textSize="13sp" android:layout_marginTop="5dp"/>
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text=""
+            android:id="@+id/recent_chat_contact_time"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="10dp"
+            android:textSize="12sp" android:layout_centerVertical="true"
+            android:layout_alignTop="@+id/recent_chat_contact_name"/>
+    <LinearLayout
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_width="30dp"
+            android:background="@drawable/new_message_badge_bg"
+            android:layout_height="30dp"
+            android:layout_alignParentEnd="true"
+            android:layout_below="@+id/recent_chat_contact_time"
+            android:layout_marginEnd="10dp"
+            android:id="@+id/new_message_badge" android:gravity="center">
         <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="#fff"
                 android:text=""
-                android:id="@+id/recent_chat_contact_name"
-                android:layout_marginStart="5dp"
-                android:textSize="15sp"/>
-        <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:text=""
-                android:id="@+id/recent_chat_contact_message"
-                android:layout_below="@+id/recent_chat_contact_name"
-                android:layout_alignParentTop="false"
-                android:layout_marginStart="15dp"
-                android:textSize="13sp" android:layout_marginTop="5dp"/>
-        <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:text=""
-                android:id="@+id/recent_chat_contact_time"
-                android:layout_alignParentEnd="true"
-                android:layout_marginEnd="10dp"
-                android:textSize="12sp" android:layout_centerVertical="true"
-                android:layout_alignTop="@+id/recent_chat_contact_name"/>
-        <LinearLayout
-                android:orientation="vertical"
-                android:visibility="gone"
-                android:layout_width="30dp"
-                android:background="@drawable/new_message_badge_bg"
-                android:layout_height="30dp"
-                android:layout_alignParentEnd="true"
-                android:layout_below="@+id/recent_chat_contact_time"
-                android:layout_marginEnd="10dp"
-                android:id="@+id/new_message_badge" android:gravity="center">
-                <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceSmall"
-                        android:text=""
-                        android:id="@+id/new_message_quantity" android:enabled="false"/>
-        </LinearLayout>
+                android:id="@+id/new_message_quantity" android:enabled="false"/>
+    </LinearLayout>
 
 </RelativeLayout>

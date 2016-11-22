@@ -16,6 +16,7 @@ import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.services.PageType
 import io.slychat.messenger.services.ui.UIMessengerService
 import io.slychat.messenger.services.ui.UIContactInfo
 import io.slychat.messenger.services.ui.UIMessage
@@ -30,8 +31,6 @@ class ChatActivity : AppCompatActivity() {
 
     private lateinit var app : AndroidApp
     private lateinit var messengerService : UIMessengerService
-
-    private var messageListener : Subscription? = null
 
     private lateinit var pageTitle : TextView
     private lateinit var backBtn : AppCompatImageButton
@@ -51,6 +50,7 @@ class ChatActivity : AppCompatActivity() {
             finish()
 
         app = AndroidApp.get(this)
+
         messengerService = app.appComponent.uiMessengerService
 
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
@@ -65,9 +65,6 @@ class ChatActivity : AppCompatActivity() {
         pageTitle = findViewById(R.id.chat_page_title) as TextView
         submitBtn = findViewById(R.id.submit_chat_btn) as ImageButton
         chatInput = findViewById(R.id.chat_input) as EditText
-
-        getContact()
-        getMessages()
 
         createEventListeners()
         setListeners()
@@ -122,6 +119,7 @@ class ChatActivity : AppCompatActivity() {
 
     private fun getMessages () {
         messengerService.getLastMessagesFor(UserId(userId), 0, 100) successUi { messages ->
+            chatList.removeAllViews()
             messages.reversed().forEach { message ->
                 chatList.addView(createMessageNode(message))
             }
@@ -185,6 +183,9 @@ class ChatActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        app.dispatchEvent("PageChange", PageType.CONVO, userId.toString())
+        getContact()
+        getMessages()
         log.debug("onResume")
     }
 

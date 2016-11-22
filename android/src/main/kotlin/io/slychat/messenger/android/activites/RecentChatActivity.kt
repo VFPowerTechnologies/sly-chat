@@ -16,7 +16,9 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Subscription
 import android.widget.AdapterView.OnItemClickListener
+import android.widget.AdapterView.generateViewId
 import io.slychat.messenger.android.formatTimeStamp
+import io.slychat.messenger.core.UserId
 import org.ocpsoft.prettytime.PrettyTime
 import java.util.*
 
@@ -25,12 +27,14 @@ class RecentChatActivity : AppCompatActivity() {
 
     private lateinit var app : AndroidApp
     private lateinit var contactService : UIContactsService
-    private lateinit var messengerService : UIMessengerService
+    private lateinit var messengerService: UIMessengerService
 
-    private var loginListener : Subscription? = null
+    private var loginListener: Subscription? = null
 
-    private lateinit var contacts : List<UIContactInfo>
-    private lateinit var contactFloatBtn : FloatingActionButton
+    private lateinit var contacts: List<UIContactInfo>
+    private lateinit var recentNodeData: MutableMap<UserId, Int>
+    private lateinit var contactFloatBtn: FloatingActionButton
+    private lateinit var recentChatContainer: LinearLayout
 
     private var arrayAdapter: ArrayAdapter<String>? = null
     private lateinit var menuArray: Array<String>
@@ -56,6 +60,7 @@ class RecentChatActivity : AppCompatActivity() {
         messengerService = app.appComponent.uiMessengerService
 
         contactFloatBtn = findViewById(R.id.contact_float_btn) as FloatingActionButton
+        recentChatContainer = findViewById(R.id.recent_chat_container) as LinearLayout
 
         prettyTime = PrettyTime()
 
@@ -68,9 +73,6 @@ class RecentChatActivity : AppCompatActivity() {
 
         setSupportActionBar(actionBar)
         createRightDrawerMenu()
-
-        fetchContacts()
-        fetchConversations()
 
         createEventListeners()
         setListeners()
@@ -153,26 +155,27 @@ class RecentChatActivity : AppCompatActivity() {
 
     private fun displayRecentChat () {
         val recentChatNodes : MutableList<View> = arrayListOf()
-        val container = findViewById(R.id.recent_chat_container) as LinearLayout
 
+        recentChatContainer.removeAllViews()
+        recentNodeData = mutableMapOf()
         app.conversationCache.forEach {
             if (it.value.status.lastMessage != null) {
-                recentChatNodes.add(createRecentChatNode(it.value, container))
+                recentChatNodes.add(createRecentChatNode(it.value))
             }
         }
 
         if (recentChatNodes.size > 0) {
             recentChatNodes.forEach { node ->
-                container.addView(node)
+                recentChatContainer.addView(node)
             }
         }
         else {
-            LayoutInflater.from(this).inflate(R.layout.recent_chat_empty_node, container, true)
+            LayoutInflater.from(this).inflate(R.layout.recent_chat_empty_node, recentChatContainer, true)
         }
     }
 
-    private fun createRecentChatNode (conversation: UIConversation, container: LinearLayout) : View {
-        val node = LayoutInflater.from(this).inflate(R.layout.recent_chat_node_layout, container, false)
+    private fun createRecentChatNode (conversation: UIConversation) : View {
+        val node = LayoutInflater.from(this).inflate(R.layout.recent_chat_node_layout, recentChatContainer, false)
         val nameView = node.findViewById(R.id.recent_chat_contact_name) as TextView
         val messageView = node.findViewById(R.id.recent_chat_contact_message) as TextView
         val timespanView = node.findViewById(R.id.recent_chat_contact_time) as TextView
@@ -196,6 +199,11 @@ class RecentChatActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        val nodeId = View.generateViewId()
+        node.id = nodeId
+
+        recentNodeData.put(conversation.contact.id, nodeId)
+
         return node
     }
 
@@ -214,6 +222,24 @@ class RecentChatActivity : AppCompatActivity() {
 
     private fun unsubscribeListener () {
         loginListener?.unsubscribe()
+        app.appComponent.uiMessengerService.addNewMessageListener {
+            handleNewMessageEvent(it)
+        }
+    }
+
+    private fun handleNewMessageEvent (messageInfo: UIMessageInfo) {
+        val contactId = messageInfo.contact
+        if (contactId != null) {
+            val nodeId = recentNodeData[contactId]
+            if (nodeId != null) {
+                val node = findViewById(nodeId)
+                recentChatContainer.removeView(node)
+            }
+            //Add new messagae to list
+        }
+        else {
+            //handle group message
+        }
     }
 
     private fun handleLoginEvent (event: LoginEvent) {
@@ -245,6 +271,8 @@ class RecentChatActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        fetchContacts()
+        fetchConversations()
         log.debug("onResume")
     }
 
