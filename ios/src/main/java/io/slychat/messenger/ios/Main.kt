@@ -10,6 +10,7 @@ import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.ios.ui.WebViewController
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.config.UserConfig
+import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.ui.createAppDirectories
 import nl.komponents.kovenant.ui.KovenantUi
@@ -67,16 +68,16 @@ class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDel
 
         app.init(platformModule)
 
-        buildUI()
+        buildUI(app.appComponent)
 
         return true
     }
 
-    private fun buildUI() {
+    private fun buildUI(appComponent: ApplicationComponent) {
         val screen = UIScreen.mainScreen()
         val window = UIWindow.alloc().initWithFrame(screen.bounds())
 
-        val vc = WebViewController.alloc().init()
+        val vc = WebViewController.alloc().initWithAppComponent(appComponent)
         val navigationController = UINavigationController.alloc().initWithRootViewController(vc)
 
         window.setRootViewController(navigationController)
