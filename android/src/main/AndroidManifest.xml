@@ -73,26 +73,20 @@
         <service
                 android:name=".NotificationStopService"
                 android:exported="false"/>
-        <activity android:name=".activites.LoginActivity">
-        </activity>
-        <activity android:name=".activites.RegisterActivity">
-        </activity>
-        <activity android:name=".activites.RecentChatActivity">
-        </activity>
-        <activity android:name=".activites.SmsVerificationActivity">
-        </activity>
-        <activity android:name=".activites.UpdatePhoneActivity">
-        </activity>
-        <activity android:name=".activites.ContactActivity">
-        </activity>
-        <activity
-                android:name=".activites.ChatActivity"
-                android:windowSoftInputMode="stateVisible|adjustResize">
-        </activity>
-        <activity android:name=".activites.AddContactActivity">
-        </activity>
-        <activity android:name=".activites.FeedbackActivity">
-        </activity>
+
+        <activity android:name=".activites.LoginActivity"/>
+        <activity android:name=".activites.RegisterActivity"/>
+        <activity android:name=".activites.RecentChatActivity"/>
+        <activity android:name=".activites.SmsVerificationActivity"/>
+        <activity android:name=".activites.UpdatePhoneActivity"/>
+        <activity android:name=".activites.ContactActivity"/>
+        <activity android:name=".activites.ChatActivity" android:windowSoftInputMode="stateAlwaysHidden|adjustResize"/>
+        <activity android:name=".activites.AddContactActivity"/>
+        <activity android:name=".activites.FeedbackActivity"/>
+        <activity android:name=".activites.ProfileActivity"/>
+        <activity android:name=".activites.InviteFriendsActivity"/>
+        <activity android:name=".activites.SettingsActivity"/>
+
     </application>
 
 </manifest>

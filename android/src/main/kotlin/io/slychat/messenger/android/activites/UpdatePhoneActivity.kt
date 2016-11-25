@@ -104,6 +104,16 @@ class UpdatePhoneActivity : AppCompatActivity() {
         finish()
     }
 
+    private fun setAppActivity() {
+        log.debug("set ui visible")
+        AndroidApp.get(this).setCurrentActivity(this, true)
+    }
+
+    private fun clearAppActivity() {
+        log.debug("set ui hidden")
+        AndroidApp.get(this).setCurrentActivity(this, false)
+    }
+
     override fun onStart() {
         super.onStart()
         log.debug("onStart")
@@ -111,11 +121,13 @@ class UpdatePhoneActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        clearAppActivity()
         log.debug("onPause")
     }
 
     override fun onResume() {
         super.onResume()
+        setAppActivity()
         log.debug("onResume")
     }
 
@@ -126,6 +138,7 @@ class UpdatePhoneActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        clearAppActivity()
         log.debug("onDestroy")
     }
 }

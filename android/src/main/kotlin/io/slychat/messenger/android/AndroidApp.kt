@@ -8,6 +8,7 @@ import android.media.RingtoneManager
 import android.net.ConnectivityManager
 import android.os.StrictMode
 import android.support.v4.content.ContextCompat
+import android.support.v7.app.AppCompatActivity
 import com.almworks.sqlite4java.SQLite
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
@@ -25,12 +26,15 @@ import io.slychat.messenger.core.http.api.gcm.GcmAsyncClient
 import io.slychat.messenger.core.http.api.gcm.RegisterRequest
 import io.slychat.messenger.core.http.api.gcm.RegisterResponse
 import io.slychat.messenger.services.*
+import io.slychat.messenger.core.persistence.AccountInfo
+import io.slychat.messenger.services.LoginState
+import io.slychat.messenger.services.Sentry
+import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
-import io.slychat.messenger.services.ui.SoftKeyboardInfo
-import io.slychat.messenger.services.ui.UIConversation
-import io.slychat.messenger.services.ui.createAppDirectories
+import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.android.androidUiDispatcher
 import nl.komponents.kovenant.task
@@ -114,18 +118,21 @@ class AndroidApp : Application() {
     private val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
     private val softKeyboardVisibility = BehaviorSubject.create(SoftKeyboardInfo(false, 0))
 
+    private var lastActivity: String? = null
+
 //    /** Points to the current activity, if one is set. Used to request permissions from various services. */
-//    var currentActivity: MainActivity? = null
-//        set(value) {
-//            field = value
-//
-//            uiVisibility.onNext(value != null)
-//
-//            if (queuedLoadComplete)
-//                queuedLoadComplete = hideSplashImage() == false
-//
-//            app.isInBackground = value == null
-//        }
+    var currentActivity: AppCompatActivity? = null
+
+    fun setCurrentActivity (activity: AppCompatActivity, visible: Boolean) {
+        if (lastActivity == activity.toString() && !visible) {
+            return
+        }
+
+        lastActivity = currentActivity.toString()
+
+        currentActivity = activity
+        uiVisibility.onNext(visible)
+    }
 
     var conversationCache: MutableMap<UserId, UIConversation> = mutableMapOf()
 
@@ -134,6 +141,30 @@ class AndroidApp : Application() {
             conversationCache.put(conversation.contact.id, conversation)
         }
     }
+
+    fun updateConversation (messageInfo: UIMessageInfo): UIConversation? {
+        val contactId = messageInfo.contact
+        val oldConversation = conversationCache[contactId]
+        if (oldConversation !== null && contactId !== null) {
+            val lastMessage = messageInfo.messages[messageInfo.messages.lastIndex]
+            val conversation = UIConversation(
+                    oldConversation.contact,
+                    UIConversationInfo(
+                            true,
+                            oldConversation.status.unreadMessageCount + messageInfo.messages.size,
+                            lastMessage.message,
+                            lastMessage.receivedTimestamp
+                    )
+            )
+            conversationCache[contactId] = conversation
+            return conversation
+        }
+
+        return null
+    }
+
+    var accountInfo : AccountInfo? = null
+    var publicKey : String? = null
 
     lateinit var appComponent: ApplicationComponent
         private set
@@ -430,6 +461,8 @@ class AndroidApp : Application() {
         val userComponent = app.userComponent ?: return
 
         conversationCache = mutableMapOf()
+        accountInfo = null
+        publicKey = null
 
         if (noNotificationsOnLogout) {
             AndroidPreferences.setTokenSentToServer(this, userComponent.userLoginData.userId, false)
@@ -511,6 +544,12 @@ class AndroidApp : Application() {
         else if (!isInitialized) {
             onSuccessfulInitListeners.add(listener)
         }
+    }
+
+    fun getUserComponent(): UserComponent {
+        val userComponent = app.userComponent ?: throw Exception()
+
+        return userComponent
     }
 
     fun dispatchEvent (type: String, page: PageType, extra: String) {

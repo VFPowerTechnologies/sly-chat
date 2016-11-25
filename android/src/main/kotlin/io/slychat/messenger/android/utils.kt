@@ -48,7 +48,10 @@ fun gcmDeleteToken(context: Context): Promise<Unit, Exception> {
     }
 }
 
-fun formatTimeStamp (time: Long): String {
+fun formatTimeStamp (time: Long?): String {
+    if (time == null)
+        return ""
+
     val timestamp = PrettyTime().format(Date(time))
 
     if (timestamp.isEmpty())

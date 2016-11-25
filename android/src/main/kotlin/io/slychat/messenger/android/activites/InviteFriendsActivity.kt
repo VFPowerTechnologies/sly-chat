@@ -1,5 +1,6 @@
 package io.slychat.messenger.android.activites
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
@@ -9,15 +10,13 @@ import android.widget.Button
 import android.widget.EditText
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import nl.komponents.kovenant.ui.failUi
-import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
-class FeedbackActivity : AppCompatActivity() {
+class InviteFriendsActivity : AppCompatActivity(), BaseActivityInterface {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private lateinit var mSubmitBtn : Button
-    private lateinit var mFeedbackField : EditText
+    private lateinit var inviteFriendsBtn : Button
+    private lateinit var inviteText : EditText
     private lateinit var app : AndroidApp
 
     override fun onCreate (savedInstanceState: Bundle?) {
@@ -25,24 +24,42 @@ class FeedbackActivity : AppCompatActivity() {
         log.debug("onCreate")
 
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
-        setContentView(R.layout.activity_feedback)
-
-        init()
-    }
-
-    private fun init () {
-        app = AndroidApp.get(this)
+        setContentView(R.layout.activity_invite_friends)
 
         val actionBar = findViewById(R.id.my_toolbar) as Toolbar
-        actionBar.title = "Feedback"
+        actionBar.title = "Invite Friends"
         setSupportActionBar(actionBar)
-
-        mSubmitBtn = findViewById(R.id.submit_feedback_btn) as Button
-        mFeedbackField = findViewById(R.id.feedback_field) as EditText
-
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
+        inviteFriendsBtn = findViewById(R.id.invite_friends_btn) as Button
+        inviteText = findViewById(R.id.invite_friends_field) as EditText
+
         createEventListeners()
+
+        app = AndroidApp.get(this)
+    }
+
+    private fun createEventListeners () {
+        inviteFriendsBtn.setOnClickListener {
+            inviteFriends()
+        }
+    }
+
+    private fun inviteFriends() {
+        val text = inviteText.text.toString()
+        if (text.isEmpty())
+            return
+
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+
+        val chooserIntent = Intent.createChooser(intent, "Invite a friend to Sly").apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        startActivity(chooserIntent)
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
@@ -52,31 +69,11 @@ class FeedbackActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun createEventListeners () {
-        mSubmitBtn.setOnClickListener {
-            handleFeedback()
-        }
-    }
-
-    private fun handleFeedback () {
-        val feedback = mFeedbackField.text.toString()
-        if (feedback.isEmpty())
-            return
-
-        app.appComponent.uiFeedbackService.submitFeedback(feedback) successUi {
-            mFeedbackField.setText("")
-        } failUi {
-            log.debug("Failed sumbiting feedback", it.stackTrace)
-        }
-    }
-
-    private fun setAppActivity() {
-        log.debug("set ui visible")
+    override fun setAppActivity() {
         app.setCurrentActivity(this, true)
     }
 
-    private fun clearAppActivity() {
-        log.debug("set ui hidden")
+    override fun clearAppActivity() {
         app.setCurrentActivity(this, false)
     }
 

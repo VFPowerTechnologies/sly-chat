@@ -6,63 +6,59 @@ import android.support.design.widget.FloatingActionButton
 import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
-import android.view.*
-import android.widget.*
+import android.view.WindowManager
+import android.view.LayoutInflater
+import android.view.View
+import android.view.Menu
+import android.view.MenuItem
+import android.view.Gravity
+import android.widget.ArrayAdapter
+import android.widget.ListView
+import android.widget.LinearLayout
+import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.services.LoginEvent
-import io.slychat.messenger.services.ui.*
-import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
-import rx.Subscription
 import android.widget.AdapterView.OnItemClickListener
-import android.widget.AdapterView.generateViewId
+import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
 import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
-import org.ocpsoft.prettytime.PrettyTime
-import java.util.*
+import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.core.persistence.UserConversation
+import io.slychat.messenger.services.LoginEvent
+import io.slychat.messenger.services.PageType
+import io.slychat.messenger.services.messaging.ConversationMessage
+import nl.komponents.kovenant.ui.successUi
+import rx.Subscription
 
-class RecentChatActivity : AppCompatActivity() {
+class RecentChatActivity : AppCompatActivity(), BaseActivityInterface {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private lateinit var app : AndroidApp
-    private lateinit var contactService : UIContactsService
-    private lateinit var messengerService: UIMessengerService
-
-    private var loginListener: Subscription? = null
-
-    private lateinit var contacts: List<UIContactInfo>
-    private lateinit var recentNodeData: MutableMap<UserId, Int>
-    private lateinit var contactFloatBtn: FloatingActionButton
-    private lateinit var recentChatContainer: LinearLayout
+    private lateinit var app: AndroidApp
 
     private var arrayAdapter: ArrayAdapter<String>? = null
     private lateinit var menuArray: Array<String>
-
     private lateinit var mDrawerLayout : DrawerLayout
     private lateinit var mDrawerList : ListView
 
-    private var prettyTime: PrettyTime? = null
+    private lateinit var recentChatList: LinearLayout
+    private lateinit var contactFloatBtn: FloatingActionButton
+
+    private var loginListener: Subscription? = null
+
+    private var recentNodeData: MutableMap<UserId, Int> = mutableMapOf()
+
+    private lateinit var messengerService: MessengerServiceImpl
 
     override fun onCreate (savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         log.debug("onCreate")
 
-//        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_recent_chat)
 
-        init()
-    }
-
-    private fun init () {
         app = AndroidApp.get(this)
-        contactService = app.appComponent.uiContactsService
-        messengerService = app.appComponent.uiMessengerService
-
-        contactFloatBtn = findViewById(R.id.contact_float_btn) as FloatingActionButton
-        recentChatContainer = findViewById(R.id.recent_chat_container) as LinearLayout
-
-        prettyTime = PrettyTime()
+        messengerService = MessengerServiceImpl(this)
 
         val actionBar = findViewById(R.id.my_toolbar) as Toolbar
         actionBar.title = "  Sly Chat"
@@ -74,8 +70,112 @@ class RecentChatActivity : AppCompatActivity() {
         setSupportActionBar(actionBar)
         createRightDrawerMenu()
 
+        recentChatList = findViewById(R.id.recent_chat_container) as LinearLayout
+        contactFloatBtn = findViewById(R.id.contact_float_btn) as FloatingActionButton
+
         createEventListeners()
+    }
+
+    private fun init () {
+        recentChatList.removeAllViews()
+
+        messengerService.fetchAllConversation() successUi {
+            displayRecentChat(messengerService.getActualSortedConversation(it))
+        }
+
         setListeners()
+    }
+
+    private fun createEventListeners () {
+        contactFloatBtn.setOnClickListener {
+            startActivity(Intent(baseContext, ContactActivity::class.java))
+        }
+    }
+
+    private fun displayRecentChat (conversations: List<UserConversation>) {
+        conversations.forEach {
+            recentChatList.addView(createRecentChatView(it))
+        }
+    }
+
+    private fun createRecentChatView (conversation: UserConversation): View {
+        val node = LayoutInflater.from(this).inflate(R.layout.recent_chat_node_layout, recentChatList, false)
+        val nameView = node.findViewById(R.id.recent_chat_contact_name) as TextView
+        val messageView = node.findViewById(R.id.recent_chat_contact_message) as TextView
+        val timespanView = node.findViewById(R.id.recent_chat_contact_time) as TextView
+        nameView.text = conversation.contact.name
+        messageView.text = conversation.info.lastMessage
+
+        val time: String
+        time = formatTimeStamp(conversation.info.lastTimestamp)
+        timespanView.text = time
+
+        if (conversation.info.unreadMessageCount > 0) {
+            val badge = node.findViewById(R.id.new_message_badge) as LinearLayout
+            val amount = badge.findViewById(R.id.new_message_quantity) as TextView
+            badge.visibility = LinearLayout.VISIBLE
+            amount.text = conversation.info.unreadMessageCount.toString()
+        }
+
+        node.setOnClickListener {
+            val intent = Intent(baseContext, ChatActivity::class.java)
+            intent.putExtra("EXTRA_USERID", conversation.contact.id.long)
+            startActivity(intent)
+        }
+
+        val nodeId = View.generateViewId()
+        node.id = nodeId
+
+        recentNodeData.put(conversation.contact.id, nodeId)
+
+        return node
+    }
+
+    fun onNewMessage (data: ConversationMessage) {
+        val conversationId = data.conversationId
+        when (conversationId) {
+            is ConversationId.User -> {
+                val conversation = messengerService.conversations[conversationId.id]
+                if (conversation != null)
+                    updateSingleRecentChatNode(conversation)
+            }
+            is ConversationId.Group -> { log.debug(conversationId.id.toString()) }
+        }
+    }
+
+    private fun updateSingleRecentChatNode (conversation: UserConversation) {
+        val userId = conversation.contact.id
+        val nodeId = recentNodeData[userId]
+        if (nodeId !== null) {
+            recentChatList.removeView(findViewById(nodeId))
+        }
+
+        recentChatList.addView(createRecentChatView(conversation), 0)
+    }
+
+    private fun setListeners () {
+        loginListener?.unsubscribe()
+        loginListener = app.app.loginEvents.subscribe {
+            handleLoginEvent(it)
+        }
+
+        messengerService.addNewMessageListener({ onNewMessage(it) })
+    }
+
+    private fun clearListners () {
+        loginListener?.unsubscribe()
+        messengerService.clearListeners()
+    }
+
+    private fun handleLoginEvent (event: LoginEvent) {
+        when (event) {
+            is LoginEvent.LoggedOut -> { processLogout() }
+        }
+    }
+
+    private fun processLogout () {
+        startActivity(Intent(baseContext, LoginActivity::class.java))
+        finish()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -105,10 +205,10 @@ class RecentChatActivity : AppCompatActivity() {
             OnItemClickListener { adapterView, view, position, l ->
                 when (menuArray[position].toLowerCase()) {
                     "profile" -> {
-                        log.debug("profile")
+                        startActivity(Intent(baseContext, ProfileActivity::class.java))
                     }
                     "settings" -> {
-                        log.debug("Settings")
+                        startActivity(Intent(baseContext, SettingsActivity::class.java))
                     }
                     "add contact" -> {
                         startActivity(Intent(baseContext, AddContactActivity::class.java))
@@ -120,7 +220,7 @@ class RecentChatActivity : AppCompatActivity() {
                         log.debug("Create Group")
                     }
                     "invite friends" -> {
-                        log.debug("Invite Friends")
+                        startActivity(Intent(baseContext, InviteFriendsActivity::class.java))
                     }
                     "feedback" -> {
                         startActivity(Intent(baseContext, FeedbackActivity::class.java))
@@ -132,130 +232,20 @@ class RecentChatActivity : AppCompatActivity() {
 
                 mDrawerLayout.closeDrawer(mDrawerList)
             }
-
-
     }
 
-    private fun fetchConversations () {
-        messengerService.getConversations() successUi { conversations ->
-            app.setConversationCache(conversations)
-            displayRecentChat()
-        } fail {
-            log.debug(it.message, it.stackTrace)
-        }
+    private fun dispatchEvent () {
+        app.dispatchEvent("PageChange", PageType.CONTACTS, "")
     }
 
-    private fun fetchContacts () {
-        contactService.getContacts() success { c ->
-            contacts = c
-        } fail {
-            log.debug(it.message, it.stackTrace)
-        }
+    override fun setAppActivity() {
+        log.debug("set ui visible")
+        app.setCurrentActivity(this, true)
     }
 
-    private fun displayRecentChat () {
-        val recentChatNodes : MutableList<View> = arrayListOf()
-
-        recentChatContainer.removeAllViews()
-        recentNodeData = mutableMapOf()
-        app.conversationCache.forEach {
-            if (it.value.status.lastMessage != null) {
-                recentChatNodes.add(createRecentChatNode(it.value))
-            }
-        }
-
-        if (recentChatNodes.size > 0) {
-            recentChatNodes.forEach { node ->
-                recentChatContainer.addView(node)
-            }
-        }
-        else {
-            LayoutInflater.from(this).inflate(R.layout.recent_chat_empty_node, recentChatContainer, true)
-        }
-    }
-
-    private fun createRecentChatNode (conversation: UIConversation) : View {
-        val node = LayoutInflater.from(this).inflate(R.layout.recent_chat_node_layout, recentChatContainer, false)
-        val nameView = node.findViewById(R.id.recent_chat_contact_name) as TextView
-        val messageView = node.findViewById(R.id.recent_chat_contact_message) as TextView
-        val timespanView = node.findViewById(R.id.recent_chat_contact_time) as TextView
-        nameView.text = conversation.contact.name
-        messageView.text = conversation.status.lastMessage
-
-        val time: String
-        time = formatTimeStamp(conversation.status.lastTimestamp!!)
-        timespanView.text = time
-
-        if (conversation.status.unreadMessageCount > 0) {
-            val badge = node.findViewById(R.id.new_message_badge) as LinearLayout
-            val amount = badge.findViewById(R.id.new_message_quantity) as TextView
-            badge.visibility = LinearLayout.VISIBLE
-            amount.text = conversation.status.unreadMessageCount.toString()
-        }
-
-        node.setOnClickListener {
-            val intent = Intent(baseContext, ChatActivity::class.java)
-            intent.putExtra("EXTRA_USERID", conversation.contact.id.long)
-            startActivity(intent)
-        }
-
-        val nodeId = View.generateViewId()
-        node.id = nodeId
-
-        recentNodeData.put(conversation.contact.id, nodeId)
-
-        return node
-    }
-
-    private fun createEventListeners () {
-        contactFloatBtn.setOnClickListener {
-            startActivity(Intent(baseContext, ContactActivity::class.java))
-        }
-    }
-
-    private fun setListeners () {
-        loginListener?.unsubscribe()
-        loginListener = app.app.loginEvents.subscribe {
-            handleLoginEvent(it)
-        }
-    }
-
-    private fun unsubscribeListener () {
-        loginListener?.unsubscribe()
-        app.appComponent.uiMessengerService.addNewMessageListener {
-            handleNewMessageEvent(it)
-        }
-    }
-
-    private fun handleNewMessageEvent (messageInfo: UIMessageInfo) {
-        val contactId = messageInfo.contact
-        if (contactId != null) {
-            val nodeId = recentNodeData[contactId]
-            if (nodeId != null) {
-                val node = findViewById(nodeId)
-                recentChatContainer.removeView(node)
-            }
-            //Add new messagae to list
-        }
-        else {
-            //handle group message
-        }
-    }
-
-    private fun handleLoginEvent (event: LoginEvent) {
-        when (event) {
-            is LoginEvent.LoggedIn -> {
-                log.debug("logged in")
-            }
-            is LoginEvent.LoggedOut -> { processLogout() }
-            is LoginEvent.LoggingIn -> { log.debug("logging in") }
-            is LoginEvent.LoginFailed -> { log.debug("login failed")}
-        }
-    }
-
-    private fun processLogout () {
-        startActivity(Intent(baseContext, LoginActivity::class.java))
-        finish()
+    override fun clearAppActivity() {
+        log.debug("set ui hidden")
+        app.setCurrentActivity(this, false)
     }
 
     override fun onStart() {
@@ -266,23 +256,27 @@ class RecentChatActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         log.debug("onPause")
-        unsubscribeListener()
+        clearAppActivity()
+        clearListners()
     }
 
     override fun onResume() {
         super.onResume()
-        fetchContacts()
-        fetchConversations()
+        init()
+        dispatchEvent()
+        setAppActivity()
         log.debug("onResume")
     }
 
     override fun onStop() {
         super.onStop()
         log.debug("onStop")
+        clearListners()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        clearAppActivity()
         log.debug("onDestroy")
     }
 }

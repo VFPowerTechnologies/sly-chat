@@ -7,25 +7,30 @@ import android.view.MenuItem
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
+import io.slychat.messenger.core.http.api.accountupdate.AccountInfo
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
-class FeedbackActivity : AppCompatActivity() {
+class ProfileActivity : AppCompatActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private lateinit var mSubmitBtn : Button
-    private lateinit var mFeedbackField : EditText
     private lateinit var app : AndroidApp
+
+    private var emailVal : TextView? = null
+    private var nameVal : TextView? = null
+    private var publicKeyVal : TextView? = null
+    private var deviceVal : TextView? = null
 
     override fun onCreate (savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         log.debug("onCreate")
 
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
-        setContentView(R.layout.activity_feedback)
+        setContentView(R.layout.activity_profile)
 
         init()
     }
@@ -33,12 +38,16 @@ class FeedbackActivity : AppCompatActivity() {
     private fun init () {
         app = AndroidApp.get(this)
 
-        val actionBar = findViewById(R.id.my_toolbar) as Toolbar
-        actionBar.title = "Feedback"
-        setSupportActionBar(actionBar)
+        emailVal = findViewById(R.id.profile_email_value) as TextView
+        nameVal = findViewById(R.id.profile_name_value) as TextView
+        deviceVal = findViewById(R.id.profil_device_id) as TextView
+        publicKeyVal = findViewById(R.id.profil_public_key_value) as TextView
 
-        mSubmitBtn = findViewById(R.id.submit_feedback_btn) as Button
-        mFeedbackField = findViewById(R.id.feedback_field) as EditText
+        displayInfo()
+
+        val actionBar = findViewById(R.id.my_toolbar) as Toolbar
+        actionBar.title = "Profile"
+        setSupportActionBar(actionBar)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -53,21 +62,15 @@ class FeedbackActivity : AppCompatActivity() {
     }
 
     private fun createEventListeners () {
-        mSubmitBtn.setOnClickListener {
-            handleFeedback()
-        }
+
     }
 
-    private fun handleFeedback () {
-        val feedback = mFeedbackField.text.toString()
-        if (feedback.isEmpty())
-            return
-
-        app.appComponent.uiFeedbackService.submitFeedback(feedback) successUi {
-            mFeedbackField.setText("")
-        } failUi {
-            log.debug("Failed sumbiting feedback", it.stackTrace)
-        }
+    private fun displayInfo () {
+        log.debug("In Display info")
+        emailVal?.text = app.accountInfo?.email
+        nameVal?.text = app.accountInfo?.name
+        deviceVal?.text = app.accountInfo?.deviceId.toString()
+        publicKeyVal?.text = app.publicKey
     }
 
     private fun setAppActivity() {

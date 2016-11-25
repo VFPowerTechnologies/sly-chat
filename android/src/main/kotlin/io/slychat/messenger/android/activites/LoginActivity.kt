@@ -114,7 +114,9 @@ class LoginActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun handleLoggedInEvent (state: LoginEvent) {
+    private fun handleLoggedInEvent (state: LoginEvent.LoggedIn) {
+        app.accountInfo = state.accountInfo
+        app.publicKey = state.publicKey
         progressDialog.dismiss()
         val intent = Intent(baseContext, RecentChatActivity::class.java)
         startActivity(intent)
@@ -155,6 +157,16 @@ class LoginActivity : AppCompatActivity() {
         finish()
     }
 
+    private fun setAppActivity() {
+        log.debug("set ui visible")
+        app.setCurrentActivity(this, true)
+    }
+
+    private fun clearAppActivity() {
+        log.debug("set ui hidden")
+        app.setCurrentActivity(this, false)
+    }
+
     override fun onStart() {
         super.onStart()
         log.debug("onStart")
@@ -162,12 +174,14 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        clearAppActivity()
         log.debug("onPause")
         unsubscribeListeners()
     }
 
     override fun onResume() {
         super.onResume()
+        setAppActivity()
         log.debug("onResume")
     }
 
@@ -178,6 +192,7 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        clearAppActivity()
         log.debug("onDestroy")
     }
 }

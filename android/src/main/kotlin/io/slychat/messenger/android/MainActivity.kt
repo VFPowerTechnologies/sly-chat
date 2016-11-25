@@ -30,6 +30,7 @@ import io.slychat.messenger.android.activites.RecentChatActivity
 import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.services.LoginEvent
+import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.clearAllListenersOnDispatcher
 import io.slychat.messenger.services.ui.js.NavigationService
@@ -52,7 +53,7 @@ class MainActivity : AppCompatActivity() {
 
         val EXTRA_CONVO_KEY = "conversationKey"
 
-        private val RINGTONE_PICKER_REQUEST_CODE = 1
+//        private val RINGTONE_PICKER_REQUEST_CODE = 1
     }
 
 //    private lateinit var dispatcher: Dispatcher
@@ -78,7 +79,9 @@ class MainActivity : AppCompatActivity() {
     private val permRequestCodeToDeferred = SparseArray<Deferred<Boolean, Exception>>()
 
     //only one can run at once
-    private var ringtonePickerDeferred: Deferred<UISelectionDialogResult<String?>, Exception>? = null
+//    private var ringtonePickerDeferred: Deferred<UISelectionDialogResult<String?>, Exception>? = null
+
+    private lateinit var app: AndroidApp
 
     /** Returns the initial page to launch after login, if any. Used when invoked via a notification intent. */
 //    private fun getInitialPage(intent: Intent): String? {
@@ -127,6 +130,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         log.debug("onCreate")
         super.onCreate(savedInstanceState)
+
+        app = AndroidApp.get(this)
 
         //XXX make optional? enable by default and change on user login after reading config
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
@@ -302,7 +307,7 @@ class MainActivity : AppCompatActivity() {
     private fun handleLoginEvent (event: LoginEvent) {
         when (event) {
             is LoginEvent.LoggedIn -> {
-                handleLoggedInEvent()
+                handleLoggedInEvent(event)
             }
             is LoginEvent.LoggedOut -> { handleLoggedOutEvent() }
             is LoginEvent.LoggingIn -> { log.debug("logging in") }
@@ -310,8 +315,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleLoggedInEvent () {
+    private fun handleLoggedInEvent (state: LoginEvent.LoggedIn) {
         log.debug("logged in")
+        app.accountInfo = state.accountInfo
+        app.publicKey = state.publicKey
         val intent = Intent(baseContext, RecentChatActivity::class.java)
         startActivity(intent)
         finish()
@@ -360,15 +367,18 @@ class MainActivity : AppCompatActivity() {
 //        webView.restoreState(savedInstanceState)
     }
 
-//    private fun setAppActivity() {
+    private fun setAppActivity() {
 //        isActive = true
-//        AndroidApp.get(this).currentActivity = this
-//    }
-//
-//    private fun clearAppActivity() {
+//        app.currentActivity = this
+        app.setCurrentActivity(this, true)
+    }
+
+    private fun clearAppActivity() {
 //        isActive = false
-//        AndroidApp.get(this).currentActivity = null
-//    }
+//        app.currentActivity = this
+        app.setCurrentActivity(this, false)
+    }
+
 
     override fun onRestart() {
         log.debug("onRestart")
@@ -382,7 +392,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         log.debug("onPause")
-//        clearAppActivity()
+        clearAppActivity()
         unsubscribeListeners()
         super.onPause()
 
@@ -396,8 +406,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         log.debug("onDestroy")
 
-//        clearAppActivity()
-
+        clearAppActivity()
 //        dispatcher.resetState()
 
         clearAllListenersOnDispatcher(AndroidApp.get(this).appComponent)
@@ -408,7 +417,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         log.debug("onResume")
         super.onResume()
-//        setAppActivity()
+        setAppActivity()
 
         if (!isInitialized)
             subToLoadComplete()
@@ -474,88 +483,8 @@ class MainActivity : AppCompatActivity() {
 //        })
 //    }
 
-    fun openRingtonePicker(previous: String?): Promise<UISelectionDialogResult<String?>, Exception> {
-        if (ringtonePickerDeferred != null)
-            error("Deferred still pending")
-
-        val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
-
-        val previousRingtoneUri = previous?.let { Uri.parse(it) }
-
-        intent.apply {
-            putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Message notification sound")
-            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
-            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
-            putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
-            putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
-
-            putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, previousRingtoneUri)
-        }
-
-        startActivityForResult(intent, RINGTONE_PICKER_REQUEST_CODE)
-
-        val deferred = deferred<UISelectionDialogResult<String?>, Exception>()
-
-        ringtonePickerDeferred = deferred
-
-        return deferred.promise
+    private fun getOrientation(): Int {
+        return windowManager.defaultDisplay.rotation
     }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        when (requestCode) {
-            RINGTONE_PICKER_REQUEST_CODE -> {
-                val deferred = ringtonePickerDeferred
-                if (deferred == null) {
-                    log.error("No deferred pending for ringtone picker")
-                    return
-                }
-
-                ringtonePickerDeferred = null
-
-                if (resultCode != Activity.RESULT_OK) {
-                    deferred.resolve(UISelectionDialogResult(false, null))
-                    return
-                }
-
-                //should never occur
-                if (data == null) {
-                    log.error("No data returned for ringtone picker")
-                    deferred.resolve(UISelectionDialogResult(false, null))
-                    return
-                }
-
-                val uri = data.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
-
-                val value = uri?.toString()
-
-                deferred.resolve(UISelectionDialogResult(true, value))
-            }
-
-            else -> {
-                log.error("Unknown request code: {}", requestCode)
-            }
-        }
-    }
-
-    fun inviteToSly(subject: String, text: String, htmlText: String?) {
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-
-            putExtra(Intent.EXTRA_SUBJECT, subject)
-            putExtra(Intent.EXTRA_TEXT, text)
-            if (htmlText != null)
-                putExtra(Intent.EXTRA_HTML_TEXT, htmlText)
-        }
-
-        val chooserIntent = Intent.createChooser(intent, "Invite a friend to Sly").apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-
-        startActivity(chooserIntent)
-    }
-
-//    private fun getOrientation(): Int {
-//        return windowManager.defaultDisplay.rotation
-//    }
 
 }
