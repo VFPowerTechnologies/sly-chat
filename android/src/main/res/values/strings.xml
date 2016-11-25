@@ -12,6 +12,25 @@
     <string name="contact_recent_title">Recent Contacts</string>
     <string name="contact_list_title">Contacts</string>
 
+    <string name="profile_device_header">Device id: </string>
+    <string name="profile_phone_header">Phone Number: </string>
+    <string name="profile_email_header">Email: </string>
+    <string name="profile_key_header">Public Key: </string>
+    <string name="profile_update_btn">Update Profile </string>
+    <string name="profile_picture_description">Profile Picture </string>
+
+    <string name="invite_friends_btn">Share</string>
+    <string name="default_invite_text">Hey, let\'s encrypt our chats: https://slychat.io/get-app</string>
+    <string name="invite_friends_hint">Type your invite text</string>
+
+    <string name="settings_notification_header">Notifications</string>
+    <string name="settings_notification_switch">Enable Notifications</string>
+    <string name="settings_notification_btn">Notification Sound</string>
+    <string name="settings_appearance_header">Appearance</string>
+    <string name="settings_theme_switch">Dark Theme</string>
+    <string name="settings_misc_header">Misc</string>
+    <string name="settings_invite_friends_switch">Hide invite friends</string>
+
     <string name="add_contact_header_text">Add Contact</string>
     <string name="chat_input_hint">Type your secure message</string>
     <string name="chat_input_expire_hint">Type your expiring secure message</string>
@@ -31,6 +50,12 @@
         <item>Invite Friends</item>
         <item>Feedback</item>
         <item>Logout</item>
+    </string-array>
+
+    <string-array name="chat_menu_list">
+        <item>Contact Info</item>
+        <item>Block</item>
+        <item>Delete Conversation</item>
     </string-array>
 
 </resources>
