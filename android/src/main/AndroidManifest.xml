@@ -86,6 +86,7 @@
         <activity android:name=".activites.ProfileActivity"/>
         <activity android:name=".activites.InviteFriendsActivity"/>
         <activity android:name=".activites.SettingsActivity"/>
+        <activity android:name=".activites.ContactInfoActivity"/>
 
     </application>
 

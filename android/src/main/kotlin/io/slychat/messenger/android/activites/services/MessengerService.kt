@@ -29,4 +29,6 @@ interface MessengerService {
 
     fun sendMessageTo (userId: UserId, message: String, ttl: Long): Promise<Unit, Exception>
 
+    fun deleteConversation (userId: UserId): Promise<Unit, Exception>
+
 }

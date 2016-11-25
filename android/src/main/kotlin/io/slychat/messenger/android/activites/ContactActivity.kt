@@ -61,11 +61,10 @@ class ContactActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         createEventListeners()
-
-        fetchConversations()
     }
 
     private fun init () {
+        fetchConversations()
         setAppActivity()
         setListeners()
     }
@@ -91,6 +90,8 @@ class ContactActivity : AppCompatActivity() {
     }
 
     private fun displayContacts () {
+        contactList.removeAllViews()
+        recentContactList.removeAllViews()
         if (conversations.isNotEmpty()) {
             conversations.forEach {
                 contactList.addView(createContactNode(it.value.contact))
@@ -161,11 +162,18 @@ class ContactActivity : AppCompatActivity() {
                 removeContactFromList(event.userId)
             }
             is ContactEvent.Removed -> {
+                log.debug("Contact Removed Event")
                 event.contacts.forEach {
+                    log.debug("Contact to be removed ${it.name}")
                     removeContactFromList(it.id)
                 }
             }
-            is ContactEvent.Sync -> { log.debug("Contact sync is running? : ${event.isRunning}") }
+            is ContactEvent.Sync -> {
+                log.debug("Is contact sync running: ${event.isRunning}")
+                if(!event.isRunning) {
+                    fetchConversations()
+                }
+            }
             is ContactEvent.Unblocked -> { log.debug("Contact was unblocked: ${event.userId}") }
             is ContactEvent.Updated -> {
                 event.contacts.forEach {
@@ -201,6 +209,7 @@ class ContactActivity : AppCompatActivity() {
     }
 
     private fun removeContactFromList (userId: UserId) {
+        log.debug("in remove contact from list")
         val nodeId = contactListData[userId]
         val recentNodeId = recentContactListData[userId]
         if (nodeId != null) {
@@ -251,6 +260,8 @@ class ContactActivity : AppCompatActivity() {
     }
 
     private fun unsubscribeListeners () {
+        contactService.clearListeners()
+        messengerService.clearListeners()
     }
 
     private fun setAppActivity() {

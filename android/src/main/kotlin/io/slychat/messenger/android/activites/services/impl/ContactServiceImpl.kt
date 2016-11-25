@@ -4,11 +4,12 @@ import android.support.v7.app.AppCompatActivity
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.activites.services.ContactService
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.services.contacts.ContactEvent
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.ui.successUi
 import rx.Subscription
 
 class ContactServiceImpl (activity: AppCompatActivity): ContactService {
@@ -33,6 +34,7 @@ class ContactServiceImpl (activity: AppCompatActivity): ContactService {
     }
 
     override fun getContacts (): Promise<MutableMap<UserId, ContactInfo>, Exception> {
+        contactList = mutableMapOf()
         return contactService.getAll() map { contacts ->
             contacts.forEach {
                 contactList.put(it.id, it)
@@ -53,15 +55,24 @@ class ContactServiceImpl (activity: AppCompatActivity): ContactService {
         }
     }
 
+    override fun deleteContact (contactInfo: ContactInfo): Promise<Boolean, Exception> {
+        return contactService.removeContact(contactInfo)
+    }
+
+    override fun blockContact (id: UserId): Promise<Unit, Exception> {
+        return contactService.block(id)
+    }
+
     private fun handleContactEvent (event: ContactEvent) {
         when (event) {
             is ContactEvent.Added -> { handleNewContactAdded(event) }
             is ContactEvent.Blocked -> { handleContactBlocked(event) }
             is ContactEvent.Removed -> { handleContactRemoved(event) }
-            is ContactEvent.Sync -> { handleContactSync(event) }
             is ContactEvent.Unblocked -> { handleContactUnblocked(event) }
             is ContactEvent.Updated -> { handleContactUpdated(event) }
         }
+
+        notifyUi(event)
     }
 
     private fun notifyUi (event: ContactEvent) {
@@ -69,33 +80,47 @@ class ContactServiceImpl (activity: AppCompatActivity): ContactService {
     }
 
     private fun handleContactBlocked (event: ContactEvent.Blocked) {
-
-        notifyUi(event)
+        val c = contactList[event.userId]
+        if (c != null) {
+            contactList[event.userId] = ContactInfo(c.id, c.email, c.name, AllowedMessageLevel.BLOCKED, c.publicKey)
+        }
+        else {
+            contactService.get(event.userId) successUi {
+                if (it != null)
+                    contactList[event.userId] = it
+            }
+        }
     }
 
     private fun handleNewContactAdded (event: ContactEvent.Added) {
-
-        notifyUi(event)
+        event.contacts.forEach { c ->
+            contactList[c.id] = c
+        }
     }
 
     private fun handleContactRemoved (event: ContactEvent.Removed) {
-
-        notifyUi(event)
-    }
-
-    private fun handleContactSync (event: ContactEvent.Sync) {
-
-        notifyUi(event)
+        event.contacts.forEach { c ->
+            contactList.remove(c.id)
+        }
     }
 
     private fun handleContactUnblocked (event: ContactEvent.Unblocked) {
-
-        notifyUi(event)
+        val c = contactList[event.userId]
+        if (c != null) {
+            contactList[event.userId] = ContactInfo(c.id, c.email, c.name, AllowedMessageLevel.GROUP_ONLY, c.publicKey)
+        }
+        else {
+            contactService.get(event.userId) successUi {
+                if (it != null)
+                    contactList[event.userId] = it
+            }
+        }
     }
 
     private fun handleContactUpdated (event: ContactEvent.Updated) {
-
-        notifyUi(event)
+        event.contacts.forEach { c ->
+            contactList[c.new.id] = c.new
+        }
     }
 
 }

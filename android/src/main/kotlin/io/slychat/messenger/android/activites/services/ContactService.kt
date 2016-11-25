@@ -7,12 +7,16 @@ import nl.komponents.kovenant.Promise
 
 interface ContactService {
 
-    fun addContactListener (listener: ((ContactEvent) -> Unit))
+    fun addContactListener(listener: ((ContactEvent) -> Unit))
 
-    fun clearListeners ()
+    fun clearListeners()
 
-    fun getContacts (): Promise<MutableMap<UserId, ContactInfo>, Exception>
+    fun getContacts(): Promise<MutableMap<UserId, ContactInfo>, Exception>
 
-    fun getContact (id: UserId): Promise<ContactInfo?, Exception>
+    fun getContact(id: UserId): Promise<ContactInfo?, Exception>
+
+    fun blockContact(id: UserId): Promise<Unit, Exception>
+
+    fun deleteContact(contactInfo: ContactInfo): Promise<Boolean, Exception>
 
 }

@@ -1,7 +1,10 @@
 package io.slychat.messenger.android.activites
 
+import android.content.DialogInterface
+import android.content.Intent
 import android.os.Bundle
 import android.support.v4.widget.DrawerLayout
+import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.view.WindowManager
@@ -10,14 +13,7 @@ import android.view.MenuItem
 import android.view.Gravity
 import android.view.View
 import android.view.LayoutInflater
-import android.widget.LinearLayout
-import android.widget.ArrayAdapter
-import android.widget.AdapterView
-import android.widget.ListView
-import android.widget.EditText
-import android.widget.TextView
-import android.widget.ImageButton
-import android.widget.ScrollView
+import android.widget.*
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import io.slychat.messenger.android.activites.services.ContactService
@@ -30,6 +26,7 @@ import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.ConversationMessageInfo
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.PageType
+import io.slychat.messenger.services.contacts.ContactEvent
 import io.slychat.messenger.services.messaging.ConversationMessage
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -50,13 +47,13 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
 
     private var arrayAdapter: ArrayAdapter<String>? = null
     private lateinit var menuArray: Array<String>
-    private lateinit var mDrawerLayout : DrawerLayout
-    private lateinit var mDrawerList : ListView
+    private lateinit var mDrawerLayout: DrawerLayout
+    private lateinit var mDrawerList: ListView
 
-    private var userId : Long = -1
+    private var userId: Long = -1
     private var chatDataLink: MutableMap<String, Int> = mutableMapOf()
 
-    override fun onCreate (savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         log.debug("onCreate")
 
@@ -90,7 +87,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
         createEventListeners()
     }
 
-    fun getContactInfo () {
+    fun getContactInfo() {
         contactService.getContact(UserId(userId)) successUi {
             if (it == null)
                 finish()
@@ -105,22 +102,22 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
         }
     }
 
-    private fun createEventListeners () {
+    private fun createEventListeners() {
         submitBtn.setOnClickListener {
             handleNewMessageSubmit()
         }
     }
 
-    private fun init () {
+    private fun init() {
+        app.dispatchEvent("PageChange", PageType.CONVO, userId.toString())
+        setAppActivity()
         setListeners()
         messengerService.fetchMessageFor(UserId(userId), 0, 100) successUi {
             displayMessages(it)
         }
-        app.dispatchEvent("PageChange", PageType.CONVO, userId.toString())
-        setAppActivity()
     }
 
-    private fun displayMessages (messages: List<ConversationMessageInfo>) {
+    private fun displayMessages(messages: List<ConversationMessageInfo>) {
         chatList.removeAllViews()
         messages.reversed().forEach { message ->
             chatList.addView(createMessageNode(message))
@@ -128,9 +125,9 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
         }
     }
 
-    private fun createMessageNode (messageInfo: ConversationMessageInfo): View {
+    private fun createMessageNode(messageInfo: ConversationMessageInfo): View {
         val layout : Int
-        if (messageInfo.info.isSent)
+        if(messageInfo.info.isSent)
             layout = R.layout.sent_message_node
         else
             layout = R.layout.received_message_node
@@ -141,7 +138,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
 
         val time: String
 
-        if (messageInfo.info.receivedTimestamp == 0L)
+        if(messageInfo.info.receivedTimestamp == 0L)
             time = "Delivering..."
         else
             time = formatTimeStamp(messageInfo.info.receivedTimestamp)
@@ -156,9 +153,9 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
         return messageNode
     }
 
-    private fun handleNewMessageSubmit () {
+    private fun handleNewMessageSubmit() {
         val messageValue = chatInput.text.toString()
-        if (messageValue.isEmpty())
+        if(messageValue.isEmpty())
             return
 
         messengerService.sendMessageTo(UserId(userId), messageValue, 0) successUi {
@@ -168,15 +165,15 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
         }
     }
 
-    private fun scrollToBottom () {
+    private fun scrollToBottom() {
         chatScrollView.post {
             chatScrollView.fullScroll(View.FOCUS_DOWN)
         }
     }
 
-    private fun onNewMessage (newMessageInfo: ConversationMessage) {
+    private fun onNewMessage(newMessageInfo: ConversationMessage) {
         val conversationId = newMessageInfo.conversationId
-        when (conversationId) {
+        when(conversationId) {
             is ConversationId.User -> {
                 if (conversationId.id == UserId(userId)) {
                     handleNewMessageDisplay(newMessageInfo)
@@ -187,8 +184,14 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
         }
     }
 
-    private fun onMessageUpdate (event: MessageUpdateEvent) {
-        when (event) {
+    private fun onContactEvent(event: ContactEvent) {
+        if(event is ContactEvent.Blocked || event is ContactEvent.Removed) {
+            finish()
+        }
+    }
+
+    private fun onMessageUpdate(event: MessageUpdateEvent) {
+        when(event) {
             is MessageUpdateEvent.Delivered -> { handleDeliveredMessageEvent(event) }
             is MessageUpdateEvent.Expired -> { handleExpiredMessage(event) }
             is MessageUpdateEvent.Deleted -> { handleDeletedMessage(event) }
@@ -198,17 +201,17 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
         }
     }
 
-    private fun handleDeliveredMessageEvent (event: MessageUpdateEvent.Delivered) {
+    private fun handleDeliveredMessageEvent(event: MessageUpdateEvent.Delivered) {
         val conversationId = event.conversationId
-        when (conversationId) {
+        when(conversationId) {
             is ConversationId.User -> { updateMessageDelivered(event) }
             is ConversationId.Group -> { log.debug("is a delivered event for group ${conversationId.id}") }
         }
     }
 
-    private fun handleFailedDelivery (event: MessageUpdateEvent.DeliveryFailed) {
+    private fun handleFailedDelivery(event: MessageUpdateEvent.DeliveryFailed) {
         val nodeId = chatDataLink[event.messageId]
-        if (nodeId === null) {
+        if(nodeId === null) {
             log.debug("Failed message update, Message id: ${event.messageId} does not exist in the current chat page")
             return
         }
@@ -217,11 +220,11 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
         (node.findViewById(R.id.timespan) as TextView).text = "Message Delivery Failed"
     }
 
-    private fun handleDeletedAllMessage (event: MessageUpdateEvent.DeletedAll) {
+    private fun handleDeletedAllMessage(event: MessageUpdateEvent.DeletedAll) {
         val conversationId = event.conversationId
-        when (conversationId) {
+        when(conversationId) {
             is ConversationId.User -> {
-                if (UserId(userId) == conversationId.id) {
+                if(UserId(userId) == conversationId.id) {
                     chatList.removeAllViews()
                 }
             }
@@ -229,14 +232,14 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
 
     }
 
-    private fun handleDeletedMessage (event: MessageUpdateEvent.Deleted) {
+    private fun handleDeletedMessage(event: MessageUpdateEvent.Deleted) {
         val conversationId = event.conversationId
-        when (conversationId) {
+        when(conversationId) {
             is ConversationId.User -> {
-                if (conversationId.id == UserId(userId)) {
+                if(conversationId.id == UserId(userId)) {
                     event.messageIds.forEach {
                         val nodeId = chatDataLink[it]
-                        if (nodeId === null) {
+                        if(nodeId === null) {
                             log.debug("Message Deleted event, Message id: $it does not exist in the current chat page")
                         } else {
                             chatList.removeView(findViewById(nodeId))
@@ -247,7 +250,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
         }
     }
 
-    private fun handleExpiredMessage (event: MessageUpdateEvent.Expired) {
+    private fun handleExpiredMessage(event: MessageUpdateEvent.Expired) {
         val nodeId = chatDataLink[event.messageId]
         if (nodeId === null) {
             log.debug("Message Expired event, Message id: ${event.messageId} does not exist in the current chat page")
@@ -259,7 +262,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
         (messageNode.findViewById(R.id.timespan) as TextView).text = ""
     }
 
-    private fun updateMessageDelivered (event: MessageUpdateEvent.Delivered) {
+    private fun updateMessageDelivered(event: MessageUpdateEvent.Delivered) {
         val nodeId = chatDataLink[event.messageId]
         if (nodeId === null) {
             log.debug("Message Delivered update, Message id: ${event.messageId} does not exist in the current chat page")
@@ -270,18 +273,20 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
         (node.findViewById(R.id.timespan) as TextView).text = formatTimeStamp(event.deliveredTimestamp)
     }
 
-    private fun handleNewMessageDisplay (newMessage: ConversationMessage) {
+    private fun handleNewMessageDisplay(newMessage: ConversationMessage) {
         chatList.addView(createMessageNode(newMessage.conversationMessageInfo))
         scrollToBottom()
     }
 
-    private fun setListeners () {
+    private fun setListeners() {
         messengerService.addNewMessageListener({ onNewMessage(it) })
         messengerService.addMessageUpdateListener({ onMessageUpdate(it) })
+        contactService.addContactListener { onContactEvent(it) }
     }
 
-    private fun clearListners () {
+    private fun clearListners() {
         messengerService.clearListeners()
+        contactService.clearListeners()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -303,27 +308,68 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
         mDrawerList.adapter = arrayAdapter
     }
 
-    private fun createRightDrawerMenu () {
+    private fun createRightDrawerMenu() {
         mDrawerList = findViewById(R.id.right_drawer) as ListView
         mDrawerLayout = findViewById(R.id.drawer_layout) as DrawerLayout
         addDrawerItems()
 
         mDrawerList.onItemClickListener =
                 AdapterView.OnItemClickListener { adapterView, view, position, l ->
-                    when (menuArray[position].toLowerCase()) {
+                    when(menuArray[position].toLowerCase()) {
                         "contact info" -> {
-                            log.debug("contact info clicked")
+                            loadContactInfo()
+                        }
+                        "delete contact" -> {
+                            openConfirmationDialog("Delete contact", "Are you sure you want to delete this contact?", { deleteContact() })
                         }
                         "block" -> {
-                            log.debug("block clicked")
+                            openConfirmationDialog("Block contact", "Are you sure you want to block this contact?", { blockContact() })
                         }
                         "delete conversation" -> {
-                            log.debug("delete conversation clicked")
+                            openConfirmationDialog("Delete conversation", "Are you sure you want to delete this whole conversation?", { deleteConversation() })
                         }
                     }
 
                     mDrawerLayout.closeDrawer(mDrawerList)
                 }
+    }
+
+    private fun loadContactInfo() {
+        val intent = Intent(baseContext, ContactInfoActivity::class.java)
+        intent.putExtra("EXTRA_USERID", userId)
+        intent.putExtra("EXTRA_USER_NAME", contactInfo.name)
+        intent.putExtra("EXTRA_USER_EMAIL", contactInfo.email)
+        intent.putExtra("EXTRA_USER_PUBKEY", contactInfo.publicKey)
+        startActivity(intent)
+    }
+
+    private fun blockContact() {
+        contactService.blockContact(UserId(userId)) failUi {
+            log.info("Failed to block user id : $userId")
+        }
+    }
+
+    private fun deleteConversation() {
+        messengerService.deleteConversation(UserId(userId)) failUi {
+            log.debug("Failed to delete the conversation")
+        }
+    }
+
+    private fun deleteContact() {
+        contactService.deleteContact(contactInfo) successUi {
+            if (!it)
+                log.info("Failed to delete user id : ${contactInfo.email}")
+        } failUi {
+            log.debug("Failed to delete user id : ${contactInfo.email}")
+        }
+    }
+
+    private fun openConfirmationDialog(title: String, message: String, callBack: () -> Unit) {
+        AlertDialog.Builder(this).setTitle(title).setMessage(message)
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .setPositiveButton(android.R.string.yes, DialogInterface.OnClickListener { dialog: DialogInterface, whichButton: Int ->
+                callBack()
+        }).setNegativeButton(android.R.string.no, null).show()
     }
 
     override fun setAppActivity() {

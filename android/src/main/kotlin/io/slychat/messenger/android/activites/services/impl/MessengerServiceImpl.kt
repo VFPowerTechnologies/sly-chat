@@ -31,11 +31,11 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
     private val messengerService = usercomponent.messengerService
 
     override fun fetchAllConversation (): Promise<MutableMap<UserId, UserConversation>, Exception> {
+        conversations = mutableMapOf()
         return messageService.getAllUserConversations() map { convo ->
             convo.forEach {
                 conversations.put(it.contact.id, it)
             }
-        } map {
             conversations
         }
     }
@@ -85,6 +85,10 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
 
     override fun sendMessageTo (userId: UserId, message: String, ttl: Long): Promise<Unit, Exception> {
         return messengerService.sendMessageTo(userId, message, ttl)
+    }
+
+    override fun deleteConversation (userId: UserId): Promise<Unit, Exception> {
+        return messageService.deleteAllMessages(ConversationId.Companion.invoke(userId))
     }
 
     private fun notifyNewMessage (info: ConversationMessage) {

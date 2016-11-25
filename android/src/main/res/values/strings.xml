@@ -54,6 +54,7 @@
 
     <string-array name="chat_menu_list">
         <item>Contact Info</item>
+        <item>Delete Contact</item>
         <item>Block</item>
         <item>Delete Conversation</item>
     </string-array>
