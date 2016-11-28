@@ -3,6 +3,8 @@ package io.slychat.messenger.android.activites
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
+import android.support.design.widget.NavigationView
+import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
@@ -32,7 +34,7 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
-class ChatActivity : AppCompatActivity(), BaseActivityInterface {
+class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.OnNavigationItemSelectedListener {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
@@ -44,11 +46,6 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
     private lateinit var submitBtn: ImageButton
     private lateinit var chatInput: EditText
     private lateinit var contactInfo: ContactInfo
-
-    private var arrayAdapter: ArrayAdapter<String>? = null
-    private lateinit var menuArray: Array<String>
-    private lateinit var mDrawerLayout: DrawerLayout
-    private lateinit var mDrawerList: ListView
 
     private var userId: Long = -1
     private var chatDataLink: MutableMap<String, Int> = mutableMapOf()
@@ -66,13 +63,20 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_chat)
 
-        val actionBar = findViewById(R.id.my_toolbar) as Toolbar
+        val actionBar = findViewById(R.id.chat_toolbar) as Toolbar
         actionBar.title = ""
         setSupportActionBar(actionBar)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        createRightDrawerMenu()
+        val navigationView = findViewById(R.id.chat_nav_view) as NavigationView
+        navigationView.setNavigationItemSelectedListener(this)
+
+        val drawerName = navigationView.getHeaderView(0).findViewById(R.id.drawer_user_name) as TextView
+        val drawerEmail = navigationView.getHeaderView(0).findViewById(R.id.drawer_user_email) as TextView
+
+        drawerEmail.text = app.accountInfo?.email
+        drawerName.text = app.accountInfo?.name
 
         messengerService = MessengerServiceImpl(this)
         contactService = ContactServiceImpl(this)
@@ -93,7 +97,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
                 finish()
             else {
                 contactInfo = it
-                val actionBar = findViewById(R.id.my_toolbar) as Toolbar
+                val actionBar = findViewById(R.id.chat_toolbar) as Toolbar
                 actionBar.title = it.name
             }
         } failUi {
@@ -296,42 +300,13 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
-            R.id.action_menu -> { mDrawerLayout.openDrawer(Gravity.END)}
+            R.id.action_menu -> {
+                val drawer = findViewById(R.id.chat_drawer_layout) as DrawerLayout
+                drawer.openDrawer(Gravity.END)
+            }
             android.R.id.home -> { finish() }
         }
         return super.onOptionsItemSelected(item)
-    }
-
-    private fun addDrawerItems() {
-        menuArray = resources.getStringArray(R.array.chat_menu_list)
-        arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, menuArray)
-        mDrawerList.adapter = arrayAdapter
-    }
-
-    private fun createRightDrawerMenu() {
-        mDrawerList = findViewById(R.id.right_drawer) as ListView
-        mDrawerLayout = findViewById(R.id.drawer_layout) as DrawerLayout
-        addDrawerItems()
-
-        mDrawerList.onItemClickListener =
-                AdapterView.OnItemClickListener { adapterView, view, position, l ->
-                    when(menuArray[position].toLowerCase()) {
-                        "contact info" -> {
-                            loadContactInfo()
-                        }
-                        "delete contact" -> {
-                            openConfirmationDialog("Delete contact", "Are you sure you want to delete this contact?", { deleteContact() })
-                        }
-                        "block" -> {
-                            openConfirmationDialog("Block contact", "Are you sure you want to block this contact?", { blockContact() })
-                        }
-                        "delete conversation" -> {
-                            openConfirmationDialog("Delete conversation", "Are you sure you want to delete this whole conversation?", { deleteConversation() })
-                        }
-                    }
-
-                    mDrawerLayout.closeDrawer(mDrawerList)
-                }
     }
 
     private fun loadContactInfo() {
@@ -370,6 +345,28 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface {
             .setPositiveButton(android.R.string.yes, DialogInterface.OnClickListener { dialog: DialogInterface, whichButton: Int ->
                 callBack()
         }).setNegativeButton(android.R.string.no, null).show()
+    }
+
+    override fun onBackPressed() {
+        val drawer = findViewById(R.id.chat_drawer_layout) as DrawerLayout
+        if(drawer.isDrawerOpen(GravityCompat.END)) {
+            drawer.closeDrawer(GravityCompat.END)
+        } else {
+            super.onBackPressed()
+        }
+    }
+
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        when(item.itemId) {
+            R.id.menu_block_contact -> { openConfirmationDialog("Block contact", "Are you sure you want to block this contact?", { blockContact() }) }
+            R.id.menu_delete_contact -> { openConfirmationDialog("Delete contact", "Are you sure you want to delete this contact?", { deleteContact() }) }
+            R.id.menu_delete_conversation -> { openConfirmationDialog("Delete conversation", "Are you sure you want to delete this whole conversation?", { deleteConversation() }) }
+            R.id.menu_contact_info -> { loadContactInfo() }
+        }
+
+        val drawer = findViewById(R.id.chat_drawer_layout) as DrawerLayout
+        drawer.closeDrawer(GravityCompat.END)
+        return true
     }
 
     override fun setAppActivity() {

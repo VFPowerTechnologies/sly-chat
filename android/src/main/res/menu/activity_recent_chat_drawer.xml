@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group>
+        <item
+                android:id="@+id/menu_profile"
+                android:icon="@drawable/ic_person_white"
+                android:title="@string/drawer_profile"/>
+        <item
+                android:id="@+id/menu_settings"
+                android:icon="@drawable/ic_settings_white"
+                android:title="@string/drawer_settings"/>
+        <item
+                android:id="@+id/menu_add_contact"
+                android:icon="@drawable/ic_person_add_white_24dp"
+                android:title="@string/drawer_add_contact"/>
+        <item
+                android:id="@+id/menu_blocked_contacts"
+                android:icon="@drawable/ic_block_white"
+                android:title="@string/drawer_blocked_contacts"/>
+        <item
+                android:id="@+id/menu_share"
+                android:icon="@drawable/ic_action_share_white"
+                android:title="@string/drawer_share"/>
+        <item
+                android:id="@+id/menu_feedback"
+                android:icon="@android:drawable/ic_menu_send"
+                android:title="@string/drawer_feedback"/>
+    </group>
+
+    <item android:title="">
+        <menu>
+            <item
+                android:icon="@drawable/ic_action_exit"
+                android:title="@string/drawer_logout"
+                android:id="@+id/menu_logout"/>
+        </menu>
+    </item>
+
+</menu>

@@ -3,6 +3,8 @@ package io.slychat.messenger.android.activites
 import android.content.Intent
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
+import android.support.design.widget.NavigationView
+import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
@@ -31,24 +33,18 @@ import io.slychat.messenger.services.messaging.ConversationMessage
 import nl.komponents.kovenant.ui.successUi
 import rx.Subscription
 
-class RecentChatActivity : AppCompatActivity(), BaseActivityInterface {
+class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.OnNavigationItemSelectedListener {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
-
-    private var arrayAdapter: ArrayAdapter<String>? = null
-    private lateinit var menuArray: Array<String>
-    private lateinit var mDrawerLayout : DrawerLayout
-    private lateinit var mDrawerList : ListView
 
     private lateinit var recentChatList: LinearLayout
     private lateinit var contactFloatBtn: FloatingActionButton
 
     private var loginListener: Subscription? = null
+    private lateinit var messengerService: MessengerServiceImpl
 
     private var recentNodeData: MutableMap<UserId, Int> = mutableMapOf()
-
-    private lateinit var messengerService: MessengerServiceImpl
 
     override fun onCreate (savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,8 +55,9 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface {
 
         app = AndroidApp.get(this)
         messengerService = MessengerServiceImpl(this)
+        messengerService = MessengerServiceImpl(this)
 
-        val actionBar = findViewById(R.id.my_toolbar) as Toolbar
+        val actionBar = findViewById(R.id.recent_chat_toolbar) as Toolbar
         actionBar.title = "  Sly Chat"
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP)
             actionBar.logo = getDrawable(R.drawable.ic_launcher)
@@ -68,10 +65,18 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface {
             actionBar.logo = resources.getDrawable(R.drawable.ic_launcher)
 
         setSupportActionBar(actionBar)
-        createRightDrawerMenu()
+
+        val navigationView = findViewById(R.id.nav_recent_chat_view) as NavigationView
+        navigationView.setNavigationItemSelectedListener(this)
 
         recentChatList = findViewById(R.id.recent_chat_container) as LinearLayout
         contactFloatBtn = findViewById(R.id.contact_float_btn) as FloatingActionButton
+
+        val drawerName = navigationView.getHeaderView(0).findViewById(R.id.drawer_user_name) as TextView//findViewById(R.id.drawer_user_name) as TextView
+        val drawerEmail = navigationView.getHeaderView(0).findViewById(R.id.drawer_user_email) as TextView//findViewById(R.id.drawer_user_name) as TextView
+
+        drawerEmail.text = app.accountInfo?.email
+        drawerName.text = app.accountInfo?.name
 
         createEventListeners()
     }
@@ -178,6 +183,15 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface {
         finish()
     }
 
+    override fun onBackPressed() {
+        val drawer = findViewById(R.id.recent_chat_drawer_layout) as DrawerLayout
+        if (drawer.isDrawerOpen(GravityCompat.END)) {
+            drawer.closeDrawer(GravityCompat.END)
+        } else {
+            super.onBackPressed()
+        }
+    }
+
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.layout_menu, menu)
         return super.onCreateOptionsMenu(menu)
@@ -185,53 +199,34 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface {
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
-            R.id.action_menu -> { mDrawerLayout.openDrawer(Gravity.END)}
+            R.id.action_menu -> {
+                val mDrawerLayout = findViewById(R.id.recent_chat_drawer_layout) as DrawerLayout
+                mDrawerLayout.openDrawer(Gravity.END)
+            }
         }
         return super.onOptionsItemSelected(item)
     }
 
-    private fun addDrawerItems() {
-        menuArray = resources.getStringArray(R.array.main_menu_list)
-        arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, menuArray)
-        mDrawerList.adapter = arrayAdapter
-    }
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        val id = item.itemId
 
-    private fun createRightDrawerMenu () {
-        mDrawerList = findViewById(R.id.right_drawer) as ListView
-        mDrawerLayout = findViewById(R.id.drawer_layout) as DrawerLayout
-        addDrawerItems()
+        if (id == R.id.menu_profile) {
+            startActivity(Intent(baseContext, ProfileActivity::class.java))
+        } else if (id == R.id.menu_add_contact) {
+            startActivity(Intent(baseContext, AddContactActivity::class.java))
+        } else if (id == R.id.menu_blocked_contacts) {
 
-        mDrawerList.onItemClickListener =
-            OnItemClickListener { adapterView, view, position, l ->
-                when (menuArray[position].toLowerCase()) {
-                    "profile" -> {
-                        startActivity(Intent(baseContext, ProfileActivity::class.java))
-                    }
-                    "settings" -> {
-                        startActivity(Intent(baseContext, SettingsActivity::class.java))
-                    }
-                    "add contact" -> {
-                        startActivity(Intent(baseContext, AddContactActivity::class.java))
-                    }
-                    "blocked contacts" -> {
-                        log.debug("Blocked Contacts")
-                    }
-                    "create group" -> {
-                        log.debug("Create Group")
-                    }
-                    "invite friends" -> {
-                        startActivity(Intent(baseContext, InviteFriendsActivity::class.java))
-                    }
-                    "feedback" -> {
-                        startActivity(Intent(baseContext, FeedbackActivity::class.java))
-                    }
-                    "logout" -> {
-                        app.app.logout()
-                    }
-                }
+        } else if (id == R.id.menu_settings) {
+            startActivity(Intent(baseContext, SettingsActivity::class.java))
+        } else if (id == R.id.menu_share) {
+            startActivity(Intent(baseContext, InviteFriendsActivity::class.java))
+        } else if (id == R.id.menu_logout) {
+            app.app.logout()
+        }
 
-                mDrawerLayout.closeDrawer(mDrawerList)
-            }
+        val drawer = findViewById(R.id.recent_chat_drawer_layout) as DrawerLayout
+        drawer.closeDrawer(GravityCompat.END)
+        return true
     }
 
     private fun dispatchEvent () {

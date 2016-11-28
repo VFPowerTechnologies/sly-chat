@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+            android:id="@+id/menu_contact_info"
+            android:icon="@drawable/ic_person_white"
+            android:title="@string/drawer_contact_info"/>
+    <item
+            android:id="@+id/menu_delete_contact"
+            android:icon="@drawable/ic_delete_forever_white"
+            android:title="@string/drawer_delete_contact"/>
+    <item
+            android:id="@+id/menu_block_contact"
+            android:icon="@drawable/ic_block_white"
+            android:title="@string/drawer_block_contact"/>
+    <item
+            android:id="@+id/menu_delete_conversation"
+            android:icon="@drawable/ic_delete_white"
+            android:title="@string/drawer_delete_conversation"/>
+
+</menu>
