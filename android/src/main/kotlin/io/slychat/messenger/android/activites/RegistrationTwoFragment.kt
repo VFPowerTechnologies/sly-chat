@@ -91,7 +91,6 @@ class RegistrationTwoFragment: Fragment() {
 
     override fun onPause() {
         log.debug("onPause")
-        mainActivity.unsubscribeRegistrationListener()
         super.onPause()
     }
 
@@ -102,7 +101,6 @@ class RegistrationTwoFragment: Fragment() {
 
     override fun onResume() {
         log.debug("onResume")
-        mainActivity.setRegistrationListener()
         super.onResume()
     }
 

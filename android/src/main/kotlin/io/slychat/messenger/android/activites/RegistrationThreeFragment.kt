@@ -76,7 +76,6 @@ class RegistrationThreeFragment: Fragment() {
 
     override fun onPause() {
         log.debug("onPause")
-        mainActivity.unsubscribeRegistrationListener()
         super.onPause()
     }
 
@@ -87,7 +86,6 @@ class RegistrationThreeFragment: Fragment() {
 
     override fun onResume() {
         log.debug("onResume")
-        mainActivity.setRegistrationListener()
         super.onResume()
     }
 

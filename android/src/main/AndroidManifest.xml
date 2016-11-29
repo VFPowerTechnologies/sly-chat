@@ -75,11 +75,7 @@
                 android:name=".NotificationStopService"
                 android:exported="false"/>
 
-        <activity android:name=".activites.LoginActivity"/>
-        <activity android:name=".activites.RegisterActivity"/>
         <activity android:name=".activites.RecentChatActivity"/>
-        <activity android:name=".activites.SmsVerificationActivity"/>
-        <activity android:name=".activites.UpdatePhoneActivity"/>
         <activity android:name=".activites.ContactActivity"/>
         <activity android:name=".activites.ChatActivity" android:windowSoftInputMode="stateAlwaysHidden|adjustResize"/>
         <activity android:name=".activites.AddContactActivity"/>

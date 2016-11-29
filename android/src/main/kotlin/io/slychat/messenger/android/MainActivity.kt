@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.View
+import android.view.WindowManager
 import android.widget.LinearLayout
 import com.google.android.gms.common.GoogleApiAvailability
 import io.slychat.messenger.android.activites.*
