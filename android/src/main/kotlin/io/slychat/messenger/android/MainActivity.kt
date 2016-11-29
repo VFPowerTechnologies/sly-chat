@@ -2,14 +2,16 @@ package io.slychat.messenger.android
 
 import android.app.AlertDialog
 import android.app.Dialog
+import android.app.ProgressDialog
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.view.WindowManager
+import android.view.View
+import android.widget.LinearLayout
 import com.google.android.gms.common.GoogleApiAvailability
-import io.slychat.messenger.android.activites.LoginActivity
-import io.slychat.messenger.android.activites.RecentChatActivity
+import io.slychat.messenger.android.activites.*
 import io.slychat.messenger.services.LoginEvent
+import io.slychat.messenger.services.RegistrationProgress
 import io.slychat.messenger.services.ui.clearAllListenersOnDispatcher
 import org.slf4j.LoggerFactory
 import rx.Subscription
@@ -26,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var loginListener : Subscription? = null
+    private var registrationListener : Subscription? = null
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -36,6 +39,17 @@ class MainActivity : AppCompatActivity() {
     private var loadCompleteSubscription: Subscription? = null
 
     private lateinit var app: AndroidApp
+
+    lateinit var progressDialog: ProgressDialog
+
+    data class RegistrationInfo(
+        var name: String,
+        var phoneNumber: String,
+        var email: String,
+        var password: String
+    )
+
+    var registrationInfo = RegistrationInfo("", "", "", "")
 //
 //    /** Returns the initial page to launch after login, if any. Used when invoked via a notification intent. */
 //    private fun getInitialPage(intent: Intent): String? {
@@ -78,7 +92,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         app = AndroidApp.get(this)
-
         //XXX make optional? enable by default and change on user login after reading config
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
 
@@ -87,6 +100,11 @@ class MainActivity : AppCompatActivity() {
 
         //display loading screen and wait for app to finish loading
         setContentView(R.layout.activity_main)
+
+        progressDialog = ProgressDialog(this)
+        progressDialog.isIndeterminate = true
+        progressDialog.setCancelable(false)
+        progressDialog.setCanceledOnTouchOutside(false)
     }
 
     private fun subToLoadComplete() {
@@ -157,31 +175,39 @@ class MainActivity : AppCompatActivity() {
         setLoginListener()
     }
 
-    private fun setLoginListener () {
-        val app = AndroidApp.get(this)
+    private fun setLoginListener() {
         loginListener?.unsubscribe()
-        loginListener = app.app.loginEvents.subscribe {
-            handleLoginEvent(it)
-        }
+        loginListener = app.app.loginEvents.subscribe { handleLoginEvent(it) }
     }
 
-    private fun unsubscribeListeners () {
+    fun setRegistrationListener() {
+        registrationListener?.unsubscribe()
+        registrationListener = app.appComponent.registrationService.registrationEvents.subscribe { handleRegistrationEvents(it) }
+    }
+
+
+    private fun unsubscribeListeners() {
+        registrationListener?.unsubscribe()
         loginListener?.unsubscribe()
     }
 
-    private fun handleLoginEvent (event: LoginEvent) {
-        when (event) {
+    private fun handleLoginEvent(event: LoginEvent) {
+        when(event) {
             is LoginEvent.LoggedIn -> {
                 handleLoggedInEvent(event)
             }
             is LoginEvent.LoggedOut -> { handleLoggedOutEvent() }
             is LoginEvent.LoggingIn -> { log.debug("logging in") }
-            is LoginEvent.LoginFailed -> { log.debug("login failed") }
+            is LoginEvent.LoginFailed -> {
+                if (event.errorMessage == "Phone confirmation needed")
+                    startSmsVerification("login")
+            }
         }
     }
 
-    private fun handleLoggedInEvent (state: LoginEvent.LoggedIn) {
+    private fun handleLoggedInEvent(state: LoginEvent.LoggedIn) {
         log.debug("logged in")
+        hideProgressDialog()
         app.accountInfo = state.accountInfo
         app.publicKey = state.publicKey
         val intent = Intent(baseContext, RecentChatActivity::class.java)
@@ -191,9 +217,85 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleLoggedOutEvent () {
         log.debug("logged out")
-        val intent = Intent(baseContext, LoginActivity::class.java)
-        startActivity(intent)
-        finish()
+
+        var fragment = supportFragmentManager.findFragmentById(R.id.main_frag_container)
+        if (fragment == null) {
+            fragment = LoginFragment()
+            fragment.view?.isFocusableInTouchMode = true
+            fragment.view?.requestFocus()
+
+            supportFragmentManager.beginTransaction().add(R.id.main_frag_container, LoginFragment()).commit()
+            showFragContainer()
+        }
+    }
+
+    private fun handleRegistrationEvents (event: RegistrationProgress) {
+        when (event) {
+            is RegistrationProgress.Complete -> { handleRegistrationComplete(event) }
+            is RegistrationProgress.Update -> {
+                setProgressDialogMessage(event.progressText)
+            }
+            is RegistrationProgress.Error -> {
+                hideProgressDialog()
+                log.debug("registration error", event.cause)
+            }
+            is RegistrationProgress.Waiting -> { log.debug("registration waiting") }
+        }
+    }
+
+    private fun handleRegistrationComplete (event: RegistrationProgress.Complete) {
+        app.appComponent.registrationService.resetState()
+        hideProgressDialog()
+
+        if (event.successful) {
+            startSmsVerification("registration")
+        }
+        else {
+            log.debug(event.errorMessage)
+        }
+    }
+
+    fun startSmsVerification(fragmentId: String) {
+        hideProgressDialog()
+        val fragment = SmsVerificationFragment()
+        val bundle = Bundle()
+        bundle.putString("EXTRA_EMAIL", registrationInfo.email)
+        bundle.putString("EXTRA_PASSWORD", registrationInfo.password)
+
+        fragment.view?.isFocusableInTouchMode = true
+        fragment.view?.requestFocus()
+        fragment.arguments = bundle
+        supportFragmentManager.beginTransaction().replace(R.id.main_frag_container, fragment).addToBackStack(fragmentId).commit()
+    }
+
+    private fun showFragContainer() {
+        val splashImage = findViewById(R.id.splashImageView) as LinearLayout
+        splashImage.visibility = View.GONE
+
+        val container = findViewById(R.id.main_frag_container) as LinearLayout
+        container.visibility = View.VISIBLE
+    }
+
+    fun showProgressDialog(message: String) {
+        progressDialog.setMessage(message)
+        progressDialog.show()
+    }
+
+    fun hideProgressDialog() {
+        progressDialog.dismiss()
+    }
+
+    fun setProgressDialogMessage(message: String) {
+        progressDialog.setMessage(message)
+    }
+
+    override fun onBackPressed() {
+        if(supportFragmentManager.backStackEntryCount > 0) {
+            supportFragmentManager.popBackStack()
+        }
+        else {
+            super.onBackPressed()
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -251,6 +353,7 @@ class MainActivity : AppCompatActivity() {
         log.debug("onResume")
         super.onResume()
         setAppActivity()
+        setLoginListener()
 
         if (!isInitialized)
             subToLoadComplete()

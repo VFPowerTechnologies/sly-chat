@@ -24,6 +24,7 @@
                 android:name=".MainActivity"
                 android:configChanges="orientation|screenSize"
                 android:label="@string/title_activity_main"
+                android:windowSoftInputMode="adjustResize"
                 android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

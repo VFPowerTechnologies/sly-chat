@@ -22,6 +22,7 @@ import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
 import android.widget.AdapterView.OnItemClickListener
+import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
 import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
@@ -179,7 +180,7 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
     }
 
     private fun processLogout () {
-        startActivity(Intent(baseContext, LoginActivity::class.java))
+        startActivity(Intent(baseContext, MainActivity::class.java))
         finish()
     }
 
