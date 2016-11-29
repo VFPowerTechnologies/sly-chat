@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:id="@+id/chat_node"
-    android:layout_gravity="end">
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:emjicon="http://schemas.android.com/apk/res-auto"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/chat_node"
+        android:layout_gravity="end">
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
@@ -19,11 +20,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center">
-            <TextView
+            <hani.momanii.supernova_emoji_library.Helper.EmojiconTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:text=""
+                    emjicon:emojiconSize="20dp"
                     android:id="@+id/message" android:layout_gravity="end" android:minWidth="50dp"/>
         </LinearLayout>
         <LinearLayout

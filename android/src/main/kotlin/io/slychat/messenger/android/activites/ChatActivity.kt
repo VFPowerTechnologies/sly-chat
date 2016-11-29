@@ -16,6 +16,8 @@ import android.view.Gravity
 import android.view.View
 import android.view.LayoutInflater
 import android.widget.*
+import hani.momanii.supernova_emoji_library.Actions.EmojIconActions
+import hani.momanii.supernova_emoji_library.Helper.EmojiconEditText
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import io.slychat.messenger.android.activites.services.ContactService
@@ -78,16 +80,23 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
         drawerEmail.text = app.accountInfo?.email
         drawerName.text = app.accountInfo?.name
 
-        messengerService = MessengerServiceImpl(this)
-        contactService = ContactServiceImpl(this)
-
-        getContactInfo()
-
         chatList = findViewById(R.id.chat_list) as LinearLayout
         chatScrollView = findViewById(R.id.chat_list_scrollview) as ScrollView
         submitBtn = findViewById(R.id.submit_chat_btn) as ImageButton
         chatInput = findViewById(R.id.chat_input) as EditText
 
+        val rootView = findViewById(R.id.chat_root_view)
+        val emojiButton = findViewById(R.id.chat_emoji_button) as ImageButton
+        val emojiInput = chatInput as EmojiconEditText
+
+        val emojIcon = EmojIconActions(this, rootView, emojiInput, emojiButton, "#ffffff","#222222","#222222")
+        emojIcon.ShowEmojIcon()
+        emojIcon.setIconsIds(R.drawable.ic_keyboard, R.drawable.ic_tag_faces)
+
+        messengerService = MessengerServiceImpl(this)
+        contactService = ContactServiceImpl(this)
+
+        getContactInfo()
         createEventListeners()
     }
 

@@ -69,6 +69,11 @@ dependencies {
     compile "com.android.support:design:$versions.appcompatv7"
     compile "org.ocpsoft.prettytime:prettytime:$versions.prettyTime"
 
+    repositories {
+        maven { url "https://dl.bintray.com/hani-momanii/maven"}
+    }
+    compile 'hani.momanii.supernova_emoji_library:supernova-emoji-library:0.0.2'
+
 }
 
 apply plugin: 'com.google.gms.google-services'

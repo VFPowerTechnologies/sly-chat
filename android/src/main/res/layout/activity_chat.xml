@@ -9,7 +9,11 @@
         android:fitsSystemWindows="true"
         tools:openDrawer="end">
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/chat_root_view"
+            android:orientation="vertical">
 
         <android.support.design.widget.AppBarLayout
                 android:layout_height="wrap_content"
@@ -52,7 +56,16 @@
                     android:layout_alignParentBottom="true"
                     android:background="@drawable/chat_input_bg"
                     android:id="@+id/chat_input_container">
-                <EditText
+                <ImageButton
+                        android:id="@+id/expire_chat_btn"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight=".1"
+                        android:src="@drawable/smiley"
+                        android:background="@null"
+                        android:paddingStart="5dp"
+                        android:layout_gravity="center_vertical"/>
+                <hani.momanii.supernova_emoji_library.Helper.EmojiconEditText
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:id="@+id/chat_input"
@@ -65,14 +78,21 @@
                         android:minHeight="50dp"
                         android:maxHeight="100dp"/>
                 <ImageButton
+                        android:id="@+id/chat_emoji_button"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight=".1"
+                        android:src="@drawable/ic_tag_faces"
+                        android:background="@null"
+                        android:layout_gravity="center_vertical"/>
+                <ImageButton
                         android:id="@+id/submit_chat_btn"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight=".1"
                         android:src="@drawable/ic_send_white"
                         android:background="@null"
-                        android:layout_gravity="center_vertical">
-                </ImageButton>
+                        android:layout_gravity="center_vertical"/>
             </LinearLayout>
         </RelativeLayout>
     </LinearLayout>
