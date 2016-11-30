@@ -1,8 +1,8 @@
 package io.slychat.messenger.ios.ui
 
 import apple.foundation.NSBundle
+import apple.foundation.NSNumber
 import apple.foundation.NSURL
-import apple.foundation.NSURLRequest
 import apple.uikit.UIColor
 import apple.uikit.UIScreen
 import apple.uikit.UIView
@@ -54,6 +54,11 @@ class WebViewController private constructor(peer: Pointer) : UIViewController(pe
         val configuration = WKWebViewConfiguration.alloc().init()
         val userContentController = WKUserContentController.alloc().init()
         configuration.setUserContentController(userContentController)
+        //tested on ios 9
+        //required to let XHR requests access file:// urls
+        //requires its value to implement boolValue, so since neither moe's java bool/int classes do, we create an
+        //NSNumber directly
+        configuration.preferences().setValueForKey(NSNumber.alloc().initWithBool(true), "allowFileAccessFromFileURLs")
 
         val webView = WKWebView.alloc().initWithFrameConfiguration(contentView.frame(), configuration)
 
@@ -64,12 +69,16 @@ class WebViewController private constructor(peer: Pointer) : UIViewController(pe
         registerCoreServicesOnDispatcher(dispatcher, appComponent)
 
         val path = NSBundle.mainBundle().pathForResourceOfTypeInDirectory("index", "html", "ui")
-        if (path != null)
-            webView.loadRequest(NSURLRequest.requestWithURL(NSURL.fileURLWithPath(path)))
+
+        if (path != null) {
+            val indexURL = NSURL.fileURLWithPath(path)
+            val base = indexURL.URLByDeletingLastPathComponent()
+
+            webView.loadFileURLAllowingReadAccessToURL(indexURL, base)
+        }
         else
             log.error("Unable to find ui/index.html resource in bundle")
 
         contentView.addSubview(webView)
     }
 }
-
