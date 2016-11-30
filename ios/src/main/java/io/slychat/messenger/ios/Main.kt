@@ -85,6 +85,8 @@ class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDel
         window.setBackgroundColor(UIColor.blackColor())
 
         window.makeKeyAndVisible()
+
+        setWindow(window)
     }
 
     override fun setWindow(value: UIWindow?) {

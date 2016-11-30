@@ -18,15 +18,24 @@ import org.moe.natj.general.Pointer
 import org.moe.natj.general.ann.Owned
 import org.moe.natj.general.ann.RegisterOnStartup
 import org.moe.natj.objc.ann.Selector
+import org.slf4j.LoggerFactory
 
 @RegisterOnStartup
 class WebViewController private constructor(peer: Pointer) : UIViewController(peer) {
-    @Selector("init")
-    external override fun init(): WebViewController
+    companion object {
+        @JvmStatic
+        @Owned
+        external fun alloc(): WebViewController
+    }
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var dispatcher: Dispatcher
 
     private lateinit var appComponent: ApplicationComponent
+
+    @Selector("init")
+    external override fun init(): WebViewController
 
     fun initWithAppComponent(applicationComponent: ApplicationComponent): WebViewController {
         init()
@@ -36,7 +45,7 @@ class WebViewController private constructor(peer: Pointer) : UIViewController(pe
         return this
     }
 
-    override fun viewDidLoad() {
+    override fun loadView() {
         val bounds = UIScreen.mainScreen().bounds()
         val contentView = UIView.alloc().initWithFrame(bounds)
         contentView.setBackgroundColor(UIColor.darkGrayColor())
@@ -52,24 +61,15 @@ class WebViewController private constructor(peer: Pointer) : UIViewController(pe
 
         dispatcher = Dispatcher(webEngineInterface)
 
-        println("Registering services")
         registerCoreServicesOnDispatcher(dispatcher, appComponent)
 
         val path = NSBundle.mainBundle().pathForResourceOfTypeInDirectory("index", "html", "ui")
-        if (path != null) {
-            println("Loading file at $path")
+        if (path != null)
             webView.loadRequest(NSURLRequest.requestWithURL(NSURL.fileURLWithPath(path)))
-        }
         else
-            println("Unable to find resource in bundle")
+            log.error("Unable to find ui/index.html resource in bundle")
 
         contentView.addSubview(webView)
-    }
-
-    companion object {
-        @JvmStatic
-        @Owned
-        external fun alloc(): WebViewController
     }
 }
 
