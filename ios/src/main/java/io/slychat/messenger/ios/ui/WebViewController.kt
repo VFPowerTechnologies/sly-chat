@@ -61,6 +61,8 @@ class WebViewController private constructor(peer: Pointer) : UIViewController(pe
         configuration.preferences().setValueForKey(NSNumber.alloc().initWithBool(true), "allowFileAccessFromFileURLs")
 
         val webView = WKWebView.alloc().initWithFrameConfiguration(contentView.frame(), configuration)
+        val scrollView = webView.scrollView()
+        scrollView.setBounces(false)
 
         val webEngineInterface = IOSWebEngineInterface(webView)
 
