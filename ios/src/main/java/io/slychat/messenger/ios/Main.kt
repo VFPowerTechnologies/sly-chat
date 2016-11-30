@@ -2,7 +2,10 @@ package io.slychat.messenger.ios
 
 import apple.NSObject
 import apple.foundation.NSDictionary
-import apple.uikit.*
+import apple.uikit.UIApplication
+import apple.uikit.UIColor
+import apple.uikit.UIScreen
+import apple.uikit.UIWindow
 import apple.uikit.c.UIKit
 import apple.uikit.protocol.UIApplicationDelegate
 import com.almworks.sqlite4java.SQLite
@@ -78,9 +81,8 @@ class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDel
         val window = UIWindow.alloc().initWithFrame(screen.bounds())
 
         val vc = WebViewController.alloc().initWithAppComponent(appComponent)
-        val navigationController = UINavigationController.alloc().initWithRootViewController(vc)
 
-        window.setRootViewController(navigationController)
+        window.setRootViewController(vc)
 
         window.setBackgroundColor(UIColor.blackColor())
 
