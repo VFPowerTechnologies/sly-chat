@@ -10,7 +10,7 @@ buildscript {
             roboVM: '1.13.0',
             jackson: '2.8.1',
             kovenant: '3.3.0',
-            libsignal: '2.2.0',
+            libsignal: '2.4.0',
             jodaTime: '2.9.2',
             sqlite4java: '1.0.392',
             spongycastle: '1.54.0.0',

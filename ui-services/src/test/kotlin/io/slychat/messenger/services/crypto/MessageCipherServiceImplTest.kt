@@ -152,16 +152,16 @@ class MessageCipherServiceImplTest {
             return preKeyStore.containsPreKey(preKeyId)
         }
 
-        override fun saveIdentity(name: String, identityKey: IdentityKey) {
-            return identityStore.saveIdentity(name, identityKey)
+        override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey) {
+            return identityStore.saveIdentity(address, identityKey)
         }
 
         override fun getIdentityKeyPair(): IdentityKeyPair {
             return identityStore.identityKeyPair
         }
 
-        override fun isTrustedIdentity(name: String, identityKey: IdentityKey): Boolean {
-            return identityStore.isTrustedIdentity(name, identityKey)
+        override fun isTrustedIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean {
+            return identityStore.isTrustedIdentity(address, identityKey)
         }
 
         override fun getLocalRegistrationId(): Int {
