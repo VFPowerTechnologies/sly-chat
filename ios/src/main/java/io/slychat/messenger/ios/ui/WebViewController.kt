@@ -7,6 +7,7 @@ import apple.uikit.UIColor
 import apple.uikit.UIScreen
 import apple.uikit.UIView
 import apple.uikit.UIViewController
+import apple.uikit.enums.UIViewAutoresizing
 import apple.webkit.WKUserContentController
 import apple.webkit.WKWebView
 import apple.webkit.WKWebViewConfiguration
@@ -61,6 +62,7 @@ class WebViewController private constructor(peer: Pointer) : UIViewController(pe
         configuration.preferences().setValueForKey(NSNumber.alloc().initWithBool(true), "allowFileAccessFromFileURLs")
 
         val webView = WKWebView.alloc().initWithFrameConfiguration(contentView.frame(), configuration)
+        webView.setAutoresizingMask(UIViewAutoresizing.FlexibleWidth or UIViewAutoresizing.FlexibleHeight)
         val scrollView = webView.scrollView()
         scrollView.setBounces(false)
 
