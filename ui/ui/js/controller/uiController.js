@@ -251,24 +251,24 @@ UIController.prototype = {
     },
 
     setAppTheme : function (theme) {
-        var body = $("body");
-        body.removeClass();
+        if(!isIos) {
+            var body = $("body");
+            body.removeClass();
 
-        switch (theme) {
-            case null:
-                body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.dafaultTheme]);
-            break;
+            switch (theme) {
+                case null:
+                    body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.dafaultTheme]);
+                    break;
 
-            case SettingsController.themesConfigName.darkTheme:
-                body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.darkTheme]);
-            break;
+                case SettingsController.themesConfigName.darkTheme:
+                    body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.darkTheme]);
+                    break;
 
-            case SettingsController.themesConfigName.whiteTheme:
-                if(!isIos)
-                    body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.whiteTheme]);
-                else
-                    body.addClass("theme-orange");
-            break;
+                case SettingsController.themesConfigName.whiteTheme:
+                    if (!isIos)
+                        body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.whiteTheme]);
+                    break;
+            }
         }
     }
 };
