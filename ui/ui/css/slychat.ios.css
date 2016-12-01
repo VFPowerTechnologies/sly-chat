@@ -14,3 +14,19 @@
 .expire-message-toggled #chatPageContent {
     padding-bottom: 100px;
 }
+
+#emojiPickerBtn {
+    display: none;
+}
+
+#newMessageInput {
+    padding-right: 20px;
+}
+
+.bottom-chat-toolbar .toolbar-inner {
+    padding: 0;
+}
+
+#inputChatExpireMessageBtn {
+    padding: 0;
+}
