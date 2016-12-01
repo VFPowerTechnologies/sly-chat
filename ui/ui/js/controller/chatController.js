@@ -140,13 +140,24 @@ ChatController.prototype = {
         messageNode.html(messageCore);
 
         if (!(expired instanceof jQuery)) {
-            messageNode.on("mouseheld", function () {
-                vibrate(50);
-                if (isGroup)
-                    this.openGroupMessageMenu(messageInfo, contact);
-                else
-                    this.openMessageMenu(message);
-            }.bind(this));
+            if(isIos) {
+                $$(messageNode).on("taphold", function () {
+                    vibrate(50);
+                    if (isGroup)
+                        this.openGroupMessageMenu(messageInfo, contact);
+                    else
+                        this.openMessageMenu(message);
+                }.bind(this));
+            }
+            else {
+                messageNode.on("mouseheld", function () {
+                    vibrate(50);
+                    if (isGroup)
+                        this.openGroupMessageMenu(messageInfo, contact);
+                    else
+                        this.openMessageMenu(message);
+                }.bind(this));
+            }
             messageNode.find(".timeago").timeago();
         }
 
@@ -244,10 +255,19 @@ ChatController.prototype = {
             }
             countdown();
 
-            messageNode.on("mouseheld", function () {
-                vibrate(50);
-                this.openMessageMenu(message);
-            }.bind(this));
+            if(isIos) {
+                $$(messageNode).on("taphold", function () {
+                    vibrate(50);
+                    this.openMessageMenu(message);
+                }.bind(this));
+            }
+            else {
+                messageNode.on("mouseheld", function () {
+                    vibrate(50);
+                    this.openMessageMenu(message);
+                }.bind(this));
+            }
+
             messageNode.find(".timeago").timeago();
 
             var messageCore = messageNode.find('.message');

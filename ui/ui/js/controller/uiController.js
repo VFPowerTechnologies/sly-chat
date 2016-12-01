@@ -165,7 +165,7 @@ UIController.prototype = {
         window.firstLoad = true;
         window.firstLogin = true;
 
-        window.slychat = new Framework7({
+        var options = {
             desktop: isDesktop,
             material: !isIos,
             cache: false,
@@ -176,7 +176,9 @@ UIController.prototype = {
             swipePanelNoFollow: true,
             modalTitle: 'Sly',
             template7Pages: true
-        });
+        };
+
+        window.slychat = new Framework7(options);
     },
 
     initMainView : function () {

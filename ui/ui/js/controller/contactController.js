@@ -196,10 +196,18 @@ ContactController.prototype  = {
             this.loadChatPage(contact);
         }.bind(this));
 
-        contactBlock.on("mouseheld", function () {
-            vibrate(50);
-            this.openContactMenu(contact);
-        }.bind(this));
+        if(isIos) {
+            $$(contactBlock).on("taphold", function () {
+                vibrate(50);
+                this.openContactMenu(contact);
+            }.bind(this));
+        }
+        else {
+            contactBlock.on("mouseheld", function () {
+                vibrate(50);
+                this.openContactMenu(contact);
+            }.bind(this));
+        }
 
         return contactBlock;
     },
@@ -338,10 +346,18 @@ ContactController.prototype  = {
                 this.loadChatPage(conversation.contact);
         }.bind(this));
 
-        recentDiv.on("mouseheld", function () {
-            vibrate(50);
-            this.openConversationMenu(conversation.contact);
-        }.bind(this));
+        if(isIos) {
+            $$(recentDiv).on("taphold", function () {
+                vibrate(50);
+                this.openConversationMenu(conversation.contact);
+            }.bind(this));
+        }
+        else {
+            recentDiv.on("mouseheld", function () {
+                vibrate(50);
+                this.openConversationMenu(conversation.contact);
+            }.bind(this));
+        }
 
         recentDiv.find(".timeago").timeago();
 
@@ -385,10 +401,18 @@ ContactController.prototype  = {
             contactController.loadChatPage(groupDetail.group, true, true);
         }.bind(this));
 
-        recentDiv.on("mouseheld", function () {
-            vibrate(50);
-            this.openGroupConversationMenu(groupDetail.group.id);
-        }.bind(this));
+        if(isIos) {
+            $$(recentDiv).on("taphold", function () {
+                vibrate(50);
+                this.openGroupConversationMenu(groupDetail.group.id);
+            }.bind(this));
+        }
+        else {
+            recentDiv.on("mouseheld", function () {
+                vibrate(50);
+                this.openGroupConversationMenu(groupDetail.group.id);
+            }.bind(this));
+        }
 
         recentDiv.find(".timeago").timeago();
 

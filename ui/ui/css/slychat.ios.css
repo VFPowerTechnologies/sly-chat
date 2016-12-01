@@ -30,3 +30,15 @@
 #inputChatExpireMessageBtn {
     padding: 0;
 }
+
+#contactPopup .tab-link {
+    color: #222;
+}
+
+#contactPopup .tab-link.active {
+    color: #ff9500;
+}
+
+#chat-content {
+    margin-bottom: 48px;
+}

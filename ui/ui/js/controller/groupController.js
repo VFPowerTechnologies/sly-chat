@@ -202,10 +202,18 @@ GroupController.prototype = {
             contactController.loadChatPage(groupDetails.group, true, true);
         });
 
-        node.on("mouseheld", function () {
-            vibrate(50);
-            this.openGroupNodeMenu(groupDetails.group.id);
-        }.bind(this));
+        if(isIos) {
+            $$(node).on("taphold", function () {
+                vibrate(50);
+                this.openGroupNodeMenu(groupDetails.group.id);
+            }.bind(this));
+        }
+        else {
+            node.on("mouseheld", function () {
+                vibrate(50);
+                this.openGroupNodeMenu(groupDetails.group.id);
+            }.bind(this));
+        }
 
         return node;
     },
@@ -590,10 +598,18 @@ GroupController.prototype = {
             node.find(".group-info-member-hidden").toggle();
         });
 
-        node.on('mouseheld', function(e) {
-            vibrate(50);
-            this.openGroupMemberMenu(member);
-        }.bind(this));
+        if(isIos) {
+            $$(node).on('taphold', function (e) {
+                vibrate(50);
+                this.openGroupMemberMenu(member);
+            }.bind(this));
+        }
+        else {
+            node.on('mouseheld', function (e) {
+                vibrate(50);
+                this.openGroupMemberMenu(member);
+            }.bind(this));
+        }
 
         return node;
     },
