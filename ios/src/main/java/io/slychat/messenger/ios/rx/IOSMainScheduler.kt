@@ -1,4 +1,4 @@
-package io.slychat.messenger.ios
+package io.slychat.messenger.ios.rx
 
 import apple.c.Globals
 import rx.Scheduler

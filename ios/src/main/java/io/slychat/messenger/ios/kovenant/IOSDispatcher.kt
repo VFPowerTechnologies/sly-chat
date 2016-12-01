@@ -1,4 +1,4 @@
-package io.slychat.messenger.ios
+package io.slychat.messenger.ios.kovenant
 
 import apple.c.Globals
 import apple.foundation.NSThread
