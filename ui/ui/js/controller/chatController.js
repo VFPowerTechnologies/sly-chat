@@ -724,7 +724,7 @@ ChatController.prototype = {
         }
 
         var newMessageInput = $("#newMessageInput"), message;
-        if (isDesktop) {
+        if (!isAndroid) {
             message = newMessageInput.val();
         }
         else {
@@ -758,7 +758,7 @@ ChatController.prototype = {
 
     handleSubmitMessageSuccess : function () {
         var input = $("#newMessageInput");
-        if (isDesktop) {
+        if (!isAndroid) {
             input.val("");
             input.click();
         }
