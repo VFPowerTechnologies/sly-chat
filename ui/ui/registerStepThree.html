@@ -1,3 +1,14 @@
+{{#if @global.ios}}
+<div class="navbar top-navbar">
+    <div class="navbar-inner">
+        <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a>Registration</div>
+        <div class="center sliding"></div>
+        <div class="right">
+        </div>
+    </div>
+</div>
+{{/if}}
+
 <div class="pages" xmlns="http://www.w3.org/1999/html">
     <div data-page="registerStepThree" class="page">
         <div class="page-content vertical-centered-content" style="padding: 0;">
@@ -13,7 +24,7 @@
                                         <div class="item-media"><i class="icon icon-form-password"></i></div>
                                         <div class="item-inner">
                                             <div class="item-input">
-                                                <input id="password" type="password" placeholder="Password" class='form-input-validate' data-errorName="Password" data-rules="required|min-6"><br>
+                                                <input id="password" type="password" placeholder="Password" class='form-input-validate' data-errorName="Password" data-rules="required|min-6">
                                             </div>
                                         </div>
                                     </div>
@@ -27,7 +38,7 @@
                                         <div class="item-media"><i class="icon icon-form-password"></i></div>
                                         <div class="item-inner">
                                             <div class="item-input">
-                                                <input id="passwordConfirmation" type="password" placeholder="Confirm Password" class='form-input-validate' data-confirmationId="#password" data-errorName="Password Confirmation" data-rules="required|confirmed|min-6"><br>
+                                                <input id="passwordConfirmation" type="password" placeholder="Confirm Password" class='form-input-validate' data-confirmationId="#password" data-errorName="Password Confirmation" data-rules="required|confirmed|min-6">
                                             </div>
                                         </div>
                                     </div>
