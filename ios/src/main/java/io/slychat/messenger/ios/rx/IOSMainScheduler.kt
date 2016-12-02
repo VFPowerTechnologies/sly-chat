@@ -63,8 +63,9 @@ class IOSMainScheduler private constructor() : Scheduler() {
             if (unsubscribed)
                 return Subscriptions.unsubscribed()
 
-            //cheat since we know DISPATCH_TIME_NOW is 0; we have no way to access the const
             val ns = TimeUnit.NANOSECONDS.convert(delayTime, unit)
+            //we know DISPATCH_TIME_NOW is 0; we have no way to access the define
+            val time = Globals.dispatch_time(0, ns)
 
             val scheduledAction = ScheduledAction(action)
 
@@ -76,7 +77,7 @@ class IOSMainScheduler private constructor() : Scheduler() {
                 }
             }
             else {
-                Globals.dispatch_after(ns, mainQueue) {
+                Globals.dispatch_after(time, mainQueue) {
                     scheduledAction.run()
                 }
             }
