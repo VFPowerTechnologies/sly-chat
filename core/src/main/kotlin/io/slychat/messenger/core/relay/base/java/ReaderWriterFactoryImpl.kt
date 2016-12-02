@@ -5,10 +5,10 @@ import java.io.OutputStream
 import java.util.concurrent.BlockingQueue
 
 internal class ReaderWriterFactoryImpl : ReaderWriterFactory {
-    private fun spawn(command: Runnable) {
-        val t = Thread(command)
+    private fun spawn(runnable: Runnable) {
+        val t = Thread(runnable)
         t.isDaemon = true
-        t.run()
+        t.start()
     }
 
     override fun createReader(inputStream: InputStream, messages: BlockingQueue<ConnectionManagerMessage>) {

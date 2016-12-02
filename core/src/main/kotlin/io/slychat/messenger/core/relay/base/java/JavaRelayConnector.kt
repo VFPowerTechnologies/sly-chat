@@ -19,7 +19,7 @@ class JavaRelayConnector : RelayConnector {
 
             val t = Thread(connectionManager)
             t.isDaemon = true
-            t.run()
+            t.start()
         })
     }
 }
