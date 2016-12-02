@@ -45,6 +45,7 @@ class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDel
     private val uiVisibility = BehaviorSubject.create<Boolean>()
 
     override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
+        println(launchOptions)
         KovenantUi.uiContext {
             dispatcher = IOSDispatcher.instance
         }
@@ -78,6 +79,8 @@ class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDel
         app.init(platformModule)
 
         buildUI(app.appComponent)
+
+        app.isInBackground = false
 
         return true
     }
