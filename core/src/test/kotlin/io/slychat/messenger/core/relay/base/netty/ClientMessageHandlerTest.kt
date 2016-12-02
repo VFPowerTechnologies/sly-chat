@@ -2,6 +2,8 @@ package io.slychat.messenger.core.relay.base.netty
 
 import io.netty.buffer.ByteBuf
 import io.netty.channel.embedded.EmbeddedChannel
+import io.slychat.messenger.core.relay.base.assertThatMessagesEqual
+import io.slychat.messenger.core.relay.base.randomOutboundRelayMessage
 import org.junit.Test
 
 class ClientMessageHandlerTest {

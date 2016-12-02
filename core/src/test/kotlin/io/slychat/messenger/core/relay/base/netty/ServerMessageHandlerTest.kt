@@ -4,6 +4,8 @@ import io.netty.buffer.UnpooledByteBufAllocator
 import io.netty.channel.embedded.EmbeddedChannel
 import io.slychat.messenger.core.relay.base.RelayConnectionEvent
 import io.slychat.messenger.core.relay.base.RelayMessage
+import io.slychat.messenger.core.relay.base.assertThatMessagesEqual
+import io.slychat.messenger.core.relay.base.randomInboundRelayMessage
 import io.slychat.messenger.testutils.testSubscriber
 import nl.komponents.kovenant.deferred
 import org.junit.Test
