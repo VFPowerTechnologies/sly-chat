@@ -2,6 +2,7 @@ package io.slychat.messenger.core.relay.base.java
 
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
 import io.slychat.messenger.core.crypto.tls.verifyHostname
+import org.slf4j.LoggerFactory
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.InetSocketAddress
@@ -13,6 +14,8 @@ internal class RelaySocketConnector(
     private val relayAddress: InetSocketAddress,
     private val sslConfigurator: SSLConfigurator
 ) : SocketConnector {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private val factory = sslConfigurator.createSocketFactory()
     private var socket: Socket? = null
 
@@ -43,7 +46,13 @@ internal class RelaySocketConnector(
     }
 
     override fun disconnect() {
-        socket?.apply { close() }
+        try {
+            socket?.apply { close() }
+        }
+        catch (t: Throwable) {
+            log.warn("An error occured while attempting to close the socket: {}", t.message, t)
+        }
+
         socket = null
     }
 }
