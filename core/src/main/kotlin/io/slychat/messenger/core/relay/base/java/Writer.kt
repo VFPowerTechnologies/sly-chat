@@ -1,6 +1,7 @@
 package io.slychat.messenger.core.relay.base.java
 
 import io.slychat.messenger.core.enforceExhaustive
+import org.slf4j.LoggerFactory
 import java.io.OutputStream
 import java.util.*
 import java.util.concurrent.BlockingQueue
@@ -39,6 +40,8 @@ internal class Writer(
         }
     }
 
+    private val log = LoggerFactory.getLogger(javaClass)
+
     override fun run() {
         try {
             main()
@@ -46,6 +49,8 @@ internal class Writer(
         catch (t: Throwable) {
             messageQueue.put(ConnectionManagerMessage.WriterError(t))
         }
+
+        log.debug("Terminated")
     }
 
     private fun main() {

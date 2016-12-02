@@ -31,6 +31,8 @@ internal class ConnectionManager(
             observer.onError(t)
             doDisconnect()
         }
+
+        log.debug("Terminated")
     }
 
     internal fun connect() {
@@ -59,6 +61,7 @@ internal class ConnectionManager(
         assert(initialized) { "processMessages() called before connect()" }
 
         log.debug("Enter message loop")
+
         try {
             var keepRunning = true
 
@@ -74,7 +77,6 @@ internal class ConnectionManager(
         finally {
             doDisconnect()
         }
-
     }
 
     private fun handleMessage(v: ConnectionManagerMessage): Boolean {

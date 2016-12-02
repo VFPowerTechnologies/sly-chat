@@ -1,5 +1,6 @@
 package io.slychat.messenger.core.relay.base.java
 
+import org.slf4j.LoggerFactory
 import java.io.InputStream
 import java.util.*
 import java.util.concurrent.BlockingQueue
@@ -10,6 +11,8 @@ internal class Reader(
     private val inputStream: InputStream,
     private val messageQueue: BlockingQueue<ConnectionManagerMessage>
 ) : Runnable {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     override fun run() {
         try {
             main()
@@ -17,6 +20,8 @@ internal class Reader(
         catch (t: Throwable) {
             messageQueue.put(ConnectionManagerMessage.ReaderError(t))
         }
+
+        log.debug("Terminated")
     }
 
     private fun main() {
