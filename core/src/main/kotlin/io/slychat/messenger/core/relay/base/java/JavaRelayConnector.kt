@@ -17,7 +17,7 @@ class JavaRelayConnector : RelayConnector {
                 ReaderWriterFactoryImpl()
             )
 
-            val t = Thread(connectionManager)
+            val t = Thread(connectionManager, "RelayConnectionManager")
             t.isDaemon = true
             t.start()
         })
