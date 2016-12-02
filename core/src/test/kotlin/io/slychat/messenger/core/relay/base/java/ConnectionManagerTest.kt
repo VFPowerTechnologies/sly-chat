@@ -111,6 +111,8 @@ class ConnectionManagerTest {
             contains(RelayConnectionLost())
         }
 
+        testSubscriber.assertCompleted()
+
         val writerMessages = ArrayList<Writer.Work>()
         readerWriterFactory.writerQueue.drainTo(writerMessages)
 

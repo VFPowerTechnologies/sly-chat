@@ -114,6 +114,7 @@ internal class ConnectionManager(
         socketConnector.disconnect()
         writerQueue.put(Writer.Work.Disconnect())
         observer.onNext(RelayConnectionLost())
+        observer.onCompleted()
     }
 
     override fun sendMessage(message: RelayMessage) {
