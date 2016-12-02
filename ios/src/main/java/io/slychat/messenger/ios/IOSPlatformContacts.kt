@@ -4,8 +4,8 @@ import apple.contacts.*
 import apple.contacts.c.Contacts
 import apple.contacts.enums.CNContactFormatterStyle
 import apple.contacts.enums.CNEntityType
+import apple.foundation.NSArray
 import apple.foundation.NSError
-import apple.foundation.NSMutableArray
 import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.services.PlatformContacts
 import nl.komponents.kovenant.Promise
@@ -47,12 +47,12 @@ class IOSPlatformContacts : PlatformContacts {
     private fun enumContacts(): List<PlatformContact> {
         val contactStore = CNContactStore.alloc().init()
 
-        //make kotlin happy
-        @Suppress("UNCHECKED_CAST")
-        val keysToFetch = NSMutableArray.alloc().init() as NSMutableArray<Any>
-        keysToFetch.add(Contacts.CNContactEmailAddressesKey())
-        keysToFetch.add(Contacts.CNContactPhoneNumbersKey())
-        keysToFetch.add(CNContactFormatter.descriptorForRequiredKeysForStyle(CNContactFormatterStyle.FullName))
+        val keysToFetch = NSArray.arrayWithObjects(
+            Contacts.CNContactEmailAddressesKey(),
+            Contacts.CNContactPhoneNumbersKey(),
+            CNContactFormatter.descriptorForRequiredKeysForStyle(CNContactFormatterStyle.FullName),
+            null
+        )
 
         val fetchRequest = CNContactFetchRequest.alloc().initWithKeysToFetch(keysToFetch)
 
