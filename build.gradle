@@ -15,7 +15,6 @@ buildscript {
             sqlite4java: '1.0.392',
             spongycastle: '1.54.0.0',
             dagger: '2.6',
-            netty: '5.0.0.Alpha2',
             rxjava: '1.1.8',
             rxjavafx: '0.1.4',
             rxandroid: '1.2.1',

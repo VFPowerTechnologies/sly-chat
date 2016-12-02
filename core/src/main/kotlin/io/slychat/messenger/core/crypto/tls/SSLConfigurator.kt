@@ -37,12 +37,16 @@ class SSLConfigurator(
         sslSettingsAdapter.setEnabledCipherSuites(arrayOf("TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"))
     }
 
-    fun configure(connection: HttpsURLConnection) {
+    fun createSocketFactory(): SSLSocketFactory {
         val sslContext = SSLContext.getInstance("TLSv1.2")
 
         sslContext.init(null, buildTrustManagers(), null)
 
-        connection.sslSocketFactory = TLS12SocketFactory(sslContext, this)
+        return TLS12SocketFactory(sslContext, this)
+    }
+
+    fun configure(connection: HttpsURLConnection) {
+        connection.sslSocketFactory = createSocketFactory()
 
         if (disableHostnameVerification) {
             connection.hostnameVerifier = HostnameVerifier { hostname, session ->
