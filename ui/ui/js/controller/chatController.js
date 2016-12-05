@@ -779,8 +779,9 @@ ChatController.prototype = {
     handleSubmitMessageSuccess : function () {
         var input = $("#newMessageInput");
         if (!isAndroid) {
-            input.val("");
-            input.click();
+            input.val([]);
+            input.blur();
+            input.focus();
         }
         else {
             var area = input.emojioneArea();
