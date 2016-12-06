@@ -42,3 +42,11 @@
 #chat-content {
     margin-bottom: 48px;
 }
+
+.blocked-contact-tabbar .tab-link {
+    color: #222;
+}
+
+.blocked-contact-tabbar  .tab-link.active {
+    color: #ff9500;
+}
