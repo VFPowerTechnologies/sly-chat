@@ -177,7 +177,8 @@ slychat.onPageInit('register', function (page) {
 });
 
 slychat.onPageInit('chat', function (page) {
-    emojiController.createPicker();
+    if(!isIos)
+        emojiController.createPicker();
 
     var isGroup = page.query.email === undefined;
     var newMessageInput = $("#newMessageInput");
@@ -295,6 +296,8 @@ slychat.onPageInit('addContact', function (page) {
 });
 
 slychat.onPageBeforeInit('contacts', function (page) {
+    if(isIos)
+        createIosMenu();
     contactController.init();
     groupController.init();
 });

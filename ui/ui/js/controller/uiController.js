@@ -172,8 +172,6 @@ UIController.prototype = {
             swipeBackPage: false,
             tapHold: true,
             tapHoldDelay: 500,
-            swipePanelOnlyClose: true,
-            swipePanelNoFollow: true,
             modalTitle: 'Sly',
             template7Pages: true
         };

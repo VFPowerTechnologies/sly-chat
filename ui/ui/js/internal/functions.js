@@ -88,6 +88,116 @@ function createMobileContactPopup(isIos) {
         '</div></div></div></div></div></div>';
 }
 
+function createIosMenu() {
+    var existingMenu = $("#iosMenu");
+    if (existingMenu.length <= 0) {
+        var inviteFriends = "";
+        if (window.shareSupported) {
+            inviteFriends = '<li id="menuInviteFriendsLink" class="item-content close-panel">' +
+                '<div class="item-media"><i class="fa fa-share-alt"></i></div>' +
+                '<div class="item-inner">' +
+                '<div class="item-title">Invite Friends</div>' +
+                '</div>' +
+                '</li>';
+        }
+        var menu = $('<div class="panel-overlay"></div>' +
+            '<div id="iosMenu" class="panel panel-right panel-cover">' +
+            '<div class="ios-menu-header" style="min-height: 100px; text-align: center; padding-bottom: 5px; border-bottom: 1px solid #eee;">' +
+            '<div style="height: 80px;">' +
+            '<img style="height: 80px; width: 80px; display: block; margin: auto;" src="img/sly_logo.png"/>' +
+            '</div>' +
+            '<p id="iosMenuUserName" style="color: #fff; margin: 0 10px;">' + profileController.name + '</p>' +
+            '<p id="iosMenuUserEmail" style="color: #fff; margin: 0 10px;">' + profileController.username + '</p>' +
+            '</div>' +
+            '<div class="list-block">' +
+            '<ul id="iosMenuList">' +
+            '<li id="menuProfileLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-user"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Profile</div>' +
+            '</div>' +
+            '</li>' +
+            '<li id="menuSettingsLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-cogs"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Settings</div>' +
+            '</div>' +
+            '</li>' +
+            '<li id="menuAddContactLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-user-plus"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Add Contact</div>' +
+            '</div>' +
+            '</li>' +
+            '<li id="menuCreateGroupLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-users"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Create Group</div>' +
+            '</div>' +
+            '</li>' +
+            '<li id="menuBlockedContactsLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-ban"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Blocked Contacts</div>' +
+            '</div>' +
+            '</li>' +
+            inviteFriends +
+            '<li id="menuFeedbackLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-commenting"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Feedback</div>' +
+            '</div>' +
+            '</li>' +
+            '<li id="menuLogoutLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-sign-out"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Logout</div>' +
+            '</div>' +
+            '</li>' +
+            '</ul>' +
+            '</div>' +
+            '</div>');
+
+        menu.find("#menuProfileLink").click(function () {
+            navigationController.loadPage('profile.html', true);
+        });
+
+        menu.find("#menuSettingsLink").click(function () {
+            navigationController.loadPage('settings.html', true);
+        });
+
+        menu.find("#menuBlockedContactsLink").click(function () {
+            navigationController.loadPage('blockedContacts.html', true);
+        });
+
+        menu.find("#menuAddContactLink").click(function () {
+            navigationController.loadPage("addContact.html", true);
+        });
+
+        menu.find("#menuCreateGroupLink").click(function () {
+            navigationController.loadPage('createGroup.html', true);
+        });
+
+        menu.find("#menuInviteFriendsLink").click(function () {
+            navigationController.loadPage("inviteFriends.html", true);
+        });
+
+        menu.find("#menuFeedbackLink").click(function () {
+            navigationController.loadPage("feedback.html", true);
+        });
+
+        menu.find("#menuLogoutLink").click(function () {
+            loginController.logout();
+        });
+
+        $('body').prepend(menu);
+    }
+    else {
+        existingMenu.find("#iosMenuUserName").html(profileController.name);
+        existingMenu.find("#iosMenuUserEmail").html(profileController.username);
+    }
+}
+
 function formatPublicKey(publicKey) {
     var publicKeyArr = publicKey.match(/.{1,4}/g);
     var formated = '';
