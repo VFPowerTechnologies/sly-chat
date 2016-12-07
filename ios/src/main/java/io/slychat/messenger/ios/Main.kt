@@ -129,11 +129,13 @@ class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDel
 
     override fun applicationWillEnterForeground(application: UIApplication?) {
         log.debug("Application will enter foreground")
-        app.isInBackground = false
     }
 
     override fun applicationDidBecomeActive(application: UIApplication) {
         log.debug("Application has become active")
+        //moved this here so that we have updated network status by this point, as the network status isn't actually
+        //updated until we get here, even if we manually call SCNetworkReachabilityGetFlags beforehand
+        app.isInBackground = false
         uiVisibility.onNext(true)
     }
 }
