@@ -28,12 +28,15 @@ import rx.subjects.BehaviorSubject
 @RegisterOnStartup
 class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDelegate {
     companion object {
+        @Selector("alloc")
+        external fun alloc(): Main
+
         @JvmStatic fun main(args: Array<String>) {
             UIKit.UIApplicationMain(0, null, null, Main::class.java.name)
         }
 
-        @Selector("alloc")
-        external fun alloc(): Main
+        val instance: Main
+            get() = UIApplication.sharedApplication().delegate() as Main
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -45,6 +48,8 @@ class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDel
     private val uiVisibility = BehaviorSubject.create<Boolean>()
 
     private lateinit var reachability: Reachability
+
+    private lateinit var webViewController: WebViewController
 
     override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
         KovenantUi.uiContext {
@@ -100,6 +105,8 @@ class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDel
 
         val vc = WebViewController.alloc().initWithAppComponent(appComponent)
 
+        webViewController = vc
+
         window.setRootViewController(vc)
 
         window.setBackgroundColor(UIColor.blackColor())
@@ -137,5 +144,9 @@ class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDel
         //updated until we get here, even if we manually call SCNetworkReachabilityGetFlags beforehand
         app.isInBackground = false
         uiVisibility.onNext(true)
+    }
+
+    fun uiLoadComplete() {
+        webViewController.hideLaunchScreenView()
     }
 }

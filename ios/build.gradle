@@ -21,8 +21,6 @@ moe {
     xcode.mainTarget = 'SlyChat'
     xcode.testTarget = 'SlyChat-Test'
     xcode.packageName = 'io.slychat.messenger.ios'
-    xcode.launchScreenFilePath = 'src/main/resources/LaunchScreen.xib'
-    xcode.bundleID = 'io.slychat.SlyChat'
     xcode.generateProject = false
     xcode.xcodeProjectDirPath = 'xcode'
 }

@@ -3,10 +3,8 @@ package io.slychat.messenger.ios.ui
 import apple.foundation.NSBundle
 import apple.foundation.NSNumber
 import apple.foundation.NSURL
-import apple.uikit.UIColor
-import apple.uikit.UIScreen
-import apple.uikit.UIView
-import apple.uikit.UIViewController
+import apple.uikit.*
+import apple.uikit.enums.UIViewAnimationOptions
 import apple.uikit.enums.UIViewAutoresizing
 import apple.webkit.WKUserContentController
 import apple.webkit.WKWebView
@@ -35,6 +33,9 @@ class WebViewController private constructor(peer: Pointer) : UIViewController(pe
 
     private lateinit var appComponent: ApplicationComponent
 
+    private var launchScreenView: UIView? = null
+    private var isLaunchScreenClosing = false
+
     @Selector("init")
     external override fun init(): WebViewController
 
@@ -48,9 +49,10 @@ class WebViewController private constructor(peer: Pointer) : UIViewController(pe
 
     override fun loadView() {
         val bounds = UIScreen.mainScreen().bounds()
-        val contentView = UIView.alloc().initWithFrame(bounds)
-        contentView.setBackgroundColor(UIColor.darkGrayColor())
-        setView(contentView)
+        val container = UIView.alloc().initWithFrame(bounds)
+        container.setBackgroundColor(UIColor.darkGrayColor())
+        container.setAutoresizingMask(UIViewAutoresizing.FlexibleHeight or UIViewAutoresizing.FlexibleWidth)
+        setView(container)
 
         val configuration = WKWebViewConfiguration.alloc().init()
         val userContentController = WKUserContentController.alloc().init()
@@ -61,7 +63,7 @@ class WebViewController private constructor(peer: Pointer) : UIViewController(pe
         //NSNumber directly
         configuration.preferences().setValueForKey(NSNumber.alloc().initWithBool(true), "allowFileAccessFromFileURLs")
 
-        val webView = WKWebView.alloc().initWithFrameConfiguration(contentView.frame(), configuration)
+        val webView = WKWebView.alloc().initWithFrameConfiguration(container.frame(), configuration)
         webView.setAutoresizingMask(UIViewAutoresizing.FlexibleWidth or UIViewAutoresizing.FlexibleHeight)
         val scrollView = webView.scrollView()
         scrollView.setBounces(false)
@@ -83,6 +85,36 @@ class WebViewController private constructor(peer: Pointer) : UIViewController(pe
         else
             log.error("Unable to find ui/index.html resource in bundle")
 
-        contentView.addSubview(webView)
+        container.addSubview(webView)
+
+        val storyboard = UIStoryboard.storyboardWithNameBundle("LaunchScreen", null)
+
+        val controller = storyboard.instantiateInitialViewController()
+        val launchScreenView = controller.view()
+        container.addSubview(launchScreenView)
+
+        this.launchScreenView = launchScreenView
+    }
+
+    fun hideLaunchScreenView() {
+        if (isLaunchScreenClosing)
+            return
+
+        val launchView = this.launchScreenView ?: return
+
+        isLaunchScreenClosing = true
+
+        UIView.transitionWithViewDurationOptionsAnimationsCompletion(
+            view(),
+            0.4,
+            UIViewAnimationOptions.TransitionCrossDissolve,
+            {
+                launchView.removeFromSuperview()
+            },
+            {
+                launchScreenView = null
+                isLaunchScreenClosing = false
+            }
+        )
     }
 }
