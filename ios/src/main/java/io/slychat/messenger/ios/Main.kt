@@ -44,8 +44,9 @@ class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDel
 
     private val uiVisibility = BehaviorSubject.create<Boolean>()
 
+    private lateinit var reachability: Reachability
+
     override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
-        println(launchOptions)
         KovenantUi.uiContext {
             dispatcher = IOSDispatcher.instance
         }
@@ -57,7 +58,15 @@ class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDel
 
         val notificationService = IOSNotificationService()
 
-        val networkStatus = BehaviorSubject.create(true)
+        reachability = Reachability()
+
+        val networkStatus = reachability.connectionStatus.map {
+            when (it) {
+                ConnectionStatus.WIFI -> true
+                ConnectionStatus.WWAN -> true
+                ConnectionStatus.NONE -> false
+            }
+        }
 
         val platformModule = PlatformModule(
             IOSUIPlatformInfoService(),
