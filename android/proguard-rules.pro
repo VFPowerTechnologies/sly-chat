@@ -21,5 +21,7 @@
 
 -keep class org.whispersystems.curve25519.OpportunisticCurve25519Provider { *; }
 
+-keepclassmembers class io.slychat.messenger.core.OSInfo { *; }
+
 #android-logger doesn't implement certain optional things
 -dontwarn org.slf4j.impl.**
