@@ -68,7 +68,7 @@
 		A5EBD5A2460D5A3A43DC832F /* build.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = build.xcconfig; sourceTree = "<group>"; };
 		AA14B4467C1286E18E473F8A /* build.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = build.xcconfig; sourceTree = "<group>"; };
 		B602E1E5E0A3D48832B802D5 /* preregister.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = preregister.txt; path = ../build/moe/test/preregister.txt; sourceTree = SOURCE_ROOT; };
-		B9AFA032EA94738DF9562B4B /* SlyChat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SlyChat.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B9AFA032EA94738DF9562B4B /* Sly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sly.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C83BC1EAE58C1A6E40FBDC51 /* preregister.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = preregister.txt; path = ../build/moe/main/preregister.txt; sourceTree = SOURCE_ROOT; };
 		EF844B6BB396794967D1D7E3 /* application.jar */ = {isa = PBXFileReference; lastKnownFileType = archive.jar; name = application.jar; path = ../build/moe/test/application.jar; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
@@ -162,7 +162,7 @@
 		FD5DAB105875B3B331A67C44 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				B9AFA032EA94738DF9562B4B /* SlyChat.app */,
+				B9AFA032EA94738DF9562B4B /* Sly.app */,
 				5DCDB00F667297D06AAF14A4 /* SlyChat-Test.app */,
 			);
 			path = Products;
@@ -185,7 +185,7 @@
 			);
 			name = SlyChat;
 			productName = SlyChat;
-			productReference = B9AFA032EA94738DF9562B4B /* SlyChat.app */;
+			productReference = B9AFA032EA94738DF9562B4B /* Sly.app */;
 			productType = "com.apple.product-type.application";
 		};
 		FF77211C96C1116F3FC44F3D /* SlyChat-Test */ = {
@@ -344,6 +344,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_NAME = Sly;
 				SDKROOT = iphoneos;
 				SYMROOT = "$(SRCROOT)/../build/moe/xcodebuild/sym";
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -392,6 +393,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_NAME = Sly;
 				SDKROOT = iphoneos;
 				SYMROOT = "$(SRCROOT)/../build/moe/xcodebuild/sym";
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -434,7 +436,6 @@
 					"-force_load",
 					"$(SRCROOT)/libsqlite4java.a",
 				);
-				PRODUCT_NAME = SlyChat;
 				STRIP_STYLE = "non-global";
 			};
 			name = Debug;
@@ -460,7 +461,6 @@
 					"-force_load",
 					"$(SRCROOT)/libsqlite4java.a",
 				);
-				PRODUCT_NAME = SlyChat;
 				STRIP_STYLE = "non-global";
 			};
 			name = Release;
