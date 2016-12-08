@@ -6,6 +6,8 @@ import apple.contacts.enums.CNContactFormatterStyle
 import apple.contacts.enums.CNEntityType
 import apple.foundation.NSArray
 import apple.foundation.NSError
+import apple.foundation.NSNotificationCenter
+import apple.foundation.NSOperationQueue
 import io.slychat.messenger.core.PlatformContact
 import io.slychat.messenger.services.PlatformContacts
 import nl.komponents.kovenant.Promise
@@ -30,8 +32,14 @@ class IOSPlatformContacts : PlatformContacts {
 
     private val contactsUpdateSubject = PublishSubject.create<Unit>()
 
+    private var contactsObserver: apple.protocol.NSObject? = null
+
     override val contactsUpdated: Observable<Unit>
         get() = contactsUpdateSubject
+
+    init {
+        registerForContactChanges()
+    }
 
     private fun requestPermission(): Promise<Boolean, Exception> {
         val d = deferred<Boolean, Exception>()
@@ -42,6 +50,19 @@ class IOSPlatformContacts : PlatformContacts {
         }
 
         return d.promise
+    }
+
+    private fun registerForContactChanges() {
+        val notificationCenter = NSNotificationCenter.defaultCenter()
+
+        //won't receive these until permission check has been done on startup
+        contactsObserver = notificationCenter.addObserverForNameObjectQueueUsingBlock(
+            Contacts.CNContactStoreDidChangeNotification(),
+            null,
+            NSOperationQueue.mainQueue()
+        ) {
+            contactsUpdateSubject.onNext(Unit)
+        }
     }
 
     private fun enumContacts(): List<PlatformContact> {
