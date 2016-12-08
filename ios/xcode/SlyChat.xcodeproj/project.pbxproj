@@ -212,11 +212,6 @@
 			isa = PBXProject;
 			attributes = {
 				ORGANIZATIONNAME = "My Company";
-				TargetAttributes = {
-					D4164C6563C97D1932E82AC1 = {
-						DevelopmentTeam = S688KN2J4X;
-					};
-				};
 			};
 			buildConfigurationList = 5311E7A441DEE013FA462F8D /* Build configuration list for PBXProject "SlyChat" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -422,8 +417,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = AA14B4467C1286E18E473F8A /* build.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon${BUNDLE_ID_SUFFIX}";
+				BUNDLE_ID_SUFFIX = .debug;
 				DEAD_CODE_STRIPPING = NO;
-				DEVELOPMENT_TEAM = S688KN2J4X;
+				DEVELOPMENT_TEAM = "";
 				EMBEDDED_CONTENT_CONTAINS_SWIFT = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = SlyChat/Info.plist;
@@ -446,8 +443,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = AA14B4467C1286E18E473F8A /* build.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon${BUNDLE_ID_SUFFIX}";
+				BUNDLE_ID_SUFFIX = "";
 				DEAD_CODE_STRIPPING = NO;
-				DEVELOPMENT_TEAM = S688KN2J4X;
+				DEVELOPMENT_TEAM = "";
 				EMBEDDED_CONTENT_CONTAINS_SWIFT = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = SlyChat/Info.plist;
