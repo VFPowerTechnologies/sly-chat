@@ -23,7 +23,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>MOE.Main.Class</key>
-	<string>io.slychat.messenger.ios.Main</string>
+	<string>io.slychat.messenger.ios.IOSApp</string>
 	<key>NSContactsUsageDescription</key>
 	<string>To find friends with Sly Chat accounts</string>
 	<key>UIApplicationExitsOnSuspend</key>

@@ -24,17 +24,18 @@ import org.slf4j.LoggerFactory
 import rx.subjects.BehaviorSubject
 
 @RegisterOnStartup
-class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDelegate {
+class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationDelegate {
     companion object {
         @Selector("alloc")
-        external fun alloc(): Main
+        external fun alloc(): IOSApp
 
-        @JvmStatic fun main(args: Array<String>) {
-            UIKit.UIApplicationMain(0, null, null, Main::class.java.name)
+        @JvmStatic
+        fun main(args: Array<String>) {
+            UIKit.UIApplicationMain(0, null, null, IOSApp::class.java.name)
         }
 
-        val instance: Main
-            get() = UIApplication.sharedApplication().delegate() as Main
+        val instance: IOSApp
+            get() = UIApplication.sharedApplication().delegate() as IOSApp
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
