@@ -13,6 +13,8 @@ object Sentry {
     private var userAddress: SlyAddress? = null
     private var androidDeviceName: String? = null
 
+    private var iosDeviceName: String? = null
+
     fun setCommunicator(communicator: ReportSubmitterCommunicator<ByteArray>) = synchronized(this) {
         this.communicator = communicator
     }
@@ -27,6 +29,10 @@ object Sentry {
 
     fun setAndroidDeviceName(androidDeviceName: String) = synchronized(this) {
         this.androidDeviceName = androidDeviceName
+    }
+
+    fun setIOSDeviceName(iosDeviceName: String) = synchronized(this) {
+        this.iosDeviceName = iosDeviceName
     }
 
     fun submit(builder: SentryEventBuilder) = synchronized(this) {
@@ -46,6 +52,10 @@ object Sentry {
 
         androidDeviceName?.apply {
             builder.withTag("androidDeviceName", this)
+        }
+
+        iosDeviceName?.apply {
+            builder.withTag("iosDeviceName", this)
         }
 
         userAddress?.apply {

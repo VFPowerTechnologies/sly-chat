@@ -2,10 +2,7 @@ package io.slychat.messenger.ios
 
 import apple.NSObject
 import apple.foundation.NSDictionary
-import apple.uikit.UIApplication
-import apple.uikit.UIColor
-import apple.uikit.UIScreen
-import apple.uikit.UIWindow
+import apple.uikit.*
 import apple.uikit.c.UIKit
 import apple.uikit.protocol.UIApplicationDelegate
 import com.almworks.sqlite4java.SQLite
@@ -13,6 +10,7 @@ import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.ios.kovenant.IOSDispatcher
 import io.slychat.messenger.ios.rx.IOSMainScheduler
 import io.slychat.messenger.ios.ui.WebViewController
+import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.ApplicationComponent
@@ -91,6 +89,8 @@ class Main private constructor(peer: Pointer) : NSObject(peer), UIApplicationDel
         )
 
         app.init(platformModule)
+
+        Sentry.setIOSDeviceName(UIDevice.currentDevice().model())
 
         buildUI(app.appComponent)
 
