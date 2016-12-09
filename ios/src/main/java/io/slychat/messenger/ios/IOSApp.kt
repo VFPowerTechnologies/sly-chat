@@ -50,6 +50,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
     private lateinit var webViewController: WebViewController
 
+    private lateinit var screenProtectionWindow: UIWindow
+
     override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
         KovenantUi.uiContext {
             dispatcher = IOSDispatcher.instance
@@ -94,6 +96,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         Sentry.setIOSDeviceName(UIDevice.currentDevice().model())
 
         buildUI(app.appComponent)
+        initScreenProtection()
 
         app.isInBackground = false
 
@@ -125,8 +128,32 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         return window
     }
 
+    //same as Signal's implementation
+    private fun initScreenProtection() {
+        val screen = UIScreen.mainScreen()
+        val window = UIWindow.alloc().initWithFrame(screen.bounds())
+        window.isHidden = true
+        window.isOpaque = true
+        window.isUserInteractionEnabled = false
+        window.setWindowLevel(Double.MAX_VALUE)
+        window.setBackgroundColor(UIColor.whiteColor())
+
+        screenProtectionWindow = window
+    }
+
+    private fun showScreenProtection() {
+        screenProtectionWindow.isHidden = false
+    }
+
+    private fun hideScreenProtection() {
+        screenProtectionWindow.isHidden = true
+    }
+
     override fun applicationWillResignActive(application: UIApplication) {
         log.debug("Application will enter background")
+
+        showScreenProtection()
+
         uiVisibility.onNext(false)
     }
 
@@ -141,9 +168,13 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
     override fun applicationDidBecomeActive(application: UIApplication) {
         log.debug("Application has become active")
+
+        hideScreenProtection()
+
         //moved this here so that we have updated network status by this point, as the network status isn't actually
         //updated until we get here, even if we manually call SCNetworkReachabilityGetFlags beforehand
         app.isInBackground = false
+
         uiVisibility.onNext(true)
     }
 
