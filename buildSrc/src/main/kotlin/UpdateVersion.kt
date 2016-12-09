@@ -17,7 +17,8 @@ open class UpdateVersion : DefaultTask() {
 
     private data class VersionInfo(
         val version: Version,
-        val androidVersionCode: Int
+        val androidVersionCode: Int,
+        val iosVersionCode: Int
     ) {
         //there's no way to remove version metadata
         private fun Version.removeSnapshot(): Version {
@@ -54,12 +55,12 @@ open class UpdateVersion : DefaultTask() {
                 }
             }
 
-            val nextAndroidVersionCode = if (versionType == VersionType.SNAPSHOT)
-                androidVersionCode
+            val (nextAndroidVersionCode, nextIOSVersionCode) = if (versionType == VersionType.SNAPSHOT)
+                androidVersionCode to iosVersionCode
             else
-                androidVersionCode + 1
+                (androidVersionCode + 1) to (iosVersionCode + 1)
 
-            return VersionInfo(nextVersion, nextAndroidVersionCode)
+            return VersionInfo(nextVersion, nextAndroidVersionCode, nextIOSVersionCode)
         }
     }
 
@@ -74,10 +75,12 @@ open class UpdateVersion : DefaultTask() {
 
         val versionProp = props.getProperty("VERSION") ?: error("VERSION missing from gradle.properties")
         val androidVersionProp = props.getProperty("ANDROID_VERSION_CODE") ?: error("ANDROID_VERSION_CODE missing from gradle.properties")
+        val iosVersionProp = props.getProperty("IOS_VERSION_CODE") ?: error("IOS_VERSION_CODE missing from gradle.properties")
 
         return VersionInfo(
             Version.valueOf(versionProp),
-            androidVersionProp.toInt()
+            androidVersionProp.toInt(),
+            iosVersionProp.toInt()
         )
     }
 
@@ -86,6 +89,7 @@ open class UpdateVersion : DefaultTask() {
         gradlePropertiesPath.writer().use { writer ->
             writer.write("VERSION=${newVersionInfo.version}\n")
             writer.write("ANDROID_VERSION_CODE=${newVersionInfo.androidVersionCode}\n")
+            writer.write("IOS_VERSION_CODE=${newVersionInfo.iosVersionCode}\n")
         }
     }
 
