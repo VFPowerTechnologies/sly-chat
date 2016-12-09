@@ -1,6 +1,7 @@
 package io.slychat.messenger.ios
 
 import apple.NSObject
+import apple.foundation.NSBundle
 import apple.foundation.NSDictionary
 import apple.uikit.*
 import apple.uikit.c.UIKit
@@ -53,6 +54,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
     private lateinit var screenProtectionWindow: UIWindow
 
     override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
+        printBundleInfo()
+
         KovenantUi.uiContext {
             dispatcher = IOSDispatcher.instance
         }
@@ -126,6 +129,20 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
     override fun window(): UIWindow? {
         return window
+    }
+
+    private fun printBundleInfo() {
+        val bundle = NSBundle.mainBundle()
+
+        val infoDictionary = bundle.infoDictionary()
+
+        val name = infoDictionary["CFBundleDisplayName"]
+
+        val version = infoDictionary["CFBundleShortVersionString"]
+
+        val build = infoDictionary["CFBundleVersion"]
+
+        log.debug("Bundle info: name=$name; version=$version; build=$build")
     }
 
     //same as Signal's implementation

@@ -30,3 +30,27 @@ dependencies {
     compile project(':ui-services')
     compile project(':stdout-logger')
 }
+
+def xcodeParams = [
+    "SLY_VERSION_STRING=$project.VERSION",
+    "SLY_BUILD_NUMBER=$project.IOS_VERSION_CODE",
+    //MOE defaults
+    'MOE_GRADLE_EXTERNAL_BUILD=YES',
+    'ONLY_ACTIVE_ARCH=NO',
+]
+
+moeMainDebugIphoneosXcodeBuild {
+    additionalParameters = xcodeParams
+}
+
+moeMainReleaseIphoneosXcodeBuild {
+    additionalParameters = xcodeParams
+}
+
+moeMainDebugIphonesimulatorXcodeBuild {
+    additionalParameters = xcodeParams
+}
+
+moeMainReleaseIphonesimulatorXcodeBuild {
+    additionalParameters = xcodeParams
+}
