@@ -25,7 +25,6 @@
                 android:id="@+id/invite_friends_field"
                 android:text="@string/default_invite_text"
                 android:textSize="15sp"
-                android:hint="@string/invite_friends_hint"
                 android:layout_gravity="center_horizontal"/>
         <Button
                 android:layout_width="wrap_content"
