@@ -7,7 +7,9 @@ UserSessionController.ids = {
     leftContactList : '#leftContactList',
     leftGroupList : '#leftGroupList',
     leftMenuUserInfo : '#leftMenuUserInfo',
-    leftMenuProfileName : '#leftMenuProfileName'
+    leftMenuProfileName : '#leftMenuProfileName',
+    iosMenuName : '#rightDrawerUserName',
+    iosMenuEmail : '#rightDrawerUserEmail'
 };
 
 UserSessionController.prototype = {
@@ -15,6 +17,9 @@ UserSessionController.prototype = {
         profileController.setUserInfo(accountInfo, publicKey);
         $(UserSessionController.ids.leftMenuProfileName).html(accountInfo.name);
         $(UserSessionController.ids.leftMenuUserInfo).html(accountInfo.name);
+
+        $(UserSessionController.ids.iosMenuName).html(accountInfo.name);
+        $(UserSessionController.ids.iosMenuEmail).html(accountInfo.email);
     },
 
     clearUserSession : function () {
@@ -41,5 +46,7 @@ UserSessionController.prototype = {
         $(UserSessionController.ids.leftGroupList).html("");
         $(UserSessionController.ids.leftMenuUserInfo).html("");
         $(UserSessionController.ids.leftMenuProfileName).html("");
+        $(UserSessionController.ids.iosMenuEmail).html("");
+        $(UserSessionController.ids.iosMenuName).html("");
     }
 };

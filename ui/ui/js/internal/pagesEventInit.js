@@ -296,8 +296,6 @@ slychat.onPageInit('addContact', function (page) {
 });
 
 slychat.onPageBeforeInit('contacts', function (page) {
-    if(isIos)
-        createIosMenu();
     contactController.init();
     groupController.init();
 });
