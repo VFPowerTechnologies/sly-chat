@@ -388,7 +388,50 @@ ChatController.prototype = {
             this.updateGroupChatPageNewMessage(messageInfo);
         }
 
+        if (navigationController.getCurrentPage() != "contacts.html" && isIos)
+            this.addNewMessageIosNotification(messageInfo);
+
         $(".timeago").timeago();
+    },
+
+    addNewMessageIosNotification : function (messageInfo) {
+        var notification = {
+            title: "Sly",
+            closeOnClick: true,
+            closeIcon: false,
+            hold: 2000,
+            additionalClass: "new-message-notification"
+        };
+
+        if(messageInfo.groupId === null) {
+            if (this.getCurrentContactId() != messageInfo.contact) {
+                var contact = contactController.getContact(messageInfo.contact);
+                if (contact) {
+                    notification.subtitle = 'New message from ' + contact.name;
+                    notification.onClick = function () {
+                        contactController.loadChatPage(contact, false, false);
+                    };
+                    this.showNewMessageNotification(notification)
+                }
+            }
+        }
+        else {
+            if (this.getCurrentContactId() != messageInfo.groupId) {
+                var groupInfo = groupController.getGroup(messageInfo.groupId);
+                if (groupInfo) {
+                    notification.subtitle = "New message in group: " + groupInfo.name;
+                    notification.onClick = function () {
+                        contactController.loadChatPage(groupInfo, false, true);
+                    };
+                    this.showNewMessageNotification(notification)
+                }
+            }
+        }
+    },
+
+    showNewMessageNotification : function (notification) {
+        $(".new-message-notification").remove();
+        slychat.addNotification(notification)
     },
 
     leftMenuAddNewMessageBadge : function (id) {
@@ -816,8 +859,7 @@ ChatController.prototype = {
 
     updateGroupChatPageNewMessage : function (messagesInfo) {
         var messages = messagesInfo.messages;
-        var currentPageContactId = $("#contact-id");
-        if(navigationController.getCurrentPage() == "chat.html" && currentPageContactId.length && currentPageContactId.html() == messagesInfo.groupId){
+        if(this.getCurrentContactId() == messagesInfo.groupId){
             var messageDiv = $("#chat-content");
 
             if(messageDiv.length){

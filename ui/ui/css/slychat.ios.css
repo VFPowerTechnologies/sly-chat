@@ -50,3 +50,8 @@
 .blocked-contact-tabbar  .tab-link.active {
     color: #ff9500;
 }
+
+.new-message-notification {
+    background-color: #fff;
+    color: #000;
+}
