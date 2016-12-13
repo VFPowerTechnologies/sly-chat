@@ -42,6 +42,7 @@
     <string name="add_button_text">Add</string>
 
     <string name="drawer_add_contact">Add Contact</string>
+    <string name="drawer_create_group">Create Group</string>
     <string name="drawer_delete_contact">Delete Contact</string>
     <string name="drawer_block_contact">Block Contact</string>
     <string name="drawer_blocked_contacts">Blocked Contacts</string>

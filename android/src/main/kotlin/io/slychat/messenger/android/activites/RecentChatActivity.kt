@@ -23,14 +23,17 @@ import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
 import android.widget.AdapterView.OnItemClickListener
 import io.slychat.messenger.android.MainActivity
+import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
 import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
 import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.UserConversation
 import io.slychat.messenger.services.LoginEvent
 import io.slychat.messenger.services.PageType
 import io.slychat.messenger.services.messaging.ConversationMessage
+import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import rx.Subscription
 
@@ -44,8 +47,17 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
 
     private var loginListener: Subscription? = null
     private lateinit var messengerService: MessengerServiceImpl
+    private lateinit var groupService: GroupServiceImpl
 
     private var recentNodeData: MutableMap<UserId, Int> = mutableMapOf()
+
+    data class RecentChatData(
+            val id: ConversationId,
+            var lastSpeakerName: String,
+            var lastTimestamp: Long,
+            var lastMessage: String,
+            var unreadMessageCount: Int
+    )
 
     override fun onCreate (savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +68,7 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
 
         app = AndroidApp.get(this)
         messengerService = MessengerServiceImpl(this)
-        messengerService = MessengerServiceImpl(this)
+        groupService = GroupServiceImpl(this)
 
         val actionBar = findViewById(R.id.recent_chat_toolbar) as Toolbar
         actionBar.title = "  Sly Chat"
@@ -73,8 +85,8 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
         recentChatList = findViewById(R.id.recent_chat_container) as LinearLayout
         contactFloatBtn = findViewById(R.id.contact_float_btn) as FloatingActionButton
 
-        val drawerName = navigationView.getHeaderView(0).findViewById(R.id.drawer_user_name) as TextView//findViewById(R.id.drawer_user_name) as TextView
-        val drawerEmail = navigationView.getHeaderView(0).findViewById(R.id.drawer_user_email) as TextView//findViewById(R.id.drawer_user_name) as TextView
+        val drawerName = navigationView.getHeaderView(0).findViewById(R.id.drawer_user_name) as TextView
+        val drawerEmail = navigationView.getHeaderView(0).findViewById(R.id.drawer_user_email) as TextView
 
         drawerEmail.text = app.accountInfo?.email
         drawerName.text = app.accountInfo?.name
@@ -85,8 +97,10 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
     private fun init () {
         recentChatList.removeAllViews()
 
-        messengerService.fetchAllConversation() successUi {
-            displayRecentChat(messengerService.getActualSortedConversation(it))
+        messengerService.fetchAllRecentChat() successUi {
+            displayRecentChat(it)
+        } failUi {
+            log.debug("failed to fetch recent chats")
         }
 
         setListeners()
@@ -98,41 +112,49 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
         }
     }
 
-    private fun displayRecentChat (conversations: List<UserConversation>) {
-        conversations.forEach {
+    private fun displayRecentChat (data: List<RecentChatData>) {
+        data.forEach {
             recentChatList.addView(createRecentChatView(it))
         }
     }
 
-    private fun createRecentChatView (conversation: UserConversation): View {
+    private fun createRecentChatView (data: RecentChatData): View {
         val node = LayoutInflater.from(this).inflate(R.layout.recent_chat_node_layout, recentChatList, false)
         val nameView = node.findViewById(R.id.recent_chat_contact_name) as TextView
         val messageView = node.findViewById(R.id.recent_chat_contact_message) as TextView
         val timespanView = node.findViewById(R.id.recent_chat_contact_time) as TextView
-        nameView.text = conversation.contact.name
-        messageView.text = conversation.info.lastMessage
+        nameView.text = data.lastSpeakerName
+        messageView.text = data.lastMessage
 
         val time: String
-        time = formatTimeStamp(conversation.info.lastTimestamp)
+        time = formatTimeStamp(data.lastTimestamp)
         timespanView.text = time
 
-        if (conversation.info.unreadMessageCount > 0) {
+        if (data.unreadMessageCount > 0) {
             val badge = node.findViewById(R.id.new_message_badge) as LinearLayout
             val amount = badge.findViewById(R.id.new_message_quantity) as TextView
             badge.visibility = LinearLayout.VISIBLE
-            amount.text = conversation.info.unreadMessageCount.toString()
-        }
-
-        node.setOnClickListener {
-            val intent = Intent(baseContext, ChatActivity::class.java)
-            intent.putExtra("EXTRA_USERID", conversation.contact.id.long)
-            startActivity(intent)
+            amount.text = data.unreadMessageCount.toString()
         }
 
         val nodeId = View.generateViewId()
         node.id = nodeId
 
-        recentNodeData.put(conversation.contact.id, nodeId)
+        if(data.id is ConversationId.User) {
+            node.setOnClickListener {
+                val intent = Intent(baseContext, UserChatActivity::class.java)
+                intent.putExtra("EXTRA_USERID", data.id.id.long)
+                startActivity(intent)
+            }
+            recentNodeData.put(data.id.id, nodeId)
+        }
+        else if(data.id is ConversationId.Group) {
+            node.setOnClickListener {
+                val intent = Intent(baseContext, GroupChatActivity::class.java)
+                intent.putExtra("EXTRA_USERID", data.id.id.string)
+                startActivity(intent)
+            }
+        }
 
         return node
     }
@@ -156,7 +178,15 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
             recentChatList.removeView(findViewById(nodeId))
         }
 
-        recentChatList.addView(createRecentChatView(conversation), 0)
+        val cId = ConversationId.invoke(userId)
+
+        recentChatList.addView(createRecentChatView(RecentChatData(
+                cId,
+                conversation.contact.name,
+                conversation.info.lastTimestamp as Long,
+                conversation.info.lastMessage as String,
+                conversation.info.unreadMessageCount
+                )), 0)
     }
 
     private fun setListeners () {
@@ -209,20 +239,15 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-
-        if (id == R.id.menu_profile) {
-            startActivity(Intent(baseContext, ProfileActivity::class.java))
-        } else if (id == R.id.menu_add_contact) {
-            startActivity(Intent(baseContext, AddContactActivity::class.java))
-        } else if (id == R.id.menu_blocked_contacts) {
-
-        } else if (id == R.id.menu_settings) {
-            startActivity(Intent(baseContext, SettingsActivity::class.java))
-        } else if (id == R.id.menu_share) {
-            startActivity(Intent(baseContext, InviteFriendsActivity::class.java))
-        } else if (id == R.id.menu_logout) {
-            app.app.logout()
+        when(item.itemId) {
+            R.id.menu_profile -> { startActivity(Intent(baseContext, ProfileActivity::class.java)) }
+            R.id.menu_add_contact -> { startActivity(Intent(baseContext, AddContactActivity::class.java)) }
+            R.id.menu_create_group -> { startActivity(Intent(baseContext, CreateGroupActivity::class.java)) }
+            R.id.menu_blocked_contacts -> { }
+            R.id.menu_settings -> { startActivity(Intent(baseContext, SettingsActivity::class.java)) }
+            R.id.menu_share -> { startActivity(Intent(baseContext, InviteFriendsActivity::class.java)) }
+            R.id.menu_feedback -> { startActivity(Intent(baseContext, FeedbackActivity::class.java)) }
+            R.id.menu_logout -> { app.app.logout() }
         }
 
         val drawer = findViewById(R.id.recent_chat_drawer_layout) as DrawerLayout
