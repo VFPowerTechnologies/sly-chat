@@ -12,7 +12,7 @@ import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import rx.Subscription
 
-class ContactServiceImpl (activity: AppCompatActivity): ContactService {
+class ContactServiceImpl(activity: AppCompatActivity): ContactService {
     private val app = AndroidApp.get(activity)
     private val contactService = app.getUserComponent().contactsService
 

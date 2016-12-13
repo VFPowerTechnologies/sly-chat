@@ -2,14 +2,14 @@ package io.slychat.messenger.android.activites.services.impl
 
 import android.support.v7.app.AppCompatActivity
 import io.slychat.messenger.android.AndroidApp
+import io.slychat.messenger.android.activites.RecentChatActivity
 import io.slychat.messenger.android.activites.services.MessengerService
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.ConversationId
-import io.slychat.messenger.core.persistence.ConversationMessageInfo
-import io.slychat.messenger.core.persistence.UserConversation
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.messaging.ConversationMessage
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -22,11 +22,17 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
     private val app = AndroidApp.get(activity)
     private var usercomponent = app.getUserComponent()
     private val messageService = usercomponent.messageService
+    private val contactService = usercomponent.contactsService
+
     var conversations: MutableMap<UserId, UserConversation> = mutableMapOf()
+    var groupConversations: MutableMap<GroupId, GroupConversation> = mutableMapOf()
+
     private var newMessageUIListener: ((ConversationMessage) -> Unit)? = null
     private var messageUpdateUIListener: ((MessageUpdateEvent) -> Unit)? = null
     private var newMessageListener: Subscription? = null
     private var messageUpdateListener: Subscription? = null
+
+    private var contactList: MutableMap<UserId, ContactInfo> = mutableMapOf()
 
     private val messengerService = usercomponent.messengerService
 
@@ -37,6 +43,63 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
                 conversations.put(it.contact.id, it)
             }
             conversations
+        }
+    }
+
+    fun fetchAllRecentChat(): Promise<List<RecentChatActivity.RecentChatData>, Exception> {
+        groupConversations = mutableMapOf()
+        conversations = mutableMapOf()
+        contactList = mutableMapOf()
+        val list = mutableListOf<RecentChatActivity.RecentChatData>()
+        return contactService.getAll() success { c ->
+            c.forEach {
+                log.debug("contact name: ${it.name}")
+                contactList.put(it.id, it)
+            }
+        } bind {
+            messageService.getAllGroupConversations() success { groupConvo ->
+                groupConvo.forEach {
+                    groupConversations.put(it.group.id, it)
+                    val conversationId = ConversationId.invoke(it.group.id)
+                    val info = it.info
+                    val contact = contactList[info.lastSpeaker]
+                    if (info.lastMessage != null && info.lastTimestamp != null) {
+                        val contactName: String
+                        if(contact == null)
+                            contactName = "You"
+                        else
+                            contactName = contact.name
+
+                        list.add(RecentChatActivity.RecentChatData(
+                                conversationId,
+                                it.group.name,
+                                contactName,
+                                info.lastTimestamp as Long,
+                                info.lastMessage as String,
+                                info.unreadMessageCount
+                        ))
+                    }
+                }
+            }
+        } bind {
+                messageService.getAllUserConversations() success { convo ->
+                    convo.forEach {
+                        conversations.put(it.contact.id, it)
+                        val conversationId = ConversationId.invoke(it.contact.id)
+                        val info = it.info
+                        if (info.lastMessage != null && info.lastTimestamp != null)
+                            list.add(RecentChatActivity.RecentChatData(
+                                    conversationId,
+                                    null,
+                                    it.contact.name,
+                                    info.lastTimestamp as Long,
+                                    info.lastMessage as String,
+                                    info.unreadMessageCount
+                            ))
+                    }
+                }
+        } bind {
+            Promise.ofSuccess<List<RecentChatActivity.RecentChatData>, Exception>(list.sortedByDescending { it.lastTimestamp })
         }
     }
 
@@ -57,6 +120,7 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
     override fun addNewMessageListener (listener: (ConversationMessage) -> Unit) {
         newMessageListener?.unsubscribe()
         newMessageListener = messageService.newMessages.subscribe {
+            log.debug("Received new message")
             updateConversationCache(it)
         }
         newMessageUIListener = listener
@@ -79,16 +143,25 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
         newMessageUIListener = null
     }
 
-    override fun fetchMessageFor (userId: UserId, from: Int, to: Int): Promise<List<ConversationMessageInfo>, Exception> {
-        return messageService.getLastMessages(ConversationId.Companion.invoke(userId), from, to)
+    override fun fetchMessageFor (conversationId: ConversationId, from: Int, to: Int): Promise<List<ConversationMessageInfo>, Exception> {
+        return messageService.getLastMessages(conversationId, from, to)
     }
 
-    override fun sendMessageTo (userId: UserId, message: String, ttl: Long): Promise<Unit, Exception> {
-        return messengerService.sendMessageTo(userId, message, ttl)
+    override fun sendMessageTo (conversationId: ConversationId, message: String, ttl: Long): Promise<Unit, Exception> {
+        when(conversationId) {
+            is ConversationId.User -> {
+                log.debug("Sending single message\n\n\n\n\n")
+                return messengerService.sendMessageTo(conversationId.id, message, ttl)
+            }
+            is ConversationId.Group -> {
+                log.debug("Sending group message\n\n\n\n\n")
+                return messengerService.sendGroupMessageTo(conversationId.id, message, ttl)
+            }
+        }
     }
 
-    override fun deleteConversation (userId: UserId): Promise<Unit, Exception> {
-        return messageService.deleteAllMessages(ConversationId.Companion.invoke(userId))
+    override fun deleteConversation (conversationId: ConversationId): Promise<Unit, Exception> {
+        return messageService.deleteAllMessages(conversationId)
     }
 
     private fun notifyNewMessage (info: ConversationMessage) {
@@ -100,7 +173,7 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
         if (conversationId is ConversationId.User) {
             val userId = conversationId.id
             messageService.getUserConversation(userId) successUi { convo ->
-                if (convo !== null) {
+                if(convo != null) {
                     conversations[userId] = convo
                     notifyNewMessage(info)
                 }
@@ -109,8 +182,18 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
             }
         }
         else if (conversationId is ConversationId.Group) {
-            // is group conversation
+            val groupId = conversationId.id
+            messageService.getGroupConversation(groupId) successUi { convo ->
+                if(convo != null) {
+                    groupConversations[groupId] = convo
+                    notifyNewMessage(info)
+                }
+            }
         }
+    }
+
+    fun getContactInfo(userId: UserId): ContactInfo? {
+        return contactList[userId]
     }
 
 }

@@ -53,5 +53,8 @@
     <string name="drawer_share">Share with your friends</string>
     <string name="drawer_feedback">Send Feedback</string>
     <string name="drawer_logout">Logout</string>
+    <string name="drawer_delete_group">Leave Group</string>
+    <string name="drawer_group_info">Group Info</string>
+    <string name="drawer_block_group">Block Group</string>
 
 </resources>

@@ -117,7 +117,8 @@ class AddContactActivity : AppCompatActivity() {
         app.appComponent.uiContactsService.addNewContact(contactInfo) successUi {
             mUsernameField.setText("")
             val intent = Intent(baseContext, ChatActivity::class.java)
-            intent.putExtra("EXTRA_USERID", contactInfo.id.long)
+            intent.putExtra("EXTRA_ISGROUP", false)
+            intent.putExtra("EXTRA_ID", contactInfo.id.long)
             startActivity(intent)
         } fail {
             log.debug("Failed to add contact ${contactInfo.email}")

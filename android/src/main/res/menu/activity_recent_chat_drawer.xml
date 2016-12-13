@@ -15,6 +15,10 @@
                 android:icon="@drawable/ic_person_add_white_24dp"
                 android:title="@string/drawer_add_contact"/>
         <item
+                android:id="@+id/menu_create_group"
+                android:icon="@drawable/ic_group_add_white"
+                android:title="@string/drawer_create_group"/>
+        <item
                 android:id="@+id/menu_blocked_contacts"
                 android:icon="@drawable/ic_block_white"
                 android:title="@string/drawer_blocked_contacts"/>

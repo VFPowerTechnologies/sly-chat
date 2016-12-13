@@ -1,6 +1,7 @@
 package io.slychat.messenger.android.activites.services
 
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.ConversationMessageInfo
 import io.slychat.messenger.core.persistence.UserConversation
 import io.slychat.messenger.services.MessageUpdateEvent
@@ -15,20 +16,21 @@ interface MessengerService {
      * Get the current cached conversation
      * return null if conversation is not cached
      */
-    fun getAllConversation (): MutableMap<UserId, UserConversation>?
+    fun getAllConversation(): MutableMap<UserId, UserConversation>?
 
-    fun getActualSortedConversation (convo: MutableMap<UserId, UserConversation>): List<UserConversation>
+    fun getActualSortedConversation(convo: MutableMap<UserId, UserConversation>): List<UserConversation>
 
-    fun addNewMessageListener (listener: (ConversationMessage) -> Unit)
+    fun addNewMessageListener(listener: (ConversationMessage) -> Unit)
 
-    fun addMessageUpdateListener (listener: (MessageUpdateEvent) -> Unit)
+    fun addMessageUpdateListener(listener: (MessageUpdateEvent) -> Unit)
 
-    fun clearListeners ()
+    fun clearListeners()
 
-    fun fetchMessageFor (userId: UserId, from: Int, to: Int): Promise<List<ConversationMessageInfo>, Exception>
+    fun fetchMessageFor(conversationId: ConversationId, from: Int, to: Int): Promise<List<ConversationMessageInfo>, Exception>
 
-    fun sendMessageTo (userId: UserId, message: String, ttl: Long): Promise<Unit, Exception>
+    fun sendMessageTo(conversationId: ConversationId, message: String, ttl: Long): Promise<Unit, Exception>
 
-    fun deleteConversation (userId: UserId): Promise<Unit, Exception>
+
+    fun deleteConversation(conversationId: ConversationId): Promise<Unit, Exception>
 
 }

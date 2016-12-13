@@ -27,9 +27,7 @@ import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
 import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
 import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.ConversationId
-import io.slychat.messenger.core.persistence.GroupId
-import io.slychat.messenger.core.persistence.UserConversation
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.LoginEvent
 import io.slychat.messenger.services.PageType
 import io.slychat.messenger.services.messaging.ConversationMessage
@@ -50,9 +48,11 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
     private lateinit var groupService: GroupServiceImpl
 
     private var recentNodeData: MutableMap<UserId, Int> = mutableMapOf()
+    private var groupRecentNodeData: MutableMap<GroupId, Int> = mutableMapOf()
 
     data class RecentChatData(
             val id: ConversationId,
+            var groupName: String?,
             var lastSpeakerName: String,
             var lastTimestamp: Long,
             var lastMessage: String,
@@ -123,7 +123,11 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
         val nameView = node.findViewById(R.id.recent_chat_contact_name) as TextView
         val messageView = node.findViewById(R.id.recent_chat_contact_message) as TextView
         val timespanView = node.findViewById(R.id.recent_chat_contact_time) as TextView
-        nameView.text = data.lastSpeakerName
+        var name = ""
+        if(data.groupName != null)
+            name += "(" + data.groupName + ") "
+        name += data.lastSpeakerName
+        nameView.text = name
         messageView.text = data.lastMessage
 
         val time: String
@@ -142,18 +146,21 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
 
         if(data.id is ConversationId.User) {
             node.setOnClickListener {
-                val intent = Intent(baseContext, UserChatActivity::class.java)
-                intent.putExtra("EXTRA_USERID", data.id.id.long)
+                val intent = Intent(baseContext, ChatActivity::class.java)
+                intent.putExtra("EXTRA_ISGROUP", false)
+                intent.putExtra("EXTRA_ID", data.id.id.long)
                 startActivity(intent)
             }
             recentNodeData.put(data.id.id, nodeId)
         }
         else if(data.id is ConversationId.Group) {
             node.setOnClickListener {
-                val intent = Intent(baseContext, GroupChatActivity::class.java)
-                intent.putExtra("EXTRA_USERID", data.id.id.string)
+                val intent = Intent(baseContext, ChatActivity::class.java)
+                intent.putExtra("EXTRA_ISGROUP", true)
+                intent.putExtra("EXTRA_ID", data.id.id.string)
                 startActivity(intent)
             }
+            groupRecentNodeData.put(data.id.id, nodeId)
         }
 
         return node
@@ -167,7 +174,12 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
                 if (conversation != null)
                     updateSingleRecentChatNode(conversation)
             }
-            is ConversationId.Group -> { log.debug(conversationId.id.toString()) }
+            is ConversationId.Group -> {
+                val conversation = messengerService.groupConversations[conversationId.id]
+                if (conversation != null)
+                    updateGroupRecentChatNode(conversation)
+                log.debug(conversationId.id.toString())
+            }
         }
     }
 
@@ -178,15 +190,45 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
             recentChatList.removeView(findViewById(nodeId))
         }
 
-        val cId = ConversationId.invoke(userId)
+        val cId = userId.toConversationId()
 
         recentChatList.addView(createRecentChatView(RecentChatData(
                 cId,
+                null,
                 conversation.contact.name,
                 conversation.info.lastTimestamp as Long,
                 conversation.info.lastMessage as String,
                 conversation.info.unreadMessageCount
                 )), 0)
+    }
+
+    private fun updateGroupRecentChatNode (conversation: GroupConversation) {
+        val groupId = conversation.group.id
+        val nodeId = groupRecentNodeData[groupId]
+        if (nodeId !== null) {
+            recentChatList.removeView(findViewById(nodeId))
+        }
+
+        val cId = groupId.toConversationId()
+
+        var speakerName = ""
+        val lastSpeakerId = conversation.info.lastSpeaker
+        if (lastSpeakerId == null)
+            speakerName = "You"
+        else {
+            val contactInfo = messengerService.getContactInfo(lastSpeakerId)
+            if (contactInfo != null)
+                speakerName = contactInfo.name
+        }
+
+        recentChatList.addView(createRecentChatView(RecentChatData(
+                cId,
+                conversation.group.name,
+                speakerName,
+                conversation.info.lastTimestamp as Long,
+                conversation.info.lastMessage as String,
+                conversation.info.unreadMessageCount
+        )), 0)
     }
 
     private fun setListeners () {

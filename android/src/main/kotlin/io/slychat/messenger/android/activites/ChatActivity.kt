@@ -20,14 +20,12 @@ import hani.momanii.supernova_emoji_library.Actions.EmojIconActions
 import hani.momanii.supernova_emoji_library.Helper.EmojiconEditText
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.ContactService
 import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
+import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
 import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
 import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.persistence.ContactInfo
-import io.slychat.messenger.core.persistence.ConversationId
-import io.slychat.messenger.core.persistence.ConversationMessageInfo
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.PageType
 import io.slychat.messenger.services.contacts.ContactEvent
@@ -41,29 +39,44 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
 
     private lateinit var app: AndroidApp
     private lateinit var messengerService: MessengerServiceImpl
-    private lateinit var contactService: ContactService
+    private lateinit var contactService: ContactServiceImpl
+    private lateinit var groupService: GroupServiceImpl
 
     private lateinit var chatList: LinearLayout
     private lateinit var chatScrollView: ScrollView
     private lateinit var submitBtn: ImageButton
     private lateinit var chatInput: EditText
     private lateinit var contactInfo: ContactInfo
+    private lateinit var groupInfo: GroupInfo
 
-    private var userId: Long = -1
+    private lateinit var conversationId: ConversationId
     private var chatDataLink: MutableMap<String, Int> = mutableMapOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         log.debug("onCreate")
 
-        userId = intent.getLongExtra("EXTRA_USERID", -1L)
-        if (userId == -1L)
-            finish()
+        val layoutId: Int
+        val isGroup = intent.getBooleanExtra("EXTRA_ISGROUP", false)
+        if(isGroup) {
+            val gIdString = intent.getStringExtra("EXTRA_ID")
+            if(gIdString == null)
+                finish()
+            conversationId = GroupId(gIdString).toConversationId()
+            layoutId = R.layout.activity_group_chat
+        }
+        else {
+            val uIdLong = intent.getLongExtra("EXTRA_ID", -1L)
+            if(uIdLong == -1L)
+                finish()
+            conversationId = UserId(uIdLong).toConversationId()
+            layoutId = R.layout.activity_user_chat
+        }
 
         app = AndroidApp.get(this)
 
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
-        setContentView(R.layout.activity_chat)
+        setContentView(layoutId)
 
         val actionBar = findViewById(R.id.chat_toolbar) as Toolbar
         actionBar.title = ""
@@ -71,14 +84,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        val navigationView = findViewById(R.id.chat_nav_view) as NavigationView
-        navigationView.setNavigationItemSelectedListener(this)
-
-        val drawerName = navigationView.getHeaderView(0).findViewById(R.id.drawer_user_name) as TextView
-        val drawerEmail = navigationView.getHeaderView(0).findViewById(R.id.drawer_user_email) as TextView
-
-        drawerEmail.text = app.accountInfo?.email
-        drawerName.text = app.accountInfo?.name
+        setNavigationMenu()
 
         chatList = findViewById(R.id.chat_list) as LinearLayout
         chatScrollView = findViewById(R.id.chat_list_scrollview) as ScrollView
@@ -95,23 +101,59 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
 
         messengerService = MessengerServiceImpl(this)
         contactService = ContactServiceImpl(this)
+        groupService = GroupServiceImpl(this)
 
-        getContactInfo()
+        getDisplayInfo()
         createEventListeners()
     }
 
-    fun getContactInfo() {
-        contactService.getContact(UserId(userId)) successUi {
-            if (it == null)
+    private fun setNavigationMenu() {
+        val navigationView: NavigationView
+        if(conversationId is ConversationId.User) {
+            navigationView = findViewById(R.id.chat_user_nav_view) as NavigationView
+        }
+        else {
+            navigationView = findViewById(R.id.chat_group_nav_view) as NavigationView
+        }
+
+        navigationView.setNavigationItemSelectedListener(this)
+
+        val drawerName = navigationView.getHeaderView(0).findViewById(R.id.drawer_user_name) as TextView
+        val drawerEmail = navigationView.getHeaderView(0).findViewById(R.id.drawer_user_email) as TextView
+
+        drawerEmail.text = app.accountInfo?.email
+        drawerName.text = app.accountInfo?.name
+    }
+
+    fun getDisplayInfo() {
+        val cId = conversationId
+        if(cId is ConversationId.User) {
+            contactService.getContact(cId.id) successUi {
+                if (it == null)
+                    finish()
+                else {
+                    contactInfo = it
+                    val actionBar = findViewById(R.id.chat_toolbar) as Toolbar
+                    actionBar.title = it.name
+                }
+            } failUi {
+                log.debug("Could not find contact to load chat page.")
                 finish()
-            else {
-                contactInfo = it
-                val actionBar = findViewById(R.id.chat_toolbar) as Toolbar
-                actionBar.title = it.name
             }
-        } failUi {
-            log.debug("Could not find contact to load chat page.")
-            finish()
+        }
+        else if(cId is ConversationId.Group){
+            groupService.getGroupInfo(cId.id) successUi {
+                if(it != null) {
+                    groupInfo = it
+                    val actionBar = findViewById(R.id.chat_toolbar) as Toolbar
+                    actionBar.title = it.name
+                }
+                else
+                    finish()
+            } failUi {
+                log.debug("Could not find the group to load chat page")
+                finish()
+            }
         }
     }
 
@@ -122,10 +164,16 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
     }
 
     private fun init() {
-        app.dispatchEvent("PageChange", PageType.CONVO, userId.toString())
+        val cId = conversationId
+        if(cId is ConversationId.User) {
+            app.dispatchEvent("PageChange", PageType.CONVO, cId.id.toString())
+        }
+        else if(cId is ConversationId.Group){
+            app.dispatchEvent("PageChange", PageType.GROUP, cId.id.string)
+        }
         setAppActivity()
         setListeners()
-        messengerService.fetchMessageFor(UserId(userId), 0, 100) successUi {
+        messengerService.fetchMessageFor(conversationId, 0, 100) successUi {
             displayMessages(it)
         }
     }
@@ -171,7 +219,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
         if(messageValue.isEmpty())
             return
 
-        messengerService.sendMessageTo(UserId(userId), messageValue, 0) successUi {
+        messengerService.sendMessageTo(conversationId, messageValue, 0) successUi {
             chatInput.setText("")
         } failUi {
             log.debug("Send message failed", it.stackTrace)
@@ -185,15 +233,10 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
     }
 
     private fun onNewMessage(newMessageInfo: ConversationMessage) {
-        val conversationId = newMessageInfo.conversationId
-        when(conversationId) {
-            is ConversationId.User -> {
-                if (conversationId.id == UserId(userId)) {
-                    handleNewMessageDisplay(newMessageInfo)
-                }
-                // else not for the current user chat page
-            }
-            is ConversationId.Group -> {  }
+        log.debug("Message Received \n\n\n\n\n")
+        val cId = newMessageInfo.conversationId
+        if (cId == conversationId) {
+            handleNewMessageDisplay(newMessageInfo)
         }
     }
 
@@ -215,10 +258,10 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
     }
 
     private fun handleDeliveredMessageEvent(event: MessageUpdateEvent.Delivered) {
-        val conversationId = event.conversationId
-        when(conversationId) {
-            is ConversationId.User -> { updateMessageDelivered(event) }
-            is ConversationId.Group -> { log.debug("is a delivered event for group ${conversationId.id}") }
+        log.debug("Message delivered\n\n\n\n\n")
+        val cId = event.conversationId
+        if(cId == conversationId) {
+            updateMessageDelivered(event)
         }
     }
 
@@ -234,30 +277,21 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
     }
 
     private fun handleDeletedAllMessage(event: MessageUpdateEvent.DeletedAll) {
-        val conversationId = event.conversationId
-        when(conversationId) {
-            is ConversationId.User -> {
-                if(UserId(userId) == conversationId.id) {
-                    chatList.removeAllViews()
-                }
-            }
+        val cId = event.conversationId
+        if(cId == conversationId) {
+            chatList.removeAllViews()
         }
-
     }
 
     private fun handleDeletedMessage(event: MessageUpdateEvent.Deleted) {
-        val conversationId = event.conversationId
-        when(conversationId) {
-            is ConversationId.User -> {
-                if(conversationId.id == UserId(userId)) {
-                    event.messageIds.forEach {
-                        val nodeId = chatDataLink[it]
-                        if(nodeId === null) {
-                            log.debug("Message Deleted event, Message id: $it does not exist in the current chat page")
-                        } else {
-                            chatList.removeView(findViewById(nodeId))
-                        }
-                    }
+        val cId = event.conversationId
+        if(cId == conversationId) {
+            event.messageIds.forEach {
+                val nodeId = chatDataLink[it]
+                if(nodeId === null) {
+                    log.debug("Message Deleted event, Message id: $it does not exist in the current chat page")
+                } else {
+                    chatList.removeView(findViewById(nodeId))
                 }
             }
         }
@@ -319,22 +353,28 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
     }
 
     private fun loadContactInfo() {
-        val intent = Intent(baseContext, ContactInfoActivity::class.java)
-        intent.putExtra("EXTRA_USERID", userId)
-        intent.putExtra("EXTRA_USER_NAME", contactInfo.name)
-        intent.putExtra("EXTRA_USER_EMAIL", contactInfo.email)
-        intent.putExtra("EXTRA_USER_PUBKEY", contactInfo.publicKey)
-        startActivity(intent)
+        val cId = conversationId
+        if(cId is ConversationId.User) {
+            val intent = Intent(baseContext, ContactInfoActivity::class.java)
+            intent.putExtra("EXTRA_USERID", cId.id.long)
+            intent.putExtra("EXTRA_USER_NAME", contactInfo.name)
+            intent.putExtra("EXTRA_USER_EMAIL", contactInfo.email)
+            intent.putExtra("EXTRA_USER_PUBKEY", contactInfo.publicKey)
+            startActivity(intent)
+        }
     }
 
     private fun blockContact() {
-        contactService.blockContact(UserId(userId)) failUi {
-            log.info("Failed to block user id : $userId")
+        val cId = conversationId
+        if(cId is ConversationId.User) {
+            contactService.blockContact(cId.id) failUi {
+                log.info("Failed to block user id : ${cId.id}")
+            }
         }
     }
 
     private fun deleteConversation() {
-        messengerService.deleteConversation(UserId(userId)) failUi {
+        messengerService.deleteConversation(conversationId) failUi {
             log.debug("Failed to delete the conversation")
         }
     }
@@ -345,6 +385,33 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
                 log.info("Failed to delete user id : ${contactInfo.email}")
         } failUi {
             log.debug("Failed to delete user id : ${contactInfo.email}")
+        }
+    }
+
+    private fun deleteGroup() {
+        val cId = conversationId
+        if(cId is ConversationId.Group) {
+            groupService.deleteGroup(cId.id) successUi {
+                finish()
+            } failUi {
+                log.debug("Failed to delete the group")
+            }
+        }
+    }
+
+    private fun blockGroup() {
+        val cId = conversationId
+        if(cId is ConversationId.Group) {
+            groupService.blockGroup(cId.id) failUi {
+                log.debug("Failed to block the group")
+            }
+        }
+    }
+
+    private fun loadGroupInfo() {
+        val cId = conversationId
+        if(cId is ConversationId.Group) {
+            log.debug("loading group info")
         }
     }
 
@@ -371,6 +438,9 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
             R.id.menu_delete_contact -> { openConfirmationDialog("Delete contact", "Are you sure you want to delete this contact?", { deleteContact() }) }
             R.id.menu_delete_conversation -> { openConfirmationDialog("Delete conversation", "Are you sure you want to delete this whole conversation?", { deleteConversation() }) }
             R.id.menu_contact_info -> { loadContactInfo() }
+            R.id.menu_group_info -> { loadGroupInfo() }
+            R.id.menu_delete_group -> { openConfirmationDialog("Delete Group", "Are you sure you want to delete this group?", { deleteGroup() })}
+            R.id.menu_block_group -> { openConfirmationDialog("Block Group", "Are you sure you want to block this group?", { blockGroup() })}
         }
 
         val drawer = findViewById(R.id.chat_drawer_layout) as DrawerLayout
