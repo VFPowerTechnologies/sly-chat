@@ -84,7 +84,6 @@ class IOSPlatformContacts : PlatformContacts {
         contactStore.enumerateContactsWithFetchRequestErrorUsingBlock(fetchRequest, fetchErrorPtr) { contact, stop ->
             val name = CNContactFormatter.stringFromContactStyle(contact, CNContactFormatterStyle.FullName)
             val emailAddresses = contact.emailAddresses().map { it.value() as String }
-            //TODO format phonenumbers
             val phoneNumbers = contact.phoneNumbers().map { (it.value() as CNPhoneNumber).stringValue() }
 
             platformContacts.add(
