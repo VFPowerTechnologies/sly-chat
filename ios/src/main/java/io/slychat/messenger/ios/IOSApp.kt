@@ -1,8 +1,8 @@
 package io.slychat.messenger.ios
 
 import apple.NSObject
-import apple.foundation.NSBundle
-import apple.foundation.NSDictionary
+import apple.foundation.*
+import apple.foundation.c.Foundation
 import apple.uikit.*
 import apple.uikit.c.UIKit
 import apple.uikit.protocol.UIApplicationDelegate
@@ -20,9 +20,11 @@ import io.slychat.messenger.services.ui.createAppDirectories
 import nl.komponents.kovenant.ui.KovenantUi
 import org.moe.natj.general.Pointer
 import org.moe.natj.general.ann.RegisterOnStartup
+import org.moe.natj.general.ptr.impl.PtrFactory
 import org.moe.natj.objc.ann.Selector
 import org.slf4j.LoggerFactory
 import rx.subjects.BehaviorSubject
+import java.io.File
 
 @RegisterOnStartup
 class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationDelegate {
@@ -53,6 +55,18 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
     private lateinit var screenProtectionWindow: UIWindow
 
+    private fun excludeDirFromBackup(path: File) {
+        val url = NSURL.fileURLWithPath(path.toString())
+
+        val errorPtr = PtrFactory.newObjectReference(NSError::class.java)
+
+        @Suppress("UNCHECKED_CAST")
+        if (!url.setResourceValueForKeyError(NSNumber.alloc().initWithBool(true), Foundation.NSURLIsExcludedFromBackupKey(), errorPtr)) {
+            val error = errorPtr.get()
+            throw RuntimeException("Unable to exclude directory from backups: ${error.description()}")
+        }
+    }
+
     override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
         printBundleInfo()
 
@@ -64,6 +78,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
         val platformInfo = IOSPlatformInfo()
         createAppDirectories(platformInfo)
+        excludeDirFromBackup(platformInfo.appFileStorageDirectory)
 
         val notificationService = IOSNotificationService()
 
