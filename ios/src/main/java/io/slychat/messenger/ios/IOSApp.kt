@@ -1,11 +1,16 @@
 package io.slychat.messenger.ios
 
 import apple.NSObject
+import apple.coregraphics.struct.CGPoint
+import apple.coregraphics.struct.CGRect
+import apple.coregraphics.struct.CGSize
 import apple.foundation.*
 import apple.foundation.c.Foundation
 import apple.uikit.*
 import apple.uikit.c.UIKit
+import apple.uikit.enums.UIModalPresentationStyle
 import apple.uikit.protocol.UIApplicationDelegate
+import apple.uikit.protocol.UIPopoverPresentationControllerDelegate
 import com.almworks.sqlite4java.SQLite
 import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.ios.kovenant.IOSDispatcher
@@ -20,6 +25,7 @@ import io.slychat.messenger.services.ui.createAppDirectories
 import nl.komponents.kovenant.ui.KovenantUi
 import org.moe.natj.general.Pointer
 import org.moe.natj.general.ann.RegisterOnStartup
+import org.moe.natj.general.ptr.Ptr
 import org.moe.natj.general.ptr.impl.PtrFactory
 import org.moe.natj.objc.ann.Selector
 import org.slf4j.LoggerFactory
@@ -27,8 +33,9 @@ import rx.subjects.BehaviorSubject
 import java.io.File
 
 @RegisterOnStartup
-class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationDelegate {
+class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationDelegate, UIPopoverPresentationControllerDelegate {
     companion object {
+        @JvmStatic
         @Selector("alloc")
         external fun alloc(): IOSApp
 
@@ -212,5 +219,52 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
     fun uiLoadComplete() {
         webViewController.hideLaunchScreenView()
+    }
+
+    private fun calcSharePopoverRect(): CGRect {
+        val frame = webViewController.view().frame()
+        val x = frame.size().width() / 2
+
+        return CGRect(CGPoint(x, 0.0), CGSize(0.0, 20.0))
+    }
+
+    fun inviteToSly(subject: String, text: String, htmlText: String?) {
+        //here we provide something that describes itself as NSURL so facebook messenger shows up in the list (else it
+        //won't list itself as a choice)
+
+        //then, we return a null value for the url; this causes facebook messenger to use the text provided as the
+        //message data; otherwise it'll only use the url
+
+        //this is similar to how the message shows up in the android version
+
+        //should this stop working, change EmptyURLActivityItemProvider to just return an NSURL when activityType() == com.facebook.Messenger.ShareExtension
+        val activityItems = nsarray(
+            text,
+            EmptyURLActivityItemProvider.alloc().initWithPlaceholderItem(NSURL.URLWithString("https://slychat.io/get-app"))
+        )
+
+        val activityController = UIActivityViewController.alloc().initWithActivityItemsApplicationActivities(activityItems, null)
+
+        val excludedTypes = nsarray(UIKit.UIActivityTypeAddToReadingList(), UIKit.UIActivityTypeAirDrop())
+
+        activityController.setExcludedActivityTypes(excludedTypes)
+
+        activityController.setModalPresentationStyle(UIModalPresentationStyle.Popover)
+
+        webViewController.presentViewControllerAnimatedCompletion(activityController, true, null)
+
+        val popoverController = activityController.popoverPresentationController()
+        if (popoverController != null) {
+            popoverController.setSourceView(webViewController.view())
+            popoverController.setSourceRect(calcSharePopoverRect())
+            //currently disabled, as this leads to a crash in MOE
+            //popoverController.setDelegate(this)
+        }
+    }
+
+    override fun popoverPresentationControllerWillRepositionPopoverToRectInView(popoverPresentationController: UIPopoverPresentationController, rect: CGRect, view: Ptr<UIView>) {
+        val newRect = calcSharePopoverRect()
+        rect.setOrigin(newRect.origin())
+        rect.setSize(newRect.size())
     }
 }

@@ -68,11 +68,10 @@ class IOSPlatformContacts : PlatformContacts {
     private fun enumContacts(): List<PlatformContact> {
         val contactStore = CNContactStore.alloc().init()
 
-        val keysToFetch = NSArray.arrayWithObjects(
+        val keysToFetch = nsarray(
             Contacts.CNContactEmailAddressesKey(),
             Contacts.CNContactPhoneNumbersKey(),
-            CNContactFormatter.descriptorForRequiredKeysForStyle(CNContactFormatterStyle.FullName),
-            null
+            CNContactFormatter.descriptorForRequiredKeysForStyle(CNContactFormatterStyle.FullName)
         )
 
         val fetchRequest = CNContactFetchRequest.alloc().initWithKeysToFetch(keysToFetch)
