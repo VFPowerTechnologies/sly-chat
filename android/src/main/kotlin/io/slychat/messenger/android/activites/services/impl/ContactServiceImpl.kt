@@ -21,19 +21,19 @@ class ContactServiceImpl(activity: AppCompatActivity): ContactService {
 
     var contactList: MutableMap<UserId, ContactInfo> = mutableMapOf()
 
-    override fun addContactListener (listener: ((ContactEvent) -> Unit)) {
+    override fun addContactListener(listener: ((ContactEvent) -> Unit)) {
         contactUIListener = listener
         contactListener = contactService.contactEvents.subscribe {
             handleContactEvent(it)
         }
     }
 
-    override fun clearListeners () {
+    override fun clearListeners() {
         contactUIListener = null
         contactListener?.unsubscribe()
     }
 
-    override fun getContacts (): Promise<MutableMap<UserId, ContactInfo>, Exception> {
+    override fun getContacts(): Promise<MutableMap<UserId, ContactInfo>, Exception> {
         contactList = mutableMapOf()
         return contactService.getAll() map { contacts ->
             contacts.forEach {
@@ -43,7 +43,7 @@ class ContactServiceImpl(activity: AppCompatActivity): ContactService {
         }
     }
 
-    override fun getContact (id: UserId): Promise<ContactInfo?, Exception> {
+    override fun getContact(id: UserId): Promise<ContactInfo?, Exception> {
         if (contactList[id] != null)
             return Promise.ofSuccess(contactList[id])
 
@@ -55,15 +55,21 @@ class ContactServiceImpl(activity: AppCompatActivity): ContactService {
         }
     }
 
-    override fun deleteContact (contactInfo: ContactInfo): Promise<Boolean, Exception> {
+    override fun deleteContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
         return contactService.removeContact(contactInfo)
     }
 
-    override fun blockContact (id: UserId): Promise<Unit, Exception> {
+    override fun blockContact(id: UserId): Promise<Unit, Exception> {
         return contactService.block(id)
     }
 
-    private fun handleContactEvent (event: ContactEvent) {
+    override fun getContactCount(): Promise<Int, Exception> {
+        return contactService.getAll() map {
+            it.size
+        }
+    }
+
+    private fun handleContactEvent(event: ContactEvent) {
         when (event) {
             is ContactEvent.Added -> { handleNewContactAdded(event) }
             is ContactEvent.Blocked -> { handleContactBlocked(event) }
@@ -75,11 +81,11 @@ class ContactServiceImpl(activity: AppCompatActivity): ContactService {
         notifyUi(event)
     }
 
-    private fun notifyUi (event: ContactEvent) {
+    private fun notifyUi(event: ContactEvent) {
         contactUIListener?.invoke(event)
     }
 
-    private fun handleContactBlocked (event: ContactEvent.Blocked) {
+    private fun handleContactBlocked(event: ContactEvent.Blocked) {
         val c = contactList[event.userId]
         if (c != null) {
             contactList[event.userId] = ContactInfo(c.id, c.email, c.name, AllowedMessageLevel.BLOCKED, c.publicKey)
@@ -92,19 +98,19 @@ class ContactServiceImpl(activity: AppCompatActivity): ContactService {
         }
     }
 
-    private fun handleNewContactAdded (event: ContactEvent.Added) {
+    private fun handleNewContactAdded(event: ContactEvent.Added) {
         event.contacts.forEach { c ->
             contactList[c.id] = c
         }
     }
 
-    private fun handleContactRemoved (event: ContactEvent.Removed) {
+    private fun handleContactRemoved(event: ContactEvent.Removed) {
         event.contacts.forEach { c ->
             contactList.remove(c.id)
         }
     }
 
-    private fun handleContactUnblocked (event: ContactEvent.Unblocked) {
+    private fun handleContactUnblocked(event: ContactEvent.Unblocked) {
         val c = contactList[event.userId]
         if (c != null) {
             contactList[event.userId] = ContactInfo(c.id, c.email, c.name, AllowedMessageLevel.GROUP_ONLY, c.publicKey)

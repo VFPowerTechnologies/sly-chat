@@ -5,7 +5,6 @@
 
     <style name="SlyMaterialTheme" parent="SlyMaterialTheme.base">
 
-
     </style>
 
     <style name="SlyMaterialTheme.base" parent="Theme.AppCompat.NoActionBar">

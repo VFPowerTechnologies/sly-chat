@@ -23,8 +23,10 @@ import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
 import android.widget.AdapterView.OnItemClickListener
 import io.slychat.messenger.android.MainActivity
+import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
 import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
 import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
+import io.slychat.messenger.android.activites.services.impl.SettingsServiceImpl
 import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
@@ -46,6 +48,8 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
     private var loginListener: Subscription? = null
     private lateinit var messengerService: MessengerServiceImpl
     private lateinit var groupService: GroupServiceImpl
+    private lateinit var contactService: ContactServiceImpl
+    private lateinit var settingsService: SettingsServiceImpl
 
     private var recentNodeData: MutableMap<UserId, Int> = mutableMapOf()
     private var groupRecentNodeData: MutableMap<GroupId, Int> = mutableMapOf()
@@ -59,7 +63,7 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
             var unreadMessageCount: Int
     )
 
-    override fun onCreate (savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         log.debug("onCreate")
 
@@ -69,6 +73,8 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
         app = AndroidApp.get(this)
         messengerService = MessengerServiceImpl(this)
         groupService = GroupServiceImpl(this)
+        contactService = ContactServiceImpl(this)
+        settingsService = SettingsServiceImpl(this)
 
         val actionBar = findViewById(R.id.recent_chat_toolbar) as Toolbar
         actionBar.title = "  Sly Chat"
@@ -99,6 +105,7 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
 
         messengerService.fetchAllRecentChat() successUi {
             displayRecentChat(it)
+            showInviteFriends()
         } failUi {
             log.debug("failed to fetch recent chats")
         }
@@ -112,19 +119,19 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
         }
     }
 
-    private fun displayRecentChat (data: List<RecentChatData>) {
+    private fun displayRecentChat(data: List<RecentChatData>) {
         data.forEach {
             recentChatList.addView(createRecentChatView(it))
         }
     }
 
-    private fun createRecentChatView (data: RecentChatData): View {
+    private fun createRecentChatView(data: RecentChatData): View {
         val node = LayoutInflater.from(this).inflate(R.layout.recent_chat_node_layout, recentChatList, false)
         val nameView = node.findViewById(R.id.recent_chat_contact_name) as TextView
         val messageView = node.findViewById(R.id.recent_chat_contact_message) as TextView
         val timespanView = node.findViewById(R.id.recent_chat_contact_time) as TextView
         var name = ""
-        if(data.groupName != null)
+        if (data.groupName != null)
             name += "(" + data.groupName + ") "
         name += data.lastSpeakerName
         nameView.text = name
@@ -144,7 +151,7 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
         val nodeId = View.generateViewId()
         node.id = nodeId
 
-        if(data.id is ConversationId.User) {
+        if (data.id is ConversationId.User) {
             node.setOnClickListener {
                 val intent = Intent(baseContext, ChatActivity::class.java)
                 intent.putExtra("EXTRA_ISGROUP", false)
@@ -153,7 +160,7 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
             }
             recentNodeData.put(data.id.id, nodeId)
         }
-        else if(data.id is ConversationId.Group) {
+        else if (data.id is ConversationId.Group) {
             node.setOnClickListener {
                 val intent = Intent(baseContext, ChatActivity::class.java)
                 intent.putExtra("EXTRA_ISGROUP", true)
@@ -166,7 +173,23 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
         return node
     }
 
-    fun onNewMessage (data: ConversationMessage) {
+    private fun showInviteFriends() {
+        contactService.getContactCount() successUi { count ->
+            val inviteNode = findViewById(R.id.recent_chat_invite_node) as LinearLayout
+            if (count < 5 && settingsService.getShowInviteEnabled()) {
+                inviteNode.visibility = View.VISIBLE
+                inviteNode.setOnClickListener {
+                    startActivity(Intent(baseContext, InviteFriendsActivity::class.java))
+                }
+            }
+            else
+                inviteNode.visibility = View.GONE
+        } failUi {
+            log.debug("Failed to check the total count of contacts")
+        }
+    }
+
+    fun onNewMessage(data: ConversationMessage) {
         val conversationId = data.conversationId
         when (conversationId) {
             is ConversationId.User -> {
@@ -183,7 +206,7 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
         }
     }
 
-    private fun updateSingleRecentChatNode (conversation: UserConversation) {
+    private fun updateSingleRecentChatNode(conversation: UserConversation) {
         val userId = conversation.contact.id
         val nodeId = recentNodeData[userId]
         if (nodeId !== null) {
@@ -202,7 +225,7 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
                 )), 0)
     }
 
-    private fun updateGroupRecentChatNode (conversation: GroupConversation) {
+    private fun updateGroupRecentChatNode(conversation: GroupConversation) {
         val groupId = conversation.group.id
         val nodeId = groupRecentNodeData[groupId]
         if (nodeId !== null) {

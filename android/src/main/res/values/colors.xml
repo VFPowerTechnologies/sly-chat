@@ -7,4 +7,5 @@
     <color name="blackToolBar">#000000</color>
     <color name="navigationBarColor">#000000</color>
     <color name="colorAccent">#c8e8ff</color>
+    <color name="darkColorAccent">#202020</color>
 </resources>

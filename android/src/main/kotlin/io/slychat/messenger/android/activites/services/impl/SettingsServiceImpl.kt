@@ -5,17 +5,17 @@ import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.activites.services.SettingsService
 
 class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
-    data class NotificationConfig (
+    data class NotificationConfig(
         var active: Boolean,
         var sound: String?,
         var soundName: String
     )
 
-    data class MarketingConfig (
+    data class MarketingConfig(
         var showInviteFriends: Boolean
     )
 
-    data class AppearanceConfig (
+    data class AppearanceConfig(
         var theme: String?
     )
 
@@ -34,14 +34,14 @@ class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
     private var appearanceListener : ((AppearanceConfig) -> Unit)? = null
 
     var notificationEnabled = true
-        set (value) {
+        set(value) {
             field = value
             notificationConfig.active = value
             updateNotificationConfig()
         }
 
     var notificationSound: String? = null
-        set (value) {
+        set(value) {
             field = value
             notificationConfig.sound = value
 
@@ -59,7 +59,7 @@ class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
         }
 
     var selectedTheme: String? = null
-        set (value) {
+        set(value) {
             field = value
             appearanceConfig.theme = value
             updateAppearanceConfig()
@@ -81,25 +81,29 @@ class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
         selectedTheme = appearanceConfig.theme
     }
 
-    override fun addNotificationConfigListener (listener: (NotificationConfig) -> Unit) {
+    override fun addNotificationConfigListener(listener: (NotificationConfig) -> Unit) {
         notificationListener = listener
     }
 
-    override fun addMarketingConfigListener (listener: (MarketingConfig) -> Unit) {
+    override fun addMarketingConfigListener(listener: (MarketingConfig) -> Unit) {
         marketingListener = listener
     }
 
-    override fun addAppearanceConfigListener (listener: (AppearanceConfig) -> Unit) {
+    override fun addAppearanceConfigListener(listener: (AppearanceConfig) -> Unit) {
         appearanceListener = listener
     }
 
-    override fun clearConfigListener () {
+    override fun clearConfigListener() {
         notificationListener = null
         appearanceListener = null
         marketingListener = null
     }
 
-    private fun notifyConfigChange (type: ConfigType) {
+    override fun getShowInviteEnabled(): Boolean {
+        return configService.marketingShowInviteFriends
+    }
+
+    private fun notifyConfigChange(type: ConfigType) {
         when (type) {
             ConfigType.NOTIFICATION -> { notificationListener?.invoke(notificationConfig) }
             ConfigType.MARKETING -> { marketingListener?.invoke(marketingConfig) }
@@ -107,7 +111,7 @@ class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
         }
     }
 
-    private fun updateNotificationConfig () {
+    private fun updateNotificationConfig() {
         configService.withEditor {
             notificationsEnabled = notificationConfig.active
             notificationsSound = notificationConfig.sound
@@ -116,7 +120,7 @@ class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
         notifyConfigChange(ConfigType.NOTIFICATION)
     }
 
-    private fun updateMarketingConfig () {
+    private fun updateMarketingConfig() {
         configService.withEditor {
             marketingShowInviteFriends = marketingConfig.showInviteFriends
         }
@@ -124,7 +128,7 @@ class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
         notifyConfigChange(ConfigType.MARKETING)
     }
 
-    private fun updateAppearanceConfig () {
+    private fun updateAppearanceConfig() {
         configService.withEditor {
             app.appComponent.appConfigService.withEditor {
                 appearanceTheme = appearanceConfig.theme

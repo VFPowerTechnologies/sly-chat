@@ -27,22 +27,36 @@
 
         </android.support.design.widget.AppBarLayout>
 
-        <ScrollView
+        <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                app:layout_behavior="@string/appbar_scrolling_view_behavior"
-                android:scrollbars="none">
+                app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
             <LinearLayout
-                    android:paddingTop="@dimen/activity_vertical_margin"
-                    android:paddingBottom="@dimen/activity_vertical_margin"
-                    android:id="@+id/recent_chat_container"
                     android:orientation="vertical"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    tools:context="io.slychat.messenger.android.activites.RecentChatActivity">
+                    android:id="@+id/recent_chat_invite_node">
+
+                <include layout="@layout/recent_chat_invite_friend_node"/>
 
             </LinearLayout>
-        </ScrollView>
+            <ScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scrollbars="none" android:layout_below="@+id/recent_chat_invite_node">
+                <LinearLayout
+                        android:paddingBottom="@dimen/activity_vertical_margin"
+                        android:id="@+id/recent_chat_container"
+                        android:orientation="vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        tools:context="io.slychat.messenger.android.activites.RecentChatActivity">
+
+                </LinearLayout>
+            </ScrollView>
+        </RelativeLayout>
+
 
         <android.support.design.widget.FloatingActionButton
                 android:id="@+id/contact_float_btn"
@@ -63,6 +77,6 @@
             android:layout_gravity="end"
             android:fitsSystemWindows="true"
             app:headerLayout="@layout/nav_drawer_header"
-            app:menu="@menu/activity_recent_chat_drawer" android:visibility="gone"/>
+            app:menu="@menu/activity_recent_chat_drawer"/>
 
 </android.support.v4.widget.DrawerLayout>

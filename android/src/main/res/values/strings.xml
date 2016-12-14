@@ -8,6 +8,9 @@
     <string name="empty_recent_chat_text">No recent chats</string>
     <string name="empty_contact_list_text">No contacts</string>
 
+    <string name="recent_chat_invite_title">Invite Your Friends</string>
+    <string name="recent_chat_invite_text">You currently have less than 5 contacts!</string>
+
     <string name="contact_page_title">Address Book</string>
     <string name="contact_recent_title">Recent Contacts</string>
     <string name="contact_list_title">Contacts</string>
@@ -29,7 +32,7 @@
     <string name="settings_appearance_header">Appearance</string>
     <string name="settings_theme_switch">Dark Theme</string>
     <string name="settings_misc_header">Misc</string>
-    <string name="settings_invite_friends_switch">Hide invite friends</string>
+    <string name="settings_invite_friends_switch">Show invite friends</string>
 
     <string name="add_contact_header_text">Add Contact</string>
     <string name="chat_input_hint">Type your secure message</string>
