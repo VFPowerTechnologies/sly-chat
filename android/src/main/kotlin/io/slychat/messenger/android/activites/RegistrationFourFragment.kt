@@ -5,8 +5,12 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Spinner
+import com.google.i18n.phonenumbers.PhoneNumberUtil
+import com.google.i18n.phonenumbers.Phonenumber
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.R
@@ -15,12 +19,14 @@ import io.slychat.messenger.services.ui.UIRegistrationInfo
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
+import java.util.*
 
 class RegistrationFourFragment: Fragment() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var registrationService : RegistrationService
     private lateinit var mainActivity: MainActivity
+    private val phoneUtil = PhoneNumberUtil.getInstance()
 
     private var v: View? = null
 
@@ -41,28 +47,56 @@ class RegistrationFourFragment: Fragment() {
             handleSubmitStepFour()
         }
 
+        populateCountrySelect()
+
         return v
+    }
+
+    private fun populateCountrySelect() {
+        val countryList = phoneUtil.supportedRegions.sortedBy { it }.toMutableList()
+        val position = countryList.indexOf(Locale.getDefault().country)
+        val spinner = v?.findViewById(R.id.registration_country_spinner) as Spinner
+        val countryAdapter = ArrayAdapter<String>(mainActivity, android.R.layout.simple_spinner_item, countryList)
+        spinner.adapter = countryAdapter
+        spinner.setSelection(position)
     }
 
     private fun handleSubmitStepFour() {
         val mPhone = v?.findViewById(R.id.registration_phone_number) as EditText
+        val mCountrySpinner = v?.findViewById(R.id.registration_country_spinner) as Spinner
+        val country = mCountrySpinner.selectedItem as String
+        val phoneInput = mPhone.text.toString()
+        val parsed : Phonenumber.PhoneNumber
 
-        val phone = mPhone.text.toString()
-        var valid = true
-
-        if(phone.isEmpty()) {
-            mPhone.error = "Phone number is required"
-            valid = false
+        if(phoneInput.isEmpty()) {
+            displayError("Phone number is required")
+            return
         }
 
-        if (valid) {
-            checkPhoneAvailability(phone)
+        try {
+            parsed = phoneUtil.parse(phoneInput, country)
+        } catch (e: Exception) {
+            displayError("Phone does not seem to be valid")
+            return
         }
+
+        if (!phoneUtil.isValidNumberForRegion(parsed, country)) {
+            displayError("Phone does not seem to be valid")
+            return
+        }
+
+        val phone = phoneUtil.format(parsed, PhoneNumberUtil.PhoneNumberFormat.E164)
+
+        checkPhoneAvailability(phone.replace("+", ""))
+    }
+
+    private fun displayError(error: String) {
+        val mPhone = v?.findViewById(R.id.registration_phone_number) as EditText
+        mPhone.error = error
     }
 
     private fun checkPhoneAvailability(phone: String) {
         val mainActivity = activity as MainActivity
-        val mPhone = v?.findViewById(R.id.registration_phone_number) as EditText
 
         mainActivity.showProgressDialog("Checking for phone number availability")
         registrationService.checkPhoneNumberAvailability(phone) successUi { available ->
@@ -74,11 +108,11 @@ class RegistrationFourFragment: Fragment() {
             }
             else {
                 mainActivity.hideProgressDialog()
-                mPhone.error = "Email is already in use"
+                displayError("Phone number is already in use")
             }
         } failUi {
             mainActivity.hideProgressDialog()
-            mPhone.error = "An error occurred"
+            displayError("An error occurred")
         }
     }
 

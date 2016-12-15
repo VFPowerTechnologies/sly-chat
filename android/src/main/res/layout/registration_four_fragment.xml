@@ -2,7 +2,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:orientation="vertical"
               android:layout_width="match_parent"
-              android:layout_height="match_parent" android:gravity="center_vertical|center_horizontal"
+              android:layout_height="match_parent"
+              android:gravity="center_vertical|center_horizontal"
               android:padding="16dp">
 
     <TextView
@@ -14,16 +15,42 @@
             android:textColor="#fff"
             android:layout_marginBottom="5dp"/>
 
-    <EditText
+    <LinearLayout
+            android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="phone"
-            android:ems="10"
-            android:id="@+id/registration_phone_number"
-            android:layout_gravity="center_horizontal"
-            android:hint="Phone Number"
-            android:layout_marginTop="15dp"
-            android:layout_marginBottom="15dp"/>
+            android:layout_height="wrap_content" android:layout_marginTop="15dp" android:layout_marginBottom="15dp">
+        <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent">
+            <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:text="Country"
+                    android:id="@+id/textView" android:textSize="10sp"/>
+            <Spinner
+                    android:layout_width="65dp"
+                    android:layout_height="match_parent"
+                    android:spinnerMode="dropdown"
+                    android:id="@+id/registration_country_spinner" android:padding="0dp"/>
+        </LinearLayout>
+        <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+            <EditText
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="phone"
+                    android:ems="10"
+                    android:id="@+id/registration_phone_number"
+                    android:layout_gravity="center_horizontal"
+                    android:hint="Phone Number"
+
+                    android:layout_marginTop="11dp"/>
+        </LinearLayout>
+    </LinearLayout>
 
     <Button
             android:layout_width="wrap_content"
