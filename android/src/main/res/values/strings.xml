@@ -3,6 +3,35 @@
     <string name="app_name">Sly</string>
     <string name="title_activity_main">Sly</string>
 
+    <string name="login_page_title">Login</string>
+    <string name="login_username_hint">Email or Phone Number</string>
+    <string name="login_password_hint">Password</string>
+    <string name="login_remember_me_text">Remember Me</string>
+    <string name="login_submit_btn">Login</string>
+    <string name="login_register_link_text">No account yet? Create one</string>
+
+    <string name="registration_one_title">Enter your name</string>
+    <string name="registration_one_details">This will be displayed to your contacts</string>
+    <string name="registration_two_title">Enter your email address</string>
+    <string name="registration_two_details">This is for account administration</string>
+    <string name="registration_three_title">Enter a password</string>
+    <string name="registration_three_details">This is for data encryption</string>
+    <string name="registration_four_title">Enter your phone number</string>
+    <string name="registration_country_label">Country</string>
+    <string name="registration_phone_hint">Phone Number</string>
+    <string name="registration_password_hint">Password</string>
+    <string name="registration_password_conf_hint">Password Confirm</string>
+    <string name="registration_email_hint">Email</string>
+    <string name="registration_name_hint">Name</string>
+    <string name="registration_next_btn">NEXT</string>
+    <string name="registration_login_link_text">Already have an account? Sign in</string>
+
+    <string name="sms_verification_title">Verify your phone number</string>
+    <string name="sms_verification_details">Last step! Enter the code we\'re sending you via SMS</string>
+    <string name="sms_verification_code_hint">Verification Code</string>
+    <string name="sms_verification_resend_link">Didn\'t receive your verification code? Resend</string>
+    <string name="sms_verification_update_phone_link">Update phone number</string>
+
     <string name="username_field_hint">Email or Phone Number</string>
 
     <string name="empty_recent_chat_text">No recent chats</string>
