@@ -56,6 +56,7 @@
 		0A1C9B801DE4CD6B008332C8 /* libsqlcipher.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libsqlcipher.a; sourceTree = SOURCE_ROOT; };
 		0A3FA06B1DE5DC800019BF8D /* sly-logger.properties */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "sly-logger.properties"; sourceTree = "<group>"; };
 		0A4799011DE5FC5C00FA76B2 /* ui */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ui; path = ../../ui/ui; sourceTree = "<group>"; };
+		0A5F144D1E0814010054FE33 /* Sly.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Sly.entitlements; sourceTree = "<group>"; };
 		0AFD69381DF8871900CEA55E /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		0AFD693A1DF8872C00CEA55E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		18B7135DA03A86786EE0B00A /* MOE.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = MOE.framework; sourceTree = MOE_FRAMEWORK_PATH; };
@@ -130,6 +131,7 @@
 		EC139B36DEC1F69208FDF599 /* SlyChat */ = {
 			isa = PBXGroup;
 			children = (
+				0A5F144D1E0814010054FE33 /* Sly.entitlements */,
 				0AFD69381DF8871900CEA55E /* LaunchScreen.storyboard */,
 				F2BDF187468EA315B76A1525 /* Supporting Files */,
 				0AFD693A1DF8872C00CEA55E /* Assets.xcassets */,
@@ -216,6 +218,14 @@
 					D4164C6563C97D1932E82AC1 = {
 						DevelopmentTeam = X87YZ6DYVJ;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.BackgroundModes = {
+								enabled = 1;
+							};
+							com.apple.Push = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -427,6 +437,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon${BUNDLE_ID_SUFFIX}";
 				BUNDLE_ID_SUFFIX = .debug;
+				CODE_SIGN_ENTITLEMENTS = SlyChat/Sly.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				DEAD_CODE_STRIPPING = NO;
 				DEVELOPMENT_TEAM = X87YZ6DYVJ;
@@ -453,6 +464,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon${BUNDLE_ID_SUFFIX}";
 				BUNDLE_ID_SUFFIX = "";
+				CODE_SIGN_ENTITLEMENTS = SlyChat/Sly.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				DEAD_CODE_STRIPPING = NO;
 				DEVELOPMENT_TEAM = X87YZ6DYVJ;
