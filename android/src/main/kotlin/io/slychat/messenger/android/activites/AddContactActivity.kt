@@ -13,20 +13,15 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.core.UserId
+import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
 import io.slychat.messenger.core.persistence.ContactInfo
-import io.slychat.messenger.services.ui.UIContactInfo
-import io.slychat.messenger.services.ui.UINewContactResult
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
 class AddContactActivity : AppCompatActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
-
-    private lateinit var mSubmitBtn : Button
-    private lateinit var mUsernameField : EditText
-    private lateinit var mContactResultList : LinearLayout
+    private lateinit var contactService: ContactServiceImpl
 
     private lateinit var app : AndroidApp
 
@@ -37,22 +32,15 @@ class AddContactActivity : AppCompatActivity() {
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_add_contact)
 
-        init()
-    }
-
-    private fun init () {
         app = AndroidApp.get(this)
+
+        contactService = ContactServiceImpl(this)
 
         val actionBar = findViewById(R.id.my_toolbar) as Toolbar
         actionBar.title = "Add Contact"
         setSupportActionBar(actionBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        mSubmitBtn = findViewById(R.id.add_contact_submit_btn) as Button
-        mUsernameField = findViewById(R.id.add_contact_field) as EditText
-        mContactResultList = findViewById(R.id.add_contact_search_result) as LinearLayout
-
-        setListeners()
         createEventListeners()
     }
 
@@ -64,26 +52,19 @@ class AddContactActivity : AppCompatActivity() {
     }
 
     private fun createEventListeners () {
+        val mSubmitBtn = findViewById(R.id.add_contact_submit_btn) as Button
         mSubmitBtn.setOnClickListener {
             handleAddContact()
         }
     }
 
-    private fun setListeners () {
-
-    }
-
-    private fun unsubscribeListener () {
-
-    }
-
     private fun handleAddContact () {
+        val mUsernameField = findViewById(R.id.add_contact_field) as EditText
         val username = mUsernameField.text.toString()
         if (username.isEmpty())
             return
 
-        app.appComponent.uiContactsService.fetchNewContactInfo(username, null) successUi { result ->
-            val contactInfo = result.contactInfo
+        contactService.fetchNewContactInfo(username) successUi { contactInfo ->
             if (contactInfo != null)
                 createContactResultNode(contactInfo)
             else {
@@ -94,7 +75,10 @@ class AddContactActivity : AppCompatActivity() {
         }
     }
 
-    private fun createContactResultNode (contactInfo: UIContactInfo) {
+    private fun createContactResultNode (contactInfo: ContactInfo) {
+        val mContactResultList = findViewById(R.id.add_contact_search_result) as LinearLayout
+        mContactResultList.removeAllViews()
+
         val node = LayoutInflater.from(this).inflate(R.layout.contact_result_node, mContactResultList, false)
         val contactNameNode = node.findViewById(R.id.contact_name) as TextView
         val contactEmailNode = node.findViewById(R.id.contact_email) as TextView
@@ -112,14 +96,19 @@ class AddContactActivity : AppCompatActivity() {
         mContactResultList.addView(node)
     }
 
-    private fun addContact (contactInfo: UIContactInfo) {
-        log.debug("in add contact")
-        app.appComponent.uiContactsService.addNewContact(contactInfo) successUi {
-            mUsernameField.setText("")
-            val intent = Intent(baseContext, ChatActivity::class.java)
-            intent.putExtra("EXTRA_ISGROUP", false)
-            intent.putExtra("EXTRA_ID", contactInfo.id.long)
-            startActivity(intent)
+    private fun addContact (contactInfo: ContactInfo) {
+        val mUsernameField = findViewById(R.id.add_contact_field) as EditText
+        contactService.addContact(contactInfo) successUi { success ->
+            if (success) {
+                mUsernameField.setText("")
+                val intent = Intent(baseContext, ChatActivity::class.java)
+                intent.putExtra("EXTRA_ISGROUP", false)
+                intent.putExtra("EXTRA_ID", contactInfo.id.long)
+                startActivity(intent)
+            }
+            else {
+                log.debug("Failed to add contact ${contactInfo.email}")
+            }
         } fail {
             log.debug("Failed to add contact ${contactInfo.email}")
         }
@@ -144,7 +133,6 @@ class AddContactActivity : AppCompatActivity() {
         super.onPause()
         log.debug("onPause")
         clearAppActivity()
-        unsubscribeListener()
     }
 
     override fun onResume () {

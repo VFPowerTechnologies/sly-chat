@@ -20,4 +20,8 @@ interface ContactService {
     fun deleteContact(contactInfo: ContactInfo): Promise<Boolean, Exception>
 
     fun getContactCount(): Promise<Int, Exception>
+
+    fun fetchNewContactInfo(username: String): Promise<ContactInfo?, Exception>
+
+    fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception>
 }
