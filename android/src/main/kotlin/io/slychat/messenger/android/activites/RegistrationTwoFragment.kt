@@ -78,6 +78,7 @@ class RegistrationTwoFragment: Fragment() {
         } failUi {
             mainActivity.hideProgressDialog()
             emailField.error = "An error occurred"
+            log.debug(it.message)
         }
     }
 

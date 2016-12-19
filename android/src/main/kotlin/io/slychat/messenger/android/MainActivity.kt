@@ -269,6 +269,16 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.beginTransaction().replace(R.id.main_frag_container, fragment).addToBackStack(fragmentId).commit()
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        val fragments = supportFragmentManager.fragments
+        if (fragments != null) {
+            for (fragment in fragments) {
+                fragment.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            }
+        }
+    }
+
     private fun showFragContainer() {
         val splashImage = findViewById(R.id.splashImageView) as LinearLayout
         splashImage.visibility = View.GONE
