@@ -1,13 +1,67 @@
 package io.slychat.messenger.ios
 
+import apple.NSObject
+import apple.foundation.NSDictionary
+import apple.uikit.UIApplication
+import apple.uikit.UILocalNotification
+import apple.uikit.enums.UIApplicationState
+import io.slychat.messenger.core.persistence.ConversationDisplayInfo
 import io.slychat.messenger.services.NotificationState
 import io.slychat.messenger.services.PlatformNotificationService
+import org.slf4j.LoggerFactory
 
 class IOSNotificationService : PlatformNotificationService {
+    companion object {
+        val CONVERSATION_ID_KEY = "conversationId"
+    }
+
+    private val log = LoggerFactory.getLogger(javaClass)
+
     override fun getNotificationSoundDisplayName(soundUri: String): String {
         return "not-implemented"
     }
 
     override fun updateNotificationState(notificationState: NotificationState) {
+        val unreadCount = notificationState.state.fold(0L) { current, notificationConversationInfo ->
+            current + notificationConversationInfo.conversationDisplayInfo.unreadCount
+        }
+
+        UIApplication.sharedApplication().setApplicationIconBadgeNumber(unreadCount)
+
+        log.debug("Setting badge count to {}", unreadCount)
+
+        //we have in-app notifications for new messages in this case
+        if (UIApplication.sharedApplication().applicationState() == UIApplicationState.Active)
+            return
+
+        notificationState.state.forEach {
+            if (it.hasNew)
+                fireNotification(it.conversationDisplayInfo)
+        }
+    }
+
+    private fun fireNotification(conversationDisplayInfo: ConversationDisplayInfo) {
+        val conversationIdString = conversationDisplayInfo.conversationId.asString()
+
+        val lastMessageData = conversationDisplayInfo.lastMessageData!!
+
+        val speakerName = lastMessageData.speakerName ?: "Me"
+        val message = lastMessageData.message ?: "<Secret message>"
+
+        val notification = UILocalNotification.alloc().init()
+
+        val userInfo = NSDictionary.dictionaryWithObjectsAndKeys<String, NSObject>(
+            CONVERSATION_ID_KEY, conversationIdString, null
+        )
+
+        notification.setUserInfo(userInfo)
+
+        notification.setAlertBody("$speakerName $message")
+
+        UIApplication.sharedApplication().presentLocalNotificationNow(notification)
+    }
+
+    //TODO
+    fun showLoggedOutNotification(accountName: String, info: List<Any>) {
     }
 }

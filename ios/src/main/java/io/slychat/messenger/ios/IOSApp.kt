@@ -8,11 +8,14 @@ import apple.foundation.*
 import apple.foundation.c.Foundation
 import apple.uikit.*
 import apple.uikit.c.UIKit
+import apple.uikit.enums.UIBackgroundFetchResult
 import apple.uikit.enums.UIModalPresentationStyle
+import apple.uikit.enums.UIUserNotificationType
 import apple.uikit.protocol.UIApplicationDelegate
 import apple.uikit.protocol.UIPopoverPresentationControllerDelegate
 import com.almworks.sqlite4java.SQLite
 import io.slychat.messenger.core.SlyBuildConfig
+import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.ios.kovenant.IOSDispatcher
 import io.slychat.messenger.ios.rx.IOSMainScheduler
 import io.slychat.messenger.ios.ui.WebViewController
@@ -74,8 +77,17 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         }
     }
 
+    private fun registerForNotifications(application: UIApplication) {
+        val types = UIUserNotificationType.Badge or UIUserNotificationType.Sound or UIUserNotificationType.Alert
+        val settings = UIUserNotificationSettings.settingsForTypesCategories(types, null)
+
+        application.registerUserNotificationSettings(settings)
+    }
+
     override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
         printBundleInfo()
+
+        registerForNotifications(application)
 
         KovenantUi.uiContext {
             dispatcher = IOSDispatcher.instance
@@ -153,6 +165,37 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         return window
     }
 
+    override fun applicationDidRegisterUserNotificationSettings(application: UIApplication, notificationSettings: UIUserNotificationSettings) {
+        if (notificationSettings.types() != UIUserNotificationType.None) {
+            application.registerForRemoteNotifications()
+        }
+        else {
+            //TODO unregister token
+            log.info("Notifications disabled")
+        }
+    }
+
+    override fun applicationDidRegisterForRemoteNotificationsWithDeviceToken(application: UIApplication, deviceToken: NSData) {
+        val length = deviceToken.length().toInt()
+
+        val builder = StringBuilder()
+
+        val bytePtr = deviceToken.bytes().bytePtr
+
+        (0..length-1).forEach {
+            val b = bytePtr[it]
+            builder.append("%02x".format(b))
+        }
+
+        val tokenString = builder.toString()
+
+        log.info("Got device token: $tokenString")
+    }
+
+    override fun applicationDidFailToRegisterForRemoteNotificationsWithError(application: UIApplication, error: NSError) {
+        log.error("Failed to register for remote notifications: {}", error.description())
+    }
+
     private fun printBundleInfo() {
         val bundle = NSBundle.mainBundle()
 
@@ -196,12 +239,12 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         uiVisibility.onNext(false)
     }
 
-    override fun applicationDidEnterBackground(application: UIApplication?) {
+    override fun applicationDidEnterBackground(application: UIApplication) {
         log.debug("Application entered background")
         app.isInBackground = true
     }
 
-    override fun applicationWillEnterForeground(application: UIApplication?) {
+    override fun applicationWillEnterForeground(application: UIApplication) {
         log.debug("Application will enter foreground")
     }
 
@@ -215,6 +258,21 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         app.isInBackground = false
 
         uiVisibility.onNext(true)
+    }
+
+    override fun applicationDidReceiveLocalNotification(application: UIApplication, notification: UILocalNotification) {
+        log.debug("Opened from local notification")
+
+        val conversationIdString = notification.userInfo()[IOSNotificationService.CONVERSATION_ID_KEY] as String
+        val conversationId = ConversationId.fromString(conversationIdString)
+
+        println("Conversation id: $conversationId")
+    }
+
+    override fun applicationDidReceiveRemoteNotificationFetchCompletionHandler(application: UIApplication, userInfo: NSDictionary<*, *>, completionHandler: UIApplicationDelegate.Block_applicationDidReceiveRemoteNotificationFetchCompletionHandler) {
+        log.debug("Received remote notification")
+
+        completionHandler.call_applicationDidReceiveRemoteNotificationFetchCompletionHandler(UIBackgroundFetchResult.NoData)
     }
 
     fun uiLoadComplete() {
