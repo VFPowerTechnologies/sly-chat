@@ -68,6 +68,26 @@ class GroupServiceImpl(activity: AppCompatActivity): GroupService {
         return groupService.part(groupId)
     }
 
+    override fun getMembersInfo(groupId: GroupId): Promise<Map<UserId, ContactInfo>, Exception> {
+        val contactMap = mutableMapOf<UserId, ContactInfo>()
+        val membersInfo = mutableMapOf<UserId, ContactInfo>()
+
+        return contactService.getAll() map { contacts ->
+            contacts.forEach {
+                contactMap.put(it.id, it)
+            }
+        } bind {
+            groupService.getMembers(groupId) map { members ->
+                members.forEach {
+                    val contactInfo = contactMap[it]
+                    if (contactInfo !== null)
+                        membersInfo.put(it, contactInfo)
+                }
+                membersInfo
+            }
+        }
+    }
+
     private fun groupEventUpdateUI(event: GroupEvent) {
         uiListener.invoke(event)
     }

@@ -25,6 +25,7 @@
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:text=""
+                    android:textColor="@color/darkMessageTextColor"
                     emjicon:emojiconSize="20dp"
                     android:id="@+id/message" android:layout_gravity="end" android:minWidth="50dp"/>
         </LinearLayout>
@@ -32,7 +33,7 @@
             android:orientation="horizontal"
             android:layout_width="wrap_content"
             android:layout_height="match_parent" android:gravity="end"
-            android:layout_marginTop="10dp">
+            android:layout_marginTop="2dp">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

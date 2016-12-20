@@ -8,4 +8,5 @@
     <color name="navigationBarColor">#000000</color>
     <color name="colorAccent">#c8e8ff</color>
     <color name="darkColorAccent">#202020</color>
+    <color name="darkMessageTextColor">#222</color>
 </resources>

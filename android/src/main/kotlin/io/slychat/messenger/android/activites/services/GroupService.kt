@@ -1,6 +1,7 @@
 package io.slychat.messenger.android.activites.services
 
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.GroupConversation
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.GroupInfo
@@ -25,4 +26,5 @@ interface GroupService {
 
     fun deleteGroup(groupId: GroupId): Promise<Boolean, Exception>
 
+    fun getMembersInfo(groupId: GroupId): Promise<Map<UserId, ContactInfo>, Exception>
 }

@@ -42,12 +42,10 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
     private lateinit var contactService: ContactServiceImpl
     private lateinit var groupService: GroupServiceImpl
 
-    private lateinit var chatList: LinearLayout
-    private lateinit var chatScrollView: ScrollView
-    private lateinit var submitBtn: ImageButton
-    private lateinit var chatInput: EditText
     private lateinit var contactInfo: ContactInfo
     private lateinit var groupInfo: GroupInfo
+
+    private var groupMembers: Map<UserId, ContactInfo>? = null
 
     private lateinit var conversationId: ConversationId
     private var chatDataLink: MutableMap<String, Int> = mutableMapOf()
@@ -86,10 +84,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
 
         setNavigationMenu()
 
-        chatList = findViewById(R.id.chat_list) as LinearLayout
-        chatScrollView = findViewById(R.id.chat_list_scrollview) as ScrollView
-        submitBtn = findViewById(R.id.submit_chat_btn) as ImageButton
-        chatInput = findViewById(R.id.chat_input) as EditText
+        val chatInput = findViewById(R.id.chat_input) as EditText
 
         val rootView = findViewById(R.id.chat_root_view)
         val emojiButton = findViewById(R.id.chat_emoji_button) as ImageButton
@@ -158,6 +153,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
     }
 
     private fun createEventListeners() {
+        val submitBtn = findViewById(R.id.submit_chat_btn) as ImageButton
         submitBtn.setOnClickListener {
             handleNewMessageSubmit()
         }
@@ -173,12 +169,20 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
         }
         setAppActivity()
         setListeners()
-        messengerService.fetchMessageFor(conversationId, 0, 100) successUi {
-            displayMessages(it)
+        messengerService.fetchMessageFor(conversationId, 0, 100) successUi { messages ->
+            if (cId is ConversationId.Group) {
+                groupService.getMembersInfo(cId.id) successUi { members ->
+                    groupMembers = members
+                    displayMessages(messages)
+                }
+            }
+            else
+                displayMessages(messages)
         }
     }
 
     private fun displayMessages(messages: List<ConversationMessageInfo>) {
+        val chatList = findViewById(R.id.chat_list) as LinearLayout
         chatList.removeAllViews()
         messages.reversed().forEach { message ->
             chatList.addView(createMessageNode(message))
@@ -193,9 +197,21 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
         else
             layout = R.layout.received_message_node
 
+        val chatList = findViewById(R.id.chat_list) as LinearLayout
         val messageNode = LayoutInflater.from(this).inflate(layout, chatList, false)
         val message = messageNode.findViewById(R.id.message) as TextView
         val timespan = messageNode.findViewById(R.id.timespan) as TextView
+
+        val speaker = messageInfo.speaker
+        val members = groupMembers
+        if(speaker !== null && conversationId is ConversationId.Group && members !== null) {
+            val contact = members[speaker]
+            if (contact !== null) {
+                val speakerName = messageNode.findViewById(R.id.chat_group_speaker_name) as TextView
+                speakerName.visibility = View.VISIBLE
+                speakerName.text = contact.name
+            }
+        }
 
         val time: String
 
@@ -215,6 +231,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
     }
 
     private fun handleNewMessageSubmit() {
+        val chatInput = findViewById(R.id.chat_input) as EditText
         val messageValue = chatInput.text.toString()
         if(messageValue.isEmpty())
             return
@@ -227,6 +244,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
     }
 
     private fun scrollToBottom() {
+        val chatScrollView = findViewById(R.id.chat_list_scrollview) as ScrollView
         chatScrollView.post {
             chatScrollView.fullScroll(View.FOCUS_DOWN)
         }
@@ -279,6 +297,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
     private fun handleDeletedAllMessage(event: MessageUpdateEvent.DeletedAll) {
         val cId = event.conversationId
         if(cId == conversationId) {
+            val chatList = findViewById(R.id.chat_list) as LinearLayout
             chatList.removeAllViews()
         }
     }
@@ -291,6 +310,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
                 if(nodeId === null) {
                     log.debug("Message Deleted event, Message id: $it does not exist in the current chat page")
                 } else {
+                    val chatList = findViewById(R.id.chat_list) as LinearLayout
                     chatList.removeView(findViewById(nodeId))
                 }
             }
@@ -304,6 +324,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
             return
         }
 
+        val chatList = findViewById(R.id.chat_list) as LinearLayout
         val messageNode = chatList.findViewById(nodeId) as LinearLayout
         (messageNode.findViewById(R.id.message) as TextView).text = "Message Expired"
         (messageNode.findViewById(R.id.timespan) as TextView).text = ""
@@ -321,6 +342,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
     }
 
     private fun handleNewMessageDisplay(newMessage: ConversationMessage) {
+        val chatList = findViewById(R.id.chat_list) as LinearLayout
         chatList.addView(createMessageNode(newMessage.conversationMessageInfo))
         scrollToBottom()
     }

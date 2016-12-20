@@ -15,6 +15,14 @@
         android:layout_margin="10dp"
         android:padding="10dp"
         android:background="@drawable/received_message_bg">
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:id="@+id/chat_group_speaker_name"
+                android:textSize="12sp"
+                android:layout_marginBottom="2dp"
+                android:visibility="gone"/>
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="wrap_content"
@@ -24,20 +32,22 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:text=""
                     emjicon:emojiconSize="20dp"
-                    android:id="@+id/message" android:layout_gravity="end" android:minWidth="50dp"/>
+                    android:id="@+id/message"
+                    android:textColor="@color/darkMessageTextColor"
+                    android:layout_gravity="end"
+                    android:minWidth="50dp"/>
         </LinearLayout>
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent" android:gravity="end"
-            android:layout_marginTop="10dp">
+            android:layout_height="match_parent"
+            android:gravity="end"
+            android:layout_marginTop="2dp">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                android:text=""
                 android:id="@+id/timespan"
                 android:layout_gravity="end"
                 android:gravity="start"
