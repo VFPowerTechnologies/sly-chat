@@ -13,6 +13,7 @@ import android.support.design.widget.TabLayout
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
+import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
 import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ContactInfo
@@ -27,6 +28,7 @@ class ContactActivity : AppCompatActivity() {
     private lateinit var app : AndroidApp
     private lateinit var messengerService: MessengerServiceImpl
     private lateinit var contactService: ContactServiceImpl
+    private lateinit var groupService: GroupServiceImpl
 
     private var contactFragment: ContactFragment? = null
     private var groupFragment: GroupFragment? = null
@@ -58,6 +60,7 @@ class ContactActivity : AppCompatActivity() {
 
         messengerService = MessengerServiceImpl(this)
         contactService = ContactServiceImpl(this)
+        groupService = GroupServiceImpl(this)
     }
 
     private fun init () {
@@ -122,7 +125,7 @@ class ContactActivity : AppCompatActivity() {
         }
     }
 
-    private fun setListeners () {
+    private fun setListeners() {
         contactService.addContactListener {
             handleContactEvent(it)
         }
@@ -130,9 +133,11 @@ class ContactActivity : AppCompatActivity() {
         messengerService.addNewMessageListener {
             contactFragment?.handleNewMessage(it)
         }
+
+        groupService.addGroupListener { groupFragment?.handleGroupEvent(it) }
     }
 
-    private fun unsubscribeListeners () {
+    private fun unsubscribeListeners() {
         contactService.clearListeners()
         messengerService.clearListeners()
     }

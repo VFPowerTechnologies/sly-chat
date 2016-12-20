@@ -15,6 +15,7 @@ import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupConversation
 import io.slychat.messenger.core.persistence.GroupId
+import io.slychat.messenger.services.messaging.GroupEvent
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
@@ -25,8 +26,6 @@ class GroupFragment : Fragment() {
 
     private lateinit var groupService: GroupServiceImpl
 
-    private lateinit var groupList: LinearLayout
-    private lateinit var createGroupBtn: FloatingActionButton
     private var groupData: MutableMap<GroupId, Int> = mutableMapOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,9 +34,6 @@ class GroupFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         v = inflater!!.inflate(R.layout.address_book_groups_fragment, container, false)
-
-        groupList = v?.findViewById(R.id.address_book_group_list) as LinearLayout
-        createGroupBtn = v?.findViewById(R.id.address_book_create_group_btn) as FloatingActionButton
 
         groupService = GroupServiceImpl(activity as AppCompatActivity)
 
@@ -48,6 +44,7 @@ class GroupFragment : Fragment() {
     }
 
     private fun createEventListeners() {
+        val createGroupBtn = v?.findViewById(R.id.address_book_create_group_btn) as FloatingActionButton
         createGroupBtn.setOnClickListener {
             startActivity(Intent(activity.baseContext, CreateGroupActivity::class.java))
         }
@@ -59,7 +56,45 @@ class GroupFragment : Fragment() {
         }
     }
 
+    fun handleGroupEvent(event: GroupEvent) {
+        when (event) {
+            is GroupEvent.Joined -> { handleJoinedEvent(event) }
+            is GroupEvent.Parted -> { handlePartedEvent(event) }
+            is GroupEvent.Blocked -> { handleBlockedEvent(event) }
+            is GroupEvent.MembershipChanged -> { handleMembershipChanged(event) }
+        }
+    }
+
+    private fun handleJoinedEvent(event: GroupEvent.Joined) {
+        fetchGroups()
+    }
+
+    private fun handlePartedEvent(event: GroupEvent.Parted) {
+        val groupList = v?.findViewById(R.id.address_book_group_list) as LinearLayout
+        val nodeId = groupData[event.id]
+        if (nodeId != null) {
+            val node = groupList.findViewById(nodeId)
+            groupList.removeView(node)
+            groupData.remove(event.id)
+        }
+    }
+
+    private fun handleBlockedEvent(event: GroupEvent.Blocked) {
+        val groupList = v?.findViewById(R.id.address_book_group_list) as LinearLayout
+        val nodeId = groupData[event.id]
+        if (nodeId != null) {
+            val node = groupList.findViewById(nodeId)
+            groupList.removeView(node)
+            groupData.remove(event.id)
+        }
+    }
+
+    private fun handleMembershipChanged(event: GroupEvent.MembershipChanged) {
+        fetchGroups()
+    }
+
     private fun displayGroups(groupConvo: MutableMap<GroupId, GroupConversation>) {
+        val groupList = v?.findViewById(R.id.address_book_group_list) as LinearLayout
         groupList.removeAllViews()
         groupData = mutableMapOf()
         groupConvo.forEach {
@@ -70,6 +105,7 @@ class GroupFragment : Fragment() {
     }
 
     private fun createGroupNode(group: GroupConversation): View {
+        val groupList = v?.findViewById(R.id.address_book_group_list) as LinearLayout
         val node = LayoutInflater.from(activity).inflate(R.layout.group_node, groupList, false)
         val name = node.findViewById(R.id.group_node_name) as TextView
         val initial = node.findViewById(R.id.group_node_initial) as TextView
