@@ -51,7 +51,7 @@ class IOSNotificationService : PlatformNotificationService {
         val notification = UILocalNotification.alloc().init()
 
         val userInfo = NSDictionary.dictionaryWithObjectsAndKeys<String, NSObject>(
-            CONVERSATION_ID_KEY, conversationIdString, null
+            conversationIdString, CONVERSATION_ID_KEY, null
         )
 
         notification.setUserInfo(userInfo)
