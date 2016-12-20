@@ -6,12 +6,16 @@ import apple.foundation.NSURL
 import apple.uikit.*
 import apple.uikit.enums.UIViewAnimationOptions
 import apple.uikit.enums.UIViewAutoresizing
+import apple.webkit.WKNavigation
 import apple.webkit.WKUserContentController
 import apple.webkit.WKWebView
 import apple.webkit.WKWebViewConfiguration
+import apple.webkit.protocol.WKNavigationDelegate
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import io.slychat.messenger.ios.webengine.IOSWebEngineInterface
 import io.slychat.messenger.services.di.ApplicationComponent
+import io.slychat.messenger.services.ui.js.NavigationService
+import io.slychat.messenger.services.ui.js.javatojs.NavigationServiceToJSProxy
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
 import org.moe.natj.general.Pointer
 import org.moe.natj.general.ann.Owned
@@ -35,6 +39,9 @@ class WebViewController private constructor(peer: Pointer) : UIViewController(pe
 
     private var launchScreenView: UIView? = null
     private var isLaunchScreenClosing = false
+
+    var navigationService: NavigationService? = null
+        private set
 
     @Selector("init")
     external override fun init(): WebViewController
@@ -81,6 +88,13 @@ class WebViewController private constructor(peer: Pointer) : UIViewController(pe
             val base = indexURL.URLByDeletingLastPathComponent()
 
             webView.loadFileURLAllowingReadAccessToURL(indexURL, base)
+
+            webView.setNavigationDelegate(object : WKNavigationDelegate {
+                override fun webViewDidFinishNavigation(webView: WKWebView, navigation: WKNavigation) {
+                    log.debug("Webview navigation complete")
+                    navigationService = NavigationServiceToJSProxy(dispatcher)
+                }
+            })
         }
         else
             log.error("Unable to find ui/index.html resource in bundle")

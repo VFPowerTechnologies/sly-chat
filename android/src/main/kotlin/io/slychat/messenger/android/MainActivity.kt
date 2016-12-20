@@ -30,6 +30,8 @@ import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.clearAllListenersOnDispatcher
 import io.slychat.messenger.services.ui.js.NavigationService
+import io.slychat.messenger.services.ui.js.getNavigationPageContacts
+import io.slychat.messenger.services.ui.js.getNavigationPageConversation
 import io.slychat.messenger.services.ui.js.javatojs.NavigationServiceToJSProxy
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
 import nl.komponents.kovenant.Deferred
@@ -86,13 +88,10 @@ class MainActivity : AppCompatActivity() {
             EXTRA_PENDING_MESSAGES_TYPE_SINGLE -> {
                 val conversationKey = intent.getStringExtra(EXTRA_CONVO_KEY) ?: throw RuntimeException("Missing EXTRA_CONVO_KEY")
                 val notificationKey = ConversationId.fromString(conversationKey)
-                when (notificationKey) {
-                    is ConversationId.User -> "user/${notificationKey.id}"
-                    is ConversationId.Group -> "group/${notificationKey.id}"
-                }
+                getNavigationPageConversation(notificationKey)
             }
 
-            EXTRA_PENDING_MESSAGES_TYPE_MULTI -> "contacts"
+            EXTRA_PENDING_MESSAGES_TYPE_MULTI -> getNavigationPageContacts()
 
             else -> throw RuntimeException("Unexpected value for EXTRA_PENDING_MESSAGES_TYPE: $messagesType")
         }

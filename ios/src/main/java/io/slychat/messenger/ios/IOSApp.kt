@@ -19,12 +19,14 @@ import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.ios.kovenant.IOSDispatcher
 import io.slychat.messenger.ios.rx.IOSMainScheduler
 import io.slychat.messenger.ios.ui.WebViewController
+import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.ui.createAppDirectories
+import io.slychat.messenger.services.ui.js.getNavigationPageConversation
 import nl.komponents.kovenant.ui.KovenantUi
 import org.moe.natj.general.Pointer
 import org.moe.natj.general.ann.RegisterOnStartup
@@ -77,10 +79,10 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         }
     }
 
+    //TODO call this only after login
     private fun registerForNotifications(application: UIApplication) {
         val types = UIUserNotificationType.Badge or UIUserNotificationType.Sound or UIUserNotificationType.Alert
         val settings = UIUserNotificationSettings.settingsForTypesCategories(types, null)
-
         application.registerUserNotificationSettings(settings)
     }
 
@@ -261,18 +263,39 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
     }
 
     override fun applicationDidReceiveLocalNotification(application: UIApplication, notification: UILocalNotification) {
-        log.debug("Opened from local notification")
-
-        val conversationIdString = notification.userInfo()[IOSNotificationService.CONVERSATION_ID_KEY] as String
+        val conversationData = notification.userInfo()[IOSNotificationService.CONVERSATION_ID_KEY]
+        val conversationIdString = conversationData as String
         val conversationId = ConversationId.fromString(conversationIdString)
 
-        println("Conversation id: $conversationId")
+        log.debug("Opened from local notification for $conversationId")
+
+        webViewController.navigationService?.goTo(getNavigationPageConversation(conversationId))
     }
 
     override fun applicationDidReceiveRemoteNotificationFetchCompletionHandler(application: UIApplication, userInfo: NSDictionary<*, *>, completionHandler: UIApplicationDelegate.Block_applicationDidReceiveRemoteNotificationFetchCompletionHandler) {
         log.debug("Received remote notification")
 
-        completionHandler.call_applicationDidReceiveRemoteNotificationFetchCompletionHandler(UIBackgroundFetchResult.NoData)
+        var taskId: Long = 0
+
+        //TODO event for when no more messages to decrypt to end this
+        taskId = application.beginBackgroundTaskWithExpirationHandler {
+            log.info("Background time expired")
+            application.endBackgroundTask(taskId)
+        }
+
+        app.addOnAutoLoginListener { app ->
+            if (app.loginState == LoginState.LOGGED_IN) {
+                //if (account == app.userComponent!!.userLoginData.address)
+                app.fetchOfflineMessages()
+                //else
+                //    log.warn("Got GCM message for different account ($account); ignoring")
+            }
+            else {
+                println("Not logged in")
+            }
+        }
+
+        completionHandler.call_applicationDidReceiveRemoteNotificationFetchCompletionHandler(UIBackgroundFetchResult.NewData)
     }
 
     fun uiLoadComplete() {
