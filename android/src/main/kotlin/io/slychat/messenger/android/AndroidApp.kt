@@ -21,9 +21,10 @@ import io.slychat.messenger.android.services.AndroidUILoadService
 import io.slychat.messenger.android.services.AndroidUIPlatformInfoService
 import io.slychat.messenger.android.services.AndroidUIPlatformService
 import io.slychat.messenger.core.*
-import io.slychat.messenger.core.http.api.gcm.GcmAsyncClient
-import io.slychat.messenger.core.http.api.gcm.RegisterRequest
-import io.slychat.messenger.core.http.api.gcm.RegisterResponse
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClient
+import io.slychat.messenger.core.http.api.pushnotifications.RegisterRequest
+import io.slychat.messenger.core.http.api.pushnotifications.RegisterResponse
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication
@@ -106,7 +107,7 @@ class AndroidApp : Application() {
 
     lateinit var notificationService: AndroidNotificationService
 
-    private lateinit var gcmClient: GcmAsyncClient
+    private lateinit var pushNotificationsClient: PushNotificationsAsyncClient
 
     //set to true once we've made this request once since startup
     private var hasCheckedGcmTokenStatus = false
@@ -184,7 +185,7 @@ class AndroidApp : Application() {
 
         appComponent = app.appComponent
 
-        gcmClient = GcmAsyncClient(appComponent.serverUrls.API_SERVER, appComponent.slyHttpClientFactory)
+        pushNotificationsClient = PushNotificationsAsyncClient(appComponent.serverUrls.API_SERVER, appComponent.slyHttpClientFactory)
 
         val packageManager = packageManager
         try {
@@ -266,7 +267,7 @@ class AndroidApp : Application() {
         val userComponent = app.userComponent ?: return
 
         userComponent.authTokenManager.bind { userCredentials ->
-            gcmClient.isRegistered(userCredentials)
+            pushNotificationsClient.isRegistered(userCredentials)
         } successUi { response ->
             log.info("GCM token is registered: {}", response.isRegistered)
 
@@ -325,8 +326,8 @@ class AndroidApp : Application() {
     }
 
     private fun pushGcmTokenToServer(userCredentials: UserCredentials, token: String): Promise<RegisterResponse, Exception> {
-        val request = RegisterRequest(token)
-        return gcmClient.register(userCredentials, request)
+        val request = RegisterRequest(token, PushNotificationService.GCM, false)
+        return pushNotificationsClient.register(userCredentials, request)
     }
 
     fun onGCMTokenRefresh(userId: UserId, token: String) {
@@ -433,7 +434,7 @@ class AndroidApp : Application() {
                 deleteGCMToken()
 
                 userComponent.authTokenManager.bind { userCredentials ->
-                    gcmClient.unregister(userCredentials)
+                    pushNotificationsClient.unregister(userCredentials)
                 } fail { e ->
                     log.error("Unable to unregister GCM token with server: {}", e.message, e)
                 }

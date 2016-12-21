@@ -1,13 +1,16 @@
 package io.slychat.messenger.core.integration.web
 
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.http.JavaHttpClient
-import io.slychat.messenger.core.http.api.gcm.GcmClient
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsClient
+import io.slychat.messenger.core.http.api.pushnotifications.UnregisterRequest
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import kotlin.test.assertEquals
 
-class WebApiGcmTest {
+class WebApiPushNotificationsTest {
     companion object {
         @ClassRule
         @JvmField
@@ -23,7 +26,7 @@ class WebApiGcmTest {
     }
 
     fun checkGCMTokenStatus(user: SiteUser, exists: Boolean) {
-        val client = GcmClient(serverBaseUrl, JavaHttpClient())
+        val client = PushNotificationsClient(serverBaseUrl, JavaHttpClient())
 
         val authToken = devClient.createAuthToken(user.email)
 
@@ -33,38 +36,36 @@ class WebApiGcmTest {
     }
 
     @Test
-    fun `gcm isRegistered should return true if token is registered`() {
+    fun `isRegistered should return true if token is registered`() {
         val userA = userManagement.injectNamedSiteUser("a@a.com").user
 
         val token = "gcm"
 
         val deviceId = devClient.addDevice(userA.email, defaultRegistrationId, DeviceState.ACTIVE)
 
-        devClient.registerGcmToken(userA.email, deviceId, token)
+        devClient.registerPushNotificationToken(userA.email, deviceId, token, PushNotificationService.GCM, false)
 
         checkGCMTokenStatus(userA, true)
     }
 
     @Test
-    fun `gcm isRegistered should return false if token is not registered`() {
+    fun `isRegistered should return false if token is not registered`() {
         val userA = userManagement.injectNamedSiteUser("a@a.com").user
 
         checkGCMTokenStatus(userA, false)
     }
 
     @Test
-    fun `gcm unregister should unregister the current device token`() {
+    fun `unregister should unregister the given device token`() {
         val user = userManagement.injectNamedSiteUser("a@a.com").user
         val token = "gcm"
 
         val deviceId = devClient.addDevice(user.email, defaultRegistrationId, DeviceState.ACTIVE)
 
-        devClient.registerGcmToken(user.email, deviceId, token)
+        devClient.registerPushNotificationToken(user.email, deviceId, token, PushNotificationService.GCM, false)
 
-        val authToken = devClient.createAuthToken(user.email)
-
-        val client = GcmClient(serverBaseUrl, JavaHttpClient())
-        client.unregister(user.getUserCredentials(authToken))
+        val client = PushNotificationsClient(serverBaseUrl, JavaHttpClient())
+        client.unregister(UnregisterRequest(SlyAddress(user.id, deviceId), token))
 
         checkGCMTokenStatus(user, false)
     }

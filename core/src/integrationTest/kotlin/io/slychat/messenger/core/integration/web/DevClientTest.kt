@@ -3,6 +3,7 @@ package io.slychat.messenger.core.integration.web
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.contacts.encryptRemoteAddressBookEntries
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.http.api.registration.RegistrationInfo
 import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
@@ -128,22 +129,24 @@ class DevClientTest {
     }
 
     @Test
-    fun `gcm functionality should work`() {
+    fun `push notification functionality should work`() {
         userManagement.injectNewSiteUser()
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
         //GCM
         val gcmToken = randomUUID()
-        devClient.registerGcmToken(username, deviceId, gcmToken)
+        val isAudio = false
 
-        val gcmTokens = devClient.getGcmTokens(username)
+        devClient.registerPushNotificationToken(username, deviceId, gcmToken, PushNotificationService.GCM, isAudio)
 
-        if (gcmTokens != listOf(UserGcmTokenInfo(deviceId, gcmToken)))
-            throw DevServerInsaneException("GCM functionality failed")
+        val gcmTokens = devClient.getPushNotificationTokens(username)
 
-        devClient.unregisterGcmToken(username, deviceId)
+        if (gcmTokens != listOf(UserPushNotificationTokenInfo(deviceId, gcmToken, PushNotificationService.GCM, isAudio)))
+            throw DevServerInsaneException("Push notification functionality failed")
 
-        if (devClient.getGcmTokens(username).size != 0)
-            throw DevServerInsaneException("GCM functionality failed")
+        devClient.unregisterPushNotificationToken(username, deviceId, isAudio)
+
+        if (devClient.getPushNotificationTokens(username).isNotEmpty())
+            throw DevServerInsaneException("Push notification functionality failed")
     }
 }

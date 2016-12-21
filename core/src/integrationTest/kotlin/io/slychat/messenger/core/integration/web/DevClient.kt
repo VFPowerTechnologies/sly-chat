@@ -11,6 +11,7 @@ import io.slychat.messenger.core.crypto.hashes.HashParams
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.HttpClient
 import io.slychat.messenger.core.http.HttpResponse
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.http.get
 import io.slychat.messenger.core.http.postJSON
 import io.slychat.messenger.core.persistence.RemoteAddressBookEntry
@@ -21,16 +22,20 @@ data class SiteAddressBook(
     val entries: List<RemoteAddressBookEntry>
 )
 
-data class UserGcmTokenInfo(
+data class UserPushNotificationTokenInfo(
     @JsonProperty("deviceId")
     val deviceId: Int,
     @JsonProperty("token")
-    val token: String
+    val token: String,
+    @JsonProperty("service")
+    val service: PushNotificationService,
+    @JsonProperty("audio")
+    val isAudio: Boolean
 )
 
-data class UserGcmTokenList(
+data class UserPushNotificationTokenList(
     @JsonProperty("tokens")
-    val tokens: List<UserGcmTokenInfo>
+    val tokens: List<UserPushNotificationTokenInfo>
 )
 
 data class Device(
@@ -195,25 +200,28 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         postRequestNoResponse(request, "/dev/address-book/$email")
     }
 
-    fun registerGcmToken(email: String, deviceId: Int, token: String) {
+    fun registerPushNotificationToken(email: String, deviceId: Int, token: String, service: PushNotificationService, isAudio: Boolean) {
         val request = mapOf(
             "deviceId" to deviceId,
-            "token" to token
+            "token" to token,
+            "service" to service,
+            "audio" to isAudio
         )
 
-        postRequestNoResponse(request, "/dev/gcm/register/$email")
+        postRequestNoResponse(request, "/dev/push-notifications/register/$email")
     }
 
-    fun unregisterGcmToken(email: String, deviceId: Int) {
+    fun unregisterPushNotificationToken(email: String, deviceId: Int, isAudio: Boolean) {
         val request = mapOf(
-            "deviceId" to deviceId
+            "deviceId" to deviceId,
+            "audio" to isAudio
         )
 
-        postRequestNoResponse(request, "/dev/gcm/unregister/$email")
+        postRequestNoResponse(request, "/dev/push-notifications/unregister/$email")
     }
 
-    fun getGcmTokens(email: String): List<UserGcmTokenInfo> {
-        return getRequest("/dev/gcm/$email", UserGcmTokenList::class.java).tokens
+    fun getPushNotificationTokens(email: String): List<UserPushNotificationTokenInfo> {
+        return getRequest("/dev/push-notifications/$email", UserPushNotificationTokenList::class.java).tokens
     }
 
     fun getDevices(email: String): List<Device> {
