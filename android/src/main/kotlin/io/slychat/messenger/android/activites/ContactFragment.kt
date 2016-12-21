@@ -54,7 +54,6 @@ class ContactFragment : Fragment() {
         contactService = ContactServiceImpl(activity as AppCompatActivity)
 
         createEventListeners()
-        fetchConversations()
 
         return v
     }
@@ -200,6 +199,12 @@ class ContactFragment : Fragment() {
             }
 
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        log.debug("onResume")
+        fetchConversations()
     }
 
 }

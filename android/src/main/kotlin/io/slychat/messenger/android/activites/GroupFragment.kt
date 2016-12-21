@@ -37,7 +37,6 @@ class GroupFragment : Fragment() {
 
         groupService = GroupServiceImpl(activity as AppCompatActivity)
 
-        fetchGroups()
         createEventListeners()
 
         return v
@@ -169,6 +168,7 @@ class GroupFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        fetchGroups()
         log.debug("onResume")
     }
 
