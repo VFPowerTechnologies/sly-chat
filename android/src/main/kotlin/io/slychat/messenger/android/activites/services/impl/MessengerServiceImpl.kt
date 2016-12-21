@@ -51,13 +51,13 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
         conversations = mutableMapOf()
         contactList = mutableMapOf()
         val list = mutableListOf<RecentChatActivity.RecentChatData>()
-        return contactService.getAll() success { c ->
+
+        return contactService.getAll() map { c ->
             c.forEach {
-                log.debug("contact name: ${it.name}")
                 contactList.put(it.id, it)
             }
         } bind {
-            messageService.getAllGroupConversations() success { groupConvo ->
+            messageService.getAllGroupConversations() map { groupConvo ->
                 groupConvo.forEach {
                     groupConversations.put(it.group.id, it)
                     val conversationId = ConversationId.invoke(it.group.id)
@@ -82,7 +82,7 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
                 }
             }
         } bind {
-                messageService.getAllUserConversations() success { convo ->
+                messageService.getAllUserConversations() map { convo ->
                     convo.forEach {
                         conversations.put(it.contact.id, it)
                         val conversationId = ConversationId.invoke(it.contact.id)
@@ -97,9 +97,8 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
                                     info.unreadMessageCount
                             ))
                     }
+                    list.sortedByDescending { it.lastTimestamp }
                 }
-        } bind {
-            Promise.ofSuccess<List<RecentChatActivity.RecentChatData>, Exception>(list.sortedByDescending { it.lastTimestamp })
         }
     }
 

@@ -85,6 +85,7 @@
         <activity android:name=".activites.InviteFriendsActivity"/>
         <activity android:name=".activites.SettingsActivity"/>
         <activity android:name=".activites.ContactInfoActivity"/>
+        <activity android:name=".activites.BlockedContactsActivity"/>
 
     </application>
 

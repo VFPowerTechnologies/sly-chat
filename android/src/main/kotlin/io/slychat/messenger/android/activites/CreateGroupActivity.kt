@@ -153,7 +153,7 @@ class CreateGroupActivity : AppCompatActivity() {
     }
 
     private fun unsubscribeListener() {
-        groupService.removeListener()
+        groupService.clearListeners()
     }
 
     private fun setAppActivity() {

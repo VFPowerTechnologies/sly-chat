@@ -12,6 +12,7 @@ import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.services.contacts.ContactEvent
 import io.slychat.messenger.services.getAccountRegionCode
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import rx.Subscription
@@ -39,8 +40,8 @@ class ContactServiceImpl(private val activity: AppCompatActivity): ContactServic
     }
 
     override fun getContacts(): Promise<MutableMap<UserId, ContactInfo>, Exception> {
-        contactList = mutableMapOf()
         return contactService.getAll() map { contacts ->
+            contactList = mutableMapOf()
             contacts.forEach {
                 contactList.put(it.id, it)
             }
@@ -60,12 +61,36 @@ class ContactServiceImpl(private val activity: AppCompatActivity): ContactServic
         }
     }
 
+    override fun getBlockedContacts(): Promise<List<ContactInfo>, Exception> {
+        return contactService.getAll() map { contacts ->
+            val contactList = mutableMapOf<UserId, ContactInfo>()
+            contacts.forEach {
+                contactList.put(it.id, it)
+            }
+            contactList
+        } bind { contactList ->
+            val blockedList = mutableListOf<ContactInfo>()
+            contactService.getBlockList() map { blocked ->
+                blocked.forEach {
+                    val contact = contactList[it]
+                    if (contact !== null)
+                        blockedList.add(contact)
+                }
+                blockedList
+            }
+        }
+    }
+
     override fun deleteContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
         return contactService.removeContact(contactInfo)
     }
 
     override fun blockContact(id: UserId): Promise<Unit, Exception> {
         return contactService.block(id)
+    }
+
+    override fun unblockContact(id: UserId): Promise<Unit, Exception> {
+        return contactService.unblock(id)
     }
 
     override fun getContactCount(): Promise<Int, Exception> {
@@ -87,6 +112,10 @@ class ContactServiceImpl(private val activity: AppCompatActivity): ContactServic
 
     override fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception> {
         return contactService.addByInfo(contactInfo)
+    }
+
+    override fun allowAll(userId: UserId): Promise<Unit, Exception> {
+        return contactService.allowAll(userId)
     }
 
     private fun parseEmail(username: String): String? {

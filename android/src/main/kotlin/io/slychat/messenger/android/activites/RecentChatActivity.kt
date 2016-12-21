@@ -308,7 +308,7 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
             R.id.menu_profile -> { startActivity(Intent(baseContext, ProfileActivity::class.java)) }
             R.id.menu_add_contact -> { startActivity(Intent(baseContext, AddContactActivity::class.java)) }
             R.id.menu_create_group -> { startActivity(Intent(baseContext, CreateGroupActivity::class.java)) }
-            R.id.menu_blocked_contacts -> { }
+            R.id.menu_blocked_contacts -> { startActivity(Intent(baseContext, BlockedContactsActivity::class.java)) }
             R.id.menu_settings -> { startActivity(Intent(baseContext, SettingsActivity::class.java)) }
             R.id.menu_share -> { startActivity(Intent(baseContext, InviteFriendsActivity::class.java)) }
             R.id.menu_feedback -> { startActivity(Intent(baseContext, FeedbackActivity::class.java)) }

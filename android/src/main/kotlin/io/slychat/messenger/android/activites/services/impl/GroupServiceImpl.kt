@@ -9,10 +9,10 @@ import io.slychat.messenger.core.persistence.GroupConversation
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.GroupInfo
 import io.slychat.messenger.services.messaging.GroupEvent
+import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
-import nl.komponents.kovenant.ui.successUi
 import rx.Subscription
 
 class GroupServiceImpl(activity: AppCompatActivity): GroupService {
@@ -40,6 +40,36 @@ class GroupServiceImpl(activity: AppCompatActivity): GroupService {
         }
     }
 
+    override fun getBlockedGroups(): Promise<List<GroupInfo>, Exception> {
+        return groupService.getBlockList() bind { blocked ->
+            getBlockedGroupsInfo(blocked)
+        }
+    }
+
+    private fun getBlockedGroupsInfo(groups: Set<GroupId>): Promise<List<GroupInfo>, Exception> {
+        val list = mutableListOf<GroupInfo>()
+        val size = groups.size
+        var completed = 0
+        val defered = deferred<List<GroupInfo>, Exception>()
+
+        if (size > 0) {
+            groups.forEach {
+                groupService.getInfo(it) success { groupInfo ->
+                    if (groupInfo !== null)
+                        list.add(groupInfo)
+                    completed += 1
+                    if (completed >= size)
+                        defered.resolve(list)
+                }
+            }
+        }
+        else {
+            defered.resolve(list)
+        }
+
+        return defered.promise
+    }
+
     override fun addGroupListener(listener: (GroupEvent) -> Unit) {
         uiListener = listener
         groupListener?.unsubscribe()
@@ -48,7 +78,7 @@ class GroupServiceImpl(activity: AppCompatActivity): GroupService {
         }
     }
 
-    override fun removeListener() {
+    override fun clearListeners() {
         groupListener?.unsubscribe()
     }
 
@@ -63,21 +93,25 @@ class GroupServiceImpl(activity: AppCompatActivity): GroupService {
     override fun blockGroup(groupId: GroupId): Promise<Unit, Exception> {
         return groupService.block(groupId)
     }
+
+    override fun unblockGroup(groupId: GroupId): Promise<Unit, Exception> {
+        return groupService.unblock(groupId)
+    }
     
     override fun deleteGroup(groupId: GroupId): Promise<Boolean, Exception> {
         return groupService.part(groupId)
     }
 
     override fun getMembersInfo(groupId: GroupId): Promise<Map<UserId, ContactInfo>, Exception> {
-        val contactMap = mutableMapOf<UserId, ContactInfo>()
-        val membersInfo = mutableMapOf<UserId, ContactInfo>()
-
         return contactService.getAll() map { contacts ->
+            val contactMap = mutableMapOf<UserId, ContactInfo>()
             contacts.forEach {
                 contactMap.put(it.id, it)
             }
-        } bind {
+            contactMap
+        } bind { contactMap ->
             groupService.getMembers(groupId) map { members ->
+                val membersInfo = mutableMapOf<UserId, ContactInfo>()
                 members.forEach {
                     val contactInfo = contactMap[it]
                     if (contactInfo !== null)

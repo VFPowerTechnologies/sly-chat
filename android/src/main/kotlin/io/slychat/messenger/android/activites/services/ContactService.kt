@@ -15,13 +15,19 @@ interface ContactService {
 
     fun getContact(id: UserId): Promise<ContactInfo?, Exception>
 
+    fun getBlockedContacts(): Promise<List<ContactInfo>, Exception>
+
     fun blockContact(id: UserId): Promise<Unit, Exception>
 
     fun deleteContact(contactInfo: ContactInfo): Promise<Boolean, Exception>
+
+    fun unblockContact(id: UserId): Promise<Unit, Exception>
 
     fun getContactCount(): Promise<Int, Exception>
 
     fun fetchNewContactInfo(username: String): Promise<ContactInfo?, Exception>
 
     fun addContact(contactInfo: ContactInfo): Promise<Boolean, Exception>
+
+    fun allowAll(userId: UserId): Promise<Unit, Exception>
 }

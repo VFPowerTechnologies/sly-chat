@@ -30,6 +30,7 @@ import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.PageType
 import io.slychat.messenger.services.contacts.ContactEvent
 import io.slychat.messenger.services.messaging.ConversationMessage
+import io.slychat.messenger.services.messaging.GroupEvent
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -264,6 +265,12 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
         }
     }
 
+    private fun onGroupEvent(event: GroupEvent) {
+        if (event is GroupEvent.Blocked || event is GroupEvent.Parted) {
+            finish()
+        }
+    }
+
     private fun onMessageUpdate(event: MessageUpdateEvent) {
         when(event) {
             is MessageUpdateEvent.Delivered -> { handleDeliveredMessageEvent(event) }
@@ -351,11 +358,13 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
         messengerService.addNewMessageListener({ onNewMessage(it) })
         messengerService.addMessageUpdateListener({ onMessageUpdate(it) })
         contactService.addContactListener { onContactEvent(it) }
+        groupService.addGroupListener { onGroupEvent(it) }
     }
 
     private fun clearListners() {
         messengerService.clearListeners()
         contactService.clearListeners()
+        groupService.clearListeners()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
