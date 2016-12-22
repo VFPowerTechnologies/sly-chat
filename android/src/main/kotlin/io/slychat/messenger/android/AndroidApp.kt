@@ -21,10 +21,7 @@ import io.slychat.messenger.android.services.AndroidUILoadService
 import io.slychat.messenger.android.services.AndroidUIPlatformInfoService
 import io.slychat.messenger.android.services.AndroidUIPlatformService
 import io.slychat.messenger.core.*
-import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
-import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClient
-import io.slychat.messenger.core.http.api.pushnotifications.RegisterRequest
-import io.slychat.messenger.core.http.api.pushnotifications.RegisterResponse
+import io.slychat.messenger.core.http.api.pushnotifications.*
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication
@@ -185,7 +182,7 @@ class AndroidApp : Application() {
 
         appComponent = app.appComponent
 
-        pushNotificationsClient = PushNotificationsAsyncClient(appComponent.serverUrls.API_SERVER, appComponent.slyHttpClientFactory)
+        pushNotificationsClient = PushNotificationsAsyncClientImpl(appComponent.serverUrls.API_SERVER, appComponent.slyHttpClientFactory)
 
         val packageManager = packageManager
         try {
