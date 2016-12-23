@@ -152,6 +152,7 @@ class PushNotificationsManagerImpl(
 
         appConfigService.withEditor {
             pushNotificationsUnregistrations += address
+            pushNotificationsRegistrations -= address.id
         }
 
         unregisterTokens()

@@ -256,6 +256,37 @@ class PushNotificationsManagerImplTest {
         }
     }
 
+    @Test
+    fun `unregister should remove the address from the registrations list when called`() {
+        val address = randomSlyAddress()
+
+        val manager = createManager(
+            defaultToken = randomToken(),
+            isNetworkAvailable = false,
+            registrations = setOf(address.id)
+        )
+
+        manager.unregister(address)
+
+        assertThat(appConfigService.pushNotificationsRegistrations).apply {
+            describedAs("Should remove the address from the registrations list")
+            doesNotContain(address.id)
+        }
+    }
+
+    @Test
+    fun `only one of registration or unregistration should be active at once`() {
+        TODO()
+    }
+
+    //eg: user clicks to stop receiving notifications while offline, then they do a local login afterwards without
+    //the unregistration having actually occured
+    //in this case we just cancel the pending unregistration
+    @Test
+    fun `login with a pending unregistration should return address to registration list`() {
+        TODO()
+    }
+
     //shouldn't occur?
     @Test
     fun `unregister should do nothing if no token is available`() {
@@ -267,7 +298,7 @@ class PushNotificationsManagerImplTest {
 
         assertThat(appConfigService.pushNotificationsUnregistrations).apply {
             describedAs("Should not add the given address to the unregistration list")
-            isEmpty()
+            doesNotContain(address)
         }
     }
 
