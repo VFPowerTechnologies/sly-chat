@@ -63,6 +63,9 @@ class PushNotificationsManagerImpl(
         }
     }
 
+    override fun init() {
+    }
+
     private fun onNetworkStatusUpdate(isAvailable: Boolean) {
         isNetworkAvailable = isAvailable
 
@@ -75,12 +78,16 @@ class PushNotificationsManagerImpl(
     }
 
     private fun onTokenUpdate(token: String?) {
+        log.info("Updating token")
+
         appConfigService.withEditor {
             pushNotificationsToken = token
         }
     }
 
     private fun onNewToken() {
+        log.info("Received new token")
+
         invalidateRegistrations()
 
         updateTokenForCurrentAccount()
@@ -96,11 +103,12 @@ class PushNotificationsManagerImpl(
         val token = appConfigService.pushNotificationsToken ?: return
 
         if (appConfigService.pushNotificationsRegistrations.contains(address.id)) {
-            log.debug("Already registered")
+            log.debug("Token already registered for {}", address)
             return
         }
 
-        log.info("Registration push notification token")
+        log.info("Registering push notification token for {}", address)
+
         isRegistrationInProgress = true
 
         authTokenManager.bind {
@@ -139,6 +147,8 @@ class PushNotificationsManagerImpl(
             log.warn("Attempt to add unregistration but no token is set")
             return
         }
+
+        log.info("Queuing unregistration for {}", address)
 
         appConfigService.withEditor {
             pushNotificationsUnregistrations += address

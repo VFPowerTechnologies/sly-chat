@@ -130,6 +130,8 @@ class SlyApplication {
             initializationComplete(doAutoLogin)
         }
 
+        applicationComponent.pushNotificationsManager.init()
+
         applicationComponent.versionChecker.init()
     }
 
