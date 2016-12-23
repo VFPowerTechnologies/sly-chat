@@ -8,8 +8,6 @@ interface PushNotificationsAsyncClient {
 
     fun register(userCredentials: UserCredentials, request: RegisterRequest): Promise<RegisterResponse, Exception>
 
-    fun unregister(userCredentials: UserCredentials): Promise<Unit, Exception>
-
     fun unregister(request: UnregisterRequest): Promise<Unit, Exception>
 }
 

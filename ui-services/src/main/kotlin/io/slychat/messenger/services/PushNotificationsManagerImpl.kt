@@ -31,12 +31,9 @@ class PushNotificationsManagerImpl(
 
     private var isNetworkAvailable = false
 
-    private var isRegistrationInProgress = false
+    private var isWorkInProgress = false
 
-    private var isUnregistrationInProgress = false
-
-    private val isLoggedIn: Boolean
-        get() = authTokenManager != null
+    private var hasCheckedForCurrentAccount = false
 
     private val isDisabled: Boolean
         get() = pushNotificationService == null
@@ -45,11 +42,12 @@ class PushNotificationsManagerImpl(
         if (!isDisabled) {
             appConfigService.updates.filter { it.contains(AppConfig.PUSH_NOTIFICATIONS_TOKEN) }.subscribe { onNewToken() }
 
-            //TODO check if we need to update the token for this user
             userSessionAvailable.subscribe { userComponent ->
                 if (userComponent != null) {
                     currentAccount = userComponent.userLoginData.address
                     authTokenManager = userComponent.authTokenManager
+                    hasCheckedForCurrentAccount = false
+
                     updateTokenForCurrentAccount()
                 } else {
                     currentAccount = null
@@ -72,9 +70,7 @@ class PushNotificationsManagerImpl(
         if (!isAvailable)
             return
 
-        updateTokenForCurrentAccount()
-
-        unregisterTokens()
+        processWork()
     }
 
     private fun onTokenUpdate(token: String?) {
@@ -93,7 +89,23 @@ class PushNotificationsManagerImpl(
         updateTokenForCurrentAccount()
     }
 
+    private fun processWork() {
+        if (!hasCheckedForCurrentAccount)
+            updateTokenForCurrentAccount()
+
+        unregisterTokens()
+    }
+
+    //TODO bug
+    //we also need to check if the account we're currently running is the new account
+    //if not, then we need to try again later
     private fun updateTokenForCurrentAccount() {
+        if (isWorkInProgress)
+            return
+
+        if (hasCheckedForCurrentAccount)
+            return
+
         if (!isNetworkAvailable)
             return
 
@@ -102,20 +114,33 @@ class PushNotificationsManagerImpl(
 
         val token = appConfigService.pushNotificationsToken ?: return
 
+        hasCheckedForCurrentAccount = true
+
         if (appConfigService.pushNotificationsRegistrations.contains(address.id)) {
             log.debug("Token already registered for {}", address)
             return
         }
 
+        if (appConfigService.pushNotificationsUnregistrations.contains(address)) {
+            log.debug("Was scheduled for unregistration, restoring to registered state")
+
+            appConfigService.withEditor {
+                pushNotificationsUnregistrations -= address
+                pushNotificationsRegistrations += address.id
+            }
+
+            return
+        }
+
         log.info("Registering push notification token for {}", address)
 
-        isRegistrationInProgress = true
+        isWorkInProgress = true
 
         authTokenManager.bind {
             val request = RegisterRequest(token, pushNotificationService!!, false)
             pushNotificationsClient.register(it, request)
         }.successUi {
-            isRegistrationInProgress = false
+            isWorkInProgress = false
 
             if (it.errorMessage != null) {
                 log.error("Failed to register push notification token: {}", it.errorMessage)
@@ -127,13 +152,18 @@ class PushNotificationsManagerImpl(
                     pushNotificationsRegistrations += address.id
                 }
             }
+
+            processWork()
         }.failUi {
             log.error("Unable to register push notification token: {}", it.message, it)
-            isRegistrationInProgress = false
+
+            isWorkInProgress = false
         }
     }
 
     private fun invalidateRegistrations() {
+        hasCheckedForCurrentAccount = false
+
         appConfigService.withEditor {
             pushNotificationsRegistrations = emptySet()
         }
@@ -162,7 +192,7 @@ class PushNotificationsManagerImpl(
         if (!isNetworkAvailable)
             return
 
-        if (isUnregistrationInProgress)
+        if (isWorkInProgress)
             return
 
         if (appConfigService.pushNotificationsUnregistrations.isEmpty())
@@ -174,21 +204,22 @@ class PushNotificationsManagerImpl(
 
         val request = UnregisterRequest(address, token)
 
+        isWorkInProgress = true
+
         pushNotificationsClient.unregister(request).successUi {
+            isWorkInProgress = false
+
             log.info("Unregistered token for {}", address)
 
             appConfigService.withEditor {
                 pushNotificationsUnregistrations -= address
             }
 
-            isUnregistrationInProgress = false
-
-            //keep processing
-            unregisterTokens()
+            processWork()
         }.failUi {
-            log.error("Failed to unregister token for {}: {}", it.message, it)
+            isWorkInProgress = false
 
-            isUnregistrationInProgress = false
+            log.error("Failed to unregister token for {}: {}", it.message, it)
         }
     }
 }

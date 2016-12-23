@@ -1,6 +1,5 @@
 package io.slychat.messenger.core.http.api.pushnotifications
 
-import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.http.HttpClient
 import io.slychat.messenger.core.http.api.ApiResult
@@ -8,11 +7,6 @@ import io.slychat.messenger.core.http.api.EmptyResponse
 import io.slychat.messenger.core.http.api.apiGetRequest
 import io.slychat.messenger.core.http.api.apiPostRequest
 import io.slychat.messenger.core.typeRef
-
-data class UnregisterRequest(
-    val address: SlyAddress,
-    val token: String
-)
 
 class PushNotificationsClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     fun isRegistered(userCredentials: UserCredentials): IsRegisteredResponse {
@@ -28,12 +22,6 @@ class PushNotificationsClient(private val serverBaseUrl: String, private val htt
     fun unregister(request: UnregisterRequest) {
         val url = "$serverBaseUrl/v1/push-notifications/unregister"
         apiPostRequest(httpClient, url, null, request, typeRef<ApiResult<EmptyResponse>>())
-    }
-
-    //TODO delete me
-    fun unregister(userCredentials: UserCredentials) {
-        val url = "$serverBaseUrl/v1/gcm/unregister"
-        apiPostRequest(httpClient, url, userCredentials, null, typeRef<ApiResult<EmptyResponse>>())
     }
 }
 

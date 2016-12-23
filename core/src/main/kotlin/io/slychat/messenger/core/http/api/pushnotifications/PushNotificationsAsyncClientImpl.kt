@@ -16,10 +16,6 @@ class PushNotificationsAsyncClientImpl(private val serverUrl: String, private va
         newClient().register(userCredentials, request)
     }
 
-    override fun unregister(userCredentials: UserCredentials): Promise<Unit, Exception> = task {
-        newClient().unregister(userCredentials)
-    }
-
     override fun unregister(request: UnregisterRequest): Promise<Unit, Exception> = task {
         newClient().unregister(request)
     }

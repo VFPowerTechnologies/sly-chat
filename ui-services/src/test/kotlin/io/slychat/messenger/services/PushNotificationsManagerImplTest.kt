@@ -1,13 +1,17 @@
 package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.*
+import io.slychat.messenger.core.SlyAddress
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.http.api.pushnotifications.*
+import io.slychat.messenger.core.randomSlyAddress
+import io.slychat.messenger.core.randomUserId
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.DummyConfigBackend
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.testutils.*
+import nl.komponents.kovenant.deferred
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
@@ -35,7 +39,6 @@ class PushNotificationsManagerImplTest {
     fun before() {
         whenever(pushNotificationsAsyncClient.register(any(), any())).thenResolve(RegisterResponse(null))
         whenever(pushNotificationsAsyncClient.unregister(any<UnregisterRequest>())).thenResolveUnit()
-        whenever(pushNotificationsAsyncClient.unregister(any<UserCredentials>())).thenResolveUnit()
     }
 
     private fun createManager(
@@ -70,6 +73,12 @@ class PushNotificationsManagerImplTest {
 
     private fun enableNetwork() {
         networkAvailability.onNext(true)
+    }
+
+    private fun newToken(): String {
+        val token = randomToken()
+        tokenUpdates.onNext(token)
+        return token
     }
 
     private fun assertSuccessfulRegistration(token: String) {
@@ -134,9 +143,7 @@ class PushNotificationsManagerImplTest {
 
         login()
 
-        val token = randomToken()
-
-        tokenUpdates.onNext(token)
+        val token = newToken()
 
         assertSuccessfulRegistration(token)
     }
@@ -276,15 +283,106 @@ class PushNotificationsManagerImplTest {
 
     @Test
     fun `only one of registration or unregistration should be active at once`() {
-        TODO()
+        val registrationDeferred = deferred<RegisterResponse, Exception>()
+        val unregistrationDeferred = deferred<Unit, Exception>()
+
+        whenever(pushNotificationsAsyncClient.register(any(), any())).thenReturn(registrationDeferred.promise)
+        whenever(pushNotificationsAsyncClient.unregister(any())).thenReturn(unregistrationDeferred.promise)
+
+        val manager = createManager(
+            defaultToken = randomToken(),
+            isNetworkAvailable = true
+        )
+
+        newToken()
+
+        //begin registration
+        login()
+
+        //queue unregistration
+        manager.unregister(randomSlyAddress())
+
+        verify(pushNotificationsAsyncClient, never()).unregister(any())
     }
+
+    @Test
+    fun `it should process pending registrations once all unregistrations have completed`() {
+        val registrationDeferred = deferred<RegisterResponse, Exception>()
+        val unregistrationDeferred = deferred<Unit, Exception>()
+
+        whenever(pushNotificationsAsyncClient.register(any(), any())).thenReturn(registrationDeferred.promise)
+        whenever(pushNotificationsAsyncClient.unregister(any())).thenReturn(unregistrationDeferred.promise)
+
+        val manager = createManager(
+            defaultToken = randomToken(),
+            isNetworkAvailable = true
+        )
+
+        val unregistrationAddress = randomSlyAddress()
+
+        manager.unregister(unregistrationAddress)
+
+        login()
+
+        verify(pushNotificationsAsyncClient, never()).register(any(), any())
+
+        unregistrationDeferred.resolve(Unit)
+
+        verify(pushNotificationsAsyncClient).register(any(), any())
+    }
+
+    @Test
+    fun `it should process pending unregistrations once all registration have completed`() {
+        val registrationDeferred = deferred<RegisterResponse, Exception>()
+        val unregistrationDeferred = deferred<Unit, Exception>()
+
+        whenever(pushNotificationsAsyncClient.register(any(), any())).thenReturn(registrationDeferred.promise)
+        whenever(pushNotificationsAsyncClient.unregister(any())).thenReturn(unregistrationDeferred.promise)
+
+        val manager = createManager(
+            defaultToken = randomToken(),
+            isNetworkAvailable = true
+        )
+
+        login()
+
+        val unregistrationAddress = randomSlyAddress()
+
+        manager.unregister(unregistrationAddress)
+
+        verify(pushNotificationsAsyncClient, never()).unregister(any())
+
+        registrationDeferred.resolve(RegisterResponse(null))
+
+        verify(pushNotificationsAsyncClient).unregister(any())
+    }
+
+    //TODO keeping going on error test
 
     //eg: user clicks to stop receiving notifications while offline, then they do a local login afterwards without
     //the unregistration having actually occured
     //in this case we just cancel the pending unregistration
     @Test
     fun `login with a pending unregistration should return address to registration list`() {
-        TODO()
+        val address = userComponent.userLoginData.address
+
+        val manager = createManager(
+            defaultToken = randomToken(),
+            isNetworkAvailable = true,
+            unregistrations = setOf(address)
+        )
+
+        login()
+
+        assertThat(appConfigService.pushNotificationsUnregistrations).apply {
+            describedAs("Should remove address from unregistrations")
+            doesNotContain(address)
+        }
+
+        assertThat(appConfigService.pushNotificationsRegistrations).apply {
+            describedAs("Should readd")
+            contains(address.id)
+        }
     }
 
     //shouldn't occur?
