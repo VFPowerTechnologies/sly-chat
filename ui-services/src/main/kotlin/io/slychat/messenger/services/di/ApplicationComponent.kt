@@ -5,10 +5,7 @@ import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
-import io.slychat.messenger.services.LocalAccountDirectory
-import io.slychat.messenger.services.PlatformContacts
-import io.slychat.messenger.services.RegistrationService
-import io.slychat.messenger.services.VersionChecker
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthenticationService
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.ui.*
@@ -90,6 +87,8 @@ interface ApplicationComponent {
     val versionChecker: VersionChecker
 
     val registrationService: RegistrationService
+
+    val pushNotificationsManager: PushNotificationsManager
 
     fun plus(userModule: UserModule): UserComponent
 }

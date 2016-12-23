@@ -78,6 +78,8 @@ class MockApplicationComponent : ApplicationComponent {
 
     override val installationDataPersistenceManager: InstallationDataPersistenceManager = mock()
 
+    override val pushNotificationsManager: PushNotificationsManager = mock()
+
     val networkStatusSubject: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
 
     override val networkStatus: Observable<Boolean>

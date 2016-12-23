@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.SlyBuildConfig
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.services.PlatformContacts
 import io.slychat.messenger.services.PlatformNotificationService
 import io.slychat.messenger.services.PlatformTelephonyService
@@ -61,6 +62,11 @@ class PlatformModule(
 
     @get:Singleton
     @get:Provides
+    @get:PushNotificationTokenUpdates
+    val tokenUpdates: Observable<String>,
+
+    @get:Singleton
+    @get:Provides
     @get:NetworkStatus
     val networkStatus: Observable<Boolean>,
 
@@ -69,6 +75,9 @@ class PlatformModule(
     val providesScheduler: Scheduler,
 
     @get:Provides
-    val defaultUserConfig: UserConfig
+    val defaultUserConfig: UserConfig,
+
+    @get:Provides
+    val pushNotificationService: PushNotificationService?
 )
 

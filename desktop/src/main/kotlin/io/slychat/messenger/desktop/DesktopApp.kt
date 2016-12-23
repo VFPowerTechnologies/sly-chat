@@ -39,6 +39,7 @@ import javafx.util.Duration
 import nl.komponents.kovenant.jfx.JFXDispatcher
 import nl.komponents.kovenant.ui.KovenantUi
 import org.slf4j.LoggerFactory
+import rx.Observable
 import rx.schedulers.JavaFxScheduler
 import rx.subjects.BehaviorSubject
 import javax.crypto.Cipher
@@ -182,9 +183,11 @@ class DesktopApp : Application() {
             DesktopUIPlatformService(browser),
             DesktopUILoadService(this),
             uiVisibility,
+            Observable.never(),
             BehaviorSubject.create(true),
             JavaFxScheduler.getInstance(),
-            UserConfig()
+            UserConfig(),
+            null
         )
 
         app.init(platformModule)

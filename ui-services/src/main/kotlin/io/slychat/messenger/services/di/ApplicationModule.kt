@@ -13,6 +13,8 @@ import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.JavaHttpClientFactory
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
 import io.slychat.messenger.core.http.api.availability.AvailabilityAsyncClientImpl
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClientImpl
 import io.slychat.messenger.core.http.api.registration.RegistrationAsyncClient
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenceManager
@@ -148,5 +150,28 @@ class ApplicationModule(
         val loginClient = AuthenticationAsyncClientImpl(serverUrl, httpClientFactory)
         val availabilityClient = AvailabilityAsyncClientImpl(serverUrl, httpClientFactory)
         return RegistrationServiceImpl(scheduler, registrationClient, loginClient, availabilityClient)
+    }
+
+    @Singleton
+    @Provides
+    fun providesPushNotificationManager(
+        app: SlyApplication,
+        appConfigService: AppConfigService,
+        serverUrls: SlyBuildConfig.ServerUrls,
+        @NetworkStatus networkAvailable: Observable<Boolean>,
+        @PushNotificationTokenUpdates tokenUpdates: Observable<String>,
+        pushNotificationService: PushNotificationService?,
+        @SlyHttp httpClientFactory: HttpClientFactory
+    ): PushNotificationsManager {
+        val pushNotificationClient = PushNotificationsAsyncClientImpl(serverUrls.API_SERVER, httpClientFactory)
+
+        return PushNotificationsManagerImpl(
+            tokenUpdates,
+            app.userSessionAvailable,
+            networkAvailable,
+            pushNotificationService,
+            appConfigService,
+            pushNotificationClient
+        )
     }
 }
