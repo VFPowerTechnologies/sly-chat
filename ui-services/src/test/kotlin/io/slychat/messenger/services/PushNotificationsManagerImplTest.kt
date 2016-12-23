@@ -145,7 +145,11 @@ class PushNotificationsManagerImplTest {
     fun `it should not attempt to register when receiving the same token value`() {
         val token = randomToken()
 
-        val manager = createManager(defaultToken = token)
+        val userId = userComponent.userLoginData.userId
+        val manager = createManager(
+            defaultToken = token,
+            registrations = setOf(userId)
+        )
 
         login()
 
@@ -155,7 +159,7 @@ class PushNotificationsManagerImplTest {
 
         assertThat(appConfigService.pushNotificationsRegistrations).apply {
             describedAs("Should not do anything when token doesn't change")
-            isEmpty()
+            contains(userId)
         }
     }
 
@@ -217,6 +221,19 @@ class PushNotificationsManagerImplTest {
         login()
 
         enableNetwork()
+
+        assertSuccessfulRegistration(token)
+    }
+
+    @Test
+    fun `it should attempt to register a pending token if the network is available when login occurs`() {
+        val token = randomToken()
+
+        val manager = createManager(
+            defaultToken = token
+        )
+
+        login()
 
         assertSuccessfulRegistration(token)
     }

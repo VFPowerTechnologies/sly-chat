@@ -19,7 +19,7 @@ class PushNotificationsManagerImpl(
     tokenUpdates: Observable<String>,
     userSessionAvailable: Observable<UserComponent?>,
     networkStatus: Observable<Boolean>,
-    private val pushNotificationService: PushNotificationService,
+    private val pushNotificationService: PushNotificationService?,
     private val appConfigService: AppConfigService,
     private val pushNotificationsClient: PushNotificationsAsyncClient
 ) : PushNotificationsManager {
@@ -38,24 +38,29 @@ class PushNotificationsManagerImpl(
     private val isLoggedIn: Boolean
         get() = authTokenManager != null
 
+    private val isDisabled: Boolean
+        get() = pushNotificationService == null
+
     init {
-        appConfigService.updates.filter { it.contains(AppConfig.PUSH_NOTIFICATIONS_TOKEN) }.subscribe { onNewToken() }
+        if (!isDisabled) {
+            appConfigService.updates.filter { it.contains(AppConfig.PUSH_NOTIFICATIONS_TOKEN) }.subscribe { onNewToken() }
 
-        //TODO check if we need to update the token for this user
-        userSessionAvailable.subscribe { userComponent ->
-            if (userComponent != null) {
-                currentAccount = userComponent.userLoginData.address
-                authTokenManager = userComponent.authTokenManager
+            //TODO check if we need to update the token for this user
+            userSessionAvailable.subscribe { userComponent ->
+                if (userComponent != null) {
+                    currentAccount = userComponent.userLoginData.address
+                    authTokenManager = userComponent.authTokenManager
+                    updateTokenForCurrentAccount()
+                } else {
+                    currentAccount = null
+                    authTokenManager = null
+                }
             }
-            else {
-                currentAccount = null
-                authTokenManager = null
-            }
+
+            tokenUpdates.subscribe { onTokenUpdate(it) }
+
+            networkStatus.subscribe { onNetworkStatusUpdate(it) }
         }
-
-        tokenUpdates.subscribe { onTokenUpdate(it) }
-
-        networkStatus.subscribe { onNetworkStatusUpdate(it) }
     }
 
     private fun onNetworkStatusUpdate(isAvailable: Boolean) {
@@ -99,7 +104,7 @@ class PushNotificationsManagerImpl(
         isRegistrationInProgress = true
 
         authTokenManager.bind {
-            val request = RegisterRequest(token, pushNotificationService, false)
+            val request = RegisterRequest(token, pushNotificationService!!, false)
             pushNotificationsClient.register(it, request)
         }.successUi {
             isRegistrationInProgress = false
@@ -127,6 +132,9 @@ class PushNotificationsManagerImpl(
     }
 
     override fun unregister(address: SlyAddress) {
+        if (isDisabled)
+            error("unregister() called but push notification system is disabled")
+
         if (appConfigService.pushNotificationsToken == null) {
             log.warn("Attempt to add unregistration but no token is set")
             return
