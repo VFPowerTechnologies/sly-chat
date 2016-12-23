@@ -180,10 +180,12 @@ class ApplicationModule(
     @Provides
     fun providesTokenFetchService(
         tokenFetcher: TokenFetcher,
+        pushNotificationService: PushNotificationService?,
         @NetworkStatus networkAvailable: Observable<Boolean>
     ): TokenFetchService {
         //FIXME
         return TokenFetchServiceImpl(
+            pushNotificationService != null,
             tokenFetcher,
             networkAvailable,
             5,

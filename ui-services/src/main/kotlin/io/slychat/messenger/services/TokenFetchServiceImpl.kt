@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 
 //TODO retry on error
 class TokenFetchServiceImpl(
+    private val isEnabled: Boolean,
     private val fetcher: TokenFetcher,
     networkAvailability: Observable<Boolean>,
     private val retryTime: Long,
@@ -26,7 +27,8 @@ class TokenFetchServiceImpl(
         get() = tokenSubject
 
     init {
-        networkAvailability.subscribe { onNetworkStatusChange(it) }
+        if (isEnabled)
+            networkAvailability.subscribe { onNetworkStatusChange(it) }
     }
 
     private fun onNetworkStatusChange(isAvailable: Boolean) {
@@ -64,6 +66,9 @@ class TokenFetchServiceImpl(
     }
 
     override fun refresh() {
+        if (!isEnabled)
+            error("TokenFetchServiceImpl is disabled")
+
         isFetched = false
         fetch()
     }
