@@ -183,7 +183,7 @@ class DesktopApp : Application() {
             DesktopUIPlatformService(browser),
             DesktopUILoadService(this),
             uiVisibility,
-            Observable.never(),
+            DesktopTokenFetcher(),
             BehaviorSubject.create(true),
             JavaFxScheduler.getInstance(),
             UserConfig(),

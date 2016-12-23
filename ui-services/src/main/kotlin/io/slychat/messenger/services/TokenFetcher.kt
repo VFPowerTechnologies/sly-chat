@@ -1,4 +1,4 @@
-package io.slychat.messenger.android
+package io.slychat.messenger.services
 
 import nl.komponents.kovenant.Promise
 

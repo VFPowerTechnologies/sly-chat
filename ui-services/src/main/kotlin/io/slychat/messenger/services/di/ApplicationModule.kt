@@ -31,6 +31,7 @@ import rx.Scheduler
 import java.io.ByteArrayInputStream
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -159,19 +160,34 @@ class ApplicationModule(
         appConfigService: AppConfigService,
         serverUrls: SlyBuildConfig.ServerUrls,
         @NetworkStatus networkAvailable: Observable<Boolean>,
-        @PushNotificationTokenUpdates tokenUpdates: Observable<String>,
+        tokenFetchService: TokenFetchService,
         pushNotificationService: PushNotificationService?,
         @SlyHttp httpClientFactory: HttpClientFactory
     ): PushNotificationsManager {
         val pushNotificationClient = PushNotificationsAsyncClientImpl(serverUrls.API_SERVER, httpClientFactory)
 
         return PushNotificationsManagerImpl(
-            tokenUpdates,
+            tokenFetchService.tokenUpdates,
             app.userSessionAvailable,
             networkAvailable,
             pushNotificationService,
             appConfigService,
             pushNotificationClient
+        )
+    }
+
+    @Singleton
+    @Provides
+    fun providesTokenFetchService(
+        tokenFetcher: TokenFetcher,
+        @NetworkStatus networkAvailable: Observable<Boolean>
+    ): TokenFetchService {
+        //FIXME
+        return TokenFetchServiceImpl(
+            tokenFetcher,
+            networkAvailable,
+            5,
+            TimeUnit.MINUTES
         )
     }
 }

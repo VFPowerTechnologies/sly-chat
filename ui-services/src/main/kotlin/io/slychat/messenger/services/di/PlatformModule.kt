@@ -8,6 +8,7 @@ import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationServ
 import io.slychat.messenger.services.PlatformContacts
 import io.slychat.messenger.services.PlatformNotificationService
 import io.slychat.messenger.services.PlatformTelephonyService
+import io.slychat.messenger.services.TokenFetcher
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.ui.*
 import rx.Observable
@@ -62,8 +63,7 @@ class PlatformModule(
 
     @get:Singleton
     @get:Provides
-    @get:PushNotificationTokenUpdates
-    val tokenUpdates: Observable<String>,
+    val tokenFetcher: TokenFetcher,
 
     @get:Singleton
     @get:Provides

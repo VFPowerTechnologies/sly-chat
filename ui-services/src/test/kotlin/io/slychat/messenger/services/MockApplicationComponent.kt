@@ -80,6 +80,8 @@ class MockApplicationComponent : ApplicationComponent {
 
     override val pushNotificationsManager: PushNotificationsManager = mock()
 
+    override val tokenFetchService: TokenFetchService = mock()
+
     val networkStatusSubject: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
 
     override val networkStatus: Observable<Boolean>

@@ -42,7 +42,6 @@ import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 //TODO keep checking PushNotificationsClient.isRegistered on login? easy way to make sure stuff is still registered...
 //maybe add to PushNotificationManager or something
@@ -90,8 +89,6 @@ class AndroidApp : Application() {
     private var noNotificationsOnLogout = false
 
     val app: SlyApplication = SlyApplication()
-
-    private lateinit var tokenFetchService: TokenFetchService
 
     //if AndroidUILoadService.loadComplete is called while we're paused (eg: during the permissions dialog)
     private var queuedLoadComplete = false
@@ -156,13 +153,6 @@ class AndroidApp : Application() {
 
         notificationService = AndroidNotificationService(this)
 
-        tokenFetchService = TokenFetchService(
-            AndroidTokenFetcher(this),
-            networkStatus,
-            5,
-            TimeUnit.MINUTES
-        )
-
         val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val defaultUserConfig = UserConfig().copy(
             notificationsSound = defaultUri.toString()
@@ -180,7 +170,7 @@ class AndroidApp : Application() {
             AndroidUIPlatformService(this),
             AndroidUILoadService(this),
             uiVisibility,
-            tokenFetchService.tokenUpdates,
+            AndroidTokenFetcher(this),
             networkStatus,
             AndroidSchedulers.mainThread(),
             defaultUserConfig,
@@ -223,7 +213,7 @@ class AndroidApp : Application() {
 
         //only do this once we've completed initialization (ie once AppConfigService is up)
         app.addOnInitListener {
-            tokenFetchService.refresh()
+            appComponent.tokenFetchService.refresh()
         }
     }
 
@@ -256,7 +246,7 @@ class AndroidApp : Application() {
     }
 
     fun onGCMTokenRefreshRequired() {
-        tokenFetchService.refresh()
+        appComponent.tokenFetchService.refresh()
     }
 
     fun onGCMMessage(account: SlyAddress, accountName: String, info: List<OfflineMessageInfo>) {

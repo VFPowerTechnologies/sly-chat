@@ -1,4 +1,4 @@
-package io.slychat.messenger.android
+package io.slychat.messenger.services
 
 import io.slychat.messenger.core.condError
 import nl.komponents.kovenant.ui.failUi
@@ -9,12 +9,12 @@ import rx.subjects.PublishSubject
 import java.util.concurrent.TimeUnit
 
 //TODO retry on error
-class TokenFetchService(
+class TokenFetchServiceImpl(
     private val fetcher: TokenFetcher,
     networkAvailability: Observable<Boolean>,
     private val retryTime: Long,
     private val retryTimeUnit: TimeUnit
-) {
+) : TokenFetchService {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private var isFetching = false
@@ -22,7 +22,7 @@ class TokenFetchService(
     private var isNetworkAvailable = false
 
     private val tokenSubject = PublishSubject.create<String>()
-    val tokenUpdates: Observable<String>
+    override val tokenUpdates: Observable<String>
         get() = tokenSubject
 
     init {
@@ -63,7 +63,7 @@ class TokenFetchService(
         }
     }
 
-    fun refresh() {
+    override fun refresh() {
         isFetched = false
         fetch()
     }

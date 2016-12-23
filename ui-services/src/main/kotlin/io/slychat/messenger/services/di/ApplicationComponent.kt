@@ -90,5 +90,7 @@ interface ApplicationComponent {
 
     val pushNotificationsManager: PushNotificationsManager
 
+    val tokenFetchService: TokenFetchService
+
     fun plus(userModule: UserModule): UserComponent
 }

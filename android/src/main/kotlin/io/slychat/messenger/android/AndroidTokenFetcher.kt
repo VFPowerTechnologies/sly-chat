@@ -3,6 +3,7 @@ package io.slychat.messenger.android
 import android.content.Context
 import com.google.android.gms.gcm.GoogleCloudMessaging
 import com.google.android.gms.iid.InstanceID
+import io.slychat.messenger.services.TokenFetcher
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
