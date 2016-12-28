@@ -13,6 +13,7 @@ import java.util.*
  * @property formatVersion Configuration version.
  * @property loginRememberMe Last state of "Remember me" on login screen.
  * @property appearanceTheme Current theme.
+ * @property pushNotificationToken Current push notification device token.
  * @property pushNotificationsRegistrations Current list of registered accounts and their unregistration tokens.
  * @property pushNotificationsUnregistrations Current list of accounts to be unregistered, and their unregistration tokens.
  */
