@@ -108,6 +108,8 @@ class PushNotificationsManagerImpl(
     }
 
     private fun unregisterAllTokens() {
+        log.info("Unregistering all addresses")
+
         appConfigService.withEditor {
             val unregistrations = HashMap(pushNotificationsUnregistrations)
             unregistrations.putAll(pushNotificationsRegistrations)

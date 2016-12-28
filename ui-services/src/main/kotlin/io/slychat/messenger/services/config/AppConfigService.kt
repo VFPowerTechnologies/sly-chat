@@ -1,24 +1,44 @@
 package io.slychat.messenger.services.config
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import io.slychat.messenger.core.SlyAddress
+import io.slychat.messenger.core.SlyAddressKeyDeserializer
+import io.slychat.messenger.core.SlyAddressKeySerializer
 import java.util.*
 
 /**
  * @property formatVersion Configuration version.
  * @property loginRememberMe Last state of "Remember me" on login screen.
  * @property appearanceTheme Current theme.
- * @property pushNotificationRegistrations Current list of registered accounts and their unregistration tokens.
- * @property pushNotificationUnregistrations Current list of accounts to be unregistered, and their unregistration tokens.
+ * @property pushNotificationsRegistrations Current list of registered accounts and their unregistration tokens.
+ * @property pushNotificationsUnregistrations Current list of accounts to be unregistered, and their unregistration tokens.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class AppConfig(
+    @JsonProperty("formatVersion")
     val formatVersion: Int = 1,
+
+    @JsonProperty("loginRememberMe")
     val loginRememberMe: Boolean = true,
+
+    @JsonProperty("appearenceTheme")
     val appearanceTheme: String? = null,
+
+    @JsonProperty("pushNotificationToken")
     val pushNotificationToken: String? = null,
-    val pushNotificationRegistrations: Map<SlyAddress, String> = emptyMap(),
-    val pushNotificationUnregistrations: Map<SlyAddress, String> = emptyMap()
+
+    @JsonDeserialize(keyUsing = SlyAddressKeyDeserializer::class)
+    @JsonSerialize(keyUsing = SlyAddressKeySerializer::class)
+    @JsonProperty("pushNotificationsRegistrations")
+    val pushNotificationsRegistrations: Map<SlyAddress, String> = emptyMap(),
+
+    @JsonDeserialize(keyUsing = SlyAddressKeyDeserializer::class)
+    @JsonSerialize(keyUsing = SlyAddressKeySerializer::class)
+    @JsonProperty("pushNotificationsUnregistrations")
+    val pushNotificationsUnregistrations: Map<SlyAddress, String> = emptyMap()
 ) {
     companion object {
         private fun join(parent: String, child: String): String = "$parent.$child"
@@ -66,20 +86,20 @@ class AppEditorInterface(override var config: AppConfig) : ConfigServiceBase.Edi
         }
 
     var pushNotificationsRegistrations: Map<SlyAddress, String>
-        get() = config.pushNotificationRegistrations
+        get() = config.pushNotificationsRegistrations
         set(value) {
             if (value != pushNotificationsRegistrations) {
                 modifiedKeys.add(AppConfig.PUSH_NOTIFICATIONS_REGISTRATIONS)
-                config = config.copy(pushNotificationRegistrations = value)
+                config = config.copy(pushNotificationsRegistrations = value)
             }
         }
 
     var pushNotificationsUnregistrations: Map<SlyAddress, String>
-        get() = config.pushNotificationUnregistrations
+        get() = config.pushNotificationsUnregistrations
         set(value) {
             if (value != pushNotificationsUnregistrations) {
                 modifiedKeys.add(AppConfig.PUSH_NOTIFICATIONS_UNREGISTRATIONS)
-                config = config.copy(pushNotificationUnregistrations = value)
+                config = config.copy(pushNotificationsUnregistrations = value)
             }
         }
 }
@@ -102,8 +122,8 @@ class AppConfigService(
         get() = config.pushNotificationToken
 
     val pushNotificationsRegistrations: Map<SlyAddress, String>
-        get() = config.pushNotificationRegistrations
+        get() = config.pushNotificationsRegistrations
 
     val pushNotificationsUnregistrations: Map<SlyAddress, String>
-        get() = config.pushNotificationUnregistrations
+        get() = config.pushNotificationsUnregistrations
 }
