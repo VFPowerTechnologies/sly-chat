@@ -8,7 +8,7 @@ class DesktopTokenFetcher : TokenFetcher {
         return false
     }
 
-    override fun fetch(): Promise<String, Exception> {
+    override fun fetch(): Promise<String?, Exception> {
         return Promise.ofFail(RuntimeException("No TokenFetcher impl for desktop"))
 
     }

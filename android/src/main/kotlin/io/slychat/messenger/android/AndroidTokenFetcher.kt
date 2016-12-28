@@ -14,7 +14,7 @@ class AndroidTokenFetcher(
         return true
     }
 
-    override fun fetch(): Promise<String, Exception> = task {
+    override fun fetch(): Promise<String?, Exception> = task {
         val instanceId = InstanceID.getInstance(context)
         val defaultSenderId = context.getString(R.string.gcm_defaultSenderId)
 

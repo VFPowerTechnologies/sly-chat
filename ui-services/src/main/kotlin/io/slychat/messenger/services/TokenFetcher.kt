@@ -3,7 +3,7 @@ package io.slychat.messenger.services
 import nl.komponents.kovenant.Promise
 
 interface TokenFetcher {
-    fun fetch(): Promise<String, Exception>
+    fun fetch(): Promise<String?, Exception>
 
     fun canRetry(exception: Exception): Boolean
 

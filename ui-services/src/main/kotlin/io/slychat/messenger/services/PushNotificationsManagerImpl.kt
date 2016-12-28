@@ -14,8 +14,19 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
+import java.util.*
 
 //TODO need to handle retries
+/**
+ * Manages registration/unregistration of device tokens for push notitifications.
+ *
+ * Tokens will only be updated if their value changes. If a null token is received, all previously registered accounts
+ * will be unregistered.
+ *
+ * Registrations will only be performed when a user is logged in.
+ *
+ * Registrations/unregistrations are processed serially.
+ */
 class PushNotificationsManagerImpl(
     tokenUpdates: Observable<String>,
     userSessionAvailable: Observable<UserComponent?>,
@@ -85,9 +96,27 @@ class PushNotificationsManagerImpl(
     private fun onNewToken() {
         log.info("Received new token")
 
-        invalidateRegistrations()
+        //token has changed
+        if (appConfigService.pushNotificationsToken != null) {
+            invalidateRegistrations()
+            updateTokenForCurrentAccount()
+        }
+        //notifications have been disabled by the user
+        else {
+            unregisterAllTokens()
+        }
+    }
 
-        updateTokenForCurrentAccount()
+    private fun unregisterAllTokens() {
+        appConfigService.withEditor {
+            val unregistrations = HashMap(pushNotificationsUnregistrations)
+            unregistrations.putAll(pushNotificationsRegistrations)
+
+            pushNotificationsUnregistrations = unregistrations
+            pushNotificationsRegistrations = emptyMap()
+        }
+
+        unregisterTokens()
     }
 
     private fun processWork() {

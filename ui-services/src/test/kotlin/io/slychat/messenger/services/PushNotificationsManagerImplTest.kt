@@ -200,16 +200,18 @@ class PushNotificationsManagerImplTest {
         }
     }
 
-    //FIXME
     @Test
     fun `it should move all current registrations to unregistrations when receiving a new null token value`() {
         val manager = createManager(
             defaultToken = randomToken(),
             registrations = setOf(randomSlyAddress(), randomSlyAddress()),
+            unregistrations = setOf(randomSlyAddress()),
             isNetworkAvailable = false
         )
 
         val registrations = appConfigService.pushNotificationsRegistrations
+
+        val oldUnregistrations = appConfigService.pushNotificationsUnregistrations
 
         tokenUpdates.onNext(null)
 
@@ -217,6 +219,31 @@ class PushNotificationsManagerImplTest {
             describedAs("Should contain all previous registrations")
             containsAllEntriesOf(registrations)
         }
+
+        assertThat(appConfigService.pushNotificationsUnregistrations).apply {
+            describedAs("Should contain all previous unregistrations")
+            containsAllEntriesOf(oldUnregistrations)
+        }
+
+        assertThat(appConfigService.pushNotificationsRegistrations).apply {
+            describedAs("Registrations list should be empty")
+            isEmpty()
+        }
+    }
+
+    @Test
+    fun `it should attempt to perform unregistrations if network is available and a new null token is received`() {
+        val address = randomSlyAddress()
+
+        val manager = createManager(
+            defaultToken = randomToken(),
+            registrations = setOf(address),
+            isNetworkAvailable = true
+        )
+
+        tokenUpdates.onNext(null)
+
+        assertSuccessfulUnregistration(address, defaultUnregistrationToken)
     }
 
     @Test
