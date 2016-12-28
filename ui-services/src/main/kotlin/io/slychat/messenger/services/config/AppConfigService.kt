@@ -11,7 +11,7 @@ data class AppConfig(
     val loginRememberMe: Boolean = true,
     val appearanceTheme: String? = null,
     val pushNotificationToken: String? = null,
-    val pushNotificationRegistrations: Set<UserId> = emptySet(),
+    val pushNotificationRegistrations: Set<SlyAddress> = emptySet(),
     val pushNotificationUnregistrations: Set<SlyAddress> = emptySet()
 ) {
     companion object {
@@ -59,7 +59,7 @@ class AppEditorInterface(override var config: AppConfig) : ConfigServiceBase.Edi
             }
         }
 
-    var pushNotificationsRegistrations: Set<UserId>
+    var pushNotificationsRegistrations: Set<SlyAddress>
         get() = config.pushNotificationRegistrations
         set(value) {
             if (value != pushNotificationsRegistrations) {
@@ -95,7 +95,7 @@ class AppConfigService(
     val pushNotificationsToken: String?
         get() = config.pushNotificationToken
 
-    val pushNotificationsRegistrations: Set<UserId>
+    val pushNotificationsRegistrations: Set<SlyAddress>
         get() = config.pushNotificationRegistrations
 
     val pushNotificationsUnregistrations: Set<SlyAddress>

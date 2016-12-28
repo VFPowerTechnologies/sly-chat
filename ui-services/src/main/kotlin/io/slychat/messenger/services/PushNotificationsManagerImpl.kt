@@ -116,7 +116,7 @@ class PushNotificationsManagerImpl(
 
         hasCheckedForCurrentAccount = true
 
-        if (appConfigService.pushNotificationsRegistrations.contains(address.id)) {
+        if (appConfigService.pushNotificationsRegistrations.contains(address)) {
             log.debug("Token already registered for {}", address)
             return
         }
@@ -126,7 +126,7 @@ class PushNotificationsManagerImpl(
 
             appConfigService.withEditor {
                 pushNotificationsUnregistrations -= address
-                pushNotificationsRegistrations += address.id
+                pushNotificationsRegistrations += address
             }
 
             return
@@ -149,7 +149,7 @@ class PushNotificationsManagerImpl(
                 log.info("Registered push notification token")
 
                 appConfigService.withEditor {
-                    pushNotificationsRegistrations += address.id
+                    pushNotificationsRegistrations += address
                 }
             }
 
@@ -182,7 +182,7 @@ class PushNotificationsManagerImpl(
 
         appConfigService.withEditor {
             pushNotificationsUnregistrations += address
-            pushNotificationsRegistrations -= address.id
+            pushNotificationsRegistrations -= address
         }
 
         unregisterTokens()

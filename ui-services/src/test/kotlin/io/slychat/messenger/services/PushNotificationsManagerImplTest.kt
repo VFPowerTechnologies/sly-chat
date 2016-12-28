@@ -2,11 +2,9 @@ package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.http.api.pushnotifications.*
 import io.slychat.messenger.core.randomSlyAddress
-import io.slychat.messenger.core.randomUserId
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.DummyConfigBackend
 import io.slychat.messenger.services.di.UserComponent
@@ -44,7 +42,7 @@ class PushNotificationsManagerImplTest {
     private fun createManager(
         isNetworkAvailable: Boolean = true,
         defaultToken: String? = null,
-        registrations: Set<UserId> = emptySet(),
+        registrations: Set<SlyAddress> = emptySet(),
         unregistrations: Set<SlyAddress> = emptySet()
     ): PushNotificationsManagerImpl {
         appConfigService.withEditor {
@@ -88,7 +86,7 @@ class PushNotificationsManagerImplTest {
 
         assertThat(appConfigService.pushNotificationsRegistrations).apply {
             describedAs("Should add account to registrations list on success")
-            contains(userComponent.userLoginData.userId)
+            contains(userComponent.userLoginData.address)
         }
     }
 
@@ -109,7 +107,7 @@ class PushNotificationsManagerImplTest {
 
     @Test
     fun `it should reset the sent list when receiving a new token`() {
-        val manager = createManager(registrations = setOf(randomUserId()))
+        val manager = createManager(registrations = setOf(randomSlyAddress()))
 
         val token = randomToken()
 
@@ -138,7 +136,7 @@ class PushNotificationsManagerImplTest {
     fun `it should attempt to register a new token if already logged in and was previously registered`() {
         val manager = createManager(
             defaultToken = randomToken(),
-            registrations = setOf(userComponent.userLoginData.userId)
+            registrations = setOf(userComponent.userLoginData.address)
         )
 
         login()
@@ -152,10 +150,10 @@ class PushNotificationsManagerImplTest {
     fun `it should not attempt to register when receiving the same token value`() {
         val token = randomToken()
 
-        val userId = userComponent.userLoginData.userId
+        val address = userComponent.userLoginData.address
         val manager = createManager(
             defaultToken = token,
-            registrations = setOf(userId)
+            registrations = setOf(randomSlyAddress())
         )
 
         login()
@@ -166,7 +164,26 @@ class PushNotificationsManagerImplTest {
 
         assertThat(appConfigService.pushNotificationsRegistrations).apply {
             describedAs("Should not do anything when token doesn't change")
-            contains(userId)
+            contains(address)
+        }
+    }
+
+    //FIXME
+    @Test
+    fun `it should move all current registrations to unregistrations when receiving a new null token value`() {
+        val registrations = setOf(randomSlyAddress(), randomSlyAddress())
+
+        val manager = createManager(
+            defaultToken = randomToken(),
+            registrations = registrations,
+            isNetworkAvailable = false
+        )
+
+        tokenUpdates.onNext(null)
+
+        assertThat(appConfigService.pushNotificationsUnregistrations).apply {
+            describedAs("Should contain all previous registrations")
+            containsAll(registrations)
         }
     }
 
@@ -174,7 +191,7 @@ class PushNotificationsManagerImplTest {
     fun `it should not attempt to register on login if already registered`() {
         val manager = createManager(
             defaultToken = randomToken(),
-            registrations = setOf(userComponent.userLoginData.userId)
+            registrations = setOf(userComponent.userLoginData.address)
         )
 
         login()
@@ -187,7 +204,7 @@ class PushNotificationsManagerImplTest {
         val manager = createManager(
             isNetworkAvailable = false,
             defaultToken = randomToken(),
-            registrations = setOf(userComponent.userLoginData.userId)
+            registrations = setOf(userComponent.userLoginData.address)
         )
 
         login()
@@ -202,7 +219,7 @@ class PushNotificationsManagerImplTest {
         val manager = createManager(
             isNetworkAvailable = false,
             defaultToken = randomToken(),
-            registrations = setOf(userComponent.userLoginData.userId)
+            registrations = setOf(userComponent.userLoginData.address)
         )
 
         login()
@@ -270,14 +287,14 @@ class PushNotificationsManagerImplTest {
         val manager = createManager(
             defaultToken = randomToken(),
             isNetworkAvailable = false,
-            registrations = setOf(address.id)
+            registrations = setOf(address)
         )
 
         manager.unregister(address)
 
         assertThat(appConfigService.pushNotificationsRegistrations).apply {
             describedAs("Should remove the address from the registrations list")
-            doesNotContain(address.id)
+            doesNotContain(address)
         }
     }
 
@@ -381,7 +398,7 @@ class PushNotificationsManagerImplTest {
 
         assertThat(appConfigService.pushNotificationsRegistrations).apply {
             describedAs("Should readd")
-            contains(address.id)
+            contains(address)
         }
     }
 
