@@ -87,6 +87,23 @@ inline fun <T, K, V> Iterable<T>.mapToMap(transform: (T) -> Pair<K, V>): Map<K, 
     return m
 }
 
+operator fun <K, V> Map<K, V>.plus(entry: Pair<K, V>): Map<K, V> {
+    val m = HashMap(this)
+
+    m += entry
+
+    return m
+}
+
+operator fun <K, V> Map<K, V>.minus(key: K): Map<K, V> {
+    val m = HashMap(this)
+
+    m.remove(key)
+
+    return m
+}
+
+
 /**
  * Used to determine OS info from Java's os.name and os.version system properties. Currently only tested on the following JREs: Oracle, OpenJDK, Android
  *

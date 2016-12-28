@@ -5,6 +5,7 @@ import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationServ
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClient
 import io.slychat.messenger.core.http.api.pushnotifications.RegisterRequest
 import io.slychat.messenger.core.http.api.pushnotifications.UnregisterRequest
+import io.slychat.messenger.core.minus
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.config.AppConfig
 import io.slychat.messenger.services.config.AppConfigService
@@ -125,8 +126,10 @@ class PushNotificationsManagerImpl(
             log.debug("Was scheduled for unregistration, restoring to registered state")
 
             appConfigService.withEditor {
+                val unregistrationToken = pushNotificationsRegistrations[address]!!
+
                 pushNotificationsUnregistrations -= address
-                pushNotificationsRegistrations += address
+                pushNotificationsRegistrations += address to unregistrationToken
             }
 
             return
@@ -149,7 +152,7 @@ class PushNotificationsManagerImpl(
                 log.info("Registered push notification token")
 
                 appConfigService.withEditor {
-                    pushNotificationsRegistrations += address
+                    pushNotificationsRegistrations += address to it.unregistrationToken
                 }
             }
 
@@ -165,7 +168,7 @@ class PushNotificationsManagerImpl(
         hasCheckedForCurrentAccount = false
 
         appConfigService.withEditor {
-            pushNotificationsRegistrations = emptySet()
+            pushNotificationsRegistrations = emptyMap()
         }
     }
 
@@ -178,10 +181,16 @@ class PushNotificationsManagerImpl(
             return
         }
 
+        val unregistrationToken = appConfigService.pushNotificationsRegistrations[address]
+        if (unregistrationToken == null) {
+            log.warn("Unable to find {} in registrations, not unregistering", address)
+            return
+        }
+
         log.info("Queuing unregistration for {}", address)
 
         appConfigService.withEditor {
-            pushNotificationsUnregistrations += address
+            pushNotificationsUnregistrations += address to unregistrationToken
             pushNotificationsRegistrations -= address
         }
 
@@ -198,11 +207,9 @@ class PushNotificationsManagerImpl(
         if (appConfigService.pushNotificationsUnregistrations.isEmpty())
             return
 
-        val token = appConfigService.pushNotificationsToken ?: return
+        val (address, unregistrationToken) = appConfigService.pushNotificationsUnregistrations.iterator().next()
 
-        val address = appConfigService.pushNotificationsUnregistrations.first()
-
-        val request = UnregisterRequest(address, token)
+        val request = UnregisterRequest(address, unregistrationToken)
 
         isWorkInProgress = true
 

@@ -2,17 +2,23 @@ package io.slychat.messenger.services.config
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.UserId
 import java.util.*
 
+/**
+ * @property formatVersion Configuration version.
+ * @property loginRememberMe Last state of "Remember me" on login screen.
+ * @property appearanceTheme Current theme.
+ * @property pushNotificationRegistrations Current list of registered accounts and their unregistration tokens.
+ * @property pushNotificationUnregistrations Current list of accounts to be unregistered, and their unregistration tokens.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class AppConfig(
     val formatVersion: Int = 1,
     val loginRememberMe: Boolean = true,
     val appearanceTheme: String? = null,
     val pushNotificationToken: String? = null,
-    val pushNotificationRegistrations: Set<SlyAddress> = emptySet(),
-    val pushNotificationUnregistrations: Set<SlyAddress> = emptySet()
+    val pushNotificationRegistrations: Map<SlyAddress, String> = emptyMap(),
+    val pushNotificationUnregistrations: Map<SlyAddress, String> = emptyMap()
 ) {
     companion object {
         private fun join(parent: String, child: String): String = "$parent.$child"
@@ -59,7 +65,7 @@ class AppEditorInterface(override var config: AppConfig) : ConfigServiceBase.Edi
             }
         }
 
-    var pushNotificationsRegistrations: Set<SlyAddress>
+    var pushNotificationsRegistrations: Map<SlyAddress, String>
         get() = config.pushNotificationRegistrations
         set(value) {
             if (value != pushNotificationsRegistrations) {
@@ -68,7 +74,7 @@ class AppEditorInterface(override var config: AppConfig) : ConfigServiceBase.Edi
             }
         }
 
-    var pushNotificationsUnregistrations: Set<SlyAddress>
+    var pushNotificationsUnregistrations: Map<SlyAddress, String>
         get() = config.pushNotificationUnregistrations
         set(value) {
             if (value != pushNotificationsUnregistrations) {
@@ -95,9 +101,9 @@ class AppConfigService(
     val pushNotificationsToken: String?
         get() = config.pushNotificationToken
 
-    val pushNotificationsRegistrations: Set<SlyAddress>
+    val pushNotificationsRegistrations: Map<SlyAddress, String>
         get() = config.pushNotificationRegistrations
 
-    val pushNotificationsUnregistrations: Set<SlyAddress>
+    val pushNotificationsUnregistrations: Map<SlyAddress, String>
         get() = config.pushNotificationUnregistrations
 }

@@ -2,8 +2,9 @@ package io.slychat.messenger.services
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.http.api.pushnotifications.*
+import io.slychat.messenger.core.mapToMap
+import io.slychat.messenger.core.randomInt
 import io.slychat.messenger.core.randomSlyAddress
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.DummyConfigBackend
@@ -32,10 +33,11 @@ class PushNotificationsManagerImplTest {
     private val tokenUpdates = PublishSubject.create<String>()
     private val appConfigService = AppConfigService(DummyConfigBackend())
     private val pushNotificationService = PushNotificationService.GCM
+    private val defaultUnregistrationToken = randomUnregistrationToken()
 
     @Before
     fun before() {
-        whenever(pushNotificationsAsyncClient.register(any(), any())).thenResolve(RegisterResponse(null))
+        whenever(pushNotificationsAsyncClient.register(any(), any())).thenResolve(RegisterResponse(defaultUnregistrationToken, null))
         whenever(pushNotificationsAsyncClient.unregister(any<UnregisterRequest>())).thenResolveUnit()
     }
 
@@ -47,8 +49,8 @@ class PushNotificationsManagerImplTest {
     ): PushNotificationsManagerImpl {
         appConfigService.withEditor {
             pushNotificationsToken = defaultToken
-            pushNotificationsRegistrations = registrations
-            pushNotificationsUnregistrations = unregistrations
+            pushNotificationsRegistrations = registrations.mapToMap { it to defaultUnregistrationToken }
+            pushNotificationsUnregistrations = unregistrations.mapToMap { it to defaultUnregistrationToken }
         }
 
         networkAvailability.onNext(isNetworkAvailable)
@@ -63,7 +65,9 @@ class PushNotificationsManagerImplTest {
         )
     }
 
-    private fun randomToken(): String = randomUUID()
+    private fun randomUnregistrationToken(): String = "unregistration-token-${randomInt(0, 1000)}"
+
+    private fun randomToken(): String = "token-${randomInt(0, 1000)}"
 
     private fun login() {
         userSessionAvailable.onNext(userComponent)
@@ -84,14 +88,42 @@ class PushNotificationsManagerImplTest {
 
         verify(pushNotificationsAsyncClient).register(any(), eq(request))
 
+        val address = userComponent.userLoginData.address
+
         assertThat(appConfigService.pushNotificationsRegistrations).apply {
             describedAs("Should add account to registrations list on success")
-            contains(userComponent.userLoginData.address)
+            containsEntry(address, defaultUnregistrationToken)
         }
     }
 
     private fun assertNoRegistrationAttempt() {
         verify(pushNotificationsAsyncClient, never()).register(any(), any())
+    }
+
+    private fun assertNoUnregistrationAttempt() {
+        verify(pushNotificationsAsyncClient, never()).unregister(any<UnregisterRequest>())
+    }
+
+    private fun assertNotRemovedFromUnregistrations(address: SlyAddress) {
+        assertThat(appConfigService.pushNotificationsUnregistrations).apply {
+            describedAs("Should contain the address")
+            containsKey(address)
+        }
+    }
+
+    private fun assertRemovedFromUnregistrations(address: SlyAddress) {
+        assertThat(appConfigService.pushNotificationsUnregistrations).apply {
+            describedAs("Should not contain the unregistered address")
+            doesNotContainKey(address)
+        }
+    }
+
+    private fun assertSuccessfulUnregistration(address: SlyAddress, unregistrationToken: String) {
+        val request = UnregisterRequest(address, unregistrationToken)
+
+        verify(pushNotificationsAsyncClient).unregister(request)
+
+        assertRemovedFromUnregistrations(address)
     }
 
     @Test
@@ -153,7 +185,7 @@ class PushNotificationsManagerImplTest {
         val address = userComponent.userLoginData.address
         val manager = createManager(
             defaultToken = token,
-            registrations = setOf(randomSlyAddress())
+            registrations = setOf(address)
         )
 
         login()
@@ -164,26 +196,26 @@ class PushNotificationsManagerImplTest {
 
         assertThat(appConfigService.pushNotificationsRegistrations).apply {
             describedAs("Should not do anything when token doesn't change")
-            contains(address)
+            containsEntry(address, defaultUnregistrationToken)
         }
     }
 
     //FIXME
     @Test
     fun `it should move all current registrations to unregistrations when receiving a new null token value`() {
-        val registrations = setOf(randomSlyAddress(), randomSlyAddress())
-
         val manager = createManager(
             defaultToken = randomToken(),
-            registrations = registrations,
+            registrations = setOf(randomSlyAddress(), randomSlyAddress()),
             isNetworkAvailable = false
         )
+
+        val registrations = appConfigService.pushNotificationsRegistrations
 
         tokenUpdates.onNext(null)
 
         assertThat(appConfigService.pushNotificationsUnregistrations).apply {
             describedAs("Should contain all previous registrations")
-            containsAll(registrations)
+            containsAllEntriesOf(registrations)
         }
     }
 
@@ -268,15 +300,19 @@ class PushNotificationsManagerImplTest {
     fun `unregister should add the given address to the unregistrations list`() {
         val token = randomToken()
 
-        val manager = createManager(defaultToken = token, isNetworkAvailable = false)
-
         val address = randomSlyAddress()
+
+        val manager = createManager(
+            defaultToken = token,
+            isNetworkAvailable = false,
+            registrations = setOf(address)
+        )
 
         manager.unregister(address)
 
         assertThat(appConfigService.pushNotificationsUnregistrations).apply {
             describedAs("Should add the given address to the unregistration list")
-            contains(address)
+            containsEntry(address, defaultUnregistrationToken)
         }
     }
 
@@ -294,7 +330,7 @@ class PushNotificationsManagerImplTest {
 
         assertThat(appConfigService.pushNotificationsRegistrations).apply {
             describedAs("Should remove the address from the registrations list")
-            doesNotContain(address)
+            doesNotContainKey(address)
         }
     }
 
@@ -306,18 +342,21 @@ class PushNotificationsManagerImplTest {
         whenever(pushNotificationsAsyncClient.register(any(), any())).thenReturn(registrationDeferred.promise)
         whenever(pushNotificationsAsyncClient.unregister(any())).thenReturn(unregistrationDeferred.promise)
 
-        val manager = createManager(
-            defaultToken = randomToken(),
-            isNetworkAvailable = true
-        )
+        val address = randomSlyAddress()
 
-        newToken()
+        val token = randomToken()
+
+        val manager = createManager(
+            defaultToken = token,
+            isNetworkAvailable = true,
+            registrations = setOf(address)
+        )
 
         //begin registration
         login()
 
         //queue unregistration
-        manager.unregister(randomSlyAddress())
+        manager.unregister(address)
 
         verify(pushNotificationsAsyncClient, never()).unregister(any())
     }
@@ -330,12 +369,13 @@ class PushNotificationsManagerImplTest {
         whenever(pushNotificationsAsyncClient.register(any(), any())).thenReturn(registrationDeferred.promise)
         whenever(pushNotificationsAsyncClient.unregister(any())).thenReturn(unregistrationDeferred.promise)
 
+        val unregistrationAddress = randomSlyAddress()
+
         val manager = createManager(
             defaultToken = randomToken(),
-            isNetworkAvailable = true
+            isNetworkAvailable = true,
+            registrations = setOf(unregistrationAddress)
         )
-
-        val unregistrationAddress = randomSlyAddress()
 
         manager.unregister(unregistrationAddress)
 
@@ -356,20 +396,21 @@ class PushNotificationsManagerImplTest {
         whenever(pushNotificationsAsyncClient.register(any(), any())).thenReturn(registrationDeferred.promise)
         whenever(pushNotificationsAsyncClient.unregister(any())).thenReturn(unregistrationDeferred.promise)
 
+        val unregistrationAddress = randomSlyAddress()
+
         val manager = createManager(
             defaultToken = randomToken(),
-            isNetworkAvailable = true
+            isNetworkAvailable = true,
+            registrations = setOf(unregistrationAddress)
         )
 
         login()
-
-        val unregistrationAddress = randomSlyAddress()
 
         manager.unregister(unregistrationAddress)
 
         verify(pushNotificationsAsyncClient, never()).unregister(any())
 
-        registrationDeferred.resolve(RegisterResponse(null))
+        registrationDeferred.resolve(RegisterResponse(defaultUnregistrationToken, null))
 
         verify(pushNotificationsAsyncClient).unregister(any())
     }
@@ -393,63 +434,23 @@ class PushNotificationsManagerImplTest {
 
         assertThat(appConfigService.pushNotificationsUnregistrations).apply {
             describedAs("Should remove address from unregistrations")
-            doesNotContain(address)
+            doesNotContainKey(address)
         }
 
         assertThat(appConfigService.pushNotificationsRegistrations).apply {
             describedAs("Should readd")
-            contains(address)
+            containsKey(address)
         }
-    }
-
-    //shouldn't occur?
-    @Test
-    fun `unregister should do nothing if no token is available`() {
-        val manager = createManager()
-
-        val address = randomSlyAddress()
-
-        manager.unregister(address)
-
-        assertThat(appConfigService.pushNotificationsUnregistrations).apply {
-            describedAs("Should not add the given address to the unregistration list")
-            doesNotContain(address)
-        }
-    }
-
-    private fun assertNoUnregistrationAttempt() {
-        verify(pushNotificationsAsyncClient, never()).unregister(any<UnregisterRequest>())
-    }
-
-    private fun assertNotRemovedFromUnregistrations(address: SlyAddress) {
-        assertThat(appConfigService.pushNotificationsUnregistrations).apply {
-            describedAs("Should contain the address")
-            contains(address)
-        }
-    }
-
-    private fun assertRemovedFromUnregistrations(address: SlyAddress) {
-        assertThat(appConfigService.pushNotificationsUnregistrations).apply {
-            describedAs("Should not contain the unregistered address")
-            doesNotContain(address)
-        }
-    }
-
-    private fun assertSuccessfulUnregistration(address: SlyAddress, token: String) {
-        val request = UnregisterRequest(address, token)
-
-        verify(pushNotificationsAsyncClient).unregister(request)
-
-        assertRemovedFromUnregistrations(address)
     }
 
     @Test
     fun `it should remove the address from unregistrations on successful unregistration`() {
-        val manager = createManager(
-            defaultToken = randomToken()
-        )
-
         val address = randomSlyAddress()
+
+        val manager = createManager(
+            defaultToken = randomToken(),
+            registrations = setOf(address)
+        )
 
         manager.unregister(address)
 
@@ -458,13 +459,14 @@ class PushNotificationsManagerImplTest {
 
     @Test
     fun `it should not remove the address from unregistrations on unregistration failure`() {
+        val address = randomSlyAddress()
+
         val manager = createManager(
-            defaultToken = randomToken()
+            defaultToken = randomToken(),
+            registrations = setOf(address)
         )
 
         whenever(pushNotificationsAsyncClient.unregister(any<UnregisterRequest>())).thenReject(TestException())
-
-        val address = randomSlyAddress()
 
         manager.unregister(address)
 
@@ -473,46 +475,50 @@ class PushNotificationsManagerImplTest {
 
     @Test
     fun `unregister should attempt to unregister the given address if network is available`() {
-        val token = randomToken()
+        val address = randomSlyAddress()
 
         val manager = createManager(
-            defaultToken = token
+            defaultToken = randomToken(),
+            registrations = setOf(address)
         )
-
-        val address = randomSlyAddress()
 
         manager.unregister(address)
 
-        assertSuccessfulUnregistration(address, token)
+        assertSuccessfulUnregistration(address, defaultUnregistrationToken)
     }
 
     @Test
     fun `unregister should not attempt to unregister the given address if network is unavailable`() {
+        val address = randomSlyAddress()
+
         val manager = createManager(
             defaultToken = randomToken(),
-            isNetworkAvailable = false
+            isNetworkAvailable = false,
+            registrations = setOf(address)
         )
 
-        manager.unregister(randomSlyAddress())
+        manager.unregister(address)
 
         assertNoUnregistrationAttempt()
     }
 
     @Test
     fun `it should attempt to unregister tokens when the network becomes available`() {
+        val address = randomSlyAddress()
+
         val token = randomToken()
+
         val manager = createManager(
             defaultToken = token,
-            isNetworkAvailable = false
+            isNetworkAvailable = false,
+            registrations = setOf(address)
         )
-
-        val address = randomSlyAddress()
 
         manager.unregister(address)
 
         enableNetwork()
 
-        assertSuccessfulUnregistration(address, token)
+        assertSuccessfulUnregistration(address, defaultUnregistrationToken)
     }
 
     @Test
@@ -535,7 +541,18 @@ class PushNotificationsManagerImplTest {
 
         assertThat(captor.allValues).apply {
             describedAs("Should call unregister for all tokens")
-            containsAll(addresses.map { UnregisterRequest(it, token) })
+            containsAll(addresses.map { UnregisterRequest(it, defaultUnregistrationToken) })
         }
+    }
+
+    //shouldn't occur
+    @Test
+    fun `it should not do anything if unregistered is called for a non-registered account`() {
+        val manager = createManager(
+            defaultToken = randomToken(),
+            isNetworkAvailable = true
+        )
+
+        manager.unregister(randomSlyAddress())
     }
 }
