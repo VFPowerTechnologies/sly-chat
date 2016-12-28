@@ -42,7 +42,7 @@ import rx.subjects.BehaviorSubject
 import java.io.File
 
 @RegisterOnStartup
-class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationDelegate, UIPopoverPresentationControllerDelegate, NotificationRegisterer {
+class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationDelegate, UIPopoverPresentationControllerDelegate {
     companion object {
         @JvmStatic
         @Selector("alloc")
@@ -92,7 +92,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
      * applicationDidRegisterForRemoteNotificationsWithDeviceToken with an APN token if notifications are enabled
      * applicationDidFailToRegisterForRemoteNotificationsWithError with an error if registration failed
      */
-    override fun registerForNotifications(): Promise<String?, Exception> {
+    fun registerForNotifications(): Promise<String?, Exception> {
         var d = notificationTokenDeferred
 
         if (d == null) {
@@ -301,6 +301,9 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
     override fun applicationWillEnterForeground(application: UIApplication) {
         log.debug("Application will enter foreground")
+
+        //we refresh here, incase the user modified notification settings while we were backgrounded/suspended
+        app.appComponent.tokenFetchService.refresh()
     }
 
     override fun applicationDidBecomeActive(application: UIApplication) {
