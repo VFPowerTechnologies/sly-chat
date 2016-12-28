@@ -15,6 +15,7 @@ import apple.uikit.protocol.UIApplicationDelegate
 import apple.uikit.protocol.UIPopoverPresentationControllerDelegate
 import com.almworks.sqlite4java.SQLite
 import io.slychat.messenger.core.SlyBuildConfig
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.ios.kovenant.IOSDispatcher
 import io.slychat.messenger.ios.rx.IOSMainScheduler
@@ -27,6 +28,9 @@ import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.ui.createAppDirectories
 import io.slychat.messenger.services.ui.js.getNavigationPageConversation
+import nl.komponents.kovenant.Deferred
+import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.ui.KovenantUi
 import org.moe.natj.general.Pointer
 import org.moe.natj.general.ann.RegisterOnStartup
@@ -38,7 +42,7 @@ import rx.subjects.BehaviorSubject
 import java.io.File
 
 @RegisterOnStartup
-class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationDelegate, UIPopoverPresentationControllerDelegate {
+class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationDelegate, UIPopoverPresentationControllerDelegate, NotificationRegisterer {
     companion object {
         @JvmStatic
         @Selector("alloc")
@@ -67,6 +71,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
     private lateinit var screenProtectionWindow: UIWindow
 
+    private var notificationTokenDeferred: Deferred<String?, Exception>? = null
+
     private fun excludeDirFromBackup(path: File) {
         val url = NSURL.fileURLWithPath(path.toString())
 
@@ -79,17 +85,31 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         }
     }
 
-    //TODO call this only after login
-    private fun registerForNotifications(application: UIApplication) {
-        val types = UIUserNotificationType.Badge or UIUserNotificationType.Sound or UIUserNotificationType.Alert
-        val settings = UIUserNotificationSettings.settingsForTypesCategories(types, null)
-        application.registerUserNotificationSettings(settings)
+    /**
+     * This promise will be fulfilled in one of the following places:
+     *
+     * applicationDidRegisterUserNotificationSettings with a null token if the user has notifications disabled
+     * applicationDidRegisterForRemoteNotificationsWithDeviceToken with an APN token if notifications are enabled
+     * applicationDidFailToRegisterForRemoteNotificationsWithError with an error if registration failed
+     */
+    override fun registerForNotifications(): Promise<String?, Exception> {
+        var d = notificationTokenDeferred
+
+        if (d == null) {
+            d = deferred<String?, Exception>()
+            notificationTokenDeferred = d
+
+            val application = UIApplication.sharedApplication()
+            val types = UIUserNotificationType.Badge or UIUserNotificationType.Sound or UIUserNotificationType.Alert
+            val settings = UIUserNotificationSettings.settingsForTypesCategories(types, null)
+            application.registerUserNotificationSettings(settings)
+        }
+
+        return d.promise
     }
 
     override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
         printBundleInfo()
-
-        registerForNotifications(application)
 
         KovenantUi.uiContext {
             dispatcher = IOSDispatcher.instance
@@ -125,9 +145,11 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
             IOSUIPlatformService(),
             IOSUILoadService(),
             uiVisibility,
+            IOSTokenFetcher(this),
             networkStatus,
             IOSMainScheduler.instance,
-            UserConfig()
+            UserConfig(),
+            PushNotificationService.APN
         )
 
         app.init(platformModule)
@@ -138,6 +160,10 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         initScreenProtection()
 
         app.isInBackground = false
+
+        app.addOnInitListener {
+            app.appComponent.tokenFetchService.refresh()
+        }
 
         return true
     }
@@ -172,8 +198,17 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
             application.registerForRemoteNotifications()
         }
         else {
-            //TODO unregister token
-            log.info("Notifications disabled")
+            log.info("Notifications disabled by user")
+
+            val d = notificationTokenDeferred
+            if (d == null) {
+                log.error("Remote notification completed but no deferred available")
+                return
+            }
+
+            notificationTokenDeferred = null
+
+            d.resolve(null)
         }
     }
 
@@ -191,11 +226,29 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
         val tokenString = builder.toString()
 
-        log.info("Got device token: $tokenString")
+        val d = notificationTokenDeferred
+        if (d == null) {
+            log.error("Got token for remote notification but no deferred available")
+            return
+        }
+
+        notificationTokenDeferred = null
+
+        d.resolve(tokenString)
     }
 
     override fun applicationDidFailToRegisterForRemoteNotificationsWithError(application: UIApplication, error: NSError) {
         log.error("Failed to register for remote notifications: {}", error.description())
+
+        val d = notificationTokenDeferred
+        if (d == null) {
+            log.error("Remote notification failure but no deferred available")
+            return
+        }
+
+        notificationTokenDeferred = null
+
+        d.reject(NotificationRegistrationException(error.description()))
     }
 
     private fun printBundleInfo() {
