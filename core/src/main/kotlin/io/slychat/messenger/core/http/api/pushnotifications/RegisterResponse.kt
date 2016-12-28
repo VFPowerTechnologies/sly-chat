@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class RegisterResponse(
+    @JsonProperty("unregistrationToken")
+    val unregistrationToken: String,
     @JsonProperty("errorMessage")
     val errorMessage: String?
 ) {

@@ -4,5 +4,5 @@ import io.slychat.messenger.core.SlyAddress
 
 data class UnregisterRequest(
     val address: SlyAddress,
-    val token: String
+    val unregistrationToken: String
 )

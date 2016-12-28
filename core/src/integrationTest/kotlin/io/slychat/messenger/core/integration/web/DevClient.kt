@@ -200,7 +200,7 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         postRequestNoResponse(request, "/dev/address-book/$email")
     }
 
-    fun registerPushNotificationToken(email: String, deviceId: Int, token: String, service: PushNotificationService, isAudio: Boolean) {
+    fun registerPushNotificationToken(email: String, deviceId: Int, token: String, service: PushNotificationService, isAudio: Boolean): String {
         val request = mapOf(
             "deviceId" to deviceId,
             "token" to token,
@@ -208,7 +208,7 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
             "audio" to isAudio
         )
 
-        postRequestNoResponse(request, "/dev/push-notifications/register/$email")
+        return postRequest(request, "/dev/push-notifications/register/$email", String::class.java)
     }
 
     fun unregisterPushNotificationToken(email: String, deviceId: Int, isAudio: Boolean) {
