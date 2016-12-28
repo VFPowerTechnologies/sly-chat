@@ -126,7 +126,9 @@ class SlyApplication {
             .observeOn(appComponent.rxScheduler)
             .subscribe { onPlatformContactsUpdated() }
 
-        appComponent.appConfigService.init() successUi {
+        appComponent.appConfigService.init() fail {
+            log.warn("Unable to read app config file: {}", it.message, it)
+        } alwaysUi {
             initializationComplete(doAutoLogin)
         }
 

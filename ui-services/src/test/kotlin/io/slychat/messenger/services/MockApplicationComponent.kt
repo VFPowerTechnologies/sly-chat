@@ -7,7 +7,7 @@ import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
 import io.slychat.messenger.services.auth.AuthenticationService
 import io.slychat.messenger.services.config.AppConfigService
-import io.slychat.messenger.services.config.DummyConfigBackend
+import io.slychat.messenger.services.config.ConfigBackend
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.di.UserModule
@@ -66,7 +66,9 @@ class MockApplicationComponent : ApplicationComponent {
 
     override val serverUrls: SlyBuildConfig.ServerUrls = mock()
 
-    override val appConfigService: AppConfigService = AppConfigService(DummyConfigBackend())
+    val appConfigBackend: ConfigBackend = mock()
+
+    override val appConfigService: AppConfigService = AppConfigService(appConfigBackend)
 
     override val slyHttpClientFactory: HttpClientFactory = mock()
 

@@ -15,10 +15,8 @@ import io.slychat.messenger.core.randomDeviceId
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.core.relay.RelayClientState
 import io.slychat.messenger.services.auth.AuthResult
-import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.thenReject
-import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenResolveUnit
+import io.slychat.messenger.services.config.AppConfig
+import io.slychat.messenger.testutils.*
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Ignore
@@ -62,6 +60,8 @@ class SlyApplicationTest {
         whenever(appComponent.platformContacts.contactsUpdated).thenReturn(platformContactsUpdated)
 
         whenever(appComponent.localAccountDirectory.getStartupInfoPersistenceManager(any())).thenReturn(startupInfoPersistenceManager)
+
+        whenever(appComponent.appConfigBackend.read<AppConfig>(any())).thenResolve(null)
 
         val userComponent = appComponent.userComponent
 
@@ -378,6 +378,17 @@ class SlyApplicationTest {
         val app = auth()
 
         verify(userComponent.preKeyManager).checkForUpload()
+    }
+
+    @Test
+    fun `it should ignore app config file read failures and continue initialization`() {
+        whenever(appComponent.appConfigBackend.read<AppConfig>(any())).thenReject(TestException())
+
+        val app = createApp()
+
+        app.init(appComponent)
+
+        assertTrue(app.isInitialized, "App must finish initializing")
     }
 
     //FIXME need to refactor to make this possible
