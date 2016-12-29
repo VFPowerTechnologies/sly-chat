@@ -1,6 +1,7 @@
 package io.slychat.messenger.services
 
 import io.slychat.messenger.core.condError
+import io.slychat.messenger.services.config.AppConfigService
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -12,6 +13,7 @@ import java.util.concurrent.TimeUnit
 class TokenFetchServiceImpl(
     private val isEnabled: Boolean,
     private val fetcher: TokenFetcher,
+    private val appConfigService: AppConfigService,
     networkAvailability: Observable<Boolean>,
     private val retryTime: Long,
     private val retryTimeUnit: TimeUnit
@@ -45,6 +47,11 @@ class TokenFetchServiceImpl(
 
         if (!isNetworkAvailable) {
             log.info("Fetch requested but no network is available")
+            return
+        }
+
+        if (!appConfigService.pushNotificationsPermRequested) {
+            log.info("Push notification permissions not requested, not doing anything")
             return
         }
 

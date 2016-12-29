@@ -213,6 +213,13 @@ class AndroidApp : Application() {
 
         //only do this once we've completed initialization (ie once AppConfigService is up)
         app.addOnInitListener {
+            //no permissions required on android
+            if (!appComponent.appConfigService.pushNotificationsPermRequested) {
+                appComponent.appConfigService.withEditor {
+                    pushNotificationsPermRequested = true
+                }
+            }
+
             appComponent.tokenFetchService.refresh()
         }
     }

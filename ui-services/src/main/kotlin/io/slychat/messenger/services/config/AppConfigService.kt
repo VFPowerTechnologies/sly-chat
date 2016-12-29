@@ -14,7 +14,8 @@ import java.util.*
  * @property formatVersion Configuration version.
  * @property loginRememberMe Last state of "Remember me" on login screen.
  * @property appearanceTheme Current theme.
- * @property pushNotificationsTokens Current push notification device token.
+ * @property pushNotificationsPermRequested Whether or not permissions to send push notifications has been requested yet.
+ * @property pushNotificationsTokens Current push notification device tokens.
  * @property pushNotificationsRegistrations Current list of registered accounts and their unregistration tokens.
  * @property pushNotificationsUnregistrations Current list of accounts to be unregistered, and their unregistration tokens.
  */
@@ -28,6 +29,9 @@ data class AppConfig(
 
     @JsonProperty("appearenceTheme")
     val appearanceTheme: String? = null,
+
+    @JsonProperty("pushNotificationsPermRequested")
+    val pushNotificationsPermRequested: Boolean = false,
 
     @JsonProperty("pushNotificationsTokens")
     val pushNotificationsTokens: DeviceTokens? = null,
@@ -51,6 +55,7 @@ data class AppConfig(
         val APPEARANCE_THEME = join(APPEARANCE, "theme")
 
         val PUSH_NOTIFICATIONS = "app.pushNotifications"
+        val PUSH_NOTIFICATIONS_PERM_REQUESTED = join(PUSH_NOTIFICATIONS, "permRequested")
         val PUSH_NOTIFICATIONS_TOKENS = join(PUSH_NOTIFICATIONS, "tokens")
         val PUSH_NOTIFICATIONS_REGISTRATIONS = join(PUSH_NOTIFICATIONS, "registrations")
         val PUSH_NOTIFICATIONS_UNREGISTRATIONS = join(PUSH_NOTIFICATIONS, "unregistrations")
@@ -75,6 +80,15 @@ class AppEditorInterface(override var config: AppConfig) : ConfigServiceBase.Edi
             if (value != appearanceTheme) {
                 modifiedKeys.add(AppConfig.APPEARANCE_THEME)
                 config = config.copy(appearanceTheme = value)
+            }
+        }
+
+    var pushNotificationsPermRequested: Boolean
+        get() = config.pushNotificationsPermRequested
+        set(value) {
+            if (value != pushNotificationsPermRequested) {
+                modifiedKeys.add(AppConfig.PUSH_NOTIFICATIONS_PERM_REQUESTED)
+                config = config.copy(pushNotificationsPermRequested = value)
             }
         }
 
@@ -119,6 +133,9 @@ class AppConfigService(
 
     val appearanceTheme: String?
         get() = config.appearanceTheme
+
+    val pushNotificationsPermRequested: Boolean
+        get() = config.pushNotificationsPermRequested
 
     val pushNotificationsTokens: DeviceTokens?
         get() = config.pushNotificationsTokens

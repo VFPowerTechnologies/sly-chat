@@ -157,13 +157,27 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
         Sentry.setIOSDeviceName(UIDevice.currentDevice().model())
 
-        buildUI(app.appComponent)
+        val appComponent = app.appComponent
+
+        buildUI(appComponent)
         initScreenProtection()
 
         app.isInBackground = false
 
+        //we don't want the notifications perm prompt showing up the first time a user boots the app
+        //in that case just defer it to login
         app.addOnInitListener {
-            app.appComponent.tokenFetchService.refresh()
+            appComponent.tokenFetchService.refresh()
+        }
+
+        app.userSessionAvailable.filter { it != null }.subscribe {
+            if (!appComponent.appConfigService.pushNotificationsPermRequested) {
+                appComponent.appConfigService.withEditor {
+                    pushNotificationsPermRequested = true
+                }
+
+                appComponent.tokenFetchService.refresh()
+            }
         }
 
         return true
@@ -304,7 +318,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         log.debug("Application will enter foreground")
 
         //we refresh here, incase the user modified notification settings while we were backgrounded/suspended
-        app.appComponent.tokenFetchService.refresh()
+        if (app.appComponent.appConfigService.pushNotificationsPermRequested)
+            app.appComponent.tokenFetchService.refresh()
     }
 
     override fun applicationDidBecomeActive(application: UIApplication) {
