@@ -91,14 +91,6 @@ class NotificationTestActivity : AppCompatActivity() {
     }
 
     private fun getCurrentConversationDisplayInfo(conversationId: ConversationId): ConversationDisplayInfo {
-        val groupName = when (conversationId) {
-            is ConversationId.Group -> {
-                val groupPos = groupSpinner.selectedItemPosition
-                dummyGroups[groupPos - 1]
-            }
-            else -> null
-        }
-
         val speakerPos = when (conversationId) {
             is ConversationId.User -> conversationId.id.long
             is ConversationId.Group -> getCurrentSelectedUserPos().toLong()
@@ -116,9 +108,17 @@ class NotificationTestActivity : AppCompatActivity() {
 
         val lastMessageData = LastMessageData(speakerName, speakerId, message, currentTimestamp())
 
+        val conversationName = when (conversationId) {
+            is ConversationId.User -> speakerName
+            is ConversationId.Group -> {
+                val groupPos = groupSpinner.selectedItemPosition
+                dummyGroups[groupPos - 1]
+            }
+        }
+
         return ConversationDisplayInfo(
             conversationId,
-            groupName,
+            conversationName,
             unreadCount,
             randomMessageIds(unreadCount),
             lastMessageData
@@ -211,7 +211,7 @@ class NotificationTestActivity : AppCompatActivity() {
 
                 val conversationDisplayInfo = ConversationDisplayInfo(
                     conversationId,
-                    null,
+                    userName,
                     1,
                     randomMessageIds(1),
                     LastMessageData(userName, userId, getNextMessageText(), currentTimestamp())
