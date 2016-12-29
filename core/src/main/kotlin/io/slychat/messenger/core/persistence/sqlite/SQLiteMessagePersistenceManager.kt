@@ -840,9 +840,9 @@ WHERE
     override fun getConversationDisplayInfo(conversationId: ConversationId): Promise<ConversationDisplayInfo, Exception> = sqlitePersistenceManager.runQuery { connection ->
         val conversationInfo = conversationInfoUtils.getConversationInfo(connection, conversationId) ?: throw InvalidConversationException(conversationId)
 
-        val groupName = when (conversationId) {
+        val conversationName = when (conversationId) {
             is ConversationId.Group -> getGroupName(connection, conversationId.id)
-            else -> null
+            is ConversationId.User -> getUserName(connection, conversationId.id)
         }
 
         val speakerId = conversationInfo.lastSpeaker
@@ -856,7 +856,7 @@ WHERE
 
         val lastMessageIds = getUnreadMessageIdsOrderedLimit(connection, conversationId, 10)
 
-        ConversationDisplayInfo(conversationId, groupName, conversationInfo.unreadMessageCount, lastMessageIds, lastMessageData)
+        ConversationDisplayInfo(conversationId, conversationName, conversationInfo.unreadMessageCount, lastMessageIds, lastMessageData)
     }
 
     private fun insertFailures(connection: SQLiteConnection, conversationId: ConversationId, messageId: String, failures: Map<UserId, MessageSendFailure>) {

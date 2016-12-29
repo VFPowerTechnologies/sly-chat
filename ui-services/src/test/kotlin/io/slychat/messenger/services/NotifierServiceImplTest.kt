@@ -236,7 +236,7 @@ class NotifierServiceImplTest {
     private fun generateConversationDisplayInfo(conversationId: ConversationId, vararg messageIds: String): ConversationDisplayInfo {
         return ConversationDisplayInfo(
             conversationId,
-            null,
+            "conversationName",
             messageIds.size,
             messageIds.toList(),
             randomLastMessageData()
@@ -251,7 +251,7 @@ class NotifierServiceImplTest {
             conversationId to NotificationConversationInfo(
                 ConversationDisplayInfo(
                     conversationId,
-                    null,
+                    "conversationName",
                     previousMessageIds.size,
                     previousMessageIds.toList(),
                     randomLastMessageData()
@@ -320,7 +320,7 @@ class NotifierServiceImplTest {
 
         val conversationDisplayInfo = ConversationDisplayInfo(
             conversationId,
-            null,
+            "conversationName",
             1,
             randomMessageIds(1),
             randomLastMessageData()
@@ -359,7 +359,7 @@ class NotifierServiceImplTest {
         val notificationConversationInfo = NotificationConversationInfo(
             ConversationDisplayInfo(
                 conversationId,
-                null,
+                "conversationName",
                 1,
                 randomMessageIds(1),
                 randomLastMessageData()

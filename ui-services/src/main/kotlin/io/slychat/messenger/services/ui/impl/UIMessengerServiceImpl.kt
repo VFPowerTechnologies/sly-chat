@@ -79,7 +79,7 @@ class UIMessengerServiceImpl(
         val uiConversationDisplayInfo = UIConversationDisplayInfo(
             userId,
             groupId,
-            conversationDisplayInfo.groupName,
+            if (groupId != null) conversationDisplayInfo.conversationName else null,
             conversationDisplayInfo.unreadCount,
             uiLastMessageData
         )
