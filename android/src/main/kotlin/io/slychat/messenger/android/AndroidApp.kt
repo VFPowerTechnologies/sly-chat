@@ -250,14 +250,6 @@ class AndroidApp : Application() {
     }
 
     fun onGCMMessage(account: SlyAddress, accountName: String, info: List<OfflineMessageInfo>) {
-        //TODO maybe keep this? we'd actually need to track ignore by addresses though, so maybe not
-        //this can occur if we logged out when there was no network connection, or from a notification after we've
-        //already requested the token to be deleted
-        //if (AndroidPreferences.getIgnoreNotifications(this)) {
-        //    deleteGCMToken()
-        //    return
-        //}
-
         //it's possible we might receive a message targetting a diff account that was previously logged in
         app.addOnAutoLoginListener { app ->
             //the app might not be finished logging in yet
