@@ -72,6 +72,15 @@ class IOSNotificationService : PlatformNotificationService {
 
         notification.setAlertBody(message.getNotificationText())
 
+        notification.setCategory(IOSApp.ACTION_CATEGORY_OFFLINE)
+
+        val userInfo = NSDictionary.dictionaryWithObjectsAndKeys<String, Any>(
+            message.account.asString(), IOSApp.USERINFO_ADDRESS,
+            null
+        )
+
+        notification.setUserInfo(userInfo)
+
         UIApplication.sharedApplication().presentLocalNotificationNow(notification)
     }
 }

@@ -8,9 +8,7 @@ import apple.foundation.*
 import apple.foundation.c.Foundation
 import apple.uikit.*
 import apple.uikit.c.UIKit
-import apple.uikit.enums.UIBackgroundFetchResult
-import apple.uikit.enums.UIModalPresentationStyle
-import apple.uikit.enums.UIUserNotificationType
+import apple.uikit.enums.*
 import apple.uikit.protocol.UIApplicationDelegate
 import apple.uikit.protocol.UIPopoverPresentationControllerDelegate
 import com.almworks.sqlite4java.SQLite
@@ -53,6 +51,10 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         @Selector("alloc")
         external fun alloc(): IOSApp
 
+        const val ACTION_CATEGORY_OFFLINE = "offline"
+        const val ACTION_ID_UNREGISTER = "unregister"
+        const val USERINFO_ADDRESS = "address"
+
         @JvmStatic
         fun main(args: Array<String>) {
             UIKit.UIApplicationMain(0, null, null, IOSApp::class.java.name)
@@ -92,6 +94,35 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         }
     }
 
+    private fun getOfflineCategory(): UIUserNotificationCategory {
+        val category = UIMutableUserNotificationCategory.alloc().init()
+
+        category.setIdentifier(ACTION_CATEGORY_OFFLINE)
+
+        val unregisterAction = UIMutableUserNotificationAction.alloc().init()
+        unregisterAction.setActivationMode(UIUserNotificationActivationMode.Background)
+        unregisterAction.setIdentifier(ACTION_ID_UNREGISTER)
+        unregisterAction.setTitle("Stop receiving notifications")
+        unregisterAction.isDestructive = true
+        unregisterAction.isAuthenticationRequired = true
+
+        val actions = nsarray(
+            unregisterAction
+        );
+
+        category.setActionsForContext(actions, UIUserNotificationActionContext.Default)
+
+        return category
+    }
+
+    private fun getNotificationCategories(): NSSet<UIUserNotificationCategory>? {
+        @Suppress("UNCHECKED_CAST")
+        return NSSet.setWithObjects(
+            getOfflineCategory(),
+            null
+        ) as NSSet<UIUserNotificationCategory>
+    }
+
     /**
      * This promise will be fulfilled in one of the following places:
      *
@@ -108,11 +139,47 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
             val application = UIApplication.sharedApplication()
             val types = UIUserNotificationType.Badge or UIUserNotificationType.Sound or UIUserNotificationType.Alert
-            val settings = UIUserNotificationSettings.settingsForTypesCategories(types, null)
+            val settings = UIUserNotificationSettings.settingsForTypesCategories(types, getNotificationCategories())
             application.registerUserNotificationSettings(settings)
         }
 
         return d.promise
+    }
+
+    private fun handleOfflineCategoryAction(identifier: String, notification: UILocalNotification) {
+        if (identifier != ACTION_ID_UNREGISTER) {
+            log.error("Unsupported offline action id: {}", identifier)
+            return
+        }
+
+        val userInfo = notification.userInfo()
+
+        val addressString = userInfo[USERINFO_ADDRESS] as String?
+        if (addressString == null) {
+            log.error("Missing address from offline userInfo")
+            return
+        }
+
+        val address = SlyAddress.fromString(addressString)
+        if (address == null) {
+            log.error("Unable to deserialize address: {}", addressString)
+            return
+        }
+
+        log.debug("Unregistering from push notifications for {}", address)
+
+        app.addOnInitListener {
+            app.appComponent.pushNotificationsManager.unregister(address)
+        }
+    }
+
+    override fun applicationHandleActionWithIdentifierForLocalNotificationCompletionHandler(application: UIApplication, identifier: String, notification: UILocalNotification, completionHandler: UIApplicationDelegate.Block_applicationHandleActionWithIdentifierForLocalNotificationCompletionHandler) {
+        if (notification.category() == ACTION_CATEGORY_OFFLINE)
+            handleOfflineCategoryAction(identifier, notification)
+        else
+            log.error("Unsupported action category: {}", notification.category())
+
+        completionHandler.call_applicationHandleActionWithIdentifierForLocalNotificationCompletionHandler()
     }
 
     override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
