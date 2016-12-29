@@ -76,6 +76,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
     private lateinit var screenProtectionWindow: UIWindow
 
+    private lateinit var notificationService: IOSNotificationService
+
     private var notificationTokenDeferred: Deferred<DeviceTokens?, Exception>? = null
 
     private fun excludeDirFromBackup(path: File) {
@@ -126,7 +128,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         createAppDirectories(platformInfo)
         excludeDirFromBackup(platformInfo.appFileStorageDirectory)
 
-        val notificationService = IOSNotificationService()
+        notificationService = IOSNotificationService()
 
         reachability = Reachability()
 
@@ -402,6 +404,12 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
             return
         }
 
+        if (message == null) {
+            log.warn("Discarding unsupported message type")
+            completionHandler.call_applicationDidReceiveRemoteNotificationFetchCompletionHandler(UIBackgroundFetchResult.NoData)
+            return
+        }
+
         var taskId: Long = 0
 
         //TODO event for when no more messages to decrypt to end this
@@ -418,7 +426,9 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
                 //    log.warn("Got GCM message for different account ($account); ignoring")
             }
             else {
-                println("Not logged in")
+                log.debug("Account offline")
+
+                notificationService.showLoggedOutNotification(message)
             }
         }
 

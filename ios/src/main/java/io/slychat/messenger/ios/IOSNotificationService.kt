@@ -6,6 +6,7 @@ import apple.uikit.UIApplication
 import apple.uikit.UILocalNotification
 import apple.uikit.enums.UIApplicationState
 import io.slychat.messenger.core.persistence.ConversationDisplayInfo
+import io.slychat.messenger.core.pushnotifications.OfflineMessagesPushNotification
 import io.slychat.messenger.services.NotificationState
 import io.slychat.messenger.services.PlatformNotificationService
 import org.slf4j.LoggerFactory
@@ -56,12 +57,21 @@ class IOSNotificationService : PlatformNotificationService {
 
         notification.setUserInfo(userInfo)
 
-        notification.setAlertBody("$speakerName $message")
+        //title isn't shown when in the background
+        notification.setAlertTitle("Message in ${conversationDisplayInfo.conversationName}")
+
+        notification.setAlertBody("$speakerName: $message")
 
         UIApplication.sharedApplication().presentLocalNotificationNow(notification)
     }
 
-    //TODO
-    fun showLoggedOutNotification(accountName: String, info: List<Any>) {
+    fun showLoggedOutNotification(message: OfflineMessagesPushNotification) {
+        val notification = UILocalNotification.alloc().init()
+
+        notification.setAlertTitle(message.getNotificationTitle())
+
+        notification.setAlertBody(message.getNotificationText())
+
+        UIApplication.sharedApplication().presentLocalNotificationNow(notification)
     }
 }
