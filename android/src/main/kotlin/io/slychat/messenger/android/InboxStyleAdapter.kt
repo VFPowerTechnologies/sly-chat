@@ -1,5 +1,7 @@
 package io.slychat.messenger.android
 
+import io.slychat.messenger.core.pushnotifications.OfflineMessageInfo
+
 interface InboxStyleAdapter {
     val userCount: Int
 

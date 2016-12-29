@@ -14,9 +14,13 @@ import apple.uikit.enums.UIUserNotificationType
 import apple.uikit.protocol.UIApplicationDelegate
 import apple.uikit.protocol.UIPopoverPresentationControllerDelegate
 import com.almworks.sqlite4java.SQLite
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.SlyBuildConfig
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.core.pushnotifications.OfflineMessageInfo
+import io.slychat.messenger.core.pushnotifications.OfflineMessagesPushNotification
 import io.slychat.messenger.ios.kovenant.IOSDispatcher
 import io.slychat.messenger.ios.rx.IOSMainScheduler
 import io.slychat.messenger.ios.ui.WebViewController
@@ -210,6 +214,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
     override fun applicationDidRegisterUserNotificationSettings(application: UIApplication, notificationSettings: UIUserNotificationSettings) {
         if (notificationSettings.types() != UIUserNotificationType.None) {
+            log.debug("Notifications allowed by user")
+
             application.registerForRemoteNotifications()
         }
         else {
@@ -240,6 +246,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         }
 
         val tokenString = builder.toString()
+
+        log.debug("Successfully registered for remote notifications; token={}", tokenString)
 
         val d = notificationTokenDeferred
         if (d == null) {
@@ -344,8 +352,55 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         webViewController.navigationService?.goTo(getNavigationPageConversation(conversationId))
     }
 
+    private fun deserializeNotification(userInfo: NSDictionary<*, *>): OfflineMessagesPushNotification? {
+        @Suppress("UNCHECKED_CAST")
+        val data = userInfo["data"] as NSDictionary<String, Any>
+
+        val type = data["type"] as String
+        val version = (data["version"] as NSNumber).intValue()
+
+        if (type != OfflineMessagesPushNotification.TYPE) {
+            log.warn("Received unknown remote notification: $type")
+            return null
+        }
+
+        if (version != 1) {
+            log.warn("Unsupported version for offline messages: {}", version)
+            return null
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        val accountStr = data["account"] as NSDictionary<String, NSNumber>
+        val userId = (accountStr["userId"] as NSNumber).longValue()
+        val deviceId = (accountStr["deviceId"] as NSNumber).intValue()
+        val account = SlyAddress(UserId(userId), deviceId)
+
+        val accountName = data["accountName"] as String
+
+        @Suppress("UNCHECKED_CAST")
+        val infoSerialized = data["info"] as NSArray<NSDictionary<String, *>>
+
+        val info = infoSerialized.map {
+            OfflineMessageInfo(
+                it["name"] as String,
+                (it["pendingCount"] as NSNumber).intValue()
+            )
+        }
+
+        return OfflineMessagesPushNotification(account, accountName, info)
+    }
+
     override fun applicationDidReceiveRemoteNotificationFetchCompletionHandler(application: UIApplication, userInfo: NSDictionary<*, *>, completionHandler: UIApplicationDelegate.Block_applicationDidReceiveRemoteNotificationFetchCompletionHandler) {
         log.debug("Received remote notification")
+
+        val message = try {
+            deserializeNotification(userInfo)
+        }
+        catch (e: Exception) {
+            log.error("Failed to deserialize remote notification: {}", e.message, e)
+            completionHandler.call_applicationDidReceiveRemoteNotificationFetchCompletionHandler(UIBackgroundFetchResult.NoData)
+            return
+        }
 
         var taskId: Long = 0
 

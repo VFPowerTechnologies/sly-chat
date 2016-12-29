@@ -61,7 +61,7 @@ class TokenFetchServiceImpl(
             isFetching = false
             isFetched = true
 
-            log.info("New token received")
+            log.info("Token received")
 
             tokenSubject.onNext(it)
         }.failUi {

@@ -11,6 +11,8 @@ import android.net.Uri
 import android.text.SpannableString
 import android.text.style.StyleSpan
 import io.slychat.messenger.core.SlyAddress
+import io.slychat.messenger.core.pushnotifications.OfflineMessageInfo
+import io.slychat.messenger.core.pushnotifications.OfflineMessagesPushNotification
 import io.slychat.messenger.services.NotificationState
 import io.slychat.messenger.services.PlatformNotificationService
 import io.slychat.messenger.services.config.UserConfigService
@@ -224,7 +226,10 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         return getInboxStyle(OfflineMessageInfoInboxStyleAdapter(info))
     }
 
-    fun showLoggedOutNotification(account: SlyAddress, accountName: String, info: List<OfflineMessageInfo>) {
+    fun showLoggedOutNotification(message: OfflineMessagesPushNotification) {
+        val accountName = message.accountName
+        val info = message.info
+
         val pendingIntent = getLoggedOffNotificationIntent()
 
         val soundUri = getMessageNotificationSound()
@@ -259,7 +264,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
             .setContentIntent(pendingIntent)
             .setStyle(getLoggedOutInboxStyle(info))
             //FIXME icon
-            .addAction(R.drawable.notification, "Stop receiving notifications", getStopMessagesIntent(account))
+            .addAction(R.drawable.notification, "Stop receiving notifications", getStopMessagesIntent(message.account))
 
         if (soundUri != null)
             notificationBuilder.setSound(soundUri)

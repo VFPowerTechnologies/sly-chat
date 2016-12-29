@@ -24,6 +24,7 @@ import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClient
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClientImpl
+import io.slychat.messenger.core.pushnotifications.OfflineMessagePushNotification
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication
@@ -256,7 +257,9 @@ class AndroidApp : Application() {
         appComponent.tokenFetchService.refresh()
     }
 
-    fun onGCMMessage(account: SlyAddress, accountName: String, info: List<OfflineMessageInfo>) {
+    fun onGCMMessage(message: OfflineMessagesPushNotification) {
+        val account = message.account
+
         //it's possible we might receive a message targetting a diff account that was previously logged in
         app.addOnAutoLoginListener { app ->
             //the app might not be finished logging in yet
@@ -269,7 +272,7 @@ class AndroidApp : Application() {
                     appComponent.pushNotificationsManager.unregister(account)
                 }
                 else
-                    notificationService.showLoggedOutNotification(account, accountName, info)
+                    notificationService.showLoggedOutNotification(message)
             }
             else if (app.loginState == LoginState.LOGGED_IN) {
                 //could maybe occur that we get older gcm messages for an account we were previously logged in as
