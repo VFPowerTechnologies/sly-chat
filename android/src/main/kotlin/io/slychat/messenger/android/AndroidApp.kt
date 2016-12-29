@@ -24,7 +24,7 @@ import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClient
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClientImpl
-import io.slychat.messenger.core.pushnotifications.OfflineMessagePushNotification
+import io.slychat.messenger.core.pushnotifications.OfflineMessagesPushNotification
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication

@@ -377,4 +377,27 @@ class MessageReceiverImplTest {
             SecurityEventData.UntrustedIdentity(it, identityKeyFingerprint(publicKey))
         }
     }
+
+    @Test
+    fun `it should emit an event once the process queue has become empty`() {
+        val receiver = createReceiver()
+
+        val testSubscriber = receiver.queueIsEmpty.testSubscriber()
+
+        val from = UserId(1)
+        val objectMapper = ObjectMapper()
+        val wrapped = createTextMessage("test")
+        val pkg = createPackage(from, wrapped.m)
+
+        val result = DecryptionResult(pkg.id.messageId, objectMapper.writeValueAsBytes(wrapped))
+
+        setDecryptionResult(result)
+
+        receiver.processPackages(listOf(pkg))
+
+        assertThat(testSubscriber.onNextEvents).apply {
+            describedAs("Should emit an event once the queue becomes empty")
+            hasSize(1)
+        }
+    }
 }

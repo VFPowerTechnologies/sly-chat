@@ -8,6 +8,8 @@ import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthenticationService
 import io.slychat.messenger.services.config.AppConfigService
+import io.slychat.messenger.services.di.annotations.NetworkStatus
+import io.slychat.messenger.services.di.annotations.SlyHttp
 import io.slychat.messenger.services.ui.*
 import rx.Observable
 import rx.Scheduler

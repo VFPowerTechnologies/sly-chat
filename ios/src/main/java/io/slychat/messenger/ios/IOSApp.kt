@@ -41,6 +41,7 @@ import org.moe.natj.general.ptr.Ptr
 import org.moe.natj.general.ptr.impl.PtrFactory
 import org.moe.natj.objc.ann.Selector
 import org.slf4j.LoggerFactory
+import rx.Subscription
 import rx.subjects.BehaviorSubject
 import java.io.File
 
@@ -479,23 +480,37 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
         var taskId: Long = 0
 
-        //TODO event for when no more messages to decrypt to end this
         taskId = application.beginBackgroundTaskWithExpirationHandler {
             log.info("Background time expired")
+
             application.endBackgroundTask(taskId)
         }
 
         app.addOnAutoLoginListener { app ->
             if (app.loginState == LoginState.LOGGED_IN) {
-                //if (account == app.userComponent!!.userLoginData.address)
-                app.fetchOfflineMessages()
-                //else
-                //    log.warn("Got GCM message for different account ($account); ignoring")
+                if (message.account == app.userComponent!!.userLoginData.address) {
+                    var subscription: Subscription? = null
+
+                    subscription = app.userComponent!!.readMessageQueueIsEmpty.subscribe {
+                        log.debug("Finished processing offline messages")
+
+                        application.endBackgroundTask(taskId)
+                        subscription!!.unsubscribe()
+                    }
+
+                    app.fetchOfflineMessages()
+                }
+                else {
+                    log.warn("Got offline message notification for different account (${message.account}); ignoring")
+                    application.endBackgroundTask(taskId)
+                }
             }
+
             else {
                 log.debug("Account offline")
 
                 notificationService.showLoggedOutNotification(message)
+                application.endBackgroundTask(taskId)
             }
         }
 

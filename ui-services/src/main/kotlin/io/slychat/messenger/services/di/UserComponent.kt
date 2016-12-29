@@ -9,7 +9,9 @@ import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.contacts.AddressBookOperationManager
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
+import io.slychat.messenger.services.di.annotations.EmptyReadMessageQueue
 import io.slychat.messenger.services.messaging.*
+import rx.Observable
 
 /** Scoped to a user's login session. */
 @UserScope
@@ -78,4 +80,7 @@ interface UserComponent {
     val eventLogService: EventLogService
 
     val keyVault: KeyVault
+
+    @get:EmptyReadMessageQueue
+    val readMessageQueueIsEmpty: Observable<Unit>
 }

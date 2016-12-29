@@ -19,6 +19,8 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import org.whispersystems.libsignal.*
+import rx.Observable
+import rx.subjects.PublishSubject
 import java.util.*
 
 class MessageReceiverImpl(
@@ -33,6 +35,11 @@ class MessageReceiverImpl(
 
     private val receivedMessageQueue = ArrayDeque<QueuedReceivedMessage>()
     private var currentReceivedMessage: QueuedReceivedMessage? = null
+
+    private val queueIsEmptySubject = PublishSubject.create<Unit>()
+
+    override val queueIsEmpty: Observable<Unit>
+        get() = queueIsEmptySubject
 
     private fun initializeReceiveQueue() {
         packageQueuePersistenceManager.getQueuedPackages() successUi { packages ->
@@ -114,6 +121,7 @@ class MessageReceiverImpl(
 
         if (receivedMessageQueue.isEmpty()) {
             log.debug("No more received messages")
+            queueIsEmptySubject.onNext(Unit)
             return
         }
 

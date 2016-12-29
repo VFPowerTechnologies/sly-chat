@@ -1,4 +1,4 @@
-package io.slychat.messenger.services.di
+package io.slychat.messenger.services.di.annotations
 
 import javax.inject.Qualifier
 

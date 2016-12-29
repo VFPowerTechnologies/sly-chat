@@ -26,6 +26,9 @@ import io.slychat.messenger.services.config.FileConfigStorage
 import io.slychat.messenger.services.config.JsonConfigBackend
 import io.slychat.messenger.services.contacts.PromiseTimerFactory
 import io.slychat.messenger.services.contacts.RxPromiseTimerFactory
+import io.slychat.messenger.services.di.annotations.ExternalHttp
+import io.slychat.messenger.services.di.annotations.NetworkStatus
+import io.slychat.messenger.services.di.annotations.SlyHttp
 import rx.Observable
 import rx.Scheduler
 import java.io.ByteArrayInputStream
