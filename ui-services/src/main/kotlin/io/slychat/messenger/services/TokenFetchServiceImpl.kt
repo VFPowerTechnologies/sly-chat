@@ -22,8 +22,8 @@ class TokenFetchServiceImpl(
     private var isFetched = false
     private var isNetworkAvailable = false
 
-    private val tokenSubject = PublishSubject.create<String>()
-    override val tokenUpdates: Observable<String>
+    private val tokenSubject = PublishSubject.create<DeviceTokens?>()
+    override val tokenUpdates: Observable<DeviceTokens?>
         get() = tokenSubject
 
     init {

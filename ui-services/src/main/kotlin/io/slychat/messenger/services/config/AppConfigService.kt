@@ -7,13 +7,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.SlyAddressKeyDeserializer
 import io.slychat.messenger.core.SlyAddressKeySerializer
+import io.slychat.messenger.services.DeviceTokens
 import java.util.*
 
 /**
  * @property formatVersion Configuration version.
  * @property loginRememberMe Last state of "Remember me" on login screen.
  * @property appearanceTheme Current theme.
- * @property pushNotificationToken Current push notification device token.
+ * @property pushNotificationsTokens Current push notification device token.
  * @property pushNotificationsRegistrations Current list of registered accounts and their unregistration tokens.
  * @property pushNotificationsUnregistrations Current list of accounts to be unregistered, and their unregistration tokens.
  */
@@ -28,8 +29,8 @@ data class AppConfig(
     @JsonProperty("appearenceTheme")
     val appearanceTheme: String? = null,
 
-    @JsonProperty("pushNotificationToken")
-    val pushNotificationToken: String? = null,
+    @JsonProperty("pushNotificationsTokens")
+    val pushNotificationsTokens: DeviceTokens? = null,
 
     @JsonDeserialize(keyUsing = SlyAddressKeyDeserializer::class)
     @JsonSerialize(keyUsing = SlyAddressKeySerializer::class)
@@ -50,7 +51,7 @@ data class AppConfig(
         val APPEARANCE_THEME = join(APPEARANCE, "theme")
 
         val PUSH_NOTIFICATIONS = "app.pushNotifications"
-        val PUSH_NOTIFICATIONS_TOKEN = join(PUSH_NOTIFICATIONS, "token")
+        val PUSH_NOTIFICATIONS_TOKENS = join(PUSH_NOTIFICATIONS, "tokens")
         val PUSH_NOTIFICATIONS_REGISTRATIONS = join(PUSH_NOTIFICATIONS, "registrations")
         val PUSH_NOTIFICATIONS_UNREGISTRATIONS = join(PUSH_NOTIFICATIONS, "unregistrations")
     }
@@ -77,12 +78,12 @@ class AppEditorInterface(override var config: AppConfig) : ConfigServiceBase.Edi
             }
         }
 
-    var pushNotificationsToken: String?
-        get() = config.pushNotificationToken
+    var pushNotificationsTokens: DeviceTokens?
+        get() = config.pushNotificationsTokens
         set(value) {
-            if (value != pushNotificationsToken) {
-                modifiedKeys.add(AppConfig.PUSH_NOTIFICATIONS_TOKEN)
-                config = config.copy(pushNotificationToken = value)
+            if (value != pushNotificationsTokens) {
+                modifiedKeys.add(AppConfig.PUSH_NOTIFICATIONS_TOKENS)
+                config = config.copy(pushNotificationsTokens = value)
             }
         }
 
@@ -119,8 +120,8 @@ class AppConfigService(
     val appearanceTheme: String?
         get() = config.appearanceTheme
 
-    val pushNotificationsToken: String?
-        get() = config.pushNotificationToken
+    val pushNotificationsTokens: DeviceTokens?
+        get() = config.pushNotificationsTokens
 
     val pushNotificationsRegistrations: Map<SlyAddress, String>
         get() = config.pushNotificationsRegistrations

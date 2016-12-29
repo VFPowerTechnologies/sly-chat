@@ -20,6 +20,7 @@ import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.ios.kovenant.IOSDispatcher
 import io.slychat.messenger.ios.rx.IOSMainScheduler
 import io.slychat.messenger.ios.ui.WebViewController
+import io.slychat.messenger.services.DeviceTokens
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication
@@ -71,7 +72,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
     private lateinit var screenProtectionWindow: UIWindow
 
-    private var notificationTokenDeferred: Deferred<String?, Exception>? = null
+    private var notificationTokenDeferred: Deferred<DeviceTokens?, Exception>? = null
 
     private fun excludeDirFromBackup(path: File) {
         val url = NSURL.fileURLWithPath(path.toString())
@@ -92,11 +93,11 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
      * applicationDidRegisterForRemoteNotificationsWithDeviceToken with an APN token if notifications are enabled
      * applicationDidFailToRegisterForRemoteNotificationsWithError with an error if registration failed
      */
-    fun registerForNotifications(): Promise<String?, Exception> {
+    fun registerForNotifications(): Promise<DeviceTokens?, Exception> {
         var d = notificationTokenDeferred
 
         if (d == null) {
-            d = deferred<String?, Exception>()
+            d = deferred<DeviceTokens?, Exception>()
             notificationTokenDeferred = d
 
             val application = UIApplication.sharedApplication()
@@ -234,7 +235,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
         notificationTokenDeferred = null
 
-        d.resolve(tokenString)
+        d.resolve(DeviceTokens(tokenString, null))
     }
 
     override fun applicationDidFailToRegisterForRemoteNotificationsWithError(application: UIApplication, error: NSError) {

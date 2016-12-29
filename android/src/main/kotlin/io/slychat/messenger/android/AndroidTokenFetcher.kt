@@ -3,6 +3,7 @@ package io.slychat.messenger.android
 import android.content.Context
 import com.google.android.gms.gcm.GoogleCloudMessaging
 import com.google.android.gms.iid.InstanceID
+import io.slychat.messenger.services.DeviceTokens
 import io.slychat.messenger.services.TokenFetcher
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
@@ -14,15 +15,17 @@ class AndroidTokenFetcher(
         return true
     }
 
-    override fun fetch(): Promise<String?, Exception> = task {
+    override fun fetch(): Promise<DeviceTokens?, Exception> = task {
         val instanceId = InstanceID.getInstance(context)
         val defaultSenderId = context.getString(R.string.gcm_defaultSenderId)
 
-        instanceId.getToken(
+        val token = instanceId.getToken(
             defaultSenderId,
             GoogleCloudMessaging.INSTANCE_ID_SCOPE,
             null
         )
+
+        DeviceTokens(token, null)
     }
 
     override fun isInterestingException(exception: Exception): Boolean {

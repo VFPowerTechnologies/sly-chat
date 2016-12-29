@@ -28,7 +28,7 @@ import java.util.*
  * Registrations/unregistrations are processed serially.
  */
 class PushNotificationsManagerImpl(
-    tokenUpdates: Observable<String>,
+    tokenUpdates: Observable<DeviceTokens?>,
     userSessionAvailable: Observable<UserComponent?>,
     networkStatus: Observable<Boolean>,
     private val pushNotificationService: PushNotificationService?,
@@ -52,7 +52,7 @@ class PushNotificationsManagerImpl(
 
     init {
         if (!isDisabled) {
-            appConfigService.updates.filter { it.contains(AppConfig.PUSH_NOTIFICATIONS_TOKEN) }.subscribe { onNewToken() }
+            appConfigService.updates.filter { it.contains(AppConfig.PUSH_NOTIFICATIONS_TOKENS) }.subscribe { onNewToken() }
 
             userSessionAvailable.subscribe { userComponent ->
                 if (userComponent != null) {
@@ -85,11 +85,11 @@ class PushNotificationsManagerImpl(
         processWork()
     }
 
-    private fun onTokenUpdate(token: String?) {
+    private fun onTokenUpdate(deviceTokens: DeviceTokens?) {
         log.info("Updating token")
 
         appConfigService.withEditor {
-            pushNotificationsToken = token
+            pushNotificationsTokens = deviceTokens
         }
     }
 
@@ -97,7 +97,7 @@ class PushNotificationsManagerImpl(
         log.info("Received new token")
 
         //token has changed
-        if (appConfigService.pushNotificationsToken != null) {
+        if (appConfigService.pushNotificationsTokens != null) {
             invalidateRegistrations()
             updateTokenForCurrentAccount()
         }
@@ -144,7 +144,7 @@ class PushNotificationsManagerImpl(
         val authTokenManager = this.authTokenManager ?: return
         val address = currentAccount ?: return
 
-        val token = appConfigService.pushNotificationsToken ?: return
+        val deviceTokens = appConfigService.pushNotificationsTokens ?: return
 
         hasCheckedForCurrentAccount = true
 
@@ -171,7 +171,7 @@ class PushNotificationsManagerImpl(
         isWorkInProgress = true
 
         authTokenManager.bind {
-            val request = RegisterRequest(token, pushNotificationService!!, false)
+            val request = RegisterRequest(deviceTokens.token, deviceTokens.audioToken, pushNotificationService!!)
             pushNotificationsClient.register(it, request)
         }.successUi {
             isWorkInProgress = false
@@ -207,7 +207,7 @@ class PushNotificationsManagerImpl(
         if (isDisabled)
             error("unregister() called but push notification system is disabled")
 
-        if (appConfigService.pushNotificationsToken == null) {
+        if (appConfigService.pushNotificationsTokens == null) {
             log.warn("Attempt to add unregistration but no token is set")
             return
         }
