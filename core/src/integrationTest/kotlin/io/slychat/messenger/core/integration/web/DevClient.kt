@@ -27,10 +27,10 @@ data class UserPushNotificationTokenInfo(
     val deviceId: Int,
     @JsonProperty("token")
     val token: String,
+    @JsonProperty("audioToken")
+    val audioToken: String?,
     @JsonProperty("service")
-    val service: PushNotificationService,
-    @JsonProperty("audio")
-    val isAudio: Boolean
+    val service: PushNotificationService
 )
 
 data class UserPushNotificationTokenList(
@@ -200,21 +200,20 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         postRequestNoResponse(request, "/dev/address-book/$email")
     }
 
-    fun registerPushNotificationToken(email: String, deviceId: Int, token: String, service: PushNotificationService, isAudio: Boolean): String {
+    fun registerPushNotificationToken(email: String, deviceId: Int, token: String, audioToken: String?, service: PushNotificationService): String {
         val request = mapOf(
             "deviceId" to deviceId,
             "token" to token,
-            "service" to service,
-            "audio" to isAudio
+            "audioToken" to audioToken,
+            "service" to service
         )
 
         return postRequest(request, "/dev/push-notifications/register/$email", String::class.java)
     }
 
-    fun unregisterPushNotificationToken(email: String, deviceId: Int, isAudio: Boolean) {
+    fun unregisterPushNotificationToken(email: String, deviceId: Int) {
         val request = mapOf(
-            "deviceId" to deviceId,
-            "audio" to isAudio
+            "deviceId" to deviceId
         )
 
         postRequestNoResponse(request, "/dev/push-notifications/unregister/$email")

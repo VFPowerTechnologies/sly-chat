@@ -43,7 +43,7 @@ class WebApiPushNotificationsTest {
 
         val deviceId = devClient.addDevice(userA.email, defaultRegistrationId, DeviceState.ACTIVE)
 
-        devClient.registerPushNotificationToken(userA.email, deviceId, token, PushNotificationService.GCM, false)
+        devClient.registerPushNotificationToken(userA.email, deviceId, token, null, PushNotificationService.GCM)
 
         checkGCMTokenStatus(userA, true)
     }
@@ -62,7 +62,7 @@ class WebApiPushNotificationsTest {
 
         val deviceId = devClient.addDevice(user.email, defaultRegistrationId, DeviceState.ACTIVE)
 
-        val unregistrationToken = devClient.registerPushNotificationToken(user.email, deviceId, token, PushNotificationService.GCM, false)
+        val unregistrationToken = devClient.registerPushNotificationToken(user.email, deviceId, token, null, PushNotificationService.GCM)
 
         val client = PushNotificationsClient(serverBaseUrl, JavaHttpClient())
         client.unregister(UnregisterRequest(SlyAddress(user.id, deviceId), unregistrationToken))

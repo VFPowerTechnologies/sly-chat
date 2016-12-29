@@ -135,16 +135,16 @@ class DevClientTest {
 
         //GCM
         val gcmToken = randomUUID()
-        val isAudio = false
+        val audioToken = randomUUID()
 
-        devClient.registerPushNotificationToken(username, deviceId, gcmToken, PushNotificationService.GCM, isAudio)
+        devClient.registerPushNotificationToken(username, deviceId, gcmToken, null, PushNotificationService.GCM)
 
         val gcmTokens = devClient.getPushNotificationTokens(username)
 
-        if (gcmTokens != listOf(UserPushNotificationTokenInfo(deviceId, gcmToken, PushNotificationService.GCM, isAudio)))
+        if (gcmTokens != listOf(UserPushNotificationTokenInfo(deviceId, gcmToken, audioToken, PushNotificationService.GCM)))
             throw DevServerInsaneException("Push notification functionality failed")
 
-        devClient.unregisterPushNotificationToken(username, deviceId, isAudio)
+        devClient.unregisterPushNotificationToken(username, deviceId)
 
         if (devClient.getPushNotificationTokens(username).isNotEmpty())
             throw DevServerInsaneException("Push notification functionality failed")
