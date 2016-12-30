@@ -6,6 +6,8 @@ import rx.Subscription
 import rx.exceptions.OnErrorNotImplementedException
 import rx.functions.Action0
 import rx.plugins.RxJavaPlugins
+import rx.subscriptions.CompositeSubscription
+import rx.subscriptions.SerialSubscription
 import rx.subscriptions.Subscriptions
 import java.util.concurrent.TimeUnit
 
@@ -16,19 +18,22 @@ class IOSMainScheduler private constructor() : Scheduler() {
     }
 
     private class ScheduledAction(private val action: Action0) : Subscription, Runnable {
-        @field:Volatile
-        private var unsubscribed = false
+        private val sub = SerialSubscription()
 
         override fun isUnsubscribed(): Boolean {
-            return unsubscribed
+            return sub.isUnsubscribed
         }
 
         override fun unsubscribe() {
-            unsubscribed = true
+            sub.unsubscribe()
+        }
+
+        fun set(subscription: Subscription) {
+            sub.set(subscription)
         }
 
         override fun run() {
-            if (unsubscribed)
+            if (sub.isUnsubscribed)
                 return
 
             try {
@@ -49,18 +54,17 @@ class IOSMainScheduler private constructor() : Scheduler() {
     }
 
     private class IOSWorker : Worker() {
-        @field:Volatile
-        private var unsubscribed = false
+        private val subscriptions = CompositeSubscription()
 
         override fun schedule(action: Action0): Subscription {
-            if (unsubscribed)
+            if (subscriptions.isUnsubscribed)
                 return Subscriptions.unsubscribed()
 
             return schedule(action, 0, TimeUnit.MILLISECONDS)
         }
 
         override fun schedule(action: Action0, delayTime: Long, unit: TimeUnit): Subscription {
-            if (unsubscribed)
+            if (subscriptions.isUnsubscribed)
                 return Subscriptions.unsubscribed()
 
             val ns = TimeUnit.NANOSECONDS.convert(delayTime, unit)
@@ -68,6 +72,13 @@ class IOSMainScheduler private constructor() : Scheduler() {
             val time = Globals.dispatch_time(0, ns)
 
             val scheduledAction = ScheduledAction(action)
+
+            subscriptions.add(scheduledAction)
+
+            //remove self when unsubscribed
+            scheduledAction.set(Subscriptions.create {
+                subscriptions.remove(scheduledAction)
+            })
 
             val mainQueue = Globals.dispatch_get_main_queue()
 
@@ -86,12 +97,12 @@ class IOSMainScheduler private constructor() : Scheduler() {
         }
 
         override fun isUnsubscribed(): Boolean {
-            return unsubscribed
+            return subscriptions.isUnsubscribed
         }
 
+        //no way to cancel something submitted via dispatch_after
         override fun unsubscribe() {
-            unsubscribed = true
-            //no way to cancel something submitted via dispatch_after
+            subscriptions.unsubscribe()
         }
     }
 
@@ -99,4 +110,3 @@ class IOSMainScheduler private constructor() : Scheduler() {
         return IOSWorker()
     }
 }
-
