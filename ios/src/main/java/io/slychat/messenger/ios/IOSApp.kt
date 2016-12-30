@@ -288,7 +288,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
             application.registerForRemoteNotifications()
         }
         else {
-            log.info("Notifications disabled by user")
+            log.debug("Notifications disabled by user")
 
             val d = notificationTokenDeferred
             if (d == null) {
@@ -488,7 +488,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
                     var subscription: Subscription? = null
 
                     subscription = app.userComponent!!.readMessageQueueIsEmpty.subscribe {
-                        log.debug("Finished processing offline messages")
+                        log.info("Finished processing offline messages")
 
                         application.endBackgroundTask(taskId)
                         subscription!!.unsubscribe()
@@ -501,7 +501,6 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
                     application.endBackgroundTask(taskId)
                 }
             }
-
             else {
                 log.debug("Account offline")
 

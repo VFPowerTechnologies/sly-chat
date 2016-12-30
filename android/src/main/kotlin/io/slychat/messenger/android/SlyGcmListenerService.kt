@@ -30,7 +30,6 @@ class SlyGcmListenerService : GcmListenerService() {
     }
 
     private fun handleMessage(data: Bundle) {
-        //TODO version check and upgrade to newer versions
         val version = data.getString("version").toInt()
         if (version != 1) {
             log.warn("Unsupported version for offline messages: {}", version)

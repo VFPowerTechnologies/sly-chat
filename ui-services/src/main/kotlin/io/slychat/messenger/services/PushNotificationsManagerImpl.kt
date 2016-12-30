@@ -86,7 +86,7 @@ class PushNotificationsManagerImpl(
     }
 
     private fun onTokenUpdate(deviceTokens: DeviceTokens?) {
-        log.info("Updating token")
+        log.info("Received token")
 
         appConfigService.withEditor {
             pushNotificationsTokens = deviceTokens
@@ -94,7 +94,7 @@ class PushNotificationsManagerImpl(
     }
 
     private fun onNewToken() {
-        log.info("Received new token")
+        log.info("Token has been changed")
 
         //token has changed
         if (appConfigService.pushNotificationsTokens != null) {
