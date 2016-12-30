@@ -244,6 +244,8 @@ class PushNotificationsManagerImpl(
 
         isWorkInProgress = true
 
+        log.info("Unregistering token for {}", address)
+
         pushNotificationsClient.unregister(request).successUi {
             isWorkInProgress = false
 

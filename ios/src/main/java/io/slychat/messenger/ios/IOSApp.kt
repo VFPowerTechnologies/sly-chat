@@ -172,6 +172,17 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
         log.debug("Unregistering from push notifications for {}", address)
 
+        val application = UIApplication.sharedApplication()
+
+        var taskId: Long = 0
+
+        //TODO fix this
+        taskId = application.beginBackgroundTaskWithExpirationHandler {
+            log.info("Background time for token unregister expired")
+
+            application.endBackgroundTask(taskId)
+        }
+
         app.addOnInitListener {
             app.appComponent.pushNotificationsManager.unregister(address)
         }
@@ -487,7 +498,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         var taskId: Long = 0
 
         taskId = application.beginBackgroundTaskWithExpirationHandler {
-            log.info("Background time expired")
+            log.info("Background time for offline message fetch expired")
 
             application.endBackgroundTask(taskId)
         }
