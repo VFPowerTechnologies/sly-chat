@@ -7,15 +7,12 @@ import apple.uikit.UILocalNotification
 import apple.uikit.enums.UIApplicationState
 import io.slychat.messenger.core.persistence.ConversationDisplayInfo
 import io.slychat.messenger.core.pushnotifications.OfflineMessagesPushNotification
+import io.slychat.messenger.ios.IOSApp.Companion.USERINFO_CONVERSATION_ID_KEY
 import io.slychat.messenger.services.NotificationState
 import io.slychat.messenger.services.PlatformNotificationService
 import org.slf4j.LoggerFactory
 
 class IOSNotificationService : PlatformNotificationService {
-    companion object {
-        val CONVERSATION_ID_KEY = "conversationId"
-    }
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun getNotificationSoundDisplayName(soundUri: String): String {
@@ -52,10 +49,12 @@ class IOSNotificationService : PlatformNotificationService {
         val notification = UILocalNotification.alloc().init()
 
         val userInfo = NSDictionary.dictionaryWithObjectsAndKeys<String, NSObject>(
-            conversationIdString, CONVERSATION_ID_KEY, null
+            conversationIdString, USERINFO_CONVERSATION_ID_KEY, null
         )
 
         notification.setUserInfo(userInfo)
+
+        notification.setCategory(IOSApp.NOTIFICATION_CATEGORY_CHAT_MESSAGE)
 
         //title isn't shown when in the background
         notification.setAlertTitle("Message in ${conversationDisplayInfo.conversationName}")
@@ -72,10 +71,10 @@ class IOSNotificationService : PlatformNotificationService {
 
         notification.setAlertBody(message.getNotificationText())
 
-        notification.setCategory(IOSApp.ACTION_CATEGORY_OFFLINE)
+        notification.setCategory(IOSApp.NOTIFICATION_CATEGORY_OFFLINE)
 
         val userInfo = NSDictionary.dictionaryWithObjectsAndKeys<String, Any>(
-            message.account.asString(), IOSApp.USERINFO_ADDRESS,
+            message.account.asString(), IOSApp.USERINFO_ADDRESS_KEY,
             null
         )
 

@@ -51,9 +51,13 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         @Selector("alloc")
         external fun alloc(): IOSApp
 
-        const val ACTION_CATEGORY_OFFLINE = "offline"
+        const val NOTIFICATION_CATEGORY_OFFLINE = "offline"
+        const val NOTIFICATION_CATEGORY_CHAT_MESSAGE = "chat-message"
+
         const val ACTION_ID_UNREGISTER = "unregister"
-        const val USERINFO_ADDRESS = "address"
+
+        const val USERINFO_ADDRESS_KEY = "address"
+        const val USERINFO_CONVERSATION_ID_KEY = "conversationId"
 
         @JvmStatic
         fun main(args: Array<String>) {
@@ -97,7 +101,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
     private fun getOfflineCategory(): UIUserNotificationCategory {
         val category = UIMutableUserNotificationCategory.alloc().init()
 
-        category.setIdentifier(ACTION_CATEGORY_OFFLINE)
+        category.setIdentifier(NOTIFICATION_CATEGORY_OFFLINE)
 
         val unregisterAction = UIMutableUserNotificationAction.alloc().init()
         unregisterAction.setActivationMode(UIUserNotificationActivationMode.Background)
@@ -154,7 +158,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
         val userInfo = notification.userInfo()
 
-        val addressString = userInfo[USERINFO_ADDRESS] as String?
+        val addressString = userInfo[USERINFO_ADDRESS_KEY] as String?
         if (addressString == null) {
             log.error("Missing address from offline userInfo")
             return
@@ -174,10 +178,10 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
     }
 
     override fun applicationHandleActionWithIdentifierForLocalNotificationCompletionHandler(application: UIApplication, identifier: String, notification: UILocalNotification, completionHandler: UIApplicationDelegate.Block_applicationHandleActionWithIdentifierForLocalNotificationCompletionHandler) {
-        if (notification.category() == ACTION_CATEGORY_OFFLINE)
+        if (notification.category() == NOTIFICATION_CATEGORY_OFFLINE)
             handleOfflineCategoryAction(identifier, notification)
         else
-            log.error("Unsupported action category: {}", notification.category())
+            log.error("Unsupported notification category: {}; identifier={}", notification.category(), identifier)
 
         completionHandler.call_applicationHandleActionWithIdentifierForLocalNotificationCompletionHandler()
     }
@@ -412,13 +416,19 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
     }
 
     override fun applicationDidReceiveLocalNotification(application: UIApplication, notification: UILocalNotification) {
-        val conversationData = notification.userInfo()[IOSNotificationService.CONVERSATION_ID_KEY]
-        val conversationIdString = conversationData as String
-        val conversationId = ConversationId.fromString(conversationIdString)
+        if (notification.category() == NOTIFICATION_CATEGORY_CHAT_MESSAGE) {
+            val conversationData = notification.userInfo()[USERINFO_CONVERSATION_ID_KEY]
+            val conversationIdString = conversationData as String
+            val conversationId = ConversationId.fromString(conversationIdString)
 
-        log.debug("Opened from local notification for $conversationId")
+            log.debug("Opened from local notification for $conversationId")
 
-        webViewController.navigationService?.goTo(getNavigationPageConversation(conversationId))
+            webViewController.navigationService?.goTo(getNavigationPageConversation(conversationId))
+        }
+        else {
+            //some notifications don't support direct actions (eg: NOTIFICATION_CATEGORY_OFFLINE)
+            log.debug("Ignoring local notification with category={}", notification.category())
+        }
     }
 
     private fun deserializeNotification(userInfo: NSDictionary<*, *>): OfflineMessagesPushNotification? {
