@@ -14,7 +14,6 @@ import apple.uikit.protocol.UIPopoverPresentationControllerDelegate
 import com.almworks.sqlite4java.SQLite
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.SlyBuildConfig
-import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.pushnotifications.OfflineMessageInfo
@@ -439,11 +438,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
             return null
         }
 
-        @Suppress("UNCHECKED_CAST")
-        val accountStr = data["account"] as NSDictionary<String, NSNumber>
-        val userId = (accountStr["userId"] as NSNumber).longValue()
-        val deviceId = (accountStr["deviceId"] as NSNumber).intValue()
-        val account = SlyAddress(UserId(userId), deviceId)
+        val accountStr = data["account"] as String
+        val account = SlyAddress.fromString(accountStr) ?: error("Invalid account format: $accountStr")
 
         val accountName = data["accountName"] as String
 
