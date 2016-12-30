@@ -7,6 +7,7 @@ import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationServ
 import io.slychat.messenger.core.http.api.registration.RegistrationInfo
 import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -131,22 +132,35 @@ class DevClientTest {
     @Test
     fun `push notification functionality should work`() {
         userManagement.injectNewSiteUser()
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
-        //GCM
+        val androidDeviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+        val iosDeviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+
         val gcmToken = randomUUID()
+        val apnsToken = randomUUID()
         val audioToken = randomUUID()
 
-        devClient.registerPushNotificationToken(username, deviceId, gcmToken, null, PushNotificationService.GCM)
+        devClient.registerPushNotificationToken(username, androidDeviceId, gcmToken, null, PushNotificationService.GCM)
+        devClient.registerPushNotificationToken(username, iosDeviceId, apnsToken, audioToken, PushNotificationService.APN)
 
-        val gcmTokens = devClient.getPushNotificationTokens(username)
+        val deviceTokens = devClient.getPushNotificationTokens(username)
 
-        if (gcmTokens != listOf(UserPushNotificationTokenInfo(deviceId, gcmToken, audioToken, PushNotificationService.GCM)))
-            throw DevServerInsaneException("Push notification functionality failed")
+        val expectedInfo = listOf(
+            UserPushNotificationTokenInfo(androidDeviceId, gcmToken, null, PushNotificationService.GCM),
+            UserPushNotificationTokenInfo(iosDeviceId, apnsToken, audioToken, PushNotificationService.APN)
+        )
 
-        devClient.unregisterPushNotificationToken(username, deviceId)
+        assertThat(deviceTokens).apply {
+            describedAs("Should contain the added tokens")
+            containsAll(expectedInfo)
+        }
 
-        if (devClient.getPushNotificationTokens(username).isNotEmpty())
-            throw DevServerInsaneException("Push notification functionality failed")
+        devClient.unregisterPushNotificationToken(username, androidDeviceId)
+        devClient.unregisterPushNotificationToken(username, iosDeviceId)
+
+        assertThat(devClient.getPushNotificationTokens(username)).apply {
+            describedAs("Should return no tokens after unregistration")
+            isEmpty()
+        }
     }
 }
