@@ -54,3 +54,7 @@ moeMainDebugIphonesimulatorXcodeBuild {
 moeMainReleaseIphonesimulatorXcodeBuild {
     additionalParameters = xcodeParams
 }
+
+moeIpaBuild {
+    inputApp 'build/moe/xcodebuild/Release-iphoneos/Sly.app'
+}
