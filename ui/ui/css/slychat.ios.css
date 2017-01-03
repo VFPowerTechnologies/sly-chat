@@ -14,6 +14,9 @@
 .expire-message-toggled #chatPageContent {
     padding-bottom: 100px;
 }
+#chat-content li.messageReceived .message {
+    background-color: #fff;
+}
 
 #emojiPickerBtn {
     display: none;

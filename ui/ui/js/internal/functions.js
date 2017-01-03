@@ -45,15 +45,29 @@ function createDesktopMenu () {
 }
 
 function createMobileContactPopup(isIos) {
-    var navbar = '<div class="navbar top-navbar">' +
-        '<div class="navbar-inner">' +
-        '<div class="left">' +
-        '<a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a>Address Book' +
-        '</div><div class="right">';
+    var navbar = '';
     if(isIos)
-        navbar += '<a id="contactPopupNewBtn" href="#" class="link icon-only close-popup"> <i class="fa fa-plus-square"></i></a>';
-
-    navbar += '</div></div></div>';
+        navbar = '<div class="navbar top-navbar">' +
+            '<div class="navbar-inner">' +
+            '<div class="left">' +
+                '<a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a>' +
+            '</div>' +
+            '<div class="center sliding">Address Book</div>' +
+            '<div class="right">' +
+                '<a id="contactPopupNewBtn" href="#" class="link icon-only close-popup"> <i class="fa fa-plus-square"></i></a>' +
+            '</div>' +
+            '</div></div>';
+    else {
+        navbar = '<div class="navbar top-navbar">' +
+            '<div class="navbar-inner">' +
+            '<div class="left">' +
+                '<a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a>Address Book' +
+            '</div>' +
+            '<div class="right">' +
+                '<a id="contactPopupNewBtn" href="#" class="link icon-only close-popup"> <i class="fa fa-plus-square"></i></a>' +
+            '</div>' +
+            '</div></div>';
+    }
 
     var addContactFloatingBtn = "";
     if(!isIos)
