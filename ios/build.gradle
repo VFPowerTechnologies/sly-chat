@@ -1,3 +1,5 @@
+import java.nio.file.Paths
+
 buildscript {
     repositories {
         jcenter()
@@ -57,4 +59,44 @@ moeMainReleaseIphonesimulatorXcodeBuild {
 
 moeIpaBuild {
     inputApp 'build/moe/xcodebuild/Release-iphoneos/Sly.app'
+}
+
+class BuildArchive extends org.moe.gradle.tasks.AbstractBaseTask {
+    List<String> additionalParameters = []
+
+    BuildArchive() {
+        java.nio.file.Path out = Paths.get(org.moe.gradle.MoePlugin.MOE)
+
+        supportsRemoteBuild = false
+        logFile = resolvePathInBuildDir(out, "BuildArchive.log")
+
+        //just let xcode decide this
+        //the scheme used is ~/Library/Developer/Xcode/Archives/2017-01-03/SlyChat 2017-01-03, 3.34 PM.xcarchive
+        outputs.upToDateWhen { false }
+    }
+
+    @Override
+    protected void run() {
+        def mainTarget = moeExtension.xcode.mainTarget
+        java.io.File projectDir = project.file("$moeExtension.xcode.xcodeProjectDirPath/${mainTarget}.xcodeproj")
+
+        exec { spec ->
+            spec.setExecutable('xcrun')
+
+            spec.args('-sdk', 'iphoneos')
+            spec.args('xcodebuild')
+            spec.args('-project', projectDir)
+
+            spec.args('-scheme', mainTarget)
+            spec.args('-configuration', 'Release')
+
+            spec.args(additionalParameters)
+
+            spec.args('archive')
+        }
+    }
+}
+
+task buildArchive(type: BuildArchive, dependsOn: moeMainReleaseIphoneosXcodeBuild) {
+    additionalParameters = xcodeParams
 }
