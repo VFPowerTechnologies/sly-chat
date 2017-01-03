@@ -1,5 +1,6 @@
 package io.slychat.messenger.android.activites
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
@@ -20,12 +21,7 @@ class ProfileActivity : AppCompatActivity() {
 
     private lateinit var app : AndroidApp
 
-    private var emailVal : TextView? = null
-    private var nameVal : TextView? = null
-    private var publicKeyVal : TextView? = null
-    private var deviceVal : TextView? = null
-
-    override fun onCreate (savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         log.debug("onCreate")
 
@@ -35,13 +31,8 @@ class ProfileActivity : AppCompatActivity() {
         init()
     }
 
-    private fun init () {
+    private fun init() {
         app = AndroidApp.get(this)
-
-        emailVal = findViewById(R.id.profile_email_value) as TextView
-        nameVal = findViewById(R.id.profile_name_value) as TextView
-        deviceVal = findViewById(R.id.profil_device_id) as TextView
-        publicKeyVal = findViewById(R.id.profil_public_key_value) as TextView
 
         displayInfo()
 
@@ -61,16 +52,29 @@ class ProfileActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun createEventListeners () {
-
+    private fun createEventListeners() {
+        val updateButton = findViewById(R.id.profile_update_btn) as Button
+        updateButton.setOnClickListener {
+            startUpdateProcess()
+        }
     }
 
-    private fun displayInfo () {
-        log.debug("In Display info")
-        emailVal?.text = app.accountInfo?.email
-        nameVal?.text = app.accountInfo?.name
-        deviceVal?.text = app.accountInfo?.deviceId.toString()
-        publicKeyVal?.text = app.publicKey
+    private fun startUpdateProcess() {
+        startActivity(Intent(baseContext, UpdateProfileActivity::class.java))
+    }
+
+    private fun displayInfo() {
+        val emailVal = findViewById(R.id.profile_email_value) as TextView
+        val nameVal = findViewById(R.id.profile_name_value) as TextView
+        val deviceVal = findViewById(R.id.profile_device_id) as TextView
+        val phoneVal = findViewById(R.id.profile_phone_value) as TextView
+        val publicKeyVal = findViewById(R.id.profile_public_key_value) as TextView
+
+        emailVal.text = app.accountInfo?.email
+        nameVal.text = app.accountInfo?.name
+        deviceVal.text = app.accountInfo?.deviceId.toString()
+        publicKeyVal.text = app.publicKey
+        phoneVal.text = app.accountInfo?.phoneNumber
     }
 
     private fun setAppActivity() {
@@ -83,29 +87,29 @@ class ProfileActivity : AppCompatActivity() {
         app.setCurrentActivity(this, false)
     }
 
-    override fun onStart () {
+    override fun onStart() {
         super.onStart()
         log.debug("onStart")
     }
 
-    override fun onPause () {
+    override fun onPause() {
         super.onPause()
         clearAppActivity()
         log.debug("onPause")
     }
 
-    override fun onResume () {
+    override fun onResume() {
         super.onResume()
         setAppActivity()
         log.debug("onResume")
     }
 
-    override fun onStop () {
+    override fun onStop() {
         super.onStop()
         log.debug("onStop")
     }
 
-    override fun onDestroy () {
+    override fun onDestroy() {
         super.onDestroy()
         clearAppActivity()
         log.debug("onDestroy")

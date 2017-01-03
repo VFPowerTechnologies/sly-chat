@@ -12,7 +12,7 @@ data class UserConfig(
     val notificationsEnabled: Boolean = true,
     val notificationsSound: String? = null,
     val messagingLastTtl: Long = TimeUnit.SECONDS.toMillis(10),
-    val marketingShowInviteFriends: Boolean = false
+    val marketingShowInviteFriends: Boolean = true
 ) {
     companion object {
         private fun join(parent: String, child: String): String = "$parent.$child"

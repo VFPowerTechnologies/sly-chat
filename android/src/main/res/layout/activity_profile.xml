@@ -38,7 +38,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/profile_update_btn"
-                android:id="@+id/profil_update_btn" android:layout_gravity="center_horizontal" android:layout_marginTop="10dp"/>
+                android:id="@+id/profile_update_btn" android:layout_gravity="center_horizontal" android:layout_marginTop="10dp"/>
     </LinearLayout>
     <LinearLayout
             android:orientation="vertical"
@@ -84,7 +84,7 @@
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceSmall"
                 android:text=""
-                android:id="@+id/profil_public_key_value"
+                android:id="@+id/profile_public_key_value"
                 android:layout_marginStart="15dp"/>
         <LinearLayout
                 android:orientation="vertical"
@@ -105,7 +105,7 @@
                         android:layout_height="wrap_content"
                         android:textAppearance="?android:attr/textAppearanceSmall"
                         android:text=""
-                        android:id="@+id/profil_device_id" android:layout_gravity="bottom"/>
+                        android:id="@+id/profile_device_id" android:layout_gravity="bottom"/>
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
