@@ -408,6 +408,7 @@ ChatController.prototype = {
                 var contact = contactController.getContact(messageInfo.contact);
                 if (contact) {
                     notification.subtitle = 'New message from ' + contact.name;
+                    notification.message = messageInfo.messages[0].message;
                     notification.onClick = function () {
                         contactController.loadChatPage(contact, false, false);
                     };
@@ -420,6 +421,7 @@ ChatController.prototype = {
                 var groupInfo = groupController.getGroup(messageInfo.groupId);
                 if (groupInfo) {
                     notification.subtitle = "New message in group: " + groupInfo.name;
+                    notification.message = messageInfo.messages[0].message;
                     notification.onClick = function () {
                         contactController.loadChatPage(groupInfo, false, true);
                     };

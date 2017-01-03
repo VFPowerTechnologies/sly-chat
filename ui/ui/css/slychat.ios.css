@@ -58,3 +58,7 @@
     background-color: #fff;
     color: #000;
 }
+
+.notifications .item-text {
+    color: #222;
+}
