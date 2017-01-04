@@ -9,7 +9,9 @@ import java.util.*
 enum class VersionType {
     PATCH,
     MINOR,
-    SNAPSHOT
+    SNAPSHOT,
+    ANDROID,
+    IOS
 }
 
 open class UpdateVersion : DefaultTask() {
@@ -53,15 +55,31 @@ open class UpdateVersion : DefaultTask() {
 
                     version.incrementMinorVersion().setPreReleaseVersion("SNAPSHOT")
                 }
+
+                VersionType.ANDROID -> {
+                    return incAndroid()
+                }
+
+                VersionType.IOS -> {
+                    return incIOS()
+                }
             }
 
             val (nextAndroidVersionCode, nextIOSVersionCode) = if (versionType == VersionType.SNAPSHOT)
                 androidVersionCode to iosVersionCode
             else
-                (androidVersionCode + 1) to (iosVersionCode + 1)
+                nextAndroidVersion() to nextIOSVersion()
 
             return VersionInfo(nextVersion, nextAndroidVersionCode, nextIOSVersionCode)
         }
+
+        private fun nextIOSVersion(): Int = iosVersionCode + 1
+
+        private fun nextAndroidVersion(): Int = androidVersionCode + 1
+
+        fun incIOS(): VersionInfo = copy(iosVersionCode = nextIOSVersion())
+
+        fun incAndroid(): VersionInfo = copy(androidVersionCode = nextAndroidVersion())
     }
 
     private val gradlePropertiesPath = File(project.rootDir, "gradle.properties")
@@ -138,10 +156,16 @@ open class UpdateVersion : DefaultTask() {
 
         val modifiedFiles = listOf(gradlePropertiesPath)
 
+        val commitMessage = when (versionType) {
+            VersionType.PATCH, VersionType.MINOR, VersionType.SNAPSHOT -> nextVersionInfo.version.toString()
+            VersionType.ANDROID -> "[android] Version ${nextVersionInfo.androidVersionCode}"
+            VersionType.IOS -> "[ios] Version ${nextVersionInfo.iosVersionCode}"
+        }
+
         try {
             writeVersionInfo(nextVersionInfo)
 
-            gitCommit(modifiedFiles, nextVersionInfo.version.toString())
+            gitCommit(modifiedFiles, commitMessage)
         }
         catch (e: Exception) {
             gitUndoChanges(modifiedFiles)

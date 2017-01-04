@@ -88,6 +88,14 @@ task nextSnapshot(type: UpdateVersion) {
     versionType = VersionType.SNAPSHOT
 }
 
+task nextIOSVersion(type: UpdateVersion) {
+    versionType = VersionType.IOS
+}
+
+task nextAndroidVersion(type: UpdateVersion) {
+    versionType = VersionType.ANDROID
+}
+
 task printVersionInfo << {
     println("Version: $project.version")
     println("Android version code: $project.androidVersionCode")
