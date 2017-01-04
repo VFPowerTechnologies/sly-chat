@@ -7,13 +7,9 @@ import android.support.v7.widget.Toolbar
 import android.view.MenuItem
 import android.view.WindowManager
 import android.widget.Button
-import android.widget.EditText
 import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.core.http.api.accountupdate.AccountInfo
-import nl.komponents.kovenant.ui.failUi
-import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
 class ProfileActivity : AppCompatActivity() {
@@ -28,13 +24,7 @@ class ProfileActivity : AppCompatActivity() {
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_profile)
 
-        init()
-    }
-
-    private fun init() {
         app = AndroidApp.get(this)
-
-        displayInfo()
 
         val actionBar = findViewById(R.id.my_toolbar) as Toolbar
         actionBar.title = "Profile"
@@ -43,6 +33,12 @@ class ProfileActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         createEventListeners()
+
+        init()
+    }
+
+    private fun init() {
+        displayInfo()
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
@@ -101,6 +97,7 @@ class ProfileActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         setAppActivity()
+        init()
         log.debug("onResume")
     }
 

@@ -8,10 +8,7 @@ import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.WindowManager
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.EditText
-import android.widget.Spinner
+import android.widget.*
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.Phonenumber
 import io.slychat.messenger.android.AndroidApp
@@ -83,6 +80,43 @@ class UpdateProfileActivity: AppCompatActivity() {
     private fun updateProfileInfo() {
         val mName = findViewById(R.id.update_profile_name_input) as EditText
         val mEmail = findViewById(R.id.update_profile_email_input) as EditText
+        val error = findViewById(R.id.update_profile_info_error) as TextView
+        val newName = mName.text.toString()
+        var newEmail: String? = mEmail.text.toString()
+        var valid = true
+
+        if (newName.isEmpty() || newName == "") {
+            mName.error = "Name is required"
+            valid = false
+        }
+
+        if (newEmail != null && (newEmail.isEmpty() || newEmail == "")) {
+            mEmail.error = "Email is required"
+            valid = false
+        }
+
+        if (newName == accountInfo.name && newEmail == accountInfo.email)
+            valid = false
+
+        if (!valid)
+            return
+
+        if (newEmail == accountInfo.email)
+            newEmail = null
+
+        accountService.updateInfo(newName, newEmail) successUi { result ->
+            if (result.successful) {
+                finish()
+            }
+            else {
+                val message = result.errorMessage
+                if (message != null)
+                    error.text = message
+            }
+        } failUi {
+            log.error("Failed to update account info")
+        }
+
     }
 
     private fun handlePhoneUpdate() {

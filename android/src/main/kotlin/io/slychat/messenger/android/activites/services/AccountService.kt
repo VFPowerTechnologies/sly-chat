@@ -15,4 +15,6 @@ interface AccountService {
     fun verifyPhone(code: String): Promise<AccountUpdateResult, Exception>
 
     fun updateAccountInfo(accountInfo: AccountInfo): Promise<Unit, Exception>
+
+    fun updateInfo(name: String?, email: String?): Promise<AccountUpdateResult, Exception>
 }
