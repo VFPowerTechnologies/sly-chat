@@ -40,9 +40,11 @@ import org.moe.natj.general.ptr.Ptr
 import org.moe.natj.general.ptr.impl.PtrFactory
 import org.moe.natj.objc.ann.Selector
 import org.slf4j.LoggerFactory
+import rx.Observable
 import rx.Subscription
 import rx.subjects.BehaviorSubject
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 @RegisterOnStartup
 class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationDelegate, UIPopoverPresentationControllerDelegate {
@@ -511,7 +513,13 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
                     subscription = app.userComponent!!.readMessageQueueIsEmpty.subscribe {
                         log.info("Finished processing offline messages")
 
-                        application.endBackgroundTask(taskId)
+                        //XXX need a better way to do this... we need to wait until the NotificationService completes
+                        //before ending our bg state
+                        Observable.timer(2, TimeUnit.SECONDS).subscribe {
+                            log.info("Ending background status")
+                            application.endBackgroundTask(taskId)
+                        }
+
                         subscription!!.unsubscribe()
                     }
 
