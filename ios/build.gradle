@@ -1,5 +1,3 @@
-import java.nio.file.Paths
-
 buildscript {
     repositories {
         jcenter()
@@ -34,78 +32,86 @@ dependencies {
 }
 
 def moeDefaultParams = [
-    //MOE defaults
     'MOE_GRADLE_EXTERNAL_BUILD=YES',
     'ONLY_ACTIVE_ARCH=NO',
 ]
 
-def xcodeParams = [
+def debugXcodeParams = [
     "SLY_VERSION_STRING=$project.VERSION".toString(),
     "SLY_BUILD_NUMBER=$project.IOS_VERSION_CODE".toString(),
 ] + moeDefaultParams
 
+//CFBundleShortVersionString must be of form a.b.c for uploads
+def strippedVersion = project.VERSION.replaceFirst(/-SNAPSHOT$/, '')
+
+//mainly used for creating IPA files
+def releaseXcodeParams = [
+    "SLY_VERSION_STRING=$strippedVersion".toString(),
+    "SLY_BUILD_NUMBER=$project.IOS_VERSION_CODE".toString(),
+] + moeDefaultParams
+
 moeMainDebugIphoneosXcodeBuild {
-    additionalParameters = xcodeParams
+    additionalParameters = debugXcodeParams
 }
 
 moeMainReleaseIphoneosXcodeBuild {
-    additionalParameters = xcodeParams
+    additionalParameters = releaseXcodeParams
 }
 
 moeMainDebugIphonesimulatorXcodeBuild {
-    additionalParameters = xcodeParams
+    additionalParameters = debugXcodeParams
 }
 
 moeMainReleaseIphonesimulatorXcodeBuild {
-    additionalParameters = xcodeParams
+    additionalParameters = releaseXcodeParams
 }
 
 moeIpaBuild {
     inputApp 'build/moe/xcodebuild/Release-iphoneos/Sly.app'
 }
 
-class BuildArchive extends org.moe.gradle.tasks.AbstractBaseTask {
-    List<String> additionalParameters = []
+def xcarchivePath = "${project.buildDir}/SlyChat.xcarchive"
 
-    BuildArchive() {
-        java.nio.file.Path out = Paths.get(org.moe.gradle.MoePlugin.MOE)
+//due to https://github.com/multi-os-engine/multi-os-engine/issues/68 we need to explicitly run moeIpaBuild
+//normally it should be run as part of the xcode build
+task buildArchive(type: Exec, dependsOn: moeIpaBuild) {
+    def mainTarget = moe.xcode.mainTarget
+    def projectDir = project.file("xcode/${mainTarget}.xcodeproj").toString()
 
-        supportsRemoteBuild = false
-        logFile = resolvePathInBuildDir(out, "BuildArchive.log")
+    executable 'xcrun'
 
-        //just let xcode decide this
-        //the scheme used is ~/Library/Developer/Xcode/Archives/2017-01-03/SlyChat 2017-01-03, 3.34 PM.xcarchive
-        outputs.upToDateWhen { false }
-    }
+    args '-sdk', 'iphoneos'
+    args 'xcodebuild'
 
-    @Override
-    protected void run() {
-        def mainTarget = moeExtension.xcode.mainTarget
-        java.io.File projectDir = project.file("$moeExtension.xcode.xcodeProjectDirPath/${mainTarget}.xcodeproj")
+    args 'archive'
 
-        exec { spec ->
-            spec.setExecutable('xcrun')
+    args '-project', projectDir
 
-            spec.args('-sdk', 'iphoneos')
-            spec.args('xcodebuild')
-            spec.args('-project', projectDir)
+    args '-scheme', mainTarget
+    args '-configuration', 'Release'
 
-            spec.args('-scheme', mainTarget)
-            spec.args('-configuration', 'Release')
+    args '-archivePath', xcarchivePath
 
-            spec.args(additionalParameters)
+    args releaseXcodeParams
 
-            spec.args('archive')
-        }
-    }
+    outputs.dir xcarchivePath
 }
 
-task buildArchive(type: BuildArchive, dependsOn: moeMainReleaseIphoneosXcodeBuild) {
-    //CFBundleShortVersionString must be of form a.b.c for uploads
-    def strippedVersion = project.VERSION.replaceFirst(/-SNAPSHOT/, '')
+task appStoreIPA(type: Exec, dependsOn: buildArchive) {
+    def ipaDir = "$project.buildDir/appstore"
+    ext.ipaPath = "$ipaDir/SlyChat.ipa"
 
-    additionalParameters = [
-        "SLY_VERSION_STRING=$strippedVersion".toString(),
-        "SLY_BUILD_NUMBER=$project.IOS_VERSION_CODE".toString(),
-    ] + moeDefaultParams
+    executable 'xcrun'
+
+    args '-sdk', 'iphoneos'
+    args 'xcodebuild'
+
+    args '-exportArchive'
+
+    args '-archivePath', xcarchivePath
+    args '-exportOptionsPlist', project.file('xcode/exportOptions.plist')
+
+    args '-exportPath', ipaDir
+
+    outputs.file ipaPath
 }
