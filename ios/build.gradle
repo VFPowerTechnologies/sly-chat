@@ -33,13 +33,16 @@ dependencies {
     compile project(':stdout-logger')
 }
 
-def xcodeParams = [
-    "SLY_VERSION_STRING=$project.VERSION",
-    "SLY_BUILD_NUMBER=$project.IOS_VERSION_CODE",
+def moeDefaultParams = [
     //MOE defaults
     'MOE_GRADLE_EXTERNAL_BUILD=YES',
     'ONLY_ACTIVE_ARCH=NO',
 ]
+
+def xcodeParams = [
+    "SLY_VERSION_STRING=$project.VERSION".toString(),
+    "SLY_BUILD_NUMBER=$project.IOS_VERSION_CODE".toString(),
+] + moeDefaultParams
 
 moeMainDebugIphoneosXcodeBuild {
     additionalParameters = xcodeParams
@@ -98,5 +101,11 @@ class BuildArchive extends org.moe.gradle.tasks.AbstractBaseTask {
 }
 
 task buildArchive(type: BuildArchive, dependsOn: moeMainReleaseIphoneosXcodeBuild) {
-    additionalParameters = xcodeParams
+    //CFBundleShortVersionString must be of form a.b.c for uploads
+    def strippedVersion = project.VERSION.replaceFirst(/-SNAPSHOT/, '')
+
+    additionalParameters = [
+        "SLY_VERSION_STRING=$strippedVersion".toString(),
+        "SLY_BUILD_NUMBER=$project.IOS_VERSION_CODE".toString(),
+    ] + moeDefaultParams
 }

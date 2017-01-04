@@ -35,6 +35,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.ui.KovenantUi
 import org.moe.natj.general.Pointer
+import org.moe.natj.general.ann.ReferenceInfo
 import org.moe.natj.general.ann.RegisterOnStartup
 import org.moe.natj.general.ptr.Ptr
 import org.moe.natj.general.ptr.impl.PtrFactory
@@ -581,12 +582,16 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         if (popoverController != null) {
             popoverController.setSourceView(webViewController.view())
             popoverController.setSourceRect(calcSharePopoverRect())
-            //currently disabled, as this leads to a crash in MOE
-            //popoverController.setDelegate(this)
+            popoverController.setDelegate(this)
         }
     }
 
-    override fun popoverPresentationControllerWillRepositionPopoverToRectInView(popoverPresentationController: UIPopoverPresentationController, rect: CGRect, view: Ptr<UIView>) {
+    //workaround as per https://github.com/multi-os-engine/multi-os-engine/issues/70
+    override fun popoverPresentationControllerWillRepositionPopoverToRectInView(
+        popoverPresentationController: UIPopoverPresentationController,
+        rect: CGRect,
+        @ReferenceInfo(depth = 1, type = UIView::class) view: Ptr<UIView>
+    ) {
         val newRect = calcSharePopoverRect()
         rect.setOrigin(newRect.origin())
         rect.setSize(newRect.size())
