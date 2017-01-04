@@ -298,6 +298,10 @@ slychat.onPageInit('addContact', function (page) {
 slychat.onPageBeforeInit('contacts', function (page) {
     contactController.init();
     groupController.init();
+
+    $("#inviteFriendsRecentButton").click(function () {
+        navigationController.loadPage("inviteFriends.html", true);
+    });
 });
 
 slychat.onPageInit('smsVerification', function (page) {
