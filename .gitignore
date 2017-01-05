@@ -4,6 +4,7 @@ build/
 robovm-build/
 *.iml
 local.properties
+keystore.properties
 build/docs/
 ui/ui/js/jvm-service
 ui/ui/js/build-config.js

@@ -155,3 +155,13 @@ project(':ios') {
         }
     }
 }
+
+project(':android') {
+    afterEvaluate { p ->
+        rootProject.tasks.create(name: 'distAndroid', description: 'Release APK build', dependsOn: p.tasks.assembleRelease) << {
+            def variants = p.android.applicationVariants
+            def releaseVariant = variants.find { it.name == 'release' }
+            print "Generated release APK: ${releaseVariant.outputs.first().outputFile}"
+        }
+    }
+}
