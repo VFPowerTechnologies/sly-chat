@@ -59,10 +59,13 @@ android.applicationVariants.all { variant ->
     variant.outputs.each { output ->
         def apkName = "SlyChat-${rootProject.version}"
 
+        apkName += '-' + variant.buildType.name
+        
         if (!output.zipAlign)
             apkName += '-unaligned'
 
-        apkName += '-' + variant.buildType.name
+        if (!variant.isSigningReady())
+            apkName += '-unsigned'
 
         output.outputFile = project.file("$project.buildDir/outputs/apk/${apkName}.apk")
     }
