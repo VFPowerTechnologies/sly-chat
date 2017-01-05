@@ -19,101 +19,106 @@
                 android:background="#000"/>
 
     </android.support.design.widget.AppBarLayout>
-    <LinearLayout
-            android:orientation="vertical"
+    <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical">
+            android:layout_height="wrap_content"
+            android:scrollbars="none">
         <LinearLayout
-                android:paddingBottom="@dimen/activity_vertical_margin"
                 android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="20dp"
-                android:layout_marginTop="20dp"
-                android:layout_marginRight="20dp"
-                android:layout_marginBottom="30dp">
-
-            <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:id="@+id/update_profile_info_error" android:layout_gravity="right" android:textColor="#f00000"/>
-            <EditText
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textPersonName"
-                    android:ems="10"
-                    android:id="@+id/update_profile_name_input"
-                    android:hint="Name"/>
-            <EditText
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textEmailAddress"
-                    android:ems="10"
-                    android:id="@+id/update_profile_email_input"
-                    android:layout_gravity="center_horizontal"
-                    android:hint="Email"/>
-            <Button
-                    style="?android:attr/buttonStyleSmall"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Update"
-                    android:id="@+id/update_profile_info_button"
-                    android:layout_gravity="center_horizontal"/>
-        </LinearLayout>
-        <LinearLayout
-                android:paddingBottom="@dimen/activity_vertical_margin"
-                android:orientation="vertical"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="20dp"
-                android:layout_marginRight="20dp">
+                android:gravity="center_vertical">
             <LinearLayout
-                    android:orientation="horizontal"
+                    android:paddingBottom="@dimen/activity_vertical_margin"
+                    android:orientation="vertical"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="15dp"
-                    android:layout_marginBottom="15dp">
-                <LinearLayout
-                        android:orientation="vertical"
+                    android:layout_marginLeft="20dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginRight="20dp"
+                    android:layout_marginBottom="30dp">
+
+                <TextView
                         android:layout_width="wrap_content"
-                        android:layout_height="match_parent">
-                    <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="?android:attr/textAppearanceSmall"
-                            android:text="@string/registration_country_label"
-                            android:textSize="12sp"/>
-                    <Spinner
-                            android:layout_width="65dp"
-                            android:layout_height="match_parent"
-                            android:spinnerMode="dropdown"
-                            android:id="@+id/update_profile_country_spinner"
-                            android:padding="0dp"/>
-                </LinearLayout>
-                <LinearLayout
-                        android:orientation="vertical"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:id="@+id/update_profile_info_error" android:layout_gravity="right" android:textColor="#f00000"/>
+                <EditText
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-                    <EditText
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="phone"
-                            android:ems="10"
-                            android:id="@+id/update_profile_phone_input"
-                            android:layout_gravity="center_horizontal"
-                            android:hint="@string/registration_phone_hint"
-                            android:layout_marginTop="12dp"/>
-                </LinearLayout>
+                        android:layout_height="wrap_content"
+                        android:inputType="textPersonName"
+                        android:ems="10"
+                        android:id="@+id/update_profile_name_input"
+                        android:hint="Name"/>
+                <EditText
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textEmailAddress"
+                        android:ems="10"
+                        android:id="@+id/update_profile_email_input"
+                        android:layout_gravity="center_horizontal"
+                        android:hint="Email"/>
+                <Button
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Update"
+                        android:id="@+id/update_profile_info_button"
+                        android:layout_gravity="center_horizontal"/>
             </LinearLayout>
-            <Button
-                    style="?android:attr/buttonStyleSmall"
-                    android:layout_width="wrap_content"
+            <LinearLayout
+                    android:paddingBottom="@dimen/activity_vertical_margin"
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Update"
-                    android:id="@+id/update_profile_phone_button"
-                    android:layout_gravity="center_horizontal"/>
+                    android:layout_marginLeft="20dp"
+                    android:layout_marginRight="20dp">
+                <LinearLayout
+                        android:orientation="horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="15dp"
+                        android:layout_marginBottom="15dp">
+                    <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent">
+                        <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="?android:attr/textAppearanceSmall"
+                                android:text="@string/registration_country_label"
+                                android:textSize="12sp"/>
+                        <Spinner
+                                android:layout_width="65dp"
+                                android:layout_height="match_parent"
+                                android:spinnerMode="dropdown"
+                                android:id="@+id/update_profile_country_spinner"
+                                android:padding="0dp"/>
+                    </LinearLayout>
+                    <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
+                        <EditText
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="phone"
+                                android:ems="10"
+                                android:id="@+id/update_profile_phone_input"
+                                android:layout_gravity="center_horizontal"
+                                android:hint="@string/registration_phone_hint"
+                                android:layout_marginTop="12dp"/>
+                    </LinearLayout>
+                </LinearLayout>
+                <Button
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Update"
+                        android:id="@+id/update_profile_phone_button"
+                        android:layout_gravity="center_horizontal"/>
+            </LinearLayout>
         </LinearLayout>
-    </LinearLayout>
+    </ScrollView>
 </LinearLayout>

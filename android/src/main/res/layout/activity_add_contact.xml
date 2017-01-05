@@ -49,12 +49,17 @@
                 android:textAppearance="?android:attr/textAppearanceSmall"
                 android:text="@string/search_result_header"
                 android:id="@+id/textView4"/>
-        <LinearLayout
-                android:orientation="vertical"
+        <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" android:id="@+id/add_contact_search_result">
-
-        </LinearLayout>
+                android:layout_height="wrap_content"
+                android:scrollbars="none">
+            <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/add_contact_search_result">
+            </LinearLayout>
+        </ScrollView>
     </LinearLayout>
 
 </LinearLayout>

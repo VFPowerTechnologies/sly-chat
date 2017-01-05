@@ -30,7 +30,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 app:layout_behavior="@string/appbar_scrolling_view_behavior"
-                android:layout_above="@+id/contact_tabs"/>
+                android:layout_above="@+id/blocked_contact_tabs"/>
         <android.support.design.widget.TabLayout
                 android:id="@+id/blocked_contact_tabs"
                 android:layout_width="match_parent"
