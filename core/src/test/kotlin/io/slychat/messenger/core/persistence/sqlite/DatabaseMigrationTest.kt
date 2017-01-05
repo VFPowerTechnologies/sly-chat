@@ -464,4 +464,70 @@ FROM conv_U2
             }
         }
     }
+
+    private data class ContactV18(
+        val id: Long,
+        val email: String,
+        val name: String,
+        val allowedMessageLevel: Int,
+        val publicKey: String
+    )
+
+    //contacts.email[-UNIQUE]
+    @Test
+    fun `migration 17 to 18`() {
+        withTestDatabase(17, 18) { persistenceManager, connection ->
+            check17to18(persistenceManager, connection)
+        }
+    }
+
+    private fun check17to18(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
+        val sql = """
+SELECT
+    id,
+    email,
+    name,
+    allowed_message_level,
+    public_key
+FROM
+    contacts
+"""
+        val expectedContact = ContactV18(1, "a@a.com", "A", 2, "pubkey")
+
+        val contacts = connection.withPrepared(sql) { stmt ->
+            stmt.map {
+                ContactV18(
+                    stmt.columnLong(0),
+                    stmt.columnString(1),
+                    stmt.columnString(2),
+                    stmt.columnInt(3),
+                    stmt.columnString(4)
+                )
+            }
+        }
+
+        assertThat(contacts).apply {
+            describedAs("Contact must be migrated")
+            containsOnly(expectedContact)
+        }
+
+        val insertSQL = """
+INSERT INTO
+    contacts
+    (id, email, name, allowed_message_level, public_key)
+VALUES
+    (?, ?, ?, ?, ?)
+"""
+
+        //shouldn't throw an exception
+        connection.withPrepared(insertSQL) { stmt ->
+            stmt.bind(1, expectedContact.id + 1)
+            stmt.bind(2, expectedContact.email)
+            stmt.bind(3, expectedContact.name)
+            stmt.bind(4, expectedContact.allowedMessageLevel)
+            stmt.bind(5, expectedContact.publicKey)
+
+            stmt.step()
+        }
+    }
 }
