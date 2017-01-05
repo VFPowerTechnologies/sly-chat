@@ -11,6 +11,8 @@ import io.slychat.messenger.core.crypto.hashes.HashParams
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.HttpClient
 import io.slychat.messenger.core.http.HttpResponse
+import io.slychat.messenger.core.http.api.offline.OfflineMessagesGetResponse
+import io.slychat.messenger.core.http.api.offline.SerializedOfflineMessage
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.http.get
 import io.slychat.messenger.core.http.postJSON
@@ -250,5 +252,17 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
 
     fun getLatestVersion(): String {
         return getRequest("/dev/client-version/latest", String::class.java)
+    }
+
+    fun addOfflineMessages(userId: UserId, deviceId: Int, offlineMessages: List<SerializedOfflineMessage>) {
+        val request = mapOf(
+            "offlineMessages" to offlineMessages
+        )
+
+        postRequestNoResponse(request, "/dev/messages/$userId/$deviceId")
+    }
+
+    fun getOfflineMessages(userId: UserId, deviceId: Int): OfflineMessagesGetResponse {
+        return getRequest("/dev/messages/$userId/$deviceId", typeRef())
     }
 }

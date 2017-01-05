@@ -1,8 +1,10 @@
 package io.slychat.messenger.core.integration.web
 
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.contacts.encryptRemoteAddressBookEntries
+import io.slychat.messenger.core.http.api.offline.SerializedOfflineMessage
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.http.api.registration.RegistrationInfo
 import io.slychat.messenger.core.persistence.AddressBookUpdate
@@ -161,6 +163,30 @@ class DevClientTest {
         assertThat(devClient.getPushNotificationTokens(username)).apply {
             describedAs("Should return no tokens after unregistration")
             isEmpty()
+        }
+    }
+
+    @Test
+    fun `offline message functionality should work`() {
+        val fromUser = userManagement.injectNamedSiteUser("a@a.com")
+        val fromUserId = fromUser.user.id
+        val fromDeviceId = devClient.addDevice(fromUser.user.email, defaultRegistrationId, DeviceState.ACTIVE)
+
+        val toUser = userManagement.injectNamedSiteUser("b@a.com")
+        val toUserId = toUser.user.id
+        val toDeviceId = devClient.addDevice(toUser.user.email, defaultRegistrationId, DeviceState.ACTIVE)
+
+        val offlineMessages = (1..3).map {
+            SerializedOfflineMessage(SlyAddress(fromUserId, fromDeviceId), it.toLong(), it.toString())
+        }
+
+        devClient.addOfflineMessages(toUserId, toDeviceId, offlineMessages)
+
+        val receivedOfflineMessages = devClient.getOfflineMessages(toUserId, toDeviceId)
+
+        assertThat(receivedOfflineMessages.messages).apply {
+            describedAs("Should return the stored offline messages")
+            containsExactlyElementsOf(offlineMessages)
         }
     }
 }
