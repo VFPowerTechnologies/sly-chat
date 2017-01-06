@@ -1,12 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#125688</color>
-    <color name="colorPrimaryDark">#125688</color>
+
+    <!--Dark theme color-->
+    <color name="colorPrimary">#111111</color>
+    <color name="colorPrimaryDark">#000000</color>
     <color name="textColorPrimary">#FFFFFF</color>
+    <color name="textColorPrimaryInverse">#000000</color>
+    <color name="textColorSecondary">#EEEEEE</color>
+    <color name="textColorSecondaryInverse">#222222</color>
     <color name="widowBackground">#FFFFFF</color>
     <color name="blackToolBar">#000000</color>
     <color name="navigationBarColor">#000000</color>
-    <color name="colorAccent">#c8e8ff</color>
-    <color name="darkColorAccent">#202020</color>
-    <color name="darkMessageTextColor">#222</color>
+    <color name="colorAccent">#202020</color>
+    <color name="darkColorAccent">#000000</color>
+    <color name="emojiconIcon">#FFFFFF</color>
+    <color name="emojiconTabs">#222222</color>
+    <color name="emojiconBackground">#222222</color>
+
+    <!--Light theme color-->
+    <color name="colorPrimaryInverse">#FB8C00</color>
+    <color name="colorPrimaryDarkInverse">#FB8C00</color>
+    <color name="textColorPrimaryLight">#000000</color>
+    <color name="textColorPrimaryLightInverse">#FFFFFF</color>
+    <color name="textColorSecondaryLight">#222222</color>
+    <color name="textColorSecondaryLightInverse">#eeeeee</color>
+    <color name="colorAccentInverse">#FB8C00</color>
+    <color name="emojiconIconLight">#222222</color>
+    <color name="emojiconTabsLight">#FFFFFF</color>
+    <color name="emojiconBackgroundLight">#FFFFFF</color>
 </resources>

@@ -5,6 +5,11 @@ import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.activites.services.SettingsService
 
 class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
+    companion object {
+        val darkTheme = "dark"
+        val lightTheme = "light"
+    }
+
     data class NotificationConfig(
         var active: Boolean,
         var sound: String?,
@@ -58,7 +63,7 @@ class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
             updateMarketingConfig()
         }
 
-    var selectedTheme: String? = null
+    var selectedTheme: String? = app.appComponent.appConfigService.appearanceTheme
         set(value) {
             field = value
             appearanceConfig.theme = value
@@ -77,8 +82,7 @@ class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
         marketingConfig = MarketingConfig(configService.marketingShowInviteFriends)
         marketingShowInviteFriends = marketingConfig.showInviteFriends
 
-        appearanceConfig = AppearanceConfig(app.appComponent.appConfigService.appearanceTheme)
-        selectedTheme = appearanceConfig.theme
+        appearanceConfig = AppearanceConfig(selectedTheme)
     }
 
     override fun addNotificationConfigListener(listener: (NotificationConfig) -> Unit) {
@@ -134,5 +138,7 @@ class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
                 appearanceTheme = appearanceConfig.theme
             }
         }
+
+        notifyConfigChange(ConfigType.APPEARANCE)
     }
 }

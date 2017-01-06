@@ -7,8 +7,8 @@ import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.AlertDialog
-import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
+import android.util.TypedValue
 import android.view.WindowManager
 import android.view.Menu
 import android.view.MenuItem
@@ -23,6 +23,7 @@ import io.slychat.messenger.android.R
 import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
 import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
 import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
+import io.slychat.messenger.android.activites.services.impl.SettingsServiceImpl
 import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
@@ -35,7 +36,7 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
-class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.OnNavigationItemSelectedListener {
+class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedListener {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
@@ -85,15 +86,7 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
 
         setNavigationMenu()
 
-        val chatInput = findViewById(R.id.chat_input) as EditText
-
-        val rootView = findViewById(R.id.chat_root_view)
-        val emojiButton = findViewById(R.id.chat_emoji_button) as ImageButton
-        val emojiInput = chatInput as EmojiconEditText
-
-        val emojIcon = EmojIconActions(this, rootView, emojiInput, emojiButton, "#ffffff","#222222","#222222")
-        emojIcon.ShowEmojIcon()
-        emojIcon.setIconsIds(R.drawable.ic_keyboard, R.drawable.ic_tag_faces)
+        setupEmojicon()
 
         messengerService = MessengerServiceImpl(this)
         contactService = ContactServiceImpl(this)
@@ -101,6 +94,39 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
 
         getDisplayInfo()
         createEventListeners()
+    }
+
+    private fun setupEmojicon() {
+        val icons: String
+        val tabs: String
+        val bg: String
+        val keyboard: Int
+        val smiley: Int
+        val currentTheme = app.appComponent.appConfigService.appearanceTheme
+
+        if (currentTheme.isNullOrEmpty() || currentTheme == SettingsServiceImpl.darkTheme) {
+            icons = "#FFFFFF"
+            tabs = "#222222"
+            bg = "#222222"
+            smiley = R.drawable.ic_tag_faces
+            keyboard = R.drawable.ic_keyboard
+        }
+        else {
+            icons = "#222222"
+            tabs = "#FFFFFF"
+            bg = "#FFFFFF"
+            smiley = R.drawable.ic_tag_faces_black
+            keyboard = R.drawable.ic_keyboard_black
+        }
+
+        val chatInput = findViewById(R.id.chat_input) as EditText
+        val rootView = findViewById(R.id.chat_root_view)
+        val emojiButton = findViewById(R.id.chat_emoji_button) as ImageButton
+        val emojiInput = chatInput as EmojiconEditText
+
+        val emojIcon = EmojIconActions(this, rootView, emojiInput, emojiButton, icons, tabs, bg)
+        emojIcon.ShowEmojIcon()
+        emojIcon.setIconsIds(keyboard, smiley)
     }
 
     private fun setNavigationMenu() {
@@ -479,11 +505,11 @@ class ChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.
         return true
     }
 
-    override fun setAppActivity() {
+    fun setAppActivity() {
         app.setCurrentActivity(this, true)
     }
 
-    override fun clearAppActivity() {
+    fun clearAppActivity() {
         app.setCurrentActivity(this, false)
     }
 

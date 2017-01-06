@@ -12,7 +12,7 @@ import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
 
-class ProfileActivity : AppCompatActivity() {
+class ProfileActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app : AndroidApp
@@ -26,7 +26,7 @@ class ProfileActivity : AppCompatActivity() {
 
         app = AndroidApp.get(this)
 
-        val actionBar = findViewById(R.id.my_toolbar) as Toolbar
+        val actionBar = findViewById(R.id.profile_toolbar) as Toolbar
         actionBar.title = "Profile"
         setSupportActionBar(actionBar)
 

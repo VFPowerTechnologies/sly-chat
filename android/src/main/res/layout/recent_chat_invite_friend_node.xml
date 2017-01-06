@@ -14,7 +14,9 @@
             android:text="@string/recent_chat_invite_title"
             android:id="@+id/recent_chat_contact_name"
             android:layout_marginStart="5dp"
-            android:textSize="15sp" android:textColor="#707070" android:singleLine="true" android:textStyle="bold"/>
+            android:textSize="15sp"
+            android:singleLine="true"
+            android:textStyle="bold"/>
     <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -23,7 +25,10 @@
             android:layout_below="@+id/recent_chat_contact_name"
             android:layout_alignParentTop="false"
             android:layout_marginStart="5dp"
-            android:textSize="13sp" android:layout_marginTop="5dp" android:maxLines="2" android:paddingEnd="45dp"
+            android:textSize="13sp"
+            android:layout_marginTop="5dp"
+            android:maxLines="2"
+            android:paddingEnd="45dp"
             android:text="@string/recent_chat_invite_text"/>
     <TextView
             android:layout_width="wrap_content"
@@ -33,7 +38,8 @@
             android:id="@+id/recent_chat_contact_time"
             android:layout_alignParentEnd="true"
             android:layout_marginEnd="10dp"
-            android:textSize="12sp" android:layout_centerVertical="true"
+            android:textSize="12sp"
+            android:layout_centerVertical="true"
             android:layout_alignTop="@+id/recent_chat_contact_name"/>
     <LinearLayout
             android:orientation="vertical"
@@ -44,14 +50,15 @@
             android:layout_alignParentEnd="true"
             android:layout_below="@+id/recent_chat_contact_time"
             android:layout_marginEnd="10dp"
-            android:id="@+id/new_message_badge" android:gravity="center">
+            android:id="@+id/new_message_badge"
+            android:gravity="center">
         <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="#fff"
                 android:text=""
-                android:id="@+id/new_message_quantity" android:enabled="false"/>
+                android:id="@+id/new_message_quantity"
+                android:enabled="false"/>
     </LinearLayout>
 
 </RelativeLayout>

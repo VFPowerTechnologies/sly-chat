@@ -22,8 +22,8 @@
             <android.support.v7.widget.Toolbar
                     android:id="@+id/recent_chat_toolbar"
                     android:layout_width="match_parent"
-                    android:layout_height="?attr/actionBarSize"
-                    android:background="#000"/>
+                    app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+                    android:layout_height="?attr/actionBarSize"/>
 
         </android.support.design.widget.AppBarLayout>
 
@@ -52,7 +52,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         tools:context="io.slychat.messenger.android.activites.RecentChatActivity">
-
                 </LinearLayout>
             </ScrollView>
         </RelativeLayout>
@@ -64,7 +63,6 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
                 android:layout_margin="@dimen/fab_margin"
-                app:backgroundTint="#000"
                 android:src="@drawable/ic_people_white_24dp"/>
 
     </android.support.design.widget.CoordinatorLayout>

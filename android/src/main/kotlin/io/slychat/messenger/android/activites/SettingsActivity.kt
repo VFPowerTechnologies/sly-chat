@@ -9,7 +9,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
-import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.util.SparseArray
 import android.view.MenuItem
@@ -27,7 +26,7 @@ import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import java.util.Arrays
 
-class SettingsActivity : AppCompatActivity(), BaseActivityInterface {
+class SettingsActivity: BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     companion object {
@@ -53,7 +52,7 @@ class SettingsActivity : AppCompatActivity(), BaseActivityInterface {
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_settings)
 
-        val actionBar = findViewById(R.id.my_toolbar) as Toolbar
+        val actionBar = findViewById(R.id.setting_toolbar) as Toolbar
         actionBar.title = "Settings"
         setSupportActionBar(actionBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -67,7 +66,7 @@ class SettingsActivity : AppCompatActivity(), BaseActivityInterface {
 
         chooseNotification = findViewById(R.id.settings_choose_notification) as LinearLayout
         darkThemeSwitch = findViewById(R.id.settings_dark_theme_switch) as Switch
-        if (settingsService.selectedTheme == "dark")
+        if (settingsService.selectedTheme == SettingsServiceImpl.darkTheme)
             darkThemeSwitch.isChecked = true
         else
             darkThemeSwitch.isChecked = false
@@ -87,7 +86,15 @@ class SettingsActivity : AppCompatActivity(), BaseActivityInterface {
         }
 
         settingsService.addAppearanceConfigListener {
-            log.debug("Current theme: ${it.theme}")
+            if (it.theme == SettingsServiceImpl.lightTheme)
+                setTheme(R.style.SlyThemeLight)
+            else
+                setTheme(R.style.SlyTheme)
+
+            finishAffinity()
+            val settingsIntent = Intent(baseContext, SettingsActivity::class.java)
+            val recentChatIntent = Intent(baseContext, RecentChatActivity::class.java)
+            startActivities(arrayOf(recentChatIntent, settingsIntent))
         }
     }
 
@@ -106,9 +113,9 @@ class SettingsActivity : AppCompatActivity(), BaseActivityInterface {
 
         darkThemeSwitch.setOnCheckedChangeListener { compoundButton, b ->
             if (b)
-                settingsService.selectedTheme = "dark"
+                settingsService.selectedTheme = SettingsServiceImpl.darkTheme
             else
-                settingsService.selectedTheme = "light"
+                settingsService.selectedTheme = SettingsServiceImpl.lightTheme
         }
 
         inviteSwitch.setOnCheckedChangeListener { compoundButton, b ->
@@ -207,11 +214,11 @@ class SettingsActivity : AppCompatActivity(), BaseActivityInterface {
         return super.onOptionsItemSelected(item)
     }
 
-    override fun setAppActivity() {
+    fun setAppActivity() {
         app.setCurrentActivity(this, true)
     }
 
-    override fun clearAppActivity() {
+    fun clearAppActivity() {
         app.setCurrentActivity(this, false)
     }
 

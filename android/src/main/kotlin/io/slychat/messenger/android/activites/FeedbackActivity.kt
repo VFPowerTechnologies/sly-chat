@@ -13,7 +13,7 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
-class FeedbackActivity : AppCompatActivity() {
+class FeedbackActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var mSubmitBtn : Button
@@ -33,7 +33,7 @@ class FeedbackActivity : AppCompatActivity() {
     private fun init () {
         app = AndroidApp.get(this)
 
-        val actionBar = findViewById(R.id.my_toolbar) as Toolbar
+        val actionBar = findViewById(R.id.feedback_toolbar) as Toolbar
         actionBar.title = "Feedback"
         setSupportActionBar(actionBar)
 

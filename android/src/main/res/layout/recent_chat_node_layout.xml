@@ -14,7 +14,6 @@
             android:id="@+id/recent_chat_contact_name"
             android:layout_marginStart="5dp"
             android:textSize="15sp"
-            android:textColor="#707070"
             android:singleLine="true"
             android:textStyle="bold"/>
     <TextView
@@ -56,7 +55,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="#fff"
                 android:text=""
                 android:id="@+id/new_message_quantity"
                 android:enabled="false"/>

@@ -20,7 +20,7 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import java.util.*
 
-class UpdateProfileActivity: AppCompatActivity() {
+class UpdateProfileActivity: BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var accountService : AccountServiceImpl

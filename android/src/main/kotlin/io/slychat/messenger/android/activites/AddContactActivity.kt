@@ -19,7 +19,7 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
-class AddContactActivity : AppCompatActivity() {
+class AddContactActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
     private lateinit var contactService: ContactServiceImpl
 
@@ -36,7 +36,7 @@ class AddContactActivity : AppCompatActivity() {
 
         contactService = ContactServiceImpl(this)
 
-        val actionBar = findViewById(R.id.my_toolbar) as Toolbar
+        val actionBar = findViewById(R.id.add_contact_toolbar) as Toolbar
         actionBar.title = "Add Contact"
         setSupportActionBar(actionBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)

@@ -22,7 +22,7 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
-class ContactActivity : AppCompatActivity() {
+class ContactActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app : AndroidApp

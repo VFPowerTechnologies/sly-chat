@@ -15,13 +15,17 @@
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:text="Update Phone Number"
-            android:id="@+id/update_phone_page_title" android:layout_gravity="left" android:layout_marginBottom="24dp"/>
+            android:id="@+id/update_phone_page_title"
+            android:layout_gravity="end"
+            android:layout_marginBottom="24dp"/>
     <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="phone"
             android:ems="10"
-            android:id="@+id/update_phone_phone_field" android:layout_gravity="center_horizontal" android:hint="Phone Number"/>
+            android:id="@+id/update_phone_phone_field"
+            android:layout_gravity="center_horizontal"
+            android:hint="Phone Number"/>
     <android.support.v7.widget.AppCompatButton
             android:id="@+id/update_phone_submit_btn"
             android:layout_width="fill_parent"
@@ -37,7 +41,7 @@
               android:layout_marginBottom="24dp"
               android:text="Received Your Code?  Go Back"
               android:gravity="center"
-              android:textSize="16dip"/>
+              android:textSize="16sp"/>
 
     <TextView android:id="@+id/update_phone_login_link"
               android:layout_width="fill_parent"
@@ -45,5 +49,5 @@
               android:layout_marginBottom="24dp"
               android:text="Cancel? Back To Login"
               android:gravity="center"
-              android:textSize="16dip"/>
+              android:textSize="16sp"/>
 </LinearLayout>

@@ -17,8 +17,10 @@
                 android:layout_height="match_parent"
                 android:textAppearance="?android:attr/textAppearanceSmall"
                 android:text=""
-                android:id="@+id/group_node_initial" android:layout_gravity="center_horizontal"
-                android:gravity="center" android:textSize="20sp"/>
+                android:id="@+id/group_node_initial"
+                android:layout_gravity="center_horizontal"
+                android:gravity="center"
+                android:textSize="20sp"/>
     </LinearLayout>
     <LinearLayout
             android:orientation="vertical"

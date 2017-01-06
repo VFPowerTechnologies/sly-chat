@@ -29,7 +29,8 @@
                     android:layout_width="150dp"
                     android:layout_height="150dp"
                     android:id="@+id/splashLogo"
-                    android:background="@drawable/ic_launcher" android:layout_gravity="bottom"/>
+                    android:background="@drawable/ic_launcher"
+                    android:layout_gravity="bottom"/>
         </LinearLayout>
 
         <LinearLayout
@@ -41,8 +42,11 @@
                     android:layout_height="72dp"
                     android:text="Encrypted."
                     android:id="@+id/textView"
-                    android:gravity="center_horizontal" android:layout_gravity="center_horizontal|bottom"
-                    android:textSize="50dp" android:fontFamily="serif" android:layout_marginBottom="5dp"/>
+                    android:gravity="center_horizontal"
+                    android:layout_gravity="center_horizontal|bottom"
+                    android:textSize="50sp"
+                    android:fontFamily="serif"
+                    android:layout_marginBottom="5dp"/>
         </LinearLayout>
 
     </LinearLayout>

@@ -6,7 +6,6 @@ import android.support.design.widget.FloatingActionButton
 import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
-import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.view.WindowManager
 import android.view.LayoutInflater
@@ -14,14 +13,11 @@ import android.view.View
 import android.view.Menu
 import android.view.MenuItem
 import android.view.Gravity
-import android.widget.ArrayAdapter
-import android.widget.ListView
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
-import android.widget.AdapterView.OnItemClickListener
 import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
 import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
@@ -37,7 +33,7 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import rx.Subscription
 
-class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, NavigationView.OnNavigationItemSelectedListener {
+class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelectedListener {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
@@ -324,12 +320,12 @@ class RecentChatActivity : AppCompatActivity(), BaseActivityInterface, Navigatio
         app.dispatchEvent("PageChange", PageType.CONTACTS, "")
     }
 
-    override fun setAppActivity() {
+    fun setAppActivity() {
         log.debug("set ui visible")
         app.setCurrentActivity(this, true)
     }
 
-    override fun clearAppActivity() {
+    fun clearAppActivity() {
         log.debug("set ui hidden")
         app.setCurrentActivity(this, false)
     }

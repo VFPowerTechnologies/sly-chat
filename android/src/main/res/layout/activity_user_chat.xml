@@ -22,8 +22,8 @@
             <android.support.v7.widget.Toolbar
                     android:id="@+id/chat_toolbar"
                     android:layout_width="match_parent"
-                    android:layout_height="?attr/actionBarSize"
-                    android:background="#000"/>
+                    app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+                    android:layout_height="?attr/actionBarSize"/>
 
         </android.support.design.widget.AppBarLayout>
 
@@ -54,14 +54,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_alignParentBottom="true"
-                    android:background="@drawable/chat_input_bg"
+                    android:background="?attr/themedChatInputColor"
                     android:id="@+id/chat_input_container">
                 <ImageButton
                         android:id="@+id/expire_chat_btn"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight=".1"
-                        android:src="@drawable/smiley"
+                        android:src="?attr/themedChatBombButton"
                         android:background="@null"
                         android:paddingStart="5dp"
                         android:layout_gravity="center_vertical"/>
@@ -82,7 +82,7 @@
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight=".1"
-                        android:src="@drawable/ic_tag_faces"
+                        android:src="?attr/themedChatEmojiButton"
                         android:background="@null"
                         android:layout_gravity="center_vertical"/>
                 <ImageButton
@@ -90,7 +90,7 @@
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight=".1"
-                        android:src="@drawable/ic_send_white"
+                        android:src="?attr/themedChatSubmitButton"
                         android:background="@null"
                         android:layout_gravity="center_vertical"/>
             </LinearLayout>

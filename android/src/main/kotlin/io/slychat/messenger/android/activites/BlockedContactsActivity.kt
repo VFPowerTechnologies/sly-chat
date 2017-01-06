@@ -16,7 +16,7 @@ import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
 import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
 import org.slf4j.LoggerFactory
 
-class BlockedContactsActivity : AppCompatActivity() {
+class BlockedContactsActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app : AndroidApp

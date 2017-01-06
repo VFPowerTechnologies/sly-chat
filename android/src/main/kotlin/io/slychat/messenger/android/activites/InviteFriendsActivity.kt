@@ -2,7 +2,6 @@ package io.slychat.messenger.android.activites
 
 import android.content.Intent
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.view.MenuItem
 import android.view.WindowManager
@@ -12,7 +11,7 @@ import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
 
-class InviteFriendsActivity : AppCompatActivity(), BaseActivityInterface {
+class InviteFriendsActivity: BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var inviteFriendsBtn : Button
@@ -26,7 +25,7 @@ class InviteFriendsActivity : AppCompatActivity(), BaseActivityInterface {
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_invite_friends)
 
-        val actionBar = findViewById(R.id.my_toolbar) as Toolbar
+        val actionBar = findViewById(R.id.invite_friends_toolbar) as Toolbar
         actionBar.title = "Invite Friends"
         setSupportActionBar(actionBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -69,11 +68,11 @@ class InviteFriendsActivity : AppCompatActivity(), BaseActivityInterface {
         return super.onOptionsItemSelected(item)
     }
 
-    override fun setAppActivity() {
+    fun setAppActivity() {
         app.setCurrentActivity(this, true)
     }
 
-    override fun clearAppActivity() {
+    fun clearAppActivity() {
         app.setCurrentActivity(this, false)
     }
 

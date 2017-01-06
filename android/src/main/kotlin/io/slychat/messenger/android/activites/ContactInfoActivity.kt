@@ -1,7 +1,6 @@
 package io.slychat.messenger.android.activites
 
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.view.MenuItem
 import android.view.WindowManager
@@ -10,7 +9,7 @@ import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
 
-class ContactInfoActivity : AppCompatActivity(), BaseActivityInterface {
+class ContactInfoActivity: BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app : AndroidApp
@@ -35,7 +34,7 @@ class ContactInfoActivity : AppCompatActivity(), BaseActivityInterface {
         contactEmail = intent.extras["EXTRA_USER_EMAIL"] as String
 
 
-        val actionBar = findViewById(R.id.my_toolbar) as Toolbar
+        val actionBar = findViewById(R.id.contact_info_toolbar) as Toolbar
         actionBar.title = "Profile"
         setSupportActionBar(actionBar)
 
@@ -67,12 +66,12 @@ class ContactInfoActivity : AppCompatActivity(), BaseActivityInterface {
         publicKeyVal?.text = contactPubKey
     }
 
-    override fun setAppActivity() {
+    fun setAppActivity() {
         log.debug("set ui visible")
         app.setCurrentActivity(this, true)
     }
 
-    override fun clearAppActivity() {
+    fun clearAppActivity() {
         log.debug("set ui hidden")
         app.setCurrentActivity(this, false)
     }
