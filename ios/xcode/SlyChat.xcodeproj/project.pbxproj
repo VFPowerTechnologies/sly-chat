@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A11D8D91E202D5A00B38DAC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 0A11D8D71E202D5A00B38DAC /* Localizable.strings */; };
 		0A1A009C1DE4D2F700C9EC7E /* libcrypto.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A1C9B7F1DE4CD6B008332C8 /* libcrypto.a */; };
 		0A1A009D1DE4D2F700C9EC7E /* libsqlcipher.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A1C9B801DE4CD6B008332C8 /* libsqlcipher.a */; };
 		0A3FA06C1DE5DC800019BF8D /* sly-logger.properties in Resources */ = {isa = PBXBuildFile; fileRef = 0A3FA06B1DE5DC800019BF8D /* sly-logger.properties */; };
@@ -52,6 +53,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0A11D8D81E202D5A00B38DAC /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Localizable.strings; sourceTree = "<group>"; };
 		0A1C9B7F1DE4CD6B008332C8 /* libcrypto.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libcrypto.a; sourceTree = SOURCE_ROOT; };
 		0A1C9B801DE4CD6B008332C8 /* libsqlcipher.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libsqlcipher.a; sourceTree = SOURCE_ROOT; };
 		0A3FA06B1DE5DC800019BF8D /* sly-logger.properties */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "sly-logger.properties"; sourceTree = "<group>"; };
@@ -96,6 +98,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0A11D8D61E202C8A00B38DAC /* en.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				0A11D8D71E202D5A00B38DAC /* Localizable.strings */,
+			);
+			path = en.lproj;
+			sourceTree = "<group>";
+		};
 		7A9A30082C1BD3D7B5063643 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
@@ -131,6 +141,7 @@
 		EC139B36DEC1F69208FDF599 /* SlyChat */ = {
 			isa = PBXGroup;
 			children = (
+				0A11D8D61E202C8A00B38DAC /* en.lproj */,
 				0A5F144D1E0814010054FE33 /* Sly.entitlements */,
 				0AFD69381DF8871900CEA55E /* LaunchScreen.storyboard */,
 				F2BDF187468EA315B76A1525 /* Supporting Files */,
@@ -236,6 +247,7 @@
 			knownRegions = (
 				en,
 				Base,
+				"zh-Hant",
 			);
 			mainGroup = E9B09DE2958AFC45E9088D39;
 			productRefGroup = FD5DAB105875B3B331A67C44 /* Products */;
@@ -266,6 +278,7 @@
 				0A4799021DE5FC5C00FA76B2 /* ui in Resources */,
 				B727F6D48DCE73F84B76D21E /* preregister.txt in Resources */,
 				0A3FA06C1DE5DC800019BF8D /* sly-logger.properties in Resources */,
+				0A11D8D91E202D5A00B38DAC /* Localizable.strings in Resources */,
 				0AFD69391DF8871900CEA55E /* LaunchScreen.storyboard in Resources */,
 				0AFD693B1DF8872C00CEA55E /* Assets.xcassets in Resources */,
 				8CC77DF9149A699ADB7C9560 /* application.jar in Resources */,
@@ -323,6 +336,17 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		0A11D8D71E202D5A00B38DAC /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				0A11D8D81E202D5A00B38DAC /* en */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		2F7BA28C4002B496CB0A7092 /* Release */ = {
