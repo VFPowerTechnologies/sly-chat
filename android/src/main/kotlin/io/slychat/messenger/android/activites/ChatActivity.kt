@@ -8,7 +8,6 @@ import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.AlertDialog
 import android.support.v7.widget.Toolbar
-import android.util.TypedValue
 import android.view.WindowManager
 import android.view.Menu
 import android.view.MenuItem
@@ -43,6 +42,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     private lateinit var messengerService: MessengerServiceImpl
     private lateinit var contactService: ContactServiceImpl
     private lateinit var groupService: GroupServiceImpl
+    private lateinit var settingsService: SettingsServiceImpl
 
     private lateinit var contactInfo: ContactInfo
     private lateinit var groupInfo: GroupInfo
@@ -51,6 +51,9 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private lateinit var conversationId: ConversationId
     private var chatDataLink: MutableMap<String, Int> = mutableMapOf()
+
+    private var expireToggled = false
+    private var expireDelay: Long? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,6 +94,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         messengerService = MessengerServiceImpl(this)
         contactService = ContactServiceImpl(this)
         groupService = GroupServiceImpl(this)
+        settingsService = SettingsServiceImpl(this)
 
         getDisplayInfo()
         createEventListeners()
@@ -181,9 +185,30 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun createEventListeners() {
         val submitBtn = findViewById(R.id.submit_chat_btn) as ImageButton
+        val expireBtn = findViewById(R.id.expire_chat_btn) as ImageButton
+        val expireSlider = findViewById(R.id.expiration_slider) as SeekBar
+
         submitBtn.setOnClickListener {
             handleNewMessageSubmit()
         }
+
+        expireBtn.setOnClickListener {
+            handleExpireMessageToggle()
+        }
+
+        expireSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                setExpireDelay(seekBar.progress.toLong())
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                setExpireDelay(seekBar.progress.toLong())
+            }
+
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                setExpireDelay(progress.toLong())
+            }
+        })
     }
 
     private fun init() {
@@ -206,6 +231,44 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             else
                 displayMessages(messages)
         }
+    }
+
+    private fun handleExpireMessageToggle() {
+        if (expireDelay == null)
+            expireDelay = settingsService.getLastMessageTtl()
+
+        if (expireToggled)
+            hideExpirationSlider()
+        else
+            showExpirationSlider()
+    }
+
+    private fun showExpirationSlider() {
+        val expireSlider = findViewById(R.id.expiration_slider) as SeekBar
+        val expirationSliderContainer = findViewById(R.id.expiration_slider_container)
+
+        var delay = expireDelay
+        if (delay == null)
+            delay = 5000
+
+        expireSlider.progress = delay.toInt() / 1000
+        setExpireDelay(delay / 1000)
+
+        expirationSliderContainer.visibility = View.VISIBLE
+        expireToggled = true
+    }
+
+    private fun setExpireDelay(delay: Long) {
+        expireDelay = delay * 1000
+
+        val expirationDelay = findViewById(R.id.expiration_delay) as TextView
+        expirationDelay.text = "Self Destruct: $delay seconds"
+    }
+
+    private fun hideExpirationSlider() {
+        val expirationSliderContainer = findViewById(R.id.expiration_slider_container)
+        expirationSliderContainer.visibility = View.GONE
+        expireToggled = false
     }
 
     private fun displayMessages(messages: List<ConversationMessageInfo>) {
@@ -258,12 +321,19 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun handleNewMessageSubmit() {
+        var ttl = 0L
         val chatInput = findViewById(R.id.chat_input) as EditText
         val messageValue = chatInput.text.toString()
         if(messageValue.isEmpty())
             return
 
-        messengerService.sendMessageTo(conversationId, messageValue, 0) successUi {
+        val delay = expireDelay
+        if (expireToggled && delay != null) {
+            ttl = delay
+            settingsService.setLastMessageTtl(ttl)
+        }
+
+        messengerService.sendMessageTo(conversationId, messageValue, ttl) successUi {
             chatInput.setText("")
         } failUi {
             log.debug("Send message failed", it.stackTrace)
@@ -278,7 +348,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun onNewMessage(newMessageInfo: ConversationMessage) {
-        log.debug("Message Received \n\n\n\n\n")
         val cId = newMessageInfo.conversationId
         if (cId == conversationId) {
             handleNewMessageDisplay(newMessageInfo)

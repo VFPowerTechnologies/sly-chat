@@ -50,49 +50,75 @@
                 </ScrollView>
             </LinearLayout>
             <LinearLayout
-                    android:orientation="horizontal"
+                    android:orientation="vertical"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_alignParentBottom="true"
-                    android:background="?attr/themedChatInputColor"
-                    android:id="@+id/chat_input_container">
-                <ImageButton
-                        android:id="@+id/expire_chat_btn"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight=".1"
-                        android:src="?attr/themedChatBombButton"
-                        android:background="@null"
-                        android:paddingStart="5dp"
-                        android:layout_gravity="center_vertical"/>
-                <hani.momanii.supernova_emoji_library.Helper.EmojiconEditText
-                        android:layout_width="0dp"
+                    android:id="@+id/chat_input_container"
+                    android:background="?attr/themedChatInputColor">
+                <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:id="@+id/chat_input"
-                        android:hint="@string/chat_input_hint"
-                        android:background="@android:color/transparent"
-                        android:inputType="text|textMultiLine"
-                        android:layout_weight="1"
-                        android:paddingStart="15dp"
-                        android:paddingEnd="15dp"
-                        android:minHeight="50dp"
-                        android:maxHeight="100dp"/>
-                <ImageButton
-                        android:id="@+id/chat_emoji_button"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight=".1"
-                        android:src="?attr/themedChatEmojiButton"
-                        android:background="@null"
-                        android:layout_gravity="center_vertical"/>
-                <ImageButton
-                        android:id="@+id/submit_chat_btn"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight=".1"
-                        android:src="?attr/themedChatSubmitButton"
-                        android:background="@null"
-                        android:layout_gravity="center_vertical"/>
+                        android:id="@+id/expiration_slider_container"
+                        android:visibility="gone"
+                        android:orientation="vertical">
+                    <SeekBar
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_horizontal"
+                            android:id="@+id/expiration_slider"
+                            android:max="120"
+                            android:layout_marginTop="5dp"/>
+                    <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="?android:attr/textAppearanceSmall"
+                            android:id="@+id/expiration_delay"
+                            android:layout_gravity="end"
+                            android:layout_marginEnd="16dp"/>
+                </LinearLayout>
+                <LinearLayout
+                        android:orientation="horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                    <ImageButton
+                            android:id="@+id/expire_chat_btn"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight=".1"
+                            android:src="?attr/themedChatBombButton"
+                            android:background="@null"
+                            android:paddingStart="5dp"
+                            android:layout_gravity="center_vertical"/>
+                    <hani.momanii.supernova_emoji_library.Helper.EmojiconEditText
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/chat_input"
+                            android:hint="@string/chat_input_hint"
+                            android:background="@android:color/transparent"
+                            android:inputType="text|textMultiLine"
+                            android:layout_weight="1"
+                            android:paddingStart="15dp"
+                            android:paddingEnd="15dp"
+                            android:minHeight="50dp"
+                            android:maxHeight="100dp"/>
+                    <ImageButton
+                            android:id="@+id/chat_emoji_button"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight=".1"
+                            android:src="?attr/themedChatEmojiButton"
+                            android:background="@null"
+                            android:layout_gravity="center_vertical"/>
+                    <ImageButton
+                            android:id="@+id/submit_chat_btn"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight=".1"
+                            android:src="?attr/themedChatSubmitButton"
+                            android:background="@null"
+                            android:layout_gravity="center_vertical"/>
+                </LinearLayout>
             </LinearLayout>
         </RelativeLayout>
     </LinearLayout>

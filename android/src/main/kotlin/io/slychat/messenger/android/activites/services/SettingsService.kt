@@ -13,4 +13,8 @@ interface SettingsService {
     fun clearConfigListener()
 
     fun getShowInviteEnabled(): Boolean
+
+    fun getLastMessageTtl(): Long
+
+    fun setLastMessageTtl(ttl: Long)
 }

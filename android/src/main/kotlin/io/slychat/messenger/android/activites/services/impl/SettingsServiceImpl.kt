@@ -107,6 +107,16 @@ class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
         return configService.marketingShowInviteFriends
     }
 
+    override fun getLastMessageTtl(): Long {
+        return configService.messagingLastTtl
+    }
+
+    override fun setLastMessageTtl(ttl: Long) {
+        configService.withEditor {
+            messagingLastTtl = ttl
+        }
+    }
+
     private fun notifyConfigChange(type: ConfigType) {
         when (type) {
             ConfigType.NOTIFICATION -> { notificationListener?.invoke(notificationConfig) }
