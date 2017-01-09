@@ -11,6 +11,7 @@ import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResourc
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
 import io.slychat.messenger.desktop.jna.CLibrary
 import io.slychat.messenger.desktop.services.*
+import io.slychat.messenger.desktop.ui.SplashImage
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.PlatformModule
@@ -19,6 +20,7 @@ import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
 import javafx.animation.FadeTransition
 import javafx.application.Application
 import javafx.application.Platform
+import javafx.scene.Node
 import javafx.scene.Scene
 import javafx.scene.control.Alert
 import javafx.scene.control.MenuBar
@@ -29,8 +31,6 @@ import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCodeCombination
 import javafx.scene.input.KeyCombination
 import javafx.scene.layout.StackPane
-import javafx.scene.paint.Color
-import javafx.scene.shape.Rectangle
 import javafx.scene.web.WebEngine
 import javafx.scene.web.WebView
 import javafx.stage.Screen
@@ -43,18 +43,6 @@ import rx.schedulers.JavaFxScheduler
 import rx.subjects.BehaviorSubject
 import javax.crypto.Cipher
 
-inline fun <R> timeIt(tag: String, body: () -> R): R {
-    val start = System.nanoTime()
-
-    val r = body()
-
-    val took = System.nanoTime() - start
-
-    println("$tag took ${took / 1000000}ms")
-
-    return r
-}
-
 class DesktopApp : Application() {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -62,7 +50,7 @@ class DesktopApp : Application() {
     private lateinit var stage: Stage
     private lateinit var webView: WebView
     private lateinit var stackPane: StackPane
-    private var loadingScreen: Rectangle? = null
+    private var loadingScreen: Node? = null
 
     private val windowService = DesktopUIWindowService(null)
     private val uiVisibility = BehaviorSubject.create<Boolean>(false)
@@ -238,11 +226,9 @@ class DesktopApp : Application() {
 
         registerCoreServicesOnDispatcher(dispatcher, appComponent)
 
-        //TODO loading screen
-        val loadingScreen = Rectangle()
-        loadingScreen.fill = Color.BLACK
-        loadingScreen.heightProperty().bind(primaryStage.heightProperty())
-        loadingScreen.widthProperty().bind(primaryStage.widthProperty())
+        val splashImage = Image("/icon_512x512.png")
+
+        val loadingScreen = SplashImage(splashImage)
         stackPane.children.add(loadingScreen)
         this.loadingScreen = loadingScreen
 
@@ -313,7 +299,10 @@ class DesktopApp : Application() {
             return
         }
 
-        val fade = FadeTransition(Duration.millis(1000.0), node)
+        loadingScreen = null
+
+        val fade = FadeTransition(Duration.millis(600.0), node)
+
         fade.fromValue = 1.0
         fade.toValue = 0.0
 
