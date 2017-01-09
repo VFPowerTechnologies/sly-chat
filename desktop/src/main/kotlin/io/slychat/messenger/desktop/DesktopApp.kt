@@ -39,10 +39,21 @@ import javafx.util.Duration
 import nl.komponents.kovenant.jfx.JFXDispatcher
 import nl.komponents.kovenant.ui.KovenantUi
 import org.slf4j.LoggerFactory
-import rx.Observable
 import rx.schedulers.JavaFxScheduler
 import rx.subjects.BehaviorSubject
 import javax.crypto.Cipher
+
+inline fun <R> timeIt(tag: String, body: () -> R): R {
+    val start = System.nanoTime()
+
+    val r = body()
+
+    val took = System.nanoTime() - start
+
+    println("$tag took ${took / 1000000}ms")
+
+    return r
+}
 
 class DesktopApp : Application() {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -52,6 +63,9 @@ class DesktopApp : Application() {
     private lateinit var webView: WebView
     private lateinit var stackPane: StackPane
     private var loadingScreen: Rectangle? = null
+
+    private val windowService = DesktopUIWindowService(null)
+    private val uiVisibility = BehaviorSubject.create<Boolean>(false)
 
     /** Enable the (hidden) debugger WebEngine feature */
     private fun enableDebugger(engine: WebEngine) {
@@ -109,23 +123,15 @@ class DesktopApp : Application() {
         primaryStage.centerOnScreen()
     }
 
-    override fun start(primaryStage: Stage) {
-        //libsignal requires AES256 for message encryption+decryption
-        if (isRestrictedCryptography()) {
-            val alert = Alert(Alert.AlertType.ERROR)
-            alert.title = "Unable to start Sly Chat"
-            alert.headerText = "An error occurred during initialization."
-            alert.contentText = "Restricted JCE policy detected. Please install Unlimited Strength Jurisdiction Policy Files from Oracle."
-            alert.showAndWait()
-            Platform.exit()
+    override fun init() {
+        //this'll be checked again in start() and it'll display an error
+        if (isRestrictedCryptography())
             return
-        }
-
-        stage = primaryStage
 
         KovenantUi.uiContext {
             dispatcher = JFXDispatcher.instance
         }
+
         javaClass.loadSQLiteLibraryFromResources()
 
         val platformInfo = DesktopPlatformInfo()
@@ -156,16 +162,6 @@ class DesktopApp : Application() {
             }
         }
 
-        val uiVisibility = BehaviorSubject.create<Boolean>(!stage.isIconified)
-
-        stage.focusedProperty().addListener { o, oldV, newV ->
-            uiVisibility.onNext(newV)
-        }
-
-        stage.iconifiedProperty().addListener { o, oldV, newV ->
-            uiVisibility.onNext(!newV)
-        }
-
         val desktopNotificationService = DesktopNotificationService(
             JfxAudioPlayback(),
             JfxNotificationDisplay()
@@ -176,7 +172,7 @@ class DesktopApp : Application() {
             SlyBuildConfig.DESKTOP_SERVER_URLS,
             platformInfo,
             DesktopTelephonyService(),
-            DesktopUIWindowService(primaryStage),
+            windowService,
             DesktopPlatformContacts(),
             desktopNotificationService,
             DesktopUIShareService(),
@@ -191,8 +187,37 @@ class DesktopApp : Application() {
         )
 
         app.init(platformModule)
+
         desktopNotificationService.init(app.userSessionAvailable)
+
         app.isInBackground = false
+    }
+
+    override fun start(primaryStage: Stage) {
+        //libsignal requires AES256 for message encryption+decryption
+        if (isRestrictedCryptography()) {
+            val alert = Alert(Alert.AlertType.ERROR)
+            alert.title = "Unable to start Sly Chat"
+            alert.headerText = "An error occurred during initialization."
+            alert.contentText = "Restricted JCE policy detected. Please install Unlimited Strength Jurisdiction Policy Files from Oracle."
+            alert.showAndWait()
+            Platform.exit()
+            return
+        }
+
+        stage = primaryStage
+
+        windowService.stage = stage
+
+        uiVisibility.onNext(!stage.isIconified)
+
+        stage.focusedProperty().addListener { o, oldV, newV ->
+            uiVisibility.onNext(newV)
+        }
+
+        stage.iconifiedProperty().addListener { o, oldV, newV ->
+            uiVisibility.onNext(!newV)
+        }
 
         val appComponent = app.appComponent
 
@@ -256,9 +281,6 @@ class DesktopApp : Application() {
         ))
 
         tk.setGlobalMenuBar(appMenuBar)
-    }
-
-    private fun onUserSessionCreated() {
     }
 
     override fun stop() {
