@@ -776,13 +776,13 @@ class SlyApplication {
             reconnectionTimerSubscription = null
         }
 
+        this.userComponent = null
+
         //notify listeners before tearing down session
         userSessionAvailableSubject.onNext(null)
 
         //TODO shutdown stuff; probably should return a promise
         deinitializeUserSession(userComponent)
-
-        this.userComponent = null
 
         Sentry.setUserAddress(null)
 
