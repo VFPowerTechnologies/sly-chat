@@ -17,6 +17,9 @@ import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.ui.createAppDirectories
+import io.slychat.messenger.services.ui.js.NavigationService
+import io.slychat.messenger.services.ui.js.getNavigationPageSettings
+import io.slychat.messenger.services.ui.js.javatojs.NavigationServiceToJSProxy
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
 import javafx.animation.FadeTransition
 import javafx.application.Application
@@ -32,6 +35,7 @@ import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCodeCombination
 import javafx.scene.input.KeyCombination
 import javafx.scene.input.KeyEvent
+import javafx.scene.layout.Pane
 import javafx.scene.layout.StackPane
 import javafx.scene.web.WebEngine
 import javafx.scene.web.WebView
@@ -50,14 +54,15 @@ class DesktopApp : Application() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val app: SlyApplication = SlyApplication()
+
     private var stage: Stage? = null
     //only used on osx
     private var prefsItem: MenuItem? = null
-    private lateinit var webView: WebView
-    private lateinit var stackPane: StackPane
     private var loadingScreen: Node? = null
 
+    private var dispatcher: Dispatcher? = null
     private val windowService = DesktopUIWindowService(null)
+    private var navigationService: NavigationService? = null
     private val uiVisibility = BehaviorSubject.create<Boolean>(false)
 
     private val keyBindings = ArrayList<KeyBinding>()
@@ -218,9 +223,9 @@ class DesktopApp : Application() {
 
         val appComponent = app.appComponent
 
-        stackPane = StackPane()
+        val stackPane = StackPane()
 
-        webView = WebView()
+        val webView = WebView()
         stackPane.children.add(webView)
 
         webView.isContextMenuEnabled = false
@@ -232,6 +237,7 @@ class DesktopApp : Application() {
         val webEngineInterface = JFXWebEngineInterface(engine)
 
         val dispatcher = Dispatcher(webEngineInterface)
+        this.dispatcher = dispatcher
 
         registerCoreServicesOnDispatcher(dispatcher, appComponent)
 
@@ -241,6 +247,7 @@ class DesktopApp : Application() {
         stackPane.children.add(loadingScreen)
         this.loadingScreen = loadingScreen
 
+        //TODO refresh prefs
         app.addOnInitListener {
             engine.load(javaClass.getResource("/ui/index.html").toExternalForm())
         }
@@ -254,6 +261,8 @@ class DesktopApp : Application() {
         initializeWindowPosition(primaryStage)
         primaryStage.show()
 
+        primaryStage.setOnHidden { onWindowClosed() }
+
         primaryStage.addEventHandler(KeyEvent.KEY_RELEASED) { event ->
             handleKeyEvent(event)
         }
@@ -261,10 +270,22 @@ class DesktopApp : Application() {
         osxSetup()
     }
 
-    private fun onUserSessionAvailable(userComponent: UserComponent?) {
-        val prefsItem = this.prefsItem ?: return
+    private fun onWindowClosed() {
+        stage = null
+        dispatcher = null
+        navigationService = null
+    }
 
-        prefsItem.isDisable = userComponent == null
+    private fun updatePrefsState() {
+        prefsItem?.isDisable = !isPrefsAvailable()
+    }
+
+    private fun isPrefsAvailable(): Boolean {
+        return navigationService != null && app.userComponent != null
+    }
+
+    private fun onUserSessionAvailable(userComponent: UserComponent?) {
+        updatePrefsState()
     }
 
     private fun handleKeyEvent(event: KeyEvent) {
@@ -326,7 +347,10 @@ class DesktopApp : Application() {
 
         val prefsItem = MenuItem("Preferences")
         prefsItem.accelerator = KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN)
-        prefsItem.isDisable = app.userComponent == null
+        prefsItem.isDisable = isPrefsAvailable()
+        prefsItem.setOnAction {
+            navigationService?.goTo(getNavigationPageSettings())
+        }
         appMenu.items.addAll(1, listOf(
             SeparatorMenuItem(),
             prefsItem,
@@ -363,7 +387,7 @@ class DesktopApp : Application() {
 
     fun uiLoadComplete() {
         val node = loadingScreen
-        if (loadingScreen == null) {
+        if (node == null) {
             log.warn("Attempted to hide splash screen twice!")
             return
         }
@@ -378,7 +402,11 @@ class DesktopApp : Application() {
         fade.play()
 
         fade.setOnFinished {
-            stackPane.children.remove(node)
+            (node.parent as Pane).children.remove(node)
         }
+
+        //will never be null here
+        navigationService = NavigationServiceToJSProxy(dispatcher!!)
+        updatePrefsState()
     }
 }
