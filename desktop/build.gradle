@@ -37,6 +37,7 @@ dependencies {
 
     //required on osx only
     compile "de.codecentric.centerdevice:centerdevice-nsmenufx:$versions.nsMenuFx"
+    compile "ca.weblite:java-objc-bridge:$versions.javaObjcBridge"
 }
 
 //jna currently doesn't work on linux when using javapacker (segfaults when attempting to load any libraries)
