@@ -46,6 +46,20 @@
     margin-bottom: 48px;
 }
 
+.expire-message-toggled #chat-content {
+    margin-bottom: 90px;
+}
+
+#newMessageInputDiv {
+    border-top: none;
+}
+.bottom-chat-toolbar .toolbar-inner {
+    border-top: 1px solid #b9b9b9;
+}
+#delaySliderContainer {
+    margin-top: 10px;
+}
+
 .blocked-contact-tabbar .tab-link {
     color: #222;
 }
