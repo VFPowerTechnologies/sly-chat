@@ -15,6 +15,7 @@ import io.slychat.messenger.desktop.ui.SplashImage
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.PlatformModule
+import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.ui.createAppDirectories
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
 import javafx.animation.FadeTransition
@@ -50,6 +51,8 @@ class DesktopApp : Application() {
 
     private val app: SlyApplication = SlyApplication()
     private var stage: Stage? = null
+    //only used on osx
+    private var prefsItem: MenuItem? = null
     private lateinit var webView: WebView
     private lateinit var stackPane: StackPane
     private var loadingScreen: Node? = null
@@ -119,6 +122,8 @@ class DesktopApp : Application() {
         //this'll be checked again in start() and it'll display an error
         if (isRestrictedCryptography())
             return
+
+        MenuItem("Testing")
 
         KovenantUi.uiContext {
             dispatcher = JFXDispatcher.instance
@@ -240,6 +245,8 @@ class DesktopApp : Application() {
             engine.load(javaClass.getResource("/ui/index.html").toExternalForm())
         }
 
+        app.userSessionAvailable.subscribe { onUserSessionAvailable(it) }
+
         javaClass.getResourceAsStream("/sly-messenger.png").use { primaryStage.icons.add(Image(it)) }
         primaryStage.title = "Sly Chat"
 
@@ -252,6 +259,12 @@ class DesktopApp : Application() {
         }
 
         osxSetup()
+    }
+
+    private fun onUserSessionAvailable(userComponent: UserComponent?) {
+        val prefsItem = this.prefsItem ?: return
+
+        prefsItem.isDisable = userComponent == null
     }
 
     private fun handleKeyEvent(event: KeyEvent) {
@@ -311,14 +324,16 @@ class DesktopApp : Application() {
         val appMenu = tk.createDefaultApplicationMenu("Sly Chat")
         appMenuBar.menus.add(appMenu)
 
-        //TODO
         val prefsItem = MenuItem("Preferences")
         prefsItem.accelerator = KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN)
+        prefsItem.isDisable = app.userComponent == null
         appMenu.items.addAll(1, listOf(
             SeparatorMenuItem(),
             prefsItem,
             SeparatorMenuItem()
         ))
+
+        this.prefsItem = prefsItem
 
         tk.setGlobalMenuBar(appMenuBar)
     }
