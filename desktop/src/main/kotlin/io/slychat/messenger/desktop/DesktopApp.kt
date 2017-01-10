@@ -5,6 +5,7 @@ import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import de.codecentric.centerdevice.MenuToolkit
 import io.slychat.messenger.core.Os
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.persistence.ConversationId
@@ -432,8 +433,19 @@ class DesktopApp : Application() {
         updatePrefsState()
     }
 
-    fun handleConversationNotificationActivated(conversationId: ConversationId) {
-        //TODO if running headless, need to open window first
+    fun handleConversationNotificationActivated(account: SlyAddress, conversationId: ConversationId) {
+        val userComponent = app.userComponent
+        if (userComponent == null) {
+            log.info("handleConversationNotificationActivated called but not logged in, ignoring")
+            return
+        }
+
+        if (userComponent.userLoginData.address != account) {
+            log.info("Attempt to load a notification for a different account, ignoring")
+            return
+        }
+
+        //TODO if running headless, need to open window first if not already opened
         navigationService?.goTo(getNavigationPageConversation(conversationId))
     }
 }

@@ -6,7 +6,7 @@ import ca.weblite.objc.Runtime
 import ca.weblite.objc.RuntimeUtils
 
 class NSDictionary(private val proxy: Proxy) : Peerable by proxy {
-    operator fun get(key: String): String {
+    operator fun get(key: String): String? {
         val v = proxy.send("objectForKey:", key)
 
         return when (v) {

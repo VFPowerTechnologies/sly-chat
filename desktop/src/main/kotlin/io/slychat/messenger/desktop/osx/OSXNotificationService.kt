@@ -1,5 +1,6 @@
 package io.slychat.messenger.desktop.osx
 
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.persistence.ConversationDisplayInfo
 import io.slychat.messenger.desktop.osx.ns.NSApplication
 import io.slychat.messenger.desktop.osx.ns.NSMutableDictionary
@@ -8,6 +9,7 @@ import io.slychat.messenger.desktop.osx.ns.NSUserNotificationCenter
 import io.slychat.messenger.services.NotificationState
 import io.slychat.messenger.services.PlatformNotificationService
 import io.slychat.messenger.services.di.UserComponent
+import org.slf4j.LoggerFactory
 import rx.Observable
 
 class OSXNotificationService : PlatformNotificationService {
@@ -17,11 +19,16 @@ class OSXNotificationService : PlatformNotificationService {
         const val USERINFO_CONVERSATION_ID_KEY = "conversationId"
     }
 
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    private var currentAccount: SlyAddress? = null
+
     fun init(userSessionAvailable: Observable<UserComponent?>) {
         userSessionAvailable.subscribe { onUserSessionAvailabilityChanged(it) }
     }
 
     private fun onUserSessionAvailabilityChanged(userComponent: UserComponent?) {
+        currentAccount = userComponent?.userLoginData?.address
     }
 
     override fun getNotificationSoundDisplayName(soundUri: String): String {
@@ -45,6 +52,13 @@ class OSXNotificationService : PlatformNotificationService {
         if (conversationDisplayInfo.unreadCount == 0)
             return
 
+        //shouldn't occur
+        val currentAccount = this.currentAccount
+        if (currentAccount == null) {
+            log.warn("Received notification info but not logged in")
+            return
+        }
+
         val lastMessageData = conversationDisplayInfo.lastMessageData ?: return
 
         val isExpirable = lastMessageData.message == null
@@ -57,8 +71,7 @@ class OSXNotificationService : PlatformNotificationService {
             notification.informativeText = lastMessageData.message
 
         val userInfo = NSMutableDictionary()
-        //TODO
-        //userInfo[USERINFO_ACCOUNT_KEY]
+        userInfo[USERINFO_ACCOUNT_KEY] = currentAccount.asString()
         userInfo[USERINFO_TYPE_KEY] = NotificationType.CONVERSATION.toString()
         userInfo[USERINFO_CONVERSATION_ID_KEY] = conversationDisplayInfo.conversationId.asString()
 
