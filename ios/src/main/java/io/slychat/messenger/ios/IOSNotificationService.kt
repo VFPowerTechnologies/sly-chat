@@ -20,9 +20,7 @@ class IOSNotificationService : PlatformNotificationService {
     }
 
     override fun updateNotificationState(notificationState: NotificationState) {
-        val unreadCount = notificationState.state.fold(0L) { current, notificationConversationInfo ->
-            current + notificationConversationInfo.conversationDisplayInfo.unreadCount
-        }
+        val unreadCount = notificationState.unreadCount()
 
         UIApplication.sharedApplication().setApplicationIconBadgeNumber(unreadCount)
 
