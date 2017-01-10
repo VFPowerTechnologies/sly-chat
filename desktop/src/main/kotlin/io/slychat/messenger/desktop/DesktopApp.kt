@@ -30,6 +30,7 @@ import javafx.scene.image.Image
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCodeCombination
 import javafx.scene.input.KeyCombination
+import javafx.scene.input.KeyEvent
 import javafx.scene.layout.StackPane
 import javafx.scene.web.WebEngine
 import javafx.scene.web.WebView
@@ -41,19 +42,22 @@ import nl.komponents.kovenant.ui.KovenantUi
 import org.slf4j.LoggerFactory
 import rx.schedulers.JavaFxScheduler
 import rx.subjects.BehaviorSubject
+import java.util.*
 import javax.crypto.Cipher
 
 class DesktopApp : Application() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val app: SlyApplication = SlyApplication()
-    private lateinit var stage: Stage
+    private var stage: Stage? = null
     private lateinit var webView: WebView
     private lateinit var stackPane: StackPane
     private var loadingScreen: Node? = null
 
     private val windowService = DesktopUIWindowService(null)
     private val uiVisibility = BehaviorSubject.create<Boolean>(false)
+
+    private val keyBindings = ArrayList<KeyBinding>()
 
     /** Enable the (hidden) debugger WebEngine feature */
     private fun enableDebugger(engine: WebEngine) {
@@ -197,13 +201,13 @@ class DesktopApp : Application() {
 
         windowService.stage = stage
 
-        uiVisibility.onNext(!stage.isIconified)
+        uiVisibility.onNext(!primaryStage.isIconified)
 
-        stage.focusedProperty().addListener { o, oldV, newV ->
+        primaryStage.focusedProperty().addListener { o, oldV, newV ->
             uiVisibility.onNext(newV)
         }
 
-        stage.iconifiedProperty().addListener { o, oldV, newV ->
+        primaryStage.iconifiedProperty().addListener { o, oldV, newV ->
             uiVisibility.onNext(!newV)
         }
 
@@ -243,13 +247,63 @@ class DesktopApp : Application() {
         initializeWindowPosition(primaryStage)
         primaryStage.show()
 
-        setupOsxMenu()
+        primaryStage.addEventHandler(KeyEvent.KEY_RELEASED) { event ->
+            handleKeyEvent(event)
+        }
+
+        osxSetup()
     }
 
-    private fun setupOsxMenu() {
+    private fun handleKeyEvent(event: KeyEvent) {
+        for (keyBinding in keyBindings) {
+            if (keyBinding.matches(event)) {
+                keyBinding.action()
+                event.consume()
+                break
+            }
+        }
+    }
+
+    private fun osxSetup() {
         if (currentOs.type != Os.Type.OSX)
             return
 
+        setupOsxMenu()
+
+        addOsxKeybindings()
+    }
+
+    private fun addOsxKeybindings() {
+        val minimize = KeyBinding(
+            KeyCodeCombination(KeyCode.M, KeyCodeCombination.META_DOWN),
+            {
+                stage?.isIconified = true
+            }
+        )
+
+        val fullScreen = KeyBinding(
+            KeyCodeCombination(KeyCode.F, KeyCodeCombination.META_DOWN, KeyCodeCombination.CONTROL_DOWN),
+            {
+                val stage = this.stage
+
+                if (stage != null)
+                    stage.isFullScreen = !stage.isFullScreen
+            }
+        )
+
+        val closeWindow = KeyBinding(
+            KeyCodeCombination(KeyCode.W, KeyCodeCombination.META_DOWN),
+            {
+                stage?.close()
+            }
+        )
+
+        keyBindings.add(minimize)
+        keyBindings.add(fullScreen)
+        keyBindings.add(closeWindow)
+    }
+
+    private fun setupOsxMenu() {
         val tk = MenuToolkit.toolkit()
 
         val appMenuBar = MenuBar()
@@ -259,7 +313,7 @@ class DesktopApp : Application() {
 
         //TODO
         val prefsItem = MenuItem("Preferences")
-        prefsItem.accelerator = KeyCodeCombination(KeyCode.P, KeyCombination.META_DOWN)
+        prefsItem.accelerator = KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN)
         appMenu.items.addAll(1, listOf(
             SeparatorMenuItem(),
             prefsItem,
