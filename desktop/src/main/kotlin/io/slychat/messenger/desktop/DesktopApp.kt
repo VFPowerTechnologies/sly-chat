@@ -7,17 +7,23 @@ import de.codecentric.centerdevice.MenuToolkit
 import io.slychat.messenger.core.Os
 import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.currentOs
+import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
 import io.slychat.messenger.desktop.jna.CLibrary
+import io.slychat.messenger.desktop.osx.OSXNotificationService
+import io.slychat.messenger.desktop.osx.UserNotificationCenterDelegate
+import io.slychat.messenger.desktop.osx.ns.NSUserNotificationCenter
 import io.slychat.messenger.desktop.services.*
 import io.slychat.messenger.desktop.ui.SplashImage
+import io.slychat.messenger.services.PlatformNotificationService
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.ui.createAppDirectories
 import io.slychat.messenger.services.ui.js.NavigationService
+import io.slychat.messenger.services.ui.js.getNavigationPageConversation
 import io.slychat.messenger.services.ui.js.getNavigationPageSettings
 import io.slychat.messenger.services.ui.js.javatojs.NavigationServiceToJSProxy
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
@@ -123,6 +129,16 @@ class DesktopApp : Application() {
         primaryStage.centerOnScreen()
     }
 
+    private fun getPlatformNotificationService(): PlatformNotificationService {
+        return if (currentOs.type == Os.Type.OSX)
+            OSXNotificationService()
+        else
+            DesktopNotificationService(
+                JfxAudioPlayback(),
+                JfxNotificationDisplay()
+            )
+    }
+
     override fun init() {
         //this'll be checked again in start() and it'll display an error
         if (isRestrictedCryptography())
@@ -164,10 +180,7 @@ class DesktopApp : Application() {
             }
         }
 
-        val desktopNotificationService = DesktopNotificationService(
-            JfxAudioPlayback(),
-            JfxNotificationDisplay()
-        )
+        val desktopNotificationService = getPlatformNotificationService()
 
         val platformModule = PlatformModule(
             DesktopUIPlatformInfoService(),
@@ -190,7 +203,13 @@ class DesktopApp : Application() {
 
         app.init(platformModule)
 
-        desktopNotificationService.init(app.userSessionAvailable)
+        when (desktopNotificationService) {
+            is DesktopNotificationService ->
+                desktopNotificationService.init(app.userSessionAvailable)
+
+            is OSXNotificationService ->
+                desktopNotificationService.init(app.userSessionAvailable)
+        }
 
         app.isInBackground = false
     }
@@ -305,6 +324,9 @@ class DesktopApp : Application() {
         setupOsxMenu()
 
         addOsxKeybindings()
+
+        val userNotificationCenter = NSUserNotificationCenter.defaultUserNotificationCenter
+        userNotificationCenter.delegate = UserNotificationCenterDelegate(this)
     }
 
     private fun addOsxKeybindings() {
@@ -408,5 +430,10 @@ class DesktopApp : Application() {
         //will never be null here
         navigationService = NavigationServiceToJSProxy(dispatcher!!)
         updatePrefsState()
+    }
+
+    fun handleConversationNotificationActivated(conversationId: ConversationId) {
+        //TODO if running headless, need to open window first
+        navigationService?.goTo(getNavigationPageConversation(conversationId))
     }
 }

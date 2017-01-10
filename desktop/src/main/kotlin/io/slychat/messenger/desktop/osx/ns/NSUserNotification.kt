@@ -5,6 +5,10 @@ import ca.weblite.objc.Peerable
 import ca.weblite.objc.Proxy
 
 class NSUserNotification(private val proxy: Proxy) : Peerable by proxy {
+    companion object {
+        const val DEFAULT_SOUND_NAME = "DefaultSoundName"
+    }
+
     constructor() : this(Client.getInstance().sendProxy("NSUserNotification", "new"))
 
     var title: String?
@@ -36,4 +40,10 @@ class NSUserNotification(private val proxy: Proxy) : Peerable by proxy {
 
     val wasPresented: Boolean
         get() = proxy.sendBoolean("isPresented")
+
+    var soundName: String?
+        get() = proxy.sendString("soundName")
+        set(value) {
+            proxy.send("setSoundName:", value)
+        }
 }

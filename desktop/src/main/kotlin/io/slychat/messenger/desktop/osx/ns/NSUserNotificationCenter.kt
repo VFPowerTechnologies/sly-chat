@@ -34,4 +34,8 @@ class NSUserNotificationCenter(private val proxy: Proxy) {
     fun removeAllDeliveredNotifications() {
         proxy.send("removeAllDeliveredNotifications")
     }
+
+    fun removeDeliveredNotification(notification: NSUserNotification) {
+        proxy.send("removeDeliveredNotification:", notification)
+    }
 }
