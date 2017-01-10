@@ -292,6 +292,16 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val message = messageNode.findViewById(R.id.message) as TextView
         val timespan = messageNode.findViewById(R.id.timespan) as TextView
 
+        val nodeId = View.generateViewId()
+        chatDataLink.put(messageInfo.info.id, nodeId)
+        messageNode.id = nodeId
+
+        if (messageInfo.info.isExpired) {
+            message.text = "Message has expired."
+            timespan.visibility = View.GONE
+            return messageNode
+        }
+
         val speaker = messageInfo.speaker
         val members = groupMembers
         if(speaker !== null && conversationId is ConversationId.Group && members !== null) {
@@ -313,11 +323,31 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         timespan.text = time
         message.text = messageInfo.info.message
 
-        val nodeId = View.generateViewId()
-        chatDataLink.put(messageInfo.info.id, nodeId)
-        messageNode.id = nodeId
+        if (messageInfo.info.ttlMs > 0 && !messageInfo.info.isSent) {
+            val expirationLayout = messageNode.findViewById(R.id.expiring_message_layout) as LinearLayout
+            expirationLayout.visibility = View.VISIBLE
+            messageNode.setOnClickListener {
+                showExpiringMessage(it, messageInfo)
+            }
+        }
+        else {
+            val messageLayout = messageNode.findViewById(R.id.message_node_layout) as LinearLayout
+            messageLayout.visibility = View.VISIBLE
+        }
 
         return messageNode
+    }
+
+    private fun showExpiringMessage(node: View, messageInfo: ConversationMessageInfo) {
+        val messageLayout = node.findViewById(R.id.message_node_layout)
+        val expireLayout = node.findViewById(R.id.expiring_message_layout)
+
+        expireLayout.visibility = View.GONE
+        messageLayout.visibility = View.VISIBLE
+
+        messengerService.startMessageExpiration(messageInfo) failUi {
+            log.error("Could not start message expiration for message id: ${messageInfo.info.id}")
+        }
     }
 
     private fun handleNewMessageSubmit() {
@@ -426,10 +456,12 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             return
         }
 
-        val chatList = findViewById(R.id.chat_list) as LinearLayout
-        val messageNode = chatList.findViewById(nodeId) as LinearLayout
-        (messageNode.findViewById(R.id.message) as TextView).text = "Message Expired"
-        (messageNode.findViewById(R.id.timespan) as TextView).text = ""
+        val messageNode = findViewById(nodeId) as LinearLayout
+        val message = messageNode.findViewById(R.id.message) as TextView
+        val timespan = messageNode.findViewById(R.id.timespan) as TextView
+        message.text = "Message has expired."
+        timespan.text = ""
+        timespan.visibility = View.GONE
     }
 
     private fun updateMessageDelivered(event: MessageUpdateEvent.Delivered) {
@@ -446,6 +478,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     private fun handleNewMessageDisplay(newMessage: ConversationMessage) {
         val chatList = findViewById(R.id.chat_list) as LinearLayout
         chatList.addView(createMessageNode(newMessage.conversationMessageInfo))
+
         scrollToBottom()
     }
 

@@ -159,15 +159,23 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
         }
     }
 
-    override fun deleteConversation (conversationId: ConversationId): Promise<Unit, Exception> {
+    override fun deleteConversation(conversationId: ConversationId): Promise<Unit, Exception> {
         return messageService.deleteAllMessages(conversationId)
     }
 
-    private fun notifyNewMessage (info: ConversationMessage) {
+    override fun startMessageExpiration(messageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
+        val cId = messageInfo.speaker?.toConversationId()
+        if (cId != null)
+            return messageService.startMessageExpiration(cId, messageInfo.info.id)
+        else
+            return Promise.ofFail(Exception("Conversation id is null"))
+    }
+
+    private fun notifyNewMessage(info: ConversationMessage) {
         newMessageUIListener?.invoke(info)
     }
 
-    private fun updateConversationCache (info: ConversationMessage) {
+    private fun updateConversationCache(info: ConversationMessage) {
         val conversationId = info.conversationId
         if (conversationId is ConversationId.User) {
             val userId = conversationId.id

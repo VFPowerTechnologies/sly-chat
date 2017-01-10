@@ -30,7 +30,7 @@ interface MessengerService {
 
     fun sendMessageTo(conversationId: ConversationId, message: String, ttl: Long): Promise<Unit, Exception>
 
-
     fun deleteConversation(conversationId: ConversationId): Promise<Unit, Exception>
 
+    fun startMessageExpiration(messageInfo: ConversationMessageInfo): Promise<Unit, Exception>
 }

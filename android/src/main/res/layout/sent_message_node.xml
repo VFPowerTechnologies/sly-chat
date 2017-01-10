@@ -11,8 +11,8 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:minHeight="50dp"
         android:layout_margin="10dp"
+        android:id="@+id/message_node_layout"
         android:padding="10dp"
         android:background="?attr/themedSentBubbleColor">
         <LinearLayout
