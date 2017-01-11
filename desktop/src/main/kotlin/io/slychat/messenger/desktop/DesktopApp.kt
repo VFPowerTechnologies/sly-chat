@@ -363,10 +363,7 @@ class DesktopApp : Application() {
     private fun setupOsxMenu() {
         val tk = MenuToolkit.toolkit()
 
-        val appMenuBar = MenuBar()
-
         val appMenu = tk.createDefaultApplicationMenu("Sly Chat")
-        appMenuBar.menus.add(appMenu)
 
         val prefsItem = MenuItem("Preferences")
         prefsItem.accelerator = KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN)
@@ -382,7 +379,7 @@ class DesktopApp : Application() {
 
         this.prefsItem = prefsItem
 
-        tk.setGlobalMenuBar(appMenuBar)
+        tk.setApplicationMenu(appMenu)
     }
 
     override fun stop() {
