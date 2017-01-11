@@ -19,6 +19,7 @@ import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
 import io.slychat.messenger.android.MainActivity
+import io.slychat.messenger.android.activites.services.RecentChatInfo
 import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
 import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
 import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
@@ -49,15 +50,6 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
 
     private var recentNodeData: MutableMap<UserId, Int> = mutableMapOf()
     private var groupRecentNodeData: MutableMap<GroupId, Int> = mutableMapOf()
-
-    data class RecentChatData(
-            val id: ConversationId,
-            var groupName: String?,
-            var lastSpeakerName: String,
-            var lastTimestamp: Long,
-            var lastMessage: String,
-            var unreadMessageCount: Int
-    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,13 +107,13 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
-    private fun displayRecentChat(data: List<RecentChatData>) {
+    private fun displayRecentChat(data: List<RecentChatInfo>) {
         data.forEach {
             recentChatList.addView(createRecentChatView(it))
         }
     }
 
-    private fun createRecentChatView(data: RecentChatData): View {
+    private fun createRecentChatView(data: RecentChatInfo): View {
         val node = LayoutInflater.from(this).inflate(R.layout.recent_chat_node_layout, recentChatList, false)
         val nameView = node.findViewById(R.id.recent_chat_contact_name) as TextView
         val messageView = node.findViewById(R.id.recent_chat_contact_message) as TextView
@@ -131,7 +123,10 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
             name += "(" + data.groupName + ") "
         name += data.lastSpeakerName
         nameView.text = name
-        messageView.text = data.lastMessage
+        if (data.lastMessage != null)
+            messageView.text = data.lastMessage
+        else
+            messageView.text = "Hidden Message"
 
         val time: String
         time = formatTimeStamp(data.lastTimestamp)
@@ -197,7 +192,6 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
                 val conversation = messengerService.groupConversations[conversationId.id]
                 if (conversation != null)
                     updateGroupRecentChatNode(conversation)
-                log.debug(conversationId.id.toString())
             }
         }
     }
@@ -211,12 +205,12 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
 
         val cId = userId.toConversationId()
 
-        recentChatList.addView(createRecentChatView(RecentChatData(
+        recentChatList.addView(createRecentChatView(RecentChatInfo(
                 cId,
                 null,
                 conversation.contact.name,
                 conversation.info.lastTimestamp as Long,
-                conversation.info.lastMessage as String,
+                conversation.info.lastMessage,
                 conversation.info.unreadMessageCount
                 )), 0)
     }
@@ -240,12 +234,12 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
                 speakerName = contactInfo.name
         }
 
-        recentChatList.addView(createRecentChatView(RecentChatData(
+        recentChatList.addView(createRecentChatView(RecentChatInfo(
                 cId,
                 conversation.group.name,
                 speakerName,
                 conversation.info.lastTimestamp as Long,
-                conversation.info.lastMessage as String,
+                conversation.info.lastMessage,
                 conversation.info.unreadMessageCount
         )), 0)
     }

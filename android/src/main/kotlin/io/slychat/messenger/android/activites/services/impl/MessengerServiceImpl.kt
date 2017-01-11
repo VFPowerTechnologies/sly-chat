@@ -4,6 +4,7 @@ import android.support.v7.app.AppCompatActivity
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.activites.RecentChatActivity
 import io.slychat.messenger.android.activites.services.MessengerService
+import io.slychat.messenger.android.activites.services.RecentChatInfo
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.MessageUpdateEvent
@@ -22,6 +23,7 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
     private val app = AndroidApp.get(activity)
     private var usercomponent = app.getUserComponent()
     private val messageService = usercomponent.messageService
+    private val groupService = usercomponent.groupService
     private val contactService = usercomponent.contactsService
 
     var conversations: MutableMap<UserId, UserConversation> = mutableMapOf()
@@ -46,11 +48,11 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
         }
     }
 
-    fun fetchAllRecentChat(): Promise<List<RecentChatActivity.RecentChatData>, Exception> {
+    fun fetchAllRecentChat(): Promise<List<RecentChatInfo>, Exception> {
         groupConversations = mutableMapOf()
         conversations = mutableMapOf()
         contactList = mutableMapOf()
-        val list = mutableListOf<RecentChatActivity.RecentChatData>()
+        val list = mutableListOf<RecentChatInfo>()
 
         return contactService.getAll() map { c ->
             c.forEach {
@@ -63,19 +65,19 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
                     val conversationId = ConversationId.invoke(it.group.id)
                     val info = it.info
                     val contact = contactList[info.lastSpeaker]
-                    if (info.lastMessage != null && info.lastTimestamp != null) {
+                    if (info.lastTimestamp != null) {
                         val contactName: String
                         if(contact == null)
                             contactName = "You"
                         else
                             contactName = contact.name
 
-                        list.add(RecentChatActivity.RecentChatData(
+                        list.add(RecentChatInfo(
                                 conversationId,
                                 it.group.name,
                                 contactName,
                                 info.lastTimestamp as Long,
-                                info.lastMessage as String,
+                                info.lastMessage,
                                 info.unreadMessageCount
                         ))
                     }
@@ -87,23 +89,19 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
                         conversations.put(it.contact.id, it)
                         val conversationId = ConversationId.invoke(it.contact.id)
                         val info = it.info
-                        if (info.lastMessage != null && info.lastTimestamp != null)
-                            list.add(RecentChatActivity.RecentChatData(
+                        if (info.lastTimestamp != null)
+                            list.add(RecentChatInfo(
                                     conversationId,
                                     null,
                                     it.contact.name,
                                     info.lastTimestamp as Long,
-                                    info.lastMessage as String,
+                                    info.lastMessage,
                                     info.unreadMessageCount
                             ))
                     }
                     list.sortedByDescending { it.lastTimestamp }
                 }
         }
-    }
-
-    override fun getAllConversation (): MutableMap<UserId, UserConversation> {
-        return conversations
     }
 
     override fun getActualSortedConversation (convo: MutableMap<UserId, UserConversation>): List<UserConversation> {
@@ -163,12 +161,8 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
         return messageService.deleteAllMessages(conversationId)
     }
 
-    override fun startMessageExpiration(messageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
-        val cId = messageInfo.speaker?.toConversationId()
-        if (cId != null)
-            return messageService.startMessageExpiration(cId, messageInfo.info.id)
-        else
-            return Promise.ofFail(Exception("Conversation id is null"))
+    override fun startMessageExpiration(conversationId: ConversationId, messageId: String): Promise<Unit, Exception> {
+        return messageService.startMessageExpiration(conversationId, messageId)
     }
 
     private fun notifyNewMessage(info: ConversationMessage) {

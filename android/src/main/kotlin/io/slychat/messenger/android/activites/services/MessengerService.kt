@@ -12,12 +12,6 @@ interface MessengerService {
 
     fun fetchAllConversation (): Promise<MutableMap<UserId, UserConversation>, Exception>
 
-    /**
-     * Get the current cached conversation
-     * return null if conversation is not cached
-     */
-    fun getAllConversation(): MutableMap<UserId, UserConversation>?
-
     fun getActualSortedConversation(convo: MutableMap<UserId, UserConversation>): List<UserConversation>
 
     fun addNewMessageListener(listener: (ConversationMessage) -> Unit)
@@ -32,5 +26,5 @@ interface MessengerService {
 
     fun deleteConversation(conversationId: ConversationId): Promise<Unit, Exception>
 
-    fun startMessageExpiration(messageInfo: ConversationMessageInfo): Promise<Unit, Exception>
+    fun startMessageExpiration(conversationId: ConversationId, messageId: String): Promise<Unit, Exception>
 }
