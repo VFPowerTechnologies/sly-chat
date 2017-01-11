@@ -34,6 +34,10 @@ import io.slychat.messenger.services.messaging.GroupEvent
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
+import android.view.animation.AnimationUtils.loadAnimation
+import android.view.animation.AnimationUtils
+
+
 
 class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedListener {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -296,9 +300,12 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         chatDataLink.put(messageInfo.info.id, nodeId)
         messageNode.id = nodeId
 
+        val messageLayout = messageNode.findViewById(R.id.message_node_layout) as LinearLayout
+
         if (messageInfo.info.isExpired) {
             message.text = "Message has expired."
             timespan.visibility = View.GONE
+            messageLayout.visibility = View.VISIBLE
             return messageNode
         }
 
@@ -329,9 +336,11 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             messageNode.setOnClickListener {
                 showExpiringMessage(it, messageInfo)
             }
+
+            val pulse = AnimationUtils.loadAnimation(this, R.anim.pulse)
+            messageNode.startAnimation(pulse)
         }
         else {
-            val messageLayout = messageNode.findViewById(R.id.message_node_layout) as LinearLayout
             messageLayout.visibility = View.VISIBLE
         }
 
@@ -344,6 +353,8 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
         expireLayout.visibility = View.GONE
         messageLayout.visibility = View.VISIBLE
+
+        node.clearAnimation()
 
         messengerService.startMessageExpiration(messageInfo) failUi {
             log.error("Could not start message expiration for message id: ${messageInfo.info.id}")
