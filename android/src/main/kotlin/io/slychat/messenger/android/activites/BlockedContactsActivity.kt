@@ -38,7 +38,7 @@ class BlockedContactsActivity : BaseActivity() {
         setContentView(R.layout.activity_blocked_contacts)
 
         val actionBar = findViewById(R.id.blocked_contact_toolbar) as Toolbar
-        actionBar.title = "Address Book"
+        actionBar.title = resources.getString(R.string.blocked_contacts_page_title)
         setSupportActionBar(actionBar)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)

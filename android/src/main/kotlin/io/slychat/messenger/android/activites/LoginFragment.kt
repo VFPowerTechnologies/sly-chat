@@ -60,7 +60,7 @@ class LoginFragment: Fragment() {
         if (!validate(username, password))
             return
 
-        mainActivity.showProgressDialog("We're logging you in")
+        mainActivity.showProgressDialog(resources.getString(R.string.login_in_process_message))
         mainActivity.registrationInfo.email = username!!
         mainActivity.registrationInfo.password = password!!
         app.app.login(username!!, password!!, rememberMe.isChecked)
@@ -72,12 +72,12 @@ class LoginFragment: Fragment() {
         val passwordField = v?.findViewById(R.id.login_password_field) as EditText
 
         if (username == null || username.isEmpty()) {
-            usernameField.error = "Username is required"
+            usernameField.error = resources.getString(R.string.login_username_required_error)
             valid = false
         }
 
         if (password == null || password.isEmpty()) {
-            passwordField.error = "Password is required"
+            passwordField.error = resources.getString(R.string.login_password_required_error)
             valid = false
         }
 

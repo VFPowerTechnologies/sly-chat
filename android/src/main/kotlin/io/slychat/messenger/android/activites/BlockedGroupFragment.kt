@@ -60,7 +60,7 @@ class BlockedGroupFragment : Fragment() {
         else {
             val emptyNode = LayoutInflater.from(activity).inflate(R.layout.empty_block_node, groupList, false)
             val textNode = emptyNode.findViewById(R.id.empty_block_text) as TextView
-            textNode.text = "No blocked group"
+            textNode.text = resources.getString(R.string.blocked_groups_empty)
             groupList.addView(emptyNode)
         }
     }
@@ -77,7 +77,7 @@ class BlockedGroupFragment : Fragment() {
         initial.text = group.name[0].toString().toUpperCase()
 
         unblockButton.setOnClickListener {
-            AlertDialog.Builder(activity).setTitle("Unblock group?").setMessage("Are you sure you want to unblock this group?")
+            AlertDialog.Builder(activity).setTitle(resources.getString(R.string.unblock_group_dialog_title)).setMessage(resources.getString(R.string.unblock_group_dialog_message))
                     .setIcon(android.R.drawable.ic_dialog_alert)
                     .setPositiveButton(android.R.string.yes, DialogInterface.OnClickListener { dialog: DialogInterface, whichButton: Int ->
                         unblockGroup(group.id)

@@ -27,7 +27,7 @@ class ProfileActivity : BaseActivity() {
         app = AndroidApp.get(this)
 
         val actionBar = findViewById(R.id.profile_toolbar) as Toolbar
-        actionBar.title = "Profile"
+        actionBar.title = resources.getString(R.string.profile_title)
         setSupportActionBar(actionBar)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)

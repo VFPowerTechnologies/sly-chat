@@ -166,7 +166,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                     actionBar.title = it.name
                 }
             } failUi {
-                log.debug("Could not find contact to load chat page.")
+                log.error("Could not find contact to load chat page.")
                 finish()
             }
         }
@@ -180,7 +180,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                 else
                     finish()
             } failUi {
-                log.debug("Could not find the group to load chat page")
+                log.error("Could not find the group to load chat page")
                 finish()
             }
         }
@@ -265,7 +265,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         expireDelay = delay * 1000
 
         val expirationDelay = findViewById(R.id.expiration_delay) as TextView
-        expirationDelay.text = "Self Destruct: $delay seconds"
+        expirationDelay.text = delay.toString()
     }
 
     private fun hideExpirationSlider() {
@@ -302,7 +302,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val messageLayout = messageNode.findViewById(R.id.message_node_layout) as LinearLayout
 
         if (messageInfo.info.isExpired) {
-            message.text = "Message has expired."
+            message.text = resources.getString(R.string.chat_expired_message_text)
             timespan.visibility = View.GONE
             messageLayout.visibility = View.VISIBLE
             return messageNode
@@ -322,7 +322,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val time: String
 
         if(messageInfo.info.receivedTimestamp == 0L)
-            time = "Delivering..."
+            time = resources.getString(R.string.chat_delivering_time_string)
         else
             time = formatTimeStamp(messageInfo.info.receivedTimestamp)
 
@@ -376,7 +376,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         messengerService.sendMessageTo(conversationId, messageValue, ttl) successUi {
             chatInput.setText("")
         } failUi {
-            log.debug("Send message failed", it.stackTrace)
+            log.error("Send message failed", it.stackTrace)
         }
     }
 
@@ -418,7 +418,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun handleDeliveredMessageEvent(event: MessageUpdateEvent.Delivered) {
-        log.debug("Message delivered\n\n\n\n\n")
         val cId = event.conversationId
         if(cId == conversationId) {
             updateMessageDelivered(event)
@@ -433,7 +432,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         }
 
         val node = findViewById(nodeId)
-        (node.findViewById(R.id.timespan) as TextView).text = "Message Delivery Failed"
+        (node.findViewById(R.id.timespan) as TextView).text = resources.getString(R.string.chat_failed_message_delivery)
     }
 
     private fun handleDeletedAllMessage(event: MessageUpdateEvent.DeletedAll) {
@@ -471,7 +470,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val timespan = messageNode.findViewById(R.id.timespan) as TextView
         val speakerName = messageNode.findViewById(R.id.chat_group_speaker_name) as TextView
         speakerName.visibility = View.GONE
-        message.text = "Message has expired."
+        message.text = resources.getString(R.string.chat_expired_message_text)
         timespan.text = ""
         timespan.visibility = View.GONE
     }
@@ -539,14 +538,14 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val cId = conversationId
         if(cId is ConversationId.User) {
             contactService.blockContact(cId.id) failUi {
-                log.info("Failed to block user id : ${cId.id}")
+                log.error("Failed to block user id : ${cId.id}")
             }
         }
     }
 
     private fun deleteConversation() {
         messengerService.deleteConversation(conversationId) failUi {
-            log.debug("Failed to delete the conversation")
+            log.error("Failed to delete the conversation")
         }
     }
 
@@ -555,7 +554,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             if (!it)
                 log.info("Failed to delete user id : ${contactInfo.email}")
         } failUi {
-            log.debug("Failed to delete user id : ${contactInfo.email}")
+            log.error("Failed to delete user id : ${contactInfo.email}")
         }
     }
 
@@ -565,7 +564,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             groupService.deleteGroup(cId.id) successUi {
                 finish()
             } failUi {
-                log.debug("Failed to delete the group")
+                log.error("Failed to delete the group")
             }
         }
     }
@@ -574,7 +573,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val cId = conversationId
         if(cId is ConversationId.Group) {
             groupService.blockGroup(cId.id) failUi {
-                log.debug("Failed to block the group")
+                log.error("Failed to block the group")
             }
         }
     }
@@ -605,13 +604,13 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when(item.itemId) {
-            R.id.menu_block_contact -> { openConfirmationDialog("Block contact", "Are you sure you want to block this contact?", { blockContact() }) }
-            R.id.menu_delete_contact -> { openConfirmationDialog("Delete contact", "Are you sure you want to delete this contact?", { deleteContact() }) }
-            R.id.menu_delete_conversation -> { openConfirmationDialog("Delete conversation", "Are you sure you want to delete this whole conversation?", { deleteConversation() }) }
+            R.id.menu_block_contact -> { openConfirmationDialog(resources.getString(R.string.chat_block_contact_title), resources.getString(R.string.chat_block_contact_text), { blockContact() }) }
+            R.id.menu_delete_contact -> { openConfirmationDialog(resources.getString(R.string.chat_delete_contact_title), resources.getString(R.string.chat_delete_contact_text), { deleteContact() }) }
+            R.id.menu_delete_conversation -> { openConfirmationDialog(resources.getString(R.string.chat_delete_conversation_title), resources.getString(R.string.chat_delete_conversation_text), { deleteConversation() }) }
             R.id.menu_contact_info -> { loadContactInfo() }
             R.id.menu_group_info -> { loadGroupInfo() }
-            R.id.menu_delete_group -> { openConfirmationDialog("Delete Group", "Are you sure you want to delete this group?", { deleteGroup() })}
-            R.id.menu_block_group -> { openConfirmationDialog("Block Group", "Are you sure you want to block this group?", { blockGroup() })}
+            R.id.menu_delete_group -> { openConfirmationDialog(resources.getString(R.string.chat_delete_group_title), resources.getString(R.string.chat_delete_group_text), { deleteGroup() })}
+            R.id.menu_block_group -> { openConfirmationDialog(resources.getString(R.string.chat_block_group_title), resources.getString(R.string.chat_block_group_text), { blockGroup() })}
         }
 
         val drawer = findViewById(R.id.chat_drawer_layout) as DrawerLayout

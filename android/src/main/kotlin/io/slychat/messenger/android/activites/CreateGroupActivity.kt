@@ -45,7 +45,7 @@ class CreateGroupActivity : BaseActivity() {
         groupService = GroupServiceImpl(this)
 
         val actionBar = findViewById(R.id.create_group_toolbar) as Toolbar
-        actionBar.title = "Create Group"
+        actionBar.title = resources.getString(R.string.create_group_title)
         setSupportActionBar(actionBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -53,7 +53,7 @@ class CreateGroupActivity : BaseActivity() {
         progressDialog.isIndeterminate = true
         progressDialog.setCancelable(false)
         progressDialog.setCanceledOnTouchOutside(false)
-        progressDialog.setMessage("Creating your new group")
+        progressDialog.setMessage(resources.getString(R.string.create_group_process_message))
 
         createEventListeners()
     }
@@ -108,7 +108,7 @@ class CreateGroupActivity : BaseActivity() {
         val mGroupName = findViewById(R.id.create_group_name) as EditText
         val name = mGroupName.text.toString()
         if(name.isEmpty()) {
-            mGroupName.error = "Group name is required"
+            mGroupName.error = resources.getString(R.string.create_group_name_required_error)
             progressDialog.dismiss()
             return
         }
@@ -123,7 +123,7 @@ class CreateGroupActivity : BaseActivity() {
 
         if(checkedContacts.size > 0) {
             groupService.createGroup(name, checkedContacts) failUi {
-                log.debug("Creating group: $name failed")
+                log.error("Creating group: $name failed")
             }
         }
         else
@@ -131,12 +131,8 @@ class CreateGroupActivity : BaseActivity() {
     }
 
     private fun handleGroupEvent(event: GroupEvent) {
-        when(event) {
-//            is GroupEvent.Blocked -> { log.debug("Blocked group id: ${event.id}")}
-            is GroupEvent.Joined -> { loadGroupChat(event.id) }
-//            is GroupEvent.MembershipChanged -> { log.debug("Membership change for group ${event.id}")}
-//            is GroupEvent.Parted -> { log.debug("Parted from group id: ${event.id}")}
-        }
+        if (event is GroupEvent.Joined)
+            loadGroupChat(event.id)
     }
 
     private fun loadGroupChat(groupId: GroupId) {

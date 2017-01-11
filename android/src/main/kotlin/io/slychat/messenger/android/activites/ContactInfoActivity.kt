@@ -35,7 +35,7 @@ class ContactInfoActivity: BaseActivity() {
 
 
         val actionBar = findViewById(R.id.contact_info_toolbar) as Toolbar
-        actionBar.title = "Profile"
+        actionBar.title = resources.getString(R.string.contact_info_title)
         setSupportActionBar(actionBar)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -60,7 +60,6 @@ class ContactInfoActivity: BaseActivity() {
     }
 
     private fun displayInfo () {
-        log.debug("In Display info")
         emailVal?.text = contactEmail
         nameVal?.text = contactName
         publicKeyVal?.text = contactPubKey

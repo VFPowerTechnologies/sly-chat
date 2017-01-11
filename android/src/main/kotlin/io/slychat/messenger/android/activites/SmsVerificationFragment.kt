@@ -69,20 +69,20 @@ class SmsVerificationFragment: Fragment() {
         val smsCodeField = v?.findViewById(R.id.sms_verification_code_field) as EditText
         val code = smsCodeField.text.toString()
         if (code.isEmpty()) {
-            smsCodeField.error = "Verification Code is required"
+            smsCodeField.error = resources.getString(R.string.registration_verification_code_required_error)
             return
         }
 
-        mainActivity.showProgressDialog("Sending Verification Code")
+        mainActivity.showProgressDialog(resources.getString(R.string.registration_sms_verification_process))
         app.appComponent.registrationService.submitVerificationCode(email, code) successUi  { result ->
             if (result.successful) {
-                mainActivity.setProgressDialogMessage("We're logging you in")
+                mainActivity.setProgressDialogMessage(resources.getString(R.string.login_in_process_message))
                 app.app.login(email, password, false)
             }
             else {
                 mainActivity.hideProgressDialog()
                 if (result.errorMessage != null && result.errorMessage == "invalid code") {
-                    smsCodeField.error = "Invalid Code"
+                    smsCodeField.error = resources.getString(R.string.registration_verification_code_invalid_error)
                 }
             }
         } failUi {

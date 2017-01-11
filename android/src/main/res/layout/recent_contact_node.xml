@@ -18,7 +18,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="fill_parent"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text=""
                 android:id="@+id/contact_initial"
                 android:layout_gravity="center_horizontal"
                 android:gravity="center_vertical"/>

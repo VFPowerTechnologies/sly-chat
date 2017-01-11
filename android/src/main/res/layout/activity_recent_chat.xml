@@ -44,7 +44,8 @@
             <ScrollView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:scrollbars="none" android:layout_below="@+id/recent_chat_invite_node">
+                    android:scrollbars="none"
+                    android:layout_below="@+id/recent_chat_invite_node">
                 <LinearLayout
                         android:paddingBottom="@dimen/activity_vertical_margin"
                         android:id="@+id/recent_chat_container"

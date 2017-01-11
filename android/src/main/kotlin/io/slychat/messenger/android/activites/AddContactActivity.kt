@@ -37,7 +37,7 @@ class AddContactActivity : BaseActivity() {
         contactService = ContactServiceImpl(this)
 
         val actionBar = findViewById(R.id.add_contact_toolbar) as Toolbar
-        actionBar.title = "Add Contact"
+        actionBar.title = resources.getString(R.string.add_contact_title)
         setSupportActionBar(actionBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -71,7 +71,7 @@ class AddContactActivity : BaseActivity() {
                 log.debug("No contact found for $username")
             }
         } failUi {
-            log.debug("Failed To Fetch Contact Info", it.stackTrace)
+            log.error("Failed To Fetch Contact Info", it.stackTrace)
         }
     }
 
@@ -109,8 +109,8 @@ class AddContactActivity : BaseActivity() {
             else {
                 log.debug("Failed to add contact ${contactInfo.email}")
             }
-        } fail {
-            log.debug("Failed to add contact ${contactInfo.email}")
+        } failUi  {
+            log.error("Failed to add contact ${contactInfo.email}")
         }
     }
 

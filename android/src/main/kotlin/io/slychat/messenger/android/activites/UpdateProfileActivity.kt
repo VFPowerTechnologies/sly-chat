@@ -39,7 +39,7 @@ class UpdateProfileActivity: BaseActivity() {
         setContentView(R.layout.activity_update_profile)
 
         val actionBar = findViewById(R.id.update_profile_toolbar) as Toolbar
-        actionBar.title = "Update Profile"
+        actionBar.title = resources.getString(R.string.update_profile_title)
         setSupportActionBar(actionBar)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -86,12 +86,12 @@ class UpdateProfileActivity: BaseActivity() {
         var valid = true
 
         if (newName.isEmpty() || newName == "") {
-            mName.error = "Name is required"
+            mName.error = resources.getString(R.string.registration_name_required_error)
             valid = false
         }
 
         if (newEmail != null && (newEmail.isEmpty() || newEmail == "")) {
-            mEmail.error = "Email is required"
+            mEmail.error = resources.getString(R.string.registration_email_required_error)
             valid = false
         }
 
@@ -128,19 +128,19 @@ class UpdateProfileActivity: BaseActivity() {
         val currentPhone = accountInfo.phoneNumber
 
         if(phoneInput.isEmpty()) {
-            mPhone.error = "Phone number is required"
+            mPhone.error = resources.getString(R.string.registration_phone_required_error)
             return
         }
 
         try {
             parsed = phoneUtil.parse(phoneInput, country)
         } catch (e: Exception) {
-            mPhone.error = "Phone does not seem to be valid"
+            mPhone.error = resources.getString(R.string.registration_phone_invalid_error)
             return
         }
 
         if (!phoneUtil.isValidNumberForRegion(parsed, country)) {
-            mPhone.error = "Phone does not seem to be valid"
+            mPhone.error = resources.getString(R.string.registration_phone_invalid_error)
             return
         }
 
@@ -148,7 +148,7 @@ class UpdateProfileActivity: BaseActivity() {
         val formattedPhone = phone.replace("+", "")
 
         if (formattedPhone == currentPhone) {
-            log.debug("Phone is the same as the currently used one")
+            log.debug(resources.getString(R.string.registration_phone_identical_error))
             return
         }
 
@@ -156,7 +156,6 @@ class UpdateProfileActivity: BaseActivity() {
     }
 
     private fun updatePhone(phone: String) {
-        log.debug("In update phone")
         accountService.updatePhone(phone) successUi { result ->
             if (result.successful) {
                 openSmsVerificationModal(null)
@@ -175,11 +174,11 @@ class UpdateProfileActivity: BaseActivity() {
         if (error !== null)
             mSmsCode.error = error
 
-        builder.setMessage("You should receive a sms verification code")
-                .setTitle("Sms Verification")
+        builder.setMessage(resources.getString(R.string.update_profile_sms_verification_message))
+                .setTitle(resources.getString(R.string.update_profile_sms_verification_title))
                 .setView(view)
                 .setCancelable(false)
-                .setPositiveButton("Submit", DialogInterface.OnClickListener { dialogInterface, i ->
+                .setPositiveButton(resources.getString(R.string.submit_button), DialogInterface.OnClickListener { dialogInterface, i ->
                     val code = mSmsCode.text.toString()
                     accountService.verifyPhone(code) successUi { result ->
                         if (result.successful && result.accountInfo !== null) {
@@ -191,7 +190,7 @@ class UpdateProfileActivity: BaseActivity() {
                     }
 
                 })
-                .setNegativeButton("Cancel", DialogInterface.OnClickListener { dialogInterface, i ->
+                .setNegativeButton(resources.getString(R.string.cancel_button), DialogInterface.OnClickListener { dialogInterface, i ->
                 })
         val dialog = builder.create()
         dialog.show()
@@ -213,10 +212,10 @@ class UpdateProfileActivity: BaseActivity() {
                 updatePhone(phone)
             }
             else {
-                mPhone.error = "Phone number is already in use"
+                mPhone.error = resources.getString(R.string.registration_phone_taken_error)
             }
         } failUi {
-            mPhone.error = "An error occurred"
+            mPhone.error = resources.getString(R.string.registration_global_error)
         }
     }
 

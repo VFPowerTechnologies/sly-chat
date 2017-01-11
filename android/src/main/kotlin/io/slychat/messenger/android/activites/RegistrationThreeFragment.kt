@@ -52,11 +52,11 @@ class RegistrationThreeFragment: Fragment() {
         var valid = true
 
         if(password.isEmpty()) {
-            mPassword.error = "Password is required"
+            mPassword.error = resources.getString(R.string.registration_password_required_error)
             valid = false
         }
         else if(password != passwordConf) {
-            mPasswordConf.error = "Password does not match"
+            mPasswordConf.error = resources.getString(R.string.registration_password_match_error)
             valid = false
         }
 

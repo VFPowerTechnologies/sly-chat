@@ -18,6 +18,7 @@ import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.UserConversation
 import io.slychat.messenger.services.messaging.ConversationMessage
+import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
@@ -193,8 +194,8 @@ class ContactFragment : Fragment() {
                     if (it != null) {
                         recentContactList.addView(createRecentContactNode(it.id, it.name), 0)
                     }
-                } fail {
-                    log.debug("Failed fetching the contact")
+                } failUi  {
+                    log.error("Failed fetching the contact")
                 }
             }
 

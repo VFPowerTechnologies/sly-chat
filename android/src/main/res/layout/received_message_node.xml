@@ -30,7 +30,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="bottom"
-                    android:text="Tap to view message"/>
+                    android:text="@string/chat_expiring_message_text"/>
         </LinearLayout>
     </LinearLayout>
     <LinearLayout

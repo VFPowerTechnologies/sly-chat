@@ -82,7 +82,7 @@ class BlockedContactFragment : Fragment() {
         else {
             val emptyNode = LayoutInflater.from(activity).inflate(R.layout.empty_block_node, contactList, false)
             val textNode = emptyNode.findViewById(R.id.empty_block_text) as TextView
-            textNode.text = "No blocked contact"
+            textNode.text = resources.getString(R.string.blocked_contacts_empty)
             contactList.addView(emptyNode)
         }
     }
@@ -97,7 +97,7 @@ class BlockedContactFragment : Fragment() {
         contactEmailNode.text = contact.email
 
         unblockButton.setOnClickListener {
-            AlertDialog.Builder(activity).setTitle("Unblock contact?").setMessage("Are you sure you want to unblock this contact?")
+            AlertDialog.Builder(activity).setTitle(resources.getString(R.string.unblock_contact_dialog_title)).setMessage(resources.getString(R.string.unblock_contact_dialog_message))
                     .setIcon(android.R.drawable.ic_dialog_alert)
                     .setPositiveButton(android.R.string.yes, DialogInterface.OnClickListener { dialog: DialogInterface, whichButton: Int ->
                         unblockContact(contact.id)
@@ -127,7 +127,7 @@ class BlockedContactFragment : Fragment() {
     private fun handleUnblockedContactEvent(userId: UserId) {
         contactService.getContact(userId) successUi { contactInfo ->
             if (contactInfo !== null) {
-                AlertDialog.Builder(activity).setTitle("Add to contact?").setMessage("Do you want to add ${contactInfo.email} back to your contact?")
+                AlertDialog.Builder(activity).setTitle(resources.getString(R.string.unblock_contact_add_back_dialog_title)).setMessage(contactInfo.email + resources.getString(R.string.unblock_contact_add_back_dialog_message))
                         .setIcon(android.R.drawable.ic_dialog_alert)
                         .setPositiveButton("YES", DialogInterface.OnClickListener { dialog: DialogInterface, whichButton: Int ->
                             addContact(contactInfo)

@@ -62,11 +62,11 @@ class UpdatePhoneFragment: Fragment() {
         val phoneField = v?.findViewById(R.id.update_phone_phone_field) as EditText
         val phone = phoneField.text.toString()
         if (phone.isEmpty()) {
-            phoneField.error = "Phone is required"
+            phoneField.error = resources.getString(R.string.registration_phone_required_error)
             return
         }
 
-        mainActivity.showProgressDialog("Updating Phone")
+        mainActivity.showProgressDialog(resources.getString(R.string.registration_update_phone_process))
 
         app.appComponent.registrationService.updatePhone(UIUpdatePhoneInfo(email, password, phone)) successUi { result ->
             mainActivity.hideProgressDialog()

@@ -47,7 +47,7 @@ class ContactActivity : BaseActivity() {
         setContentView(R.layout.activity_contact)
 
         val actionBar = findViewById(R.id.contact_toolbar) as Toolbar
-        actionBar.title = "Address Book"
+        actionBar.title = resources.getString(R.string.contact_page_title)
         setSupportActionBar(actionBar)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -73,7 +73,7 @@ class ContactActivity : BaseActivity() {
         contactService.getContacts() successUi {
             contactList = it
         } failUi {
-            log.debug("Failed to fetch all contacts")
+            log.error("Failed to fetch all contacts")
         }
     }
 
@@ -104,14 +104,11 @@ class ContactActivity : BaseActivity() {
                 contactFragment?.removeContactFromList(event.userId)
             }
             is ContactEvent.Removed -> {
-                log.debug("Contact Removed Event")
                 event.contacts.forEach {
-                    log.debug("Contact to be removed ${it.name}")
                     contactFragment?.removeContactFromList(it.id)
                 }
             }
             is ContactEvent.Sync -> {
-                log.debug("Is contact sync running: ${event.isRunning}")
                 if(!event.isRunning) {
                     contactFragment?.fetchConversations()
                 }

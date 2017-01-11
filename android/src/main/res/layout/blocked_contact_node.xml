@@ -15,13 +15,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text=""
                 android:id="@+id/contact_name"/>
         <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text=""
                 android:id="@+id/contact_email"
                 android:textSize="15sp"
                 android:layout_marginTop="5dp"/>
@@ -34,7 +32,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
-                    android:text="Unblock"
+                    android:text="@string/unblock_button"
                     android:id="@+id/unblock_button"/>
     </LinearLayout>
 </LinearLayout>

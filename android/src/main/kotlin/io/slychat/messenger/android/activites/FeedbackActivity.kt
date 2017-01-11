@@ -34,7 +34,7 @@ class FeedbackActivity : BaseActivity() {
         app = AndroidApp.get(this)
 
         val actionBar = findViewById(R.id.feedback_toolbar) as Toolbar
-        actionBar.title = "Feedback"
+        actionBar.title = resources.getString(R.string.feedback_title)
         setSupportActionBar(actionBar)
 
         mSubmitBtn = findViewById(R.id.submit_feedback_btn) as Button
@@ -66,7 +66,7 @@ class FeedbackActivity : BaseActivity() {
         app.appComponent.uiFeedbackService.submitFeedback(feedback) successUi {
             mFeedbackField.setText("")
         } failUi {
-            log.debug("Failed sumbiting feedback", it.stackTrace)
+            log.error("Failed sumbiting feedback", it.stackTrace)
         }
     }
 

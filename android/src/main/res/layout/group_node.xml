@@ -38,7 +38,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text=""
                     android:id="@+id/group_node_name"/>
         </LinearLayout>
         <LinearLayout
@@ -50,14 +49,12 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:text=""
                     android:id="@+id/textView10"
                     android:layout_gravity="start"/>
             <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:text=""
                     android:id="@+id/group_node_members"/>
         </LinearLayout>
     </LinearLayout>

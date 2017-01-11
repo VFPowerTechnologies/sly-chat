@@ -65,7 +65,7 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
         settingsService = SettingsServiceImpl(this)
 
         val actionBar = findViewById(R.id.recent_chat_toolbar) as Toolbar
-        actionBar.title = "  Sly Chat"
+        actionBar.title = resources.getString(R.string.recent_chat_title)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP)
             actionBar.logo = getDrawable(R.drawable.ic_launcher)
         else
@@ -95,7 +95,7 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
             displayRecentChat(it)
             showInviteFriends()
         } failUi {
-            log.debug("failed to fetch recent chats")
+            log.error("failed to fetch recent chats")
         }
 
         setListeners()
@@ -126,7 +126,7 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
         if (data.lastMessage != null)
             messageView.text = data.lastMessage
         else
-            messageView.text = "Hidden Message"
+            messageView.text = resources.getString(R.string.recent_chat_hidden_text)
 
         val time: String
         time = formatTimeStamp(data.lastTimestamp)
@@ -176,7 +176,7 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
             else
                 inviteNode.visibility = View.GONE
         } failUi {
-            log.debug("Failed to check the total count of contacts")
+            log.error("Failed to check the total count of contacts")
         }
     }
 
@@ -227,7 +227,7 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
         var speakerName = ""
         val lastSpeakerId = conversation.info.lastSpeaker
         if (lastSpeakerId == null)
-            speakerName = "You"
+            speakerName = resources.getString(R.string.recent_chat_self_speaker_name)
         else {
             val contactInfo = messengerService.getContactInfo(lastSpeakerId)
             if (contactInfo != null)

@@ -14,7 +14,7 @@
             android:id="@+id/recent_chat_contact_name"
             android:layout_marginStart="5dp"
             android:textSize="15sp"
-            android:singleLine="true"
+            android:maxLines="1"
             android:textStyle="bold"/>
     <TextView
             android:layout_width="wrap_content"

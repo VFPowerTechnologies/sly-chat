@@ -26,7 +26,7 @@ class InviteFriendsActivity: BaseActivity() {
         setContentView(R.layout.activity_invite_friends)
 
         val actionBar = findViewById(R.id.invite_friends_toolbar) as Toolbar
-        actionBar.title = "Invite Friends"
+        actionBar.title = resources.getString(R.string.invite_friends_title)
         setSupportActionBar(actionBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -54,7 +54,7 @@ class InviteFriendsActivity: BaseActivity() {
             putExtra(Intent.EXTRA_TEXT, text)
         }
 
-        val chooserIntent = Intent.createChooser(intent, "Invite a friend to Sly").apply {
+        val chooserIntent = Intent.createChooser(intent, resources.getString(R.string.invite_friends_intent_text)).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 

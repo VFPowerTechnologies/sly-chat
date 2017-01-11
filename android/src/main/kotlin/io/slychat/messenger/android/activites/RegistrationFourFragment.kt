@@ -83,19 +83,19 @@ class RegistrationFourFragment: Fragment() {
         val parsed : Phonenumber.PhoneNumber
 
         if(phoneInput.isEmpty()) {
-            displayError("Phone number is required")
+            displayError(resources.getString(R.string.registration_phone_required_error))
             return
         }
 
         try {
             parsed = phoneUtil.parse(phoneInput, country)
         } catch (e: Exception) {
-            displayError("Phone does not seem to be valid")
+            displayError(resources.getString(R.string.registration_phone_invalid_error))
             return
         }
 
         if (!phoneUtil.isValidNumberForRegion(parsed, country)) {
-            displayError("Phone does not seem to be valid")
+            displayError(resources.getString(R.string.registration_phone_invalid_error))
             return
         }
 
@@ -112,21 +112,21 @@ class RegistrationFourFragment: Fragment() {
     private fun checkPhoneAvailability(phone: String) {
         val mainActivity = activity as MainActivity
 
-        mainActivity.showProgressDialog("Checking for phone number availability")
+        mainActivity.showProgressDialog(resources.getString(R.string.registration_phone_verification_process))
         registrationService.checkPhoneNumberAvailability(phone) successUi { available ->
             if(available) {
                 mainActivity.registrationInfo.phoneNumber = phone
-                mainActivity.setProgressDialogMessage("Registration in progress")
+                mainActivity.setProgressDialogMessage(resources.getString(R.string.registration_process))
                 doRegistration()
 
             }
             else {
                 mainActivity.hideProgressDialog()
-                displayError("Phone number is already in use")
+                displayError(resources.getString(R.string.registration_phone_taken_error))
             }
         } failUi {
             mainActivity.hideProgressDialog()
-            displayError("An error occurred")
+            displayError(resources.getString(R.string.registration_global_error))
         }
     }
 
@@ -186,8 +186,8 @@ class RegistrationFourFragment: Fragment() {
     private fun showPermissionRequestDetails() {
         val alert = AlertDialog.Builder(activity)
         alert.setCancelable(false)
-        alert.setTitle("Permission Required")
-        alert.setMessage("Phone access is required to retrieved your phone number")
+        alert.setTitle(resources.getString(R.string.permission_request_title))
+        alert.setMessage(resources.getString(R.string.permission_request_title_phone_access))
         alert.setPositiveButton(android.R.string.ok, DialogInterface.OnClickListener { dialogInterface, i ->
             requestPermission(activity, Manifest.permission.READ_PHONE_STATE) successUi { granted ->
                 if (granted) {

@@ -57,8 +57,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                android:text="@string/search_result_header"
-                android:id="@+id/textView4"/>
+                android:text="@string/search_result_header"/>
         <ScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

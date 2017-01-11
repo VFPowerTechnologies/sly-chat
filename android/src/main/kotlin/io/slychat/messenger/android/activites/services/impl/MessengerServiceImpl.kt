@@ -23,7 +23,6 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
     private val app = AndroidApp.get(activity)
     private var usercomponent = app.getUserComponent()
     private val messageService = usercomponent.messageService
-    private val groupService = usercomponent.groupService
     private val contactService = usercomponent.contactsService
 
     var conversations: MutableMap<UserId, UserConversation> = mutableMapOf()
@@ -117,7 +116,6 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
     override fun addNewMessageListener (listener: (ConversationMessage) -> Unit) {
         newMessageListener?.unsubscribe()
         newMessageListener = messageService.newMessages.subscribe {
-            log.debug("Received new message")
             updateConversationCache(it)
         }
         newMessageUIListener = listener
@@ -147,11 +145,9 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
     override fun sendMessageTo (conversationId: ConversationId, message: String, ttl: Long): Promise<Unit, Exception> {
         when(conversationId) {
             is ConversationId.User -> {
-                log.debug("Sending single message\n\n\n\n\n")
                 return messengerService.sendMessageTo(conversationId.id, message, ttl)
             }
             is ConversationId.Group -> {
-                log.debug("Sending group message\n\n\n\n\n")
                 return messengerService.sendGroupMessageTo(conversationId.id, message, ttl)
             }
         }
@@ -179,7 +175,7 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
                     notifyNewMessage(info)
                 }
             } failUi {
-                log.debug("Getting conversation for ${userId.long} failed")
+                log.error("Getting conversation for ${userId.long} failed")
             }
         }
         else if (conversationId is ConversationId.Group) {

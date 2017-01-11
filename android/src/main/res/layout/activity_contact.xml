@@ -33,6 +33,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:tabMode="fixed"
-                app:tabGravity="fill" android:layout_gravity="bottom" android:layout_alignParentBottom="true"/>
+                app:tabGravity="fill"
+                android:layout_gravity="bottom"
+                android:layout_alignParentBottom="true"/>
     </RelativeLayout>
 </LinearLayout>

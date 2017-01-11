@@ -50,7 +50,7 @@ class RegistrationTwoFragment: Fragment() {
         var valid = true
 
         if (email.isEmpty()) {
-            emailField.error = "Your email is required"
+            emailField.error = resources.getString(R.string.registration_email_required_error)
             valid = false
         }
 
@@ -64,7 +64,7 @@ class RegistrationTwoFragment: Fragment() {
         val app = AndroidApp.get(activity)
         val emailField = v?.findViewById(R.id.registration_email) as EditText
 
-        mainActivity.showProgressDialog("Checking for email availability")
+        mainActivity.showProgressDialog(resources.getString(R.string.registration_email_verification_process))
         app.appComponent.registrationService.checkEmailAvailability(email) successUi { available ->
             if(available) {
                 mainActivity.registrationInfo.email = email
@@ -73,11 +73,11 @@ class RegistrationTwoFragment: Fragment() {
             }
             else {
                 mainActivity.hideProgressDialog()
-                emailField.error = "Email is already in use"
+                emailField.error = resources.getString(R.string.registration_email_taken_error)
             }
         } failUi {
             mainActivity.hideProgressDialog()
-            emailField.error = "An error occurred"
+            emailField.error = resources.getString(R.string.registration_global_error)
             log.debug(it.message)
         }
     }

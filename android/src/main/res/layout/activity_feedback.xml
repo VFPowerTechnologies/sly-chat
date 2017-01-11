@@ -28,12 +28,12 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/feedback_field"
                 android:maxLines="5"
-                android:hint="Please type your feedback"
+                android:hint="@string/feedback_hint"
                 android:gravity="top"/>
         <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Submit"
+                android:text="@string/submit_button"
                 android:id="@+id/submit_feedback_btn"
                 android:layout_gravity="center_horizontal"/>
     </LinearLayout>

@@ -53,7 +53,7 @@ class SettingsActivity: BaseActivity() {
         setContentView(R.layout.activity_settings)
 
         val actionBar = findViewById(R.id.setting_toolbar) as Toolbar
-        actionBar.title = "Settings"
+        actionBar.title = resources.getString(R.string.settings_title)
         setSupportActionBar(actionBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -141,7 +141,7 @@ class SettingsActivity: BaseActivity() {
         val previousRingtoneUri = previous?.let { Uri.parse(it) }
 
         intent.apply {
-            putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Message notification sound")
+            putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, resources.getString(R.string.settings_ringtone_intent_text))
             putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
             putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
             putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))

@@ -47,7 +47,7 @@ class RegistrationOneFragment: Fragment() {
         var valid = true
 
         if (name.isEmpty()) {
-            nameField.error = "Your name is required"
+            nameField.error = resources.getString(R.string.registration_name_required_error)
             valid = false
         }
 

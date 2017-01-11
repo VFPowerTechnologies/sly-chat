@@ -36,11 +36,11 @@
                         android:inputType="textPersonName"
                         android:ems="10"
                         android:id="@+id/create_group_name"
-                        android:hint="Group Name"/>
+                        android:hint="@string/create_group_name_hint"/>
                 <Button
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Create"
+                        android:text="@string/create_button"
                         android:id="@+id/create_group_submit_btn"/>
             </LinearLayout>
             <LinearLayout
@@ -52,8 +52,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textAppearance="?android:attr/textAppearanceMedium"
-                        android:text="Contacts"
-                        android:id="@+id/textView9"/>
+                        android:text="@string/create_group_contact_header"/>
                 <ScrollView android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:scrollbars="none">

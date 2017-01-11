@@ -69,13 +69,25 @@
                             android:id="@+id/expiration_slider"
                             android:max="120"
                             android:layout_marginTop="5dp"/>
-                    <TextView
+                    <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textAppearance="?android:attr/textAppearanceSmall"
-                            android:id="@+id/expiration_delay"
-                            android:layout_gravity="end"
-                            android:layout_marginEnd="16dp"/>
+                            android:orientation="horizontal"
+                            android:layout_gravity="end">
+                        <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/expiring_delay_start"/>
+                        <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="?android:attr/textAppearanceSmall"
+                                android:id="@+id/expiration_delay"/>
+                        <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/expiring_delay_end"/>
+                    </LinearLayout>
                 </LinearLayout>
                 <LinearLayout
                         android:orientation="horizontal"
