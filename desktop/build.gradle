@@ -88,6 +88,28 @@ distZip {
     enabled = false
 }
 
+//there's the mac.signing-key-user-name setting, but setting it never actually works
+//not providing a name doesn't work either, even when it's unambiguous
+//even running the command it tries yields the key in the results, so I've no clue what its problem is
+def osxSigningIdentity = 'Systèmes Informatiques Keystream Inc, Les (X87YZ6DYVJ)'
+
+def jfxBundler = 'all'
+
+switch (System.getProperty('os.name')) {
+    case 'Linux':
+        jfxBundler = 'image'
+        break
+
+    //don't bother wasting time building a .pkg or image
+    case 'Mac OS X':
+        jfxBundler = 'dmg'
+        break
+
+    case { it.startsWith('Windows') }:
+        jfxBundler = 'exe'
+        break
+}
+
 jfx {
     //don't disable this, otherwise errors won't be displayed at all
     verbose = true
@@ -96,9 +118,22 @@ jfx {
 
     jfxMainAppJarName = 'sly-chat.jar'
 
-    appName = 'sly-chat'
+    appName = 'Sly'
+
+    nativeReleaseVersion = rootProject.version
 
     vendor = 'Keystream Information Systems'
+
+    bundler = jfxBundler
+
+    bundleArguments = [
+        'mac.category': 'public.app-category.social-networking',
+        'mac.CFBundleIdentifier': 'io.slychat.messenger.desktop',
+        //MUST be a string, otherwise the task just won't run but won't actually fail
+        'mac.CFBundleVersion': '1',
+        'mac.signing-key-developer-id-app': "Developer ID Application: $osxSigningIdentity".toString(),
+        'mac.signing-key-developer-id-installer': "Developer ID Installer: $osxSigningIdentity".toString(),
+    ]
 }
 
 String sha256(File path) {
@@ -129,7 +164,50 @@ task distLinux(dependsOn: distTar) << {
      generateChecksumFile(distTar.archivePath)
 }
 
-task distOSX(dependsOn: jfxNative) {
+boolean isDMGProperlySigned(String path) {
+    def result = exec {
+        executable 'spctl'
+
+        ignoreExitValue true
+
+        args '-a', path
+    }
+
+    result.rethrowFailure()
+
+    result.exitValue == 0
+}
+
+task verifyDMGSignature(dependsOn: jfxNative) {
+    doLast {
+        String mountRoot = "${System.getProperty('java.io.tmpdir')}"
+        String mountPoint = "$mountRoot/$jfx.appName"
+        String appPath = "$mountPoint/${jfx.appName}.app"
+        File dmgPath = new File("$project.projectDir/$jfx.nativeOutputDir/$jfx.appName-${jfx.nativeReleaseVersion}.dmg")
+
+        logger.debug("Mounting $dmgPath to $mountPoint")
+
+        exec {
+            executable 'hdiutil'
+
+            args 'attach', dmgPath.toString(), '-mountroot', mountRoot
+        }
+
+        try {
+            if (!isDMGProperlySigned(appPath))
+                throw new GradleException("DMG is not properly signed, rejected by GateKeeper check")
+        }
+        finally {
+            exec {
+                executable 'hdiutil'
+
+                args 'detach', mountPoint
+            }
+        }
+    }
+}
+
+task distOSX(dependsOn: verifyDMGSignature) {
     //annoyingly we can't make jfxNative not append the version to the dmg file name
     //so we just symlink, since this makes this more consistent with the windows/linux releases
     File dmgPath = new File("$project.projectDir/$jfx.nativeOutputDir/$jfx.appName-${jfx.nativeReleaseVersion}.dmg")

@@ -34,7 +34,6 @@ import javafx.application.Platform
 import javafx.scene.Node
 import javafx.scene.Scene
 import javafx.scene.control.Alert
-import javafx.scene.control.MenuBar
 import javafx.scene.control.MenuItem
 import javafx.scene.control.SeparatorMenuItem
 import javafx.scene.image.Image
@@ -274,8 +273,8 @@ class DesktopApp : Application() {
 
         app.userSessionAvailable.subscribe { onUserSessionAvailable(it) }
 
-        javaClass.getResourceAsStream("/sly-messenger.png").use { primaryStage.icons.add(Image(it)) }
-        primaryStage.title = "Sly Chat"
+        javaClass.getResourceAsStream("/window-icon.png").use { primaryStage.icons.add(Image(it)) }
+        primaryStage.title = "Sly"
 
         primaryStage.scene = Scene(stackPane, 852.0, 480.0)
         initializeWindowPosition(primaryStage)
