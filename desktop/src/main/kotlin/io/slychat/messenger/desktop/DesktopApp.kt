@@ -151,8 +151,6 @@ class DesktopApp : Application() {
         if (isRestrictedCryptography())
             return
 
-        MenuItem("Testing")
-
         KovenantUi.uiContext {
             dispatcher = JFXDispatcher.instance
         }
@@ -221,6 +219,7 @@ class DesktopApp : Application() {
         app.isInBackground = false
     }
 
+    /** Creates the main ui window. */
     private fun initPrimaryStage(primaryStage: Stage, isInitialLoad: Boolean) {
         this.stage = primaryStage
 
@@ -318,8 +317,6 @@ class DesktopApp : Application() {
         dispatcher = null
         navigationService = null
         loadingScreen = null
-
-        updatePrefsState()
     }
 
     private fun updatePrefsState() {
@@ -357,7 +354,7 @@ class DesktopApp : Application() {
         hookAppleEvents()
 
         val userNotificationCenter = NSUserNotificationCenter.defaultUserNotificationCenter
-        userNotificationCenter.delegate = UserNotificationCenterDelegate(this)
+        userNotificationCenter.delegate = UserNotificationCenterDelegate(this, uiVisibility)
     }
 
     private fun addOsxKeybindings() {
@@ -460,8 +457,6 @@ class DesktopApp : Application() {
         if (navigationService == null) {
             //will never be null here
             navigationService = NavigationServiceToJSProxy(dispatcher!!)
-
-            updatePrefsState()
 
             runUIAvailableListeners()
         }

@@ -6,8 +6,20 @@ import io.slychat.messenger.desktop.DesktopApp
 import io.slychat.messenger.desktop.osx.ns.NSUserNotification
 import io.slychat.messenger.desktop.osx.ns.NSUserNotificationCenter
 import io.slychat.messenger.desktop.osx.ns.NSUserNotificationCenterDelegate
+import rx.subjects.BehaviorSubject
 
-class UserNotificationCenterDelegate(private val desktopApp: DesktopApp) : NSUserNotificationCenterDelegate() {
+class UserNotificationCenterDelegate(
+    private val desktopApp: DesktopApp,
+    uiVisibility: BehaviorSubject<Boolean>
+) : NSUserNotificationCenterDelegate() {
+    private var isUIVisible = false
+
+    init {
+        uiVisibility.subscribe {
+            isUIVisible = it
+        }
+    }
+
     override fun didActivateNotification(center: NSUserNotificationCenter, notification: NSUserNotification) {
         val userInfo = notification.userInfo
 
@@ -32,6 +44,6 @@ class UserNotificationCenterDelegate(private val desktopApp: DesktopApp) : NSUse
     }
 
     override fun shouldPresentNotification(center: NSUserNotificationCenter, notification: NSUserNotification): Boolean {
-        return false
+        return !isUIVisible
     }
 }
