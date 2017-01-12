@@ -327,7 +327,7 @@ class DesktopApp : Application() {
     }
 
     private fun isPrefsAvailable(): Boolean {
-        return navigationService != null && app.userComponent != null
+        return app.userComponent != null
     }
 
     private fun onUserSessionAvailable(userComponent: UserComponent?) {
@@ -399,7 +399,9 @@ class DesktopApp : Application() {
         prefsItem.accelerator = KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN)
         prefsItem.isDisable = isPrefsAvailable()
         prefsItem.setOnAction {
-            navigationService?.goTo(getNavigationPageSettings())
+            addUIAvailableListener {
+                navigationService?.goTo(getNavigationPageSettings())
+            }
         }
         appMenu.items.addAll(1, listOf(
             SeparatorMenuItem(),
