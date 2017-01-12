@@ -70,8 +70,6 @@
     <string name="sms_verification_resend_link">Didn\'t receive your verification code? Resend</string>
     <string name="sms_verification_update_phone_link">Update phone number</string>
 
-    <string name="username_field_hint">Email or Phone Number</string>
-
     <string name="empty_recent_chat_text">No recent chats</string>
     <string name="empty_contact_list_text">No contacts</string>
 
@@ -146,7 +144,7 @@
     <string name="chat_delete_conversation_text">Are you sure you want to delete this whole conversation?</string>
     <string name="chat_block_group_title">Block group</string>
     <string name="chat_block_group_text">Are you sure you want to block this group?</string>
-    <string name="chat_delete_group_title">Delete contact</string>
+    <string name="chat_delete_group_title">Delete group</string>
     <string name="chat_delete_group_text">Are you sure you want to delete this group?</string>
 
     <string name="action_menu">Action Menu</string>

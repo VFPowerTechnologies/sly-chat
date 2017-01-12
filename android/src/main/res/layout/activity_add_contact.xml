@@ -37,7 +37,7 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/add_contact_field"
                 android:inputType="textEmailAddress"
-                android:hint="@string/username_field_hint"
+                android:hint="@string/login_username_hint"
                 android:layout_marginTop="10dp"
                 android:layout_marginBottom="10dp"/>
         <Button
