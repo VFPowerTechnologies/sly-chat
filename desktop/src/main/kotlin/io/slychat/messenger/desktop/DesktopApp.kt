@@ -53,6 +53,7 @@ import javafx.scene.web.WebEngine
 import javafx.scene.web.WebView
 import javafx.stage.Screen
 import javafx.stage.Stage
+import javafx.stage.StageStyle
 import javafx.util.Duration
 import nl.komponents.kovenant.jfx.JFXDispatcher
 import nl.komponents.kovenant.ui.KovenantUi
@@ -342,6 +343,18 @@ class DesktopApp : Application() {
         }
     }
 
+    /**
+     * Enable some OSX-specific functionality:
+     *
+     * Notification center support. (this is handled via a custom PlatformNotificationService)
+     *
+     * App won't shutdown when window is closed, but will continue to function in the background. UI will be restored
+     * if the dock tile is clicked, or a notification is activated.
+     *
+     * A proper system menu part is set up.
+     *
+     * Stages will response to common OSX keybindings (such as cmd-w).
+     */
     private fun osxSetup() {
         if (currentOs.type != Os.Type.OSX)
             return
@@ -350,7 +363,7 @@ class DesktopApp : Application() {
 
         setupOsxMenu()
 
-        addOsxKeybindings()
+        registerOsxKeybindings()
 
         hookAppleEvents()
 
@@ -358,35 +371,70 @@ class DesktopApp : Application() {
         userNotificationCenter.delegate = UserNotificationCenterDelegate(this, uiVisibility)
     }
 
-    private fun addOsxKeybindings() {
+    /**
+     * Registers common window-level keybindings used on OSX.
+     *
+     * Currently registers the following bindings:
+     *
+     * cmd-m: minimize
+     * cmd-ctrl-f: fullscreen
+     * cmd-w: close window
+     * cmd-,: preferences (if logged in)
+     *
+     * cmd-h, cmd-alt-h are handled via NSDeskFX's app menu accelerators.
+     */
+    private fun registerOsxKeybindings() {
+        //note that we do all stage modifications in the next event loop iteration
+        //if we don't do this, we get various issues
+        //for closing a window, an NSArray objectAtIndex: is thrown (although no crash occurs)
+        //also for closing, any other window will end up processing the event even if consume() is called; so cmd-w can
+        //do something like closing the focused About window AND the main window with a single press/release
+        //for fullscreening, something similar happens if you unfullscreen right away, and the titlebar icon gets corrupted
+        //if you switch space after fullscreening, then go back and unfullscreen the jvm crashes from an uncaught CALayer exception
+        //I haven't seen any adverse effects for minimization, but doing the same thing there anyways incase
         val minimize = KeyBinding(
             KeyCodeCombination(KeyCode.M, KeyCodeCombination.META_DOWN),
             {
-                stage?.isIconified = true
+                val stage = this.stage
+
+                if (stage != null) {
+                    Platform.runLater {
+                        stage.isIconified = true
+                    }
+                }
             }
         )
         keyBindings.add(minimize)
 
-        //val fullScreen = KeyBinding(
-        //    KeyCodeCombination(KeyCode.F, KeyCodeCombination.META_DOWN, KeyCodeCombination.CONTROL_DOWN),
-        //    {
-        //        val stage = this.stage
+        val fullScreen = KeyBinding(
+            KeyCodeCombination(KeyCode.F, KeyCodeCombination.META_DOWN, KeyCodeCombination.CONTROL_DOWN),
+            {
+                val stage = this.stage
 
-        //        if (stage != null)
-        //            stage.isFullScreen = !stage.isFullScreen
-        //    }
-        //)
-        //keyBindings.add(fullScreen)
+                if (stage != null) {
+                    Platform.runLater {
+                        stage.isFullScreen = !stage.isFullScreen
+                    }
+                }
+            }
+        )
+        keyBindings.add(fullScreen)
 
         val closeWindow = KeyBinding(
             KeyCodeCombination(KeyCode.W, KeyCodeCombination.META_DOWN),
             {
-                stage?.close()
+                val stage = this.stage
+                if (stage != null) {
+                    Platform.runLater {
+                        stage.close()
+                    }
+                }
             }
         )
         keyBindings.add(closeWindow)
     }
 
+    /** Uses NSDeskFX to modify the app menu. */
     private fun setupOsxMenu() {
         val tk = MenuToolkit.toolkit()
 
@@ -396,6 +444,19 @@ class DesktopApp : Application() {
             .withCopyright("Copyright 2016-2017 Keystream Systems Inc.")
             .withCloseOnFocusLoss()
             .build()
+
+        //disable minimize button in titlebar
+        aboutStage.initStyle(StageStyle.UTILITY)
+
+        aboutStage.addEventHandler(KeyEvent.KEY_RELEASED) { event ->
+            if (KeyCodeCombination(KeyCode.W, KeyCodeCombination.META_DOWN).match(event)) {
+                Platform.runLater {
+                    aboutStage.close()
+                }
+
+                event.consume()
+            }
+        }
 
         val appMenu = tk.createDefaultApplicationMenu("Sly", aboutStage)
 
@@ -486,8 +547,7 @@ class DesktopApp : Application() {
 
             val stage = this.stage!!
 
-            if (stage.isIconified)
-                stage.isIconified = false
+            stage.toFront()
         }
         else {
             uiAvailableListeners.add(listener)
@@ -538,9 +598,8 @@ class DesktopApp : Application() {
         val stage = this.stage
 
         if (stage != null) {
-            if (stage.isIconified)
-                stage.isIconified = false
-            //else os handles refocusing for us
+            //os handles refocusing for us
+            stage.toFront()
         }
         else
             restoreUI()

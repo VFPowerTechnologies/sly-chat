@@ -10,6 +10,6 @@ class KeyBinding(
     fun matches(event: KeyEvent): Boolean = combination.match(event)
 
     override fun toString(): String {
-        return "KeyBinding($combination)"
+        return "KeyBinding(combination=$combination)"
     }
 }
