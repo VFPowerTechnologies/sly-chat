@@ -78,6 +78,8 @@ class DesktopApp : Application() {
 
     private val keyBindings = ArrayList<KeyBinding>()
 
+    private val uiAvailableListeners = ArrayList<() -> Unit>()
+
     /** Enable the (hidden) debugger WebEngine feature */
     private fun enableDebugger(engine: WebEngine) {
         val objectMapper = ObjectMapper()
@@ -219,7 +221,7 @@ class DesktopApp : Application() {
         app.isInBackground = false
     }
 
-    private fun initAndShowStage(primaryStage: Stage, isInitialLoad: Boolean) {
+    private fun initPrimaryStage(primaryStage: Stage, isInitialLoad: Boolean) {
         this.stage = primaryStage
 
         stage = primaryStage
@@ -305,7 +307,7 @@ class DesktopApp : Application() {
         //on startup, due to https://bugs.openjdk.java.net/browse/JDK-8088179
         //so if this ever gets backported to jre8, I'll come back and fix the stuff here
         app.addOnInitListener {
-            initAndShowStage(primaryStage, true)
+            initPrimaryStage(primaryStage, true)
 
             osxSetup()
         }
@@ -456,14 +458,28 @@ class DesktopApp : Application() {
         if (navigationService == null) {
             //will never be null here
             navigationService = NavigationServiceToJSProxy(dispatcher!!)
+
             updatePrefsState()
+
+            runUIAvailableListeners()
         }
         else
             log.warn("Attempt to hide splash screen twice")
     }
 
-    private fun runWhenUIIsPresent() {
+    private fun runUIAvailableListeners() {
+        uiAvailableListeners.forEach { it() }
+        uiAvailableListeners.clear()
+    }
 
+    /** Runs the given listener when the webview ui has completed loading (via uiLoadComplete). */
+    private fun addUIAvailableListener(listener: () -> Unit) {
+        if (navigationService != null)
+            listener()
+        else {
+            uiAvailableListeners.add(listener)
+            restoreUI()
+        }
     }
 
     fun handleConversationNotificationActivated(account: SlyAddress, conversationId: ConversationId) {
@@ -478,8 +494,9 @@ class DesktopApp : Application() {
             return
         }
 
-        //TODO if running headless, need to open window first if not already opened
-        navigationService?.goTo(getNavigationPageConversation(conversationId))
+        addUIAvailableListener {
+            navigationService?.goTo(getNavigationPageConversation(conversationId))
+        }
     }
 
     //must be done after NSApplication has been created, so need to call via start(), and not in main() or init()
@@ -492,13 +509,14 @@ class DesktopApp : Application() {
         appleEventManager.setEventHandler(appleEventHandler, sel("handleAppleEvent:withReplyEvent:"), kCoreEventClass, kAEReopenApplication)
     }
 
-    //the window comes up much quicker here, but we still need a splash image to hide the web page loading
-    private fun newPrimaryStage(): Stage {
+    private fun restoreUI() {
+        if (stage != null)
+            return
+
         val stage = Stage()
 
-        initAndShowStage(stage, false)
-
-        return stage
+        //the window comes up much quicker here, so we don't display a loading page (looks odd anyways)
+        initPrimaryStage(stage, false)
     }
 
     //only used on osx
@@ -512,6 +530,6 @@ class DesktopApp : Application() {
             //else os handles refocusing for us
         }
         else
-            newPrimaryStage()
+            restoreUI()
     }
 }
