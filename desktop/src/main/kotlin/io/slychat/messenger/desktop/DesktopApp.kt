@@ -472,10 +472,19 @@ class DesktopApp : Application() {
         uiAvailableListeners.clear()
     }
 
-    /** Runs the given listener when the webview ui has completed loading (via uiLoadComplete). */
+    /**
+     * Runs the given listener when the webview ui has completed loading (via uiLoadComplete).
+     * Will unminimize window if required.
+     */
     private fun addUIAvailableListener(listener: () -> Unit) {
-        if (navigationService != null)
+        if (navigationService != null) {
             listener()
+
+            val stage = this.stage!!
+
+            if (stage.isIconified)
+                stage.isIconified = false
+        }
         else {
             uiAvailableListeners.add(listener)
             restoreUI()
