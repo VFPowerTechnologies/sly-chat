@@ -171,7 +171,7 @@ class DesktopApp : Application() {
             hostServices
         }
         catch (e: NullPointerException) {
-            null
+           null
         }
 
         val browser = if (hostServices != null)
@@ -299,15 +299,24 @@ class DesktopApp : Application() {
             return
         }
 
-        initAndShowStage(primaryStage, true)
+        //delay showing ui until app config is read so we have access to the current theme info
 
-        osxSetup()
+        //ideally we'd use this info to provide proper fill colors, but right now this doesn't prevent flickering
+        //on startup, due to https://bugs.openjdk.java.net/browse/JDK-8088179
+        //so if this ever gets backported to jre8, I'll come back and fix the stuff here
+        app.addOnInitListener {
+            initAndShowStage(primaryStage, true)
+
+            osxSetup()
+        }
     }
 
     private fun onWindowClosed() {
         stage = null
         dispatcher = null
         navigationService = null
+        loadingScreen = null
+
         updatePrefsState()
     }
 
@@ -451,6 +460,10 @@ class DesktopApp : Application() {
         }
         else
             log.warn("Attempt to hide splash screen twice")
+    }
+
+    private fun runWhenUIIsPresent() {
+
     }
 
     fun handleConversationNotificationActivated(account: SlyAddress, conversationId: ConversationId) {

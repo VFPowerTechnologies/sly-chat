@@ -194,6 +194,10 @@ class SlyApplication {
             autoLogin()
     }
 
+    /**
+     * Will call the given listener once the app config file has been read.
+     * If the file has already been read, the listener is called immediately.
+     */
     fun addOnInitListener(listener: (SlyApplication) -> Unit) {
         if (isInitialized)
             listener(this)
