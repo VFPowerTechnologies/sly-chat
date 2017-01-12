@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
 import de.codecentric.centerdevice.MenuToolkit
+import de.codecentric.centerdevice.dialogs.about.AboutStageBuilder
 import io.slychat.messenger.core.Os
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.SlyBuildConfig
@@ -389,7 +390,14 @@ class DesktopApp : Application() {
     private fun setupOsxMenu() {
         val tk = MenuToolkit.toolkit()
 
-        val appMenu = tk.createDefaultApplicationMenu("Sly Chat")
+        val aboutStage = AboutStageBuilder.start("Sly")
+            .withAppName("Sly")
+            .withImage(Image("/about-icon.png"))
+            .withCopyright("Copyright 2016-2017 Keystream Systems Inc.")
+            .withCloseOnFocusLoss()
+            .build()
+
+        val appMenu = tk.createDefaultApplicationMenu("Sly", aboutStage)
 
         val prefsItem = MenuItem("Preferences")
         prefsItem.accelerator = KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN)
