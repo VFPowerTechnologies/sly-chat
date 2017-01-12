@@ -1,5 +1,6 @@
 package io.slychat.messenger.desktop
 
+import ca.weblite.objc.RuntimeUtils.sel
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import com.vfpowertech.jsbridge.desktopwebengine.JFXWebEngineInterface
@@ -12,8 +13,12 @@ import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
 import io.slychat.messenger.desktop.jna.CLibrary
+import io.slychat.messenger.desktop.osx.AppleEventHandler
 import io.slychat.messenger.desktop.osx.OSXNotificationService
 import io.slychat.messenger.desktop.osx.UserNotificationCenterDelegate
+import io.slychat.messenger.desktop.osx.ns.NSAppleEventManager
+import io.slychat.messenger.desktop.osx.ns.NSAppleEventManager.Companion.kAEReopenApplication
+import io.slychat.messenger.desktop.osx.ns.NSAppleEventManager.Companion.kCoreEventClass
 import io.slychat.messenger.desktop.osx.ns.NSUserNotificationCenter
 import io.slychat.messenger.desktop.services.*
 import io.slychat.messenger.desktop.ui.SplashImage
@@ -214,17 +219,8 @@ class DesktopApp : Application() {
         app.isInBackground = false
     }
 
-    override fun start(primaryStage: Stage) {
-        //libsignal requires AES256 for message encryption+decryption
-        if (isRestrictedCryptography()) {
-            val alert = Alert(Alert.AlertType.ERROR)
-            alert.title = "Unable to start Sly Chat"
-            alert.headerText = "An error occurred during initialization."
-            alert.contentText = "Restricted JCE policy detected. Please install Unlimited Strength Jurisdiction Policy Files from Oracle."
-            alert.showAndWait()
-            Platform.exit()
-            return
-        }
+    private fun initAndShowStage(primaryStage: Stage, isInitialLoad: Boolean) {
+        this.stage = primaryStage
 
         stage = primaryStage
 
@@ -262,11 +258,12 @@ class DesktopApp : Application() {
 
         val splashImage = Image("/icon_512x512.png")
 
-        val loadingScreen = SplashImage(splashImage)
-        stackPane.children.add(loadingScreen)
-        this.loadingScreen = loadingScreen
+        if (isInitialLoad) {
+            val loadingScreen = SplashImage(splashImage)
+            stackPane.children.add(loadingScreen)
+            this.loadingScreen = loadingScreen
+        }
 
-        //TODO refresh prefs
         app.addOnInitListener {
             engine.load(javaClass.getResource("/ui/index.html").toExternalForm())
         }
@@ -278,13 +275,31 @@ class DesktopApp : Application() {
 
         primaryStage.scene = Scene(stackPane, 852.0, 480.0)
         initializeWindowPosition(primaryStage)
-        primaryStage.show()
+
+        //we wanna show something to the user asap
+        if (isInitialLoad)
+            primaryStage.show()
 
         primaryStage.setOnHidden { onWindowClosed() }
 
         primaryStage.addEventHandler(KeyEvent.KEY_RELEASED) { event ->
             handleKeyEvent(event)
         }
+    }
+
+    override fun start(primaryStage: Stage) {
+        //libsignal requires AES256 for message encryption+decryption
+        if (isRestrictedCryptography()) {
+            val alert = Alert(Alert.AlertType.ERROR)
+            alert.title = "Unable to start Sly Chat"
+            alert.headerText = "An error occurred during initialization."
+            alert.contentText = "Restricted JCE policy detected. Please install Unlimited Strength Jurisdiction Policy Files from Oracle."
+            alert.showAndWait()
+            Platform.exit()
+            return
+        }
+
+        initAndShowStage(primaryStage, true)
 
         osxSetup()
     }
@@ -293,6 +308,7 @@ class DesktopApp : Application() {
         stage = null
         dispatcher = null
         navigationService = null
+        updatePrefsState()
     }
 
     private fun updatePrefsState() {
@@ -321,9 +337,13 @@ class DesktopApp : Application() {
         if (currentOs.type != Os.Type.OSX)
             return
 
+        Platform.setImplicitExit(false)
+
         setupOsxMenu()
 
         addOsxKeybindings()
+
+        hookAppleEvents()
 
         val userNotificationCenter = NSUserNotificationCenter.defaultUserNotificationCenter
         userNotificationCenter.delegate = UserNotificationCenterDelegate(this)
@@ -406,27 +426,31 @@ class DesktopApp : Application() {
 
     fun uiLoadComplete() {
         val node = loadingScreen
-        if (node == null) {
-            log.warn("Attempted to hide splash screen twice!")
-            return
+
+        if (node != null) {
+            loadingScreen = null
+
+            val fade = FadeTransition(Duration.millis(600.0), node)
+
+            fade.fromValue = 1.0
+            fade.toValue = 0.0
+
+            fade.play()
+
+            fade.setOnFinished {
+                (node.parent as Pane).children.remove(node)
+            }
         }
+        else
+            stage?.show()
 
-        loadingScreen = null
-
-        val fade = FadeTransition(Duration.millis(600.0), node)
-
-        fade.fromValue = 1.0
-        fade.toValue = 0.0
-
-        fade.play()
-
-        fade.setOnFinished {
-            (node.parent as Pane).children.remove(node)
+        if (navigationService == null) {
+            //will never be null here
+            navigationService = NavigationServiceToJSProxy(dispatcher!!)
+            updatePrefsState()
         }
-
-        //will never be null here
-        navigationService = NavigationServiceToJSProxy(dispatcher!!)
-        updatePrefsState()
+        else
+            log.warn("Attempt to hide splash screen twice")
     }
 
     fun handleConversationNotificationActivated(account: SlyAddress, conversationId: ConversationId) {
@@ -443,5 +467,38 @@ class DesktopApp : Application() {
 
         //TODO if running headless, need to open window first if not already opened
         navigationService?.goTo(getNavigationPageConversation(conversationId))
+    }
+
+    //must be done after NSApplication has been created, so need to call via start(), and not in main() or init()
+    //GlassApplication doesn't support the reopen event at all, so we can just hook it
+    private fun hookAppleEvents() {
+        val appleEventHandler = AppleEventHandler(this)
+
+        val appleEventManager = NSAppleEventManager.sharedAppleEventManager
+
+        appleEventManager.setEventHandler(appleEventHandler, sel("handleAppleEvent:withReplyEvent:"), kCoreEventClass, kAEReopenApplication)
+    }
+
+    //the window comes up much quicker here, but we still need a splash image to hide the web page loading
+    private fun newPrimaryStage(): Stage {
+        val stage = Stage()
+
+        initAndShowStage(stage, false)
+
+        return stage
+    }
+
+    //only used on osx
+    //implements default system behavior when docktile is clicked
+    fun onReopenEvent() {
+        val stage = this.stage
+
+        if (stage != null) {
+            if (stage.isIconified)
+                stage.isIconified = false
+            //else os handles refocusing for us
+        }
+        else
+            newPrimaryStage()
     }
 }

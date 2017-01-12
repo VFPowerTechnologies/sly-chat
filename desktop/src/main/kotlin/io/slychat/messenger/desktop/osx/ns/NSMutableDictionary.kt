@@ -7,7 +7,7 @@ import ca.weblite.objc.Proxy
 class NSMutableDictionary(private val proxy: Proxy) : Peerable by proxy {
     constructor() : this(Client.getInstance().sendProxy("NSMutableDictionary", "new"))
 
-    operator fun get(key: String): String {
+    operator fun get(key: String): String? {
         return getString(proxy.send("objectForKey:", key))
     }
 

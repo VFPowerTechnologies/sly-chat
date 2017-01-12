@@ -5,7 +5,10 @@ import ca.weblite.objc.Proxy
 import ca.weblite.objc.Runtime
 import ca.weblite.objc.RuntimeUtils
 
-fun getString(v: Any): String {
+fun getString(v: Any?): String? {
+    if (v == null)
+        return null
+
     return when (v) {
         is String -> v
         is Proxy -> {
