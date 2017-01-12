@@ -364,16 +364,18 @@ class DesktopApp : Application() {
                 stage?.isIconified = true
             }
         )
+        keyBindings.add(minimize)
 
-        val fullScreen = KeyBinding(
-            KeyCodeCombination(KeyCode.F, KeyCodeCombination.META_DOWN, KeyCodeCombination.CONTROL_DOWN),
-            {
-                val stage = this.stage
+        //val fullScreen = KeyBinding(
+        //    KeyCodeCombination(KeyCode.F, KeyCodeCombination.META_DOWN, KeyCodeCombination.CONTROL_DOWN),
+        //    {
+        //        val stage = this.stage
 
-                if (stage != null)
-                    stage.isFullScreen = !stage.isFullScreen
-            }
-        )
+        //        if (stage != null)
+        //            stage.isFullScreen = !stage.isFullScreen
+        //    }
+        //)
+        //keyBindings.add(fullScreen)
 
         val closeWindow = KeyBinding(
             KeyCodeCombination(KeyCode.W, KeyCodeCombination.META_DOWN),
@@ -381,9 +383,6 @@ class DesktopApp : Application() {
                 stage?.close()
             }
         )
-
-        keyBindings.add(minimize)
-        keyBindings.add(fullScreen)
         keyBindings.add(closeWindow)
     }
 
