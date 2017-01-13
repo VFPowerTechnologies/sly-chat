@@ -21,6 +21,9 @@ NavigationController.prototype = {
                 this.loadPage("contacts.html", false);
             }.bind(this));
         }
+        else if (page == 'settings') {
+            navigationController.loadPage('settings.html', true);
+        }
         else if(/^user\//.test(page)) {
             var id = page.split("/", 2)[1];
 

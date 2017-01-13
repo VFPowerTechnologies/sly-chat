@@ -54,6 +54,12 @@ data class AppConfig(
         val APPEARANCE = "app.appearance"
         val APPEARANCE_THEME = join(APPEARANCE, "theme")
 
+        //these mush be kept in sync with settingsController.js's themesConfigName
+        val APPEARANCE_THEME_VALUE_DARK = "dark"
+        val APPEARANCE_THEME_VALUE_WHITE = "white"
+        //value if setting is null
+        val APPEARANCE_THEME_VALUE_DEFAULT = APPEARANCE_THEME_VALUE_DARK
+
         val PUSH_NOTIFICATIONS = "app.pushNotifications"
         val PUSH_NOTIFICATIONS_PERM_REQUESTED = join(PUSH_NOTIFICATIONS, "permRequested")
         val PUSH_NOTIFICATIONS_TOKENS = join(PUSH_NOTIFICATIONS, "tokens")

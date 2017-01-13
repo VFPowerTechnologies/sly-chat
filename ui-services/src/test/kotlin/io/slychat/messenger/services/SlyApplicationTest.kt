@@ -290,6 +290,20 @@ class SlyApplicationTest {
     }
 
     @Test
+    fun `it should unset userComponent before emitting the logout event`() {
+        val app = authWithOtherDevices(null)
+
+        var wasNulled = false
+        app.userSessionAvailable.subscribe {
+            wasNulled = app.userComponent == null
+        }
+
+        app.logout()
+
+        assertTrue(wasNulled, ".userComponent was not set to null before userSessionAvailable emitted")
+    }
+
+    @Test
     fun `it should update the relay clock diff when RelayClock changes`() {
         val app = authWithOtherDevices(null)
 

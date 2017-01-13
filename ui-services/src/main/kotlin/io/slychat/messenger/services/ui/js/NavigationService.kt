@@ -24,5 +24,8 @@ fun getNavigationPageConversation(conversationId: ConversationId): String {
     }
 }
 
+/** Returns the URL for the settings page. */
+fun getNavigationPageSettings(): String = "settings"
+
 /** Returns the URL for the contacts page. */
 fun getNavigationPageContacts(): String = "contacts"
