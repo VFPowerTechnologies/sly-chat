@@ -64,7 +64,6 @@ function createMobileContactPopup(isIos) {
                 '<a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a>Address Book' +
             '</div>' +
             '<div class="right">' +
-                '<a id="contactPopupNewBtn" href="#" class="link icon-only close-popup"> <i class="fa fa-plus-square"></i></a>' +
             '</div>' +
             '</div></div>';
     }

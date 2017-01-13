@@ -13,4 +13,4 @@ window.addEventListener('unhandledrejection', function (event) {
 
 window.uiController = new UIController();
 
-uiController.startUI();
+uiController.init();
