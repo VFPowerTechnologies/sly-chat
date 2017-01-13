@@ -15,6 +15,7 @@ import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResourc
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
 import io.slychat.messenger.desktop.jna.CLibrary
 import io.slychat.messenger.desktop.osx.AppleEventHandler
+import io.slychat.messenger.desktop.osx.GlassEventHandler
 import io.slychat.messenger.desktop.osx.OSXNotificationService
 import io.slychat.messenger.desktop.osx.UserNotificationCenterDelegate
 import io.slychat.messenger.desktop.osx.ns.NSAppleEventManager
@@ -366,6 +367,9 @@ class DesktopApp : Application() {
         registerOsxKeybindings()
 
         hookAppleEvents()
+
+        val glassApplication = com.sun.glass.ui.Application.GetApplication()
+        glassApplication.eventHandler = GlassEventHandler(glassApplication.eventHandler)
 
         val userNotificationCenter = NSUserNotificationCenter.defaultUserNotificationCenter
         userNotificationCenter.delegate = UserNotificationCenterDelegate(this, uiVisibility)
