@@ -36,6 +36,7 @@ buildscript {
             androidDeviceNames: '1.1.2',
             prettyTime: '4.0.1.Final',
             moeGradle: '1.2.5',
+            javaObjcBridge: '1.0.0',
         ]
     }
 

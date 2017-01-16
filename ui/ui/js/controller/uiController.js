@@ -42,8 +42,16 @@ var UIController = function () {
 };
 
 UIController.prototype = {
-    startUI : function () {
-        this.initApplication();
+    init : function () {
+        platformInfoService.getInfo().then(function (info) {
+            this.startUI(info)
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e)
+        })
+    },
+
+    startUI : function (info) {
+        this.initApplication(info);
         this.initMainView();
         this.createMobileMenu();
         this.handlePlatformUpdate();
@@ -151,15 +159,21 @@ UIController.prototype = {
         emojiController.setWindowRotationListener();
     },
 
-    initApplication : function () {
-        window.isAndroid = Framework7.prototype.device.android === true;
-        window.isIos = Framework7.prototype.device.ios === true;
-        window.isDesktop = Framework7.prototype.device.ios === false && Framework7.prototype.device.android === false;
+    initApplication : function (info) {
+        window.isAndroid = info.name === "android";
+        window.isIos = info.name === "ios";
+        window.isDesktop = info.name === "desktop";
+        window.isOsx = info.os === "osx";
+        window.isWindows = info.os === "windows";
+        window.isLinux = info.os === "linux";
 
         Template7.global = {
             android: isAndroid,
             ios: isIos,
-            isDesktop: isDesktop
+            isDesktop: isDesktop,
+            isOsx: isOsx,
+            isLinux: isLinux,
+            isWindows: isWindows
         };
 
         window.firstLoad = true;
@@ -183,6 +197,9 @@ UIController.prototype = {
         }
 
         window.slychat = new Framework7(options);
+
+        addPagesListeners();
+        createFormValidation();
     },
 
     createIosMenu : function () {

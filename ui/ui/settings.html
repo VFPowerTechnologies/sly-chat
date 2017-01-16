@@ -24,29 +24,31 @@
         <div class="page-content">
             <div class="list-block" style="margin-top: 0;">
                 {{#unless @global.ios}}
-                <!-- Notifications -->
-                <div class="list-group">
-                    <ul>
-                        <li class="list-group-title">Notifications</li>
-                        <li class="item-content">
-                            <div class="item-inner">
-                                <div class="item-title">Enable Notifications</div>
-                                <div class="item-after">
-                                        <label class="label-switch">
-                                            <input id='notifications-enabled-checkbox' type="checkbox">
-                                            <div class="checkbox"></div>
-                                        </label>
+                    {{#unless @global.isOsx}}
+                    <!-- Notifications -->
+                    <div class="list-group">
+                        <ul>
+                            <li class="list-group-title">Notifications</li>
+                            <li class="item-content">
+                                <div class="item-inner">
+                                    <div class="item-title">Enable Notifications</div>
+                                    <div class="item-after">
+                                            <label class="label-switch">
+                                                <input id='notifications-enabled-checkbox' type="checkbox">
+                                                <div class="checkbox"></div>
+                                            </label>
+                                    </div>
                                 </div>
-                            </div>
-                        </li>
-                        <li id='notification-sound-select-btn' class="item-content" style="cursor: pointer;">
-                            <div class="item-inner">
-                                <div class="item-title">Notification Sound</div>
-                                <div id="notification-sound-name" class="item-after"></div>
-                            </div>
-                        </li>
-                    </ul>
-                </div> <!-- Notifications End -->
+                            </li>
+                            <li id='notification-sound-select-btn' class="item-content" style="cursor: pointer;">
+                                <div class="item-inner">
+                                    <div class="item-title">Notification Sound</div>
+                                    <div id="notification-sound-name" class="item-after"></div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div> <!-- Notifications End -->
+                    {{/unless}}
                 <!-- Appearance -->
                 <div class="list-group">
                     <ul>

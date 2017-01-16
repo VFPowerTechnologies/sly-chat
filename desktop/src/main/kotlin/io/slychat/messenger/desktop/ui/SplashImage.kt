@@ -6,10 +6,10 @@ import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.shape.Rectangle
 
-class SplashImage(image: Image) : StackPane() {
+class SplashImage(image: Image, backgroundColor: Color) : StackPane() {
     init {
         val background = Rectangle()
-        background.fill = Color.BLACK
+        background.fill = backgroundColor
         background.heightProperty().bind(heightProperty())
         background.widthProperty().bind(widthProperty())
         children.add(background)

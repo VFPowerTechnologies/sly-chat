@@ -194,6 +194,10 @@ class SlyApplication {
             autoLogin()
     }
 
+    /**
+     * Will call the given listener once the app config file has been read.
+     * If the file has already been read, the listener is called immediately.
+     */
     fun addOnInitListener(listener: (SlyApplication) -> Unit) {
         if (isInitialized)
             listener(this)
@@ -776,13 +780,13 @@ class SlyApplication {
             reconnectionTimerSubscription = null
         }
 
+        this.userComponent = null
+
         //notify listeners before tearing down session
         userSessionAvailableSubject.onNext(null)
 
         //TODO shutdown stuff; probably should return a promise
         deinitializeUserSession(userComponent)
-
-        this.userComponent = null
 
         Sentry.setUserAddress(null)
 
