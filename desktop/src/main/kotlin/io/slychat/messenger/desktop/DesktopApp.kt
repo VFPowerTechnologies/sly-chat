@@ -26,6 +26,7 @@ import io.slychat.messenger.desktop.services.*
 import io.slychat.messenger.desktop.ui.SplashImage
 import io.slychat.messenger.services.PlatformNotificationService
 import io.slychat.messenger.services.SlyApplication
+import io.slychat.messenger.services.config.AppConfig
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.di.UserComponent
@@ -50,6 +51,7 @@ import javafx.scene.input.KeyCombination
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.Pane
 import javafx.scene.layout.StackPane
+import javafx.scene.paint.Color
 import javafx.scene.web.WebEngine
 import javafx.scene.web.WebView
 import javafx.stage.Screen
@@ -263,7 +265,14 @@ class DesktopApp : Application() {
         val splashImage = Image("/icon_512x512.png")
 
         if (isInitialLoad) {
-            val loadingScreen = SplashImage(splashImage)
+            val appearanceTheme = appComponent.appConfigService.appearanceTheme ?: AppConfig.APPEARANCE_THEME_VALUE_DEFAULT
+            val backgroundColor = when (appearanceTheme) {
+                AppConfig.APPEARANCE_THEME_VALUE_DARK -> Color.BLACK
+                AppConfig.APPEARANCE_THEME_VALUE_WHITE -> Color.WHITE
+                else -> Color.BLACK
+            }
+
+            val loadingScreen = SplashImage(splashImage, backgroundColor)
             stackPane.children.add(loadingScreen)
             this.loadingScreen = loadingScreen
         }
