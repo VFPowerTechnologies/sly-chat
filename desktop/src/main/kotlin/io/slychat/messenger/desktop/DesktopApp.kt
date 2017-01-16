@@ -278,11 +278,19 @@ class DesktopApp : Application() {
         primaryStage.title = "Sly"
 
         primaryStage.scene = Scene(stackPane, 852.0, 480.0)
-        initializeWindowPosition(primaryStage)
 
         //we wanna show something to the user asap
         if (isInitialLoad)
             primaryStage.show()
+
+        /*
+            Calling show() before initializing the position is required due to resolution scaling on OSX
+            the stage is rendered according to the main monitor
+            if we change the position to a different monitor, then call show() the stage
+            is still rendered in the main monitor's scale, not the associated monitor
+            calling show() beforehand avoids this issue
+        */
+        initializeWindowPosition(primaryStage)
 
         primaryStage.setOnHidden { onWindowClosed() }
 
