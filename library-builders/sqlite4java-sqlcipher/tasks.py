@@ -4,10 +4,13 @@ class Task(object):
     def __init__(self, name, description=None):
         self.name = name
         self.description = description
-        self.depends_on = []
+        self.depends_on = set()
+
+    def configure(self, context):
+        "Configure self dependencies/etc based on context info"
 
     def add_dependency(self, task_name):
-        self.depends_on.append(task_name)
+        self.depends_on.add(task_name)
 
     def run(self, task_context):
         raise NotImplementedError()
@@ -48,6 +51,9 @@ class Tasks(object):
             print('%s%s: %s' % ('  '*indent_level, task_name, task.description))
 
     def run(self, task_name, task_context):
+        for task in self.tasks_by_name.values():
+            task.configure(task_context)
+
         task = self._get_task_by_name(task_name)
 
         tasks_completed = set()

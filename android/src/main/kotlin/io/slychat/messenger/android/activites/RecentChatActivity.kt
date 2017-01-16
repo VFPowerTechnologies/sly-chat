@@ -85,7 +85,20 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
         drawerEmail.text = app.accountInfo?.email
         drawerName.text = app.accountInfo?.name
 
+        doPlatforContactSync()
+
         createEventListeners()
+    }
+
+    private fun doPlatforContactSync() {
+        if (app.platformContactSyncOccured)
+            return
+
+        app.getUserComponent().addressBookOperationManager.withCurrentSyncJobNoScheduler {
+            doFindPlatformContacts()
+        }
+
+        app.platformContactSyncOccured = true
     }
 
     private fun init () {

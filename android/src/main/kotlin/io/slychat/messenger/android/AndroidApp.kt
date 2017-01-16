@@ -14,19 +14,22 @@ import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
-import com.google.android.gms.iid.InstanceID
 import com.google.android.gms.security.ProviderInstaller
 import com.jaredrummler.android.device.DeviceName
+import io.slychat.messenger.android.activites.BaseActivity
 import io.slychat.messenger.android.services.AndroidPlatformContacts
 import io.slychat.messenger.android.services.AndroidUILoadService
 import io.slychat.messenger.android.services.AndroidUIPlatformInfoService
 import io.slychat.messenger.android.services.AndroidUIPlatformService
 import io.slychat.messenger.core.*
-import io.slychat.messenger.core.http.api.gcm.GcmAsyncClient
-import io.slychat.messenger.core.http.api.gcm.RegisterRequest
-import io.slychat.messenger.core.http.api.gcm.RegisterResponse
 import io.slychat.messenger.services.*
 import io.slychat.messenger.core.persistence.AccountInfo
+import io.slychat.messenger.core.SlyAddress
+import io.slychat.messenger.core.SlyBuildConfig
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClient
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClientImpl
+import io.slychat.messenger.core.pushnotifications.OfflineMessagesPushNotification
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
 import io.slychat.messenger.services.SlyApplication
@@ -39,7 +42,6 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.android.androidUiDispatcher
 import nl.komponents.kovenant.task
 import nl.komponents.kovenant.ui.KovenantUi
-import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -47,13 +49,15 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
 import java.util.*
 
+//TODO keep checking PushNotificationsClient.isRegistered on login? easy way to make sure stuff is still registered...
+//maybe add to PushNotificationManager or something
 class AndroidApp : Application() {
     companion object {
         fun get(context: Context): AndroidApp =
-            context.applicationContext as AndroidApp
+                context.applicationContext as AndroidApp
 
         /** Will never leak any exceptions. */
-        private fun gcmInit(context: Context): LoadError? {
+        private fun playServicesInit(context: Context): LoadError? {
             try {
                 val apiAvailability = GoogleApiAvailability.getInstance()
 
@@ -81,13 +85,11 @@ class AndroidApp : Application() {
             }
         }
 
-        private fun gcmInitAsync(context: Context): Promise<LoadError?, Exception> = task { gcmInit(context) }
+        private fun playServicesInitAsync(context: Context): Promise<LoadError?, Exception> = task { playServicesInit(context) }
     }
 
-    private var gcmInitRunning = false
-    private var gcmInitComplete = false
-
-    private var gcmRegistering = false
+    private var playServicesInitRunning = false
+    private var playServicesInitComplete = false
 
     //TODO move this into settings
     private var noNotificationsOnLogout = false
@@ -109,10 +111,7 @@ class AndroidApp : Application() {
 
     lateinit var notificationService: AndroidNotificationService
 
-    private lateinit var gcmClient: GcmAsyncClient
-
-    //set to true once we've made this request once since startup
-    private var hasCheckedGcmTokenStatus = false
+    private lateinit var pushNotificationsClient: PushNotificationsAsyncClient
 
     private val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
     private val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
@@ -120,10 +119,12 @@ class AndroidApp : Application() {
 
     private var lastActivity: String? = null
 
-//    /** Points to the current activity, if one is set. Used to request permissions from various services. */
-    var currentActivity: AppCompatActivity? = null
+    var platformContactSyncOccured = true
 
-    fun setCurrentActivity (activity: AppCompatActivity, visible: Boolean) {
+    //    /** Points to the current activity, if one is set. Used to request permissions from various services. */
+    var currentActivity: BaseActivity? = null
+
+    fun setCurrentActivity (activity: BaseActivity, visible: Boolean) {
         if (lastActivity == activity.toString() && !visible) {
             return
         }
@@ -179,14 +180,14 @@ class AndroidApp : Application() {
 
         if (SlyBuildConfig.DEBUG) {
             val policy = StrictMode.ThreadPolicy.Builder()
-                .detectAll()
-                .penaltyLog()
-                .build()
+                    .detectAll()
+                    .penaltyLog()
+                    .build()
 
             StrictMode.setThreadPolicy(policy)
         }
 
-        runGcmInit()
+        runPlayServicesInit()
     }
 
     private fun init() {
@@ -197,24 +198,26 @@ class AndroidApp : Application() {
 
         val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val defaultUserConfig = UserConfig().copy(
-            notificationsSound = defaultUri.toString()
+                notificationsSound = defaultUri.toString()
         )
 
         val platformModule = PlatformModule(
-            AndroidUIPlatformInfoService(),
-            SlyBuildConfig.ANDROID_SERVER_URLS,
-            platformInfo,
-            AndroidTelephonyService(this),
-            AndroidUIWindowService(this, softKeyboardVisibility),
-            AndroidPlatformContacts(this),
-            notificationService,
-            AndroidUIShareService(this),
-            AndroidUIPlatformService(this),
-            AndroidUILoadService(this),
-            uiVisibility,
-            networkStatus,
-            AndroidSchedulers.mainThread(),
-            defaultUserConfig
+                AndroidUIPlatformInfoService(),
+                SlyBuildConfig.ANDROID_SERVER_URLS,
+                platformInfo,
+                AndroidTelephonyService(this),
+                AndroidUIWindowService(this, softKeyboardVisibility),
+                AndroidPlatformContacts(this),
+                notificationService,
+                AndroidUIShareService(this),
+                AndroidUIPlatformService(this),
+                AndroidUILoadService(this),
+                uiVisibility,
+                AndroidTokenFetcher(this),
+                networkStatus,
+                AndroidSchedulers.mainThread(),
+                defaultUserConfig,
+                PushNotificationService.GCM
         )
 
         app.init(platformModule)
@@ -222,7 +225,7 @@ class AndroidApp : Application() {
 
         appComponent = app.appComponent
 
-        gcmClient = GcmAsyncClient(appComponent.serverUrls.API_SERVER, appComponent.slyHttpClientFactory)
+        pushNotificationsClient = PushNotificationsAsyncClientImpl(appComponent.serverUrls.API_SERVER, appComponent.slyHttpClientFactory)
 
         val packageManager = packageManager
         try {
@@ -250,20 +253,32 @@ class AndroidApp : Application() {
             else
                 onUserSessionDestroyed()
         }
+
+        //only do this once we've completed initialization (ie once AppConfigService is up)
+        app.addOnInitListener {
+            //no permissions required on android
+            if (!appComponent.appConfigService.pushNotificationsPermRequested) {
+                appComponent.appConfigService.withEditor {
+                    pushNotificationsPermRequested = true
+                }
+            }
+
+            appComponent.tokenFetchService.refresh()
+        }
     }
 
-    private fun runGcmInit() {
-        if (gcmInitComplete || gcmInitRunning)
+    private fun runPlayServicesInit() {
+        if (playServicesInitComplete || playServicesInitRunning)
             return
 
-        gcmInitRunning = true
+        playServicesInitRunning = true
 
-        gcmInitAsync(this) successUi { loadError ->
-            gcmInitRunning = false
+        playServicesInitAsync(this) successUi { loadError ->
+            playServicesInitRunning = false
 
             if (loadError == null) {
-                gcmInitComplete = true
-                log.debug("GCM init successful")
+                playServicesInitComplete = true
+                log.debug("Play Services init successful")
                 init()
                 app.addOnInitListener {
                     finishInitialization(null)
@@ -271,156 +286,35 @@ class AndroidApp : Application() {
             }
             else {
                 if (loadError.cause != null)
-                    log.error("GCM init failure: {}: errorCode={}", loadError.cause.message, loadError.cause)
+                    log.error("Play Services init failure: {}: errorCode={}", loadError.cause.message, loadError.cause)
                 else
-                    log.error("GCM init failure: {}: {}", loadError.type, loadError.errorCode)
+                    log.error("Play Services init failure: {}: {}", loadError.type, loadError.errorCode)
 
                 finishInitialization(loadError)
             }
         }
     }
 
-    //this serves to also handle any issues where somehow the settings get out of sync and multiple users
-    //have tokenSent=true
-    private fun resetTokenSentForUsers() {
-        val usernames = AndroidPreferences.getTokenUserList(this)
-
-        AndroidPreferences.withEditor(this) {
-            usernames.forEach { username ->
-                val userId = UserId(username.toLong())
-                setTokenSentToServer(userId, false)
-            }
-        }
-    }
-
     fun onGCMTokenRefreshRequired() {
-        refreshGCMToken(true)
+        appComponent.tokenFetchService.refresh()
     }
 
-    private fun checkGCMTokenStatus() {
-        if (!app.isNetworkAvailable || hasCheckedGcmTokenStatus)
-            return
-
-        val userComponent = app.userComponent ?: return
-
-        userComponent.authTokenManager.bind { userCredentials ->
-            gcmClient.isRegistered(userCredentials)
-        } successUi { response ->
-            log.info("GCM token is registered: {}", response.isRegistered)
-
-            if (!response.isRegistered)
-                refreshGCMToken(true)
-
-            hasCheckedGcmTokenStatus = true
-        } fail { e ->
-            log.condError(isNotNetworkError(e), "Unable to check GCM token status: {}", e.message, e)
-        }
-    }
-
-    private fun refreshGCMToken(force: Boolean) {
-        //we need to make sure we reset all tokens on force, since we may receive this when no user is logged in
-        if (force)
-            resetTokenSentForUsers()
-
-        val userComponent = app.userComponent ?: return
-        val userId = userComponent.userLoginData.userId
-
-        if (gcmRegistering)
-            return
-
-        if (!force) {
-            val tokenSent = AndroidPreferences.getTokenSentToServer(this, userId)
-            if (tokenSent)
-                return
-        }
-
-        AndroidPreferences.setIgnoreNotifications(this, false)
-
-        //make sure only the current user has token sent set to true
-        //don't need to do this twice, since if we're forcing we've already done this
-        if (!force)
-            resetTokenSentForUsers()
-
-        if (app.isNetworkAvailable) {
-            gcmRegistering = true
-
-            gcmFetchToken(this, userComponent.userLoginData.address.id) successUi {
-                gcmRegistering = false
-                onGCMTokenRefresh(it.userId, it.token)
-            } failUi { e ->
-                val isInteresting = when (e.message) {
-                    InstanceID.ERROR_BACKOFF -> false
-                    InstanceID.ERROR_SERVICE_NOT_AVAILABLE -> false
-                    InstanceID.ERROR_TIMEOUT -> false
-                    //shouldn't occur, but even if it did we have no info to go on anyways
-                    null -> false
-                    else -> true
-                }
-                log.condError(isInteresting, "GCM token registration failed: {}", e.message, e)
-                gcmRegistering = false
-            }
-        }
-    }
-
-    private fun pushGcmTokenToServer(userCredentials: UserCredentials, token: String): Promise<RegisterResponse, Exception> {
-        val request = RegisterRequest(token)
-        return gcmClient.register(userCredentials, request)
-    }
-
-    fun onGCMTokenRefresh(userId: UserId, token: String) {
-        val userComponent = app.userComponent ?: return
-
-        //if we've logged out since, do nothing (the token'll be refreshed again on next login)
-        if (userComponent.userLoginData.address.id != userId)
-            return
-
-        log.debug("Received GCM token for user {}: {}", userId.long, token)
-
-        userComponent.authTokenManager.bind { userCredentials ->
-            pushGcmTokenToServer(userCredentials, token)
-        } successUi { response ->
-            if (response.isSuccess) {
-                log.info("GCM token successfully registered with server")
-
-                val usernames = HashSet(AndroidPreferences.getTokenUserList(this))
-                AndroidPreferences.withEditor(this) {
-                    val username = userId.long.toString()
-                    setTokenSentToServer(userId, true)
-                    usernames.add(username)
-                    setTokenUserList(usernames)
-                }
-            }
-            //TODO
-            else {
-                log.error("Error registering token: {}", response.errorMessage)
-            }
-        } fail { e ->
-            log.error("Error registering token: {}", e.message, e)
-        }
-    }
-
-    fun onGCMMessage(account: SlyAddress, accountName: String, info: List<OfflineMessageInfo>) {
-        //this can occur if we logged out when there was no network connection, or from a notification after we've
-        //already requested the token to be deleted
-        if (AndroidPreferences.getIgnoreNotifications(this)) {
-            deleteGCMToken()
-            return
-        }
+    fun onGCMMessage(message: OfflineMessagesPushNotification) {
+        val account = message.account
 
         //it's possible we might receive a message targetting a diff account that was previously logged in
         app.addOnAutoLoginListener { app ->
             //the app might not be finished logging in yet
             //if we have auto-login, this will at least be LOGGING_IN (since login is called before we get here)
 
-            //in this case we just delete the token, as every new login reregisters a new token anyways
-            //so if we have no auto-login but we're still receiving gcm messages we haven't deleted the existing token
             if (app.loginState == LoginState.LOGGED_OUT) {
                 if (noNotificationsOnLogout) {
                     log.warn("Got a GCM message but no longer logged in; invalidating token")
-                    deleteGCMToken()
+                    //I guess? shouldn't really happen anymore since we retry unregistration
+                    appComponent.pushNotificationsManager.unregister(account)
                 }
                 else
-                    notificationService.showLoggedOutNotification(accountName, info)
+                    notificationService.showLoggedOutNotification(message)
             }
             else if (app.loginState == LoginState.LOGGED_IN) {
                 //could maybe occur that we get older gcm messages for an account we were previously logged in as
@@ -433,30 +327,16 @@ class AndroidApp : Application() {
     }
 
     private fun onUserSessionCreated() {
-        checkGCM()
     }
 
-    fun stopReceivingNotifications() {
-        deleteGCMToken()
-    }
-
-    private fun deleteGCMToken() {
-        resetTokenSentForUsers()
-        AndroidPreferences.setIgnoreNotifications(this, true)
-
-        gcmDeleteToken(this) success {
-            log.info("GCM token invalidated")
-        } fail { e ->
-            if (e.message == InstanceID.ERROR_SERVICE_NOT_AVAILABLE || e.message == InstanceID.ERROR_TIMEOUT)
-                log.error("InstanceID service unavailable: {}", e.message)
-            else
-                log.error("Unable to delete instance id due to instance error: {}", e.message, e)
+    //TODO need SlyAddress; so need to add it to notification context
+    fun stopReceivingNotifications(address: SlyAddress) {
+        app.addOnInitListener {
+            appComponent.pushNotificationsManager.unregister(address)
         }
     }
 
     private fun onUserSessionDestroyed() {
-        hasCheckedGcmTokenStatus = false
-
         //occurs on startup when we first register for events
         val userComponent = app.userComponent ?: return
 
@@ -464,38 +344,12 @@ class AndroidApp : Application() {
         accountInfo = null
         publicKey = null
 
-        if (noNotificationsOnLogout) {
-            AndroidPreferences.setTokenSentToServer(this, userComponent.userLoginData.userId, false)
-
-            AndroidPreferences.setIgnoreNotifications(this, true)
-
-            //this is a best effort attempt at unregistering
-            //even if this fails, the token'll be invalidated on the next login that registers one
-            if (app.isNetworkAvailable) {
-                deleteGCMToken()
-
-                userComponent.authTokenManager.bind { userCredentials ->
-                    gcmClient.unregister(userCredentials)
-                } fail { e ->
-                    log.error("Unable to unregister GCM token with server: {}", e.message, e)
-                }
-            }
-        }
-    }
-
-    private fun checkGCM() {
-        if (!hasCheckedGcmTokenStatus)
-            checkGCMTokenStatus()
-        else
-            refreshGCMToken(false)
+        if (noNotificationsOnLogout)
+            appComponent.pushNotificationsManager.unregister(userComponent.userLoginData.address)
     }
 
     fun updateNetworkStatus(isConnected: Boolean) {
         networkStatus.onNext(isConnected)
-
-        if (isConnected) {
-            checkGCM()
-        }
     }
 
     /** Use to request a runtime permission. If no activity is available, succeeds with false. */
@@ -503,10 +357,14 @@ class AndroidApp : Application() {
         if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED)
             return Promise.ofSuccess(true)
 
-//        val activity = currentActivity ?: return Promise.ofSuccess(false)
-        return Promise.ofSuccess(false)
+        val activity = currentActivity ?: return Promise.ofSuccess(false)
 
-//        return activity.requestPermission(permission)
+        if (activity is MainActivity) {
+            platformContactSyncOccured = false
+            return Promise.ofSuccess(false)
+        }
+
+        return activity.requestPermission(permission)
     }
 
 //    private fun hideSplashImage(): Boolean {
@@ -536,7 +394,7 @@ class AndroidApp : Application() {
         softKeyboardVisibility.onNext(SoftKeyboardInfo(isVisible, keyboardHeight))
     }
 
-    /** Fires only if GCM services and SlyApplication have successfully completed initialization. Used by services. */
+    /** Fires only if play services and SlyApplication have successfully completed initialization. Used by services. */
     fun addOnSuccessfulInitListener(listener: () -> Unit) {
         if (wasSuccessfullyInitialized) {
             listener()
@@ -558,3 +416,386 @@ class AndroidApp : Application() {
         this.appComponent.uiEventService.dispatchEvent(event)
     }
 }
+
+//package io.slychat.messenger.android
+//
+//import android.app.Application
+//import android.content.Context
+//import android.content.IntentFilter
+//import android.content.pm.PackageManager
+//import android.media.RingtoneManager
+//import android.net.ConnectivityManager
+//import android.os.StrictMode
+//import android.support.v7.app.AppCompatActivity
+//import com.almworks.sqlite4java.SQLite
+//import com.google.android.gms.common.ConnectionResult
+//import com.google.android.gms.common.GoogleApiAvailability
+//import com.google.android.gms.common.GooglePlayServicesNotAvailableException
+//import com.google.android.gms.common.GooglePlayServicesRepairableException
+//import com.google.android.gms.security.ProviderInstaller
+//import com.jaredrummler.android.device.DeviceName
+//import io.slychat.messenger.android.services.AndroidPlatformContacts
+//import io.slychat.messenger.android.services.AndroidUILoadService
+//import io.slychat.messenger.android.services.AndroidUIPlatformInfoService
+//import io.slychat.messenger.android.services.AndroidUIPlatformService
+//import io.slychat.messenger.core.SlyAddress
+//import io.slychat.messenger.core.SlyBuildConfig
+//import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
+//import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClient
+//import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClientImpl
+//import io.slychat.messenger.core.persistence.AccountInfo
+//import io.slychat.messenger.core.pushnotifications.OfflineMessagesPushNotification
+//import io.slychat.messenger.services.*
+//import io.slychat.messenger.services.config.UserConfig
+//import io.slychat.messenger.services.di.ApplicationComponent
+//import io.slychat.messenger.services.di.PlatformModule
+//import io.slychat.messenger.services.di.UserComponent
+//import io.slychat.messenger.services.ui.SoftKeyboardInfo
+//import io.slychat.messenger.services.ui.createAppDirectories
+//import nl.komponents.kovenant.Promise
+//import nl.komponents.kovenant.android.androidUiDispatcher
+//import nl.komponents.kovenant.task
+//import nl.komponents.kovenant.ui.KovenantUi
+//import nl.komponents.kovenant.ui.successUi
+//import org.slf4j.LoggerFactory
+//import rx.Observable
+//import rx.android.schedulers.AndroidSchedulers
+//import rx.subjects.BehaviorSubject
+//import java.util.*
+//
+////TODO keep checking PushNotificationsClient.isRegistered on login? easy way to make sure stuff is still registered...
+////maybe add to PushNotificationManager or something
+//class AndroidApp : Application() {
+//    companion object {
+//        fun get(context: Context): AndroidApp =
+//                context.applicationContext as AndroidApp
+//
+//        /** Will never leak any exceptions. */
+//        private fun playServicesInit(context: Context): LoadError? {
+//            try {
+//                val apiAvailability = GoogleApiAvailability.getInstance()
+//
+//                val resultCode = apiAvailability.isGooglePlayServicesAvailable(context)
+//
+//                if (resultCode != ConnectionResult.SUCCESS)
+//                    return LoadError(LoadErrorType.NO_PLAY_SERVICES, resultCode, null)
+//
+//                try {
+//                    ProviderInstaller.installIfNeeded(context)
+//                }
+//                catch (e: GooglePlayServicesRepairableException) {
+//                    return LoadError(LoadErrorType.SSL_PROVIDER_INSTALLATION_FAILURE, e.connectionStatusCode, null)
+//
+//                }
+//                catch (e: GooglePlayServicesNotAvailableException) {
+//                    //shouldn't happen?
+//                    return LoadError(LoadErrorType.NO_PLAY_SERVICES, e.errorCode, null)
+//                }
+//
+//                return null
+//            }
+//            catch (t: Throwable) {
+//                return LoadError(LoadErrorType.UNKNOWN, 0, t)
+//            }
+//        }
+//
+//        private fun playServicesInitAsync(context: Context): Promise<LoadError?, Exception> = task { playServicesInit(context) }
+//    }
+//
+//    private var playServicesInitRunning = false
+//    private var playServicesInitComplete = false
+//
+//    //TODO move this into settings
+//    private var noNotificationsOnLogout = false
+//
+//    val app: SlyApplication = SlyApplication()
+//
+//    //if AndroidUILoadService.loadComplete is called while we're paused (eg: during the permissions dialog)
+////    private var queuedLoadComplete = false
+//
+//    private val onSuccessfulInitListeners = ArrayList<() -> Unit>()
+//    private var isInitialized = false
+//    private var wasSuccessfullyInitialized = false
+//
+//    private val loadCompleteSubject = BehaviorSubject.create<LoadError?>()
+//    /** Fires once both GCM services and SlyApplication have completed initialization, in that order. */
+//    val loadComplete: Observable<LoadError?> = loadCompleteSubject.observeOn(AndroidSchedulers.mainThread())
+//
+//    private val log = LoggerFactory.getLogger(javaClass)
+//
+//    lateinit var notificationService: AndroidNotificationService
+//
+//    private lateinit var pushNotificationsClient: PushNotificationsAsyncClient
+//
+//    private val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
+//    private val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
+//    private val softKeyboardVisibility = BehaviorSubject.create(SoftKeyboardInfo(false, 0))
+//
+//    private var lastActivity: String? = null
+//    var accountInfo : AccountInfo? = null
+//    var publicKey : String? = null
+//
+//    /** Points to the current activity, if one is set. Used to request permissions from various services. */
+//    var currentActivity: AppCompatActivity? = null
+//        set(value) {
+//            field = value
+//
+//            uiVisibility.onNext(value != null)
+//
+////            if (queuedLoadComplete)
+////                queuedLoadComplete = hideSplashImage() == false
+//
+////            app.isInBackground = value == null
+//        }
+//
+//    lateinit var appComponent: ApplicationComponent
+//        private set
+//
+//    override fun onCreate() {
+//        super.onCreate()
+//
+//        SQLite.loadLibrary()
+//        KovenantUi.uiContext {
+//            dispatcher = androidUiDispatcher()
+//        }
+//
+//        if (SlyBuildConfig.DEBUG) {
+//            val policy = StrictMode.ThreadPolicy.Builder()
+//                    .detectAll()
+//                    .penaltyLog()
+//                    .build()
+//
+//            StrictMode.setThreadPolicy(policy)
+//        }
+//
+//        runPlayServicesInit()
+//    }
+//
+//    private fun init() {
+//        val platformInfo = AndroidPlatformInfo(this)
+//        createAppDirectories(platformInfo)
+//
+//        notificationService = AndroidNotificationService(this)
+//
+//        val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+//        val defaultUserConfig = UserConfig().copy(
+//                notificationsSound = defaultUri.toString()
+//        )
+//
+//        val platformModule = PlatformModule(
+//                AndroidUIPlatformInfoService(),
+//                SlyBuildConfig.ANDROID_SERVER_URLS,
+//                platformInfo,
+//                AndroidTelephonyService(this),
+//                AndroidUIWindowService(this, softKeyboardVisibility),
+//                AndroidPlatformContacts(this),
+//                notificationService,
+//                AndroidUIShareService(this),
+//                AndroidUIPlatformService(this),
+//                AndroidUILoadService(this),
+//                uiVisibility,
+//                AndroidTokenFetcher(this),
+//                networkStatus,
+//                AndroidSchedulers.mainThread(),
+//                defaultUserConfig,
+//                PushNotificationService.GCM
+//        )
+//
+//        app.init(platformModule)
+//        notificationService.init(app.userSessionAvailable)
+//
+//        appComponent = app.appComponent
+//
+//        pushNotificationsClient = PushNotificationsAsyncClientImpl(appComponent.serverUrls.API_SERVER, appComponent.slyHttpClientFactory)
+//
+//        val packageManager = packageManager
+//        try {
+//            val info = packageManager.getPackageInfo("com.google.android.webview", 0)
+//            Sentry.setWebViewInfo(info.versionName)
+//        }
+//        catch (e: PackageManager.NameNotFoundException) {
+//            //do nothing
+//        }
+//
+//        try {
+//            Sentry.setAndroidDeviceName(DeviceName.getDeviceName())
+//        }
+//        catch (e: Exception) {
+//            log.error("setAndroidDeviceInfo failed: {}", e.message, e)
+//        }
+//
+//        val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+//        val networkReceiver = NetworkStatusReceiver()
+//        registerReceiver(networkReceiver, filter)
+//
+//        app.userSessionAvailable.subscribe {
+//            if (it != null)
+//                onUserSessionCreated()
+//            else
+//                onUserSessionDestroyed()
+//        }
+//
+//        //only do this once we've completed initialization (ie once AppConfigService is up)
+//        app.addOnInitListener {
+//            //no permissions required on android
+//            if (!appComponent.appConfigService.pushNotificationsPermRequested) {
+//                appComponent.appConfigService.withEditor {
+//                    pushNotificationsPermRequested = true
+//                }
+//            }
+//
+//            appComponent.tokenFetchService.refresh()
+//        }
+//    }
+//
+//    private fun runPlayServicesInit() {
+//        if (playServicesInitComplete || playServicesInitRunning)
+//            return
+//
+//        playServicesInitRunning = true
+//
+//        playServicesInitAsync(this) successUi { loadError ->
+//            playServicesInitRunning = false
+//
+//            if (loadError == null) {
+//                playServicesInitComplete = true
+//                log.debug("Play Services init successful")
+//                init()
+//                app.addOnInitListener {
+//                    finishInitialization(null)
+//                }
+//            }
+//            else {
+//                if (loadError.cause != null)
+//                    log.error("Play Services init failure: {}: errorCode={}", loadError.cause.message, loadError.cause)
+//                else
+//                    log.error("Play Services init failure: {}: {}", loadError.type, loadError.errorCode)
+//
+//                finishInitialization(loadError)
+//            }
+//        }
+//    }
+//
+//    fun onGCMTokenRefreshRequired() {
+//        appComponent.tokenFetchService.refresh()
+//    }
+//
+//    fun onGCMMessage(message: OfflineMessagesPushNotification) {
+//        val account = message.account
+//
+//        //it's possible we might receive a message targetting a diff account that was previously logged in
+//        app.addOnAutoLoginListener { app ->
+//            //the app might not be finished logging in yet
+//            //if we have auto-login, this will at least be LOGGING_IN (since login is called before we get here)
+//
+//            if (app.loginState == LoginState.LOGGED_OUT) {
+//                if (noNotificationsOnLogout) {
+//                    log.warn("Got a GCM message but no longer logged in; invalidating token")
+//                    //I guess? shouldn't really happen anymore since we retry unregistration
+//                    appComponent.pushNotificationsManager.unregister(account)
+//                }
+//                else
+//                    notificationService.showLoggedOutNotification(message)
+//            }
+//            else if (app.loginState == LoginState.LOGGED_IN) {
+//                //could maybe occur that we get older gcm messages for an account we were previously logged in as
+//                if (account == app.userComponent!!.userLoginData.address)
+//                    app.fetchOfflineMessages()
+//                else
+//                    log.warn("Got GCM message for different account ($account); ignoring")
+//            }
+//        }
+//    }
+//
+//    private fun onUserSessionCreated() {
+//    }
+//
+//    fun getUserComponent(): UserComponent {
+//        val userComponent = app.userComponent ?: throw Exception()
+//
+//        return userComponent
+//    }
+//
+//    //TODO need SlyAddress; so need to add it to notification context
+//    fun stopReceivingNotifications(address: SlyAddress) {
+//        app.addOnInitListener {
+//            appComponent.pushNotificationsManager.unregister(address)
+//        }
+//    }
+//
+//    private fun onUserSessionDestroyed() {
+//        //occurs on startup when we first register for events
+//        val userComponent = app.userComponent ?: return
+//
+//        if (noNotificationsOnLogout)
+//            appComponent.pushNotificationsManager.unregister(userComponent.userLoginData.address)
+//    }
+//
+//    fun updateNetworkStatus(isConnected: Boolean) {
+//        networkStatus.onNext(isConnected)
+//    }
+//
+//    fun setCurrentActivity (activity: AppCompatActivity, visible: Boolean) {
+//        if (lastActivity == activity.toString() && !visible) {
+//            return
+//        }
+//
+//        lastActivity = currentActivity.toString()
+//
+//        currentActivity = activity
+//        uiVisibility.onNext(visible)
+//    }
+//
+//    /** Use to request a runtime permission. If no activity is available, succeeds with false. */
+////    fun requestPermission(permission: String): Promise<Boolean, Exception> {
+////        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED)
+////            return Promise.ofSuccess(true)
+////
+////        val activity = currentActivity ?: return Promise.ofSuccess(false)
+////
+////        return activity.requestPermission(permission)
+////    }
+//
+////    private fun hideSplashImage(): Boolean {
+////        val currentActivity = currentActivity as? MainActivity ?: return false
+////
+////        currentActivity.hideSplashImage()
+////        return true
+////    }
+//
+////    fun uiLoadCompleted() {
+////        queuedLoadComplete = hideSplashImage() == false
+////    }
+//
+//    private fun finishInitialization(loadError: LoadError?) {
+//        isInitialized = true
+//        loadCompleteSubject.onNext(loadError)
+//
+//        if (loadError == null) {
+//            wasSuccessfullyInitialized = true
+//
+//            onSuccessfulInitListeners.forEach { it() }
+//            onSuccessfulInitListeners.clear()
+//        }
+//    }
+//
+////    fun updateSoftKeyboardVisibility(isVisible: Boolean, keyboardHeight: Int) {
+////        softKeyboardVisibility.onNext(SoftKeyboardInfo(isVisible, keyboardHeight))
+////    }
+//
+//    /** Fires only if play services and SlyApplication have successfully completed initialization. Used by services. */
+//    fun addOnSuccessfulInitListener(listener: () -> Unit) {
+//        if (wasSuccessfullyInitialized) {
+//            listener()
+//        }
+//        else if (!isInitialized) {
+//            onSuccessfulInitListeners.add(listener)
+//        }
+//    }
+//
+//    fun dispatchEvent (type: String, page: PageType, extra: String) {
+//        val event = UIEvent.PageChange(page, extra)
+//
+//        this.appComponent.uiEventService.dispatchEvent(event)
+//    }
+//}

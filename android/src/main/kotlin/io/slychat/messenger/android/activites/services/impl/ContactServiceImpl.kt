@@ -104,7 +104,6 @@ class ContactServiceImpl(private val activity: AppCompatActivity): ContactServic
 
         val phone = parsePhoneNumber(username)
 
-
         return contactService.fetchRemoteContactInfo(email, phone) map { response ->
             response.contactInfo?.toCore(AllowedMessageLevel.ALL)
         }

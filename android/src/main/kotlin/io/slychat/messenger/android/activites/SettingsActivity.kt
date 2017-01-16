@@ -180,32 +180,32 @@ class SettingsActivity: BaseActivity() {
         }
     }
 
-    private fun requestPermission(permission: String): Promise<Boolean, Exception> {
-        val requestCode = nextPermRequestCode
-        nextPermRequestCode += 1
+//    private fun requestPermission(permission: String): Promise<Boolean, Exception> {
+//        val requestCode = nextPermRequestCode
+//        nextPermRequestCode += 1
+//
+//        val deferred = deferred<Boolean, Exception>()
+//        permRequestCodeToDeferred.put(requestCode, deferred)
+//
+//        ActivityCompat.requestPermissions(this, arrayOf(permission), requestCode)
+//
+//        return deferred.promise
+//    }
 
-        val deferred = deferred<Boolean, Exception>()
-        permRequestCodeToDeferred.put(requestCode, deferred)
-
-        ActivityCompat.requestPermissions(this, arrayOf(permission), requestCode)
-
-        return deferred.promise
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        val deferred = permRequestCodeToDeferred[requestCode]
-
-        if (deferred == null) {
-            log.error("Got response for unknown request code ({}); permissions={}", requestCode, Arrays.toString(permissions))
-            return
-        }
-
-        permRequestCodeToDeferred.remove(requestCode)
-
-        val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
-
-        deferred.resolve(granted)
-    }
+//    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+//        val deferred = permRequestCodeToDeferred[requestCode]
+//
+//        if (deferred == null) {
+//            log.error("Got response for unknown request code ({}); permissions={}", requestCode, Arrays.toString(permissions))
+//            return
+//        }
+//
+//        permRequestCodeToDeferred.remove(requestCode)
+//
+//        val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+//
+//        deferred.resolve(granted)
+//    }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {

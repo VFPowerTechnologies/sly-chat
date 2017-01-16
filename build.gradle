@@ -10,12 +10,11 @@ buildscript {
             roboVM: '1.13.0',
             jackson: '2.8.1',
             kovenant: '3.3.0',
-            libsignal: '2.2.0',
+            libsignal: '2.4.0',
             jodaTime: '2.9.2',
             sqlite4java: '1.0.392',
             spongycastle: '1.54.0.0',
             dagger: '2.6',
-            netty: '5.0.0.Alpha2',
             rxjava: '1.1.8',
             rxjavafx: '0.1.4',
             rxandroid: '1.2.1',
@@ -35,7 +34,8 @@ buildscript {
             nsMenuFx: '2.1.4',
             jna: '4.2.2',
             androidDeviceNames: '1.1.2',
-            prettyTime: '4.0.1.Final'
+            prettyTime: '4.0.1.Final',
+            moeGradle: '1.2.5',
         ]
     }
 
@@ -89,6 +89,14 @@ task nextSnapshot(type: UpdateVersion) {
     versionType = VersionType.SNAPSHOT
 }
 
+task nextIOSVersion(type: UpdateVersion) {
+    versionType = VersionType.IOS
+}
+
+task nextAndroidVersion(type: UpdateVersion) {
+    versionType = VersionType.ANDROID
+}
+
 task printVersionInfo << {
     println("Version: $project.version")
     println("Android version code: $project.androidVersionCode")
@@ -137,6 +145,24 @@ project(':ui-services') {
                 sourceDirs += file('generated')
                 generatedSourceDirs += file('generated')
             }
+        }
+    }
+}
+
+project(':ios') {
+    afterEvaluate { p ->
+        rootProject.tasks.create(name: 'distIOS', description: 'Release IPA build', dependsOn: p.tasks.appStoreIPA) << {
+            print "Generated release IPA: ${p.tasks.appStoreIPA.ipaPath}"
+        }
+    }
+}
+
+project(':android') {
+    afterEvaluate { p ->
+        rootProject.tasks.create(name: 'distAndroid', description: 'Release APK build', dependsOn: p.tasks.assembleRelease) << {
+            def variants = p.android.applicationVariants
+            def releaseVariant = variants.find { it.name == 'release' }
+            print "Generated release APK: ${releaseVariant.outputs.first().outputFile}"
         }
     }
 }

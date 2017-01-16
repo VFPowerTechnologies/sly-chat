@@ -1,3 +1,14 @@
+{{#if @global.ios}}
+<div class="navbar top-navbar">
+  <div class="navbar-inner">
+      <div class="left"></div>
+    <div class="center sliding">Login</div>
+    <div class="right">
+    </div>
+  </div>
+</div>
+{{/if}}
+
 <div class="pages">
   <div data-page="login" class="page">
     <div class="page-content vertical-centered-content">
@@ -47,7 +58,7 @@
           <div class="content-block">
             <div class="row">
               <div class="col-100">
-                <input id="submitLogin" type="submit" value="Submit" class="button button-big button-fill"/>
+                <input id="submitLogin" type="submit" value="Login" class="button button-big button-fill"/>
               </div>
             </div>
           </div>

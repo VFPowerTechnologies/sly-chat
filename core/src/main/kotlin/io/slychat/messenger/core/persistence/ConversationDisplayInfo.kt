@@ -2,9 +2,12 @@ package io.slychat.messenger.core.persistence
 
 import io.slychat.messenger.core.UserId
 
+/**
+ * @property conversationName Is either the group name, or the conversation user's name.
+ */
 data class ConversationDisplayInfo(
     val conversationId: ConversationId,
-    val groupName: String?,
+    val conversationName: String,
     //the actual full unread count; may be larger than latestUnreadMessageIds
     val unreadCount: Int,
     //this will actually contained a limited amount of ids

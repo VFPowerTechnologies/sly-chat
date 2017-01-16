@@ -9,6 +9,8 @@ import io.slychat.messenger.core.http.api.feedback.FeedbackAsyncClientImpl
 import io.slychat.messenger.core.http.api.infoservice.InfoServiceAsyncClient
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.config.AppConfigService
+import io.slychat.messenger.services.di.annotations.ExternalHttp
+import io.slychat.messenger.services.di.annotations.SlyHttp
 import io.slychat.messenger.services.ui.*
 import io.slychat.messenger.services.ui.impl.*
 import javax.inject.Singleton

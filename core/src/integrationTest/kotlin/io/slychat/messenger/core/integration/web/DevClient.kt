@@ -11,6 +11,9 @@ import io.slychat.messenger.core.crypto.hashes.HashParams
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.HttpClient
 import io.slychat.messenger.core.http.HttpResponse
+import io.slychat.messenger.core.http.api.offline.OfflineMessagesGetResponse
+import io.slychat.messenger.core.http.api.offline.SerializedOfflineMessage
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.http.get
 import io.slychat.messenger.core.http.postJSON
 import io.slychat.messenger.core.persistence.RemoteAddressBookEntry
@@ -21,16 +24,20 @@ data class SiteAddressBook(
     val entries: List<RemoteAddressBookEntry>
 )
 
-data class UserGcmTokenInfo(
+data class UserPushNotificationTokenInfo(
     @JsonProperty("deviceId")
     val deviceId: Int,
     @JsonProperty("token")
-    val token: String
+    val token: String,
+    @JsonProperty("audioToken")
+    val audioToken: String?,
+    @JsonProperty("service")
+    val service: PushNotificationService
 )
 
-data class UserGcmTokenList(
+data class UserPushNotificationTokenList(
     @JsonProperty("tokens")
-    val tokens: List<UserGcmTokenInfo>
+    val tokens: List<UserPushNotificationTokenInfo>
 )
 
 data class Device(
@@ -195,25 +202,27 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         postRequestNoResponse(request, "/dev/address-book/$email")
     }
 
-    fun registerGcmToken(email: String, deviceId: Int, token: String) {
+    fun registerPushNotificationToken(email: String, deviceId: Int, token: String, audioToken: String?, service: PushNotificationService): String {
         val request = mapOf(
             "deviceId" to deviceId,
-            "token" to token
+            "token" to token,
+            "audioToken" to audioToken,
+            "service" to service
         )
 
-        postRequestNoResponse(request, "/dev/gcm/register/$email")
+        return postRequest(request, "/dev/push-notifications/register/$email", String::class.java)
     }
 
-    fun unregisterGcmToken(email: String, deviceId: Int) {
+    fun unregisterPushNotificationToken(email: String, deviceId: Int) {
         val request = mapOf(
             "deviceId" to deviceId
         )
 
-        postRequestNoResponse(request, "/dev/gcm/unregister/$email")
+        postRequestNoResponse(request, "/dev/push-notifications/unregister/$email")
     }
 
-    fun getGcmTokens(email: String): List<UserGcmTokenInfo> {
-        return getRequest("/dev/gcm/$email", UserGcmTokenList::class.java).tokens
+    fun getPushNotificationTokens(email: String): List<UserPushNotificationTokenInfo> {
+        return getRequest("/dev/push-notifications/$email", UserPushNotificationTokenList::class.java).tokens
     }
 
     fun getDevices(email: String): List<Device> {
@@ -243,5 +252,17 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
 
     fun getLatestVersion(): String {
         return getRequest("/dev/client-version/latest", String::class.java)
+    }
+
+    fun addOfflineMessages(userId: UserId, deviceId: Int, offlineMessages: List<SerializedOfflineMessage>) {
+        val request = mapOf(
+            "offlineMessages" to offlineMessages
+        )
+
+        postRequestNoResponse(request, "/dev/messages/$userId/$deviceId")
+    }
+
+    fun getOfflineMessages(userId: UserId, deviceId: Int): OfflineMessagesGetResponse {
+        return getRequest("/dev/messages/$userId/$deviceId", typeRef())
     }
 }

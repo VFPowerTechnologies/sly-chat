@@ -1,21 +1,13 @@
 package io.slychat.messenger.android
 
 import android.os.Bundle
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.gcm.GcmListenerService
 import io.slychat.messenger.core.SlyAddress
+import io.slychat.messenger.core.pushnotifications.OfflineMessageInfo
+import io.slychat.messenger.core.pushnotifications.OfflineMessagesPushNotification
 import io.slychat.messenger.core.typeRef
 import org.slf4j.LoggerFactory
-
-data class OfflineMessageInfo(
-    @JsonProperty("name")
-    val name: String,
-    @JsonProperty("pendingCount")
-    val pendingCount: Int
-)
-
-val GCM_TYPE_OFFLINE_MESSAGE = "offline-message"
 
 class SlyGcmListenerService : GcmListenerService() {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -24,7 +16,7 @@ class SlyGcmListenerService : GcmListenerService() {
         log.debug("Received message from server")
 
         val type = data.getString("type")
-        if (type != GCM_TYPE_OFFLINE_MESSAGE) {
+        if (type != OfflineMessagesPushNotification.TYPE) {
             log.warn("Received unsupported GCM message type: $type")
             return
         }
@@ -38,8 +30,11 @@ class SlyGcmListenerService : GcmListenerService() {
     }
 
     private fun handleMessage(data: Bundle) {
-        //TODO version check and upgrade to newer versions
         val version = data.getString("version").toInt()
+        if (version != 1) {
+            log.warn("Unsupported version for offline messages: {}", version)
+            return
+        }
 
         val infoSerialized = data.getString("info")
         val objectMapper = ObjectMapper()
@@ -50,9 +45,11 @@ class SlyGcmListenerService : GcmListenerService() {
 
         val accountName = data.getString("accountName")
 
+        val message = OfflineMessagesPushNotification(account, accountName, info)
+
         val app = AndroidApp.get(this)
         androidRunInMain(this) {
-            app.onGCMMessage(account, accountName, info)
+            app.onGCMMessage(message)
         }
     }
 }

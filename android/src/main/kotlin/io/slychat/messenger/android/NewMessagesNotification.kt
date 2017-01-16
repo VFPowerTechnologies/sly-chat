@@ -31,7 +31,7 @@ class NewMessagesNotification {
             //constructor prevents lastMessageData being null if unreadCount is 0
             val lastMessageData = conversationDisplayInfo.lastMessageData!!
             contents[conversationDisplayInfo.conversationId] = NewMessageData(
-                conversationDisplayInfo.groupName,
+                conversationDisplayInfo.conversationName,
                 lastMessageData.speakerName ?: "Me",
                 lastMessageData.message ?: "<Secret message>",
                 lastMessageData.timestamp,

@@ -55,6 +55,49 @@ android {
     }
 }
 
+android.applicationVariants.all { variant ->
+    variant.outputs.each { output ->
+        def apkName = "SlyChat-${rootProject.version}"
+
+        apkName += '-' + variant.buildType.name
+        
+        if (!output.zipAlign)
+            apkName += '-unaligned'
+
+        if (!variant.isSigningReady())
+            apkName += '-unsigned'
+
+        output.outputFile = project.file("$project.buildDir/outputs/apk/${apkName}.apk")
+    }
+}
+
+try {
+    rootProject.file('keystore.properties').withInputStream {
+        def keystoreProperties = new Properties()
+        keystoreProperties.load(it)
+
+        android {
+            signingConfigs {
+                release {
+                    keyAlias keystoreProperties['keyAlias']
+                    keyPassword keystoreProperties['keyPassword']
+                    storeFile file(keystoreProperties['storeFile'])
+                    storePassword keystoreProperties['storePassword']
+                }
+            }
+
+            buildTypes {
+                release {
+                    signingConfig signingConfigs.release
+                }
+            }
+        }
+    }
+}
+catch (FileNotFoundException ignored) {
+    logger.warn('No keystore.properties found, not setting release signing config')
+}
+
 dependencies {
     compile "com.android.support:appcompat-v7:$versions.appcompatv7"
     //pure-java curve25519 is broken: https://github.com/WhisperSystems/curve25519-java/pull/4

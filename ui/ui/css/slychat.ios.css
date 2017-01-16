@@ -14,3 +14,65 @@
 .expire-message-toggled #chatPageContent {
     padding-bottom: 100px;
 }
+#chat-content li.messageReceived .message {
+    background-color: #fff;
+}
+
+#emojiPickerBtn {
+    display: none;
+}
+
+#newMessageInput {
+    padding-right: 20px;
+}
+
+.bottom-chat-toolbar .toolbar-inner {
+    padding: 0;
+}
+
+#inputChatExpireMessageBtn {
+    padding: 0;
+}
+
+#contactPopup .tab-link {
+    color: #222;
+}
+
+#contactPopup .tab-link.active {
+    color: #ff9500;
+}
+
+#chat-content {
+    margin-bottom: 48px;
+}
+
+.expire-message-toggled #chat-content {
+    margin-bottom: 90px;
+}
+
+#newMessageInputDiv {
+    border-top: none;
+}
+.bottom-chat-toolbar .toolbar-inner {
+    border-top: 1px solid #b9b9b9;
+}
+#delaySliderContainer {
+    margin-top: 10px;
+}
+
+.blocked-contact-tabbar .tab-link {
+    color: #222;
+}
+
+.blocked-contact-tabbar  .tab-link.active {
+    color: #ff9500;
+}
+
+.new-message-notification {
+    background-color: #fff;
+    color: #000;
+}
+
+.notifications .item-text {
+    color: #222;
+}

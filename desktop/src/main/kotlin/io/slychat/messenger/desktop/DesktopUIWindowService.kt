@@ -11,7 +11,7 @@ import nl.komponents.kovenant.Promise
 import java.io.File
 import java.net.URI
 
-class DesktopUIWindowService(private val stage: Stage) : UIWindowService {
+class DesktopUIWindowService(var stage: Stage?) : UIWindowService {
     override fun copyTextToClipboard(text: String) {
         val clipboard = Clipboard.getSystemClipboard()
         val content = ClipboardContent()
@@ -25,6 +25,8 @@ class DesktopUIWindowService(private val stage: Stage) : UIWindowService {
     }
 
     override fun minimize() {
+        val stage = this.stage ?: return
+
         stage.isIconified = true
     }
 

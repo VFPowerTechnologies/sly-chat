@@ -1,0 +1,11 @@
+/* Displays the {contact name}. */
+"NOTIFICATION_OFFLINE_SINGLE_TITLE" = "From %@";
+
+/* Displays the {total number} of messages from a single user. */
+"NOTIFICATION_OFFLINE_SINGLE_BODY" = "%@ new messages";
+
+/* Displays the {total number} of users that have sent you messages. */
+"NOTIFICATION_OFFLINE_MULTI_TITLE" = "From %@ users";
+
+/* Displays the {total number} of messages from multiple users. */
+"NOTIFICATION_OFFLINE_MULTI_BODY" = "%@ new messages";

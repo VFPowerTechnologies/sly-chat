@@ -11,6 +11,7 @@ import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResourc
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
 import io.slychat.messenger.desktop.jna.CLibrary
 import io.slychat.messenger.desktop.services.*
+import io.slychat.messenger.desktop.ui.SplashImage
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.PlatformModule
@@ -19,6 +20,7 @@ import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
 import javafx.animation.FadeTransition
 import javafx.application.Application
 import javafx.application.Platform
+import javafx.scene.Node
 import javafx.scene.Scene
 import javafx.scene.control.Alert
 import javafx.scene.control.MenuBar
@@ -29,8 +31,6 @@ import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCodeCombination
 import javafx.scene.input.KeyCombination
 import javafx.scene.layout.StackPane
-import javafx.scene.paint.Color
-import javafx.scene.shape.Rectangle
 import javafx.scene.web.WebEngine
 import javafx.scene.web.WebView
 import javafx.stage.Screen
@@ -50,7 +50,10 @@ class DesktopApp : Application() {
     private lateinit var stage: Stage
     private lateinit var webView: WebView
     private lateinit var stackPane: StackPane
-    private var loadingScreen: Rectangle? = null
+    private var loadingScreen: Node? = null
+
+    private val windowService = DesktopUIWindowService(null)
+    private val uiVisibility = BehaviorSubject.create<Boolean>(false)
 
     /** Enable the (hidden) debugger WebEngine feature */
     private fun enableDebugger(engine: WebEngine) {
@@ -108,23 +111,15 @@ class DesktopApp : Application() {
         primaryStage.centerOnScreen()
     }
 
-    override fun start(primaryStage: Stage) {
-        //libsignal requires AES256 for message encryption+decryption
-        if (isRestrictedCryptography()) {
-            val alert = Alert(Alert.AlertType.ERROR)
-            alert.title = "Unable to start Sly Chat"
-            alert.headerText = "An error occurred during initialization."
-            alert.contentText = "Restricted JCE policy detected. Please install Unlimited Strength Jurisdiction Policy Files from Oracle."
-            alert.showAndWait()
-            Platform.exit()
+    override fun init() {
+        //this'll be checked again in start() and it'll display an error
+        if (isRestrictedCryptography())
             return
-        }
-
-        stage = primaryStage
 
         KovenantUi.uiContext {
             dispatcher = JFXDispatcher.instance
         }
+
         javaClass.loadSQLiteLibraryFromResources()
 
         val platformInfo = DesktopPlatformInfo()
@@ -155,16 +150,6 @@ class DesktopApp : Application() {
             }
         }
 
-        val uiVisibility = BehaviorSubject.create<Boolean>(!stage.isIconified)
-
-        stage.focusedProperty().addListener { o, oldV, newV ->
-            uiVisibility.onNext(newV)
-        }
-
-        stage.iconifiedProperty().addListener { o, oldV, newV ->
-            uiVisibility.onNext(!newV)
-        }
-
         val desktopNotificationService = DesktopNotificationService(
             JfxAudioPlayback(),
             JfxNotificationDisplay()
@@ -175,21 +160,52 @@ class DesktopApp : Application() {
             SlyBuildConfig.DESKTOP_SERVER_URLS,
             platformInfo,
             DesktopTelephonyService(),
-            DesktopUIWindowService(primaryStage),
+            windowService,
             DesktopPlatformContacts(),
             desktopNotificationService,
             DesktopUIShareService(),
             DesktopUIPlatformService(browser),
             DesktopUILoadService(this),
             uiVisibility,
+            DesktopTokenFetcher(),
             BehaviorSubject.create(true),
             JavaFxScheduler.getInstance(),
-            UserConfig()
+            UserConfig(),
+            null
         )
 
         app.init(platformModule)
+
         desktopNotificationService.init(app.userSessionAvailable)
+
 //        app.isInBackground = false
+    }
+
+    override fun start(primaryStage: Stage) {
+        //libsignal requires AES256 for message encryption+decryption
+        if (isRestrictedCryptography()) {
+            val alert = Alert(Alert.AlertType.ERROR)
+            alert.title = "Unable to start Sly Chat"
+            alert.headerText = "An error occurred during initialization."
+            alert.contentText = "Restricted JCE policy detected. Please install Unlimited Strength Jurisdiction Policy Files from Oracle."
+            alert.showAndWait()
+            Platform.exit()
+            return
+        }
+
+        stage = primaryStage
+
+        windowService.stage = stage
+
+        uiVisibility.onNext(!stage.isIconified)
+
+        stage.focusedProperty().addListener { o, oldV, newV ->
+            uiVisibility.onNext(newV)
+        }
+
+        stage.iconifiedProperty().addListener { o, oldV, newV ->
+            uiVisibility.onNext(!newV)
+        }
 
         val appComponent = app.appComponent
 
@@ -210,11 +226,9 @@ class DesktopApp : Application() {
 
         registerCoreServicesOnDispatcher(dispatcher, appComponent)
 
-        //TODO loading screen
-        val loadingScreen = Rectangle()
-        loadingScreen.fill = Color.BLACK
-        loadingScreen.heightProperty().bind(primaryStage.heightProperty())
-        loadingScreen.widthProperty().bind(primaryStage.widthProperty())
+        val splashImage = Image("/icon_512x512.png")
+
+        val loadingScreen = SplashImage(splashImage)
         stackPane.children.add(loadingScreen)
         this.loadingScreen = loadingScreen
 
@@ -255,9 +269,6 @@ class DesktopApp : Application() {
         tk.setGlobalMenuBar(appMenuBar)
     }
 
-    private fun onUserSessionCreated() {
-    }
-
     override fun stop() {
         super.stop()
 
@@ -288,7 +299,10 @@ class DesktopApp : Application() {
             return
         }
 
-        val fade = FadeTransition(Duration.millis(1000.0), node)
+        loadingScreen = null
+
+        val fade = FadeTransition(Duration.millis(600.0), node)
+
         fade.fromValue = 1.0
         fade.toValue = 0.0
 

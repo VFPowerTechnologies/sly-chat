@@ -10,6 +10,9 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.text.SpannableString
 import android.text.style.StyleSpan
+import io.slychat.messenger.core.SlyAddress
+import io.slychat.messenger.core.pushnotifications.OfflineMessageInfo
+import io.slychat.messenger.core.pushnotifications.OfflineMessagesPushNotification
 import io.slychat.messenger.services.NotificationState
 import io.slychat.messenger.services.PlatformNotificationService
 import io.slychat.messenger.services.config.UserConfigService
@@ -85,9 +88,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
             //so we just add this to trigger that behavior
             inboxStyle.addLine("...")
 
-            var remainingCount = 0
-            for (i in MAX_NOTIFICATION_LINES..userCount-1)
-                remainingCount += adapter.getEntryUnreadCount(i)
+            val remainingCount = (MAX_NOTIFICATION_LINES..userCount-1).sumBy { adapter.getEntryUnreadCount(it) }
 
             inboxStyle.setSummaryText("$remainingCount more messages")
         }
@@ -206,8 +207,9 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         return getPendingIntentForActivity(intent)
     }
 
-    private fun getStopMessagesIntent(): PendingIntent {
+    private fun getStopMessagesIntent(account: SlyAddress): PendingIntent {
         val intent = Intent(context, NotificationStopService::class.java)
+        intent.putExtra(NotificationStopService.EXTRA_ACCOUNT, account.asString())
         return getPendingIntentForService(intent)
     }
 
@@ -224,32 +226,17 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
         return getInboxStyle(OfflineMessageInfoInboxStyleAdapter(info))
     }
 
-    fun showLoggedOutNotification(accountName: String, info: List<OfflineMessageInfo>) {
+    fun showLoggedOutNotification(message: OfflineMessagesPushNotification) {
+        val accountName = message.accountName
+        val info = message.info
+
         val pendingIntent = getLoggedOffNotificationIntent()
 
         val soundUri = getMessageNotificationSound()
 
-        val notificationTitle = if (info.size == 1) {
-            "New messages from ${info[0].name}"
-        }
-        else {
-            val totalMessages = info.fold(0) { z, b ->
-                z + b.pendingCount
-            }
-            "$totalMessages new messages"
-        }
+        val notificationTitle = message.getNotificationTitle()
 
-        val notificationText = if (info.size == 1) {
-            val pendingCount = info[0].pendingCount
-            val s = "$pendingCount new message"
-            if (pendingCount > 1)
-                s + "s"
-            else
-                s
-        }
-        else {
-            "New messages for $accountName"
-        }
+        val notificationText = message.getNotificationText()
 
         val notificationBuilder = Notification.Builder(context)
             .setContentTitle(notificationTitle)
@@ -259,7 +246,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
             .setContentIntent(pendingIntent)
             .setStyle(getLoggedOutInboxStyle(info))
             //FIXME icon
-            .addAction(R.drawable.notification, "Stop receiving notifications", getStopMessagesIntent())
+            .addAction(R.drawable.notification, "Stop receiving notifications", getStopMessagesIntent(message.account))
 
         if (soundUri != null)
             notificationBuilder.setSound(soundUri)

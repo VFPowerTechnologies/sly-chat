@@ -46,7 +46,7 @@ class SiteUserManagement(private val devClient: DevClient) {
         return siteUser
     }
 
-    fun injectNamedSiteUser(username: String, phoneNumber: String? = null): GeneratedSiteUser {
+    fun injectNamedSiteUser(email: String, phoneNumber: String? = null): GeneratedSiteUser {
         val number = if (phoneNumber == null) {
             currentPhoneNumber++
             currentPhoneNumber.toString()
@@ -54,7 +54,7 @@ class SiteUserManagement(private val devClient: DevClient) {
         else
             phoneNumber
 
-        val registrationInfo = RegistrationInfo(username, "name", number)
+        val registrationInfo = RegistrationInfo(email, "name", number)
         return injectSiteUser(registrationInfo)
     }
 

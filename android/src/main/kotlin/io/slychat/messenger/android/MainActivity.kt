@@ -5,7 +5,6 @@ import android.app.Dialog
 import android.app.ProgressDialog
 import android.content.Intent
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.view.WindowManager
 import android.widget.LinearLayout
@@ -17,7 +16,7 @@ import io.slychat.messenger.services.ui.clearAllListenersOnDispatcher
 import org.slf4j.LoggerFactory
 import rx.Subscription
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
     companion object {
         val ACTION_VIEW_MESSAGES = "io.slychat.messenger.android.action.VIEW_MESSAGES"
 
@@ -267,16 +266,6 @@ class MainActivity : AppCompatActivity() {
         fragment.view?.requestFocus()
         fragment.arguments = bundle
         supportFragmentManager.beginTransaction().replace(R.id.main_frag_container, fragment).addToBackStack(fragmentId).commit()
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        val fragments = supportFragmentManager.fragments
-        if (fragments != null) {
-            for (fragment in fragments) {
-                fragment.onRequestPermissionsResult(requestCode, permissions, grantResults)
-            }
-        }
     }
 
     private fun showFragContainer() {

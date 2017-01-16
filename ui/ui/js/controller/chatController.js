@@ -140,13 +140,24 @@ ChatController.prototype = {
         messageNode.html(messageCore);
 
         if (!(expired instanceof jQuery)) {
-            messageNode.on("mouseheld", function () {
-                vibrate(50);
-                if (isGroup)
-                    this.openGroupMessageMenu(messageInfo, contact);
-                else
-                    this.openMessageMenu(message);
-            }.bind(this));
+            if(isIos) {
+                $$(messageNode).on("taphold", function () {
+                    vibrate(50);
+                    if (isGroup)
+                        this.openGroupMessageMenu(messageInfo, contact);
+                    else
+                        this.openMessageMenu(message);
+                }.bind(this));
+            }
+            else {
+                messageNode.on("mouseheld", function () {
+                    vibrate(50);
+                    if (isGroup)
+                        this.openGroupMessageMenu(messageInfo, contact);
+                    else
+                        this.openMessageMenu(message);
+                }.bind(this));
+            }
             messageNode.find(".timeago").timeago();
         }
 
@@ -244,10 +255,19 @@ ChatController.prototype = {
             }
             countdown();
 
-            messageNode.on("mouseheld", function () {
-                vibrate(50);
-                this.openMessageMenu(message);
-            }.bind(this));
+            if(isIos) {
+                $$(messageNode).on("taphold", function () {
+                    vibrate(50);
+                    this.openMessageMenu(message);
+                }.bind(this));
+            }
+            else {
+                messageNode.on("mouseheld", function () {
+                    vibrate(50);
+                    this.openMessageMenu(message);
+                }.bind(this));
+            }
+
             messageNode.find(".timeago").timeago();
 
             var messageCore = messageNode.find('.message');
@@ -368,7 +388,52 @@ ChatController.prototype = {
             this.updateGroupChatPageNewMessage(messageInfo);
         }
 
+        if (navigationController.getCurrentPage() != "contacts.html" && isIos)
+            this.addNewMessageIosNotification(messageInfo);
+
         $(".timeago").timeago();
+    },
+
+    addNewMessageIosNotification : function (messageInfo) {
+        var notification = {
+            title: "Sly",
+            closeOnClick: true,
+            closeIcon: false,
+            hold: 2000,
+            additionalClass: "new-message-notification"
+        };
+
+        if(messageInfo.groupId === null) {
+            if (this.getCurrentContactId() != messageInfo.contact) {
+                var contact = contactController.getContact(messageInfo.contact);
+                if (contact) {
+                    notification.subtitle = 'New message from ' + contact.name;
+                    notification.message = messageInfo.messages[0].message;
+                    notification.onClick = function () {
+                        contactController.loadChatPage(contact, false, false);
+                    };
+                    this.showNewMessageNotification(notification)
+                }
+            }
+        }
+        else {
+            if (this.getCurrentContactId() != messageInfo.groupId) {
+                var groupInfo = groupController.getGroup(messageInfo.groupId);
+                if (groupInfo) {
+                    notification.subtitle = "New message in group: " + groupInfo.name;
+                    notification.message = messageInfo.messages[0].message;
+                    notification.onClick = function () {
+                        contactController.loadChatPage(groupInfo, false, true);
+                    };
+                    this.showNewMessageNotification(notification)
+                }
+            }
+        }
+    },
+
+    showNewMessageNotification : function (notification) {
+        $(".new-message-notification").remove();
+        slychat.addNotification(notification)
     },
 
     leftMenuAddNewMessageBadge : function (id) {
@@ -724,7 +789,7 @@ ChatController.prototype = {
         }
 
         var newMessageInput = $("#newMessageInput"), message;
-        if (isDesktop) {
+        if (!isAndroid) {
             message = newMessageInput.val();
         }
         else {
@@ -758,9 +823,10 @@ ChatController.prototype = {
 
     handleSubmitMessageSuccess : function () {
         var input = $("#newMessageInput");
-        if (isDesktop) {
-            input.val("");
-            input.click();
+        if (!isAndroid) {
+            input.val([]);
+            input.blur();
+            input.focus();
         }
         else {
             var area = input.emojioneArea();
@@ -795,8 +861,7 @@ ChatController.prototype = {
 
     updateGroupChatPageNewMessage : function (messagesInfo) {
         var messages = messagesInfo.messages;
-        var currentPageContactId = $("#contact-id");
-        if(navigationController.getCurrentPage() == "chat.html" && currentPageContactId.length && currentPageContactId.html() == messagesInfo.groupId){
+        if(this.getCurrentContactId() == messagesInfo.groupId){
             var messageDiv = $("#chat-content");
 
             if(messageDiv.length){

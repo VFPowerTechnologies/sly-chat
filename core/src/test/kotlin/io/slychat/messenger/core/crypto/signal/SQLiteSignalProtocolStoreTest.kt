@@ -6,12 +6,12 @@ import com.nhaarman.mockito_kotlin.whenever
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.generateKeyPair
 import io.slychat.messenger.core.crypto.identityKeyFingerprint
+import io.slychat.messenger.core.crypto.randomRegistrationId
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactsPersistenceManager
 import io.slychat.messenger.core.persistence.PreKeyPersistenceManager
 import io.slychat.messenger.core.persistence.SignalSessionPersistenceManager
 import io.slychat.messenger.core.randomContactInfo
-import io.slychat.messenger.core.crypto.randomRegistrationId
 import io.slychat.messenger.core.randomSignalAddress
 import io.slychat.messenger.testutils.thenResolve
 import org.junit.Test
@@ -40,7 +40,7 @@ class SQLiteSignalProtocolStoreTest {
 
         whenever(contactsPersistenceManager.get(any<UserId>())).thenResolve(null)
 
-        assertFalse(signalStore.isTrustedIdentity(address.name, identityKeyPair.publicKey))
+        assertFalse(signalStore.isTrustedIdentity(address, identityKeyPair.publicKey))
     }
 
     @Test
@@ -51,7 +51,7 @@ class SQLiteSignalProtocolStoreTest {
 
         whenever(contactsPersistenceManager.get(any<UserId>())).thenResolve(contactInfo)
 
-        assertFalse(signalStore.isTrustedIdentity(address.name, identityKeyPair.publicKey))
+        assertFalse(signalStore.isTrustedIdentity(address, identityKeyPair.publicKey))
     }
 
     @Test
@@ -64,6 +64,6 @@ class SQLiteSignalProtocolStoreTest {
 
         whenever(contactsPersistenceManager.get(any<UserId>())).thenResolve(contactInfo)
 
-        assertTrue(signalStore.isTrustedIdentity(address.name, identityKeyPair.publicKey))
+        assertTrue(signalStore.isTrustedIdentity(address, identityKeyPair.publicKey))
     }
 }

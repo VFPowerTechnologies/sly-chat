@@ -87,25 +87,22 @@ inline fun <T, K, V> Iterable<T>.mapToMap(transform: (T) -> Pair<K, V>): Map<K, 
     return m
 }
 
-/** Attempts to return the current Android version. Uses reflection to access android.os.Build.VERSION.RELEASE. */
-private fun getAndroidVersion(): String? {
-    return try {
-        //android.os.Build(class).VERSION(static class).RELEASE(static string)
-        //we could technically use android.os.Build$VERSION, but afaik the $ naming is convention and not standard so
-        //I'd rather not rely on it
-        val buildClass = Class.forName("android.os.Build")
-        val versionClass = buildClass.declaredClasses.filter { it.simpleName == "VERSION" }.firstOrNull()
-        if (versionClass == null)
-            "unknown"
-        else {
-            val releaseField = versionClass.getField("RELEASE")
-            releaseField.get(null) as String
-        }
-    }
-    catch (e: ClassNotFoundException) {
-        null
-    }
+operator fun <K, V> Map<K, V>.plus(entry: Pair<K, V>): Map<K, V> {
+    val m = HashMap(this)
+
+    m += entry
+
+    return m
 }
+
+operator fun <K, V> Map<K, V>.minus(key: K): Map<K, V> {
+    val m = HashMap(this)
+
+    m.remove(key)
+
+    return m
+}
+
 
 /**
  * Used to determine OS info from Java's os.name and os.version system properties. Currently only tested on the following JREs: Oracle, OpenJDK, Android
@@ -115,13 +112,7 @@ private fun getAndroidVersion(): String? {
 fun osFromProperties(osName: String, osVersion: String): Os {
     return when {
         osName == "Linux" -> {
-            //no property actually contains the android version, and os.version is just the linux version
-            //so we just use reflection for testing
-            val androidVersion = getAndroidVersion()
-            if (androidVersion != null)
-                Os(Os.Type.ANDROID, androidVersion)
-            else
-                Os(Os.Type.LINUX, osVersion)
+            Os(Os.Type.LINUX, osVersion)
         }
 
         osName.startsWith("Windows") -> {
@@ -138,10 +129,28 @@ fun osFromProperties(osName: String, osVersion: String): Os {
     }
 }
 
-val currentOs: Os = osFromProperties(
-    System.getProperty("os.name"),
-    System.getProperty("os.version")
-)
+//default to desktop lookup if no special class is provided
+private fun getOsInfo(): Os {
+    val cls = try {
+        Class.forName("io.slychat.messenger.core.OSInfo")
+    }
+    catch (e: ClassNotFoundException) {
+        return osFromProperties(
+            System.getProperty("os.name"),
+            System.getProperty("os.version")
+        )
+    }
+
+    val getType = cls.getMethod("getType")
+    val osType = getType.invoke(null) as Os.Type
+
+    val getVersion = cls.getMethod("getVersion")
+    val version = getVersion.invoke(null) as String
+
+    return Os(osType, version)
+}
+
+val currentOs: Os = getOsInfo()
 
 fun emptyByteArray(): ByteArray = ByteArray(0)
 

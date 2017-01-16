@@ -177,7 +177,9 @@ slychat.onPageInit('register', function (page) {
 });
 
 slychat.onPageInit('chat', function (page) {
-    emojiController.createPicker();
+    if(!isIos)
+        emojiController.createPicker();
+
     var isGroup = page.query.email === undefined;
     var newMessageInput = $("#newMessageInput");
     contactController.resetUnreadCount(page.query.id, isGroup);
@@ -256,30 +258,33 @@ slychat.onPageInit('chat', function (page) {
 
             chatController.toggleExpiringMessageDisplay();
         });
-        $("#emojiPickerBtn").on('touchstart', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            emojiController.toggleMobileEmoji();
-        });
 
-        newMessageInput.emojioneArea({
-            autoHideFilters: true,
-            useInternalCDN: false,
-            autocomplete: false,
-            recentEmojis: false,
-            attributes: {
-                autocomplete: 'on'
-            },
-            events: {
-                click: function (editor, event) {
-                    editor.focus();
+        if(!isIos) {
+            $("#emojiPickerBtn").on('touchstart', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                emojiController.toggleMobileEmoji();
+            });
+
+            newMessageInput.emojioneArea({
+                autoHideFilters: true,
+                useInternalCDN: false,
+                autocomplete: false,
+                recentEmojis: false,
+                attributes: {
+                    autocomplete: 'on'
+                },
+                events: {
+                    click: function (editor, event) {
+                        editor.focus();
+                    }
                 }
-            }
-        });
+            });
 
-        $(".emojionearea-editor").on("touchstart", function (e) {
-            e.stopImmediatePropagation();
-        });
+            $(".emojionearea-editor").on("touchstart", function (e) {
+                e.stopImmediatePropagation();
+            });
+        }
     }
 });
 
@@ -293,6 +298,10 @@ slychat.onPageInit('addContact', function (page) {
 slychat.onPageBeforeInit('contacts', function (page) {
     contactController.init();
     groupController.init();
+
+    $("#inviteFriendsRecentButton").click(function () {
+        navigationController.loadPage("inviteFriends.html", true);
+    });
 });
 
 slychat.onPageInit('smsVerification', function (page) {

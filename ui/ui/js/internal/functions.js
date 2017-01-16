@@ -44,20 +44,44 @@ function createDesktopMenu () {
         '</div></div></div></div></div>';
 }
 
-function createMobileContactPopup() {
+function createMobileContactPopup(isIos) {
+    var navbar = '';
+    if(isIos)
+        navbar = '<div class="navbar top-navbar">' +
+            '<div class="navbar-inner">' +
+            '<div class="left">' +
+                '<a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a>' +
+            '</div>' +
+            '<div class="center sliding">Address Book</div>' +
+            '<div class="right">' +
+                '<a id="contactPopupNewBtn" href="#" class="link icon-only close-popup"> <i class="fa fa-plus-square"></i></a>' +
+            '</div>' +
+            '</div></div>';
+    else {
+        navbar = '<div class="navbar top-navbar">' +
+            '<div class="navbar-inner">' +
+            '<div class="left">' +
+                '<a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a>Address Book' +
+            '</div>' +
+            '<div class="right">' +
+                '<a id="contactPopupNewBtn" href="#" class="link icon-only close-popup"> <i class="fa fa-plus-square"></i></a>' +
+            '</div>' +
+            '</div></div>';
+    }
+
+    var addContactFloatingBtn = "";
+    if(!isIos)
+        addContactFloatingBtn = '<a href="#" id="contactPopupNewBtn" class="floating-button close-popup">new</a>';
+
     return '<div class="popup-overlay"></div>' +
         '<div id="contactPopup" class="popup popup-contact tablet-fullscreen">' +
         '<div class="view navbar-fixed" data-page>' +
         '<div class="pages">' +
         '<div data-page class="page">' +
-        '<div class="navbar top-navbar">' +
-        '<div class="navbar-inner">' +
-        '<div class="left">' +
-        '<a href="#" class="link close-popup close-popup-btn icon-only"> <i class="icon icon-back" style="margin-left: 10px;"></i></a>Address Book' +
-        '</div><div class="right"></div></div></div>' +
+        navbar +
         '<div class="page-content" style="padding-bottom: 48px;">' +
         '<div class="tabs-swipeable-wrap">' +
-        '<a href="#" id="contactPopupNewBtn" class="floating-button close-popup">new</a>' +
+        addContactFloatingBtn +
         '<div class="tabs">' +
         '<div class="tab active" id="contact-tab" style="overflow: auto;">' +
         '<div class="content-block-title">Recent contacts</div>' +

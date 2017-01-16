@@ -56,6 +56,8 @@ class OfflineMessageManagerImpl(
 
         authTokenManager.bind { userCredentials ->
             offlineMessagesClient.get(userCredentials) bindUi { response ->
+                log.info("Received {} offline messages", response.messages.size)
+
                 if (response.messages.isNotEmpty()) {
                     val offlineMessages = response.messages.map { m ->
                         Package(PackageId(m.from, randomUUID()), m.timestamp, m.serializedMessage)

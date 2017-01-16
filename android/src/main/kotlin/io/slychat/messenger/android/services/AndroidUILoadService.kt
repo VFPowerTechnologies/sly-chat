@@ -8,6 +8,6 @@ class AndroidUILoadService(val context: Context) : UILoadService {
     override fun loadComplete() {
         val app = AndroidApp.get(context)
 
-        app.uiLoadCompleted()
+//        app.uiLoadCompleted()
     }
 }

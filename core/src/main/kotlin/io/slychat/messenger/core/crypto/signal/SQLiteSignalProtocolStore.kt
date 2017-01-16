@@ -79,7 +79,7 @@ class SQLiteSignalProtocolStore(
         return preKeyPersistenceManager.containsUnsignedPreKey(preKeyId).get()
     }
 
-    override fun saveIdentity(name: String, identityKey: IdentityKey) {
+    override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey) {
         //the identity keys are static per account; so we do nothing here, as simply adding a contact records their pubkey
     }
 
@@ -87,9 +87,9 @@ class SQLiteSignalProtocolStore(
         return identityKeyPair
     }
 
-    override fun isTrustedIdentity(name: String, identityKey: IdentityKey): Boolean {
+    override fun isTrustedIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean {
         //don't trust anyone we haven't yet added to the contact list
-        val contact = contactsPersistenceManager.get(UserId(name.toLong())).get() ?: return false
+        val contact = contactsPersistenceManager.get(UserId(address.name.toLong())).get() ?: return false
         return contact.publicKey == identityKey.serialize().hexify()
     }
 

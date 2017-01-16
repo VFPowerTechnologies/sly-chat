@@ -8,7 +8,18 @@ interface RelayConnectionEvent
 /** Sent when a connection to the relay is established. */
 data class RelayConnectionEstablished(val connection: RelayConnection) : RelayConnectionEvent
 
-class RelayConnectionLost() : RelayConnectionEvent
+class RelayConnectionLost() : RelayConnectionEvent {
+    override fun equals(other: Any?): Boolean {
+        if (other == null)
+            return false
+
+        return other is RelayConnectionLost
+    }
+
+    override fun hashCode(): Int {
+        return 0
+    }
+}
 
 /** Represents an incoming or outgoing message to the relay server. */
 class RelayMessage(

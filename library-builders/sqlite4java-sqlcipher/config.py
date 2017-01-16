@@ -72,6 +72,7 @@ def process_config_file(config):
     r['root-prefix-path'] = join(root_path, 'root')
     r['root-output-path'] = join(root_path, 'output')
     r['root-android-output-path'] = join(r['root-output-path'], 'android')
+    r['root-ios-output-path'] = join(r['root-output-path'], 'ios')
 
     return r
 
