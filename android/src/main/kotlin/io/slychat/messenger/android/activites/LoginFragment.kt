@@ -84,6 +84,11 @@ class LoginFragment: Fragment() {
         return valid
     }
 
+    fun showLoginError(error: String) {
+        val errorView = v?.findViewById(R.id.login_error) as TextView
+        errorView.text = error
+    }
+
     override fun onPause() {
         log.debug("onPause")
         super.onPause()

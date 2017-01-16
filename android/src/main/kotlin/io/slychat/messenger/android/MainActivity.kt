@@ -197,22 +197,30 @@ class MainActivity : BaseActivity() {
                 handleLoggedInEvent(event)
             }
             is LoginEvent.LoggedOut -> { handleLoggedOutEvent() }
-            is LoginEvent.LoggingIn -> { log.debug("logging in") }
-            is LoginEvent.LoginFailed -> {
-                if (event.errorMessage == "Phone confirmation needed")
-                    startSmsVerification("login")
-            }
+            is LoginEvent.LoginFailed -> { handleLoginFailedEvent(event) }
         }
     }
 
     private fun handleLoggedInEvent(state: LoginEvent.LoggedIn) {
-        log.debug("logged in")
         hideProgressDialog()
         app.accountInfo = state.accountInfo
         app.publicKey = state.publicKey
         val intent = Intent(baseContext, RecentChatActivity::class.java)
         startActivity(intent)
         finish()
+    }
+
+    private fun handleLoginFailedEvent(event: LoginEvent.LoginFailed) {
+        val error = event.errorMessage
+        hideProgressDialog()
+        if (error == "Phone confirmation needed")
+            startSmsVerification("login")
+
+        val fragment = supportFragmentManager.findFragmentById(R.id.main_frag_container)
+        if (fragment !is LoginFragment || error == null)
+            return
+
+        fragment.showLoginError(error)
     }
 
     private fun handleLoggedOutEvent () {
