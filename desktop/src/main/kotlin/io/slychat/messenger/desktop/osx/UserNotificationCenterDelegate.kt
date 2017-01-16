@@ -24,7 +24,13 @@ class UserNotificationCenterDelegate(
         val userInfo = notification.userInfo
 
         val typeString = userInfo[OSXNotificationService.USERINFO_TYPE_KEY] ?: return
-        val type = NotificationType.valueOf(typeString)
+        //incase we encounter a new notification on an older version or something
+        val type = try {
+            NotificationType.valueOf(typeString)
+        }
+        catch (e: IllegalArgumentException) {
+            return
+        }
 
         when (type) {
             NotificationType.CONVERSATION -> {
