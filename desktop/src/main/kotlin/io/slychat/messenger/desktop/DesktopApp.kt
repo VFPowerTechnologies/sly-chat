@@ -65,13 +65,6 @@ import rx.subjects.BehaviorSubject
 import java.util.*
 import javax.crypto.Cipher
 
-fun showAlert(text: String) {
-    val alert = Alert(Alert.AlertType.INFORMATION)
-    alert.title = "Info"
-    alert.contentText = text
-    alert.show()
-}
-
 class DesktopApp : Application() {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -148,7 +141,7 @@ class DesktopApp : Application() {
 
     private fun getPlatformNotificationService(): PlatformNotificationService {
         return if (currentOs.type == Os.Type.OSX)
-            OSXNotificationService()
+            OSXNotificationService(uiVisibility)
         else
             DesktopNotificationService(
                 JfxAudioPlayback(),

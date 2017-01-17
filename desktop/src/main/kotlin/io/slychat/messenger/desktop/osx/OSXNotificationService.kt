@@ -14,12 +14,21 @@ import io.slychat.messenger.services.di.UserComponent
 import nl.komponents.kovenant.task
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.subjects.BehaviorSubject
 
-class OSXNotificationService : PlatformNotificationService {
+class OSXNotificationService(uiVisibility: BehaviorSubject<Boolean>) : PlatformNotificationService {
     companion object {
         const val USERINFO_TYPE_KEY = "type"
         const val USERINFO_ACCOUNT_KEY = "account"
         const val USERINFO_CONVERSATION_ID_KEY = "conversationId"
+    }
+
+    private var isUIVisible = false
+
+    init {
+        uiVisibility.subscribe {
+            isUIVisible = it
+        }
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -69,9 +78,11 @@ class OSXNotificationService : PlatformNotificationService {
         val unreadCount = notificationState.unreadCount()
         NSApplication.sharedApplication.dockTile.badgeLabel = if (unreadCount > 0) unreadCount.toString() else null
 
-        notificationState.state.forEach {
-            if (it.hasNew)
-                displayNotification(it.conversationDisplayInfo)
+        if (!isUIVisible) {
+            notificationState.state.forEach {
+                if (it.hasNew)
+                    displayNotification(it.conversationDisplayInfo)
+            }
         }
 
         if (unreadCount > 0)
