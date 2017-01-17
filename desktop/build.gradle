@@ -17,7 +17,7 @@ apply plugin: 'kotlin'
 apply plugin: 'application'
 apply plugin: 'javafx-gradle-plugin'
 
-mainClassName = 'io.slychat.messenger.desktop.DesktopApp'
+mainClassName = 'io.slychat.messenger.desktop.Main'
 applicationName = "sly-chat"
 
 sourceSets.main.resources.srcDirs += "$rootProject.projectDir/ui"
@@ -183,7 +183,7 @@ task verifyDMGSignature(dependsOn: jfxNative) {
         String mountRoot = "${System.getProperty('java.io.tmpdir')}"
         String mountPoint = "$mountRoot/$jfx.appName"
         String appPath = "$mountPoint/${jfx.appName}.app"
-        File dmgPath = new File("$project.projectDir/$jfx.nativeOutputDir/$jfx.appName-${jfx.nativeReleaseVersion}.dmg")
+        File dmgPath = project.file("$jfx.nativeOutputDir/$jfx.appName-${jfx.nativeReleaseVersion}.dmg")
 
         logger.debug("Mounting $dmgPath to $mountPoint")
 
@@ -236,4 +236,28 @@ task zipWindows(type: Zip, dependsOn: jfxNative) {
 
 task distWindows(dependsOn: zipWindows) << {
     generateChecksumFile(zipWindows.archivePath)
+}
+
+//can't extend jfx* tasks, as they just call these worker classes (and settings are plugin-level)
+import de.dynamicfiles.projects.gradle.plugins.javafx.tasks.workers.JfxNativeWorker
+task generateAppBundle(dependsOn: 'jfxJar') {
+    doFirst {
+        jfx {
+            bundler = 'mac.app'
+        }
+    }
+
+    doLast {
+        new JfxNativeWorker().jfxnative(project)
+    }
+}
+
+task runAppBundle << {
+    String appName = jfx.appName
+
+    String appDir = project.file("${jfx.nativeOutputDir}/${appName}.app").toString()
+
+    project.exec {
+        executable = "$appDir/Contents/MacOS/$appName"
+    }
 }

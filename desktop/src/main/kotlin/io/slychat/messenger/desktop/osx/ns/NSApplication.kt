@@ -9,6 +9,8 @@ class NSApplication(private val proxy: Proxy) {
         const val NSCriticalRequest = 0
         const val NSInformationRequest = 10
 
+        const val DidFinishLaunchingNotification = "NSApplicationDidFinishLaunchingNotification"
+
         @JvmStatic
         val sharedApplication: NSApplication
             get() {

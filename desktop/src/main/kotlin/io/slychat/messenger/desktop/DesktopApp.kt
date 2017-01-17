@@ -13,7 +13,6 @@ import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
-import io.slychat.messenger.desktop.jna.CLibrary
 import io.slychat.messenger.desktop.osx.AppleEventHandler
 import io.slychat.messenger.desktop.osx.GlassEventHandler
 import io.slychat.messenger.desktop.osx.OSXNotificationService
@@ -66,6 +65,13 @@ import rx.subjects.BehaviorSubject
 import java.util.*
 import javax.crypto.Cipher
 
+fun showAlert(text: String) {
+    val alert = Alert(Alert.AlertType.INFORMATION)
+    alert.title = "Info"
+    alert.contentText = text
+    alert.show()
+}
+
 class DesktopApp : Application() {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -111,7 +117,6 @@ class DesktopApp : Application() {
                         jsLog.debug(text, *args)
                     else
                         println("Unknown level: $level")
-
                 }
             }
             null
@@ -151,6 +156,7 @@ class DesktopApp : Application() {
             )
     }
 
+    /** Perform AppComponent and other non-UI-related initialization. */
     override fun init() {
         //this'll be checked again in start() and it'll display an error
         if (isRestrictedCryptography())
@@ -320,6 +326,9 @@ class DesktopApp : Application() {
             return
         }
 
+        //only do this once on startup
+        checkForStartupNotification()
+
         //delay showing ui until app config is read so we have access to the current theme info
 
         //ideally we'd use this info to provide proper fill colors, but right now this doesn't prevent flickering
@@ -330,6 +339,20 @@ class DesktopApp : Application() {
 
             osxSetup()
         }
+    }
+
+    /** Check if the app was launched from a notification. */
+    private fun checkForStartupNotification() {
+        if (currentOs.type != Os.Type.OSX)
+            return
+
+        val notificationHandler = Main.startupNotificationObserver ?: return
+
+        val conversationId = notificationHandler.startupConversationId ?: return
+        notificationHandler.clear()
+
+        val initialPage = getNavigationPageConversation(conversationId)
+        app.appComponent.uiStateService.initialPage = initialPage
     }
 
     private fun onWindowClosed() {
@@ -507,17 +530,6 @@ class DesktopApp : Application() {
     }
 
     companion object {
-        @JvmStatic
-        fun main(args: Array<String>) {
-            if (currentOs.type.isPosix) {
-                val libc = CLibrary.INSTANCE
-                //077, kotlin doesn't support octal literals
-                libc.umask(63)
-            }
-
-            launch(DesktopApp::class.java, *args)
-        }
-
         private fun isRestrictedCryptography(): Boolean {
             return Cipher.getMaxAllowedKeyLength("AES") != Integer.MAX_VALUE
         }
