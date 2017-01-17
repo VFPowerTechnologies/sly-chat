@@ -581,6 +581,28 @@ class DesktopApp : Application() {
         }
     }
 
+    fun handleSendConversationSendReply(account: SlyAddress, conversationId: ConversationId, message: String) {
+        val userComponent = app.userComponent
+        if (userComponent == null) {
+            log.info("handleConversationSendReply called but not logged in, ignoring")
+            return
+        }
+
+        if (userComponent.userLoginData.address != account) {
+            log.info("Attempt to reply to a notification for a different account, ignoring")
+            return
+        }
+
+        val messengerService = userComponent.messengerService
+
+        when (conversationId) {
+            is ConversationId.User -> messengerService.sendMessageTo(conversationId.id, message, 0)
+            is ConversationId.Group -> messengerService.sendGroupMessageTo(conversationId.id, message, 0)
+        } fail {
+            log.error("Failed to send notification reply: {}", it.message, it)
+        }
+    }
+
     fun handleConversationNotificationActivated(account: SlyAddress, conversationId: ConversationId) {
         val userComponent = app.userComponent
         if (userComponent == null) {

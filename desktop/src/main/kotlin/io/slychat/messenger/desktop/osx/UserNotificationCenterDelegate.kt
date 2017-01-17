@@ -39,7 +39,13 @@ class UserNotificationCenterDelegate(
 
                 val conversationId = ConversationId.fromString(conversationIdString)
                 val account = SlyAddress.fromString(accountString)!!
-                desktopApp.handleConversationNotificationActivated(account, conversationId)
+
+                when (notification.activationType) {
+                    NSUserNotification.ActivationTypeContentsClicked ->
+                        desktopApp.handleConversationNotificationActivated(account, conversationId)
+                    NSUserNotification.ActivationTypeReplied ->
+                        desktopApp.handleSendConversationSendReply(account, conversationId, notification.response!!.string)
+                }
             }
         }
 

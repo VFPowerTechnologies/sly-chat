@@ -7,6 +7,10 @@ import ca.weblite.objc.Proxy
 class NSUserNotification(private val proxy: Proxy) : Peerable by proxy {
     companion object {
         const val DEFAULT_SOUND_NAME = "DefaultSoundName"
+
+        const val ActivationTypeNone = 0
+        const val ActivationTypeContentsClicked = 1
+        const val ActivationTypeReplied = 3
     }
 
     constructor() : this(Client.getInstance().sendProxy("NSUserNotification", "new"))
@@ -46,4 +50,43 @@ class NSUserNotification(private val proxy: Proxy) : Peerable by proxy {
         set(value) {
             proxy.send("setSoundName:", value)
         }
+
+    val activationType: Int
+        get() = proxy.sendInt("activationType")
+
+    var hasActionButton: Boolean
+        get() = proxy.sendBoolean("hasActionButton")
+        set(value) {
+            proxy.send("setHasActionButton:", value.toObjc())
+        }
+
+    var hasReplyButton: Boolean
+        get() = proxy.sendBoolean("hasReplyButton")
+        set(value) {
+            proxy.send("setHasReplyButton:", value.toObjc())
+        }
+
+    val response: NSAttributedString?
+        get() {
+            val response = proxy.sendProxy("response") ?: return null
+            return NSAttributedString(response)
+        }
+
+    var responsePlaceholder: String?
+        get() = getString(proxy.send("responsePlaceholder"))
+        set(value) {
+            proxy.send("setResponsePlaceholder:", value)
+        }
+
+    override fun toString(): String {
+        return proxy.toString()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return proxy == other
+    }
+
+    override fun hashCode(): Int {
+        return proxy.hashCode()
+    }
 }

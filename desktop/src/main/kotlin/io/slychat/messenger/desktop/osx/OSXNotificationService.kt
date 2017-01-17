@@ -120,6 +120,10 @@ class OSXNotificationService(uiVisibility: BehaviorSubject<Boolean>) : PlatformN
         if (!isExpirable)
             notification.informativeText = lastMessageData.message
 
+        notification.hasActionButton = true
+        notification.hasReplyButton = true
+        notification.responsePlaceholder = "Reply to message"
+
         val userInfo = NSMutableDictionary()
         userInfo[USERINFO_ACCOUNT_KEY] = currentAccount.asString()
         userInfo[USERINFO_TYPE_KEY] = NotificationType.CONVERSATION.toString()
