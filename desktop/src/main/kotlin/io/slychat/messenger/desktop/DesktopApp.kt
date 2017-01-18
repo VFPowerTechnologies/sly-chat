@@ -13,7 +13,6 @@ import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
-import io.slychat.messenger.desktop.jna.CLibrary
 import io.slychat.messenger.desktop.osx.AppleEventHandler
 import io.slychat.messenger.desktop.osx.GlassEventHandler
 import io.slychat.messenger.desktop.osx.OSXNotificationService
@@ -111,7 +110,6 @@ class DesktopApp : Application() {
                         jsLog.debug(text, *args)
                     else
                         println("Unknown level: $level")
-
                 }
             }
             null
@@ -143,7 +141,7 @@ class DesktopApp : Application() {
 
     private fun getPlatformNotificationService(): PlatformNotificationService {
         return if (currentOs.type == Os.Type.OSX)
-            OSXNotificationService()
+            OSXNotificationService(uiVisibility)
         else
             DesktopNotificationService(
                 JfxAudioPlayback(),
@@ -151,6 +149,7 @@ class DesktopApp : Application() {
             )
     }
 
+    /** Perform AppComponent and other non-UI-related initialization. */
     override fun init() {
         //this'll be checked again in start() and it'll display an error
         if (isRestrictedCryptography())
@@ -320,6 +319,9 @@ class DesktopApp : Application() {
             return
         }
 
+        //only do this once on startup
+        checkForStartupNotification()
+
         //delay showing ui until app config is read so we have access to the current theme info
 
         //ideally we'd use this info to provide proper fill colors, but right now this doesn't prevent flickering
@@ -330,6 +332,20 @@ class DesktopApp : Application() {
 
             osxSetup()
         }
+    }
+
+    /** Check if the app was launched from a notification. */
+    private fun checkForStartupNotification() {
+        if (currentOs.type != Os.Type.OSX)
+            return
+
+        val notificationHandler = Main.startupNotificationObserver ?: return
+
+        val conversationId = notificationHandler.startupConversationId ?: return
+        notificationHandler.clear()
+
+        val initialPage = getNavigationPageConversation(conversationId)
+        app.appComponent.uiStateService.initialPage = initialPage
     }
 
     private fun onWindowClosed() {
@@ -507,17 +523,6 @@ class DesktopApp : Application() {
     }
 
     companion object {
-        @JvmStatic
-        fun main(args: Array<String>) {
-            if (currentOs.type.isPosix) {
-                val libc = CLibrary.INSTANCE
-                //077, kotlin doesn't support octal literals
-                libc.umask(63)
-            }
-
-            launch(DesktopApp::class.java, *args)
-        }
-
         private fun isRestrictedCryptography(): Boolean {
             return Cipher.getMaxAllowedKeyLength("AES") != Integer.MAX_VALUE
         }
@@ -573,6 +578,28 @@ class DesktopApp : Application() {
         else {
             uiAvailableListeners.add(listener)
             restoreUI()
+        }
+    }
+
+    fun handleSendConversationSendReply(account: SlyAddress, conversationId: ConversationId, message: String) {
+        val userComponent = app.userComponent
+        if (userComponent == null) {
+            log.info("handleConversationSendReply called but not logged in, ignoring")
+            return
+        }
+
+        if (userComponent.userLoginData.address != account) {
+            log.info("Attempt to reply to a notification for a different account, ignoring")
+            return
+        }
+
+        val messengerService = userComponent.messengerService
+
+        when (conversationId) {
+            is ConversationId.User -> messengerService.sendMessageTo(conversationId.id, message, 0)
+            is ConversationId.Group -> messengerService.sendGroupMessageTo(conversationId.id, message, 0)
+        } fail {
+            log.error("Failed to send notification reply: {}", it.message, it)
         }
     }
 
