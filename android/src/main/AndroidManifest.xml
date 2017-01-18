@@ -28,7 +28,6 @@
                 android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
-%
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
@@ -75,9 +74,22 @@
                 android:name=".NotificationStopService"
                 android:exported="false"/>
 
-        <activity android:name=".activites.RecentChatActivity"/>
+        <activity
+                android:name=".activites.RecentChatActivity"
+                android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity"/>
+        </activity>
         <activity android:name=".activites.ContactActivity"/>
-        <activity android:name=".activites.ChatActivity" android:windowSoftInputMode="stateAlwaysHidden|adjustResize"/>
+        <activity
+                android:name=".activites.ChatActivity"
+                android:windowSoftInputMode="stateAlwaysHidden|adjustResize"
+                android:parentActivityName=".activites.RecentChatActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activites.RecentChatActivity"/>
+        </activity>
         <activity android:name=".activites.AddContactActivity"/>
         <activity android:name=".activites.CreateGroupActivity"/>
         <activity android:name=".activites.FeedbackActivity"/>

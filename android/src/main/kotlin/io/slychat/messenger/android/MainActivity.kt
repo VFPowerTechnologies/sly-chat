@@ -17,16 +17,6 @@ import org.slf4j.LoggerFactory
 import rx.Subscription
 
 class MainActivity : BaseActivity() {
-    companion object {
-        val ACTION_VIEW_MESSAGES = "io.slychat.messenger.android.action.VIEW_MESSAGES"
-
-        val EXTRA_PENDING_MESSAGES_TYPE = "pendingMessagesType"
-        val EXTRA_PENDING_MESSAGES_TYPE_SINGLE = "single"
-        val EXTRA_PENDING_MESSAGES_TYPE_MULTI = "multi"
-
-        val EXTRA_CONVO_KEY = "conversationKey"
-    }
-
     private var loginListener : Subscription? = null
     private var registrationListener : Subscription? = null
 
@@ -50,42 +40,6 @@ class MainActivity : BaseActivity() {
     )
 
     var registrationInfo = RegistrationInfo("", "", "", "")
-//
-//    /** Returns the initial page to launch after login, if any. Used when invoked via a notification intent. */
-//    private fun getInitialPage(intent: Intent): String? {
-//        if (intent.action != ACTION_VIEW_MESSAGES)
-//            return null
-//
-//        val messagesType = intent.getStringExtra(EXTRA_PENDING_MESSAGES_TYPE) ?: return null
-//
-//        val page = when (messagesType) {
-//            EXTRA_PENDING_MESSAGES_TYPE_SINGLE -> {
-//                val conversationKey = intent.getStringExtra(EXTRA_CONVO_KEY) ?: throw RuntimeException("Missing EXTRA_CONVO_KEY")
-//                val notificationKey = ConversationId.fromString(conversationKey)
-//                when (notificationKey) {
-//                    is ConversationId.User -> "user/${notificationKey.id}"
-//                    is ConversationId.Group -> "group/${notificationKey.id}"
-//                }
-//            }
-//
-//            EXTRA_PENDING_MESSAGES_TYPE_MULTI -> "contacts"
-//
-//            else -> throw RuntimeException("Unexpected value for EXTRA_PENDING_MESSAGES_TYPE: $messagesType")
-//        }
-//
-//        return page
-//    }
-
-    override fun onNewIntent(intent: Intent) {
-        log.debug("onNewIntent")
-        super.onNewIntent(intent)
-
-        this.intent = intent
-
-        //if the activity was destroyed but a notification caused to be recreated, then let init() handle setting the initial page
-        if (!isInitialized)
-            return
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         log.debug("onCreate")
@@ -205,8 +159,8 @@ class MainActivity : BaseActivity() {
         hideProgressDialog()
         app.accountInfo = state.accountInfo
         app.publicKey = state.publicKey
-        val intent = Intent(baseContext, RecentChatActivity::class.java)
-        startActivity(intent)
+
+        startActivity(Intent(baseContext, RecentChatActivity::class.java))
         finish()
     }
 
@@ -224,8 +178,6 @@ class MainActivity : BaseActivity() {
     }
 
     private fun handleLoggedOutEvent () {
-        log.debug("logged out")
-
         var fragment = supportFragmentManager.findFragmentById(R.id.main_frag_container)
         if (fragment == null) {
             fragment = LoginFragment()
@@ -259,7 +211,7 @@ class MainActivity : BaseActivity() {
             startSmsVerification("registration")
         }
         else {
-            log.debug(event.errorMessage)
+            log.error(event.errorMessage)
         }
     }
 
@@ -361,7 +313,6 @@ class MainActivity : BaseActivity() {
         log.debug("onResume")
         super.onResume()
         setAppActivity()
-        setLoginListener()
 
         if (!isInitialized)
             subToLoadComplete()

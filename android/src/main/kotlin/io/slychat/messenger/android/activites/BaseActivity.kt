@@ -1,5 +1,6 @@
 package io.slychat.messenger.android.activites
 
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
@@ -9,6 +10,7 @@ import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.R
 import io.slychat.messenger.android.activites.services.impl.SettingsServiceImpl
+import io.slychat.messenger.core.persistence.ConversationId
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
@@ -16,7 +18,6 @@ import org.slf4j.LoggerFactory
 import java.util.*
 
 open class BaseActivity: AppCompatActivity() {
-
     private var nextPermRequestCode = 0
     private val permRequestCodeToDeferred = SparseArray<Deferred<Boolean, Exception>>()
 
@@ -60,5 +61,20 @@ open class BaseActivity: AppCompatActivity() {
         val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
 
         deferred.resolve(granted)
+    }
+
+    fun getChatPageIntent(conversationId: ConversationId): Intent {
+        val intent = Intent(baseContext, ChatActivity::class.java)
+
+        if (conversationId is ConversationId.User) {
+            intent.putExtra("EXTRA_ISGROUP", false)
+            intent.putExtra("EXTRA_ID", conversationId.id.long)
+        }
+        else if (conversationId is ConversationId.Group) {
+            intent.putExtra("EXTRA_ISGROUP", true)
+            intent.putExtra("EXTRA_ID", conversationId.id.string)
+        }
+
+        return intent
     }
 }
