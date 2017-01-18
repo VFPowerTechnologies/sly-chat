@@ -4,7 +4,6 @@ import apple.contacts.*
 import apple.contacts.c.Contacts
 import apple.contacts.enums.CNContactFormatterStyle
 import apple.contacts.enums.CNEntityType
-import apple.foundation.NSArray
 import apple.foundation.NSError
 import apple.foundation.NSNotificationCenter
 import apple.foundation.NSOperationQueue
