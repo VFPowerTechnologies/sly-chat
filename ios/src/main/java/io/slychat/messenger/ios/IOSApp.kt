@@ -247,6 +247,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         app.init(platformModule)
 
         Sentry.setIOSDeviceName(UIDevice.currentDevice().model())
+        Sentry.setBuildNumber(NSBundle.mainBundle().infoDictionary()["CFBundleVersion"] as String)
 
         val appComponent = app.appComponent
 
