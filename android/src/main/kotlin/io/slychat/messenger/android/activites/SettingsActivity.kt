@@ -26,7 +26,7 @@ import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import java.util.Arrays
 
-class SettingsActivity: BaseActivity() {
+class SettingsActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     companion object {
@@ -36,16 +36,13 @@ class SettingsActivity: BaseActivity() {
     private lateinit var app: AndroidApp
     private lateinit var settingsService: SettingsServiceImpl
 
-    private var nextPermRequestCode = 0
-    private val permRequestCodeToDeferred = SparseArray<Deferred<Boolean, Exception>>()
-
     private lateinit var notificationSwitch: Switch
     private lateinit var notificationSoundName: TextView
     private lateinit var chooseNotification: LinearLayout
     private lateinit var darkThemeSwitch: Switch
     private lateinit var inviteSwitch: Switch
 
-    override fun onCreate (savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         log.debug("onCreate")
 
@@ -80,7 +77,7 @@ class SettingsActivity: BaseActivity() {
         app = AndroidApp.get(this)
     }
 
-    private fun setConfigListeners () {
+    private fun setConfigListeners() {
         settingsService.addNotificationConfigListener {
             notificationSoundName.text = it.soundName
         }
@@ -98,11 +95,11 @@ class SettingsActivity: BaseActivity() {
         }
     }
 
-    private fun clearConfigListeners () {
+    private fun clearConfigListeners() {
         settingsService.clearConfigListener()
     }
 
-    private fun createEventListeners () {
+    private fun createEventListeners() {
         chooseNotification.setOnClickListener {
             handleNotificationChooser()
         }
@@ -123,7 +120,7 @@ class SettingsActivity: BaseActivity() {
         }
     }
 
-    private fun handleNotificationChooser () {
+    private fun handleNotificationChooser() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             openRingtonePicker(settingsService.notificationConfig.sound)
         }
@@ -135,7 +132,7 @@ class SettingsActivity: BaseActivity() {
         }
     }
 
-    private fun openRingtonePicker (previous: String?) {
+    private fun openRingtonePicker(previous: String?) {
         val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
 
         val previousRingtoneUri = previous?.let { Uri.parse(it) }
@@ -153,7 +150,7 @@ class SettingsActivity: BaseActivity() {
         startActivityForResult(intent, SettingsActivity.RINGTONE_PICKER_REQUEST_CODE)
     }
 
-    override fun onActivityResult (requestCode: Int, resultCode: Int, data: Intent?) {
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {
             RINGTONE_PICKER_REQUEST_CODE -> {
                 if (resultCode != Activity.RESULT_OK) {
@@ -180,33 +177,6 @@ class SettingsActivity: BaseActivity() {
         }
     }
 
-//    private fun requestPermission(permission: String): Promise<Boolean, Exception> {
-//        val requestCode = nextPermRequestCode
-//        nextPermRequestCode += 1
-//
-//        val deferred = deferred<Boolean, Exception>()
-//        permRequestCodeToDeferred.put(requestCode, deferred)
-//
-//        ActivityCompat.requestPermissions(this, arrayOf(permission), requestCode)
-//
-//        return deferred.promise
-//    }
-
-//    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-//        val deferred = permRequestCodeToDeferred[requestCode]
-//
-//        if (deferred == null) {
-//            log.error("Got response for unknown request code ({}); permissions={}", requestCode, Arrays.toString(permissions))
-//            return
-//        }
-//
-//        permRequestCodeToDeferred.remove(requestCode)
-//
-//        val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
-//
-//        deferred.resolve(granted)
-//    }
-
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
             android.R.id.home -> { finish() }
@@ -214,40 +184,8 @@ class SettingsActivity: BaseActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    fun setAppActivity() {
-        app.setCurrentActivity(this, true)
-    }
-
-    fun clearAppActivity() {
-        app.setCurrentActivity(this, false)
-    }
-
-    override fun onStart () {
-        super.onStart()
-        log.debug("onStart")
-    }
-
-    override fun onPause () {
-        super.onPause()
-        clearAppActivity()
-        log.debug("onPause")
-    }
-
-    override fun onResume () {
-        super.onResume()
-        setAppActivity()
-        log.debug("onResume")
-    }
-
     override fun onStop () {
         super.onStop()
         clearConfigListeners()
-        log.debug("onStop")
-    }
-
-    override fun onDestroy () {
-        super.onDestroy()
-        clearAppActivity()
-        log.debug("onDestroy")
     }
 }

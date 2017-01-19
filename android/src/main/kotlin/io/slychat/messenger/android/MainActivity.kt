@@ -17,8 +17,8 @@ import org.slf4j.LoggerFactory
 import rx.Subscription
 
 class MainActivity : BaseActivity() {
-    private var loginListener : Subscription? = null
-    private var registrationListener : Subscription? = null
+    private var loginListener: Subscription? = null
+    private var registrationListener: Subscription? = null
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -268,30 +268,9 @@ class MainActivity : BaseActivity() {
         super.onRestoreInstanceState(savedInstanceState)
     }
 
-    private fun setAppActivity() {
-        app.setCurrentActivity(this, true)
-    }
-
-    private fun clearAppActivity() {
-        app.setCurrentActivity(this, false)
-    }
-
-
-    override fun onRestart() {
-        log.debug("onRestart")
-        super.onRestart()
-    }
-
-    override fun onStop() {
-        log.debug("onStop")
-        super.onStop()
-    }
-
     override fun onPause() {
-        log.debug("onPause")
-        clearAppActivity()
-        unsubscribeListeners()
         super.onPause()
+        unsubscribeListeners()
 
         val sub = loadCompleteSubscription
         if (sub != null) {
@@ -301,19 +280,12 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
-        log.debug("onDestroy")
-
-        clearAppActivity()
-        clearAllListenersOnDispatcher(AndroidApp.get(this).appComponent)
-
         super.onDestroy()
+        clearAllListenersOnDispatcher(AndroidApp.get(this).appComponent)
     }
 
     override fun onResume() {
-        log.debug("onResume")
         super.onResume()
-        setAppActivity()
-
         if (!isInitialized)
             subToLoadComplete()
     }

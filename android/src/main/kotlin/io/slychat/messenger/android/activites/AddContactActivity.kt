@@ -23,9 +23,9 @@ class AddContactActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
     private lateinit var contactService: ContactServiceImpl
 
-    private lateinit var app : AndroidApp
+    private lateinit var app: AndroidApp
 
-    override fun onCreate (savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         log.debug("onCreate")
 
@@ -51,14 +51,14 @@ class AddContactActivity : BaseActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun createEventListeners () {
+    private fun createEventListeners() {
         val mSubmitBtn = findViewById(R.id.add_contact_submit_btn) as Button
         mSubmitBtn.setOnClickListener {
             handleAddContact()
         }
     }
 
-    private fun handleAddContact () {
+    private fun handleAddContact() {
         val mUsernameField = findViewById(R.id.add_contact_field) as EditText
         val username = mUsernameField.text.toString()
         if (username.isEmpty())
@@ -75,7 +75,7 @@ class AddContactActivity : BaseActivity() {
         }
     }
 
-    private fun createContactResultNode (contactInfo: ContactInfo) {
+    private fun createContactResultNode(contactInfo: ContactInfo) {
         val mContactResultList = findViewById(R.id.add_contact_search_result) as LinearLayout
         mContactResultList.removeAllViews()
 
@@ -96,7 +96,7 @@ class AddContactActivity : BaseActivity() {
         mContactResultList.addView(node)
     }
 
-    private fun addContact (contactInfo: ContactInfo) {
+    private fun addContact(contactInfo: ContactInfo) {
         val mUsernameField = findViewById(R.id.add_contact_field) as EditText
         contactService.addContact(contactInfo) successUi { success ->
             if (success) {
@@ -112,43 +112,5 @@ class AddContactActivity : BaseActivity() {
         } failUi  {
             log.error("Failed to add contact ${contactInfo.email}")
         }
-    }
-
-    private fun setAppActivity() {
-        log.debug("set ui visible")
-        app.setCurrentActivity(this, true)
-    }
-
-    private fun clearAppActivity() {
-        log.debug("set ui hidden")
-        app.setCurrentActivity(this, false)
-    }
-
-    override fun onStart () {
-        super.onStart()
-        log.debug("onStart")
-    }
-
-    override fun onPause () {
-        super.onPause()
-        log.debug("onPause")
-        clearAppActivity()
-    }
-
-    override fun onResume () {
-        super.onResume()
-        setAppActivity()
-        log.debug("onResume")
-    }
-
-    override fun onStop () {
-        super.onStop()
-        log.debug("onStop")
-    }
-
-    override fun onDestroy () {
-        super.onDestroy()
-        clearAppActivity()
-        log.debug("onDestroy")
     }
 }

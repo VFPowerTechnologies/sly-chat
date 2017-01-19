@@ -16,11 +16,11 @@ import org.slf4j.LoggerFactory
 class FeedbackActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private lateinit var mSubmitBtn : Button
-    private lateinit var mFeedbackField : EditText
-    private lateinit var app : AndroidApp
+    private lateinit var mSubmitBtn: Button
+    private lateinit var mFeedbackField: EditText
+    private lateinit var app: AndroidApp
 
-    override fun onCreate (savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         log.debug("onCreate")
 
@@ -30,7 +30,7 @@ class FeedbackActivity : BaseActivity() {
         init()
     }
 
-    private fun init () {
+    private fun init() {
         app = AndroidApp.get(this)
 
         val actionBar = findViewById(R.id.feedback_toolbar) as Toolbar
@@ -52,13 +52,13 @@ class FeedbackActivity : BaseActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun createEventListeners () {
+    private fun createEventListeners() {
         mSubmitBtn.setOnClickListener {
             handleFeedback()
         }
     }
 
-    private fun handleFeedback () {
+    private fun handleFeedback() {
         val feedback = mFeedbackField.text.toString()
         if (feedback.isEmpty())
             return
@@ -68,43 +68,5 @@ class FeedbackActivity : BaseActivity() {
         } failUi {
             log.error("Failed sumbiting feedback", it.stackTrace)
         }
-    }
-
-    private fun setAppActivity() {
-        log.debug("set ui visible")
-        app.setCurrentActivity(this, true)
-    }
-
-    private fun clearAppActivity() {
-        log.debug("set ui hidden")
-        app.setCurrentActivity(this, false)
-    }
-
-    override fun onStart () {
-        super.onStart()
-        log.debug("onStart")
-    }
-
-    override fun onPause () {
-        super.onPause()
-        clearAppActivity()
-        log.debug("onPause")
-    }
-
-    override fun onResume () {
-        super.onResume()
-        setAppActivity()
-        log.debug("onResume")
-    }
-
-    override fun onStop () {
-        super.onStop()
-        log.debug("onStop")
-    }
-
-    override fun onDestroy () {
-        super.onDestroy()
-        clearAppActivity()
-        log.debug("onDestroy")
     }
 }

@@ -11,21 +11,22 @@ import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.R
 import io.slychat.messenger.android.activites.services.impl.SettingsServiceImpl
 import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.services.PageType
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import org.slf4j.LoggerFactory
 import java.util.*
 
-open class BaseActivity: AppCompatActivity() {
+open class BaseActivity : AppCompatActivity() {
     private var nextPermRequestCode = 0
     private val permRequestCodeToDeferred = SparseArray<Deferred<Boolean, Exception>>()
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        if (this !is MainActivity) {
-            val app = AndroidApp.get(this)
+        val app = getAndroidApp()
+        if (app !== null) {
             val currentTheme = app.appComponent.appConfigService.appearanceTheme
 
             if (currentTheme == SettingsServiceImpl.lightTheme) {
@@ -34,6 +35,13 @@ open class BaseActivity: AppCompatActivity() {
         }
 
         super.onCreate(savedInstanceState)
+    }
+
+    private fun getAndroidApp(): AndroidApp? {
+        return if (this !is MainActivity)
+            AndroidApp.get(this)
+        else
+            null
     }
 
     fun requestPermission(permission: String): Promise<Boolean, Exception> {
@@ -76,5 +84,60 @@ open class BaseActivity: AppCompatActivity() {
         }
 
         return intent
+    }
+
+    fun setAppActivity() {
+        val app = getAndroidApp()
+        if (app !== null)
+            app.setCurrentActivity(this, true)
+
+        log.debug("set ui visible")
+    }
+
+    fun clearAppActivity() {
+        val app = getAndroidApp()
+        if (app !== null)
+            app.setCurrentActivity(this, false)
+
+        log.debug("set ui hidden")
+    }
+
+    fun dispatchEvent () {
+        val app = getAndroidApp()
+        if (app !== null)
+            app.dispatchEvent("PageChange", PageType.CONTACTS, "")
+    }
+
+    override fun onRestart() {
+        log.debug("onRestart")
+        super.onRestart()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        log.debug("onStart")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        log.debug("onPause")
+        clearAppActivity()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        setAppActivity()
+        log.debug("onResume")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        clearAppActivity()
+        log.debug("onStop")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        log.debug("onDestroy")
     }
 }

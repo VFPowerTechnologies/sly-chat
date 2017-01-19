@@ -9,20 +9,20 @@ import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
 
-class ContactInfoActivity: BaseActivity() {
+class ContactInfoActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private lateinit var app : AndroidApp
+    private lateinit var app: AndroidApp
 
     private var contactName: String? = null
     private var contactEmail: String? = null
     private var contactPubKey: String? = null
 
-    private var emailVal : TextView? = null
-    private var nameVal : TextView? = null
-    private var publicKeyVal : TextView? = null
+    private var emailVal: TextView? = null
+    private var nameVal: TextView? = null
+    private var publicKeyVal: TextView? = null
 
-    override fun onCreate (savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         log.debug("onCreate")
 
@@ -47,7 +47,7 @@ class ContactInfoActivity: BaseActivity() {
         publicKeyVal = findViewById(R.id.contact_info_public_key_value) as TextView
     }
 
-    private fun init () {
+    private fun init() {
         setAppActivity()
         displayInfo()
     }
@@ -59,47 +59,14 @@ class ContactInfoActivity: BaseActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun displayInfo () {
+    private fun displayInfo() {
         emailVal?.text = contactEmail
         nameVal?.text = contactName
         publicKeyVal?.text = contactPubKey
     }
 
-    fun setAppActivity() {
-        log.debug("set ui visible")
-        app.setCurrentActivity(this, true)
-    }
-
-    fun clearAppActivity() {
-        log.debug("set ui hidden")
-        app.setCurrentActivity(this, false)
-    }
-
-    override fun onStart () {
-        super.onStart()
-        log.debug("onStart")
-    }
-
-    override fun onPause () {
-        super.onPause()
-        clearAppActivity()
-        log.debug("onPause")
-    }
-
-    override fun onResume () {
+    override fun onResume() {
         super.onResume()
         init()
-        log.debug("onResume")
-    }
-
-    override fun onStop () {
-        super.onStop()
-        log.debug("onStop")
-    }
-
-    override fun onDestroy () {
-        super.onDestroy()
-        clearAppActivity()
-        log.debug("onDestroy")
     }
 }

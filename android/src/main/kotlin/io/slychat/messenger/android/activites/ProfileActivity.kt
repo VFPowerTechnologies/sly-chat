@@ -2,7 +2,6 @@ package io.slychat.messenger.android.activites
 
 import android.content.Intent
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.view.MenuItem
 import android.view.WindowManager
@@ -15,7 +14,7 @@ import org.slf4j.LoggerFactory
 class ProfileActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private lateinit var app : AndroidApp
+    private lateinit var app: AndroidApp
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,42 +72,8 @@ class ProfileActivity : BaseActivity() {
         phoneVal.text = app.accountInfo?.phoneNumber
     }
 
-    private fun setAppActivity() {
-        log.debug("set ui visible")
-        app.setCurrentActivity(this, true)
-    }
-
-    private fun clearAppActivity() {
-        log.debug("set ui hidden")
-        app.setCurrentActivity(this, false)
-    }
-
-    override fun onStart() {
-        super.onStart()
-        log.debug("onStart")
-    }
-
-    override fun onPause() {
-        super.onPause()
-        clearAppActivity()
-        log.debug("onPause")
-    }
-
     override fun onResume() {
         super.onResume()
-        setAppActivity()
         init()
-        log.debug("onResume")
-    }
-
-    override fun onStop() {
-        super.onStop()
-        log.debug("onStop")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        clearAppActivity()
-        log.debug("onDestroy")
     }
 }

@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory
 class BlockedContactsActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private lateinit var app : AndroidApp
+    private lateinit var app: AndroidApp
     private lateinit var contactService: ContactServiceImpl
     private lateinit var groupService: GroupServiceImpl
 
@@ -28,7 +28,7 @@ class BlockedContactsActivity : BaseActivity() {
 
     private lateinit var viewPager: ViewPager
 
-    override fun onCreate (savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         log.debug("onCreate")
 
@@ -53,7 +53,7 @@ class BlockedContactsActivity : BaseActivity() {
         groupService = GroupServiceImpl(this)
     }
 
-    private fun init () {
+    private fun init() {
         setAppActivity()
         setListeners()
     }
@@ -84,43 +84,14 @@ class BlockedContactsActivity : BaseActivity() {
         contactService.clearListeners()
     }
 
-    private fun setAppActivity() {
-        log.debug("set ui visible")
-        app.setCurrentActivity(this, true)
-    }
-
-    private fun clearAppActivity() {
-        log.debug("set ui hidden")
-        app.setCurrentActivity(this, false)
-    }
-
-    override fun onStart() {
-        super.onStart()
-        log.debug("onStart")
-    }
-
     override fun onPause() {
         super.onPause()
-        log.debug("onPause")
-        clearAppActivity()
         unsubscribeListeners()
     }
 
     override fun onResume() {
         super.onResume()
         init()
-        log.debug("onResume")
-    }
-
-    override fun onStop() {
-        super.onStop()
-        log.debug("onStop")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        clearAppActivity()
-        log.debug("onDestroy")
     }
 
     internal inner class ViewPagerAdapter(manager: FragmentManager) : FragmentPagerAdapter(manager) {

@@ -11,14 +11,14 @@ import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
 
-class InviteFriendsActivity: BaseActivity() {
+class InviteFriendsActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private lateinit var inviteFriendsBtn : Button
-    private lateinit var inviteText : EditText
-    private lateinit var app : AndroidApp
+    private lateinit var inviteFriendsBtn: Button
+    private lateinit var inviteText: EditText
+    private lateinit var app: AndroidApp
 
-    override fun onCreate (savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         log.debug("onCreate")
 
@@ -38,7 +38,7 @@ class InviteFriendsActivity: BaseActivity() {
         app = AndroidApp.get(this)
     }
 
-    private fun createEventListeners () {
+    private fun createEventListeners() {
         inviteFriendsBtn.setOnClickListener {
             inviteFriends()
         }
@@ -66,41 +66,5 @@ class InviteFriendsActivity: BaseActivity() {
             android.R.id.home -> { finish() }
         }
         return super.onOptionsItemSelected(item)
-    }
-
-    fun setAppActivity() {
-        app.setCurrentActivity(this, true)
-    }
-
-    fun clearAppActivity() {
-        app.setCurrentActivity(this, false)
-    }
-
-    override fun onStart () {
-        super.onStart()
-        log.debug("onStart")
-    }
-
-    override fun onPause () {
-        super.onPause()
-        clearAppActivity()
-        log.debug("onPause")
-    }
-
-    override fun onResume () {
-        super.onResume()
-        setAppActivity()
-        log.debug("onResume")
-    }
-
-    override fun onStop () {
-        super.onStop()
-        log.debug("onStop")
-    }
-
-    override fun onDestroy () {
-        super.onDestroy()
-        clearAppActivity()
-        log.debug("onDestroy")
     }
 }

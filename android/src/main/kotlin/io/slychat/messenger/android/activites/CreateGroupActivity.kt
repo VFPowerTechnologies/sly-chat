@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory
 class CreateGroupActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private lateinit var app : AndroidApp
+    private lateinit var app: AndroidApp
     private lateinit var groupService: GroupServiceImpl
     private lateinit var progressDialog: ProgressDialog
 
@@ -89,7 +89,7 @@ class CreateGroupActivity : BaseActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        when(item?.itemId) {
+        when (item?.itemId) {
             android.R.id.home -> { finish() }
         }
         return super.onOptionsItemSelected(item)
@@ -107,7 +107,7 @@ class CreateGroupActivity : BaseActivity() {
 
         val mGroupName = findViewById(R.id.create_group_name) as EditText
         val name = mGroupName.text.toString()
-        if(name.isEmpty()) {
+        if (name.isEmpty()) {
             mGroupName.error = resources.getString(R.string.create_group_name_required_error)
             progressDialog.dismiss()
             return
@@ -117,11 +117,11 @@ class CreateGroupActivity : BaseActivity() {
 
         contactData.forEach {
             val checkbox = findViewById(it.value) as CheckBox
-            if(checkbox.isChecked)
+            if (checkbox.isChecked)
                 checkedContacts.add(it.key)
         }
 
-        if(checkedContacts.size > 0) {
+        if (checkedContacts.size > 0) {
             groupService.createGroup(name, checkedContacts) failUi {
                 log.error("Creating group: $name failed")
             }
@@ -152,44 +152,18 @@ class CreateGroupActivity : BaseActivity() {
         groupService.clearListeners()
     }
 
-    private fun setAppActivity() {
-        log.debug("set ui visible")
-        app.setCurrentActivity(this, true)
-    }
-
-    private fun clearAppActivity() {
-        log.debug("set ui hidden")
-        app.setCurrentActivity(this, false)
-    }
-
-    override fun onStart() {
-        super.onStart()
-        log.debug("onStart")
-    }
-
     override fun onPause() {
         super.onPause()
-        log.debug("onPause")
-        clearAppActivity()
         unsubscribeListener()
     }
 
     override fun onResume() {
         super.onResume()
         init()
-        log.debug("onResume")
     }
 
     override fun onStop() {
         super.onStop()
-        clearAppActivity()
         unsubscribeListener()
-        log.debug("onStop")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        clearAppActivity()
-        log.debug("onDestroy")
     }
 }

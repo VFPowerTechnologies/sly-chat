@@ -34,7 +34,7 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import rx.Subscription
 
-class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelectedListener {
+class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedListener {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
@@ -101,7 +101,7 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
         app.platformContactSyncOccured = true
     }
 
-    private fun init () {
+    private fun init() {
         recentChatList.removeAllViews()
 
         messengerService.fetchAllRecentChat() successUi {
@@ -114,7 +114,7 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
         setListeners()
     }
 
-    private fun createEventListeners () {
+    private fun createEventListeners() {
         contactFloatBtn.setOnClickListener {
             startActivity(Intent(baseContext, ContactActivity::class.java))
         }
@@ -257,7 +257,7 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
         )), 0)
     }
 
-    private fun setListeners () {
+    private fun setListeners() {
         loginListener?.unsubscribe()
         loginListener = app.app.loginEvents.subscribe {
             handleLoginEvent(it)
@@ -266,18 +266,18 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
         messengerService.addNewMessageListener({ onNewMessage(it) })
     }
 
-    private fun clearListners () {
+    private fun clearListners() {
         loginListener?.unsubscribe()
         messengerService.clearListeners()
     }
 
-    private fun handleLoginEvent (event: LoginEvent) {
+    private fun handleLoginEvent(event: LoginEvent) {
         when (event) {
             is LoginEvent.LoggedOut -> { processLogout() }
         }
     }
 
-    private fun processLogout () {
+    private fun processLogout() {
         startActivity(Intent(baseContext, MainActivity::class.java))
         finish()
     }
@@ -323,29 +323,8 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
         return true
     }
 
-    private fun dispatchEvent () {
-        app.dispatchEvent("PageChange", PageType.CONTACTS, "")
-    }
-
-    fun setAppActivity() {
-        log.debug("set ui visible")
-        app.setCurrentActivity(this, true)
-    }
-
-    fun clearAppActivity() {
-        log.debug("set ui hidden")
-        app.setCurrentActivity(this, false)
-    }
-
-    override fun onStart() {
-        super.onStart()
-        log.debug("onStart")
-    }
-
     override fun onPause() {
         super.onPause()
-        log.debug("onPause")
-        clearAppActivity()
         clearListners()
     }
 
@@ -353,19 +332,10 @@ class RecentChatActivity: BaseActivity(), NavigationView.OnNavigationItemSelecte
         super.onResume()
         init()
         dispatchEvent()
-        setAppActivity()
-        log.debug("onResume")
     }
 
     override fun onStop() {
         super.onStop()
-        log.debug("onStop")
         clearListners()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        clearAppActivity()
-        log.debug("onDestroy")
     }
 }

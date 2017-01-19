@@ -64,16 +64,16 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
         val layoutId: Int
         val isGroup = intent.getBooleanExtra("EXTRA_ISGROUP", false)
-        if(isGroup) {
+        if (isGroup) {
             val gIdString = intent.getStringExtra("EXTRA_ID")
-            if(gIdString == null)
+            if (gIdString == null)
                 finish()
             conversationId = GroupId(gIdString).toConversationId()
             layoutId = R.layout.activity_group_chat
         }
         else {
             val uIdLong = intent.getLongExtra("EXTRA_ID", -1L)
-            if(uIdLong == -1L)
+            if (uIdLong == -1L)
                 finish()
             conversationId = UserId(uIdLong).toConversationId()
             layoutId = R.layout.activity_user_chat
@@ -138,7 +138,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun setNavigationMenu() {
         val navigationView: NavigationView
-        if(conversationId is ConversationId.User) {
+        if (conversationId is ConversationId.User) {
             navigationView = findViewById(R.id.chat_user_nav_view) as NavigationView
         }
         else {
@@ -156,7 +156,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     fun getDisplayInfo() {
         val cId = conversationId
-        if(cId is ConversationId.User) {
+        if (cId is ConversationId.User) {
             contactService.getContact(cId.id) successUi {
                 if (it == null)
                     finish()
@@ -170,9 +170,9 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                 finish()
             }
         }
-        else if(cId is ConversationId.Group){
+        else if (cId is ConversationId.Group){
             groupService.getGroupInfo(cId.id) successUi {
-                if(it != null) {
+                if (it != null) {
                     groupInfo = it
                     val actionBar = findViewById(R.id.chat_toolbar) as Toolbar
                     actionBar.title = it.name
@@ -216,10 +216,10 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun init() {
         val cId = conversationId
-        if(cId is ConversationId.User) {
+        if (cId is ConversationId.User) {
             app.dispatchEvent("PageChange", PageType.CONVO, cId.id.toString())
         }
-        else if(cId is ConversationId.Group){
+        else if (cId is ConversationId.Group){
             app.dispatchEvent("PageChange", PageType.GROUP, cId.id.string)
         }
         setAppActivity()
@@ -285,7 +285,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun createMessageNode(messageInfo: ConversationMessageInfo): View {
         val layout : Int
-        if(messageInfo.info.isSent)
+        if (messageInfo.info.isSent)
             layout = R.layout.sent_message_node
         else
             layout = R.layout.received_message_node
@@ -310,7 +310,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
         val speaker = messageInfo.speaker
         val members = groupMembers
-        if(speaker !== null && conversationId is ConversationId.Group && members !== null) {
+        if (speaker !== null && conversationId is ConversationId.Group && members !== null) {
             val contact = members[speaker]
             if (contact !== null) {
                 val speakerName = messageNode.findViewById(R.id.chat_group_speaker_name) as TextView
@@ -321,7 +321,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
         val time: String
 
-        if(messageInfo.info.receivedTimestamp == 0L)
+        if (messageInfo.info.receivedTimestamp == 0L)
             time = resources.getString(R.string.chat_delivering_time_string)
         else
             time = formatTimeStamp(messageInfo.info.receivedTimestamp)
@@ -364,7 +364,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         var ttl = 0L
         val chatInput = findViewById(R.id.chat_input) as EditText
         val messageValue = chatInput.text.toString()
-        if(messageValue.isEmpty())
+        if (messageValue.isEmpty())
             return
 
         val delay = expireDelay
@@ -395,7 +395,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun onContactEvent(event: ContactEvent) {
-        if(event is ContactEvent.Blocked || event is ContactEvent.Removed) {
+        if (event is ContactEvent.Blocked || event is ContactEvent.Removed) {
             finish()
         }
     }
@@ -407,7 +407,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun onMessageUpdate(event: MessageUpdateEvent) {
-        when(event) {
+        when (event) {
             is MessageUpdateEvent.Delivered -> { handleDeliveredMessageEvent(event) }
             is MessageUpdateEvent.Expired -> { handleExpiredMessage(event) }
             is MessageUpdateEvent.Deleted -> { handleDeletedMessage(event) }
@@ -419,25 +419,26 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun handleDeliveredMessageEvent(event: MessageUpdateEvent.Delivered) {
         val cId = event.conversationId
-        if(cId == conversationId) {
+        if (cId == conversationId) {
             updateMessageDelivered(event)
         }
     }
 
     private fun handleFailedDelivery(event: MessageUpdateEvent.DeliveryFailed) {
         val nodeId = chatDataLink[event.messageId]
-        if(nodeId === null) {
+        if (nodeId === null) {
             log.debug("Failed message update, Message id: ${event.messageId} does not exist in the current chat page")
             return
         }
 
         val node = findViewById(nodeId)
-        (node.findViewById(R.id.timespan) as TextView).text = resources.getString(R.string.chat_failed_message_delivery)
+        val timespanNode = node.findViewById(R.id.timespan) as TextView
+        timespanNode.text = resources.getString(R.string.chat_failed_message_delivery)
     }
 
     private fun handleDeletedAllMessage(event: MessageUpdateEvent.DeletedAll) {
         val cId = event.conversationId
-        if(cId == conversationId) {
+        if (cId == conversationId) {
             val chatList = findViewById(R.id.chat_list) as LinearLayout
             chatList.removeAllViews()
         }
@@ -445,10 +446,10 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun handleDeletedMessage(event: MessageUpdateEvent.Deleted) {
         val cId = event.conversationId
-        if(cId == conversationId) {
+        if (cId == conversationId) {
             event.messageIds.forEach {
                 val nodeId = chatDataLink[it]
-                if(nodeId === null) {
+                if (nodeId === null) {
                     log.debug("Message Deleted event, Message id: $it does not exist in the current chat page")
                 } else {
                     val chatList = findViewById(R.id.chat_list) as LinearLayout
@@ -524,7 +525,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun loadContactInfo() {
         val cId = conversationId
-        if(cId is ConversationId.User) {
+        if (cId is ConversationId.User) {
             val intent = Intent(baseContext, ContactInfoActivity::class.java)
             intent.putExtra("EXTRA_USERID", cId.id.long)
             intent.putExtra("EXTRA_USER_NAME", contactInfo.name)
@@ -536,7 +537,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun blockContact() {
         val cId = conversationId
-        if(cId is ConversationId.User) {
+        if (cId is ConversationId.User) {
             contactService.blockContact(cId.id) failUi {
                 log.error("Failed to block user id : ${cId.id}")
             }
@@ -560,7 +561,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun deleteGroup() {
         val cId = conversationId
-        if(cId is ConversationId.Group) {
+        if (cId is ConversationId.Group) {
             groupService.deleteGroup(cId.id) successUi {
                 finish()
             } failUi {
@@ -571,7 +572,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun blockGroup() {
         val cId = conversationId
-        if(cId is ConversationId.Group) {
+        if (cId is ConversationId.Group) {
             groupService.blockGroup(cId.id) failUi {
                 log.error("Failed to block the group")
             }
@@ -580,7 +581,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun loadGroupInfo() {
         val cId = conversationId
-        if(cId is ConversationId.Group) {
+        if (cId is ConversationId.Group) {
             log.debug("loading group info")
         }
     }
@@ -595,7 +596,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     override fun onBackPressed() {
         val drawer = findViewById(R.id.chat_drawer_layout) as DrawerLayout
-        if(drawer.isDrawerOpen(GravityCompat.END)) {
+        if (drawer.isDrawerOpen(GravityCompat.END)) {
             drawer.closeDrawer(GravityCompat.END)
         } else {
             super.onBackPressed()
@@ -603,7 +604,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        when(item.itemId) {
+        when (item.itemId) {
             R.id.menu_block_contact -> { openConfirmationDialog(resources.getString(R.string.chat_block_contact_title), resources.getString(R.string.chat_block_contact_text), { blockContact() }) }
             R.id.menu_delete_contact -> { openConfirmationDialog(resources.getString(R.string.chat_delete_contact_title), resources.getString(R.string.chat_delete_contact_text), { deleteContact() }) }
             R.id.menu_delete_conversation -> { openConfirmationDialog(resources.getString(R.string.chat_delete_conversation_title), resources.getString(R.string.chat_delete_conversation_text), { deleteConversation() }) }
@@ -618,41 +619,13 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         return true
     }
 
-    fun setAppActivity() {
-        app.setCurrentActivity(this, true)
-    }
-
-    fun clearAppActivity() {
-        app.setCurrentActivity(this, false)
-    }
-
-    override fun onStart() {
-        super.onStart()
-        log.debug("onStart")
-    }
-
     override fun onPause() {
         super.onPause()
-        log.debug("onPause")
-        clearAppActivity()
         clearListners()
     }
 
     override fun onResume() {
         super.onResume()
         init()
-        log.debug("onResume")
-    }
-
-    override fun onStop() {
-        super.onStop()
-        log.debug("onStop")
-        clearListners()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        clearAppActivity()
-        log.debug("onDestroy")
     }
 }
