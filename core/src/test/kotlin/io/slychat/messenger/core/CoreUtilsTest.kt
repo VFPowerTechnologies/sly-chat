@@ -7,6 +7,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLHandshakeException
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class CoreUtilsTest {
     @Test
@@ -33,5 +34,10 @@ class CoreUtilsTest {
     fun `isNotNetworkError should return false for SocketException`() {
         assertFalse(isNotNetworkError(SocketException("ETIMEDOUT (Connection timed out)")))
         assertFalse(isNotNetworkError(SocketException(null)))
+    }
+
+    @Test
+    fun `isNotNetworkError should return true for other exceptions`() {
+        assertTrue(isNotNetworkError(RuntimeException("testing")))
     }
 }

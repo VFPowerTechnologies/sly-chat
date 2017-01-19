@@ -4,7 +4,6 @@ import apple.contacts.*
 import apple.contacts.c.Contacts
 import apple.contacts.enums.CNContactFormatterStyle
 import apple.contacts.enums.CNEntityType
-import apple.foundation.NSArray
 import apple.foundation.NSError
 import apple.foundation.NSNotificationCenter
 import apple.foundation.NSOperationQueue
@@ -81,12 +80,13 @@ class IOSPlatformContacts : PlatformContacts {
         val platformContacts = ArrayList<PlatformContact>()
 
         contactStore.enumerateContactsWithFetchRequestErrorUsingBlock(fetchRequest, fetchErrorPtr) { contact, stop ->
+            //this has actually returned null for someone before; no idea why
             val name = CNContactFormatter.stringFromContactStyle(contact, CNContactFormatterStyle.FullName)
             val emailAddresses = contact.emailAddresses().map { it.value() as String }
             val phoneNumbers = contact.phoneNumbers().map { (it.value() as CNPhoneNumber).stringValue() }
 
             platformContacts.add(
-                PlatformContact(name, emailAddresses, phoneNumbers)
+                PlatformContact(name ?: "", emailAddresses, phoneNumbers)
             )
         }
 

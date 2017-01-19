@@ -176,10 +176,10 @@ fun isNotNetworkError(t: Throwable): Boolean = when (t) {
     is UnknownHostException -> false
     is SSLHandshakeException -> false
     is ConnectException -> false
+    //android throws this from HttpURLConnection, wrapping the underlying ConnectException, etc
     //not really sure if I should ignore all of these; haven't seen any that were of any value
     is SocketException -> false
-    //android throws this from HttpURLConnection, wrapping the underlying ConnectException, etc
-    else -> false
+    else -> true
 }
 
 /** Logs at error level only if isError is true; otherwise logs at warning level. */
