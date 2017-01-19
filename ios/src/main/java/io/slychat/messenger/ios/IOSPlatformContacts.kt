@@ -80,12 +80,13 @@ class IOSPlatformContacts : PlatformContacts {
         val platformContacts = ArrayList<PlatformContact>()
 
         contactStore.enumerateContactsWithFetchRequestErrorUsingBlock(fetchRequest, fetchErrorPtr) { contact, stop ->
+            //this has actually returned null for someone before; no idea why
             val name = CNContactFormatter.stringFromContactStyle(contact, CNContactFormatterStyle.FullName)
             val emailAddresses = contact.emailAddresses().map { it.value() as String }
             val phoneNumbers = contact.phoneNumbers().map { (it.value() as CNPhoneNumber).stringValue() }
 
             platformContacts.add(
-                PlatformContact(name, emailAddresses, phoneNumbers)
+                PlatformContact(name ?: "", emailAddresses, phoneNumbers)
             )
         }
 
