@@ -88,7 +88,7 @@ class ReportSubmitter<ReportType>(
     }
 
     //read from queue/etc
-    fun run() {
+    override fun run() {
         if (isShutdown)
             error("Already shutdown")
 

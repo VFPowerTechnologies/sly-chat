@@ -138,15 +138,9 @@ class SlyApplication {
     }
 
     private fun initSentry(applicationComponent: ApplicationComponent): ReportSubmitterCommunicator<ByteArray>? {
-        val dsn = SlyBuildConfig.sentryDsn ?: return null
+        val reporter = applicationComponent.reportSubmitterCommunicator ?: return null
 
-        val bugReportsPath = applicationComponent.platformInfo.appFileStorageDirectory / "bug-reports.bin"
-
-        val storage = FileReportStorage(bugReportsPath)
-
-        val client = RavenReportSubmitClient(dsn, applicationComponent.slyHttpClientFactory)
-
-        val reporter = ReportSubmitter(storage, client)
+        log.debug("Initializing bug reporter")
 
         val thread = Thread({
             try {

@@ -18,6 +18,10 @@ import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsy
 import io.slychat.messenger.core.http.api.registration.RegistrationAsyncClient
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenceManager
+import io.slychat.messenger.core.sentry.FileReportStorage
+import io.slychat.messenger.core.sentry.RavenReportSubmitClient
+import io.slychat.messenger.core.sentry.ReportSubmitter
+import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthenticationService
 import io.slychat.messenger.services.auth.AuthenticationServiceImpl
@@ -29,6 +33,7 @@ import io.slychat.messenger.services.contacts.RxPromiseTimerFactory
 import io.slychat.messenger.services.di.annotations.ExternalHttp
 import io.slychat.messenger.services.di.annotations.NetworkStatus
 import io.slychat.messenger.services.di.annotations.SlyHttp
+import org.jetbrains.annotations.Nullable
 import rx.Observable
 import rx.Scheduler
 import java.io.ByteArrayInputStream
@@ -196,5 +201,23 @@ class ApplicationModule(
             5,
             TimeUnit.MINUTES
         )
+    }
+
+    @Singleton
+    @Provides
+    @Nullable
+    fun providesReportSubmitterReporter(
+        platformInfo: PlatformInfo,
+        @SlyHttp httpClientFactory: HttpClientFactory
+    ): ReportSubmitterCommunicator<ByteArray>? {
+        val dsn = SlyBuildConfig.sentryDsn ?: return null
+
+        val bugReportsPath = platformInfo.appFileStorageDirectory / "bug-reports.bin"
+
+        val storage = FileReportStorage(bugReportsPath)
+
+        val client = RavenReportSubmitClient(dsn, httpClientFactory)
+
+        return ReportSubmitter(storage, client)
     }
 }

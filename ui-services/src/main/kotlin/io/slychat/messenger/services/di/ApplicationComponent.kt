@@ -5,6 +5,7 @@ import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
+import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthenticationService
 import io.slychat.messenger.services.config.AppConfigService
@@ -93,6 +94,8 @@ interface ApplicationComponent {
     val pushNotificationsManager: PushNotificationsManager
 
     val tokenFetchService: TokenFetchService
+
+    val reportSubmitterCommunicator: ReportSubmitterCommunicator<ByteArray>?
 
     fun plus(userModule: UserModule): UserComponent
 }

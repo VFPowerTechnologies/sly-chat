@@ -12,4 +12,6 @@ interface ReportSubmitterCommunicator<in ReportType> {
     fun updateNetworkStatus(isAvailable: Boolean)
 
     fun submit(report: ReportType)
+
+    fun run()
 }
