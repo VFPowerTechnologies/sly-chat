@@ -1,12 +1,18 @@
 package io.slychat.messenger.core.sentry
 
+import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.deferred
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
 
+/**
+ * Handles storing and submitting reports.
+ *
+ * Once shutdown, will not start up again; run will throw an IllegalStateException if called.
+ */
 class ReportSubmitter<ReportType>(
     private val storage: ReportStorage<ReportType>,
     private val client: ReportSubmitClient<ReportType>,
@@ -28,6 +34,11 @@ class ReportSubmitter<ReportType>(
 
     private val messageQueue = ArrayBlockingQueue<ReporterMessage<ReportType>>(10)
     private val queuedReports = ArrayDeque<ReportType>(maxQueueSize)
+
+    private val shutdownDeferred = deferred<Unit, Exception>()
+    //will never be rejected
+    override val shutdownPromise: Promise<Unit, Exception>
+        get() = shutdownDeferred.promise
 
     //if this is non-zero, don't attempt to submit any messages until the current time exceeds this value
     var delayUntil = 0L
@@ -78,6 +89,9 @@ class ReportSubmitter<ReportType>(
 
     //read from queue/etc
     fun run() {
+        if (isShutdown)
+            error("Already shutdown")
+
         getReports()
         submitReports(true)
 
@@ -110,6 +124,8 @@ class ReportSubmitter<ReportType>(
 
             processMessage(message)
         }
+
+        shutdownDeferred.resolve(Unit)
     }
 
     /** Removes the oldest reports in the queue until it drops back to the max size. */

@@ -487,4 +487,17 @@ class ReportSubmitterTest {
 
         waitForWorkerThreadShutdown()
     }
+
+    @Test(timeout = 1000)
+    fun `should resolve shutdownPromise after shutting down`() {
+        initReporter()
+
+        launchWorkerThread()
+
+        sendShutdown()
+
+        reporter.shutdownPromise.get()
+
+        waitForWorkerThreadShutdown()
+    }
 }
