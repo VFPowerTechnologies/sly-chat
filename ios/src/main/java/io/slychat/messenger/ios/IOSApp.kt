@@ -1,6 +1,8 @@
 package io.slychat.messenger.ios
 
 import apple.NSObject
+import apple.corefoundation.c.CoreFoundation
+import apple.corefoundation.opaque.CFStringRef
 import apple.coregraphics.struct.CGPoint
 import apple.coregraphics.struct.CGRect
 import apple.coregraphics.struct.CGSize
@@ -39,6 +41,7 @@ import org.moe.natj.general.ann.ReferenceInfo
 import org.moe.natj.general.ann.RegisterOnStartup
 import org.moe.natj.general.ptr.Ptr
 import org.moe.natj.general.ptr.impl.PtrFactory
+import org.moe.natj.objc.ObjCRuntime
 import org.moe.natj.objc.ann.Selector
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -249,6 +252,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         Sentry.setIOSDeviceName(UIDevice.currentDevice().model())
         Sentry.setBuildNumber(NSBundle.mainBundle().infoDictionary()["CFBundleVersion"] as String)
 
+        initializeUnhandledExceptionHandlers()
+
         val appComponent = app.appComponent
 
         buildUI(appComponent)
@@ -273,6 +278,92 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         }
 
         return true
+    }
+
+    private fun initializeUnhandledExceptionHandlers() {
+        log.debug("Initializing uncaught exception handlers")
+
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            log.info("Uncaught exception in thread <<{}>>: {}", thread.name, throwable.message, throwable)
+        }
+
+        //special handler for main thread crash
+        Thread.currentThread().setUncaughtExceptionHandler { thread, throwable ->
+            log.error("Uncaught exception on main thread: {}", throwable.message, throwable)
+
+            //XXX we need to get ReportSubmitter to shutdown and flush its reports here, but that requires a redesign
+            //in general it should have enough time to send the report, fix this later
+
+            try {
+                showCrashDialog()
+            }
+            catch (t: Throwable) {
+                log.error("Error attempting to display crash dialog: {}", t.message, t)
+            }
+
+            System.exit(-1)
+        }
+
+        //this can be called if our app throws an uncaught exception when called from native code
+        //here, we can't display the crash dialog properly; the dialog shows up and the loop runs, but user input isn't
+        //processed for some reason
+        //I've tested this via objc and it's the same so it's not so issue caused by MOE or anything
+        Foundation.NSSetUncaughtExceptionHandler { nsException ->
+            //reason here'll be the (java) stacktrace as a string
+            log.error("Uncaught NSException: {}", nsException.reason())
+
+            System.exit(-1)
+        }
+    }
+
+    private fun showCrashDialog() {
+        val rootViewController = UIApplication.sharedApplication().keyWindow()?.rootViewController()
+        if (rootViewController == null) {
+            log.error("No rootViewController, unable to display crash dialog")
+            return
+        }
+
+        val alert = UIAlertController.alertControllerWithTitleMessagePreferredStyle(
+            "Unexpected Error",
+            "Sly has unexpectedly crashed. An error report has been generated.",
+            UIAlertControllerStyle.Alert
+        )
+
+        var dismissed = false
+
+        val action = UIAlertAction.actionWithTitleStyleHandler(
+            "Exit Application",
+            UIAlertActionStyle.Cancel,
+            { dismissed = true }
+        )
+
+        alert.addAction(action)
+
+        rootViewController.presentViewControllerAnimatedCompletion(alert, true, null)
+
+        val runLoop = CoreFoundation.CFRunLoopGetCurrent()
+        val allModes = CoreFoundation.CFRunLoopCopyAllModes(runLoop)
+
+        //since the main loop is no longer running, we need to run it to handle dialog errors
+        try {
+            @Suppress("UNCHECKED_CAST")
+            val modes = ObjCRuntime.cast(allModes, NSArray::class.java) as NSArray<String>
+
+            while (!dismissed) {
+                for (mode in modes) {
+                    val nsString = NSString.stringWithString(mode)
+
+                    CoreFoundation.CFRunLoopRunInMode(
+                        ObjCRuntime.cast(nsString, CFStringRef::class.java),
+                        0.001,
+                        0
+                    )
+                }
+            }
+        }
+        finally {
+            CoreFoundation.CFRelease(allModes)
+        }
     }
 
     private fun buildUI(appComponent: ApplicationComponent) {
