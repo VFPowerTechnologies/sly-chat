@@ -301,6 +301,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
                 log.error("Error attempting to display crash dialog: {}", t.message, t)
             }
 
+            Sentry.waitForShutdown()
+
             System.exit(-1)
         }
 
@@ -309,8 +311,11 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         //processed for some reason
         //I've tested this via objc and it's the same so it's not so issue caused by MOE or anything
         Foundation.NSSetUncaughtExceptionHandler { nsException ->
+            //TODO would be nice to reparse this into a proper exception for logging
             //reason here'll be the (java) stacktrace as a string
             log.error("Uncaught NSException: {}", nsException.reason())
+
+            Sentry.waitForShutdown()
 
             System.exit(-1)
         }

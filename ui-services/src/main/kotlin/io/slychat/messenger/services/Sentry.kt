@@ -72,4 +72,12 @@ object Sentry {
 
         return builder.build()
     }
+
+    /** Waits for the report submitter to shut down. Used on crashes to ensure proper flush to disk of crash report. */
+    fun waitForShutdown() = synchronized(this) {
+        val communicator = this.communicator ?: return
+
+        communicator.shutdown()
+        communicator.shutdownPromise.get()
+    }
 }
