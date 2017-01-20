@@ -50,7 +50,6 @@ class ReportSubmitterTest {
 
     private lateinit var mockClient: ReportSubmitClient<Int>
     private lateinit var mockStorage : ReportStorage<Int>
-    private lateinit var messageQueue: BlockingQueue<ReporterMessage<Int>>
     private lateinit var reporter: ReportSubmitter<Int>
     private lateinit var throwableQueue: BlockingQueue<Throwable?>
 
@@ -65,14 +64,13 @@ class ReportSubmitterTest {
     }
 
     private fun sendReport(report: Int) {
-        messageQueue.put(ReporterMessage.BugReport(report))
+        reporter.submit(report)
     }
 
     private fun sendReports(n: Int) {
         (1..n).forEach { i ->
-            messageQueue.put(ReporterMessage.BugReport(i))
+            reporter.submit(i)
         }
-
     }
 
     private fun processReport(report: Int) {
@@ -92,7 +90,7 @@ class ReportSubmitterTest {
     }
 
     private fun sendShutdown() {
-        messageQueue.put(ReporterMessage.Shutdown())
+        reporter.shutdown()
     }
 
     private fun processShutdown() {
@@ -108,11 +106,9 @@ class ReportSubmitterTest {
     ) {
         mockStorage = mock()
         mockClient = mock()
-        messageQueue = ArrayBlockingQueue<ReporterMessage<Int>>(10)
         reporter = ReportSubmitter(
             mockStorage,
             mockClient,
-            messageQueue,
             isNetworkAvailable,
             isFatal,
             initialWaitTimeMs,

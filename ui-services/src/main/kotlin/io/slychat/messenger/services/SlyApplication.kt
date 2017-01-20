@@ -146,9 +146,7 @@ class SlyApplication {
 
         val client = RavenReportSubmitClient(dsn, applicationComponent.slyHttpClientFactory)
 
-        val queue = ArrayBlockingQueue<ReporterMessage<ByteArray>>(10)
-
-        val reporter = ReportSubmitter(storage, client, queue)
+        val reporter = ReportSubmitter(storage, client)
 
         val thread = Thread({
             try {
@@ -165,11 +163,9 @@ class SlyApplication {
 
         thread.start()
 
-        val communicator = ReportSubmitterCommunicator(queue)
+        Sentry.setCommunicator(reporter)
 
-        Sentry.setCommunicator(communicator)
-
-        return communicator
+        return reporter
     }
 
     /** Starts background initialization; use addOnInitListener to be notified when app has finished initializing. Once finalized, will trigger auto-login. */

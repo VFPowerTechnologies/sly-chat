@@ -3,19 +3,19 @@ package io.slychat.messenger.core.sentry
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import java.util.*
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
 
 class ReportSubmitter<ReportType>(
     private val storage: ReportStorage<ReportType>,
     private val client: ReportSubmitClient<ReportType>,
-    private val messageQueue: BlockingQueue<ReporterMessage<ReportType>>,
     initialNetworkStatus: Boolean = false,
     initialFatalStatus: Boolean = false,
     private val initialWaitTimeMs: Long = DEFAULT_INITIAL_WAIT_TIME_MS,
     private val maxWaitTimeMs: Long = DEFAULT_MAX_WAIT_TIME_MS,
     val maxQueueSize: Int = DEFAULT_MAX_QUEUE_SIZE
-) {
+) : ReportSubmitterCommunicator<ReportType> {
     companion object {
         val DEFAULT_INITIAL_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10)
         val DEFAULT_MAX_WAIT_TIME_MS = TimeUnit.MINUTES.toMillis(5)
@@ -26,6 +26,7 @@ class ReportSubmitter<ReportType>(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
+    private val messageQueue = ArrayBlockingQueue<ReporterMessage<ReportType>>(10)
     private val queuedReports = ArrayDeque<ReportType>(maxQueueSize)
 
     //if this is non-zero, don't attempt to submit any messages until the current time exceeds this value
@@ -84,7 +85,7 @@ class ReportSubmitter<ReportType>(
             val message = if (delayUntil != 0L) {
                 val current = currentTimeMs()
 
-                val waitTime = delayUntil-current
+                val waitTime = delayUntil - current
                 if (waitTime <= 0) {
                     delayUntil = 0
                     messageQueue.take()
@@ -205,4 +206,16 @@ class ReportSubmitter<ReportType>(
 
     internal val pendingReports: Collection<ReportType>
         get() = queuedReports.toList()
+
+    override fun shutdown() {
+        messageQueue.offer(ReporterMessage.Shutdown())
+    }
+
+    override fun updateNetworkStatus(isAvailable: Boolean) {
+        messageQueue.offer(ReporterMessage.NetworkStatus(isAvailable))
+    }
+
+    override fun submit(report: ReportType) {
+        messageQueue.offer(ReporterMessage.BugReport(report))
+    }
 }
