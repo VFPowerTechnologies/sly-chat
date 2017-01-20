@@ -100,5 +100,6 @@ enum class LoggerLevel {
     DEBUG,
     INFO,
     WARN,
-    ERROR
+    ERROR,
+    FATAL
 }

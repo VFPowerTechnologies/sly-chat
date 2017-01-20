@@ -6,7 +6,8 @@ import io.slychat.messenger.core.sentry.SentryEventBuilder
 import io.slychat.messenger.core.sentry.ThrowableThrowableAdapter
 import io.slychat.messenger.core.sentry.extractCulprit
 import io.slychat.messenger.services.Sentry
-import org.slf4j.helpers.MarkerIgnoringBase
+import org.slf4j.Logger
+import org.slf4j.Marker
 import org.slf4j.helpers.MessageFormatter
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -15,109 +16,209 @@ class LoggerAdapter(
     private val loggerName: String,
     private val allowedPriority: LogPriority,
     private val platformLogger: PlatformLogger
-) : MarkerIgnoringBase() {
+) : Logger {
     override fun getName(): String? {
         return loggerName
     }
 
     override fun warn(msg: String) {
-        log(LogPriority.WARN, msg, null)
+        log(null, LogPriority.WARN, msg, null)
     }
 
     override fun warn(format: String, arg: Any?) {
-        formatAndLog(LogPriority.WARN, format, arg)
+        formatAndLog(null, LogPriority.WARN, format, arg)
     }
 
     override fun warn(format: String, vararg arguments: Any?) {
-        formatAndLog(LogPriority.WARN, format, *arguments)
+        formatAndLog(null, LogPriority.WARN, format, *arguments)
     }
 
     override fun warn(format: String, arg1: Any?, arg2: Any?) {
-        formatAndLog(LogPriority.WARN, format, arg1, arg2)
+        formatAndLog(null, LogPriority.WARN, format, arg1, arg2)
     }
 
     override fun warn(msg: String, t: Throwable) {
-        log(LogPriority.WARN, msg, t)
+        log(null, LogPriority.WARN, msg, t)
     }
 
     override fun info(msg: String) {
-        log(LogPriority.INFO, msg, null)
+        log(null, LogPriority.INFO, msg, null)
     }
 
     override fun info(format: String, arg: Any?) {
-        formatAndLog(LogPriority.INFO, format, arg)
+        formatAndLog(null, LogPriority.INFO, format, arg)
     }
 
     override fun info(format: String, arg1: Any?, arg2: Any?) {
-        formatAndLog(LogPriority.INFO, format, arg1, arg2)
+        formatAndLog(null, LogPriority.INFO, format, arg1, arg2)
     }
 
     override fun info(format: String, vararg arguments: Any?) {
-        formatAndLog(LogPriority.INFO, format, *arguments)
+        formatAndLog(null, LogPriority.INFO, format, *arguments)
     }
 
     override fun info(msg: String, t: Throwable) {
-        log(LogPriority.INFO, msg, t)
+        log(null, LogPriority.INFO, msg, t)
     }
 
     override fun error(msg: String) {
-        log(LogPriority.ERROR, msg, null)
+        log(null, LogPriority.ERROR, msg, null)
     }
 
     override fun error(format: String, arg: Any?) {
-        formatAndLog(LogPriority.ERROR, format, arg)
+        formatAndLog(null, LogPriority.ERROR, format, arg)
     }
 
     override fun error(format: String, arg1: Any?, arg2: Any?) {
-        formatAndLog(LogPriority.ERROR, format, arg1, arg2)
+        formatAndLog(null, LogPriority.ERROR, format, arg1, arg2)
     }
 
     override fun error(format: String, vararg arguments: Any?) {
-        formatAndLog(LogPriority.ERROR, format, *arguments)
+        formatAndLog(null, LogPriority.ERROR, format, *arguments)
     }
 
     override fun error(msg: String, t: Throwable) {
-        log(LogPriority.ERROR, msg, t)
+        log(null, LogPriority.ERROR, msg, t)
     }
 
     override fun debug(msg: String) {
-        log(LogPriority.DEBUG, msg, null)
+        log(null, LogPriority.DEBUG, msg, null)
     }
 
     override fun debug(format: String, arg: Any?) {
-        formatAndLog(LogPriority.DEBUG, format, arg)
+        formatAndLog(null, LogPriority.DEBUG, format, arg)
     }
 
     override fun debug(format: String, arg1: Any?, arg2: Any?) {
-        formatAndLog(LogPriority.DEBUG, format, arg1, arg2)
+        formatAndLog(null, LogPriority.DEBUG, format, arg1, arg2)
     }
 
     override fun debug(format: String, vararg arguments: Any?) {
-        formatAndLog(LogPriority.DEBUG, format, *arguments)
+        formatAndLog(null, LogPriority.DEBUG, format, *arguments)
     }
 
     override fun debug(msg: String, t: Throwable) {
-        log(LogPriority.DEBUG, msg, t)
+        log(null, LogPriority.DEBUG, msg, t)
     }
 
     override fun trace(msg: String) {
-        log(LogPriority.TRACE, msg, null)
+        log(null, LogPriority.TRACE, msg, null)
     }
 
     override fun trace(format: String, arg: Any?) {
-        formatAndLog(LogPriority.TRACE, format, arg)
+        formatAndLog(null, LogPriority.TRACE, format, arg)
     }
 
     override fun trace(format: String, arg1: Any?, arg2: Any?) {
-        formatAndLog(LogPriority.TRACE, format, arg1, arg2)
+        formatAndLog(null, LogPriority.TRACE, format, arg1, arg2)
     }
 
     override fun trace(format: String, vararg arguments: Any?) {
-        formatAndLog(LogPriority.TRACE, format, *arguments)
+        formatAndLog(null, LogPriority.TRACE, format, *arguments)
     }
 
     override fun trace(msg: String, t: Throwable) {
-        log(LogPriority.TRACE, msg, t)
+        log(null, LogPriority.TRACE, msg, t)
+    }
+
+    override fun debug(marker: Marker, format: String, arg1: Any?, arg2: Any?) {
+        formatAndLog(marker, LogPriority.DEBUG, format, arg1, arg2)
+    }
+
+    override fun debug(marker: Marker, format: String, arg: Any?) {
+        formatAndLog(marker, LogPriority.DEBUG, format, arg)
+    }
+
+    override fun debug(marker: Marker, format: String, vararg arguments: Any?) {
+        formatAndLog(marker, LogPriority.DEBUG, format, *arguments)
+    }
+
+    override fun debug(marker: Marker, msg: String) {
+        log(marker, LogPriority.DEBUG, msg, null)
+    }
+
+    override fun debug(marker: Marker, msg: String, t: Throwable?) {
+        log(marker, LogPriority.DEBUG, msg, t)
+    }
+
+    override fun error(marker: Marker, format: String, arg1: Any?, arg2: Any?) {
+        formatAndLog(marker, LogPriority.ERROR, format, arg1, arg2)
+    }
+
+    override fun error(marker: Marker, format: String, arg: Any?) {
+        formatAndLog(marker, LogPriority.ERROR, format, arg)
+    }
+
+    override fun error(marker: Marker, format: String, vararg arguments: Any?) {
+        formatAndLog(marker, LogPriority.ERROR, format, *arguments)
+    }
+
+    override fun error(marker: Marker, msg: String) {
+        log(marker, LogPriority.ERROR, msg, null)
+    }
+
+    override fun error(marker: Marker, msg: String, t: Throwable?) {
+        log(marker, LogPriority.ERROR, msg, t)
+    }
+
+    override fun info(marker: Marker, format: String, arg1: Any?, arg2: Any?) {
+        formatAndLog(marker, LogPriority.INFO, format, arg1, arg2)
+    }
+
+    override fun info(marker: Marker, format: String, arg: Any?) {
+        formatAndLog(marker, LogPriority.INFO, format, arg)
+    }
+
+    override fun info(marker: Marker, format: String, vararg arguments: Any?) {
+        formatAndLog(marker, LogPriority.INFO, format, *arguments)
+    }
+
+    override fun info(marker: Marker, msg: String) {
+        log(marker, LogPriority.INFO, msg, null)
+    }
+
+    override fun info(marker: Marker, msg: String, t: Throwable?) {
+        log(marker, LogPriority.INFO, msg, t)
+    }
+
+    override fun trace(marker: Marker, format: String, arg1: Any?, arg2: Any?) {
+        formatAndLog(marker, LogPriority.TRACE, format, arg1, arg2)
+    }
+
+    override fun trace(marker: Marker, format: String, arg: Any?) {
+        formatAndLog(marker, LogPriority.TRACE, format, arg)
+    }
+
+    override fun trace(marker: Marker, format: String, vararg argArray: Any?) {
+        formatAndLog(marker, LogPriority.TRACE, format, *argArray)
+    }
+
+    override fun trace(marker: Marker, msg: String) {
+        log(marker, LogPriority.TRACE, msg, null)
+    }
+
+    override fun trace(marker: Marker, msg: String, t: Throwable?) {
+        log(marker, LogPriority.TRACE, msg, t)
+    }
+
+    override fun warn(marker: Marker, format: String, arg1: Any?, arg2: Any?) {
+        formatAndLog(marker, LogPriority.WARN, format, arg1, arg2)
+    }
+
+    override fun warn(marker: Marker, format: String, arg: Any?) {
+        formatAndLog(marker, LogPriority.WARN, format, arg)
+    }
+
+    override fun warn(marker: Marker, format: String, vararg arguments: Any?) {
+        formatAndLog(marker, LogPriority.WARN, format, *arguments)
+    }
+
+    override fun warn(marker: Marker, msg: String) {
+        log(marker, LogPriority.WARN, msg, null)
+    }
+
+    override fun warn(marker: Marker, msg: String, t: Throwable?) {
+        log(marker, LogPriority.WARN, msg, t)
     }
 
     override fun isErrorEnabled(): Boolean {
@@ -140,21 +241,41 @@ class LoggerAdapter(
         return isLoggable(LogPriority.TRACE)
     }
 
+    override fun isDebugEnabled(marker: Marker): Boolean {
+        return isDebugEnabled
+    }
+
+    override fun isErrorEnabled(marker: Marker): Boolean {
+        return isErrorEnabled
+    }
+
+    override fun isInfoEnabled(marker: Marker?): Boolean {
+        return isInfoEnabled
+    }
+
+    override fun isTraceEnabled(marker: Marker?): Boolean {
+        return isTraceEnabled
+    }
+
+    override fun isWarnEnabled(marker: Marker?): Boolean {
+        return isWarnEnabled
+    }
+
     //on android, checks LogPriority.isLoggable
     private fun isLoggable(priority: LogPriority): Boolean {
         return priority >= allowedPriority
     }
 
-    private fun formatAndLog(priority: LogPriority, format: String, vararg arguments: Any?) {
+    private fun formatAndLog(marker: Marker?, priority: LogPriority, format: String, vararg arguments: Any?) {
         if (!isLoggable(priority))
             return
         val ft = MessageFormatter.arrayFormat(format, arguments)
-        logInternal(priority, ft.message, ft.throwable)
+        logInternal(marker, priority, ft.message, ft.throwable)
     }
 
-    private fun log(priority: LogPriority, message: String, throwable: Throwable?) {
+    private fun log(marker: Marker?, priority: LogPriority, message: String, throwable: Throwable?) {
         if (isLoggable(priority)) {
-            logInternal(priority, message, throwable)
+            logInternal(marker, priority, message, throwable)
         }
     }
 
@@ -198,7 +319,7 @@ class LoggerAdapter(
         return sw.toString()
     }
 
-    private fun logInternal(priority: LogPriority, message: String, throwable: Throwable?) {
+    private fun logInternal(marker: Marker?, priority: LogPriority, message: String, throwable: Throwable?) {
         val m = if (throwable != null) {
             val s = getStackTraceAsString(throwable)
             message + "\n" + s
@@ -216,7 +337,10 @@ class LoggerAdapter(
             val timestamp = currentTimestamp()
             //WARNING don't move this into another function call without editting the stacktrace logic in the function
             val culprit = getCulpritFromStacktrace()
-            val level = logPriorityToSentryLevel(priority)
+            val level = if (marker?.equals(Markers.FATAL) ?: false)
+                LoggerLevel.FATAL
+            else
+                logPriorityToSentryLevel(priority)
 
             val builder = SentryEventBuilder(
                 loggerName,

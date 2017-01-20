@@ -5,6 +5,7 @@ import org.joda.time.DateTimeZone
 import org.joda.time.format.DateTimeFormat
 import java.util.*
 
+//https://docs.sentry.io/clientdev/
 class SentryEventBuilder(
     val loggerName: String,
     val threadName: String,

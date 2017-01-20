@@ -23,6 +23,7 @@ import io.slychat.messenger.core.pushnotifications.OfflineMessagesPushNotificati
 import io.slychat.messenger.ios.kovenant.IOSDispatcher
 import io.slychat.messenger.ios.rx.IOSMainScheduler
 import io.slychat.messenger.ios.ui.WebViewController
+import io.slychat.messenger.logger.Markers
 import io.slychat.messenger.services.DeviceTokens
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
@@ -284,12 +285,12 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         log.debug("Initializing uncaught exception handlers")
 
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            log.info("Uncaught exception in thread <<{}>>: {}", thread.name, throwable.message, throwable)
+            log.error("Uncaught exception in thread <<{}>>: {}", thread.name, throwable.message, throwable)
         }
 
         //special handler for main thread crash
         Thread.currentThread().setUncaughtExceptionHandler { thread, throwable ->
-            log.error("Uncaught exception on main thread: {}", throwable.message, throwable)
+            log.error(Markers.FATAL, "Uncaught exception on main thread: {}", throwable.message, throwable)
 
             //XXX we need to get ReportSubmitter to shutdown and flush its reports here, but that requires a redesign
             //in general it should have enough time to send the report, fix this later
@@ -313,7 +314,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         Foundation.NSSetUncaughtExceptionHandler { nsException ->
             //TODO would be nice to reparse this into a proper exception for logging
             //reason here'll be the (java) stacktrace as a string
-            log.error("Uncaught NSException: {}", nsException.reason())
+            log.error(Markers.FATAL, "Uncaught NSException: {}", nsException.reason())
 
             Sentry.waitForShutdown()
 
