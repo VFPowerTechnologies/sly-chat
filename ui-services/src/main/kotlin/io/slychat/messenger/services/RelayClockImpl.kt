@@ -36,8 +36,10 @@ class RelayClockImpl(
     }
 
     override fun setDifference(diff: Long) {
-        clockDiff = if (Math.abs(diff) <= differenceThreshold) {
-            log.debug("Difference is below threshold ({} < {}), ignoring", differenceThreshold, diff)
+        val absDiff = Math.abs(diff)
+        
+        clockDiff = if (absDiff <= differenceThreshold) {
+            log.debug("Difference is below threshold ({} < {}), ignoring", differenceThreshold, absDiff)
             0
         }
         else {
