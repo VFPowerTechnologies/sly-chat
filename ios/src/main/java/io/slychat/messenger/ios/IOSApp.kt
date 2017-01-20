@@ -292,9 +292,6 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         Thread.currentThread().setUncaughtExceptionHandler { thread, throwable ->
             log.error(Markers.FATAL, "Uncaught exception on main thread: {}", throwable.message, throwable)
 
-            //XXX we need to get ReportSubmitter to shutdown and flush its reports here, but that requires a redesign
-            //in general it should have enough time to send the report, fix this later
-
             try {
                 showCrashDialog()
             }
