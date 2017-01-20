@@ -153,15 +153,14 @@ class ReportSubmitter<ReportType>(
     }
 
     private fun submitReports(noWrite: Boolean = false) {
-        if (!isNetworkAvailable || delayUntil != 0L) {
-            //just a hack for the initial run so we don't pointlessly rewrite the reports we just read
-            if (!noWrite)
-                storeReports()
-
-            return
-        }
-
         if (queuedReports.isEmpty())
+            return
+
+        //just a hack for the initial run so we don't pointlessly rewrite the reports we just read
+        if (!noWrite)
+            storeReports()
+
+        if (!isNetworkAvailable || delayUntil != 0L)
             return
 
         while (queuedReports.isNotEmpty()) {
