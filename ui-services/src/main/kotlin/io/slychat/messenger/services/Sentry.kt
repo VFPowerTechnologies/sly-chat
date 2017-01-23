@@ -9,11 +9,17 @@ import io.slychat.messenger.core.sentry.serialize
 /** Frontend for the logger service, and for keeping extra environment info for sentry events. */
 object Sentry {
     private var reportSubmitter: ReportSubmitter<ByteArray>? = null
+
+    //tags
     private var webViewVersion: String? = null
     private var userAddress: SlyAddress? = null
     private var androidDeviceName: String? = null
     private var iosDeviceName: String? = null
     private var buildNumber: String? = null
+
+    //context
+    private var isUiVisible = false
+    private var isNetworkAvailable = false
 
     fun setReportSubmitter(reportSubmitter: ReportSubmitter<ByteArray>) = synchronized(this) {
         this.reportSubmitter = reportSubmitter
@@ -37,6 +43,14 @@ object Sentry {
 
     fun setBuildNumber(buildNumber: String) {
         this.buildNumber = buildNumber
+    }
+
+    fun setIsUiVisible(isVisible: Boolean) = synchronized(this) {
+        isUiVisible = isUiVisible
+    }
+
+    fun setIsNetworkAvailable(isAvailable: Boolean) = synchronized(this) {
+        isNetworkAvailable = isAvailable
     }
 
     fun submit(builder: SentryEventBuilder) = synchronized(this) {
@@ -69,6 +83,9 @@ object Sentry {
         buildNumber?.apply {
             builder.withTag("buildNumber", this)
         }
+
+        builder.withExtra(SentryEvent.EXTRA_IS_UI_VISIBLE, isUiVisible.toString())
+        builder.withExtra(SentryEvent.EXTRA_IS_NETWORK_AVAILABLE, isNetworkAvailable.toString())
 
         return builder.build()
     }

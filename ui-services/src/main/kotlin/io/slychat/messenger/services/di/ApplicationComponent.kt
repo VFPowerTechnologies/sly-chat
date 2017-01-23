@@ -11,6 +11,7 @@ import io.slychat.messenger.services.auth.AuthenticationService
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.di.annotations.NetworkStatus
 import io.slychat.messenger.services.di.annotations.SlyHttp
+import io.slychat.messenger.services.di.annotations.UIVisibility
 import io.slychat.messenger.services.ui.*
 import rx.Observable
 import rx.Scheduler
@@ -86,6 +87,9 @@ interface ApplicationComponent {
 
     @get:NetworkStatus
     val networkStatus: Observable<Boolean>
+
+    @get:UIVisibility
+    val uiVisibility: Observable<Boolean>
 
     val versionChecker: VersionChecker
 

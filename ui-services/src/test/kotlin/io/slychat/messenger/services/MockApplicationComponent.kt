@@ -90,6 +90,11 @@ class MockApplicationComponent : ApplicationComponent {
     override val networkStatus: Observable<Boolean>
         get() = networkStatusSubject
 
+    val uiVisibilitySubject: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
+
+    override val uiVisibility: Observable<Boolean>
+        get() = uiVisibilitySubject
+
     override val versionChecker: VersionChecker = mock()
 
     override val registrationService: RegistrationService = mock()

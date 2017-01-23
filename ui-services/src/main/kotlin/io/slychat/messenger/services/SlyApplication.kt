@@ -119,6 +119,8 @@ class SlyApplication {
         //must be done after bugReportSubmitter is set, so that it can receive the initial network status
         appComponent.networkStatus.subscribe { updateNetworkStatus(it) }
 
+        appComponent.uiVisibility.subscribe { Sentry.setIsUiVisible(it) }
+
         //android can fire these events multiple time in succession (eg: when google account sync is occuring)
         //so we clamp down the number of events we process
         appComponent.platformContacts.contactsUpdated
@@ -388,6 +390,8 @@ class SlyApplication {
         //ignore dup updates
         if (isAvailable == isNetworkAvailable)
             return
+
+        Sentry.setIsNetworkAvailable(isAvailable)
 
         isNetworkAvailable = isAvailable
         log.info("Network is available: {}", isAvailable)
