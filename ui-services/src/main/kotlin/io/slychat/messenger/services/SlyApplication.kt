@@ -85,7 +85,7 @@ class SlyApplication {
     //if we're disconnecting and we get a connect request during that time, we force a reconnect on disconnect
     private var wantRelayReconnect = false
 
-    private var bugReportSubmitter: ReportSubmitterCommunicator<ByteArray>? = null
+    private var bugReportSubmitter: ReportSubmitter<ByteArray>? = null
 
     var isInBackground: Boolean = true
         set(value) {
@@ -137,8 +137,8 @@ class SlyApplication {
         applicationComponent.versionChecker.init()
     }
 
-    private fun initSentry(applicationComponent: ApplicationComponent): ReportSubmitterCommunicator<ByteArray>? {
-        val reporter = applicationComponent.reportSubmitterCommunicator ?: return null
+    private fun initSentry(applicationComponent: ApplicationComponent): ReportSubmitter<ByteArray>? {
+        val reporter = applicationComponent.reportSubmitter ?: return null
 
         log.debug("Initializing bug reporter")
 
@@ -147,7 +147,7 @@ class SlyApplication {
                 reporter.run()
             }
             catch (t: Throwable) {
-                log.error("ReportSubmitter terminated with error: {}", t.message, t)
+                log.error("ReportSubmitterImpl terminated with error: {}", t.message, t)
             }
         })
 
@@ -157,7 +157,7 @@ class SlyApplication {
 
         thread.start()
 
-        Sentry.setCommunicator(reporter)
+        Sentry.setReportSubmitter(reporter)
 
         return reporter
     }

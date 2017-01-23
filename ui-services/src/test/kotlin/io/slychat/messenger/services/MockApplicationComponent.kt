@@ -5,7 +5,7 @@ import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
-import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
+import io.slychat.messenger.core.sentry.ReportSubmitter
 import io.slychat.messenger.services.auth.AuthenticationService
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.ConfigBackend
@@ -94,7 +94,7 @@ class MockApplicationComponent : ApplicationComponent {
 
     override val registrationService: RegistrationService = mock()
 
-    override val reportSubmitterCommunicator: ReportSubmitterCommunicator<ByteArray>?
+    override val reportSubmitter: ReportSubmitter<ByteArray>?
         get() = null
 
     val userComponent = MockUserComponent()

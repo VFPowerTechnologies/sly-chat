@@ -21,7 +21,7 @@ import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenc
 import io.slychat.messenger.core.sentry.FileReportStorage
 import io.slychat.messenger.core.sentry.RavenReportSubmitClient
 import io.slychat.messenger.core.sentry.ReportSubmitter
-import io.slychat.messenger.core.sentry.ReportSubmitterCommunicator
+import io.slychat.messenger.core.sentry.ReportSubmitterImpl
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthenticationService
 import io.slychat.messenger.services.auth.AuthenticationServiceImpl
@@ -206,10 +206,10 @@ class ApplicationModule(
     @Singleton
     @Provides
     @Nullable
-    fun providesReportSubmitterReporter(
+    fun providesReportSubmitter(
         platformInfo: PlatformInfo,
         @SlyHttp httpClientFactory: HttpClientFactory
-    ): ReportSubmitterCommunicator<ByteArray>? {
+    ): ReportSubmitter<ByteArray>? {
         val dsn = SlyBuildConfig.sentryDsn ?: return null
 
         val bugReportsPath = platformInfo.appFileStorageDirectory / "bug-reports.bin"
@@ -218,6 +218,6 @@ class ApplicationModule(
 
         val client = RavenReportSubmitClient(dsn, httpClientFactory)
 
-        return ReportSubmitter(storage, client)
+        return ReportSubmitterImpl(storage, client)
     }
 }

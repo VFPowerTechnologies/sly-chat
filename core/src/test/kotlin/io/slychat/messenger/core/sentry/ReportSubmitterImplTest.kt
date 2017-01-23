@@ -15,7 +15,7 @@ import kotlin.concurrent.withLock
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class ReportSubmitterTest {
+class ReportSubmitterImplTest {
     private companion object {
         class WorkerStopped() : Throwable()
 
@@ -50,7 +50,7 @@ class ReportSubmitterTest {
 
     private lateinit var mockClient: ReportSubmitClient<Int>
     private lateinit var mockStorage : ReportStorage<Int>
-    private lateinit var reporter: ReportSubmitter<Int>
+    private lateinit var reporter: ReportSubmitterImpl<Int>
     private lateinit var throwableQueue: BlockingQueue<Throwable?>
 
     private fun <R> withFixedMillis(millis: Long, body: () -> R): R {
@@ -100,13 +100,13 @@ class ReportSubmitterTest {
     private fun initReporter(
         isNetworkAvailable: Boolean = false,
         isFatal: Boolean = false,
-        initialWaitTimeMs: Long = ReportSubmitter.DEFAULT_INITIAL_WAIT_TIME_MS,
-        maxWaitTimeMs: Long = ReportSubmitter.DEFAULT_MAX_WAIT_TIME_MS,
-        maxQueueSize: Int = ReportSubmitter.DEFAULT_MAX_QUEUE_SIZE
+        initialWaitTimeMs: Long = ReportSubmitterImpl.DEFAULT_INITIAL_WAIT_TIME_MS,
+        maxWaitTimeMs: Long = ReportSubmitterImpl.DEFAULT_MAX_WAIT_TIME_MS,
+        maxQueueSize: Int = ReportSubmitterImpl.DEFAULT_MAX_QUEUE_SIZE
     ) {
         mockStorage = mock()
         mockClient = mock()
-        reporter = ReportSubmitter(
+        reporter = ReportSubmitterImpl(
             mockStorage,
             mockClient,
             isNetworkAvailable,
