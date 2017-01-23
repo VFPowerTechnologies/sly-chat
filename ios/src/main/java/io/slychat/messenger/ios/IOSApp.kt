@@ -288,6 +288,10 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
             log.error("Uncaught exception in thread <<{}>>: {}", thread.name, throwable.message, throwable)
         }
 
+        //WARNING
+        //do NOT call System.exit with a negative value
+        //this will cause the app not to exit if there are any remaining daemon threads
+
         //special handler for main thread crash
         Thread.currentThread().setUncaughtExceptionHandler { thread, throwable ->
             log.error(Markers.FATAL, "Uncaught exception on main thread: {}", throwable.message, throwable)
@@ -301,7 +305,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
             Sentry.waitForShutdown()
 
-            System.exit(-1)
+            System.exit(1)
         }
 
         //this can be called if our app throws an uncaught exception when called from native code
@@ -315,7 +319,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
             Sentry.waitForShutdown()
 
-            System.exit(-1)
+            System.exit(1)
         }
     }
 
