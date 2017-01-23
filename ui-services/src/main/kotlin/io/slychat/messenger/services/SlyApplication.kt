@@ -107,14 +107,14 @@ class SlyApplication {
 
         appComponent = applicationComponent
 
+        bugReportSubmitter = initSentry(appComponent)
+
         initializeApplicationServices()
 
         initInstallationData()
 
         val interval = SlyBuildConfig.relayKeepAliveIntervalMs
         keepAliveObservable = Observable.interval(interval, interval, TimeUnit.MILLISECONDS, appComponent.rxScheduler)
-
-        bugReportSubmitter = initSentry(appComponent)
 
         //must be done after bugReportSubmitter is set, so that it can receive the initial network status
         appComponent.networkStatus.subscribe { updateNetworkStatus(it) }
