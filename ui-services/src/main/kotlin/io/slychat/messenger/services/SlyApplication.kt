@@ -608,12 +608,16 @@ class SlyApplication {
     }
 
     private fun startRelayKeepAlive() {
+        log.debug("Starting relay keep alive")
         keepAliveTimerSub = keepAliveObservable.subscribe {
             userComponent?.relayClientManager?.sendPing()
         }
     }
 
     private fun stopRelayKeepAlive() {
+        if (keepAliveTimerSub != null)
+            log.debug("Stopping relay keep alive")
+
         keepAliveTimerSub?.unsubscribe()
         keepAliveTimerSub = null
     }
@@ -751,6 +755,7 @@ class SlyApplication {
 
     private fun disconnectFromRelay() {
         val userComponent = this.userComponent ?: return
+        stopRelayKeepAlive()
         userComponent.relayClientManager.disconnect()
     }
 
