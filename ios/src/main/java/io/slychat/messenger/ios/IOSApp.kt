@@ -284,9 +284,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
     private fun initializeUnhandledExceptionHandlers() {
         log.debug("Initializing uncaught exception handlers")
 
-        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            log.error("Uncaught exception in thread <<{}>>: {}", thread.name, throwable.message, throwable)
-        }
+        //default thread handler is already set by SlyApplication
 
         //WARNING
         //do NOT call System.exit with a negative value
