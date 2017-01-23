@@ -7,13 +7,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
-import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
-import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.R
 import io.slychat.messenger.services.RegistrationService
-import nl.komponents.kovenant.ui.failUi
-import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
 class RegistrationThreeFragment: Fragment() {
@@ -21,7 +17,7 @@ class RegistrationThreeFragment: Fragment() {
 
     private lateinit var registrationService : RegistrationService
     private lateinit var app: AndroidApp
-    private lateinit var mainActivity: MainActivity
+    private lateinit var registrationActivity: RegistrationActivity
 
     private var v: View? = null
 
@@ -32,7 +28,7 @@ class RegistrationThreeFragment: Fragment() {
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         v = inflater?.inflate(R.layout.registration_three_fragment, container, false)
         app = AndroidApp.get(activity)
-        mainActivity = activity as MainActivity
+        registrationActivity = activity as RegistrationActivity
         registrationService = app.appComponent.registrationService
 
         val submitStepThree = v?.findViewById(R.id.submit_step_three) as Button
@@ -61,7 +57,7 @@ class RegistrationThreeFragment: Fragment() {
         }
 
         if (valid) {
-            mainActivity.registrationInfo.password = password
+            registrationActivity.registrationInfo.password = password
             goToStepFour()
         }
     }

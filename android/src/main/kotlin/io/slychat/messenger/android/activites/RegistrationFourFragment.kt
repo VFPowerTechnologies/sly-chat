@@ -19,7 +19,6 @@ import android.widget.*
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.Phonenumber
 import io.slychat.messenger.android.AndroidApp
-import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.R
 import io.slychat.messenger.services.RegistrationService
 import io.slychat.messenger.services.ui.UIRegistrationInfo
@@ -35,7 +34,7 @@ class RegistrationFourFragment: Fragment() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var registrationService : RegistrationService
-    private lateinit var mainActivity: MainActivity
+    private lateinit var registrationActivity: RegistrationActivity
     private val phoneUtil = PhoneNumberUtil.getInstance()
 
     private var nextPermRequestCode = 0
@@ -50,10 +49,8 @@ class RegistrationFourFragment: Fragment() {
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         v = inflater?.inflate(R.layout.registration_four_fragment, container, false)
         val app = AndroidApp.get(activity)
-        mainActivity = activity as MainActivity
         registrationService = app.appComponent.registrationService
-
-        mainActivity.setRegistrationListener()
+        registrationActivity = activity as RegistrationActivity
 
         val submitStepFour = v?.findViewById(R.id.submit_step_four) as Button
         submitStepFour.setOnClickListener {
@@ -70,7 +67,7 @@ class RegistrationFourFragment: Fragment() {
         val countryList = phoneUtil.supportedRegions.sortedBy { it }.toMutableList()
         val position = countryList.indexOf(Locale.getDefault().country)
         val spinner = v?.findViewById(R.id.registration_country_spinner) as Spinner
-        val countryAdapter = ArrayAdapter<String>(mainActivity, android.R.layout.simple_spinner_item, countryList)
+        val countryAdapter = ArrayAdapter<String>(registrationActivity, android.R.layout.simple_spinner_item, countryList)
         spinner.adapter = countryAdapter
         spinner.setSelection(position)
     }
@@ -110,28 +107,26 @@ class RegistrationFourFragment: Fragment() {
     }
 
     private fun checkPhoneAvailability(phone: String) {
-        val mainActivity = activity as MainActivity
-
-        mainActivity.showProgressDialog(resources.getString(R.string.registration_phone_verification_process))
+        registrationActivity.showProgressDialog(resources.getString(R.string.registration_phone_verification_process))
         registrationService.checkPhoneNumberAvailability(phone) successUi { available ->
             if(available) {
-                mainActivity.registrationInfo.phoneNumber = phone
-                mainActivity.setProgressDialogMessage(resources.getString(R.string.registration_process))
+                registrationActivity.registrationInfo.phoneNumber = phone
+                registrationActivity.setProgressDialogMessage(resources.getString(R.string.registration_process))
                 doRegistration()
 
             }
             else {
-                mainActivity.hideProgressDialog()
+                registrationActivity.hideProgressDialog()
                 displayError(resources.getString(R.string.registration_phone_taken_error))
             }
         } failUi {
-            mainActivity.hideProgressDialog()
+            registrationActivity.hideProgressDialog()
             displayError(resources.getString(R.string.registration_global_error))
         }
     }
 
     private fun doRegistration() {
-        val info = mainActivity.registrationInfo
+        val info = registrationActivity.registrationInfo
         val uiRegistrationInfo = UIRegistrationInfo(info.name, info.email, info.password, info.phoneNumber)
 
         registrationService.doRegistration(uiRegistrationInfo)

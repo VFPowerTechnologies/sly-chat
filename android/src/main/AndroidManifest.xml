@@ -90,6 +90,12 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".activites.RecentChatActivity"/>
         </activity>
+        <activity
+                android:name=".activites.LoginActivity"
+                android:windowSoftInputMode="adjustResize"/>
+        <activity
+                android:name=".activites.RegistrationActivity"
+                android:windowSoftInputMode="adjustResize"/>
         <activity android:name=".activites.AddContactActivity"/>
         <activity android:name=".activites.CreateGroupActivity"/>
         <activity android:name=".activites.FeedbackActivity"/>

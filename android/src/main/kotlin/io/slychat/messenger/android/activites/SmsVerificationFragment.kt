@@ -9,7 +9,6 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
-import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.R
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -22,20 +21,25 @@ class SmsVerificationFragment: Fragment() {
     private lateinit var email: String
     private lateinit var password: String
 
-    private lateinit var mainActivity: MainActivity
+    private var rememberMe = false
+
+    private lateinit var registrationActivity: RegistrationActivity
 
     private lateinit var app: AndroidApp
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        registrationActivity = activity as RegistrationActivity
+
         email = this.arguments["EXTRA_EMAIL"] as String
         password = this.arguments["EXTRA_PASSWORD"] as String
+        rememberMe = this.arguments["EXTRA_REMEMBER_ME"] as Boolean
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View ? {
         v = inflater?.inflate(R.layout.sms_verification_fragment, container, false)
         app = AndroidApp.get(activity)
-        mainActivity = activity as MainActivity
 
         val smsSubmitBtn = v?.findViewById(R.id.submit_step_five) as Button
         val updatePhoneLink = v?.findViewById(R.id.sms_verification_update_phone_link) as TextView
@@ -73,20 +77,20 @@ class SmsVerificationFragment: Fragment() {
             return
         }
 
-        mainActivity.showProgressDialog(resources.getString(R.string.registration_sms_verification_process))
+        registrationActivity.showProgressDialog(resources.getString(R.string.registration_sms_verification_process))
         app.appComponent.registrationService.submitVerificationCode(email, code) successUi  { result ->
             if (result.successful) {
-                mainActivity.setProgressDialogMessage(resources.getString(R.string.login_in_process_message))
-                app.app.login(email, password, false)
+                registrationActivity.setProgressDialogMessage(resources.getString(R.string.login_in_process_message))
+                app.app.login(email, password, rememberMe)
             }
             else {
-                mainActivity.hideProgressDialog()
+                registrationActivity.hideProgressDialog()
                 if (result.errorMessage != null && result.errorMessage == "invalid code") {
                     smsCodeField.error = resources.getString(R.string.registration_verification_code_invalid_error)
                 }
             }
         } failUi {
-            mainActivity.hideProgressDialog()
+            registrationActivity.hideProgressDialog()
             log.debug(it.message, it.stackTrace)
         }
     }

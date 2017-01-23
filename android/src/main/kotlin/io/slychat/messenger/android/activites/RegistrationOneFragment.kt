@@ -1,5 +1,6 @@
 package io.slychat.messenger.android.activites
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
@@ -8,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
-import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
 
@@ -31,10 +31,8 @@ class RegistrationOneFragment: Fragment() {
 
         val loginLink = v?.findViewById(R.id.registration_login_link) as TextView
         loginLink.setOnClickListener {
-            val fragment = LoginFragment()
-            fragment.view?.isFocusableInTouchMode = true
-            fragment.view?.requestFocus()
-            fragmentManager.beginTransaction().replace(R.id.main_frag_container, fragment).addToBackStack("registration").commit()
+            startActivity(Intent(activity, LoginActivity::class.java))
+            activity.finish()
         }
 
         return v
@@ -52,8 +50,8 @@ class RegistrationOneFragment: Fragment() {
         }
 
         if (valid) {
-            val mainAtivity = activity as MainActivity
-            mainAtivity.registrationInfo.name = name
+            val registrationActivity = activity as RegistrationActivity
+            registrationActivity.registrationInfo.name = name
             goToStepTwo()
         }
     }

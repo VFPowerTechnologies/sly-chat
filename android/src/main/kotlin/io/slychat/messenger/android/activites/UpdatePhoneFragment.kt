@@ -10,7 +10,6 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
-import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.R
 import io.slychat.messenger.services.ui.UIUpdatePhoneInfo
 import nl.komponents.kovenant.ui.failUi
@@ -24,12 +23,15 @@ class UpdatePhoneFragment: Fragment() {
     private lateinit var email: String
     private lateinit var password: String
 
-    private lateinit var mainActivity: MainActivity
+    private lateinit var registrationActivity: RegistrationActivity
 
     private lateinit var app: AndroidApp
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        registrationActivity = activity as RegistrationActivity
+
         email = this.arguments["EXTRA_EMAIL"] as String
         password = this.arguments["EXTRA_PASSWORD"] as String
     }
@@ -37,7 +39,6 @@ class UpdatePhoneFragment: Fragment() {
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View ? {
         v = inflater?.inflate(R.layout.update_phone_fragment, container, false)
         app = AndroidApp.get(activity)
-        mainActivity = activity as MainActivity
 
         val updateSubmitbtn = v?.findViewById(R.id.update_phone_submit_btn) as Button
         val cancelLink = v?.findViewById(R.id.update_phone_login_link) as TextView
@@ -52,7 +53,7 @@ class UpdatePhoneFragment: Fragment() {
         }
 
         verifyLink.setOnClickListener {
-            mainActivity.startSmsVerification("updatePhone")
+            registrationActivity.startSmsVerification("updatePhone")
         }
 
         return v
@@ -66,18 +67,18 @@ class UpdatePhoneFragment: Fragment() {
             return
         }
 
-        mainActivity.showProgressDialog(resources.getString(R.string.registration_update_phone_process))
+        registrationActivity.showProgressDialog(resources.getString(R.string.registration_update_phone_process))
 
         app.appComponent.registrationService.updatePhone(UIUpdatePhoneInfo(email, password, phone)) successUi { result ->
-            mainActivity.hideProgressDialog()
+            registrationActivity.hideProgressDialog()
             if (result.successful) {
-                mainActivity.startSmsVerification("updatePhone")
+                registrationActivity.startSmsVerification("updatePhone")
             }
             else {
                 log.debug(result.errorMessage)
             }
         } failUi {
-            mainActivity.hideProgressDialog()
+            registrationActivity.hideProgressDialog()
             log.debug(it.message, it.stackTrace)
         }
 

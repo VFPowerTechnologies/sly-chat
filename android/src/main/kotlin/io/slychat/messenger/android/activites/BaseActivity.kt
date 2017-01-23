@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.SparseArray
+import android.view.WindowManager
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.R
@@ -25,6 +26,7 @@ open class BaseActivity : AppCompatActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        log.debug("onCreate")
         val app = getAndroidApp()
         if (app !== null) {
             val currentTheme = app.appComponent.appConfigService.appearanceTheme
@@ -33,8 +35,9 @@ open class BaseActivity : AppCompatActivity() {
                 setTheme(R.style.SlyThemeLight)
             }
         }
-
         super.onCreate(savedInstanceState)
+
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
     }
 
     private fun getAndroidApp(): AndroidApp? {

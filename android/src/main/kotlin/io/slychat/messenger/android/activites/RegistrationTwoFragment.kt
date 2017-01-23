@@ -7,9 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
-import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
-import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.R
 import io.slychat.messenger.services.RegistrationService
 import nl.komponents.kovenant.ui.failUi
@@ -21,7 +19,7 @@ class RegistrationTwoFragment: Fragment() {
 
     private lateinit var registrationService : RegistrationService
     private lateinit var app: AndroidApp
-    private lateinit var mainActivity: MainActivity
+    private lateinit var registrationActivity: RegistrationActivity
 
     private var v: View? = null
 
@@ -32,7 +30,7 @@ class RegistrationTwoFragment: Fragment() {
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         v = inflater?.inflate(R.layout.registration_two_fragment, container, false)
         app = AndroidApp.get(activity)
-        mainActivity = activity as MainActivity
+        registrationActivity = activity as RegistrationActivity
         registrationService = app.appComponent.registrationService
 
         val submitStepTwo = v?.findViewById(R.id.submit_step_two) as Button
@@ -60,23 +58,22 @@ class RegistrationTwoFragment: Fragment() {
     }
 
     private fun checkAvailability(email: String) {
-        val mainActivity = activity as MainActivity
         val app = AndroidApp.get(activity)
         val emailField = v?.findViewById(R.id.registration_email) as EditText
 
-        mainActivity.showProgressDialog(resources.getString(R.string.registration_email_verification_process))
+        registrationActivity.showProgressDialog(resources.getString(R.string.registration_email_verification_process))
         app.appComponent.registrationService.checkEmailAvailability(email) successUi { available ->
             if(available) {
-                mainActivity.registrationInfo.email = email
-                mainActivity.hideProgressDialog()
+                registrationActivity.registrationInfo.email = email
+                registrationActivity.hideProgressDialog()
                 goToStepThree()
             }
             else {
-                mainActivity.hideProgressDialog()
+                registrationActivity.hideProgressDialog()
                 emailField.error = resources.getString(R.string.registration_email_taken_error)
             }
         } failUi {
-            mainActivity.hideProgressDialog()
+            registrationActivity.hideProgressDialog()
             emailField.error = resources.getString(R.string.registration_global_error)
             log.debug(it.message)
         }
