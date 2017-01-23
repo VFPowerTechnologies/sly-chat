@@ -96,6 +96,9 @@
         <activity
                 android:name=".activites.RegistrationActivity"
                 android:windowSoftInputMode="adjustResize"/>
+        <activity
+                android:name=".activites.GroupInfoActivity"
+                android:windowSoftInputMode="adjustResize"/>
         <activity android:name=".activites.AddContactActivity"/>
         <activity android:name=".activites.CreateGroupActivity"/>
         <activity android:name=".activites.FeedbackActivity"/>

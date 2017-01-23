@@ -582,7 +582,9 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     private fun loadGroupInfo() {
         val cId = conversationId
         if (cId is ConversationId.Group) {
-            log.debug("loading group info")
+            val intent = Intent(baseContext, GroupInfoActivity::class.java)
+            intent.putExtra(GroupInfoActivity.EXTRA_GROUP_ID, cId.id.string)
+            startActivity(intent)
         }
     }
 

@@ -98,6 +98,10 @@
     <string name="profile_update_btn">Update Profil</string>
     <string name="profile_picture_description">Photo du profil</string>
 
+    <string name="group_info_title">Info du groupe</string>
+    <string name="group_picture_description">Photo du groupe</string>
+    <string name="group_info_members">Membres:</string>
+
     <string name="update_profile_title">Modifier le profil</string>
     <string name="update_profile_sms_verification_message">Vous devriez reçevoir un code de vérification par sms</string>
     <string name="update_profile_sms_verification_title">Vérification par sms</string>
