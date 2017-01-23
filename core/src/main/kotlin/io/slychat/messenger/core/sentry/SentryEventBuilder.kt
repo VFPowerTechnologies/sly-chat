@@ -73,6 +73,9 @@ class SentryEventBuilder(
                 effectiveTags["osVersion"] = osVersion
         }
 
+        val extra = HashMap(this.extra)
+        extra[SentryEvent.EXTRA_THREAD_NAME] = threadName
+
         return SentryEvent(
             randomUUID(),
             loggerName,
@@ -84,9 +87,7 @@ class SentryEventBuilder(
             exceptionInterface,
             userInterface,
             effectiveTags,
-            mapOf(
-                "Thread Name" to threadName
-            )
+            extra
         )
     }
 }

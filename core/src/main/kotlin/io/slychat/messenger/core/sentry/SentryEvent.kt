@@ -62,6 +62,12 @@ data class SentryEvent(
     //thread-name etc
     val extra: Map<String, String>
 ) {
+    companion object {
+        const val EXTRA_IS_UI_VISIBLE = "Is UI Visible"
+        const val EXTRA_IS_NETWORK_AVAILABLE = "Is Network Available"
+        const val EXTRA_THREAD_NAME = "Thread Name"
+    }
+
     val platform = "java"
 
     val release: String? = SlyBuildConfig.VERSION
