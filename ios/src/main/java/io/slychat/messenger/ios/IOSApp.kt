@@ -1,6 +1,7 @@
 package io.slychat.messenger.ios
 
 import apple.NSObject
+import apple.c.Globals
 import apple.corefoundation.c.CoreFoundation
 import apple.corefoundation.opaque.CFStringRef
 import apple.coregraphics.struct.CGPoint
@@ -204,6 +205,21 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         completionHandler.call_applicationHandleActionWithIdentifierForLocalNotificationCompletionHandler()
     }
 
+    private fun setupSignalHandlers() {
+        //app can crash due to a SIGPIPE; open app, bg, lock screen, unlock, click desktop icon will typically replicate the issue
+        //https://developer.apple.com/library/content/documentation/NetworkingInternetWeb/Conceptual/NetworkingOverview/CommonPitfalls/CommonPitfalls.html
+        //this does note that we should ignore SIGPIPE when using posix sockets
+        //I guess MOE doesn't do this? I've never seen this be an issue on java before
+
+        //Globals.sigignore exists but it's deprecated so let's not touch it
+        //SIG_IGN isn't provided by MOE, so just do this instead (although it's just NULL, so maybe passing a null fn would work)
+        val errno = CUtilFunctions.ignoreSIGPIPE()
+        if (errno != 0)
+            log.error("Unable to ignore SIGPIPE: {}", Globals.strerror(errno))
+        else
+            log.debug("Ignoring SIGPIPE")
+    }
+
     override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
         printBundleInfo()
 
@@ -254,6 +270,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         initializeUnhandledExceptionHandlers()
 
         app.init(platformModule)
+
+        setupSignalHandlers()
 
         val appComponent = app.appComponent
 

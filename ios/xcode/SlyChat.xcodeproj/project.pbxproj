@@ -17,6 +17,7 @@
 		3F290959C1EBC7B183CF506A /* preregister.txt in Resources */ = {isa = PBXBuildFile; fileRef = B602E1E5E0A3D48832B802D5 /* preregister.txt */; };
 		4216D27E230039D473AE88D0 /* MOE.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 18B7135DA03A86786EE0B00A /* MOE.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4D05852DCFE258D9B9FFAAE1 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6262965B25F645601E9986A7 /* main.cpp */; };
+		61384A33D15E19740ABF0BB6 /* utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 613849CC91EFBD5B42BC1E78 /* utils.c */; };
 		84D65B0AEED9909E3989A27B /* MOE.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 18B7135DA03A86786EE0B00A /* MOE.framework */; };
 		8CC77DF9149A699ADB7C9560 /* application.jar in Resources */ = {isa = PBXBuildFile; fileRef = 3CE6A69449BEA934800EF985 /* application.jar */; };
 		A0666AD0B9FB6365357B68FD /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6262965B25F645601E9986A7 /* main.cpp */; };
@@ -65,6 +66,7 @@
 		3CE6A69449BEA934800EF985 /* application.jar */ = {isa = PBXFileReference; lastKnownFileType = archive.jar; name = application.jar; path = ../build/moe/main/application.jar; sourceTree = SOURCE_ROOT; };
 		4F4FA97F6229291CAB03470D /* Info-Test.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Info-Test.plist"; path = "SlyChat-Test/Info-Test.plist"; sourceTree = SOURCE_ROOT; };
 		5DCDB00F667297D06AAF14A4 /* SlyChat-Test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SlyChat-Test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		613849CC91EFBD5B42BC1E78 /* utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = utils.c; sourceTree = "<group>"; };
 		6262965B25F645601E9986A7 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		775BBFC0D851F1689C1406AD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = SlyChat/Info.plist; sourceTree = SOURCE_ROOT; };
 		806373BC6EB410BF4F808E28 /* classlist.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = classlist.txt; path = ../build/moe/test/classlist.txt; sourceTree = SOURCE_ROOT; };
@@ -146,6 +148,7 @@
 				0AFD69381DF8871900CEA55E /* LaunchScreen.storyboard */,
 				F2BDF187468EA315B76A1525 /* Supporting Files */,
 				0AFD693A1DF8872C00CEA55E /* Assets.xcassets */,
+				613849CC91EFBD5B42BC1E78 /* utils.c */,
 			);
 			path = SlyChat;
 			sourceTree = "<group>";
@@ -324,6 +327,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A0666AD0B9FB6365357B68FD /* main.cpp in Sources */,
+				61384A33D15E19740ABF0BB6 /* utils.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
