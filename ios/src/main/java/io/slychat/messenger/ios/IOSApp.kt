@@ -248,12 +248,12 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
             PushNotificationService.APN
         )
 
-        app.init(platformModule)
-
         Sentry.setIOSDeviceName(UIDevice.currentDevice().model())
         Sentry.setBuildNumber(NSBundle.mainBundle().infoDictionary()["CFBundleVersion"] as String)
 
         initializeUnhandledExceptionHandlers()
+
+        app.init(platformModule)
 
         val appComponent = app.appComponent
 
