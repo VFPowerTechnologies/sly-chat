@@ -17,6 +17,7 @@ import apple.uikit.protocol.UIPopoverPresentationControllerDelegate
 import com.almworks.sqlite4java.SQLite
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.SlyBuildConfig
+import io.slychat.messenger.core.div
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.pushnotifications.OfflineMessageInfo
@@ -93,6 +94,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
     private lateinit var notificationService: IOSNotificationService
 
     private var notificationTokenDeferred: Deferred<DeviceTokens?, Exception>? = null
+
+    private lateinit var crashReportPath: File
 
     private fun excludeDirFromBackup(path: File) {
         val url = NSURL.fileURLWithPath(path.toString())
@@ -220,7 +223,37 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
             log.debug("Ignoring SIGPIPE")
     }
 
+    private fun installCrashReporter() {
+        val errno = CUtilFunctions.hookSignalCrashHandler(crashReportPath.toString())
+        if (errno != 0)
+            log.error("Failed to install crash reporter: {}", Globals.strerror(errno))
+        else
+            log.debug("Crash reporter installed")
+    }
+
+    private fun checkForCrashReport() {
+        if (crashReportPath.exists()) {
+            log.debug("Crash report found")
+
+            val report = crashReportPath.readText()
+
+            log.error(Markers.FATAL, report)
+
+            crashReportPath.delete()
+        }
+        else
+            log.debug("No crash report found")
+    }
+
     override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
+        val platformInfo = IOSPlatformInfo()
+
+        createAppDirectories(platformInfo)
+
+        crashReportPath = platformInfo.appFileStorageDirectory / "crash-report"
+
+        installCrashReporter()
+
         printBundleInfo()
 
         KovenantUi.uiContext {
@@ -229,8 +262,6 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
         SQLite.loadLibrary()
 
-        val platformInfo = IOSPlatformInfo()
-        createAppDirectories(platformInfo)
         excludeDirFromBackup(platformInfo.appFileStorageDirectory)
 
         notificationService = IOSNotificationService()
@@ -270,6 +301,9 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         initializeUnhandledExceptionHandlers()
 
         app.init(platformModule)
+
+        //always call this after app.init, so Sentry is active
+        checkForCrashReport()
 
         setupSignalHandlers()
 
