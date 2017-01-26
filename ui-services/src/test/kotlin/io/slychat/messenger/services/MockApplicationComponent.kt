@@ -27,6 +27,8 @@ class MockApplicationComponent : ApplicationComponent {
 
     override val uiLoginService: UILoginService = mock()
 
+    override val uiResetAccountService: UIResetAccountService = mock()
+
     override val uiContactsService: UIContactsService = mock()
 
     override val uiShareService: UIShareService = mock()
