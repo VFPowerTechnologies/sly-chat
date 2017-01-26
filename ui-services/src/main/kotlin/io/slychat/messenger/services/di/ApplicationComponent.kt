@@ -30,6 +30,8 @@ interface ApplicationComponent {
 
     val uiLoginService: UILoginService
 
+    val uiResetAccountService: UIResetAccountService
+
     val uiContactsService: UIContactsService
 
     val uiMessengerService: UIMessengerService

@@ -12,6 +12,7 @@ import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.di.annotations.ExternalHttp
 import io.slychat.messenger.services.di.annotations.SlyHttp
 import io.slychat.messenger.services.ui.*
+import io.slychat.messenger.services.ui.UIResetAccountService
 import io.slychat.messenger.services.ui.impl.*
 import javax.inject.Singleton
 
@@ -31,6 +32,14 @@ class UIServicesModule {
         app: SlyApplication
     ): UILoginService {
         return UILoginServiceImpl(app)
+    }
+
+    @Singleton
+    @Provides
+    fun provideResetAccountService(
+        resetAccountService: ResetAccountService
+    ): UIResetAccountService {
+        return UIResetAccountServiceImpl(resetAccountService)
     }
 
     @Singleton
