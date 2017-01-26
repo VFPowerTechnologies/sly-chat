@@ -20,6 +20,8 @@ fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponen
 
         dispatcher.registerService(UILoginServiceToJavaProxy(uiLoginService, dispatcher))
 
+        dispatcher.registerService(UIResetAccountServiceToJavaProxy(uiResetAccountService, dispatcher))
+
         dispatcher.registerService(UIContactsServiceToJavaProxy(uiContactsService, dispatcher))
 
         dispatcher.registerService(UIMessengerServiceToJavaProxy(uiMessengerService, dispatcher))

@@ -127,6 +127,11 @@ function addPagesListeners() {
             console.error("Unable to fetch app config: " + e.message);
         });
 
+        $("#forgotPasswordBtn").click(function (e) {
+            e.preventDefault();
+            navigationController.loadPage("forgotPassword.html", true);
+        });
+
         $$("#rememberMe").on("change", function (e) {
             configService.setLoginRememberMe($$(this).prop("checked"));
         });
@@ -146,6 +151,14 @@ function addPagesListeners() {
         if (isDesktop) {
             $("#login").focus();
         }
+    });
+
+    slychat.onPageInit('forgotPassword', function (page) {
+        accountResetController.onPageLoad();
+    });
+
+    slychat.onPageInit('accountResetConfirm', function (page) {
+        accountResetController.onConfirmPageLoad(page.query);
     });
 
     slychat.onPageInit('register', function (page) {

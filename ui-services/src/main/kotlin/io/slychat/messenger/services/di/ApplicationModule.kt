@@ -11,6 +11,7 @@ import io.slychat.messenger.core.div
 import io.slychat.messenger.core.http.HttpClientConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.JavaHttpClientFactory
+import io.slychat.messenger.core.http.api.accountreset.ResetAccountAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
 import io.slychat.messenger.core.http.api.availability.AvailabilityAsyncClientImpl
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
@@ -159,6 +160,17 @@ class ApplicationModule(
         val loginClient = AuthenticationAsyncClientImpl(serverUrl, httpClientFactory)
         val availabilityClient = AvailabilityAsyncClientImpl(serverUrl, httpClientFactory)
         return RegistrationServiceImpl(scheduler, registrationClient, loginClient, availabilityClient)
+    }
+
+    @Singleton
+    @Provides
+    fun providesResetAccountService(
+            serverUrls: SlyBuildConfig.ServerUrls,
+            @SlyHttp httpClientFactory: HttpClientFactory
+    ): ResetAccountService {
+        val serverUrl = serverUrls.API_SERVER
+        val resetAccountClient = ResetAccountAsyncClient(serverUrl, httpClientFactory)
+        return ResetAccountServiceImpl(resetAccountClient)
     }
 
     @Singleton
