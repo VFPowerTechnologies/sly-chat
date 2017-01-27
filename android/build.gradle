@@ -5,7 +5,7 @@ buildscript {
     dependencies {
         classpath "com.android.tools.build:gradle:$versions.androidGradle"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
-        classpath "com.google.gms:google-services:$versions.androidGradle"
+        classpath "com.google.gms:google-services:$versions.googleServices"
     }
 }
 
@@ -60,7 +60,7 @@ android.applicationVariants.all { variant ->
         def apkName = "SlyChat-${rootProject.version}"
 
         apkName += '-' + variant.buildType.name
-        
+
         if (!output.zipAlign)
             apkName += '-unaligned'
 
