@@ -159,7 +159,8 @@ project(':ios') {
 
 project(':android') {
     afterEvaluate { p ->
-        rootProject.tasks.create(name: 'distAndroid', description: 'Release APK build', dependsOn: p.tasks.assembleRelease) << {
+        //accessing via p.tasks.assembleRelease no longer works on newer versions
+        rootProject.tasks.create(name: 'distAndroid', description: 'Release APK build', dependsOn: 'android:assembleRelease') << {
             def variants = p.android.applicationVariants
             def releaseVariant = variants.find { it.name == 'release' }
             print "Generated release APK: ${releaseVariant.outputs.first().outputFile}"
