@@ -5,7 +5,7 @@ ext.androidVersionCode = project.ANDROID_VERSION_CODE.toInteger()
 buildscript {
     ext {
         versions = [
-            kotlin: '1.0.3',
+            kotlin: '1.0.6',
             slf4j: '1.7.15',
             roboVM: '1.13.0',
             jackson: '2.8.1',
