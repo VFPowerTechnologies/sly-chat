@@ -1,4 +1,5 @@
 -dontobfuscate
+-dontnote **
 
 #ignore warnings about sun.misc.Unsafe
 #as well as other internal platform-specific or optional things
