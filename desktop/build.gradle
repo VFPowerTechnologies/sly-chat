@@ -4,6 +4,7 @@ import java.security.MessageDigest
 
 buildscript {
     repositories {
+        mavenLocal()
         jcenter()
     }
 

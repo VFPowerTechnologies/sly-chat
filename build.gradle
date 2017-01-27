@@ -18,7 +18,7 @@ buildscript {
             rxjava: '1.1.8',
             rxjavafx: '0.1.4',
             rxandroid: '1.2.1',
-            jfxGradlePlugin: '8.7.0',
+            jfxGradlePlugin: '8.8.0-SNAPSHOT',
             appcompatv7: '23.1.1',
             playServices: '10.0.1',
             googleServices: '3.0.0',
