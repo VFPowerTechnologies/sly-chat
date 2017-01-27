@@ -22,7 +22,6 @@ buildscript {
             appcompatv7: '23.1.1',
             playServices: '8.3.0',
             libphonenumber: '7.1.1',
-            dokka: '0.9.9',
             junit: '4.11',
             assertJ: '3.5.1',
             mockitoKotlin: '0.5.2',
@@ -42,19 +41,9 @@ buildscript {
     repositories {
         jcenter()
     }
-
-    dependencies {
-        classpath "org.jetbrains.dokka:dokka-gradle-plugin:$versions.dokka"
-    }
 }
 
 subprojects {
-    apply plugin: 'org.jetbrains.dokka'
-
-    dokka {
-        outputDirectory = 'build/docs'
-    }
-
     repositories {
         mavenLocal()
         jcenter()
