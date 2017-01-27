@@ -3,14 +3,20 @@ package io.slychat.messenger.services.messaging
 import io.slychat.messenger.core.persistence.ConversationId
 import java.util.*
 
-internal class MessageListMap : HashMap<ConversationId, MutableList<String>>() {
+//https://youtrack.jetbrains.com/issue/KT-15313
+//direct inheritance causes issues when compiling with gradle > 3.1
+internal class MessageListMap private constructor(
+    private val underlying: HashMap<ConversationId, MutableList<String>>
+) : Map<ConversationId, MutableList<String>> by underlying {
+    constructor() : this(HashMap())
+
     override fun get(key: ConversationId): MutableList<String> {
-        val v = super.get(key)
+        val v = underlying[key]
         if (v != null)
             return v
 
         val list = ArrayList<String>()
-        set(key, list)
+        underlying[key] = list
 
         return list
     }
