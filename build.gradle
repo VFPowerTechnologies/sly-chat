@@ -87,9 +87,11 @@ task nextAndroidVersion(type: UpdateVersion) {
     versionType = VersionType.ANDROID
 }
 
-task printVersionInfo << {
-    println("Version: $project.version")
-    println("Android version code: $project.androidVersionCode")
+task printVersionInfo {
+    doLast {
+        println("Version: $project.version")
+        println("Android version code: $project.androidVersionCode")
+    }
 }
 
 task clean {
@@ -141,8 +143,10 @@ project(':ui-services') {
 
 project(':ios') {
     afterEvaluate { p ->
-        rootProject.tasks.create(name: 'distIOS', description: 'Release IPA build', dependsOn: p.tasks.appStoreIPA) << {
-            print "Generated release IPA: ${p.tasks.appStoreIPA.ipaPath}"
+        rootProject.tasks.create(name: 'distIOS', description: 'Release IPA build', dependsOn: p.tasks.appStoreIPA) {
+            doLast {
+                print "Generated release IPA: ${p.tasks.appStoreIPA.ipaPath}"
+            }
         }
     }
 }
@@ -150,10 +154,12 @@ project(':ios') {
 project(':android') {
     afterEvaluate { p ->
         //accessing via p.tasks.assembleRelease no longer works on newer versions
-        rootProject.tasks.create(name: 'distAndroid', description: 'Release APK build', dependsOn: 'android:assembleRelease') << {
-            def variants = p.android.applicationVariants
-            def releaseVariant = variants.find { it.name == 'release' }
-            print "Generated release APK: ${releaseVariant.outputs.first().outputFile}"
+        rootProject.tasks.create(name: 'distAndroid', description: 'Release APK build', dependsOn: 'android:assembleRelease') {
+            doLast {
+                def variants = p.android.applicationVariants
+                def releaseVariant = variants.find { it.name == 'release' }
+                print "Generated release APK: ${releaseVariant.outputs.first().outputFile}"
+            }
         }
     }
 }
