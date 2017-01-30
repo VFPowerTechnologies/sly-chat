@@ -198,15 +198,29 @@ function addPagesListeners() {
         var newMessageInput = $("#newMessageInput");
         contactController.resetUnreadCount(page.query.id, isGroup);
 
+        var conversationId = { id: page.query.id };
         if (!isGroup) {
             chatController.fetchMessageFor(0, 100, page.query);
+            conversationId.t = 'u';
         }
         else {
             groupController.fetchGroupMessage(0, 100, page.query.id);
+            conversationId.t = 'g';
         }
 
-        configService.getLastMessageTtl().then(function (v) {
-            chatController.lastMessageTtl = v;
+        chatController.conversationId = conversationId;
+
+        configService.getConvoTTLSettings(chatController.conversationId).then(function (v) {
+            if (v === null) {
+                v = {
+                    enabled: false,
+                    lastTTL: 30 * 1000,
+                }
+            }
+
+            chatController.ttlEnabled = v.enabled;
+            chatController.messageTTL = v.lastTTL;
+            chatController.enableExpiringMessageDisplay(v.enabled);
         }).catch(function (e) {
             exceptionController.handleError(e);
         });

@@ -1,8 +1,10 @@
 var ChatController = function () {
     this.lastMessage = null;
     this.currentContact = null;
-    this.lastMessageTtl = 0;
+    this.messageTTL = 0;
+    this.ttlEnabled = false;
     this.messages = [];
+    this.conversationId = null;
 };
 
 ChatController.prototype = {
@@ -854,18 +856,20 @@ ChatController.prototype = {
         openInfoPopup(content, "Message Info");
     },
 
+    updateConvoTTLSettings : function () {
+        configService.setConvoTTLSettings(
+            this.conversationId,
+            {
+                enabled: this.ttlEnabled,
+                lastTTL: this.messageTTL,
+            }
+        ).catch(function (e) {
+            exceptionController.handleError(e);
+        });
+    },
+
     handleSubmitMessage : function (contact) {
         var ttl = 0, mainView = $("#mainView");
-        if (mainView.hasClass('expire-message-toggled')) {
-            var slider = document.getElementById("delaySlider");
-            if (slider !== null) {
-                ttl = parseInt(slider.noUiSlider.get()) * 1000;
-                if (ttl !== 0) {
-                    this.lastMessageTtl = ttl;
-                    configService.setLastMessageTtl(ttl);
-                }
-            }
-        }
 
         var newMessageInput = $("#newMessageInput"), message;
         if (!isAndroid) {
@@ -880,6 +884,9 @@ ChatController.prototype = {
         }
 
         if (message !== "") {
+            if (this.ttlEnabled)
+                ttl = this.messageTTL;
+
             this.submitNewMessage(contact, message, ttl);
         }
     },
@@ -962,23 +969,38 @@ ChatController.prototype = {
         }
     },
 
-    toggleExpiringMessageDisplay : function () {
+    enableExpiringMessageDisplay : function (enabled) {
         var mainView = $("#mainView");
         var bottomToolbar = $(".bottom-chat-toolbar");
         var editor = $(".emojionearea-editor");
 
-        if (mainView.hasClass("expire-message-toggled")) {
-            mainView.removeClass("expire-message-toggled");
-            bottomToolbar.removeClass("expiring-message-toolbar");
-            bottomToolbar.find("#delaySliderContainer").remove();
-            editor.attr("placeholder", "Type your secure message");
-        }
-        else {
+        if (enabled) {
             mainView.addClass("expire-message-toggled");
             bottomToolbar.addClass("expiring-message-toolbar");
             this.createExpireDelaySlider(bottomToolbar);
             editor.attr("placeholder", "Type your expiring secure message");
         }
+        else {
+            mainView.removeClass("expire-message-toggled");
+            bottomToolbar.removeClass("expiring-message-toolbar");
+            bottomToolbar.find("#delaySliderContainer").remove();
+            editor.attr("placeholder", "Type your secure message");
+        }
+    },
+
+    toggleExpiringMessageDisplay : function () {
+        var mainView = $("#mainView");
+
+        if (mainView.hasClass("expire-message-toggled")) {
+            this.enableExpiringMessageDisplay(false);
+            this.ttlEnabled = false;
+        }
+        else {
+            this.enableExpiringMessageDisplay(true);
+            this.ttlEnabled = true;
+        }
+
+        this.updateConvoTTLSettings();
     },
 
     createExpireDelaySlider : function (toolbar) {
@@ -992,7 +1014,7 @@ ChatController.prototype = {
         var slider = document.getElementById('delaySlider');
 
         noUiSlider.create(slider, {
-            start: [Math.floor(this.lastMessageTtl / 1000)],
+            start: [Math.floor(this.messageTTL / 1000)],
             step: 1,
             range: {
                 min: [1],
@@ -1008,5 +1030,13 @@ ChatController.prototype = {
         slider.noUiSlider.on('slide', function () {
             $("#delayDisplay").html(slider.noUiSlider.get());
         })
+
+        slider.noUiSlider.on('change', function () {
+            ttl = parseInt(slider.noUiSlider.get()) * 1000;
+            if (ttl !== 0) {
+                this.messageTTL = ttl;
+                this.updateConvoTTLSettings();
+            }
+        }.bind(this));
     }
 };

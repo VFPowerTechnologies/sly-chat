@@ -3,6 +3,8 @@ package io.slychat.messenger.services.ui
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.vfpowertech.jsbridge.processor.annotations.Exclude
 import com.vfpowertech.jsbridge.processor.annotations.JSToJavaGenerate
+import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.services.config.ConvoTTLSettings
 
 data class UINotificationConfig(
     @JsonProperty("enabled")
@@ -31,9 +33,9 @@ interface UIConfigService {
 
     fun setLoginRememberMe(v: Boolean)
 
-    fun getLastMessageTtl(): Long
+    fun getConvoTTLSettings(conversationId: ConversationId): ConvoTTLSettings?
 
-    fun setLastMessageTtl(v: Long)
+    fun setConvoTTLSettings(conversationId: ConversationId, convoTTLSettings: ConvoTTLSettings)
 
     fun setNotificationConfig(config: UINotificationConfig)
 
