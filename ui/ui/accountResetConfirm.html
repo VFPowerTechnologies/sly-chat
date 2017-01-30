@@ -1,0 +1,76 @@
+{{#if @global.ios}}
+<div class="navbar top-navbar">
+  <div class="navbar-inner">
+    <div class="left"></div>
+    <div class="center sliding">Forgot Password</div>
+    <div class="right">
+    </div>
+  </div>
+</div>
+{{/if}}
+
+<div class="pages">
+  <div data-page="accountResetConfirm" class="page">
+    <div class="page-content vertical-centered-content">
+      <div  style="margin: 0 10px 0 10px;">
+        <form id="smsConfirmationForm" style="display: none;">
+          <div class="content-block-title">Sms Verification</div>
+          <div class="list-block">
+            <ul class="form-list-input">
+              <li>
+                <div class="item-content">
+                  <div class="item-media"><i class="icon icon-form-name"></i></div>
+                  <div class="item-inner">
+                    <div class="item-input">
+                      <input id='smsCode' class='form-input-validate' type="number" name='smsCode' placeholder="Sms Verification Code" data-errorName="Sms Verification Code" data-rules="required"/>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="list-block list-error-block">
+            <ul class="error-block"></ul>
+          </div>
+          <div class="content-block">
+            <div class="row">
+              <div class="col-100">
+                <input id="submitSmsVerification" type="submit" value="Submit" class="button button-big button-fill"/>
+              </div>
+            </div>
+          </div>
+        </form>
+        <form id="emailConfirmationForm" style="display: none;">
+          <div class="content-block-title">Email Verification</div>
+          <div class="list-block">
+            <ul class="form-list-input">
+              <li>
+                <div class="item-content">
+                  <div class="item-media"><i class="icon icon-form-name"></i></div>
+                  <div class="item-inner">
+                    <div class="item-input">
+                      <input id='emailCode' class='form-input-validate' type="number" name='emailCode' placeholder="Email Verification Code" data-errorName="Email Verification Code" data-rules="required"/>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="list-block list-error-block">
+            <ul class="error-block"></ul>
+          </div>
+          <div class="content-block">
+            <div class="row">
+              <div class="col-100">
+                <input id="submitEmailVerification" type="submit" value="Submit" class="button button-big button-fill"/>
+              </div>
+            </div>
+          </div>
+        </form>
+        <div class="content-block">
+          <p><a id='backToLogin' href="#">Back to login</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

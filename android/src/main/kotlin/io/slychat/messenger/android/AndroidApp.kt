@@ -212,6 +212,8 @@ class AndroidApp : Application() {
             log.error("setAndroidDeviceInfo failed: {}", e.message, e)
         }
 
+        Sentry.setBuildNumber(BuildConfig.VERSION_CODE.toString())
+
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         val networkReceiver = NetworkStatusReceiver()
         registerReceiver(networkReceiver, filter)

@@ -1,6 +1,9 @@
 package io.slychat.messenger.ios
 
 import apple.NSObject
+import apple.c.Globals
+import apple.corefoundation.c.CoreFoundation
+import apple.corefoundation.opaque.CFStringRef
 import apple.coregraphics.struct.CGPoint
 import apple.coregraphics.struct.CGRect
 import apple.coregraphics.struct.CGSize
@@ -14,6 +17,7 @@ import apple.uikit.protocol.UIPopoverPresentationControllerDelegate
 import com.almworks.sqlite4java.SQLite
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.SlyBuildConfig
+import io.slychat.messenger.core.div
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.pushnotifications.OfflineMessageInfo
@@ -21,6 +25,7 @@ import io.slychat.messenger.core.pushnotifications.OfflineMessagesPushNotificati
 import io.slychat.messenger.ios.kovenant.IOSDispatcher
 import io.slychat.messenger.ios.rx.IOSMainScheduler
 import io.slychat.messenger.ios.ui.WebViewController
+import io.slychat.messenger.logger.Markers
 import io.slychat.messenger.services.DeviceTokens
 import io.slychat.messenger.services.LoginState
 import io.slychat.messenger.services.Sentry
@@ -39,6 +44,7 @@ import org.moe.natj.general.ann.ReferenceInfo
 import org.moe.natj.general.ann.RegisterOnStartup
 import org.moe.natj.general.ptr.Ptr
 import org.moe.natj.general.ptr.impl.PtrFactory
+import org.moe.natj.objc.ObjCRuntime
 import org.moe.natj.objc.ann.Selector
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -88,6 +94,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
     private lateinit var notificationService: IOSNotificationService
 
     private var notificationTokenDeferred: Deferred<DeviceTokens?, Exception>? = null
+
+    private lateinit var crashReportPath: File
 
     private fun excludeDirFromBackup(path: File) {
         val url = NSURL.fileURLWithPath(path.toString())
@@ -200,7 +208,52 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         completionHandler.call_applicationHandleActionWithIdentifierForLocalNotificationCompletionHandler()
     }
 
+    private fun setupSignalHandlers() {
+        //app can crash due to a SIGPIPE; open app, bg, lock screen, unlock, click desktop icon will typically replicate the issue
+        //https://developer.apple.com/library/content/documentation/NetworkingInternetWeb/Conceptual/NetworkingOverview/CommonPitfalls/CommonPitfalls.html
+        //this does note that we should ignore SIGPIPE when using posix sockets
+        //I guess MOE doesn't do this? I've never seen this be an issue on java before
+
+        //Globals.sigignore exists but it's deprecated so let's not touch it
+        //SIG_IGN isn't provided by MOE, so just do this instead (although it's just NULL, so maybe passing a null fn would work)
+        val errno = CUtilFunctions.ignoreSIGPIPE()
+        if (errno != 0)
+            log.error("Unable to ignore SIGPIPE: {}", Globals.strerror(errno))
+        else
+            log.debug("Ignoring SIGPIPE")
+    }
+
+    private fun installCrashReporter() {
+        val errno = CUtilFunctions.hookSignalCrashHandler(crashReportPath.toString())
+        if (errno != 0)
+            log.error("Failed to install crash reporter: {}", Globals.strerror(errno))
+        else
+            log.debug("Crash reporter installed")
+    }
+
+    private fun checkForCrashReport() {
+        if (crashReportPath.exists()) {
+            log.debug("Crash report found")
+
+            val report = crashReportPath.readText()
+
+            log.error(Markers.FATAL, report)
+
+            crashReportPath.delete()
+        }
+        else
+            log.debug("No crash report found")
+    }
+
     override fun applicationDidFinishLaunchingWithOptions(application: UIApplication, launchOptions: NSDictionary<*, *>?): Boolean {
+        val platformInfo = IOSPlatformInfo()
+
+        createAppDirectories(platformInfo)
+
+        crashReportPath = platformInfo.appFileStorageDirectory / "crash-report"
+
+        installCrashReporter()
+
         printBundleInfo()
 
         KovenantUi.uiContext {
@@ -209,8 +262,6 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
 
         SQLite.loadLibrary()
 
-        val platformInfo = IOSPlatformInfo()
-        createAppDirectories(platformInfo)
         excludeDirFromBackup(platformInfo.appFileStorageDirectory)
 
         notificationService = IOSNotificationService()
@@ -244,9 +295,17 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
             PushNotificationService.APN
         )
 
+        Sentry.setIOSDeviceName(UIDevice.currentDevice().model())
+        Sentry.setBuildNumber(NSBundle.mainBundle().infoDictionary()["CFBundleVersion"] as String)
+
+        initializeUnhandledExceptionHandlers()
+
         app.init(platformModule)
 
-        Sentry.setIOSDeviceName(UIDevice.currentDevice().model())
+        //always call this after app.init, so Sentry is active
+        checkForCrashReport()
+
+        setupSignalHandlers()
 
         val appComponent = app.appComponent
 
@@ -272,6 +331,96 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         }
 
         return true
+    }
+
+    private fun initializeUnhandledExceptionHandlers() {
+        log.debug("Initializing uncaught exception handlers")
+
+        //default thread handler is already set by SlyApplication
+
+        //WARNING
+        //do NOT call System.exit with a negative value
+        //this will cause the app not to exit if there are any remaining daemon threads
+
+        //special handler for main thread crash
+        Thread.currentThread().setUncaughtExceptionHandler { thread, throwable ->
+            log.error(Markers.FATAL, "Uncaught exception on main thread: {}", throwable.message, throwable)
+
+            try {
+                showCrashDialog()
+            }
+            catch (t: Throwable) {
+                log.error("Error attempting to display crash dialog: {}", t.message, t)
+            }
+
+            Sentry.waitForShutdown()
+
+            System.exit(1)
+        }
+
+        //this can be called if our app throws an uncaught exception when called from native code
+        //here, we can't display the crash dialog properly; the dialog shows up and the loop runs, but user input isn't
+        //processed for some reason
+        //I've tested this via objc and it's the same so it's not so issue caused by MOE or anything
+        Foundation.NSSetUncaughtExceptionHandler { nsException ->
+            //TODO would be nice to reparse this into a proper exception for logging
+            //reason here'll be the (java) stacktrace as a string
+            log.error(Markers.FATAL, "Uncaught NSException: {}", nsException.reason())
+
+            Sentry.waitForShutdown()
+
+            System.exit(1)
+        }
+    }
+
+    private fun showCrashDialog() {
+        val rootViewController = UIApplication.sharedApplication().keyWindow()?.rootViewController()
+        if (rootViewController == null) {
+            log.error("No rootViewController, unable to display crash dialog")
+            return
+        }
+
+        val alert = UIAlertController.alertControllerWithTitleMessagePreferredStyle(
+            "Unexpected Error",
+            "Sly has unexpectedly crashed. An error report has been generated.",
+            UIAlertControllerStyle.Alert
+        )
+
+        var dismissed = false
+
+        val action = UIAlertAction.actionWithTitleStyleHandler(
+            "Exit Application",
+            UIAlertActionStyle.Cancel,
+            { dismissed = true }
+        )
+
+        alert.addAction(action)
+
+        rootViewController.presentViewControllerAnimatedCompletion(alert, true, null)
+
+        val runLoop = CoreFoundation.CFRunLoopGetCurrent()
+        val allModes = CoreFoundation.CFRunLoopCopyAllModes(runLoop)
+
+        //since the main loop is no longer running, we need to run it to handle dialog errors
+        try {
+            @Suppress("UNCHECKED_CAST")
+            val modes = ObjCRuntime.cast(allModes, NSArray::class.java) as NSArray<String>
+
+            while (!dismissed) {
+                for (mode in modes) {
+                    val nsString = NSString.stringWithString(mode)
+
+                    CoreFoundation.CFRunLoopRunInMode(
+                        ObjCRuntime.cast(nsString, CFStringRef::class.java),
+                        0.001,
+                        0
+                    )
+                }
+            }
+        }
+        finally {
+            CoreFoundation.CFRelease(allModes)
+        }
     }
 
     private fun buildUI(appComponent: ApplicationComponent) {

@@ -5,6 +5,7 @@ import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
+import io.slychat.messenger.core.sentry.ReportSubmitter
 import io.slychat.messenger.services.auth.AuthenticationService
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.config.ConfigBackend
@@ -25,6 +26,8 @@ class MockApplicationComponent : ApplicationComponent {
     override val uiRegistrationService: UIRegistrationService = mock()
 
     override val uiLoginService: UILoginService = mock()
+
+    override val uiResetAccountService: UIResetAccountService = mock()
 
     override val uiContactsService: UIContactsService = mock()
 
@@ -89,10 +92,18 @@ class MockApplicationComponent : ApplicationComponent {
     override val networkStatus: Observable<Boolean>
         get() = networkStatusSubject
 
+    val uiVisibilitySubject: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
+
+    override val uiVisibility: Observable<Boolean>
+        get() = uiVisibilitySubject
+
     override val versionChecker: VersionChecker = mock()
 
     override val registrationService: RegistrationService = mock()
-    
+
+    override val reportSubmitter: ReportSubmitter<ByteArray>?
+        get() = null
+
     val userComponent = MockUserComponent()
 
     override fun plus(userModule: UserModule): UserComponent {

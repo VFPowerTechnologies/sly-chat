@@ -1,6 +1,7 @@
 package io.slychat.messenger.core.sentry
 
 import com.nhaarman.mockito_kotlin.*
+import org.assertj.core.api.Assertions
 import org.joda.time.DateTimeUtils
 import org.junit.Test
 import org.mockito.ArgumentMatcher
@@ -14,7 +15,7 @@ import kotlin.concurrent.withLock
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class ReportSubmitterTest {
+class ReportSubmitterImplTest {
     private companion object {
         class WorkerStopped() : Throwable()
 
@@ -49,8 +50,7 @@ class ReportSubmitterTest {
 
     private lateinit var mockClient: ReportSubmitClient<Int>
     private lateinit var mockStorage : ReportStorage<Int>
-    private lateinit var messageQueue: BlockingQueue<ReporterMessage<Int>>
-    private lateinit var reporter: ReportSubmitter<Int>
+    private lateinit var reporter: ReportSubmitterImpl<Int>
     private lateinit var throwableQueue: BlockingQueue<Throwable?>
 
     private fun <R> withFixedMillis(millis: Long, body: () -> R): R {
@@ -64,14 +64,13 @@ class ReportSubmitterTest {
     }
 
     private fun sendReport(report: Int) {
-        messageQueue.put(ReporterMessage.BugReport(report))
+        reporter.submit(report)
     }
 
     private fun sendReports(n: Int) {
         (1..n).forEach { i ->
-            messageQueue.put(ReporterMessage.BugReport(i))
+            reporter.submit(i)
         }
-
     }
 
     private fun processReport(report: Int) {
@@ -91,7 +90,7 @@ class ReportSubmitterTest {
     }
 
     private fun sendShutdown() {
-        messageQueue.put(ReporterMessage.Shutdown())
+        reporter.shutdown()
     }
 
     private fun processShutdown() {
@@ -101,17 +100,15 @@ class ReportSubmitterTest {
     private fun initReporter(
         isNetworkAvailable: Boolean = false,
         isFatal: Boolean = false,
-        initialWaitTimeMs: Long = ReportSubmitter.DEFAULT_INITIAL_WAIT_TIME_MS,
-        maxWaitTimeMs: Long = ReportSubmitter.DEFAULT_MAX_WAIT_TIME_MS,
-        maxQueueSize: Int = ReportSubmitter.DEFAULT_MAX_QUEUE_SIZE
+        initialWaitTimeMs: Long = ReportSubmitterImpl.DEFAULT_INITIAL_WAIT_TIME_MS,
+        maxWaitTimeMs: Long = ReportSubmitterImpl.DEFAULT_MAX_WAIT_TIME_MS,
+        maxQueueSize: Int = ReportSubmitterImpl.DEFAULT_MAX_QUEUE_SIZE
     ) {
         mockStorage = mock()
         mockClient = mock()
-        messageQueue = ArrayBlockingQueue<ReporterMessage<Int>>(10)
-        reporter = ReportSubmitter(
+        reporter = ReportSubmitterImpl(
             mockStorage,
             mockClient,
-            messageQueue,
             isNetworkAvailable,
             isFatal,
             initialWaitTimeMs,
@@ -295,12 +292,7 @@ class ReportSubmitterTest {
         assertEquals(initialWaitTimeMs, reporter.currentWaitTimeMs, "Current wait time not reset")
     }
 
-    @Test
-    fun `should write out the contents of the queue while network is unavailable`() {
-        initReporter()
-
-        val reports = listOf(1, 2)
-
+    private fun withRecordingStores(body: () -> Unit): List<List<Int>>  {
         //for reasons beyond me, both ArgumentCaptor and inOrder are fucking broken here; it returns the final arg twice
         //only and I have no idea why; if I reverse the order then it acts like the first call was never made
         //so we just do this instead, which works fine
@@ -310,14 +302,44 @@ class ReportSubmitterTest {
             Unit
         }
 
-        processReports(reports)
+        body()
 
+        return got
+    }
+
+    private fun testStorageWrite(isNetworkAvailable: Boolean, expected: List<List<Int>>) {
+        initReporter(isNetworkAvailable = isNetworkAvailable)
+
+        val reports = listOf(1, 2)
+
+        val got = withRecordingStores {
+            processReports(reports)
+        }
+
+        assertEquals(expected, got, "Invalid store calls")
+    }
+
+    @Test
+    fun `should write out the contents of the queue while network is unavailable`() {
         val expected = listOf(
             listOf(1),
             listOf(1, 2)
         )
 
-        assertEquals(expected, got, "Invalid store calls")
+        testStorageWrite(false, expected)
+    }
+
+    @Test
+    fun `it should write out the contents of the queue when network is available`() {
+        //it'll write the report, then send it, then repeat
+        val expected = listOf(
+            listOf(1),
+            emptyList(),
+            listOf(2),
+            emptyList()
+        )
+
+        testStorageWrite(true, expected)
     }
 
     @Test
@@ -337,9 +359,19 @@ class ReportSubmitterTest {
     fun `should store reports after uploading is complete`() {
         initReporter(isNetworkAvailable = true)
 
-        processReport(0)
+        val got = withRecordingStores {
+            processReport(0)
+        }
 
-        verify(mockStorage).store(argThat(CollectionWith<Int>(listOf())))
+        val expected = listOf(
+            listOf(0),
+            emptyList()
+        )
+
+        Assertions.assertThat(got).apply {
+            describedAs("Should write out the empty queue after uploading is complete")
+            containsExactlyElementsOf(expected)
+        }
     }
 
     //threaded tests; make sure to use the send* helper variants, not process*
@@ -352,12 +384,26 @@ class ReportSubmitterTest {
 
         launchWorkerThread()
 
-        sendReports(2)
+        val got = withRecordingStores {
+            sendReports(2)
+            waitForWorkerThreadShutdown()
+        }
 
-        waitForWorkerThreadShutdown()
+        val expected = listOf(
+            //write before sending
+            listOf(1),
+            //write after processing queue (aborted early due to error)
+            listOf(1),
+            //write after receiving another report while in delayed mode
+            listOf(1, 2)
+        )
 
         verify(mockClient, times(1)).submit(any())
-        verify(mockStorage, times(2)).store(any())
+
+        Assertions.assertThat(got).apply {
+            describedAs("Should write reports to the queue while in delayed mode")
+            containsExactlyElementsOf(expected)
+        }
     }
 
     @Test
@@ -438,6 +484,19 @@ class ReportSubmitterTest {
                 cond.await()
             }
         }
+
+        waitForWorkerThreadShutdown()
+    }
+
+    @Test(timeout = 1000)
+    fun `should resolve shutdownPromise after shutting down`() {
+        initReporter()
+
+        launchWorkerThread()
+
+        sendShutdown()
+
+        reporter.shutdownPromise.get()
 
         waitForWorkerThreadShutdown()
     }

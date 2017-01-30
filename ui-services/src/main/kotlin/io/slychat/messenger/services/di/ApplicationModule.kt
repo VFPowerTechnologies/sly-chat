@@ -11,6 +11,7 @@ import io.slychat.messenger.core.div
 import io.slychat.messenger.core.http.HttpClientConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.JavaHttpClientFactory
+import io.slychat.messenger.core.http.api.accountreset.ResetAccountAsyncClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClientImpl
 import io.slychat.messenger.core.http.api.availability.AvailabilityAsyncClientImpl
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
@@ -18,6 +19,10 @@ import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsy
 import io.slychat.messenger.core.http.api.registration.RegistrationAsyncClient
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonInstallationDataPersistenceManager
+import io.slychat.messenger.core.sentry.FileReportStorage
+import io.slychat.messenger.core.sentry.RavenReportSubmitClient
+import io.slychat.messenger.core.sentry.ReportSubmitter
+import io.slychat.messenger.core.sentry.ReportSubmitterImpl
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthenticationService
 import io.slychat.messenger.services.auth.AuthenticationServiceImpl
@@ -29,6 +34,7 @@ import io.slychat.messenger.services.contacts.RxPromiseTimerFactory
 import io.slychat.messenger.services.di.annotations.ExternalHttp
 import io.slychat.messenger.services.di.annotations.NetworkStatus
 import io.slychat.messenger.services.di.annotations.SlyHttp
+import org.jetbrains.annotations.Nullable
 import rx.Observable
 import rx.Scheduler
 import java.io.ByteArrayInputStream
@@ -158,6 +164,17 @@ class ApplicationModule(
 
     @Singleton
     @Provides
+    fun providesResetAccountService(
+            serverUrls: SlyBuildConfig.ServerUrls,
+            @SlyHttp httpClientFactory: HttpClientFactory
+    ): ResetAccountService {
+        val serverUrl = serverUrls.API_SERVER
+        val resetAccountClient = ResetAccountAsyncClient(serverUrl, httpClientFactory)
+        return ResetAccountServiceImpl(resetAccountClient)
+    }
+
+    @Singleton
+    @Provides
     fun providesPushNotificationManager(
         app: SlyApplication,
         appConfigService: AppConfigService,
@@ -196,5 +213,23 @@ class ApplicationModule(
             5,
             TimeUnit.MINUTES
         )
+    }
+
+    @Singleton
+    @Provides
+    @Nullable
+    fun providesReportSubmitter(
+        platformInfo: PlatformInfo,
+        @SlyHttp httpClientFactory: HttpClientFactory
+    ): ReportSubmitter<ByteArray>? {
+        val dsn = SlyBuildConfig.sentryDsn ?: return null
+
+        val bugReportsPath = platformInfo.appFileStorageDirectory / "bug-reports.bin"
+
+        val storage = FileReportStorage(bugReportsPath)
+
+        val client = RavenReportSubmitClient(dsn, httpClientFactory)
+
+        return ReportSubmitterImpl(storage, client)
     }
 }
