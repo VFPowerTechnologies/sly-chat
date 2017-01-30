@@ -21,29 +21,22 @@ import java.util.*
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class AppConfig(
-    @JsonProperty("formatVersion")
     val formatVersion: Int = 1,
 
-    @JsonProperty("loginRememberMe")
     val loginRememberMe: Boolean = true,
 
-    @JsonProperty("appearenceTheme")
     val appearanceTheme: String? = null,
 
-    @JsonProperty("pushNotificationsPermRequested")
     val pushNotificationsPermRequested: Boolean = false,
 
-    @JsonProperty("pushNotificationsTokens")
     val pushNotificationsTokens: DeviceTokens? = null,
 
-    @JsonDeserialize(keyUsing = SlyAddressKeyDeserializer::class)
-    @JsonSerialize(keyUsing = SlyAddressKeySerializer::class)
-    @JsonProperty("pushNotificationsRegistrations")
+    @field:JsonDeserialize(keyUsing = SlyAddressKeyDeserializer::class)
+    @get:JsonSerialize(keyUsing = SlyAddressKeySerializer::class)
     val pushNotificationsRegistrations: Map<SlyAddress, String> = emptyMap(),
 
-    @JsonDeserialize(keyUsing = SlyAddressKeyDeserializer::class)
-    @JsonSerialize(keyUsing = SlyAddressKeySerializer::class)
-    @JsonProperty("pushNotificationsUnregistrations")
+    @field:JsonDeserialize(keyUsing = SlyAddressKeyDeserializer::class)
+    @get:JsonSerialize(keyUsing = SlyAddressKeySerializer::class)
     val pushNotificationsUnregistrations: Map<SlyAddress, String> = emptyMap()
 ) {
     companion object {

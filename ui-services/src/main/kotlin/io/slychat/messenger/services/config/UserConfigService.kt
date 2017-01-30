@@ -1,7 +1,6 @@
 package io.slychat.messenger.services.config
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import io.slychat.messenger.core.persistence.ConversationId
@@ -13,21 +12,16 @@ import java.util.*
 //real paths, eg content://settings/system/ringtone)
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class UserConfig(
-    @JsonProperty("formatVersion")
     val formatVersion: Int = 1,
 
-    @JsonProperty("notificationsEnabled")
     val notificationsEnabled: Boolean = true,
 
-    @JsonProperty("notificationsSound")
     val notificationsSound: String? = null,
 
-    @JsonDeserialize(keyUsing = ConversationIdKeyDeserializer::class)
-    @JsonSerialize(keyUsing = ConversationIdKeySerializer::class)
-    @JsonProperty("messagingConvoTTLSettings")
+    @field:JsonDeserialize(keyUsing = ConversationIdKeyDeserializer::class)
+    @get:JsonSerialize(keyUsing = ConversationIdKeySerializer::class)
     val messagingConvoTTLSettings: Map<ConversationId, ConvoTTLSettings> = emptyMap(),
 
-    @JsonProperty("marketingShowInviteFriends")
     val marketingShowInviteFriends: Boolean = false
 ) {
     companion object {
