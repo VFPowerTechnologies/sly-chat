@@ -37,9 +37,10 @@ class UIServicesModule {
     @Singleton
     @Provides
     fun provideResetAccountService(
+        localAccountDirectory: LocalAccountDirectory,
         resetAccountService: ResetAccountService
     ): UIResetAccountService {
-        return UIResetAccountServiceImpl(resetAccountService)
+        return UIResetAccountServiceImpl(resetAccountService, localAccountDirectory)
     }
 
     @Singleton

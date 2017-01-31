@@ -164,22 +164,32 @@ ResetAccountController.prototype = {
 
     phoneFreeSuccess: function () {
         this.phoneFreed = true;
-        $(ResetAccountController.ids.smsConfirmationForm).remove();
-        slychat.alert("Your phone number has been release and can now be used for a new account", "Success");
+        var callback = function () {
+            if (this.phoneFreed && this.emailFreed)
+                this.finishResetProcedure();
+            else
+                $(ResetAccountController.ids.smsConfirmationForm).remove();
+        }.bind(this);
 
-        if (this.phoneFreed && this.emailFreed)
-            navigationController.loadPage("login.html", false);
-        else
-            $(ResetAccountController.ids.smsConfirmationForm).remove();
+        slychat.alert("Your phone number has been release and can now be used for a new account", "Success", callback);
     },
 
     emailFreeSuccess: function () {
         this.emailFreed = true;
-        slychat.alert("Your email has been release and can now be used for a new account", "Success");
+        var callback = function () {
+            if (this.phoneFreed && this.emailFreed)
+                this.finishResetProcedure();
+            else
+                $(ResetAccountController.ids.emailConfirmationForm).remove();
+        }.bind(this);
 
-        if (this.phoneFreed && this.emailFreed)
+        slychat.alert("Your email has been release and can now be used for a new account", "Success", callback);
+    },
+
+    finishResetProcedure: function () {
+        var callback = function () {
             navigationController.loadPage("login.html", false);
-        else
-            $(ResetAccountController.ids.emailConfirmationForm).remove();
+        };
+        slychat.alert("A uninstall and reinstall is needed on other devices to delete local data.", "Success", callback);
     }
 };

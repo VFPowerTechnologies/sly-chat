@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.ui.impl
 
+import io.slychat.messenger.services.LocalAccountDirectory
 import io.slychat.messenger.services.ResetAccountService
 import io.slychat.messenger.services.ui.UIRequestResetAccountResult
 import io.slychat.messenger.services.ui.UIResetAccountService
@@ -9,7 +10,8 @@ import nl.komponents.kovenant.functional.map
 
 
 class UIResetAccountServiceImpl(
-    private val resetAccountService: ResetAccountService
+    private val resetAccountService: ResetAccountService,
+    private val localAccountDirectory: LocalAccountDirectory
 ) : UIResetAccountService {
 
     override fun resetAccount(username: String): Promise<UIRequestResetAccountResult, Exception> {
@@ -19,14 +21,20 @@ class UIResetAccountServiceImpl(
     }
 
     override fun submitEmailConfirmationCode(username: String, code: String): Promise<UIResetAccountResult, Exception> {
-        return resetAccountService.submitEmailResetCode(username, code) map {
-            UIResetAccountResult(it.isSuccess, it.errorMessage)
+        return resetAccountService.submitEmailResetCode(username, code) map { result ->
+            if (result.isSuccess)
+                localAccountDirectory.findAccountFor(username)?.apply { localAccountDirectory.deleteAccountData(this.id) }
+
+            UIResetAccountResult(result.isSuccess, result.errorMessage)
         }
     }
 
     override fun submitPhoneNumberConfirmationCode(username: String, code: String): Promise<UIResetAccountResult, Exception> {
-        return resetAccountService.submitSmsResetCode(username, code) map {
-            UIResetAccountResult(it.isSuccess, it.errorMessage)
+        return resetAccountService.submitSmsResetCode(username, code) map { result ->
+            if (result.isSuccess)
+                localAccountDirectory.findAccountFor(username)?.apply { localAccountDirectory.deleteAccountData(this.id) }
+
+            UIResetAccountResult(result.isSuccess, result.errorMessage)
         }
     }
 

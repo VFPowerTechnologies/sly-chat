@@ -1,18 +1,28 @@
 package io.slychat.messenger.services.config
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.core.persistence.ConversationIdKeyDeserializer
+import io.slychat.messenger.core.persistence.ConversationIdKeySerializer
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 //paths are strings because android uses android.net.Uri for representing files (not all of which are convertable to
 //real paths, eg content://settings/system/ringtone)
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class UserConfig(
     val formatVersion: Int = 1,
+
     val notificationsEnabled: Boolean = true,
+
     val notificationsSound: String? = null,
-    val messagingLastTtl: Long = TimeUnit.SECONDS.toMillis(10),
-    val marketingShowInviteFriends: Boolean = true
+
+    @field:JsonDeserialize(keyUsing = ConversationIdKeyDeserializer::class)
+    @get:JsonSerialize(keyUsing = ConversationIdKeySerializer::class)
+    val messagingConvoTTLSettings: Map<ConversationId, ConvoTTLSettings> = emptyMap(),
+
+    val marketingShowInviteFriends: Boolean = false
 ) {
     companion object {
         private fun join(parent: String, child: String): String = "$parent.$child"
@@ -24,15 +34,11 @@ data class UserConfig(
 
         val MESSAGING = "user.messaging"
 
-        val MESSAGING_LAST_TTL = join(MESSAGING, "lastTtl")
+        val MESSAGING_CONVO_TTL_SETTINGS = join(MESSAGING, "convoTTLSettings")
 
         val MARKETING = "user.marketing"
 
         val MARKETING_SHOW_INVITE_FRIENDS = join(MARKETING, "showInviteFriends")
-    }
-
-    init {
-        require(messagingLastTtl >= 0) { "messagingLastTtl must be >= 0, got $messagingLastTtl" }
     }
 }
 
@@ -57,12 +63,12 @@ class UserEditorInterface(override var config: UserConfig) : ConfigServiceBase.E
             }
         }
 
-    var messagingLastTtl: Long
-        get() = config.messagingLastTtl
+    var messagingConvoTTLSettings: Map<ConversationId, ConvoTTLSettings>
+        get() = config.messagingConvoTTLSettings
         set(value) {
-            if (value != messagingLastTtl) {
-                modifiedKeys.add(UserConfig.MESSAGING_LAST_TTL)
-                config = config.copy(messagingLastTtl = value)
+            if (value != messagingConvoTTLSettings) {
+                modifiedKeys.add(UserConfig.MESSAGING_CONVO_TTL_SETTINGS)
+                config = config.copy(messagingConvoTTLSettings = value)
             }
         }
 
@@ -90,8 +96,8 @@ class UserConfigService(
     val notificationsEnabled: Boolean
         get() = config.notificationsEnabled
 
-    val messagingLastTtl: Long
-        get() = config.messagingLastTtl
+    val messagingConvoLastTTL: Map<ConversationId, ConvoTTLSettings>
+        get() = config.messagingConvoTTLSettings
 
     val marketingShowInviteFriends: Boolean
         get() = config.marketingShowInviteFriends

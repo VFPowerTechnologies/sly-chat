@@ -1,10 +1,8 @@
 package io.slychat.messenger.services.ui.impl
 
+import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.services.PlatformNotificationService
-import io.slychat.messenger.services.config.AppConfig
-import io.slychat.messenger.services.config.AppConfigService
-import io.slychat.messenger.services.config.UserConfig
-import io.slychat.messenger.services.config.UserConfigService
+import io.slychat.messenger.services.config.*
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.ui.UIAppearanceConfig
 import io.slychat.messenger.services.ui.UIConfigService
@@ -192,13 +190,13 @@ class UIConfigServiceImpl(
         }
     }
 
-    override fun getLastMessageTtl(): Long {
-        return getUserConfigServiceOrThrow().messagingLastTtl
+    override fun getConvoTTLSettings(conversationId: ConversationId): ConvoTTLSettings? {
+        return getUserConfigServiceOrThrow().messagingConvoLastTTL[conversationId]
     }
 
-    override fun setLastMessageTtl(v: Long) {
+    override fun setConvoTTLSettings(conversationId: ConversationId, convoTTLSettings: ConvoTTLSettings) {
         getUserConfigServiceOrThrow().withEditor {
-            messagingLastTtl = v
+            messagingConvoTTLSettings += conversationId to convoTTLSettings
         }
     }
 }

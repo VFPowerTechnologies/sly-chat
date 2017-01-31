@@ -3,7 +3,24 @@ package io.slychat.messenger.core.persistence
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonSerializer
+import com.fasterxml.jackson.databind.KeyDeserializer
+import com.fasterxml.jackson.databind.SerializerProvider
 import io.slychat.messenger.core.UserId
+
+class ConversationIdKeyDeserializer : KeyDeserializer() {
+    override fun deserializeKey(key: String, ctxt: DeserializationContext): Any {
+        return ConversationId.fromString(key)
+    }
+}
+
+class ConversationIdKeySerializer : JsonSerializer<ConversationId>() {
+    override fun serialize(value: ConversationId, gen: JsonGenerator, serializers: SerializerProvider) {
+        gen.writeFieldName(value.asString())
+    }
+}
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
