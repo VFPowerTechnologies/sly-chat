@@ -3,6 +3,8 @@ package io.slychat.messenger.android.activites.services.impl
 import android.support.v7.app.AppCompatActivity
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.activites.services.SettingsService
+import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.services.config.ConvoTTLSettings
 
 class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
     companion object {
@@ -107,13 +109,13 @@ class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
         return configService.marketingShowInviteFriends
     }
 
-    override fun getLastMessageTtl(): Long {
-        return configService.messagingLastTtl
+    override fun getConvoTTLSettings(conversationId: ConversationId): ConvoTTLSettings? {
+        return configService.messagingConvoLastTTL[conversationId]
     }
 
-    override fun setLastMessageTtl(ttl: Long) {
+    override fun setConvoTTLSettings(conversationId: ConversationId, convoTTLSettings: ConvoTTLSettings) {
         configService.withEditor {
-            messagingLastTtl = ttl
+            messagingConvoTTLSettings += conversationId to convoTTLSettings
         }
     }
 

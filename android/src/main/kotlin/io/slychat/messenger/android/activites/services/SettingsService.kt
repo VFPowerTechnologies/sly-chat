@@ -1,6 +1,8 @@
 package io.slychat.messenger.android.activites.services
 
 import io.slychat.messenger.android.activites.services.impl.SettingsServiceImpl
+import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.services.config.ConvoTTLSettings
 
 interface SettingsService {
 
@@ -14,7 +16,7 @@ interface SettingsService {
 
     fun getShowInviteEnabled(): Boolean
 
-    fun getLastMessageTtl(): Long
+    fun getConvoTTLSettings(conversationId: ConversationId): ConvoTTLSettings?
 
-    fun setLastMessageTtl(ttl: Long)
+    fun setConvoTTLSettings(conversationId: ConversationId, convoTTLSettings: ConvoTTLSettings)
 }

@@ -35,7 +35,7 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import android.view.animation.AnimationUtils
-
+import io.slychat.messenger.services.config.ConvoTTLSettings
 
 
 class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedListener {
@@ -202,6 +202,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         expireSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onStopTrackingTouch(seekBar: SeekBar) {
                 setExpireDelay(seekBar.progress.toLong())
+                settingsService.setConvoTTLSettings(conversationId, ConvoTTLSettings(true, seekBar.progress.toLong() * 1000))
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar) {
@@ -234,11 +235,24 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             else
                 displayMessages(messages)
         }
+
+        displayExpireSliderOnStart()
+    }
+
+    private fun displayExpireSliderOnStart() {
+        val ttlConfig = settingsService.getConvoTTLSettings(conversationId)
+        if (ttlConfig != null && ttlConfig.isEnabled) {
+            setExpireDelay(ttlConfig.lastTTL/1000)
+            showExpirationSlider()
+        }
     }
 
     private fun handleExpireMessageToggle() {
-        if (expireDelay == null)
-            expireDelay = settingsService.getLastMessageTtl()
+        val ttlConfig = settingsService.getConvoTTLSettings(this.conversationId)
+        if (ttlConfig != null)
+            expireDelay = ttlConfig.lastTTL
+        else
+            expireDelay = 30000L
 
         if (expireToggled)
             hideExpirationSlider()
@@ -257,6 +271,8 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         expireSlider.progress = delay.toInt() / 1000
         setExpireDelay(delay / 1000)
 
+        settingsService.setConvoTTLSettings(conversationId, ConvoTTLSettings(true, delay))
+
         expirationSliderContainer.visibility = View.VISIBLE
         expireToggled = true
     }
@@ -269,6 +285,10 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun hideExpirationSlider() {
+        val settingsTTl = settingsService.getConvoTTLSettings(conversationId)
+        if (settingsTTl != null)
+            settingsService.setConvoTTLSettings(conversationId, ConvoTTLSettings(false, settingsTTl.lastTTL))
+
         val expirationSliderContainer = findViewById(R.id.expiration_slider_container)
         expirationSliderContainer.visibility = View.GONE
         expireToggled = false
@@ -370,7 +390,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val delay = expireDelay
         if (expireToggled && delay != null) {
             ttl = delay
-            settingsService.setLastMessageTtl(ttl)
+            settingsService.setConvoTTLSettings(this.conversationId, ConvoTTLSettings(true, ttl))
         }
 
         messengerService.sendMessageTo(conversationId, messageValue, ttl) successUi {
