@@ -196,7 +196,6 @@ class UIConfigServiceImpl(
 
     override fun setConvoTTLSettings(conversationId: ConversationId, convoTTLSettings: ConvoTTLSettings) {
         getUserConfigServiceOrThrow().withEditor {
-            println(convoTTLSettings)
             messagingConvoTTLSettings += conversationId to convoTTLSettings
         }
     }
