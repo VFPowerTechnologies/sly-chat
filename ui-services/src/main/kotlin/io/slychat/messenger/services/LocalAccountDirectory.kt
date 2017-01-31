@@ -29,4 +29,6 @@ interface LocalAccountDirectory {
 
     /** Create user account directory structure. */
     fun createUserDirectories(userId: UserId)
+
+    fun deleteAccountData(userId: UserId)
 }
