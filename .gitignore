@@ -4,6 +4,7 @@ build/
 robovm-build/
 *.iml
 local.properties
+keystore.properties
 build/docs/
 ui/ui/js/jvm-service
 ui/ui/js/build-config.js
@@ -13,3 +14,6 @@ __pycache__/
 *.old
 android/src/main/resources/sly-logger.properties
 desktop/src/main/resources/sly-logger.properties
+ios/xcode/sly-logger.properties
+xcuserdata/
+.DS_Store

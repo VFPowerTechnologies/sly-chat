@@ -12,6 +12,7 @@ data class Os(val type: Type, val version: String) {
         WINDOWS("Windows", false),
         OSX("OSX", true),
         ANDROID("Android", false),
+        IOS("IOS", false),
         UNKNOWN("Unknown", false)
     }
 

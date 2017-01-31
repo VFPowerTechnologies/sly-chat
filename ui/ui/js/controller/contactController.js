@@ -196,10 +196,18 @@ ContactController.prototype  = {
             this.loadChatPage(contact);
         }.bind(this));
 
-        contactBlock.on("mouseheld", function () {
-            vibrate(50);
-            this.openContactMenu(contact);
-        }.bind(this));
+        if(isIos) {
+            $$(contactBlock).on("taphold", function () {
+                vibrate(50);
+                this.openContactMenu(contact);
+            }.bind(this));
+        }
+        else {
+            contactBlock.on("mouseheld", function () {
+                vibrate(50);
+                this.openContactMenu(contact);
+            }.bind(this));
+        }
 
         return contactBlock;
     },
@@ -254,7 +262,7 @@ ContactController.prototype  = {
         var frag =  $(document.createDocumentFragment());
 
         if (window.shareSupported && !settingsController.marketingConfig.showInviteFriends)
-            frag.prepend(this.createRecentChatInvite("Invite Your Friends"));
+            $("#inviteFriendsRecentButton").show();
 
         if(jointedRecentChat.length > 0) {
             jointedRecentChat.forEach(function (conversation) {
@@ -273,43 +281,6 @@ ContactController.prototype  = {
 
     emptyRecentChatHtml : function () {
         return "<div style='text-align: center'>No recent chats</div>";
-    },
-
-    createRecentChatInvite : function (message) {
-        var hideBtn = "";
-        var lessMessage = "";
-        if (Object.size(this.conversations) >= 5) {
-            hideBtn = '' +
-                '<div class="right">' +
-                    '<span>' +
-                        '<a class="btn hide-link">Hide</a>' +
-                    '</span>' +
-                '</div>';
-        }
-        else {
-            lessMessage = "<div class='left'>You currently have less than 5 contacts!</div>";
-        }
-
-        var link = $('' +
-            '<div id="inviteFriendsRecentButton" class="item-link recent-contact-link row ">' +
-                '<div class="recent-chat-name">' +
-                    '<span>' + message + '</span>' +
-                '</div>' +
-                hideBtn +
-                lessMessage +
-            '</div>'
-        );
-
-        link.find(".hide-link").click(function () {
-            $("#inviteFriendsRecentButton").remove();
-            settingsController.setMarketingInviteDisabled(true);
-        });
-
-        link.click(function (e) {
-            navigationController.loadPage("inviteFriends.html", true);
-        });
-
-        return link;
     },
 
     createSingleRecentChatNode : function (conversation) {
@@ -338,10 +309,18 @@ ContactController.prototype  = {
                 this.loadChatPage(conversation.contact);
         }.bind(this));
 
-        recentDiv.on("mouseheld", function () {
-            vibrate(50);
-            this.openConversationMenu(conversation.contact);
-        }.bind(this));
+        if(isIos) {
+            $$(recentDiv).on("taphold", function () {
+                vibrate(50);
+                this.openConversationMenu(conversation.contact);
+            }.bind(this));
+        }
+        else {
+            recentDiv.on("mouseheld", function () {
+                vibrate(50);
+                this.openConversationMenu(conversation.contact);
+            }.bind(this));
+        }
 
         recentDiv.find(".timeago").timeago();
 
@@ -385,10 +364,18 @@ ContactController.prototype  = {
             contactController.loadChatPage(groupDetail.group, true, true);
         }.bind(this));
 
-        recentDiv.on("mouseheld", function () {
-            vibrate(50);
-            this.openGroupConversationMenu(groupDetail.group.id);
-        }.bind(this));
+        if(isIos) {
+            $$(recentDiv).on("taphold", function () {
+                vibrate(50);
+                this.openGroupConversationMenu(groupDetail.group.id);
+            }.bind(this));
+        }
+        else {
+            recentDiv.on("mouseheld", function () {
+                vibrate(50);
+                this.openGroupConversationMenu(groupDetail.group.id);
+            }.bind(this));
+        }
 
         recentDiv.find(".timeago").timeago();
 

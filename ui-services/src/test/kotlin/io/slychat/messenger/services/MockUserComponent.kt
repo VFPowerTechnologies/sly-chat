@@ -15,6 +15,8 @@ import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.messaging.*
+import rx.Observable
+import rx.subjects.PublishSubject
 
 class MockUserComponent : UserComponent {
     companion object {
@@ -87,6 +89,11 @@ class MockUserComponent : UserComponent {
     override val groupEventLoggerWatcher: GroupEventLoggerWatcher = mock()
 
     override val eventLogService: EventLogService = mock()
+
+    val readMessageQueueIsEmptySubject = PublishSubject.create<Unit>()
+
+    override val readMessageQueueIsEmpty: Observable<Unit>
+        get() = readMessageQueueIsEmptySubject
 
     override val messageDeletionWatcher: MessageDeletionWatcher = mock()
 }

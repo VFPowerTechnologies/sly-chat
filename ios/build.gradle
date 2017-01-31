@@ -1,0 +1,117 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.multi-os-engine:moe-gradle:$versions.moeGradle"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
+    }
+}
+
+apply plugin: 'moe'
+apply plugin: 'kotlin'
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+test { exclude '**' }
+
+moe {
+    xcode.mainTarget = 'SlyChat'
+    xcode.testTarget = 'SlyChat-Test'
+    xcode.generateProject = false
+    xcode.xcodeProjectDirPath = 'xcode'
+}
+
+dependencies {
+    compile fileTree(dir: 'lib', include: '*.jar')
+
+    compile project(':ui-services')
+    compile project(':stdout-logger')
+}
+
+def moeDefaultParams = [
+    'MOE_GRADLE_EXTERNAL_BUILD=YES',
+    'ONLY_ACTIVE_ARCH=NO',
+]
+
+def debugXcodeParams = [
+    "SLY_VERSION_STRING=$project.VERSION".toString(),
+    "SLY_BUILD_NUMBER=$project.IOS_VERSION_CODE".toString(),
+] + moeDefaultParams
+
+//CFBundleShortVersionString must be of form a.b.c for uploads
+def strippedVersion = project.VERSION.replaceFirst(/-SNAPSHOT$/, '')
+
+//mainly used for creating IPA files
+def releaseXcodeParams = [
+    "SLY_VERSION_STRING=$strippedVersion".toString(),
+    "SLY_BUILD_NUMBER=$project.IOS_VERSION_CODE".toString(),
+] + moeDefaultParams
+
+moeMainDebugIphoneosXcodeBuild {
+    additionalParameters = debugXcodeParams
+}
+
+moeMainReleaseIphoneosXcodeBuild {
+    additionalParameters = releaseXcodeParams
+}
+
+moeMainDebugIphonesimulatorXcodeBuild {
+    additionalParameters = debugXcodeParams
+}
+
+moeMainReleaseIphonesimulatorXcodeBuild {
+    additionalParameters = releaseXcodeParams
+}
+
+moeIpaBuild {
+    inputApp 'build/moe/xcodebuild/Release-iphoneos/Sly.app'
+}
+
+def xcarchivePath = "${project.buildDir}/SlyChat.xcarchive"
+
+//due to https://github.com/multi-os-engine/multi-os-engine/issues/68 we need to explicitly run moeIpaBuild
+//normally it should be run as part of the xcode build
+task buildArchive(type: Exec, dependsOn: moeIpaBuild) {
+    def mainTarget = moe.xcode.mainTarget
+    def projectDir = project.file("xcode/${mainTarget}.xcodeproj").toString()
+
+    executable 'xcrun'
+
+    args '-sdk', 'iphoneos'
+    args 'xcodebuild'
+
+    args 'archive'
+
+    args '-project', projectDir
+
+    args '-scheme', mainTarget
+    args '-configuration', 'Release'
+
+    args '-archivePath', xcarchivePath
+
+    args releaseXcodeParams
+
+    outputs.dir xcarchivePath
+}
+
+task appStoreIPA(type: Exec, dependsOn: buildArchive) {
+    def ipaDir = "$project.buildDir/appstore"
+    ext.ipaPath = "$ipaDir/SlyChat.ipa"
+
+    executable 'xcrun'
+
+    args '-sdk', 'iphoneos'
+    args 'xcodebuild'
+
+    args '-exportArchive'
+
+    args '-archivePath', xcarchivePath
+    args '-exportOptionsPlist', project.file('xcode/exportOptions.plist')
+
+    args '-exportPath', ipaDir
+
+    outputs.file ipaPath
+}

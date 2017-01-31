@@ -1,11 +1,15 @@
 package io.slychat.messenger.core.integration.web
 
+import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.contacts.encryptRemoteAddressBookEntries
+import io.slychat.messenger.core.http.api.offline.SerializedOfflineMessage
+import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.http.api.registration.RegistrationInfo
 import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -128,22 +132,61 @@ class DevClientTest {
     }
 
     @Test
-    fun `gcm functionality should work`() {
+    fun `push notification functionality should work`() {
         userManagement.injectNewSiteUser()
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
-        //GCM
+        val androidDeviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+        val iosDeviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+
         val gcmToken = randomUUID()
-        devClient.registerGcmToken(username, deviceId, gcmToken)
+        val apnsToken = randomUUID()
+        val audioToken = randomUUID()
 
-        val gcmTokens = devClient.getGcmTokens(username)
+        devClient.registerPushNotificationToken(username, androidDeviceId, gcmToken, null, PushNotificationService.GCM)
+        devClient.registerPushNotificationToken(username, iosDeviceId, apnsToken, audioToken, PushNotificationService.APN)
 
-        if (gcmTokens != listOf(UserGcmTokenInfo(deviceId, gcmToken)))
-            throw DevServerInsaneException("GCM functionality failed")
+        val deviceTokens = devClient.getPushNotificationTokens(username)
 
-        devClient.unregisterGcmToken(username, deviceId)
+        val expectedInfo = listOf(
+            UserPushNotificationTokenInfo(androidDeviceId, gcmToken, null, PushNotificationService.GCM),
+            UserPushNotificationTokenInfo(iosDeviceId, apnsToken, audioToken, PushNotificationService.APN)
+        )
 
-        if (devClient.getGcmTokens(username).size != 0)
-            throw DevServerInsaneException("GCM functionality failed")
+        assertThat(deviceTokens).apply {
+            describedAs("Should contain the added tokens")
+            containsAll(expectedInfo)
+        }
+
+        devClient.unregisterPushNotificationToken(username, androidDeviceId)
+        devClient.unregisterPushNotificationToken(username, iosDeviceId)
+
+        assertThat(devClient.getPushNotificationTokens(username)).apply {
+            describedAs("Should return no tokens after unregistration")
+            isEmpty()
+        }
+    }
+
+    @Test
+    fun `offline message functionality should work`() {
+        val fromUser = userManagement.injectNamedSiteUser("a@a.com")
+        val fromUserId = fromUser.user.id
+        val fromDeviceId = devClient.addDevice(fromUser.user.email, defaultRegistrationId, DeviceState.ACTIVE)
+
+        val toUser = userManagement.injectNamedSiteUser("b@a.com")
+        val toUserId = toUser.user.id
+        val toDeviceId = devClient.addDevice(toUser.user.email, defaultRegistrationId, DeviceState.ACTIVE)
+
+        val offlineMessages = (1..3).map {
+            SerializedOfflineMessage(SlyAddress(fromUserId, fromDeviceId), it.toLong(), it.toString())
+        }
+
+        devClient.addOfflineMessages(toUserId, toDeviceId, offlineMessages)
+
+        val receivedOfflineMessages = devClient.getOfflineMessages(toUserId, toDeviceId)
+
+        assertThat(receivedOfflineMessages.messages).apply {
+            describedAs("Should return the stored offline messages")
+            containsExactlyElementsOf(offlineMessages)
+        }
     }
 }

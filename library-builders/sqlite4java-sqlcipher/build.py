@@ -11,9 +11,10 @@ from os.path import exists, join
 
 from tasks import Task
 from utils import (make_dirs, write_to_file, get_static_lib_name_for_platform,
-                   unpack_source, get_template, arch_to_setenv_info,
-                   platform_is_android, get_android_configure_host_type,
-                   apply_patch, get_sha256_checksum, get_os_from_platform,
+                   unpack_source, get_template, get_file_path,
+                   arch_to_setenv_info, platform_is_android,
+                   get_android_configure_host_type, apply_patch,
+                   get_sha256_checksum, get_os_from_platform,
                    get_dynamic_lib_name_for_platform)
 
 
@@ -22,6 +23,7 @@ DOWNLOAD_URLS = {
     'openssl': 'https://www.openssl.org/source/openssl-1.0.2h.tar.gz',
     'sqlcipher': 'https://github.com/sqlcipher/sqlcipher/archive/v3.4.0.tar.gz',
     'sqlite4java': 'https://bitbucket.org/almworks/sqlite4java/get/fa4bb0fe7319a5f1afe008284146ac83e027de60.tar.gz',
+    'openssl-for-iphone': 'https://github.com/x2on/OpenSSL-for-iPhone/archive/f11efc9224c76b5c64a4d1b091743f2fd87f1435.tar.gz',
 }
 
 
@@ -30,12 +32,14 @@ DOWNLOAD_HASHES = {
     'openssl': '1d4007e53aad94a5b2002fe045ee7bb0b3d98f1a47f8b2bc851dcd1c74332919',
     'sqlcipher': '99b702ecf796de02bf7b7b35de4ceef145f0d62b4467a86707c2d59beea243d0',
     'sqlite4java': '24accb1c7abd9549bb28f85b35d519c87406a1dabc832772f85f6c787584f7d2',
+    'openssl-for-iphone': 'fc8733c5c99eb5a929bbd4d686fc9da9c6072789f53ecc741c919f71d8493af8',
 }
 
 
 PLATFORM_LINUX = 'linux-x86_64'
 PLATFORM_OSX = 'osx-x86_64'
 PLATFORM_WINDOWS = 'win32-x64'
+PLATFORM_IOS = 'ios'
 
 
 class CreateWorkDirsTask(Task):
@@ -49,7 +53,8 @@ class CreateWorkDirsTask(Task):
                     task_context['root-build-path'],
                     task_context['root-prefix-path'],
                     task_context['root-output-path'],
-                    task_context['root-android-output-path']]:
+                    task_context['root-android-output-path'],
+                    task_context['root-ios-output-path']]:
             make_dirs(dir)
 
 
@@ -144,13 +149,9 @@ class BuildTask(Task):
                 raise RuntimeError('%s build failed, unable to find lib at %s' % (self.build_item_name, lib_path))
 
 
-class BuildOpenSSLTask(BuildTask):
+class BuildOpenSSLTaskBase(BuildTask):
     #CAST causes some text relocations to be generated so we need to disable it
     _configure_options = 'no-ssl2 no-ssl3 no-cast no-comp no-dso no-hw no-engine no-shared'
-
-    def __init__(self):
-        super().__init__('build-openssl', 'openssl', 'crypto')
-        self.add_dependency('download-openssl')
 
     def _get_template_filename(self, platform):
         return 'openssl-%s-build.sh' % get_os_from_platform(platform)
@@ -162,6 +163,26 @@ class BuildOpenSSLTask(BuildTask):
             'configure-options': self._configure_options,
         }
         return template.substitute(**context)
+
+
+class IOSBuildOpenSSLTask(BuildOpenSSLTaskBase):
+    def __init__(self):
+        super().__init__('build-openssl-ios', 'openssl-for-iphone', 'crypto')
+        self.add_dependency('download-openssl-for-iphone')
+
+    def do_build(self, text_context, platform, prefix_dir, build_dir):
+        template = self._get_template(platform, prefix_dir)
+
+        self.run_build_script(build_dir, template)
+
+
+class BuildOpenSSLTask(BuildOpenSSLTaskBase):
+    #CAST causes some text relocations to be generated so we need to disable it
+    _configure_options = 'no-ssl2 no-ssl3 no-cast no-comp no-dso no-hw no-engine no-shared'
+
+    def __init__(self):
+        super().__init__('build-openssl', 'openssl', 'crypto')
+        self.add_dependency('download-openssl')
 
     def _get_android_template(self, task_context, prefix_dir, platform):
         template = get_template('openssl-android-build.sh')
@@ -198,8 +219,14 @@ class BuildOpenSSLTask(BuildTask):
 class BuildSQLCipher(BuildTask):
     def __init__(self):
         super().__init__('build-sqlcipher', 'sqlcipher', 'sqlcipher')
-        self.add_dependency('build-openssl')
         self.add_dependency('download-sqlcipher')
+
+    def configure(self, context):
+        for platform in context['platforms']:
+            if platform == PLATFORM_IOS:
+                self.add_dependency('build-openssl-ios')
+            else:
+                self.add_dependency('build-openssl')
 
     def _get_android_template(self, task_context, prefix_dir, platform):
         template = get_template('sqlcipher-android-build.sh')
@@ -242,10 +269,11 @@ class BuildSQLCipher(BuildTask):
             self._apply_windows_patch(build_dir)
             subprocess.check_call(['autoreconf'], cwd=build_dir)
 
-        #need to copy more recent config.sub/guess scripts (for android)
-        libtool_dir = join(task_context['libtool-home'], 'build-aux')
-        for ext in ['sub', 'guess']:
-            shutil.copy(join(libtool_dir, 'config.' + ext), build_dir)
+        if platform_is_android(platform):
+            #need to copy more recent config.sub/guess scripts (for android)
+            libtool_dir = join(task_context['libtool-home'], 'build-aux')
+            for ext in ['sub', 'guess']:
+                shutil.copy(join(libtool_dir, 'config.' + ext), build_dir)
 
         self.run_build_script(build_dir, template)
 
@@ -295,6 +323,7 @@ class BuildSQLite4JavaTask(Task):
     def run(self, task_context):
         desktop_platforms = []
         android_abis = []
+        build_for_ios = False
 
         for platform in task_context['platforms']:
             if platform_is_android(platform):
@@ -306,8 +335,18 @@ class BuildSQLite4JavaTask(Task):
                     android_abis.append(abi)
                 else:
                     print('%s already present, not building' % abi)
+
+            elif platform == PLATFORM_IOS:
+                lib_name = 'libsqlite4java.a'
+
+                a_path = join(task_context['root-ios-output-path'], lib_name)
+                build_for_ios = not exists(a_path)
+                if not build_for_ios:
+                    print('%s already present, not building' % platform)
+
             else:
                 lib_name = get_dynamic_lib_name_for_platform(platform, 'sqlite4java')
+
                 so_path = join(task_context['root-output-path'], lib_name)
                 if not exists(so_path):
                     desktop_platforms.append(platform)
@@ -328,9 +367,19 @@ class BuildSQLite4JavaTask(Task):
         if len(android_abis) > 0:
             gant_targets.append('sqlcipher-android')
 
+        if build_for_ios:
+            gant_targets.append('sqlcipher-ios')
+
         if len(gant_targets) <= 0:
             print('Nothing to build')
             return
+
+        if build_for_ios:
+            print('Copying jni.h file for IOS build')
+            include_dir = join(build_dir, 'include')
+            make_dirs(include_dir)
+            jni_h_path = get_file_path('jni.h')
+            shutil.copy(jni_h_path, include_dir)
 
         self._apply_patch(
             android_abis,
@@ -366,6 +415,17 @@ class BuildSQLite4JavaTask(Task):
             output_path = task_context['root-output-path']
             print('Moving %s -> %s' % (so_path, output_path))
             shutil.move(so_path, output_path)
+
+        if build_for_ios:
+            a_path = join(build_dir, 'build', 'lib.ios', 'libsqlite4java.a')
+            output_path = task_context['root-ios-output-path']
+            print('Moving %s -> %s' % (a_path, output_path))
+            shutil.move(a_path, output_path)
+            #XXX this is hacky; move into separate final copy task or something
+            lib_prefix = join(task_context['root-prefix-path'], 'ios', 'lib')
+            print('Moving secondary libs to output folder')
+            shutil.copy(join(lib_prefix, 'libsqlcipher.a'), output_path)
+            shutil.copy(join(lib_prefix, 'libcrypto.a'), output_path)
 
 
 def create_download_task(key):

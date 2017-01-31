@@ -9,7 +9,9 @@ import java.util.*
 enum class VersionType {
     PATCH,
     MINOR,
-    SNAPSHOT
+    SNAPSHOT,
+    ANDROID,
+    IOS
 }
 
 open class UpdateVersion : DefaultTask() {
@@ -17,7 +19,8 @@ open class UpdateVersion : DefaultTask() {
 
     private data class VersionInfo(
         val version: Version,
-        val androidVersionCode: Int
+        val androidVersionCode: Int,
+        val iosVersionCode: Int
     ) {
         //there's no way to remove version metadata
         private fun Version.removeSnapshot(): Version {
@@ -52,15 +55,31 @@ open class UpdateVersion : DefaultTask() {
 
                     version.incrementMinorVersion().setPreReleaseVersion("SNAPSHOT")
                 }
+
+                VersionType.ANDROID -> {
+                    return incAndroid()
+                }
+
+                VersionType.IOS -> {
+                    return incIOS()
+                }
             }
 
-            val nextAndroidVersionCode = if (versionType == VersionType.SNAPSHOT)
-                androidVersionCode
+            val (nextAndroidVersionCode, nextIOSVersionCode) = if (versionType == VersionType.SNAPSHOT)
+                androidVersionCode to iosVersionCode
             else
-                androidVersionCode + 1
+                nextAndroidVersion() to nextIOSVersion()
 
-            return VersionInfo(nextVersion, nextAndroidVersionCode)
+            return VersionInfo(nextVersion, nextAndroidVersionCode, nextIOSVersionCode)
         }
+
+        private fun nextIOSVersion(): Int = iosVersionCode + 1
+
+        private fun nextAndroidVersion(): Int = androidVersionCode + 1
+
+        fun incIOS(): VersionInfo = copy(iosVersionCode = nextIOSVersion())
+
+        fun incAndroid(): VersionInfo = copy(androidVersionCode = nextAndroidVersion())
     }
 
     private val gradlePropertiesPath = File(project.rootDir, "gradle.properties")
@@ -74,10 +93,12 @@ open class UpdateVersion : DefaultTask() {
 
         val versionProp = props.getProperty("VERSION") ?: error("VERSION missing from gradle.properties")
         val androidVersionProp = props.getProperty("ANDROID_VERSION_CODE") ?: error("ANDROID_VERSION_CODE missing from gradle.properties")
+        val iosVersionProp = props.getProperty("IOS_VERSION_CODE") ?: error("IOS_VERSION_CODE missing from gradle.properties")
 
         return VersionInfo(
             Version.valueOf(versionProp),
-            androidVersionProp.toInt()
+            androidVersionProp.toInt(),
+            iosVersionProp.toInt()
         )
     }
 
@@ -86,6 +107,7 @@ open class UpdateVersion : DefaultTask() {
         gradlePropertiesPath.writer().use { writer ->
             writer.write("VERSION=${newVersionInfo.version}\n")
             writer.write("ANDROID_VERSION_CODE=${newVersionInfo.androidVersionCode}\n")
+            writer.write("IOS_VERSION_CODE=${newVersionInfo.iosVersionCode}\n")
         }
     }
 
@@ -134,10 +156,16 @@ open class UpdateVersion : DefaultTask() {
 
         val modifiedFiles = listOf(gradlePropertiesPath)
 
+        val commitMessage = when (versionType) {
+            VersionType.PATCH, VersionType.MINOR, VersionType.SNAPSHOT -> nextVersionInfo.version.toString()
+            VersionType.ANDROID -> "[android] Version ${nextVersionInfo.androidVersionCode}"
+            VersionType.IOS -> "[ios] Version ${nextVersionInfo.iosVersionCode}"
+        }
+
         try {
             writeVersionInfo(nextVersionInfo)
 
-            gitCommit(modifiedFiles, nextVersionInfo.version.toString())
+            gitCommit(modifiedFiles, commitMessage)
         }
         catch (e: Exception) {
             gitUndoChanges(modifiedFiles)

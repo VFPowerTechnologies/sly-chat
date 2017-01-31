@@ -5,6 +5,7 @@ import org.joda.time.DateTimeZone
 import org.joda.time.format.DateTimeFormat
 import java.util.*
 
+//https://docs.sentry.io/clientdev/
 class SentryEventBuilder(
     val loggerName: String,
     val threadName: String,
@@ -72,6 +73,9 @@ class SentryEventBuilder(
                 effectiveTags["osVersion"] = osVersion
         }
 
+        val extra = HashMap(this.extra)
+        extra[SentryEvent.EXTRA_THREAD_NAME] = threadName
+
         return SentryEvent(
             randomUUID(),
             loggerName,
@@ -83,9 +87,7 @@ class SentryEventBuilder(
             exceptionInterface,
             userInterface,
             effectiveTags,
-            mapOf(
-                "Thread Name" to threadName
-            )
+            extra
         )
     }
 }

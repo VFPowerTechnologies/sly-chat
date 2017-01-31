@@ -5,9 +5,10 @@ import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.persistence.InstallationDataPersistenceManager
+import io.slychat.messenger.core.sentry.ReportSubmitter
 import io.slychat.messenger.services.auth.AuthenticationService
 import io.slychat.messenger.services.config.AppConfigService
-import io.slychat.messenger.services.config.DummyConfigBackend
+import io.slychat.messenger.services.config.ConfigBackend
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.di.UserModule
@@ -25,6 +26,8 @@ class MockApplicationComponent : ApplicationComponent {
     override val uiRegistrationService: UIRegistrationService = mock()
 
     override val uiLoginService: UILoginService = mock()
+
+    override val uiResetAccountService: UIResetAccountService = mock()
 
     override val uiContactsService: UIContactsService = mock()
 
@@ -66,7 +69,9 @@ class MockApplicationComponent : ApplicationComponent {
 
     override val serverUrls: SlyBuildConfig.ServerUrls = mock()
 
-    override val appConfigService: AppConfigService = AppConfigService(DummyConfigBackend())
+    val appConfigBackend: ConfigBackend = mock()
+
+    override val appConfigService: AppConfigService = AppConfigService(appConfigBackend)
 
     override val slyHttpClientFactory: HttpClientFactory = mock()
 
@@ -78,12 +83,26 @@ class MockApplicationComponent : ApplicationComponent {
 
     override val installationDataPersistenceManager: InstallationDataPersistenceManager = mock()
 
+    override val pushNotificationsManager: PushNotificationsManager = mock()
+
+    override val tokenFetchService: TokenFetchService = mock()
+
     val networkStatusSubject: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
 
     override val networkStatus: Observable<Boolean>
         get() = networkStatusSubject
 
+    val uiVisibilitySubject: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
+
+    override val uiVisibility: Observable<Boolean>
+        get() = uiVisibilitySubject
+
     override val versionChecker: VersionChecker = mock()
+
+    override val registrationService: RegistrationService = mock()
+
+    override val reportSubmitter: ReportSubmitter<ByteArray>?
+        get() = null
 
     val userComponent = MockUserComponent()
 

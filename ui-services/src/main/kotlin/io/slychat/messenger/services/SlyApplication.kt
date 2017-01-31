@@ -85,7 +85,7 @@ class SlyApplication {
     //if we're disconnecting and we get a connect request during that time, we force a reconnect on disconnect
     private var wantRelayReconnect = false
 
-    private var bugReportSubmitter: ReportSubmitterCommunicator<ByteArray>? = null
+    private var bugReportSubmitter: ReportSubmitter<ByteArray>? = null
 
     var isInBackground: Boolean = true
         set(value) {
@@ -107,6 +107,8 @@ class SlyApplication {
 
         appComponent = applicationComponent
 
+        bugReportSubmitter = initSentry(appComponent)
+
         initializeApplicationServices()
 
         initInstallationData()
@@ -114,10 +116,10 @@ class SlyApplication {
         val interval = SlyBuildConfig.relayKeepAliveIntervalMs
         keepAliveObservable = Observable.interval(interval, interval, TimeUnit.MILLISECONDS, appComponent.rxScheduler)
 
-        bugReportSubmitter = initSentry(appComponent)
-
         //must be done after bugReportSubmitter is set, so that it can receive the initial network status
         appComponent.networkStatus.subscribe { updateNetworkStatus(it) }
+
+        appComponent.uiVisibility.subscribe { Sentry.setIsUiVisible(it) }
 
         //android can fire these events multiple time in succession (eg: when google account sync is occuring)
         //so we clamp down the number of events we process
@@ -126,32 +128,28 @@ class SlyApplication {
             .observeOn(appComponent.rxScheduler)
             .subscribe { onPlatformContactsUpdated() }
 
-        appComponent.appConfigService.init() successUi {
+        appComponent.appConfigService.init() fail {
+            log.warn("Unable to read app config file: {}", it.message, it)
+        } alwaysUi {
             initializationComplete(doAutoLogin)
         }
+
+        applicationComponent.pushNotificationsManager.init()
 
         applicationComponent.versionChecker.init()
     }
 
-    private fun initSentry(applicationComponent: ApplicationComponent): ReportSubmitterCommunicator<ByteArray>? {
-        val dsn = SlyBuildConfig.sentryDsn ?: return null
+    private fun initSentry(applicationComponent: ApplicationComponent): ReportSubmitter<ByteArray>? {
+        val reporter = applicationComponent.reportSubmitter ?: return null
 
-        val bugReportsPath = applicationComponent.platformInfo.appFileStorageDirectory / "bug-reports.bin"
-
-        val storage = FileReportStorage(bugReportsPath)
-
-        val client = RavenReportSubmitClient(dsn, applicationComponent.slyHttpClientFactory)
-
-        val queue = ArrayBlockingQueue<ReporterMessage<ByteArray>>(10)
-
-        val reporter = ReportSubmitter(storage, client, queue)
+        log.debug("Initializing bug reporter")
 
         val thread = Thread({
             try {
                 reporter.run()
             }
             catch (t: Throwable) {
-                log.error("ReportSubmitter terminated with error: {}", t.message, t)
+                log.error("ReportSubmitterImpl terminated with error: {}", t.message, t)
             }
         })
 
@@ -161,11 +159,9 @@ class SlyApplication {
 
         thread.start()
 
-        val communicator = ReportSubmitterCommunicator(queue)
+        Sentry.setReportSubmitter(reporter)
 
-        Sentry.setCommunicator(communicator)
-
-        return communicator
+        return reporter
     }
 
     /** Starts background initialization; use addOnInitListener to be notified when app has finished initializing. Once finalized, will trigger auto-login. */
@@ -190,6 +186,10 @@ class SlyApplication {
             autoLogin()
     }
 
+    /**
+     * Will call the given listener once the app config file has been read.
+     * If the file has already been read, the listener is called immediately.
+     */
     fun addOnInitListener(listener: (SlyApplication) -> Unit) {
         if (isInitialized)
             listener(this)
@@ -390,6 +390,8 @@ class SlyApplication {
         //ignore dup updates
         if (isAvailable == isNetworkAvailable)
             return
+
+        Sentry.setIsNetworkAvailable(isAvailable)
 
         isNetworkAvailable = isAvailable
         log.info("Network is available: {}", isAvailable)
@@ -606,12 +608,16 @@ class SlyApplication {
     }
 
     private fun startRelayKeepAlive() {
+        log.debug("Starting relay keep alive")
         keepAliveTimerSub = keepAliveObservable.subscribe {
             userComponent?.relayClientManager?.sendPing()
         }
     }
 
     private fun stopRelayKeepAlive() {
+        if (keepAliveTimerSub != null)
+            log.debug("Stopping relay keep alive")
+
         keepAliveTimerSub?.unsubscribe()
         keepAliveTimerSub = null
     }
@@ -749,6 +755,7 @@ class SlyApplication {
 
     private fun disconnectFromRelay() {
         val userComponent = this.userComponent ?: return
+        stopRelayKeepAlive()
         userComponent.relayClientManager.disconnect()
     }
 
@@ -772,13 +779,13 @@ class SlyApplication {
             reconnectionTimerSubscription = null
         }
 
+        this.userComponent = null
+
         //notify listeners before tearing down session
         userSessionAvailableSubject.onNext(null)
 
         //TODO shutdown stuff; probably should return a promise
         deinitializeUserSession(userComponent)
-
-        this.userComponent = null
 
         Sentry.setUserAddress(null)
 

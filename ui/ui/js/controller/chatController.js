@@ -1,7 +1,10 @@
 var ChatController = function () {
     this.lastMessage = null;
     this.currentContact = null;
-    this.lastMessageTtl = 0;
+    this.messageTTL = 0;
+    this.ttlEnabled = false;
+    this.messages = [];
+    this.conversationId = null;
 };
 
 ChatController.prototype = {
@@ -22,10 +25,7 @@ ChatController.prototype = {
                     break;
 
                 case 'DELIVERY_FAILED':
-                    //TODO
-                    //this may be received multiple times for a message (eg:
-                    //group message failed to send to N recipients), but all
-                    //the current failures up to this point will be present
+                    this.onDeliveryFailed(event);
                     break;
 
                 case 'EXPIRING':
@@ -45,6 +45,19 @@ ChatController.prototype = {
                     break;
             }
         }.bind(this));
+    },
+
+    onDeliveryFailed: function (event) {
+        var id = event.messageId;
+        if (typeof this.messages[id] != "undefined" && this.messages[id] != null && this.messages[id].failures != null) {
+            this.messages[id].failures = event.failures;
+        }
+
+        var messageNode = $("#message_" + id);
+        if (messageNode.length <= 0)
+            return;
+
+        messageNode.find(".timespan").html("Delivery failed");
     },
 
     addNewMessageListener : function () {
@@ -85,7 +98,10 @@ ChatController.prototype = {
             classes += " messageReceived";
 
         var timespan = "";
-        if(message.sent && message.receivedTimestamp == 0){
+        if (!$.isEmptyObject(message.failures)) {
+            timespan = "Delivery failed";
+        }
+        else if(message.sent && message.receivedTimestamp == 0){
             timespan = "Delivering...";
         }
         else {
@@ -140,13 +156,24 @@ ChatController.prototype = {
         messageNode.html(messageCore);
 
         if (!(expired instanceof jQuery)) {
-            messageNode.on("mouseheld", function () {
-                vibrate(50);
-                if (isGroup)
-                    this.openGroupMessageMenu(messageInfo, contact);
-                else
-                    this.openMessageMenu(message);
-            }.bind(this));
+            if(isIos) {
+                $$(messageNode).on("taphold", function () {
+                    vibrate(50);
+                    if (isGroup)
+                        this.openGroupMessageMenu(messageInfo, contact);
+                    else
+                        this.openMessageMenu(message);
+                }.bind(this));
+            }
+            else {
+                messageNode.on("mouseheld", function () {
+                    vibrate(50);
+                    if (isGroup)
+                        this.openGroupMessageMenu(messageInfo, contact);
+                    else
+                        this.openMessageMenu(message);
+                }.bind(this));
+            }
             messageNode.find(".timeago").timeago();
         }
 
@@ -244,10 +271,19 @@ ChatController.prototype = {
             }
             countdown();
 
-            messageNode.on("mouseheld", function () {
-                vibrate(50);
-                this.openMessageMenu(message);
-            }.bind(this));
+            if(isIos) {
+                $$(messageNode).on("taphold", function () {
+                    vibrate(50);
+                    this.openMessageMenu(message);
+                }.bind(this));
+            }
+            else {
+                messageNode.on("mouseheld", function () {
+                    vibrate(50);
+                    this.openMessageMenu(message);
+                }.bind(this));
+            }
+
             messageNode.find(".timeago").timeago();
 
             var messageCore = messageNode.find('.message');
@@ -346,9 +382,17 @@ ChatController.prototype = {
         return false;
     },
 
+    storeNewMessagesInCache : function (messages) {
+        messages.forEach(function (message) {
+            this.messages[message.id] = message;
+        }.bind(this))
+    },
+
     handleNewMessageDisplay : function(messageInfo) {
         if(messageInfo.messages.length <= 0)
             return;
+
+        this.storeNewMessagesInCache(messageInfo.messages);
 
         var messages = messageInfo.messages;
         var contactId = messageInfo.contact;
@@ -368,7 +412,52 @@ ChatController.prototype = {
             this.updateGroupChatPageNewMessage(messageInfo);
         }
 
+        if (navigationController.getCurrentPage() != "contacts.html" && isIos)
+            this.addNewMessageIosNotification(messageInfo);
+
         $(".timeago").timeago();
+    },
+
+    addNewMessageIosNotification : function (messageInfo) {
+        var notification = {
+            title: "Sly",
+            closeOnClick: true,
+            closeIcon: false,
+            hold: 2000,
+            additionalClass: "new-message-notification"
+        };
+
+        if(messageInfo.groupId === null) {
+            if (this.getCurrentContactId() != messageInfo.contact) {
+                var contact = contactController.getContact(messageInfo.contact);
+                if (contact) {
+                    notification.subtitle = 'New message from ' + contact.name;
+                    notification.message = messageInfo.messages[0].message;
+                    notification.onClick = function () {
+                        contactController.loadChatPage(contact, false, false);
+                    };
+                    this.showNewMessageNotification(notification)
+                }
+            }
+        }
+        else {
+            if (this.getCurrentContactId() != messageInfo.groupId) {
+                var groupInfo = groupController.getGroup(messageInfo.groupId);
+                if (groupInfo) {
+                    notification.subtitle = "New message in group: " + groupInfo.name;
+                    notification.message = messageInfo.messages[0].message;
+                    notification.onClick = function () {
+                        contactController.loadChatPage(groupInfo, false, true);
+                    };
+                    this.showNewMessageNotification(notification)
+                }
+            }
+        }
+    },
+
+    showNewMessageNotification : function (notification) {
+        $(".new-message-notification").remove();
+        slychat.addNotification(notification)
     },
 
     leftMenuAddNewMessageBadge : function (id) {
@@ -565,9 +654,11 @@ ChatController.prototype = {
         messages.reverse();
 
         var organizedMessages = [];
+        this.messages = [];
         messages.forEach(function (message) {
             organizedMessages[message.info.id] = message;
-        });
+            this.messages[message.info.id] = message;
+        }.bind(this));
 
         return organizedMessages;
     },
@@ -576,9 +667,11 @@ ChatController.prototype = {
         messages.reverse();
 
         var organizedMessages = [];
+        this.messages = [];
         messages.forEach(function (message) {
             organizedMessages[message.id] = message;
-        });
+            this.messages[message.id] = message;
+        }.bind(this));
 
         return organizedMessages;
     },
@@ -589,11 +682,38 @@ ChatController.prototype = {
     },
 
     showGroupMessageInfo : function (message, groupId) {
+        var messageId = message.info.id;
+        var info = this.messages[messageId];
         var contactDiv = "";
         var receivedTime = "";
         var groupName = "";
+        var deliveryFailed = "";
         var group = groupController.getGroup(groupId);
         var members = groupController.getGroupMembers(groupId);
+
+        var failures = message.info.failures;
+        if (!$.isEmptyObject(failures)) {
+            deliveryFailed = "<div class='message-info'>" +
+                "<p class='message-info-title' style='color: #ff6161;'>Delivery failed:</p>";
+
+            for (var key in failures) {
+                if (failures.hasOwnProperty(key) && (typeof members[key] != "undefined" && members[key] != null)) {
+                    var failureMessage = "";
+                    switch (failures[key].t) {
+                        case "inactiveUser":
+                            failureMessage = "User " + members[key].name + " is inactive";
+                            break;
+                        default:
+                            failureMessage = "Delivery has failed for user " + members[key].name;
+                            break;
+                    }
+
+                    deliveryFailed += "<p class='message-info-details' style='color: #8c0000;'>" + failureMessage+ "</p>";
+                }
+            }
+
+            deliveryFailed += "</div>";
+        }
 
         var memberList = "";
 
@@ -637,7 +757,7 @@ ChatController.prototype = {
                 "</div>";
         }
 
-        var content = contactDiv +
+        var content = deliveryFailed + contactDiv +
             '<div class="message-info">' +
             '<p class="message-info-title">Message id:</p>'+
             '<p class="message-info-details">' + message.info.id + '</p>' +
@@ -666,6 +786,32 @@ ChatController.prototype = {
     showMessageInfo : function (message, contact) {
         var contactDiv = "";
         var receivedTime = "";
+        var deliveryFailed = "";
+
+        var info = this.messages[message.id];
+        var failures = message.failures;
+        if (!$.isEmptyObject(failures)) {
+            deliveryFailed = "<div class='message-info'>" +
+                "<p class='message-info-title' style='color: #ff6161;'>Delivery failed:</p>";
+
+            for (var key in failures) {
+                if (failures.hasOwnProperty(key)) {
+                    var failureMessage = "";
+                    switch (failures[key].t) {
+                        case "inactiveUser":
+                            failureMessage = "User is inactive";
+                            break;
+                        default:
+                            failureMessage = "Delivery has failed";
+                            break;
+                    }
+
+                    deliveryFailed += "<p class='message-info-details' style='color: #8c0000;'>" + failureMessage+ "</p>";
+                }
+            }
+
+            deliveryFailed += "</div>";
+        }
 
         if (message.sent === true){
             contactDiv = "<div class='message-info'>" +
@@ -689,7 +835,7 @@ ChatController.prototype = {
                 "</div>";
         }
 
-        var content = contactDiv +
+        var content = deliveryFailed + contactDiv +
             "<div class='message-info'>" +
             "<p class='message-info-title'>Contact Public Key:</p>" +
             "<p class='message-info-details'>" + formatPublicKey(contact.publicKey) + "</p>" +
@@ -710,21 +856,23 @@ ChatController.prototype = {
         openInfoPopup(content, "Message Info");
     },
 
+    updateConvoTTLSettings : function () {
+        configService.setConvoTTLSettings(
+            this.conversationId,
+            {
+                enabled: this.ttlEnabled,
+                lastTTL: this.messageTTL,
+            }
+        ).catch(function (e) {
+            exceptionController.handleError(e);
+        });
+    },
+
     handleSubmitMessage : function (contact) {
         var ttl = 0, mainView = $("#mainView");
-        if (mainView.hasClass('expire-message-toggled')) {
-            var slider = document.getElementById("delaySlider");
-            if (slider !== null) {
-                ttl = parseInt(slider.noUiSlider.get()) * 1000;
-                if (ttl !== 0) {
-                    this.lastMessageTtl = ttl;
-                    configService.setLastMessageTtl(ttl);
-                }
-            }
-        }
 
         var newMessageInput = $("#newMessageInput"), message;
-        if (isDesktop) {
+        if (!isAndroid) {
             message = newMessageInput.val();
         }
         else {
@@ -736,6 +884,9 @@ ChatController.prototype = {
         }
 
         if (message !== "") {
+            if (this.ttlEnabled)
+                ttl = this.messageTTL;
+
             this.submitNewMessage(contact, message, ttl);
         }
     },
@@ -751,16 +902,17 @@ ChatController.prototype = {
         }
         else {
             messengerService.sendMessageTo(contact.id, message, ttl).then(this.handleSubmitMessageSuccess()).catch(function (e) {
-                console.log(e);
+                exceptionController.handleError(e);
             });
         }
     },
 
     handleSubmitMessageSuccess : function () {
         var input = $("#newMessageInput");
-        if (isDesktop) {
-            input.val("");
-            input.click();
+        if (!isAndroid) {
+            input.val([]);
+            input.blur();
+            input.focus();
         }
         else {
             var area = input.emojioneArea();
@@ -795,8 +947,7 @@ ChatController.prototype = {
 
     updateGroupChatPageNewMessage : function (messagesInfo) {
         var messages = messagesInfo.messages;
-        var currentPageContactId = $("#contact-id");
-        if(navigationController.getCurrentPage() == "chat.html" && currentPageContactId.length && currentPageContactId.html() == messagesInfo.groupId){
+        if(this.getCurrentContactId() == messagesInfo.groupId){
             var messageDiv = $("#chat-content");
 
             if(messageDiv.length){
@@ -818,23 +969,38 @@ ChatController.prototype = {
         }
     },
 
-    toggleExpiringMessageDisplay : function () {
+    enableExpiringMessageDisplay : function (enabled) {
         var mainView = $("#mainView");
         var bottomToolbar = $(".bottom-chat-toolbar");
         var editor = $(".emojionearea-editor");
 
-        if (mainView.hasClass("expire-message-toggled")) {
-            mainView.removeClass("expire-message-toggled");
-            bottomToolbar.removeClass("expiring-message-toolbar");
-            bottomToolbar.find("#delaySliderContainer").remove();
-            editor.attr("placeholder", "Type your secure message");
-        }
-        else {
+        if (enabled) {
             mainView.addClass("expire-message-toggled");
             bottomToolbar.addClass("expiring-message-toolbar");
             this.createExpireDelaySlider(bottomToolbar);
             editor.attr("placeholder", "Type your expiring secure message");
         }
+        else {
+            mainView.removeClass("expire-message-toggled");
+            bottomToolbar.removeClass("expiring-message-toolbar");
+            bottomToolbar.find("#delaySliderContainer").remove();
+            editor.attr("placeholder", "Type your secure message");
+        }
+    },
+
+    toggleExpiringMessageDisplay : function () {
+        var mainView = $("#mainView");
+
+        if (mainView.hasClass("expire-message-toggled")) {
+            this.enableExpiringMessageDisplay(false);
+            this.ttlEnabled = false;
+        }
+        else {
+            this.enableExpiringMessageDisplay(true);
+            this.ttlEnabled = true;
+        }
+
+        this.updateConvoTTLSettings();
     },
 
     createExpireDelaySlider : function (toolbar) {
@@ -848,7 +1014,7 @@ ChatController.prototype = {
         var slider = document.getElementById('delaySlider');
 
         noUiSlider.create(slider, {
-            start: [Math.floor(this.lastMessageTtl / 1000)],
+            start: [Math.floor(this.messageTTL / 1000)],
             step: 1,
             range: {
                 min: [1],
@@ -864,5 +1030,13 @@ ChatController.prototype = {
         slider.noUiSlider.on('slide', function () {
             $("#delayDisplay").html(slider.noUiSlider.get());
         })
+
+        slider.noUiSlider.on('change', function () {
+            ttl = parseInt(slider.noUiSlider.get()) * 1000;
+            if (ttl !== 0) {
+                this.messageTTL = ttl;
+                this.updateConvoTTLSettings();
+            }
+        }.bind(this));
     }
 };

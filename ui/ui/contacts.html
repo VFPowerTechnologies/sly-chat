@@ -2,9 +2,10 @@
 <!-- Top Navbar -->
 <div class="navbar top-navbar">
     <div class="navbar-inner">
-        <div class="left"><img style="height: 40px; width: 40px; margin-right: 10px; padding-left: 10px;" src="img/sly_logo.png"> Sly Chat </div>
+        <div class="left"></div>
+        <div class="center sliding">Sly Chat</div>
         <div class="right">
-            <a href="#" class="link icon-only open-action-menu"> <i class="icon icon-bars"></i></a>
+            <a href="#" data-panel="right" class="link icon-only open-panel"> <i class="icon icon-bars"></i></a>
         </div>
     </div>
 </div>
@@ -31,6 +32,12 @@
         {{#unless @global.isDesktop}}
         <div class="page-content row">
         {{/unless}}
+            <div id="inviteFriendsRecentButton" class="item-link recent-contact-link row" style="display: none;">
+                <div class="recent-chat-name">
+                    <span>Invite Your Friends</span>
+                </div>
+                <div class="left">You currently have less than 5 contacts!</div>
+            </div>
             <div id='recentChatList' class="col-100 contact-list">
             </div>
         </div>
@@ -40,7 +47,7 @@
         {{/unless}}
         {{#if @global.ios}}
         <div class="toolbar">
-            <div class="toolbar-inner"><a href="#" id="openContactPopupBtn" data-popup=".popup-contact" class="link open-popup">Contact</a></div>
+            <div class="toolbar-inner"><a href="#" id="openContactPopupBtn" data-popup=".popup-contact" class="link open-popup">Contacts</a></div>
         </div>
         {{/if}}
     </div>

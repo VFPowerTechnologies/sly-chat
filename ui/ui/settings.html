@@ -1,10 +1,9 @@
 {{#if @global.ios}}
 <div class="navbar top-navbar">
     <div class="navbar-inner">
-        <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a>Settings</div>
-        <div class="center sliding"></div>
+        <div class="left"><a href="#" class="backBtn link icon-only"> <i class="fa fa-angle-left fa-2x"></i></a></div>
+        <div class="center sliding">Settings</div>
         <div class="right">
-            <a href="#" class="link icon-only open-action-menu"> <i class="icon icon-bars"></i></a>
         </div>
     </div>
 </div>
@@ -24,29 +23,32 @@
 
         <div class="page-content">
             <div class="list-block" style="margin-top: 0;">
-                <!-- Notifications -->
-                <div class="list-group">
-                    <ul>
-                        <li class="list-group-title">Notifications</li>
-                        <li class="item-content">
-                            <div class="item-inner">
-                                <div class="item-title">Enable Notifications</div>
-                                <div class="item-after">
-                                        <label class="label-switch">
-                                            <input id='notifications-enabled-checkbox' type="checkbox">
-                                            <div class="checkbox"></div>
-                                        </label>
+                {{#unless @global.ios}}
+                    {{#unless @global.isOsx}}
+                    <!-- Notifications -->
+                    <div class="list-group">
+                        <ul>
+                            <li class="list-group-title">Notifications</li>
+                            <li class="item-content">
+                                <div class="item-inner">
+                                    <div class="item-title">Enable Notifications</div>
+                                    <div class="item-after">
+                                            <label class="label-switch">
+                                                <input id='notifications-enabled-checkbox' type="checkbox">
+                                                <div class="checkbox"></div>
+                                            </label>
+                                    </div>
                                 </div>
-                            </div>
-                        </li>
-                        <li id='notification-sound-select-btn' class="item-content" style="cursor: pointer;">
-                            <div class="item-inner">
-                                <div class="item-title">Notification Sound</div>
-                                <div id="notification-sound-name" class="item-after"></div>
-                            </div>
-                        </li>
-                    </ul>
-                </div> <!-- Notifications End -->
+                            </li>
+                            <li id='notification-sound-select-btn' class="item-content" style="cursor: pointer;">
+                                <div class="item-inner">
+                                    <div class="item-title">Notification Sound</div>
+                                    <div id="notification-sound-name" class="item-after"></div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div> <!-- Notifications End -->
+                    {{/unless}}
                 <!-- Appearance -->
                 <div class="list-group">
                     <ul>
@@ -64,6 +66,7 @@
                         </li>
                     </ul>
                 </div> <!-- Appearance End -->
+                {{/unless}}
                 <!-- Misc -->
                 <div class="list-group">
                     <ul>

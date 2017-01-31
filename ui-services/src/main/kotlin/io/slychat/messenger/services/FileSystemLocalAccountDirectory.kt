@@ -38,6 +38,17 @@ class FileSystemLocalAccountDirectory(
         return r
     }
 
+    private fun recursiveDelete(dir: File) {
+        if (dir.isDirectory) {
+            for (file in dir.listFiles()) {
+                recursiveDelete(file)
+            }
+        }
+        else {
+            dir.delete()
+        }
+    }
+
     override fun areAccountsPresent(): Boolean {
         return getAccountDirs().isNotEmpty()
     }
@@ -86,5 +97,9 @@ class FileSystemLocalAccountDirectory(
 
     override fun createUserDirectories(userId: UserId) {
         userPathsGenerator.getPaths(userId).accountDir.mkdirs()
+    }
+
+    override fun deleteAccountData(userId: UserId) {
+        recursiveDelete(userPathsGenerator.getPaths(userId).accountDir)
     }
 }

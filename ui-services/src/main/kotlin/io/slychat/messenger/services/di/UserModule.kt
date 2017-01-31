@@ -24,6 +24,9 @@ import io.slychat.messenger.services.config.*
 import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageCipherServiceImpl
+import io.slychat.messenger.services.di.annotations.EmptyReadMessageQueue
+import io.slychat.messenger.services.di.annotations.SlyHttp
+import io.slychat.messenger.services.di.annotations.UIVisibility
 import io.slychat.messenger.services.messaging.*
 import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
@@ -484,5 +487,14 @@ class UserModule(
         eventLogService: EventLogService
     ): GroupEventLoggerWatcher {
         return GroupEventLoggerWatcherImpl(groupService.groupEvents, eventLogService)
+    }
+
+    @UserScope
+    @Provides
+    @EmptyReadMessageQueue
+    fun providesEmptyReadMessageQueue(
+        messageReceiver: MessageReceiver
+    ): Observable<Unit> {
+        return messageReceiver.queueIsEmpty
     }
 }

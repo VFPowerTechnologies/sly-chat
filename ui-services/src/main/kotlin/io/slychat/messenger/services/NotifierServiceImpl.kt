@@ -17,6 +17,10 @@ data class NotificationState(
     companion object {
         val empty = NotificationState(emptyList())
     }
+
+    fun unreadCount(): Long = state.fold(0L) { current, notificationConversationInfo ->
+        current + notificationConversationInfo.conversationDisplayInfo.unreadCount
+    }
 }
 
 /**

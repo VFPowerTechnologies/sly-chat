@@ -1,9 +1,6 @@
 package io.slychat.messenger.logger
 
 import org.slf4j.ILoggerFactory
-import io.slychat.messenger.logger.LogPriority
-import io.slychat.messenger.logger.LoggerFactory
-import io.slychat.messenger.logger.PlatformLogger
 import org.slf4j.spi.LoggerFactoryBinder
 import java.util.*
 
@@ -33,6 +30,9 @@ abstract class BaseStaticLoggerBinder : LoggerFactoryBinder {
     private fun loadConfigFromProperties() {
         val properties = Properties()
         javaClass.getResourceAsStream("/sly-logger.properties").use {
+            if (it == null)
+                throw RuntimeException("/sly-logger.properties not found")
+            
             properties.load(it)
         }
 

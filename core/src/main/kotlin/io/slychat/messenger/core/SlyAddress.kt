@@ -3,10 +3,7 @@ package io.slychat.messenger.core
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import org.whispersystems.libsignal.SignalProtocolAddress
@@ -37,6 +34,18 @@ class SlyAddressDeserializer : JsonDeserializer<SlyAddress>() {
 class SlyAddressSerializer : JsonSerializer<SlyAddress>() {
     override fun serialize(value: SlyAddress, gen: JsonGenerator, serializers: SerializerProvider) {
         gen.writeString(value.asString())
+    }
+}
+
+class SlyAddressKeySerializer : JsonSerializer<SlyAddress>() {
+    override fun serialize(value: SlyAddress, gen: JsonGenerator, serializers: SerializerProvider) {
+        gen.writeFieldName(value.asString())
+    }
+}
+
+class SlyAddressKeyDeserializer : KeyDeserializer() {
+    override fun deserializeKey(key: String, ctxt: DeserializationContext): Any {
+        return SlyAddress.fromString(key)!!
     }
 }
 

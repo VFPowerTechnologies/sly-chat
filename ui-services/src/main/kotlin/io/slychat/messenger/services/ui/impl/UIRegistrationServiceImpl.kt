@@ -1,98 +1,89 @@
 package io.slychat.messenger.services.ui.impl
 
-import io.slychat.messenger.core.crypto.hashes.HashType
-import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
-import io.slychat.messenger.core.hexify
-import io.slychat.messenger.core.http.api.accountupdate.UpdatePhoneRequest
-import io.slychat.messenger.core.http.api.authentication.AuthenticationAsyncClient
-import io.slychat.messenger.core.http.api.availability.AvailabilityAsyncClient
-import io.slychat.messenger.core.http.api.availability.AvailabilityClient
-import io.slychat.messenger.core.http.api.registration.*
-import io.slychat.messenger.services.auth.AuthApiResponseException
+import io.slychat.messenger.core.enforceExhaustive
+import io.slychat.messenger.services.RegistrationProgress
+import io.slychat.messenger.services.RegistrationService
 import io.slychat.messenger.services.ui.*
+import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.functional.bind
-import nl.komponents.kovenant.functional.map
+import nl.komponents.kovenant.deferred
+import org.slf4j.LoggerFactory
 import java.util.*
 
 class UIRegistrationServiceImpl(
-    private val registrationClient: RegistrationAsyncClient,
-    private val loginClient: AuthenticationAsyncClient,
-    private val availabilityClient: AvailabilityAsyncClient
+    val registrationService: RegistrationService
 ) : UIRegistrationService {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private val listeners = ArrayList<(String) -> Unit>()
 
-    override fun doRegistration(info: UIRegistrationInfo): Promise<UIRegistrationResult, Exception> {
-        val username = info.email
-        val password = info.password
+    private var currentRegistration: Deferred<UIRegistrationResult, Exception>? = null
 
-        //we don't need to write the key vault to disk here, as we receive it during login
-        //on failure we just discard it
-        updateProgress("Generating key vault")
-        return asyncGenerateNewKeyVault(password) bind { keyVault ->
-            updateProgress("Connecting to server...")
-            val registrationInfo = RegistrationInfo(username, info.name, info.phoneNumber)
-            val request = registrationRequestFromKeyVault(registrationInfo, keyVault, password)
-            registrationClient.register(request)
-        } map { result ->
-            val uiResult = UIRegistrationResult(result.isSuccess, result.errorMessage, result.validationErrors)
-            if (uiResult.successful) {
-                updateProgress("Registration complete")
+    init {
+        registrationService.registrationEvents.subscribe { onRegistrationEvent(it) }
+    }
+
+    private fun withCurrentDeferred(body: (Deferred<UIRegistrationResult, Exception>) -> Unit) {
+        val d = currentRegistration
+        currentRegistration = null
+        if (d != null)
+            body(d)
+        else
+            log.error("Registration complete received, but no deferred available")
+    }
+
+    private fun onRegistrationEvent(event: RegistrationProgress) {
+        when (event) {
+            is RegistrationProgress.Waiting -> {}
+
+            is RegistrationProgress.Update -> updateProgress(event.progressText)
+
+            is RegistrationProgress.Complete -> withCurrentDeferred {
+                it.resolve(UIRegistrationResult(event.successful, event.errorMessage, event.validationErrors))
             }
-            else {
-                updateProgress("An error occured during registration")
+
+            is RegistrationProgress.Error -> withCurrentDeferred {
+                it.reject(event.cause)
             }
-            uiResult
-        }
+        }.enforceExhaustive()
+    }
+
+    override fun doRegistration(info: UIRegistrationInfo): Promise<UIRegistrationResult, Exception> {
+        val d = deferred<UIRegistrationResult, Exception>()
+        currentRegistration = d
+        registrationService.doRegistration(info)
+
+        return d.promise
     }
 
     //TODO need a better reporting setup
     private fun updateProgress(status: String) {
-        synchronized(this) {
-            for (listener in listeners)
-                listener(status)
-        }
+        for (listener in listeners)
+            listener(status)
     }
 
     override fun addListener(listener: (String) -> Unit) {
-        synchronized(this) {
-            listeners.add(listener)
-        }
+        listeners.add(listener)
     }
 
     override fun submitVerificationCode(username: String, code: String): Promise<UISmsVerificationStatus, Exception> {
-        return registrationClient.verifySmsCode(SmsVerificationRequest(username, code)) map { response ->
-            UISmsVerificationStatus(response.isSuccess, response.errorMessage)
-        }
+        return registrationService.submitVerificationCode(username, code)
     }
 
     override fun resendVerificationCode(username: String): Promise<UISmsVerificationStatus, Exception> {
-        return registrationClient.resendSmsCode(SmsResendRequest(username)) map { response ->
-            UISmsVerificationStatus(response.isSuccess, response.errorMessage)
-        }
+        return registrationService.resendVerificationCode(username)
     }
 
     override fun checkEmailAvailability(email: String): Promise<Boolean, Exception> {
-        return availabilityClient.checkEmailAvailability(email)
+        return registrationService.checkEmailAvailability(email)
     }
 
     override fun checkPhoneNumberAvailability(phoneNumber: String): Promise<Boolean, Exception> {
-        return availabilityClient.checkPhoneNumberAvailability(phoneNumber)
+        return registrationService.checkPhoneNumberAvailability(phoneNumber)
     }
 
     override fun updatePhone(info: UIUpdatePhoneInfo): Promise<UIUpdatePhoneResult, Exception> {
-        return loginClient.getParams(info.email) bind { response ->
-            if (response.errorMessage != null)
-                throw AuthApiResponseException(response.errorMessage)
-
-            val authParams = response.params!!
-
-            val remotePasswordHash = hashPasswordWithParams(info.password, authParams.hashParams, HashType.REMOTE)
-
-            registrationClient.updatePhone(UpdatePhoneRequest(info.email, remotePasswordHash.hexify(), info.phoneNumber)) map { response ->
-                UIUpdatePhoneResult(response.isSuccess, response.errorMessage)
-            }
-        }
+        return registrationService.updatePhone(info)
     }
 
     override fun clearListeners() {

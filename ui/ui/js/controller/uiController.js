@@ -3,6 +3,7 @@ var UIController = function () {
     window.platformInfoService = new PlatformInfoService();
     window.messengerService = new MessengerService();
     window.loginService = new LoginService();
+    window.resetAccountService = new ResetAccountService();
     window.contactService = new ContactsService();
     window.historyService = new HistoryService();
     window.networkStatusService = new NetworkStatusService();
@@ -25,6 +26,7 @@ var UIController = function () {
     window.userSessionController = new UserSessionController();
     window.loginController = new LoginController();
     window.registrationController = new RegistrationController();
+    window.accountResetController = new ResetAccountController();
     window.profileController = new ProfileController();
     window.contactController = new ContactController();
     window.chatController = new ChatController();
@@ -42,8 +44,16 @@ var UIController = function () {
 };
 
 UIController.prototype = {
-    startUI : function () {
-        this.initApplication();
+    init : function () {
+        platformInfoService.getInfo().then(function (info) {
+            this.startUI(info)
+        }.bind(this)).catch(function (e) {
+            exceptionController.handleError(e)
+        })
+    },
+
+    startUI : function (info) {
+        this.initApplication(info);
         this.initMainView();
         this.createMobileMenu();
         this.handlePlatformUpdate();
@@ -151,32 +161,154 @@ UIController.prototype = {
         emojiController.setWindowRotationListener();
     },
 
-    initApplication : function () {
-        window.isAndroid = Framework7.prototype.device.android === true;
-        window.isIos = Framework7.prototype.device.ios === true;
-        window.isDesktop = Framework7.prototype.device.ios === false && Framework7.prototype.device.android === false;
+    initApplication : function (info) {
+        window.isAndroid = info.name === "android";
+        window.isIos = info.name === "ios";
+        window.isDesktop = info.name === "desktop";
+        window.isOsx = info.os === "osx";
+        window.isWindows = info.os === "windows";
+        window.isLinux = info.os === "linux";
 
         Template7.global = {
             android: isAndroid,
             ios: isIos,
-            isDesktop: isDesktop
+            isDesktop: isDesktop,
+            isOsx: isOsx,
+            isLinux: isLinux,
+            isWindows: isWindows
         };
 
         window.firstLoad = true;
         window.firstLogin = true;
 
-        window.slychat = new Framework7({
+        var options = {
             desktop: isDesktop,
             material: !isIos,
             cache: false,
             swipeBackPage: false,
             tapHold: true,
             tapHoldDelay: 500,
-            swipePanelOnlyClose: true,
-            swipePanelNoFollow: true,
             modalTitle: 'Sly',
             template7Pages: true
+        };
+
+        if (isIos) {
+            this.createIosMenu();
+            options.swipePanel = 'right';
+            options.swipePanelOnlyClose = true;
+        }
+
+        window.slychat = new Framework7(options);
+
+        addPagesListeners();
+        createFormValidation();
+    },
+
+    createIosMenu : function () {
+        var menu = $('<div class="panel-overlay"></div>' +
+            '<div id="iosMenu" class="panel panel-right panel-cover">' +
+            '<div class="ios-menu-header" style="min-height: 100px; text-align: center; padding-bottom: 5px; border-bottom: 1px solid #eee;">' +
+            '<div style="height: 80px;">' +
+            '<img style="height: 80px; width: 80px; display: block; margin: auto;" src="img/sly_logo.png"/>' +
+            '</div>' +
+            '<p id="rightDrawerUserName" style="color: #fff; margin: 0 10px;"></p>' +
+            '<p id="rightDrawerUserEmail" style="color: #fff; margin: 0 10px;"></p>' +
+            '</div>' +
+            '<div class="list-block">' +
+            '<ul id="iosMenuList">' +
+            '<li id="menuProfileLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-user"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Profile</div>' +
+            '</div>' +
+            '</li>' +
+            '<li id="menuSettingsLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-cogs"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Settings</div>' +
+            '</div>' +
+            '</li>' +
+            '<li id="menuAddContactLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-user-plus"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Add Contact</div>' +
+            '</div>' +
+            '</li>' +
+            '<li id="menuCreateGroupLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-users"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Create Group</div>' +
+            '</div>' +
+            '</li>' +
+            '<li id="menuBlockedContactsLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-ban"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Blocked Contacts</div>' +
+            '</div>' +
+            '</li>' +
+            '<li id="menuFeedbackLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-commenting"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Feedback</div>' +
+            '</div>' +
+            '</li>' +
+            '<li id="menuLogoutLink" class="item-content close-panel">' +
+            '<div class="item-media"><i class="fa fa-sign-out"></i></div>' +
+            '<div class="item-inner">' +
+            '<div class="item-title">Logout</div>' +
+            '</div>' +
+            '</li>' +
+            '</ul>' +
+            '</div>' +
+            '</div>');
+
+        menu.find("#menuProfileLink").click(function () {
+            navigationController.loadPage('profile.html', true);
         });
+
+        menu.find("#menuSettingsLink").click(function () {
+            navigationController.loadPage('settings.html', true);
+        });
+
+        menu.find("#menuBlockedContactsLink").click(function () {
+            navigationController.loadPage('blockedContacts.html', true);
+        });
+
+        menu.find("#menuAddContactLink").click(function () {
+            navigationController.loadPage("addContact.html", true);
+        });
+
+        menu.find("#menuCreateGroupLink").click(function () {
+            navigationController.loadPage('createGroup.html', true);
+        });
+
+        menu.find("#menuFeedbackLink").click(function () {
+            navigationController.loadPage("feedback.html", true);
+        });
+
+        menu.find("#menuLogoutLink").click(function () {
+            loginController.logout();
+        });
+
+        $('body').prepend(menu);
+    },
+
+    addInviteToIosMenu : function () {
+        var iosMenu = $("#iosMenu");
+        if (iosMenu.length > 0) {
+            var invite = $('<li id="menuInviteFriendsLink" class="item-content close-panel">' +
+                '<div class="item-media"><i class="fa fa-share-alt"></i></div>' +
+                    '<div class="item-inner">' +
+                        '<div class="item-title">Invite Friends</div>' +
+                    '</div>' +
+                '</li>');
+
+            invite.click(function () {
+                navigationController.loadPage("inviteFriends.html", true);
+            });
+
+            iosMenu.find("#menuBlockedContactsLink").after(invite);
+        }
     },
 
     initMainView : function () {
@@ -189,6 +321,9 @@ UIController.prototype = {
     createMobileMenu : function () {
         shareService.isSupported().then(function (isSupported) {
             window.shareSupported = isSupported;
+            if (isSupported)
+                uiController.addInviteToIosMenu();
+
             if (!isDesktop)
                 navigationController.createMenu();
         }).catch(function (e) {
@@ -251,24 +386,24 @@ UIController.prototype = {
     },
 
     setAppTheme : function (theme) {
-        var body = $("body");
-        body.removeClass();
+        if(!isIos) {
+            var body = $("body");
+            body.removeClass();
 
-        switch (theme) {
-            case null:
-                body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.dafaultTheme]);
-            break;
+            switch (theme) {
+                case null:
+                    body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.dafaultTheme]);
+                    break;
 
-            case SettingsController.themesConfigName.darkTheme:
-                body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.darkTheme]);
-            break;
+                case SettingsController.themesConfigName.darkTheme:
+                    body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.darkTheme]);
+                    break;
 
-            case SettingsController.themesConfigName.whiteTheme:
-                if(!isIos)
-                    body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.whiteTheme]);
-                else
-                    body.addClass("theme-orange");
-            break;
+                case SettingsController.themesConfigName.whiteTheme:
+                    if (!isIos)
+                        body.addClass(SettingsController.themesClassName[SettingsController.themesConfigName.whiteTheme]);
+                    break;
+            }
         }
     }
 };

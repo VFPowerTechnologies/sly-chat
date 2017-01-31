@@ -1,9 +1,9 @@
 Requirements:
-    General:
+    For all builds:
         - python3: for build scripts
         - patch
         - bash
-        - autotools: for building sqlcipher
+        - autotools: for building sqlcipher and for more recent guess scripts
         - groovy (build.conf:groovy-home): required to run gant
         - gant (build.conf:gant-home): required to build sqlite4java
         - swig (for sqlite4java)
@@ -16,15 +16,27 @@ Requirements:
         - Windows (64bit) Oracle JDK (build.conf:win32-jdk-home)
         - Mingw w64 cross compiler (mingw-w64-gcc in arch)
 
-    For android builds:
+    For Android builds:
         - Android NDK
         - Android SDK
+
+    For IOS builds:
+        - IOS SDK
 
 Build directory layout:
     build/: unpackaged source dir used during builds
         <platform>/
     output/: copied sqlite4java libraries from root/ after successful builds
+        android/
+        ios/
     root/: used as prefix when building src under build/
         <platform>/
     src/: source tarballs
         <platform>/
+
+Running the build:
+    1) Edit build.conf (or provide your own) to to designate platforms, and to
+       point to the proper locations for tools needed for your target platforms
+
+    2) Run `python3 main.py /path/to/build.conf build-sqlite4java`. Running
+       without a task name will list available tasks.
