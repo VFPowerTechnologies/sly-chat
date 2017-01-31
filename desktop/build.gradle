@@ -105,8 +105,10 @@ switch (System.getProperty('os.name')) {
         jfxBundler = 'dmg'
         break
 
+    //currently we just want a .zip file, and this is run during this process
+    //by the zipWindows task
     case { it.startsWith('Windows') }:
-        jfxBundler = 'exe'
+        jfxBundler = 'all'
         break
 }
 
