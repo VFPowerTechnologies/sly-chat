@@ -95,12 +95,17 @@ class GroupFragment : Fragment() {
     private fun displayGroups(groupConvo: MutableMap<GroupId, GroupConversation>) {
         val groupList = v?.findViewById(R.id.address_book_group_list) as LinearLayout
         groupList.removeAllViews()
-        groupData = mutableMapOf()
-        groupConvo.forEach {
-            groupList.addView(createGroupNode(it.value))
-        }
+        if (groupConvo.count() > 0) {
+            groupData = mutableMapOf()
+            groupConvo.forEach {
+                groupList.addView(createGroupNode(it.value))
+            }
 
-        createMemberList()
+            createMemberList()
+        }
+        else {
+            groupList.addView(LayoutInflater.from(activity).inflate(R.layout.empty_group_node, groupList, false))
+        }
     }
 
     private fun createGroupNode(group: GroupConversation): View {

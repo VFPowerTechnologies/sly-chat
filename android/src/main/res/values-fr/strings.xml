@@ -84,6 +84,8 @@
     <string name="contact_list_title">Contacts</string>
     <string name="contact_info_title">Information du contact</string>
 
+    <string name="empty_group_string">Vous ne faites parti d\'aucun groupe</string>
+
     <string name="create_group_title">Créer un groupe</string>
     <string name="create_group_name_hint">Nom du groupe</string>
     <string name="create_group_contact_header">Contacts</string>

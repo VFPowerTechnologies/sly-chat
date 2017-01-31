@@ -121,8 +121,13 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
     }
 
     private fun displayRecentChat(data: List<RecentChatInfo>) {
-        data.forEach {
-            recentChatList.addView(createRecentChatView(it))
+        if (data.count() > 0) {
+            data.forEach {
+                recentChatList.addView(createRecentChatView(it))
+            }
+        }
+        else {
+            recentChatList.addView(LayoutInflater.from(this).inflate(R.layout.recent_chat_empty_node, recentChatList, false))
         }
     }
 
@@ -209,7 +214,15 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
         }
     }
 
+    private fun removeEmptyChatNode() {
+        val emptyNode = recentChatList.findViewById(R.id.recent_chat_empty_node)
+        if (emptyNode !== null)
+            recentChatList.removeView(emptyNode)
+    }
+
     private fun updateSingleRecentChatNode(conversation: UserConversation) {
+        removeEmptyChatNode()
+
         val userId = conversation.contact.id
         val nodeId = recentNodeData[userId]
         if (nodeId !== null) {
@@ -229,6 +242,8 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
     }
 
     private fun updateGroupRecentChatNode(conversation: GroupConversation) {
+        removeEmptyChatNode()
+
         val groupId = conversation.group.id
         val nodeId = groupRecentNodeData[groupId]
         if (nodeId !== null) {
