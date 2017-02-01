@@ -40,10 +40,10 @@ index bb4d034..93528bc 100644
 -APP_ABI := armeabi-v7a armeabi x86
 +APP_ABI := {{abi_list}}
 diff --git a/ant/build.gant b/ant/build.gant
-index 1e4e4ab..fd2cc36 100644
+index 1e4e4ab..0eb338e 100644
 --- a/ant/build.gant
 +++ b/ant/build.gant
-@@ -522,3 +522,221 @@ target(name: 'android') {
+@@ -522,3 +522,244 @@ target(name: 'android') {
    ant.delete(dir: androidDir)
    ant.delete(dir: "$target/project")
  }
@@ -170,21 +170,21 @@ index 1e4e4ab..fd2cc36 100644
 +    return proc.getInputStream().getText("UTF-8").trim()
 +}
 +
-+String xcrunFind(String tool) {
++String xcrunFind(String sdk, String tool) {
 +    return getCommandOutput(
 +        'xcrun',
 +        '--sdk',
-+        'iphoneos',
++        sdk,
 +        '--find',
 +        tool
 +    )
 +}
 +
-+String xcrunGetSDKPath() {
++String xcrunGetSDKPath(sdk) {
 +    return getCommandOutput(
 +        'xcrun',
 +        '--sdk',
-+        'iphoneos',
++        sdk,
 +        '--show-sdk-path'
 +    )
 +}
@@ -211,57 +211,80 @@ index 1e4e4ab..fd2cc36 100644
 +        swigArgs.each { arg(value: it) }
 +    }
 +
-+    String out = "$build/lib.ios"
-+    String objects = "$build/cc.ios"
-+
-+    ant.mkdir(dir: out)
-+    ant.mkdir(dir: objects)
-+
-+    def cc = xcrunFind('clang')
-+    def libtool = xcrunFind('libtool')
-+    def sdkPath = xcrunGetSDKPath()
++    def sdks = [
++        ['iphoneos', ['armv7', 'armv7s', 'arm64']],
++        ['iphonesimulator', ['x86_64', 'i386']],
++    ]
 +
 +    def minIOSVersion = '7.0'
 +
-+    ant.echo("cc: $cc")
-+    ant.echo("libtool: $libtool")
-+    ant.echo("sdk path: $sdkPath")
++    def libs = []
 +
-+    def archs = [
-+        'armv7',
-+        'armv7s',
-+        'arm64',
-+    ].collect { "-arch $it" }.join(' ')
++    for (sdkInfo in sdks) {
++        def (sdk, archs) = sdkInfo
 +
-+    def include = rel('../include')
-+    //technically this should ref the sqlcipher's sqlite3.h under our prefix but w/e
-+    def sqliteInclude = rel('../sqlite')
-+    def clargs = "-isysroot $sdkPath $archs -mios-version-min=$minIOSVersion -fembed-bitcode -I$include -I$sqliteInclude"
++        ant.echo("Building for sdk=$sdk (archs=$archs)")
 +
-+    def buildType = 'release'
++        String out = "$build/$sdk/lib.ios"
++        String objects = "$build/$sdk/cc.ios"
 +
-+    def debugSuffix = ("debug".equals(buildType) ? "-d" : "")
-+    def libName = "libsqlite4java${debugSuffix}.a"
++        ant.mkdir(dir: out)
++        ant.mkdir(dir: objects)
 +
-+    ant.echo(message: "Compiling object files")
++        def cc = xcrunFind(sdk, 'clang')
++        def libtool = xcrunFind(sdk, 'libtool')
++        def sdkPath = xcrunGetSDKPath(sdk)
 +
-+    def compile = { inputFilePath, outputFileName ->
-+        def outputFilePath = "$objects/$outputFileName"
++        ant.echo("cc: $cc")
++        ant.echo("libtool: $libtool")
++        ant.echo("sdk path: $sdkPath")
 +
-+        ant.echo("$inputFilePath -> $outputFilePath")
++        def archFlags = archs.collect { "-arch $it" }.join(' ')
 +
-+        ant.exec(failonerror: true, dir: mod, executable: cc) {
-+            arg(line: "$clargs -c $inputFilePath -o $outputFilePath")
++        def include = rel('../include')
++        //technically this should ref the sqlcipher's sqlite3.h under our prefix but w/e
++        def sqliteInclude = rel('../sqlite')
++        def clargs = "-isysroot $sdkPath $archFlags -mios-version-min=$minIOSVersion -fembed-bitcode -I$include -I$sqliteInclude"
++
++        def buildType = 'release'
++
++        def debugSuffix = ("debug".equals(buildType) ? "-d" : "")
++        def libName = "libsqlite4java${debugSuffix}.a"
++        def libPath = "$out/$libName"
++        libs.add(libPath)
++
++        ant.echo(message: "Compiling object files")
++
++        def compile = { inputFilePath, outputFileName ->
++            def outputFilePath = "$objects/$outputFileName"
++
++            ant.echo("$inputFilePath -> $outputFilePath")
++
++            ant.exec(failonerror: true, dir: mod, executable: cc) {
++                arg(line: "$clargs -c $inputFilePath -o $outputFilePath")
++            }
++        }
++
++        compile("$build/swig/sqlite_wrap.c", "sqlite_wrap.o")
++        compile("native/sqlite3_wrap_manual.c", "sqlite3_wrap_manual.o")
++        compile("native/intarray.c", "intarray.o")
++
++        ant.echo("Generating $libName")
++
++        ant.exec(failonerror: true, dir: mod, executable: libtool) {
++            arg(line: "-static -o $libPath $objects/sqlite_wrap.o $objects/sqlite3_wrap_manual.o $objects/intarray.o")
 +        }
 +    }
 +
-+    compile("$build/swig/sqlite_wrap.c", "sqlite_wrap.o")
-+    compile("native/sqlite3_wrap_manual.c", "sqlite3_wrap_manual.o")
-+    compile("native/intarray.c", "intarray.o")
++    ant.mkdir(dir: "$build/lib.ios")
++    def fatLibPath = "$build/lib.ios/libsqlite4java.a"
 +
-+    ant.echo("Generating $libName")
++    ant.echo("Generating fat library $fatLibPath from $libs")
 +
-+    ant.exec(failonerror: true, dir: mod, executable: libtool) {
-+        arg(line: "-static -o $out/$libName $objects/sqlite_wrap.o $objects/sqlite3_wrap_manual.o $objects/intarray.o")
++    ant.exec(failonerror: true, dir: '', executable: 'lipo') {
++        arg(value: '-create')
++        libs.each { arg(value: it) }
++        arg(value: '-output')
++        arg(value: fatLibPath)
 +    }
 +}
