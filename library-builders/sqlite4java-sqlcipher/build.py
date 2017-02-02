@@ -280,7 +280,7 @@ class BuildSQLCipher(BuildTask):
 
 class BuildSQLite4JavaTask(Task):
     """
-    We add two new gant targets: sqlcipher-android and sqlcipher-desktop.
+    We add three new gant targets: sqlcipher-android, sqlcipher-ios and sqlcipher-desktop.
 
     The desktop version uses build-<os>.properties files for values of cc, etc.
 
