@@ -97,6 +97,9 @@
                 android:name=".activites.RegistrationActivity"
                 android:windowSoftInputMode="adjustResize"/>
         <activity
+                android:name=".activites.ForgotPasswordActivity"
+                android:windowSoftInputMode="adjustResize"/>
+        <activity
                 android:name=".activites.GroupInfoActivity"
                 android:windowSoftInputMode="adjustResize"/>
         <activity android:name=".activites.AddContactActivity"/>

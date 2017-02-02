@@ -67,6 +67,8 @@ class MockApplicationComponent : ApplicationComponent {
 
     override val platformContacts: PlatformContacts = mock()
 
+    override val resetAccountService: ResetAccountService = mock()
+
     override val serverUrls: SlyBuildConfig.ServerUrls = mock()
 
     val appConfigBackend: ConfigBackend = mock()

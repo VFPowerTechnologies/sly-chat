@@ -30,6 +30,7 @@
     <string name="login_in_process_message">We\'re logging you in</string>
     <string name="login_username_required_error">Username is required</string>
     <string name="login_password_required_error">Password is required</string>
+    <string name="login_forgot_password_link_text">Forgot your password?</string>
 
     <string name="registration_one_title">Enter your name</string>
     <string name="registration_one_details">This will be displayed to your contacts</string>
@@ -85,6 +86,23 @@
     <string name="contact_info_title">Contact info</string>
 
     <string name="empty_group_string">You don\'t have any groups</string>
+
+    <string name="forgot_password_title">Forgot Password</string>
+    <string name="forgot_password_text">Warning resetting your password will delete all account data, due to encryption architecture&#8230;</string>
+    <string name="forgot_password_text_two">You will then have to create your sly chat account again.</string>
+    <string name="forgot_password_confirm_text">We sent a confirmation code to both email and phone number registered to your account.</string>
+    <string name="forgot_password_confirm_text_two">You should receive them shortly</string>
+    <string name="forgot_password_back_to_login">Back to login</string>
+    <string name="forgot_password_sms_title">Sms Verification</string>
+    <string name="forgot_password_sms_hint">Sms Verification Code</string>
+    <string name="forgot_password_email_title">Email Verification</string>
+    <string name="forgot_password_email_hint">Email Verificaiton Code</string>
+    <string name="forgot_password_phone_success_text">Your phone number has been release and can now be used for a new account</string>
+    <string name="forgot_password_email_success_text">Your email has been release and can now be used for a new account</string>
+    <string name="forgot_password_request_complete_text">A uninstall and reinstall is needed on other devices to delete local data</string>
+    <string name="forgot_password_username_required_error">Email or phone number is required</string>
+    <string name="forgot_password_email_code_required_error">Email verification code is required</string>
+    <string name="forgot_password_sms_code_required_error">Sms verification code is required</string>
 
     <string name="create_group_title">Create Group</string>
     <string name="create_group_name_hint">Group Name</string>
@@ -175,6 +193,8 @@
 
     <string name="permission_request_title">Permission Required</string>
     <string name="permission_request_title_phone_access">Phone access is required to retrieved your phone number</string>
+
+    <string name="global_success">Success</string>
 
     <string name="submit_button">Submit</string>
     <string name="cancel_button">Cancel</string>

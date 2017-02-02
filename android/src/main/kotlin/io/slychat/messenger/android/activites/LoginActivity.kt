@@ -46,9 +46,14 @@ class LoginActivity : BaseActivity() {
             handleSubmitLogin()
         }
 
-        val registerLink = findViewById(R.id.login_register_link) as TextView
+        val registerLink = findViewById(R.id.login_register_link)
         registerLink.setOnClickListener {
             startActivity(Intent(baseContext, RegistrationActivity::class.java))
+        }
+
+        val forgotPasswdLink = findViewById(R.id.login_forgot_password_link)
+        forgotPasswdLink.setOnClickListener {
+            startActivity(Intent(baseContext, ForgotPasswordActivity::class.java))
         }
     }
 

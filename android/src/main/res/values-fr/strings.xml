@@ -30,6 +30,7 @@
     <string name="login_in_process_message">Connexion en cours</string>
     <string name="login_username_required_error">Nom d\'utilisateur requis</string>
     <string name="login_password_required_error">Mot de passe requis</string>
+    <string name="login_forgot_password_link_text">Oublié votre mot de passe?</string>
 
     <string name="registration_one_title">Entrer votre nom</string>
     <string name="registration_one_details">Ce sera affiché à vos contacts</string>
@@ -85,6 +86,17 @@
     <string name="contact_info_title">Information du contact</string>
 
     <string name="empty_group_string">Vous ne faites parti d\'aucun groupe</string>
+
+    <string name="forgot_password_title">Mot de passe oublié</string>
+    <string name="forgot_password_text">Avertissement, due au fonctionnement de l\'encryption, reinitializer votre mot de passe va effacer tout les données de votre compte&#8230;</string>
+    <string name="forgot_password_text_two">Vous devrez creer votre compte sly chat de nouveau.</string>
+    <string name="forgot_password_confirm_text">Nous avons envoyé un code de confirmation à votre courriel et numéro de téléphone enregisté à votre compte.</string>
+    <string name="forgot_password_confirm_text_two">Vous devriez les recevoirs sous peu</string>
+    <string name="forgot_password_back_to_login">Retour à la connexion</string>
+    <string name="forgot_password_sms_title">Vérification SMS</string>
+    <string name="forgot_password_sms_hint">Code de vérification SMS</string>
+    <string name="forgot_password_email_title">Vérification du courriel</string>
+    <string name="forgot_password_email_hint">Code de vérification du courriel</string>
 
     <string name="create_group_title">Créer un groupe</string>
     <string name="create_group_name_hint">Nom du groupe</string>
@@ -181,5 +193,12 @@
     <string name="create_button">Créer</string>
     <string name="update_button">Mettre a jour</string>
     <string name="unblock_button">Débloquer</string>
+    <string name="forgot_password_email_code_required_error">Code de vérification du courriel est requis</string>
+    <string name="forgot_password_email_success_text">Votre courriel est libre pour la création d\'un nouveau compte</string>
+    <string name="forgot_password_phone_success_text">Votre numéro de téléphone est libre pour la création d\'un nouveau compte</string>
+    <string name="forgot_password_request_complete_text">La réinstallation est requise sur les autres dispositifs pour effacer les données de votre compte</string>
+    <string name="forgot_password_sms_code_required_error">Code de vérification SMS est requis</string>
+    <string name="forgot_password_username_required_error">Votre courriel ou numéro de téléphone est requis</string>
+    <string name="global_success">Succès</string>
 
 </resources>
