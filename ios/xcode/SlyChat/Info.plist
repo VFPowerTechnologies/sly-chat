@@ -27,7 +27,7 @@
 	<key>MOE.Main.Class</key>
 	<string>io.slychat.messenger.ios.IOSApp</string>
 	<key>NSContactsUsageDescription</key>
-	<string>To find friends with Sly Chat accounts</string>
+	<string>In order to find which of your friends have Sly accounts, we need to upload your contacts to our servers. We do not store this information, it is only utilized for the duration of the search and is then discarded.</string>
 	<key>UIApplicationExitsOnSuspend</key>
 	<false/>
 	<key>UIBackgroundModes</key>
