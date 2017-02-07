@@ -4,6 +4,7 @@ import java.security.MessageDigest
 
 buildscript {
     repositories {
+        mavenLocal()
         jcenter()
     }
 
@@ -162,8 +163,10 @@ void generateChecksumFile(File path) {
     sha256Path.withWriter { it.write(digest) }
 }
 
-task distLinux(dependsOn: distTar) << {
-     generateChecksumFile(distTar.archivePath)
+task distLinux(dependsOn: distTar) {
+    doLast {
+        generateChecksumFile(distTar.archivePath)
+    }
 }
 
 boolean isDMGProperlySigned(String path) {
@@ -236,8 +239,10 @@ task zipWindows(type: Zip, dependsOn: jfxNative) {
     from dirPath
 }
 
-task distWindows(dependsOn: zipWindows) << {
-    generateChecksumFile(zipWindows.archivePath)
+task distWindows(dependsOn: zipWindows) {
+    doLast {
+        generateChecksumFile(zipWindows.archivePath)
+    }
 }
 
 //can't extend jfx* tasks, as they just call these worker classes (and settings are plugin-level)
@@ -254,12 +259,14 @@ task generateAppBundle(dependsOn: 'jfxJar') {
     }
 }
 
-task runAppBundle << {
-    String appName = jfx.appName
+task runAppBundle {
+    doLast {
+        String appName = jfx.appName
 
-    String appDir = project.file("${jfx.nativeOutputDir}/${appName}.app").toString()
+        String appDir = project.file("${jfx.nativeOutputDir}/${appName}.app").toString()
 
-    project.exec {
-        executable = "$appDir/Contents/MacOS/$appName"
+        project.exec {
+            executable = "$appDir/Contents/MacOS/$appName"
+        }
     }
 }
