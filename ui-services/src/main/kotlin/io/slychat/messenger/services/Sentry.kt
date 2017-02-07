@@ -46,7 +46,7 @@ object Sentry {
     }
 
     fun setIsUiVisible(isVisible: Boolean) = synchronized(this) {
-        isUiVisible = isUiVisible
+        isUiVisible = isVisible
     }
 
     fun setIsNetworkAvailable(isAvailable: Boolean) = synchronized(this) {
