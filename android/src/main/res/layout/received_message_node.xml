@@ -7,6 +7,11 @@
         android:layout_height="wrap_content"
         android:id="@+id/chat_node"
         android:layout_gravity="start">
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/message_id"
+            android:visibility="gone"/>
     <LinearLayout
             android:orientation="vertical"
             android:layout_width="match_parent"

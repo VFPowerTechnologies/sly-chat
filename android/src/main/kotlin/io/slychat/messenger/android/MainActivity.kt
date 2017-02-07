@@ -168,5 +168,7 @@ class MainActivity : BaseActivity() {
         super.onResume()
         if (!isInitialized)
             subToLoadComplete()
+        else
+            setLoginListener()
     }
 }

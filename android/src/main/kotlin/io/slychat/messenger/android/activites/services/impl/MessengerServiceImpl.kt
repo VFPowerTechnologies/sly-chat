@@ -161,6 +161,10 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
         return messageService.startMessageExpiration(conversationId, messageId)
     }
 
+    override fun deleteMessage(conversationId: ConversationId, messageId: String): Promise<Unit, Exception> {
+        return messageService.deleteMessages(conversationId, listOf(messageId), false)
+    }
+
     private fun notifyNewMessage(info: ConversationMessage) {
         newMessageUIListener?.invoke(info)
     }

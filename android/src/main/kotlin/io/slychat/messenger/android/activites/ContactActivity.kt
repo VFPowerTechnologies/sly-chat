@@ -137,6 +137,7 @@ class ContactActivity : BaseActivity() {
     private fun unsubscribeListeners() {
         contactService.clearListeners()
         messengerService.clearListeners()
+        groupService.clearListeners()
     }
 
     override fun onPause() {

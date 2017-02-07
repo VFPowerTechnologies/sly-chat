@@ -47,4 +47,8 @@
         <item name="themedChatBombButton">@drawable/bomb_black</item>
     </style>
 
+    <style name="checkBoxStyle" parent="Base.Theme.AppCompat">
+        <item name="colorAccent">#00ff00</item>
+        <item name="android:textColorSecondary">#222222</item>
+    </style>
 </resources>

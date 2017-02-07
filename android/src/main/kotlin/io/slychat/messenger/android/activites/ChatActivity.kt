@@ -1,19 +1,13 @@
 package io.slychat.messenger.android.activites
 
-import android.content.DialogInterface
-import android.content.Intent
+import android.content.*
 import android.os.Bundle
 import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.AlertDialog
 import android.support.v7.widget.Toolbar
-import android.view.WindowManager
-import android.view.Menu
-import android.view.MenuItem
-import android.view.Gravity
-import android.view.View
-import android.view.LayoutInflater
+import android.view.*
 import android.widget.*
 import hani.momanii.supernova_emoji_library.Actions.EmojIconActions
 import hani.momanii.supernova_emoji_library.Helper.EmojiconEditText
@@ -36,7 +30,7 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import android.view.animation.AnimationUtils
 import io.slychat.messenger.services.config.ConvoTTLSettings
-
+import android.view.ContextMenu.ContextMenuInfo
 
 class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedListener {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -52,8 +46,11 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private var groupMembers: Map<UserId, ContactInfo>? = null
 
+    private var messagesCache = mutableMapOf<MessageId, ConversationMessageInfo>()
+
     private lateinit var conversationId: ConversationId
     private var chatDataLink: MutableMap<String, Int> = mutableMapOf()
+    private var contextMenuMessageId: String? = null
 
     private var expireToggled = false
     private var expireDelay: Long? = null
@@ -226,6 +223,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         setAppActivity()
         setListeners()
         messengerService.fetchMessageFor(conversationId, 0, 100) successUi { messages ->
+            cacheMessages(messages)
             if (cId is ConversationId.Group) {
                 groupService.getMembersInfo(cId.id) successUi { members ->
                     groupMembers = members
@@ -237,6 +235,16 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         }
 
         displayExpireSliderOnStart()
+    }
+
+    private fun cacheMessages(messages: List<ConversationMessageInfo>) {
+        messages.forEach { message ->
+            addMessageToCache(message)
+        }
+    }
+
+    private fun addMessageToCache(message: ConversationMessageInfo) {
+        messagesCache.put(MessageId(message.info.id), message)
     }
 
     private fun displayExpireSliderOnStart() {
@@ -312,12 +320,15 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
         val chatList = findViewById(R.id.chat_list) as LinearLayout
         val messageNode = LayoutInflater.from(this).inflate(layout, chatList, false)
+        val messageIdNode = messageNode.findViewById(R.id.message_id) as TextView
         val message = messageNode.findViewById(R.id.message) as TextView
         val timespan = messageNode.findViewById(R.id.timespan) as TextView
 
         val nodeId = View.generateViewId()
         chatDataLink.put(messageInfo.info.id, nodeId)
         messageNode.id = nodeId
+
+        messageIdNode.text = messageInfo.info.id
 
         val messageLayout = messageNode.findViewById(R.id.message_node_layout) as LinearLayout
 
@@ -363,7 +374,81 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             messageLayout.visibility = View.VISIBLE
         }
 
+        registerForContextMenu(messageNode)
+
         return messageNode
+    }
+
+    override fun onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenuInfo?) {
+        super.onCreateContextMenu(menu, v, menuInfo)
+        val messageIdNode = v.findViewById(R.id.message_id) as TextView
+        contextMenuMessageId = messageIdNode.text.toString()
+
+        val inflater = menuInflater
+        inflater.inflate(R.menu.message_context_menu, menu)
+    }
+
+    override fun onContextItemSelected(item: MenuItem): Boolean {
+        val messageId = contextMenuMessageId
+        when (item.itemId) {
+            R.id.delete_single_message -> {
+                if (messageId != null) {
+                    messengerService.deleteMessage(conversationId, messageId) successUi {
+                        val chatList = findViewById(R.id.chat_list) as LinearLayout
+                        val nodeId = chatDataLink[messageId]
+                        if (nodeId != null) {
+                            val messageView = chatList.findViewById(nodeId)
+                            chatList.removeView(messageView)
+                            chatDataLink.remove(messageId)
+                        }
+                    } failUi {
+                        log.error("Failed to delete message $messageId")
+                    }
+                }
+                return true
+            }
+            R.id.view_message_info -> {
+                if (messageId != null) {
+                    val messageInfo = messagesCache[MessageId(messageId)]
+                    if (messageInfo != null)
+                        startMessageInfoActivity(messageInfo)
+                }
+                return true
+            }
+            R.id.copy_message_text -> {
+                if (messageId != null) {
+                    val messageInfo = messagesCache[MessageId(messageId)]
+                    if (messageInfo != null) {
+                        log.debug(messageInfo.info.message)
+                        copyMessageText(messageInfo.info.message)
+                    }
+                }
+                return true
+            }
+            else -> return super.onContextItemSelected(item)
+        }
+    }
+
+    private fun startMessageInfoActivity(messageInfo: ConversationMessageInfo) {
+        val intent = Intent(baseContext, MessageInfoActivity::class.java)
+        intent.putExtra(MessageInfoActivity.EXTRA_SENT_TIME, messageInfo.info.timestamp)
+        intent.putExtra(MessageInfoActivity.EXTRA_MESSAGE_ID, messageInfo.info.id)
+        intent.putExtra(MessageInfoActivity.EXTRA_IS_SENT, messageInfo.info.isSent)
+        intent.putExtra(MessageInfoActivity.EXTRA_RECEIVED_TIME, messageInfo.info.receivedTimestamp)
+        intent.putExtra(MessageInfoActivity.EXTRA_SPEAKER_ID, messageInfo.speaker?.long)
+
+        val cId = conversationId
+        intent.putExtra(MessageInfoActivity.EXTRA_CONVERSTATION_ID, cId.asString())
+
+        startActivity(intent)
+    }
+
+    private fun copyMessageText(message: String) {
+        val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
+        val clipData = ClipData.newPlainText("", message)
+
+        clipboardManager.primaryClip = clipData
     }
 
     private fun showExpiringMessage(node: View, messageInfo: ConversationMessageInfo) {
@@ -410,6 +495,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     private fun onNewMessage(newMessageInfo: ConversationMessage) {
         val cId = newMessageInfo.conversationId
         if (cId == conversationId) {
+            addMessageToCache(newMessageInfo.conversationMessageInfo)
             handleNewMessageDisplay(newMessageInfo)
         }
     }
@@ -461,6 +547,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         if (cId == conversationId) {
             val chatList = findViewById(R.id.chat_list) as LinearLayout
             chatList.removeAllViews()
+            messagesCache.clear()
         }
     }
 
@@ -468,6 +555,9 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val cId = event.conversationId
         if (cId == conversationId) {
             event.messageIds.forEach {
+                val messageId = MessageId(it)
+                messagesCache.remove(messageId)
+
                 val nodeId = chatDataLink[it]
                 if (nodeId === null) {
                     log.debug("Message Deleted event, Message id: $it does not exist in the current chat page")
@@ -489,8 +579,10 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val messageNode = findViewById(nodeId) as LinearLayout
         val message = messageNode.findViewById(R.id.message) as TextView
         val timespan = messageNode.findViewById(R.id.timespan) as TextView
-        val speakerName = messageNode.findViewById(R.id.chat_group_speaker_name) as TextView
-        speakerName.visibility = View.GONE
+        if (conversationId is ConversationId.Group) {
+            val speakerName = messageNode.findViewById(R.id.chat_group_speaker_name) as TextView
+            speakerName.visibility = View.GONE
+        }
         message.text = resources.getString(R.string.chat_expired_message_text)
         timespan.text = ""
         timespan.visibility = View.GONE

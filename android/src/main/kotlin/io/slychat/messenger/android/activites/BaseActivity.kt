@@ -111,6 +111,11 @@ open class BaseActivity : AppCompatActivity() {
             app.dispatchEvent("PageChange", PageType.CONTACTS, "")
     }
 
+    fun pxToDp(sizeInDp: Int): Int {
+        val scale = resources.displayMetrics.density
+        return (sizeInDp*scale + 0.5f).toInt()
+    }
+
     override fun onRestart() {
         log.debug("onRestart")
         super.onRestart()

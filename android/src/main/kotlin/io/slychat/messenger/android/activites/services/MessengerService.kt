@@ -27,4 +27,6 @@ interface MessengerService {
     fun deleteConversation(conversationId: ConversationId): Promise<Unit, Exception>
 
     fun startMessageExpiration(conversationId: ConversationId, messageId: String): Promise<Unit, Exception>
+
+    fun deleteMessage(conversationId: ConversationId, messageId: String): Promise<Unit, Exception>
 }
