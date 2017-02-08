@@ -102,6 +102,7 @@ dependencies {
     compile "com.android.support:appcompat-v7:$versions.appcompatv7"
     //pure-java curve25519 is broken: https://github.com/WhisperSystems/curve25519-java/pull/4
     compile "org.whispersystems:signal-protocol-android:$versions.libsignal"
+    compile project(':core')
     compile project(':ui-services')
     compile project(':logger')
     compile "com.vfpowertech:jsbridge-android-webengine:$versions.jsbridge"
