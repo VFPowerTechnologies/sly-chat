@@ -332,6 +332,8 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
         val messageLayout = messageNode.findViewById(R.id.message_node_layout) as LinearLayout
 
+        registerForContextMenu(messageNode)
+
         if (messageInfo.info.isExpired) {
             message.text = resources.getString(R.string.chat_expired_message_text)
             timespan.visibility = View.GONE
@@ -374,8 +376,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             messageLayout.visibility = View.VISIBLE
         }
 
-        registerForContextMenu(messageNode)
-
         return messageNode
     }
 
@@ -393,17 +393,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         when (item.itemId) {
             R.id.delete_single_message -> {
                 if (messageId != null) {
-                    messengerService.deleteMessage(conversationId, messageId) successUi {
-                        val chatList = findViewById(R.id.chat_list) as LinearLayout
-                        val nodeId = chatDataLink[messageId]
-                        if (nodeId != null) {
-                            val messageView = chatList.findViewById(nodeId)
-                            chatList.removeView(messageView)
-                            chatDataLink.remove(messageId)
-                        }
-                    } failUi {
-                        log.error("Failed to delete message $messageId")
-                    }
+                    deleteMessage(messageId)
                 }
                 return true
             }
@@ -427,6 +417,30 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             }
             else -> return super.onContextItemSelected(item)
         }
+    }
+
+    private fun deleteMessage(messageId: String) {
+        val dialog = android.app.AlertDialog.Builder(this)
+                .setTitle("Delete message?")
+                .setMessage("Are you sure you want to delete this message?")
+                .setPositiveButton("OK", object : DialogInterface.OnClickListener {
+                    override fun onClick(dialog: DialogInterface?, which: Int) {
+                        messengerService.deleteMessage(conversationId, messageId) successUi {
+                            val chatList = findViewById(R.id.chat_list) as LinearLayout
+                            val nodeId = chatDataLink[messageId]
+                            if (nodeId != null) {
+                                val messageView = chatList.findViewById(nodeId)
+                                chatList.removeView(messageView)
+                                chatDataLink.remove(messageId)
+                            }
+                        } failUi {
+                            log.error("Failed to delete message $messageId")
+                        }
+                    }
+                })
+                .create()
+
+        dialog.show()
     }
 
     private fun startMessageInfoActivity(messageInfo: ConversationMessageInfo) {
