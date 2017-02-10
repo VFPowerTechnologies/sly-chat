@@ -9,6 +9,7 @@ import android.net.ConnectivityManager
 import android.os.StrictMode
 import android.support.v4.content.ContextCompat
 import com.almworks.sqlite4java.SQLite
+import com.fasterxml.jackson.databind.deser.Deserializers
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
@@ -113,22 +114,21 @@ class AndroidApp : Application() {
     private val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
     private val softKeyboardVisibility = BehaviorSubject.create(SoftKeyboardInfo(false, 0))
 
-    private var lastActivity: String? = null
-
     var platformContactSyncOccured = true
 
-    //    /** Points to the current activity, if one is set. Used to request permissions from various services. */
     var currentActivity: BaseActivity? = null
 
     fun setCurrentActivity (activity: BaseActivity, visible: Boolean) {
-        if (lastActivity == activity.toString() && !visible) {
+        if (!visible && activity == currentActivity) {
+            currentActivity = null
+            uiVisibility.onNext(visible)
             return
         }
 
-        lastActivity = currentActivity.toString()
-
-        currentActivity = activity
-        uiVisibility.onNext(visible)
+        if (visible) {
+            currentActivity = activity
+            uiVisibility.onNext(visible)
+        }
     }
 
     var conversationCache: MutableMap<UserId, UIConversation> = mutableMapOf()
@@ -328,9 +328,8 @@ class AndroidApp : Application() {
         if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED)
             return Promise.ofSuccess(true)
 
-        val activity = currentActivity ?: return Promise.ofSuccess(false)
-
-        if (activity is MainActivity) {
+        val activity = currentActivity
+        if (activity == null || activity is MainActivity) {
             platformContactSyncOccured = false
             return Promise.ofSuccess(false)
         }

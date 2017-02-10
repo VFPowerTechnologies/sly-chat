@@ -13,7 +13,6 @@ import android.text.SpannableString
 import android.text.style.StyleSpan
 import io.slychat.messenger.android.activites.ChatActivity
 import io.slychat.messenger.android.activites.RecentChatActivity
-import io.slychat.messenger.android.activites.SettingsActivity
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.pushnotifications.OfflineMessageInfo

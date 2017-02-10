@@ -48,7 +48,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private var messagesCache = mutableMapOf<MessageId, ConversationMessageInfo>()
 
-    private lateinit var conversationId: ConversationId
+    lateinit var conversationId: ConversationId
     private var chatDataLink: MutableMap<String, Int> = mutableMapOf()
     private var contextMenuMessageId: String? = null
 
@@ -214,12 +214,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun init() {
         val cId = conversationId
-        if (cId is ConversationId.User) {
-            app.dispatchEvent("PageChange", PageType.CONVO, cId.id.toString())
-        }
-        else if (cId is ConversationId.Group){
-            app.dispatchEvent("PageChange", PageType.GROUP, cId.id.string)
-        }
         setAppActivity()
         setListeners()
         messengerService.fetchMessageFor(conversationId, 0, 100) successUi { messages ->

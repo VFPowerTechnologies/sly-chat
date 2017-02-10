@@ -40,4 +40,4 @@ sealed class UIEvent {
     }
 }
 
-enum class PageType { CONVO, CONTACTS, GROUP, ADDRESS_BOOK }
+enum class PageType { CONVO, CONTACTS, GROUP, ADDRESS_BOOK, OTHER }

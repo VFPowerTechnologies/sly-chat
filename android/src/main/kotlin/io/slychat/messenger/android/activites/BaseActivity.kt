@@ -93,22 +93,44 @@ open class BaseActivity : AppCompatActivity() {
         val app = getAndroidApp()
         if (app !== null)
             app.setCurrentActivity(this, true)
-
-        log.debug("set ui visible")
     }
 
     fun clearAppActivity() {
         val app = getAndroidApp()
         if (app !== null)
             app.setCurrentActivity(this, false)
-
-        log.debug("set ui hidden")
     }
 
-    fun dispatchEvent () {
-        val app = getAndroidApp()
-        if (app !== null)
-            app.dispatchEvent("PageChange", PageType.CONTACTS, "")
+    private fun dispatchEvent() {
+        val app = getAndroidApp() ?: return
+
+        val pageType: PageType
+        var extra = ""
+        val eventType = "PageChange"
+
+        when (this) {
+            is RecentChatActivity -> {
+                pageType = PageType.CONTACTS
+            }
+            is ChatActivity -> {
+                val cId = this.conversationId
+                if (cId is ConversationId.User) {
+                    pageType = PageType.CONVO
+                    extra = cId.id.long.toString()
+                }
+                else if (cId is ConversationId.Group) {
+                    pageType = PageType.GROUP
+                    extra = cId.id.string
+                }
+                else
+                    pageType = PageType.OTHER
+            }
+            else -> {
+                pageType = PageType.OTHER
+            }
+        }
+
+        app.dispatchEvent(eventType, pageType, extra)
     }
 
     fun pxToDp(sizeInDp: Int): Int {
@@ -135,6 +157,7 @@ open class BaseActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         setAppActivity()
+        dispatchEvent()
         log.debug("onResume")
     }
 

@@ -346,7 +346,6 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
     override fun onResume() {
         super.onResume()
         init()
-        dispatchEvent()
     }
 
     override fun onStop() {
