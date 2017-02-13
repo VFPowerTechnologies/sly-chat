@@ -113,6 +113,15 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
         return list.sortedByDescending { it.info.lastTimestamp }
     }
 
+    override fun getSortedByNameConversation (convo: MutableMap<UserId, UserConversation>): List<UserConversation> {
+        val list = mutableListOf<UserConversation>()
+        convo.forEach {
+            list.add(it.value)
+        }
+
+        return list.sortedBy { it.contact.name }
+    }
+
     override fun addNewMessageListener (listener: (ConversationMessage) -> Unit) {
         newMessageListener?.unsubscribe()
         newMessageListener = messageService.newMessages.subscribe {

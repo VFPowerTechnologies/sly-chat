@@ -69,8 +69,8 @@ class CreateGroupActivity : BaseActivity() {
         val messengerService = MessengerServiceImpl(this)
         contactData = mutableMapOf()
         messengerService.fetchAllConversation() successUi { conversations ->
-            conversations.forEach {
-                mContactList.addView(createContactNode(it.value, mContactList))
+            messengerService.getSortedByNameConversation(conversations).forEach {
+                mContactList.addView(createContactNode(it, mContactList))
             }
         }
     }

@@ -14,6 +14,8 @@ interface MessengerService {
 
     fun getActualSortedConversation(convo: MutableMap<UserId, UserConversation>): List<UserConversation>
 
+    fun getSortedByNameConversation (convo: MutableMap<UserId, UserConversation>): List<UserConversation>
+
     fun addNewMessageListener(listener: (ConversationMessage) -> Unit)
 
     fun addMessageUpdateListener(listener: (MessageUpdateEvent) -> Unit)

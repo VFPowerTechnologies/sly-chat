@@ -76,8 +76,8 @@ class ContactFragment : Fragment() {
         contactList.removeAllViews()
         recentContactList.removeAllViews()
         if (conversations.isNotEmpty()) {
-            conversations.forEach {
-                contactList.addView(createContactNode(it.value.contact))
+            messengerService.getSortedByNameConversation(conversations).forEach {
+                contactList.addView(createContactNode(it.contact))
             }
             messengerService.getActualSortedConversation(conversations).forEach {
                 recentContactList.addView(createRecentContactNode(it.contact.id, it.contact.name))
