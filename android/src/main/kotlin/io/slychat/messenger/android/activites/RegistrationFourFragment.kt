@@ -1,16 +1,8 @@
 package io.slychat.messenger.android.activites
 
-import android.Manifest
-import android.app.Activity
-import android.content.Context
-import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AlertDialog
-import android.telephony.TelephonyManager
 import android.util.SparseArray
 import android.view.LayoutInflater
 import android.view.View
@@ -23,8 +15,6 @@ import io.slychat.messenger.android.R
 import io.slychat.messenger.services.RegistrationService
 import io.slychat.messenger.services.ui.UIRegistrationInfo
 import nl.komponents.kovenant.Deferred
-import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.deferred
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -37,7 +27,8 @@ class RegistrationFourFragment: Fragment() {
     private lateinit var registrationActivity: RegistrationActivity
     private val phoneUtil = PhoneNumberUtil.getInstance()
 
-    private var nextPermRequestCode = 0
+    private lateinit var app: AndroidApp
+
     private val permRequestCodeToDeferred = SparseArray<Deferred<Boolean, Exception>>()
 
     private var v: View? = null
@@ -48,7 +39,7 @@ class RegistrationFourFragment: Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         v = inflater?.inflate(R.layout.registration_four_fragment, container, false)
-        val app = AndroidApp.get(activity)
+        app = AndroidApp.get(activity)
         registrationService = app.appComponent.registrationService
         registrationActivity = activity as RegistrationActivity
 
@@ -132,18 +123,6 @@ class RegistrationFourFragment: Fragment() {
         registrationService.doRegistration(uiRegistrationInfo)
     }
 
-    fun requestPermission(activity: Activity, permission: String): Promise<Boolean, Exception> {
-        val requestCode = nextPermRequestCode
-        nextPermRequestCode += 1
-
-        val deferred = deferred<Boolean, Exception>()
-        permRequestCodeToDeferred.put(requestCode, deferred)
-
-        ActivityCompat.requestPermissions(activity, arrayOf(permission), requestCode)
-
-        return deferred.promise
-    }
-
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         val deferred = permRequestCodeToDeferred[requestCode]
 
@@ -160,38 +139,11 @@ class RegistrationFourFragment: Fragment() {
     }
 
     private fun displayPhoneNumber() {
-        val permission = Manifest.permission.READ_PHONE_STATE
-
-        if (ContextCompat.checkSelfPermission(activity, permission) !== PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)) {
-                showPermissionRequestDetails()
-            } else {
-                requestPermission(activity, permission) successUi { granted ->
-                    if (granted) {
-                        setDefaultPhoneNumber(getPhoneNumber())
-                    }
-                }
-            }
+        app.appComponent.uiTelephonyService.getDevicePhoneNumber() successUi { phone ->
+            setDefaultPhoneNumber(phone)
+        } failUi {
+            log.error(it.message)
         }
-        else {
-            setDefaultPhoneNumber(getPhoneNumber())
-        }
-    }
-
-    private fun showPermissionRequestDetails() {
-        val alert = AlertDialog.Builder(activity)
-        alert.setCancelable(false)
-        alert.setTitle(resources.getString(R.string.permission_request_title))
-        alert.setMessage(resources.getString(R.string.permission_request_title_phone_access))
-        alert.setPositiveButton(android.R.string.ok, DialogInterface.OnClickListener { dialogInterface, i ->
-            requestPermission(activity, Manifest.permission.READ_PHONE_STATE) successUi { granted ->
-                if (granted) {
-                    setDefaultPhoneNumber(getPhoneNumber())
-                }
-            }
-        })
-
-        alert.show()
     }
 
     private fun setDefaultPhoneNumber(phone: String?) {
@@ -202,17 +154,6 @@ class RegistrationFourFragment: Fragment() {
             mPhone.text.clear()
             mPhone.append(phone)
         }
-    }
-
-    private fun getPhoneNumber(): String? {
-        val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-        val phoneNumber = telephonyManager.line1Number
-        if (phoneNumber == null || phoneNumber.isEmpty())
-            return null
-        return if (phoneNumber.startsWith("+"))
-            phoneNumber.substring(1)
-        else
-            phoneNumber
     }
 
     override fun onPause() {

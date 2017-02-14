@@ -6,8 +6,7 @@ import io.slychat.messenger.services.ui.UILoadService
 
 class AndroidUILoadService(val context: Context) : UILoadService {
     override fun loadComplete() {
-        val app = AndroidApp.get(context)
-
+//        val app = AndroidApp.get(context)
 //        app.uiLoadCompleted()
     }
 }

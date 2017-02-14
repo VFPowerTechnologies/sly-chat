@@ -1,5 +1,6 @@
 package io.slychat.messenger.android
 
+import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.IntentFilter
@@ -329,10 +330,13 @@ class AndroidApp : Application() {
             return Promise.ofSuccess(true)
 
         val activity = currentActivity
-        if (activity == null || activity is MainActivity) {
+        if (permission == Manifest.permission.READ_PHONE_STATE && (activity is MainActivity || activity == null)) {
             platformContactSyncOccured = false
             return Promise.ofSuccess(false)
         }
+
+        if (activity == null)
+            return Promise.ofSuccess(false)
 
         return activity.requestPermission(permission)
     }
