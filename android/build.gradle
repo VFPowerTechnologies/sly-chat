@@ -61,9 +61,6 @@ android.applicationVariants.all { variant ->
 
         apkName += '-' + variant.buildType.name
 
-        if (!output.zipAlign)
-            apkName += '-unaligned'
-
         if (!variant.isSigningReady())
             apkName += '-unsigned'
 
