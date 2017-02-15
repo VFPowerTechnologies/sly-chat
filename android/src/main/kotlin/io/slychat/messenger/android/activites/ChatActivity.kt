@@ -501,6 +501,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun onNewMessage(newMessageInfo: ConversationMessage) {
+        log.debug("New message received")
         val cId = newMessageInfo.conversationId
         if (cId == conversationId) {
             addMessageToCache(newMessageInfo.conversationMessageInfo)
@@ -527,8 +528,12 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             is MessageUpdateEvent.Deleted -> { handleDeletedMessage(event) }
             is MessageUpdateEvent.DeletedAll -> { handleDeletedAllMessage(event) }
             is MessageUpdateEvent.DeliveryFailed -> { handleFailedDelivery(event) }
-            is MessageUpdateEvent.Expiring -> { log.debug("Expiring") }
+            is MessageUpdateEvent.Expiring -> { handleMessageExpiringEvent(event) }
         }
+    }
+
+    private fun handleMessageExpiringEvent(event: MessageUpdateEvent.Expiring) {
+        log.debug("Message expiring event")
     }
 
     private fun handleDeliveredMessageEvent(event: MessageUpdateEvent.Delivered) {
