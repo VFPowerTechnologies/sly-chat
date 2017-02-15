@@ -156,6 +156,7 @@ class MainActivity : BaseActivity() {
         if (sub != null) {
             sub.unsubscribe()
             loadCompleteSubscription = null
+            isInitialized = false
         }
     }
 
@@ -168,7 +169,5 @@ class MainActivity : BaseActivity() {
         super.onResume()
         if (!isInitialized)
             subToLoadComplete()
-        else
-            setLoginListener()
     }
 }

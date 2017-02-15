@@ -330,7 +330,7 @@ class AndroidApp : Application() {
             return Promise.ofSuccess(true)
 
         val activity = currentActivity
-        if (permission == Manifest.permission.READ_PHONE_STATE && (activity is MainActivity || activity == null)) {
+        if (permission == Manifest.permission.READ_CONTACTS && (activity is MainActivity || activity == null)) {
             platformContactSyncOccured = false
             return Promise.ofSuccess(false)
         }
