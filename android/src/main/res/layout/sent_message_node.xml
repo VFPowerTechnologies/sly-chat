@@ -38,7 +38,7 @@
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:gravity="end"
             android:layout_marginTop="2dp">
             <TextView
@@ -47,9 +47,33 @@
                 android:textAppearance="?android:attr/textAppearanceSmall"
                 android:text=""
                 android:id="@+id/timespan"
+                android:maxLines="1"
                 android:layout_gravity="end"
                 android:gravity="start"
                 android:textSize="12sp"/>
+        </LinearLayout>
+        <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/chat_message_expire_time_layout"
+                android:gravity="end"
+                android:layout_marginTop="2dp"
+                android:visibility="gone">
+            <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:id="@+id/expire_seconds_left"
+                    android:maxLines="1"
+                    android:textSize="12sp"/>
+            <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:maxLines="1"
+                    android:text="@string/chat_expiring_message_timer_text"
+                    android:textSize="12sp"/>
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

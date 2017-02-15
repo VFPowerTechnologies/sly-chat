@@ -200,5 +200,6 @@
     <string name="forgot_password_sms_code_required_error">Code de vérification SMS est requis</string>
     <string name="forgot_password_username_required_error">Votre courriel ou numéro de téléphone est requis</string>
     <string name="global_success">Succès</string>
+    <string name="chat_expiring_message_timer_text">" secondes"</string>
 
 </resources>
