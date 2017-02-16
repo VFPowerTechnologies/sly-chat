@@ -2,7 +2,6 @@ package io.slychat.messenger.android.activites.services.impl
 
 import android.support.v7.app.AppCompatActivity
 import io.slychat.messenger.android.AndroidApp
-import io.slychat.messenger.android.activites.RecentChatActivity
 import io.slychat.messenger.android.activites.services.MessengerService
 import io.slychat.messenger.android.activites.services.RecentChatInfo
 import io.slychat.messenger.core.UserId
@@ -12,33 +11,23 @@ import io.slychat.messenger.services.messaging.ConversationMessage
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
-import nl.komponents.kovenant.ui.failUi
-import nl.komponents.kovenant.ui.successUi
-import org.slf4j.LoggerFactory
 import rx.Subscription
 
 class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
-    private val log = LoggerFactory.getLogger(javaClass)
-
     private val app = AndroidApp.get(activity)
     private var usercomponent = app.getUserComponent()
     private val messageService = usercomponent.messageService
-    private val contactService = usercomponent.contactsService
-
-    var conversations: MutableMap<UserId, UserConversation> = mutableMapOf()
-    var groupConversations: MutableMap<GroupId, GroupConversation> = mutableMapOf()
+    private val contactService = ContactServiceImpl(activity)
 
     private var newMessageUIListener: ((ConversationMessage) -> Unit)? = null
     private var messageUpdateUIListener: ((MessageUpdateEvent) -> Unit)? = null
     private var newMessageListener: Subscription? = null
     private var messageUpdateListener: Subscription? = null
 
-    private var contactList: MutableMap<UserId, ContactInfo> = mutableMapOf()
-
     private val messengerService = usercomponent.messengerService
 
     override fun fetchAllConversation (): Promise<MutableMap<UserId, UserConversation>, Exception> {
-        conversations = mutableMapOf()
+        val conversations = mutableMapOf<UserId, UserConversation>()
         return messageService.getAllUserConversations() map { convo ->
             convo.forEach {
                 conversations.put(it.contact.id, it)
@@ -47,10 +36,18 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
         }
     }
 
+    override fun getUserConversation(userId: UserId): Promise<UserConversation?, Exception> {
+        return messageService.getUserConversation(userId)
+    }
+
+    override fun getGroupConversation(groupId: GroupId): Promise<GroupConversation?, Exception> {
+        return messageService.getGroupConversation(groupId)
+    }
+
     fun fetchAllRecentChat(): Promise<List<RecentChatInfo>, Exception> {
-        groupConversations = mutableMapOf()
-        conversations = mutableMapOf()
-        contactList = mutableMapOf()
+        val groupConversations = mutableMapOf<GroupId, GroupConversation>()
+        val conversations = mutableMapOf<UserId, UserConversation>()
+        val contactList = mutableMapOf<UserId, ContactInfo>()
         val list = mutableListOf<RecentChatInfo>()
 
         return contactService.getAll() map { c ->
@@ -125,7 +122,7 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
     override fun addNewMessageListener (listener: (ConversationMessage) -> Unit) {
         newMessageListener?.unsubscribe()
         newMessageListener = messageService.newMessages.subscribe {
-            updateConversationCache(it)
+            notifyNewMessage(it)
         }
         newMessageUIListener = listener
     }
@@ -133,7 +130,7 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
     override fun addMessageUpdateListener (listener: (MessageUpdateEvent) -> Unit) {
         messageUpdateUIListener = listener
         messageUpdateListener?.unsubscribe()
-        messageUpdateListener = messageService.messageUpdates.subscribe() {
+        messageUpdateListener = messageService.messageUpdates.subscribe {
             listener.invoke(it)
         }
     }
@@ -177,33 +174,4 @@ class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
     private fun notifyNewMessage(info: ConversationMessage) {
         newMessageUIListener?.invoke(info)
     }
-
-    private fun updateConversationCache(info: ConversationMessage) {
-        val conversationId = info.conversationId
-        if (conversationId is ConversationId.User) {
-            val userId = conversationId.id
-            messageService.getUserConversation(userId) successUi { convo ->
-                if(convo != null) {
-                    conversations[userId] = convo
-                    notifyNewMessage(info)
-                }
-            } failUi {
-                log.error("Getting conversation for ${userId.long} failed")
-            }
-        }
-        else if (conversationId is ConversationId.Group) {
-            val groupId = conversationId.id
-            messageService.getGroupConversation(groupId) successUi { convo ->
-                if(convo != null) {
-                    groupConversations[groupId] = convo
-                    notifyNewMessage(info)
-                }
-            }
-        }
-    }
-
-    fun getContactInfo(userId: UserId): ContactInfo? {
-        return contactList[userId]
-    }
-
 }

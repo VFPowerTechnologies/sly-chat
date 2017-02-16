@@ -27,11 +27,19 @@ class ContactServiceImpl(private val activity: AppCompatActivity): ContactServic
 
     var contactList: MutableMap<UserId, ContactInfo> = mutableMapOf()
 
+    init {
+        getContacts()
+    }
+
     override fun addContactListener(listener: ((ContactEvent) -> Unit)) {
         contactUIListener = listener
         contactListener = contactService.contactEvents.subscribe {
             handleContactEvent(it)
         }
+    }
+
+    override fun getAll(): Promise<List<ContactInfo>, Exception> {
+        return contactService.getAll()
     }
 
     override fun clearListeners() {

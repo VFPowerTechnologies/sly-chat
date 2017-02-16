@@ -28,7 +28,6 @@ import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.LoginEvent
-import io.slychat.messenger.services.PageType
 import io.slychat.messenger.services.messaging.ConversationMessage
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -202,14 +201,20 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
         val conversationId = data.conversationId
         when (conversationId) {
             is ConversationId.User -> {
-                val conversation = messengerService.conversations[conversationId.id]
-                if (conversation != null)
-                    updateSingleRecentChatNode(conversation)
+                messengerService.getUserConversation(conversationId.id) successUi { conversation ->
+                    if (conversation != null)
+                        updateSingleRecentChatNode(conversation)
+                } failUi {
+                    log.error(it.message)
+                }
             }
             is ConversationId.Group -> {
-                val conversation = messengerService.groupConversations[conversationId.id]
-                if (conversation != null)
-                    updateGroupRecentChatNode(conversation)
+                messengerService.getGroupConversation(conversationId.id) successUi { conversation ->
+                    if (conversation != null)
+                        updateGroupRecentChatNode(conversation)
+                } failUi {
+                    log.error(it.message)
+                }
             }
         }
     }
@@ -257,7 +262,7 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
         if (lastSpeakerId == null)
             speakerName = resources.getString(R.string.recent_chat_self_speaker_name)
         else {
-            val contactInfo = messengerService.getContactInfo(lastSpeakerId)
+            val contactInfo = contactService.contactList[lastSpeakerId]
             if (contactInfo != null)
                 speakerName = contactInfo.name
         }

@@ -2,6 +2,7 @@ package io.slychat.messenger.android.activites
 
 import android.content.*
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
@@ -21,7 +22,6 @@ import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.MessageUpdateEvent
-import io.slychat.messenger.services.PageType
 import io.slychat.messenger.services.contacts.ContactEvent
 import io.slychat.messenger.services.messaging.ConversationMessage
 import io.slychat.messenger.services.messaging.GroupEvent
@@ -367,6 +367,14 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             messageNode.startAnimation(pulse)
         }
         else {
+            if (messageInfo.info.expiresAt > 0) {
+                val delayLayout = messageNode.findViewById(R.id.chat_message_expire_time_layout)
+                val mTimer = delayLayout.findViewById(R.id.expire_seconds_left) as TextView
+                val timeLeft = messageInfo.info.expiresAt - System.currentTimeMillis()
+                startMessageExpirationCountdown(timeLeft, mTimer)
+
+                delayLayout.visibility = View.VISIBLE
+            }
             messageLayout.visibility = View.VISIBLE
         }
 
@@ -403,7 +411,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                 if (messageId != null) {
                     val messageInfo = messagesCache[MessageId(messageId)]
                     if (messageInfo != null) {
-                        log.debug(messageInfo.info.message)
                         copyMessageText(messageInfo.info.message)
                     }
                 }
@@ -460,15 +467,14 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun showExpiringMessage(node: View, messageInfo: ConversationMessageInfo) {
-        val messageLayout = node.findViewById(R.id.message_node_layout)
-        val expireLayout = node.findViewById(R.id.expiring_message_layout)
+        messengerService.startMessageExpiration(conversationId, messageInfo.info.id) successUi {
+            val messageLayout = node.findViewById(R.id.message_node_layout)
+            val expireLayout = node.findViewById(R.id.expiring_message_layout)
 
-        expireLayout.visibility = View.GONE
-        messageLayout.visibility = View.VISIBLE
-
-        node.clearAnimation()
-
-        messengerService.startMessageExpiration(conversationId, messageInfo.info.id) failUi {
+            expireLayout.visibility = View.GONE
+            messageLayout.visibility = View.VISIBLE
+            node.clearAnimation()
+        } failUi {
             log.error("Could not start message expiration for message id: ${messageInfo.info.id}")
         }
     }
@@ -501,7 +507,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun onNewMessage(newMessageInfo: ConversationMessage) {
-        log.debug("New message received")
         val cId = newMessageInfo.conversationId
         if (cId == conversationId) {
             addMessageToCache(newMessageInfo.conversationMessageInfo)
@@ -533,7 +538,30 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun handleMessageExpiringEvent(event: MessageUpdateEvent.Expiring) {
-        log.debug("Message expiring event")
+        val nodeId = chatDataLink[event.messageId]
+        if (nodeId != null) {
+            val mMessageNode = findViewById(nodeId)
+            val mDelayLayout = mMessageNode.findViewById(R.id.chat_message_expire_time_layout)
+            val mTimer = mDelayLayout.findViewById(R.id.expire_seconds_left) as TextView
+
+            startMessageExpirationCountdown(event.ttl, mTimer)
+
+            mDelayLayout.visibility = View.VISIBLE
+        }
+    }
+
+    private fun startMessageExpirationCountdown(delay: Long, textView: TextView) {
+
+        object : CountDownTimer(delay, 1000) {
+            override fun onTick(millisLeft: Long) {
+                val secondsLeft = (millisLeft / 1000).toInt()
+                textView.text = secondsLeft.toString()
+            }
+
+            override fun onFinish() {
+                //
+            }
+        }.start()
     }
 
     private fun handleDeliveredMessageEvent(event: MessageUpdateEvent.Delivered) {
@@ -546,7 +574,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     private fun handleFailedDelivery(event: MessageUpdateEvent.DeliveryFailed) {
         val nodeId = chatDataLink[event.messageId]
         if (nodeId === null) {
-            log.debug("Failed message update, Message id: ${event.messageId} does not exist in the current chat page")
+            log.error("Failed message update, Message id: ${event.messageId} does not exist in the current chat page")
             return
         }
 
@@ -573,7 +601,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
                 val nodeId = chatDataLink[it]
                 if (nodeId === null) {
-                    log.debug("Message Deleted event, Message id: $it does not exist in the current chat page")
+                    log.error("Message Deleted event, Message id: $it does not exist in the current chat page")
                 } else {
                     val chatList = findViewById(R.id.chat_list) as LinearLayout
                     chatList.removeView(findViewById(nodeId))
@@ -584,12 +612,11 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun handleExpiredMessage(event: MessageUpdateEvent.Expired) {
         val nodeId = chatDataLink[event.messageId]
-        if (nodeId === null) {
-            log.debug("Message Expired event, Message id: ${event.messageId} does not exist in the current chat page")
+        if (nodeId === null)
             return
-        }
 
         val messageNode = findViewById(nodeId) as LinearLayout
+        val delayNode = messageNode.findViewById(R.id.chat_message_expire_time_layout)
         val message = messageNode.findViewById(R.id.message) as TextView
         val timespan = messageNode.findViewById(R.id.timespan) as TextView
         if (conversationId is ConversationId.Group) {
@@ -599,14 +626,14 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         message.text = resources.getString(R.string.chat_expired_message_text)
         timespan.text = ""
         timespan.visibility = View.GONE
+
+        delayNode.visibility = View.GONE
     }
 
     private fun updateMessageDelivered(event: MessageUpdateEvent.Delivered) {
         val nodeId = chatDataLink[event.messageId]
-        if (nodeId === null) {
-            log.debug("Message Delivered update, Message id: ${event.messageId} does not exist in the current chat page")
+        if (nodeId === null)
             return
-        }
 
         val node = findViewById(nodeId)
         (node.findViewById(R.id.timespan) as TextView).text = formatTimeStamp(event.deliveredTimestamp)

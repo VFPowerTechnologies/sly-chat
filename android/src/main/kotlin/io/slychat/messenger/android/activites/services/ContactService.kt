@@ -11,6 +11,8 @@ interface ContactService {
 
     fun clearListeners()
 
+    fun getAll(): Promise<List<ContactInfo>, Exception>
+
     fun getContacts(): Promise<MutableMap<UserId, ContactInfo>, Exception>
 
     fun getContact(id: UserId): Promise<ContactInfo?, Exception>
