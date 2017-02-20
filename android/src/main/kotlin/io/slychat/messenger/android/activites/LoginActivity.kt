@@ -32,6 +32,9 @@ class LoginActivity : BaseActivity() {
 
         setContentView(R.layout.activity_login)
 
+        val mRememberMe = findViewById(R.id.login_remember_me) as Switch
+        mRememberMe.isChecked = app.appComponent.uiConfigService.getLoginRememberMe()
+
         initProgressDialog()
         createEventListeners()
     }
@@ -54,6 +57,13 @@ class LoginActivity : BaseActivity() {
         val forgotPasswdLink = findViewById(R.id.login_forgot_password_link)
         forgotPasswdLink.setOnClickListener {
             startActivity(Intent(baseContext, ForgotPasswordActivity::class.java))
+        }
+
+        val mRememberMe = findViewById(R.id.login_remember_me) as Switch
+        mRememberMe.setOnCheckedChangeListener { btn, checked ->
+            app.appComponent.appConfigService.withEditor {
+                loginRememberMe = checked
+            }
         }
     }
 
