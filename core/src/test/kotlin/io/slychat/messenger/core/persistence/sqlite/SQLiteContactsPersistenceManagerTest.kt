@@ -202,6 +202,15 @@ class SQLiteContactsPersistenceManagerTest {
     }
 
     @Test
+    fun `add should allow contacts with the same email`() {
+        val info = createDummyContact(AllowedMessageLevel.ALL)
+        val info2 = info.copy(id = randomUserId())
+
+        contactsPersistenceManager.add(info).get()
+        contactsPersistenceManager.add(info2).get()
+    }
+
+    @Test
     fun `addSelf should not generate a remote update`() {
         val contact = contactA
         contactsPersistenceManager.addSelf(contact).get()
