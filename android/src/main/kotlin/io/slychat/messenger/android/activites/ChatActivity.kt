@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory
 import android.view.animation.AnimationUtils
 import io.slychat.messenger.services.config.ConvoTTLSettings
 import android.view.ContextMenu.ContextMenuInfo
+import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.isNotNetworkError
 
 class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedListener {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -163,7 +165,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                     actionBar.title = it.name
                 }
             } failUi {
-                log.error("Could not find contact to load chat page.")
+                log.error("Something failed ${it.message}", it)
                 finish()
             }
         }
@@ -177,7 +179,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                 else
                     finish()
             } failUi {
-                log.error("Could not find the group to load chat page")
+                log.error("Something failed ${it.message}", it)
                 finish()
             }
         }
@@ -435,7 +437,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                                 chatDataLink.remove(messageId)
                             }
                         } failUi {
-                            log.error("Failed to delete message $messageId")
+                            log.error("Something failed ${it.message}", it)
                         }
                     }
                 })
@@ -475,7 +477,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             messageLayout.visibility = View.VISIBLE
             node.clearAnimation()
         } failUi {
-            log.error("Could not start message expiration for message id: ${messageInfo.info.id}")
+            log.error("Something failed ${it.message}", it)
         }
     }
 
@@ -495,7 +497,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         messengerService.sendMessageTo(conversationId, messageValue, ttl) successUi {
             chatInput.setText("")
         } failUi {
-            log.error("Send message failed", it.stackTrace)
+            log.condError(isNotNetworkError(it), "${it.message}", it)
         }
     }
 
@@ -573,10 +575,8 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun handleFailedDelivery(event: MessageUpdateEvent.DeliveryFailed) {
         val nodeId = chatDataLink[event.messageId]
-        if (nodeId === null) {
-            log.error("Failed message update, Message id: ${event.messageId} does not exist in the current chat page")
+        if (nodeId === null)
             return
-        }
 
         val node = findViewById(nodeId)
         val timespanNode = node.findViewById(R.id.timespan) as TextView
@@ -600,9 +600,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                 messagesCache.remove(messageId)
 
                 val nodeId = chatDataLink[it]
-                if (nodeId === null) {
-                    log.error("Message Deleted event, Message id: $it does not exist in the current chat page")
-                } else {
+                if (nodeId != null) {
                     val chatList = findViewById(R.id.chat_list) as LinearLayout
                     chatList.removeView(findViewById(nodeId))
                 }
@@ -691,23 +689,23 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val cId = conversationId
         if (cId is ConversationId.User) {
             contactService.blockContact(cId.id) failUi {
-                log.error("Failed to block user id : ${cId.id}")
+                log.error("Something failed ${it.message}", it)
             }
         }
     }
 
     private fun deleteConversation() {
         messengerService.deleteConversation(conversationId) failUi {
-            log.error("Failed to delete the conversation")
+            log.error("Something failed ${it.message}", it)
         }
     }
 
     private fun deleteContact() {
         contactService.deleteContact(contactInfo) successUi {
             if (!it)
-                log.info("Failed to delete user id : ${contactInfo.email}")
+                log.warn("Failed to delete user id : ${contactInfo.id}")
         } failUi {
-            log.error("Failed to delete user id : ${contactInfo.email}")
+            log.error("Something failed ${it.message}", it)
         }
     }
 
@@ -717,7 +715,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             groupService.deleteGroup(cId.id) successUi {
                 finish()
             } failUi {
-                log.error("Failed to delete the group")
+                log.error("Something failed ${it.message}", it)
             }
         }
     }
@@ -726,7 +724,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val cId = conversationId
         if (cId is ConversationId.Group) {
             groupService.blockGroup(cId.id) failUi {
-                log.error("Failed to block the group")
+                log.error("Something failed ${it.message}", it)
             }
         }
     }

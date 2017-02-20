@@ -108,7 +108,7 @@ class RegistrationActivity : BaseActivity() {
             startSmsVerification("registration")
         }
         else {
-            log.error(event.errorMessage)
+            log.warn(event.errorMessage)
         }
     }
 

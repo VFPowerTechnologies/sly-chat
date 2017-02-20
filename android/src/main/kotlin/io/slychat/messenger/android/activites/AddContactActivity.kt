@@ -2,7 +2,6 @@ package io.slychat.messenger.android.activites
 
 import android.content.Intent
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -14,6 +13,8 @@ import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
+import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.ContactInfo
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -68,10 +69,10 @@ class AddContactActivity : BaseActivity() {
             if (contactInfo != null)
                 createContactResultNode(contactInfo)
             else {
-                log.debug("No contact found for $username")
+                mUsernameField.error = "No contact found"
             }
         } failUi {
-            log.error("Failed To Fetch Contact Info", it.stackTrace)
+            log.condError(isNotNetworkError(it), "${it.message}", it)
         }
     }
 
@@ -99,18 +100,13 @@ class AddContactActivity : BaseActivity() {
     private fun addContact(contactInfo: ContactInfo) {
         val mUsernameField = findViewById(R.id.add_contact_field) as EditText
         contactService.addContact(contactInfo) successUi { success ->
-            if (success) {
                 mUsernameField.setText("")
                 val intent = Intent(baseContext, ChatActivity::class.java)
                 intent.putExtra("EXTRA_ISGROUP", false)
                 intent.putExtra("EXTRA_ID", contactInfo.id.long)
                 startActivity(intent)
-            }
-            else {
-                log.debug("Failed to add contact ${contactInfo.email}")
-            }
         } failUi  {
-            log.error("Failed to add contact ${contactInfo.email}")
+            log.error("Something failed ${it.message}", it)
         }
     }
 }

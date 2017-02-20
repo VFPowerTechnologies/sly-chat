@@ -154,7 +154,7 @@ class SettingsActivity : BaseActivity() {
         when (requestCode) {
             RINGTONE_PICKER_REQUEST_CODE -> {
                 if (resultCode != Activity.RESULT_OK) {
-                    log.debug("Ringtone picker failed")
+                    log.warn("Ringtone picker failed")
                     return
                 }
 

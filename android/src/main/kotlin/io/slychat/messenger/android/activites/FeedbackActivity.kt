@@ -9,6 +9,8 @@ import android.widget.Button
 import android.widget.EditText
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
+import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.isNotNetworkError
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -66,7 +68,7 @@ class FeedbackActivity : BaseActivity() {
         app.appComponent.uiFeedbackService.submitFeedback(feedback) successUi {
             mFeedbackField.setText("")
         } failUi {
-            log.error("Failed sumbiting feedback", it.stackTrace)
+            log.condError(isNotNetworkError(it), "${it.message}", it)
         }
     }
 }

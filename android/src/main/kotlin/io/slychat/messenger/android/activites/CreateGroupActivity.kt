@@ -123,7 +123,7 @@ class CreateGroupActivity : BaseActivity() {
 
         if (checkedContacts.size > 0) {
             groupService.createGroup(name, checkedContacts) failUi {
-                log.error("Creating group: $name failed")
+                log.error("Something failed ${it.message}", it)
             }
         }
         else

@@ -67,11 +67,11 @@ class MessageInfoActivity : BaseActivity() {
                 if (contactInfo != null)
                         displaySingleMessageInfo(contactInfo, bundle)
                 else {
-                    log.error("Message Info failed, user id: ${cId.id} was not found")
+                    log.warn("Message Info failed, user id: ${cId.id} was not found")
                     finish()
                 }
             } failUi {
-                log.error(it.message)
+                log.error("Something failed ${it.message}", it)
                 finish()
             }
         }
@@ -81,16 +81,16 @@ class MessageInfoActivity : BaseActivity() {
                     groupService.getMembersInfo(cId.id) successUi { members ->
                         displayGroupMessageInfo(groupInfo, members, bundle)
                     } failUi {
-                        log.error(it.message)
+                        log.error("Something failed ${it.message}", it)
                         finish()
                     }
                 }
                 else {
-                    log.error("Message Info failed, group id: ${cId.id} was not found")
+                    log.warn("Message Info failed, group id: ${cId.id} was not found")
                     finish()
                 }
             } failUi {
-                log.error(it.message)
+                log.error("Something failed ${it.message}", it)
                 finish()
             }
         }

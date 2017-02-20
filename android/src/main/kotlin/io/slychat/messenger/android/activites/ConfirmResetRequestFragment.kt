@@ -13,6 +13,8 @@ import android.widget.EditText
 import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
+import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.services.ResetAccountService
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -96,7 +98,7 @@ class ConfirmResetRequestFragment: Fragment() {
             }
         } failUi {
             mEmailCode.error = resources.getString(R.string.registration_global_error)
-            log.error(it.message)
+            log.condError(isNotNetworkError(it), "${it.message}", it)
         }
     }
 
@@ -117,7 +119,7 @@ class ConfirmResetRequestFragment: Fragment() {
             }
         } failUi {
             mSmsCode.error = resources.getString(R.string.registration_global_error)
-            log.error(it.message)
+            log.condError(isNotNetworkError(it), "${it.message}", it)
         }
     }
 

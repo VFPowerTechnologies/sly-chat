@@ -10,6 +10,8 @@ import android.widget.EditText
 import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
+import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.services.ResetAccountService
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.ui.failUi
@@ -76,7 +78,7 @@ class StartResetRequestFragment: Fragment() {
             }
         } failUi {
             mUsername.error = resources.getString(R.string.registration_global_error)
-            log.error(it.message)
+            log.condError(isNotNetworkError(it), "${it.message}", it)
         }
     }
 

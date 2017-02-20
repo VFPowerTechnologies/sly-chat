@@ -14,6 +14,8 @@ import com.google.i18n.phonenumbers.Phonenumber
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import io.slychat.messenger.android.activites.services.impl.AccountServiceImpl
+import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.AccountInfo
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -114,7 +116,7 @@ class UpdateProfileActivity : BaseActivity() {
                     error.text = message
             }
         } failUi {
-            log.error("Failed to update account info")
+            log.condError(isNotNetworkError(it), "${it.message}", it)
         }
 
     }
@@ -200,7 +202,7 @@ class UpdateProfileActivity : BaseActivity() {
         accountService.updateAccountInfo(newAccountInfo) successUi {
             finish()
         } failUi {
-            log.error("Failed to update the account info")
+            log.condError(isNotNetworkError(it), "${it.message}", it)
         }
     }
 
