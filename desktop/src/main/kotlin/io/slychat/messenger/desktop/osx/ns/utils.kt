@@ -24,8 +24,5 @@ fun getString(v: Any?): String? {
 }
 
 fun Boolean.toObjc(): Byte {
-    return if (this)
-        return 1
-    else
-        return 0
+    return if (this) 1 else 0
 }

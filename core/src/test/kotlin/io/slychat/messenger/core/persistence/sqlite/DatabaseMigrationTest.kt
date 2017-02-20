@@ -481,6 +481,14 @@ FROM conv_U2
         }
     }
 
+    //I had forgotten to remove the constraint from the master scheme, so this is just the same check
+    @Test
+    fun `migration 18 to 19`() {
+        withTestDatabase(18, 19) { persistenceManager, connection ->
+            check17to18(persistenceManager, connection)
+        }
+    }
+
     private fun check17to18(persistenceManager: SQLitePersistenceManager, connection: SQLiteConnection) {
         val sql = """
 SELECT
