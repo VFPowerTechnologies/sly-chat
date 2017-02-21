@@ -5,7 +5,7 @@ import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.services.contacts.ContactEvent
 import nl.komponents.kovenant.Promise
 
-interface ContactService {
+interface AndroidContactService {
 
     fun addContactListener(listener: ((ContactEvent) -> Unit))
 

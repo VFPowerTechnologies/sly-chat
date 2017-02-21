@@ -10,7 +10,7 @@ import android.view.WindowManager
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.impl.SettingsServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidConfigServiceImpl
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.services.PageType
 import nl.komponents.kovenant.Deferred
@@ -31,7 +31,7 @@ open class BaseActivity : AppCompatActivity() {
         if (app !== null) {
             val currentTheme = app.appComponent.appConfigService.appearanceTheme
 
-            if (currentTheme == SettingsServiceImpl.lightTheme) {
+            if (currentTheme == AndroidConfigServiceImpl.lightTheme) {
                 setTheme(R.style.SlyThemeLight)
             }
         }

@@ -13,7 +13,7 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.Phonenumber
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.impl.AccountServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidAccountServiceImpl
 import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.AccountInfo
@@ -25,7 +25,7 @@ import java.util.*
 class UpdateProfileActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private lateinit var accountService: AccountServiceImpl
+    private lateinit var accountService: AndroidAccountServiceImpl
 
     private val phoneUtil = PhoneNumberUtil.getInstance()
 
@@ -48,7 +48,7 @@ class UpdateProfileActivity : BaseActivity() {
 
         app = AndroidApp.get(this)
 
-        accountService = AccountServiceImpl(this)
+        accountService = AndroidAccountServiceImpl(this)
         setEventListener()
     }
 

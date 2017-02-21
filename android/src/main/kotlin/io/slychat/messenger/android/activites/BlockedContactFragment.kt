@@ -13,7 +13,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidContactServiceImpl
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.services.contacts.ContactEvent
@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory
 
 class BlockedContactFragment : Fragment() {
     private val log = LoggerFactory.getLogger(javaClass)
-    private lateinit var contactService: ContactServiceImpl
+    private lateinit var contactService: AndroidContactServiceImpl
 
     private var contactListData: MutableMap<UserId, Int> = mutableMapOf()
 
@@ -35,7 +35,7 @@ class BlockedContactFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         v = inflater?.inflate(R.layout.blocked_contacts_fragment, container, false)
-        contactService = ContactServiceImpl(activity as AppCompatActivity)
+        contactService = AndroidContactServiceImpl(activity as AppCompatActivity)
 
         fetchBlockedContact()
 

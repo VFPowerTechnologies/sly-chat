@@ -5,7 +5,7 @@ import com.google.i18n.phonenumbers.NumberParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.Phonenumber
 import io.slychat.messenger.android.AndroidApp
-import io.slychat.messenger.android.activites.services.ContactService
+import io.slychat.messenger.android.activites.services.AndroidContactService
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
@@ -18,7 +18,7 @@ import nl.komponents.kovenant.ui.successUi
 import rx.Subscription
 import java.util.regex.Pattern
 
-class ContactServiceImpl(private val activity: AppCompatActivity): ContactService {
+class AndroidContactServiceImpl(private val activity: AppCompatActivity): AndroidContactService {
     private val app = AndroidApp.get(activity)
     private val contactService = app.getUserComponent().contactsService
 

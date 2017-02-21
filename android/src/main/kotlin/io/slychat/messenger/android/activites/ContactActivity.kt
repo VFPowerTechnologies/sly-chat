@@ -12,9 +12,9 @@ import android.view.MenuItem
 import android.support.design.widget.TabLayout
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
-import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
-import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidContactServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidGroupServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidMessengerServiceImpl
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.services.contacts.ContactEvent
@@ -26,9 +26,9 @@ class ContactActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
-    private lateinit var messengerService: MessengerServiceImpl
-    private lateinit var contactService: ContactServiceImpl
-    private lateinit var groupService: GroupServiceImpl
+    private lateinit var messengerService: AndroidMessengerServiceImpl
+    private lateinit var contactService: AndroidContactServiceImpl
+    private lateinit var groupService: AndroidGroupServiceImpl
 
     private var contactFragment: ContactFragment? = null
     private var groupFragment: GroupFragment? = null
@@ -58,9 +58,9 @@ class ContactActivity : BaseActivity() {
         val tabLayout = findViewById(R.id.contact_tabs) as TabLayout
         tabLayout.setupWithViewPager(viewPager)
 
-        messengerService = MessengerServiceImpl(this)
-        contactService = ContactServiceImpl(this)
-        groupService = GroupServiceImpl(this)
+        messengerService = AndroidMessengerServiceImpl(this)
+        contactService = AndroidContactServiceImpl(this)
+        groupService = AndroidGroupServiceImpl(this)
     }
 
     private fun init() {

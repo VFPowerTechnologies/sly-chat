@@ -4,7 +4,7 @@ import io.slychat.messenger.android.activites.services.impl.AccountUpdateResult
 import io.slychat.messenger.core.persistence.AccountInfo
 import nl.komponents.kovenant.Promise
 
-interface AccountService {
+interface AndroidAccountService {
 
     fun getAccountInfo(): AccountInfo
 

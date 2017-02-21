@@ -9,7 +9,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidGroupServiceImpl
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.GroupId
@@ -26,7 +26,7 @@ class GroupInfoActivity : BaseActivity() {
     private lateinit var app: AndroidApp
 
     private lateinit var groupId: GroupId
-    private lateinit var groupService: GroupServiceImpl
+    private lateinit var groupService: AndroidGroupServiceImpl
     private var groupInfo: GroupInfo? = null
     private var membersInfo: Map<UserId, ContactInfo>? = null
 
@@ -35,7 +35,7 @@ class GroupInfoActivity : BaseActivity() {
 
         app = AndroidApp.get(this)
 
-        groupService = GroupServiceImpl(this)
+        groupService = AndroidGroupServiceImpl(this)
 
         setContentView(R.layout.activity_group_info)
 

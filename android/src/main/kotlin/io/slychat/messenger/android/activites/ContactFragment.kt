@@ -11,8 +11,8 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
-import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidContactServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidMessengerServiceImpl
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ConversationId
@@ -29,8 +29,8 @@ class ContactFragment : Fragment() {
     private lateinit var contactList : LinearLayout
     private lateinit var addContactBtn : FloatingActionButton
 
-    private lateinit var messengerService: MessengerServiceImpl
-    private lateinit var contactService: ContactServiceImpl
+    private lateinit var messengerService: AndroidMessengerServiceImpl
+    private lateinit var contactService: AndroidContactServiceImpl
 
     private var contactListData: MutableMap<UserId, Int> = mutableMapOf()
     private var recentContactListData: MutableMap<UserId, Int> = mutableMapOf()
@@ -51,8 +51,8 @@ class ContactFragment : Fragment() {
         recentContactList = v?.findViewById(R.id.recent_contact_list) as LinearLayout
         addContactBtn = v?.findViewById(R.id.contacts_add_contact_btn) as FloatingActionButton
 
-        messengerService = MessengerServiceImpl(activity as AppCompatActivity)
-        contactService = ContactServiceImpl(activity as AppCompatActivity)
+        messengerService = AndroidMessengerServiceImpl(activity as AppCompatActivity)
+        contactService = AndroidContactServiceImpl(activity as AppCompatActivity)
 
         createEventListeners()
 

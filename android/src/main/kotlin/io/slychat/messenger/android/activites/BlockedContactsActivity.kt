@@ -12,16 +12,15 @@ import android.view.MenuItem
 import android.support.design.widget.TabLayout
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
-import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidContactServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidGroupServiceImpl
 import org.slf4j.LoggerFactory
 
 class BlockedContactsActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
-    private lateinit var contactService: ContactServiceImpl
-    private lateinit var groupService: GroupServiceImpl
+    private lateinit var contactService: AndroidContactServiceImpl
 
     private var contactFragment: BlockedContactFragment? = null
     private var groupFragment: BlockedGroupFragment? = null
@@ -49,8 +48,7 @@ class BlockedContactsActivity : BaseActivity() {
         val tabLayout = findViewById(R.id.blocked_contact_tabs) as TabLayout
         tabLayout.setupWithViewPager(viewPager)
 
-        contactService = ContactServiceImpl(this)
-        groupService = GroupServiceImpl(this)
+        contactService = AndroidContactServiceImpl(this)
     }
 
     private fun init() {

@@ -8,7 +8,7 @@ import io.slychat.messenger.core.persistence.GroupInfo
 import io.slychat.messenger.services.messaging.GroupEvent
 import nl.komponents.kovenant.Promise
 
-interface GroupService {
+interface AndroidGroupService {
 
     fun addGroupListener(listener: (GroupEvent) -> Unit)
 

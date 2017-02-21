@@ -20,10 +20,10 @@ import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
 import io.slychat.messenger.android.MainActivity
 import io.slychat.messenger.android.activites.services.RecentChatInfo
-import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
-import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
-import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
-import io.slychat.messenger.android.activites.services.impl.SettingsServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidContactServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidGroupServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidMessengerServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidConfigServiceImpl
 import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
@@ -42,10 +42,10 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
     private lateinit var contactFloatBtn: FloatingActionButton
 
     private var loginListener: Subscription? = null
-    private lateinit var messengerService: MessengerServiceImpl
-    private lateinit var groupService: GroupServiceImpl
-    private lateinit var contactService: ContactServiceImpl
-    private lateinit var settingsService: SettingsServiceImpl
+    private lateinit var messengerService: AndroidMessengerServiceImpl
+    private lateinit var groupService: AndroidGroupServiceImpl
+    private lateinit var contactService: AndroidContactServiceImpl
+    private lateinit var configService: AndroidConfigServiceImpl
 
     private var recentNodeData: MutableMap<UserId, Int> = mutableMapOf()
     private var groupRecentNodeData: MutableMap<GroupId, Int> = mutableMapOf()
@@ -58,10 +58,10 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
         setContentView(R.layout.activity_recent_chat)
 
         app = AndroidApp.get(this)
-        messengerService = MessengerServiceImpl(this)
-        groupService = GroupServiceImpl(this)
-        contactService = ContactServiceImpl(this)
-        settingsService = SettingsServiceImpl(this)
+        messengerService = AndroidMessengerServiceImpl(this)
+        groupService = AndroidGroupServiceImpl(this)
+        contactService = AndroidContactServiceImpl(this)
+        configService = AndroidConfigServiceImpl(this)
 
         val actionBar = findViewById(R.id.recent_chat_toolbar) as Toolbar
         actionBar.title = resources.getString(R.string.recent_chat_title)
@@ -184,7 +184,7 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
     private fun showInviteFriends() {
         contactService.getContactCount() successUi { count ->
             val inviteNode = findViewById(R.id.recent_chat_invite_node) as LinearLayout
-            if (count < 5 && settingsService.getShowInviteEnabled()) {
+            if (count < 5 && configService.getShowInviteEnabled()) {
                 inviteNode.visibility = View.VISIBLE
                 inviteNode.setOnClickListener {
                     startActivity(Intent(baseContext, InviteFriendsActivity::class.java))

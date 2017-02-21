@@ -14,10 +14,10 @@ import hani.momanii.supernova_emoji_library.Actions.EmojIconActions
 import hani.momanii.supernova_emoji_library.Helper.EmojiconEditText
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
-import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
-import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
-import io.slychat.messenger.android.activites.services.impl.SettingsServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidContactServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidGroupServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidMessengerServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidConfigServiceImpl
 import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
@@ -38,10 +38,10 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
-    private lateinit var messengerService: MessengerServiceImpl
-    private lateinit var contactService: ContactServiceImpl
-    private lateinit var groupService: GroupServiceImpl
-    private lateinit var settingsService: SettingsServiceImpl
+    private lateinit var messengerService: AndroidMessengerServiceImpl
+    private lateinit var contactService: AndroidContactServiceImpl
+    private lateinit var groupService: AndroidGroupServiceImpl
+    private lateinit var configService: AndroidConfigServiceImpl
 
     private lateinit var contactInfo: ContactInfo
     private lateinit var groupInfo: GroupInfo
@@ -93,10 +93,10 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
         setupEmojicon()
 
-        messengerService = MessengerServiceImpl(this)
-        contactService = ContactServiceImpl(this)
-        groupService = GroupServiceImpl(this)
-        settingsService = SettingsServiceImpl(this)
+        messengerService = AndroidMessengerServiceImpl(this)
+        contactService = AndroidContactServiceImpl(this)
+        groupService = AndroidGroupServiceImpl(this)
+        configService = AndroidConfigServiceImpl(this)
 
         getDisplayInfo()
         createEventListeners()
@@ -110,7 +110,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val smiley: Int
         val currentTheme = app.appComponent.appConfigService.appearanceTheme
 
-        if (currentTheme.isNullOrEmpty() || currentTheme == SettingsServiceImpl.darkTheme) {
+        if (currentTheme.isNullOrEmpty() || currentTheme == AndroidConfigServiceImpl.darkTheme) {
             icons = "#FFFFFF"
             tabs = "#222222"
             bg = "#222222"
@@ -201,7 +201,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         expireSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onStopTrackingTouch(seekBar: SeekBar) {
                 setExpireDelay(seekBar.progress.toLong())
-                settingsService.setConvoTTLSettings(conversationId, ConvoTTLSettings(true, seekBar.progress.toLong() * 1000))
+                configService.setConvoTTLSettings(conversationId, ConvoTTLSettings(true, seekBar.progress.toLong() * 1000))
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar) {
@@ -244,7 +244,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun displayExpireSliderOnStart() {
-        val ttlConfig = settingsService.getConvoTTLSettings(conversationId)
+        val ttlConfig = configService.getConvoTTLSettings(conversationId)
         if (ttlConfig != null && ttlConfig.isEnabled) {
             setExpireDelay(ttlConfig.lastTTL/1000)
             showExpirationSlider()
@@ -252,7 +252,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun handleExpireMessageToggle() {
-        val ttlConfig = settingsService.getConvoTTLSettings(this.conversationId)
+        val ttlConfig = configService.getConvoTTLSettings(this.conversationId)
         if (ttlConfig != null)
             expireDelay = ttlConfig.lastTTL
         else
@@ -275,7 +275,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         expireSlider.progress = delay.toInt() / 1000
         setExpireDelay(delay / 1000)
 
-        settingsService.setConvoTTLSettings(conversationId, ConvoTTLSettings(true, delay))
+        configService.setConvoTTLSettings(conversationId, ConvoTTLSettings(true, delay))
 
         expirationSliderContainer.visibility = View.VISIBLE
         expireToggled = true
@@ -289,9 +289,9 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun hideExpirationSlider() {
-        val settingsTTl = settingsService.getConvoTTLSettings(conversationId)
+        val settingsTTl = configService.getConvoTTLSettings(conversationId)
         if (settingsTTl != null)
-            settingsService.setConvoTTLSettings(conversationId, ConvoTTLSettings(false, settingsTTl.lastTTL))
+            configService.setConvoTTLSettings(conversationId, ConvoTTLSettings(false, settingsTTl.lastTTL))
 
         val expirationSliderContainer = findViewById(R.id.expiration_slider_container)
         expirationSliderContainer.visibility = View.GONE
@@ -491,7 +491,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val delay = expireDelay
         if (expireToggled && delay != null) {
             ttl = delay
-            settingsService.setConvoTTLSettings(this.conversationId, ConvoTTLSettings(true, ttl))
+            configService.setConvoTTLSettings(this.conversationId, ConvoTTLSettings(true, ttl))
         }
 
         messengerService.sendMessageTo(conversationId, messageValue, ttl) successUi {

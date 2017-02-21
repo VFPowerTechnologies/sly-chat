@@ -15,8 +15,8 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
-import io.slychat.messenger.android.activites.services.impl.MessengerServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidGroupServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidMessengerServiceImpl
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.UserConversation
@@ -29,7 +29,7 @@ class CreateGroupActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
-    private lateinit var groupService: GroupServiceImpl
+    private lateinit var groupService: AndroidGroupServiceImpl
     private lateinit var progressDialog: ProgressDialog
 
     private var contactData: MutableMap<UserId, Int> = mutableMapOf()
@@ -42,7 +42,7 @@ class CreateGroupActivity : BaseActivity() {
         setContentView(R.layout.activity_create_group)
 
         app = AndroidApp.get(this)
-        groupService = GroupServiceImpl(this)
+        groupService = AndroidGroupServiceImpl(this)
 
         val actionBar = findViewById(R.id.create_group_toolbar) as Toolbar
         actionBar.title = resources.getString(R.string.create_group_title)
@@ -66,7 +66,7 @@ class CreateGroupActivity : BaseActivity() {
 
     private fun createContactList() {
         val mContactList = findViewById(R.id.create_group_member_list) as LinearLayout
-        val messengerService = MessengerServiceImpl(this)
+        val messengerService = AndroidMessengerServiceImpl(this)
         contactData = mutableMapOf()
         messengerService.fetchAllConversation() successUi { conversations ->
             messengerService.getSortedByNameConversation(conversations).forEach {

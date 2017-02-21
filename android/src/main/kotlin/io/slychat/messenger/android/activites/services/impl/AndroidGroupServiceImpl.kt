@@ -2,7 +2,7 @@ package io.slychat.messenger.android.activites.services.impl
 
 import android.support.v7.app.AppCompatActivity
 import io.slychat.messenger.android.AndroidApp
-import io.slychat.messenger.android.activites.services.GroupService
+import io.slychat.messenger.android.activites.services.AndroidGroupService
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.GroupConversation
@@ -15,7 +15,7 @@ import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import rx.Subscription
 
-class GroupServiceImpl(activity: AppCompatActivity): GroupService {
+class AndroidGroupServiceImpl(activity: AppCompatActivity): AndroidGroupService {
     private val app = AndroidApp.get(activity)
     private val groupService = app.getUserComponent().groupService
     private val contactService = app.getUserComponent().contactsService

@@ -1,16 +1,16 @@
 package io.slychat.messenger.android.activites.services
 
-import io.slychat.messenger.android.activites.services.impl.SettingsServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidConfigServiceImpl
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.services.config.ConvoTTLSettings
 
-interface SettingsService {
+interface AndroidConfigService {
 
-    fun addNotificationConfigListener(listener: (SettingsServiceImpl.NotificationConfig) -> Unit)
+    fun addNotificationConfigListener(listener: (AndroidConfigServiceImpl.NotificationConfig) -> Unit)
 
-    fun addMarketingConfigListener(listener: (SettingsServiceImpl.MarketingConfig) -> Unit)
+    fun addMarketingConfigListener(listener: (AndroidConfigServiceImpl.MarketingConfig) -> Unit)
 
-    fun addAppearanceConfigListener(listener: (SettingsServiceImpl.AppearanceConfig) -> Unit)
+    fun addAppearanceConfigListener(listener: (AndroidConfigServiceImpl.AppearanceConfig) -> Unit)
 
     fun clearConfigListener()
 

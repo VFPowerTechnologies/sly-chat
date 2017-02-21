@@ -6,7 +6,7 @@ import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.messaging.ConversationMessage
 import nl.komponents.kovenant.Promise
 
-interface MessengerService {
+interface AndroidMessengerService {
 
     fun fetchAllConversation (): Promise<MutableMap<UserId, UserConversation>, Exception>
 

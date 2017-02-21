@@ -7,10 +7,8 @@ import android.content.pm.PackageManager
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Bundle
-import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.widget.Toolbar
-import android.util.SparseArray
 import android.view.MenuItem
 import android.view.WindowManager
 import android.widget.LinearLayout
@@ -18,13 +16,9 @@ import android.widget.Switch
 import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.impl.SettingsServiceImpl
-import nl.komponents.kovenant.Deferred
-import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.deferred
+import io.slychat.messenger.android.activites.services.impl.AndroidConfigServiceImpl
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
-import java.util.Arrays
 
 class SettingsActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -34,7 +28,7 @@ class SettingsActivity : BaseActivity() {
     }
 
     private lateinit var app: AndroidApp
-    private lateinit var settingsService: SettingsServiceImpl
+    private lateinit var configService: AndroidConfigServiceImpl
 
     private lateinit var notificationSwitch: Switch
     private lateinit var notificationSoundName: TextView
@@ -54,22 +48,22 @@ class SettingsActivity : BaseActivity() {
         setSupportActionBar(actionBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        settingsService = SettingsServiceImpl(this)
+        configService = AndroidConfigServiceImpl(this)
 
         notificationSwitch = findViewById(R.id.settings_notification_switch) as Switch
         notificationSoundName = findViewById(R.id.settings_notification_sound_name) as TextView
-        notificationSwitch.isChecked = settingsService.notificationEnabled
-        notificationSoundName.text = settingsService.notificationConfig.soundName
+        notificationSwitch.isChecked = configService.notificationEnabled
+        notificationSoundName.text = configService.notificationConfig.soundName
 
         chooseNotification = findViewById(R.id.settings_choose_notification) as LinearLayout
         darkThemeSwitch = findViewById(R.id.settings_dark_theme_switch) as Switch
-        if (settingsService.selectedTheme == SettingsServiceImpl.darkTheme)
+        if (configService.selectedTheme == AndroidConfigServiceImpl.darkTheme)
             darkThemeSwitch.isChecked = true
         else
             darkThemeSwitch.isChecked = false
 
         inviteSwitch = findViewById(R.id.settings_invite_switch) as Switch
-        inviteSwitch.isChecked = settingsService.marketingShowInviteFriends
+        inviteSwitch.isChecked = configService.marketingShowInviteFriends
 
         createEventListeners()
         setConfigListeners()
@@ -78,12 +72,12 @@ class SettingsActivity : BaseActivity() {
     }
 
     private fun setConfigListeners() {
-        settingsService.addNotificationConfigListener {
+        configService.addNotificationConfigListener {
             notificationSoundName.text = it.soundName
         }
 
-        settingsService.addAppearanceConfigListener {
-            if (it.theme == SettingsServiceImpl.lightTheme)
+        configService.addAppearanceConfigListener {
+            if (it.theme == AndroidConfigServiceImpl.lightTheme)
                 setTheme(R.style.SlyThemeLight)
             else
                 setTheme(R.style.SlyTheme)
@@ -96,7 +90,7 @@ class SettingsActivity : BaseActivity() {
     }
 
     private fun clearConfigListeners() {
-        settingsService.clearConfigListener()
+        configService.clearConfigListener()
     }
 
     private fun createEventListeners() {
@@ -105,29 +99,29 @@ class SettingsActivity : BaseActivity() {
         }
 
         notificationSwitch.setOnCheckedChangeListener { compoundButton, b ->
-            settingsService.notificationEnabled = b
+            configService.notificationEnabled = b
         }
 
         darkThemeSwitch.setOnCheckedChangeListener { compoundButton, b ->
             if (b)
-                settingsService.selectedTheme = SettingsServiceImpl.darkTheme
+                configService.selectedTheme = AndroidConfigServiceImpl.darkTheme
             else
-                settingsService.selectedTheme = SettingsServiceImpl.lightTheme
+                configService.selectedTheme = AndroidConfigServiceImpl.lightTheme
         }
 
         inviteSwitch.setOnCheckedChangeListener { compoundButton, b ->
-            settingsService.marketingShowInviteFriends = b
+            configService.marketingShowInviteFriends = b
         }
     }
 
     private fun handleNotificationChooser() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-            openRingtonePicker(settingsService.notificationConfig.sound)
+            openRingtonePicker(configService.notificationConfig.sound)
         }
         else {
             requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE) map { granted ->
                 if (granted)
-                    openRingtonePicker(settingsService.notificationConfig.sound)
+                    openRingtonePicker(configService.notificationConfig.sound)
             }
         }
     }
@@ -168,7 +162,7 @@ class SettingsActivity : BaseActivity() {
 
                 val value = uri?.toString()
                 if (value != null)
-                    settingsService.notificationSound = value
+                    configService.notificationSound = value
             }
 
             else -> {

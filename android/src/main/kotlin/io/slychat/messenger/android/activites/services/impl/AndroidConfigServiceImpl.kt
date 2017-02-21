@@ -2,11 +2,11 @@ package io.slychat.messenger.android.activites.services.impl
 
 import android.support.v7.app.AppCompatActivity
 import io.slychat.messenger.android.AndroidApp
-import io.slychat.messenger.android.activites.services.SettingsService
+import io.slychat.messenger.android.activites.services.AndroidConfigService
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.services.config.ConvoTTLSettings
 
-class SettingsServiceImpl (activity: AppCompatActivity): SettingsService {
+class AndroidConfigServiceImpl(activity: AppCompatActivity): AndroidConfigService {
     companion object {
         val darkTheme = "dark"
         val lightTheme = "light"

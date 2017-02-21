@@ -2,14 +2,14 @@ package io.slychat.messenger.android.activites.services.impl
 
 import android.support.v7.app.AppCompatActivity
 import io.slychat.messenger.android.AndroidApp
-import io.slychat.messenger.android.activites.services.AccountService
+import io.slychat.messenger.android.activites.services.AndroidAccountService
 import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.services.ui.UIAccountUpdateResult
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 
-class AccountServiceImpl(val activity: AppCompatActivity): AccountService {
+class AndroidAccountServiceImpl(val activity: AppCompatActivity): AndroidAccountService {
     private val app = AndroidApp.get(activity)
 
     fun UIAccountUpdateResult.toAccountUpdateResultResult(): AccountUpdateResult = AccountUpdateResult(successful, errorMessage, accountInfo)

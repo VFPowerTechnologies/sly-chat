@@ -11,7 +11,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidGroupServiceImpl
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupConversation
 import io.slychat.messenger.core.persistence.GroupId
@@ -24,7 +24,7 @@ class GroupFragment : Fragment() {
 
     private var v: View? = null
 
-    private lateinit var groupService: GroupServiceImpl
+    private lateinit var groupService: AndroidGroupServiceImpl
 
     private var groupData: MutableMap<GroupId, Int> = mutableMapOf()
 
@@ -35,7 +35,7 @@ class GroupFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         v = inflater!!.inflate(R.layout.address_book_groups_fragment, container, false)
 
-        groupService = GroupServiceImpl(activity as AppCompatActivity)
+        groupService = AndroidGroupServiceImpl(activity as AppCompatActivity)
 
         createEventListeners()
 

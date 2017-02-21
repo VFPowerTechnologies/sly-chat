@@ -12,7 +12,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidContactServiceImpl
 import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.ContactInfo
@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 
 class AddContactActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
-    private lateinit var contactService: ContactServiceImpl
+    private lateinit var contactService: AndroidContactServiceImpl
 
     private lateinit var app: AndroidApp
 
@@ -35,7 +35,7 @@ class AddContactActivity : BaseActivity() {
 
         app = AndroidApp.get(this)
 
-        contactService = ContactServiceImpl(this)
+        contactService = AndroidContactServiceImpl(this)
 
         val actionBar = findViewById(R.id.add_contact_toolbar) as Toolbar
         actionBar.title = resources.getString(R.string.add_contact_title)

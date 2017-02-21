@@ -2,7 +2,7 @@ package io.slychat.messenger.android.activites.services.impl
 
 import android.support.v7.app.AppCompatActivity
 import io.slychat.messenger.android.AndroidApp
-import io.slychat.messenger.android.activites.services.MessengerService
+import io.slychat.messenger.android.activites.services.AndroidMessengerService
 import io.slychat.messenger.android.activites.services.RecentChatInfo
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
@@ -13,11 +13,11 @@ import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import rx.Subscription
 
-class MessengerServiceImpl (activity: AppCompatActivity): MessengerService {
+class AndroidMessengerServiceImpl(activity: AppCompatActivity): AndroidMessengerService {
     private val app = AndroidApp.get(activity)
     private var usercomponent = app.getUserComponent()
     private val messageService = usercomponent.messageService
-    private val contactService = ContactServiceImpl(activity)
+    private val contactService = AndroidContactServiceImpl(activity)
 
     private var newMessageUIListener: ((ConversationMessage) -> Unit)? = null
     private var messageUpdateUIListener: ((MessageUpdateEvent) -> Unit)? = null

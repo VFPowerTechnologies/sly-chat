@@ -12,8 +12,8 @@ import android.widget.TextView
 import android.view.ViewGroup.LayoutParams
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
-import io.slychat.messenger.android.activites.services.impl.ContactServiceImpl
-import io.slychat.messenger.android.activites.services.impl.GroupServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidContactServiceImpl
+import io.slychat.messenger.android.activites.services.impl.AndroidGroupServiceImpl
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.persistence.ConversationId
@@ -34,8 +34,8 @@ class MessageInfoActivity : BaseActivity() {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
-    private lateinit var contactService: ContactServiceImpl
-    private lateinit var groupService: GroupServiceImpl
+    private lateinit var contactService: AndroidContactServiceImpl
+    private lateinit var groupService: AndroidGroupServiceImpl
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,8 +45,8 @@ class MessageInfoActivity : BaseActivity() {
         setContentView(R.layout.activity_message_info)
 
         app = AndroidApp.get(this)
-        contactService = ContactServiceImpl(this)
-        groupService = GroupServiceImpl(this)
+        contactService = AndroidContactServiceImpl(this)
+        groupService = AndroidGroupServiceImpl(this)
 
         val actionBar = findViewById(R.id.message_info_toolbar) as Toolbar
         actionBar.title = "Message Information"
