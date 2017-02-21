@@ -14,6 +14,7 @@ import io.slychat.messenger.core.randomAuthToken
 import io.slychat.messenger.core.randomDeviceId
 import io.slychat.messenger.core.relay.RelayClientEvent
 import io.slychat.messenger.core.relay.RelayClientState
+import io.slychat.messenger.services.auth.AuthApiResponseException
 import io.slychat.messenger.services.auth.AuthResult
 import io.slychat.messenger.services.config.AppConfig
 import io.slychat.messenger.testutils.*
@@ -28,6 +29,7 @@ import rx.subjects.PublishSubject
 import java.io.IOException
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class SlyApplicationTest {
@@ -122,6 +124,42 @@ class SlyApplicationTest {
         finally {
             loginEventSubscriber.unsubscribe()
         }
+    }
+
+    @Test
+    fun `resetLoginEvent should reset the last login event to LOGGED_OUT`() {
+        val app = createApp()
+        app.init(appComponent)
+
+        whenever(appComponent.authenticationService.auth(any(), any(), any())).thenReject(AuthApiResponseException(""))
+
+        app.login("", "", true)
+
+        var maybeFirstEvent: LoginEvent? = null
+
+        val sub = app.loginEvents.subscribe {
+            maybeFirstEvent = it
+        }
+
+        val firstEvent = assertNotNull(maybeFirstEvent, "First LoginEvent not emitted")
+
+        assertEquals(LoginState.LOGIN_FAILED, firstEvent.state, "Invalid first login state")
+
+        sub.unsubscribe()
+
+        app.resetLoginEvent()
+
+        var maybeSecondEvent: LoginEvent? = null
+
+        val sub2 = app.loginEvents.subscribe {
+            maybeSecondEvent = it
+        }
+
+        val secondEvent = assertNotNull(maybeSecondEvent, "Second LoginEvent not emitted")
+
+        assertEquals(LoginState.LOGGED_OUT, secondEvent.state, "Invalid second login state")
+
+        sub2.unsubscribe()
     }
 
     @Test
