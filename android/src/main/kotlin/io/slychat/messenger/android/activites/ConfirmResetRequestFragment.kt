@@ -146,7 +146,7 @@ class ConfirmResetRequestFragment: Fragment() {
         val dialog = AlertDialog.Builder(activity)
                 .setTitle(title)
                 .setMessage(message)
-                .setPositiveButton("OK", object : DialogInterface.OnClickListener {
+                .setPositiveButton(resources.getString(R.string.ok_button), object : DialogInterface.OnClickListener {
                     override fun onClick(dialog: DialogInterface?, which: Int) {
                         dialog?.dismiss()
                         callback()

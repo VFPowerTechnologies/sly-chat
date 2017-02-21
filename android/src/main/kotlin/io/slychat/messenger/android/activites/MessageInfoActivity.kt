@@ -49,8 +49,7 @@ class MessageInfoActivity : BaseActivity() {
         groupService = AndroidGroupServiceImpl(this)
 
         val actionBar = findViewById(R.id.message_info_toolbar) as Toolbar
-        actionBar.title = "Message Information"
-//        actionBar.title = resources.getString(R.string.profile_title)
+        actionBar.title = resources.getString(R.string.message_info_title)
         setSupportActionBar(actionBar)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -102,34 +101,34 @@ class MessageInfoActivity : BaseActivity() {
 
         val mInfoContainer = findViewById(R.id.message_info_container) as LinearLayout
         if (isSent) {
-            val mIsSent = createInfoTitle("Message was sent to:")
+            val mIsSent = createInfoTitle(resources.getString(R.string.message_info_sent_to))
             mIsSent.setPadding(0, 0, 0, pxToDp(16))
 
             mInfoContainer.addView(mIsSent)
         }
 
 
-        val mContactName = createInformationNode("Contact name:", contactInfo.name)
+        val mContactName = createInformationNode(resources.getString(R.string.message_info_contact_name), contactInfo.name)
         mInfoContainer.addView(mContactName)
 
-        val mContactEmail = createInformationNode("Contact email:", contactInfo.email)
+        val mContactEmail = createInformationNode(resources.getString(R.string.message_info_contact_email), contactInfo.email)
         mInfoContainer.addView(mContactEmail)
 
-        val mContactPubKey = createInformationNode("Contact public key:", contactInfo.publicKey)
+        val mContactPubKey = createInformationNode(resources.getString(R.string.message_info_contact_pub_key), contactInfo.publicKey)
         mInfoContainer.addView(mContactPubKey)
 
-        val mMessageId = createInformationNode("Message id:", messageId)
+        val mMessageId = createInformationNode(resources.getString(R.string.message_info_message_id), messageId)
         mInfoContainer.addView(mMessageId)
 
         if (isSent) {
             val sentTime = bundle.get(EXTRA_SENT_TIME) as Long
-            val mSentTime = createInformationNode("Sent time:", sentTime.toString())
+            val mSentTime = createInformationNode(resources.getString(R.string.message_info_sent_time), sentTime.toString())
             mInfoContainer.addView(mSentTime)
         }
         else {
             val receivedTime = bundle.get(EXTRA_RECEIVED_TIME) as Long
             if (receivedTime > 0) {
-                val mReceivedTime = createInformationNode("Received time:", receivedTime.toString())
+                val mReceivedTime = createInformationNode(resources.getString(R.string.message_info_received_time), receivedTime.toString())
                 mInfoContainer.addView(mReceivedTime)
             }
         }
@@ -142,42 +141,42 @@ class MessageInfoActivity : BaseActivity() {
         val mInfoContainer = findViewById(R.id.message_info_container) as LinearLayout
 
         if (isSent) {
-            val mSentTo = createInformationNode("Message was sent to group:", groupInfo.name)
+            val mSentTo = createInformationNode(resources.getString(R.string.message_info_sent_to_group), groupInfo.name)
             mInfoContainer.addView(mSentTo)
         }
         else {
-            val mReceivedIn = createInformationNode("Message received in group:", groupInfo.name)
+            val mReceivedIn = createInformationNode(resources.getString(R.string.message_info_sent_to_group), groupInfo.name)
             mInfoContainer.addView(mReceivedIn)
 
             if (speakerId != null) {
                 val fromContact = members[UserId(speakerId)]
                 if (fromContact != null) {
-                    val mFromContactName = createInformationNode("Contact name:", fromContact.name)
+                    val mFromContactName = createInformationNode(resources.getString(R.string.message_info_contact_name), fromContact.name)
                     mInfoContainer.addView(mFromContactName)
 
-                    val mFromContactEmail = createInformationNode("Contact email:", fromContact.email)
+                    val mFromContactEmail = createInformationNode(resources.getString(R.string.message_info_contact_email), fromContact.email)
                     mInfoContainer.addView(mFromContactEmail)
                 }
             }
         }
 
-        val mMessageId = createInformationNode("Message id:", messageId)
+        val mMessageId = createInformationNode(resources.getString(R.string.message_info_message_id), messageId)
         mInfoContainer.addView(mMessageId)
 
         if (isSent) {
             val sentTime = bundle.get(EXTRA_SENT_TIME) as Long
-            val mSentTime = createInformationNode("Sent time:", sentTime.toString())
+            val mSentTime = createInformationNode(resources.getString(R.string.message_info_sent_time), sentTime.toString())
             mInfoContainer.addView(mSentTime)
         }
         else {
             val receivedTime = bundle.get(EXTRA_RECEIVED_TIME) as Long
             if (receivedTime > 0) {
-                val mReceivedTime = createInformationNode("Received time:", receivedTime.toString())
+                val mReceivedTime = createInformationNode(resources.getString(R.string.message_info_received_time), receivedTime.toString())
                 mInfoContainer.addView(mReceivedTime)
             }
         }
 
-        val mGroupId = createInformationNode("Group id:", groupInfo.id.string)
+        val mGroupId = createInformationNode(resources.getString(R.string.message_info_group_id), groupInfo.id.string)
         mInfoContainer.addView(mGroupId)
 
         val mMembers = createMembersNode(members)
@@ -187,7 +186,7 @@ class MessageInfoActivity : BaseActivity() {
     private fun createMembersNode(members: Map<UserId, ContactInfo>): View {
         val node = LinearLayout(this)
         node.orientation = LinearLayout.VERTICAL
-        val titleNode = createInfoTitle("Group members:")
+        val titleNode = createInfoTitle(resources.getString(R.string.message_info_group_members))
         node.addView(titleNode)
         members.forEach { member ->
             node.addView(createMemberInfo(member.value.name, member.value.email))

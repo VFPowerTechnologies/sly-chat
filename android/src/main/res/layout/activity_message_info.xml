@@ -45,7 +45,7 @@
             <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Message Is Encrypted"
+                    android:text="@string/message_info_encrypted"
                     android:textAppearance="@style/TextAppearance.AppCompat.Medium"/>
 
             <CheckBox

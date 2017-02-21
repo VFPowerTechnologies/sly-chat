@@ -69,7 +69,7 @@ class AddContactActivity : BaseActivity() {
             if (contactInfo != null)
                 createContactResultNode(contactInfo)
             else {
-                mUsernameField.error = "No contact found"
+                mUsernameField.error = resources.getString(R.string.add_contact_no_result_error)
             }
         } failUi {
             log.condError(isNotNetworkError(it), "${it.message}", it)

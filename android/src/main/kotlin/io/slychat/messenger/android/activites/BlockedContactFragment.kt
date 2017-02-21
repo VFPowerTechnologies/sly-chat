@@ -129,9 +129,9 @@ class BlockedContactFragment : Fragment() {
             if (contactInfo !== null) {
                 AlertDialog.Builder(activity).setTitle(resources.getString(R.string.unblock_contact_add_back_dialog_title)).setMessage(contactInfo.email + resources.getString(R.string.unblock_contact_add_back_dialog_message))
                         .setIcon(android.R.drawable.ic_dialog_alert)
-                        .setPositiveButton("YES", DialogInterface.OnClickListener { dialog: DialogInterface, whichButton: Int ->
+                        .setPositiveButton(resources.getString(R.string.positive_button), DialogInterface.OnClickListener { dialog: DialogInterface, whichButton: Int ->
                             addContact(contactInfo)
-                        }).setNegativeButton("NO", null).show()
+                        }).setNegativeButton(resources.getString(R.string.negative_button), null).show()
             }
         }
     }

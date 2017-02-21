@@ -201,5 +201,24 @@
     <string name="forgot_password_username_required_error">Votre courriel ou numéro de téléphone est requis</string>
     <string name="global_success">Succès</string>
     <string name="chat_expiring_message_timer_text">" secondes"</string>
+    <string name="message_info_encrypted">Le message est crypté</string>
+    <string name="message_info_contact_email">Courriel du contact:</string>
+    <string name="message_info_contact_name">Nom du contact:</string>
+    <string name="message_info_contact_pub_key">Clé publique du contact:</string>
+    <string name="message_info_group_id">Id du groupe:</string>
+    <string name="message_info_group_members">Membres du groupe:</string>
+    <string name="message_info_message_id">Id du message:</string>
+    <string name="message_info_received_in_group">Recu dans le groupe:</string>
+    <string name="message_info_received_time">Heure de réception:</string>
+    <string name="message_info_sent_time">Heure d\'envoi:</string>
+    <string name="message_info_sent_to">Envoyé à:</string>
+    <string name="message_info_sent_to_group">Envoyé au groupe:</string>
+    <string name="message_info_title">Infomation du message</string>
+    <string name="add_contact_no_result_error">Aucun résultat trouvé</string>
+    <string name="negative_button">NON</string>
+    <string name="positive_button">OUI</string>
+    <string name="delete_message_text">êtes vous certain de vouloir effacer ce message?</string>
+    <string name="delete_message_title">Effacer ce message?</string>
+    <string name="ok_button">OK</string>
 
 </resources>

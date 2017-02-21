@@ -424,9 +424,9 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun deleteMessage(messageId: String) {
         val dialog = android.app.AlertDialog.Builder(this)
-                .setTitle("Delete message?")
-                .setMessage("Are you sure you want to delete this message?")
-                .setPositiveButton("OK", object : DialogInterface.OnClickListener {
+                .setTitle(resources.getString(R.string.delete_message_title))
+                .setMessage(resources.getString(R.string.delete_message_text))
+                .setPositiveButton(resources.getString(R.string.ok_button), object : DialogInterface.OnClickListener {
                     override fun onClick(dialog: DialogInterface?, which: Int) {
                         messengerService.deleteMessage(conversationId, messageId) successUi {
                             val chatList = findViewById(R.id.chat_list) as LinearLayout
