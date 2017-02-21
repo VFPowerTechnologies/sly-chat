@@ -4,11 +4,9 @@ import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.slychat.messenger.core.AuthToken
-import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.SerializedKeyVault
 import io.slychat.messenger.core.crypto.hashes.HashParams
-import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.HttpClient
 import io.slychat.messenger.core.http.HttpResponse
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesGetResponse
@@ -17,7 +15,6 @@ import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationServ
 import io.slychat.messenger.core.http.get
 import io.slychat.messenger.core.http.postJSON
 import io.slychat.messenger.core.persistence.RemoteAddressBookEntry
-import io.slychat.messenger.core.typeRef
 
 data class SiteAddressBook(
     @JsonProperty("entries")
@@ -69,11 +66,44 @@ enum class DeviceState {
     ACTIVE
 }
 
+data class UploadPartInfo(
+    @JsonProperty("n")
+    val n: Int,
+    @JsonProperty("size")
+    val size: Long
+)
+
+data class UploadInfo(
+    @JsonProperty("id")
+    val id: String,
+    @JsonProperty("fileSize")
+    val fileSize: Long,
+    @JsonProperty("fileMetadata")
+    val fileMetadata: ByteArray,
+    @JsonProperty("userMetadata")
+    val userMetadata: ByteArray,
+    @JsonProperty("parts")
+    val parts: List<UploadPartInfo>
+)
+
+class FileInfo(
+    @JsonProperty("id")
+    val id: String,
+    @JsonProperty("isDeleted")
+    val isDeleted: Boolean,
+    @JsonProperty("userMetadata")
+    val userMetadata: ByteArray,
+    @JsonProperty("fileMetadata")
+    val fileMetadata: ByteArray,
+    @JsonProperty("fileSize")
+    val fileSize: Long
+)
+
 /** Client for web api server dev functionality. */
 class DevClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     private val objectMapper = ObjectMapper()
 
-    private fun postRequestNoResponse(request: Any, url: String) {
+    private fun postRequestNoResponse(request: Any?, url: String) {
         val body = objectMapper.writeValueAsBytes(request)
 
         throwOnFailure(httpClient.postJSON("$serverBaseUrl$url", body))
@@ -264,5 +294,21 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
 
     fun getOfflineMessages(userId: UserId, deviceId: Int): OfflineMessagesGetResponse {
         return getRequest("/dev/messages/$userId/$deviceId", typeRef())
+    }
+
+    fun getQuota(userId: UserId): Quota {
+        return getRequest("/dev/storage/quota/$userId", typeRef())
+    }
+
+    fun getUploadInfo(userId: UserId, uploadId: String): UploadInfo? {
+        return getRequest("/dev/upload/$userId/$uploadId", typeRef())
+    }
+
+    fun markPartsAsComplete(userId: UserId, uploadId: String) {
+        postRequestNoResponse(null, "/dev/upload/$userId/$uploadId")
+    }
+
+    fun getFileInfo(userId : UserId, fileId: String): FileInfo? {
+        return getRequest("/dev/storage/$userId/$fileId", typeRef())
     }
 }

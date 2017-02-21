@@ -124,6 +124,8 @@ fun randomRegistrationId(): Int = KeyHelper.generateRegistrationId(false)
 
 fun randomMessageId(): String = randomUUID()
 
+fun generateUploadId(): String = randomUUID()
+
 fun randomMessageSendFailures(userId: UserId): Map<UserId, MessageSendFailure> = mapOf(
     userId to MessageSendFailure.InactiveUser()
 )
