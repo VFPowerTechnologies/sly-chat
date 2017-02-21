@@ -13,6 +13,15 @@ import io.slychat.messenger.services.RegistrationService
 import org.slf4j.LoggerFactory
 
 class RegistrationThreeFragment: Fragment() {
+    companion object {
+        fun getNewInstance(): Fragment {
+            val fragment = RegistrationThreeFragment()
+            fragment.view?.isFocusableInTouchMode = true
+            fragment.view?.requestFocus()
+
+            return fragment
+        }
+    }
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var registrationService : RegistrationService
@@ -63,11 +72,8 @@ class RegistrationThreeFragment: Fragment() {
     }
 
     private fun goToStepFour() {
-        val fragment = RegistrationFourFragment()
-        fragment.view?.isFocusableInTouchMode = true
-        fragment.view?.requestFocus()
-
-        fragmentManager.beginTransaction().replace(R.id.main_frag_container, fragment).addToBackStack("registrationStepThree").commit()
+        val fragment = RegistrationFourFragment.getNewInstance()
+        fragmentManager.beginTransaction().replace(R.id.main_frag_container, fragment).addToBackStack(RegistrationThreeFragment::class.java.name).commit()
     }
 
     override fun onPause() {

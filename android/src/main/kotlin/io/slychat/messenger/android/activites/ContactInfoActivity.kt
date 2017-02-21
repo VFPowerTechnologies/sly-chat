@@ -10,6 +10,13 @@ import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
 
 class ContactInfoActivity : BaseActivity() {
+    companion object {
+        val EXTRA_USER_ID = "io.slychat.messenger.android.activities.ContactInfoActivity.userId"
+        val EXTRA_USER_NAME = "io.slychat.messenger.android.activities.ContactInfoActivity.userName"
+        val EXTRA_USER_EMAIL = "io.slychat.messenger.android.activities.ContactInfoActivity.userEmail"
+        val EXTRA_USER_PUBKEY = "io.slychat.messenger.android.activities.ContactInfoActivity.userPubKey"
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
@@ -29,9 +36,9 @@ class ContactInfoActivity : BaseActivity() {
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_contact_info)
 
-        contactName = intent.extras["EXTRA_USER_NAME"] as String
-        contactPubKey = intent.extras["EXTRA_USER_PUBKEY"] as String
-        contactEmail = intent.extras["EXTRA_USER_EMAIL"] as String
+        contactName = intent.extras[EXTRA_USER_NAME] as String
+        contactPubKey = intent.extras[EXTRA_USER_PUBKEY] as String
+        contactEmail = intent.extras[EXTRA_USER_EMAIL] as String
 
 
         val actionBar = findViewById(R.id.contact_info_toolbar) as Toolbar

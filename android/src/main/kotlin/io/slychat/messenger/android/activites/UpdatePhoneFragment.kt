@@ -1,8 +1,8 @@
 package io.slychat.messenger.android.activites
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.Fragment
-import android.support.v4.app.FragmentManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,6 +17,24 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
 class UpdatePhoneFragment: Fragment() {
+    companion object {
+        val EXTRA_USERNAME = "io.slychat.messenger.android.activities.UpdatePhoneFragment.username"
+        val EXTRA_PASSWORD = "io.slychat.messenger.android.activities.UpdatePhoneFragment.password"
+
+        fun getNewInstance(username: String, password: String): Fragment {
+            val fragment = UpdatePhoneFragment()
+            val bundle = Bundle()
+            bundle.putString(EXTRA_USERNAME, username)
+            bundle.putString(EXTRA_PASSWORD, password)
+
+            fragment.view?.isFocusableInTouchMode = true
+            fragment.view?.requestFocus()
+            fragment.arguments = bundle
+
+            return fragment
+        }
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
     private var v: View? = null
 
@@ -32,8 +50,8 @@ class UpdatePhoneFragment: Fragment() {
 
         registrationActivity = activity as RegistrationActivity
 
-        email = this.arguments["EXTRA_EMAIL"] as String
-        password = this.arguments["EXTRA_PASSWORD"] as String
+        email = this.arguments[EXTRA_USERNAME] as String
+        password = this.arguments[EXTRA_PASSWORD] as String
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View ? {
@@ -49,11 +67,11 @@ class UpdatePhoneFragment: Fragment() {
         }
 
         cancelLink.setOnClickListener {
-            fragmentManager.popBackStack("login", FragmentManager.POP_BACK_STACK_INCLUSIVE)
+            activity.finish()
         }
 
         verifyLink.setOnClickListener {
-            registrationActivity.startSmsVerification("updatePhone")
+            registrationActivity.startSmsVerification(UpdatePhoneFragment::class.java.name)
         }
 
         return v
@@ -72,7 +90,7 @@ class UpdatePhoneFragment: Fragment() {
         app.appComponent.registrationService.updatePhone(UIUpdatePhoneInfo(email, password, phone)) successUi { result ->
             registrationActivity.hideProgressDialog()
             if (result.successful) {
-                registrationActivity.startSmsVerification("updatePhone")
+                registrationActivity.startSmsVerification(UpdatePhoneFragment::class.java.name)
             }
             else {
                 log.debug(result.errorMessage)

@@ -11,6 +11,12 @@ import org.slf4j.LoggerFactory
 import rx.Subscription
 
 class RegistrationActivity : BaseActivity() {
+    companion object {
+        val EXTRA_USERNAME = "io.slychat.messenger.android.activities.RegistrationActivity.username"
+        val EXTRA_PASSWORD = "io.slychat.messenger.android.activities.RegistrationActivity.password"
+        val EXTRA_REMEMBER_ME = "io.slychat.messenger.android.activities.RegistrationActivity.rememberMe"
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     private var loginListener: Subscription? = null
@@ -38,24 +44,14 @@ class RegistrationActivity : BaseActivity() {
 
         var fragment = supportFragmentManager.findFragmentById(R.id.main_frag_container)
         if (fragment == null) {
-            if (intent.action == "sms_verification") {
-                val email = intent.getStringExtra("EXTRA_EMAIL")
-                val password = intent.getStringExtra("EXTRA_PASSWORD")
-                val rememberMe = intent.getBooleanExtra("EXTRA_REMEMBER_ME", false)
-                fragment = SmsVerificationFragment()
-                val bundle = Bundle()
-                bundle.putString("EXTRA_EMAIL", email)
-                bundle.putString("EXTRA_PASSWORD", password)
-                bundle.putBoolean("EXTRA_REMEMBER_ME", rememberMe)
-
-                fragment.view?.isFocusableInTouchMode = true
-                fragment.view?.requestFocus()
-                fragment.arguments = bundle
+            if (intent.action == SmsVerificationFragment::class.java.name) {
+                val username = intent.getStringExtra(EXTRA_USERNAME)
+                val password = intent.getStringExtra(EXTRA_PASSWORD)
+                val rememberMe = intent.getBooleanExtra(EXTRA_REMEMBER_ME, false)
+                fragment = SmsVerificationFragment.getNewInstance(username, password, rememberMe)
             }
             else {
-                fragment = RegistrationOneFragment()
-                fragment.view?.isFocusableInTouchMode = true
-                fragment.view?.requestFocus()
+                fragment = RegistrationOneFragment.getNewInstance()
             }
 
             supportFragmentManager.beginTransaction().add(R.id.main_frag_container, fragment).commit()
@@ -105,7 +101,7 @@ class RegistrationActivity : BaseActivity() {
         hideProgressDialog()
 
         if (event.successful) {
-            startSmsVerification("registration")
+            startSmsVerification(RegistrationActivity::class.java.name)
         }
         else {
             log.warn(event.errorMessage)
@@ -114,15 +110,7 @@ class RegistrationActivity : BaseActivity() {
 
     fun startSmsVerification(fragmentId: String) {
         hideProgressDialog()
-        val fragment = SmsVerificationFragment()
-        val bundle = Bundle()
-        bundle.putString("EXTRA_EMAIL", registrationInfo.email)
-        bundle.putString("EXTRA_PASSWORD", registrationInfo.password)
-        bundle.putBoolean("EXTRA_REMEMBER_ME", false)
-
-        fragment.view?.isFocusableInTouchMode = true
-        fragment.view?.requestFocus()
-        fragment.arguments = bundle
+        val fragment = SmsVerificationFragment.getNewInstance(registrationInfo.email, registrationInfo.password, false)
         supportFragmentManager.beginTransaction().replace(R.id.main_frag_container, fragment).addToBackStack(fragmentId).commit()
     }
 

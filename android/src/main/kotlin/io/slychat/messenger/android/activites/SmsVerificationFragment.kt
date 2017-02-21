@@ -15,6 +15,28 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
 class SmsVerificationFragment: Fragment() {
+    companion object {
+        val EXTRA_USERNAME = "io.slychat.messenger.android.activities.SmsVerificationFragment.username"
+        val EXTRA_PASSWORD = "io.slychat.messenger.android.activities.SmsVerificationFragment.password"
+        val EXTRA_REMEMBER_ME = "io.slychat.messenger.android.activities.SmsVerificationFragment.rememberMe"
+
+        val INVALID_CODE_ERROR = "invalid code"
+
+        fun getNewInstance(username: String, password: String, rememberMe: Boolean): Fragment {
+            val fragment = SmsVerificationFragment()
+            val bundle = Bundle()
+            bundle.putString(EXTRA_USERNAME, username)
+            bundle.putString(EXTRA_PASSWORD, password)
+            bundle.putBoolean(EXTRA_REMEMBER_ME, rememberMe)
+
+            fragment.view?.isFocusableInTouchMode = true
+            fragment.view?.requestFocus()
+            fragment.arguments = bundle
+
+            return fragment
+        }
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
     private var v: View? = null
 
@@ -32,9 +54,9 @@ class SmsVerificationFragment: Fragment() {
 
         registrationActivity = activity as RegistrationActivity
 
-        email = this.arguments["EXTRA_EMAIL"] as String
-        password = this.arguments["EXTRA_PASSWORD"] as String
-        rememberMe = this.arguments["EXTRA_REMEMBER_ME"] as Boolean
+        email = this.arguments[EXTRA_USERNAME] as String
+        password = this.arguments[EXTRA_PASSWORD] as String
+        rememberMe = this.arguments[EXTRA_REMEMBER_ME] as Boolean
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View ? {
@@ -50,15 +72,8 @@ class SmsVerificationFragment: Fragment() {
         }
 
         updatePhoneLink.setOnClickListener {
-            val fragment = UpdatePhoneFragment()
-            val bundle = Bundle()
-            bundle.putString("EXTRA_EMAIL", email)
-            bundle.putString("EXTRA_PASSWORD", password)
-
-            fragment.view?.isFocusableInTouchMode = true
-            fragment.view?.requestFocus()
-            fragment.arguments = bundle
-            fragmentManager.beginTransaction().replace(R.id.main_frag_container, fragment).addToBackStack("smsVerification").commit()
+            val fragment = UpdatePhoneFragment.getNewInstance(email, password)
+            fragmentManager.beginTransaction().replace(R.id.main_frag_container, fragment).addToBackStack(SmsVerificationFragment::class.java.name).commit()
         }
 
         resendCodeLink.setOnClickListener {
@@ -85,7 +100,7 @@ class SmsVerificationFragment: Fragment() {
             }
             else {
                 registrationActivity.hideProgressDialog()
-                if (result.errorMessage != null && result.errorMessage == "invalid code") {
+                if (result.errorMessage != null && result.errorMessage == INVALID_CODE_ERROR) {
                     smsCodeField.error = resources.getString(R.string.registration_verification_code_invalid_error)
                 }
             }

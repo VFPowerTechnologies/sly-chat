@@ -12,6 +12,9 @@ import io.slychat.messenger.android.R
 import org.slf4j.LoggerFactory
 
 class InviteFriendsActivity : BaseActivity() {
+    companion object {
+        val PLAIN_TEXT_TYPE = "text/plain"
+    }
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var inviteFriendsBtn: Button
@@ -50,7 +53,7 @@ class InviteFriendsActivity : BaseActivity() {
             return
 
         val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
+            type = PLAIN_TEXT_TYPE
             putExtra(Intent.EXTRA_TEXT, text)
         }
 

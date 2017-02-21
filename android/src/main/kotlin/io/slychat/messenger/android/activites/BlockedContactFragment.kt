@@ -146,8 +146,8 @@ class BlockedContactFragment : Fragment() {
 
     private fun loadChatPageFor (id: UserId) {
         val intent = Intent(activity.baseContext, ChatActivity::class.java)
-        intent.putExtra("EXTRA_ISGROUP", false)
-        intent.putExtra("EXTRA_ID", id.long)
+        intent.putExtra(ChatActivity.EXTRA_ISGROUP, false)
+        intent.putExtra(ChatActivity.EXTRA_CONVERSTATION_ID, id.long)
         startActivity(intent)
     }
 }

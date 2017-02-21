@@ -14,6 +14,9 @@ import org.slf4j.LoggerFactory
 import rx.Subscription
 
 class LoginActivity : BaseActivity() {
+    companion object {
+        val PHONE_CONFIRMATION_NEEDED_ERROR = "Phone confirmation needed"
+    }
     private val log = LoggerFactory.getLogger(javaClass)
 
     private var loginListener: Subscription? = null
@@ -121,6 +124,7 @@ class LoginActivity : BaseActivity() {
     }
 
     private fun handleLoggedInEvent(state: LoginEvent.LoggedIn) {
+        log.debug("Received a logged in event")
         hideProgressDialog()
         app.accountInfo = state.accountInfo
         app.publicKey = state.publicKey
@@ -130,12 +134,15 @@ class LoginActivity : BaseActivity() {
     }
 
     private fun handleLoginFailedEvent(event: LoginEvent.LoginFailed) {
+        log.debug("Received a login failed event")
         val error = event.errorMessage
         hideProgressDialog()
-        if (error == "Phone confirmation needed")
+        if (error == PHONE_CONFIRMATION_NEEDED_ERROR)
             startSmsVerification()
         else if (error !== null)
             showLoginError(error)
+
+        app.app.resetLoginEvent()
     }
 
     fun showLoginError(error: String) {
@@ -149,10 +156,10 @@ class LoginActivity : BaseActivity() {
         val rembemberMe = findViewById(R.id.login_remember_me) as Switch
         val registrationIntent = Intent(baseContext, RegistrationActivity::class.java)
 
-        registrationIntent.putExtra("EXTRA_EMAIL", username)
-        registrationIntent.putExtra("EXTRA_PASSWORD", password)
-        registrationIntent.putExtra("EXTRA_REMEMBER_ME", rembemberMe.isChecked)
-        registrationIntent.action = "sms_verification"
+        registrationIntent.putExtra(RegistrationActivity.EXTRA_USERNAME, username)
+        registrationIntent.putExtra(RegistrationActivity.EXTRA_PASSWORD, password)
+        registrationIntent.putExtra(RegistrationActivity.EXTRA_REMEMBER_ME, rembemberMe.isChecked)
+        registrationIntent.action = SmsVerificationFragment::class.java.name
         startActivity(registrationIntent)
     }
 

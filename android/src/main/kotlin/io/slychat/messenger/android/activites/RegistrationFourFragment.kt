@@ -21,6 +21,15 @@ import org.slf4j.LoggerFactory
 import java.util.*
 
 class RegistrationFourFragment: Fragment() {
+    companion object {
+        fun getNewInstance(): Fragment {
+            val fragment = RegistrationFourFragment()
+            fragment.view?.isFocusableInTouchMode = true
+            fragment.view?.requestFocus()
+
+            return fragment
+        }
+    }
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var registrationService : RegistrationService

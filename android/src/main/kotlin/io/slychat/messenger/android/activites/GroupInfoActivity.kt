@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory
 
 class GroupInfoActivity : BaseActivity() {
     companion object {
-        val EXTRA_GROUP_ID = "group_id"
+        val EXTRA_GROUP_ID = "io.slychat.messenger.android.activites.GroupInfoActivity.groupId"
     }
     private val log = LoggerFactory.getLogger(javaClass)
 

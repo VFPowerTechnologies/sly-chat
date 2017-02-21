@@ -159,20 +159,15 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
         val nodeId = View.generateViewId()
         node.id = nodeId
 
+        val intent = getChatPageIntent(data.id)
         if (data.id is ConversationId.User) {
             node.setOnClickListener {
-                val intent = Intent(baseContext, ChatActivity::class.java)
-                intent.putExtra("EXTRA_ISGROUP", false)
-                intent.putExtra("EXTRA_ID", data.id.id.long)
                 startActivity(intent)
             }
             recentNodeData.put(data.id.id, nodeId)
         }
         else if (data.id is ConversationId.Group) {
             node.setOnClickListener {
-                val intent = Intent(baseContext, ChatActivity::class.java)
-                intent.putExtra("EXTRA_ISGROUP", true)
-                intent.putExtra("EXTRA_ID", data.id.id.string)
                 startActivity(intent)
             }
             groupRecentNodeData.put(data.id.id, nodeId)

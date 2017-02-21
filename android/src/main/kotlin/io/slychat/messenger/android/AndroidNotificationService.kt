@@ -157,12 +157,12 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
             intent = Intent(context, ChatActivity::class.java)
             val conversationId = newMessagesNotification.contents.keys.first()
             if (conversationId is ConversationId.User) {
-                intent.putExtra("EXTRA_ISGROUP", false)
-                intent.putExtra("EXTRA_ID", conversationId.id.long)
+                intent.putExtra(ChatActivity.EXTRA_CONVERSTATION_ID, false)
+                intent.putExtra(ChatActivity.EXTRA_CONVERSTATION_ID, conversationId.id.long)
             }
             else if (conversationId is ConversationId.Group) {
-                intent.putExtra("EXTRA_ISGROUP", true)
-                intent.putExtra("EXTRA_ID", conversationId.id.string)
+                intent.putExtra(ChatActivity.EXTRA_ISGROUP, true)
+                intent.putExtra(ChatActivity.EXTRA_CONVERSTATION_ID, conversationId.id.string)
             }
         }
         else

@@ -78,12 +78,12 @@ open class BaseActivity : AppCompatActivity() {
         val intent = Intent(baseContext, ChatActivity::class.java)
 
         if (conversationId is ConversationId.User) {
-            intent.putExtra("EXTRA_ISGROUP", false)
-            intent.putExtra("EXTRA_ID", conversationId.id.long)
+            intent.putExtra(ChatActivity.EXTRA_ISGROUP, false)
+            intent.putExtra(ChatActivity.EXTRA_CONVERSTATION_ID, conversationId.id.long)
         }
         else if (conversationId is ConversationId.Group) {
-            intent.putExtra("EXTRA_ISGROUP", true)
-            intent.putExtra("EXTRA_ID", conversationId.id.string)
+            intent.putExtra(ChatActivity.EXTRA_ISGROUP, true)
+            intent.putExtra(ChatActivity.EXTRA_CONVERSTATION_ID, conversationId.id.string)
         }
 
         return intent

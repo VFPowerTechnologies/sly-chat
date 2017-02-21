@@ -15,6 +15,16 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 
 class RegistrationTwoFragment: Fragment() {
+    companion object {
+        fun getNewInstance(): Fragment {
+            val fragment = RegistrationTwoFragment()
+            fragment.view?.isFocusableInTouchMode = true
+            fragment.view?.requestFocus()
+
+            return fragment
+        }
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var registrationService : RegistrationService
@@ -80,11 +90,8 @@ class RegistrationTwoFragment: Fragment() {
     }
 
     private fun goToStepThree() {
-        val fragment = RegistrationThreeFragment()
-        fragment.view?.isFocusableInTouchMode = true
-        fragment.view?.requestFocus()
-
-        fragmentManager.beginTransaction().replace(R.id.main_frag_container, fragment).addToBackStack("registrationStepTwo").commit()
+        val fragment = RegistrationThreeFragment.getNewInstance()
+        fragmentManager.beginTransaction().replace(R.id.main_frag_container, fragment).addToBackStack(RegistrationTwoFragment::class.java.name).commit()
     }
 
     override fun onPause() {

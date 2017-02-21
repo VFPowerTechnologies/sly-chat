@@ -16,6 +16,7 @@ import io.slychat.messenger.android.activites.services.impl.AndroidContactServic
 import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.ContactInfo
+import io.slychat.messenger.core.persistence.toConversationId
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -101,9 +102,7 @@ class AddContactActivity : BaseActivity() {
         val mUsernameField = findViewById(R.id.add_contact_field) as EditText
         contactService.addContact(contactInfo) successUi { success ->
                 mUsernameField.setText("")
-                val intent = Intent(baseContext, ChatActivity::class.java)
-                intent.putExtra("EXTRA_ISGROUP", false)
-                intent.putExtra("EXTRA_ID", contactInfo.id.long)
+                val intent = getChatPageIntent(contactInfo.id.toConversationId())
                 startActivity(intent)
         } failUi  {
             log.error("Something failed ${it.message}", it)

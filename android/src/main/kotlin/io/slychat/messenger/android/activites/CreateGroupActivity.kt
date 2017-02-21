@@ -1,7 +1,6 @@
 package io.slychat.messenger.android.activites
 
 import android.app.ProgressDialog
-import android.content.Intent
 import android.os.Bundle
 import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
@@ -19,6 +18,7 @@ import io.slychat.messenger.android.activites.services.impl.AndroidMessengerServ
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.UserConversation
+import io.slychat.messenger.core.persistence.toConversationId
 import io.slychat.messenger.services.messaging.GroupEvent
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -136,9 +136,7 @@ class CreateGroupActivity : BaseActivity() {
 
     private fun loadGroupChat(groupId: GroupId) {
         progressDialog.dismiss()
-        val intent = Intent(baseContext, ChatActivity::class.java)
-        intent.putExtra("EXTRA_ISGROUP", true)
-        intent.putExtra("EXTRA_ID", groupId.string)
+        val intent = getChatPageIntent(groupId.toConversationId())
         startActivity(intent)
         finish()
     }

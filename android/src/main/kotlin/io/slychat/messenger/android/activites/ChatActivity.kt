@@ -35,6 +35,10 @@ import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.isNotNetworkError
 
 class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedListener {
+    companion object {
+        val EXTRA_ISGROUP = "io.slychat.messenger.android.activities.ChatActivity.isGroup"
+        val EXTRA_CONVERSTATION_ID = "io.slychat.messenger.android.activities.ChatActivity.converstationId"
+    }
     private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
@@ -62,16 +66,16 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         log.debug("onCreate")
 
         val layoutId: Int
-        val isGroup = intent.getBooleanExtra("EXTRA_ISGROUP", false)
+        val isGroup = intent.getBooleanExtra(EXTRA_ISGROUP, false)
         if (isGroup) {
-            val gIdString = intent.getStringExtra("EXTRA_ID")
+            val gIdString = intent.getStringExtra(EXTRA_CONVERSTATION_ID)
             if (gIdString == null)
                 finish()
             conversationId = GroupId(gIdString).toConversationId()
             layoutId = R.layout.activity_group_chat
         }
         else {
-            val uIdLong = intent.getLongExtra("EXTRA_ID", -1L)
+            val uIdLong = intent.getLongExtra(EXTRA_CONVERSTATION_ID, -1L)
             if (uIdLong == -1L)
                 finish()
             conversationId = UserId(uIdLong).toConversationId()
@@ -677,10 +681,10 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val cId = conversationId
         if (cId is ConversationId.User) {
             val intent = Intent(baseContext, ContactInfoActivity::class.java)
-            intent.putExtra("EXTRA_USERID", cId.id.long)
-            intent.putExtra("EXTRA_USER_NAME", contactInfo.name)
-            intent.putExtra("EXTRA_USER_EMAIL", contactInfo.email)
-            intent.putExtra("EXTRA_USER_PUBKEY", contactInfo.publicKey)
+            intent.putExtra(ContactInfoActivity.EXTRA_USER_ID, cId.id.long)
+            intent.putExtra(ContactInfoActivity.EXTRA_USER_NAME, contactInfo.name)
+            intent.putExtra(ContactInfoActivity.EXTRA_USER_EMAIL, contactInfo.email)
+            intent.putExtra(ContactInfoActivity.EXTRA_USER_PUBKEY, contactInfo.publicKey)
             startActivity(intent)
         }
     }

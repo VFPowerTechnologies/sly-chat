@@ -130,8 +130,8 @@ class GroupFragment : Fragment() {
 
     private fun loadGroupChat(id: GroupId) {
         val intent = Intent(activity.baseContext, ChatActivity::class.java)
-        intent.putExtra("EXTRA_ISGROUP", true)
-        intent.putExtra("EXTRA_ID", id.string)
+        intent.putExtra(ChatActivity.EXTRA_ISGROUP, true)
+        intent.putExtra(ChatActivity.EXTRA_CONVERSTATION_ID, id.string)
         startActivity(intent)
     }
 
