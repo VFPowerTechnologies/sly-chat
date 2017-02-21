@@ -109,6 +109,7 @@ dependencies {
     compile "com.google.android.gms:play-services-gcm:$versions.playServices"
     compile "com.android.support:design:$versions.appcompatv7"
     compile "org.ocpsoft.prettytime:prettytime:$versions.prettyTime"
+    compile "com.googlecode.libphonenumber:libphonenumber:$versions.libphonenumber"
 
     repositories {
         maven { url "https://dl.bintray.com/hani-momanii/maven"}
