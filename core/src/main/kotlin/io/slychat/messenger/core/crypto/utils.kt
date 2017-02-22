@@ -1,14 +1,12 @@
 @file:JvmName("CryptoUtils")
 package io.slychat.messenger.core.crypto
 
-import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.crypto.hashes.HashData
 import io.slychat.messenger.core.crypto.hashes.HashParams
 import io.slychat.messenger.core.crypto.hashes.HashType
 import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
 import io.slychat.messenger.core.hexify
-import io.slychat.messenger.core.persistence.MessageSendFailure
 import org.spongycastle.crypto.engines.AESFastEngine
 import org.spongycastle.crypto.modes.GCMBlockCipher
 import org.spongycastle.crypto.params.AEADParameters
@@ -129,10 +127,6 @@ fun randomRegistrationId(): Int = KeyHelper.generateRegistrationId(false)
 fun randomMessageId(): String = randomUUID()
 
 fun generateUploadId(): String = randomUUID()
-
-fun randomMessageSendFailures(userId: UserId): Map<UserId, MessageSendFailure> = mapOf(
-    userId to MessageSendFailure.InactiveUser()
-)
 
 fun getSingleBlockSize(blockSize: Int): Int {
     val key = ByteArray(256 / 8)

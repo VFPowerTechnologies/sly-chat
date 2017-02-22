@@ -193,3 +193,7 @@ fun randomSecurityEvent(target: LogTarget? = null): LogEvent.Security {
         SecurityEventData.InvalidKey(randomSlyAddress(), "invalid signature on device key!")
     )
 }
+
+fun randomMessageSendFailures(userId: UserId): Map<UserId, MessageSendFailure> = mapOf(
+    userId to MessageSendFailure.InactiveUser()
+)
