@@ -1,5 +1,8 @@
 package io.slychat.messenger.core.http
 
+import java.io.FilterOutputStream
+import java.io.OutputStream
+
 /** Simple HTTP Client. */
 interface HttpClient {
     /** Get a http resource. */
@@ -10,6 +13,10 @@ interface HttpClient {
 
     /** Post the given data as application/json. */
     fun postJSON(url: String, body: ByteArray, headers: List<Pair<String, String>>): HttpResponse
+
+    fun upload(url: String, headers: List<Pair<String, String>>, entities: List<MultipartEntity>, filterStream: ((OutputStream) -> FilterOutputStream)?): HttpResponse
+
+    fun download(url: String, headers: List<Pair<String, String>>): HttpStreamResponse
 }
 
 /** GET request with query params. */

@@ -1,11 +1,9 @@
 package io.slychat.messenger.core.http
 
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
-import java.io.BufferedReader
-import java.io.InputStream
-import java.io.InputStreamReader
-import java.io.Reader
+import java.io.*
 import java.net.HttpURLConnection
+import java.net.ProtocolException
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 
@@ -114,5 +112,84 @@ class JavaHttpClient(
         val data = readStreamResponse(connection, headers)
 
         return HttpResponse(connection.responseCode, headers, data)
+    }
+
+    //TODO write multipart support for builtin HttpServer to test this
+    override fun upload(url: String, headers: List<Pair<String, String>>, entities: List<MultipartEntity>, filterStream: ((OutputStream) -> FilterOutputStream)?): HttpResponse {
+        val connection = getHttpConnection(url)
+
+        connection.doInput = true
+        connection.doOutput = true
+        connection.requestMethod = "POST"
+        connection.useCaches = false
+
+        for (header in headers)
+            connection.setRequestProperty(header.first, header.second)
+
+        val boundary = generateBoundary()
+
+        val contentLength = calcMultipartTotalSize(boundary, entities)
+
+        connection.setFixedLengthStreamingMode(contentLength)
+
+        connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+        //HttpURLConnection will wait for 5s for a 100, and then send data; this is to support servers that don't
+        //understand the Expect header; there's no way to configure this timeout
+        connection.setRequestProperty("Expect", "100-Continue")
+
+        val rawOutputStream = try {
+            connection.outputStream
+        }
+        catch (e: ProtocolException) {
+            //XXX I can't seem to get it to read the body on error; errorStream is null and inputStream throws an exception
+            //also only ProtocolException is thrown here when an error occurs (see expect100Continue in the HttpURLConnection src)
+            val headers = lowercaseHeaders(connection.headerFields ?: mapOf())
+            val code = connection.responseCode
+
+            val data = readStreamResponse(connection, headers)
+            return HttpResponse(code, headers, data)
+        }
+
+        val outputStream = if (filterStream != null)
+            filterStream(rawOutputStream)
+        else
+            rawOutputStream
+
+        outputStream.buffered().use {
+            writeMultipartEntities(it, boundary, entities)
+        }
+
+        val headers = lowercaseHeaders(connection.headerFields ?: mapOf())
+        val code = connection.responseCode
+
+        val data = readStreamResponse(connection, headers)
+
+        return HttpResponse(code, headers, data)
+    }
+
+    override fun download(url: String, headers: List<Pair<String, String>>): HttpStreamResponse {
+        val connection = getHttpConnection(url)
+
+        connection.doOutput = true
+        connection.requestMethod = "GET"
+        connection.useCaches = false
+
+        for (header in headers)
+            connection.setRequestProperty(header.first, header.second)
+
+        val responseCode = connection.responseCode
+        val headers = lowercaseHeaders(connection.headerFields ?: mapOf())
+
+        val body = try {
+            connection.inputStream
+        }
+        catch (e: IOException) {
+            if (connection.errorStream != null)
+                connection.errorStream
+            else
+                ByteArrayInputStream(ByteArray(0))
+        }
+
+        return HttpStreamResponse(responseCode, headers, body)
     }
 }

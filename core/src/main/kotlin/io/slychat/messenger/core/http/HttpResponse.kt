@@ -14,5 +14,7 @@ data class HttpResponse(
     val headers: Map<String, List<String>>,
     val body: String
 ) {
-    val isSuccess: Boolean = code >= 200 && code < 300
+    val isSuccess: Boolean
+        get() = code >= 200 && code < 300
 }
+
