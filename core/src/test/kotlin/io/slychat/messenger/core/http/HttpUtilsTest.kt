@@ -1,6 +1,7 @@
 package io.slychat.messenger.core.http
 
 import org.junit.Test
+import java.io.ByteArrayInputStream
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -23,5 +24,40 @@ class HttpUtilsTest {
     @Test
     fun `toQueryString should encode unicode characters to UTF8`() {
         assertEquals("k=%e5%ad%94%e6%98%8e", toQueryString(listOf("k" to "孔明")).toLowerCase())
+    }
+
+    private fun testData2() {
+        val boundary = "AKEUMkvzjKQKOBkE7Mql8dsa30P5F9y"
+
+        val entities = listOf(
+            MultipartEntity.Text("fileId", "12345"),
+
+            MultipartEntity.Text("size", "49"),
+            MultipartEntity.Data("file", 49, ByteArrayInputStream(ByteArray(0)))
+        )
+
+        val totalSize = calcMultipartTotalSize(boundary, entities)
+
+        assertEquals(387L, totalSize, "Invalid filesize for data")
+    }
+
+    private fun testData() {
+        val boundary = "V401o-vuvaCf9aw6ngU6cDDuRoR2izn"
+
+        val entities = listOf(
+            MultipartEntity.Text("fileId", "12345"),
+            MultipartEntity.Text("size", "241160"),
+            MultipartEntity.Data("file", 241160, ByteArrayInputStream(ByteArray(0)))
+        )
+
+        val totalSize = calcMultipartTotalSize(boundary, entities)
+
+        assertEquals(241502L, totalSize, "Invalid filesize for data")
+    }
+
+    @Test
+    fun `it should calc multipart entity sizes correctly`() {
+        testData()
+        testData2()
     }
 }
