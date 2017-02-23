@@ -128,6 +128,8 @@ fun randomMessageId(): String = randomUUID()
 
 fun generateUploadId(): String = randomUUID()
 
+fun generateFileId(): String = randomUUID()
+
 fun getSingleBlockSize(blockSize: Int): Int {
     val key = ByteArray(256 / 8)
 

@@ -12,6 +12,7 @@ import io.slychat.messenger.core.http.HttpResponse
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesGetResponse
 import io.slychat.messenger.core.http.api.offline.SerializedOfflineMessage
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
+import io.slychat.messenger.core.http.api.storage.FileInfo
 import io.slychat.messenger.core.http.get
 import io.slychat.messenger.core.http.postJSON
 import io.slychat.messenger.core.persistence.RemoteAddressBookEntry
@@ -84,19 +85,6 @@ data class UploadInfo(
     val userMetadata: ByteArray,
     @JsonProperty("parts")
     val parts: List<UploadPartInfo>
-)
-
-class FileInfo(
-    @JsonProperty("id")
-    val id: String,
-    @JsonProperty("isDeleted")
-    val isDeleted: Boolean,
-    @JsonProperty("userMetadata")
-    val userMetadata: ByteArray,
-    @JsonProperty("fileMetadata")
-    val fileMetadata: ByteArray,
-    @JsonProperty("fileSize")
-    val fileSize: Long
 )
 
 /** Client for web api server dev functionality. */
@@ -308,7 +296,18 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         postRequestNoResponse(null, "/dev/upload/$userId/$uploadId")
     }
 
+    fun addFileListVersion(userId: UserId, version: Int) {
+        val request = mapOf(
+            "version" to version
+        )
+        postRequestNoResponse(request, "/dev/storage/$userId/filelist")
+    }
+
     fun getFileInfo(userId : UserId, fileId: String): FileInfo? {
         return getRequest("/dev/storage/$userId/$fileId", typeRef())
+    }
+
+    fun addFile(userId : UserId, fileInfo: FileInfo) {
+        postRequestNoResponse(fileInfo, "/dev/storage/$userId")
     }
 }

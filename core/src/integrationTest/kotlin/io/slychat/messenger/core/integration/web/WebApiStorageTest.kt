@@ -1,11 +1,11 @@
 package io.slychat.messenger.core.integration.web
 
-import io.slychat.messenger.core.AuthToken
-import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.UserCredentials
-import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.http.JavaHttpClient
-import io.slychat.messenger.core.http.api.StorageClientImpl
+import io.slychat.messenger.core.http.api.storage.FileInfo
+import io.slychat.messenger.core.http.api.storage.StorageClientImpl
+import org.assertj.core.api.Assertions
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -43,5 +43,56 @@ class WebApiStorageTest {
         val expected = devClient.getQuota(user.user.id)
 
         assertEquals(expected, quota, "Invalid quota")
+    }
+
+    @Test
+    fun `getFileList should return the user's file list`() {
+        val user = userManagement.injectNamedSiteUser("a@a.com")
+        val username = user.user.email
+        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+
+        val lastUpdateVersion = 1
+
+        devClient.addFileListVersion(user.user.id, lastUpdateVersion)
+
+        val presentFileInfo = FileInfo(
+            generateFileId(),
+            "TODO",
+            false,
+            lastUpdateVersion,
+            currentTimestampSeconds(),
+            currentTimestampSeconds(),
+            emptyByteArray(),
+            emptyByteArray(),
+            10L
+        )
+
+        val deletedFileInfo = FileInfo(
+            generateFileId(),
+            "TODO",
+            true,
+            lastUpdateVersion,
+            currentTimestampSeconds(),
+            currentTimestampSeconds(),
+            emptyByteArray(),
+            null,
+            0
+        )
+
+        devClient.addFile(user.user.id, presentFileInfo)
+        devClient.addFile(user.user.id, deletedFileInfo)
+
+        val authToken = devClient.createAuthToken(username, deviceId)
+
+        val client = StorageClientImpl(serverBaseUrl, JavaHttpClient())
+
+        val resp = client.getFileList(user.getUserCredentials(authToken, deviceId), 0)
+
+        Assertions.assertThat(resp.files).apply {
+            describedAs("Should contain the user's files")
+            containsOnly(presentFileInfo, deletedFileInfo)
+        }
+
+        assertEquals(resp.version, lastUpdateVersion, "Invalid file list version")
     }
 }

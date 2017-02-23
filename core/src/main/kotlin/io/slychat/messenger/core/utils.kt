@@ -72,6 +72,8 @@ operator fun String.div(child: String): File =
 /** Returns the current time in milliseconds. */
 fun currentTimestamp(): Long = DateTime().millis
 
+fun currentTimestampSeconds(): Long = DateTime().millis / 1000
+
 inline fun <T, R> Iterable<T>.mapToSet(transform: (T) -> R): Set<R> {
     return mapTo(HashSet<R>(), transform)
 }

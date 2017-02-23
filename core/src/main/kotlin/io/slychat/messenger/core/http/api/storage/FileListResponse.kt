@@ -1,10 +1,10 @@
-package io.slychat.messenger.core.http.api
+package io.slychat.messenger.core.http.api.storage
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class FileListResponse(
-    @JsonProperty("latestVersion")
-    val latestVersion: Int,
+    @JsonProperty("version")
+    val version: Int,
     @JsonProperty("files")
     val files: List<FileInfo>
 )

@@ -116,7 +116,7 @@ class WebApiUploadTest {
 
         val fileInfo = assertNotNull(devClient.getFileInfo(user.user.id, fileId), "No such file")
 
-        assertEquals(request.fileSize, fileInfo.fileSize, "Invalid fileSize")
+        assertEquals(request.fileSize, fileInfo.size, "Invalid fileSize")
         assertTrue(Arrays.equals(request.fileMetadata, fileInfo.fileMetadata), "Invalid file metadata")
         assertTrue(Arrays.equals(request.userMetadata, fileInfo.userMetadata), "Invalid user metadata")
     }

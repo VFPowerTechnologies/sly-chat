@@ -15,9 +15,7 @@ data class UserMetadata(
     @JsonProperty("directory")
     val directory: String,
     @JsonProperty("fileName")
-    val fileName: String,
-    @JsonProperty("sharedFrom")
-    val sharedFrom: SharedFrom?
+    val fileName: String
 ) {
     init {
         require(fileName.isNotBlank()) { "Invalid file name: <<$fileName>>" }
