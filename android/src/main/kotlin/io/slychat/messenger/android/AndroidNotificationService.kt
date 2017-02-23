@@ -3,6 +3,7 @@ package io.slychat.messenger.android
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.TaskStackBuilder
 import android.content.Context
 import android.content.Intent
 import android.graphics.Typeface
@@ -10,7 +11,10 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.text.SpannableString
 import android.text.style.StyleSpan
+import io.slychat.messenger.android.activites.ChatActivity
+import io.slychat.messenger.android.activites.RecentChatActivity
 import io.slychat.messenger.core.SlyAddress
+import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.pushnotifications.OfflineMessageInfo
 import io.slychat.messenger.core.pushnotifications.OfflineMessagesPushNotification
 import io.slychat.messenger.services.NotificationState
@@ -135,6 +139,7 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
 
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
 
         return intent
     }
@@ -145,24 +150,25 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
     private fun getPendingIntentForService(intent: Intent): PendingIntent =
         PendingIntent.getService(context, 0, intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_UPDATE_CURRENT)
 
-    private fun getNewMessagesNotificationIntent(): PendingIntent {
-        val intent = getMainActivityIntent()
-        intent.action = MainActivity.ACTION_VIEW_MESSAGES
-
+    private fun getNewMessagesNotificationIntent(): Intent {
+        val intent: Intent
         val isSingleUser = newMessagesNotification.userCount() == 1
-        val typeExtra = if (isSingleUser)
-            MainActivity.EXTRA_PENDING_MESSAGES_TYPE_SINGLE
-        else
-            MainActivity.EXTRA_PENDING_MESSAGES_TYPE_MULTI
-
-        intent.putExtra(MainActivity.EXTRA_PENDING_MESSAGES_TYPE, typeExtra)
-
         if (isSingleUser) {
-            val conversationInfo = newMessagesNotification.contents.keys.first()
-            intent.putExtra(MainActivity.EXTRA_CONVO_KEY, conversationInfo.asString())
+            intent = Intent(context, ChatActivity::class.java)
+            val conversationId = newMessagesNotification.contents.keys.first()
+            if (conversationId is ConversationId.User) {
+                intent.putExtra(ChatActivity.EXTRA_CONVERSTATION_ID, false)
+                intent.putExtra(ChatActivity.EXTRA_CONVERSTATION_ID, conversationId.id.long)
+            }
+            else if (conversationId is ConversationId.Group) {
+                intent.putExtra(ChatActivity.EXTRA_ISGROUP, true)
+                intent.putExtra(ChatActivity.EXTRA_CONVERSTATION_ID, conversationId.id.string)
+            }
         }
+        else
+            intent = Intent(context, RecentChatActivity::class.java)
 
-        return getPendingIntentForActivity(intent)
+        return intent
     }
 
     private fun getNewMessagesNotificationDeleteIntent(): PendingIntent {
@@ -178,7 +184,12 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
             return
         }
 
-        val pendingIntent = getNewMessagesNotificationIntent()
+        val stackBuilder = TaskStackBuilder.create(context)
+            .addParentStack(MainActivity::class.java)
+            .addParentStack(RecentChatActivity::class.java)
+            .addNextIntent(getNewMessagesNotificationIntent())
+
+        val pendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_UPDATE_CURRENT)
         val deletePendingIntent = getNewMessagesNotificationDeleteIntent()
 
         val soundUri = getMessageNotificationSound()

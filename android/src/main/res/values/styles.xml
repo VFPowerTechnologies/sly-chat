@@ -1,0 +1,54 @@
+<resources>
+
+    <style name="SlyTheme" parent="SlyTheme.Base"/>
+    <style name="SlyThemeLight" parent="SlyThemeLight.Base"/>
+
+    <style name="SlyTheme.Base" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:textColorPrimary">@color/textColorPrimary</item>
+        <item name="android:textColorSecondary">@color/textColorSecondary</item>
+        <item name="android:textColorPrimaryInverse">@color/textColorPrimaryInverse</item>
+        <item name="android:textColorSecondaryInverse">@color/textColorSecondaryInverse</item>
+        <item name="themedDrawerHeader">@drawable/side_nav_bar</item>
+        <item name="themedSentBubbleColor">@drawable/sent_message_bg</item>
+        <item name="themedReceivedBubbleColor">@drawable/received_message_bg</item>
+        <item name="themedChatInputColor">@drawable/chat_input_bg</item>
+        <item name="themedEmojiconIconColor">@color/emojiconIcon</item>
+        <item name="themedEmojiconTabsColor">@color/emojiconTabs</item>
+        <item name="themedEmojiconBackgroundColor">@color/emojiconBackground</item>
+        <item name="themedChatSubmitButton">@drawable/ic_send_white</item>
+        <item name="themedChatEmojiButton">@drawable/ic_tag_faces</item>
+        <item name="themedChatBombButton">@drawable/bomb_white</item>
+    </style>
+
+    <style name="SlyThemeLight.Base" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="colorPrimary">@color/colorPrimaryInverse</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDarkInverse</item>
+        <item name="colorAccent">@color/colorAccentInverse</item>
+        <item name="android:textColorPrimary">@color/textColorPrimaryLight</item>
+        <item name="android:textColorSecondary">@color/textColorSecondaryLight</item>
+        <item name="android:textColorPrimaryInverse">@color/textColorPrimaryLightInverse</item>
+        <item name="android:textColorSecondaryInverse">@color/textColorSecondaryLightInverse</item>
+        <item name="themedDrawerHeader">@drawable/side_nav_bar_light</item>
+        <item name="themedSentBubbleColor">@drawable/sent_message_bg_light</item>
+        <item name="themedReceivedBubbleColor">@drawable/received_message_bg_light</item>
+        <item name="themedChatInputColor">@drawable/chat_input_bg_light</item>
+        <item name="themedEmojiconIconColor">@color/emojiconIconLight</item>
+        <item name="themedEmojiconTabsColor">@color/emojiconTabsLight</item>
+        <item name="themedEmojiconBackgroundColor">@color/emojiconBackgroundLight</item>
+        <item name="themedChatSubmitButton">@drawable/ic_send_black</item>
+        <item name="themedChatEmojiButton">@drawable/ic_tag_faces_black</item>
+        <item name="themedChatBombButton">@drawable/bomb_black</item>
+    </style>
+
+    <style name="checkBoxStyle" parent="Base.Theme.AppCompat">
+        <item name="colorAccent">#00ff00</item>
+        <item name="android:textColorSecondary">#222222</item>
+    </style>
+</resources>

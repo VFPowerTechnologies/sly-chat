@@ -220,7 +220,7 @@ class DesktopApp : Application() {
                 desktopNotificationService.init(app.userSessionAvailable)
         }
 
-        app.isInBackground = false
+//        app.isInBackground = false
     }
 
     /** Creates the main ui window. */
