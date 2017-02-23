@@ -3,7 +3,7 @@ package io.slychat.messenger.core.http.api.storage
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.util.*
 
-class FileInfo(
+data class FileInfo(
     @JsonProperty("id")
     val id: String,
     @JsonProperty("shareKey")

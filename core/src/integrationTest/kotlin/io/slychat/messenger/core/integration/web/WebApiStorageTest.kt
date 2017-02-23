@@ -5,7 +5,7 @@ import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.storage.FileInfo
 import io.slychat.messenger.core.http.api.storage.StorageClientImpl
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -27,6 +27,24 @@ class WebApiStorageTest {
     @Before
     fun before() {
         devClient.clear()
+    }
+
+    private fun addDummyFile(userId: UserId, lastUpdateVersion: Int): FileInfo {
+        val fileInfo = FileInfo(
+            generateFileId(),
+            "sk",
+            false,
+            lastUpdateVersion,
+            currentTimestampSeconds(),
+            currentTimestampSeconds(),
+            emptyByteArray(),
+            emptyByteArray(),
+            10L
+        )
+
+        devClient.addFile(userId, fileInfo)
+
+        return fileInfo
     }
 
     @Test
@@ -88,11 +106,43 @@ class WebApiStorageTest {
 
         val resp = client.getFileList(user.getUserCredentials(authToken, deviceId), 0)
 
-        Assertions.assertThat(resp.files).apply {
+        assertThat(resp.files).apply {
             describedAs("Should contain the user's files")
             containsOnly(presentFileInfo, deletedFileInfo)
         }
 
         assertEquals(resp.version, lastUpdateVersion, "Invalid file list version")
+    }
+
+    @Test
+    fun `updateMetadata should update the user's metadata`() {
+        val user = userManagement.injectNamedSiteUser("a@a.com")
+        val username = user.user.email
+        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+
+        val lastUpdateVersion = 1
+
+        devClient.addFileListVersion(user.id, lastUpdateVersion)
+
+        val fileInfo = addDummyFile(user.id, 1)
+
+        val authToken = devClient.createAuthToken(username, deviceId)
+
+        val client = StorageClientImpl(serverBaseUrl, JavaHttpClient())
+
+        val newMetadata = byteArrayOf(0x77)
+
+        val userCredentials = user.getUserCredentials(authToken, deviceId)
+        val updateResp = client.updateMetadata(userCredentials, fileInfo.id, newMetadata)
+
+        assertEquals(lastUpdateVersion + 1, updateResp.newVersion, "Invalid new version")
+
+        val getResp = client.getFileInfo(userCredentials, fileInfo.id)
+
+        assertThat(getResp.fileInfo.userMetadata).apply {
+            describedAs("Metadata not updated")
+            inHexadecimal()
+            isEqualTo(newMetadata)
+        }
     }
 }

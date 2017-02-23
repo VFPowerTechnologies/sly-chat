@@ -11,7 +11,9 @@ interface StorageClient {
 
     fun getFileList(userCredentials: UserCredentials, sinceVersion: Int): FileListResponse
 
-    fun updateMetadata(userCredentials : UserCredentials, newMetadata: ByteArray): UpdateMetadataResponse
+    fun getFileInfo(userCredentials : UserCredentials, fileId: String): GetFileInfoResponse
+
+    fun updateMetadata(userCredentials: UserCredentials, fileId: String, newMetadata: ByteArray): UpdateMetadataResponse
 
     //may no longer be present if the original owner deleted it
     fun acceptShare(userCredentials: UserCredentials, request: AcceptShareRequest): AcceptShareResponse
