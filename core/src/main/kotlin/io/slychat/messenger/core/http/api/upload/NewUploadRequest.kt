@@ -2,6 +2,7 @@ package io.slychat.messenger.core.http.api.upload
 
 class NewUploadRequest(
     val uploadId: String,
+    val shareKey: String,
     val fileSize: Long,
     val partSize: Long,
 

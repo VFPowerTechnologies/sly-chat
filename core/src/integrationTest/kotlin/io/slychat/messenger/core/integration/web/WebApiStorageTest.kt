@@ -57,7 +57,7 @@ class WebApiStorageTest {
 
         val presentFileInfo = FileInfo(
             generateFileId(),
-            "TODO",
+            "sk",
             false,
             lastUpdateVersion,
             currentTimestampSeconds(),
@@ -69,7 +69,7 @@ class WebApiStorageTest {
 
         val deletedFileInfo = FileInfo(
             generateFileId(),
-            "TODO",
+            "sk",
             true,
             lastUpdateVersion,
             currentTimestampSeconds(),

@@ -31,6 +31,7 @@ class WebApiUploadTest {
     private fun getDummyUploadRequest(partCount: Int = 1): NewUploadRequest {
         return NewUploadRequest(
             generateUploadId(),
+            "sk",
             10L * partCount,
             10,
             0,
