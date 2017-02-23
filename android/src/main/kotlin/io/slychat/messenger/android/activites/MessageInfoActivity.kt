@@ -70,7 +70,7 @@ class MessageInfoActivity : BaseActivity() {
                     finish()
                 }
             } failUi {
-                log.error("Something failed ${it.message}", it)
+                log.error("Something failed: {}", it.message, it)
                 finish()
             }
         }
@@ -80,7 +80,7 @@ class MessageInfoActivity : BaseActivity() {
                     groupService.getMembersInfo(cId.id) successUi { members ->
                         displayGroupMessageInfo(groupInfo, members, bundle)
                     } failUi {
-                        log.error("Something failed ${it.message}", it)
+                        log.error("Something failed: {}", it.message, it)
                         finish()
                     }
                 }
@@ -89,7 +89,7 @@ class MessageInfoActivity : BaseActivity() {
                     finish()
                 }
             } failUi {
-                log.error("Something failed ${it.message}", it)
+                log.error("Something failed: {}", it.message, it)
                 finish()
             }
         }

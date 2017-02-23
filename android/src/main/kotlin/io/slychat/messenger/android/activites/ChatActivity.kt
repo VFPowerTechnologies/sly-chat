@@ -169,7 +169,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                     actionBar.title = it.name
                 }
             } failUi {
-                log.error("Something failed ${it.message}", it)
+                log.error("Something failed: {}", it.message, it)
                 finish()
             }
         }
@@ -183,7 +183,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                 else
                     finish()
             } failUi {
-                log.error("Something failed ${it.message}", it)
+                log.error("Something failed: {}", it.message, it)
                 finish()
             }
         }
@@ -441,7 +441,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                                 chatDataLink.remove(messageId)
                             }
                         } failUi {
-                            log.error("Something failed ${it.message}", it)
+                            log.error("Something failed: {}", it.message, it)
                         }
                     }
                 })
@@ -481,7 +481,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             messageLayout.visibility = View.VISIBLE
             node.clearAnimation()
         } failUi {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
     }
 
@@ -693,14 +693,14 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val cId = conversationId
         if (cId is ConversationId.User) {
             contactService.blockContact(cId.id) failUi {
-                log.error("Something failed ${it.message}", it)
+                log.error("Something failed: {}", it.message, it)
             }
         }
     }
 
     private fun deleteConversation() {
         messengerService.deleteConversation(conversationId) failUi {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
     }
 
@@ -709,7 +709,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             if (!it)
                 log.warn("Failed to delete user id : ${contactInfo.id}")
         } failUi {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
     }
 
@@ -719,7 +719,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             groupService.deleteGroup(cId.id) successUi {
                 finish()
             } failUi {
-                log.error("Something failed ${it.message}", it)
+                log.error("Something failed: {}", it.message, it)
             }
         }
     }
@@ -728,7 +728,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val cId = conversationId
         if (cId is ConversationId.Group) {
             groupService.blockGroup(cId.id) failUi {
-                log.error("Something failed ${it.message}", it)
+                log.error("Something failed: {}", it.message, it)
             }
         }
     }

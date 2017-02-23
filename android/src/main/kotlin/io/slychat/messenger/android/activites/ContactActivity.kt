@@ -73,7 +73,7 @@ class ContactActivity : BaseActivity() {
         contactService.getContacts() successUi {
             contactList = it
         } failUi {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
     }
 

@@ -195,7 +195,7 @@ class ContactFragment : Fragment() {
                         recentContactList.addView(createRecentContactNode(it.id, it.name), 0)
                     }
                 } failUi  {
-                    log.error("Something failed ${it.message}", it)
+                    log.error("Something failed: {}", it.message, it)
                 }
             }
 

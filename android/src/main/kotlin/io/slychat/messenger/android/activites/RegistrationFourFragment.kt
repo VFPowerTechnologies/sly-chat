@@ -151,7 +151,7 @@ class RegistrationFourFragment: Fragment() {
         app.appComponent.uiTelephonyService.getDevicePhoneNumber() successUi { phone ->
             setDefaultPhoneNumber(phone)
         } failUi {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
     }
 

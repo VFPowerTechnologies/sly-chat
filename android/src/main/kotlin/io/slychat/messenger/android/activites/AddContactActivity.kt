@@ -105,7 +105,7 @@ class AddContactActivity : BaseActivity() {
                 val intent = getChatPageIntent(contactInfo.id.toConversationId())
                 startActivity(intent)
         } failUi  {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
     }
 }

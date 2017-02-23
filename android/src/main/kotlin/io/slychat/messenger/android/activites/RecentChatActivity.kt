@@ -107,7 +107,7 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
             displayRecentChat(it)
             showInviteFriends()
         } failUi {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
 
         setListeners()
@@ -188,7 +188,7 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
             else
                 inviteNode.visibility = View.GONE
         } failUi {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
     }
 
@@ -200,7 +200,7 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
                     if (conversation != null)
                         updateSingleRecentChatNode(conversation)
                 } failUi {
-                    log.error("Something failed ${it.message}", it)
+                    log.error("Something failed: {}", it.message, it)
                 }
             }
             is ConversationId.Group -> {
@@ -208,7 +208,7 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
                     if (conversation != null)
                         updateGroupRecentChatNode(conversation)
                 } failUi {
-                    log.error("Something failed ${it.message}", it)
+                    log.error("Something failed: {}", it.message, it)
                 }
             }
         }

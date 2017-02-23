@@ -44,7 +44,7 @@ class BlockedGroupFragment : Fragment() {
         groupService.getBlockedGroups() successUi { blocked ->
             displayBlockedGroups(blocked)
         } failUi {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
     }
 
@@ -99,7 +99,7 @@ class BlockedGroupFragment : Fragment() {
                 groupList.removeView(node)
             }
         } failUi {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
     }
 

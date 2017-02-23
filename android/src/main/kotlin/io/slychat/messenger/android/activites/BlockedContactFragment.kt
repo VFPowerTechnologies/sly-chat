@@ -46,7 +46,7 @@ class BlockedContactFragment : Fragment() {
         contactService.getBlockedContacts() successUi { blocked ->
             displayBlockedContacts(blocked)
         } failUi {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
     }
 
@@ -67,7 +67,7 @@ class BlockedContactFragment : Fragment() {
             if (contact !== null)
                 contactList.addView(createContactNode(contact))
         } failUi {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
     }
 
@@ -120,7 +120,7 @@ class BlockedContactFragment : Fragment() {
                 contactList.removeView(node)
             }
         } failUi {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
     }
 
@@ -140,7 +140,7 @@ class BlockedContactFragment : Fragment() {
         contactService.allowAll(contactInfo.id) successUi { success ->
             loadChatPageFor(contactInfo.id)
         } failUi {
-            log.error("Something failed ${it.message}", it)
+            log.error("Something failed: {}", it.message, it)
         }
     }
 
