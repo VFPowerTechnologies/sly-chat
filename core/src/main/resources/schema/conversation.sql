@@ -26,7 +26,10 @@ CREATE TABLE IF NOT EXISTS `conv_%id%` (
     is_delivered INTEGER NOT NULL,
     message TEXT NOT NULL,
     -- true if this message has associated failures in the message_failures table
-    has_failures INTEGER NOT NULL
+    has_failures INTEGER NOT NULL,
+    attachment_id INTEGER,
+
+    FOREIGN KEY (attachment_id) REFERENCES attachments (id)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS `unique_conv_%id%_timestamp_n` ON `conv_%id%` (timestamp, n);

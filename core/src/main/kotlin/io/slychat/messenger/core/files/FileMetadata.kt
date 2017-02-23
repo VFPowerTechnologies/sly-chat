@@ -1,4 +1,4 @@
-package io.slychat.messenger.core
+package io.slychat.messenger.core.files
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -11,5 +11,5 @@ data class FileMetadata(
     @JsonProperty("cipherId")
     val cipherId: CipherId,
     @JsonProperty("chunkSize")
-    val chunkSize: Long
+    val chunkSize: Int
 )
