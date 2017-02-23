@@ -109,7 +109,10 @@ dependencies {
     compile "com.google.android.gms:play-services-gcm:$versions.playServices"
     compile "com.android.support:design:$versions.appcompatv7"
     compile "org.ocpsoft.prettytime:prettytime:$versions.prettyTime"
+
+    //Added to prevent unresolve reference in IDEA
     compile "com.googlecode.libphonenumber:libphonenumber:$versions.libphonenumber"
+    compile "com.almworks.sqlite4java:sqlite4java:$versions.sqlite4java"
 
     repositories {
         maven { url "https://dl.bintray.com/hani-momanii/maven"}

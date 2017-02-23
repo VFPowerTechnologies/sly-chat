@@ -113,7 +113,6 @@ class AndroidApp : Application() {
 
     private val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
     private val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
-    private val softKeyboardVisibility = BehaviorSubject.create(SoftKeyboardInfo(false, 0))
 
     var platformContactSyncOccured = true
 
@@ -176,12 +175,12 @@ class AndroidApp : Application() {
                 SlyBuildConfig.ANDROID_SERVER_URLS,
                 platformInfo,
                 AndroidTelephonyService(this),
-                AndroidUIWindowService(this, softKeyboardVisibility),
+                AndroidUIWindowService(),
                 AndroidPlatformContacts(this),
                 notificationService,
-                AndroidUIShareService(this),
-                AndroidUIPlatformService(this),
-                AndroidUILoadService(this),
+                AndroidUIShareService(),
+                AndroidUIPlatformService(),
+                AndroidUILoadService(),
                 uiVisibility,
                 AndroidTokenFetcher(this),
                 networkStatus,
