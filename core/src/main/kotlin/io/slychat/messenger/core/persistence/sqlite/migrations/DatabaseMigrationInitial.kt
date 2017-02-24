@@ -28,7 +28,9 @@ class DatabaseMigrationInitial : DatabaseMigration(1) {
             "event_log",
             "message_failures",
             "file_list_version",
-            "files"
+            "files",
+            "uploads",
+            "upload_parts"
         )
     }
 

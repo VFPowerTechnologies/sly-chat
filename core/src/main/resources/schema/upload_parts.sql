@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS upload_parts (
     -- [1, ...]
     n INTEGER NOT NULL,
     size INTEGER NOT NULL,
-    is_completed BOOLEAN NOT NULL,
+    is_complete BOOLEAN NOT NULL,
 
     FOREIGN KEY (upload_id) REFERENCES uploads (id) ON DELETE CASCADE,
     UNIQUE (upload_id, n)

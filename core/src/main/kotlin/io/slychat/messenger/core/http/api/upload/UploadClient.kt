@@ -4,7 +4,7 @@ import io.slychat.messenger.core.UserCredentials
 import java.io.InputStream
 
 interface UploadClient {
-    fun getUploads(userCredentials: UserCredentials): UploadsResponse
+    fun getUploads(userCredentials: UserCredentials): GetUploadsResponse
 
     fun newUpload(userCredentials: UserCredentials, request: NewUploadRequest): NewUploadResponse
 

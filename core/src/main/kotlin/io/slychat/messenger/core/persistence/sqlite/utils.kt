@@ -42,6 +42,10 @@ fun SQLiteStatement.bind(index: Int, value: GroupId?) {
     bind(index, value?.string)
 }
 
+fun SQLiteStatement.bind(index: Int, enum: Enum<*>?) {
+    bind(index, enum?.toString())
+}
+
 fun SQLiteStatement.bind(index: Int, boolean: Boolean) {
     val v = if (boolean) 1 else 0
     bind(index, v)

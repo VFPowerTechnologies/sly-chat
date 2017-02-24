@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS files (
     id TEXT PRIMARY KEY NOT NULL,
     -- for sharing with other users
     share_key TEXT NOT NULL,
+    -- 0 is used if the file has not been uploaded yet
     last_update_version INTEGER NOT NULL,
     is_deleted BOOLEAN NOT NULL,
     creation_date INTEGER NOT NULL,
