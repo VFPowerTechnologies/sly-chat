@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import java.io.IOException
+import java.util.*
 
 class KeySerializer : JsonSerializer<Key>() {
     override fun serialize(value: Key, gen: JsonGenerator, serializers: SerializerProvider) {
@@ -31,4 +32,23 @@ class KeyDeserializer : JsonDeserializer<Key>() {
 /** Cryptographic key. */
 @JsonSerialize(using = KeySerializer::class)
 @JsonDeserialize(using = KeyDeserializer::class)
-class Key(val raw: ByteArray)
+class Key(val raw: ByteArray) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != javaClass) return false
+
+        other as Key
+
+        if (!Arrays.equals(raw, other.raw)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return Arrays.hashCode(raw)
+    }
+
+    override fun toString(): String {
+        return "Key()"
+    }
+}

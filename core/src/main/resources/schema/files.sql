@@ -1,8 +1,7 @@
 CREATE TABLE IF NOT EXISTS files (
-    file_id TEXT PRIMARY KEY NOT NULL,
+    id TEXT PRIMARY KEY NOT NULL,
     -- for sharing with other users
     share_key TEXT NOT NULL,
-    -- XXX maybe?
     last_update_version INTEGER NOT NULL,
     is_deleted BOOLEAN NOT NULL,
     creation_date INTEGER NOT NULL,
@@ -12,10 +11,10 @@ CREATE TABLE IF NOT EXISTS files (
 
     -- user metadata
     -- key used to encrypt file metadata and file data
-    file_key TEXT NOT NULL,
+    file_key BLOB NOT NULL,
     file_name TEXT NOT NULL,
     directory TEXT NOT NULL,
-    shared_from TEXT NOT NULL,
+    shared_from TEXT,
 
     -- file metadata
     cipher_id INTEGER NOT NULL,

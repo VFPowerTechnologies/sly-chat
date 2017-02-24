@@ -26,7 +26,9 @@ class DatabaseMigrationInitial : DatabaseMigration(1) {
             "address_book_hashes",
             "expiring_messages",
             "event_log",
-            "message_failures"
+            "message_failures",
+            "file_list_version",
+            "files"
         )
     }
 
@@ -57,5 +59,10 @@ class DatabaseMigrationInitial : DatabaseMigration(1) {
     override fun apply(connection: SQLiteConnection) {
         createTables(connection)
         initializePreKeyIds(connection)
+        initializeFileListVersion(connection)
+    }
+
+    private fun initializeFileListVersion(connection: SQLiteConnection) {
+        connection.exec("INSERT INTO file_list_version (version) VALUES (0)")
     }
 }

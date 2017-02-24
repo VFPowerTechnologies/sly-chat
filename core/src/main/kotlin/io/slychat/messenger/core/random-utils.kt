@@ -1,9 +1,12 @@
 @file:JvmName("RandomUtils")
 package io.slychat.messenger.core
 
-import io.slychat.messenger.core.crypto.randomMessageId
-import io.slychat.messenger.core.crypto.randomRegistrationId
-import io.slychat.messenger.core.crypto.randomUUID
+import io.slychat.messenger.core.crypto.*
+import io.slychat.messenger.core.crypto.ciphers.AES256GCMCipher
+import io.slychat.messenger.core.crypto.ciphers.Key
+import io.slychat.messenger.core.files.FileMetadata
+import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.core.files.UserMetadata
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
 import io.slychat.messenger.core.persistence.*
@@ -13,6 +16,9 @@ import java.util.*
 //[min, max]
 fun randomInt(min: Int = 0, max: Int = Int.MAX_VALUE-1): Int =
     min + Random().nextInt((max - min) + 1)
+
+fun randomLong(min: Int = 0, max: Int = Int.MAX_VALUE-1): Long =
+    randomInt(min, max).toLong()
 
 fun randomGroupInfo(): GroupInfo = randomGroupInfo(GroupMembershipLevel.JOINED)
 fun randomGroupInfo(membershipLevel: GroupMembershipLevel): GroupInfo =
@@ -197,3 +203,38 @@ fun randomSecurityEvent(target: LogTarget? = null): LogEvent.Security {
 fun randomMessageSendFailures(userId: UserId): Map<UserId, MessageSendFailure> = mapOf(
     userId to MessageSendFailure.InactiveUser()
 )
+
+fun randomUserMetadata(): UserMetadata {
+    return UserMetadata(
+        Key(byteArrayOf(0x73, 0x68, 0x69, 0x6e, 0x6f, 0x7a, 0x61, 0x6b, 0x69, 0x61, 0x69)),
+        "/" + randomName(),
+        randomName()
+    )
+}
+
+fun randomFileMetadata(): FileMetadata {
+    return FileMetadata(
+        randomInt().toLong(),
+        AES256GCMCipher.id,
+        randomInt()
+    )
+}
+
+fun randomRemoteFile(isDeleted: Boolean = false): RemoteFile {
+    val fileMetadata = if (!isDeleted)
+        randomFileMetadata()
+    else
+        null
+
+    return RemoteFile(
+        generateFileId(),
+        generateShareKey(),
+        1,
+        isDeleted,
+        randomUserMetadata(),
+        fileMetadata,
+        1,
+        2,
+        randomLong()
+    )
+}

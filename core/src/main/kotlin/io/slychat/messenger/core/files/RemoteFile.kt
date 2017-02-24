@@ -1,7 +1,5 @@
 package io.slychat.messenger.core.files
 
-import org.joda.time.DateTime
-
 data class RemoteFile(
     val id: String,
     val shareKey: String,
@@ -9,6 +7,8 @@ data class RemoteFile(
     //only used for remote entries returned
     val isDeleted: Boolean,
     val userMetadata: UserMetadata,
-    val creationDate: DateTime,
-    val modificationDate: DateTime
+    val fileMetadata: FileMetadata?,
+    val creationDate: Long,
+    val modificationDate: Long,
+    val remoteFileSize: Long
 )
