@@ -1,5 +1,6 @@
 package io.slychat.messenger.core.integration.web
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.crypto.generateUploadId
@@ -7,11 +8,17 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.upload.NewUploadRequest
 import io.slychat.messenger.core.http.api.upload.UploadClient
 import io.slychat.messenger.core.http.api.upload.UploadClientImpl
-import org.junit.Before
-import org.junit.ClassRule
-import org.junit.Test
+import io.slychat.messenger.core.http.get
+import io.slychat.messenger.core.persistence.sqlite.JSONMapper
+import org.junit.*
+import java.net.ConnectException
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+
+data class DevResponse(
+    @JsonProperty("storageEnabled")
+    val storageEnabled: Boolean
+)
 
 class FileServerApiUploadTest {
     companion object {
@@ -19,9 +26,29 @@ class FileServerApiUploadTest {
         @JvmField
         val isDevServerRunning = IsDevServerRunningClassRule()
 
-        @ClassRule
-        @JvmField
-        val isFileServerRunning = IsDevFileServerRunningClassRule()
+        private var isStorageEnabled = false
+
+        private var multiPartSize: Long = 0
+
+        @BeforeClass
+        @JvmStatic
+        fun beforeClass() {
+            val devSettings = try {
+                val response = JavaHttpClient().get("$fileServerBaseUrl/dev")
+                if (response.code == 404)
+                    throw ServerDevModeDisabledException()
+
+                JSONMapper.mapper.readValue(response.body, DevResponse::class.java)
+            }
+            catch (e: ConnectException) {
+                Assume.assumeTrue(false)
+                throw e
+            }
+
+            isStorageEnabled = devSettings.storageEnabled
+            //min part size for s3 (excluding final part) is 5mb
+            multiPartSize = if (isStorageEnabled) 5242880L else 10L
+        }
     }
 
     private val devClient = DevClient(serverBaseUrl, JavaHttpClient())
@@ -39,13 +66,28 @@ class FileServerApiUploadTest {
         return UploadClientImpl(serverBaseUrl, fileServerBaseUrl, JavaHttpClient())
     }
 
-    private fun getNewUploadRequest(partCount: Int = 1): NewUploadRequest {
+    private fun getSingleNewUploadRequest(): NewUploadRequest {
+        val partSize = 10L
+
         return NewUploadRequest(
             generateUploadId(),
             generateFileId(),
             "sk",
-            10L * partCount,
-            10,
+            partSize,
+            partSize,
+            0,
+            1,
+            byteArrayOf(0x77), byteArrayOf(0x66)
+        )
+    }
+
+    private fun getMultiNewUploadRequest(partCount: Int = 1): NewUploadRequest {
+        return NewUploadRequest(
+            generateUploadId(),
+            generateFileId(),
+            "sk",
+            multiPartSize * partCount,
+            multiPartSize,
             0,
             partCount,
             byteArrayOf(0x77), byteArrayOf(0x66)
@@ -75,7 +117,7 @@ class FileServerApiUploadTest {
 
         val client = newClient()
 
-        val request = getNewUploadRequest()
+        val request = getSingleNewUploadRequest()
         val newUploadResponse = client.newUpload(userCredentials, request)
         assertTrue(newUploadResponse.hadSufficientQuota, "Insufficient quota")
 
@@ -89,7 +131,7 @@ class FileServerApiUploadTest {
 
         val client = newClient()
 
-        val request = getNewUploadRequest(2)
+        val request = getMultiNewUploadRequest(2)
         val newUploadResponse = client.newUpload(userCredentials, request)
         assertTrue(newUploadResponse.hadSufficientQuota, "Insufficient quota")
 
@@ -106,13 +148,15 @@ class FileServerApiUploadTest {
 
         val client = newClient()
 
+        val finalPartSize = 5L
+
         val request = NewUploadRequest(
             generateUploadId(),
             generateFileId(),
             "sk",
-            15L,
-            10,
-            5,
+            multiPartSize + finalPartSize,
+            multiPartSize,
+            finalPartSize,
             2,
             byteArrayOf(0x77), byteArrayOf(0x66)
         )

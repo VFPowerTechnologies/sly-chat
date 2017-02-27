@@ -16,24 +16,15 @@ val fileServerBaseUrl = "http://localhost:9000"
 val emptyMd5 = "d41d8cd98f00b204e9800998ecf8427e"
 val defaultRegistrationId = 12345
 
-private fun isServerRunning(baseUrl: String) {
+fun isDevServerRunning() {
     try {
-        val response = JavaHttpClient().get("$baseUrl/dev")
+        val response = JavaHttpClient().get("$serverBaseUrl/dev")
         if (response.code == 404)
             throw ServerDevModeDisabledException()
     }
     catch (e: ConnectException) {
         Assume.assumeTrue(false)
     }
-}
-
-
-fun isDevServerRunning() {
-    isServerRunning(serverBaseUrl)
-}
-
-fun isDevFileServerRunning() {
-    isServerRunning(fileServerBaseUrl)
 }
 
 fun SiteUser.getUserCredentials(authToken: AuthToken, deviceId: Int = DEFAULT_DEVICE_ID): UserCredentials {
