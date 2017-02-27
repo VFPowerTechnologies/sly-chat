@@ -28,16 +28,14 @@ class UploadClientImpl(
 
         val dataPart = MultipartPart.Data("data", size, inputStream)
 
-        return inputStream.use {
-            val resp = httpClient.upload(
-                url,
-                userCredentialsToHeaders(userCredentials),
-                listOf(dataPart),
-                filterStream
-            )
+        val resp = httpClient.upload(
+            url,
+            userCredentialsToHeaders(userCredentials),
+            listOf(dataPart),
+            filterStream
+        )
 
-            valueFromApi(resp, typeRef())
-        }
+        return valueFromApi(resp, typeRef())
     }
 
     override fun completeUpload(userCredentials: UserCredentials, uploadId: String) {

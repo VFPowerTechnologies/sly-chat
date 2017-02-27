@@ -33,12 +33,12 @@ class WebApiUploadTest {
         return NewUploadRequest(
             generateUploadId(),
             generateFileId(),
+            "sk",
             10L * partCount,
             10,
             0,
             partCount,
-            byteArrayOf(0x77),
-            byteArrayOf(0x66), "sk"
+            byteArrayOf(0x77), byteArrayOf(0x66)
         )
     }
 

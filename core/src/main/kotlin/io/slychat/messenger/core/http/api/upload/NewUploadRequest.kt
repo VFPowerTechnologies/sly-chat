@@ -3,16 +3,17 @@ package io.slychat.messenger.core.http.api.upload
 class NewUploadRequest(
     val uploadId: String,
     val fileId: String,
+    val shareKey: String,
     val fileSize: Long,
-    val partSize: Long,
 
     //this is the total encrypted file size
-    val finalPartSize: Long,
+    val partSize: Long,
 
-    val partCount: Int,
+    val finalPartSize: Long,
     //0 if evenly divided into parts, otherwise the size of the last part
+    val partCount: Int,
     val userMetadata: ByteArray,
-    val fileMetadata: ByteArray, val shareKey: String
+    val fileMetadata: ByteArray
 ) {
     init {
         val evenCount = if (finalPartSize == 0L) partCount else partCount - 1

@@ -10,7 +10,6 @@ interface UploadClient {
     fun newUpload(userCredentials: UserCredentials, request: NewUploadRequest): NewUploadResponse
 
     //if upload is only a single part, there's no need to call completeUpload
-    //the client will close the input stream on completion or error
     fun uploadPart(userCredentials: UserCredentials, uploadId: String, partN: Int, size: Long, inputStream: InputStream, filterStream: ((OutputStream) -> OutputStream)?): UploadPartCompleteResponse
 
     fun completeUpload(userCredentials: UserCredentials, uploadId: String)

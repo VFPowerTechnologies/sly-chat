@@ -1,9 +1,6 @@
 package io.slychat.messenger.core.integration.web
 
-import io.slychat.messenger.core.AuthToken
-import io.slychat.messenger.core.SlyAddress
-import io.slychat.messenger.core.UserCredentials
-import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.crypto.generateUploadId
 import io.slychat.messenger.core.http.JavaHttpClient
@@ -12,6 +9,7 @@ import io.slychat.messenger.core.http.api.upload.UploadClientImpl
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class FileServerApiUploadTest {
@@ -44,12 +42,12 @@ class FileServerApiUploadTest {
         return NewUploadRequest(
             generateUploadId(),
             generateFileId(),
+            "sk",
             10L * partCount,
             10,
             0,
             partCount,
-            byteArrayOf(0x77),
-            byteArrayOf(0x66), "sk"
+            byteArrayOf(0x77), byteArrayOf(0x66)
         )
     }
 
@@ -65,18 +63,21 @@ class FileServerApiUploadTest {
         val client = newClient()
 
         val request = getNewUploadRequest()
-        val resp = client.newUpload(userCredentials, request)
-        assertTrue(resp.hadSufficientQuota, "Insufficient quota")
+        val newUploadResponse = client.newUpload(userCredentials, request)
+        assertTrue(newUploadResponse.hadSufficientQuota, "Insufficient quota")
 
         val inputStream = DummyInputStream(request.partSize)
+        val md5InputStream = MD5InputStream(inputStream)
 
-        client.uploadPart(
+        val resp = client.uploadPart(
             userCredentials,
             request.uploadId,
             1,
             request.partSize,
-            inputStream,
+            md5InputStream,
             null
         )
+
+        assertEquals(md5InputStream.digestString, resp.checksum, "Invalid checksum")
     }
 }
