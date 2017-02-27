@@ -13,6 +13,7 @@ import io.slychat.messenger.core.persistence.sqlite.JSONMapper
 import org.junit.*
 import java.net.ConnectException
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 data class DevResponse(
@@ -108,6 +109,15 @@ class FileServerApiUploadTest {
         )
 
         assertEquals(md5InputStream.digestString, resp.checksum, "Invalid checksum")
+    }
+
+    @Test
+    fun `upload should fail if creds are invalid`() {
+        val client = newClient()
+
+        assertFailsWith(UnauthorizedException::class) {
+            uploadPart(client, invalidUserCredentials, generateUploadId(), 1, 10)
+        }
     }
 
     @Test

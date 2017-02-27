@@ -7,6 +7,7 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.ApiException
 import io.slychat.messenger.core.http.api.upload.NewUploadRequest
 import io.slychat.messenger.core.http.api.upload.UploadClientImpl
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -48,13 +49,11 @@ class WebApiUploadTest {
     }
 
     private fun newClient(): UploadClientImpl {
-        return UploadClientImpl(serverBaseUrl, "TODO", JavaHttpClient())
+        return UploadClientImpl(serverBaseUrl, fileServerBaseUrl, JavaHttpClient())
     }
 
     @Test
     fun `newUpload should fail if creds are invalid`() {
-        val user = userManagement.injectNewSiteUser()
-
         val client = newClient()
 
         assertFailsWith(UnauthorizedException::class) {
@@ -64,10 +63,7 @@ class WebApiUploadTest {
 
     @Test
     fun `newUpload should create a new upload when given valid values`() {
-        val user = userManagement.injectNewSiteUser()
-        val username = user.user.email
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
-        val authToken = devClient.createAuthToken(username, deviceId)
+        val authUser = devClient.newAuthUser(userManagement)
 
         val client = newClient()
 
@@ -75,12 +71,12 @@ class WebApiUploadTest {
         val uploadId = request.uploadId
         val fileSize = request.fileSize
 
-        val resp = client.newUpload(user.getUserCredentials(authToken, deviceId), request)
+        val resp = client.newUpload(authUser.userCredentials, request)
 
         assertTrue(resp.hadSufficientQuota, "Should have sufficient quota")
         assertEquals(fileSize, resp.quota.usedBytes, "Quota not updated")
 
-        val uploadInfo = assertNotNull(devClient.getUploadInfo(user.user.id, uploadId), "No upload returned from server")
+        val uploadInfo = assertNotNull(devClient.getUploadInfo(authUser.user.user.id, uploadId), "No upload returned from server")
 
         assertEquals(uploadId, uploadInfo.id, "Invalid id")
         assertEquals(request.fileId, uploadInfo.fileId, "Invalid fileId")
@@ -100,21 +96,18 @@ class WebApiUploadTest {
     
     @Test
     fun `completeUpload should complete the upload if all parts are complete`() {
-        val user = userManagement.injectNewSiteUser()
-        val username = user.user.email
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
-        val authToken = devClient.createAuthToken(username, deviceId)
+        val authUser = devClient.newAuthUser(userManagement)
+        val user = authUser.user
 
         val client = newClient()
 
         val request = getDummyUploadRequest()
-        val userCredentials = user.getUserCredentials(authToken, deviceId)
-        val resp = client.newUpload(userCredentials, request)
+        val resp = client.newUpload(authUser.userCredentials, request)
         assertTrue(resp.hadSufficientQuota, "Insufficient quota")
 
         devClient.markPartsAsComplete(user.user.id, request.uploadId)
 
-        client.completeUpload(userCredentials, request.uploadId)
+        client.completeUpload(authUser.userCredentials, request.uploadId)
 
         val fileInfo = assertNotNull(devClient.getFileInfo(user.user.id, request.fileId), "No such file")
 
@@ -125,23 +118,60 @@ class WebApiUploadTest {
 
     @Test
     fun `completeUpload should fail if not all parts are complete`() {
-        val user = userManagement.injectNewSiteUser()
-        val username = user.user.email
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
-        val authToken = devClient.createAuthToken(username, deviceId)
+        val authUser = devClient.newAuthUser(userManagement)
 
         val client = newClient()
 
         val request = getDummyUploadRequest(2)
-        val userCredentials = user.getUserCredentials(authToken, deviceId)
-        val resp = client.newUpload(userCredentials, request)
+        val resp = client.newUpload(authUser.userCredentials, request)
         assertTrue(resp.hadSufficientQuota, "Insufficient quota")
 
         val e = assertFailsWith(ApiException::class) {
-            client.completeUpload(userCredentials, request.uploadId)
+            client.completeUpload(authUser.userCredentials, request.uploadId)
         }
 
         assertEquals("IncompleteUpload", e.message, "Invalid error message")
+    }
+
+    @Test
+    fun `getUploads should return nothing if no uploads are pending`() {
+        val authUser = devClient.newAuthUser(userManagement)
+        val client = newClient()
+
+        assertThat(client.getUploads(authUser.userCredentials).uploads).apply {
+            describedAs("Should be empty")
+            isEmpty()
+        }
+    }
+
+    @Test
+    fun `getUploads should return all uploads`() {
+        val authUser = devClient.newAuthUser(userManagement)
+        val client = newClient()
+
+        val request = getDummyUploadRequest(2)
+        val resp = client.newUpload(authUser.userCredentials, request)
+        assertTrue(resp.hadSufficientQuota, "Insufficient quota")
+
+        val expected = io.slychat.messenger.core.http.api.upload.UploadInfo(
+            request.uploadId,
+            authUser.deviceId,
+            request.fileId,
+            request.fileSize,
+            request.userMetadata,
+            request.fileMetadata,
+            listOf(
+                io.slychat.messenger.core.http.api.upload.UploadPartInfo(1, request.partSize, false),
+                io.slychat.messenger.core.http.api.upload.UploadPartInfo(2, request.partSize, false)
+            )
+        )
+
+        val getUploadsResponse = client.getUploads(authUser.userCredentials)
+
+        assertThat(getUploadsResponse.uploads).apply {
+            describedAs("Should match uploads")
+            containsOnly(expected)
+        }
     }
 }
 

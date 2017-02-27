@@ -14,7 +14,9 @@ class UploadClientImpl(
     private val httpClient: HttpClient
 ) : UploadClient {
     override fun getUploads(userCredentials: UserCredentials): GetUploadsResponse {
-        TODO()
+        val url = "$serverBaseUrl/v1/upload"
+
+        return apiGetRequest(httpClient, url, userCredentials, emptyList(), typeRef())
     }
 
     override fun newUpload(userCredentials: UserCredentials, request: NewUploadRequest): NewUploadResponse {
