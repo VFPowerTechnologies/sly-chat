@@ -5,6 +5,8 @@ import java.io.InputStream
 import java.io.OutputStream
 
 interface UploadClient {
+    fun getUpload(userCredentials : UserCredentials, uploadId: String): UploadInfo?
+
     fun getUploads(userCredentials: UserCredentials): GetUploadsResponse
 
     fun newUpload(userCredentials: UserCredentials, request: NewUploadRequest): NewUploadResponse

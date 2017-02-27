@@ -7,6 +7,8 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.ApiException
 import io.slychat.messenger.core.http.api.upload.NewUploadRequest
 import io.slychat.messenger.core.http.api.upload.UploadClientImpl
+import io.slychat.messenger.core.http.api.upload.UploadInfo
+import io.slychat.messenger.core.http.api.upload.UploadPartInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
@@ -76,7 +78,7 @@ class WebApiUploadTest {
         assertTrue(resp.hadSufficientQuota, "Should have sufficient quota")
         assertEquals(fileSize, resp.quota.usedBytes, "Quota not updated")
 
-        val uploadInfo = assertNotNull(devClient.getUploadInfo(authUser.user.user.id, uploadId), "No upload returned from server")
+        val uploadInfo = assertNotNull(client.getUpload(authUser.userCredentials, uploadId), "No upload returned from server")
 
         assertEquals(uploadId, uploadInfo.id, "Invalid id")
         assertEquals(request.fileId, uploadInfo.fileId, "Invalid fileId")
@@ -153,7 +155,7 @@ class WebApiUploadTest {
         val resp = client.newUpload(authUser.userCredentials, request)
         assertTrue(resp.hadSufficientQuota, "Insufficient quota")
 
-        val expected = io.slychat.messenger.core.http.api.upload.UploadInfo(
+        val expected = UploadInfo(
             request.uploadId,
             authUser.deviceId,
             request.fileId,
@@ -161,8 +163,8 @@ class WebApiUploadTest {
             request.userMetadata,
             request.fileMetadata,
             listOf(
-                io.slychat.messenger.core.http.api.upload.UploadPartInfo(1, request.partSize, false),
-                io.slychat.messenger.core.http.api.upload.UploadPartInfo(2, request.partSize, false)
+                UploadPartInfo(1, request.partSize, false),
+                UploadPartInfo(2, request.partSize, false)
             )
         )
 

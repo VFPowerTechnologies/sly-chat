@@ -67,28 +67,6 @@ enum class DeviceState {
     ACTIVE
 }
 
-data class UploadPartInfo(
-    @JsonProperty("n")
-    val n: Int,
-    @JsonProperty("size")
-    val size: Long
-)
-
-class UploadInfo(
-    @JsonProperty("id")
-    val id: String,
-    @JsonProperty("fileId")
-    val fileId: String,
-    @JsonProperty("fileSize")
-    val fileSize: Long,
-    @JsonProperty("fileMetadata")
-    val fileMetadata: ByteArray,
-    @JsonProperty("userMetadata")
-    val userMetadata: ByteArray,
-    @JsonProperty("parts")
-    val parts: List<UploadPartInfo>
-)
-
 /** Client for web api server dev functionality. */
 class DevClient(private val serverBaseUrl: String, private val httpClient: HttpClient) {
     private val objectMapper = ObjectMapper()
@@ -288,10 +266,6 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
 
     fun getQuota(userId: UserId): Quota {
         return getRequest("/dev/storage/quota/$userId", typeRef())
-    }
-
-    fun getUploadInfo(userId: UserId, uploadId: String): UploadInfo? {
-        return getRequest("/dev/upload/$userId/$uploadId", typeRef())
     }
 
     fun markPartsAsComplete(userId: UserId, uploadId: String) {
