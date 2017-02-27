@@ -51,7 +51,7 @@ fun <T> valueFromApi(response: HttpResponse, typeReference: TypeReference<ApiRes
     return getValueFromApiResult(apiResult, response)
 }
 
-private fun userCredentialsToHeaders(userCredentials: UserCredentials?): List<Pair<String, String>> {
+internal fun userCredentialsToHeaders(userCredentials: UserCredentials?): List<Pair<String, String>> {
     return if (userCredentials != null) {
         val username = userCredentials.address.asString()
         val creds = "$username:${userCredentials.authToken.string}".toByteArray(Charsets.UTF_8)

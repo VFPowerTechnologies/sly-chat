@@ -1,6 +1,7 @@
 package io.slychat.messenger.core.integration.web
 
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.crypto.generateUploadId
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.ApiException
@@ -31,13 +32,13 @@ class WebApiUploadTest {
     private fun getDummyUploadRequest(partCount: Int = 1): NewUploadRequest {
         return NewUploadRequest(
             generateUploadId(),
-            "sk",
+            generateFileId(),
             10L * partCount,
             10,
             0,
             partCount,
             byteArrayOf(0x77),
-            byteArrayOf(0x66)
+            byteArrayOf(0x66), "sk"
         )
     }
 
@@ -82,6 +83,7 @@ class WebApiUploadTest {
         val uploadInfo = assertNotNull(devClient.getUploadInfo(user.user.id, uploadId), "No upload returned from server")
 
         assertEquals(uploadId, uploadInfo.id, "Invalid id")
+        assertEquals(request.fileId, uploadInfo.fileId, "Invalid fileId")
         assertEquals(request.partCount, uploadInfo.parts.size, "Invalid part count")
         assertTrue(Arrays.equals(request.userMetadata, uploadInfo.userMetadata), "Invalid user metadata")
         assertTrue(Arrays.equals(request.fileMetadata, uploadInfo.fileMetadata), "Invalid file metadata")
@@ -112,10 +114,9 @@ class WebApiUploadTest {
 
         devClient.markPartsAsComplete(user.user.id, request.uploadId)
 
-        val completeResp = client.completeUpload(userCredentials, request.uploadId)
-        val fileId = completeResp.fileId
+        client.completeUpload(userCredentials, request.uploadId)
 
-        val fileInfo = assertNotNull(devClient.getFileInfo(user.user.id, fileId), "No such file")
+        val fileInfo = assertNotNull(devClient.getFileInfo(user.user.id, request.fileId), "No such file")
 
         assertEquals(request.fileSize, fileInfo.size, "Invalid fileSize")
         assertTrue(Arrays.equals(request.fileMetadata, fileInfo.fileMetadata), "Invalid file metadata")

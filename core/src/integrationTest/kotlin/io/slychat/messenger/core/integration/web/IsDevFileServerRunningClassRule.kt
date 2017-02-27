@@ -2,9 +2,8 @@ package io.slychat.messenger.core.integration.web
 
 import org.junit.rules.ExternalResource
 
-class IsDevServerRunningClassRule : ExternalResource() {
+class IsDevFileServerRunningClassRule : ExternalResource() {
     override fun before() {
-        isDevServerRunning()
+        isDevFileServerRunning()
     }
 }
-

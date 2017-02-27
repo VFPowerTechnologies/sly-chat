@@ -36,12 +36,12 @@ fun generateBoundary(): String {
     return builder.toString()
 }
 
-sealed class MultipartEntity {
+sealed class MultipartPart {
     abstract val name: String
     abstract val contentType: String?
     abstract val size: Long
 
-    class Text(override val name: String, val value: String) : MultipartEntity() {
+    class Text(override val name: String, val value: String) : MultipartPart() {
         private val raw = value.toByteArray(Charsets.US_ASCII)
 
         override val size: Long
@@ -52,28 +52,28 @@ sealed class MultipartEntity {
             get() = null
     }
 
-    class Data(override val name: String, override val size: Long, val inputStream: InputStream) : MultipartEntity() {
+    class Data(override val name: String, override val size: Long, val inputStream: InputStream) : MultipartPart() {
         override val contentType: String?
             get() = "application/octet-stream"
     }
 }
 
-fun calcMultipartEntitySize(entity: MultipartEntity, boundary: String): Long {
+fun calcMultipartEntitySize(part: MultipartPart, boundary: String): Long {
     var totalSize = 0L
 
     //-- + boundary + \r\n
     totalSize += boundary.length + 4
 
-    totalSize += "Content-Disposition: form-data; name=\"${entity.name}\"\r\n".toByteArray(Charsets.US_ASCII).size
+    totalSize += "Content-Disposition: form-data; name=\"${part.name}\"\r\n".toByteArray(Charsets.US_ASCII).size
 
-    if (entity.contentType != null)
-        totalSize += "Content-Type: ${entity.contentType}\r\n".toByteArray(Charsets.US_ASCII).size
+    if (part.contentType != null)
+        totalSize += "Content-Type: ${part.contentType}\r\n".toByteArray(Charsets.US_ASCII).size
 
     //\r\n
     totalSize += 2
 
     //value size
-    totalSize += entity.size
+    totalSize += part.size
 
     //\r\n after value
     totalSize += 2
@@ -81,7 +81,7 @@ fun calcMultipartEntitySize(entity: MultipartEntity, boundary: String): Long {
     return totalSize
 }
 
-fun calcMultipartTotalSize(boundary: String, entities: Iterable<MultipartEntity>): Long {
+fun calcMultipartTotalSize(boundary: String, entities: Iterable<MultipartPart>): Long {
     //--boundary--\r\n
     var totalSize =  boundary.toByteArray(Charsets.US_ASCII).size + 6L
 
@@ -92,25 +92,25 @@ fun calcMultipartTotalSize(boundary: String, entities: Iterable<MultipartEntity>
     return totalSize
 }
 
-fun writeMultipartEntity(outputStream: OutputStream, boundary: String, entity: MultipartEntity) {
+fun writeMultipartPart(outputStream: OutputStream, boundary: String, part: MultipartPart) {
     outputStream.write("--$boundary\r\n".toByteArray(Charsets.US_ASCII))
-    outputStream.write("Content-Disposition: form-data; name=\"${entity.name}\"\r\n".toByteArray(Charsets.US_ASCII))
+    outputStream.write("Content-Disposition: form-data; name=\"${part.name}\"\r\n".toByteArray(Charsets.US_ASCII))
 
-    if (entity.contentType != null)
-        outputStream.write("Content-Type: ${entity.contentType}\r\n".toByteArray(Charsets.US_ASCII))
+    if (part.contentType != null)
+        outputStream.write("Content-Type: ${part.contentType}\r\n".toByteArray(Charsets.US_ASCII))
 
     outputStream.write("\r\n".toByteArray(Charsets.US_ASCII))
 
-    when (entity) {
-        is MultipartEntity.Text -> {
-            outputStream.write("${entity.value}\r\n".toByteArray(Charsets.US_ASCII))
+    when (part) {
+        is MultipartPart.Text -> {
+            outputStream.write("${part.value}\r\n".toByteArray(Charsets.US_ASCII))
         }
 
-        is MultipartEntity.Data -> {
+        is MultipartPart.Data -> {
             val buffer = ByteArray(1024 * 8)
 
             while (true) {
-                val read = entity.inputStream.read(buffer)
+                val read = part.inputStream.read(buffer)
                 if (read == -1)
                     break
 
@@ -122,9 +122,9 @@ fun writeMultipartEntity(outputStream: OutputStream, boundary: String, entity: M
     }
 }
 
-fun writeMultipartEntities(outputStream: OutputStream, boundary: String, entities: Iterable<MultipartEntity>) {
-    entities.forEach {
-        writeMultipartEntity(outputStream, boundary, it)
+fun writeMultipartParts(outputStream: OutputStream, boundary: String, parts: Iterable<MultipartPart>) {
+    parts.forEach {
+        writeMultipartPart(outputStream, boundary, it)
     }
 
     outputStream.write("--$boundary--\r\n".toByteArray(Charsets.US_ASCII))

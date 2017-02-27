@@ -115,7 +115,7 @@ class JavaHttpClient(
     }
 
     //TODO write multipart support for builtin HttpServer to test this
-    override fun upload(url: String, headers: List<Pair<String, String>>, entities: List<MultipartEntity>, filterStream: ((OutputStream) -> FilterOutputStream)?): HttpResponse {
+    override fun upload(url: String, headers: List<Pair<String, String>>, parts: List<MultipartPart>, filterStream: ((OutputStream) -> OutputStream)?): HttpResponse {
         val connection = getHttpConnection(url)
 
         connection.doInput = true
@@ -128,7 +128,7 @@ class JavaHttpClient(
 
         val boundary = generateBoundary()
 
-        val contentLength = calcMultipartTotalSize(boundary, entities)
+        val contentLength = calcMultipartTotalSize(boundary, parts)
 
         connection.setFixedLengthStreamingMode(contentLength)
 
@@ -156,7 +156,7 @@ class JavaHttpClient(
             rawOutputStream
 
         outputStream.buffered().use {
-            writeMultipartEntities(it, boundary, entities)
+            writeMultipartParts(it, boundary, parts)
         }
 
         val headers = lowercaseHeaders(connection.headerFields ?: mapOf())

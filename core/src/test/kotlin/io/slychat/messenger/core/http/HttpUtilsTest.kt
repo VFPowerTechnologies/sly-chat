@@ -30,10 +30,10 @@ class HttpUtilsTest {
         val boundary = "AKEUMkvzjKQKOBkE7Mql8dsa30P5F9y"
 
         val entities = listOf(
-            MultipartEntity.Text("fileId", "12345"),
+            MultipartPart.Text("fileId", "12345"),
 
-            MultipartEntity.Text("size", "49"),
-            MultipartEntity.Data("file", 49, ByteArrayInputStream(ByteArray(0)))
+            MultipartPart.Text("size", "49"),
+            MultipartPart.Data("file", 49, ByteArrayInputStream(ByteArray(0)))
         )
 
         val totalSize = calcMultipartTotalSize(boundary, entities)
@@ -45,9 +45,9 @@ class HttpUtilsTest {
         val boundary = "V401o-vuvaCf9aw6ngU6cDDuRoR2izn"
 
         val entities = listOf(
-            MultipartEntity.Text("fileId", "12345"),
-            MultipartEntity.Text("size", "241160"),
-            MultipartEntity.Data("file", 241160, ByteArrayInputStream(ByteArray(0)))
+            MultipartPart.Text("fileId", "12345"),
+            MultipartPart.Text("size", "241160"),
+            MultipartPart.Data("file", 241160, ByteArrayInputStream(ByteArray(0)))
         )
 
         val totalSize = calcMultipartTotalSize(boundary, entities)

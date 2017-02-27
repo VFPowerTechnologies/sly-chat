@@ -77,6 +77,8 @@ data class UploadPartInfo(
 data class UploadInfo(
     @JsonProperty("id")
     val id: String,
+    @JsonProperty("fileId")
+    val fileId: String,
     @JsonProperty("fileSize")
     val fileSize: Long,
     @JsonProperty("fileMetadata")
