@@ -2,6 +2,7 @@ package io.slychat.messenger.core.persistence
 
 data class UploadPart(
     val n: Int,
+    val offset: Long,
     val size: Long,
     val isComplete: Boolean
 ) {

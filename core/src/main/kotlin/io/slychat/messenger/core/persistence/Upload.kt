@@ -9,5 +9,19 @@ data class Upload(
     //if file at filePath is already encrypted (used when uploading cached inline attachments)
     val isEncrypted: Boolean,
     val error: UploadError?,
+    //are in order
     val parts: List<UploadPart>
-)
+) {
+    init {
+        var offset = 0L
+        var n = 1
+
+        parts.forEach {
+            require(it.n == n) { "UploadPart out of order: expected $n, got ${it.n}"}
+            n += 1
+
+            require(it.offset == offset) { "UploadPart with invalid offset: expected $offset, got ${it.offset}" }
+            offset += it.size
+        }
+    }
+}

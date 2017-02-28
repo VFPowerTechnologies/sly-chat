@@ -41,15 +41,17 @@ class SQLiteUploadPersistenceManager(
     private fun uploadPartToRow(uploadId: String, part: UploadPart, stmt: SQLiteStatement) {
         stmt.bind(1, uploadId)
         stmt.bind(2, part.n)
-        stmt.bind(3, part.size)
-        stmt.bind(4, part.isComplete)
+        stmt.bind(3, part.offset)
+        stmt.bind(4, part.size)
+        stmt.bind(5, part.isComplete)
     }
 
     private fun rowToUploadPart(stmt : SQLiteStatement): UploadPart {
         return UploadPart(
             stmt.columnInt(0),
             stmt.columnLong(1),
-            stmt.columnBool(2)
+            stmt.columnLong(2),
+            stmt.columnBool(3)
         )
     }
 
@@ -74,9 +76,9 @@ VALUES
         val sql = """
 INSERT INTO
     upload_parts
-    (upload_id, n, size, is_complete)
+    (upload_id, n, offset, size, is_complete)
 VALUES
-    (?, ?, ?, ?)
+    (?, ?, ?, ?, ?)
 """
         connection.batchInsert(sql, parts) { stmt, part ->
             uploadPartToRow(uploadId, part, stmt)
@@ -161,7 +163,7 @@ FROM
         //language=SQLite
         val sql = """
 SELECT
-    n, size, is_complete
+    n, offset, size, is_complete
 FROM
     upload_parts
 WHERE
