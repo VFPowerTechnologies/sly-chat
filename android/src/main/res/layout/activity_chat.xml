@@ -30,25 +30,45 @@
         <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
-            <LinearLayout
-                    android:orientation="vertical"
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_above="@+id/chat_input_container"
+                android:layout_alignParentStart="true">
+
+                <ScrollView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_above="@+id/chat_input_container"
-                    android:layout_alignParentStart="true">
-                <ScrollView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scrollbars="none"
-                        android:id="@+id/chat_list_scrollview">
+                    android:scrollbars="none"
+                    android:id="@+id/chat_list_scrollview">
                     <LinearLayout
-                            android:id="@+id/chat_list"
-                            android:orientation="vertical"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content">
+                        android:id="@+id/chat_list"
+                        android:orientation="vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
                     </LinearLayout>
                 </ScrollView>
-            </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/jump_to_recent_messages"
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="20dp"
+                    android:visibility="gone"
+                    android:gravity="center_horizontal">
+                    <TextView
+                        android:id="@+id/jump_to_recent_label"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginEnd="5dp"
+                        android:visibility="gone"
+                        android:background="@drawable/new_message_badge_bg"
+                        android:gravity="center"/>
+                    <TextView
+                        android:text="@string/jump_to_recent_messages"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </FrameLayout>
             <LinearLayout
                     android:orientation="vertical"
                     android:layout_width="match_parent"
@@ -137,12 +157,11 @@
     </LinearLayout>
 
     <android.support.design.widget.NavigationView
-            android:id="@+id/chat_user_nav_view"
+            android:id="@+id/chat_nav_view"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_gravity="end"
             android:fitsSystemWindows="true"
-            app:headerLayout="@layout/nav_drawer_header"
-            app:menu="@menu/activity_user_chat_drawer"/>
+            app:headerLayout="@layout/nav_drawer_header"/>
 
 </android.support.v4.widget.DrawerLayout>

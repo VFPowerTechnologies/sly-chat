@@ -112,6 +112,7 @@ dependencies {
     //Added to prevent unresolved reference in IDEA
     compile "com.googlecode.libphonenumber:libphonenumber:$versions.libphonenumber"
     compile "com.almworks.sqlite4java:sqlite4java:$versions.sqlite4java"
+    compile "org.slf4j:slf4j-api:$versions.slf4j"
 
     repositories {
         maven { url "https://dl.bintray.com/hani-momanii/maven"}

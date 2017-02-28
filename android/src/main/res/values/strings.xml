@@ -172,6 +172,7 @@
     <string name="chat_delete_group_title">Delete group</string>
     <string name="chat_delete_group_text">Are you sure you want to delete this group?</string>
     <string name="chat_expiring_message_timer_text">" seconds"</string>
+    <string name="jump_to_recent_messages">Jump to recent messages</string>
 
     <string name="message_info_title">Message Information</string>
     <string name="message_info_encrypted">Message Is Encrypted</string>

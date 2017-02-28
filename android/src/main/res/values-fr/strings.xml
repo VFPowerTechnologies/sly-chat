@@ -220,5 +220,6 @@
     <string name="delete_message_text">êtes vous certain de vouloir effacer ce message?</string>
     <string name="delete_message_title">Effacer ce message?</string>
     <string name="ok_button">OK</string>
+    <string name="jump_to_recent_messages">Voir les messages récents</string>
 
 </resources>

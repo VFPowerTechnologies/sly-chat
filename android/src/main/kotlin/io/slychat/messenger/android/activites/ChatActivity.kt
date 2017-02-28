@@ -3,6 +3,7 @@ package io.slychat.messenger.android.activites
 import android.content.*
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.os.Handler
 import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
@@ -47,6 +48,19 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     private lateinit var groupService: AndroidGroupServiceImpl
     private lateinit var configService: AndroidConfigServiceImpl
 
+    private lateinit var actionBar: Toolbar
+    private lateinit var chatList: LinearLayout
+    private lateinit var chatInput: EditText
+    private lateinit var submitBtn: ImageButton
+    private lateinit var expireBtn: ImageButton
+    private lateinit var expireSlider: SeekBar
+    private lateinit var expirationDelay: TextView
+    private lateinit var expirationSliderContainer: LinearLayout
+    private lateinit var jumpToRecentBtn: LinearLayout
+    private lateinit var jumpToRecentLabel: TextView
+    private lateinit var rootView: LinearLayout
+    private lateinit var chatScrollView: ScrollView
+
     private lateinit var contactInfo: ContactInfo
     private lateinit var groupInfo: GroupInfo
 
@@ -61,33 +75,44 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     private var expireToggled = false
     private var expireDelay: Long? = null
 
+    private var currentScrollDiff = 0
+
+    private var initiated = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         log.debug("onCreate")
 
-        val layoutId: Int
         val isGroup = intent.getBooleanExtra(EXTRA_ISGROUP, false)
         if (isGroup) {
             val gIdString = intent.getStringExtra(EXTRA_CONVERSTATION_ID)
             if (gIdString == null)
                 finish()
             conversationId = GroupId(gIdString).toConversationId()
-            layoutId = R.layout.activity_group_chat
         }
         else {
             val uIdLong = intent.getLongExtra(EXTRA_CONVERSTATION_ID, -1L)
             if (uIdLong == -1L)
                 finish()
             conversationId = UserId(uIdLong).toConversationId()
-            layoutId = R.layout.activity_user_chat
         }
 
         app = AndroidApp.get(this)
 
-        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
-        setContentView(layoutId)
+        setContentView(R.layout.activity_chat)
 
-        val actionBar = findViewById(R.id.chat_toolbar) as Toolbar
+        chatList = findViewById(R.id.chat_list) as LinearLayout
+        submitBtn = findViewById(R.id.submit_chat_btn) as ImageButton
+        expireBtn = findViewById(R.id.expire_chat_btn) as ImageButton
+        expireSlider = findViewById(R.id.expiration_slider) as SeekBar
+        expirationDelay = findViewById(R.id.expiration_delay) as TextView
+        expirationSliderContainer = findViewById(R.id.expiration_slider_container) as LinearLayout
+        jumpToRecentBtn = findViewById(R.id.jump_to_recent_messages) as LinearLayout
+        jumpToRecentLabel = jumpToRecentBtn.findViewById(R.id.jump_to_recent_label) as TextView
+        rootView = findViewById(R.id.chat_root_view) as LinearLayout
+        chatScrollView = findViewById(R.id.chat_list_scrollview) as ScrollView
+        actionBar = findViewById(R.id.chat_toolbar) as Toolbar
+
         actionBar.title = ""
         setSupportActionBar(actionBar)
 
@@ -129,8 +154,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             keyboard = R.drawable.ic_keyboard_black
         }
 
-        val chatInput = findViewById(R.id.chat_input) as EditText
-        val rootView = findViewById(R.id.chat_root_view)
+        chatInput = findViewById(R.id.chat_input) as EditText
         val emojiButton = findViewById(R.id.chat_emoji_button) as ImageButton
         val emojiInput = chatInput as EmojiconEditText
 
@@ -141,11 +165,12 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun setNavigationMenu() {
         val navigationView: NavigationView
+        navigationView = findViewById(R.id.chat_nav_view) as NavigationView
         if (conversationId is ConversationId.User) {
-            navigationView = findViewById(R.id.chat_user_nav_view) as NavigationView
+            navigationView.inflateMenu(R.menu.activity_user_chat_drawer)
         }
         else {
-            navigationView = findViewById(R.id.chat_group_nav_view) as NavigationView
+            navigationView.inflateMenu(R.menu.activity_group_chat_drawer)
         }
 
         navigationView.setNavigationItemSelectedListener(this)
@@ -165,7 +190,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                     finish()
                 else {
                     contactInfo = it
-                    val actionBar = findViewById(R.id.chat_toolbar) as Toolbar
                     actionBar.title = it.name
                 }
             } failUi {
@@ -177,7 +201,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             groupService.getGroupInfo(cId.id) successUi {
                 if (it != null) {
                     groupInfo = it
-                    val actionBar = findViewById(R.id.chat_toolbar) as Toolbar
                     actionBar.title = it.name
                 }
                 else
@@ -190,9 +213,35 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun createEventListeners() {
-        val submitBtn = findViewById(R.id.submit_chat_btn) as ImageButton
-        val expireBtn = findViewById(R.id.expire_chat_btn) as ImageButton
-        val expireSlider = findViewById(R.id.expiration_slider) as SeekBar
+        rootView.viewTreeObserver.addOnGlobalLayoutListener {
+            val heightDiff = rootView.rootView.height - rootView.height
+            if (heightDiff > dpToPx(200F))
+                handleKeyboardOpen()
+        }
+
+        chatScrollView.viewTreeObserver.addOnScrollChangedListener {
+            val height = chatScrollView.getChildAt(0).height
+            val diff = height - (chatScrollView.scrollY + chatScrollView.height)
+
+            if (diff > 300) {
+                val handler = Handler()
+                handler.postDelayed(object : Runnable {
+                    override fun run() {
+                        if (currentScrollDiff > 300)
+                            showJumpToRecent()
+                    }
+                }, 500)
+            }
+            else if (diff < 200)
+                hideJumpToRecent()
+
+            currentScrollDiff = diff
+        }
+
+        jumpToRecentBtn.setOnClickListener {
+            scrollToBottom()
+            hideJumpToRecent()
+        }
 
         submitBtn.setOnClickListener {
             handleNewMessageSubmit()
@@ -237,6 +286,23 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         displayExpireSliderOnStart()
     }
 
+    private fun handleKeyboardOpen() {
+        if (currentScrollDiff < 200)
+            scrollToBottom()
+        else
+            showJumpToRecent()
+    }
+
+    private fun showJumpToRecent() {
+        jumpToRecentBtn.visibility = View.VISIBLE
+    }
+
+    private fun hideJumpToRecent() {
+        jumpToRecentBtn.visibility = View.GONE
+        jumpToRecentLabel.visibility = View.GONE
+        jumpToRecentLabel.text = ""
+    }
+
     private fun cacheMessages(messages: List<ConversationMessageInfo>) {
         messages.forEach { message ->
             addMessageToCache(message)
@@ -269,9 +335,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun showExpirationSlider() {
-        val expireSlider = findViewById(R.id.expiration_slider) as SeekBar
-        val expirationSliderContainer = findViewById(R.id.expiration_slider_container)
-
         var delay = expireDelay
         if (delay == null)
             delay = 5000
@@ -287,8 +350,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun setExpireDelay(delay: Long) {
         expireDelay = delay * 1000
-
-        val expirationDelay = findViewById(R.id.expiration_delay) as TextView
         expirationDelay.text = delay.toString()
     }
 
@@ -297,18 +358,19 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         if (settingsTTl != null)
             configService.setConvoTTLSettings(conversationId, ConvoTTLSettings(false, settingsTTl.lastTTL))
 
-        val expirationSliderContainer = findViewById(R.id.expiration_slider_container)
         expirationSliderContainer.visibility = View.GONE
         expireToggled = false
     }
 
     private fun displayMessages(messages: List<ConversationMessageInfo>) {
-        val chatList = findViewById(R.id.chat_list) as LinearLayout
         chatList.removeAllViews()
         messages.reversed().forEach { message ->
             chatList.addView(createMessageNode(message))
-            scrollToBottom()
+            if (!initiated)
+                scrollToBottom()
         }
+
+        initiated = true
     }
 
     private fun createMessageNode(messageInfo: ConversationMessageInfo): View {
@@ -318,7 +380,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         else
             layout = R.layout.received_message_node
 
-        val chatList = findViewById(R.id.chat_list) as LinearLayout
         val messageNode = LayoutInflater.from(this).inflate(layout, chatList, false)
         val messageIdNode = messageNode.findViewById(R.id.message_id) as TextView
         val message = messageNode.findViewById(R.id.message) as TextView
@@ -433,7 +494,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                 .setPositiveButton(resources.getString(R.string.ok_button), object : DialogInterface.OnClickListener {
                     override fun onClick(dialog: DialogInterface?, which: Int) {
                         messengerService.deleteMessage(conversationId, messageId) successUi {
-                            val chatList = findViewById(R.id.chat_list) as LinearLayout
                             val nodeId = chatDataLink[messageId]
                             if (nodeId != null) {
                                 val messageView = chatList.findViewById(nodeId)
@@ -487,7 +547,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private fun handleNewMessageSubmit() {
         var ttl = 0L
-        val chatInput = findViewById(R.id.chat_input) as EditText
         val messageValue = chatInput.text.toString()
         if (messageValue.isEmpty())
             return
@@ -506,7 +565,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun scrollToBottom() {
-        val chatScrollView = findViewById(R.id.chat_list_scrollview) as ScrollView
         chatScrollView.post {
             chatScrollView.fullScroll(View.FOCUS_DOWN)
         }
@@ -590,7 +648,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     private fun handleDeletedAllMessage(event: MessageUpdateEvent.DeletedAll) {
         val cId = event.conversationId
         if (cId == conversationId) {
-            val chatList = findViewById(R.id.chat_list) as LinearLayout
             chatList.removeAllViews()
             messagesCache.clear()
         }
@@ -605,7 +662,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
                 val nodeId = chatDataLink[it]
                 if (nodeId != null) {
-                    val chatList = findViewById(R.id.chat_list) as LinearLayout
                     chatList.removeView(findViewById(nodeId))
                 }
             }
@@ -645,7 +701,19 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val chatList = findViewById(R.id.chat_list) as LinearLayout
         chatList.addView(createMessageNode(newMessage.conversationMessageInfo))
 
-        scrollToBottom()
+        if (currentScrollDiff < 300)
+            scrollToBottom()
+        else if (jumpToRecentBtn.visibility == View.VISIBLE && !newMessage.conversationMessageInfo.info.isSent) {
+            val currentText = jumpToRecentLabel.text.toString()
+            var currentCount: Int
+            try {
+                currentCount = currentText.toInt()
+            } catch (e: NumberFormatException) {
+                currentCount = 0
+            }
+            jumpToRecentLabel.text = (currentCount + 1).toString()
+            jumpToRecentLabel.visibility = View.VISIBLE
+        }
     }
 
     private fun setListeners() {

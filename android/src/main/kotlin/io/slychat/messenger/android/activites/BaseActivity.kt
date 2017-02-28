@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.SparseArray
+import android.util.TypedValue
 import android.view.WindowManager
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.MainActivity
@@ -136,6 +137,11 @@ open class BaseActivity : AppCompatActivity() {
     fun pxToDp(sizeInDp: Int): Int {
         val scale = resources.displayMetrics.density
         return (sizeInDp*scale + 0.5f).toInt()
+    }
+
+    fun dpToPx(valueInDp: Float): Float {
+        val metrics = resources.displayMetrics
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, valueInDp, metrics)
     }
 
     override fun onRestart() {
