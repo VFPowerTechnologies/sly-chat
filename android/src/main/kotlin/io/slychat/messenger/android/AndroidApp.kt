@@ -194,6 +194,8 @@ class AndroidApp : Application() {
 
         appComponent = app.appComponent
 
+        app.isInBackground = false
+
         pushNotificationsClient = PushNotificationsAsyncClientImpl(appComponent.serverUrls.API_SERVER, appComponent.slyHttpClientFactory)
 
         val packageManager = packageManager
