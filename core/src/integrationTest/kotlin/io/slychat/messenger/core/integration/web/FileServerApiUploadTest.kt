@@ -1,6 +1,5 @@
 package io.slychat.messenger.core.integration.web
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.crypto.generateUploadId
@@ -8,18 +7,13 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.upload.NewUploadRequest
 import io.slychat.messenger.core.http.api.upload.UploadClient
 import io.slychat.messenger.core.http.api.upload.UploadClientImpl
-import io.slychat.messenger.core.http.get
-import io.slychat.messenger.core.persistence.sqlite.JSONMapper
-import org.junit.*
-import java.net.ConnectException
+import org.junit.Before
+import org.junit.BeforeClass
+import org.junit.ClassRule
+import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-
-data class DevResponse(
-    @JsonProperty("storageEnabled")
-    val storageEnabled: Boolean
-)
 
 class FileServerApiUploadTest {
     companion object {
@@ -34,17 +28,7 @@ class FileServerApiUploadTest {
         @BeforeClass
         @JvmStatic
         fun beforeClass() {
-            val devSettings = try {
-                val response = JavaHttpClient().get("$fileServerBaseUrl/dev")
-                if (response.code == 404)
-                    throw ServerDevModeDisabledException()
-
-                JSONMapper.mapper.readValue(response.body, DevResponse::class.java)
-            }
-            catch (e: ConnectException) {
-                Assume.assumeTrue(false)
-                throw e
-            }
+            val devSettings = isDevFileServerRunning()
 
             isStorageEnabled = devSettings.storageEnabled
             //min part size for s3 (excluding final part) is 5mb
@@ -55,7 +39,6 @@ class FileServerApiUploadTest {
     private val devClient = DevClient(serverBaseUrl, JavaHttpClient())
     private val userManagement = SiteUserManagement(devClient)
 
-    private val password = userManagement.defaultPassword
     private val invalidUserCredentials = UserCredentials(SlyAddress(UserId(999999), 999), AuthToken(""))
 
     @Before

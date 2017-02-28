@@ -5,6 +5,7 @@ import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.get
+import io.slychat.messenger.core.persistence.sqlite.JSONMapper
 import org.junit.Assume
 import java.net.ConnectException
 
@@ -24,6 +25,21 @@ fun isDevServerRunning() {
     }
     catch (e: ConnectException) {
         Assume.assumeTrue(false)
+    }
+}
+
+fun isDevFileServerRunning(): FileServerDevResponse {
+    return try {
+        val response = JavaHttpClient().get("$fileServerBaseUrl/dev")
+        if (response.code == 404)
+            throw ServerDevModeDisabledException()
+
+        JSONMapper.mapper.readValue(response.body, FileServerDevResponse::class.java)
+    }
+    catch (e: ConnectException) {
+        //never returns
+        Assume.assumeTrue(false)
+        throw e
     }
 }
 

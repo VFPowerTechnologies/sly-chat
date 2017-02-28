@@ -4,6 +4,7 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.storage.FileInfo
+import io.slychat.messenger.core.http.api.storage.StorageClient
 import io.slychat.messenger.core.http.api.storage.StorageClientImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -27,6 +28,10 @@ class WebApiStorageTest {
     @Before
     fun before() {
         devClient.clear()
+    }
+
+    private fun newClient(): StorageClient {
+        return StorageClientImpl(serverBaseUrl, fileServerBaseUrl, JavaHttpClient())
     }
 
     private fun addDummyFile(userId: UserId, lastUpdateVersion: Int): FileInfo {
@@ -55,7 +60,7 @@ class WebApiStorageTest {
 
         val authToken = devClient.createAuthToken(username, deviceId)
 
-        val client = StorageClientImpl(serverBaseUrl, JavaHttpClient())
+        val client = newClient()
 
         val quota = client.getQuota(user.getUserCredentials(authToken, deviceId))
         val expected = devClient.getQuota(user.user.id)
@@ -102,7 +107,7 @@ class WebApiStorageTest {
 
         val authToken = devClient.createAuthToken(username, deviceId)
 
-        val client = StorageClientImpl(serverBaseUrl, JavaHttpClient())
+        val client = newClient()
 
         val resp = client.getFileList(user.getUserCredentials(authToken, deviceId), 0)
 
@@ -128,7 +133,7 @@ class WebApiStorageTest {
 
         val authToken = devClient.createAuthToken(username, deviceId)
 
-        val client = StorageClientImpl(serverBaseUrl, JavaHttpClient())
+        val client = newClient()
 
         val newMetadata = byteArrayOf(0x77)
 

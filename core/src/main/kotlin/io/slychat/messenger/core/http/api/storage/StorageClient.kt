@@ -17,4 +17,8 @@ interface StorageClient {
 
     //may no longer be present if the original owner deleted it
     fun acceptShare(userCredentials: UserCredentials, request: AcceptShareRequest): AcceptShareResponse
+
+    //if an error occurs, ApiException is thrown
+    //if the file is missing, null is returned
+    fun downloadFile(userCredentials: UserCredentials, fileId: String): DownloadFileResponse?
 }

@@ -30,23 +30,28 @@ private fun <T> readValueOrThrowInvalid(response: HttpResponse, typeReference: T
     }
 }
 
-/** Throws an ApiResultException if an api-level error occured, otherwise returns the request value. */
-fun <T> valueFromApi(response: HttpResponse, typeReference: TypeReference<ApiResult<T>>): T {
-    val apiResult = when (response.code) {
+internal fun <T> throwApiException(response: HttpResponse, typeReference: TypeReference<ApiResult<T>>): Nothing {
+   when (response.code) {
         401 ->
             throw UnauthorizedException()
         409 ->
             throw ResourceConflictException()
         429 ->
             throw TooManyRequestsException()
-        200, 400 ->
-            readValueOrThrowInvalid(response, typeReference)
         in 500..599 -> {
             val apiValue = readValueOrThrowInvalid(response, typeReference)
             throw ServerErrorException(response, apiValue.error)
         }
         else -> throw UnexpectedResponseException(response)
     }
+}
+
+/** Throws an ApiResultException if an api-level error occured, otherwise returns the request value. */
+fun <T> valueFromApi(response: HttpResponse, typeReference: TypeReference<ApiResult<T>>): T {
+    val apiResult = if (response.code == 200 || response.code == 400)
+        readValueOrThrowInvalid(response, typeReference)
+    else
+        throwApiException(response, typeReference)
 
     return getValueFromApiResult(apiResult, response)
 }
