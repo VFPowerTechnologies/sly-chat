@@ -8,5 +8,7 @@ enum class UploadError(val isTransient: Boolean) {
     //XXX this is only for single part uploads; we need to delete the old file and create a new upload in this case
     CORRUPTED(false),
     //things like disconnection, etc
-    NETWORK_ISSUE(true)
+    NETWORK_ISSUE(true),
+    //not really sure whether to mark this transient or not
+    UNKNOWN(true)
 }

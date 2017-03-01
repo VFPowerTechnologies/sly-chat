@@ -1,5 +1,8 @@
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.isNotNetworkError
+import io.slychat.messenger.core.persistence.UploadError
 import io.slychat.messenger.core.persistence.UploadInfo
 import io.slychat.messenger.core.persistence.UploadPersistenceManager
 import io.slychat.messenger.core.persistence.UploadState
@@ -12,6 +15,7 @@ import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Subscription
 import rx.subjects.PublishSubject
+import java.io.FileNotFoundException
 import java.util.*
 
 class TransferManagerImpl(
@@ -157,7 +161,7 @@ class TransferManagerImpl(
             updateCachedUploadState(uploadId, newState)
         } failUi {
             log.error("Failed to update upload {} state to {}: {}", uploadId, newState, it.message, it)
-            moveUploadToErrorState(uploadId)
+            moveUploadToErrorState(uploadId, UploadError.UNKNOWN)
         }
     }
 
@@ -177,8 +181,13 @@ class TransferManagerImpl(
         subject.onNext(TransferEvent.UploadStateChanged(status.upload, newState))
     }
 
-    private fun moveUploadToErrorState(uploadId: String) {
+    private fun moveUploadToErrorState(uploadId: String, uploadError: UploadError) {
         log.info("Moving upload {} to error state", uploadId)
+
+        val status = all[uploadId] ?: error("No status for id=$uploadId")
+        all[uploadId] = status.copy(
+            upload = status.upload.copy(error = uploadError)
+        )
 
         active.remove(uploadId)
         queued.remove(uploadId)
@@ -187,6 +196,7 @@ class TransferManagerImpl(
         updateTransferState(uploadId, UploadTransferState.ERROR)
     }
 
+    //TODO
     //XXX this is called on a diff thread
     //just keep track of last time we emitted data, and emit every second
     //the last time it occurs doesn't matter (since we end up completing)
@@ -196,8 +206,32 @@ class TransferManagerImpl(
 
     }
 
+    private fun handleUploadException(uploadId: String, e: Exception, origin: String) {
+        val uploadError = when (e) {
+            is FileNotFoundException -> UploadError.FILE_DISAPPEARED
+
+            is InsufficientQuotaException -> UploadError.INSUFFICIENT_QUOTA
+
+            is UploadCorruptedException -> UploadError.CORRUPTED
+
+            else -> {
+                if (isNotNetworkError(e))
+                    UploadError.UNKNOWN
+                else
+                    UploadError.NETWORK_ISSUE
+            }
+        }
+
+        log.condError(uploadError == UploadError.UNKNOWN, "{} failed: {}", origin, e.message, e)
+
+        uploadPersistenceManager.setError(uploadId, uploadError) successUi {
+            moveUploadToErrorState(uploadId, uploadError)
+        } fail {
+            log.error("Failed to set upload error for {}: {}", uploadId, it.message, it)
+        }
+    }
+
     private fun uploadNextPart(status: UploadStatus) {
-        //TODO error
         val nextPart = status.upload.parts.find { !it.isComplete }
         val uploadId = status.upload.id
         if (nextPart == null) {
@@ -211,15 +245,15 @@ class TransferManagerImpl(
         //it could occur that this is called after status.upload is modified (eg: another part completes) if transfering
         //multiple parts; however we don't actually use .parts since we pass in the part explicitly so this isn't an issue
         //we should probably mapUi, because if something caused the upload to fail we don't wanna do anything
-        val p = transferOperations.uploadPart(status.upload, nextPart, status.file) {
+        transferOperations.uploadPart(status.upload, nextPart, status.file) {
             receivePartProgress(status.upload.id, nextPart.n, it)
-        }
-
-        p.bind {
+        } bind {
             uploadPersistenceManager.completePart(uploadId, nextPart.n)
-        }.successUi {
+        } successUi {
             completePart(uploadId, nextPart.n)
             nextStep(uploadId)
+        } failUi { e ->
+            handleUploadException(uploadId, e, "uploadPart")
         }
     }
 
@@ -246,15 +280,42 @@ class TransferManagerImpl(
     }
 
     private fun createUpload(status: UploadStatus) {
-        //TODO error
-        val p = transferOperations.create(status.upload, status.file)
-
         val uploadId = status.upload.id
 
-        p bind {
+        transferOperations.create(status.upload, status.file) bind {
             updateUploadState(uploadId, UploadState.CREATED)
         } successUi {
             nextStep(uploadId)
+        } failUi {
+            handleUploadException(uploadId, it, "create")
+        }
+    }
+
+    private inline fun updateCachedStatus(uploadId: String, fn: (UploadStatus) -> UploadStatus): UploadStatus {
+        val status = all[uploadId] ?: error("Attempt to update $uploadId but no such upload")
+
+        val updated = fn(status)
+
+        all[uploadId] = updated
+
+        return updated
+    }
+
+    override fun clearError(uploadId: String): Promise<Unit, Exception> {
+        return uploadPersistenceManager.setError(uploadId, null) successUi {
+            inactive.remove(uploadId)
+            queued.add(uploadId)
+
+            val status = updateCachedStatus(uploadId) {
+                it.copy(
+                    upload = it.upload.copy(error = null),
+                    state = UploadTransferState.QUEUED
+                )
+            }
+
+            subject.onNext(TransferEvent.UploadStateChanged(status.upload, status.state))
+
+            startNextUpload()
         }
     }
 }

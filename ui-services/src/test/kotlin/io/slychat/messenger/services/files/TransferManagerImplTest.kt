@@ -6,7 +6,6 @@ import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.crypto.generateShareKey
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenResolve
@@ -16,6 +15,9 @@ import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import rx.subjects.BehaviorSubject
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class TransferManagerImplTest {
     companion object {
@@ -41,6 +43,7 @@ class TransferManagerImplTest {
         whenever(uploadPersistenceManager.add(any())).thenResolveUnit()
         whenever(uploadPersistenceManager.completePart(any(), any())).thenResolveUnit()
         whenever(uploadPersistenceManager.setState(any(), any())).thenResolveUnit()
+        whenever(uploadPersistenceManager.setError(any(), any())).thenResolveUnit()
     }
 
     private fun newManager(isNetworkAvailable: Boolean = true): TransferManagerImpl {
@@ -54,7 +57,7 @@ class TransferManagerImplTest {
         )
     }
 
-    private fun randomUploadInfo(partCount: Int = 1, uploadState: UploadState = UploadState.PENDING): UploadInfo {
+    private fun randomUploadInfo(partCount: Int = 1, state: UploadState = UploadState.PENDING, error: UploadError? = null): UploadInfo {
         val file = RemoteFile(
             generateFileId(),
             generateShareKey(),
@@ -67,7 +70,7 @@ class TransferManagerImplTest {
             randomLong()
         )
 
-        val upload = randomUpload(file.id, file.remoteFileSize, uploadState)
+        val upload = randomUpload(file.id, file.remoteFileSize, state, error)
 
         return UploadInfo(upload, file)
     }
@@ -104,6 +107,32 @@ class TransferManagerImplTest {
     }
 
     @Test
+    fun `it should start fetched uploads with state=PENDING when network is available`() {
+        val info = randomUploadInfo(state = UploadState.PENDING)
+
+        val manager = newManager(true)
+
+        whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
+
+        manager.init()
+
+        transferOperations.assertCreateCalled(info.upload, info.file)
+    }
+
+    @Test
+    fun `it should start fetched uploads with state=CREATED when network is available`() {
+        val info = randomUploadInfo(state = UploadState.CREATED)
+
+        val manager = newManager(true)
+
+        whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
+
+        manager.init()
+
+        transferOperations.assertUploadPartCalled(info.upload, info.upload.parts[0], info.file)
+    }
+
+    @Test
     fun `it should not start fetched uploads which have an associated error`() {
         val file = randomRemoteFile()
         val upload = randomUpload(file.id, file.remoteFileSize).copy(
@@ -137,7 +166,7 @@ class TransferManagerImplTest {
 
     @Test
     fun `it should not start fetched complete uploads`() {
-        val info = randomUploadInfo(uploadState = UploadState.COMPLETE)
+        val info = randomUploadInfo(state = UploadState.COMPLETE)
 
         whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
 
@@ -150,7 +179,7 @@ class TransferManagerImplTest {
 
     @Test
     fun `it should emit UploadAdded with state=COMPLETE when fetching a completed upload`() {
-        val info = randomUploadInfo(uploadState = UploadState.COMPLETE)
+        val info = randomUploadInfo(state = UploadState.COMPLETE)
 
         whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
 
@@ -281,5 +310,128 @@ class TransferManagerImplTest {
 
             transferOperations.completeUploadPartOperation(1)
         }
+    }
+
+    @Test
+    fun `it should mark the upload as error when an exception occurs during creation`() {
+        val manager = newManager()
+
+        val info = randomUploadInfo()
+
+        manager.upload(info).get()
+
+        transferOperations.createDeferred.reject(InsufficientQuotaException())
+
+        val status = assertNotNull(manager.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
+
+        assertEquals(UploadTransferState.ERROR, status.state, "Invalid state")
+    }
+
+    @Test
+    fun `it should update upload error when creation fails`() {
+        val manager = newManager()
+
+        val info = randomUploadInfo()
+
+        manager.upload(info).get()
+
+        transferOperations.createDeferred.reject(InsufficientQuotaException())
+
+        verify(uploadPersistenceManager).setError(info.upload.id, UploadError.INSUFFICIENT_QUOTA)
+    }
+
+    @Test
+    fun `it should not attempt to upload parts when creation fails`() {
+        val manager = newManager()
+
+        val info = randomUploadInfo()
+
+        manager.upload(info).get()
+
+        transferOperations.createDeferred.reject(InsufficientQuotaException())
+
+        transferOperations.assertUploadPartNotCalled()
+    }
+
+    @Test
+    fun `it should emit a TransferEvent when an exception occurs during creation`() {
+        val manager = newManager()
+
+        val info = randomUploadInfo()
+
+        manager.upload(info).get()
+
+        val updated = info.upload.copy(error = UploadError.INSUFFICIENT_QUOTA)
+        assertEventEmitted(manager, TransferEvent.UploadStateChanged(updated, UploadTransferState.ERROR)) {
+            transferOperations.createDeferred.reject(InsufficientQuotaException())
+        }
+    }
+
+    @Test
+    fun `it should set upload error to INSUFFICIENT_QUOTA when creation fails with InsufficientQuotaException`() {
+        val manager = newManager()
+
+        val info = randomUploadInfo()
+
+        manager.upload(info).get()
+
+        transferOperations.createDeferred.reject(InsufficientQuotaException())
+
+        val status = assertNotNull(manager.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
+
+        assertEquals(status.upload.error, UploadError.INSUFFICIENT_QUOTA, "Invalid error")
+    }
+
+    private fun testClearError(manager: TransferManager): UploadInfo {
+        val info = randomUploadInfo(error = UploadError.FILE_DISAPPEARED)
+
+        whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
+
+        manager.init()
+
+        manager.clearError(info.upload.id).get()
+
+        return info
+    }
+
+    @Test
+    fun `clearError should clear the stored update error`() {
+        val manager = newManager(true)
+
+        val info = testClearError(manager)
+        verify(uploadPersistenceManager).setError(info.upload.id, null)
+    }
+
+    @Test
+    fun `clearError should reset the cached upload's error state`() {
+        val manager = newManager(true)
+
+        val info = testClearError(manager)
+
+        val status = assertNotNull(manager.uploads.find { it.upload.id == info.upload.id }, "Upload not found")
+
+        assertNull(status.upload.error, "Error not cleared")
+    }
+
+    @Test
+    fun `clearError should update emit a TransferEvent on clear`() {
+        val manager = newManager(true)
+        val info = randomUploadInfo(error = UploadError.FILE_DISAPPEARED)
+
+        whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
+
+        manager.init()
+
+        assertEventEmitted(manager, TransferEvent.UploadStateChanged(info.upload.copy(error = null), UploadTransferState.QUEUED)) {
+            manager.clearError(info.upload.id).get()
+        }
+    }
+
+    @Test
+    fun `clearError should queue the upload for processing if network is available`() {
+        val manager = newManager(true)
+        val info = testClearError(manager)
+
+        transferOperations.assertCreateCalled(info.upload, info.file)
     }
 }

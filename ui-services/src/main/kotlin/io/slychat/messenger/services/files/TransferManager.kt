@@ -16,5 +16,7 @@ interface TransferManager {
     fun shutdown()
 
     fun upload(info: UploadInfo): Promise<Unit, Exception>
+
+    fun clearError(uploadId: String): Promise<Unit, Exception>
 }
 

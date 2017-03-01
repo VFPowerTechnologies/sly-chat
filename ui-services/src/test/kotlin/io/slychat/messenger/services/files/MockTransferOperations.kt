@@ -54,6 +54,11 @@ class MockTransferOperations : TransferOperations {
             fail("create() called with differing args\nExpected:\n$expected\n\nActual:\n$args")
     }
 
+    fun assertUploadPartNotCalled() {
+        if (uploadArgs.isNotEmpty())
+            fail("uploadPart() called ${uploadArgs.size}")
+    }
+
     fun assertUploadPartNotCalled(n: Int) {
         val args = uploadArgs[n]
         if (args != null)
