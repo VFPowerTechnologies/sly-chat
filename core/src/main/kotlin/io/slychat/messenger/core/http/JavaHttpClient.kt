@@ -5,6 +5,7 @@ import java.io.*
 import java.net.HttpURLConnection
 import java.net.ProtocolException
 import java.net.URL
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.net.ssl.HttpsURLConnection
 
 
@@ -115,7 +116,7 @@ class JavaHttpClient(
     }
 
     //TODO write multipart support for builtin HttpServer to test this
-    override fun upload(url: String, headers: List<Pair<String, String>>, parts: List<MultipartPart>, filterStream: ((OutputStream) -> OutputStream)?): HttpResponse {
+    override fun upload(url: String, headers: List<Pair<String, String>>, parts: List<MultipartPart>, isCancelled: AtomicBoolean, filterStream: ((OutputStream) -> OutputStream)?): HttpResponse {
         val connection = getHttpConnection(url)
 
         connection.doInput = true
@@ -156,7 +157,7 @@ class JavaHttpClient(
             rawOutputStream
 
         outputStream.buffered().use {
-            writeMultipartParts(it, boundary, parts)
+            writeMultipartParts(it, boundary, parts, isCancelled)
         }
 
         val headers = lowercaseHeaders(connection.headerFields ?: mapOf())

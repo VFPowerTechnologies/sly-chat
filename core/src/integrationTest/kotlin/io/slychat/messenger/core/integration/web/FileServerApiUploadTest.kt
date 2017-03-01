@@ -11,6 +11,7 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -88,6 +89,7 @@ class FileServerApiUploadTest {
             partNumber,
             partSize,
             md5InputStream,
+            AtomicBoolean(),
             null
         )
 

@@ -12,6 +12,7 @@ import org.assertj.core.api.Assertions
 import org.junit.*
 import java.io.ByteArrayInputStream
 import java.util.*
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.*
 
 class FileServerApiStorageTest {
@@ -92,6 +93,7 @@ class FileServerApiStorageTest {
             1,
             partSize,
             ByteArrayInputStream(fileData),
+            AtomicBoolean(),
             null
         )
 

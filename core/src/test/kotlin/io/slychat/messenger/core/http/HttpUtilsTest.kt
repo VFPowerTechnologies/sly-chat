@@ -2,7 +2,11 @@ package io.slychat.messenger.core.http
 
 import org.junit.Test
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class HttpUtilsTest {
@@ -59,5 +63,19 @@ class HttpUtilsTest {
     fun `it should calc multipart entity sizes correctly`() {
         testData()
         testData2()
+    }
+
+    //XXX only checked during MultipartPart.Data; writeMultipartParts checks after each part
+    @Test
+    fun `writeMultipartPart should throw CancelledException if isCancelled is set to true`() {
+        val isCancelled = AtomicBoolean(true)
+
+        val outputStream = ByteArrayOutputStream()
+
+        val bytes = byteArrayOf(0x77, 0x66)
+        val part = MultipartPart.Data("data", bytes.size.toLong(), ByteArrayInputStream(bytes))
+        assertFailsWith(CancellationException::class) {
+            writeMultipartPart(outputStream, generateBoundary(), part, isCancelled)
+        }
     }
 }

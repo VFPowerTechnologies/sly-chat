@@ -5,6 +5,8 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.URLEncoder
 import java.util.*
+import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicBoolean
 
 fun toQueryString(params: List<Pair<String, String>>): String {
     if (params.isEmpty())
@@ -92,7 +94,7 @@ fun calcMultipartTotalSize(boundary: String, entities: Iterable<MultipartPart>):
     return totalSize
 }
 
-fun writeMultipartPart(outputStream: OutputStream, boundary: String, part: MultipartPart) {
+fun writeMultipartPart(outputStream: OutputStream, boundary: String, part: MultipartPart, isCancelled: AtomicBoolean) {
     outputStream.write("--$boundary\r\n".toByteArray(Charsets.US_ASCII))
     outputStream.write("Content-Disposition: form-data; name=\"${part.name}\"\r\n".toByteArray(Charsets.US_ASCII))
 
@@ -110,6 +112,9 @@ fun writeMultipartPart(outputStream: OutputStream, boundary: String, part: Multi
             val buffer = ByteArray(1024 * 8)
 
             while (true) {
+                if (isCancelled.get())
+                    throw CancellationException()
+
                 val read = part.inputStream.read(buffer)
                 if (read == -1)
                     break
@@ -122,9 +127,14 @@ fun writeMultipartPart(outputStream: OutputStream, boundary: String, part: Multi
     }
 }
 
-fun writeMultipartParts(outputStream: OutputStream, boundary: String, parts: Iterable<MultipartPart>) {
+/**
+ * @throws CancellationException Thrown if isCancelled is set to true.
+ */
+fun writeMultipartParts(outputStream: OutputStream, boundary: String, parts: Iterable<MultipartPart>, isCancelled: AtomicBoolean) {
     parts.forEach {
-        writeMultipartPart(outputStream, boundary, it)
+        writeMultipartPart(outputStream, boundary, it, isCancelled)
+        if (isCancelled.get())
+            throw CancellationException()
     }
 
     outputStream.write("--$boundary--\r\n".toByteArray(Charsets.US_ASCII))
