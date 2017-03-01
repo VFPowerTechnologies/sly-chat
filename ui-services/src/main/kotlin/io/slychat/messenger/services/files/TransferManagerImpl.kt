@@ -18,7 +18,6 @@ class TransferManagerImpl(
     override var options: TransferOptions,
     private val uploadPersistenceManager: UploadPersistenceManager,
     private val transferOperations: TransferOperations,
-    //TODO
     networkStatus: Observable<Boolean>
 ) : TransferManager {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -75,7 +74,14 @@ class TransferManagerImpl(
             if (upload.id in all)
                 error("Upload ${upload.id} already in transfer list")
 
-            val initialState = UploadTransferState.QUEUED
+            val initialState = if (upload.error == null) {
+                if (upload.state == UploadState.COMPLETE)
+                    UploadTransferState.COMPLETE
+                else
+                    UploadTransferState.QUEUED
+            }
+            else
+                UploadTransferState.ERROR
 
             all[upload.id] = UploadStatus(
                 upload,
@@ -84,7 +90,8 @@ class TransferManagerImpl(
                 upload.parts.map { UploadPartTransferProgress(0, it.size) }
             )
 
-            queued.add(upload.id)
+            if (initialState == UploadTransferState.QUEUED)
+                queued.add(upload.id)
 
             subject.onNext(TransferEvent.UploadAdded(upload, initialState))
         }
@@ -108,8 +115,6 @@ class TransferManagerImpl(
         }
 
         while (queued.isNotEmpty()) {
-            //TODO don't start uploads with errors
-
             val nextId = queued.pop()
 
             val status = all[nextId] ?: error("Queued upload $nextId not in upload list")
@@ -125,8 +130,6 @@ class TransferManagerImpl(
         }
     }
 
-    //TODO might make sense to have the TransferOperations return Promise's or something? would make it easier to test the async stuff I guess
-    //maybe we can abstract their creation off into some TransferOperations object with .create(), .uploadPart(), etc
     private fun nextStep(uploadId: String) {
         val status = all[uploadId] ?: error("nextStep called for invalid upload id: $uploadId")
 
@@ -216,7 +219,6 @@ class TransferManagerImpl(
             uploadPersistenceManager.completePart(uploadId, nextPart.n)
         }.successUi {
             completePart(uploadId, nextPart.n)
-            //TODO update state, emit event
             nextStep(uploadId)
         }
     }

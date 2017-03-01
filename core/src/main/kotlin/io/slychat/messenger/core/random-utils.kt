@@ -239,13 +239,13 @@ fun randomRemoteFile(isDeleted: Boolean = false): RemoteFile {
     )
 }
 
-fun randomUpload(fileId: String? = null, fileSize: Long = 0): Upload {
+fun randomUpload(fileId: String? = null, fileSize: Long = 0, uploadState: UploadState = UploadState.PENDING): Upload {
     val fid = fileId ?: generateFileId()
 
     return Upload(
         generateUploadId(),
         fid,
-        UploadState.PENDING,
+        uploadState,
         "/tmp/" + randomName(),
         false,
         null,

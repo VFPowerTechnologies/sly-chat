@@ -1,17 +1,12 @@
 package io.slychat.messenger.services.files
 
 import com.nhaarman.mockito_kotlin.*
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.crypto.generateShareKey
 import io.slychat.messenger.core.files.RemoteFile
-import io.slychat.messenger.core.persistence.UploadInfo
-import io.slychat.messenger.core.persistence.UploadPart
-import io.slychat.messenger.core.persistence.UploadPersistenceManager
-import io.slychat.messenger.core.persistence.UploadState
-import io.slychat.messenger.core.randomFileMetadata
-import io.slychat.messenger.core.randomLong
-import io.slychat.messenger.core.randomUpload
-import io.slychat.messenger.core.randomUserMetadata
+import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.services.assertEventEmitted
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenResolve
@@ -59,7 +54,7 @@ class TransferManagerImplTest {
         )
     }
 
-    private fun randomUploadInfo(partCount: Int = 1): UploadInfo {
+    private fun randomUploadInfo(partCount: Int = 1, uploadState: UploadState = UploadState.PENDING): UploadInfo {
         val file = RemoteFile(
             generateFileId(),
             generateShareKey(),
@@ -72,9 +67,22 @@ class TransferManagerImplTest {
             randomLong()
         )
 
-        val upload = randomUpload(file.id, file.remoteFileSize)
+        val upload = randomUpload(file.id, file.remoteFileSize, uploadState)
 
         return UploadInfo(upload, file)
+    }
+
+    private fun <R> assertEventEmitted(manager: TransferManager, event: TransferEvent, body: () -> R): R {
+        val testSubscriber = manager.events.testSubscriber()
+
+        val r = body()
+
+        assertThat(testSubscriber.onNextEvents).apply {
+            describedAs("Should emit ${event.javaClass.simpleName}")
+            contains(event)
+        }
+
+        return r
     }
 
     @Test
@@ -95,17 +103,62 @@ class TransferManagerImplTest {
         }
     }
 
-    private fun <R> assertEventEmitted(manager: TransferManager, event: TransferEvent, body: () -> R): R {
-        val testSubscriber = manager.events.testSubscriber()
+    @Test
+    fun `it should not start fetched uploads which have an associated error`() {
+        val file = randomRemoteFile()
+        val upload = randomUpload(file.id, file.remoteFileSize).copy(
+            error = UploadError.INSUFFICIENT_QUOTA
+        )
 
-        val r = body()
+        whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(UploadInfo(upload, file)))
 
-        assertThat(testSubscriber.onNextEvents).apply {
-            describedAs("Should emit ${event.javaClass.simpleName}")
-            contains(event)
+        val manager = newManager(true)
+
+        manager.init()
+
+        transferOperations.assertCreateNotCalled()
+    }
+
+    @Test
+    fun `it should emit UploadAdded with state=ERROR when fetching uploads with an associated error`() {
+        val file = randomRemoteFile()
+        val upload = randomUpload(file.id, file.remoteFileSize).copy(
+            error = UploadError.INSUFFICIENT_QUOTA
+        )
+
+        whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(UploadInfo(upload, file)))
+
+        val manager = newManager(true)
+
+        assertEventEmitted(manager, TransferEvent.UploadAdded(upload, UploadTransferState.ERROR)) {
+            manager.init()
         }
+    }
 
-        return r
+    @Test
+    fun `it should not start fetched complete uploads`() {
+        val info = randomUploadInfo(uploadState = UploadState.COMPLETE)
+
+        whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
+
+        val manager = newManager(true)
+
+        manager.init()
+
+        transferOperations.assertCreateNotCalled()
+    }
+
+    @Test
+    fun `it should emit UploadAdded with state=COMPLETE when fetching a completed upload`() {
+        val info = randomUploadInfo(uploadState = UploadState.COMPLETE)
+
+        whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
+
+        val manager = newManager(true)
+
+        assertEventEmitted(manager, TransferEvent.UploadAdded(info.upload, UploadTransferState.COMPLETE)) {
+            manager.init()
+        }
     }
 
     @Test
@@ -205,7 +258,7 @@ class TransferManagerImplTest {
 
         manager.upload(uploadInfo).get()
 
-        transferOperations.getUploadPartDeferred(1).resolve(Unit)
+        transferOperations.completeUploadPartOperation(1)
 
         verify(uploadPersistenceManager).setState(uploadInfo.upload.id, UploadState.COMPLETE)
     }
@@ -226,7 +279,7 @@ class TransferManagerImplTest {
         assertEventEmitted(manager, TransferEvent.UploadStateChanged(updated, UploadTransferState.COMPLETE)) {
             manager.upload(uploadInfo).get()
 
-            transferOperations.getUploadPartDeferred(1).resolve(Unit)
+            transferOperations.completeUploadPartOperation(1)
         }
     }
 }

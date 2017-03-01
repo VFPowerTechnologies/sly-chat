@@ -78,4 +78,8 @@ class MockTransferOperations : TransferOperations {
     fun getUploadPartDeferred(n: Int): Deferred<Unit, Exception> {
         return uploadDeferreds[n] ?: fail("uploadPart() not called for part $n")
     }
+
+    fun completeUploadPartOperation(n: Int) {
+        getUploadPartDeferred(n).resolve(Unit)
+    }
 }
