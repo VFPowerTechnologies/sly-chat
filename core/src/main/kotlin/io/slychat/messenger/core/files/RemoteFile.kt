@@ -11,4 +11,9 @@ data class RemoteFile(
     val creationDate: Long,
     val modificationDate: Long,
     val remoteFileSize: Long
-)
+) {
+    init {
+        if (fileMetadata == null && !isDeleted)
+            error("File is not deleted but has empty fileMetadata")
+    }
+}

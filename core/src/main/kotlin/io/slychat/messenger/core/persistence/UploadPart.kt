@@ -7,6 +7,7 @@ data class UploadPart(
     val isComplete: Boolean
 ) {
     init {
-        require(n > 0) { "n must be >= 0, got $n" }
+        require(n > 0) { "n must be > 0, got $n" }
+        require(size > 0) { "size must be > 0, got $size" }
     }
 }

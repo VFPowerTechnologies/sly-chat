@@ -5,10 +5,6 @@ enum class UploadState {
     PENDING,
     //remote upload entry has been created
     CREATED,
-    //this is either actually transfering, or queued to be transfering
-    RUNNING,
     //only complete once all parts are completed
-    COMPLETE,
-    //when in this state, .error is set
-    ERROR
+    COMPLETE
 }

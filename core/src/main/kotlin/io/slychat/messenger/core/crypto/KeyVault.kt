@@ -70,6 +70,8 @@ class KeyVault(
     private fun infoForType(type: DerivedKeyType): HKDFInfo = when (type) {
         DerivedKeyType.ACCOUNT_LOCAL_INFO -> HKDFInfoList.accountLocalInfo()
         DerivedKeyType.REMOTE_ADDRESS_BOOK_ENTRIES -> HKDFInfoList.remoteAddressBookEntries()
+        //TODO maybe add the fileId into this
+        DerivedKeyType.USER_METADATA -> HKDFInfoList.userMetadata()
     }
 
     fun getDerivedKeySpec(type: DerivedKeyType): DerivedKeySpec {

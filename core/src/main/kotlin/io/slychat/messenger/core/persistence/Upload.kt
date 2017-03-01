@@ -24,4 +24,20 @@ data class Upload(
             offset += it.size
         }
     }
+
+    val isSinglePart: Boolean
+        get() = parts.size == 1
+
+    fun markPartCompleted(partN: Int): Upload {
+        require(partN > 0 && partN <= parts.size) { "Invalid part number given: $partN" }
+
+        return copy(
+            parts = parts.map {
+                if (it.n == partN)
+                    it.copy(isComplete = true)
+                else
+                    it
+            }
+        )
+    }
 }
