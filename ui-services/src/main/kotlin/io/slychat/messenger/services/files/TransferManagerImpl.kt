@@ -56,6 +56,11 @@ class TransferManagerImpl(
     }
 
     override fun init() {
+        uploadPersistenceManager.getAll() successUi {
+            addUploads(it)
+        } failUi {
+            log.error("Failed to fetch initial uploads: {}", it.message, it)
+        }
     }
 
     override fun shutdown() {
@@ -63,12 +68,10 @@ class TransferManagerImpl(
         subscription = null
     }
 
-    //XXX right now this requires the file to already be added... might be better to do this with the upload in one shot
-    override fun upload(info: UploadInfo): Promise<Unit, Exception> {
-        val upload = info.upload
-        val file = info.file
-
-        return uploadPersistenceManager.add(info) mapUi {
+    private fun addUploads(info: Iterable<UploadInfo>) {
+        info.forEach {
+            val upload = it.upload
+            val file = it.file
             if (upload.id in all)
                 error("Upload ${upload.id} already in transfer list")
 
@@ -84,8 +87,14 @@ class TransferManagerImpl(
             queued.add(upload.id)
 
             subject.onNext(TransferEvent.UploadAdded(upload, initialState))
+        }
 
-            startNextUpload()
+        startNextUpload()
+    }
+
+    override fun upload(info: UploadInfo): Promise<Unit, Exception> {
+        return uploadPersistenceManager.add(info) mapUi {
+            addUploads(listOf(info))
         }
     }
 

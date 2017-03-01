@@ -14,6 +14,7 @@ import io.slychat.messenger.core.randomUpload
 import io.slychat.messenger.core.randomUserMetadata
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.testSubscriber
+import io.slychat.messenger.testutils.thenResolve
 import io.slychat.messenger.testutils.thenResolveUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -41,6 +42,7 @@ class TransferManagerImplTest {
 
     @Before
     fun before() {
+        whenever(uploadPersistenceManager.getAll()).thenResolve(emptyList())
         whenever(uploadPersistenceManager.add(any())).thenResolveUnit()
         whenever(uploadPersistenceManager.completePart(any(), any())).thenResolveUnit()
         whenever(uploadPersistenceManager.setState(any(), any())).thenResolveUnit()
@@ -75,14 +77,22 @@ class TransferManagerImplTest {
         return UploadInfo(upload, file)
     }
 
-    //XXX can't do this unless we merge upload/file persistence; else we need to get all uploads and then fetch their files one at a time
     @Test
     fun `it should fetch uploads from storage on init`() {
+        val uploadInfo = listOf(randomUploadInfo(), randomUploadInfo())
+
+        whenever(uploadPersistenceManager.getAll()).thenResolve(uploadInfo)
+
         val manager = newManager(false)
 
         manager.init()
 
-        TODO()
+        val actual = manager.uploads.map { UploadInfo(it.upload, it.file) }
+
+        assertThat(actual).apply {
+            describedAs("Should contain initial uploads")
+            containsAll(uploadInfo)
+        }
     }
 
     private fun <R> assertEventEmitted(manager: TransferManager, event: TransferEvent, body: () -> R): R {
