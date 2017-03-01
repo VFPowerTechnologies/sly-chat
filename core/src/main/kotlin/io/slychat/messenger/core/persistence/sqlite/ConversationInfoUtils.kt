@@ -5,7 +5,7 @@ import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 
-class ConversationInfoUtils {
+internal class ConversationInfoUtils {
     private fun rowToConversationInfo(stmt: SQLiteStatement): ConversationInfo {
         return ConversationInfo(
             stmt.columnNullableLong(0)?.let { UserId(it) },

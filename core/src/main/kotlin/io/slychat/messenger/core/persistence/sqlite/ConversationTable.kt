@@ -15,11 +15,8 @@ import io.slychat.messenger.core.readResourceFileText
  *
  * Since this is accessed only within the db thread pool, this isn't an issue.
  */
-object ConversationTable {
-    private val tableTemplate: String
-    init {
-        tableTemplate = javaClass.readResourceFileText("/schema/conversation.sql")
-    }
+internal object ConversationTable {
+    private val tableTemplate: String = javaClass.readResourceFileText("/schema/conversation.sql")
 
     fun getTablename(conversationId: ConversationId) =
         "conv_${conversationId.asString()}"

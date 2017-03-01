@@ -1,8 +1,6 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
-import com.almworks.sqlite4java.SQLiteConstants
-import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
@@ -10,6 +8,8 @@ import nl.komponents.kovenant.Promise
 class SQLiteUploadPersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
 ) : UploadPersistenceManager {
+    private val fileUtils = FileUtils()
+
     private fun uploadToRow(upload: Upload, stmt: SQLiteStatement) {
         stmt.bind(1, upload.id)
         stmt.bind(2, upload.fileId)
@@ -85,19 +85,12 @@ VALUES
         }
     }
 
-    override fun add(upload: Upload): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {
-        try {
-            it.withTransaction {
-                insertUpload(it, upload)
-                insertUploadParts(it, upload.id, upload.parts)
-            }
-        }
-        catch (e: SQLiteException) {
-            //only constraint we have; message is just [FOREIGN KEY constraint failed]
-            if (e.baseErrorCode == SQLiteConstants.SQLITE_CONSTRAINT)
-                throw InvalidFileException(upload.fileId)
-            else
-                throw e
+    override fun add(info: UploadInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {
+        val upload = info.upload
+        it.withTransaction {
+            fileUtils.insertFile(it, info.file)
+            insertUpload(it, upload)
+            insertUploadParts(it, upload.id, upload.parts)
         }
     }
 
@@ -142,19 +135,32 @@ WHERE
             throw InvalidUploadException(uploadId)
     }
 
-    override fun getAll(): Promise<List<Upload>, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun getAll(): Promise<List<UploadInfo>, Exception> = sqlitePersistenceManager.runQuery { connection ->
         //language=SQLite
         val sql = """
 SELECT
-    id, file_id, state, file_path, is_encrypted, error
+    u.id, u.file_id, u.state, u.file_path, u.is_encrypted, u.error,
+
+    f.id, f.share_key, f.last_update_version,
+    f.is_deleted, f.creation_date, f.modification_date,
+    f.remote_file_size, f.file_key, f.file_name,
+    f.directory, f.cipher_id, f.chunk_size,
+    f.file_size
 FROM
-    uploads
+    uploads AS u
+JOIN
+    files AS f
+ON
+    f.id = u.file_id
 """
         connection.withPrepared(sql) { stmt ->
             stmt.map {
                 val id = stmt.columnString(0)
                 val parts = getParts(connection, id)
-                rowToUpload(stmt, parts)
+                UploadInfo(
+                    rowToUpload(stmt, parts),
+                    fileUtils.rowToRemoteFile(stmt, 6)
+                )
             }
         }
     }

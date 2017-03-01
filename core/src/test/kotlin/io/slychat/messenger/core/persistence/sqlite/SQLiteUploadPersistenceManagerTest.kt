@@ -1,8 +1,6 @@
 package io.slychat.messenger.core.persistence.sqlite
 
-import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.crypto.generateUploadId
-import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomRemoteFile
 import org.assertj.core.api.Assertions.assertThat
@@ -22,7 +20,6 @@ class SQLiteUploadPersistenceManagerTest {
     }
 
     private lateinit var persistenceManager: SQLitePersistenceManager
-    private lateinit var fileListPersistenceManager: SQLiteFileListPersistenceManager
     private lateinit var uploadPersistenceManager: SQLiteUploadPersistenceManager
 
     @Before
@@ -30,7 +27,6 @@ class SQLiteUploadPersistenceManagerTest {
         persistenceManager = SQLitePersistenceManager(null, null)
         persistenceManager.init()
 
-        fileListPersistenceManager = SQLiteFileListPersistenceManager(persistenceManager)
         uploadPersistenceManager = SQLiteUploadPersistenceManager(persistenceManager)
     }
 
@@ -43,16 +39,16 @@ class SQLiteUploadPersistenceManagerTest {
         return "/path/file.ext"
     }
 
-    private fun insertFile(): RemoteFile {
+    private fun insertUploadFull(error: UploadError?): UploadInfo {
         val file = randomRemoteFile()
-        fileListPersistenceManager.addFile(file).get()
-        return file
+        val upload = randomUpload(file.id, error)
+        val info = UploadInfo(upload, file)
+        uploadPersistenceManager.add(info).get()
+        return info
     }
 
     private fun insertUpload(error: UploadError? = null): Upload {
-        val upload = randomUpload(insertFile().id, error)
-        uploadPersistenceManager.add(upload).get()
-        return upload
+        return insertUploadFull(error).upload
     }
 
     private fun randomUpload(fileId: String, error: UploadError? = null): Upload {
@@ -78,26 +74,17 @@ class SQLiteUploadPersistenceManagerTest {
 
     @Test
     fun `add should insert a new upload entry`() {
-        val file = insertFile()
+        val file = randomRemoteFile()
 
         val upload = randomUpload(file.id)
 
-        uploadPersistenceManager.add(upload).get()
+        uploadPersistenceManager.add(UploadInfo(upload, file)).get()
 
         val actual = getUpload(upload.id, "Upload not inserted in db")
 
         assertThat(actual).apply {
             describedAs("Should match the inserted upload")
             isEqualToComparingFieldByField(upload)
-        }
-    }
-
-    @Test
-    fun `add should throw InvalidFileException if no associated file exists`() {
-        val upload = randomUpload(generateFileId())
-
-        assertFailsWith(InvalidFileException::class) {
-            uploadPersistenceManager.add(upload).get()
         }
     }
 
@@ -192,8 +179,8 @@ class SQLiteUploadPersistenceManagerTest {
     @Test
     fun `getAll should return all uploads`() {
         val expected = listOf(
-            insertUpload(null),
-            insertUpload(UploadError.INSUFFICIENT_QUOTA)
+            insertUploadFull(null),
+            insertUploadFull(UploadError.INSUFFICIENT_QUOTA)
         )
 
         val actual = uploadPersistenceManager.getAll().get()

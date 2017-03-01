@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.persistence.UploadInfo
 import nl.komponents.kovenant.Promise
 import rx.Observable
 
@@ -14,6 +15,6 @@ interface TransferManager {
 
     fun shutdown()
 
-    fun upload(request: UploadRequest): Promise<Unit, Exception>
+    fun upload(info: UploadInfo): Promise<Unit, Exception>
 }
 

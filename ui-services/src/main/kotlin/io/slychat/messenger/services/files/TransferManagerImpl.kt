@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.persistence.UploadInfo
 import io.slychat.messenger.core.persistence.UploadPersistenceManager
 import io.slychat.messenger.core.persistence.UploadState
 import io.slychat.messenger.services.mapUi
@@ -63,11 +64,11 @@ class TransferManagerImpl(
     }
 
     //XXX right now this requires the file to already be added... might be better to do this with the upload in one shot
-    override fun upload(request: UploadRequest): Promise<Unit, Exception> {
-        val upload = request.upload
-        val file = request.file
+    override fun upload(info: UploadInfo): Promise<Unit, Exception> {
+        val upload = info.upload
+        val file = info.file
 
-        return uploadPersistenceManager.add(request.upload) mapUi {
+        return uploadPersistenceManager.add(info) mapUi {
             if (upload.id in all)
                 error("Upload ${upload.id} already in transfer list")
 
