@@ -21,11 +21,16 @@ fun decryptUserMetadata(keyVault: KeyVault, um: ByteArray): UserMetadata {
 }
 
 fun encryptFileMetadata(userMetadata: UserMetadata, fileMetadata: FileMetadata): ByteArray {
-    val cipher = CipherList.defaultDataEncryptionCipher
+    val cipher = CipherList.getCipher(userMetadata.cipherId)
     val fm = JSONMapper.mapper.writeValueAsBytes(fileMetadata)
-    return encryptBulkData(cipher, userMetadata.fileKey, fm)
+    //we use cipher directly, as we don't need to prepend the id to the encrypted data
+    return cipher.encrypt(userMetadata.fileKey, fm)
 }
 
 fun decryptFileMetadata(userMetadata: UserMetadata, fm: ByteArray): FileMetadata {
-    TODO()
+    val cipher = CipherList.getCipher(userMetadata.cipherId)
+
+    val json = cipher.decrypt(userMetadata.fileKey, fm)
+
+    return JSONMapper.mapper.readValue(json, FileMetadata::class.java)
 }

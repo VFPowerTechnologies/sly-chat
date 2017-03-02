@@ -26,8 +26,8 @@ fun encryptBulkData(derivedKeySpec: DerivedKeySpec, data: ByteArray): ByteArray 
     return encryptBulkData(CipherList.defaultDataEncryptionCipher, derivedKeySpec, data)
 }
 
-fun encryptBulkData(cipher: Cipher, derivedKey: Key, data: ByteArray): ByteArray {
-    val cipherText = cipher.encrypt(derivedKey, data)
+fun encryptBulkData(cipher: Cipher, key: Key, data: ByteArray): ByteArray {
+    val cipherText = cipher.encrypt(key, data)
 
     val output = ByteArray(1 + cipherText.size)
     output[0] = cipher.id.short.toByte()
