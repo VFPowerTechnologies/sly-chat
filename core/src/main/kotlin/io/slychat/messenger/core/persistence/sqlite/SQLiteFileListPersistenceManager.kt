@@ -1,14 +1,26 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
+import com.almworks.sqlite4java.SQLiteStatement
+import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.core.files.UserMetadata
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.core.persistence.FileListUpdate
+import io.slychat.messenger.core.persistence.InvalidFileException
 import nl.komponents.kovenant.Promise
+import org.slf4j.LoggerFactory
 
 class SQLiteFileListPersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
 ) : FileListPersistenceManager {
+    companion object {
+        private const val UPDATE_TYPE_DELETE = "d"
+        private const val UPDATE_TYPE_METADATA = "m"
+    }
+
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private val fileUtils = FileUtils()
 
     private fun isFilePresent(connection: SQLiteConnection, fileId: String): Boolean {
@@ -87,11 +99,74 @@ WHERE
         //FIXME
         if (connection.changes <= 0)
             throw IllegalStateException("File ${file.id} doesn't exist")
-
     }
 
-    override fun updateFile(file: RemoteFile): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        updateFile(connection, file)
+    //currently all remote updates are exclusive with each other (since it doesn't make sense to delete something, then rename it, etc)
+    private fun insertRemoteUpdate(connection: SQLiteConnection, fileId: String, type: String) {
+        //language=SQLite
+        val sql = """
+INSERT OR REPLACE INTO
+    remote_file_updates
+    (file_id, type)
+VALUES
+    (?, ?)
+"""
+
+        connection.withPrepared(sql) {
+            it.bind(1, fileId)
+            it.bind(2, type)
+            it.step()
+        }
+    }
+
+    override fun deleteFile(fileId: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        //language=SQLite
+        val sql = """
+UPDATE
+    files
+SET
+    is_deleted = 1
+WHERE
+    id = ?
+"""
+
+        connection.withTransaction {
+            connection.withPrepared(sql) {
+                it.bind(1, fileId)
+                it.step()
+            }
+
+            if (connection.changes <= 0)
+                throw InvalidFileException(fileId)
+
+            insertRemoteUpdate(connection, fileId, UPDATE_TYPE_DELETE)
+        }
+    }
+
+    override fun updateMetadata(fileId: String, userMetadata: UserMetadata): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        //language=SQLite
+        val sql = """
+UPDATE
+    files
+SET
+    file_name = ?,
+    directory = ?
+WHERE
+    id = ?
+"""
+        connection.withTransaction {
+            connection.withPrepared(sql) {
+                it.bind(1, userMetadata.fileName)
+                it.bind(2, userMetadata.directory)
+                it.bind(3, fileId)
+                it.step()
+            }
+
+            if (connection.changes <= 0)
+                throw InvalidFileException(fileId)
+
+            insertRemoteUpdate(connection, fileId, UPDATE_TYPE_METADATA)
+        }
     }
 
     override fun getFileInfo(fileId: String): Promise<RemoteFile?, Exception> = sqlitePersistenceManager.runQuery {
@@ -133,6 +208,7 @@ WHERE
     }
 
     private fun setVersion(connection: SQLiteConnection, latestVersion: Int) {
+        //language=SQLite
         val sql = """
 UPDATE
     file_list_version
@@ -151,6 +227,47 @@ SET
             it.step()
 
             it.columnInt(0)
+        }
+    }
+
+    override fun getRemoteUpdates(): Promise<List<FileListUpdate>, Exception> = sqlitePersistenceManager.runQuery {
+        //language=SQLite
+        val sql = """
+SELECT
+    u.file_id,
+    u.type,
+    f.file_key,
+    f.file_name,
+    f.directory
+FROM
+    remote_file_updates u
+JOIN
+    files f
+ON
+    f.id = u.file_id
+"""
+       it.withPrepared(sql) {
+           it.map { rowToFileListUpdate(it) }
+       }
+    }
+
+    private fun rowToFileListUpdate(stmt: SQLiteStatement): FileListUpdate {
+        val fileId = stmt.columnString(0)
+        val type = stmt.columnString(1)
+
+        return when (type) {
+            UPDATE_TYPE_DELETE -> FileListUpdate.Delete(fileId)
+
+            UPDATE_TYPE_METADATA -> {
+                val userMetadata = UserMetadata(
+                    Key(stmt.columnBlob(2)),
+                    stmt.columnString(4),
+                    stmt.columnString(3)
+                )
+                FileListUpdate.MetadataUpdate(fileId, userMetadata)
+            }
+
+            else -> throw IllegalArgumentException("Unknown FileListUpdate type: $type")
         }
     }
 }

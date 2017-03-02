@@ -1,13 +1,20 @@
 package io.slychat.messenger.core.persistence.sqlite
 
+import io.slychat.messenger.core.crypto.generateFileId
+import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.core.persistence.FileListUpdate
+import io.slychat.messenger.core.persistence.InvalidFileException
 import io.slychat.messenger.core.randomRemoteFile
-import org.assertj.core.api.Assertions
+import io.slychat.messenger.core.randomUserMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class SQLiteFileListPersistenceManagerTest {
     companion object {
@@ -20,6 +27,25 @@ class SQLiteFileListPersistenceManagerTest {
 
     private lateinit var persistenceManager: SQLitePersistenceManager
     private lateinit var fileListPersistenceManager: SQLiteFileListPersistenceManager
+
+    private fun insertFile(): RemoteFile {
+        val file = randomRemoteFile()
+
+        fileListPersistenceManager.addFile(file).get()
+
+        return file
+    }
+
+    private fun getFile(id: String): RemoteFile {
+        return assertNotNull(fileListPersistenceManager.getFileInfo(id).get(), "File not found")
+    }
+
+    private fun assertRemoteUpdateExists(update: FileListUpdate, message: String) {
+        assertThat(fileListPersistenceManager.getRemoteUpdates().get()).apply {
+            describedAs(message)
+            contains(update)
+        }
+    }
 
     @Before
     fun before() {
@@ -45,33 +71,15 @@ class SQLiteFileListPersistenceManagerTest {
 
         fileListPersistenceManager.addFile(file).get()
 
-        Assertions.assertThat(fileListPersistenceManager.getAllFiles(0, 1000).get()).apply {
+        assertThat(fileListPersistenceManager.getAllFiles(0, 1000).get()).apply {
             describedAs("Should contain added files")
             containsOnly(file)
         }
     }
 
     @Test
-    fun `updateFile should update the corresponding file`() {
-        val file = randomRemoteFile()
-
-        fileListPersistenceManager.addFile(file).get()
-
-        val update = file.copy(isDeleted = true, fileMetadata = null)
-
-        fileListPersistenceManager.updateFile(update).get()
-
-        assertThat(fileListPersistenceManager.getFileInfo(update.id).get()).apply {
-            describedAs("Message not updated")
-            isEqualToComparingFieldByField(update)
-        }
-    }
-
-    @Test
     fun `mergeUpdates should update files`() {
-        val file = randomRemoteFile()
-
-        fileListPersistenceManager.addFile(file).get()
+        val file = insertFile()
 
         val updated = file.copy(lastUpdateVersion = 2)
 
@@ -96,5 +104,118 @@ class SQLiteFileListPersistenceManagerTest {
         fileListPersistenceManager.mergeUpdates(listOf(randomRemoteFile()), latestVersion).get()
 
         assertEquals(latestVersion, fileListPersistenceManager.getVersion().get(), "Version not updated")
+    }
+
+    @Test
+    fun `mergeUpdates should not generate remote updates`() {
+        val latestVersion = 2
+
+        val file = insertFile()
+        val updates = listOf(randomRemoteFile(), file.copy(userMetadata = file.userMetadata.rename("newName")))
+
+        fileListPersistenceManager.mergeUpdates(updates, latestVersion).get()
+
+        assertThat(fileListPersistenceManager.getRemoteUpdates().get()).apply {
+            describedAs("Should not create remote updates")
+            isEmpty()
+        }
+    }
+
+    @Test
+    fun `deleteFile should mark file as deleted`() {
+        val file = insertFile()
+
+        fileListPersistenceManager.deleteFile(file.id).get()
+
+        val remoteFile = getFile(file.id)
+
+        assertTrue(remoteFile.isDeleted, "File not marked as deleted")
+    }
+
+    @Test
+    fun `deleteFile should throw if file doesn't exist`() {
+        assertFailsWith(InvalidFileException::class) {
+            fileListPersistenceManager.deleteFile(generateFileId()).get()
+        }
+    }
+
+    @Test
+    fun `deleteFile should create a delete remote update`() {
+        val file = insertFile()
+
+        fileListPersistenceManager.deleteFile(file.id).get()
+
+        assertRemoteUpdateExists(FileListUpdate.Delete(file.id), "Should add a delete remote update")
+    }
+
+    @Test
+    fun `deletefile should override metadata update`() {
+        val file = insertFile()
+
+        val userMetadata = file.userMetadata.moveTo("/newDir", "newName")
+
+        fileListPersistenceManager.updateMetadata(file.id, userMetadata).get()
+
+        fileListPersistenceManager.deleteFile(file.id).get()
+
+        assertRemoteUpdateExists(FileListUpdate.Delete(file.id), "Should add a delete remote update")
+    }
+
+    @Test
+    fun `updateMetadata should update the file metadata`() {
+        val file = insertFile()
+
+        val userMetadata = file.userMetadata.moveTo("/newDir", "newName")
+
+        fileListPersistenceManager.updateMetadata(file.id, userMetadata).get()
+
+        val updated = getFile(file.id)
+
+        assertEquals(userMetadata, updated.userMetadata, "Metadata not updated")
+    }
+
+    @Test
+    fun `updateMetadata should throw if file doesn't exist`() {
+        assertFailsWith(InvalidFileException::class) {
+            fileListPersistenceManager.updateMetadata(generateFileId(), randomUserMetadata()).get()
+        }
+    }
+
+    @Test
+    fun `updateMetadata should create a remote update`() {
+        val file = insertFile()
+
+        val userMetadata = file.userMetadata.moveTo("/newDir", "newName")
+
+        fileListPersistenceManager.updateMetadata(file.id, userMetadata).get()
+
+        assertRemoteUpdateExists(FileListUpdate.MetadataUpdate(file.id, userMetadata), "Should add an update metadata remote update")
+    }
+
+    //not that you'd normally do this...
+    @Test
+    fun `updateMetadata should override deletion update`() {
+        val file = insertFile()
+
+        fileListPersistenceManager.deleteFile(file.id).get()
+
+        val userMetadata = file.userMetadata.moveTo("/newDir", "newName")
+
+        fileListPersistenceManager.updateMetadata(file.id, userMetadata).get()
+
+        assertRemoteUpdateExists(FileListUpdate.MetadataUpdate(file.id, userMetadata), "Should override existing delete update")
+    }
+
+    @Test
+    fun `multiple updateMetadata calls should retain the last update`() {
+        val file = insertFile()
+
+        val userMetadata = file.userMetadata.moveTo("/newDir", "newName")
+
+        fileListPersistenceManager.updateMetadata(file.id, file.userMetadata.moveTo("/oldDir", "oldName"))
+
+        fileListPersistenceManager.updateMetadata(file.id, userMetadata).get()
+
+        assertRemoteUpdateExists(FileListUpdate.MetadataUpdate(file.id, userMetadata), "Should override existing metadata update")
     }
 }

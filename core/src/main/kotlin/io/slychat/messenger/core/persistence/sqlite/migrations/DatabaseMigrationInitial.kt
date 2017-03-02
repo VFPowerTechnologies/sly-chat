@@ -29,6 +29,7 @@ class DatabaseMigrationInitial : DatabaseMigration(1) {
             "message_failures",
             "file_list_version",
             "files",
+            "remote_file_updates",
             "uploads",
             "upload_parts"
         )

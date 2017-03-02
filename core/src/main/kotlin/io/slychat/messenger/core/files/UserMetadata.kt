@@ -9,6 +9,7 @@ import io.slychat.messenger.core.crypto.ciphers.Key
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class UserMetadata(
+    //this should never be updated
     @JsonProperty("fileKey")
     val fileKey: Key,
     //dir/filenames should be case-insensitive during comparisions
@@ -21,4 +22,13 @@ data class UserMetadata(
         require(fileName.isNotBlank()) { "Invalid file name: <<$fileName>>" }
         require(directory.startsWith("/")) { "Invalid directory path: <<$directory>>" }
     }
+
+    fun rename(newFileName: String): UserMetadata =
+        copy(fileName = newFileName)
+
+    fun moveTo(directory: String): UserMetadata =
+        copy(directory = directory)
+
+    fun moveTo(directory: String, newFileName: String): UserMetadata =
+        copy(directory = directory, fileName = newFileName)
 }
