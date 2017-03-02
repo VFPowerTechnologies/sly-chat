@@ -57,7 +57,7 @@ fun decryptBulkData(derivedKeySpec: DerivedKeySpec, ciphertext: ByteArray): Byte
     if (ciphertext.isEmpty())
         return emptyByteArray()
 
-    if (ciphertext.size <= 0)
+    if (ciphertext.isEmpty())
         throw IllegalArgumentException("Malformed ciphertext")
 
     val cipherId = CipherId(ciphertext[0].toShort())

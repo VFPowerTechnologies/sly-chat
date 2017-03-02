@@ -1,15 +1,13 @@
 package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.UserCredentials
-import io.slychat.messenger.core.crypto.DerivedKeyType
 import io.slychat.messenger.core.crypto.KeyVault
-import io.slychat.messenger.core.crypto.ciphers.CipherList
-import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
 import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.core.files.encryptFileMetadata
+import io.slychat.messenger.core.files.encryptUserMetadata
 import io.slychat.messenger.core.http.api.upload.NewUploadRequest
 import io.slychat.messenger.core.http.api.upload.UploadClient
 import io.slychat.messenger.core.persistence.Upload
-import io.slychat.messenger.core.persistence.sqlite.JSONMapper
 
 class CreateUploadOperation(
     private val userCredentials: UserCredentials,
@@ -20,17 +18,9 @@ class CreateUploadOperation(
 ) {
     fun run() {
         val fileMetadata = file.fileMetadata ?: error("fileMetadata is null")
-        val keySpec = keyVault.getDerivedKeySpec(DerivedKeyType.USER_METADATA)
 
-        val mapper = JSONMapper.mapper
-        val um = mapper.writeValueAsBytes(file.userMetadata)
-        val fm = mapper.writeValueAsBytes(fileMetadata)
-
-        val encryptedUserMetadata = encryptBulkData(keySpec, um)
-
-        val cipher = CipherList.getCipher(fileMetadata.cipherId)
-
-        val encryptedFileMetadata = encryptBulkData(cipher, file.userMetadata.fileKey, fm)
+        val encryptedUserMetadata = encryptUserMetadata(keyVault, file.userMetadata)
+        val encryptedFileMetadata = encryptFileMetadata(file.userMetadata, fileMetadata)
 
         val partCount = upload.parts.size
         val firstPartSize = upload.parts.first().size
