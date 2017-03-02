@@ -4,7 +4,6 @@ import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.http.api.AcceptShareRequest
 import io.slychat.messenger.core.http.api.AcceptShareResponse
-import io.slychat.messenger.core.http.api.UpdateMetadataResponse
 
 interface StorageClient {
     fun getQuota(userCredentials: UserCredentials): Quota
@@ -13,7 +12,7 @@ interface StorageClient {
 
     fun getFileInfo(userCredentials : UserCredentials, fileId: String): GetFileInfoResponse
 
-    fun updateMetadata(userCredentials: UserCredentials, fileId: String, newMetadata: ByteArray): UpdateMetadataResponse
+    fun update(userCredentials: UserCredentials, request: UpdateRequest): UpdateResponse
 
     //may no longer be present if the original owner deleted it
     fun acceptShare(userCredentials: UserCredentials, request: AcceptShareRequest): AcceptShareResponse

@@ -6,6 +6,7 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.storage.FileInfo
 import io.slychat.messenger.core.http.api.storage.StorageClient
 import io.slychat.messenger.core.http.api.storage.StorageClientImpl
+import io.slychat.messenger.core.http.api.storage.UpdateRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
@@ -34,7 +35,7 @@ class WebApiStorageTest {
         return StorageClientImpl(serverBaseUrl, fileServerBaseUrl, JavaHttpClient())
     }
 
-    private fun addDummyFile(userId: UserId, lastUpdateVersion: Int): FileInfo {
+    private fun addDummyFile(userId: UserId, lastUpdateVersion: Long): FileInfo {
         val fileInfo = FileInfo(
             generateFileId(),
             "sk",
@@ -74,7 +75,7 @@ class WebApiStorageTest {
         val username = user.user.email
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
-        val lastUpdateVersion = 1
+        val lastUpdateVersion = 1L
 
         devClient.addFileListVersion(user.user.id, lastUpdateVersion)
 
@@ -120,12 +121,12 @@ class WebApiStorageTest {
     }
 
     @Test
-    fun `updateMetadata should update the user's metadata`() {
+    fun `update should update the user's metadata`() {
         val user = userManagement.injectNamedSiteUser("a@a.com")
         val username = user.user.email
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
-        val lastUpdateVersion = 1
+        val lastUpdateVersion = 1L
 
         devClient.addFileListVersion(user.id, lastUpdateVersion)
 
@@ -138,7 +139,12 @@ class WebApiStorageTest {
         val newMetadata = byteArrayOf(0x77)
 
         val userCredentials = user.getUserCredentials(authToken, deviceId)
-        val updateResp = client.updateMetadata(userCredentials, fileInfo.id, newMetadata)
+        val request = UpdateRequest(
+            emptyList(),
+            mapOf(fileInfo.id to newMetadata)
+        )
+
+        val updateResp = client.update(userCredentials, request)
 
         assertEquals(lastUpdateVersion + 1, updateResp.newVersion, "Invalid new version")
 

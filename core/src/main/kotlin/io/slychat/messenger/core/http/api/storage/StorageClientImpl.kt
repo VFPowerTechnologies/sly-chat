@@ -29,12 +29,8 @@ class StorageClientImpl(
         return apiGetRequest(httpClient, url, userCredentials, emptyList(), typeRef())
     }
 
-    override fun updateMetadata(userCredentials: UserCredentials, fileId: String, newMetadata: ByteArray): UpdateMetadataResponse {
-        val request = mapOf(
-            "metadata" to newMetadata
-        )
-
-        val url = "$serverBaseUrl/v1/storage/$fileId/metadata"
+    override fun update(userCredentials: UserCredentials, request: UpdateRequest): UpdateResponse {
+        val url = "$serverBaseUrl/v1/storage"
 
         return apiPostRequest(httpClient, url, userCredentials, request, typeRef())
     }

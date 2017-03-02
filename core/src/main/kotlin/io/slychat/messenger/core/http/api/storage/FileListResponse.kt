@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 data class FileListResponse(
     @JsonProperty("version")
-    val version: Int,
+    val version: Long,
     @JsonProperty("files")
     val files: List<FileInfo>
 )

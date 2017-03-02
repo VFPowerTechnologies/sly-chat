@@ -3,7 +3,6 @@ package io.slychat.messenger.core.http.api.storage
 import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.http.HttpClientFactory
-import io.slychat.messenger.core.http.api.UpdateMetadataResponse
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 
@@ -22,7 +21,7 @@ class StorageAsyncClientImpl(
         newClient().getFileList(userCredentials, sinceVersion)
     }
 
-    override fun updateMetadata(userCredentials: UserCredentials, fileId: String, newMetadata: ByteArray): Promise<UpdateMetadataResponse, Exception> = task {
-        newClient().updateMetadata(userCredentials, fileId, newMetadata)
+    override fun update(userCredentials: UserCredentials, request: UpdateRequest): Promise<UpdateResponse, Exception> = task {
+        newClient().update(userCredentials, request)
     }
 }

@@ -3,7 +3,7 @@ package io.slychat.messenger.core.http.api.storage
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.util.*
 
-data class FileInfo(
+class FileInfo(
     @JsonProperty("id")
     val id: String,
     @JsonProperty("shareKey")
@@ -12,7 +12,7 @@ data class FileInfo(
     @get:JsonProperty("isDeleted")
     val isDeleted: Boolean,
     @JsonProperty("lastUpdateVersion")
-    val lastUpdateVersion: Int,
+    val lastUpdateVersion: Long,
     @JsonProperty("creationDate")
     val creationDate: Long,
     @JsonProperty("modificationDate")
@@ -52,7 +52,7 @@ data class FileInfo(
         var result = id.hashCode()
         result = 31 * result + shareKey.hashCode()
         result = 31 * result + isDeleted.hashCode()
-        result = 31 * result + lastUpdateVersion
+        result = 31 * result + lastUpdateVersion.hashCode()
         result = 31 * result + creationDate.hashCode()
         result = 31 * result + modificationDate.hashCode()
         result = 31 * result + Arrays.hashCode(userMetadata)

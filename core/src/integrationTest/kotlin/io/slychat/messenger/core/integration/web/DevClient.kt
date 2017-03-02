@@ -272,7 +272,7 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         postRequestNoResponse(null, "/dev/upload/$userId/$uploadId")
     }
 
-    fun addFileListVersion(userId: UserId, version: Int) {
+    fun addFileListVersion(userId: UserId, version: Long) {
         val request = mapOf(
             "version" to version
         )
