@@ -18,10 +18,9 @@ interface FileListPersistenceManager {
 
     fun getFileInfo(fileId: String): Promise<RemoteFile?, Exception>
 
-    fun mergeUpdates(updates: List<RemoteFile>, latestVersion: Int): Promise<Unit, Exception>
+    fun mergeUpdates(updates: List<RemoteFile>, latestVersion: Long): Promise<Unit, Exception>
 
-    //TODO change to Long
-    fun getVersion(): Promise<Int, Exception>
+    fun getVersion(): Promise<Long, Exception>
 
     fun getRemoteUpdates(): Promise<List<FileListUpdate>, Exception>
 }

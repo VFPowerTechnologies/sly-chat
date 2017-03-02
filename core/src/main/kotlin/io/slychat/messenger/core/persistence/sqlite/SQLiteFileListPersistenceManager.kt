@@ -9,7 +9,6 @@ import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.core.persistence.FileListUpdate
 import io.slychat.messenger.core.persistence.InvalidFileException
 import nl.komponents.kovenant.Promise
-import org.slf4j.LoggerFactory
 
 class SQLiteFileListPersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
@@ -18,8 +17,6 @@ class SQLiteFileListPersistenceManager(
         private const val UPDATE_TYPE_DELETE = "d"
         private const val UPDATE_TYPE_METADATA = "m"
     }
-
-    private val log = LoggerFactory.getLogger(javaClass)
 
     private val fileUtils = FileUtils()
 
@@ -193,7 +190,7 @@ WHERE
         }
     }
 
-    override fun mergeUpdates(updates: List<RemoteFile>, latestVersion: Int): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun mergeUpdates(updates: List<RemoteFile>, latestVersion: Long): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             updates.forEach {
                 //kinda bad but w/e
@@ -207,7 +204,7 @@ WHERE
         }
     }
 
-    private fun setVersion(connection: SQLiteConnection, latestVersion: Int) {
+    private fun setVersion(connection: SQLiteConnection, latestVersion: Long) {
         //language=SQLite
         val sql = """
 UPDATE
@@ -222,11 +219,11 @@ SET
         }
     }
 
-    override fun getVersion(): Promise<Int, Exception> = sqlitePersistenceManager.runQuery {
+    override fun getVersion(): Promise<Long, Exception> = sqlitePersistenceManager.runQuery {
         it.withPrepared("SELECT version FROM file_list_version") {
             it.step()
 
-            it.columnInt(0)
+            it.columnLong(0)
         }
     }
 

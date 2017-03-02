@@ -99,7 +99,7 @@ class SQLiteFileListPersistenceManagerTest {
 
     @Test
     fun `mergeUpdates should update list version`() {
-        val latestVersion = 2
+        val latestVersion = 2L
 
         fileListPersistenceManager.mergeUpdates(listOf(randomRemoteFile()), latestVersion).get()
 
@@ -108,7 +108,7 @@ class SQLiteFileListPersistenceManagerTest {
 
     @Test
     fun `mergeUpdates should not generate remote updates`() {
-        val latestVersion = 2
+        val latestVersion = 2L
 
         val file = insertFile()
         val updates = listOf(randomRemoteFile(), file.copy(userMetadata = file.userMetadata.rename("newName")))
