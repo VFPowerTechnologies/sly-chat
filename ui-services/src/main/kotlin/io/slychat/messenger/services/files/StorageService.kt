@@ -16,7 +16,7 @@ interface StorageService {
 
     fun sync()
 
-    fun getFileList(): Promise<List<RemoteFile>, Exception>
+    fun getFileList(startingAt: Int, count: Int): Promise<List<RemoteFile>, Exception>
 
     fun getFileListFor(path: String): Promise<List<RemoteFile>, Exception>
 

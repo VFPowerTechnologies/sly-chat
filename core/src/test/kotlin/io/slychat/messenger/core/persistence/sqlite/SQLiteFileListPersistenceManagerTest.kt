@@ -45,7 +45,7 @@ class SQLiteFileListPersistenceManagerTest {
 
         fileListPersistenceManager.addFile(file).get()
 
-        Assertions.assertThat(fileListPersistenceManager.getAllFiles().get()).apply {
+        Assertions.assertThat(fileListPersistenceManager.getAllFiles(0, 1000).get()).apply {
             describedAs("Should contain added files")
             containsOnly(file)
         }

@@ -3,6 +3,7 @@ package io.slychat.messenger.core.persistence.sqlite
 import com.almworks.sqlite4java.SQLiteConnection
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
+import io.slychat.messenger.core.persistence.FileListUpdate
 import nl.komponents.kovenant.Promise
 
 class SQLiteFileListPersistenceManager(
@@ -30,7 +31,7 @@ WHERE
         fileUtils.insertFile(it, file)
     }
 
-    override fun getAllFiles(): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
+    override fun getAllFiles(startingAt: Int, count: Int): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
         //language=SQLite
         val sql = """
 SELECT
@@ -41,6 +42,12 @@ SELECT
     file_size
 FROM
     files
+ORDER BY
+    id
+LIMIT
+    $count
+OFFSET
+    $startingAt
 """
 
         it.withPrepared(sql) {

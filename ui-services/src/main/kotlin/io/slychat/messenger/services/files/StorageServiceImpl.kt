@@ -80,8 +80,8 @@ class StorageServiceImpl(
         TODO()
     }
 
-    override fun getFileList(): Promise<List<RemoteFile>, Exception> {
-        return fileListPersistenceManager.getAllFiles()
+    override fun getFileList(startingAt: Int, count: Int): Promise<List<RemoteFile>, Exception> {
+        return fileListPersistenceManager.getAllFiles(startingAt, count)
     }
 
     override fun getFileListFor(path: String): Promise<List<RemoteFile>, Exception> {
