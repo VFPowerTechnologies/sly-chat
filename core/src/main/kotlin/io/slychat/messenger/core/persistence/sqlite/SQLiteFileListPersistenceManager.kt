@@ -40,7 +40,12 @@ WHERE
         fileUtils.insertFile(it, file)
     }
 
-    override fun getAllFiles(startingAt: Int, count: Int): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
+    override fun getAllFiles(startingAt: Int, count: Int, includePending: Boolean): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
+        val whereClause = if (!includePending)
+            "WHERE last_update_version != 0"
+        else
+            ""
+
         //language=SQLite
         val sql = """
 SELECT
@@ -51,6 +56,7 @@ SELECT
     file_size
 FROM
     files
+$whereClause
 ORDER BY
     id
 LIMIT

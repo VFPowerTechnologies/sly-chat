@@ -28,8 +28,8 @@ class SQLiteFileListPersistenceManagerTest {
     private lateinit var persistenceManager: SQLitePersistenceManager
     private lateinit var fileListPersistenceManager: SQLiteFileListPersistenceManager
 
-    private fun insertFile(): RemoteFile {
-        val file = randomRemoteFile()
+    private fun insertFile(lastUpdateVersion: Long = 1): RemoteFile {
+        val file = randomRemoteFile().copy(lastUpdateVersion = lastUpdateVersion)
 
         fileListPersistenceManager.addFile(file).get()
 
@@ -71,9 +71,46 @@ class SQLiteFileListPersistenceManagerTest {
 
         fileListPersistenceManager.addFile(file).get()
 
-        assertThat(fileListPersistenceManager.getAllFiles(0, 1000).get()).apply {
+        val stored = getFile(file.id)
+        assertEquals(file, stored, "Version in db differs from original")
+    }
+
+    @Test
+    fun `getAllFiles should omit pending files when told to`() {
+        val existingFile = insertFile()
+
+        insertFile(0)
+
+        assertThat(fileListPersistenceManager.getAllFiles(0, 1000, false).get()).apply {
+            describedAs("Should not contain pending files")
+            containsOnly(existingFile)
+        }
+    }
+
+    @Test
+    fun `getAllFiles should include pending files when told to`() {
+        val existingFile = insertFile()
+
+        val pendingFile = insertFile(0)
+
+        assertThat(fileListPersistenceManager.getAllFiles(0, 1000, true).get()).apply {
             describedAs("Should contain added files")
-            containsOnly(file)
+            containsOnly(existingFile, pendingFile)
+        }
+    }
+
+    @Test
+    fun `getAllFiles should include only given range of files`() {
+        val files = listOf(
+            insertFile(),
+            insertFile()
+        ).sortedBy { it.id }
+
+        for (i in 0..1) {
+            assertThat(fileListPersistenceManager.getAllFiles(i, 1, false).get()).apply {
+                describedAs("Should contain only the range [$i, ${i + 1})")
+                containsOnly(files[i])
+            }
         }
     }
 

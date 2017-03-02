@@ -31,7 +31,7 @@ internal class FileUtils {
         return RemoteFile(
             stmt.columnString(colOffset + 0),
             stmt.columnString(colOffset + 1),
-            stmt.columnInt(colOffset + 2),
+            stmt.columnLong(colOffset + 2),
             isDeleted,
             userMetadata,
             fileMetadata,

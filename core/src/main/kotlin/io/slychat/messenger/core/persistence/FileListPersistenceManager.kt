@@ -7,8 +7,7 @@ import nl.komponents.kovenant.Promise
 interface FileListPersistenceManager {
     fun addFile(file: RemoteFile): Promise<Unit, Exception>
 
-    //should we filter out upload-bound files here? Or at least provide an option to?
-    fun getAllFiles(startingAt: Int, count: Int): Promise<List<RemoteFile>, Exception>
+    fun getAllFiles(startingAt: Int, count: Int, includePending: Boolean): Promise<List<RemoteFile>, Exception>
 
     //generates a remote update
     fun deleteFile(fileId: String): Promise<Unit, Exception>

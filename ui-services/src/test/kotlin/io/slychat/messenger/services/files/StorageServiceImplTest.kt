@@ -66,7 +66,7 @@ class StorageServiceImplTest {
 
         val fileList = listOf(randomRemoteFile(), randomRemoteFile())
 
-        whenever(fileListPersistenceManager.getAllFiles(0, 1000)).thenResolve(fileList)
+        whenever(fileListPersistenceManager.getAllFiles(0, 1000, false)).thenResolve(fileList)
 
         assertThat(service.getFileList(0, 1000).get()).apply {
             describedAs("Should return the cached file list")
