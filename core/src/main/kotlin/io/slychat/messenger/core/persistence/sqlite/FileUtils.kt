@@ -12,6 +12,7 @@ internal class FileUtils {
     fun rowToRemoteFile(stmt: SQLiteStatement, colOffset: Int = 0): RemoteFile {
         val userMetadata = UserMetadata(
             Key(stmt.columnBlob(colOffset + 7)),
+            CipherId(stmt.columnInt(colOffset + 10).toShort()),
             stmt.columnString(colOffset + 9),
             stmt.columnString(colOffset + 8)
         )
@@ -21,7 +22,6 @@ internal class FileUtils {
         val fileMetadata = if (!isDeleted) {
             FileMetadata(
                 stmt.columnLong(colOffset + 12),
-                CipherId(stmt.columnInt(colOffset + 10).toShort()),
                 stmt.columnInt(colOffset + 11)
             )
         }
@@ -50,12 +50,12 @@ internal class FileUtils {
         stmt.bind(6, file.modificationDate)
         stmt.bind(7, file.remoteFileSize)
         stmt.bind(8, file.userMetadata.fileKey.raw)
+        stmt.bind(11, file.userMetadata.cipherId.short.toInt())
         stmt.bind(9, file.userMetadata.fileName)
         stmt.bind(10, file.userMetadata.directory)
 
         val fileMetadata = file.fileMetadata
         if (fileMetadata != null) {
-            stmt.bind(11, fileMetadata.cipherId.short.toInt())
             stmt.bind(12, fileMetadata.chunkSize)
             stmt.bind(13, fileMetadata.size)
         }

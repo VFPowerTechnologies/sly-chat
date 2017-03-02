@@ -2,6 +2,7 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteStatement
+import io.slychat.messenger.core.crypto.ciphers.CipherId
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.files.UserMetadata
@@ -240,6 +241,7 @@ SELECT
     u.file_id,
     u.type,
     f.file_key,
+    f.cipher_id,
     f.file_name,
     f.directory
 FROM
@@ -264,8 +266,9 @@ ON
             UPDATE_TYPE_METADATA -> {
                 val userMetadata = UserMetadata(
                     Key(stmt.columnBlob(2)),
-                    stmt.columnString(4),
-                    stmt.columnString(3)
+                    CipherId(stmt.columnInt(3).toShort()),
+                    stmt.columnString(5),
+                    stmt.columnString(4)
                 )
                 FileListUpdate.MetadataUpdate(fileId, userMetadata)
             }

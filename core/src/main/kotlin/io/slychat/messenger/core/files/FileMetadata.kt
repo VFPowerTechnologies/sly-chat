@@ -6,10 +6,6 @@ import io.slychat.messenger.core.crypto.ciphers.CipherId
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class FileMetadata(
-    @JsonProperty("size")
-    val size: Long,
-    @JsonProperty("cipherId")
-    val cipherId: CipherId,
-    @JsonProperty("chunkSize")
-    val chunkSize: Int
+    @JsonProperty("size") val size: Long,
+    @JsonProperty("chunkSize") val chunkSize: Int
 )

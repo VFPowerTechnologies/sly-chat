@@ -2,6 +2,7 @@ package io.slychat.messenger.core.files
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import io.slychat.messenger.core.crypto.ciphers.CipherId
 import io.slychat.messenger.core.crypto.ciphers.Key
 
 /**
@@ -12,11 +13,12 @@ data class UserMetadata(
     //this should never be updated
     @JsonProperty("fileKey")
     val fileKey: Key,
-    //dir/filenames should be case-insensitive during comparisions
+    @JsonProperty("cipherId")
+    val cipherId: CipherId,
+    //dir/filenames should be case-insensitive during searches
     @JsonProperty("directory")
     val directory: String,
-    @JsonProperty("fileName")
-    val fileName: String
+    @JsonProperty("fileName") val fileName: String
 ) {
     init {
         require(fileName.isNotBlank()) { "Invalid file name: <<$fileName>>" }

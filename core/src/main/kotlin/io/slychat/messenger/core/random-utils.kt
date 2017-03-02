@@ -2,7 +2,7 @@
 package io.slychat.messenger.core
 
 import io.slychat.messenger.core.crypto.*
-import io.slychat.messenger.core.crypto.ciphers.AES256GCMCipher
+import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.files.FileMetadata
 import io.slychat.messenger.core.files.RemoteFile
@@ -207,6 +207,7 @@ fun randomMessageSendFailures(userId: UserId): Map<UserId, MessageSendFailure> =
 fun randomUserMetadata(): UserMetadata {
     return UserMetadata(
         Key(byteArrayOf(0x73, 0x68, 0x69, 0x6e, 0x6f, 0x7a, 0x61, 0x6b, 0x69, 0x61, 0x69)),
+        CipherList.defaultDataEncryptionCipher.id,
         "/" + randomName(),
         randomName()
     )
@@ -215,7 +216,6 @@ fun randomUserMetadata(): UserMetadata {
 fun randomFileMetadata(): FileMetadata {
     return FileMetadata(
         randomInt().toLong(),
-        AES256GCMCipher.id,
         randomInt()
     )
 }

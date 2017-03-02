@@ -13,12 +13,12 @@ CREATE TABLE IF NOT EXISTS files (
     -- user metadata
     -- key used to encrypt file metadata and file data
     file_key BLOB NOT NULL,
+    cipher_id INTEGER NOT NULL,
     file_name TEXT NOT NULL,
     directory TEXT NOT NULL,
     shared_from TEXT,
 
     -- file metadata
-    cipher_id INTEGER NOT NULL,
     chunk_size INTEGER NOT NULL,
     -- decrypted file size
     file_size INTEGER NOT NULL
