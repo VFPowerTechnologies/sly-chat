@@ -17,7 +17,7 @@ class StorageAsyncClientImpl(
         newClient().getQuota(userCredentials)
     }
 
-    override fun getFileList(userCredentials: UserCredentials, sinceVersion: Int): Promise<FileListResponse, Exception> = task {
+    override fun getFileList(userCredentials: UserCredentials, sinceVersion: Long): Promise<FileListResponse, Exception> = task {
         newClient().getFileList(userCredentials, sinceVersion)
     }
 

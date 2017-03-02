@@ -1,9 +1,6 @@
 package io.slychat.messenger.services.files
 
-import com.nhaarman.mockito_kotlin.MockitoKotlin
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.whenever
+import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.http.api.storage.StorageAsyncClient
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
@@ -13,6 +10,8 @@ import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenResolve
+import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.deferred
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
@@ -30,18 +29,29 @@ class StorageServiceImplTest {
         }
     }
 
+    private class MockStorageSyncJob : StorageSyncJob {
+        val d = deferred<StorageSyncResult, Exception>()
+
+        override fun run(): Promise<StorageSyncResult, Exception> {
+            return d.promise
+        }
+    }
+
     private val fileListPersistenceManager: FileListPersistenceManager = mock()
     private val storageClient: StorageAsyncClient = mock()
     private val networkStatus = BehaviorSubject.create<Boolean>()
+    private val syncJobFactory: StorageSyncJobFactory = mock()
+    private val syncJob = MockStorageSyncJob()
 
     @Before
     fun before() {
         whenever(storageClient.getQuota(any())).thenResolve(Quota(0, 100))
+        whenever(syncJobFactory.create(any())).thenReturn(syncJob)
     }
 
     private fun newService(isNetworkAvailable: Boolean = true): StorageServiceImpl {
         networkStatus.onNext(isNetworkAvailable)
-        return StorageServiceImpl(MockAuthTokenManager(), storageClient, fileListPersistenceManager, networkStatus)
+        return StorageServiceImpl(MockAuthTokenManager(), storageClient, fileListPersistenceManager, syncJobFactory, networkStatus)
     }
 
     @Test
@@ -80,7 +90,35 @@ class StorageServiceImplTest {
     }
 
     @Test
-    fun `it should fetch pending changes on init`() {
-        TODO()
+    fun `sync should not run if network is unavailable`() {
+        val service = newService(false)
+
+        service.sync()
+
+        verify(syncJobFactory, never()).create(any())
+    }
+
+    @Test
+    fun `sync should run on network reconnect`() {
+        val service = newService(false)
+
+        networkStatus.onNext(true)
+
+        verify(syncJobFactory).create(any())
+    }
+
+    @Test
+    fun `sync should update sync status on start and completion`() {
+        val service = newService(true)
+
+        val testSubscriber = service.syncRunning.testSubscriber()
+
+        service.sync()
+
+        testSubscriber.assertReceivedOnNext(listOf(true))
+
+        syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0))
+
+        testSubscriber.assertReceivedOnNext(listOf(true, false))
     }
 }

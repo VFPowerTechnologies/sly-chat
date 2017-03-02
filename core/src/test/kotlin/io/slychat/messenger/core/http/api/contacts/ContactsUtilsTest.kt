@@ -17,7 +17,7 @@ class ContactsUtilsTest {
     }
 
     @Test
-    fun `decryptRemoteContactEntries should be able to decrypt the output of encryptRemoteContactEntries`() {
+    fun `decryptRemoteAddressBookEntries should be able to decrypt the output of encryptRemoteAddressBookEntries`() {
         val updates = listOf(
             AddressBookUpdate.Contact(randomUserId(), AllowedMessageLevel.ALL),
             AddressBookUpdate.Group(randomGroupId(), randomGroupName(), randomUserIds(), GroupMembershipLevel.JOINED)

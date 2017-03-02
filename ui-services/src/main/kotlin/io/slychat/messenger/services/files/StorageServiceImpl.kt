@@ -1,8 +1,10 @@
 package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.Quota
+import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.http.api.storage.StorageAsyncClient
+import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Promise
@@ -20,6 +22,7 @@ class StorageServiceImpl(
     private val authTokenManager: AuthTokenManager,
     private val storageClient: StorageAsyncClient,
     private val fileListPersistenceManager: FileListPersistenceManager,
+    private val syncJobFactory: StorageSyncJobFactory,
     networkStatus: Observable<Boolean>
 ) : StorageService {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -34,6 +37,14 @@ class StorageServiceImpl(
     override val updates: Observable<List<RemoteFile>>
         get() = updatesSubject
 
+    private val syncRunningSubject = BehaviorSubject.create(false)
+
+    override val syncRunning: Observable<Boolean>
+        get() = syncRunningSubject
+
+    private val isSyncRunning: Boolean
+        get() = syncRunningSubject.value
+
     private var subscription: Subscription? = null
 
     private var isNetworkAvailable = false
@@ -47,8 +58,10 @@ class StorageServiceImpl(
     private fun onNetworkStatusChange(isAvailable: Boolean) {
         isNetworkAvailable = isAvailable
 
-        if (isNetworkAvailable)
+        if (isNetworkAvailable) {
             updateQuota()
+            sync()
+        }
     }
 
     fun updateQuota() {
@@ -68,6 +81,10 @@ class StorageServiceImpl(
         }
     }
 
+    private fun updateSyncStatus(v: Boolean) {
+        syncRunningSubject.onNext(v)
+    }
+
     override fun init() {
     }
 
@@ -77,7 +94,20 @@ class StorageServiceImpl(
     }
 
     override fun sync() {
-        TODO()
+        if (isSyncRunning || !isNetworkAvailable)
+            return
+
+        updateSyncStatus(true)
+
+        authTokenManager.bind {
+            syncJobFactory.create(it).run()
+        } successUi {
+            log.info("Sync job complete: remoteUpdatesPerformed={}; newListVersion={}", it.remoteUpdatesPerformed, it.newListVersion)
+            updateSyncStatus(false)
+        } fail {
+            log.condError(isNotNetworkError(it), "Sync job failed: {}", it.message, it)
+            updateSyncStatus(false)
+        }
     }
 
     override fun getFileList(startingAt: Int, count: Int): Promise<List<RemoteFile>, Exception> {

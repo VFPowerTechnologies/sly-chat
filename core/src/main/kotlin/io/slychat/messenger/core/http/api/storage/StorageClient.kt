@@ -8,7 +8,7 @@ import io.slychat.messenger.core.http.api.AcceptShareResponse
 interface StorageClient {
     fun getQuota(userCredentials: UserCredentials): Quota
 
-    fun getFileList(userCredentials: UserCredentials, sinceVersion: Int): FileListResponse
+    fun getFileList(userCredentials: UserCredentials, sinceVersion: Long): FileListResponse
 
     fun getFileInfo(userCredentials : UserCredentials, fileId: String): GetFileInfoResponse
 

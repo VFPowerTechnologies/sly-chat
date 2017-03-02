@@ -10,6 +10,8 @@ interface StorageService {
 
     val updates: Observable<List<RemoteFile>>
 
+    val syncRunning: Observable<Boolean>
+
     fun init()
 
     fun shutdown()

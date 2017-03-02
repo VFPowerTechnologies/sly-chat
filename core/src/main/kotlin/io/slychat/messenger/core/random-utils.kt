@@ -220,7 +220,7 @@ fun randomFileMetadata(): FileMetadata {
     )
 }
 
-fun randomRemoteFile(isDeleted: Boolean = false): RemoteFile {
+fun randomRemoteFile(isDeleted: Boolean = false, userMetadata: UserMetadata? = null): RemoteFile {
     val fileMetadata = if (!isDeleted)
         randomFileMetadata()
     else
@@ -231,7 +231,7 @@ fun randomRemoteFile(isDeleted: Boolean = false): RemoteFile {
         generateShareKey(),
         1,
         isDeleted,
-        randomUserMetadata(),
+        userMetadata ?: randomUserMetadata(),
         fileMetadata,
         1,
         2,

@@ -1,6 +1,10 @@
 package io.slychat.messenger.core.http.api.storage
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import io.slychat.messenger.core.crypto.KeyVault
+import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.core.files.decryptFileMetadata
+import io.slychat.messenger.core.files.decryptUserMetadata
 import java.util.*
 
 class FileInfo(
@@ -25,6 +29,24 @@ class FileInfo(
     @JsonProperty("size")
     val size: Long
 ) {
+    fun toRemoteFile(keyVault: KeyVault): RemoteFile {
+        val userMetadata = decryptUserMetadata(keyVault, userMetadata)
+
+        val fileMetadata = fileMetadata?.let { decryptFileMetadata(userMetadata, it) }
+
+        return RemoteFile(
+            id,
+            shareKey,
+            lastUpdateVersion,
+            isDeleted,
+            userMetadata,
+            fileMetadata,
+            creationDate,
+            modificationDate,
+            size
+        )
+    }
+
     override fun toString(): String {
         return "FileInfo(id='$id', shareKey='$shareKey', isDeleted=$isDeleted, lastUpdateVersion=$lastUpdateVersion, creationDate=$creationDate, modificationDate=$modificationDate, userMetadata=${Arrays.toString(userMetadata)}, fileMetadata=${Arrays.toString(fileMetadata)}, size=$size)"
     }

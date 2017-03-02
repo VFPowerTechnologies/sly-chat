@@ -17,7 +17,7 @@ class StorageClientImpl(
         return apiGetRequest(httpClient, url, userCredentials, emptyList(), typeRef())
     }
 
-    override fun getFileList(userCredentials: UserCredentials, sinceVersion: Int): FileListResponse {
+    override fun getFileList(userCredentials: UserCredentials, sinceVersion: Long): FileListResponse {
         val url = "$serverBaseUrl/v1/storage"
 
         return apiGetRequest(httpClient, url, userCredentials, listOf("v" to sinceVersion.toString()), typeRef())
