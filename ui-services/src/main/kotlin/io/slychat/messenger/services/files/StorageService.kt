@@ -22,7 +22,7 @@ interface StorageService {
 
     fun getFileListFor(path: String): Promise<List<RemoteFile>, Exception>
 
-    fun deleteFile(): Promise<Unit, Exception>
+    fun deleteFile(fileId: String): Promise<Unit, Exception>
 
     fun getFileListVersion(): Promise<Int, Exception>
 }

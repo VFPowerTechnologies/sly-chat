@@ -2,6 +2,7 @@ package io.slychat.messenger.services.files
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.Quota
+import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.http.api.storage.StorageAsyncClient
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.core.randomRemoteFile
@@ -10,6 +11,7 @@ import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenResolveUnit
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import org.assertj.core.api.Assertions.assertThat
@@ -45,7 +47,10 @@ class StorageServiceImplTest {
 
     @Before
     fun before() {
+        whenever(fileListPersistenceManager.deleteFile(any())).thenResolveUnit()
+
         whenever(storageClient.getQuota(any())).thenResolve(Quota(0, 100))
+
         whenever(syncJobFactory.create(any())).thenReturn(syncJob)
     }
 
@@ -85,8 +90,23 @@ class StorageServiceImplTest {
     }
 
     @Test
-    fun `it should queue file deletes when network is unavailable`() {
-        TODO()
+    fun `it should persist file deletes`() {
+        val service = newService(false)
+
+        val fileId = generateFileId()
+
+        service.deleteFile(fileId).get()
+
+        verify(fileListPersistenceManager).deleteFile(fileId)
+    }
+
+    @Test
+    fun `it should run a sync after a file deletes when network is available`() {
+        val service = newService(true)
+
+        service.deleteFile(generateFileId()).get()
+
+        verify(syncJobFactory).create(any())
     }
 
     @Test
