@@ -147,6 +147,22 @@ VALUES
         }
     }
 
+    private fun deleteFile(connection: SQLiteConnection, fileId: String) {
+        //language=SQLite
+        val sql = """
+DELETE FROM
+    files
+WHERE
+    id = ?
+"""
+
+        connection.withPrepared(sql) {
+            it.bind(1, fileId)
+            it.step()
+        }
+    }
+
+
     override fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception> {
         if (fileIds.isEmpty())
             return Promise.ofSuccess(Unit)
@@ -179,9 +195,6 @@ WHERE
         }
     }
 
-    private fun deleteFile(connection: SQLiteConnection, fileId: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-    }
-
     override fun updateMetadata(fileId: String, userMetadata: UserMetadata): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         //language=SQLite
         val sql = """
@@ -208,7 +221,7 @@ WHERE
         }
     }
 
-    override fun getFileInfo(fileId: String): Promise<RemoteFile?, Exception> = sqlitePersistenceManager.runQuery {
+    override fun getFile(fileId: String): Promise<RemoteFile?, Exception> = sqlitePersistenceManager.runQuery {
         //language=SQLite
         val sql = """
 SELECT
@@ -236,8 +249,12 @@ WHERE
         connection.withTransaction {
             updates.forEach {
                 //kinda bad but w/e
-                if (isFilePresent(connection, it.id))
-                    updateFile(connection, it)
+                if (isFilePresent(connection, it.id)) {
+                    if (it.isDeleted)
+                        deleteFile(connection, it.id)
+                    else
+                        updateFile(connection, it)
+                }
                 else
                     fileUtils.insertFile(connection, it)
             }

@@ -12,10 +12,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class SQLiteFileListPersistenceManagerTest {
     companion object {
@@ -38,7 +35,7 @@ class SQLiteFileListPersistenceManagerTest {
     }
 
     private fun getFile(id: String): RemoteFile {
-        return assertNotNull(fileListPersistenceManager.getFileInfo(id).get(), "File not found")
+        return assertNotNull(fileListPersistenceManager.getFile(id).get(), "File not found")
     }
 
     private fun assertRemoteUpdateExists(update: FileListUpdate, message: String) {
@@ -213,7 +210,7 @@ class SQLiteFileListPersistenceManagerTest {
 
         fileListPersistenceManager.mergeUpdates(listOf(updated), 2).get()
 
-        assertEquals(updated, fileListPersistenceManager.getFileInfo(updated.id).get(), "File not updated")
+        assertEquals(updated, fileListPersistenceManager.getFile(updated.id).get(), "File not updated")
     }
 
     @Test
@@ -222,7 +219,16 @@ class SQLiteFileListPersistenceManagerTest {
 
         fileListPersistenceManager.mergeUpdates(listOf(file), 2).get()
 
-        assertEquals(file, fileListPersistenceManager.getFileInfo(file.id).get(), "File not added")
+        assertEquals(file, fileListPersistenceManager.getFile(file.id).get(), "File not added")
+    }
+
+    @Test
+    fun `mergeUpdates should remove deleted files`() {
+        val file = insertFile()
+
+        fileListPersistenceManager.mergeUpdates(listOf(file.copy(isDeleted = true)), 2).get()
+
+        assertNull(fileListPersistenceManager.getFile(file.id).get(), "File not deleted from table")
     }
 
     @Test

@@ -17,7 +17,7 @@ interface FileListPersistenceManager {
     //generates a remote update
     fun updateMetadata(fileId: String, userMetadata: UserMetadata): Promise<Unit, Exception>
 
-    fun getFileInfo(fileId: String): Promise<RemoteFile?, Exception>
+    fun getFile(fileId: String): Promise<RemoteFile?, Exception>
 
     fun mergeUpdates(updates: List<RemoteFile>, latestVersion: Long): Promise<Unit, Exception>
 
