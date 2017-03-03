@@ -118,9 +118,8 @@ class StorageServiceImpl(
         TODO()
     }
 
-    //TODO deleteFiles
-    override fun deleteFile(fileId: String): Promise<Unit, Exception> {
-        return fileListPersistenceManager.deleteFile(fileId) successUi {
+    override fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception> {
+        return fileListPersistenceManager.deleteFiles(fileIds) successUi {
             sync()
         }
     }

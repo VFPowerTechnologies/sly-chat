@@ -47,7 +47,7 @@ class StorageServiceImplTest {
 
     @Before
     fun before() {
-        whenever(fileListPersistenceManager.deleteFile(any())).thenResolveUnit()
+        whenever(fileListPersistenceManager.deleteFiles(any())).thenResolveUnit()
 
         whenever(storageClient.getQuota(any())).thenResolve(Quota(0, 100))
 
@@ -93,18 +93,18 @@ class StorageServiceImplTest {
     fun `it should persist file deletes`() {
         val service = newService(false)
 
-        val fileId = generateFileId()
+        val fileIds = listOf(generateFileId())
 
-        service.deleteFile(fileId).get()
+        service.deleteFiles(fileIds).get()
 
-        verify(fileListPersistenceManager).deleteFile(fileId)
+        verify(fileListPersistenceManager).deleteFiles(fileIds)
     }
 
     @Test
     fun `it should run a sync after a file deletes when network is available`() {
         val service = newService(true)
 
-        service.deleteFile(generateFileId()).get()
+        service.deleteFiles(listOf(generateFileId())).get()
 
         verify(syncJobFactory).create(any())
     }
