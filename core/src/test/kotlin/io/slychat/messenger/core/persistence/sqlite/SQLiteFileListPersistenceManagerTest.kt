@@ -250,10 +250,10 @@ class SQLiteFileListPersistenceManagerTest {
     }
 
     @Test
-    fun `deleteFile should mark file as deleted`() {
+    fun `deleteFiles should mark file as deleted`() {
         val file = insertFile()
 
-        fileListPersistenceManager.deleteFile(file.id).get()
+        fileListPersistenceManager.deleteFiles(listOf(file.id)).get()
 
         val remoteFile = getFile(file.id)
 
@@ -261,30 +261,30 @@ class SQLiteFileListPersistenceManagerTest {
     }
 
     @Test
-    fun `deleteFile should throw if file doesn't exist`() {
+    fun `deleteFiles should throw if file doesn't exist`() {
         assertFailsWith(InvalidFileException::class) {
-            fileListPersistenceManager.deleteFile(generateFileId()).get()
+            fileListPersistenceManager.deleteFiles(listOf(generateFileId())).get()
         }
     }
 
     @Test
-    fun `deleteFile should create a delete remote update`() {
+    fun `deleteFiles should create a delete remote update`() {
         val file = insertFile()
 
-        fileListPersistenceManager.deleteFile(file.id).get()
+        fileListPersistenceManager.deleteFiles(listOf(file.id)).get()
 
         assertRemoteUpdateExists(FileListUpdate.Delete(file.id), "Should add a delete remote update")
     }
 
     @Test
-    fun `deletefile should override metadata update`() {
+    fun `deletefiles should override metadata update`() {
         val file = insertFile()
 
         val userMetadata = file.userMetadata.moveTo("/newDir", "newName")
 
         fileListPersistenceManager.updateMetadata(file.id, userMetadata).get()
 
-        fileListPersistenceManager.deleteFile(file.id).get()
+        fileListPersistenceManager.deleteFiles(listOf(file.id)).get()
 
         assertRemoteUpdateExists(FileListUpdate.Delete(file.id), "Should add a delete remote update")
     }
@@ -325,7 +325,7 @@ class SQLiteFileListPersistenceManagerTest {
     fun `updateMetadata should override deletion update`() {
         val file = insertFile()
 
-        fileListPersistenceManager.deleteFile(file.id).get()
+        fileListPersistenceManager.deleteFiles(listOf(file.id)).get()
 
         val userMetadata = file.userMetadata.moveTo("/newDir", "newName")
 

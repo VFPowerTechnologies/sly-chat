@@ -11,8 +11,8 @@ interface FileListPersistenceManager {
 
     fun getFilesAt(startingAt: Int, count: Int, includePending: Boolean, path: String): Promise<List<RemoteFile>, Exception>
 
-    //generates a remote update
-    fun deleteFile(fileId: String): Promise<Unit, Exception>
+    //generates remote updates
+    fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception>
 
     //generates a remote update
     fun updateMetadata(fileId: String, userMetadata: UserMetadata): Promise<Unit, Exception>
