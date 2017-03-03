@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS files (
     -- key used to encrypt file metadata and file data
     file_key BLOB NOT NULL,
     cipher_id INTEGER NOT NULL,
-    file_name TEXT NOT NULL,
-    directory TEXT NOT NULL,
+    file_name TEXT NOT NULL COLLATE NOCASE,
+    directory TEXT NOT NULL COLLATE NOCASE,
     shared_from TEXT,
 
     -- file metadata
@@ -23,3 +23,5 @@ CREATE TABLE IF NOT EXISTS files (
     -- decrypted file size
     file_size INTEGER NOT NULL
 );
+
+CREATE UNIQUE INDEX files_uniq_directory_file_name ON files (directory, file_name);

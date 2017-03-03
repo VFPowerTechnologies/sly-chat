@@ -1,12 +1,15 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import com.almworks.sqlite4java.SQLiteConnection
+import com.almworks.sqlite4java.SQLiteConstants
+import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.crypto.ciphers.CipherId
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.files.FileMetadata
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.files.UserMetadata
+import io.slychat.messenger.core.persistence.DuplicateFilePathException
 
 internal class FileUtils {
     fun rowToRemoteFile(stmt: SQLiteStatement, colOffset: Int = 0): RemoteFile {
@@ -89,7 +92,19 @@ INSERT INTO
 """
         connection.withPrepared(sql) {
             remoteFileToRow(file, it)
-            it.step()
+            try {
+                it.step()
+            }
+            catch (e: SQLiteException) {
+                if (e.errorCode != SQLiteConstants.SQLITE_CONSTRAINT_UNIQUE)
+                    throw e
+                val message = e.message ?: throw e
+
+                if (message.contains("files.directory, files.file_name"))
+                    throw DuplicateFilePathException(file.userMetadata.directory, file.userMetadata.fileName)
+
+                throw e
+            }
         }
     }
 }

@@ -10,6 +10,7 @@ import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.core.persistence.FileListUpdate
 import io.slychat.messenger.core.persistence.InvalidFileException
 import nl.komponents.kovenant.Promise
+import java.util.*
 
 class SQLiteFileListPersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
@@ -41,14 +42,23 @@ WHERE
         fileUtils.insertFile(it, file)
     }
 
-    override fun getAllFiles(startingAt: Int, count: Int, includePending: Boolean): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
-        val whereClause = if (!includePending)
-            "WHERE last_update_version != 0"
+    private fun getFileSelectQuery(startingAt: Int, count: Int, path: String?, includePending: Boolean): String {
+        val whereClause = if (!includePending || path != null) {
+            val clauses = ArrayList<String>()
+
+            if (path != null)
+                clauses.add("directory = ?")
+
+            if (!includePending)
+                clauses.add("last_update_version != 0")
+
+            "WHERE " + clauses.joinToString(" AND ")
+        }
         else
             ""
 
         //language=SQLite
-        val sql = """
+        return """
 SELECT
     id, share_key, last_update_version,
     is_deleted, creation_date, modification_date,
@@ -66,7 +76,21 @@ OFFSET
     $startingAt
 """
 
+    }
+
+    override fun getAllFiles(startingAt: Int, count: Int, includePending: Boolean): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
+        val sql = getFileSelectQuery(startingAt, count, null, includePending)
+
         it.withPrepared(sql) {
+            it.map { fileUtils.rowToRemoteFile(it) }
+        }
+    }
+
+    override fun getFilesAt(startingAt: Int, count: Int, includePending: Boolean, path: String): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
+        val sql = getFileSelectQuery(startingAt, count, path, includePending)
+
+        it.withPrepared(sql) {
+            it.bind(1, path)
             it.map { fileUtils.rowToRemoteFile(it) }
         }
     }

@@ -2,6 +2,7 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.core.persistence.DuplicateFilePathException
 import io.slychat.messenger.core.persistence.FileListUpdate
 import io.slychat.messenger.core.persistence.InvalidFileException
 import io.slychat.messenger.core.randomRemoteFile
@@ -47,6 +48,12 @@ class SQLiteFileListPersistenceManagerTest {
         }
     }
 
+    private fun testGetFilesAt(path: String, includePending: Boolean): List<RemoteFile> {
+        (0..1).forEach { insertFile() }
+
+        return fileListPersistenceManager.getFilesAt(0, 100, includePending, path).get()
+    }
+
     @Before
     fun before() {
         persistenceManager = SQLitePersistenceManager(null, null)
@@ -73,6 +80,31 @@ class SQLiteFileListPersistenceManagerTest {
 
         val stored = getFile(file.id)
         assertEquals(file, stored, "Version in db differs from original")
+    }
+
+    @Test
+    fun `addFile should throw if path already has a file`() {
+        val file = insertFile()
+
+        assertFailsWith(DuplicateFilePathException::class) {
+            fileListPersistenceManager.addFile(file).get()
+        }
+    }
+
+    @Test
+    fun `addFile should be case insensitive when checking path for dups`() {
+        val file = insertFile()
+
+        val um = file.userMetadata
+        val modified = file.copy(
+            userMetadata = file.userMetadata.copy(
+                directory = um.directory.toUpperCase(), fileName = um.fileName.toUpperCase()
+            )
+        )
+
+        assertFailsWith(DuplicateFilePathException::class) {
+            fileListPersistenceManager.addFile(modified).get()
+        }
     }
 
     @Test
@@ -111,6 +143,65 @@ class SQLiteFileListPersistenceManagerTest {
                 describedAs("Should contain only the range [$i, ${i + 1})")
                 containsOnly(files[i])
             }
+        }
+    }
+
+    @Test
+    fun `getFilesAt should only return files in the specified directory`() {
+        val d = "/path"
+        val expected = randomRemoteFile(userMetadata = randomUserMetadata(directory = d)).copy(lastUpdateVersion = 1)
+
+        fileListPersistenceManager.addFile(expected).get()
+
+        assertThat(testGetFilesAt(d, false)).apply {
+            describedAs("Should return only files at the given path")
+            containsOnly(expected)
+        }
+    }
+
+    @Test
+    fun `getAllFiles should include only the given range of files`() {
+        val d = "/path"
+
+        val files = listOf(
+            randomRemoteFile(userMetadata = randomUserMetadata(directory = d)).copy(lastUpdateVersion = 1),
+            randomRemoteFile(userMetadata = randomUserMetadata(directory = d)).copy(lastUpdateVersion = 1)
+        ).sortedBy { it.id }
+
+        files.forEach { fileListPersistenceManager.addFile(it).get() }
+        (0..1).forEach { insertFile() }
+
+        for (i in 0..1) {
+            assertThat(fileListPersistenceManager.getFilesAt(i, 1, false, d).get()).apply {
+                describedAs("Should contain only the range [$i, ${i + 1})")
+                containsOnly(files[i])
+            }
+        }
+    }
+
+    @Test
+    fun `getFilesAt should return pending files if asked`() {
+        val d = "/path"
+        val expected = randomRemoteFile(userMetadata = randomUserMetadata(directory = d)).copy(lastUpdateVersion = 0)
+
+        fileListPersistenceManager.addFile(expected).get()
+
+        assertThat(testGetFilesAt(d, true)).apply {
+            describedAs("Should return only pending files at the given path")
+            containsOnly(expected)
+        }
+    }
+
+    @Test
+    fun `getFilesAt should ignore directory case`() {
+        val d = "/path"
+        val expected = randomRemoteFile(userMetadata = randomUserMetadata(directory = d)).copy(lastUpdateVersion = 1)
+
+        fileListPersistenceManager.addFile(expected).get()
+
+        assertThat(testGetFilesAt(d.toUpperCase(), false)).apply {
+            describedAs("Should return only files at the given path")
+            containsOnly(expected)
         }
     }
 
