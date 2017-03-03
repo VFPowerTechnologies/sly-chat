@@ -78,7 +78,7 @@ OFFSET
 
     }
 
-    override fun getAllFiles(startingAt: Int, count: Int, includePending: Boolean): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
+    override fun getFiles(startingAt: Int, count: Int, includePending: Boolean): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
         val sql = getFileSelectQuery(startingAt, count, null, includePending)
 
         it.withPrepared(sql) {

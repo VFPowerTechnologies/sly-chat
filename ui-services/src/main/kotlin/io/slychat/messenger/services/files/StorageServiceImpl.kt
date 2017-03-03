@@ -110,21 +110,17 @@ class StorageServiceImpl(
         }
     }
 
-    override fun getFileList(startingAt: Int, count: Int): Promise<List<RemoteFile>, Exception> {
-        return fileListPersistenceManager.getAllFiles(startingAt, count, false)
+    override fun getFiles(startingAt: Int, count: Int): Promise<List<RemoteFile>, Exception> {
+        return fileListPersistenceManager.getFiles(startingAt, count, false)
     }
 
-    override fun getFileListFor(path: String): Promise<List<RemoteFile>, Exception> {
-        TODO()
+    override fun getFilesAt(startingAt: Int, count: Int, path: String): Promise<List<RemoteFile>, Exception> {
+        return fileListPersistenceManager.getFilesAt(startingAt, count, false, path)
     }
 
     override fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception> {
         return fileListPersistenceManager.deleteFiles(fileIds) successUi {
             sync()
         }
-    }
-
-    override fun getFileListVersion(): Promise<Int, Exception> {
-        TODO()
     }
 }

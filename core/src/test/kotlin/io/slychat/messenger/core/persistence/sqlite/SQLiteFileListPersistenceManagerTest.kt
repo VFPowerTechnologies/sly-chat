@@ -110,7 +110,7 @@ class SQLiteFileListPersistenceManagerTest {
 
         insertFile(0)
 
-        assertThat(fileListPersistenceManager.getAllFiles(0, 1000, false).get()).apply {
+        assertThat(fileListPersistenceManager.getFiles(0, 1000, false).get()).apply {
             describedAs("Should not contain pending files")
             containsOnly(existingFile)
         }
@@ -122,7 +122,7 @@ class SQLiteFileListPersistenceManagerTest {
 
         val pendingFile = insertFile(0)
 
-        assertThat(fileListPersistenceManager.getAllFiles(0, 1000, true).get()).apply {
+        assertThat(fileListPersistenceManager.getFiles(0, 1000, true).get()).apply {
             describedAs("Should contain added files")
             containsOnly(existingFile, pendingFile)
         }
@@ -136,7 +136,7 @@ class SQLiteFileListPersistenceManagerTest {
         ).sortedBy { it.id }
 
         for (i in 0..1) {
-            assertThat(fileListPersistenceManager.getAllFiles(i, 1, false).get()).apply {
+            assertThat(fileListPersistenceManager.getFiles(i, 1, false).get()).apply {
                 describedAs("Should contain only the range [$i, ${i + 1})")
                 containsOnly(files[i])
             }

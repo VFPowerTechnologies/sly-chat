@@ -19,6 +19,7 @@ import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import rx.subjects.BehaviorSubject
+import kotlin.test.assertEquals
 
 class StorageServiceImplTest {
     companion object {
@@ -81,9 +82,9 @@ class StorageServiceImplTest {
 
         val fileList = listOf(randomRemoteFile(), randomRemoteFile())
 
-        whenever(fileListPersistenceManager.getAllFiles(0, 1000, false)).thenResolve(fileList)
+        whenever(fileListPersistenceManager.getFiles(0, 1000, false)).thenResolve(fileList)
 
-        assertThat(service.getFileList(0, 1000).get()).apply {
+        assertThat(service.getFiles(0, 1000).get()).apply {
             describedAs("Should return the cached file list")
             containsAll(fileList)
         }
@@ -140,5 +141,34 @@ class StorageServiceImplTest {
         syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0))
 
         testSubscriber.assertReceivedOnNext(listOf(true, false))
+    }
+
+    @Test
+    fun `getFilesAt should proxy requests to the persistence manager`() {
+        val service = newService(true)
+
+        val files = listOf(randomRemoteFile())
+
+        val startingAt = 0
+        val count = 100
+        val path = "/"
+
+        whenever(fileListPersistenceManager.getFilesAt(startingAt, count, false, path)).thenResolve(files)
+
+        assertEquals(files, service.getFilesAt(startingAt, count, path).get(), "Returned invalid files")
+    }
+
+    @Test
+    fun `getFiles should proxy requests to the persistence manager`() {
+        val service = newService(true)
+
+        val files = listOf(randomRemoteFile())
+
+        val startingAt = 0
+        val count = 100
+
+        whenever(fileListPersistenceManager.getFiles(startingAt, count, false)).thenResolve(files)
+
+        assertEquals(files, service.getFiles(startingAt, count).get(), "Returned invalid files")
     }
 }
