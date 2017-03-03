@@ -50,7 +50,7 @@ WHERE
                 clauses.add("directory = ?")
 
             if (!includePending)
-                clauses.add("last_update_version != 0")
+                clauses.add("is_pending = 0")
 
             "WHERE " + clauses.joinToString(" AND ")
         }
@@ -113,7 +113,8 @@ SET
     directory = ?,
     cipher_id = ?,
     chunk_size = ?,
-    file_size = ?
+    file_size = ?,
+    is_pending = 0
 WHERE
     id = ?
 """

@@ -21,7 +21,10 @@ CREATE TABLE IF NOT EXISTS files (
     -- file metadata
     chunk_size INTEGER NOT NULL,
     -- decrypted file size
-    file_size INTEGER NOT NULL
+    file_size INTEGER NOT NULL,
+
+    is_pending BOOLEAN NOT NULL
 );
 
+CREATE INDEX files_idx_is_pending ON files (is_pending);
 CREATE UNIQUE INDEX files_uniq_directory_file_name ON files (directory, file_name);

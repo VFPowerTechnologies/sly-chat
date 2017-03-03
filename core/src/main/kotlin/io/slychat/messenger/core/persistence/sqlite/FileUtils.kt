@@ -70,6 +70,7 @@ internal class FileUtils {
     }
 
     fun insertFile(connection: SQLiteConnection, file: RemoteFile) {
+        val isPending = if (file.isPending) 1 else 0
         //language=SQLite
         val sql = """
 INSERT INTO
@@ -79,7 +80,7 @@ INSERT INTO
     is_deleted, creation_date, modification_date,
     remote_file_size, file_key, file_name,
     directory, cipher_id, chunk_size,
-    file_size
+    file_size, is_pending
     )
     VALUES
     (
@@ -87,7 +88,7 @@ INSERT INTO
     ?, ?, ?,
     ?, ?, ?,
     ?, ?, ?,
-    ?
+    ?, $isPending
     )
 """
         connection.withPrepared(sql) {
