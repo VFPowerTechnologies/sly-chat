@@ -5,6 +5,7 @@ import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.files.encryptFileMetadata
 import io.slychat.messenger.core.files.encryptUserMetadata
+import io.slychat.messenger.core.files.getFilePathHash
 import io.slychat.messenger.core.http.api.upload.NewUploadRequest
 import io.slychat.messenger.core.http.api.upload.UploadClient
 import io.slychat.messenger.core.persistence.Upload
@@ -39,7 +40,8 @@ class CreateUploadOperation(
             lastPartSize,
             partCount,
             encryptedUserMetadata,
-            encryptedFileMetadata
+            encryptedFileMetadata,
+            getFilePathHash(keyVault, file.userMetadata)
         )
 
         val resp = uploadClient.newUpload(userCredentials, request)

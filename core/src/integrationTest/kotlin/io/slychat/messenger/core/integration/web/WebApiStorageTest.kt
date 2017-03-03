@@ -3,10 +3,7 @@ package io.slychat.messenger.core.integration.web
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.http.JavaHttpClient
-import io.slychat.messenger.core.http.api.storage.FileInfo
-import io.slychat.messenger.core.http.api.storage.StorageClient
-import io.slychat.messenger.core.http.api.storage.StorageClientImpl
-import io.slychat.messenger.core.http.api.storage.UpdateRequest
+import io.slychat.messenger.core.http.api.storage.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
@@ -141,7 +138,7 @@ class WebApiStorageTest {
         val userCredentials = user.getUserCredentials(authToken, deviceId)
         val request = UpdateRequest(
             emptyList(),
-            mapOf(fileInfo.id to newMetadata)
+            mapOf(fileInfo.id to MetadataUpdateRequest("hash", newMetadata))
         )
 
         val updateResp = client.update(userCredentials, request)

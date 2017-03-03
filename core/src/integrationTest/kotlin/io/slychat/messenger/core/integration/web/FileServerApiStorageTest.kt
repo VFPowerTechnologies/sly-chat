@@ -81,7 +81,8 @@ class FileServerApiStorageTest {
             partSize,
             0,
             1,
-            byteArrayOf(0x77), byteArrayOf(0x66)
+            byteArrayOf(0x77), byteArrayOf(0x66),
+            "10"
         )
 
         val newUploadResponse = client.newUpload(userCredentials, request)

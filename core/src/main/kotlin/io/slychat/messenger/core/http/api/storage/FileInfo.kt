@@ -28,6 +28,7 @@ class FileInfo(
     val fileMetadata: ByteArray?,
     @JsonProperty("size")
     val size: Long
+
 ) {
     fun toRemoteFile(keyVault: KeyVault): RemoteFile {
         val userMetadata = decryptUserMetadata(keyVault, userMetadata)

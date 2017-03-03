@@ -13,7 +13,8 @@ class NewUploadRequest(
     //0 if evenly divided into parts, otherwise the size of the last part
     val partCount: Int,
     val userMetadata: ByteArray,
-    val fileMetadata: ByteArray
+    val fileMetadata: ByteArray,
+    val pathHash: String
 ) {
     init {
         val evenCount = if (finalPartSize == 0L) partCount else partCount - 1

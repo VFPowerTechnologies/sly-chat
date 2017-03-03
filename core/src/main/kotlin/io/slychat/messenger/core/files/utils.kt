@@ -6,6 +6,8 @@ import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
 import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
+import io.slychat.messenger.core.hexify
+import io.slychat.messenger.core.http.api.contacts.md5
 import io.slychat.messenger.core.persistence.sqlite.JSONMapper
 
 fun encryptUserMetadata(keyVault: KeyVault, userMetadata: UserMetadata): ByteArray {
@@ -33,4 +35,9 @@ fun decryptFileMetadata(userMetadata: UserMetadata, fm: ByteArray): FileMetadata
     val json = cipher.decrypt(userMetadata.fileKey, fm)
 
     return JSONMapper.mapper.readValue(json, FileMetadata::class.java)
+}
+
+fun getFilePathHash(keyVault: KeyVault, userMetadata: UserMetadata): String {
+    val pathBytes = "${userMetadata.directory}/${userMetadata.fileName}".toByteArray(Charsets.UTF_8)
+    return md5(keyVault.anonymizingData, pathBytes).hexify()
 }

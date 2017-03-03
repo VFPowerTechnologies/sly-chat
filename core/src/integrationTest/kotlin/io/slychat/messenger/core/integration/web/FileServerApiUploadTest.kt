@@ -62,7 +62,8 @@ class FileServerApiUploadTest {
             partSize,
             0,
             1,
-            byteArrayOf(0x77), byteArrayOf(0x66)
+            byteArrayOf(0x77), byteArrayOf(0x66),
+            "10"
         )
     }
 
@@ -75,7 +76,8 @@ class FileServerApiUploadTest {
             multiPartSize,
             0,
             partCount,
-            byteArrayOf(0x77), byteArrayOf(0x66)
+            byteArrayOf(0x77), byteArrayOf(0x66),
+            "10"
         )
     }
 
@@ -153,7 +155,8 @@ class FileServerApiUploadTest {
             multiPartSize,
             finalPartSize,
             2,
-            byteArrayOf(0x77), byteArrayOf(0x66)
+            byteArrayOf(0x77), byteArrayOf(0x66),
+            "10"
         )
 
         val newUploadResponse = client.newUpload(userCredentials, request)

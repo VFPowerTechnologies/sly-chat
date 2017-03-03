@@ -4,6 +4,8 @@ import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.files.encryptUserMetadata
+import io.slychat.messenger.core.files.getFilePathHash
+import io.slychat.messenger.core.http.api.storage.MetadataUpdateRequest
 import io.slychat.messenger.core.http.api.storage.StorageAsyncClient
 import io.slychat.messenger.core.http.api.storage.UpdateRequest
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
@@ -33,14 +35,17 @@ class StorageSyncJobImpl(
                 Promise.of(PushResults(0))
             else {
                 val delete = ArrayList<String>()
-                val updateMetadata = HashMap<String, ByteArray>()
+                val updateMetadata = HashMap<String, MetadataUpdateRequest>()
 
                 remoteUpdates.forEach {
                     when (it) {
                         is FileListUpdate.Delete -> delete.add(it.fileId)
 
                         is FileListUpdate.MetadataUpdate -> {
-                            updateMetadata[it.fileId] = encryptUserMetadata(keyVault, it.userMetadata)
+                            updateMetadata[it.fileId] = MetadataUpdateRequest(
+                                getFilePathHash(keyVault, it.userMetadata),
+                                encryptUserMetadata(keyVault, it.userMetadata)
+                            )
                         }
                     }
                 }
