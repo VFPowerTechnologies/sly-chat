@@ -19,7 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-class TransferManagerImplTest {
+class UploaderImplTest {
     companion object {
         @JvmField
         @ClassRule
@@ -32,7 +32,7 @@ class TransferManagerImplTest {
         }
     }
 
-    private val transferOptions = TransferOptions(10, 10)
+    private val simulUploads = 10
     private val uploadPersistenceManager: UploadPersistenceManager = mock()
     private val transferOperations = MockTransferOperations()
     private val networkStatus = BehaviorSubject.create<Boolean>()
@@ -46,11 +46,11 @@ class TransferManagerImplTest {
         whenever(uploadPersistenceManager.setError(any(), any())).thenResolveUnit()
     }
 
-    private fun newManager(isNetworkAvailable: Boolean = true): TransferManagerImpl {
+    private fun newUploader(isNetworkAvailable: Boolean = true): Uploader {
         networkStatus.onNext(isNetworkAvailable)
 
-        return TransferManagerImpl(
-            transferOptions,
+        return UploaderImpl(
+            simulUploads,
             uploadPersistenceManager,
             transferOperations,
             networkStatus
@@ -75,7 +75,7 @@ class TransferManagerImplTest {
         return UploadInfo(upload, file)
     }
 
-    private fun <R> assertEventEmitted(manager: TransferManager, event: TransferEvent, body: () -> R): R {
+    private fun <R> assertEventEmitted(manager: Uploader, event: TransferEvent, body: () -> R): R {
         val testSubscriber = manager.events.testSubscriber()
 
         val r = body()
@@ -94,11 +94,11 @@ class TransferManagerImplTest {
 
         whenever(uploadPersistenceManager.getAll()).thenResolve(uploadInfo)
 
-        val manager = newManager(false)
+        val uploader = newUploader(false)
 
-        manager.init()
+        uploader.init()
 
-        val actual = manager.uploads.map { UploadInfo(it.upload, it.file) }
+        val actual = uploader.uploads.map { UploadInfo(it.upload, it.file) }
 
         assertThat(actual).apply {
             describedAs("Should contain initial uploads")
@@ -110,11 +110,11 @@ class TransferManagerImplTest {
     fun `it should start fetched uploads with state=PENDING when network is available`() {
         val info = randomUploadInfo(state = UploadState.PENDING)
 
-        val manager = newManager(true)
+        val uploader = newUploader(true)
 
         whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
 
-        manager.init()
+        uploader.init()
 
         transferOperations.assertCreateCalled(info.upload, info.file)
     }
@@ -123,11 +123,11 @@ class TransferManagerImplTest {
     fun `it should start fetched uploads with state=CREATED when network is available`() {
         val info = randomUploadInfo(state = UploadState.CREATED)
 
-        val manager = newManager(true)
+        val uploader = newUploader(true)
 
         whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
 
-        manager.init()
+        uploader.init()
 
         transferOperations.assertUploadPartCalled(info.upload, info.upload.parts[0], info.file)
     }
@@ -141,9 +141,9 @@ class TransferManagerImplTest {
 
         whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(UploadInfo(upload, file)))
 
-        val manager = newManager(true)
+        val uploader = newUploader(true)
 
-        manager.init()
+        uploader.init()
 
         transferOperations.assertCreateNotCalled()
     }
@@ -157,10 +157,10 @@ class TransferManagerImplTest {
 
         whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(UploadInfo(upload, file)))
 
-        val manager = newManager(true)
+        val uploader = newUploader(true)
 
-        assertEventEmitted(manager, TransferEvent.UploadAdded(upload, UploadTransferState.ERROR)) {
-            manager.init()
+        assertEventEmitted(uploader, TransferEvent.UploadAdded(upload, UploadTransferState.ERROR)) {
+            uploader.init()
         }
     }
 
@@ -170,9 +170,9 @@ class TransferManagerImplTest {
 
         whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
 
-        val manager = newManager(true)
+        val uploader = newUploader(true)
 
-        manager.init()
+        uploader.init()
 
         transferOperations.assertCreateNotCalled()
     }
@@ -183,20 +183,20 @@ class TransferManagerImplTest {
 
         whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
 
-        val manager = newManager(true)
+        val uploader = newUploader(true)
 
-        assertEventEmitted(manager, TransferEvent.UploadAdded(info.upload, UploadTransferState.COMPLETE)) {
-            manager.init()
+        assertEventEmitted(uploader, TransferEvent.UploadAdded(info.upload, UploadTransferState.COMPLETE)) {
+            uploader.init()
         }
     }
 
     @Test
     fun `adding a new upload should persist the upload info`() {
-        val manager = newManager(false)
+        val uploader = newUploader(false)
 
         val uploadInfo = randomUploadInfo()
 
-        manager.upload(uploadInfo).get()
+        uploader.upload(uploadInfo).get()
 
         verify(uploadPersistenceManager).add(uploadInfo)
     }
@@ -205,45 +205,45 @@ class TransferManagerImplTest {
 
     @Test
     fun `adding a new upload should emit an UploadAdded event`() {
-        val manager = newManager(false)
+        val uploader = newUploader(false)
 
         val uploadInfo = randomUploadInfo()
 
         val event = TransferEvent.UploadAdded(uploadInfo.upload, UploadTransferState.QUEUED)
-        assertEventEmitted(manager, event) {
-            manager.upload(uploadInfo).get()
+        assertEventEmitted(uploader, event) {
+            uploader.upload(uploadInfo).get()
         }
     }
 
     @Test
     fun `it should not attempt to start uploads when network is unavailable`() {
-        val manager = newManager(false)
+        val uploader = newUploader(false)
 
         val uploadInfo = randomUploadInfo()
 
-        manager.upload(uploadInfo).get()
+        uploader.upload(uploadInfo).get()
 
         transferOperations.assertCreateNotCalled()
     }
 
     @Test
     fun `it should immediately start an upload if queue space is available and the network is available`() {
-        val manager = newManager()
+        val uploader = newUploader()
 
         val uploadInfo = randomUploadInfo()
 
-        manager.upload(uploadInfo).get()
+        uploader.upload(uploadInfo).get()
 
         transferOperations.assertCreateCalled(uploadInfo.upload, uploadInfo.file)
     }
 
     @Test
     fun `it should start queued uploads when network becomes available`() {
-        val manager = newManager(false)
+        val uploader = newUploader(false)
 
         val uploadInfo = randomUploadInfo()
 
-        manager.upload(uploadInfo).get()
+        uploader.upload(uploadInfo).get()
 
         networkStatus.onNext(true)
 
@@ -252,26 +252,26 @@ class TransferManagerImplTest {
 
     @Test
     fun `it should update upload state when creation succeeds`() {
-        val manager = newManager()
+        val uploader = newUploader()
 
         val uploadInfo = randomUploadInfo()
 
         transferOperations.autoResolveCreate = true
 
-        manager.upload(uploadInfo).get()
+        uploader.upload(uploadInfo).get()
 
         verify(uploadPersistenceManager).setState(uploadInfo.upload.id, UploadState.CREATED)
     }
 
     @Test
     fun `it should upload parts once upload has been created`() {
-        val manager = newManager()
+        val uploader = newUploader()
 
         val uploadInfo = randomUploadInfo()
 
         transferOperations.autoResolveCreate = true
 
-        manager.upload(uploadInfo).get()
+        uploader.upload(uploadInfo).get()
 
         val upload = uploadInfo.upload
         transferOperations.assertUploadPartCalled(upload.copy(state = UploadState.CREATED), upload.parts[0], uploadInfo.file)
@@ -279,13 +279,13 @@ class TransferManagerImplTest {
 
     @Test
     fun `it should move an upload to completion state once all parts have been uploaded`() {
-        val manager = newManager()
+        val uploader = newUploader()
 
         val uploadInfo = randomUploadInfo()
 
         transferOperations.autoResolveCreate = true
 
-        manager.upload(uploadInfo).get()
+        uploader.upload(uploadInfo).get()
 
         transferOperations.completeUploadPartOperation(1)
 
@@ -294,7 +294,7 @@ class TransferManagerImplTest {
 
     @Test
     fun `it should emit a TransferEvent when moving an upload to completion state`() {
-        val manager = newManager()
+        val uploader = newUploader()
 
         val uploadInfo = randomUploadInfo()
 
@@ -305,8 +305,8 @@ class TransferManagerImplTest {
             state = UploadState.COMPLETE
         )
 
-        assertEventEmitted(manager, TransferEvent.UploadStateChanged(updated, UploadTransferState.COMPLETE)) {
-            manager.upload(uploadInfo).get()
+        assertEventEmitted(uploader, TransferEvent.UploadStateChanged(updated, UploadTransferState.COMPLETE)) {
+            uploader.upload(uploadInfo).get()
 
             transferOperations.completeUploadPartOperation(1)
         }
@@ -314,26 +314,26 @@ class TransferManagerImplTest {
 
     @Test
     fun `it should mark the upload as error when an exception occurs during creation`() {
-        val manager = newManager()
+        val uploader = newUploader()
 
         val info = randomUploadInfo()
 
-        manager.upload(info).get()
+        uploader.upload(info).get()
 
         transferOperations.createDeferred.reject(InsufficientQuotaException())
 
-        val status = assertNotNull(manager.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
+        val status = assertNotNull(uploader.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
 
         assertEquals(UploadTransferState.ERROR, status.state, "Invalid state")
     }
 
     @Test
     fun `it should update upload error when creation fails`() {
-        val manager = newManager()
+        val uploader = newUploader()
 
         val info = randomUploadInfo()
 
-        manager.upload(info).get()
+        uploader.upload(info).get()
 
         transferOperations.createDeferred.reject(InsufficientQuotaException())
 
@@ -342,11 +342,11 @@ class TransferManagerImplTest {
 
     @Test
     fun `it should not attempt to upload parts when creation fails`() {
-        val manager = newManager()
+        val uploader = newUploader()
 
         val info = randomUploadInfo()
 
-        manager.upload(info).get()
+        uploader.upload(info).get()
 
         transferOperations.createDeferred.reject(InsufficientQuotaException())
 
@@ -355,34 +355,34 @@ class TransferManagerImplTest {
 
     @Test
     fun `it should emit a TransferEvent when an exception occurs during creation`() {
-        val manager = newManager()
+        val uploader = newUploader()
 
         val info = randomUploadInfo()
 
-        manager.upload(info).get()
+        uploader.upload(info).get()
 
         val updated = info.upload.copy(error = UploadError.INSUFFICIENT_QUOTA)
-        assertEventEmitted(manager, TransferEvent.UploadStateChanged(updated, UploadTransferState.ERROR)) {
+        assertEventEmitted(uploader, TransferEvent.UploadStateChanged(updated, UploadTransferState.ERROR)) {
             transferOperations.createDeferred.reject(InsufficientQuotaException())
         }
     }
 
     @Test
     fun `it should set upload error to INSUFFICIENT_QUOTA when creation fails with InsufficientQuotaException`() {
-        val manager = newManager()
+        val uploader = newUploader()
 
         val info = randomUploadInfo()
 
-        manager.upload(info).get()
+        uploader.upload(info).get()
 
         transferOperations.createDeferred.reject(InsufficientQuotaException())
 
-        val status = assertNotNull(manager.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
+        val status = assertNotNull(uploader.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
 
         assertEquals(status.upload.error, UploadError.INSUFFICIENT_QUOTA, "Invalid error")
     }
 
-    private fun testClearError(manager: TransferManager): UploadInfo {
+    private fun testClearError(manager: Uploader): UploadInfo {
         val info = randomUploadInfo(error = UploadError.FILE_DISAPPEARED)
 
         whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
@@ -396,41 +396,41 @@ class TransferManagerImplTest {
 
     @Test
     fun `clearError should clear the stored update error`() {
-        val manager = newManager(true)
+        val uploader = newUploader(true)
 
-        val info = testClearError(manager)
+        val info = testClearError(uploader)
         verify(uploadPersistenceManager).setError(info.upload.id, null)
     }
 
     @Test
     fun `clearError should reset the cached upload's error state`() {
-        val manager = newManager(true)
+        val uploader = newUploader(true)
 
-        val info = testClearError(manager)
+        val info = testClearError(uploader)
 
-        val status = assertNotNull(manager.uploads.find { it.upload.id == info.upload.id }, "Upload not found")
+        val status = assertNotNull(uploader.uploads.find { it.upload.id == info.upload.id }, "Upload not found")
 
         assertNull(status.upload.error, "Error not cleared")
     }
 
     @Test
     fun `clearError should update emit a TransferEvent on clear`() {
-        val manager = newManager(true)
+        val uploader = newUploader(true)
         val info = randomUploadInfo(error = UploadError.FILE_DISAPPEARED)
 
         whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
 
-        manager.init()
+        uploader.init()
 
-        assertEventEmitted(manager, TransferEvent.UploadStateChanged(info.upload.copy(error = null), UploadTransferState.QUEUED)) {
-            manager.clearError(info.upload.id).get()
+        assertEventEmitted(uploader, TransferEvent.UploadStateChanged(info.upload.copy(error = null), UploadTransferState.QUEUED)) {
+            uploader.clearError(info.upload.id).get()
         }
     }
 
     @Test
     fun `clearError should queue the upload for processing if network is available`() {
-        val manager = newManager(true)
-        val info = testClearError(manager)
+        val uploader = newUploader(true)
+        val info = testClearError(uploader)
 
         transferOperations.assertCreateCalled(info.upload, info.file)
     }
