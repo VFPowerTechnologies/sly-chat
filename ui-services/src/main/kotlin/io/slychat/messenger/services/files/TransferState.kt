@@ -1,7 +1,7 @@
 package io.slychat.messenger.services.files
 
 //state in transfer manager
-enum class UploadTransferState {
+enum class TransferState {
     QUEUED,
     //transferring data
     ACTIVE,
@@ -9,6 +9,6 @@ enum class UploadTransferState {
     CANCELLED,
     //complete
     COMPLETE,
-    //error during some state (upload.error is set)
+    //error during some state (upload.error/download.error is set)
     ERROR
 }

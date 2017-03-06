@@ -8,7 +8,7 @@ import io.slychat.messenger.core.persistence.Upload
 data class UploadStatus(
     val upload: Upload,
     val file: RemoteFile,
-    val state: UploadTransferState,
+    val state: TransferState,
     val progress: List<UploadPartTransferProgress>
 ) {
     val transferedBytes: Long = progress.foldRight(0L) { p, t -> t + p.transferedBytes }

@@ -8,5 +8,11 @@ interface Downloader {
 
     val events: Observable<TransferEvent>
 
+    val downloads: List<DownloadStatus>
+
+    fun init()
+
+    fun shutdown()
+
     fun download(fileId: String, decrypt: Boolean, toPath: String): Promise<Unit, Exception>
 }

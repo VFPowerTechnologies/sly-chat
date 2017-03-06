@@ -80,12 +80,12 @@ class UploaderImpl(
 
             val initialState = if (upload.error == null) {
                 if (upload.state == UploadState.COMPLETE)
-                    UploadTransferState.COMPLETE
+                    TransferState.COMPLETE
                 else
-                    UploadTransferState.QUEUED
+                    TransferState.QUEUED
             }
             else
-                UploadTransferState.ERROR
+                TransferState.ERROR
 
             all[upload.id] = UploadStatus(
                 upload,
@@ -94,7 +94,7 @@ class UploaderImpl(
                 upload.parts.map { UploadPartTransferProgress(0, it.size) }
             )
 
-            if (initialState == UploadTransferState.QUEUED)
+            if (initialState == TransferState.QUEUED)
                 queued.add(upload.id)
 
             subject.onNext(TransferEvent.UploadAdded(upload, initialState))
@@ -125,7 +125,7 @@ class UploaderImpl(
 
             active.add(nextId)
 
-            val newState = UploadTransferState.ACTIVE
+            val newState = TransferState.ACTIVE
             all[nextId] = status.copy(state = newState)
 
             subject.onNext(TransferEvent.UploadStateChanged(status.upload, newState))
@@ -153,7 +153,7 @@ class UploaderImpl(
         active.remove(uploadId)
         inactive.add(uploadId)
 
-        updateTransferState(uploadId, UploadTransferState.COMPLETE)
+        updateTransferState(uploadId, TransferState.COMPLETE)
     }
 
     private fun updateUploadState(uploadId: String, newState: UploadState): Promise<Unit, Exception> {
@@ -173,7 +173,7 @@ class UploaderImpl(
         )
     }
 
-    private fun updateTransferState(uploadId : String, newState: UploadTransferState) {
+    private fun updateTransferState(uploadId : String, newState: TransferState) {
         val status = all[uploadId] ?: error("Requested up to update transfer state for upload $uploadId but no such upload")
 
         all[uploadId] = status.copy(state = newState)
@@ -193,7 +193,7 @@ class UploaderImpl(
         queued.remove(uploadId)
         inactive.add(uploadId)
 
-        updateTransferState(uploadId, UploadTransferState.ERROR)
+        updateTransferState(uploadId, TransferState.ERROR)
     }
 
     //TODO
@@ -309,7 +309,7 @@ class UploaderImpl(
             val status = updateCachedStatus(uploadId) {
                 it.copy(
                     upload = it.upload.copy(error = null),
-                    state = UploadTransferState.QUEUED
+                    state = TransferState.QUEUED
                 )
             }
 

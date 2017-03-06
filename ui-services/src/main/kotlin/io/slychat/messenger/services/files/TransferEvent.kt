@@ -3,7 +3,7 @@ package io.slychat.messenger.services.files
 import io.slychat.messenger.core.persistence.Upload
 
 sealed class TransferEvent {
-    class UploadAdded(val upload: Upload, val state: UploadTransferState) : TransferEvent() {
+    class UploadAdded(val upload: Upload, val state: TransferState) : TransferEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
@@ -51,7 +51,7 @@ sealed class TransferEvent {
         }
     }
 
-    class UploadStateChanged(val upload: Upload, val state: UploadTransferState) : TransferEvent() {
+    class UploadStateChanged(val upload: Upload, val state: TransferState) : TransferEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false

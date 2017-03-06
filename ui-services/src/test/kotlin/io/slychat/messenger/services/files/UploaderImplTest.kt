@@ -159,7 +159,7 @@ class UploaderImplTest {
 
         val uploader = newUploader(true)
 
-        assertEventEmitted(uploader, TransferEvent.UploadAdded(upload, UploadTransferState.ERROR)) {
+        assertEventEmitted(uploader, TransferEvent.UploadAdded(upload, TransferState.ERROR)) {
             uploader.init()
         }
     }
@@ -185,7 +185,7 @@ class UploaderImplTest {
 
         val uploader = newUploader(true)
 
-        assertEventEmitted(uploader, TransferEvent.UploadAdded(info.upload, UploadTransferState.COMPLETE)) {
+        assertEventEmitted(uploader, TransferEvent.UploadAdded(info.upload, TransferState.COMPLETE)) {
             uploader.init()
         }
     }
@@ -209,7 +209,7 @@ class UploaderImplTest {
 
         val uploadInfo = randomUploadInfo()
 
-        val event = TransferEvent.UploadAdded(uploadInfo.upload, UploadTransferState.QUEUED)
+        val event = TransferEvent.UploadAdded(uploadInfo.upload, TransferState.QUEUED)
         assertEventEmitted(uploader, event) {
             uploader.upload(uploadInfo).get()
         }
@@ -305,7 +305,7 @@ class UploaderImplTest {
             state = UploadState.COMPLETE
         )
 
-        assertEventEmitted(uploader, TransferEvent.UploadStateChanged(updated, UploadTransferState.COMPLETE)) {
+        assertEventEmitted(uploader, TransferEvent.UploadStateChanged(updated, TransferState.COMPLETE)) {
             uploader.upload(uploadInfo).get()
 
             transferOperations.completeUploadPartOperation(1)
@@ -324,7 +324,7 @@ class UploaderImplTest {
 
         val status = assertNotNull(uploader.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
 
-        assertEquals(UploadTransferState.ERROR, status.state, "Invalid state")
+        assertEquals(TransferState.ERROR, status.state, "Invalid state")
     }
 
     @Test
@@ -362,7 +362,7 @@ class UploaderImplTest {
         uploader.upload(info).get()
 
         val updated = info.upload.copy(error = UploadError.INSUFFICIENT_QUOTA)
-        assertEventEmitted(uploader, TransferEvent.UploadStateChanged(updated, UploadTransferState.ERROR)) {
+        assertEventEmitted(uploader, TransferEvent.UploadStateChanged(updated, TransferState.ERROR)) {
             transferOperations.createDeferred.reject(InsufficientQuotaException())
         }
     }
@@ -422,7 +422,7 @@ class UploaderImplTest {
 
         uploader.init()
 
-        assertEventEmitted(uploader, TransferEvent.UploadStateChanged(info.upload.copy(error = null), UploadTransferState.QUEUED)) {
+        assertEventEmitted(uploader, TransferEvent.UploadStateChanged(info.upload.copy(error = null), TransferState.QUEUED)) {
             uploader.clearError(info.upload.id).get()
         }
     }

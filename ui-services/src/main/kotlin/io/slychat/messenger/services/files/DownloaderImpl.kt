@@ -15,6 +15,17 @@ class DownloaderImpl(
     override val events: Observable<TransferEvent>
         get() = subject
 
+    override val downloads: List<DownloadStatus>
+        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
+
+    override fun init() {
+        TODO()
+    }
+
+    override fun shutdown() {
+        TODO()
+    }
+
     override fun download(fileId: String, decrypt: Boolean, toPath: String): Promise<Unit, Exception> {
         TODO()
     }
