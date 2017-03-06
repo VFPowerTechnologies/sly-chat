@@ -391,7 +391,9 @@ class UploaderImplTest {
 
         manager.clearError(info.upload.id).get()
 
-        return info
+        return info.copy(
+            upload = info.upload.copy(error = null)
+        )
     }
 
     @Test

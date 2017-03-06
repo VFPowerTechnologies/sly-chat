@@ -16,27 +16,25 @@ import rx.Observable
 import rx.Subscription
 import rx.subjects.PublishSubject
 import java.io.FileNotFoundException
-import java.util.*
 
 class UploaderImpl(
-    override var simulUploads: Int,
+    initialSimulUploads: Int,
     private val uploadPersistenceManager: UploadPersistenceManager,
     private val transferOperations: TransferOperations,
     networkStatus: Observable<Boolean>
 ) : Uploader {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    //upload ids
-    private val queued = ArrayDeque<String>()
-    private val active = ArrayList<String>()
-    //completed, errored uploads
-    private val inactive = ArrayList<String>()
+    private val list = TransferList<UploadStatus>(initialSimulUploads)
 
-    //uploadId->upload
-    private val all = HashMap<String, UploadStatus>()
+    override var simulUploads: Int
+        get() = list.maxSize
+        set(value) {
+            list.maxSize = value
+        }
 
     override val uploads: List<UploadStatus>
-        get() = all.values.toList()
+        get() = list.all.values.toList()
 
     private val subject = PublishSubject.create<TransferEvent>()
 
@@ -75,7 +73,7 @@ class UploaderImpl(
         info.forEach {
             val upload = it.upload
             val file = it.file
-            if (upload.id in all)
+            if (upload.id in list.all)
                 error("Upload ${upload.id} already in transfer list")
 
             val initialState = if (upload.error == null) {
@@ -87,7 +85,7 @@ class UploaderImpl(
             else
                 TransferState.ERROR
 
-            all[upload.id] = UploadStatus(
+            list.all[upload.id] = UploadStatus(
                 upload,
                 file,
                 initialState,
@@ -95,7 +93,7 @@ class UploaderImpl(
             )
 
             if (initialState == TransferState.QUEUED)
-                queued.add(upload.id)
+                list.queued.add(upload.id)
 
             subject.onNext(TransferEvent.UploadAdded(upload, initialState))
         }
@@ -113,29 +111,28 @@ class UploaderImpl(
         if (!isNetworkAvailable)
             return
 
-        if (active.size >= simulUploads) {
-            log.info("{}/{} uploads running, not starting more", active.size, simulUploads)
+        if (!list.canActivateMore) {
+            log.info("{}/{} uploads running, not starting more", list.active.size, list.maxSize)
             return
         }
 
-        while (queued.isNotEmpty()) {
-            val nextId = queued.pop()
+        while (list.canActivateMore) {
+            val next = list.nextQueued()
 
-            val status = all[nextId] ?: error("Queued upload $nextId not in upload list")
-
-            active.add(nextId)
+            val nextId = next.upload.id
+            list.active.add(nextId)
 
             val newState = TransferState.ACTIVE
-            all[nextId] = status.copy(state = newState)
+            list.setStatus(nextId, next.copy(state = newState))
 
-            subject.onNext(TransferEvent.UploadStateChanged(status.upload, newState))
+            subject.onNext(TransferEvent.UploadStateChanged(next.upload, newState))
 
-            nextStep(status.upload.id)
+            nextStep(nextId)
         }
     }
 
     private fun nextStep(uploadId: String) {
-        val status = all[uploadId] ?: error("nextStep called for invalid upload id: $uploadId")
+        val status = list.getStatus(uploadId)
 
         when (status.upload.state) {
             UploadState.PENDING -> createUpload(status)
@@ -150,8 +147,8 @@ class UploaderImpl(
         log.info("Marking upload {} as complete", status.upload.id)
 
         val uploadId = status.upload.id
-        active.remove(uploadId)
-        inactive.add(uploadId)
+        list.active.remove(uploadId)
+        list.inactive.add(uploadId)
 
         updateTransferState(uploadId, TransferState.COMPLETE)
     }
@@ -166,17 +163,17 @@ class UploaderImpl(
     }
 
     private fun updateCachedUploadState(uploadId: String, newState: UploadState) {
-        val status = all[uploadId] ?: error("Requested to update cached upload state for invalid id $uploadId")
-
-        all[uploadId] = status.copy(
-            status.upload.copy(state = newState)
-        )
+        list.updateStatus(uploadId) {
+            it.copy(
+                it.upload.copy(state = newState)
+            )
+        }
     }
 
     private fun updateTransferState(uploadId : String, newState: TransferState) {
-        val status = all[uploadId] ?: error("Requested up to update transfer state for upload $uploadId but no such upload")
-
-        all[uploadId] = status.copy(state = newState)
+        val status = list.updateStatus(uploadId) {
+            it.copy(state = newState)
+        }
 
         subject.onNext(TransferEvent.UploadStateChanged(status.upload, newState))
     }
@@ -184,14 +181,15 @@ class UploaderImpl(
     private fun moveUploadToErrorState(uploadId: String, uploadError: UploadError) {
         log.info("Moving upload {} to error state", uploadId)
 
-        val status = all[uploadId] ?: error("No status for id=$uploadId")
-        all[uploadId] = status.copy(
-            upload = status.upload.copy(error = uploadError)
-        )
+        list.updateStatus(uploadId) {
+            it.copy(
+                upload = it.upload.copy(error = uploadError)
+            )
+        }
 
-        active.remove(uploadId)
-        queued.remove(uploadId)
-        inactive.add(uploadId)
+        list.active.remove(uploadId)
+        list.queued.remove(uploadId)
+        list.inactive.add(uploadId)
 
         updateTransferState(uploadId, TransferState.ERROR)
     }
@@ -261,7 +259,7 @@ class UploaderImpl(
     //since we schedule stuff to be run, it'll occur that we complete a part before the final progress update comes in
 
     private fun completePart(uploadId: String, n: Int) {
-        val status = all[uploadId] ?: error("completePart called with invalid upload id: $uploadId")
+        val status = list.getStatus(uploadId)
 
         val newProgress = status.progress.mapIndexed { i, progress ->
             if (i == (n - 1))
@@ -270,10 +268,10 @@ class UploaderImpl(
                 progress
         }
 
-        all[uploadId] = status.copy(
+        list.setStatus(uploadId, status.copy(
             upload = status.upload.markPartCompleted(n),
             progress = newProgress
-        )
+        ))
 
         val transferProgress = UploadTransferProgress(newProgress, status.transferedBytes, status.totalBytes)
         subject.onNext(TransferEvent.UploadProgress(status.upload, transferProgress))
@@ -291,22 +289,12 @@ class UploaderImpl(
         }
     }
 
-    private inline fun updateCachedStatus(uploadId: String, fn: (UploadStatus) -> UploadStatus): UploadStatus {
-        val status = all[uploadId] ?: error("Attempt to update $uploadId but no such upload")
-
-        val updated = fn(status)
-
-        all[uploadId] = updated
-
-        return updated
-    }
-
     override fun clearError(uploadId: String): Promise<Unit, Exception> {
         return uploadPersistenceManager.setError(uploadId, null) successUi {
-            inactive.remove(uploadId)
-            queued.add(uploadId)
+            list.inactive.remove(uploadId)
+            list.queued.add(uploadId)
 
-            val status = updateCachedStatus(uploadId) {
+            val status = list.updateStatus(uploadId) {
                 it.copy(
                     upload = it.upload.copy(error = null),
                     state = TransferState.QUEUED
