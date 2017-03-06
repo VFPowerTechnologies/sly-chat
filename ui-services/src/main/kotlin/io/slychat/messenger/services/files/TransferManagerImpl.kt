@@ -5,13 +5,20 @@ import nl.komponents.kovenant.Promise
 import rx.Observable
 
 class TransferManagerImpl(
-    override var options: TransferOptions,
-    private val uploader: Uploader
+    private val uploader: Uploader,
+    private val downloader: Downloader
 ) : TransferManager {
-    override val events: Observable<TransferEvent>
-        get() = uploader.events
+    override val events: Observable<TransferEvent> = Observable.merge(uploader.events, downloader.events)
+
     override val uploads: List<UploadStatus>
         get() = uploader.uploads
+
+    override var options: TransferOptions
+        get() = TransferOptions(downloader.simulDownloads, uploader.simulUploads)
+        set(value) {
+            downloader.simulDownloads = value.simulDownloads
+            uploader.simulUploads = value.simulUploads
+        }
 
     override fun init() {
         uploader.init()
@@ -27,5 +34,9 @@ class TransferManagerImpl(
 
     override fun clearError(uploadId: String): Promise<Unit, Exception> {
         return uploader.clearError(uploadId)
+    }
+
+    override fun download(fileId: String, decrypt: Boolean, toPath: String): Promise<Unit, Exception> {
+        TODO()
     }
 }

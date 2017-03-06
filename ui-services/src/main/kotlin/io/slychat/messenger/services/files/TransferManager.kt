@@ -18,5 +18,7 @@ interface TransferManager {
     fun upload(info: UploadInfo): Promise<Unit, Exception>
 
     fun clearError(uploadId: String): Promise<Unit, Exception>
+
+    fun download(fileId: String, decrypt: Boolean, toPath: String): Promise<Unit, Exception>
 }
 

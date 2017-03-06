@@ -128,6 +128,8 @@ fun randomMessageId(): String = randomUUID()
 
 fun generateUploadId(): String = randomUUID()
 
+fun generateDownloadId(): String = randomUUID()
+
 fun generateFileId(): String = randomUUID()
 
 fun generateShareKey(): String = randomUUID()

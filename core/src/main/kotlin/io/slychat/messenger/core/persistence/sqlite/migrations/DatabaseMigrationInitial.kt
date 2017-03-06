@@ -31,7 +31,8 @@ class DatabaseMigrationInitial : DatabaseMigration(1) {
             "files",
             "remote_file_updates",
             "uploads",
-            "upload_parts"
+            "upload_parts",
+            "downloads"
         )
     }
 

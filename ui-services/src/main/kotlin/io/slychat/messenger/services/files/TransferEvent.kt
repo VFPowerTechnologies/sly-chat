@@ -74,4 +74,8 @@ sealed class TransferEvent {
             return "UploadStateChanged(upload=$upload, state=$state)"
         }
     }
+
+    class DownloadAdded(val downloadId: String)
+    class DownloadProgress(val downloadId: String, val progress: DownloadTransferProgress)
+    class DownloadStateChange(val downloadId: String)
 }
