@@ -9,6 +9,7 @@ import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class WebApiStorageTest {
     companion object {
@@ -118,10 +119,9 @@ class WebApiStorageTest {
     }
 
     @Test
-    fun `update should update the user's metadata`() {
-        val user = userManagement.injectNamedSiteUser("a@a.com")
-        val username = user.user.email
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+    fun `update should update the user metadata`() {
+        val authUser = devClient.newAuthUser(userManagement)
+        val user = authUser.user
 
         val lastUpdateVersion = 1L
 
@@ -129,13 +129,11 @@ class WebApiStorageTest {
 
         val fileInfo = addDummyFile(user.id, 1)
 
-        val authToken = devClient.createAuthToken(username, deviceId)
-
         val client = newClient()
 
         val newMetadata = byteArrayOf(0x77)
 
-        val userCredentials = user.getUserCredentials(authToken, deviceId)
+        val userCredentials = authUser.userCredentials
         val request = UpdateRequest(
             emptyList(),
             mapOf(fileInfo.id to MetadataUpdateRequest("hash", newMetadata))
@@ -152,5 +150,32 @@ class WebApiStorageTest {
             inHexadecimal()
             isEqualTo(newMetadata)
         }
+    }
+
+    @Test
+    fun `update should delete files`() {
+        val authUser = devClient.newAuthUser(userManagement)
+        val user = authUser.user
+        val lastUpdateVersion = 1L
+
+        devClient.addFileListVersion(user.id, lastUpdateVersion)
+
+        val fileInfo = addDummyFile(user.id, 1)
+
+        val client = newClient()
+
+        val request = UpdateRequest(
+            listOf(fileInfo.id),
+            emptyMap()
+        )
+
+        val userCredentials = authUser.userCredentials
+        val updateResp = client.update(userCredentials, request)
+
+        assertEquals(lastUpdateVersion + 1, updateResp.newVersion, "Invalid new version")
+
+        val getResp = client.getFileInfo(userCredentials, fileInfo.id)
+
+        assertTrue(getResp.fileInfo.isDeleted, "File not marked as deleted")
     }
 }
