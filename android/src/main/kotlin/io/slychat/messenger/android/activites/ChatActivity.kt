@@ -2,7 +2,6 @@ package io.slychat.messenger.android.activites
 
 import android.content.*
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.os.Handler
 import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
@@ -19,7 +18,6 @@ import io.slychat.messenger.android.activites.services.impl.AndroidContactServic
 import io.slychat.messenger.android.activites.services.impl.AndroidGroupServiceImpl
 import io.slychat.messenger.android.activites.services.impl.AndroidMessengerServiceImpl
 import io.slychat.messenger.android.activites.services.impl.AndroidConfigServiceImpl
-import io.slychat.messenger.android.formatTimeStamp
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.MessageUpdateEvent
@@ -29,7 +27,6 @@ import io.slychat.messenger.services.messaging.GroupEvent
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
-import android.view.animation.AnimationUtils
 import io.slychat.messenger.services.config.ConvoTTLSettings
 import android.view.ContextMenu.ContextMenuInfo
 import io.slychat.messenger.core.condError
@@ -39,11 +36,12 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     companion object {
         val EXTRA_ISGROUP = "io.slychat.messenger.android.activities.ChatActivity.isGroup"
         val EXTRA_CONVERSTATION_ID = "io.slychat.messenger.android.activities.ChatActivity.converstationId"
+        val LOAD_COUNT = 30
     }
-    private val log = LoggerFactory.getLogger(javaClass)
+    val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
-    private lateinit var messengerService: AndroidMessengerServiceImpl
+    lateinit var messengerService: AndroidMessengerServiceImpl
     private lateinit var contactService: AndroidContactServiceImpl
     private lateinit var groupService: AndroidGroupServiceImpl
     private lateinit var configService: AndroidConfigServiceImpl
@@ -77,7 +75,8 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     private var currentScrollDiff = 0
 
-    private var initiated = false
+    private var initialized = false
+    private var lastMessageLoaded = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -268,11 +267,21 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun init() {
-        val cId = conversationId
         setAppActivity()
         setListeners()
-        messengerService.fetchMessageFor(conversationId, 0, 100) successUi { messages ->
+        displayExpireSliderOnStart()
+
+        if (!initialized)
+            fetchAndDisplayOnStart()
+        else
+            fetchAndDisplayUnreed()
+    }
+
+    private fun fetchAndDisplayOnStart() {
+        val cId = conversationId
+        messengerService.fetchMessageFor(conversationId, 0, LOAD_COUNT) successUi { messages ->
             cacheMessages(messages)
+            lastMessageLoaded = messages.count()
             if (cId is ConversationId.Group) {
                 groupService.getMembersInfo(cId.id) successUi { members ->
                     groupMembers = members
@@ -281,9 +290,28 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             }
             else
                 displayMessages(messages)
+        } failUi {
+            log.error("Something failed: {}", it.message, it)
         }
+    }
 
-        displayExpireSliderOnStart()
+    private fun fetchAndDisplayUnreed() {
+        messengerService.fetchMessageFor(conversationId, 0, LOAD_COUNT) successUi { messages ->
+            val notSeen = mutableListOf<ConversationMessageInfo>()
+            messages.forEach { message ->
+                if (!chatDataLink.containsKey(message.info.id))
+                    notSeen.add(message)
+            }
+
+            notSeen.sortBy { it.info.timestamp }
+
+            notSeen.forEach {
+                chatList.addView(createMessageNode(it))
+                scrollOnNewMessage(it.info.isSent)
+            }
+        } failUi {
+            log.error("Something failed: {}", it.message, it)
+        }
     }
 
     private fun handleKeyboardOpen() {
@@ -366,84 +394,17 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         chatList.removeAllViews()
         messages.reversed().forEach { message ->
             chatList.addView(createMessageNode(message))
-            if (!initiated)
+
+            if (!initialized)
                 scrollToBottom()
         }
 
-        initiated = true
+        initialized = true
     }
 
     private fun createMessageNode(messageInfo: ConversationMessageInfo): View {
-        val layout : Int
-        if (messageInfo.info.isSent)
-            layout = R.layout.sent_message_node
-        else
-            layout = R.layout.received_message_node
-
-        val messageNode = LayoutInflater.from(this).inflate(layout, chatList, false)
-        val messageIdNode = messageNode.findViewById(R.id.message_id) as TextView
-        val message = messageNode.findViewById(R.id.message) as TextView
-        val timespan = messageNode.findViewById(R.id.timespan) as TextView
-
-        val nodeId = View.generateViewId()
-        chatDataLink.put(messageInfo.info.id, nodeId)
-        messageNode.id = nodeId
-
-        messageIdNode.text = messageInfo.info.id
-
-        val messageLayout = messageNode.findViewById(R.id.message_node_layout) as LinearLayout
-
-        registerForContextMenu(messageNode)
-
-        if (messageInfo.info.isExpired) {
-            message.text = resources.getString(R.string.chat_expired_message_text)
-            timespan.visibility = View.GONE
-            messageLayout.visibility = View.VISIBLE
-            return messageNode
-        }
-
-        val speaker = messageInfo.speaker
-        val members = groupMembers
-        if (speaker !== null && conversationId is ConversationId.Group && members !== null) {
-            val contact = members[speaker]
-            if (contact !== null) {
-                val speakerName = messageNode.findViewById(R.id.chat_group_speaker_name) as TextView
-                speakerName.visibility = View.VISIBLE
-                speakerName.text = contact.name
-            }
-        }
-
-        val time: String
-
-        if (messageInfo.info.receivedTimestamp == 0L)
-            time = resources.getString(R.string.chat_delivering_time_string)
-        else
-            time = formatTimeStamp(messageInfo.info.receivedTimestamp)
-
-        timespan.text = time
-        message.text = messageInfo.info.message
-
-        if (messageInfo.info.ttlMs > 0 && !messageInfo.info.isSent && messageInfo.info.expiresAt <= 0) {
-            val expirationLayout = messageNode.findViewById(R.id.expiring_message_layout) as LinearLayout
-            expirationLayout.visibility = View.VISIBLE
-            messageNode.setOnClickListener {
-                showExpiringMessage(it, messageInfo)
-            }
-
-            val pulse = AnimationUtils.loadAnimation(this, R.anim.pulse)
-            messageNode.startAnimation(pulse)
-        }
-        else {
-            if (messageInfo.info.expiresAt > 0) {
-                val delayLayout = messageNode.findViewById(R.id.chat_message_expire_time_layout)
-                val mTimer = delayLayout.findViewById(R.id.expire_seconds_left) as TextView
-                val timeLeft = messageInfo.info.expiresAt - System.currentTimeMillis()
-                startMessageExpirationCountdown(timeLeft, mTimer)
-
-                delayLayout.visibility = View.VISIBLE
-            }
-            messageLayout.visibility = View.VISIBLE
-        }
+        val messageNode = ChatMessage(messageInfo, this).create(conversationId, groupMembers)
+        chatDataLink.put(messageInfo.info.id, messageNode.id)
 
         return messageNode
     }
@@ -532,18 +493,18 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         clipboardManager.primaryClip = clipData
     }
 
-    private fun showExpiringMessage(node: View, messageInfo: ConversationMessageInfo) {
-        messengerService.startMessageExpiration(conversationId, messageInfo.info.id) successUi {
-            val messageLayout = node.findViewById(R.id.message_node_layout)
-            val expireLayout = node.findViewById(R.id.expiring_message_layout)
-
-            expireLayout.visibility = View.GONE
-            messageLayout.visibility = View.VISIBLE
-            node.clearAnimation()
-        } failUi {
-            log.error("Something failed: {}", it.message, it)
-        }
-    }
+//    private fun showExpiringMessage(node: View, messageInfo: ConversationMessageInfo) {
+//        messengerService.startMessageExpiration(conversationId, messageInfo.info.id) successUi {
+//            val messageLayout = node.findViewById(R.id.message_node_layout)
+//            val expireLayout = node.findViewById(R.id.expiring_message_layout)
+//
+//            expireLayout.visibility = View.GONE
+//            messageLayout.visibility = View.VISIBLE
+//            node.clearAnimation()
+//        } failUi {
+//            log.error("Something failed: {}", it.message, it)
+//        }
+//    }
 
     private fun handleNewMessageSubmit() {
         var ttl = 0L
@@ -604,28 +565,9 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     private fun handleMessageExpiringEvent(event: MessageUpdateEvent.Expiring) {
         val nodeId = chatDataLink[event.messageId]
         if (nodeId != null) {
-            val mMessageNode = findViewById(nodeId)
-            val mDelayLayout = mMessageNode.findViewById(R.id.chat_message_expire_time_layout)
-            val mTimer = mDelayLayout.findViewById(R.id.expire_seconds_left) as TextView
-
-            startMessageExpirationCountdown(event.ttl, mTimer)
-
-            mDelayLayout.visibility = View.VISIBLE
+            val mMessageNode = findViewById(nodeId) as ChatMessage
+            mMessageNode.startMessageExpirationCountdown(event.ttl)
         }
-    }
-
-    private fun startMessageExpirationCountdown(delay: Long, textView: TextView) {
-
-        object : CountDownTimer(delay, 1000) {
-            override fun onTick(millisLeft: Long) {
-                val secondsLeft = (millisLeft / 1000).toInt()
-                textView.text = secondsLeft.toString()
-            }
-
-            override fun onFinish() {
-                //
-            }
-        }.start()
     }
 
     private fun handleDeliveredMessageEvent(event: MessageUpdateEvent.Delivered) {
@@ -640,9 +582,8 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         if (nodeId === null)
             return
 
-        val node = findViewById(nodeId)
-        val timespanNode = node.findViewById(R.id.timespan) as TextView
-        timespanNode.text = resources.getString(R.string.chat_failed_message_delivery)
+        val node = findViewById(nodeId) as ChatMessage
+        node.markFailedDelivery()
     }
 
     private fun handleDeletedAllMessage(event: MessageUpdateEvent.DeletedAll) {
@@ -673,19 +614,8 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         if (nodeId === null)
             return
 
-        val messageNode = findViewById(nodeId) as LinearLayout
-        val delayNode = messageNode.findViewById(R.id.chat_message_expire_time_layout)
-        val message = messageNode.findViewById(R.id.message) as TextView
-        val timespan = messageNode.findViewById(R.id.timespan) as TextView
-        if (conversationId is ConversationId.Group) {
-            val speakerName = messageNode.findViewById(R.id.chat_group_speaker_name) as TextView
-            speakerName.visibility = View.GONE
-        }
-        message.text = resources.getString(R.string.chat_expired_message_text)
-        timespan.text = ""
-        timespan.visibility = View.GONE
-
-        delayNode.visibility = View.GONE
+        val messageNode = findViewById(nodeId) as ChatMessage
+        messageNode.setMessageExpired()
     }
 
     private fun updateMessageDelivered(event: MessageUpdateEvent.Delivered) {
@@ -693,17 +623,20 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         if (nodeId === null)
             return
 
-        val node = findViewById(nodeId)
-        (node.findViewById(R.id.timespan) as TextView).text = formatTimeStamp(event.deliveredTimestamp)
+        val node = findViewById(nodeId) as ChatMessage
+        node.updateTimeStamp(event.deliveredTimestamp)
     }
 
     private fun handleNewMessageDisplay(newMessage: ConversationMessage) {
-        val chatList = findViewById(R.id.chat_list) as LinearLayout
         chatList.addView(createMessageNode(newMessage.conversationMessageInfo))
 
+        scrollOnNewMessage(newMessage.conversationMessageInfo.info.isSent)
+    }
+
+    private fun scrollOnNewMessage(isSent: Boolean) {
         if (currentScrollDiff < 300)
             scrollToBottom()
-        else if (jumpToRecentBtn.visibility == View.VISIBLE && !newMessage.conversationMessageInfo.info.isSent) {
+        else if (jumpToRecentBtn.visibility == View.VISIBLE && !isSent) {
             val currentText = jumpToRecentLabel.text.toString()
             var currentCount: Int
             try {
