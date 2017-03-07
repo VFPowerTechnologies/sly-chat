@@ -20,7 +20,7 @@ import java.io.FileNotFoundException
 class UploaderImpl(
     initialSimulUploads: Int,
     private val uploadPersistenceManager: UploadPersistenceManager,
-    private val transferOperations: TransferOperations,
+    private val uploadOperations: UploadOperations,
     networkStatus: Observable<Boolean>
 ) : Uploader {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -244,7 +244,7 @@ class UploaderImpl(
         //it could occur that this is called after status.upload is modified (eg: another part completes) if transfering
         //multiple parts; however we don't actually use .parts since we pass in the part explicitly so this isn't an issue
         //we should probably mapUi, because if something caused the upload to fail we don't wanna do anything
-        transferOperations.uploadPart(status.upload, nextPart, status.file) {
+        uploadOperations.uploadPart(status.upload, nextPart, status.file) {
             receivePartProgress(status.upload.id, nextPart.n, it)
         } bind {
             uploadPersistenceManager.completePart(uploadId, nextPart.n)
@@ -281,7 +281,7 @@ class UploaderImpl(
     private fun createUpload(status: UploadStatus) {
         val uploadId = status.upload.id
 
-        transferOperations.create(status.upload, status.file) bind {
+        uploadOperations.create(status.upload, status.file) bind {
             updateUploadState(uploadId, UploadState.CREATED)
         } successUi {
             nextStep(uploadId)

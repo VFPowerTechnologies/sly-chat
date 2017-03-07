@@ -6,7 +6,7 @@ import io.slychat.messenger.core.persistence.UploadPart
 import nl.komponents.kovenant.Promise
 
 //factory used to simplify testing
-interface TransferOperations {
+interface UploadOperations {
     fun create(upload: Upload, file: RemoteFile): Promise<Unit, Exception>
 
     fun uploadPart(upload: Upload, part: UploadPart, file: RemoteFile, progressCallback: (Long) -> Unit): Promise<Unit, Exception>

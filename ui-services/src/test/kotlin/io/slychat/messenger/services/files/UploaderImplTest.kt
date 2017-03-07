@@ -34,7 +34,7 @@ class UploaderImplTest {
 
     private val simulUploads = 10
     private val uploadPersistenceManager: UploadPersistenceManager = mock()
-    private val transferOperations = MockTransferOperations()
+    private val transferOperations = MockUploadOperations()
     private val networkStatus = BehaviorSubject.create<Boolean>()
 
     @Before

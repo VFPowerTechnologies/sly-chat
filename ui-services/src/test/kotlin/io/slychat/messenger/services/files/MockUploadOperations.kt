@@ -9,7 +9,7 @@ import nl.komponents.kovenant.deferred
 import java.util.*
 import kotlin.test.fail
 
-class MockTransferOperations : TransferOperations {
+class MockUploadOperations : UploadOperations {
     var createDeferred = deferred<Unit, Exception>()
     var uploadDeferreds = HashMap<Int, Deferred<Unit, Exception>>()
 
