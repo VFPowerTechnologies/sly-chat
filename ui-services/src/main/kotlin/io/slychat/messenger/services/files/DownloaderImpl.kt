@@ -117,10 +117,18 @@ class DownloaderImpl(
     }
 
     private fun handleDownloadException(downloadId: String, e: Exception) {
+        if (e is CancellationException) {
+            downloadPersistenceManager.setState(downloadId, DownloadState.CANCELLED) successUi {
+                markDownloadCancelled(downloadId)
+            } fail {
+                log.error("Unable to mark download as cancelled: {}", it.message, it)
+            }
+
+            return
+        }
+
         val downloadError = when (e) {
             is FileMissingException -> DownloadError.REMOTE_FILE_MISSING
-
-            is CancellationException -> DownloadError.CANCELLED
 
             else -> {
                 if (isNotNetworkError(e))

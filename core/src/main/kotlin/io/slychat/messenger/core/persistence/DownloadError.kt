@@ -9,8 +9,6 @@ enum class DownloadError(val isTransient: Boolean) {
     CORRUPTED(false),
     //things like disconnection, etc
     NETWORK_ISSUE(true),
-    //user cancelled download
-    CANCELLED(false),
     //not really sure whether to mark this transient or not
     UNKNOWN(true)
 }

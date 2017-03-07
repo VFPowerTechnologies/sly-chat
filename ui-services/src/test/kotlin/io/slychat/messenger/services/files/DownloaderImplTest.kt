@@ -248,8 +248,34 @@ class DownloaderImplTest {
     }
 
     @Test
-    fun `it should set the download error to CANCELLED when download fails with CancellationException`() {
-        testDownloadError(CancellationException(), DownloadError.CANCELLED)
+    fun `it should set the download state to CANCELLED when download fails with CancellationException`() {
+        val downloader = newDownloader(true)
+
+        val downloadInfo = randomDownloadInfo()
+        downloader.download(downloadInfo).get()
+
+        val download = downloadInfo.download
+        val d = downloadOperations.getDownloadDeferred(download.id)
+        d.reject(CancellationException())
+
+        verify(downloadPersistenceManager).setState(downloadInfo.download.id, DownloadState.CANCELLED)
+    }
+
+    @Test
+    fun `it should emit a TransferEvent with state=CANCELLED when a download is cancelled`() {
+        val downloader = newDownloader(true)
+
+        val downloadInfo = randomDownloadInfo()
+        downloader.download(downloadInfo).get()
+
+        val download = downloadInfo.download
+        val d = downloadOperations.getDownloadDeferred(download.id)
+
+        val event = TransferEvent.DownloadStateChange(download.copy(state = DownloadState.CANCELLED), TransferState.CANCELLED)
+        assertEventEmitted(downloader, event) {
+            d.reject(CancellationException())
+        }
+
     }
 
     @Test
