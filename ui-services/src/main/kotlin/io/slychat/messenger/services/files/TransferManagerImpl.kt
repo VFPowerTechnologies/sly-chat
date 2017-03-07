@@ -40,7 +40,7 @@ class TransferManagerImpl(
     override fun shutdown() {
         subscription?.unsubscribe()
         subscription = null
-        
+
         uploader.shutdown()
         downloader.shutdown()
     }

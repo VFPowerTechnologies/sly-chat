@@ -13,7 +13,10 @@ import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
-import kotlin.test.*
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class SQLiteDownloadPersistenceManagerTest {
     companion object {
@@ -75,20 +78,20 @@ class SQLiteDownloadPersistenceManagerTest {
     }
 
     @Test
-    fun `setComplete should update completion status`() {
+    fun `setState should update state`() {
         val download = insertDownload()
 
-        downloadPersistenceManager.setComplete(download.id, true).get()
+        downloadPersistenceManager.setState(download.id, DownloadState.COMPLETE).get()
 
         val updated = getDownload(download.id)
 
-        assertTrue(updated.isComplete, "Completion status not updated")
+        assertEquals(DownloadState.COMPLETE, updated.state, "Completion status not updated")
     }
 
     @Test
     fun `setComplete should throw InvalidDownloadException if download doesn't exist`() {
         assertFailsWith(InvalidDownloadException::class) {
-            downloadPersistenceManager.setComplete(generateDownloadId(), true).get()
+            downloadPersistenceManager.setState(generateDownloadId(), DownloadState.COMPLETE).get()
         }
     }
 

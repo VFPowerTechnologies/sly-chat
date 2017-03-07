@@ -15,7 +15,7 @@ class SQLiteDownloadPersistenceManager(
         val sql = """
 INSERT INTO
     downloads
-    (id, file_id, is_complete, file_path, do_decrypt, error)
+    (id, file_id, state, file_path, do_decrypt, error)
 VALUES
     (?, ?, ?, ?, ?, ?)
 """
@@ -23,7 +23,7 @@ VALUES
         connection.withPrepared(sql) {
             it.bind(1, download.id)
             it.bind(2, download.fileId)
-            it.bind(3, download.isComplete)
+            it.bind(3, download.state)
             it.bind(4, download.filePath)
             it.bind(5, download.doDecrypt)
             it.bind(6, download.error)
@@ -35,18 +35,18 @@ VALUES
         insertDownload(it, download)
     }
 
-    override fun setComplete(downloadId: String, isComplete: Boolean): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {
+    override fun setState(downloadId: String, state: DownloadState): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {
         //language=SQLite
         val sql = """
 UPDATE
     downloads
 SET
-    is_complete = ?
+    state = ?
 WHERE
     id = ?
 """
         it.withPrepared(sql) {
-            it.bind(1, isComplete)
+            it.bind(1, state)
             it.bind(2, downloadId)
             it.step()
         }
@@ -80,7 +80,7 @@ WHERE
         //language=SQLite
         val sql = """
 SELECT
-    d.id, d.file_id, d.is_complete, d.file_path, d.do_decrypt, d.error,
+    d.id, d.file_id, d.state, d.file_path, d.do_decrypt, d.error,
 
     f.id, f.share_key, f.last_update_version,
     f.is_deleted, f.creation_date, f.modification_date,
@@ -109,7 +109,7 @@ ON
         //language=SQLite
         val sql = """
 SELECT
-    id, file_id, is_complete, file_path, do_decrypt, error
+    id, file_id, state, file_path, do_decrypt, error
 FROM
     downloads
 WHERE
@@ -129,7 +129,7 @@ WHERE
         return Download(
             stmt.columnString(0),
             stmt.columnString(1),
-            stmt.columnBool(2),
+            DownloadState.valueOf(stmt.columnString(2)),
             stmt.columnString(3),
             stmt.columnBool(4),
             stmt.columnString(5)?.let { DownloadError.valueOf(it) }

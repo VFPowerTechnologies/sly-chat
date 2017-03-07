@@ -5,6 +5,7 @@ import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.DownloadError
 import io.slychat.messenger.core.persistence.DownloadInfo
 import io.slychat.messenger.core.persistence.DownloadPersistenceManager
+import io.slychat.messenger.core.persistence.DownloadState
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.failUi
@@ -64,10 +65,11 @@ class DownloaderImpl(
                 error("Download ${download.id} already in transfer list")
 
             val initialState = if (download.error == null) {
-                if (download.isComplete)
-                    TransferState.COMPLETE
-                else
-                    TransferState.QUEUED
+                when (download.state) {
+                    DownloadState.COMPLETE -> TransferState.COMPLETE
+                    DownloadState.CANCELLED -> TransferState.CANCELLED
+                    DownloadState.CREATED -> TransferState.QUEUED
+                }
             }
             else
                 TransferState.ERROR
@@ -140,21 +142,38 @@ class DownloaderImpl(
     private fun startDownload(downloadId: String) {
         val status = list.getStatus(downloadId)
 
-        if (status.download.isComplete) {
-            log.warn("startDownload called with a completed download")
-        }
-        else {
-            //TODO
-            downloadOperations.download(status.download, status.file, AtomicBoolean()) {
-                receiveProgress(downloadId, it)
-            } bind {
-                downloadPersistenceManager.setComplete(downloadId, true)
-            } successUi {
-                markDownloadComplete(downloadId)
-            } failUi {
-                handleDownloadException(downloadId, it)
+        when (status.download.state) {
+            DownloadState.CREATED -> {
+                //TODO
+                downloadOperations.download(status.download, status.file, AtomicBoolean()) {
+                    receiveProgress(downloadId, it)
+                } bind {
+                    downloadPersistenceManager.setState(downloadId, DownloadState.COMPLETE)
+                } successUi {
+                    markDownloadComplete(downloadId)
+                } failUi {
+                    handleDownloadException(downloadId, it)
+                }
             }
+            DownloadState.COMPLETE -> log.warn("startDownload called with a completed download")
+            DownloadState.CANCELLED -> log.warn("startDownload called with a cancelled download")
         }
+    }
+
+    private fun markDownloadCancelled(downloadId: String) {
+        log.info("Marking download {} as cancelled", downloadId)
+
+        list.updateStatus(downloadId) {
+            it.copy(
+                download = it.download.copy(state = DownloadState.CANCELLED)
+            )
+        }
+
+        list.queued.remove(downloadId)
+        list.active.remove(downloadId)
+        list.inactive.add(downloadId)
+
+        updateTransferState(downloadId, TransferState.CANCELLED)
     }
 
     private fun markDownloadComplete(downloadId: String) {
@@ -162,7 +181,7 @@ class DownloaderImpl(
 
         list.updateStatus(downloadId) {
             it.copy(
-                download = it.download.copy(isComplete = true)
+                download = it.download.copy(state = DownloadState.COMPLETE)
             )
         }
 

@@ -251,11 +251,11 @@ fun randomUpload(fileId: String? = null, fileSize: Long = 0, state: UploadState 
     )
 }
 
-fun randomDownload(fileId: String? = null, fileSize: Long = 0, isComplete: Boolean = false, error: DownloadError? = null): Download {
+fun randomDownload(fileId: String? = null, fileSize: Long = 0, state: DownloadState = DownloadState.CREATED, error: DownloadError? = null): Download {
     return Download(
         generateDownloadId(),
         fileId ?: generateFileId(),
-        isComplete,
+        state,
         "/tmp" + randomName(),
         false,
         error

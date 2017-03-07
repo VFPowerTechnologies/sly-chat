@@ -1,10 +1,7 @@
 package io.slychat.messenger.services.files
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.persistence.DownloadError
-import io.slychat.messenger.core.persistence.DownloadInfo
-import io.slychat.messenger.core.persistence.DownloadPersistenceManager
-import io.slychat.messenger.core.persistence.UploadPart
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomDownload
 import io.slychat.messenger.core.randomRemoteFile
 import io.slychat.messenger.core.randomUpload
@@ -61,10 +58,10 @@ class DownloaderImplTest {
         return r
     }
 
-    private fun randomDownloadInfo(error: DownloadError? = null, isComplete: Boolean = false): DownloadInfo {
+    private fun randomDownloadInfo(error: DownloadError? = null, state: DownloadState = DownloadState.CREATED): DownloadInfo {
         val file = randomRemoteFile()
         return DownloadInfo(
-            randomDownload(file.id, error = error, isComplete = isComplete),
+            randomDownload(file.id, error = error, state = state),
             file
         )
     }
@@ -104,7 +101,7 @@ class DownloaderImplTest {
     fun before() {
         whenever(downloadPersistenceManager.add(any())).thenResolveUnit()
         whenever(downloadPersistenceManager.getAll()).thenResolve(emptyList())
-        whenever(downloadPersistenceManager.setComplete(any(), any())).thenResolveUnit()
+        whenever(downloadPersistenceManager.setState(any(), any())).thenResolveUnit()
         whenever(downloadPersistenceManager.setError(any(), any())).thenResolveUnit()
     }
 
@@ -152,7 +149,7 @@ class DownloaderImplTest {
 
     @Test
     fun `it should not start fetched completed downloads`() {
-        val downloadInfo = randomDownloadInfo(isComplete = true)
+        val downloadInfo = randomDownloadInfo(state = DownloadState.COMPLETE)
 
         whenever(downloadPersistenceManager.getAll()).thenResolve(listOf(downloadInfo))
 
@@ -221,7 +218,7 @@ class DownloaderImplTest {
         val download = downloadInfo.download
         val d = downloadOperations.getDownloadDeferred(download.id)
 
-        val event = TransferEvent.DownloadStateChange(download.copy(isComplete = true), TransferState.COMPLETE)
+        val event = TransferEvent.DownloadStateChange(download.copy(state = DownloadState.COMPLETE), TransferState.COMPLETE)
         assertEventEmitted(downloader, event) {
             d.resolve(Unit)
         }
@@ -237,7 +234,7 @@ class DownloaderImplTest {
         val d = downloadOperations.getDownloadDeferred(downloadInfo.download.id)
         d.resolve(Unit)
 
-        verify(downloadPersistenceManager).setComplete(downloadInfo.download.id, true)
+        verify(downloadPersistenceManager).setState(downloadInfo.download.id, DownloadState.COMPLETE)
     }
 
     @Test
