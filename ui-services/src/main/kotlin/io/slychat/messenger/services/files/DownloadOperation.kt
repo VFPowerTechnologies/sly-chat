@@ -5,17 +5,16 @@ import io.slychat.messenger.core.crypto.DecryptInputStream
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.http.api.storage.StorageClient
 import io.slychat.messenger.core.persistence.Download
+import rx.Subscriber
 import java.io.FileOutputStream
 import java.util.concurrent.CancellationException
-import java.util.concurrent.atomic.AtomicBoolean
 
 class DownloadOperation(
     private val userCredentials: UserCredentials,
     private val download: Download,
     private val file: RemoteFile,
     private val storageClient: StorageClient,
-    private val isCancelled: AtomicBoolean,
-    private val progressCallback: (Long) -> Unit
+    private val subscriber: Subscriber<in Long>
 ) {
     init {
         require(!file.isDeleted) { "Given a deleted file" }
@@ -45,9 +44,9 @@ class DownloadOperation(
                     }
 
                     outputStream.write(buffer, 0, read)
-                    progressCallback(read.toLong())
+                    subscriber.onNext(read.toLong())
 
-                    if (isCancelled.get())
+                    if (subscriber.isUnsubscribed)
                         throw CancellationException()
                 }
             }

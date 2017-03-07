@@ -7,22 +7,31 @@ import io.slychat.messenger.core.persistence.DownloadInfo
 import io.slychat.messenger.core.persistence.DownloadPersistenceManager
 import io.slychat.messenger.core.persistence.DownloadState
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.Scheduler
+import rx.Subscriber
+import rx.Subscription
 import rx.subjects.PublishSubject
+import java.util.*
 import java.util.concurrent.CancellationException
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.TimeUnit
 
 //TODO need to react to file deletions (or prevent them while downloads attached to them exist)
 class DownloaderImpl(
     initialSimulDownloads: Int,
     private val downloadPersistenceManager: DownloadPersistenceManager,
     private val downloadOperations: DownloadOperations,
+    private val timerScheduler: Scheduler,
+    private val mainScheduler: Scheduler,
     initialNetworkStatus: Boolean
 ) : Downloader {
+    companion object {
+        internal const val PROGRESS_TIME_MS = 1000L
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val list = TransferList<DownloadStatus>(initialSimulDownloads)
@@ -48,6 +57,8 @@ class DownloaderImpl(
         set(value) {
             list.maxSize = value
         }
+
+    private val downloadSubscriptions = HashMap<String, Subscription>()
 
     override fun init() {
         downloadPersistenceManager.getAll() successUi {
@@ -116,7 +127,7 @@ class DownloaderImpl(
         }
     }
 
-    private fun handleDownloadException(downloadId: String, e: Exception) {
+    private fun handleDownloadException(downloadId: String, e: Throwable) {
         if (e is CancellationException) {
             downloadPersistenceManager.setState(downloadId, DownloadState.CANCELLED) successUi {
                 markDownloadCancelled(downloadId)
@@ -147,23 +158,53 @@ class DownloaderImpl(
         }
     }
 
+    private fun removeDownloadSubscription(downloadId: String) {
+        log.debug("Removing download subscription for {}", downloadId)
+        downloadSubscriptions.remove(downloadId)?.unsubscribe()
+    }
+
     private fun startDownload(downloadId: String) {
         val status = list.getStatus(downloadId)
 
         when (status.download.state) {
             DownloadState.CREATED -> {
-                //TODO
-                downloadOperations.download(status.download, status.file, AtomicBoolean()) {
-                    receiveProgress(downloadId, it)
-                } bind {
-                    downloadPersistenceManager.setState(downloadId, DownloadState.COMPLETE)
-                } successUi {
-                    markDownloadComplete(downloadId)
-                } failUi {
-                    handleDownloadException(downloadId, it)
-                }
+                val timer = Observable.interval(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
+
+                if (downloadId in downloadSubscriptions)
+                    error("Attempt to start duplicate download $downloadId")
+
+                 val subscription = downloadOperations.download(status.download, status.file)
+                    .buffer(timer)
+                    .map { it.sum() }
+                    .observeOn(mainScheduler)
+                    .subscribe(object : Subscriber<Long>() {
+                        override fun onError(e: Throwable) {
+                            removeDownloadSubscription(downloadId)
+                            handleDownloadException(downloadId, e)
+                        }
+
+                        override fun onCompleted() {
+                            removeDownloadSubscription(downloadId)
+
+                            downloadPersistenceManager.setState(downloadId, DownloadState.COMPLETE) successUi {
+                                markDownloadComplete(downloadId)
+                            } successUi {
+                                markDownloadComplete(downloadId)
+                            } fail {
+                                log.error("Failed to update download state: {}", it.message, it)
+                            }
+                        }
+
+                        override fun onNext(t: Long) {
+                            receiveProgress(downloadId, t)
+                        }
+                    })
+
+                downloadSubscriptions[downloadId] = subscription
             }
+
             DownloadState.COMPLETE -> log.warn("startDownload called with a completed download")
+
             DownloadState.CANCELLED -> log.warn("startDownload called with a cancelled download")
         }
     }
@@ -200,10 +241,19 @@ class DownloaderImpl(
     }
 
     private fun receiveProgress(downloadId: String, transferedBytes: Long) {
+        val status = list.updateStatus(downloadId) {
+            it.copy(progress = it.progress.add(transferedBytes))
+        }
+
+        subject.onNext(TransferEvent.DownloadProgress(status.download, status.progress))
     }
 
     override fun shutdown() {
-        TODO()
+        downloadSubscriptions.forEach { t, u ->
+            u.unsubscribe()
+        }
+
+        downloadSubscriptions.clear()
     }
 
     override fun download(info: DownloadInfo): Promise<Unit, Exception> {

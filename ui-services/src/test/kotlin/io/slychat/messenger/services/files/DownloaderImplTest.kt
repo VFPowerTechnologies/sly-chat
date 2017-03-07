@@ -14,8 +14,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
+import rx.schedulers.TestScheduler
 import java.net.SocketTimeoutException
 import java.util.concurrent.CancellationException
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -34,13 +36,16 @@ class DownloaderImplTest {
 
     private val simulDownloads = 10
     private val downloadPersistenceManager: DownloadPersistenceManager = mock()
-    private val downloadOperations = MockDownloadOperations()
+    private val scheduler = TestScheduler()
+    private val downloadOperations = MockDownloadOperations(scheduler)
 
     private fun newDownloader(isNetworkAvailable: Boolean = true): Downloader {
         return DownloaderImpl(
             simulDownloads,
             downloadPersistenceManager,
             downloadOperations,
+            scheduler,
+            scheduler,
             isNetworkAvailable
         )
     }
@@ -87,11 +92,10 @@ class DownloaderImplTest {
         downloader.download(downloadInfo).get()
 
         val download = downloadInfo.download
-        val d = downloadOperations.getDownloadDeferred(download.id)
 
         val event = TransferEvent.DownloadStateChange(download.copy(error = expectedError), TransferState.ERROR)
         assertEventEmitted(downloader, event) {
-            d.reject(e)
+            downloadOperations.errorDownload(download.id, e)
         }
 
         verify(downloadPersistenceManager).setError(download.id, expectedError)
@@ -216,11 +220,10 @@ class DownloaderImplTest {
         downloader.download(downloadInfo).get()
 
         val download = downloadInfo.download
-        val d = downloadOperations.getDownloadDeferred(download.id)
 
         val event = TransferEvent.DownloadStateChange(download.copy(state = DownloadState.COMPLETE), TransferState.COMPLETE)
         assertEventEmitted(downloader, event) {
-            d.resolve(Unit)
+            downloadOperations.completeDownload(download.id)
         }
     }
 
@@ -231,8 +234,7 @@ class DownloaderImplTest {
         val downloadInfo = randomDownloadInfo()
         downloader.download(downloadInfo).get()
 
-        val d = downloadOperations.getDownloadDeferred(downloadInfo.download.id)
-        d.resolve(Unit)
+        downloadOperations.completeDownload(downloadInfo.download.id)
 
         verify(downloadPersistenceManager).setState(downloadInfo.download.id, DownloadState.COMPLETE)
     }
@@ -255,8 +257,7 @@ class DownloaderImplTest {
         downloader.download(downloadInfo).get()
 
         val download = downloadInfo.download
-        val d = downloadOperations.getDownloadDeferred(download.id)
-        d.reject(CancellationException())
+        downloadOperations.errorDownload(download.id, CancellationException())
 
         verify(downloadPersistenceManager).setState(downloadInfo.download.id, DownloadState.CANCELLED)
     }
@@ -269,13 +270,11 @@ class DownloaderImplTest {
         downloader.download(downloadInfo).get()
 
         val download = downloadInfo.download
-        val d = downloadOperations.getDownloadDeferred(download.id)
 
         val event = TransferEvent.DownloadStateChange(download.copy(state = DownloadState.CANCELLED), TransferState.CANCELLED)
         assertEventEmitted(downloader, event) {
-            d.reject(CancellationException())
+            downloadOperations.errorDownload(download.id, CancellationException())
         }
-
     }
 
     @Test
@@ -317,5 +316,22 @@ class DownloaderImplTest {
         val info = testClearError(downloader)
 
         downloadOperations.assertDownloadCalled(info.download, info.file)
+    }
+
+    @Test
+    fun `it should emit progress events when download reports progress`() {
+        val downloader = newDownloader(true)
+        val info = randomDownloadInfo()
+
+        downloader.download(info).get()
+
+        val downloadId = info.download.id
+        downloadOperations.sendDownloadProgress(downloadId, 500L)
+        downloadOperations.sendDownloadProgress(downloadId, 500L)
+
+        val event = TransferEvent.DownloadProgress(info.download, DownloadTransferProgress(1000, info.file.remoteFileSize))
+        assertEventEmitted(downloader, event) {
+            scheduler.advanceTimeBy(DownloaderImpl.PROGRESS_TIME_MS, TimeUnit.MILLISECONDS)
+        }
     }
 }
