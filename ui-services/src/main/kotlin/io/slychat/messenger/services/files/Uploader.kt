@@ -7,6 +7,8 @@ import rx.Observable
 interface Uploader {
     var simulUploads: Int
 
+    var isNetworkAvailable: Boolean
+
     val events: Observable<TransferEvent>
 
     val uploads: List<UploadStatus>

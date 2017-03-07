@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.persistence.DownloadInfo
 import io.slychat.messenger.core.persistence.UploadInfo
 import nl.komponents.kovenant.Promise
 import rx.Observable
@@ -19,6 +20,6 @@ interface TransferManager {
 
     fun clearError(uploadId: String): Promise<Unit, Exception>
 
-    fun download(fileId: String, decrypt: Boolean, toPath: String): Promise<Unit, Exception>
+    fun download(info: DownloadInfo): Promise<Unit, Exception>
 }
 

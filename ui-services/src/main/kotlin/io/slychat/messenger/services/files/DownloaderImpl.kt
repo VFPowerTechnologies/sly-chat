@@ -179,9 +179,9 @@ class DownloaderImpl(
         TODO()
     }
 
-    override fun download(downloadInfo: DownloadInfo): Promise<Unit, Exception> {
-        return downloadPersistenceManager.add(downloadInfo.download) successUi {
-            addDownloads(listOf(downloadInfo))
+    override fun download(info: DownloadInfo): Promise<Unit, Exception> {
+        return downloadPersistenceManager.add(info.download) successUi {
+            addDownloads(listOf(info))
         }
     }
 

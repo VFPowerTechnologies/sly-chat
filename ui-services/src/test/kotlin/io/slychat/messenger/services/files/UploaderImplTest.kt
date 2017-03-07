@@ -14,7 +14,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
-import rx.subjects.BehaviorSubject
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -35,7 +34,6 @@ class UploaderImplTest {
     private val simulUploads = 10
     private val uploadPersistenceManager: UploadPersistenceManager = mock()
     private val transferOperations = MockUploadOperations()
-    private val networkStatus = BehaviorSubject.create<Boolean>()
 
     @Before
     fun before() {
@@ -47,13 +45,11 @@ class UploaderImplTest {
     }
 
     private fun newUploader(isNetworkAvailable: Boolean = true): Uploader {
-        networkStatus.onNext(isNetworkAvailable)
-
         return UploaderImpl(
             simulUploads,
             uploadPersistenceManager,
             transferOperations,
-            networkStatus
+            isNetworkAvailable
         )
     }
 
@@ -259,7 +255,7 @@ class UploaderImplTest {
 
         uploader.upload(uploadInfo).get()
 
-        networkStatus.onNext(true)
+        uploader.isNetworkAvailable = true
 
         transferOperations.assertCreateCalled(uploadInfo.upload, uploadInfo.file)
     }

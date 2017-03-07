@@ -17,7 +17,7 @@ interface Downloader {
 
     fun shutdown()
 
-    fun download(downloadInfo: DownloadInfo): Promise<Unit, Exception>
+    fun download(info: DownloadInfo): Promise<Unit, Exception>
 
     fun clearError(downloadId: String): Promise<Unit, Exception>
 }

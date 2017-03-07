@@ -13,7 +13,6 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
-import rx.Subscription
 import rx.subjects.PublishSubject
 import java.io.FileNotFoundException
 
@@ -21,7 +20,7 @@ class UploaderImpl(
     initialSimulUploads: Int,
     private val uploadPersistenceManager: UploadPersistenceManager,
     private val uploadOperations: UploadOperations,
-    networkStatus: Observable<Boolean>
+    initialNetworkStatus: Boolean
 ) : Uploader {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -33,6 +32,14 @@ class UploaderImpl(
             list.maxSize = value
         }
 
+    override var isNetworkAvailable = initialNetworkStatus
+        set(value) {
+            field = value
+
+            if (value)
+                startNextUpload()
+        }
+
     override val uploads: List<UploadStatus>
         get() = list.all.values.toList()
 
@@ -40,21 +47,6 @@ class UploaderImpl(
 
     override val events: Observable<TransferEvent>
         get() = subject
-
-    private var subscription: Subscription? = null
-
-    private var isNetworkAvailable = false
-
-    init {
-        subscription = networkStatus.subscribe { onNetworkStatusChange(it) }
-    }
-
-    private fun onNetworkStatusChange(isAvailable: Boolean) {
-        isNetworkAvailable = isAvailable
-
-        if (isAvailable)
-            startNextUpload()
-    }
 
     override fun init() {
         uploadPersistenceManager.getAll() successUi {
@@ -65,8 +57,6 @@ class UploaderImpl(
     }
 
     override fun shutdown() {
-        subscription?.unsubscribe()
-        subscription = null
     }
 
     private fun addUploads(info: Iterable<UploadInfo>) {

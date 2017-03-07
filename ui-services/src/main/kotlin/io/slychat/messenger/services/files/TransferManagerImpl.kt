@@ -1,12 +1,15 @@
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.persistence.DownloadInfo
 import io.slychat.messenger.core.persistence.UploadInfo
 import nl.komponents.kovenant.Promise
 import rx.Observable
+import rx.Subscription
 
 class TransferManagerImpl(
     private val uploader: Uploader,
-    private val downloader: Downloader
+    private val downloader: Downloader,
+    networkStatus: Observable<Boolean>
 ) : TransferManager {
     override val events: Observable<TransferEvent> = Observable.merge(uploader.events, downloader.events)
 
@@ -20,12 +23,26 @@ class TransferManagerImpl(
             uploader.simulUploads = value.simulUploads
         }
 
+    private var subscription: Subscription? = null
+
+    init {
+        subscription = networkStatus.subscribe {
+            uploader.isNetworkAvailable = it
+            downloader.isNetworkAvailable = it
+        }
+    }
+
     override fun init() {
         uploader.init()
+        downloader.init()
     }
 
     override fun shutdown() {
+        subscription?.unsubscribe()
+        subscription = null
+        
         uploader.shutdown()
+        downloader.shutdown()
     }
 
     override fun upload(info: UploadInfo): Promise<Unit, Exception> {
@@ -36,7 +53,7 @@ class TransferManagerImpl(
         return uploader.clearError(uploadId)
     }
 
-    override fun download(fileId: String, decrypt: Boolean, toPath: String): Promise<Unit, Exception> {
-        TODO()
+    override fun download(info: DownloadInfo): Promise<Unit, Exception> {
+        return downloader.download(info)
     }
 }
