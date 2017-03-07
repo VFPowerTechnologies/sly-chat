@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.persistence.Download
 import io.slychat.messenger.core.persistence.Upload
 
 sealed class TransferEvent {
@@ -75,7 +76,75 @@ sealed class TransferEvent {
         }
     }
 
-    class DownloadAdded(val downloadId: String)
-    class DownloadProgress(val downloadId: String, val progress: DownloadTransferProgress)
-    class DownloadStateChange(val downloadId: String)
+    class DownloadAdded(val download: Download, val state: TransferState) : TransferEvent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as DownloadAdded
+
+            if (download != other.download) return false
+            if (state != other.state) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = download.hashCode()
+            result = 31 * result + state.hashCode()
+            return result
+        }
+
+        override fun toString(): String {
+            return "DownloadAdded(download=$download, state=$state)"
+        }
+    }
+
+    class DownloadProgress(val downloadId: String, val progress: DownloadTransferProgress) : TransferEvent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as DownloadProgress
+
+            if (downloadId != other.downloadId) return false
+            if (progress != other.progress) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = downloadId.hashCode()
+            result = 31 * result + progress.hashCode()
+            return result
+        }
+
+        override fun toString(): String {
+            return "DownloadProgress(downloadId='$downloadId', progress=$progress)"
+        }
+    }
+
+    class DownloadStateChange(val download: Download, val state: TransferState) : TransferEvent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as DownloadStateChange
+
+            if (download != other.download) return false
+            if (state != other.state) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = download.hashCode()
+            result = 31 * result + state.hashCode()
+            return result
+        }
+
+        override fun toString(): String {
+            return "DownloadStateChange(download=$download, state=$state)"
+        }
+    }
 }

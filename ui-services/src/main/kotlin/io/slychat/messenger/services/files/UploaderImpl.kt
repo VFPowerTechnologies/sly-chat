@@ -170,7 +170,7 @@ class UploaderImpl(
         }
     }
 
-    private fun updateTransferState(uploadId : String, newState: TransferState) {
+    private fun updateTransferState(uploadId: String, newState: TransferState) {
         val status = list.updateStatus(uploadId) {
             it.copy(state = newState)
         }
@@ -204,6 +204,7 @@ class UploaderImpl(
 
     }
 
+    //TODO cancellation error
     private fun handleUploadException(uploadId: String, e: Exception, origin: String) {
         val uploadError = when (e) {
             is FileNotFoundException -> UploadError.FILE_DISAPPEARED

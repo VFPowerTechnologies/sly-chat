@@ -75,8 +75,8 @@ class UploaderImplTest {
         return UploadInfo(upload, file)
     }
 
-    private fun <R> assertEventEmitted(manager: Uploader, event: TransferEvent, body: () -> R): R {
-        val testSubscriber = manager.events.testSubscriber()
+    private fun <R> assertEventEmitted(uploader: Uploader, event: TransferEvent, body: () -> R): R {
+        val testSubscriber = uploader.events.testSubscriber()
 
         val r = body()
 
@@ -86,6 +86,20 @@ class UploaderImplTest {
         }
 
         return r
+    }
+
+    private fun testClearError(uploader: Uploader): UploadInfo {
+        val info = randomUploadInfo(error = UploadError.FILE_DISAPPEARED)
+
+        whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
+
+        uploader.init()
+
+        uploader.clearError(info.upload.id).get()
+
+        return info.copy(
+            upload = info.upload.copy(error = null)
+        )
     }
 
     @Test
@@ -380,20 +394,6 @@ class UploaderImplTest {
         val status = assertNotNull(uploader.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
 
         assertEquals(status.upload.error, UploadError.INSUFFICIENT_QUOTA, "Invalid error")
-    }
-
-    private fun testClearError(manager: Uploader): UploadInfo {
-        val info = randomUploadInfo(error = UploadError.FILE_DISAPPEARED)
-
-        whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
-
-        manager.init()
-
-        manager.clearError(info.upload.id).get()
-
-        return info.copy(
-            upload = info.upload.copy(error = null)
-        )
     }
 
     @Test
