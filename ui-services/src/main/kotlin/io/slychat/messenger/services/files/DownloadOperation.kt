@@ -18,7 +18,7 @@ class DownloadOperation(
     private val progressCallback: (Long) -> Unit
 ) {
     init {
-        require(file.isDeleted) { "Given a deleted file" }
+        require(!file.isDeleted) { "Given a deleted file" }
     }
 
     fun run() {
