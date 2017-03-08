@@ -1,7 +1,12 @@
 package io.slychat.messenger.core.crypto
 
+import io.slychat.messenger.core.crypto.ciphers.Key
 import org.junit.BeforeClass
 import org.junit.Test
+import org.spongycastle.crypto.engines.AESFastEngine
+import org.spongycastle.crypto.modes.GCMBlockCipher
+import org.spongycastle.crypto.params.AEADParameters
+import org.spongycastle.crypto.params.KeyParameter
 import java.io.ByteArrayInputStream
 import java.security.SecureRandom
 import java.util.*
@@ -10,15 +15,43 @@ import kotlin.test.assertTrue
 
 class EncryptInputStreamTest {
     companion object {
-        private lateinit var key: ByteArray
+        private lateinit var key: Key
 
         @JvmStatic
         @BeforeClass
         fun beforeClass() {
-            key = ByteArray(256 / 8)
-            SecureRandom().nextBytes(key)
+            val b = ByteArray(256 / 8)
+            SecureRandom().nextBytes(b)
+            key = Key(b)
         }
     }
+
+    private fun decryptBuffer(key: Key, data: ByteArray, size: Int): ByteArray {
+        val authTagLength = 128
+
+        val cipher = GCMBlockCipher(AESFastEngine())
+
+        val iv = ByteArray(96 / 8)
+        System.arraycopy(
+            data,
+            0,
+            iv,
+            0,
+            iv.size
+        )
+
+        val dataSize = size - iv.size
+
+        cipher.init(false, AEADParameters(KeyParameter(key.raw), authTagLength, iv))
+
+        val plaintext = ByteArray(cipher.getOutputSize(dataSize))
+
+        val outputLength = cipher.processBytes(data, iv.size, dataSize, plaintext, 0)
+        cipher.doFinal(plaintext, outputLength)
+
+        return plaintext
+    }
+
 
     private fun assertByteArraysEqual(expected: ByteArray, actual: ByteArray) {
         assertTrue(Arrays.equals(expected, actual), "Expected ${Arrays.toString(expected)} but got ${Arrays.toString(actual)}")

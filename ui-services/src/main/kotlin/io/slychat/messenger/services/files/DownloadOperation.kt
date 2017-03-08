@@ -24,7 +24,7 @@ class DownloadOperation(
         val resp = storageClient.downloadFile(userCredentials, file.id) ?: throw FileMissingException(file.id)
 
         val inputStream = if (download.doDecrypt)
-            DecryptInputStream(file.userMetadata.fileKey.raw, resp.inputStream, file.fileMetadata!!.chunkSize)
+            DecryptInputStream(file.userMetadata.fileKey, resp.inputStream, file.fileMetadata!!.chunkSize)
         else
             resp.inputStream
 

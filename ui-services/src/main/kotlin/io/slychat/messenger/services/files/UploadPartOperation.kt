@@ -25,7 +25,7 @@ class UploadPartOperation(
             fileInputStream.skip(part.offset)
 
             val dataInputStream = if (!upload.isEncrypted)
-                EncryptInputStream(file.userMetadata.fileKey.raw, fileInputStream, file.fileMetadata!!.chunkSize)
+                EncryptInputStream(file.userMetadata.fileKey, fileInputStream, file.fileMetadata!!.chunkSize)
             else
                 fileInputStream
 

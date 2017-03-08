@@ -1,6 +1,7 @@
 package io.slychat.messenger.core.crypto
 
 import com.vfpowertech.httpuploader.TestInputStream
+import io.slychat.messenger.core.crypto.ciphers.Key
 import org.junit.BeforeClass
 import org.junit.Test
 import java.io.ByteArrayInputStream
@@ -14,13 +15,14 @@ import kotlin.test.assertTrue
 
 class DecryptInputStreamTest {
     companion object {
-        private lateinit var key: ByteArray
+        private lateinit var key: Key
 
         @JvmStatic
         @BeforeClass
         fun beforeClass() {
-            key = ByteArray(256 / 8)
-            SecureRandom().nextBytes(key)
+            val b = ByteArray(256 / 8)
+            SecureRandom().nextBytes(b)
+            key = Key(b)
         }
     }
 

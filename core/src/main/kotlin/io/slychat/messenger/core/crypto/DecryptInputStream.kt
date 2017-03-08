@@ -1,42 +1,17 @@
 package io.slychat.messenger.core.crypto
 
+import io.slychat.messenger.core.crypto.ciphers.Key
 import org.spongycastle.crypto.engines.AESFastEngine
 import org.spongycastle.crypto.modes.GCMBlockCipher
 import org.spongycastle.crypto.params.AEADParameters
 import org.spongycastle.crypto.params.KeyParameter
 import java.io.InputStream
 
-fun decryptBuffer(key: ByteArray, data: ByteArray, size: Int): ByteArray {
-    val authTagLength = 128
-
-    val cipher = GCMBlockCipher(AESFastEngine())
-
-    val iv = ByteArray(96 / 8)
-    System.arraycopy(
-        data,
-        0,
-        iv,
-        0,
-        iv.size
-    )
-
-    val dataSize = size - iv.size
-
-    cipher.init(false, AEADParameters(KeyParameter(key), authTagLength, iv))
-
-    val plaintext = ByteArray(cipher.getOutputSize(dataSize))
-
-    val outputLength = cipher.processBytes(data, iv.size, dataSize, plaintext, 0)
-    cipher.doFinal(plaintext, outputLength)
-
-    return plaintext
-}
-
 //TODO convert to FilterInputStream
 class DecryptInputStream(
-    private val key: ByteArray,
+    private val key: Key,
     private val inputStream: InputStream,
-    val chunkSize: Int
+    chunkSize: Int
 ) : InputStream() {
     private enum class State {
         //if EOF is reached and no part of the iv has been read, move to EOF; if EOF is reached but some of the iv's been reached, throw exception
@@ -71,7 +46,7 @@ class DecryptInputStream(
         val authTagLength = 128
 
         val iv = ByteArray(ivSize)
-        cipher.init(true, AEADParameters(KeyParameter(key), authTagLength, iv))
+        cipher.init(true, AEADParameters(KeyParameter(key.raw), authTagLength, iv))
         encryptedChunkSize = cipher.getOutputSize(chunkSize)
     }
 
@@ -80,7 +55,7 @@ class DecryptInputStream(
 
         val cipher = GCMBlockCipher(AESFastEngine())
 
-        cipher.init(false, AEADParameters(KeyParameter(key), authTagLength, currentIV))
+        cipher.init(false, AEADParameters(KeyParameter(key.raw), authTagLength, currentIV))
 
         this.cipher = cipher
     }
