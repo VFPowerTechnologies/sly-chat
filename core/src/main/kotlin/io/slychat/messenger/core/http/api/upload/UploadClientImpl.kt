@@ -52,4 +52,8 @@ class UploadClientImpl(
         val url = "$serverBaseUrl/v1/upload/$uploadId"
         apiPostRequest(httpClient, url, userCredentials, mapOf<String, String>(), typeRef<ApiResult<EmptyResponse>>())
     }
+
+    override fun delete(userCredentials: UserCredentials, uploadId: String) {
+        TODO()
+    }
 }

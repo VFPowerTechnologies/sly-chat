@@ -16,5 +16,8 @@ interface UploadClient {
     fun uploadPart(userCredentials: UserCredentials, uploadId: String, partN: Int, size: Long, inputStream: InputStream, isCancelled: AtomicBoolean, filterStream: ((OutputStream) -> OutputStream)?): UploadPartCompleteResponse
 
     fun completeUpload(userCredentials: UserCredentials, uploadId: String)
+
+    //throws UploadInProgressException if an upload is still active
+    fun delete(userCredentials: UserCredentials, uploadId: String)
 }
 
