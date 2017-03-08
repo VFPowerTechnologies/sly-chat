@@ -185,8 +185,6 @@ class DownloaderImpl(
 
                             downloadPersistenceManager.setState(downloadId, DownloadState.COMPLETE) successUi {
                                 markDownloadComplete(downloadId)
-                            } successUi {
-                                markDownloadComplete(downloadId)
                             } fail {
                                 log.error("Failed to update download state: {}", it.message, it)
                             }
