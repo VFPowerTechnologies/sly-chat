@@ -13,6 +13,7 @@ class MockDownloadOperations(private val scheduler: TestScheduler) : DownloadOpe
     private data class DownloadArgs(val download: Download, val file: RemoteFile)
 
     private val downloadObservables = HashMap<String, PublishSubject<Long>>()
+    private val unsubscriptions = HashSet<String>()
 
     private var downloadArgs: DownloadArgs? = null
 
@@ -21,7 +22,7 @@ class MockDownloadOperations(private val scheduler: TestScheduler) : DownloadOpe
 
         val s = PublishSubject.create<Long>()
         downloadObservables[download.id] = s
-        return s
+        return s.doOnUnsubscribe { unsubscriptions.add(download.id) }
     }
 
     fun assertDownloadNotCalled() {
@@ -57,5 +58,10 @@ class MockDownloadOperations(private val scheduler: TestScheduler) : DownloadOpe
         val s = getDownloadSubject(downloadId)
         s.onNext(transferedBytes)
         scheduler.triggerActions()
+    }
+
+    fun assertUnsubscribed(downloadId: String) {
+        if (downloadId !in unsubscriptions)
+            fail("$downloadId was not unsubscribed")
     }
 }

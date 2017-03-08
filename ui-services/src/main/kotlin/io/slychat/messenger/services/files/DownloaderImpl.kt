@@ -2,10 +2,7 @@ package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.isNotNetworkError
-import io.slychat.messenger.core.persistence.DownloadError
-import io.slychat.messenger.core.persistence.DownloadInfo
-import io.slychat.messenger.core.persistence.DownloadPersistenceManager
-import io.slychat.messenger.core.persistence.DownloadState
+import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -302,5 +299,16 @@ class DownloaderImpl(
         list.inactive.add(downloadId)
 
         updateTransferState(downloadId, TransferState.ERROR)
+    }
+
+    override fun cancel(downloadId: String): Boolean {
+        if (downloadId !in list.all)
+            throw InvalidDownloadException(downloadId)
+
+        val sub = downloadSubscriptions[downloadId] ?: return false
+
+        sub.unsubscribe()
+
+        return true
     }
 }

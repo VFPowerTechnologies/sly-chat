@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.files
 
 import com.nhaarman.mockito_kotlin.*
+import io.slychat.messenger.core.crypto.generateDownloadId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomDownload
 import io.slychat.messenger.core.randomRemoteFile
@@ -18,8 +19,7 @@ import rx.schedulers.TestScheduler
 import java.net.SocketTimeoutException
 import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
+import kotlin.test.*
 
 class DownloaderImplTest {
     companion object {
@@ -332,6 +332,37 @@ class DownloaderImplTest {
         val event = TransferEvent.DownloadProgress(info.download, DownloadTransferProgress(1000, info.file.remoteFileSize))
         assertEventEmitted(downloader, event) {
             scheduler.advanceTimeBy(DownloaderImpl.PROGRESS_TIME_MS, TimeUnit.MILLISECONDS)
+        }
+    }
+
+    @Test
+    fun `cancel should send cancellation to a running download`() {
+        val downloader = newDownloader()
+        val info = randomDownloadInfo()
+
+        downloader.download(info).get()
+
+        assertTrue(downloader.cancel(info.download.id), "Invalid return value")
+
+        downloadOperations.assertUnsubscribed(info.download.id)
+    }
+
+    @Test
+    fun `cancel should return false if download wasn't running`() {
+        val downloader = newDownloader(false)
+        val info = randomDownloadInfo()
+
+        downloader.download(info).get()
+
+        assertFalse(downloader.cancel(info.download.id), "Invalid return value")
+    }
+
+    @Test
+    fun `cancel should throw InvalidDownloadException if downloadId is invalid`() {
+        val downloader = newDownloader()
+
+        assertFailsWith(InvalidDownloadException::class) {
+            downloader.cancel(generateDownloadId())
         }
     }
 }

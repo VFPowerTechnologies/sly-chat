@@ -21,5 +21,7 @@ interface TransferManager {
     fun clearError(uploadId: String): Promise<Unit, Exception>
 
     fun download(info: DownloadInfo): Promise<Unit, Exception>
+
+    fun cancelDownload(downloadId: String): Boolean
 }
 

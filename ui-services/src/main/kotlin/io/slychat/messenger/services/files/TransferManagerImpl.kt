@@ -56,4 +56,8 @@ class TransferManagerImpl(
     override fun download(info: DownloadInfo): Promise<Unit, Exception> {
         return downloader.download(info)
     }
+
+    override fun cancelDownload(downloadId: String): Boolean {
+        return downloader.cancel(downloadId)
+    }
 }

@@ -19,5 +19,8 @@ interface Downloader {
 
     fun download(info: DownloadInfo): Promise<Unit, Exception>
 
+    /** Returns true if download was sent cancel signal, false if download wasn't running. */
+    fun cancel(downloadId: String): Boolean
+
     fun clearError(downloadId: String): Promise<Unit, Exception>
 }
