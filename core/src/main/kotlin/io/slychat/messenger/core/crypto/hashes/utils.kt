@@ -1,3 +1,4 @@
+@file:JvmName("HashesUtils")
 package io.slychat.messenger.core.crypto.hashes
 
 import org.spongycastle.crypto.generators.SCrypt
@@ -13,7 +14,7 @@ private const val REMOTE_PASSWORD_INDICATOR: Byte = 0x22
 /**
  * Derive a key from a password, either for remote authentication or local (key vault) encryption.
  *
- * @throws IllegalArgumentException If the type of CryptoParams is unknown
+ * @throws IllegalArgumentException If the type of HashParams is unknown.
  */
 fun hashPasswordWithParams(password: String, params: HashParams, type: HashType): ByteArray {
     //if two users share the same password, and the local IV for user A and the remote IV for user B are also equal,
@@ -37,6 +38,10 @@ fun hashPasswordWithParams(password: String, params: HashParams, type: HashType)
 
     return when (params) {
         is HashParams.SCrypt ->
+            //great bug
             SCrypt.generate(fullData, params.salt, params.n, params.r, params.p, params.keyLengthBits * 8)
+
+        is HashParams.SCrypt2 ->
+            SCrypt.generate(fullData, params.salt, params.n, params.r, params.p, params.keyLengthBits / 8)
     }
 }
