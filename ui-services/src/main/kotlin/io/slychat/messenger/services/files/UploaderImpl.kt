@@ -13,15 +13,24 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.Scheduler
+import rx.Subscriber
 import rx.subjects.PublishSubject
 import java.io.FileNotFoundException
+import java.util.concurrent.TimeUnit
 
 class UploaderImpl(
     initialSimulUploads: Int,
     private val uploadPersistenceManager: UploadPersistenceManager,
     private val uploadOperations: UploadOperations,
+    private val timerScheduler: Scheduler,
+    private val mainScheduler: Scheduler,
     initialNetworkStatus: Boolean
 ) : Uploader {
+    companion object {
+        internal const val PROGRESS_TIME_MS = 1000L
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val list = TransferList<UploadStatus>(initialSimulUploads)
@@ -184,18 +193,24 @@ class UploaderImpl(
         updateTransferState(uploadId, TransferState.ERROR)
     }
 
-    //TODO
-    //XXX this is called on a diff thread
-    //just keep track of last time we emitted data, and emit every second
-    //the last time it occurs doesn't matter (since we end up completing)
-    //XXX for testing this this is kinda difficult though... although I guess just override the current time works?
-    //not sure using an observable really makes things any easier anyways
     private fun receivePartProgress(uploadId: String, partN: Int, transferedBytes: Long) {
+        val status = list.updateStatus(uploadId) {
+            val progress = it.progress.mapIndexed { i, uploadPartTransferProgress ->
+                if (i == partN - 1)
+                    uploadPartTransferProgress.add(transferedBytes)
+                else
+                    uploadPartTransferProgress
+            }
 
+            it.copy(progress = progress)
+        }
+
+        val progress = UploadTransferProgress(status.progress, status.transferedBytes, status.totalBytes)
+        subject.onNext(TransferEvent.UploadProgress(status.upload, progress))
     }
 
     //TODO cancellation error
-    private fun handleUploadException(uploadId: String, e: Exception, origin: String) {
+    private fun handleUploadException(uploadId: String, e: Throwable, origin: String) {
         val uploadError = when (e) {
             is FileNotFoundException -> UploadError.FILE_DISAPPEARED
 
@@ -230,20 +245,30 @@ class UploaderImpl(
             return
         }
 
-        //(for later)
-        //it could occur that this is called after status.upload is modified (eg: another part completes) if transfering
-        //multiple parts; however we don't actually use .parts since we pass in the part explicitly so this isn't an issue
-        //we should probably mapUi, because if something caused the upload to fail we don't wanna do anything
-        uploadOperations.uploadPart(status.upload, nextPart, status.file) {
-            receivePartProgress(status.upload.id, nextPart.n, it)
-        } bind {
-            uploadPersistenceManager.completePart(uploadId, nextPart.n)
-        } successUi {
-            completePart(uploadId, nextPart.n)
-            nextStep(uploadId)
-        } failUi { e ->
-            handleUploadException(uploadId, e, "uploadPart")
-        }
+        val timer = Observable.interval(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
+
+        uploadOperations.uploadPart(status.upload, nextPart, status.file)
+            .buffer(timer)
+            .map { it.sum() }
+            .observeOn(mainScheduler)
+            .subscribe(object : Subscriber<Long>() {
+                override fun onError(e: Throwable) {
+                    handleUploadException(uploadId, e, "uploadPart")
+                }
+
+                override fun onNext(t: Long) {
+                    receivePartProgress(uploadId, nextPart.n, t)
+                }
+
+                override fun onCompleted() {
+                    uploadPersistenceManager.completePart(uploadId, nextPart.n) successUi {
+                        completePart(uploadId, nextPart.n)
+                        nextStep(uploadId)
+                    } fail {
+                        log.error("Failed to mark part as complete: {}", it.message, it)
+                    }
+                }
+            })
     }
 
     //XXX for progress, check if part's marked as complete, and drop it

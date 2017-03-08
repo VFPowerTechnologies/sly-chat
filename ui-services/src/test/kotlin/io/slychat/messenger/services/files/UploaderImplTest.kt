@@ -14,6 +14,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
+import rx.schedulers.TestScheduler
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -33,7 +35,8 @@ class UploaderImplTest {
 
     private val simulUploads = 10
     private val uploadPersistenceManager: UploadPersistenceManager = mock()
-    private val transferOperations = MockUploadOperations()
+    private val scheduler = TestScheduler()
+    private val uploadOperations = MockUploadOperations(scheduler)
 
     @Before
     fun before() {
@@ -48,7 +51,9 @@ class UploaderImplTest {
         return UploaderImpl(
             simulUploads,
             uploadPersistenceManager,
-            transferOperations,
+            uploadOperations,
+            scheduler,
+            scheduler,
             isNetworkAvailable
         )
     }
@@ -126,7 +131,7 @@ class UploaderImplTest {
 
         uploader.init()
 
-        transferOperations.assertCreateCalled(info.upload, info.file)
+        uploadOperations.assertCreateCalled(info.upload, info.file)
     }
 
     @Test
@@ -139,7 +144,7 @@ class UploaderImplTest {
 
         uploader.init()
 
-        transferOperations.assertUploadPartCalled(info.upload, info.upload.parts[0], info.file)
+        uploadOperations.assertUploadPartCalled(info.upload, info.upload.parts[0], info.file)
     }
 
     @Test
@@ -155,7 +160,7 @@ class UploaderImplTest {
 
         uploader.init()
 
-        transferOperations.assertCreateNotCalled()
+        uploadOperations.assertCreateNotCalled()
     }
 
     @Test
@@ -184,7 +189,7 @@ class UploaderImplTest {
 
         uploader.init()
 
-        transferOperations.assertCreateNotCalled()
+        uploadOperations.assertCreateNotCalled()
     }
 
     @Test
@@ -233,7 +238,7 @@ class UploaderImplTest {
 
         uploader.upload(uploadInfo).get()
 
-        transferOperations.assertCreateNotCalled()
+        uploadOperations.assertCreateNotCalled()
     }
 
     @Test
@@ -244,7 +249,7 @@ class UploaderImplTest {
 
         uploader.upload(uploadInfo).get()
 
-        transferOperations.assertCreateCalled(uploadInfo.upload, uploadInfo.file)
+        uploadOperations.assertCreateCalled(uploadInfo.upload, uploadInfo.file)
     }
 
     @Test
@@ -257,7 +262,7 @@ class UploaderImplTest {
 
         uploader.isNetworkAvailable = true
 
-        transferOperations.assertCreateCalled(uploadInfo.upload, uploadInfo.file)
+        uploadOperations.assertCreateCalled(uploadInfo.upload, uploadInfo.file)
     }
 
     @Test
@@ -266,7 +271,7 @@ class UploaderImplTest {
 
         val uploadInfo = randomUploadInfo()
 
-        transferOperations.autoResolveCreate = true
+        uploadOperations.autoResolveCreate = true
 
         uploader.upload(uploadInfo).get()
 
@@ -279,12 +284,12 @@ class UploaderImplTest {
 
         val uploadInfo = randomUploadInfo()
 
-        transferOperations.autoResolveCreate = true
+        uploadOperations.autoResolveCreate = true
 
         uploader.upload(uploadInfo).get()
 
         val upload = uploadInfo.upload
-        transferOperations.assertUploadPartCalled(upload.copy(state = UploadState.CREATED), upload.parts[0], uploadInfo.file)
+        uploadOperations.assertUploadPartCalled(upload.copy(state = UploadState.CREATED), upload.parts[0], uploadInfo.file)
     }
 
     @Test
@@ -293,11 +298,11 @@ class UploaderImplTest {
 
         val uploadInfo = randomUploadInfo()
 
-        transferOperations.autoResolveCreate = true
+        uploadOperations.autoResolveCreate = true
 
         uploader.upload(uploadInfo).get()
 
-        transferOperations.completeUploadPartOperation(1)
+        uploadOperations.completeUploadPartOperation(1)
 
         verify(uploadPersistenceManager).setState(uploadInfo.upload.id, UploadState.COMPLETE)
     }
@@ -308,7 +313,7 @@ class UploaderImplTest {
 
         val uploadInfo = randomUploadInfo()
 
-        transferOperations.autoResolveCreate = true
+        uploadOperations.autoResolveCreate = true
 
         val upload = uploadInfo.upload
         val updated = upload.markPartCompleted(1).copy(
@@ -318,7 +323,7 @@ class UploaderImplTest {
         assertEventEmitted(uploader, TransferEvent.UploadStateChanged(updated, TransferState.COMPLETE)) {
             uploader.upload(uploadInfo).get()
 
-            transferOperations.completeUploadPartOperation(1)
+            uploadOperations.completeUploadPartOperation(1)
         }
     }
 
@@ -330,7 +335,7 @@ class UploaderImplTest {
 
         uploader.upload(info).get()
 
-        transferOperations.createDeferred.reject(InsufficientQuotaException())
+        uploadOperations.createDeferred.reject(InsufficientQuotaException())
 
         val status = assertNotNull(uploader.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
 
@@ -345,7 +350,7 @@ class UploaderImplTest {
 
         uploader.upload(info).get()
 
-        transferOperations.createDeferred.reject(InsufficientQuotaException())
+        uploadOperations.createDeferred.reject(InsufficientQuotaException())
 
         verify(uploadPersistenceManager).setError(info.upload.id, UploadError.INSUFFICIENT_QUOTA)
     }
@@ -358,9 +363,9 @@ class UploaderImplTest {
 
         uploader.upload(info).get()
 
-        transferOperations.createDeferred.reject(InsufficientQuotaException())
+        uploadOperations.createDeferred.reject(InsufficientQuotaException())
 
-        transferOperations.assertUploadPartNotCalled()
+        uploadOperations.assertUploadPartNotCalled()
     }
 
     @Test
@@ -373,7 +378,7 @@ class UploaderImplTest {
 
         val updated = info.upload.copy(error = UploadError.INSUFFICIENT_QUOTA)
         assertEventEmitted(uploader, TransferEvent.UploadStateChanged(updated, TransferState.ERROR)) {
-            transferOperations.createDeferred.reject(InsufficientQuotaException())
+            uploadOperations.createDeferred.reject(InsufficientQuotaException())
         }
     }
 
@@ -385,7 +390,7 @@ class UploaderImplTest {
 
         uploader.upload(info).get()
 
-        transferOperations.createDeferred.reject(InsufficientQuotaException())
+        uploadOperations.createDeferred.reject(InsufficientQuotaException())
 
         val status = assertNotNull(uploader.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
 
@@ -430,6 +435,31 @@ class UploaderImplTest {
         val uploader = newUploader(true)
         val info = testClearError(uploader)
 
-        transferOperations.assertCreateCalled(info.upload, info.file)
+        uploadOperations.assertCreateCalled(info.upload, info.file)
+    }
+
+    @Test
+    fun `it should emit progress events when uploads reports progress`() {
+        val info = randomUploadInfo(state = UploadState.CREATED)
+        whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
+
+        val uploader = newUploader()
+
+        uploader.init()
+
+        val uploadId = info.upload.id
+        uploadOperations.sendUploadProgress(uploadId, 1, 500L)
+        uploadOperations.sendUploadProgress(uploadId, 1, 500L)
+
+        val progress = UploadTransferProgress(
+            listOf(UploadPartTransferProgress(1000, info.file.remoteFileSize)),
+            1000,
+            info.file.remoteFileSize
+        )
+
+        val event = TransferEvent.UploadProgress(info.upload, progress)
+        assertEventEmitted(uploader, event) {
+            scheduler.advanceTimeBy(DownloaderImpl.PROGRESS_TIME_MS, TimeUnit.MILLISECONDS)
+        }
     }
 }

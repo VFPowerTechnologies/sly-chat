@@ -3,15 +3,17 @@ package io.slychat.messenger.services.files
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.Upload
 import io.slychat.messenger.core.persistence.UploadPart
-import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
+import rx.Observable
+import rx.schedulers.TestScheduler
+import rx.subjects.PublishSubject
 import java.util.*
 import kotlin.test.fail
 
-class MockUploadOperations : UploadOperations {
+class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperations {
     var createDeferred = deferred<Unit, Exception>()
-    var uploadDeferreds = HashMap<Int, Deferred<Unit, Exception>>()
+    var uploadSubjects = HashMap<Int, PublishSubject<Long>>()
 
     var autoResolveCreate = false
 
@@ -19,7 +21,8 @@ class MockUploadOperations : UploadOperations {
     private data class UploadArgs(val upload: Upload, val part: UploadPart, val file: RemoteFile)
 
     private var createArgs: CreateArgs? = null
-    private var uploadArgs = HashMap<Int, UploadArgs>()
+    private var uploadArgs = HashMap<Pair<String, Int>, UploadArgs>()
+    private val unsubscriptions = HashSet<Pair<String, Int>>()
 
     override fun create(upload: Upload, file: RemoteFile): Promise<Unit, Exception> {
         if (autoResolveCreate)
@@ -29,16 +32,16 @@ class MockUploadOperations : UploadOperations {
         return createDeferred.promise
     }
 
-    override fun uploadPart(upload: Upload, part: UploadPart, file: RemoteFile, progressCallback: (Long) -> Unit): Promise<Unit, Exception> {
-        uploadArgs[part.n] = UploadArgs(upload, part, file)
+    override fun uploadPart(upload: Upload, part: UploadPart, file: RemoteFile): Observable<Long> {
+        uploadArgs[upload.id to part.n] = UploadArgs(upload, part, file)
 
-        if (part.n in uploadDeferreds)
+        if (part.n in uploadSubjects)
             throw RuntimeException("Attempted to upload part ${part.n} twice")
 
-        val d = deferred<Unit, Exception>()
-        uploadDeferreds[part.n] = d
+        val s = PublishSubject.create<Long>()
+        uploadSubjects[part.n] = s
 
-        return d.promise
+        return s.doOnUnsubscribe { unsubscriptions.add(upload.id to part.n) }
     }
 
     fun assertCreateNotCalled() {
@@ -59,8 +62,8 @@ class MockUploadOperations : UploadOperations {
             fail("uploadPart() called ${uploadArgs.size}")
     }
 
-    fun assertUploadPartNotCalled(n: Int) {
-        val args = uploadArgs[n]
+    fun assertUploadPartNotCalled(uploadId: String, n: Int) {
+        val args = uploadArgs[uploadId to n]
         if (args != null)
             fail("uploadPart() called with args=$args")
     }
@@ -70,7 +73,7 @@ class MockUploadOperations : UploadOperations {
     }
 
     fun assertUploadPartCalled(upload: Upload, part: UploadPart, file: RemoteFile) {
-        val args = uploadArgs[part.n] ?: fail("uploadPart() not called for part ${part.n}")
+        val args = uploadArgs[upload.id to part.n] ?: fail("uploadPart() not called for part ${part.n}")
 
         if (args.upload != upload)
             failWithDiff("uploadPart", upload, args.upload)
@@ -80,11 +83,23 @@ class MockUploadOperations : UploadOperations {
             failWithDiff("uploadPart", file, args.file)
     }
 
-    fun getUploadPartDeferred(n: Int): Deferred<Unit, Exception> {
-        return uploadDeferreds[n] ?: fail("uploadPart() not called for part $n")
+    private fun getUploadPartSubject(n: Int): PublishSubject<Long> {
+        return uploadSubjects[n] ?: fail("uploadPart() not called for part $n")
     }
 
     fun completeUploadPartOperation(n: Int) {
-        getUploadPartDeferred(n).resolve(Unit)
+        getUploadPartSubject(n).onCompleted()
+        scheduler.triggerActions()
+    }
+
+    fun sendUploadProgress(uploadId: String, partN: Int, transferedBytes: Long) {
+        val s = getUploadPartSubject(partN)
+        s.onNext(transferedBytes)
+        scheduler.triggerActions()
+    }
+
+    fun assertUnsubscribed(uploadId: String, partN: Int) {
+        if ((uploadId to partN) !in unsubscriptions)
+            fail("$uploadId/$partN was not unsubscribed")
     }
 }

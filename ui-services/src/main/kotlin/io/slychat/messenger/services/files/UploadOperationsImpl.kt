@@ -8,13 +8,12 @@ import io.slychat.messenger.services.UploadClientFactory
 import io.slychat.messenger.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Context
 import nl.komponents.kovenant.Promise
+import rx.Observable
 
 class UploadOperationsImpl(
     private val authTokenManager: AuthTokenManager,
     private val uploadClientFactory: UploadClientFactory,
-    private val keyVault: KeyVault,
-    //TODO
-    private val context: Context
+    private val keyVault: KeyVault
 ) : UploadOperations {
     override fun create(upload: Upload, file: RemoteFile): Promise<Unit, Exception> {
         return authTokenManager.map {
@@ -23,11 +22,14 @@ class UploadOperationsImpl(
         }
     }
 
-    override fun uploadPart(upload: Upload, part: UploadPart, file: RemoteFile, progressCallback: (Long) -> Unit): Promise<Unit, Exception> {
-        return authTokenManager.map {
-            val op = UploadPartOperation(it, upload, part, file, uploadClientFactory.create(), progressCallback)
+    override fun uploadPart(upload: Upload, part: UploadPart, file: RemoteFile): Observable<Long> {
+        TODO()
+        //return Observable.create {
+        //    val userCredentials = authTokenManager.map { it }
+        //
+        //    val op = UploadPartOperation(userCredentials, upload, part, file, uploadClientFactory.create(), progressCallback)
 
-            op.run()
-        }
+        //    op.run()
+        //}
     }
 }

@@ -4,4 +4,8 @@ package io.slychat.messenger.services.files
 data class UploadPartTransferProgress(
     val transferedBytes: Long,
     val totalBytes: Long
-)
+) {
+    fun add(bytes: Long): UploadPartTransferProgress {
+        return copy(transferedBytes = bytes + transferedBytes)
+    }
+}
