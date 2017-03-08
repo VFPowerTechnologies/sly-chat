@@ -54,8 +54,10 @@ fun formatTimeStamp (time: Long?): String {
 
     val timestamp = PrettyTime().format(Date(time))
 
-    if (timestamp.isEmpty())
-        return ""
-
-    return timestamp
+    return if (timestamp.isEmpty())
+        ""
+    else if (timestamp == "moments ago")
+        "now"
+    else
+        timestamp
 }
