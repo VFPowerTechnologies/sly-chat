@@ -13,6 +13,8 @@ interface PlatformFileAccess {
 
     fun getFileDisplayName(path: String): Promise<Long, Exception>
 
+    fun getMimeType(path: String): Promise<String, Exception>
+
     fun getFileInfo(path: String): Promise<FileInfo, Exception>
 
     fun openFileForRead(path: String): Promise<InputStream, Exception>
