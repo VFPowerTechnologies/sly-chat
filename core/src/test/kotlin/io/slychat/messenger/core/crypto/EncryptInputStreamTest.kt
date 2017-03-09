@@ -26,6 +26,20 @@ class EncryptInputStreamTest {
         }
     }
 
+    fun getSingleBlockSize(blockSize: Int): Int {
+        val key = ByteArray(256 / 8)
+
+        val authTagLength = 128
+
+        val cipher = GCMBlockCipher(AESFastEngine())
+
+        val iv = ByteArray(96 / 8)
+
+        cipher.init(true, AEADParameters(KeyParameter(key), authTagLength, iv))
+
+        return cipher.getOutputSize(blockSize) + iv.size
+    }
+
     private fun decryptBuffer(key: Key, data: ByteArray, size: Int): ByteArray {
         val authTagLength = 128
 

@@ -1,16 +1,13 @@
 @file:JvmName("CryptoUtils")
 package io.slychat.messenger.core.crypto
 
+import io.slychat.messenger.core.crypto.ciphers.Cipher
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.crypto.hashes.HashData
 import io.slychat.messenger.core.crypto.hashes.HashParams
 import io.slychat.messenger.core.crypto.hashes.HashType
 import io.slychat.messenger.core.crypto.hashes.hashPasswordWithParams
 import io.slychat.messenger.core.hexify
-import org.spongycastle.crypto.engines.AESFastEngine
-import org.spongycastle.crypto.modes.GCMBlockCipher
-import org.spongycastle.crypto.params.AEADParameters
-import org.spongycastle.crypto.params.KeyParameter
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.util.KeyHelper
@@ -134,38 +131,14 @@ fun generateFileId(): String = randomUUID()
 
 fun generateShareKey(): String = randomUUID()
 
-fun getSingleBlockSize(blockSize: Int): Int {
-    val key = ByteArray(256 / 8)
-
-    val authTagLength = 128
-
-    val cipher = GCMBlockCipher(AESFastEngine())
-
-    val iv = ByteArray(96 / 8)
-
-    cipher.init(true, AEADParameters(KeyParameter(key), authTagLength, iv))
-
-    return cipher.getOutputSize(blockSize) + iv.size
-}
-
-fun getTotalSize(filesize: Long, blockSize: Int): Long {
+fun getBlockEncryptionSize(cipher: Cipher, filesize: Long, blockSize: Int): Long {
     require(filesize >= 0)
     require(blockSize >= 0)
 
     val blockCount = filesize / blockSize
     val rem = filesize % blockSize
 
-    val key = ByteArray(256 / 8)
+    val forBlocks = cipher.getEncryptedSize(blockSize) * blockCount
 
-    val authTagLength = 128
-
-    val cipher = GCMBlockCipher(AESFastEngine())
-
-    val iv = ByteArray(96 / 8)
-
-    cipher.init(true, AEADParameters(KeyParameter(key), authTagLength, iv))
-
-    val forBlocks = (cipher.getOutputSize(blockSize) + iv.size) * blockCount
-
-    return forBlocks + (cipher.getOutputSize(rem.toInt()) + iv.size)
+    return forBlocks + cipher.getEncryptedSize(rem.toInt())
 }

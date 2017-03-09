@@ -19,4 +19,13 @@ class AES256GCMCipherTest {
 
         assertEquals(plaintext, decrypted.toString(Charsets.UTF_8))
     }
+
+    @Test
+    fun `getEncryptedSize should return the proper size`() {
+        val cipher = AES256GCMCipher()
+
+        val size = 100
+        //+ ivSize + authTagSize
+        assertEquals(size + 12 + 16, cipher.getEncryptedSize(size), "Invalid size")
+    }
 }
