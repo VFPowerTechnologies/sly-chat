@@ -1,4 +1,4 @@
-package com.vfpowertech.httpuploader
+package io.slychat.messenger.core
 
 import java.io.InputStream
 

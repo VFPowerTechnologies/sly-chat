@@ -1,6 +1,6 @@
 package io.slychat.messenger.core.crypto
 
-import com.vfpowertech.httpuploader.TestInputStream
+import io.slychat.messenger.core.TestInputStream
 import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.crypto.ciphers.MalformedEncryptedDataException

@@ -131,14 +131,14 @@ fun generateFileId(): String = randomUUID()
 
 fun generateShareKey(): String = randomUUID()
 
-fun getBlockEncryptionSize(cipher: Cipher, filesize: Long, blockSize: Int): Long {
-    require(filesize >= 0)
-    require(blockSize >= 0)
+fun getChunkEncryptionSize(cipher: Cipher, filesize: Long, chunkSize: Int): Long {
+    require(filesize > 0) { "filesize must be > 0, got $filesize" }
+    require(chunkSize > 0) { "chunkSize must be > 0, got $chunkSize" }
 
-    val blockCount = filesize / blockSize
-    val rem = filesize % blockSize
+    val blockCount = filesize / chunkSize
+    val rem = filesize % chunkSize
 
-    val forBlocks = cipher.getEncryptedSize(blockSize) * blockCount
+    val forBlocks = cipher.getEncryptedSize(chunkSize) * blockCount
 
     return forBlocks + cipher.getEncryptedSize(rem.toInt())
 }
