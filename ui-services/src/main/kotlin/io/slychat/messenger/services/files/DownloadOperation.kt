@@ -2,6 +2,7 @@ package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.crypto.DecryptInputStream
+import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.http.api.storage.StorageClient
 import io.slychat.messenger.core.persistence.Download
@@ -21,10 +22,11 @@ class DownloadOperation(
     }
 
     fun run() {
+        val cipher = CipherList.getCipher(file.userMetadata.cipherId)
         val resp = storageClient.downloadFile(userCredentials, file.id) ?: throw FileMissingException(file.id)
 
         val inputStream = if (download.doDecrypt)
-            DecryptInputStream(file.userMetadata.fileKey, resp.inputStream, file.fileMetadata!!.chunkSize)
+            DecryptInputStream(cipher, file.userMetadata.fileKey, resp.inputStream, file.fileMetadata!!.chunkSize)
         else
             resp.inputStream
 

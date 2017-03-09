@@ -4,6 +4,7 @@ import io.slychat.messenger.core.MD5InputStream
 import io.slychat.messenger.core.ProgressOutputStream
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.crypto.EncryptInputStream
+import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.http.api.upload.UploadClient
 import io.slychat.messenger.core.persistence.Upload
@@ -24,8 +25,10 @@ class UploadPartOperation(
         FileInputStream(upload.filePath).use { fileInputStream ->
             fileInputStream.skip(part.offset)
 
+            val cipher = CipherList.getCipher(file.userMetadata.cipherId)
+
             val dataInputStream = if (!upload.isEncrypted)
-                EncryptInputStream(file.userMetadata.fileKey, fileInputStream, file.fileMetadata!!.chunkSize)
+                EncryptInputStream(cipher, file.userMetadata.fileKey, fileInputStream, file.fileMetadata!!.chunkSize)
             else
                 fileInputStream
 
