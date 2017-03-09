@@ -108,4 +108,11 @@ class AES256GCMCipher : Cipher {
 
         return cipher.getOutputSize(size) + iv.size
     }
+
+    override fun getInputSizeForOutput(wantedOutputSize: Int): Int {
+        require((wantedOutputSize % 2) == 0) { "wantedOutputSize must be a power of 2, got $wantedOutputSize" }
+
+        //stream cipher, our own overhead is the MAC, and then that we prepend the iv itself
+        return (wantedOutputSize - (authTagLengthBits / 8) - ivSizeBytes)
+    }
 }

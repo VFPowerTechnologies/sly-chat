@@ -12,17 +12,23 @@ data class Upload(
     //are in order
     val parts: List<UploadPart>
 ) {
-    init {
-        var offset = 0L
-        var n = 1
+    companion object {
+        fun verifyParts(parts: List<UploadPart>) {
+            var offset = 0L
+            var n = 1
 
-        parts.forEach {
-            require(it.n == n) { "UploadPart out of order: expected $n, got ${it.n}"}
-            n += 1
+            parts.forEach {
+                require(it.n == n) { "UploadPart out of order: expected $n, got ${it.n}"}
+                n += 1
 
-            require(it.offset == offset) { "UploadPart with invalid offset: expected $offset, got ${it.offset}" }
-            offset += it.localSize
+                require(it.offset == offset) { "UploadPart with invalid offset: expected $offset, got ${it.offset}" }
+                offset += it.localSize
+            }
         }
+    }
+
+    init {
+        verifyParts(parts)
     }
 
     val isSinglePart: Boolean

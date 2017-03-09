@@ -1,7 +1,6 @@
 @file:JvmName("CryptoUtils")
 package io.slychat.messenger.core.crypto
 
-import io.slychat.messenger.core.crypto.ciphers.Cipher
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.crypto.hashes.HashData
 import io.slychat.messenger.core.crypto.hashes.HashParams
@@ -130,15 +129,3 @@ fun generateDownloadId(): String = randomUUID()
 fun generateFileId(): String = randomUUID()
 
 fun generateShareKey(): String = randomUUID()
-
-fun getChunkEncryptionSize(cipher: Cipher, filesize: Long, chunkSize: Int): Long {
-    require(filesize > 0) { "filesize must be > 0, got $filesize" }
-    require(chunkSize > 0) { "chunkSize must be > 0, got $chunkSize" }
-
-    val blockCount = filesize / chunkSize
-    val rem = filesize % chunkSize
-
-    val forBlocks = cipher.getEncryptedSize(chunkSize) * blockCount
-
-    return forBlocks + cipher.getEncryptedSize(rem.toInt())
-}
