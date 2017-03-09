@@ -29,7 +29,7 @@ class UploaderImplTest {
         init {
             MockitoKotlin.registerInstanceCreator { randomUpload() }
             MockitoKotlin.registerInstanceCreator { randomUserMetadata() }
-            MockitoKotlin.registerInstanceCreator { UploadPart(1, 0, 10, false) }
+            MockitoKotlin.registerInstanceCreator { UploadPart(1, 0, 10, 10, false) }
         }
     }
 
@@ -451,8 +451,10 @@ class UploaderImplTest {
         uploadOperations.sendUploadProgress(uploadId, 1, 500L)
         uploadOperations.sendUploadProgress(uploadId, 1, 500L)
 
+        val partProgress = info.upload.parts.map { UploadPartTransferProgress(1000, it.remoteSize) }
+
         val progress = UploadTransferProgress(
-            listOf(UploadPartTransferProgress(1000, info.file.remoteFileSize)),
+            partProgress,
             1000,
             info.file.remoteFileSize
         )

@@ -21,7 +21,7 @@ data class Upload(
             n += 1
 
             require(it.offset == offset) { "UploadPart with invalid offset: expected $offset, got ${it.offset}" }
-            offset += it.size
+            offset += it.localSize
         }
     }
 

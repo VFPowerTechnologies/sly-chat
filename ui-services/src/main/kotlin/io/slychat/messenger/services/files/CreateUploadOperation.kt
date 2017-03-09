@@ -24,12 +24,12 @@ class CreateUploadOperation(
         val encryptedFileMetadata = encryptFileMetadata(file.userMetadata, fileMetadata)
 
         val partCount = upload.parts.size
-        val firstPartSize = upload.parts.first().size
+        val firstPartSize = upload.parts.first().remoteSize
         val lastPart = upload.parts.last()
-        val lastPartSize = if (lastPart.size == firstPartSize)
+        val lastPartSize = if (lastPart.remoteSize == firstPartSize)
             0
         else
-            lastPart.size
+            lastPart.remoteSize
 
         val request = NewUploadRequest(
             upload.id,

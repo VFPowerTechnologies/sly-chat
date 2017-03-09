@@ -30,7 +30,7 @@ class DownloaderImplTest {
         init {
             MockitoKotlin.registerInstanceCreator { randomUpload() }
             MockitoKotlin.registerInstanceCreator { randomUserMetadata() }
-            MockitoKotlin.registerInstanceCreator { UploadPart(1, 0, 10, false) }
+            MockitoKotlin.registerInstanceCreator { UploadPart(1, 0, 10, 10, false) }
         }
     }
 

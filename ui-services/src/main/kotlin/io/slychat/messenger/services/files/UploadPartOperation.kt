@@ -23,6 +23,7 @@ class UploadPartOperation(
     fun run() {
         //TODO handle missing file (FileNotFoundException), and then any other exception that's raise
         FileInputStream(upload.filePath).use { fileInputStream ->
+            //TODO limit reading
             fileInputStream.skip(part.offset)
 
             val cipher = CipherList.getCipher(file.userMetadata.cipherId)
@@ -35,7 +36,7 @@ class UploadPartOperation(
             val md5InputStream = MD5InputStream(dataInputStream)
 
             val resp = md5InputStream.use {
-                uploadClient.uploadPart(userCredentials, upload.id, part.n, part.size, md5InputStream, AtomicBoolean()) { outputStream ->
+                uploadClient.uploadPart(userCredentials, upload.id, part.n, part.remoteSize, md5InputStream, AtomicBoolean()) { outputStream ->
                     ProgressOutputStream(outputStream, progressCallback)
                 }
             }

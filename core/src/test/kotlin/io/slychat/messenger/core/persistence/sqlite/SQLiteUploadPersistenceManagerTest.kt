@@ -53,8 +53,8 @@ class SQLiteUploadPersistenceManagerTest {
 
     private fun randomUpload(fileId: String, error: UploadError? = null): Upload {
         val parts = listOf(
-            UploadPart(1, 0, 10, false),
-            UploadPart(2, 10, 5, false)
+            UploadPart(1, 0, 10, 11, false),
+            UploadPart(2, 10, 5, 6, false)
         )
 
         return Upload(
