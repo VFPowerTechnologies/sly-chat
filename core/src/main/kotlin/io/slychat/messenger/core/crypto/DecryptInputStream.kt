@@ -1,108 +1,56 @@
 package io.slychat.messenger.core.crypto
 
+import io.slychat.messenger.core.crypto.ciphers.Cipher
 import io.slychat.messenger.core.crypto.ciphers.Key
-import org.spongycastle.crypto.engines.AESFastEngine
-import org.spongycastle.crypto.modes.GCMBlockCipher
-import org.spongycastle.crypto.params.AEADParameters
-import org.spongycastle.crypto.params.KeyParameter
 import java.io.InputStream
 
 //TODO convert to FilterInputStream
 class DecryptInputStream(
+    private val cipher: Cipher,
     private val key: Key,
     private val inputStream: InputStream,
     chunkSize: Int
 ) : InputStream() {
     private enum class State {
-        //if EOF is reached and no part of the iv has been read, move to EOF; if EOF is reached but some of the iv's been reached, throw exception
-        READ_IV,
-        //if EOF is reached, move to copy_data
+        //if EOF is reached and no part of the iv+data has been read, move to EOF; if EOF is reached but some of the data has been read, move to copy_data
         READ_DATA,
-        //once empty, move back to IV
+        //once empty, move back to READ_DATA
         COPY_DATA,
         //terminate with read count if > 0, else return -1
         EOF
     }
 
-    private var ivSize = 96 / 8
-    private var ivReadSize = 0
-    private var currentIV = ByteArray(ivSize)
+    private var currentState = State.READ_DATA
 
-    private var currentState = State.READ_IV
-
-    private var encryptedChunkSize = 0
+    //this includes the IV
+    private var encryptedChunkSize = cipher.getEncryptedSize(chunkSize)
     private var encryptedChunkReadSize = 0
+    private var encryptedChunk = ByteArray(encryptedChunkSize)
 
-    private var chunkReadSize = 0
-    private var currentChunk = ByteArray(chunkSize)
+    private var decryptedChunkSize = 0
+    private var decryptedChunk: ByteArray? = null
     //how much has been copied to user buffer
-    private var copiedChunkSize = 0
-    private var cipher: GCMBlockCipher? = null
+    private var copiedDecryptedChunkSize = 0
 
     private class Update(val nextState: State, val hasMoreInput: Boolean, val read: Int)
 
-    init {
-        val cipher = GCMBlockCipher(AESFastEngine())
-        val authTagLength = 128
-
-        val iv = ByteArray(ivSize)
-        cipher.init(true, AEADParameters(KeyParameter(key.raw), authTagLength, iv))
-        encryptedChunkSize = cipher.getOutputSize(chunkSize)
-    }
-
-    private fun initCipher() {
-        val authTagLength = 128
-
-        val cipher = GCMBlockCipher(AESFastEngine())
-
-        cipher.init(false, AEADParameters(KeyParameter(key.raw), authTagLength, currentIV))
-
-        this.cipher = cipher
-    }
-
-    private fun handleReadIV(): Update {
-        val remaining = ivSize - ivReadSize
-
-        val read = inputStream.read(currentIV, ivReadSize, remaining)
-
-        if (read == -1) {
-            if (ivReadSize == 0)
-                return Update(State.EOF, false, 0)
-            else
-                error("EOF while reading IV")
-        }
-
-        val hasMoreInput = read != 0
-
-        ivReadSize += read
-
-        return if (ivReadSize == ivSize)
-            Update(State.READ_DATA, true, 0)
-        else
-            Update(State.READ_IV, hasMoreInput, 0)
-    }
-
     private fun handleReadData(): Update {
-        val cipher = this.cipher ?: error("No cipher set")
-
         val remaining = encryptedChunkSize - encryptedChunkReadSize
 
-        //XXX do something about this so we don't alloc everytime
-        val buffer = ByteArray(remaining)
+        val read = inputStream.read(encryptedChunk, encryptedChunkReadSize, remaining)
 
-        val read = inputStream.read(buffer, 0, remaining)
-
-        if (read == -1)
-            return Update(State.COPY_DATA, true, 0)
+        if (read == -1) {
+            if (encryptedChunkReadSize == 0)
+                return Update(State.EOF, false, 0)
+            else
+                return Update(State.COPY_DATA, true, 0)
+        }
         else if (read == 0)
             return Update(State.READ_DATA, false, 0)
 
         val hasMoreInput = read == remaining
 
         encryptedChunkReadSize += read
-
-        val n = cipher.processBytes(buffer, 0, read, currentChunk, chunkReadSize)
-        chunkReadSize += n
 
         return if (encryptedChunkReadSize == encryptedChunkSize)
             Update(State.COPY_DATA, true, 0)
@@ -111,21 +59,21 @@ class DecryptInputStream(
     }
 
     private fun handleCopyData(b: ByteArray, off: Int, len: Int): Update {
-        val remaining = chunkReadSize - copiedChunkSize
+        val remaining = decryptedChunkSize - copiedDecryptedChunkSize
         val toCopy = Math.min(len, remaining)
 
         System.arraycopy(
-            currentChunk,
-            copiedChunkSize,
+            decryptedChunk,
+            copiedDecryptedChunkSize,
             b,
             off,
             toCopy
         )
 
-        copiedChunkSize += toCopy
+        copiedDecryptedChunkSize += toCopy
 
-        if (copiedChunkSize == chunkReadSize)
-            return Update(State.READ_IV, true, toCopy)
+        if (copiedDecryptedChunkSize == decryptedChunkSize)
+            return Update(State.READ_DATA, true, toCopy)
         else
             return Update(State.COPY_DATA, true, toCopy)
     }
@@ -145,7 +93,6 @@ class DecryptInputStream(
 
         loop@ while (remaining > 0) {
             val update = when (currentState) {
-                State.READ_IV -> handleReadIV()
                 State.READ_DATA -> handleReadData()
                 State.COPY_DATA -> handleCopyData(b, offset, remaining)
                 State.EOF -> break@loop
@@ -169,21 +116,17 @@ class DecryptInputStream(
     }
 
     private fun handleTransition(prev: State, next: State) {
-        if (prev == State.READ_IV && next == State.READ_DATA) {
+        if (prev == State.READ_DATA && next == State.COPY_DATA) {
+            copiedDecryptedChunkSize = 0
+
+            val plaintext = cipher.decrypt(key, encryptedChunk, encryptedChunkReadSize)
+
+            decryptedChunk = plaintext
+            decryptedChunkSize = plaintext.size
+        }
+        else if (prev == State.COPY_DATA && next == State.READ_DATA) {
             encryptedChunkReadSize = 0
-            chunkReadSize = 0
-
-            initCipher()
-        }
-        else if (prev == State.READ_DATA && next == State.COPY_DATA) {
-            copiedChunkSize = 0
-
-            val cipher = this.cipher ?: error("No cipher set")
-
-            chunkReadSize += cipher.doFinal(currentChunk, chunkReadSize)
-        }
-        else if (prev == State.COPY_DATA && next == State.READ_IV) {
-            ivReadSize = 0
+            decryptedChunkSize = 0
         }
     }
 

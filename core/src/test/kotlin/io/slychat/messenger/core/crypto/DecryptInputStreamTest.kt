@@ -1,13 +1,11 @@
 package io.slychat.messenger.core.crypto
 
 import com.vfpowertech.httpuploader.TestInputStream
+import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.crypto.ciphers.Key
+import io.slychat.messenger.core.crypto.ciphers.MalformedEncryptedDataException
 import org.junit.BeforeClass
 import org.junit.Test
-import org.spongycastle.crypto.engines.AESFastEngine
-import org.spongycastle.crypto.modes.GCMBlockCipher
-import org.spongycastle.crypto.params.AEADParameters
-import org.spongycastle.crypto.params.KeyParameter
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -30,32 +28,7 @@ class DecryptInputStreamTest {
         }
     }
 
-    internal fun encryptBuffer(key: Key, data: ByteArray, size: Int): ByteArray {
-        val authTagLength = 128
-
-        val cipher = GCMBlockCipher(AESFastEngine())
-
-        val iv = ByteArray(96 / 8)
-        SecureRandom().nextBytes(iv)
-
-        cipher.init(true, AEADParameters(KeyParameter(key.raw), authTagLength, iv))
-
-        val ciphertext = ByteArray(cipher.getOutputSize(size) + iv.size)
-
-        System.arraycopy(
-            iv,
-            0,
-            ciphertext,
-            0,
-            iv.size
-        )
-
-        val outputLength = cipher.processBytes(data, 0, size, ciphertext, iv.size)
-        cipher.doFinal(ciphertext, iv.size + outputLength)
-
-        return ciphertext
-    }
-
+    private val cipher = CipherList.defaultDataEncryptionCipher
 
     private fun assertByteArraysEqual(expected: ByteArray, actual: ByteArray) {
         assertTrue(Arrays.equals(expected, actual), "Expected ${Arrays.toString(expected)} but got ${Arrays.toString(actual)}")
@@ -82,13 +55,13 @@ class DecryptInputStreamTest {
     @Test
     fun `it should decrypt single chunk output`() {
         val plaintext = getByteArray(10)
-        val ciphertext = encryptBuffer(key, plaintext, plaintext.size)
+        val ciphertext = cipher.encrypt(key, plaintext)
 
         val inputStream = ByteArrayInputStream(ciphertext)
 
         val got = ByteArray(plaintext.size)
 
-        DecryptInputStream(key, inputStream, 10).use {
+        DecryptInputStream(cipher, key, inputStream, 10).use {
             it.read(got)
         }
 
@@ -102,15 +75,15 @@ class DecryptInputStreamTest {
         val chunkSize = 5
 
         val ciphertextStream = ByteArrayOutputStream()
-        ciphertextStream.write(encryptBuffer(key, plaintext, chunkSize))
-        ciphertextStream.write(encryptBuffer(key, Arrays.copyOfRange(plaintext, chunkSize, plaintext.size), chunkSize))
+        ciphertextStream.write(cipher.encrypt(key, plaintext, chunkSize))
+        ciphertextStream.write(cipher.encrypt(key, Arrays.copyOfRange(plaintext, chunkSize, plaintext.size), chunkSize))
         val ciphertext = ciphertextStream.toByteArray()
 
         val inputStream = ByteArrayInputStream(ciphertext)
 
         val got = ByteArray(plaintext.size)
 
-        DecryptInputStream(key, inputStream, chunkSize).use {
+        DecryptInputStream(cipher, key, inputStream, chunkSize).use {
             it.read(got)
         }
 
@@ -124,15 +97,15 @@ class DecryptInputStreamTest {
         val chunkSize = 5
 
         val ciphertextStream = ByteArrayOutputStream()
-        ciphertextStream.write(encryptBuffer(key, plaintext, chunkSize))
-        ciphertextStream.write(encryptBuffer(key, Arrays.copyOfRange(plaintext, chunkSize, plaintext.size), 3))
+        ciphertextStream.write(cipher.encrypt(key, plaintext, chunkSize))
+        ciphertextStream.write(cipher.encrypt(key, Arrays.copyOfRange(plaintext, chunkSize, plaintext.size), 3))
         val ciphertext = ciphertextStream.toByteArray()
 
         val inputStream = ByteArrayInputStream(ciphertext)
 
         val got = ByteArray(plaintext.size)
 
-        DecryptInputStream(key, inputStream, chunkSize).use {
+        DecryptInputStream(cipher, key, inputStream, chunkSize).use {
             readUntilEOF(it, got)
         }
 
@@ -146,15 +119,15 @@ class DecryptInputStreamTest {
         val chunkSize = 5
 
         val ciphertextStream = ByteArrayOutputStream()
-        ciphertextStream.write(encryptBuffer(key, plaintext, chunkSize))
-        ciphertextStream.write(encryptBuffer(key, Arrays.copyOfRange(plaintext, chunkSize, plaintext.size), chunkSize))
+        ciphertextStream.write(cipher.encrypt(key, plaintext, chunkSize))
+        ciphertextStream.write(cipher.encrypt(key, Arrays.copyOfRange(plaintext, chunkSize, plaintext.size), chunkSize))
         val ciphertext = ciphertextStream.toByteArray()
 
         val inputStream = ByteArrayInputStream(ciphertext)
 
         val got = ByteArray(plaintext.size)
 
-        val read = DecryptInputStream(key, inputStream, chunkSize).use {
+        val read = DecryptInputStream(cipher, key, inputStream, chunkSize).use {
             it.read(got)
         }
 
@@ -164,7 +137,7 @@ class DecryptInputStreamTest {
     @Test
     fun `read should return -1 for EOF`() {
         val got = ByteArray(10)
-        val read = DecryptInputStream(key, ByteArrayInputStream(ByteArray(0)), 10).use {
+        val read = DecryptInputStream(cipher, key, ByteArrayInputStream(ByteArray(0)), 10).use {
             it.read(got)
         }
 
@@ -174,11 +147,10 @@ class DecryptInputStreamTest {
     @Test
     fun `it should throw when IV is not fully read and EOF is reached`() {
         val input = TestInputStream(ByteArray(2))
-        assertFailsWith(IllegalStateException::class) {
+        assertFailsWith(MalformedEncryptedDataException::class) {
             val got = ByteArray(10)
-            DecryptInputStream(key, input, 10).use {
-                it.read(got)
-                it.read(got)
+            DecryptInputStream(cipher, key, input, 10).use {
+                while (it.read(got) == 0) {}
             }
         }
     }
@@ -187,7 +159,7 @@ class DecryptInputStreamTest {
     fun `it should read chunks across multiple calls`() {
         val plaintext = getByteArray(10)
         val chunkSize = 10
-        val ciphertext = encryptBuffer(key, plaintext, plaintext.size)
+        val ciphertext = cipher.encrypt(key, plaintext, plaintext.size)
         val half = ciphertext.size / 2
 
         val inputStream = TestInputStream(
@@ -197,7 +169,7 @@ class DecryptInputStreamTest {
 
         val got = ByteArray(plaintext.size)
 
-        DecryptInputStream(key, inputStream, chunkSize).use {
+        DecryptInputStream(cipher, key, inputStream, chunkSize).use {
             var read = 0
             var remaining = got.size
             while (read != plaintext.size) {
@@ -213,12 +185,12 @@ class DecryptInputStreamTest {
     fun `it should only copy part of the chunk if buffer is too small`() {
         val plaintext = getByteArray(10)
         val chunkSize = 10
-        val ciphertext = encryptBuffer(key, plaintext, plaintext.size)
+        val ciphertext = cipher.encrypt(key, plaintext, plaintext.size)
 
         val first = ByteArray(5)
         val second = ByteArray(5)
 
-        DecryptInputStream(key, ByteArrayInputStream(ciphertext), chunkSize).use {
+        DecryptInputStream(cipher, key, ByteArrayInputStream(ciphertext), chunkSize).use {
             it.read(first, 0, 5)
             it.read(second, 0, 5)
         }
@@ -233,7 +205,7 @@ class DecryptInputStreamTest {
     @Test
     fun `calling read after hitting EOF should return -1`() {
         val got = ByteArray(10)
-        val read = DecryptInputStream(key, ByteArrayInputStream(ByteArray(0)), 10).use {
+        val read = DecryptInputStream(cipher, key, ByteArrayInputStream(ByteArray(0)), 10).use {
             it.read(got)
             it.read(got)
         }

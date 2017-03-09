@@ -88,7 +88,7 @@ class AES256GCMCipher : Cipher {
 
     override fun decrypt(key: Key, ciphertext: ByteArray, ciphertextSize: Int): ByteArray {
         if (ciphertextSize < ivSizeBytes)
-            throw IllegalArgumentException("Malformed encrypted data")
+            throw MalformedEncryptedDataException("Not enough data for IV ($ciphertextSize < $ivSizeBytes)")
 
         val iv = ciphertext.copyOfRange(0, ivSizeBytes)
 
