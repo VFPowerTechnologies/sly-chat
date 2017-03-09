@@ -35,13 +35,23 @@ internal fun getRemoteFileSize(cipher: Cipher, fileSize: Long, chunkSize: Int): 
  * Then we generate upload parts for each of these full parts, followed by calculating the final part using the
  * remaining even chunks and any remaining bytes that didn't fit into a full encrypted chunk.
  */
-internal fun calcUploadParts(cipher: Cipher, fileSize: Long, encryptedChunkSize: Int, minPartSize: Int): ArrayList<UploadPart> {
+internal fun calcUploadParts(cipher: Cipher, fileSize: Long, encryptedChunkSize: Int, minPartSize: Int): List<UploadPart> {
     require(encryptedChunkSize <= minPartSize) { "encryptedChunkSize ($encryptedChunkSize) should be <= minPartSize ($minPartSize)" }
     require((minPartSize % encryptedChunkSize) == 0) { "encryptedChunkSize ($encryptedChunkSize) must be a multiple of minPartSize ($minPartSize)" }
 
     val chunksPerPart = (minPartSize / encryptedChunkSize).toLong()
 
     val plainChunkSize = cipher.getInputSizeForOutput(encryptedChunkSize)
+
+    if (fileSize < plainChunkSize) {
+        return listOf(UploadPart(
+            1,
+            0,
+            fileSize,
+            cipher.getEncryptedSize(fileSize.toInt()).toLong(),
+            false
+        ))
+    }
 
     val evenChunks = fileSize / plainChunkSize
     //if > 0, then this is the bytes that make up the final chunk

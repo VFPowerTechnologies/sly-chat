@@ -7,13 +7,12 @@ import io.slychat.messenger.core.persistence.Upload
 import io.slychat.messenger.core.persistence.UploadPart
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
-import java.util.*
 import kotlin.test.assertEquals
 
 class FilesUtilsTest {
     private val cipher = AES256GCMCipher()
 
-    private fun assertPartSanity(fileSize: Long, encryptedChunkSize: Int, actual: ArrayList<UploadPart>) {
+    private fun assertPartSanity(fileSize: Long, encryptedChunkSize: Int, actual: List<UploadPart>) {
         assertEquals(fileSize, actual.fold(0L) { i, p -> i + p.localSize }, "Total part localSize should match local data size")
         Upload.verifyParts(actual)
 
@@ -63,6 +62,20 @@ class FilesUtilsTest {
     fun `calcUploadParts should calc the proper size when given a size evenly divisible into the min part size`() {
         val encryptedChunkSize = 128.kb
         val fileSize = cipher.getInputSizeForOutput(encryptedChunkSize) * 40L
+        val actual = calcUploadParts(cipher, fileSize, encryptedChunkSize, 5.mb)
+
+        assertThat(actual).apply {
+            describedAs("Should only contain a single part")
+            hasSize(1)
+        }
+
+        assertPartSanity(fileSize, encryptedChunkSize, actual)
+    }
+
+    @Test
+    fun `calcUploadParts should calc the proper size when given a size smaller than the chunk size`() {
+        val encryptedChunkSize = 128.kb
+        val fileSize = 100L
         val actual = calcUploadParts(cipher, fileSize, encryptedChunkSize, 5.mb)
 
         assertThat(actual).apply {
