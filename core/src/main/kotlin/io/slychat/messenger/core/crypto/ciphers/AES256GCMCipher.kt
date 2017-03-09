@@ -30,10 +30,10 @@ class AES256GCMCipher : Cipher {
         return cipher
     }
 
-    private fun encrypt(aeadBlockCipher: AEADBlockCipher, input: ByteArray, output: ByteArray, outputOffset: Int) {
+    private fun encrypt(aeadBlockCipher: AEADBlockCipher, input: ByteArray, inputSize: Int, output: ByteArray, outputOffset: Int) {
         require(outputOffset >= 0) { "outputOffset must be >= 0, got $outputOffset" }
 
-        val outputLength = aeadBlockCipher.processBytes(input, 0, input.size, output, outputOffset)
+        val outputLength = aeadBlockCipher.processBytes(input, 0, inputSize, output, outputOffset)
         aeadBlockCipher.doFinal(output, outputOffset + outputLength)
     }
 
@@ -57,10 +57,14 @@ class AES256GCMCipher : Cipher {
     }
 
     override fun encrypt(key: Key, plaintext: ByteArray): ByteArray {
+        return encrypt(key, plaintext, plaintext.size)
+    }
+
+    override fun encrypt(key: Key, plaintext: ByteArray, plaintextSize: Int): ByteArray {
         val iv = getRandomBits(ivSizeBits)
         val cipher = newCipher(true, getAEADParameters(key, iv))
 
-        val outputSize = iv.size + cipher.getOutputSize(plaintext.size)
+        val outputSize = iv.size + cipher.getOutputSize(plaintextSize)
 
         //prepend IV
         val output = ByteArray(outputSize)
@@ -73,20 +77,24 @@ class AES256GCMCipher : Cipher {
             iv.size
         )
 
-        encrypt(cipher, plaintext, output, iv.size)
+        encrypt(cipher, plaintext, plaintextSize, output, iv.size)
 
         return output
     }
 
     override fun decrypt(key: Key, ciphertext: ByteArray): ByteArray {
-        if (ciphertext.size < ivSizeBytes)
+        return decrypt(key, ciphertext, ciphertext.size)
+    }
+
+    override fun decrypt(key: Key, ciphertext: ByteArray, ciphertextSize: Int): ByteArray {
+        if (ciphertextSize < ivSizeBytes)
             throw IllegalArgumentException("Malformed encrypted data")
 
         val iv = ciphertext.copyOfRange(0, ivSizeBytes)
 
         val cipher = newCipher(false, getAEADParameters(key, iv))
 
-        return decrypt(cipher, ciphertext, iv.size, ciphertext.size - iv.size)
+        return decrypt(cipher, ciphertext, iv.size, ciphertextSize - iv.size)
     }
 
     override fun getEncryptedSize(size: Int): Int {

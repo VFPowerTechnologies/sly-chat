@@ -1,5 +1,8 @@
 package io.slychat.messenger.core.crypto
 
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.verify
+import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.crypto.ciphers.Key
 import org.junit.BeforeClass
 import org.junit.Test
@@ -8,6 +11,7 @@ import org.spongycastle.crypto.modes.GCMBlockCipher
 import org.spongycastle.crypto.params.AEADParameters
 import org.spongycastle.crypto.params.KeyParameter
 import java.io.ByteArrayInputStream
+import java.io.InputStream
 import java.security.SecureRandom
 import java.util.*
 import kotlin.test.assertEquals
@@ -26,6 +30,8 @@ class EncryptInputStreamTest {
         }
     }
 
+    private val cipher = CipherList.defaultDataEncryptionCipher
+
     fun getSingleBlockSize(blockSize: Int): Int {
         val key = ByteArray(256 / 8)
 
@@ -40,40 +46,13 @@ class EncryptInputStreamTest {
         return cipher.getOutputSize(blockSize) + iv.size
     }
 
-    private fun decryptBuffer(key: Key, data: ByteArray, size: Int): ByteArray {
-        val authTagLength = 128
-
-        val cipher = GCMBlockCipher(AESFastEngine())
-
-        val iv = ByteArray(96 / 8)
-        System.arraycopy(
-            data,
-            0,
-            iv,
-            0,
-            iv.size
-        )
-
-        val dataSize = size - iv.size
-
-        cipher.init(false, AEADParameters(KeyParameter(key.raw), authTagLength, iv))
-
-        val plaintext = ByteArray(cipher.getOutputSize(dataSize))
-
-        val outputLength = cipher.processBytes(data, iv.size, dataSize, plaintext, 0)
-        cipher.doFinal(plaintext, outputLength)
-
-        return plaintext
-    }
-
-
     private fun assertByteArraysEqual(expected: ByteArray, actual: ByteArray) {
         assertTrue(Arrays.equals(expected, actual), "Expected ${Arrays.toString(expected)} but got ${Arrays.toString(actual)}")
     }
 
     private fun newCipherStream(input: ByteArray, chunkSize: Int): EncryptInputStream {
         val inputStream = ByteArrayInputStream(input)
-        return EncryptInputStream(key, inputStream, chunkSize)
+        return EncryptInputStream(cipher, key, inputStream, chunkSize)
     }
 
     @Test
@@ -85,7 +64,7 @@ class EncryptInputStreamTest {
 
         cipherStream.read(ciphertext)
 
-        val decrypted = decryptBuffer(key, ciphertext, ciphertext.size)
+        val decrypted = cipher.decrypt(key, ciphertext)
 
         assertByteArraysEqual(plaintext, decrypted)
     }
@@ -102,8 +81,8 @@ class EncryptInputStreamTest {
 
         cipherStream.read(ciphertext)
 
-        val decryptedFirst = decryptBuffer(key, Arrays.copyOfRange(ciphertext, 0, encryptedChunkSize), encryptedChunkSize)
-        val decryptedSecond = decryptBuffer(key, Arrays.copyOfRange(ciphertext, encryptedChunkSize, ciphertext.size), encryptedChunkSize)
+        val decryptedFirst = cipher.decrypt(key, Arrays.copyOfRange(ciphertext, 0, encryptedChunkSize), encryptedChunkSize)
+        val decryptedSecond = cipher.decrypt(key, Arrays.copyOfRange(ciphertext, encryptedChunkSize, ciphertext.size), encryptedChunkSize)
 
         val decrypted = ByteArray(plaintext.size)
         System.arraycopy(
@@ -139,8 +118,8 @@ class EncryptInputStreamTest {
 
         cipherStream.read(ciphertext)
 
-        val decryptedFirst = decryptBuffer(key, Arrays.copyOfRange(ciphertext, 0, encryptedChunkSize), encryptedChunkSize)
-        val decryptedSecond = decryptBuffer(key, Arrays.copyOfRange(ciphertext, encryptedChunkSize, ciphertext.size), lastChunkSize)
+        val decryptedFirst = cipher.decrypt(key, Arrays.copyOfRange(ciphertext, 0, encryptedChunkSize), encryptedChunkSize)
+        val decryptedSecond = cipher.decrypt(key, Arrays.copyOfRange(ciphertext, encryptedChunkSize, ciphertext.size), lastChunkSize)
 
         val decrypted = ByteArray(plaintext.size)
         System.arraycopy(
@@ -184,15 +163,16 @@ class EncryptInputStreamTest {
         cipherStream.read(ciphertext, 0, half)
         cipherStream.read(ciphertext, half, rest)
 
-        val decrypted = decryptBuffer(key, ciphertext, ciphertext.size)
+        val decrypted = cipher.decrypt(key, ciphertext, ciphertext.size)
 
         assertByteArraysEqual(plaintext, decrypted)
     }
 
-    /*
     @Test
     fun `close() should call the underlying InputStream close method`() {
-        TODO()
+        val inputStream = mock<InputStream>()
+
+        EncryptInputStream(cipher, key, inputStream, 10).use {  }
+        verify(inputStream).close()
     }
-    */
 }

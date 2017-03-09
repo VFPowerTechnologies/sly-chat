@@ -4,6 +4,10 @@ import com.vfpowertech.httpuploader.TestInputStream
 import io.slychat.messenger.core.crypto.ciphers.Key
 import org.junit.BeforeClass
 import org.junit.Test
+import org.spongycastle.crypto.engines.AESFastEngine
+import org.spongycastle.crypto.modes.GCMBlockCipher
+import org.spongycastle.crypto.params.AEADParameters
+import org.spongycastle.crypto.params.KeyParameter
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -25,6 +29,33 @@ class DecryptInputStreamTest {
             key = Key(b)
         }
     }
+
+    internal fun encryptBuffer(key: Key, data: ByteArray, size: Int): ByteArray {
+        val authTagLength = 128
+
+        val cipher = GCMBlockCipher(AESFastEngine())
+
+        val iv = ByteArray(96 / 8)
+        SecureRandom().nextBytes(iv)
+
+        cipher.init(true, AEADParameters(KeyParameter(key.raw), authTagLength, iv))
+
+        val ciphertext = ByteArray(cipher.getOutputSize(size) + iv.size)
+
+        System.arraycopy(
+            iv,
+            0,
+            ciphertext,
+            0,
+            iv.size
+        )
+
+        val outputLength = cipher.processBytes(data, 0, size, ciphertext, iv.size)
+        cipher.doFinal(ciphertext, iv.size + outputLength)
+
+        return ciphertext
+    }
+
 
     private fun assertByteArraysEqual(expected: ByteArray, actual: ByteArray) {
         assertTrue(Arrays.equals(expected, actual), "Expected ${Arrays.toString(expected)} but got ${Arrays.toString(actual)}")

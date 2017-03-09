@@ -21,6 +21,22 @@ class AES256GCMCipherTest {
     }
 
     @Test
+    fun `it should be able to encrypt and decrypt when given an explicit size`() {
+        val cipher = AES256GCMCipher()
+
+        val key = generateKey(cipher.keySizeBits)
+
+        val expected = "test"
+        val plaintext = expected + "1"
+
+        val ciphertext = cipher.encrypt(key, plaintext.toByteArray(Charsets.US_ASCII), expected.length)
+
+        val decrypted = cipher.decrypt(key, ciphertext)
+
+        assertEquals(expected, decrypted.toString(Charsets.US_ASCII))
+    }
+
+    @Test
     fun `getEncryptedSize should return the proper size`() {
         val cipher = AES256GCMCipher()
 
