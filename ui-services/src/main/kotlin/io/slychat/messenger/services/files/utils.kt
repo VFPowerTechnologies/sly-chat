@@ -1,10 +1,14 @@
 @file:JvmName("FilesUtils")
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.UnauthorizedException
+import rx.Observable
 import io.slychat.messenger.core.crypto.ciphers.Cipher
 import io.slychat.messenger.core.mb
 import io.slychat.messenger.core.persistence.UploadPart
+import io.slychat.messenger.services.auth.AuthTokenManager
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 //S3 limitation; each part except the last must be >= 5mb
 internal val MIN_PART_SIZE = 5.mb
@@ -80,4 +84,26 @@ internal fun calcUploadParts(cipher: Cipher, fileSize: Long, encryptedChunkSize:
     }
 
     return parts
+}
+
+internal fun <T> authFailureRetry(authTokenManager: AuthTokenManager, observable: Observable<T>): Observable<T> {
+    return observable.retryWhen {
+        val maxRetries = 3
+        it.zipWith(Observable.range(1, maxRetries + 1), { e, i -> e to i }).flatMap {
+            val (e, i) = it
+
+            if (i > maxRetries)
+                Observable.error(e)
+            else {
+                if (e is UnauthorizedException) {
+                    authTokenManager.invalidateToken()
+                    val exp = Math.pow(2.0, i.toDouble())
+                    val secs = Random().nextInt(exp.toInt() + 1).toLong()
+                    Observable.timer(secs, TimeUnit.SECONDS)
+                }
+                else
+                    Observable.error(e)
+            }
+        }
+    }
 }
