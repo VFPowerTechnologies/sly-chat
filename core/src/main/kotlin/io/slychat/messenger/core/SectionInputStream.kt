@@ -1,17 +1,16 @@
 package io.slychat.messenger.core
 
 import java.io.InputStream
-import java.io.RandomAccessFile
 
 class SectionInputStream(
-    private val randomAccessFile: RandomAccessFile,
+    private val inputStream: InputStream,
     offset: Long,
     size: Long
 ) : InputStream() {
     private var remaining = size
 
     init {
-        randomAccessFile.seek(offset)
+        inputStream.skip(offset)
     }
 
     override fun read(): Int {
@@ -23,7 +22,7 @@ class SectionInputStream(
             return -1
 
         val toRead = Math.min(b.size.toLong(), remaining)
-        val read = randomAccessFile.read(b, off, toRead.toInt())
+        val read = inputStream.read(b, off, toRead.toInt())
 
         if (read > 0)
             remaining -= read
@@ -36,6 +35,6 @@ class SectionInputStream(
     }
 
     override fun close() {
-        randomAccessFile.close()
+        inputStream.close()
     }
 }

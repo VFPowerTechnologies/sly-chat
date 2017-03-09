@@ -1,8 +1,7 @@
 package io.slychat.messenger.core
 
 import org.junit.Test
-import java.io.File
-import java.io.RandomAccessFile
+import java.io.ByteArrayInputStream
 import kotlin.test.assertEquals
 
 class SectionInputStreamTest {
@@ -10,18 +9,8 @@ class SectionInputStreamTest {
     private val max = s.length
 
     private fun <R> withTestStream(offset: Long, size: Long, body: (SectionInputStream) -> R): R {
-        val f = File.createTempFile("sly", "")
-        return try {
-            val raf = RandomAccessFile(f, "rw")
-            raf.use { raf ->
-                raf.write(s.toByteArray())
-                raf.seek(0)
-                body(SectionInputStream(raf, offset, size))
-            }
-        }
-        finally {
-            f.delete()
-        }
+        val inputStream = ByteArrayInputStream(s.toByteArray())
+        return body(SectionInputStream(inputStream, offset, size))
     }
 
     @Test

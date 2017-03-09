@@ -2,6 +2,7 @@ package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.MD5InputStream
 import io.slychat.messenger.core.ProgressOutputStream
+import io.slychat.messenger.core.SectionInputStream
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.crypto.EncryptInputStream
 import io.slychat.messenger.core.crypto.ciphers.CipherList
@@ -23,15 +24,14 @@ class UploadPartOperation(
     fun run() {
         //TODO handle missing file (FileNotFoundException), and then any other exception that's raise
         FileInputStream(upload.filePath).use { fileInputStream ->
-            //TODO limit reading
-            fileInputStream.skip(part.offset)
+            val limiter = SectionInputStream(fileInputStream, part.offset, part.localSize)
 
             val cipher = CipherList.getCipher(file.userMetadata.cipherId)
 
             val dataInputStream = if (!upload.isEncrypted)
-                EncryptInputStream(cipher, file.userMetadata.fileKey, fileInputStream, file.fileMetadata!!.chunkSize)
+                EncryptInputStream(cipher, file.userMetadata.fileKey, limiter, file.fileMetadata!!.chunkSize)
             else
-                fileInputStream
+                limiter
 
             val md5InputStream = MD5InputStream(dataInputStream)
 
