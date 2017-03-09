@@ -18,6 +18,8 @@ interface StorageService {
 
     fun sync()
 
+    fun getFile(fileId: String): Promise<RemoteFile?, Exception>
+
     fun getFiles(startingAt: Int, count: Int): Promise<List<RemoteFile>, Exception>
 
     fun getFilesAt(startingAt: Int, count: Int, path: String): Promise<List<RemoteFile>, Exception>

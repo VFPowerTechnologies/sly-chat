@@ -1,23 +1,20 @@
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.crypto.*
 import io.slychat.messenger.core.crypto.ciphers.CipherList
-import io.slychat.messenger.core.crypto.generateFileId
-import io.slychat.messenger.core.crypto.generateKey
-import io.slychat.messenger.core.crypto.generateShareKey
-import io.slychat.messenger.core.crypto.generateUploadId
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.files.FileMetadata
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.files.UserMetadata
 import io.slychat.messenger.core.kb
-import io.slychat.messenger.core.persistence.Upload
-import io.slychat.messenger.core.persistence.UploadInfo
-import io.slychat.messenger.core.persistence.UploadState
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.bindUi
 import nl.komponents.kovenant.Promise
+import java.io.FileNotFoundException
 
 class FileSharingServiceImpl(
     private val transferManager: TransferManager,
+    private val storageService: StorageService,
     private val fileAccess: PlatformFileAccess
 ) : FileSharingService {
     override fun uploadFile(localFilePath: String, remoteFileDirectory: String, remoteFileName: String): Promise<Unit, Exception> {
@@ -71,6 +68,29 @@ class FileSharingServiceImpl(
             )
 
             transferManager.upload(info)
+        }
+    }
+
+    override fun downloadFile(fileId: String, localFilePath: String): Promise<Unit, Exception> {
+        return storageService.getFile(fileId) bindUi { file ->
+            if (file == null)
+                throw FileNotFoundException()
+
+            val download = Download(
+                generateDownloadId(),
+                file.id,
+                DownloadState.CREATED,
+                localFilePath,
+                true,
+                null
+            )
+
+            val info = DownloadInfo(
+                download,
+                file
+            )
+
+            transferManager.download(info)
         }
     }
 }
