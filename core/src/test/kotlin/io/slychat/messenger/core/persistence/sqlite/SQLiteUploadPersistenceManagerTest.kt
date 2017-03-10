@@ -2,6 +2,7 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.crypto.generateUploadId
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.randomName
 import io.slychat.messenger.core.randomRemoteFile
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -61,6 +62,7 @@ class SQLiteUploadPersistenceManagerTest {
             generateUploadId(),
             fileId,
             UploadState.PENDING,
+            randomName(),
             randomFilePath(),
             false,
             error,

@@ -242,11 +242,14 @@ fun randomRemoteFile(isDeleted: Boolean = false, userMetadata: UserMetadata? = n
 fun randomUpload(fileId: String? = null, fileSize: Long = 0, state: UploadState = UploadState.PENDING, error: UploadError? = null): Upload {
     val localSize = if (fileSize == 0L) randomLong() else fileSize
     val remoteSize = localSize + 1
+    val fileName = randomName()
+
     return Upload(
         generateUploadId(),
         fileId ?: generateFileId(),
         state,
-        "/tmp/" + randomName(),
+        fileName,
+        "/tmp/" + fileName,
         false,
         error,
         listOf(UploadPart(1, 0, localSize, remoteSize, false))

@@ -56,10 +56,10 @@ class FileSharingServiceImpl(
                 generateUploadId(),
                 generateFileId(),
                 UploadState.PENDING,
+                fileInfo.displayName,
                 localFilePath,
                 false,
-                null,
-                parts
+                null, parts
             )
 
             val info = UploadInfo(
