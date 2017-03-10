@@ -264,7 +264,8 @@ open class GenBuildConfig : DefaultTask() {
         //adds <platform><SettingName> to context
         val urlSettings = listOf(
             "httpApiServer" to { s: String -> s },
-            "relayServer" to { s -> stringToInetSocketAddress(s) }
+            "relayServer" to { s -> stringToInetSocketAddress(s) },
+            "fileServer" to { s: String -> s }
         )
 
         for (entry in urlSettings) {

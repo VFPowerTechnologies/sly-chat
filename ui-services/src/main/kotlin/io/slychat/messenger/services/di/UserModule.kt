@@ -513,7 +513,7 @@ class UserModule(
     ): Downloader {
         val operations = DownloadOperationsImpl(
             authTokenManager,
-            StorageClientFactoryImpl(serverUrls.API_SERVER, "TODO", httpClientFactory),
+            StorageClientFactoryImpl(serverUrls.API_SERVER, serverUrls.FILE_SERVER, httpClientFactory),
             Schedulers.io()
         )
 
@@ -539,7 +539,7 @@ class UserModule(
     ): Uploader {
         val operations = UploadOperationsImpl(
             authTokenManager,
-            UploadClientFactoryImpl(serverUrls.API_SERVER, "TODO", httpClientFactory),
+            UploadClientFactoryImpl(serverUrls.API_SERVER, serverUrls.FILE_SERVER, httpClientFactory),
             keyVault,
             Schedulers.io()
         )
@@ -584,7 +584,7 @@ class UserModule(
         @NetworkStatus networkStatus: Observable<Boolean>,
         keyVault: KeyVault
     ): StorageService {
-        val storageClient = StorageAsyncClientImpl(serverUrls.API_SERVER, "TODO", httpClientFactory)
+        val storageClient = StorageAsyncClientImpl(serverUrls.API_SERVER, serverUrls.FILE_SERVER, httpClientFactory)
         val syncJobFactory = StorageSyncJobFactoryImpl(keyVault, fileListPersistenceManager, storageClient)
 
         return StorageServiceImpl(

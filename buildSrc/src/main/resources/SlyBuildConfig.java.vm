@@ -9,10 +9,12 @@ import io.slychat.messenger.core.sentry.DSN;
 public class SlyBuildConfig {
     public static class ServerUrls {
         public final String API_SERVER;
+        public final String FILE_SERVER;
         public final InetSocketAddress RELAY_SERVER;
 
-        public ServerUrls(final String apiServer, final InetSocketAddress relayServer) {
+        public ServerUrls(final String apiServer, final String fileServer, final InetSocketAddress relayServer) {
             this.API_SERVER = apiServer;
+            this.FILE_SERVER = fileServer;
             this.RELAY_SERVER = relayServer;
         }
     }
@@ -29,8 +31,8 @@ public class SlyBuildConfig {
     public static final boolean TLS_DISABLE_HOSTNAME_VERIFICATION = $disableHostnameVerification;
     public static final boolean TLS_DISABLE_CRL_VERIFICATION = $disableCRLVerification;
 
-    public static final ServerUrls DESKTOP_SERVER_URLS = new ServerUrls("$desktopHttpApiServer", $desktopRelayServer);
-    public static final ServerUrls ANDROID_SERVER_URLS = new ServerUrls("$androidHttpApiServer", $androidRelayServer);
+    public static final ServerUrls DESKTOP_SERVER_URLS = new ServerUrls("$desktopHttpApiServer", "$desktopFileServer", $desktopRelayServer);
+    public static final ServerUrls ANDROID_SERVER_URLS = new ServerUrls("$androidHttpApiServer", "$androidFileServer", $androidRelayServer);
 
     public static final long relayKeepAliveIntervalMs = $relayKeepAliveIntervalMs;
 
