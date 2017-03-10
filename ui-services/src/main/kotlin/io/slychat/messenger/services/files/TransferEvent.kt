@@ -28,7 +28,7 @@ sealed class TransferEvent {
         }
     }
 
-    class UploadProgress(val upload : Upload, val transferProgress: UploadTransferProgress) : TransferEvent() {
+    class UploadProgress(val upload: Upload, val transferProgress: UploadTransferProgress) : TransferEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false

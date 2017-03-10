@@ -165,13 +165,11 @@ class DownloaderImpl(
 
         when (status.download.state) {
             DownloadState.CREATED -> {
-                val timer = Observable.interval(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
-
                 if (downloadId in downloadSubscriptions)
                     error("Attempt to start duplicate download $downloadId")
 
                  val subscription = downloadOperations.download(status.download, status.file)
-                    .buffer(timer)
+                    .buffer(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
                     .map { it.sum() }
                     .observeOn(mainScheduler)
                     .subscribe(object : Subscriber<Long>() {

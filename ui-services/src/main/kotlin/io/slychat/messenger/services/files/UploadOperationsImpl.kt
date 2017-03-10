@@ -25,9 +25,16 @@ class UploadOperationsImpl(
 
     override fun uploadPart(upload: Upload, part: UploadPart, file: RemoteFile): Observable<Long> {
         return authFailureRetry(authTokenManager, Observable.create<Long> { subscriber ->
-            val userCredentials = authTokenManager.map { it }.get()
-            val op = UploadPartOperation(userCredentials, upload, part, file, uploadClientFactory.create(), subscriber)
-            op.run()
+            try {
+                val userCredentials = authTokenManager.map { it }.get()
+                val op = UploadPartOperation(userCredentials, upload, part, file, uploadClientFactory.create(), subscriber)
+                op.run()
+
+                subscriber.onCompleted()
+            }
+            catch (t: Throwable) {
+                subscriber.onError(t)
+            }
         }).subscribeOn(subscribeScheduler)
     }
 }

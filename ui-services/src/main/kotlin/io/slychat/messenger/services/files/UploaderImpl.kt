@@ -245,10 +245,8 @@ class UploaderImpl(
             return
         }
 
-        val timer = Observable.interval(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
-
         uploadOperations.uploadPart(status.upload, nextPart, status.file)
-            .buffer(timer)
+            .buffer(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
             .map { it.sum() }
             .observeOn(mainScheduler)
             .subscribe(object : Subscriber<Long>() {
@@ -261,6 +259,8 @@ class UploaderImpl(
                 }
 
                 override fun onCompleted() {
+                    log.info("Upload $uploadId/${nextPart.n} completed")
+
                     uploadPersistenceManager.completePart(uploadId, nextPart.n) successUi {
                         completePart(uploadId, nextPart.n)
                         nextStep(uploadId)
