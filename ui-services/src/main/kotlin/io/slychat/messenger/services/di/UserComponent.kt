@@ -10,6 +10,7 @@ import io.slychat.messenger.services.contacts.AddressBookOperationManager
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.di.annotations.EmptyReadMessageQueue
+import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.services.messaging.*
 import rx.Observable
 
@@ -80,6 +81,8 @@ interface UserComponent {
     val eventLogService: EventLogService
 
     val keyVault: KeyVault
+
+    val storageService: StorageService
 
     @get:EmptyReadMessageQueue
     val readMessageQueueIsEmpty: Observable<Unit>

@@ -12,6 +12,7 @@ import io.slychat.messenger.services.TokenFetcher
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.annotations.NetworkStatus
 import io.slychat.messenger.services.di.annotations.UIVisibility
+import io.slychat.messenger.services.files.PlatformFileAccess
 import io.slychat.messenger.services.ui.*
 import rx.Observable
 import rx.Scheduler
@@ -80,6 +81,9 @@ class PlatformModule(
     val defaultUserConfig: UserConfig,
 
     @get:Provides
-    val pushNotificationService: PushNotificationService?
+    val pushNotificationService: PushNotificationService?,
+
+    @get:Provides
+    val fileAccess: PlatformFileAccess
 )
 

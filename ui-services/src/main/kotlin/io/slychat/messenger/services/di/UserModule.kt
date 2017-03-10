@@ -13,6 +13,7 @@ import io.slychat.messenger.core.http.api.contacts.ContactLookupAsyncClientImpl
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClientImpl
 import io.slychat.messenger.core.http.api.prekeys.HttpPreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
+import io.slychat.messenger.core.http.api.storage.StorageAsyncClientImpl
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.base.RelayConnector
 import io.slychat.messenger.services.*
@@ -25,8 +26,10 @@ import io.slychat.messenger.services.contacts.*
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MessageCipherServiceImpl
 import io.slychat.messenger.services.di.annotations.EmptyReadMessageQueue
+import io.slychat.messenger.services.di.annotations.NetworkStatus
 import io.slychat.messenger.services.di.annotations.SlyHttp
 import io.slychat.messenger.services.di.annotations.UIVisibility
+import io.slychat.messenger.services.files.*
 import io.slychat.messenger.services.messaging.*
 import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
@@ -497,5 +500,101 @@ class UserModule(
         messageReceiver: MessageReceiver
     ): Observable<Unit> {
         return messageReceiver.queueIsEmpty
+    }
+
+    @UserScope
+    @Provides
+    fun providesDownloader(
+        serverUrls: ServerUrls,
+        @SlyHttp httpClientFactory: HttpClientFactory,
+        authTokenManager: AuthTokenManager,
+        downloadPersistenceManager: DownloadPersistenceManager,
+        mainScheduler: Scheduler
+    ): Downloader {
+        val operations = DownloadOperationsImpl(
+            authTokenManager,
+            StorageClientFactoryImpl(serverUrls.API_SERVER, "TODO", httpClientFactory),
+            Schedulers.io()
+        )
+
+        return DownloaderImpl(
+            0,
+            downloadPersistenceManager,
+            operations,
+            Schedulers.computation(),
+            mainScheduler,
+            false
+        )
+    }
+
+    @UserScope
+    @Provides
+    fun providesUploader(
+        serverUrls: ServerUrls,
+        @SlyHttp httpClientFactory: HttpClientFactory,
+        authTokenManager: AuthTokenManager,
+        uploadPersistenceManager: UploadPersistenceManager,
+        mainScheduler: Scheduler,
+        keyVault: KeyVault
+    ): Uploader {
+        val operations = UploadOperationsImpl(
+            authTokenManager,
+            UploadClientFactoryImpl(serverUrls.API_SERVER, "TODO", httpClientFactory),
+            keyVault,
+            Schedulers.io()
+        )
+
+        return UploaderImpl(
+            0,
+            uploadPersistenceManager,
+            operations,
+            Schedulers.computation(),
+            mainScheduler,
+            false
+        )
+    }
+
+    @UserScope
+    @Provides
+    fun providesTransferManager(
+        uploader: Uploader,
+        downloader: Downloader,
+        @NetworkStatus networkStatus: Observable<Boolean>
+    ): TransferManager {
+        val manager = TransferManagerImpl(
+            uploader,
+            downloader,
+            networkStatus
+        )
+
+        manager.options = TransferOptions(10, 10)
+
+        return manager
+    }
+
+    @UserScope
+    @Provides
+    fun providesStorageService(
+        serverUrls: ServerUrls,
+        @SlyHttp httpClientFactory: HttpClientFactory,
+        authTokenManager: AuthTokenManager,
+        fileListPersistenceManager: FileListPersistenceManager,
+        transferManager: TransferManager,
+        fileAccess: PlatformFileAccess,
+        @NetworkStatus networkStatus: Observable<Boolean>,
+        keyVault: KeyVault
+    ): StorageService {
+        val storageClient = StorageAsyncClientImpl(serverUrls.API_SERVER, "TODO", httpClientFactory)
+        val syncJobFactory = StorageSyncJobFactoryImpl(keyVault, fileListPersistenceManager, storageClient)
+
+        return StorageServiceImpl(
+            authTokenManager,
+            storageClient,
+            fileListPersistenceManager,
+            syncJobFactory,
+            transferManager,
+            fileAccess,
+            networkStatus
+        )
     }
 }

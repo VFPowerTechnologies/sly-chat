@@ -529,6 +529,7 @@ class SlyApplication {
         userComponent.messageReadWatcher.init()
         userComponent.messageDeletionWatcher.init()
         userComponent.groupEventLoggerWatcher.init()
+        userComponent.storageService.init()
     }
 
     private fun shutdownUserComponents(userComponent: UserComponent) {
@@ -547,6 +548,7 @@ class SlyApplication {
         userComponent.preKeyManager.shutdown()
         userComponent.persistenceManager.shutdown()
         userComponent.notifierService.shutdown()
+        userComponent.storageService.shutdown()
     }
 
     //should come up with something better...

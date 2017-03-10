@@ -144,4 +144,28 @@ class UserPersistenceModule {
     ): EventLog {
         return SQLiteEventLog(sqlitePersistenceManager)
     }
+
+    @UserScope
+    @Provides
+    fun providesFileListPersistenceManager(
+        sqlitePersistenceManager: SQLitePersistenceManager
+    ): FileListPersistenceManager {
+        return SQLiteFileListPersistenceManager(sqlitePersistenceManager)
+    }
+
+    @UserScope
+    @Provides
+    fun providesUploadPersistenceManager(
+        sqlitePersistenceManager: SQLitePersistenceManager
+    ): UploadPersistenceManager {
+        return SQLiteUploadPersistenceManager(sqlitePersistenceManager)
+    }
+
+    @UserScope
+    @Provides
+    fun providesDownloadPersistenceManager(
+        sqlitePersistenceManager: SQLitePersistenceManager
+    ): DownloadPersistenceManager {
+        return SQLiteDownloadPersistenceManager(sqlitePersistenceManager)
+    }
 }
