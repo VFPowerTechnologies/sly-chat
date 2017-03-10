@@ -1,16 +1,17 @@
 package io.slychat.messenger.core
 
+import java.io.FilterInputStream
 import java.io.InputStream
 
 class SectionInputStream(
-    private val inputStream: InputStream,
+    inputStream: InputStream,
     offset: Long,
     size: Long
-) : InputStream() {
+) : FilterInputStream(inputStream) {
     private var remaining = size
 
     init {
-        inputStream.skip(offset)
+        `in`.skip(offset)
     }
 
     override fun read(): Int {
@@ -22,7 +23,7 @@ class SectionInputStream(
             return -1
 
         val toRead = Math.min(b.size.toLong(), remaining)
-        val read = inputStream.read(b, off, toRead.toInt())
+        val read = `in`.read(b, off, toRead.toInt())
 
         if (read > 0)
             remaining -= read
@@ -32,9 +33,5 @@ class SectionInputStream(
 
     override fun read(b: ByteArray): Int {
         return read(b, 0, b.size)
-    }
-
-    override fun close() {
-        inputStream.close()
     }
 }
