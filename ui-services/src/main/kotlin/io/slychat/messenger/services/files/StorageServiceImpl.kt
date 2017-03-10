@@ -175,7 +175,7 @@ class StorageServiceImpl(
 
             val upload = Upload(
                 generateUploadId(),
-                generateFileId(),
+                file.id,
                 UploadState.PENDING,
                 fileInfo.displayName,
                 localFilePath,
