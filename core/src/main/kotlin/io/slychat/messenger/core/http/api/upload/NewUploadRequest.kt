@@ -17,9 +17,13 @@ class NewUploadRequest(
     val pathHash: String
 ) {
     init {
-        val evenCount = if (finalPartSize == 0L) partCount else partCount - 1
+        if (partCount == 1)
+            require(fileSize == partSize) { "Part sizes don't add up to file size; got $partSize, expected $fileSize" }
+        else {
+            val evenCount = if (finalPartSize == 0L) partCount else partCount - 1
 
-        val calc = (evenCount * partSize) + finalPartSize
-        require(fileSize == calc) { "Part sizes don't add up to file size; got $fileSize, expected $calc" }
+            val calc = (evenCount * partSize) + finalPartSize
+            require(fileSize == calc) { "Part sizes don't add up to file size; got $calc, expected $fileSize" }
+        }
     }
 }

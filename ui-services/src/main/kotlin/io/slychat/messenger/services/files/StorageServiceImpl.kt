@@ -159,7 +159,7 @@ class StorageServiceImpl(
             val chunkSize = 128.kb
             val remoteFileSize = getRemoteFileSize(cipher, fileInfo.size, chunkSize)
 
-            val parts = calcUploadParts(cipher, remoteFileSize, chunkSize, MIN_PART_SIZE)
+            val parts = calcUploadParts(cipher, fileInfo.size, chunkSize, MIN_PART_SIZE)
 
             val fileMetadata = FileMetadata(
                 fileInfo.size,
