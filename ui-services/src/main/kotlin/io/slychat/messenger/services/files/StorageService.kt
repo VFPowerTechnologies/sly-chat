@@ -10,6 +10,8 @@ interface StorageService {
 
     val updates: Observable<List<RemoteFile>>
 
+    val transferEvents: Observable<TransferEvent>
+
     val syncRunning: Observable<Boolean>
 
     fun init()

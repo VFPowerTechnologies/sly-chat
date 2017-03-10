@@ -51,6 +51,9 @@ class StorageServiceImpl(
     private val isSyncRunning: Boolean
         get() = syncRunningSubject.value
 
+    override val transferEvents: Observable<TransferEvent>
+        get() = transferManager.events
+
     private var subscription: Subscription? = null
 
     private var isNetworkAvailable = false
