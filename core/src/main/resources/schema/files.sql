@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS files (
     chunk_size INTEGER NOT NULL,
     -- decrypted file size
     file_size INTEGER NOT NULL,
+    -- only null when there's no file metadata
+    mime_type TEXT,
 
     is_pending BOOLEAN NOT NULL
 );

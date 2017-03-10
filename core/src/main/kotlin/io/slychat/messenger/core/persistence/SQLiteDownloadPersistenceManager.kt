@@ -80,13 +80,14 @@ WHERE
         //language=SQLite
         val sql = """
 SELECT
-    d.id, d.file_id, d.state, d.file_path, d.do_decrypt, d.error,
+    d.id, d.file_id, d.state,
+    d.file_path, d.do_decrypt, d.error,
 
     f.id, f.share_key, f.last_update_version,
     f.is_deleted, f.creation_date, f.modification_date,
     f.remote_file_size, f.file_key, f.file_name,
     f.directory, f.cipher_id, f.chunk_size,
-    f.file_size
+    f.file_size, f.mime_type
 FROM
     downloads AS d
 JOIN

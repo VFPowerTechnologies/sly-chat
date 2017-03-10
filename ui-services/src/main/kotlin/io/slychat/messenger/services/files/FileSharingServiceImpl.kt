@@ -37,7 +37,8 @@ class FileSharingServiceImpl(
 
             val fileMetadata = FileMetadata(
                 fileInfo.size,
-                chunkSize
+                chunkSize,
+                fileInfo.mimeType
             )
 
             val file = RemoteFile(

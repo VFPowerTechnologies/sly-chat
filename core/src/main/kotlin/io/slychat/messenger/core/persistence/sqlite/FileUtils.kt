@@ -25,7 +25,8 @@ internal class FileUtils {
         val fileMetadata = if (!isDeleted) {
             FileMetadata(
                 stmt.columnLong(colOffset + 12),
-                stmt.columnInt(colOffset + 11)
+                stmt.columnInt(colOffset + 11),
+                stmt.columnString(colOffset + 13)
             )
         }
         else
@@ -61,11 +62,13 @@ internal class FileUtils {
         if (fileMetadata != null) {
             stmt.bind(12, fileMetadata.chunkSize)
             stmt.bind(13, fileMetadata.size)
+            stmt.bind(14, fileMetadata.mimeType)
         }
         else {
             stmt.bind(11, 0)
             stmt.bind(12, 0)
             stmt.bind(13, 0)
+            stmt.bindNull(14)
         }
     }
 
@@ -80,7 +83,7 @@ INSERT INTO
     is_deleted, creation_date, modification_date,
     remote_file_size, file_key, file_name,
     directory, cipher_id, chunk_size,
-    file_size, is_pending
+    file_size, mime_type, is_pending
     )
     VALUES
     (
@@ -88,7 +91,7 @@ INSERT INTO
     ?, ?, ?,
     ?, ?, ?,
     ?, ?, ?,
-    ?, $isPending
+    ?, ?, $isPending
     )
 """
         connection.withPrepared(sql) {

@@ -216,7 +216,8 @@ fun randomUserMetadata(directory: String? = null): UserMetadata {
 fun randomFileMetadata(): FileMetadata {
     return FileMetadata(
         randomInt().toLong(),
-        randomInt()
+        randomInt(),
+        "*/*"
     )
 }
 

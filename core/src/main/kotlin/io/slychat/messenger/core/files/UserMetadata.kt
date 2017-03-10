@@ -18,7 +18,8 @@ data class UserMetadata(
     //dir/filenames should be case-insensitive during searches
     @JsonProperty("directory")
     val directory: String,
-    @JsonProperty("fileName") val fileName: String
+    @JsonProperty("fileName")
+    val fileName: String
 ) {
     init {
         require(fileName.isNotBlank()) { "Invalid file name: <<$fileName>>" }

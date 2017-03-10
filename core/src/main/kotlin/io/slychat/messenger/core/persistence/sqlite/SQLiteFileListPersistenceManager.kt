@@ -64,7 +64,7 @@ SELECT
     is_deleted, creation_date, modification_date,
     remote_file_size, file_key, file_name,
     directory, cipher_id, chunk_size,
-    file_size
+    file_size, mime_type
 FROM
     files
 $whereClause
@@ -114,6 +114,7 @@ SET
     cipher_id = ?,
     chunk_size = ?,
     file_size = ?,
+    mime_type = ?,
     is_pending = 0
 WHERE
     id = ?
@@ -121,7 +122,7 @@ WHERE
 
         connection.withPrepared(sql) {
             fileUtils.remoteFileToRow(file, it)
-            it.bind(14, file.id)
+            it.bind(15, file.id)
             it.step()
         }
 
@@ -230,7 +231,7 @@ SELECT
     is_deleted, creation_date, modification_date,
     remote_file_size, file_key, file_name,
     directory, cipher_id, chunk_size,
-    file_size
+    file_size, mime_type
 FROM
     files
 WHERE

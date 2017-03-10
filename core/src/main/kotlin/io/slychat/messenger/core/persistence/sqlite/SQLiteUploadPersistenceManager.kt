@@ -144,7 +144,7 @@ SELECT
     f.is_deleted, f.creation_date, f.modification_date,
     f.remote_file_size, f.file_key, f.file_name,
     f.directory, f.cipher_id, f.chunk_size,
-    f.file_size
+    f.file_size, f.mime_type
 FROM
     uploads AS u
 JOIN
