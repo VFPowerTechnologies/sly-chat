@@ -25,4 +25,8 @@ interface StorageService {
     fun getFilesAt(startingAt: Int, count: Int, path: String): Promise<List<RemoteFile>, Exception>
 
     fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception>
+
+    fun uploadFile(localFilePath: String, remoteFileDirectory: String, remoteFileName: String): Promise<Unit, Exception>
+
+    fun downloadFile(fileId: String, localFilePath: String): Promise<Unit, Exception>
 }

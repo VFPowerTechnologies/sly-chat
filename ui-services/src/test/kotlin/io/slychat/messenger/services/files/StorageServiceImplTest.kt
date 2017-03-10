@@ -43,6 +43,8 @@ class StorageServiceImplTest {
     private val fileListPersistenceManager: FileListPersistenceManager = mock()
     private val storageClient: StorageAsyncClient = mock()
     private val networkStatus = BehaviorSubject.create<Boolean>()
+    private val transferManager: TransferManager = mock()
+    private val fileAccess: PlatformFileAccess = mock()
     private val syncJobFactory: StorageSyncJobFactory = mock()
     private val syncJob = MockStorageSyncJob()
 
@@ -57,7 +59,15 @@ class StorageServiceImplTest {
 
     private fun newService(isNetworkAvailable: Boolean = true): StorageServiceImpl {
         networkStatus.onNext(isNetworkAvailable)
-        return StorageServiceImpl(MockAuthTokenManager(), storageClient, fileListPersistenceManager, syncJobFactory, networkStatus)
+        return StorageServiceImpl(
+            MockAuthTokenManager(),
+            storageClient,
+            fileListPersistenceManager,
+            syncJobFactory,
+            transferManager,
+            fileAccess,
+            networkStatus
+        )
     }
 
     @Test
