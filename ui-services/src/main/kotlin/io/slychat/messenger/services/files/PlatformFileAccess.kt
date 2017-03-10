@@ -11,7 +11,7 @@ import java.io.OutputStream
 interface PlatformFileAccess {
     fun getFileSize(path: String): Promise<Long, Exception>
 
-    fun getFileDisplayName(path: String): Promise<Long, Exception>
+    fun getFileDisplayName(path: String): Promise<String, Exception>
 
     fun getMimeType(path: String): Promise<String, Exception>
 

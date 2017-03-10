@@ -207,7 +207,8 @@ class DesktopApp : Application() {
             BehaviorSubject.create(true),
             JavaFxScheduler.getInstance(),
             UserConfig(),
-            null
+            null,
+            DesktopFileAccess()
         )
 
         app.init(platformModule)
