@@ -60,6 +60,12 @@ class StorageServiceImpl(
 
     private var isUpdatingQuota = false
 
+    override val uploads: List<UploadStatus>
+        get() = transferManager.uploads
+
+    override val downloads: List<DownloadStatus>
+        get() = transferManager.downloads
+
     init {
         subscription = networkStatus.subscribe { onNetworkStatusChange(it) }
     }

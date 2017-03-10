@@ -14,6 +14,10 @@ interface StorageService {
 
     val syncRunning: Observable<Boolean>
 
+    val uploads: List<UploadStatus>
+
+    val downloads: List<DownloadStatus>
+
     fun init()
 
     fun shutdown()

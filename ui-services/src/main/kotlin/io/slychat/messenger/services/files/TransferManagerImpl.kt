@@ -16,6 +16,9 @@ class TransferManagerImpl(
     override val uploads: List<UploadStatus>
         get() = uploader.uploads
 
+    override val downloads: List<DownloadStatus>
+        get() = downloader.downloads
+
     override var options: TransferOptions
         get() = TransferOptions(downloader.simulDownloads, uploader.simulUploads)
         set(value) {

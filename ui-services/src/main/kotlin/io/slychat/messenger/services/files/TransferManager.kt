@@ -12,6 +12,8 @@ interface TransferManager {
 
     val uploads: List<UploadStatus>
 
+    val downloads: List<DownloadStatus>
+
     fun init()
 
     fun shutdown()
