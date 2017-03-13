@@ -8,10 +8,7 @@ import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.core.randomRemoteFile
 import io.slychat.messenger.core.randomUserMetadata
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
-import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.testSubscriber
-import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenResolveUnit
+import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import org.assertj.core.api.Assertions.assertThat
@@ -142,15 +139,31 @@ class StorageServiceImplTest {
     fun `sync should update sync status on start and completion`() {
         val service = newService(true)
 
-        val testSubscriber = service.syncRunning.testSubscriber()
+        val testSubscriber = service.syncEvents.testSubscriber()
 
         service.sync()
 
-        testSubscriber.assertReceivedOnNext(listOf(true))
+        testSubscriber.assertReceivedOnNext(listOf(FileListSyncEvent.Begin()))
 
-        syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0))
+        val result = StorageSyncResult(0, emptyList(), 0)
+        syncJob.d.resolve(result)
 
-        testSubscriber.assertReceivedOnNext(listOf(true, false))
+        testSubscriber.assertReceivedOnNext(listOf(FileListSyncEvent.Begin(), FileListSyncEvent.End(result)))
+    }
+
+    @Test
+    fun `sync should emit an Error event if the sync fails`() {
+        val service = newService(true)
+
+        val testSubscriber = service.syncEvents.testSubscriber()
+
+        service.sync()
+
+        testSubscriber.assertReceivedOnNext(listOf(FileListSyncEvent.Begin()))
+
+        syncJob.d.reject(TestException())
+
+        testSubscriber.assertReceivedOnNext(listOf(FileListSyncEvent.Begin(), FileListSyncEvent.Error()))
     }
 
     @Test

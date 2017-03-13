@@ -43,13 +43,12 @@ class StorageServiceImpl(
     override val updates: Observable<List<RemoteFile>>
         get() = updatesSubject
 
-    private val syncRunningSubject = BehaviorSubject.create(false)
+    private val syncEventsSubject = BehaviorSubject.create<FileListSyncEvent>()
 
-    override val syncRunning: Observable<Boolean>
-        get() = syncRunningSubject
+    override val syncEvents: Observable<FileListSyncEvent>
+        get() = syncEventsSubject
 
-    private val isSyncRunning: Boolean
-        get() = syncRunningSubject.value
+    private var isSyncRunning = false
 
     override val transferEvents: Observable<TransferEvent>
         get() = transferManager.events
@@ -96,8 +95,19 @@ class StorageServiceImpl(
         }
     }
 
-    private fun updateSyncStatus(v: Boolean) {
-        syncRunningSubject.onNext(v)
+    private fun beginSync() {
+        isSyncRunning = true
+        syncEventsSubject.onNext(FileListSyncEvent.Begin())
+    }
+
+    private fun endSync(result: StorageSyncResult?) {
+        isSyncRunning = false
+        val ev = if (result != null)
+            FileListSyncEvent.End(result)
+        else
+            FileListSyncEvent.Error()
+
+        syncEventsSubject.onNext(ev)
     }
 
     override fun init() {
@@ -112,16 +122,16 @@ class StorageServiceImpl(
         if (isSyncRunning || !isNetworkAvailable)
             return
 
-        updateSyncStatus(true)
+        beginSync()
 
         authTokenManager.bind {
             syncJobFactory.create(it).run()
         } successUi {
             log.info("Sync job complete: remoteUpdatesPerformed={}; newListVersion={}", it.remoteUpdatesPerformed, it.newListVersion)
-            updateSyncStatus(false)
+            endSync(it)
         } fail {
             log.condError(isNotNetworkError(it), "Sync job failed: {}", it.message, it)
-            updateSyncStatus(false)
+            endSync(null)
         }
     }
 

@@ -12,7 +12,7 @@ interface StorageService {
 
     val transferEvents: Observable<TransferEvent>
 
-    val syncRunning: Observable<Boolean>
+    val syncEvents: Observable<FileListSyncEvent>
 
     val uploads: List<UploadStatus>
 
