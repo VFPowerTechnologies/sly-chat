@@ -24,4 +24,6 @@ interface FileListPersistenceManager {
     fun getVersion(): Promise<Long, Exception>
 
     fun getRemoteUpdates(): Promise<List<FileListUpdate>, Exception>
+
+    fun removeRemoteUpdates(fileIds: List<String>): Promise<Unit, Exception>
 }

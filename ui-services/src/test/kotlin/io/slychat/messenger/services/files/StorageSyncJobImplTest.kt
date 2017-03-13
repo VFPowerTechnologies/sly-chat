@@ -63,6 +63,7 @@ class StorageSyncJobImplTest {
         whenever(fileListPersistenceManager.getVersion()).thenResolve(currentVersion)
         whenever(fileListPersistenceManager.mergeUpdates(any(), any())).thenResolveUnit()
         whenever(fileListPersistenceManager.getRemoteUpdates()).thenResolve(emptyList())
+        whenever(fileListPersistenceManager.removeRemoteUpdates(any())).thenResolveUnit()
         whenever(storageClient.getFileList(any(), any())).thenResolve(FileListResponse(0, emptyList()))
         whenever(storageClient.update(any(), any())).thenResolve(UpdateResponse(newVersion))
     }
@@ -78,6 +79,19 @@ class StorageSyncJobImplTest {
         val result = syncJob.run().get()
 
         assertEquals(1, result.remoteUpdatesPerformed, "Invalid update count")
+    }
+
+    @Test
+    fun `it should remove the pushed updates on success`() {
+        val remoteUpdates = listOf(
+            FileListUpdate.Delete(generateFileId())
+        )
+
+        whenever(fileListPersistenceManager.getRemoteUpdates()).thenResolve(remoteUpdates)
+
+        syncJob.run().get()
+
+        verify(fileListPersistenceManager).removeRemoteUpdates(remoteUpdates.map { it.fileId })
     }
 
     @Test

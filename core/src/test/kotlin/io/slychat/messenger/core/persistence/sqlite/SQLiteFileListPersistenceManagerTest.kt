@@ -256,6 +256,21 @@ class SQLiteFileListPersistenceManagerTest {
     }
 
     @Test
+    fun `remoteRemoteUpdates should remove the given updates`() {
+        val file = insertFile()
+        val file2 = insertFile()
+
+        fileListPersistenceManager.deleteFiles(listOf(file.id, file2.id)).get()
+
+        fileListPersistenceManager.removeRemoteUpdates(listOf(file.id)).get()
+
+        assertThat(fileListPersistenceManager.getRemoteUpdates().get()).apply {
+            describedAs("Should remove the given updates")
+            containsOnly(FileListUpdate.Delete(file2.id))
+        }
+    }
+
+    @Test
     fun `deleteFiles should mark file as deleted`() {
         val file = insertFile()
 

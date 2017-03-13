@@ -53,7 +53,9 @@ class StorageSyncJobImpl(
                 val updateCount = remoteUpdates.size
 
                 val request = UpdateRequest(delete, updateMetadata)
-                storageClient.update(userCredentials, request) map { PushResults(updateCount) }
+                storageClient.update(userCredentials, request) bind {
+                    fileListPersistenceManager.removeRemoteUpdates(remoteUpdates.map { it.fileId }) map { PushResults(updateCount) }
+                }
             }
         }
     }

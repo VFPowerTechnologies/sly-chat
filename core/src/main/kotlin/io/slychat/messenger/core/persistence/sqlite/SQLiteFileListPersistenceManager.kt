@@ -330,4 +330,21 @@ ON
             else -> throw IllegalArgumentException("Unknown FileListUpdate type: $type")
         }
     }
+
+    override fun removeRemoteUpdates(fileIds: List<String>): Promise<Unit, Exception> {
+        if (fileIds.isEmpty())
+            return Promise.ofSuccess(Unit)
+
+        return sqlitePersistenceManager.runQuery { connection ->
+            connection.withTransaction {
+                connection.withPrepared("DELETE FROM remote_file_updates WHERE file_id=?") { stmt ->
+                    fileIds.forEach { fileId ->
+                        stmt.bind(1, fileId)
+                        stmt.step()
+                        stmt.reset()
+                    }
+                }
+            }
+        }
+    }
 }
