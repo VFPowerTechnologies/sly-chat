@@ -529,6 +529,7 @@ class SlyApplication {
         userComponent.messageReadWatcher.init()
         userComponent.messageDeletionWatcher.init()
         userComponent.groupEventLoggerWatcher.init()
+        userComponent.transferManager.init()
         userComponent.storageService.init()
     }
 

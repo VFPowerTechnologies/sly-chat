@@ -15,6 +15,7 @@ import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.files.StorageService
+import io.slychat.messenger.services.files.TransferManager
 import io.slychat.messenger.services.messaging.*
 import rx.Observable
 import rx.subjects.PublishSubject
@@ -90,6 +91,8 @@ class MockUserComponent : UserComponent {
     override val groupEventLoggerWatcher: GroupEventLoggerWatcher = mock()
 
     override val storageService: StorageService = mock()
+
+    override val transferManager: TransferManager = mock()
 
     override val eventLogService: EventLogService = mock()
 

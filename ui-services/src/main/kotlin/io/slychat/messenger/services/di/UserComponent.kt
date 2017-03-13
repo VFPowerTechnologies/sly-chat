@@ -11,6 +11,7 @@ import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.di.annotations.EmptyReadMessageQueue
 import io.slychat.messenger.services.files.StorageService
+import io.slychat.messenger.services.files.TransferManager
 import io.slychat.messenger.services.messaging.*
 import rx.Observable
 
@@ -83,6 +84,8 @@ interface UserComponent {
     val keyVault: KeyVault
 
     val storageService: StorageService
+
+    val transferManager: TransferManager
 
     @get:EmptyReadMessageQueue
     val readMessageQueueIsEmpty: Observable<Unit>
