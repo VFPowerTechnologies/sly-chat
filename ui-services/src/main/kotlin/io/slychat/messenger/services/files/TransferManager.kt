@@ -28,7 +28,7 @@ interface TransferManager {
 
     fun cancelDownload(downloadId: String): Boolean
 
-    fun removeDownload(downloadId: String): Promise<Unit, Exception>
+    fun removeDownloads(downloadIds: List<String>): Promise<Unit, Exception>
 
     fun removeUploads(uploadIds: List<String>): Promise<Unit, Exception>
 }

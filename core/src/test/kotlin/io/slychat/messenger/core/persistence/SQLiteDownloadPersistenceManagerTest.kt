@@ -80,16 +80,20 @@ class SQLiteDownloadPersistenceManagerTest {
     @Test
     fun `remove should remove an existing download`() {
         val download = insertDownload()
+        val download2 = insertDownload()
 
-        downloadPersistenceManager.remove(download.id).get()
+        val downloadIds = listOf(download.id, download2.id)
+        downloadPersistenceManager.remove(downloadIds).get()
 
-        assertNull(downloadPersistenceManager.get(download.id).get(), "Download not removed")
+        downloadIds.forEach {
+            assertNull(downloadPersistenceManager.get(it).get(), "Download not removed")
+        }
     }
 
     @Test
     fun `remove should throw if download doesn't exist`() {
         assertFailsWith(InvalidDownloadException::class) {
-            downloadPersistenceManager.remove(generateDownloadId()).get()
+            downloadPersistenceManager.remove(listOf(generateDownloadId())).get()
         }
     }
 

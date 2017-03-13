@@ -35,22 +35,31 @@ VALUES
         insertDownload(it, download)
     }
 
-    override fun remove(downloadId: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {
-        //language=SQLite
-        val sql = """
+    override fun remove(downloadIds: List<String>): Promise<Unit, Exception> {
+        if (downloadIds.isEmpty())
+            return Promise.ofSuccess(Unit)
+
+        return sqlitePersistenceManager.runQuery { connection ->
+            //language=SQLite
+            val sql = """
 DELETE FROM
     downloads
 WHERE
     id = ?
 """
 
-        it.withPrepared(sql) {
-            it.bind(1, downloadId)
-            it.step()
+            connection.withTransaction {
+                it.withPrepared(sql) { stmt ->
+                    downloadIds.forEach {
+                        stmt.bind(1, it)
+                        stmt.step()
+                        if (connection.changes <= 0)
+                            throw InvalidDownloadException(it)
+                        stmt.reset()
+                    }
+                }
+            }
         }
-
-        if (it.changes <= 0)
-            throw InvalidDownloadException(downloadId)
     }
 
     override fun setState(downloadId: String, state: DownloadState): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {

@@ -1,6 +1,5 @@
 package io.slychat.messenger.core.persistence.sqlite
 
-import io.slychat.messenger.core.crypto.generateDownloadId
 import io.slychat.messenger.core.crypto.generateUploadId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomName
@@ -106,9 +105,9 @@ class SQLiteUploadPersistenceManagerTest {
     }
 
     @Test
-    fun `remove should throw if download doesn't exist`() {
-        assertFailsWith(InvalidDownloadException::class) {
-            uploadPersistenceManager.remove(listOf(generateDownloadId())).get()
+    fun `remove should throw if upload doesn't exist`() {
+        assertFailsWith(InvalidUploadException::class) {
+            uploadPersistenceManager.remove(listOf(generateUploadId())).get()
         }
     }
 

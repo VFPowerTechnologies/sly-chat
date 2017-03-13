@@ -6,7 +6,7 @@ interface DownloadPersistenceManager {
     fun add(download: Download): Promise<Unit, Exception>
 
     //remove a download from the list
-    fun remove(downloadId: String): Promise<Unit, Exception>
+    fun remove(downloadIds: List<String>): Promise<Unit, Exception>
 
     fun setState(downloadId: String, state: DownloadState): Promise<Unit, Exception>
 

@@ -68,8 +68,8 @@ class TransferManagerImpl(
         return downloader.cancel(downloadId)
     }
 
-    override fun removeDownload(downloadId: String): Promise<Unit, Exception> {
-        return downloader.remove(downloadId)
+    override fun removeDownloads(downloadIds: List<String>): Promise<Unit, Exception> {
+        return downloader.remove(downloadIds)
     }
 
     override fun removeUploads(uploadIds: List<String>): Promise<Unit, Exception> {

@@ -38,7 +38,7 @@ interface StorageService {
 
     fun removeUploads(uploadIds: List<String>): Promise<Unit, Exception>
 
-    fun removeDownload(downloadId: String): Promise<Unit, Exception>
+    fun removeDownloads(downloadIds: List<String>): Promise<Unit, Exception>
 
     fun retryDownload(downloadId: String): Promise<Unit, Exception>
 

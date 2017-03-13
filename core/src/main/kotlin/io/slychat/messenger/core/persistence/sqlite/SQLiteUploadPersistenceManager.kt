@@ -112,7 +112,7 @@ WHERE
                         stmt.bind(1, it)
                         stmt.step()
                         if (connection.changes <= 0)
-                            throw InvalidDownloadException(it)
+                            throw InvalidUploadException(it)
                         stmt.reset()
                     }
                 }

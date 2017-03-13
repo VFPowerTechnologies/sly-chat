@@ -386,7 +386,7 @@ class DownloaderImplTest {
         downloader.download(downloadInfo).get()
 
         assertFailsWith(IllegalStateException::class) {
-            downloader.remove(downloadInfo.download.id).get()
+            downloader.remove(listOf(downloadInfo.download.id)).get()
         }
     }
 
@@ -395,7 +395,7 @@ class DownloaderImplTest {
         val downloader = newDownloader()
 
         assertFailsWith(InvalidDownloadException::class) {
-            downloader.remove(generateDownloadId()).get()
+            downloader.remove(listOf(generateDownloadId())).get()
         }
     }
 
@@ -405,9 +405,9 @@ class DownloaderImplTest {
 
         val downloader = newDownloaderWithDownload(info)
 
-        downloader.remove(info.download.id).get()
+        downloader.remove(listOf(info.download.id)).get()
 
-        verify(downloadPersistenceManager).remove(info.download.id)
+        verify(downloadPersistenceManager).remove(listOf(info.download.id))
 
         assertThat(downloader.downloads.map { it.download }).apply {
             describedAs("Should remove download from list")
@@ -421,10 +421,10 @@ class DownloaderImplTest {
 
         val downloader = newDownloaderWithDownload(info)
 
-        val ev = TransferEvent.DownloadRemoved(info.download)
+        val ev = TransferEvent.DownloadRemoved(listOf(info.download))
 
         assertEventEmitted(downloader, ev) {
-            downloader.remove(info.download.id).get()
+            downloader.remove(listOf(info.download.id)).get()
         }
     }
 }
