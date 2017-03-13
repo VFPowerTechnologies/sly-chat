@@ -19,6 +19,7 @@ interface PlatformFileAccess {
 
     fun openFileForRead(path: String): Promise<InputStream, Exception>
 
+    //TODO append
     fun openFileForWrite(path: String): Promise<OutputStream, Exception>
 
     fun createFile(path: String): Promise<Unit, Exception>

@@ -10,7 +10,6 @@ import android.net.ConnectivityManager
 import android.os.StrictMode
 import android.support.v4.content.ContextCompat
 import com.almworks.sqlite4java.SQLite
-import com.fasterxml.jackson.databind.deser.Deserializers
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
@@ -22,23 +21,21 @@ import io.slychat.messenger.android.services.AndroidPlatformContacts
 import io.slychat.messenger.android.services.AndroidUILoadService
 import io.slychat.messenger.android.services.AndroidUIPlatformInfoService
 import io.slychat.messenger.android.services.AndroidUIPlatformService
-import io.slychat.messenger.core.*
-import io.slychat.messenger.services.*
-import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.SlyBuildConfig
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClient
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsAsyncClientImpl
+import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.pushnotifications.OfflineMessagesPushNotification
-import io.slychat.messenger.services.LoginState
-import io.slychat.messenger.services.Sentry
-import io.slychat.messenger.services.SlyApplication
+import io.slychat.messenger.services.*
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.di.UserComponent
-import io.slychat.messenger.services.ui.*
+import io.slychat.messenger.services.ui.UIConversation
+import io.slychat.messenger.services.ui.createAppDirectories
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.android.androidUiDispatcher
 import nl.komponents.kovenant.task
@@ -167,26 +164,27 @@ class AndroidApp : Application() {
 
         val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val defaultUserConfig = UserConfig().copy(
-                notificationsSound = defaultUri.toString()
+            notificationsSound = defaultUri.toString()
         )
 
         val platformModule = PlatformModule(
-                AndroidUIPlatformInfoService(),
-                SlyBuildConfig.ANDROID_SERVER_URLS,
-                platformInfo,
-                AndroidTelephonyService(this),
-                AndroidUIWindowService(),
-                AndroidPlatformContacts(this),
-                notificationService,
-                AndroidUIShareService(),
-                AndroidUIPlatformService(),
-                AndroidUILoadService(),
-                uiVisibility,
-                AndroidTokenFetcher(this),
-                networkStatus,
-                AndroidSchedulers.mainThread(),
-                defaultUserConfig,
-                PushNotificationService.GCM
+            AndroidUIPlatformInfoService(),
+            SlyBuildConfig.ANDROID_SERVER_URLS,
+            platformInfo,
+            AndroidTelephonyService(this),
+            AndroidUIWindowService(),
+            AndroidPlatformContacts(this),
+            notificationService,
+            AndroidUIShareService(),
+            AndroidUIPlatformService(),
+            AndroidUILoadService(),
+            uiVisibility,
+            AndroidTokenFetcher(this),
+            networkStatus,
+            AndroidSchedulers.mainThread(),
+            defaultUserConfig,
+            PushNotificationService.GCM,
+            AndroidFileAccess(this)
         )
 
         app.init(platformModule)
@@ -370,7 +368,7 @@ class AndroidApp : Application() {
         return userComponent
     }
 
-    fun dispatchEvent (type: String, page: PageType, extra: String) {
+    fun dispatchEvent(type: String, page: PageType, extra: String) {
         val event = UIEvent.PageChange(page, extra)
 
         this.appComponent.uiEventService.dispatchEvent(event)
