@@ -2,10 +2,7 @@ package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.isNotNetworkError
-import io.slychat.messenger.core.persistence.UploadError
-import io.slychat.messenger.core.persistence.UploadInfo
-import io.slychat.messenger.core.persistence.UploadPersistenceManager
-import io.slychat.messenger.core.persistence.UploadState
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -320,6 +317,29 @@ class UploaderImpl(
             subject.onNext(TransferEvent.UploadStateChanged(status.upload, status.state))
 
             startNextUpload()
+        }
+    }
+
+    override fun remove(uploadIds: List<String>): Promise<Unit, Exception> {
+        val statuses = uploadIds.map { uploadId ->
+            list.all[uploadId] ?: throw InvalidUploadException(uploadId)
+        }
+
+        val ids = statuses.map { status ->
+            val id = status.upload.id
+            if (id !in list.inactive)
+                throw IllegalStateException("Upload $id is currently active, can't remove")
+
+            list.queued.remove(id)
+            list.inactive.remove(id)
+
+            id
+        }
+
+        return uploadPersistenceManager.remove(ids) successUi {
+            ids.forEach { list.all.remove(it) }
+
+            subject.onNext(TransferEvent.UploadRemoved(statuses.map { it.upload }))
         }
     }
 }

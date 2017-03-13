@@ -5,6 +5,8 @@ import nl.komponents.kovenant.Promise
 interface UploadPersistenceManager {
     fun add(info: UploadInfo): Promise<Unit, Exception>
 
+    fun remove(uploadIds: List<String>): Promise<Unit, Exception>
+
     fun setState(uploadId: String, newState: UploadState): Promise<Unit, Exception>
 
     fun completePart(uploadId: String, n: Int): Promise<Unit, Exception>

@@ -233,7 +233,19 @@ class StorageServiceImpl(
         }
     }
 
+    override fun removeUploads(uploadIds: List<String>): Promise<Unit, Exception> {
+        return transferManager.removeUploads(uploadIds)
+    }
+
     override fun removeDownload(downloadId: String): Promise<Unit, Exception> {
         return transferManager.removeDownload(downloadId)
+    }
+
+    override fun retryDownload(downloadId: String): Promise<Unit, Exception> {
+        return transferManager.clearDownloadError(downloadId)
+    }
+
+    override fun retryUpload(uploadId: String): Promise<Unit, Exception> {
+        return transferManager.clearUploadError(uploadId)
     }
 }

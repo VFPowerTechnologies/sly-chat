@@ -4,6 +4,7 @@ import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.crypto.generateShareKey
+import io.slychat.messenger.core.crypto.generateUploadId
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.testutils.KovenantTestModeRule
@@ -17,6 +18,7 @@ import org.junit.Test
 import rx.schedulers.TestScheduler
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -45,6 +47,7 @@ class UploaderImplTest {
         whenever(uploadPersistenceManager.completePart(any(), any())).thenResolveUnit()
         whenever(uploadPersistenceManager.setState(any(), any())).thenResolveUnit()
         whenever(uploadPersistenceManager.setError(any(), any())).thenResolveUnit()
+        whenever(uploadPersistenceManager.remove(any())).thenResolveUnit()
     }
 
     private fun newUploader(isNetworkAvailable: Boolean = true): Uploader {
@@ -56,6 +59,16 @@ class UploaderImplTest {
             scheduler,
             isNetworkAvailable
         )
+    }
+
+    private fun newUploaderWithUpload(info: UploadInfo, isNetworkAvailable: Boolean = true): Uploader {
+        val uploader = newUploader(isNetworkAvailable = isNetworkAvailable)
+
+        whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
+
+        uploader.init()
+
+        return uploader
     }
 
     private fun randomUploadInfo(partCount: Int = 1, state: UploadState = UploadState.PENDING, error: UploadError? = null): UploadInfo {
@@ -462,6 +475,57 @@ class UploaderImplTest {
         val event = TransferEvent.UploadProgress(info.upload, progress)
         assertEventEmitted(uploader, event) {
             scheduler.advanceTimeBy(DownloaderImpl.PROGRESS_TIME_MS, TimeUnit.MILLISECONDS)
+        }
+    }
+
+    @Test
+    fun `remove should throw IllegalStateException if called for an active upload`() {
+        val uploader = newUploader()
+
+        val info = randomUploadInfo()
+
+        uploader.upload(info).get()
+
+        assertFailsWith(IllegalStateException::class) {
+            uploader.remove(listOf(info.upload.id)).get()
+        }
+    }
+
+    @Test
+    fun `remove should throw InvalidUploadException if called for an invalid upload id`() {
+        val uploader = newUploader()
+
+        assertFailsWith(InvalidUploadException::class) {
+            uploader.remove(listOf(generateUploadId())).get()
+        }
+    }
+
+    @Test
+    fun `remove should remove a non-active upload`() {
+        val info = randomUploadInfo(error = UploadError.FILE_DISAPPEARED)
+
+        val uploader = newUploaderWithUpload(info)
+
+        uploader.remove(listOf(info.upload.id)).get()
+
+        verify(uploadPersistenceManager).remove(listOf(info.upload.id))
+
+        assertThat(uploader.uploads.map { it.upload }).apply {
+            describedAs("Should remove uploads from list")
+            doesNotContain(info.upload)
+        }
+    }
+
+    @Test
+    fun `remove should emit an UploadRemoved event`() {
+        val info = randomUploadInfo(error = UploadError.FILE_DISAPPEARED)
+
+        val uploader = newUploaderWithUpload(info)
+
+        val ev = TransferEvent.UploadRemoved(listOf(info.upload))
+
+        assertEventEmitted(uploader, ev) {
+            uploader.remove(listOf(info.upload.id)).get()
         }
     }
 }

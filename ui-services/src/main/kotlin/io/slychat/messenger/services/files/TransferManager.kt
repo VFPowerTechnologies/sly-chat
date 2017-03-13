@@ -20,12 +20,16 @@ interface TransferManager {
 
     fun upload(info: UploadInfo): Promise<Unit, Exception>
 
-    fun clearError(uploadId: String): Promise<Unit, Exception>
+    fun clearUploadError(uploadId: String): Promise<Unit, Exception>
+
+    fun clearDownloadError(downloadId: String): Promise<Unit, Exception>
 
     fun download(info: DownloadInfo): Promise<Unit, Exception>
 
     fun cancelDownload(downloadId: String): Boolean
 
     fun removeDownload(downloadId: String): Promise<Unit, Exception>
+
+    fun removeUploads(uploadIds: List<String>): Promise<Unit, Exception>
 }
 

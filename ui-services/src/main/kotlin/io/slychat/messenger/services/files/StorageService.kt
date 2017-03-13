@@ -36,5 +36,11 @@ interface StorageService {
 
     fun downloadFile(fileId: String, localFilePath: String): Promise<Unit, Exception>
 
+    fun removeUploads(uploadIds: List<String>): Promise<Unit, Exception>
+
     fun removeDownload(downloadId: String): Promise<Unit, Exception>
+
+    fun retryDownload(downloadId: String): Promise<Unit, Exception>
+
+    fun retryUpload(uploadId: String): Promise<Unit, Exception>
 }

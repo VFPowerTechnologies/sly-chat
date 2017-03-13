@@ -28,6 +28,27 @@ sealed class TransferEvent {
         }
     }
 
+    class UploadRemoved(val uploads: List<Upload>) : TransferEvent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as UploadRemoved
+
+            if (uploads != other.uploads) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return uploads.hashCode()
+        }
+
+        override fun toString(): String {
+            return "UploadRemoved(uploads=$uploads)"
+        }
+    }
+
     class UploadProgress(val upload: Upload, val transferProgress: UploadTransferProgress) : TransferEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

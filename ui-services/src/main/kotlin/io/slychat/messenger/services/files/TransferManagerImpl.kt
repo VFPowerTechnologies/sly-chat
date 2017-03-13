@@ -52,8 +52,12 @@ class TransferManagerImpl(
         return uploader.upload(info)
     }
 
-    override fun clearError(uploadId: String): Promise<Unit, Exception> {
+    override fun clearUploadError(uploadId: String): Promise<Unit, Exception> {
         return uploader.clearError(uploadId)
+    }
+
+    override fun clearDownloadError(downloadId: String): Promise<Unit, Exception> {
+        return downloader.clearError(downloadId)
     }
 
     override fun download(info: DownloadInfo): Promise<Unit, Exception> {
@@ -66,5 +70,9 @@ class TransferManagerImpl(
 
     override fun removeDownload(downloadId: String): Promise<Unit, Exception> {
         return downloader.remove(downloadId)
+    }
+
+    override fun removeUploads(uploadIds: List<String>): Promise<Unit, Exception> {
+        return uploader.remove(uploadIds)
     }
 }

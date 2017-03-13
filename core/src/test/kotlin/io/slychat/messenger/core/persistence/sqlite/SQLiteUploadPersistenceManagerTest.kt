@@ -1,5 +1,6 @@
 package io.slychat.messenger.core.persistence.sqlite
 
+import io.slychat.messenger.core.crypto.generateDownloadId
 import io.slychat.messenger.core.crypto.generateUploadId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomName
@@ -87,6 +88,27 @@ class SQLiteUploadPersistenceManagerTest {
         assertThat(actual).apply {
             describedAs("Should match the inserted upload")
             isEqualToComparingFieldByField(upload)
+        }
+    }
+
+    @Test
+    fun `remove should remove an existing upload`() {
+        val upload = insertUpload()
+        val upload2 = insertUpload()
+
+        val uploadIds = listOf(upload.id, upload2.id)
+
+        uploadPersistenceManager.remove(uploadIds).get()
+
+        uploadIds.forEach {
+            assertNull(uploadPersistenceManager.get(it).get(), "Upload not removed")
+        }
+    }
+
+    @Test
+    fun `remove should throw if download doesn't exist`() {
+        assertFailsWith(InvalidDownloadException::class) {
+            uploadPersistenceManager.remove(listOf(generateDownloadId())).get()
         }
     }
 

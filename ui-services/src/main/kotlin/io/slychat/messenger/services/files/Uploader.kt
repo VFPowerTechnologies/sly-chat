@@ -20,4 +20,6 @@ interface Uploader {
     fun upload(info: UploadInfo): Promise<Unit, Exception>
 
     fun clearError(uploadId: String): Promise<Unit, Exception>
+
+    fun remove(uploadIds: List<String>): Promise<Unit, Exception>
 }

@@ -93,6 +93,33 @@ VALUES
         }
     }
 
+    override fun remove(uploadIds: List<String>): Promise<Unit, Exception> {
+        if (uploadIds.isEmpty())
+            return Promise.ofSuccess(Unit)
+
+        return sqlitePersistenceManager.runQuery { connection ->
+            //language=SQLite
+            val sql = """
+DELETE FROM
+    uploads
+WHERE
+    id = ?
+"""
+
+            connection.withTransaction {
+                it.withPrepared(sql) { stmt ->
+                    uploadIds.forEach {
+                        stmt.bind(1, it)
+                        stmt.step()
+                        if (connection.changes <= 0)
+                            throw InvalidDownloadException(it)
+                        stmt.reset()
+                    }
+                }
+            }
+        }
+    }
+
     override fun setState(uploadId: String, newState: UploadState): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {
         //language=SQLite
         val sql = """
