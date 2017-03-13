@@ -50,6 +50,16 @@ class DownloaderImplTest {
         )
     }
 
+    private fun newDownloaderWithDownload(info: DownloadInfo, isNetworkAvailable: Boolean = true): Downloader {
+        val downloader = newDownloader(isNetworkAvailable = isNetworkAvailable)
+
+        whenever(downloadPersistenceManager.getAll()).thenResolve(listOf(info))
+
+        downloader.init()
+
+        return downloader
+    }
+
     private fun <R> assertEventEmitted(downloader: Downloader, event: TransferEvent, body: () -> R): R {
         val testSubscriber = downloader.events.testSubscriber()
 
@@ -107,6 +117,7 @@ class DownloaderImplTest {
         whenever(downloadPersistenceManager.getAll()).thenResolve(emptyList())
         whenever(downloadPersistenceManager.setState(any(), any())).thenResolveUnit()
         whenever(downloadPersistenceManager.setError(any(), any())).thenResolveUnit()
+        whenever(downloadPersistenceManager.remove(any())).thenResolveUnit()
     }
 
     @Test
@@ -363,6 +374,57 @@ class DownloaderImplTest {
 
         assertFailsWith(InvalidDownloadException::class) {
             downloader.cancel(generateDownloadId())
+        }
+    }
+
+    @Test
+    fun `remove should throw IllegalStateException if called for an active download`() {
+        val downloader = newDownloader()
+
+        val downloadInfo = randomDownloadInfo()
+
+        downloader.download(downloadInfo).get()
+
+        assertFailsWith(IllegalStateException::class) {
+            downloader.remove(downloadInfo.download.id).get()
+        }
+    }
+
+    @Test
+    fun `remove should throw InvalidDownloadException if called for an invalid download id`() {
+        val downloader = newDownloader()
+
+        assertFailsWith(InvalidDownloadException::class) {
+            downloader.remove(generateDownloadId()).get()
+        }
+    }
+
+    @Test
+    fun `remove should remove a non-active download`() {
+        val info = randomDownloadInfo(error = DownloadError.REMOTE_FILE_MISSING)
+
+        val downloader = newDownloaderWithDownload(info)
+
+        downloader.remove(info.download.id).get()
+
+        verify(downloadPersistenceManager).remove(info.download.id)
+
+        assertThat(downloader.downloads.map { it.download }).apply {
+            describedAs("Should remove download from list")
+            doesNotContain(info.download)
+        }
+    }
+
+    @Test
+    fun `remove should emit a DownloadRemoved event`() {
+        val info = randomDownloadInfo(error = DownloadError.REMOTE_FILE_MISSING)
+
+        val downloader = newDownloaderWithDownload(info)
+
+        val ev = TransferEvent.DownloadRemoved(info.download)
+
+        assertEventEmitted(downloader, ev) {
+            downloader.remove(info.download.id).get()
         }
     }
 }

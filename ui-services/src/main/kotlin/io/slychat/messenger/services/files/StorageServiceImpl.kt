@@ -230,4 +230,8 @@ class StorageServiceImpl(
             transferManager.download(info)
         }
     }
+
+    override fun removeDownload(downloadId: String): Promise<Unit, Exception> {
+        return transferManager.removeDownload(downloadId)
+    }
 }

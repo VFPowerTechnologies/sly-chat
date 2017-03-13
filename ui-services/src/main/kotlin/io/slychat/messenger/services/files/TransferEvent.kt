@@ -100,6 +100,27 @@ sealed class TransferEvent {
         }
     }
 
+    class DownloadRemoved(val download: Download) : TransferEvent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as DownloadRemoved
+
+            if (download != other.download) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return download.hashCode()
+        }
+
+        override fun toString(): String {
+            return "DownloadRemoved(download=$download)"
+        }
+    }
+
     class DownloadProgress(val download: Download, val progress: DownloadTransferProgress) : TransferEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

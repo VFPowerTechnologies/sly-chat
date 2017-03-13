@@ -307,4 +307,20 @@ class DownloaderImpl(
 
         return true
     }
+
+    override fun remove(downloadId: String): Promise<Unit, Exception> {
+        val status = list.all[downloadId] ?: throw InvalidDownloadException(downloadId)
+
+        val id = status.download.id
+        if (id in list.active)
+            throw IllegalStateException("Download $downloadId is currently active, can't remove")
+
+        list.queued.remove(id)
+        list.inactive.remove(id)
+
+        return downloadPersistenceManager.remove(id) successUi {
+            list.all.remove(id)
+            subject.onNext(TransferEvent.DownloadRemoved(status.download))
+        }
+    }
 }

@@ -19,6 +19,9 @@ interface Downloader {
 
     fun download(info: DownloadInfo): Promise<Unit, Exception>
 
+    //throws IllegalStateException if called on an active download
+    fun remove(downloadId: String): Promise<Unit, Exception>
+
     /** Returns true if download was sent cancel signal, false if download wasn't running. */
     fun cancel(downloadId: String): Boolean
 

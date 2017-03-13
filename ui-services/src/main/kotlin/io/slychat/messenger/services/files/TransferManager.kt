@@ -25,5 +25,7 @@ interface TransferManager {
     fun download(info: DownloadInfo): Promise<Unit, Exception>
 
     fun cancelDownload(downloadId: String): Boolean
+
+    fun removeDownload(downloadId: String): Promise<Unit, Exception>
 }
 
