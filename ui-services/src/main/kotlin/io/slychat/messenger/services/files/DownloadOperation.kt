@@ -7,10 +7,10 @@ import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.http.api.storage.StorageClient
 import io.slychat.messenger.core.persistence.Download
 import rx.Subscriber
-import java.io.FileOutputStream
 import java.util.concurrent.CancellationException
 
 class DownloadOperation(
+    private val fileAccess: PlatformFileAccess,
     private val userCredentials: UserCredentials,
     private val download: Download,
     private val file: RemoteFile,
@@ -33,7 +33,7 @@ class DownloadOperation(
         inputStream.use { inputStream ->
             val buffer = ByteArray(8 * 1024)
 
-            FileOutputStream(download.filePath).use { outputStream ->
+            fileAccess.openFileForWrite(download.filePath).use { outputStream ->
                 while (true) {
                     val read = inputStream.read(buffer)
 

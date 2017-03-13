@@ -1,13 +1,10 @@
 package io.slychat.messenger.android
 
 import android.content.Context
-import android.graphics.Path
 import android.net.Uri
 import android.provider.OpenableColumns
 import io.slychat.messenger.services.files.FileInfo
 import io.slychat.messenger.services.files.PlatformFileAccess
-import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.task
 import java.io.*
 
 class AndroidFileAccess(private val context: Context) : PlatformFileAccess {
@@ -68,41 +65,29 @@ class AndroidFileAccess(private val context: Context) : PlatformFileAccess {
         }
     }
 
-    override fun getFileSize(path: String): Promise<Long, Exception> {
-        return task { queryFileInfo(path).size }
+    override fun getFileSize(path: String): Long {
+        return queryFileInfo(path).size
     }
 
-    override fun getFileDisplayName(path: String): Promise<String, Exception> {
-        return task { queryFileInfo(path).displayName }
+    override fun getFileInfo(path: String): FileInfo {
+        return queryFileInfo(path)
     }
 
-    override fun getMimeType(path: String): Promise<String, Exception> {
-        return task { queryFileInfo(path).mimeType }
-    }
+    override fun openFileForRead(path: String): InputStream {
+        val p = parsePath(path)
 
-    override fun getFileInfo(path: String): Promise<FileInfo, Exception> {
-        return task { queryFileInfo(path) }
-    }
-
-    override fun openFileForRead(path: String): Promise<InputStream, Exception> {
-        return task {
-            val p = parsePath(path)
-
-            when (p) {
-                is PathType.F -> FileInputStream(p.file)
-                is PathType.U -> context.contentResolver.openInputStream(p.uri)
-            }
+        return when (p) {
+            is PathType.F -> FileInputStream(p.file)
+            is PathType.U -> context.contentResolver.openInputStream(p.uri)
         }
     }
 
-    override fun openFileForWrite(path: String): Promise<OutputStream, Exception> {
-        return task {
-            val p = parsePath(path)
+    override fun openFileForWrite(path: String): OutputStream {
+        val p = parsePath(path)
 
-            when (p) {
-                is PathType.F -> FileOutputStream(p.file)
-                is PathType.U -> context.contentResolver.openOutputStream(p.uri)
-            }
+        return when (p) {
+            is PathType.F -> FileOutputStream(p.file)
+            is PathType.U -> context.contentResolver.openOutputStream(p.uri)
         }
     }
 }

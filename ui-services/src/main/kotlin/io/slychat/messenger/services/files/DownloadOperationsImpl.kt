@@ -8,6 +8,7 @@ import rx.Observable
 import rx.Scheduler
 
 class DownloadOperationsImpl(
+    private val fileAccess: PlatformFileAccess,
     private val authTokenManager: AuthTokenManager,
     private val storageClientFactory: StorageClientFactory,
     private val subscribeScheduler: Scheduler
@@ -17,7 +18,7 @@ class DownloadOperationsImpl(
         return authFailureRetry(authTokenManager, Observable.create<Long> { subscriber ->
             try {
                 val userCredentials = authTokenManager.map { it }.get()
-                val op = DownloadOperation(userCredentials, download, file, storageClientFactory.create(), subscriber)
+                val op = DownloadOperation(fileAccess, userCredentials, download, file, storageClientFactory.create(), subscriber)
                 op.run()
 
                 subscriber.onCompleted()

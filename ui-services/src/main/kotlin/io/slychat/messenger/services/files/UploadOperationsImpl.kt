@@ -11,6 +11,7 @@ import rx.Observable
 import rx.Scheduler
 
 class UploadOperationsImpl(
+    private val fileAccess: PlatformFileAccess,
     private val authTokenManager: AuthTokenManager,
     private val uploadClientFactory: UploadClientFactory,
     private val keyVault: KeyVault,
@@ -27,7 +28,7 @@ class UploadOperationsImpl(
         return authFailureRetry(authTokenManager, Observable.create<Long> { subscriber ->
             try {
                 val userCredentials = authTokenManager.map { it }.get()
-                val op = UploadPartOperation(userCredentials, upload, part, file, uploadClientFactory.create(), subscriber)
+                val op = UploadPartOperation(fileAccess, userCredentials, upload, part, file, uploadClientFactory.create(), subscriber)
                 op.run()
 
                 subscriber.onCompleted()

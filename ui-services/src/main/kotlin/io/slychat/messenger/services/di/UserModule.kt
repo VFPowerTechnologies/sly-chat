@@ -509,9 +509,11 @@ class UserModule(
         @SlyHttp httpClientFactory: HttpClientFactory,
         authTokenManager: AuthTokenManager,
         downloadPersistenceManager: DownloadPersistenceManager,
-        mainScheduler: Scheduler
+        mainScheduler: Scheduler,
+        fileAccess: PlatformFileAccess
     ): Downloader {
         val operations = DownloadOperationsImpl(
+            fileAccess,
             authTokenManager,
             StorageClientFactoryImpl(serverUrls.API_SERVER, serverUrls.FILE_SERVER, httpClientFactory),
             Schedulers.io()
@@ -535,9 +537,11 @@ class UserModule(
         authTokenManager: AuthTokenManager,
         uploadPersistenceManager: UploadPersistenceManager,
         mainScheduler: Scheduler,
-        keyVault: KeyVault
+        keyVault: KeyVault,
+        fileAccess: PlatformFileAccess
     ): Uploader {
         val operations = UploadOperationsImpl(
+            fileAccess,
             authTokenManager,
             UploadClientFactoryImpl(serverUrls.API_SERVER, serverUrls.FILE_SERVER, httpClientFactory),
             keyVault,

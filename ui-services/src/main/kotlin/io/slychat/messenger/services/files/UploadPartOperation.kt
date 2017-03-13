@@ -12,10 +12,10 @@ import io.slychat.messenger.core.persistence.Upload
 import io.slychat.messenger.core.persistence.UploadPart
 import rx.Subscriber
 import rx.subscriptions.Subscriptions
-import java.io.FileInputStream
 import java.util.concurrent.atomic.AtomicBoolean
 
 class UploadPartOperation(
+    private val fileAccess: PlatformFileAccess,
     private val userCredentials: UserCredentials,
     private val upload: Upload,
     private val part: UploadPart,
@@ -25,7 +25,7 @@ class UploadPartOperation(
 ) {
     fun run() {
         //TODO handle missing file (FileNotFoundException), and then any other exception that's raise
-        FileInputStream(upload.filePath).use { fileInputStream ->
+        fileAccess.openFileForRead(upload.filePath).use { fileInputStream ->
             val limiter = SectionInputStream(fileInputStream, part.offset, part.localSize)
 
             val cipher = CipherList.getCipher(file.userMetadata.cipherId)

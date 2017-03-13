@@ -11,6 +11,7 @@ import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.bindUi
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.task
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -154,7 +155,8 @@ class StorageServiceImpl(
     }
 
     override fun uploadFile(localFilePath: String, remoteFileDirectory: String, remoteFileName: String): Promise<Unit, Exception> {
-        return fileAccess.getFileInfo(localFilePath) bindUi { fileInfo ->
+        return task {
+            val fileInfo = fileAccess.getFileInfo(localFilePath)
             val cipher = CipherList.defaultDataEncryptionCipher
             val key = generateKey(cipher.keySizeBits)
 
@@ -199,12 +201,12 @@ class StorageServiceImpl(
                 null, parts
             )
 
-            val info = UploadInfo(
+            UploadInfo(
                 upload,
                 file
             )
-
-            transferManager.upload(info)
+        } bindUi {
+            transferManager.upload(it)
         }
     }
 
