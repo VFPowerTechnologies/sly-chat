@@ -7,4 +7,7 @@ data class Download(
     val filePath: String,
     val doDecrypt: Boolean,
     val error: DownloadError?
-)
+) {
+    val isComplete: Boolean
+        get() = state == DownloadState.COMPLETE
+}

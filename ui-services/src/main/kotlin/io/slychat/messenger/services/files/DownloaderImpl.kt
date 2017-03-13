@@ -88,7 +88,7 @@ class DownloaderImpl(
                 initialState,
                 //TODO we need to fetch this from disk? always do this when adding to queue; need to inc count but not
                 //actually start download until a file size is established
-                DownloadTransferProgress(0, file.remoteFileSize)
+                DownloadTransferProgress(if (download.isComplete) file.remoteFileSize else 0, file.remoteFileSize)
             )
 
             if (initialState == TransferState.QUEUED)
