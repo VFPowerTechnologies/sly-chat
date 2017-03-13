@@ -13,5 +13,5 @@ interface UploadPersistenceManager {
 
     fun getAll(): Promise<List<UploadInfo>, Exception>
 
-    fun get(uploadId : String): Promise<Upload?, Exception>
+    fun get(uploadId: String): Promise<Upload?, Exception>
 }

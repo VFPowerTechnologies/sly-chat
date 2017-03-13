@@ -88,7 +88,7 @@ class UploaderImpl(
                 upload,
                 file,
                 initialState,
-                upload.parts.map { UploadPartTransferProgress(0, it.remoteSize) }
+                upload.parts.map { UploadPartTransferProgress(if (it.isComplete) it.remoteSize else 0, it.remoteSize) }
             )
 
             if (initialState == TransferState.QUEUED)
