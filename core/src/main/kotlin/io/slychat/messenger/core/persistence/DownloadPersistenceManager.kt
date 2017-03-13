@@ -5,6 +5,9 @@ import nl.komponents.kovenant.Promise
 interface DownloadPersistenceManager {
     fun add(download: Download): Promise<Unit, Exception>
 
+    //remove a download from the list
+    fun remove(downloadId: String): Promise<Unit, Exception>
+
     fun setState(downloadId: String, state: DownloadState): Promise<Unit, Exception>
 
     fun setError(downloadId: String, error: DownloadError?): Promise<Unit, Exception>

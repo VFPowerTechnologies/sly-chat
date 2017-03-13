@@ -35,6 +35,24 @@ VALUES
         insertDownload(it, download)
     }
 
+    override fun remove(downloadId: String): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {
+        //language=SQLite
+        val sql = """
+DELETE FROM
+    downloads
+WHERE
+    id = ?
+"""
+
+        it.withPrepared(sql) {
+            it.bind(1, downloadId)
+            it.step()
+        }
+
+        if (it.changes <= 0)
+            throw InvalidDownloadException(downloadId)
+    }
+
     override fun setState(downloadId: String, state: DownloadState): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {
         //language=SQLite
         val sql = """
