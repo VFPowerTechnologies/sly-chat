@@ -1,16 +1,12 @@
 package io.slychat.messenger.services.files
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.*
-import io.slychat.messenger.core.crypto.generateFileId
-import io.slychat.messenger.core.crypto.generateShareKey
 import io.slychat.messenger.core.crypto.generateUploadId
-import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.testSubscriber
-import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenResolveUnit
+import io.slychat.messenger.core.randomRemoteFile
+import io.slychat.messenger.core.randomUpload
+import io.slychat.messenger.core.randomUserMetadata
+import io.slychat.messenger.testutils.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
@@ -71,18 +67,8 @@ class UploaderImplTest {
         return uploader
     }
 
-    private fun randomUploadInfo(partCount: Int = 1, state: UploadState = UploadState.PENDING, error: UploadError? = null): UploadInfo {
-        val file = RemoteFile(
-            generateFileId(),
-            generateShareKey(),
-            0,
-            false,
-            randomUserMetadata(),
-            randomFileMetadata(),
-            1,
-            2,
-            randomLong()
-        )
+    private fun randomUploadInfo(state: UploadState = UploadState.PENDING, error: UploadError? = null): UploadInfo {
+        val file = randomRemoteFile()
 
         val upload = randomUpload(file.id, file.remoteFileSize, state, error)
 
@@ -229,8 +215,6 @@ class UploaderImplTest {
         verify(uploadPersistenceManager).add(uploadInfo)
     }
 
-    //TODO transfer event tests
-
     @Test
     fun `adding a new upload should emit an UploadAdded event`() {
         val uploader = newUploader(false)
@@ -306,7 +290,7 @@ class UploaderImplTest {
     }
 
     @Test
-    fun `it should move an upload to completion state once all parts have been uploaded`() {
+    fun `it should move an upload to completion state once all parts have been uploaded for a single part upload`() {
         val uploader = newUploader()
 
         val uploadInfo = randomUploadInfo()
@@ -318,6 +302,56 @@ class UploaderImplTest {
         uploadOperations.completeUploadPartOperation(1)
 
         verify(uploadPersistenceManager).setState(uploadInfo.upload.id, UploadState.COMPLETE)
+
+        uploadOperations.assertCompleteNotCalled()
+    }
+
+    private fun runMultipartCompletion(): Upload {
+        val uploader = newUploader()
+
+        val file = randomRemoteFile()
+
+        val upload = randomUpload(file.id, file.remoteFileSize, UploadState.CREATED).copy(
+            parts = listOf(
+                UploadPart(1, 0, 1, 1, true),
+                UploadPart(2, 1, file.remoteFileSize - 1, file.remoteFileSize - 1, false)
+            )
+        )
+
+        val info = UploadInfo(upload, file)
+
+        whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
+
+        uploader.init()
+
+        uploadOperations.completeUploadPartOperation(2)
+
+        return upload.copy(
+            parts = listOf(
+                upload.parts[0],
+                upload.parts[1].copy(isComplete = true)
+            )
+        )
+    }
+
+    @Test
+    fun `it should complete an upload remotely if multipart`() {
+        val expected = runMultipartCompletion()
+        uploadOperations.assertCompleteCalled(expected)
+    }
+
+    @Test
+    fun `it should update state to complete once multipart completion occurs`() {
+        val expected = runMultipartCompletion()
+        uploadOperations.completeCompleteUploadOperation()
+        verify(uploadPersistenceManager).setState(expected.id, UploadState.COMPLETE)
+    }
+
+    @Test
+    fun `it should move an upload to error state if multipart completion fails`() {
+        val expected = runMultipartCompletion()
+        uploadOperations.rejectCompleteUploadOperation(TestException())
+        verify(uploadPersistenceManager).setError(expected.id, UploadError.UNKNOWN)
     }
 
     @Test

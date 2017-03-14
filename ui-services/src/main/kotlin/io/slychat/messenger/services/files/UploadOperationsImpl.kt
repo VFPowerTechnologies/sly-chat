@@ -38,4 +38,11 @@ class UploadOperationsImpl(
             }
         }).subscribeOn(subscribeScheduler)
     }
+
+    override fun complete(upload: Upload): Promise<Unit, Exception> {
+        return authTokenManager.map {
+            val op = CompeteUploadOperation(it, upload, uploadClientFactory.create())
+            op.run()
+        }
+    }
 }

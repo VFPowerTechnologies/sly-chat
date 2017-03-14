@@ -11,4 +11,6 @@ interface UploadOperations {
     fun create(upload: Upload, file: RemoteFile): Promise<Unit, Exception>
 
     fun uploadPart(upload: Upload, part: UploadPart, file: RemoteFile): Observable<Long>
+
+    fun complete(upload: Upload): Promise<Unit, Exception>
 }

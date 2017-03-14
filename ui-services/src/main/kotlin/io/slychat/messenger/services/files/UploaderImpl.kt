@@ -237,10 +237,21 @@ class UploaderImpl(
     private fun uploadNextPart(status: UploadStatus) {
         val nextPart = status.upload.parts.find { !it.isComplete }
         val uploadId = status.upload.id
+
         if (nextPart == null) {
-            updateUploadState(uploadId, UploadState.COMPLETE) mapUi {
-                markUploadComplete(status)
+            val p = if (status.upload.isSinglePart)
+                Promise.ofSuccess(Unit)
+            else
+                uploadOperations.complete(status.upload)
+
+            p successUi {
+                updateUploadState(uploadId, UploadState.COMPLETE) mapUi {
+                    markUploadComplete(status)
+                }
+            } failUi {
+                handleUploadException(status.upload.id, it, "completeUpload")
             }
+
             return
         }
 

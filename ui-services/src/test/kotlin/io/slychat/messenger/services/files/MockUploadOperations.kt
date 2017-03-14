@@ -9,10 +9,12 @@ import rx.Observable
 import rx.schedulers.TestScheduler
 import rx.subjects.PublishSubject
 import java.util.*
+import kotlin.test.assertEquals
 import kotlin.test.fail
 
 class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperations {
     var createDeferred = deferred<Unit, Exception>()
+    var completeDeferred = deferred<Unit, Exception>()
     var uploadSubjects = HashMap<Int, PublishSubject<Long>>()
 
     var autoResolveCreate = false
@@ -22,6 +24,7 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
 
     private var createArgs: CreateArgs? = null
     private var uploadArgs = HashMap<Pair<String, Int>, UploadArgs>()
+    private var completeArgs: Upload? = null
     private val unsubscriptions = HashSet<Pair<String, Int>>()
 
     override fun create(upload: Upload, file: RemoteFile): Promise<Unit, Exception> {
@@ -101,5 +104,30 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
     fun assertUnsubscribed(uploadId: String, partN: Int) {
         if ((uploadId to partN) !in unsubscriptions)
             fail("$uploadId/$partN was not unsubscribed")
+    }
+
+    override fun complete(upload: Upload): Promise<Unit, Exception> {
+        completeArgs = upload
+
+        return completeDeferred.promise
+    }
+
+    fun assertCompleteNotCalled() {
+        if (completeArgs != null)
+            fail("complete($completeArgs) called")
+    }
+
+    fun assertCompleteCalled(upload: Upload) {
+        val args = completeArgs ?: fail("complete() not called")
+
+        assertEquals(upload, args, "complete() called with differing args")
+    }
+
+    fun completeCompleteUploadOperation() {
+        completeDeferred.resolve(Unit)
+    }
+
+    fun rejectCompleteUploadOperation(e: Exception) {
+        completeDeferred.reject(e)
     }
 }
