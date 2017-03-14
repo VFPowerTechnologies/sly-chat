@@ -64,9 +64,9 @@ class SQLiteUploadPersistenceManagerTest {
             UploadState.PENDING,
             randomName(),
             randomFilePath(),
+            null,
             false,
-            error,
-            parts
+            error, parts
         )
     }
 
@@ -78,7 +78,10 @@ class SQLiteUploadPersistenceManagerTest {
     fun `add should insert a new upload entry`() {
         val file = randomRemoteFile()
 
-        val upload = randomUpload(file.id)
+        val upload = randomUpload(file.id).copy(
+            isEncrypted = true,
+            cachePath = "/cache/path"
+        )
 
         uploadPersistenceManager.add(UploadInfo(upload, file)).get()
 

@@ -251,6 +251,7 @@ fun randomUpload(fileId: String? = null, fileSize: Long = 0, state: UploadState 
         state,
         fileName,
         "/tmp/" + fileName,
+        null,
         false,
         error,
         listOf(UploadPart(1, 0, localSize, remoteSize, false))

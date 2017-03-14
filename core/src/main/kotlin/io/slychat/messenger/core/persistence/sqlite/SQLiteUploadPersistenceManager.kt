@@ -16,12 +16,13 @@ class SQLiteUploadPersistenceManager(
         stmt.bind(3, upload.state)
         stmt.bind(4, upload.displayName)
         stmt.bind(5, upload.filePath)
-        stmt.bind(6, upload.isEncrypted)
-        stmt.bind(7, upload.error)
+        stmt.bind(6, upload.cachePath)
+        stmt.bind(7, upload.isEncrypted)
+        stmt.bind(8, upload.error)
     }
 
     private fun rowToUpload(stmt: SQLiteStatement, parts: List<UploadPart>): Upload {
-        val error = stmt.columnString(6)?.let { UploadError.valueOf(it) }
+        val error = stmt.columnString(7)?.let { UploadError.valueOf(it) }
 
         return Upload(
             stmt.columnString(0),
@@ -29,7 +30,8 @@ class SQLiteUploadPersistenceManager(
             UploadState.valueOf(stmt.columnString(2)),
             stmt.columnString(3),
             stmt.columnString(4),
-            stmt.columnBool(5),
+            stmt.columnString(5),
+            stmt.columnBool(6),
             error,
             parts
         )
@@ -59,9 +61,9 @@ class SQLiteUploadPersistenceManager(
         val sql = """
 INSERT INTO
     uploads
-    (id, file_id, state, display_name, file_path, is_encrypted, error)
+    (id, file_id, state, display_name, file_path, cache_path, is_encrypted, error)
 VALUES
-    (?, ?, ?, ?, ?, ?, ?)
+    (?, ?, ?, ?, ?, ?, ?, ?)
 """
 
         connection.withPrepared(sql) {
@@ -165,7 +167,7 @@ WHERE
         //language=SQLite
         val sql = """
 SELECT
-    u.id, u.file_id, u.state, u.display_name, u.file_path, u.is_encrypted, u.error,
+    u.id, u.file_id, u.state, u.display_name, u.file_path, u.cache_path, u.is_encrypted, u.error,
 
     f.id, f.share_key, f.last_update_version,
     f.is_deleted, f.creation_date, f.modification_date,
@@ -185,7 +187,7 @@ ON
                 val parts = getParts(connection, id)
                 UploadInfo(
                     rowToUpload(stmt, parts),
-                    fileUtils.rowToRemoteFile(stmt, 7)
+                    fileUtils.rowToRemoteFile(stmt, 8)
                 )
             }
         }
@@ -217,7 +219,7 @@ ORDER BY n
             //language=SQLite
             val sql = """
 SELECT
-    id, file_id, state, display_name, file_path, is_encrypted, error
+    id, file_id, state, display_name, file_path, cache_path, is_encrypted, error
 FROM
     uploads
 WHERE

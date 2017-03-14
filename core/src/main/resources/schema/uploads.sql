@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS uploads (
     display_name TEXT NOT NULL,
     -- path of file on disk
     file_path TEXT NOT NULL,
+    cache_path TEXT,
     -- if true, don't encrypt file as it's already encrypted
     is_encrypted BOOLEAN NOT NULL,
 

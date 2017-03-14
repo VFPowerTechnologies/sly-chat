@@ -216,8 +216,10 @@ class StorageServiceImpl(
                 UploadState.PENDING,
                 fileInfo.displayName,
                 localFilePath,
+                null,
                 false,
-                null, parts
+                null,
+                parts
             )
 
             UploadInfo(
