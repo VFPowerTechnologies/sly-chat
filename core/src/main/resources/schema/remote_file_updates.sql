@@ -5,5 +5,5 @@ CREATE TABLE remote_file_updates (
     -- m:
     type TEXT NOT NULL,
 
-    FOREIGN KEY (file_id) REFERENCES files (id)
+    FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE
 );
