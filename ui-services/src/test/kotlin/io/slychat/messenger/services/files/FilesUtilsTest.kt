@@ -45,6 +45,20 @@ class FilesUtilsTest {
     }
 
     @Test
+    fun `calcUploadParts should calc the proper amount of chunks with no even chunks but with a last chunk`() {
+        val fileSize = 10L.mb
+        val minPartSize = 5.mb
+        val encryptedChunkSize = 128.kb
+        val actual = calcUploadParts(cipher, fileSize, encryptedChunkSize, minPartSize)
+        assertPartSanity(fileSize, encryptedChunkSize, actual)
+
+        assertThat(actual).apply {
+            describedAs("Should contain 3 parts")
+            hasSize(3)
+        }
+    }
+
+    @Test
     fun `calcUploadParts should calculate the proper size when given an even plaintext chunk size`() {
         val encryptedChunkSize = 128.kb
         val fileSize = cipher.getInputSizeForOutput(encryptedChunkSize) * 90L
@@ -53,7 +67,7 @@ class FilesUtilsTest {
         assertPartSanity(fileSize, encryptedChunkSize, actual)
 
         assertThat(actual).apply {
-            describedAs("Should only contain a single part")
+            describedAs("Should contain 3 parts")
             hasSize(3)
         }
     }

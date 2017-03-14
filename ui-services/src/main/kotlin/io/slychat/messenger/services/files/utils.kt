@@ -2,11 +2,11 @@
 package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.UnauthorizedException
-import rx.Observable
 import io.slychat.messenger.core.crypto.ciphers.Cipher
 import io.slychat.messenger.core.mb
 import io.slychat.messenger.core.persistence.UploadPart
 import io.slychat.messenger.services.auth.AuthTokenManager
+import rx.Observable
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -74,7 +74,7 @@ internal fun calcUploadParts(cipher: Cipher, localFileSize: Long, encryptedChunk
         parts.add(p)
     }
 
-    if (pr > 0) {
+    if (pr > 0 || lastChunkSize > 0) {
         val lastChunkEncryptedSize = if (lastChunkSize > 0)
             cipher.getEncryptedSize(lastChunkSize.toInt())
         else
