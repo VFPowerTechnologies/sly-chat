@@ -7,6 +7,7 @@ import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
+import org.spongycastle.crypto.InvalidCipherTextException
 import rx.Observable
 import rx.Scheduler
 import rx.Subscriber
@@ -139,6 +140,8 @@ class DownloaderImpl(
 
         val downloadError = when (e) {
             is FileMissingException -> DownloadError.REMOTE_FILE_MISSING
+
+            is InvalidCipherTextException -> DownloadError.CORRUPTED
 
             else -> {
                 if (isNotNetworkError(e))
