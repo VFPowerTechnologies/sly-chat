@@ -9,5 +9,5 @@ CREATE TABLE downloads (
 
     error TEXT DEFAULT NULL,
 
-    FOREIGN KEY (file_id) REFERENCES files (id)
+    FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE
 );
