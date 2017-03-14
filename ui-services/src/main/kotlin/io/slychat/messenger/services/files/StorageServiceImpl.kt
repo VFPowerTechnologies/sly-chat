@@ -8,6 +8,7 @@ import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.files.UserMetadata
 import io.slychat.messenger.core.http.api.storage.StorageAsyncClient
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.rx.plusAssign
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.bindUi
 import nl.komponents.kovenant.Promise
@@ -16,9 +17,9 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
-import rx.Subscription
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
+import rx.subscriptions.CompositeSubscription
 import java.io.FileNotFoundException
 
 //XXX an issue right now is that upload adds a file to the list but it isn't reflected in the file list until the upload completes
@@ -54,7 +55,7 @@ class StorageServiceImpl(
     override val transferEvents: Observable<TransferEvent>
         get() = transferManager.events
 
-    private var subscription: Subscription? = null
+    private var subscriptions = CompositeSubscription()
 
     private var isNetworkAvailable = false
 
@@ -67,7 +68,16 @@ class StorageServiceImpl(
         get() = transferManager.downloads
 
     init {
-        subscription = networkStatus.subscribe { onNetworkStatusChange(it) }
+        subscriptions += networkStatus.subscribe { onNetworkStatusChange(it) }
+        subscriptions += transferEvents.subscribe { onTransferEvent(it) }
+    }
+
+    private fun onTransferEvent(event: TransferEvent) {
+        if (event !is TransferEvent.UploadStateChanged)
+            return
+
+        if (event.state == TransferState.COMPLETE)
+            sync()
     }
 
     private fun onNetworkStatusChange(isAvailable: Boolean) {
@@ -115,8 +125,7 @@ class StorageServiceImpl(
     }
 
     override fun shutdown() {
-        subscription?.unsubscribe()
-        subscription = null
+        subscriptions.clear()
     }
 
     override fun sync() {

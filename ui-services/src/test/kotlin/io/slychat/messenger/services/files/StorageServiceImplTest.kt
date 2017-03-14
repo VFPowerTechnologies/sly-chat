@@ -6,16 +6,19 @@ import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.http.api.storage.StorageAsyncClient
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.core.randomRemoteFile
+import io.slychat.messenger.core.randomUpload
 import io.slychat.messenger.core.randomUserMetadata
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import rx.subjects.BehaviorSubject
+import rx.subjects.PublishSubject
 import kotlin.test.assertEquals
 
 class StorageServiceImplTest {
@@ -31,9 +34,20 @@ class StorageServiceImplTest {
 
     private class MockStorageSyncJob : StorageSyncJob {
         val d = deferred<StorageSyncResult, Exception>()
+        private var wasCalled = false
 
         override fun run(): Promise<StorageSyncResult, Exception> {
+            wasCalled = true
             return d.promise
+        }
+
+        fun clearCalls() {
+            wasCalled = false
+        }
+
+        fun assertRunCalled() {
+            if (!wasCalled)
+                fail("StorageSyncJob.run() not called")
         }
     }
 
@@ -45,13 +59,14 @@ class StorageServiceImplTest {
     private val syncJobFactory: StorageSyncJobFactory = mock()
     private val syncJob = MockStorageSyncJob()
 
+    private val transferEvents: PublishSubject<TransferEvent> = PublishSubject.create()
+
     @Before
     fun before() {
         whenever(fileListPersistenceManager.deleteFiles(any())).thenResolveUnit()
-
         whenever(storageClient.getQuota(any())).thenResolve(Quota(0, 100))
-
         whenever(syncJobFactory.create(any())).thenReturn(syncJob)
+        whenever(transferManager.events).thenReturn(transferEvents)
     }
 
     private fun newService(isNetworkAvailable: Boolean = true): StorageServiceImpl {
@@ -193,5 +208,18 @@ class StorageServiceImplTest {
         whenever(fileListPersistenceManager.getFiles(startingAt, count, false)).thenResolve(files)
 
         assertEquals(files, service.getFiles(startingAt, count).get(), "Returned invalid files")
+    }
+
+    @Test
+    fun `it should sync when receiving an upload completion event`() {
+        val service = newService(true)
+
+        //since we sync on startup
+        syncJob.clearCalls()
+        syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0))
+
+        transferEvents.onNext(TransferEvent.UploadStateChanged(randomUpload(), TransferState.COMPLETE))
+
+        syncJob.assertRunCalled()
     }
 }
