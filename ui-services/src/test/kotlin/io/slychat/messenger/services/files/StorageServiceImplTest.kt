@@ -35,14 +35,17 @@ class StorageServiceImplTest {
     private class MockStorageSyncJob : StorageSyncJob {
         val d = deferred<StorageSyncResult, Exception>()
         private var wasCalled = false
+        var callCount = 0
 
         override fun run(): Promise<StorageSyncResult, Exception> {
             wasCalled = true
+            callCount += 1
             return d.promise
         }
 
         fun clearCalls() {
             wasCalled = false
+            callCount = 0
         }
 
         fun assertRunCalled() {
@@ -221,5 +224,16 @@ class StorageServiceImplTest {
         transferEvents.onNext(TransferEvent.UploadStateChanged(randomUpload(), TransferState.COMPLETE))
 
         syncJob.assertRunCalled()
+    }
+
+    @Test
+    fun `it should queue sync if requested while one is already running`() {
+        val service = newService(true)
+
+        service.sync()
+
+        syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0))
+
+        assertEquals(2, syncJob.callCount, "Queued sync job not run")
     }
 }

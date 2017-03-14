@@ -51,6 +51,9 @@ class StorageServiceImpl(
         get() = syncEventsSubject
 
     private var isSyncRunning = false
+    //if another sync is triggered during the current one (eg: upload completed while we were syncing, so we need to
+    //sync again)
+    private var isSyncPending = false
 
     override val transferEvents: Observable<TransferEvent>
         get() = transferManager.events
@@ -119,6 +122,11 @@ class StorageServiceImpl(
             FileListSyncEvent.Error()
 
         syncEventsSubject.onNext(ev)
+
+        if (isSyncPending) {
+            isSyncPending = false
+            sync()
+        }
     }
 
     override fun init() {
@@ -129,8 +137,10 @@ class StorageServiceImpl(
     }
 
     override fun sync() {
-        if (isSyncRunning || !isNetworkAvailable)
+        if (isSyncRunning || !isNetworkAvailable) {
+            isSyncPending = true
             return
+        }
 
         beginSync()
 
