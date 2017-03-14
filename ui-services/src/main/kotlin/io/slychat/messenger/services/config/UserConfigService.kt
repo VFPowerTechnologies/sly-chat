@@ -22,7 +22,11 @@ data class UserConfig(
     @get:JsonSerialize(keyUsing = ConversationIdKeySerializer::class)
     val messagingConvoTTLSettings: Map<ConversationId, ConvoTTLSettings> = emptyMap(),
 
-    val marketingShowInviteFriends: Boolean = false
+    val marketingShowInviteFriends: Boolean = false,
+
+    val transfersSimulDownloads: Int = 3,
+
+    val transfersSimulUploads: Int = 3
 ) {
     companion object {
         private fun join(parent: String, child: String): String = "$parent.$child"
@@ -39,6 +43,12 @@ data class UserConfig(
         val MARKETING = "user.marketing"
 
         val MARKETING_SHOW_INVITE_FRIENDS = join(MARKETING, "showInviteFriends")
+
+        val TRANSFERS = "user.transfers"
+
+        val TRANSFERS_SIMUL_DOWNLOADS = join(TRANSFERS, "simulDownloads")
+
+        val TRANSFERS_SIMUL_UPLOADS = join(TRANSFERS, "simulUploads")
     }
 }
 
@@ -80,6 +90,24 @@ class UserEditorInterface(override var config: UserConfig) : ConfigServiceBase.E
                 config = config.copy(marketingShowInviteFriends = value)
             }
         }
+
+    var transfersSimulDownloads: Int
+        get() = config.transfersSimulDownloads
+        set(value) {
+            if (value != transfersSimulDownloads) {
+                modifiedKeys.add(UserConfig.TRANSFERS_SIMUL_DOWNLOADS)
+                config = config.copy(transfersSimulDownloads = value)
+            }
+        }
+
+    var transfersSimulUploads: Int
+        get() = config.transfersSimulUploads
+        set(value) {
+            if (value != transfersSimulUploads) {
+                modifiedKeys.add(UserConfig.TRANSFERS_SIMUL_UPLOADS)
+                config = config.copy(transfersSimulUploads = value)
+            }
+        }
 }
 
 class UserConfigService(
@@ -101,4 +129,10 @@ class UserConfigService(
 
     val marketingShowInviteFriends: Boolean
         get() = config.marketingShowInviteFriends
+
+    val tranfersSimulDownloads: Int
+        get() = config.transfersSimulDownloads
+
+    val transfersSimulUploads: Int
+        get() = config.transfersSimulUploads
 }

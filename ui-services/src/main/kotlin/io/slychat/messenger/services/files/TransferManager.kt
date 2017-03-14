@@ -6,8 +6,6 @@ import nl.komponents.kovenant.Promise
 import rx.Observable
 
 interface TransferManager {
-    var options: TransferOptions
-
     val events: Observable<TransferEvent>
 
     val uploads: List<UploadStatus>

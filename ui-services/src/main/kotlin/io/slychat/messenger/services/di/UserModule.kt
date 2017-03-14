@@ -561,17 +561,17 @@ class UserModule(
     @UserScope
     @Provides
     fun providesTransferManager(
+        userConfigService: UserConfigService,
         uploader: Uploader,
         downloader: Downloader,
         @NetworkStatus networkStatus: Observable<Boolean>
     ): TransferManager {
         val manager = TransferManagerImpl(
+            userConfigService,
             uploader,
             downloader,
             networkStatus
         )
-
-        manager.options = TransferOptions(10, 10)
 
         return manager
     }

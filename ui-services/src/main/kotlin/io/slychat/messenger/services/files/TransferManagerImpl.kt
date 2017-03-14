@@ -2,11 +2,15 @@ package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.persistence.DownloadInfo
 import io.slychat.messenger.core.persistence.UploadInfo
+import io.slychat.messenger.core.rx.plusAssign
+import io.slychat.messenger.services.config.UserConfig
+import io.slychat.messenger.services.config.UserConfigService
 import nl.komponents.kovenant.Promise
 import rx.Observable
-import rx.Subscription
+import rx.subscriptions.CompositeSubscription
 
 class TransferManagerImpl(
+    private val userConfigService: UserConfigService,
     private val uploader: Uploader,
     private val downloader: Downloader,
     networkStatus: Observable<Boolean>
@@ -19,19 +23,30 @@ class TransferManagerImpl(
     override val downloads: List<DownloadStatus>
         get() = downloader.downloads
 
-    override var options: TransferOptions
-        get() = TransferOptions(downloader.simulDownloads, uploader.simulUploads)
-        set(value) {
-            downloader.simulDownloads = value.simulDownloads
-            uploader.simulUploads = value.simulUploads
-        }
-
-    private var subscription: Subscription? = null
+    private var subscriptions = CompositeSubscription()
 
     init {
-        subscription = networkStatus.subscribe {
+        subscriptions += networkStatus.subscribe {
             uploader.isNetworkAvailable = it
             downloader.isNetworkAvailable = it
+        }
+
+        downloader.simulDownloads = userConfigService.tranfersSimulDownloads
+
+        uploader.simulUploads = userConfigService.transfersSimulUploads
+
+        subscriptions += userConfigService.updates.subscribe { onUserConfigUpdates(it) }
+    }
+
+    private fun onUserConfigUpdates(keys: Collection<String>) {
+        keys.forEach {
+            when (it) {
+                UserConfig.TRANSFERS_SIMUL_UPLOADS ->
+                    uploader.simulUploads = userConfigService.transfersSimulUploads
+
+                UserConfig.TRANSFERS_SIMUL_DOWNLOADS ->
+                    downloader.simulDownloads = userConfigService.tranfersSimulDownloads
+            }
         }
     }
 
@@ -41,8 +56,7 @@ class TransferManagerImpl(
     }
 
     override fun shutdown() {
-        subscription?.unsubscribe()
-        subscription = null
+        subscriptions.clear()
 
         uploader.shutdown()
         downloader.shutdown()
