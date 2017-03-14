@@ -549,6 +549,7 @@ class SlyApplication {
         userComponent.preKeyManager.shutdown()
         userComponent.persistenceManager.shutdown()
         userComponent.notifierService.shutdown()
+        userComponent.transferManager.shutdown()
         userComponent.storageService.shutdown()
     }
 
