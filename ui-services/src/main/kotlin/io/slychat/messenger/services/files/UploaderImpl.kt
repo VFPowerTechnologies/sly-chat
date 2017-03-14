@@ -90,6 +90,8 @@ class UploaderImpl(
 
             if (initialState == TransferState.QUEUED)
                 list.queued.add(upload.id)
+            else
+                list.inactive.add(upload.id)
 
             subject.onNext(TransferEvent.UploadAdded(upload, initialState))
         }

@@ -502,7 +502,7 @@ class UploaderImplTest {
 
     @Test
     fun `remove should remove a non-active upload`() {
-        val info = randomUploadInfo(error = UploadError.FILE_DISAPPEARED)
+        val info = randomUploadInfo(state = UploadState.COMPLETE)
 
         val uploader = newUploaderWithUpload(info)
 
@@ -518,7 +518,7 @@ class UploaderImplTest {
 
     @Test
     fun `remove should emit an UploadRemoved event`() {
-        val info = randomUploadInfo(error = UploadError.FILE_DISAPPEARED)
+        val info = randomUploadInfo(state = UploadState.COMPLETE)
 
         val uploader = newUploaderWithUpload(info)
 

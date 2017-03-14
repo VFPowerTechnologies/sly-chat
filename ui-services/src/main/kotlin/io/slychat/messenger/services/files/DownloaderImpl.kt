@@ -93,6 +93,8 @@ class DownloaderImpl(
 
             if (initialState == TransferState.QUEUED)
                 list.queued.add(download.id)
+            else
+                list.inactive.add(download.id)
 
             subject.onNext(TransferEvent.DownloadAdded(download, initialState))
         }
