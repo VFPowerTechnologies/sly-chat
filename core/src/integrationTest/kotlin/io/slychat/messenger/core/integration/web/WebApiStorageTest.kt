@@ -52,7 +52,7 @@ class WebApiStorageTest {
     }
 
     @Test
-    fun `quota should return the user's quota`() {
+    fun `getFileList should return the user's quota`() {
         val user = userManagement.injectNamedSiteUser("a@a.com")
         val username = user.user.email
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
@@ -61,10 +61,10 @@ class WebApiStorageTest {
 
         val client = newClient()
 
-        val quota = client.getQuota(user.getUserCredentials(authToken, deviceId))
+        val resp = client.getFileList(user.getUserCredentials(authToken, deviceId), 0)
         val expected = devClient.getQuota(user.user.id)
 
-        assertEquals(expected, quota, "Invalid quota")
+        assertEquals(expected, resp.quota, "Invalid quota")
     }
 
     @Test
