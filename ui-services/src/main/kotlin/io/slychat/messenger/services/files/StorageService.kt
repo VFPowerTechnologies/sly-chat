@@ -48,4 +48,8 @@ interface StorageService {
 
     /** Must not be called during a sync. */
     fun clearSyncError()
+
+    fun removeCompletedDownloads(): Promise<Unit, Exception>
+
+    fun removeCompletedUploads(): Promise<Unit, Exception>
 }

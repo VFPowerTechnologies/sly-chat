@@ -29,5 +29,11 @@ interface TransferManager {
     fun removeDownloads(downloadIds: List<String>): Promise<Unit, Exception>
 
     fun removeUploads(uploadIds: List<String>): Promise<Unit, Exception>
+
+    /** Removes downloads in COMPLETE or CANCELLED state. */
+    fun removeCompletedDownloads(): Promise<Unit, Exception>
+
+    /** Removes downloads in COMPLETE state. */
+    fun removeCompletedUploads(): Promise<Unit, Exception>
 }
 

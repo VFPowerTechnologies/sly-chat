@@ -89,4 +89,16 @@ class TransferManagerImpl(
     override fun removeUploads(uploadIds: List<String>): Promise<Unit, Exception> {
         return uploader.remove(uploadIds)
     }
+
+    override fun removeCompletedDownloads(): Promise<Unit, Exception> {
+        val toRemove = downloader.downloads.filter {
+            it.state == TransferState.COMPLETE || it.state == TransferState.CANCELLED
+        }.map { it.download.id }
+        return downloader.remove(toRemove)
+    }
+
+    override fun removeCompletedUploads(): Promise<Unit, Exception> {
+        val toRemove = uploader.uploads.filter { it.state == TransferState.COMPLETE }.map { it.upload.id }
+        return uploader.remove(toRemove)
+    }
 }

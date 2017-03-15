@@ -281,4 +281,12 @@ class StorageServiceImpl(
             transferManager.cancelDownload(it)
         }
     }
+
+    override fun removeCompletedDownloads(): Promise<Unit, Exception> {
+        return transferManager.removeCompletedDownloads()
+    }
+
+    override fun removeCompletedUploads(): Promise<Unit, Exception> {
+        return transferManager.removeCompletedUploads()
+    }
 }

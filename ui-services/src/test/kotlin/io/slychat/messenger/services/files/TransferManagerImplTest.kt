@@ -3,6 +3,10 @@ package io.slychat.messenger.services.files
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.whenever
+import io.slychat.messenger.core.randomDownload
+import io.slychat.messenger.core.randomRemoteFile
+import io.slychat.messenger.core.randomUpload
 import io.slychat.messenger.services.config.DummyConfigBackend
 import io.slychat.messenger.services.config.UserConfigService
 import org.junit.Test
@@ -68,5 +72,84 @@ class TransferManagerImplTest {
         }
 
         verify(downloader).simulDownloads = v
+    }
+
+    private fun randomUploadStatus(state: TransferState): UploadStatus {
+        val file = randomRemoteFile()
+        //XXX state doesn't actually matter here
+        val upload = randomUpload(fileId = file.id)
+
+        return UploadStatus(
+            upload,
+            file,
+            state,
+            upload.parts.map {
+                val transferedBytes = if (state == TransferState.COMPLETE)
+                    it.remoteSize
+                else
+                    0L
+                UploadPartTransferProgress(transferedBytes, it.remoteSize)
+            }
+        )
+    }
+
+    private fun randomDownloadStatus(state: TransferState): DownloadStatus {
+        val file = randomRemoteFile()
+        val download = randomDownload(fileId = file.id)
+
+        val transferedBytes = if (state == TransferState.COMPLETE)
+            file.remoteFileSize
+        else
+            0L
+
+        return DownloadStatus(
+            download,
+            file,
+            state,
+            DownloadTransferProgress(transferedBytes, file.remoteFileSize)
+        )
+    }
+
+    @Test
+    fun `removeCompletedDownloads should remove completed and cancelled downloads`() {
+        val completed = randomDownloadStatus(TransferState.COMPLETE)
+        val cancelled = randomDownloadStatus(TransferState.CANCELLED)
+
+        val statuses = listOf(
+            completed,
+            randomDownloadStatus(TransferState.QUEUED),
+            randomDownloadStatus(TransferState.ACTIVE),
+            cancelled,
+            randomDownloadStatus(TransferState.ERROR)
+        )
+
+        whenever(downloader.downloads).thenReturn(statuses)
+
+        val manager = newManager()
+
+        manager.removeCompletedDownloads()
+
+        verify(downloader).remove(listOf(completed.download.id, cancelled.download.id))
+    }
+
+    @Test
+    fun `removeCompletedUploads should remove completed uploads`() {
+        val completed = randomUploadStatus(TransferState.COMPLETE)
+
+        val statuses = listOf(
+            completed,
+            randomUploadStatus(TransferState.QUEUED),
+            randomUploadStatus(TransferState.ACTIVE),
+            randomUploadStatus(TransferState.CANCELLED),
+            randomUploadStatus(TransferState.ERROR)
+        )
+
+        whenever(uploader.uploads).thenReturn(statuses)
+
+        val manager = newManager()
+
+        manager.removeCompletedUploads()
+
+        verify(uploader).remove(listOf(completed.upload.id))
     }
 }
