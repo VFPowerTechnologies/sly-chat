@@ -9,6 +9,7 @@ import io.slychat.messenger.core.files.UserMetadata
 import io.slychat.messenger.core.http.api.storage.StorageAsyncClient
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.rx.plusAssign
+import io.slychat.messenger.services.UserPaths
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.bindUi
 import nl.komponents.kovenant.Promise
@@ -31,6 +32,7 @@ class StorageServiceImpl(
     private val syncJobFactory: StorageSyncJobFactory,
     private val transferManager: TransferManager,
     private val fileAccess: PlatformFileAccess,
+    private val userPaths: UserPaths,
     networkStatus: Observable<Boolean>
 ) : StorageService {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -173,7 +175,7 @@ class StorageServiceImpl(
         }
     }
 
-    override fun uploadFile(localFilePath: String, remoteFileDirectory: String, remoteFileName: String): Promise<Unit, Exception> {
+    override fun uploadFile(localFilePath: String, remoteFileDirectory: String, remoteFileName: String, cache: Boolean): Promise<Unit, Exception> {
         return task {
             val fileInfo = fileAccess.getFileInfo(localFilePath)
             val cipher = CipherList.defaultDataEncryptionCipher
@@ -190,7 +192,11 @@ class StorageServiceImpl(
             val chunkSize = 128.kb
             val remoteFileSize = getRemoteFileSize(cipher, fileInfo.size, chunkSize)
 
-            val parts = calcUploadParts(cipher, fileInfo.size, chunkSize, MIN_PART_SIZE)
+            val parts = if (!cache)
+                calcUploadParts(cipher, fileInfo.size, chunkSize, MIN_PART_SIZE)
+            else
+                //FIXME alignment
+                calcUploadPartsEncrypted(remoteFileSize, MIN_PART_SIZE)
 
             val fileMetadata = FileMetadata(
                 fileInfo.size,
@@ -210,14 +216,19 @@ class StorageServiceImpl(
                 remoteFileSize
             )
 
+            val cachePath = if (cache)
+                (userPaths.fileCacheDir / file.id).toString()
+            else
+                null
+
             val upload = Upload(
                 generateUploadId(),
                 file.id,
                 UploadState.PENDING,
                 fileInfo.displayName,
                 localFilePath,
-                null,
-                false,
+                cachePath,
+                cache == true,
                 null,
                 parts
             )

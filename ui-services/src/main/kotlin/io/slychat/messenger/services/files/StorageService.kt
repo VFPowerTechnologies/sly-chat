@@ -32,7 +32,7 @@ interface StorageService {
 
     fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception>
 
-    fun uploadFile(localFilePath: String, remoteFileDirectory: String, remoteFileName: String): Promise<Unit, Exception>
+    fun uploadFile(localFilePath: String, remoteFileDirectory: String, remoteFileName: String, cache: Boolean): Promise<Unit, Exception>
 
     fun downloadFile(fileId: String, localFilePath: String): Promise<Unit, Exception>
 

@@ -24,8 +24,10 @@ class UploadPartOperation(
     private val subscriber: Subscriber<in Long>
 ) {
     fun run() {
-        //TODO handle missing file (FileNotFoundException), and then any other exception that's raise
-        fileAccess.openFileForRead(upload.filePath).use { fileInputStream ->
+        //TODO handle missing file (FileNotFoundException), and then any other exception that's raised
+        val filePath = upload.cachePath ?: upload.filePath
+
+        fileAccess.openFileForRead(filePath).use { fileInputStream ->
             val limiter = SectionInputStream(fileInputStream, part.offset, part.localSize)
 
             val cipher = CipherList.getCipher(file.userMetadata.cipherId)

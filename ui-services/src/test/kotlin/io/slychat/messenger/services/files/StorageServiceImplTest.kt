@@ -8,6 +8,7 @@ import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.core.randomRemoteFile
 import io.slychat.messenger.core.randomUpload
 import io.slychat.messenger.core.randomUserMetadata
+import io.slychat.messenger.services.UserPaths
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
@@ -19,6 +20,7 @@ import org.junit.ClassRule
 import org.junit.Test
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
+import java.io.File
 import kotlin.test.assertEquals
 
 class StorageServiceImplTest {
@@ -61,6 +63,16 @@ class StorageServiceImplTest {
     private val fileAccess: PlatformFileAccess = mock()
     private val syncJobFactory: StorageSyncJobFactory = mock()
     private val syncJob = MockStorageSyncJob()
+    private val userPaths = UserPaths(
+        File("accountDir"),
+        File("keyVault"),
+        File("accountInfo"),
+        File("accountParams"),
+        File("sessionData"),
+        File("db"),
+        File("config"),
+        File("cacheDir")
+    )
 
     private val transferEvents: PublishSubject<TransferEvent> = PublishSubject.create()
 
@@ -81,6 +93,7 @@ class StorageServiceImplTest {
             syncJobFactory,
             transferManager,
             fileAccess,
+            userPaths,
             networkStatus
         )
     }

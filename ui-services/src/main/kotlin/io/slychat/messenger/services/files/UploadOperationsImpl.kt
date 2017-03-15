@@ -4,7 +4,9 @@ import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.Upload
 import io.slychat.messenger.core.persistence.UploadPart
+import io.slychat.messenger.core.rx.observable
 import io.slychat.messenger.services.UploadClientFactory
+import io.slychat.messenger.services.UserPaths
 import io.slychat.messenger.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Promise
 import rx.Observable
@@ -44,5 +46,11 @@ class UploadOperationsImpl(
             val op = CompeteUploadOperation(it, upload, uploadClientFactory.create())
             op.run()
         }
+    }
+
+    override fun cache(upload: Upload, file: RemoteFile): Observable<Long> {
+        return observable<Long> {
+            CacheFileOperation(fileAccess, upload, file, it).run()
+        }.subscribeOn(subscribeScheduler)
     }
 }

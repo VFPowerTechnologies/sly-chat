@@ -134,11 +134,40 @@ class UploaderImpl(
 
         when (status.upload.state) {
             UploadState.PENDING -> createUpload(status)
+            UploadState.CACHING -> cacheFile(status)
             //for now we just upload the next available part sequentially
             UploadState.CREATED -> uploadNextPart(status)
             //this shouldn't get here, but it's here for completion
             UploadState.COMPLETE -> log.warn("nextStep called with state=COMPLETE state")
         }
+    }
+
+    private fun cacheFile(status: UploadStatus) {
+        val uploadId = status.upload.id
+
+        //TODO cancellation
+        uploadOperations.cache(status.upload, status.file)
+            .buffer(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
+            .map { it.sum() }
+            .observeOn(mainScheduler)
+            .subscribe(object : Subscriber<Long>() {
+                override fun onNext(t: Long) {
+                    //TODO caching progress
+                }
+
+                override fun onCompleted() {
+                    log.info("Caching for $uploadId completed")
+                    updateUploadState(uploadId, UploadState.CREATED) successUi {
+                        nextStep(uploadId)
+                    } fail {
+                        log.error("Failed to move")
+                    }
+                }
+
+                override fun onError(e: Throwable) {
+                    handleUploadException(uploadId, e, "cacheFile")
+                }
+            })
     }
 
     private fun markUploadComplete(status: UploadStatus) {
@@ -307,7 +336,12 @@ class UploaderImpl(
         val uploadId = status.upload.id
 
         uploadOperations.create(status.upload, status.file) bind {
-            updateUploadState(uploadId, UploadState.CREATED)
+            val nextState = if (status.upload.isEncrypted)
+                UploadState.CACHING
+            else
+                UploadState.CREATED
+
+            updateUploadState(uploadId, nextState)
         } successUi {
             nextStep(uploadId)
         } failUi {

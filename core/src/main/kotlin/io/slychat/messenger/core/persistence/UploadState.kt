@@ -5,6 +5,8 @@ enum class UploadState {
     PENDING,
     //remote upload entry has been created
     CREATED,
+    //needs to be written to local cache
+    CACHING,
     //only complete once all parts are completed
     COMPLETE
 }

@@ -31,6 +31,31 @@ internal fun getRemoteFileSize(cipher: Cipher, fileSize: Long, chunkSize: Int): 
     return evenChunks + extra
 }
 
+/** Splits the given file into parts. File is assumed to be already encrypted. */
+internal fun calcUploadPartsEncrypted(remoteFileSize: Long, minPartSize: Int): List<UploadPart> {
+    val parts = ArrayList<UploadPart>()
+
+    var remaining = remoteFileSize
+    var offset = 0L
+    var n = 1
+
+    val mps = minPartSize.toLong()
+
+    while (remaining > 0) {
+        val partSize = Math.min(remaining, mps)
+
+        parts.add(
+            UploadPart(n, offset, partSize, partSize, false)
+        )
+
+        n += 1
+        offset += partSize
+        remaining -= partSize
+    }
+
+    return parts
+}
+
 /**
  * This will calculate the UploadParts for a given file.
  *

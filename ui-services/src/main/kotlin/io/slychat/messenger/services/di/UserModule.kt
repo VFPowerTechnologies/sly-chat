@@ -585,6 +585,7 @@ class UserModule(
         fileListPersistenceManager: FileListPersistenceManager,
         transferManager: TransferManager,
         fileAccess: PlatformFileAccess,
+        userPaths: UserPaths,
         @NetworkStatus networkStatus: Observable<Boolean>,
         keyVault: KeyVault
     ): StorageService {
@@ -598,6 +599,7 @@ class UserModule(
             syncJobFactory,
             transferManager,
             fileAccess,
+            userPaths,
             networkStatus
         )
     }

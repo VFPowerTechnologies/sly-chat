@@ -276,6 +276,44 @@ class UploaderImplTest {
     }
 
     @Test
+    fun `creation should move to caching state if isEncrypted is true`() {
+        val file = randomRemoteFile()
+
+        val upload = randomUpload(file.id, file.remoteFileSize, UploadState.PENDING).copy(
+            isEncrypted = true,
+            cachePath = "/path"
+        )
+
+        val info = UploadInfo(upload, file)
+
+        uploadOperations.autoResolveCreate = true
+
+        val uploader = newUploaderWithUpload(info)
+
+        verify(uploadPersistenceManager).setState(info.upload.id, UploadState.CACHING)
+    }
+
+    @Test
+    fun `it should move to created state once caching completes`() {
+        val file = randomRemoteFile()
+
+        val upload = randomUpload(file.id, file.remoteFileSize, UploadState.CACHING).copy(
+            isEncrypted = true,
+            cachePath = "/path"
+        )
+
+        val info = UploadInfo(upload, file)
+
+        uploadOperations.autoResolveCreate = true
+
+        val uploader = newUploaderWithUpload(info)
+
+        uploadOperations.completeCacheOperation(upload.id)
+
+        verify(uploadPersistenceManager).setState(info.upload.id, UploadState.CREATED)
+    }
+
+    @Test
     fun `it should upload parts once upload has been created`() {
         val uploader = newUploader()
 

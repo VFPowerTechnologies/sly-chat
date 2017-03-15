@@ -16,11 +16,13 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
     var createDeferred = deferred<Unit, Exception>()
     var completeDeferred = deferred<Unit, Exception>()
     var uploadSubjects = HashMap<Int, PublishSubject<Long>>()
+    val cacheSubjects = HashMap<String, PublishSubject<Long>>()
 
     var autoResolveCreate = false
 
     private data class CreateArgs(val upload: Upload, val file: RemoteFile)
     private data class UploadArgs(val upload: Upload, val part: UploadPart, val file: RemoteFile)
+    private data class CacheArgs(val upload: Upload, val file: RemoteFile)
 
     private var createArgs: CreateArgs? = null
     private var uploadArgs = HashMap<Pair<String, Int>, UploadArgs>()
@@ -129,5 +131,19 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
 
     fun rejectCompleteUploadOperation(e: Exception) {
         completeDeferred.reject(e)
+    }
+
+    override fun cache(upload: Upload, file: RemoteFile): Observable<Long> {
+        val s = PublishSubject.create<Long>()
+        cacheSubjects[upload.id] = s
+
+        return s
+    }
+
+    fun completeCacheOperation(uploadId: String) {
+        val s = cacheSubjects[uploadId] ?: fail("cache($uploadId) not called")
+
+        s.onCompleted()
+        scheduler.triggerActions()
     }
 }
