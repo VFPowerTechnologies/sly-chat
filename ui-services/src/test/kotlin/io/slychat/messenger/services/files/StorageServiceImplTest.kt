@@ -1,10 +1,10 @@
 package io.slychat.messenger.services.files
 
 import com.nhaarman.mockito_kotlin.*
-import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.http.api.storage.StorageAsyncClient
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
+import io.slychat.messenger.core.randomQuota
 import io.slychat.messenger.core.randomRemoteFile
 import io.slychat.messenger.core.randomUpload
 import io.slychat.messenger.core.randomUserMetadata
@@ -79,7 +79,6 @@ class StorageServiceImplTest {
     @Before
     fun before() {
         whenever(fileListPersistenceManager.deleteFiles(any())).thenResolveUnit()
-        whenever(storageClient.getQuota(any())).thenResolve(Quota(0, 100))
         whenever(syncJobFactory.create(any())).thenReturn(syncJob)
         whenever(transferManager.events).thenReturn(transferEvents)
     }
@@ -96,22 +95,6 @@ class StorageServiceImplTest {
             userPaths,
             networkStatus
         )
-    }
-
-    @Test
-    fun `it should update quota once network becomes available`() {
-        val service = newService(false)
-        val testSubscriber = service.quota.testSubscriber()
-
-        val quota = Quota(10, 10)
-        whenever(storageClient.getQuota(any())).thenResolve(quota)
-
-        networkStatus.onNext(true)
-
-        assertThat(testSubscriber.onNextEvents).apply {
-            describedAs("Should emit quota update")
-            contains(quota)
-        }
     }
 
     @Test
@@ -176,7 +159,7 @@ class StorageServiceImplTest {
 
         testSubscriber.assertReceivedOnNext(listOf(FileListSyncEvent.Begin()))
 
-        val result = StorageSyncResult(0, emptyList(), 0)
+        val result = StorageSyncResult(0, emptyList(), 0, randomQuota())
         syncJob.d.resolve(result)
 
         testSubscriber.assertReceivedOnNext(listOf(FileListSyncEvent.Begin(), FileListSyncEvent.End(result)))
@@ -232,7 +215,7 @@ class StorageServiceImplTest {
 
         //since we sync on startup
         syncJob.clearCalls()
-        syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0))
+        syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0, randomQuota()))
 
         transferEvents.onNext(TransferEvent.UploadStateChanged(randomUpload(), TransferState.COMPLETE))
 
@@ -245,8 +228,20 @@ class StorageServiceImplTest {
 
         service.sync()
 
-        syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0))
+        syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0, randomQuota()))
 
         assertEquals(2, syncJob.callCount, "Queued sync job not run")
+    }
+
+    @Test
+    fun `it should update quota after completing a successful sync`() {
+        val service = newService(true)
+
+        val testSubscriber = service.quota.testSubscriber()
+
+        val quota = randomQuota()
+        syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0, quota))
+
+        testSubscriber.assertReceivedOnNext(listOf(quota))
     }
 }

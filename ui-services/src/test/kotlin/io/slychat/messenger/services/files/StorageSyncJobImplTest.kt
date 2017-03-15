@@ -39,6 +39,8 @@ class StorageSyncJobImplTest {
     private val currentVersion = 0L
     private val newVersion = 1L
 
+    private val dummyQuota = randomQuota()
+
     private fun generateTestFileInfo(): Pair<RemoteFile, FileInfo> {
         val um = randomUserMetadata().copy(fileKey = generateKey(128))
         val file = randomRemoteFile(userMetadata = um)
@@ -64,7 +66,7 @@ class StorageSyncJobImplTest {
         whenever(fileListPersistenceManager.mergeUpdates(any(), any())).thenResolveUnit()
         whenever(fileListPersistenceManager.getRemoteUpdates()).thenResolve(emptyList())
         whenever(fileListPersistenceManager.removeRemoteUpdates(any())).thenResolveUnit()
-        whenever(storageClient.getFileList(any(), any())).thenResolve(FileListResponse(0, emptyList()))
+        whenever(storageClient.getFileList(any(), any())).thenResolve(FileListResponse(0, emptyList(), dummyQuota))
         whenever(storageClient.update(any(), any())).thenResolve(UpdateResponse(newVersion))
     }
 
@@ -106,10 +108,12 @@ class StorageSyncJobImplTest {
     @Test
     fun `it should update the local file list with the results from a pull`() {
         val (file, info) = generateTestFileInfo()
+        val quota = randomQuota()
 
         whenever(storageClient.getFileList(any(), eq(currentVersion))).thenResolve(FileListResponse(
             newVersion,
-            listOf(info)
+            listOf(info),
+            quota
         ))
 
         syncJob.run().get()
@@ -118,12 +122,14 @@ class StorageSyncJobImplTest {
     }
 
     @Test
-    fun `it should return the file list updates and the new version in the job results`() {
+    fun `it should return the file list updates, new version and current quota in the job results`() {
         val (file, info) = generateTestFileInfo()
+        val quota = randomQuota()
 
         whenever(storageClient.getFileList(any(), eq(currentVersion))).thenResolve(FileListResponse(
             newVersion,
-            listOf(info)
+            listOf(info),
+            quota
         ))
 
         val result = syncJob.run().get()
@@ -133,5 +139,7 @@ class StorageSyncJobImplTest {
             describedAs("Invalid update list")
             containsOnly(file)
         }
+
+        assertEquals(quota, result.quota, "Invalid quota")
     }
 }

@@ -7,4 +7,9 @@ data class Quota(
     val usedBytes: Long,
     @JsonProperty("maxBytes")
     val maxBytes: Long
-)
+) {
+    init {
+        if (usedBytes > maxBytes)
+            error("usedBytes ($usedBytes) must be <= maxBytes ($maxBytes)")
+    }
+}

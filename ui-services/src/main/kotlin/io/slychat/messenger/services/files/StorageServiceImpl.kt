@@ -14,7 +14,6 @@ import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.bindUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
-import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -64,8 +63,6 @@ class StorageServiceImpl(
 
     private var isNetworkAvailable = false
 
-    private var isUpdatingQuota = false
-
     override val uploads: List<UploadStatus>
         get() = transferManager.uploads
 
@@ -88,27 +85,8 @@ class StorageServiceImpl(
     private fun onNetworkStatusChange(isAvailable: Boolean) {
         isNetworkAvailable = isAvailable
 
-        if (isNetworkAvailable) {
-            updateQuota()
+        if (isNetworkAvailable)
             sync()
-        }
-    }
-
-    fun updateQuota() {
-        if (isUpdatingQuota)
-            return
-
-        isUpdatingQuota = true
-
-        authTokenManager.bind {
-            storageClient.getQuota(it)
-        } successUi {
-            isUpdatingQuota = false
-            quotaSubject.onNext(it)
-        } failUi  {
-            isUpdatingQuota = false
-            log.error("Failed to update quota: {}", it.message, it)
-        }
     }
 
     private fun beginSync() {
@@ -118,8 +96,10 @@ class StorageServiceImpl(
 
     private fun endSync(result: StorageSyncResult?) {
         isSyncRunning = false
-        val ev = if (result != null)
+        val ev = if (result != null) {
+            quotaSubject.onNext(result.quota)
             FileListSyncEvent.End(result)
+        }
         else
             FileListSyncEvent.Error()
 

@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.files.RemoteFile
@@ -23,7 +24,7 @@ class StorageSyncJobImpl(
     private val storageClient: StorageAsyncClient
 ) : StorageSyncJob {
     private class PushResults(val remoteUpdatesPerformed: Int)
-    private class PullResults(val updates: List<RemoteFile>, val newListVersion: Long)
+    private class PullResults(val updates: List<RemoteFile>, val newListVersion: Long, val quota: Quota)
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -67,9 +68,10 @@ class StorageSyncJobImpl(
             storageClient.getFileList(userCredentials, currentVersion) bind {
                 val remoteFiles = it.files.map { it.toRemoteFile(keyVault) }
                 val latestVersion = it.version
+                val quota = it.quota
 
                 fileListPersistenceManager.mergeUpdates(remoteFiles, latestVersion) map {
-                    PullResults(remoteFiles, latestVersion)
+                    PullResults(remoteFiles, latestVersion, quota)
                 }
             }
         }
@@ -78,7 +80,7 @@ class StorageSyncJobImpl(
     override fun run(): Promise<StorageSyncResult, Exception> {
         return pushUpdates() bind { pushResults ->
             pullUpdates() map { pullResults ->
-                StorageSyncResult(pushResults.remoteUpdatesPerformed, pullResults.updates, pullResults.newListVersion)
+                StorageSyncResult(pushResults.remoteUpdatesPerformed, pullResults.updates, pullResults.newListVersion, pullResults.quota)
             }
         }
     }

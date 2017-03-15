@@ -268,3 +268,10 @@ fun randomDownload(fileId: String? = null, fileSize: Long = 0, state: DownloadSt
         error
     )
 }
+
+fun randomQuota(): Quota {
+    val max = randomInt()
+    val used = randomInt(max = max)
+
+    return Quota(used.toLong(), max.toLong())
+}
