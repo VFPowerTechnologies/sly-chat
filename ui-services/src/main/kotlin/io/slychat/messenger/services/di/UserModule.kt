@@ -594,7 +594,6 @@ class UserModule(
 
         return StorageServiceImpl(
             authTokenManager,
-            storageClient,
             fileListPersistenceManager,
             syncJobFactory,
             transferManager,

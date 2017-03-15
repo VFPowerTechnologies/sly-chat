@@ -6,7 +6,6 @@ import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.files.FileMetadata
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.files.UserMetadata
-import io.slychat.messenger.core.http.api.storage.StorageAsyncClient
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.rx.plusAssign
 import io.slychat.messenger.services.UserPaths
@@ -26,7 +25,6 @@ import java.io.FileNotFoundException
 //I guess this isn't that much of an issue anyways
 class StorageServiceImpl(
     private val authTokenManager: AuthTokenManager,
-    private val storageClient: StorageAsyncClient,
     private val fileListPersistenceManager: FileListPersistenceManager,
     private val syncJobFactory: StorageSyncJobFactory,
     private val transferManager: TransferManager,
@@ -86,7 +84,15 @@ class StorageServiceImpl(
         isNetworkAvailable = isAvailable
 
         if (isNetworkAvailable)
-            sync()
+            nextSync()
+    }
+
+    private fun nextSync() {
+        if (!isSyncPending)
+            return
+
+        isSyncPending = false
+        sync()
     }
 
     private fun beginSync() {
@@ -105,10 +111,7 @@ class StorageServiceImpl(
 
         syncEventsSubject.onNext(ev)
 
-        if (isSyncPending) {
-            isSyncPending = false
-            sync()
-        }
+        nextSync()
     }
 
     override fun init() {

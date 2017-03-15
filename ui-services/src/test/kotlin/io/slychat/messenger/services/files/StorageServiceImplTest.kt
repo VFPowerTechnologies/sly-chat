@@ -2,7 +2,6 @@ package io.slychat.messenger.services.files
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.crypto.generateFileId
-import io.slychat.messenger.core.http.api.storage.StorageAsyncClient
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.core.randomQuota
 import io.slychat.messenger.core.randomRemoteFile
@@ -57,7 +56,6 @@ class StorageServiceImplTest {
     }
 
     private val fileListPersistenceManager: FileListPersistenceManager = mock()
-    private val storageClient: StorageAsyncClient = mock()
     private val networkStatus = BehaviorSubject.create<Boolean>()
     private val transferManager: TransferManager = mock()
     private val fileAccess: PlatformFileAccess = mock()
@@ -87,7 +85,6 @@ class StorageServiceImplTest {
         networkStatus.onNext(isNetworkAvailable)
         return StorageServiceImpl(
             MockAuthTokenManager(),
-            storageClient,
             fileListPersistenceManager,
             syncJobFactory,
             transferManager,
@@ -141,8 +138,12 @@ class StorageServiceImplTest {
     }
 
     @Test
-    fun `sync should run on network reconnect`() {
+    fun `sync should queue a sync to on network reconnect`() {
         val service = newService(false)
+
+        service.sync()
+
+        verify(syncJobFactory, never()).create(any())
 
         networkStatus.onNext(true)
 
@@ -227,6 +228,7 @@ class StorageServiceImplTest {
         val service = newService(true)
 
         service.sync()
+        service.sync()
 
         syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0, randomQuota()))
 
@@ -238,6 +240,8 @@ class StorageServiceImplTest {
         val service = newService(true)
 
         val testSubscriber = service.quota.testSubscriber()
+
+        service.sync()
 
         val quota = randomQuota()
         syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0, quota))
