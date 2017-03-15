@@ -16,27 +16,12 @@ sealed class FileListSyncEvent {
         }
     }
 
-    class Error : FileListSyncEvent() {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            return other?.javaClass == javaClass
-        }
-
-        override fun hashCode(): Int {
-            return 0
-        }
-
-        override fun toString(): String {
-            return "Error()"
-        }
-    }
-
-    class End(val result: StorageSyncResult) : FileListSyncEvent() {
+    class Result(val result: StorageSyncResult) : FileListSyncEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
-            other as End
+            other as Result
 
             if (result != other.result) return false
 
@@ -48,7 +33,28 @@ sealed class FileListSyncEvent {
         }
 
         override fun toString(): String {
-            return "End(result=$result)"
+            return "Result(result=$result)"
+        }
+    }
+
+    class End(val hasError: Boolean) : FileListSyncEvent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as End
+
+            if (hasError != other.hasError) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return hasError.hashCode()
+        }
+
+        override fun toString(): String {
+            return "End(hasError=$hasError)"
         }
     }
 }

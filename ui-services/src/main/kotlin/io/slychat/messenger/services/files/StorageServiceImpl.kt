@@ -100,18 +100,24 @@ class StorageServiceImpl(
         syncEventsSubject.onNext(FileListSyncEvent.Begin())
     }
 
-    private fun endSync(result: StorageSyncResult?) {
+    private fun endSync(hasError: Boolean) {
         isSyncRunning = false
-        val ev = if (result != null) {
-            quotaSubject.onNext(result.quota)
-            FileListSyncEvent.End(result)
-        }
-        else
-            FileListSyncEvent.Error()
 
-        syncEventsSubject.onNext(ev)
+        syncEventsSubject.onNext(FileListSyncEvent.End(hasError))
 
         nextSync()
+    }
+
+    private fun onSyncError(t: Throwable) {
+        //TODO track errors
+        endSync(true)
+    }
+
+    private fun onSyncSuccess(result: StorageSyncResult) {
+        quotaSubject.onNext(result.quota)
+        syncEventsSubject.onNext(FileListSyncEvent.Result(result))
+
+        endSync(false)
     }
 
     override fun init() {
@@ -133,11 +139,18 @@ class StorageServiceImpl(
             syncJobFactory.create(it).run()
         } successUi {
             log.info("Sync job complete: remoteUpdatesPerformed={}; newListVersion={}", it.remoteUpdatesPerformed, it.newListVersion)
-            endSync(it)
+            onSyncSuccess(it)
         } fail {
             log.condError(isNotNetworkError(it), "Sync job failed: {}", it.message, it)
-            endSync(null)
+            onSyncError(it)
         }
+    }
+
+    override fun clearSyncError() {
+        if (isSyncRunning)
+            error("clearSyncError called while sync was running")
+
+        syncEventsSubject.onNext(FileListSyncEvent.End(false))
     }
 
     override fun getFile(fileId: String): Promise<RemoteFile?, Exception> {

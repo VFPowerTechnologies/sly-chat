@@ -45,4 +45,7 @@ interface StorageService {
     fun retryUpload(uploadId: String): Promise<Unit, Exception>
 
     fun cancelDownloads(downloadIds: List<String>)
+
+    /** Must not be called during a sync. */
+    fun clearSyncError()
 }

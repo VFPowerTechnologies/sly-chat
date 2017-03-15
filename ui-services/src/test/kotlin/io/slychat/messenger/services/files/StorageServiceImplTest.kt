@@ -151,23 +151,26 @@ class StorageServiceImplTest {
     }
 
     @Test
-    fun `sync should update sync status on start and completion`() {
+    fun `sync should emit events on start and completion`() {
         val service = newService(true)
+
+        val result = StorageSyncResult(0, emptyList(), 0, randomQuota())
+        syncJob.d.resolve(result)
 
         val testSubscriber = service.syncEvents.testSubscriber()
 
         service.sync()
 
-        testSubscriber.assertReceivedOnNext(listOf(FileListSyncEvent.Begin()))
-
-        val result = StorageSyncResult(0, emptyList(), 0, randomQuota())
-        syncJob.d.resolve(result)
-
-        testSubscriber.assertReceivedOnNext(listOf(FileListSyncEvent.Begin(), FileListSyncEvent.End(result)))
+        val events = listOf(
+            FileListSyncEvent.Begin(),
+            FileListSyncEvent.Result(result),
+            FileListSyncEvent.End(false)
+        )
+        testSubscriber.assertReceivedOnNext(events)
     }
 
     @Test
-    fun `sync should emit an Error event if the sync fails`() {
+    fun `sync should emit an End event with hasError if the sync fails`() {
         val service = newService(true)
 
         val testSubscriber = service.syncEvents.testSubscriber()
@@ -178,7 +181,22 @@ class StorageServiceImplTest {
 
         syncJob.d.reject(TestException())
 
-        testSubscriber.assertReceivedOnNext(listOf(FileListSyncEvent.Begin(), FileListSyncEvent.Error()))
+        testSubscriber.assertReceivedOnNext(listOf(FileListSyncEvent.Begin(), FileListSyncEvent.End(true)))
+    }
+
+    @Test
+    fun `clearSyncError should emit an End event with no error indication`() {
+        val service = newService(true)
+
+        service.sync()
+
+        syncJob.d.reject(TestException())
+
+        val testSubscriber = service.syncEvents.testSubscriber()
+
+        service.clearSyncError()
+
+        testSubscriber.assertReceivedOnNext(listOf(FileListSyncEvent.End(true), FileListSyncEvent.End(false)))
     }
 
     @Test
