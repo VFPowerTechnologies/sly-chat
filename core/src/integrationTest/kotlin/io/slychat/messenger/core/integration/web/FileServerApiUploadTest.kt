@@ -91,8 +91,7 @@ class FileServerApiUploadTest {
             partNumber,
             partSize,
             md5InputStream,
-            AtomicBoolean(),
-            null
+            AtomicBoolean()
         )
 
         assertEquals(md5InputStream.digestString, resp.checksum, "Invalid checksum")

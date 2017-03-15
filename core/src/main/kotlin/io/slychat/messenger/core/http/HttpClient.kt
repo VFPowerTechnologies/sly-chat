@@ -14,7 +14,7 @@ interface HttpClient {
     /** Post the given data as application/json. */
     fun postJSON(url: String, body: ByteArray, headers: List<Pair<String, String>>): HttpResponse
 
-    fun upload(url: String, headers: List<Pair<String, String>>, parts: List<MultipartPart>, isCancelled: AtomicBoolean, filterStream: ((OutputStream) -> OutputStream)?): HttpResponse
+    fun upload(url: String, headers: List<Pair<String, String>>, parts: List<MultipartPart>, isCancelled: AtomicBoolean): HttpResponse
 
     fun download(url: String, headers: List<Pair<String, String>>): HttpStreamResponse
 }

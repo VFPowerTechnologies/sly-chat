@@ -116,7 +116,7 @@ class JavaHttpClient(
     }
 
     //TODO write multipart support for builtin HttpServer to test this
-    override fun upload(url: String, headers: List<Pair<String, String>>, parts: List<MultipartPart>, isCancelled: AtomicBoolean, filterStream: ((OutputStream) -> OutputStream)?): HttpResponse {
+    override fun upload(url: String, headers: List<Pair<String, String>>, parts: List<MultipartPart>, isCancelled: AtomicBoolean): HttpResponse {
         val connection = getHttpConnection(url)
 
         connection.doInput = true
@@ -138,7 +138,7 @@ class JavaHttpClient(
         //understand the Expect header; there's no way to configure this timeout
         connection.setRequestProperty("Expect", "100-Continue")
 
-        val rawOutputStream = try {
+        val outputStream = try {
             connection.outputStream
         }
         catch (e: ProtocolException) {
@@ -150,11 +150,6 @@ class JavaHttpClient(
             val data = readStreamResponse(connection, headers)
             return HttpResponse(code, headers, data)
         }
-
-        val outputStream = if (filterStream != null)
-            filterStream(rawOutputStream)
-        else
-            rawOutputStream
 
         outputStream.buffered().use {
             writeMultipartParts(it, boundary, parts, isCancelled)

@@ -13,7 +13,7 @@ interface UploadClient {
     fun newUpload(userCredentials: UserCredentials, request: NewUploadRequest): NewUploadResponse
 
     //if upload is only a single part, there's no need to call completeUpload
-    fun uploadPart(userCredentials: UserCredentials, uploadId: String, partN: Int, size: Long, inputStream: InputStream, isCancelled: AtomicBoolean, filterStream: ((OutputStream) -> OutputStream)?): UploadPartCompleteResponse
+    fun uploadPart(userCredentials: UserCredentials, uploadId: String, partN: Int, size: Long, inputStream: InputStream, isCancelled: AtomicBoolean): UploadPartCompleteResponse
 
     fun completeUpload(userCredentials: UserCredentials, uploadId: String)
 

@@ -94,8 +94,7 @@ class FileServerApiStorageTest {
             1,
             partSize,
             ByteArrayInputStream(fileData),
-            AtomicBoolean(),
-            null
+            AtomicBoolean()
         )
 
         return fileId

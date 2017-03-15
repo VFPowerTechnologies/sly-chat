@@ -1,7 +1,7 @@
 package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.MD5InputStream
-import io.slychat.messenger.core.ProgressOutputStream
+import io.slychat.messenger.core.ProgressInputStream
 import io.slychat.messenger.core.SectionInputStream
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.crypto.EncryptInputStream
@@ -32,19 +32,22 @@ class UploadPartOperation(
 
             val cipher = CipherList.getCipher(file.userMetadata.cipherId)
 
-            val dataInputStream = if (!upload.isEncrypted)
+            val encryptInputStream = if (!upload.isEncrypted)
                 EncryptInputStream(cipher, file.userMetadata.fileKey, limiter, file.fileMetadata!!.chunkSize)
             else
                 limiter
 
-            val md5InputStream = MD5InputStream(dataInputStream)
+            //we want progress for the remote size, so listen for progress on the encrypted stream
+            //this isn't completely accurate since it excludes the http overhead, as well as not being accurate
+            //time-wise due to output buffering but the difference is negligible
+            val progressInputStream = ProgressInputStream(encryptInputStream) {
+                subscriber.onNext(it.toLong())
+            }
+
+            val md5InputStream = MD5InputStream(progressInputStream)
 
             val resp = md5InputStream.use {
-                uploadClient.uploadPart(userCredentials, upload.id, part.n, part.remoteSize, md5InputStream, isCancelled) { outputStream ->
-                    ProgressOutputStream(outputStream) {
-                        subscriber.onNext(it)
-                    }
-                }
+                uploadClient.uploadPart(userCredentials, upload.id, part.n, part.remoteSize, md5InputStream, isCancelled)
             }
 
             if (resp.checksum != md5InputStream.digestString) {

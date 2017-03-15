@@ -6,7 +6,6 @@ import io.slychat.messenger.core.http.MultipartPart
 import io.slychat.messenger.core.http.api.*
 import io.slychat.messenger.core.typeRef
 import java.io.InputStream
-import java.io.OutputStream
 import java.util.concurrent.atomic.AtomicBoolean
 
 class UploadClientImpl(
@@ -32,7 +31,7 @@ class UploadClientImpl(
         return apiPostRequest(httpClient, url, userCredentials, request, typeRef())
     }
 
-    override fun uploadPart(userCredentials: UserCredentials, uploadId: String, partN: Int, size: Long, inputStream: InputStream, isCancelled: AtomicBoolean, filterStream: ((OutputStream) -> OutputStream)?): UploadPartCompleteResponse {
+    override fun uploadPart(userCredentials: UserCredentials, uploadId: String, partN: Int, size: Long, inputStream: InputStream, isCancelled: AtomicBoolean): UploadPartCompleteResponse {
         val url = "$fileServerBaseUrl/v1/upload/$uploadId/$partN"
 
         val dataPart = MultipartPart.Data("data", size, inputStream)
@@ -41,8 +40,7 @@ class UploadClientImpl(
             url,
             userCredentialsToHeaders(userCredentials),
             listOf(dataPart),
-            isCancelled,
-            filterStream
+            isCancelled
         )
 
         return valueFromApi(resp, typeRef())
