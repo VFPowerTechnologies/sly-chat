@@ -17,16 +17,16 @@ internal fun getRemoteFileSize(cipher: Cipher, fileSize: Long, chunkSize: Int): 
     require(fileSize > 0) { "fileSize must be > 0, got $fileSize" }
     require(chunkSize > 0) { "chunkSize must be > 0, got $chunkSize" }
 
-    val plainChunkSize = cipher.getInputSizeForOutput(chunkSize)
-
-    val chunkCount = fileSize / plainChunkSize
-    val rem = fileSize % plainChunkSize
+    val chunkCount = fileSize / chunkSize
+    val rem = fileSize % chunkSize
     val extra = if (rem > 0)
         cipher.getEncryptedSize(rem.toInt())
     else
         0
 
-    val evenChunks = chunkSize * chunkCount
+    val encryptedChunkSize = cipher.getEncryptedSize(chunkSize)
+
+    val evenChunks = encryptedChunkSize * chunkCount
 
     return evenChunks + extra
 }
@@ -58,21 +58,16 @@ internal fun calcUploadPartsEncrypted(remoteFileSize: Long, minPartSize: Int): L
 
 /**
  * This will calculate the UploadParts for a given file.
- *
- * First, we extract how large each plaintext chunk will be based on the given cipher and the encrypted chunk size.
- * Then we calculate how many encrypted chunks fit into the minimum part size.
- * Then we generate upload parts for each of these full parts, followed by calculating the final part using the
- * remaining even chunks and any remaining bytes that didn't fit into a full encrypted chunk.
  */
-internal fun calcUploadParts(cipher: Cipher, localFileSize: Long, encryptedChunkSize: Int, minPartSize: Int): List<UploadPart> {
-    require(encryptedChunkSize <= minPartSize) { "encryptedChunkSize ($encryptedChunkSize) should be <= minPartSize ($minPartSize)" }
-    require((minPartSize % encryptedChunkSize) == 0) { "encryptedChunkSize ($encryptedChunkSize) must be a multiple of minPartSize ($minPartSize)" }
+internal fun calcUploadParts(cipher: Cipher, localFileSize: Long, chunkSize: Int, minPartSize: Int): List<UploadPart> {
+    require(chunkSize <= minPartSize) { "encryptedChunkSize ($chunkSize) should be <= minPartSize ($minPartSize)" }
+    require((minPartSize % chunkSize) == 0) { "encryptedChunkSize ($chunkSize) must be a multiple of minPartSize ($minPartSize)" }
 
-    val chunksPerPart = (minPartSize / encryptedChunkSize).toLong()
+    val encryptedChunkSize = cipher.getEncryptedSize(chunkSize)
 
-    val plainChunkSize = cipher.getInputSizeForOutput(encryptedChunkSize)
+    val chunksPerPart = (minPartSize / chunkSize).toLong()
 
-    if (localFileSize < plainChunkSize) {
+    if (localFileSize < chunkSize) {
         return listOf(UploadPart(
             1,
             0,
@@ -82,9 +77,9 @@ internal fun calcUploadParts(cipher: Cipher, localFileSize: Long, encryptedChunk
         ))
     }
 
-    val evenChunks = localFileSize / plainChunkSize
+    val evenChunks = localFileSize / chunkSize
     //if > 0, then this is the bytes that make up the final chunk
-    val lastChunkSize = localFileSize % plainChunkSize
+    val lastChunkSize = localFileSize % chunkSize
 
     val evenParts = (evenChunks / chunksPerPart).toInt()
     //remaining chunks (plus one more if lastChunkSize is > 1) for the final part
@@ -94,7 +89,7 @@ internal fun calcUploadParts(cipher: Cipher, localFileSize: Long, encryptedChunk
     var currentOffset = 0L
 
     (1..evenParts).forEach {
-        val p = UploadPart(it, currentOffset, chunksPerPart * plainChunkSize, chunksPerPart * encryptedChunkSize, false)
+        val p = UploadPart(it, currentOffset, chunksPerPart * chunkSize, chunksPerPart * encryptedChunkSize, false)
         currentOffset += p.localSize
         parts.add(p)
     }
@@ -105,7 +100,7 @@ internal fun calcUploadParts(cipher: Cipher, localFileSize: Long, encryptedChunk
         else
             0
 
-        parts.add(UploadPart(evenParts + 1, currentOffset, (pr * plainChunkSize) + lastChunkSize, (pr * encryptedChunkSize) + lastChunkEncryptedSize, false))
+        parts.add(UploadPart(evenParts + 1, currentOffset, (pr * chunkSize) + lastChunkSize, (pr * encryptedChunkSize) + lastChunkEncryptedSize, false))
     }
 
     return parts

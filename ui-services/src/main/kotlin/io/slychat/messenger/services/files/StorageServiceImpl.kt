@@ -195,7 +195,6 @@ class StorageServiceImpl(
             val parts = if (!cache)
                 calcUploadParts(cipher, fileInfo.size, chunkSize, MIN_PART_SIZE)
             else
-                //FIXME alignment
                 calcUploadPartsEncrypted(remoteFileSize, MIN_PART_SIZE)
 
             val fileMetadata = FileMetadata(

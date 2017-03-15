@@ -30,9 +30,9 @@ class FilesUtilsTest {
     @Test
     fun `calcUploadParts should calculate the proper size for multiple parts`() {
         val expected = listOf(
-            UploadPart(n=1, offset=0, localSize=5241760, remoteSize=5242880, isComplete=false),
-            UploadPart(n=2, offset=5241760, localSize=5241760, remoteSize=5242880, isComplete=false),
-            UploadPart(n=3, offset=10483520, localSize = 2099392, remoteSize=2099868, isComplete=false)
+            UploadPart(n=1, offset=0, localSize=5242880, remoteSize=5244000, isComplete=false),
+            UploadPart(n=2, offset=5242880, localSize=5242880, remoteSize=5244000, isComplete=false),
+            UploadPart(n=3, offset=10485760, localSize=2097152, remoteSize=2097600, isComplete=false)
         )
 
         val minPartSize = 5.mb
@@ -50,7 +50,7 @@ class FilesUtilsTest {
 
     @Test
     fun `calcUploadParts should calc the proper amount of chunks with no even chunks but with a last chunk`() {
-        val fileSize = 10L.mb
+        val fileSize = 10L.mb + 10
         val minPartSize = 5.mb
         val encryptedChunkSize = 128.kb
         val actual = calcUploadParts(cipher, fileSize, encryptedChunkSize, minPartSize)
@@ -60,34 +60,6 @@ class FilesUtilsTest {
             describedAs("Should contain 3 parts")
             hasSize(3)
         }
-    }
-
-    @Test
-    fun `calcUploadParts should calculate the proper size when given an even plaintext chunk size`() {
-        val encryptedChunkSize = 128.kb
-        val fileSize = cipher.getInputSizeForOutput(encryptedChunkSize) * 90L
-        val actual = calcUploadParts(cipher, fileSize, 128.kb, 5.mb)
-
-        assertPartSanity(fileSize, encryptedChunkSize, actual)
-
-        assertThat(actual).apply {
-            describedAs("Should contain 3 parts")
-            hasSize(3)
-        }
-    }
-
-    @Test
-    fun `calcUploadParts should calc the proper size when given a size evenly divisible into the min part size`() {
-        val encryptedChunkSize = 128.kb
-        val fileSize = cipher.getInputSizeForOutput(encryptedChunkSize) * 40L
-        val actual = calcUploadParts(cipher, fileSize, encryptedChunkSize, 5.mb)
-
-        assertThat(actual).apply {
-            describedAs("Should only contain a single part")
-            hasSize(1)
-        }
-
-        assertPartSanity(fileSize, encryptedChunkSize, actual)
     }
 
     @Test

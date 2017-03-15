@@ -17,7 +17,4 @@ interface Cipher {
 
     /** Returns the expected size of encrypting data of the given size. This includes the prepended IV's size as well. */
     fun getEncryptedSize(size: Int): Int
-
-    /** Returns how large the input must be to fit inside the given output size including the overhead of the cipher and the IV. */
-    fun getInputSizeForOutput(wantedOutputSize: Int): Int
 }

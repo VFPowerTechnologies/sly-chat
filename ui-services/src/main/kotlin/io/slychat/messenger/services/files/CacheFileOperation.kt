@@ -14,6 +14,7 @@ class CacheFileOperation(
 ) {
     init {
         require(upload.cachePath != null) { "No cache path set for upload" }
+        require(!file.isDeleted) { "Given a deleted file" }
     }
 
     fun run() {
