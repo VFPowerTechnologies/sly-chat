@@ -433,6 +433,13 @@ class SlyApplicationTest {
     }
 
     @Test
+    fun `it should schedule a file list sync after login initialization`() {
+        val app = auth()
+
+        verify(userComponent.storageService).sync()
+    }
+
+    @Test
     fun `it should ignore app config file read failures and continue initialization`() {
         whenever(appComponent.appConfigBackend.read<AppConfig>(any())).thenReject(TestException())
 

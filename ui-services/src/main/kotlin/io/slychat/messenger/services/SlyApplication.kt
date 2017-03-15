@@ -584,6 +584,8 @@ class SlyApplication {
 
         checkPreKeys()
 
+        userComponent.storageService.sync()
+
         val publicKey = userComponent.keyVault.fingerprint
 
         emitLoginEvent(LoggedIn(accountInfo, publicKey))
