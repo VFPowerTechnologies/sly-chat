@@ -8,6 +8,7 @@ import io.slychat.messenger.core.http.api.storage.StorageClient
 import io.slychat.messenger.core.persistence.Download
 import rx.Subscriber
 import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicBoolean
 
 class DownloadOperation(
     private val fileAccess: PlatformFileAccess,
@@ -15,7 +16,8 @@ class DownloadOperation(
     private val download: Download,
     private val file: RemoteFile,
     private val storageClient: StorageClient,
-    private val subscriber: Subscriber<in Long>
+    private val subscriber: Subscriber<in Long>,
+    private val isCancelled: AtomicBoolean
 ) {
     init {
         require(!file.isDeleted) { "Given a deleted file" }
@@ -32,7 +34,6 @@ class DownloadOperation(
 
         inputStream.use { inputStream ->
             val buffer = ByteArray(8 * 1024)
-
             fileAccess.openFileForWrite(download.filePath).use { outputStream ->
                 while (true) {
                     val read = inputStream.read(buffer)
@@ -48,7 +49,7 @@ class DownloadOperation(
                     outputStream.write(buffer, 0, read)
                     subscriber.onNext(read.toLong())
 
-                    if (subscriber.isUnsubscribed)
+                    if (isCancelled.get() || subscriber.isUnsubscribed)
                         throw CancellationException()
                 }
             }

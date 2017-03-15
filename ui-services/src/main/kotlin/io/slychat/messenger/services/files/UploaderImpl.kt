@@ -14,7 +14,9 @@ import rx.Scheduler
 import rx.Subscriber
 import rx.subjects.PublishSubject
 import java.io.FileNotFoundException
+import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 class UploaderImpl(
     initialSimulUploads: Int,
@@ -31,6 +33,8 @@ class UploaderImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val list = TransferList<UploadStatus>(initialSimulUploads)
+
+    private val cancellationTokens = HashMap<String, AtomicBoolean>()
 
     override var simulUploads: Int
         get() = list.maxSize
@@ -152,7 +156,7 @@ class UploaderImpl(
             .observeOn(mainScheduler)
             .subscribe(object : Subscriber<Long>() {
                 override fun onNext(t: Long) {
-                    //TODO caching progress
+                    //TODO progress
                 }
 
                 override fun onCompleted() {
@@ -237,6 +241,11 @@ class UploaderImpl(
         subject.onNext(TransferEvent.UploadProgress(status.upload, progress))
     }
 
+    private fun removeCancellationToken(downloadId: String) {
+        log.debug("Removing cancellation token for {}", downloadId)
+        cancellationTokens.remove(downloadId)
+    }
+
     //TODO cancellation error
     private fun handleUploadException(uploadId: String, e: Throwable, origin: String) {
         val uploadError = when (e) {
@@ -284,12 +293,15 @@ class UploaderImpl(
             return
         }
 
-        uploadOperations.uploadPart(status.upload, nextPart, status.file)
+        val cancellationToken = AtomicBoolean()
+
+        uploadOperations.uploadPart(status.upload, nextPart, status.file, cancellationToken)
             .buffer(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
             .map { it.sum() }
             .observeOn(mainScheduler)
             .subscribe(object : Subscriber<Long>() {
                 override fun onError(e: Throwable) {
+                    removeCancellationToken(uploadId)
                     handleUploadException(uploadId, e, "uploadPart")
                 }
 
@@ -298,6 +310,7 @@ class UploaderImpl(
                 }
 
                 override fun onCompleted() {
+                    removeCancellationToken(uploadId)
                     log.info("Upload $uploadId/${nextPart.n} completed")
 
                     uploadPersistenceManager.completePart(uploadId, nextPart.n) successUi {
@@ -308,6 +321,8 @@ class UploaderImpl(
                     }
                 }
             })
+
+        cancellationTokens[uploadId] = cancellationToken
     }
 
     //XXX for progress, check if part's marked as complete, and drop it

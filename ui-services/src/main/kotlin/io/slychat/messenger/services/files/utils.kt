@@ -7,6 +7,8 @@ import io.slychat.messenger.core.mb
 import io.slychat.messenger.core.persistence.UploadPart
 import io.slychat.messenger.services.auth.AuthTokenManager
 import rx.Observable
+import rx.Scheduler
+import rx.schedulers.Schedulers
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -106,7 +108,7 @@ internal fun calcUploadParts(cipher: Cipher, localFileSize: Long, chunkSize: Int
     return parts
 }
 
-internal fun <T> authFailureRetry(authTokenManager: AuthTokenManager, observable: Observable<T>): Observable<T> {
+internal fun <T> authFailureRetry(authTokenManager: AuthTokenManager, observable: Observable<T>, timerScheduler: Scheduler? = null): Observable<T> {
     return observable.retryWhen {
         val maxRetries = 3
         it.zipWith(Observable.range(1, maxRetries + 1), { e, i -> e to i }).flatMap {
@@ -119,7 +121,7 @@ internal fun <T> authFailureRetry(authTokenManager: AuthTokenManager, observable
                     authTokenManager.invalidateToken()
                     val exp = Math.pow(2.0, i.toDouble())
                     val secs = Random().nextInt(exp.toInt() + 1).toLong()
-                    Observable.timer(secs, TimeUnit.SECONDS)
+                    Observable.timer(secs, TimeUnit.SECONDS, timerScheduler ?: Schedulers.computation())
                 }
                 else
                     Observable.error(e)

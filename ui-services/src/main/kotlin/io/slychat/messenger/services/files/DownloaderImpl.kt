@@ -11,11 +11,11 @@ import org.spongycastle.crypto.InvalidCipherTextException
 import rx.Observable
 import rx.Scheduler
 import rx.Subscriber
-import rx.Subscription
 import rx.subjects.PublishSubject
 import java.util.*
 import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 //TODO need to react to file deletions (or prevent them while downloads attached to them exist)
 class DownloaderImpl(
@@ -56,7 +56,7 @@ class DownloaderImpl(
             list.maxSize = value
         }
 
-    private val downloadSubscriptions = HashMap<String, Subscription>()
+    private val cancellationTokens = HashMap<String, AtomicBoolean>()
 
     override fun init() {
         downloadPersistenceManager.getAll() successUi {
@@ -160,9 +160,9 @@ class DownloaderImpl(
         }
     }
 
-    private fun removeDownloadSubscription(downloadId: String) {
-        log.debug("Removing download subscription for {}", downloadId)
-        downloadSubscriptions.remove(downloadId)?.unsubscribe()
+    private fun removeCancellationToken(downloadId: String) {
+        log.debug("Removing cancellation token for {}", downloadId)
+        cancellationTokens.remove(downloadId)
     }
 
     private fun startDownload(downloadId: String) {
@@ -170,35 +170,37 @@ class DownloaderImpl(
 
         when (status.download.state) {
             DownloadState.CREATED -> {
-                if (downloadId in downloadSubscriptions)
+                if (downloadId in cancellationTokens)
                     error("Attempt to start duplicate download $downloadId")
 
-                 val subscription = downloadOperations.download(status.download, status.file)
-                    .buffer(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
-                    .map { it.sum() }
-                    .observeOn(mainScheduler)
-                    .subscribe(object : Subscriber<Long>() {
-                        override fun onError(e: Throwable) {
-                            removeDownloadSubscription(downloadId)
-                            handleDownloadException(downloadId, e)
-                        }
+                val cancellationToken = AtomicBoolean()
 
-                        override fun onCompleted() {
-                            removeDownloadSubscription(downloadId)
+                downloadOperations.download(status.download, status.file, cancellationToken)
+                   .buffer(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
+                   .map { it.sum() }
+                   .observeOn(mainScheduler)
+                   .subscribe(object : Subscriber<Long>() {
+                       override fun onError(e: Throwable) {
+                           removeCancellationToken(downloadId)
+                           handleDownloadException(downloadId, e)
+                       }
 
-                            downloadPersistenceManager.setState(downloadId, DownloadState.COMPLETE) successUi {
-                                markDownloadComplete(downloadId)
-                            } fail {
-                                log.error("Failed to update download state: {}", it.message, it)
-                            }
-                        }
+                       override fun onCompleted() {
+                           removeCancellationToken(downloadId)
 
-                        override fun onNext(t: Long) {
-                            receiveProgress(downloadId, t)
-                        }
-                    })
+                           downloadPersistenceManager.setState(downloadId, DownloadState.COMPLETE) successUi {
+                               markDownloadComplete(downloadId)
+                           } fail {
+                               log.error("Failed to update download state: {}", it.message, it)
+                           }
+                       }
 
-                downloadSubscriptions[downloadId] = subscription
+                       override fun onNext(t: Long) {
+                           receiveProgress(downloadId, t)
+                       }
+                   })
+
+                cancellationTokens[downloadId] = cancellationToken
             }
 
             DownloadState.COMPLETE -> log.warn("startDownload called with a completed download")
@@ -247,11 +249,9 @@ class DownloaderImpl(
     }
 
     override fun shutdown() {
-        downloadSubscriptions.forEach { t, u ->
-            u.unsubscribe()
+        cancellationTokens.forEach { t, u ->
+            u.set(true)
         }
-
-        downloadSubscriptions.clear()
     }
 
     override fun download(info: DownloadInfo): Promise<Unit, Exception> {
@@ -306,9 +306,9 @@ class DownloaderImpl(
         if (downloadId !in list.all)
             throw InvalidDownloadException(downloadId)
 
-        val sub = downloadSubscriptions[downloadId] ?: return false
+        val token = cancellationTokens[downloadId] ?: return false
 
-        sub.unsubscribe()
+        token.set(true)
 
         return true
     }

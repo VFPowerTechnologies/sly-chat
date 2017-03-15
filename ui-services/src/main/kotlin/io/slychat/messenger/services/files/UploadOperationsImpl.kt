@@ -6,11 +6,11 @@ import io.slychat.messenger.core.persistence.Upload
 import io.slychat.messenger.core.persistence.UploadPart
 import io.slychat.messenger.core.rx.observable
 import io.slychat.messenger.services.UploadClientFactory
-import io.slychat.messenger.services.UserPaths
 import io.slychat.messenger.services.auth.AuthTokenManager
 import nl.komponents.kovenant.Promise
 import rx.Observable
 import rx.Scheduler
+import java.util.concurrent.atomic.AtomicBoolean
 
 class UploadOperationsImpl(
     private val fileAccess: PlatformFileAccess,
@@ -26,11 +26,11 @@ class UploadOperationsImpl(
         }
     }
 
-    override fun uploadPart(upload: Upload, part: UploadPart, file: RemoteFile): Observable<Long> {
+    override fun uploadPart(upload: Upload, part: UploadPart, file: RemoteFile, isCancelled: AtomicBoolean): Observable<Long> {
         return authFailureRetry(authTokenManager, Observable.create<Long> { subscriber ->
             try {
                 val userCredentials = authTokenManager.map { it }.get()
-                val op = UploadPartOperation(fileAccess, userCredentials, upload, part, file, uploadClientFactory.create(), subscriber)
+                val op = UploadPartOperation(fileAccess, userCredentials, upload, part, file, uploadClientFactory.create(), subscriber, isCancelled)
                 op.run()
 
                 subscriber.onCompleted()

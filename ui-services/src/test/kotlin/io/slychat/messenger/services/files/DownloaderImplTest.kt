@@ -355,7 +355,7 @@ class DownloaderImplTest {
 
         assertTrue(downloader.cancel(info.download.id), "Invalid return value")
 
-        downloadOperations.assertUnsubscribed(info.download.id)
+        downloadOperations.assertCancelled(info.download.id)
     }
 
     @Test

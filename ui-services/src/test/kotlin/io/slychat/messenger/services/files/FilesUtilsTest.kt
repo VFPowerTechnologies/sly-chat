@@ -1,15 +1,24 @@
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.UnauthorizedException
 import io.slychat.messenger.core.crypto.ciphers.AES256GCMCipher
 import io.slychat.messenger.core.kb
 import io.slychat.messenger.core.mb
 import io.slychat.messenger.core.persistence.Upload
 import io.slychat.messenger.core.persistence.UploadPart
+import io.slychat.messenger.core.rx.observable
+import io.slychat.messenger.services.crypto.MockAuthTokenManager
+import io.slychat.messenger.testutils.TestException
+import io.slychat.messenger.testutils.testSubscriber
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import rx.schedulers.TestScheduler
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 
 class FilesUtilsTest {
+    private val scheduler = TestScheduler()
+
     private val cipher = AES256GCMCipher()
 
     private fun assertPartLocalSizeSanity(fileSize: Long, actual: List<UploadPart>) {
@@ -114,5 +123,40 @@ class FilesUtilsTest {
             describedAs("Should contain the proper part info")
             hasSize(2)
         }
+    }
+
+    @Test
+    fun `authFailureRetry should propagate non-auth exceptions`() {
+        val authTokenManager = MockAuthTokenManager()
+
+        val testSubscriber = authFailureRetry(authTokenManager, observable<Unit> {
+            throw TestException()
+        }).testSubscriber()
+
+        testSubscriber.assertError(TestException::class.java)
+    }
+
+    @Test
+    fun `authFailureRetry should retry when an auth exception occurs`() {
+        val authTokenManager = MockAuthTokenManager()
+
+        val o = object {
+            private var n = 0
+
+            fun run() {
+                n += 1
+                if (n == 1)
+                    throw UnauthorizedException()
+            }
+        }
+
+        val testSubscriber = authFailureRetry(authTokenManager, observable<Unit> {
+            o.run()
+        }, scheduler).testSubscriber()
+
+        //this is messy...
+        scheduler.advanceTimeBy(10, TimeUnit.SECONDS)
+
+        testSubscriber.assertCompleted()
     }
 }

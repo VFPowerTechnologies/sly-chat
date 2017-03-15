@@ -43,4 +43,6 @@ interface StorageService {
     fun retryDownload(downloadId: String): Promise<Unit, Exception>
 
     fun retryUpload(uploadId: String): Promise<Unit, Exception>
+
+    fun cancelDownloads(downloadIds: List<String>)
 }

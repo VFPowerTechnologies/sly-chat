@@ -9,6 +9,7 @@ import rx.Observable
 import rx.schedulers.TestScheduler
 import rx.subjects.PublishSubject
 import java.util.*
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.assertEquals
 import kotlin.test.fail
 
@@ -37,7 +38,7 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
         return createDeferred.promise
     }
 
-    override fun uploadPart(upload: Upload, part: UploadPart, file: RemoteFile): Observable<Long> {
+    override fun uploadPart(upload: Upload, part: UploadPart, file: RemoteFile, isCancelled: AtomicBoolean): Observable<Long> {
         uploadArgs[upload.id to part.n] = UploadArgs(upload, part, file)
 
         if (part.n in uploadSubjects)

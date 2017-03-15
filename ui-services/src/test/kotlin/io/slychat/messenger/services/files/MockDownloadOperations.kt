@@ -6,6 +6,8 @@ import rx.Observable
 import rx.schedulers.TestScheduler
 import rx.subjects.PublishSubject
 import java.util.*
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.test.assertTrue
 import kotlin.test.fail
 
 //test scheduler is require, since operators like buffer() delay running completion/error
@@ -13,16 +15,17 @@ class MockDownloadOperations(private val scheduler: TestScheduler) : DownloadOpe
     private data class DownloadArgs(val download: Download, val file: RemoteFile)
 
     private val downloadObservables = HashMap<String, PublishSubject<Long>>()
-    private val unsubscriptions = HashSet<String>()
+    private val cancellationTokens = HashMap<String, AtomicBoolean>()
 
     private var downloadArgs: DownloadArgs? = null
 
-    override fun download(download: Download, file: RemoteFile): Observable<Long> {
+    override fun download(download: Download, file: RemoteFile, isCancelled: AtomicBoolean): Observable<Long> {
         downloadArgs = DownloadArgs(download, file)
 
         val s = PublishSubject.create<Long>()
         downloadObservables[download.id] = s
-        return s.doOnUnsubscribe { unsubscriptions.add(download.id) }
+        cancellationTokens[download.id] = isCancelled
+        return s
     }
 
     fun assertDownloadNotCalled() {
@@ -60,8 +63,9 @@ class MockDownloadOperations(private val scheduler: TestScheduler) : DownloadOpe
         scheduler.triggerActions()
     }
 
-    fun assertUnsubscribed(downloadId: String) {
-        if (downloadId !in unsubscriptions)
-            fail("$downloadId was not unsubscribed")
+    fun assertCancelled(downloadId: String) {
+        val token = cancellationTokens[downloadId] ?: fail("download($downloadId) was not called")
+
+        assertTrue(token.get(), "Cancellation not requested")
     }
 }

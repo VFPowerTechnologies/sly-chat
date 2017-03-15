@@ -279,4 +279,10 @@ class StorageServiceImpl(
     override fun retryUpload(uploadId: String): Promise<Unit, Exception> {
         return transferManager.clearUploadError(uploadId)
     }
+
+    override fun cancelDownloads(downloadIds: List<String>) {
+        downloadIds.forEach {
+            transferManager.cancelDownload(it)
+        }
+    }
 }

@@ -11,7 +11,6 @@ import io.slychat.messenger.core.http.api.upload.UploadClient
 import io.slychat.messenger.core.persistence.Upload
 import io.slychat.messenger.core.persistence.UploadPart
 import rx.Subscriber
-import rx.subscriptions.Subscriptions
 import java.util.concurrent.atomic.AtomicBoolean
 
 class UploadPartOperation(
@@ -21,7 +20,8 @@ class UploadPartOperation(
     private val part: UploadPart,
     private val file: RemoteFile,
     private val uploadClient: UploadClient,
-    private val subscriber: Subscriber<in Long>
+    private val subscriber: Subscriber<in Long>,
+    private val isCancelled: AtomicBoolean
 ) {
     fun run() {
         //TODO handle missing file (FileNotFoundException), and then any other exception that's raised
@@ -38,12 +38,6 @@ class UploadPartOperation(
                 limiter
 
             val md5InputStream = MD5InputStream(dataInputStream)
-
-            val isCancelled = AtomicBoolean()
-
-            subscriber.add(Subscriptions.create {
-                isCancelled.set(true)
-            })
 
             val resp = md5InputStream.use {
                 uploadClient.uploadPart(userCredentials, upload.id, part.n, part.remoteSize, md5InputStream, isCancelled) { outputStream ->
