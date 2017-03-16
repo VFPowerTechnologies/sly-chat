@@ -25,7 +25,7 @@ interface MessengerService {
 
     fun broadcastDeletedAll(conversationId: ConversationId, lastMessageTimestamp: Long): Promise<Unit, Exception>
 
-    fun broadcastSync()
+    fun broadcastAddressBookSync()
 
     fun broadcastFileListSync()
 

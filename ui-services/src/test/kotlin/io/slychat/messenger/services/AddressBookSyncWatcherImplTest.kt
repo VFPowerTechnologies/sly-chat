@@ -23,7 +23,7 @@ class AddressBookSyncWatcherImplTest {
 
         syncEvents.onNext(AddressBookSyncEvent.End(info, result))
 
-        verify(messengerService).broadcastSync()
+        verify(messengerService).broadcastAddressBookSync()
     }
 
     @Test
@@ -33,6 +33,6 @@ class AddressBookSyncWatcherImplTest {
 
         syncEvents.onNext(AddressBookSyncEvent.End(info, result))
 
-        verify(messengerService, never()).broadcastSync()
+        verify(messengerService, never()).broadcastAddressBookSync()
     }
 }

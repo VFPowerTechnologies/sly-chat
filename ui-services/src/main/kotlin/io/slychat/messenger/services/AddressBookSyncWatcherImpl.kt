@@ -28,7 +28,7 @@ class AddressBookSyncWatcherImpl(
 
             is AddressBookSyncEvent.End -> {
                 if (event.result.updateCount > 0)
-                    messengerService.broadcastSync()
+                    messengerService.broadcastAddressBookSync()
             }
         }
     }

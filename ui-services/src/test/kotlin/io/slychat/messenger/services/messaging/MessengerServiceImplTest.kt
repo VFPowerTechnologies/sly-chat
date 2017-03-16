@@ -901,7 +901,7 @@ class MessengerServiceImplTest {
     fun `it should send itself a SelfAddressBookUpdated message when broadcastSync is called`() {
         val messengerService = createService()
 
-        messengerService.broadcastSync()
+        messengerService.broadcastAddressBookSync()
 
         retrieveSyncMessage<SyncMessage.AddressBookSync>()
     }

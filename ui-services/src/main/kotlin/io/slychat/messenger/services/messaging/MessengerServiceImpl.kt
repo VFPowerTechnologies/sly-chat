@@ -404,7 +404,7 @@ class MessengerServiceImpl(
         return sendSyncMessage(SyncMessage.SelfMessage(sentMessageInfo)) map { messageInfo }
     }
 
-    override fun broadcastSync() {
+    override fun broadcastAddressBookSync() {
         sendSyncMessage(SyncMessage.AddressBookSync()) fail {
             log.error("Failed to send AddressBookSync message: {}", it.message, it)
         }
