@@ -176,11 +176,11 @@ class StorageServiceImpl(
     }
 
     override fun getFiles(startingAt: Int, count: Int): Promise<List<RemoteFile>, Exception> {
-        return fileListPersistenceManager.getFiles(startingAt, count, false)
+        return fileListPersistenceManager.getFiles(startingAt, count, true)
     }
 
     override fun getFilesAt(startingAt: Int, count: Int, path: String): Promise<List<RemoteFile>, Exception> {
-        return fileListPersistenceManager.getFilesAt(startingAt, count, false, path)
+        return fileListPersistenceManager.getFilesAt(startingAt, count, true, path)
     }
 
     override fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception> {
