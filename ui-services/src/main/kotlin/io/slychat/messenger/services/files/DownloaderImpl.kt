@@ -314,6 +314,9 @@ class DownloaderImpl(
     }
 
     override fun remove(downloadIds: List<String>): Promise<Unit, Exception> {
+        if (downloadIds.isEmpty())
+            return Promise.ofSuccess(Unit)
+
         val statuses = downloadIds.map { downloadId ->
             list.all[downloadId] ?: throw InvalidDownloadException(downloadId)
         }

@@ -81,6 +81,10 @@ class StorageServiceImplTest {
         whenever(syncJobFactory.create(any())).thenReturn(syncJob)
         whenever(transferManager.events).thenReturn(transferEvents)
         whenever(transferManager.quota).thenReturn(quotaEvents)
+        whenever(transferManager.downloads).thenReturn(emptyList())
+        whenever(transferManager.uploads).thenReturn(emptyList())
+        whenever(transferManager.removeDownloads(any())).thenResolveUnit()
+        whenever(transferManager.removeUploads(any())).thenResolveUnit()
         whenever(transferManager.upload(any())).thenResolveUnit()
         whenever(fileAccess.getFileInfo(any())).thenReturn(FileInfo("displayName", randomLong(), "*/*"))
 
@@ -105,7 +109,7 @@ class StorageServiceImplTest {
 
         val fileList = listOf(randomRemoteFile(), randomRemoteFile())
 
-        whenever(fileListPersistenceManager.getFiles(0, 1000, false)).thenResolve(fileList)
+        whenever(fileListPersistenceManager.getFiles(0, 1000, true)).thenResolve(fileList)
 
         assertThat(service.getFiles(0, 1000).get()).apply {
             describedAs("Should return the cached file list")
@@ -214,7 +218,7 @@ class StorageServiceImplTest {
         val count = 100
         val path = "/"
 
-        whenever(fileListPersistenceManager.getFilesAt(startingAt, count, false, path)).thenResolve(files)
+        whenever(fileListPersistenceManager.getFilesAt(startingAt, count, true, path)).thenResolve(files)
 
         assertEquals(files, service.getFilesAt(startingAt, count, path).get(), "Returned invalid files")
     }
@@ -228,7 +232,7 @@ class StorageServiceImplTest {
         val startingAt = 0
         val count = 100
 
-        whenever(fileListPersistenceManager.getFiles(startingAt, count, false)).thenResolve(files)
+        whenever(fileListPersistenceManager.getFiles(startingAt, count, true)).thenResolve(files)
 
         assertEquals(files, service.getFiles(startingAt, count).get(), "Returned invalid files")
     }
@@ -366,5 +370,43 @@ class StorageServiceImplTest {
         assertThat(events).desc("It should not emit an Added event") {
             isEmpty()
         }
+    }
+
+    @Test
+    fun `it should remove any associated downloads when deleting a file`() {
+        val service = newService(false)
+
+        val status = randomDownloadStatus(TransferState.COMPLETE)
+
+        val fileIds = listOf(
+            generateFileId(),
+            status.download.fileId
+        )
+
+        whenever(transferManager.downloads).thenReturn(listOf(status))
+
+        service.deleteFiles(fileIds).get()
+
+        verify(transferManager).removeDownloads(listOf(status.download.id))
+        verify(fileListPersistenceManager).deleteFiles(fileIds)
+    }
+
+    @Test
+    fun `it should remove any associated uploads when deleting a file`() {
+        val service = newService(false)
+
+        val status = randomUploadStatus(TransferState.COMPLETE)
+
+        val fileIds = listOf(
+            generateFileId(),
+            status.upload.fileId
+        )
+
+        whenever(transferManager.uploads).thenReturn(listOf(status))
+
+        service.deleteFiles(fileIds).get()
+
+        verify(transferManager).removeUploads(listOf(status.upload.id))
+        verify(fileListPersistenceManager).deleteFiles(fileIds)
     }
 }

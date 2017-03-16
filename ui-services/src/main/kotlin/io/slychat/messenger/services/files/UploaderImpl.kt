@@ -7,7 +7,6 @@ import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -395,6 +394,9 @@ class UploaderImpl(
     }
 
     override fun remove(uploadIds: List<String>): Promise<Unit, Exception> {
+        if (uploadIds.isEmpty())
+            return Promise.ofSuccess(Unit)
+
         val statuses = uploadIds.map { uploadId ->
             list.all[uploadId] ?: throw InvalidUploadException(uploadId)
         }

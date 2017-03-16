@@ -13,6 +13,7 @@ import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.task
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -21,6 +22,7 @@ import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import rx.subscriptions.CompositeSubscription
 import java.io.FileNotFoundException
+import java.util.*
 
 //XXX an issue right now is that upload adds a file to the list but it isn't reflected in the file list until the upload completes
 //I guess this isn't that much of an issue anyways
@@ -184,10 +186,18 @@ class StorageServiceImpl(
     }
 
     override fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception> {
-        return fileListPersistenceManager.deleteFiles(fileIds) mapUi {
-            fileEventsSubject.onNext(RemoteFileEvent.Deleted(it))
-            sync()
-            Unit
+        val s = HashSet(fileIds)
+        val uploads = transferManager.uploads.filter { it.file.id in s }.map { it.upload.id }
+        val downloads = transferManager.downloads.filter { it.file.id in s }.map { it.download.id }
+
+        return transferManager.removeUploads(uploads) bindUi {
+            transferManager.removeDownloads(downloads)
+        } bind {
+            fileListPersistenceManager.deleteFiles(fileIds) mapUi {
+                fileEventsSubject.onNext(RemoteFileEvent.Deleted(it))
+                sync()
+                Unit
+            }
         }
     }
 
