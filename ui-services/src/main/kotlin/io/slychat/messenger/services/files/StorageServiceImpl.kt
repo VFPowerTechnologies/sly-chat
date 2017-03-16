@@ -11,6 +11,7 @@ import io.slychat.messenger.core.rx.plusAssign
 import io.slychat.messenger.services.UserPaths
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.bindUi
+import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 import nl.komponents.kovenant.ui.successUi
@@ -56,6 +57,11 @@ class StorageServiceImpl(
 
     override val transferEvents: Observable<TransferEvent>
         get() = transferManager.events
+
+    private val fileEventsSubject = PublishSubject.create<RemoteFileEvent>()
+
+    override val fileEvents: Observable<RemoteFileEvent>
+        get() = fileEventsSubject
 
     private var subscriptions = CompositeSubscription()
 
@@ -118,6 +124,17 @@ class StorageServiceImpl(
         quotaSubject.onNext(result.quota)
         syncEventsSubject.onNext(FileListSyncEvent.Result(result))
 
+        val mergeResults = result.mergeResults
+
+        if (mergeResults.added.isNotEmpty())
+            fileEventsSubject.onNext(RemoteFileEvent.Added(mergeResults.added))
+
+        if (mergeResults.deleted.isNotEmpty())
+            fileEventsSubject.onNext(RemoteFileEvent.Deleted(mergeResults.deleted))
+
+        if (mergeResults.updated.isNotEmpty())
+            fileEventsSubject.onNext(RemoteFileEvent.Updated(mergeResults.updated))
+
         endSync(false)
     }
 
@@ -167,8 +184,10 @@ class StorageServiceImpl(
     }
 
     override fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception> {
-        return fileListPersistenceManager.deleteFiles(fileIds) successUi {
+        return fileListPersistenceManager.deleteFiles(fileIds) mapUi {
+            fileEventsSubject.onNext(RemoteFileEvent.Deleted(it))
             sync()
+            Unit
         }
     }
 

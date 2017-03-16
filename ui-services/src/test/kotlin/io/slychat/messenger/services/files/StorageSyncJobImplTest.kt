@@ -12,12 +12,12 @@ import io.slychat.messenger.core.http.api.storage.FileInfo
 import io.slychat.messenger.core.http.api.storage.FileListResponse
 import io.slychat.messenger.core.http.api.storage.StorageAsyncClient
 import io.slychat.messenger.core.http.api.storage.UpdateResponse
+import io.slychat.messenger.core.persistence.FileListMergeResults
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.core.persistence.FileListUpdate
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
 import io.slychat.messenger.testutils.thenResolveUnit
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -63,7 +63,7 @@ class StorageSyncJobImplTest {
     @Before
     fun before() {
         whenever(fileListPersistenceManager.getVersion()).thenResolve(currentVersion)
-        whenever(fileListPersistenceManager.mergeUpdates(any(), any())).thenResolveUnit()
+        whenever(fileListPersistenceManager.mergeUpdates(any(), any())).thenResolve(FileListMergeResults(emptyList(), emptyList(), emptyList()))
         whenever(fileListPersistenceManager.getRemoteUpdates()).thenResolve(emptyList())
         whenever(fileListPersistenceManager.removeRemoteUpdates(any())).thenResolveUnit()
         whenever(storageClient.getFileList(any(), any())).thenResolve(FileListResponse(0, emptyList(), dummyQuota))
@@ -122,7 +122,7 @@ class StorageSyncJobImplTest {
     }
 
     @Test
-    fun `it should return the file list updates, new version and current quota in the job results`() {
+    fun `it should return the file list merge results, new version and current quota in the job results`() {
         val (file, info) = generateTestFileInfo()
         val quota = randomQuota()
 
@@ -132,13 +132,13 @@ class StorageSyncJobImplTest {
             quota
         ))
 
+        val mergeResults = FileListMergeResults(listOf(file), emptyList(), emptyList())
+        whenever(fileListPersistenceManager.mergeUpdates(any(), any())).thenResolve(mergeResults)
+
         val result = syncJob.run().get()
 
         assertEquals(newVersion, result.newListVersion, "Invalid version")
-        assertThat(result.updates).apply {
-            describedAs("Invalid update list")
-            containsOnly(file)
-        }
+        assertEquals(mergeResults, result.mergeResults, "Invalid merge results")
 
         assertEquals(quota, result.quota, "Invalid quota")
     }

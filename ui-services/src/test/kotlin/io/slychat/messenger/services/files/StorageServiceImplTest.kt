@@ -3,10 +3,14 @@ package io.slychat.messenger.services.files
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
+import io.slychat.messenger.core.persistence.FileListMergeResults
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.services.UserPaths
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
-import io.slychat.messenger.testutils.*
+import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.TestException
+import io.slychat.messenger.testutils.testSubscriber
+import io.slychat.messenger.testutils.thenResolve
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import org.assertj.core.api.Assertions.assertThat
@@ -74,7 +78,7 @@ class StorageServiceImplTest {
 
     @Before
     fun before() {
-        whenever(fileListPersistenceManager.deleteFiles(any())).thenResolveUnit()
+        whenever(fileListPersistenceManager.deleteFiles(any())).thenResolve(emptyList())
         whenever(syncJobFactory.create(any())).thenReturn(syncJob)
         whenever(transferManager.events).thenReturn(transferEvents)
         whenever(transferManager.quota).thenReturn(quotaEvents)
@@ -153,7 +157,7 @@ class StorageServiceImplTest {
     fun `sync should emit events on start and completion`() {
         val service = newService(true)
 
-        val result = StorageSyncResult(0, emptyList(), 0, randomQuota())
+        val result = StorageSyncResult(0, FileListMergeResults.empty, 0, randomQuota())
         syncJob.d.resolve(result)
 
         val testSubscriber = service.syncEvents.testSubscriber()
@@ -233,7 +237,7 @@ class StorageServiceImplTest {
 
         //since we sync on startup
         syncJob.clearCalls()
-        syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0, randomQuota()))
+        syncJob.d.resolve(StorageSyncResult(0, FileListMergeResults.empty, 0, randomQuota()))
 
         transferEvents.onNext(TransferEvent.UploadStateChanged(randomUpload(), TransferState.COMPLETE))
 
@@ -247,7 +251,7 @@ class StorageServiceImplTest {
         service.sync()
         service.sync()
 
-        syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0, randomQuota()))
+        syncJob.d.resolve(StorageSyncResult(0, FileListMergeResults.empty, 0, randomQuota()))
 
         assertEquals(2, syncJob.callCount, "Queued sync job not run")
     }
@@ -261,7 +265,7 @@ class StorageServiceImplTest {
         service.sync()
 
         val quota = randomQuota()
-        syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0, quota))
+        syncJob.d.resolve(StorageSyncResult(0, FileListMergeResults.empty, 0, quota))
 
         testSubscriber.assertReceivedOnNext(listOf(quota))
     }
@@ -277,5 +281,56 @@ class StorageServiceImplTest {
         quotaEvents.onNext(quota)
 
         testSubscriber.assertReceivedOnNext(listOf(quota))
+    }
+
+    @Test
+    fun `it should emit a file deleted event when a local file is marked as deleted`() {
+        val service = newService(true)
+
+        val file = randomRemoteFile(isDeleted = true)
+
+        val testSubscriber = service.fileEvents.testSubscriber()
+
+        whenever(fileListPersistenceManager.deleteFiles(any())).thenResolve(listOf(file))
+
+        service.deleteFiles(listOf(file.id)).get()
+
+        testSubscriber.assertReceivedOnNext(listOf(RemoteFileEvent.Deleted(listOf(file))))
+    }
+
+    private fun testSyncFileEvents(mergeResults: FileListMergeResults) {
+        val service = newService(true)
+
+        val testSubscriber = service.fileEvents.testSubscriber()
+
+        service.sync()
+
+        syncJob.d.resolve(StorageSyncResult(0, mergeResults, 0, randomQuota()))
+
+        val ev = if (mergeResults.added.isNotEmpty())
+            RemoteFileEvent.Added(mergeResults.added)
+        else if (mergeResults.deleted.isNotEmpty())
+            RemoteFileEvent.Deleted(mergeResults.deleted)
+        else if (mergeResults.updated.isNotEmpty())
+            RemoteFileEvent.Updated(mergeResults.updated)
+        else
+            error("Received empty merge results")
+
+        testSubscriber.assertReceivedOnNext(listOf(ev))
+    }
+
+    @Test
+    fun `it should emit added events when a sync has added results`() {
+        testSyncFileEvents(FileListMergeResults(listOf(randomRemoteFile()), emptyList(), emptyList()))
+    }
+
+    @Test
+    fun `it should emit deleted events when a sync has deleted results`() {
+        testSyncFileEvents(FileListMergeResults(emptyList(), listOf(randomRemoteFile()), emptyList()))
+    }
+
+    @Test
+    fun `it should emit updated events when a sync has updated results`() {
+        testSyncFileEvents(FileListMergeResults(emptyList(), emptyList(), listOf(randomRemoteFile())))
     }
 }

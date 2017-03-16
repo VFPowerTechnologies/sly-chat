@@ -6,4 +6,8 @@ data class FileListMergeResults(
     val added: List<RemoteFile>,
     val deleted: List<RemoteFile>,
     val updated: List<RemoteFile>
-)
+) {
+    companion object {
+        val empty = FileListMergeResults(emptyList(), emptyList(), emptyList())
+    }
+}

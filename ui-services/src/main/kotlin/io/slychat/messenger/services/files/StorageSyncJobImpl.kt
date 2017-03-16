@@ -3,12 +3,12 @@ package io.slychat.messenger.services.files
 import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.crypto.KeyVault
-import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.files.encryptUserMetadata
 import io.slychat.messenger.core.files.getFilePathHash
 import io.slychat.messenger.core.http.api.storage.MetadataUpdateRequest
 import io.slychat.messenger.core.http.api.storage.StorageAsyncClient
 import io.slychat.messenger.core.http.api.storage.UpdateRequest
+import io.slychat.messenger.core.persistence.FileListMergeResults
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.core.persistence.FileListUpdate
 import nl.komponents.kovenant.Promise
@@ -24,7 +24,7 @@ class StorageSyncJobImpl(
     private val storageClient: StorageAsyncClient
 ) : StorageSyncJob {
     private class PushResults(val remoteUpdatesPerformed: Int)
-    private class PullResults(val updates: List<RemoteFile>, val newListVersion: Long, val quota: Quota)
+    private class PullResults(val mergeResults: FileListMergeResults, val newListVersion: Long, val quota: Quota)
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -71,7 +71,7 @@ class StorageSyncJobImpl(
                 val quota = it.quota
 
                 fileListPersistenceManager.mergeUpdates(remoteFiles, latestVersion) map {
-                    PullResults(remoteFiles, latestVersion, quota)
+                    PullResults(it, latestVersion, quota)
                 }
             }
         }
@@ -80,7 +80,7 @@ class StorageSyncJobImpl(
     override fun run(): Promise<StorageSyncResult, Exception> {
         return pushUpdates() bind { pushResults ->
             pullUpdates() map { pullResults ->
-                StorageSyncResult(pushResults.remoteUpdatesPerformed, pullResults.updates, pullResults.newListVersion, pullResults.quota)
+                StorageSyncResult(pushResults.remoteUpdatesPerformed, pullResults.mergeResults, pullResults.newListVersion, pullResults.quota)
             }
         }
     }
