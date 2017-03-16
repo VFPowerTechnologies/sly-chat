@@ -367,4 +367,17 @@ class SQLiteFileListPersistenceManagerTest {
 
         assertRemoteUpdateExists(FileListUpdate.MetadataUpdate(file.id, userMetadata), "Should override existing metadata update")
     }
+
+    @Test
+    fun `getFileCount should return the number of files`() {
+        insertFile()
+        insertFile()
+
+        assertEquals(2, fileListPersistenceManager.getFileCount().get(), "Invalid file list count")
+    }
+
+    @Test
+    fun `getFileCount should return 0 when list is empty`() {
+        assertEquals(0, fileListPersistenceManager.getFileCount().get(), "Invalid empty file list count")
+    }
 }

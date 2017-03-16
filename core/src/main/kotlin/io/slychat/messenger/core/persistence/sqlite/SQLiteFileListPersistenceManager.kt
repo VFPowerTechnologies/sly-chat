@@ -347,4 +347,11 @@ ON
             }
         }
     }
+
+    override fun getFileCount(): Promise<Int, Exception> = sqlitePersistenceManager.runQuery {
+        it.withPrepared("SELECT count(*) FROM files") { stmt ->
+            stmt.step()
+            stmt.columnInt(0)
+        }
+    }
 }
