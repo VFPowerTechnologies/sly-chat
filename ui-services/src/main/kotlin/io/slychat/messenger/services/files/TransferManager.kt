@@ -33,7 +33,7 @@ interface TransferManager {
     /** Removes downloads in COMPLETE or CANCELLED state. */
     fun removeCompletedDownloads(): Promise<Unit, Exception>
 
-    /** Removes downloads in COMPLETE state. */
+    /** Removes uploads in COMPLETE state. */
     fun removeCompletedUploads(): Promise<Unit, Exception>
 }
 
