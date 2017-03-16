@@ -7,10 +7,7 @@ import io.slychat.messenger.core.persistence.FileListMergeResults
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.services.UserPaths
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
-import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.TestException
-import io.slychat.messenger.testutils.testSubscriber
-import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import org.assertj.core.api.Assertions.assertThat
@@ -22,6 +19,7 @@ import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 
 class StorageServiceImplTest {
     companion object {
@@ -31,6 +29,7 @@ class StorageServiceImplTest {
 
         init {
             MockitoKotlin.registerInstanceCreator { randomUserMetadata() }
+            MockitoKotlin.registerInstanceCreator { randomUpload() }
         }
     }
 
@@ -82,6 +81,9 @@ class StorageServiceImplTest {
         whenever(syncJobFactory.create(any())).thenReturn(syncJob)
         whenever(transferManager.events).thenReturn(transferEvents)
         whenever(transferManager.quota).thenReturn(quotaEvents)
+        whenever(transferManager.upload(any())).thenResolveUnit()
+        whenever(fileAccess.getFileInfo(any())).thenReturn(FileInfo("displayName", randomLong(), "*/*"))
+
     }
 
     private fun newService(isNetworkAvailable: Boolean = true): StorageServiceImpl {
@@ -332,5 +334,37 @@ class StorageServiceImplTest {
     @Test
     fun `it should emit updated events when a sync has updated results`() {
         testSyncFileEvents(FileListMergeResults(emptyList(), emptyList(), listOf(randomRemoteFile())))
+    }
+
+    @Test
+    fun `it should emit a file added event when a successful upload store occurs`() {
+        val service = newService(true)
+
+        val testSubscriber = service.fileEvents.testSubscriber()
+
+        service.uploadFile("/localPath", "/remoteDir", "fileName", false).get()
+
+        val events = testSubscriber.onNextEvents.filter { it is RemoteFileEvent.Added }
+        assertThat(events).desc("It should emit an Added event") {
+            hasSize(1)
+        }
+    }
+
+    @Test
+    fun `it should not emit a file added event when an upload store fails`() {
+        val service = newService(true)
+
+        val testSubscriber = service.fileEvents.testSubscriber()
+
+        whenever(transferManager.upload(any())).thenReject(TestException())
+
+        assertFails {
+            service.uploadFile("/localPath", "/remoteDir", "fileName", false).get()
+        }
+
+        val events = testSubscriber.onNextEvents.filter { it is RemoteFileEvent.Added }
+        assertThat(events).desc("It should not emit an Added event") {
+            isEmpty()
+        }
     }
 }

@@ -252,8 +252,10 @@ class StorageServiceImpl(
                 upload,
                 file
             )
-        } bindUi {
-            transferManager.upload(it)
+        } bindUi { info ->
+            transferManager.upload(info) successUi {
+                fileEventsSubject.onNext(RemoteFileEvent.Added(listOf(info.file)))
+            }
         }
     }
 
