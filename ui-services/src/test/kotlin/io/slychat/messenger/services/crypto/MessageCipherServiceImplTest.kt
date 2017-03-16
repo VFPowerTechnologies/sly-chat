@@ -49,7 +49,7 @@ class MessageCipherServiceImplTest {
 
     @Rule
     @JvmField
-    val timeoutRule = Timeout(1000)
+    val timeoutRule = Timeout(1500)
 
     //InMemorySessionStore.deleteAllSessions is bugged in 2.2.0 since it attempts to remove items during iteration
     private class FixedInMemorySessionStore : SessionStore {
