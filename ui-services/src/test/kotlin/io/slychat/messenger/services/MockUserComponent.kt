@@ -102,4 +102,6 @@ class MockUserComponent : UserComponent {
         get() = readMessageQueueIsEmptySubject
 
     override val messageDeletionWatcher: MessageDeletionWatcher = mock()
+
+    override val fileListSyncWatcher: FileListSyncWatcher = mock()
 }

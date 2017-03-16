@@ -602,4 +602,13 @@ class UserModule(
             networkStatus
         )
     }
+
+    @UserScope
+    @Provides
+    fun providesFileListSyncWatcher(
+        messengerService: MessengerService,
+        storageService: StorageService
+    ): FileListSyncWatcher {
+        return FileListSyncWatcherImpl(storageService.syncEvents, messengerService)
+    }
 }

@@ -409,4 +409,8 @@ class MessengerServiceImpl(
             log.error("Failed to send SelfSync message: {}", it.message, it)
         }
     }
+
+    override fun broadcastFileListSync() {
+        TODO()
+    }
 }

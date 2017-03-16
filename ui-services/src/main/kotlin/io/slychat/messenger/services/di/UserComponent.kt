@@ -89,4 +89,6 @@ interface UserComponent {
 
     @get:EmptyReadMessageQueue
     val readMessageQueueIsEmpty: Observable<Unit>
+
+    val fileListSyncWatcher: FileListSyncWatcher
 }

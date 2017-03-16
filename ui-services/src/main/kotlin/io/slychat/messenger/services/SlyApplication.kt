@@ -531,6 +531,7 @@ class SlyApplication {
         userComponent.groupEventLoggerWatcher.init()
         userComponent.transferManager.init()
         userComponent.storageService.init()
+        userComponent.fileListSyncWatcher.init()
     }
 
     private fun shutdownUserComponents(userComponent: UserComponent) {
@@ -551,6 +552,7 @@ class SlyApplication {
         userComponent.notifierService.shutdown()
         userComponent.transferManager.shutdown()
         userComponent.storageService.shutdown()
+        userComponent.fileListSyncWatcher.shutdown()
     }
 
     //should come up with something better...

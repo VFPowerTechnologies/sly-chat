@@ -27,6 +27,8 @@ interface MessengerService {
 
     fun broadcastSync()
 
+    fun broadcastFileListSync()
+
     /** Notify another user that you've added them as a contact. */
     fun notifyContactAdd(userIds: Collection<UserId>): Promise<Unit, Exception>
 
