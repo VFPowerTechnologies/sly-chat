@@ -166,9 +166,9 @@ WHERE
     }
 
 
-    override fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception> {
+    override fun deleteFiles(fileIds: List<String>): Promise<List<RemoteFile>, Exception> {
         if (fileIds.isEmpty())
-            return Promise.ofSuccess(Unit)
+            return Promise.ofSuccess(emptyList())
 
         return sqlitePersistenceManager.runQuery { connection ->
             //language=SQLite
@@ -181,6 +181,8 @@ WHERE
     id = ?
 """
 
+            val updated = ArrayList<RemoteFile>()
+
             connection.withTransaction {
                 connection.withPrepared(sql) {
                     fileIds.forEach { fileId ->
@@ -192,9 +194,12 @@ WHERE
                             throw InvalidFileException(fileId)
 
                         insertRemoteUpdate(connection, fileId, UPDATE_TYPE_DELETE)
+                        updated.add(selectFile(connection, fileId)!!)
                     }
                 }
             }
+
+            updated
         }
     }
 
@@ -224,7 +229,7 @@ WHERE
         }
     }
 
-    override fun getFile(fileId: String): Promise<RemoteFile?, Exception> = sqlitePersistenceManager.runQuery {
+    private fun selectFile(connection: SQLiteConnection, fileId: String): RemoteFile? {
         //language=SQLite
         val sql = """
 SELECT
@@ -239,13 +244,17 @@ WHERE
     id = ?
 """
 
-        it.withPrepared(sql) {
+        return connection.withPrepared(sql) {
             it.bind(1, fileId)
             if (it.step())
                 fileUtils.rowToRemoteFile(it)
             else
                 null
         }
+    }
+
+    override fun getFile(fileId: String): Promise<RemoteFile?, Exception> = sqlitePersistenceManager.runQuery {
+        selectFile(it, fileId)
     }
 
     override fun mergeUpdates(updates: List<RemoteFile>, latestVersion: Long): Promise<FileListMergeResults, Exception> = sqlitePersistenceManager.runQuery { connection ->

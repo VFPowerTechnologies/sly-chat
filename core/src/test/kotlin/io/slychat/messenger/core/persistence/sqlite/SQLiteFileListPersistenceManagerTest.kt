@@ -313,6 +313,17 @@ class SQLiteFileListPersistenceManagerTest {
     }
 
     @Test
+    fun `deleteFiles should return the updated files`() {
+        val file = insertFile()
+
+        val deleted = fileListPersistenceManager.deleteFiles(listOf(file.id)).get()
+
+        assertThat(deleted).desc("Should return updated files") {
+            containsOnly(file.copy(isDeleted = true, fileMetadata = null))
+        }
+    }
+
+    @Test
     fun `deleteFiles should throw if file doesn't exist`() {
         assertFailsWith(InvalidFileException::class) {
             fileListPersistenceManager.deleteFiles(listOf(generateFileId())).get()
