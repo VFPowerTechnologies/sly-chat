@@ -406,11 +406,13 @@ class MessengerServiceImpl(
 
     override fun broadcastSync() {
         sendSyncMessage(SyncMessage.AddressBookSync()) fail {
-            log.error("Failed to send SelfSync message: {}", it.message, it)
+            log.error("Failed to send AddressBookSync message: {}", it.message, it)
         }
     }
 
     override fun broadcastFileListSync() {
-        TODO()
+        sendSyncMessage(SyncMessage.FileListSync()) fail {
+            log.error("Failed to send FileListSync message: {}", it.message, it)
+        }
     }
 }

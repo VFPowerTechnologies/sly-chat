@@ -1037,4 +1037,15 @@ class MessengerServiceImplTest {
 
         assertEquals(SyncMessage.MessagesDeletedAll(conversationId, lastMessageTimestamp), message, "Invalid sync message")
     }
+
+    @Test
+    fun `it should generate a FileListSync message when broadcastFileListSync is called`() {
+        val messengerService = createService()
+
+        messengerService.broadcastFileListSync()
+
+        val message = retrieveSyncMessage<SyncMessage.FileListSync>()
+
+        assertEquals(SyncMessage.FileListSync(), message, "Invalid sync message")
+    }
 }

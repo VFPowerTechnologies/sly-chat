@@ -127,6 +127,8 @@ class MessageProcessorImpl(
                     log.info("Messages until {} deleted for {}", m.lastMessageTimestamp, m.conversationId)
                     messageService.deleteAllMessagesUntil(m.conversationId, m.lastMessageTimestamp)
                 }
+
+                is SyncMessage.FileListSync -> TODO()
             }
         }
     }

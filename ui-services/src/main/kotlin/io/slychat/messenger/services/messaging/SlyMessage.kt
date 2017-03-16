@@ -229,7 +229,8 @@ sealed class GroupEventMessage {
     JsonSubTypes.Type(SyncMessage.MessageExpired::class, name = "e"),
     JsonSubTypes.Type(SyncMessage.MessagesRead::class, name = "r"),
     JsonSubTypes.Type(SyncMessage.MessagesDeleted::class, name = "md"),
-    JsonSubTypes.Type(SyncMessage.MessagesDeletedAll::class, name = "mda")
+    JsonSubTypes.Type(SyncMessage.MessagesDeletedAll::class, name = "mda"),
+    JsonSubTypes.Type(SyncMessage.FileListSync::class, name = "f")
 )
 sealed class SyncMessage {
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -313,7 +314,7 @@ sealed class SyncMessage {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    class AddressBookSync() : SyncMessage() {
+    class AddressBookSync : SyncMessage() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
 
@@ -416,6 +417,23 @@ sealed class SyncMessage {
 
         override fun toString(): String {
             return "MessagesDeletedAll(conversationId=$conversationId, lastMessageTimestamp=$lastMessageTimestamp)"
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    class FileListSync : SyncMessage() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+
+            return other?.javaClass == javaClass
+        }
+
+        override fun hashCode(): Int {
+            return 0
+        }
+
+        override fun toString(): String {
+            return "FileListSync()"
         }
     }
 }
