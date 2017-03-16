@@ -2,9 +2,12 @@ package io.slychat.messenger.desktop
 
 import io.slychat.messenger.services.files.FileInfo
 import io.slychat.messenger.services.files.PlatformFileAccess
+import org.apache.tika.Tika
 import java.io.*
 
 class DesktopFileAccess : PlatformFileAccess {
+    private val tika = Tika()
+
     override fun getFileSize(path: String): Long {
         return File(path).length()
     }
@@ -14,8 +17,7 @@ class DesktopFileAccess : PlatformFileAccess {
         return FileInfo(
                 file.name,
                 file.length(),
-                //TODO
-                "*/*"
+                tika.detect(file)
             )
     }
 

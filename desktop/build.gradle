@@ -36,6 +36,8 @@ dependencies {
 
     compile "net.java.dev.jna:jna:$versions.jna"
 
+    compile "org.apache.tika:tika-core:$versions.tika"
+
     //required on osx only
     compile "de.codecentric.centerdevice:centerdevice-nsmenufx:$versions.nsMenuFx"
     compile "ca.weblite:java-objc-bridge:$versions.javaObjcBridge"
