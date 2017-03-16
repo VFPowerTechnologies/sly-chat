@@ -1,12 +1,9 @@
 package io.slychat.messenger.services.files
 
 import com.nhaarman.mockito_kotlin.*
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
-import io.slychat.messenger.core.randomQuota
-import io.slychat.messenger.core.randomRemoteFile
-import io.slychat.messenger.core.randomUpload
-import io.slychat.messenger.core.randomUserMetadata
 import io.slychat.messenger.services.UserPaths
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.testutils.*
@@ -72,13 +69,15 @@ class StorageServiceImplTest {
         File("cacheDir")
     )
 
-    private val transferEvents: PublishSubject<TransferEvent> = PublishSubject.create()
+    private val transferEvents = PublishSubject.create<TransferEvent>()
+    private val quotaEvents = PublishSubject.create<Quota>()
 
     @Before
     fun before() {
         whenever(fileListPersistenceManager.deleteFiles(any())).thenResolveUnit()
         whenever(syncJobFactory.create(any())).thenReturn(syncJob)
         whenever(transferManager.events).thenReturn(transferEvents)
+        whenever(transferManager.quota).thenReturn(quotaEvents)
     }
 
     private fun newService(isNetworkAvailable: Boolean = true): StorageServiceImpl {
@@ -263,6 +262,19 @@ class StorageServiceImplTest {
 
         val quota = randomQuota()
         syncJob.d.resolve(StorageSyncResult(0, emptyList(), 0, quota))
+
+        testSubscriber.assertReceivedOnNext(listOf(quota))
+    }
+
+    @Test
+    fun `it should proxy quota info emitted by TransferManager`() {
+        val service = newService(true)
+
+        val testSubscriber = service.quota.testSubscriber()
+
+        val quota = randomQuota()
+
+        quotaEvents.onNext(quota)
 
         testSubscriber.assertReceivedOnNext(listOf(quota))
     }

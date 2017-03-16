@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.persistence.DownloadInfo
 import io.slychat.messenger.core.persistence.UploadInfo
 import io.slychat.messenger.core.rx.plusAssign
@@ -22,6 +23,9 @@ class TransferManagerImpl(
 
     override val downloads: List<DownloadStatus>
         get() = downloader.downloads
+
+    override val quota: Observable<Quota>
+        get() = uploader.quota
 
     private var subscriptions = CompositeSubscription()
 

@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.persistence.DownloadInfo
 import io.slychat.messenger.core.persistence.UploadInfo
 import nl.komponents.kovenant.Promise
@@ -11,6 +12,8 @@ interface TransferManager {
     val uploads: List<UploadStatus>
 
     val downloads: List<DownloadStatus>
+
+    val quota: Observable<Quota>
 
     fun init()
 

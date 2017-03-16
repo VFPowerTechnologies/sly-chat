@@ -70,6 +70,7 @@ class StorageServiceImpl(
     init {
         subscriptions += networkStatus.subscribe { onNetworkStatusChange(it) }
         subscriptions += transferEvents.subscribe { onTransferEvent(it) }
+        subscriptions += transferManager.quota.subscribe { quotaSubject.onNext(it) }
     }
 
     private fun onTransferEvent(event: TransferEvent) {
