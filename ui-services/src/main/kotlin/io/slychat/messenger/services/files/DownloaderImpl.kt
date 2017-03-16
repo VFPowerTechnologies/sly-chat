@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.crypto.ciphers.UnknownCipherException
 import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
@@ -142,6 +143,8 @@ class DownloaderImpl(
             is FileMissingException -> DownloadError.REMOTE_FILE_MISSING
 
             is InvalidCipherTextException -> DownloadError.CORRUPTED
+
+            is UnknownCipherException -> DownloadError.UNKNOWN_CIPHER
 
             else -> {
                 if (isNotNetworkError(e))

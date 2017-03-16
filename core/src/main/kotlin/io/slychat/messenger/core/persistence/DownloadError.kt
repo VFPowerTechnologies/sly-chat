@@ -9,6 +9,8 @@ enum class DownloadError(val isTransient: Boolean) {
     CORRUPTED(false),
     //things like disconnection, etc
     NETWORK_ISSUE(true),
+    //occurs if downloading a file encrypted with a cipher this version of Sly doesn't support
+    UNKNOWN_CIPHER(false),
     //not really sure whether to mark this transient or not
     UNKNOWN(true)
 }
