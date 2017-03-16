@@ -16,7 +16,7 @@ sealed class FileListSyncEvent {
         }
     }
 
-    class Result(val result: StorageSyncResult) : FileListSyncEvent() {
+    class Result(val result: FileListSyncResult) : FileListSyncEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false

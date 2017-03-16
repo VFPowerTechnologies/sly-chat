@@ -122,7 +122,7 @@ class StorageServiceImpl(
         endSync(true)
     }
 
-    private fun onSyncSuccess(result: StorageSyncResult) {
+    private fun onSyncSuccess(result: FileListSyncResult) {
         quotaSubject.onNext(result.quota)
         syncEventsSubject.onNext(FileListSyncEvent.Result(result))
 

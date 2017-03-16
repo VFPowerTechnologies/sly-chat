@@ -6,7 +6,7 @@ import com.nhaarman.mockito_kotlin.verify
 import io.slychat.messenger.core.persistence.FileListMergeResults
 import io.slychat.messenger.core.randomQuota
 import io.slychat.messenger.services.files.FileListSyncEvent
-import io.slychat.messenger.services.files.StorageSyncResult
+import io.slychat.messenger.services.files.FileListSyncResult
 import io.slychat.messenger.services.messaging.MessengerService
 import org.junit.Test
 import rx.subjects.PublishSubject
@@ -23,7 +23,7 @@ class FileListSyncWatcherImplTest {
     fun `it should send a broadcast message when a result contains pushed updates`() {
         val watcher = newWatcher()
 
-        syncEvents.onNext(FileListSyncEvent.Result(StorageSyncResult(1, FileListMergeResults.empty, 1, randomQuota())))
+        syncEvents.onNext(FileListSyncEvent.Result(FileListSyncResult(1, FileListMergeResults.empty, 1, randomQuota())))
 
         verify(messengerService).broadcastFileListSync()
     }
@@ -32,7 +32,7 @@ class FileListSyncWatcherImplTest {
     fun `it should not send a broadcast message when a result doesn't contain pushed updates`() {
         val watcher = newWatcher()
 
-        syncEvents.onNext(FileListSyncEvent.Result(StorageSyncResult(0, FileListMergeResults.empty, 1, randomQuota())))
+        syncEvents.onNext(FileListSyncEvent.Result(FileListSyncResult(0, FileListMergeResults.empty, 1, randomQuota())))
 
         verify(messengerService, never()).broadcastFileListSync()
     }

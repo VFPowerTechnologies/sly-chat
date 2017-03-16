@@ -77,10 +77,10 @@ class StorageSyncJobImpl(
         }
     }
 
-    override fun run(): Promise<StorageSyncResult, Exception> {
+    override fun run(): Promise<FileListSyncResult, Exception> {
         return pushUpdates() bind { pushResults ->
             pullUpdates() map { pullResults ->
-                StorageSyncResult(pushResults.remoteUpdatesPerformed, pullResults.mergeResults, pullResults.newListVersion, pullResults.quota)
+                FileListSyncResult(pushResults.remoteUpdatesPerformed, pullResults.mergeResults, pullResults.newListVersion, pullResults.quota)
             }
         }
     }

@@ -34,11 +34,11 @@ class StorageServiceImplTest {
     }
 
     private class MockStorageSyncJob : StorageSyncJob {
-        val d = deferred<StorageSyncResult, Exception>()
+        val d = deferred<FileListSyncResult, Exception>()
         private var wasCalled = false
         var callCount = 0
 
-        override fun run(): Promise<StorageSyncResult, Exception> {
+        override fun run(): Promise<FileListSyncResult, Exception> {
             wasCalled = true
             callCount += 1
             return d.promise
@@ -163,7 +163,7 @@ class StorageServiceImplTest {
     fun `sync should emit events on start and completion`() {
         val service = newService(true)
 
-        val result = StorageSyncResult(0, FileListMergeResults.empty, 0, randomQuota())
+        val result = FileListSyncResult(0, FileListMergeResults.empty, 0, randomQuota())
         syncJob.d.resolve(result)
 
         val testSubscriber = service.syncEvents.testSubscriber()
@@ -243,7 +243,7 @@ class StorageServiceImplTest {
 
         //since we sync on startup
         syncJob.clearCalls()
-        syncJob.d.resolve(StorageSyncResult(0, FileListMergeResults.empty, 0, randomQuota()))
+        syncJob.d.resolve(FileListSyncResult(0, FileListMergeResults.empty, 0, randomQuota()))
 
         transferEvents.onNext(TransferEvent.UploadStateChanged(randomUpload(), TransferState.COMPLETE))
 
@@ -257,7 +257,7 @@ class StorageServiceImplTest {
         service.sync()
         service.sync()
 
-        syncJob.d.resolve(StorageSyncResult(0, FileListMergeResults.empty, 0, randomQuota()))
+        syncJob.d.resolve(FileListSyncResult(0, FileListMergeResults.empty, 0, randomQuota()))
 
         assertEquals(2, syncJob.callCount, "Queued sync job not run")
     }
@@ -271,7 +271,7 @@ class StorageServiceImplTest {
         service.sync()
 
         val quota = randomQuota()
-        syncJob.d.resolve(StorageSyncResult(0, FileListMergeResults.empty, 0, quota))
+        syncJob.d.resolve(FileListSyncResult(0, FileListMergeResults.empty, 0, quota))
 
         testSubscriber.assertReceivedOnNext(listOf(quota))
     }
@@ -311,7 +311,7 @@ class StorageServiceImplTest {
 
         service.sync()
 
-        syncJob.d.resolve(StorageSyncResult(0, mergeResults, 0, randomQuota()))
+        syncJob.d.resolve(FileListSyncResult(0, mergeResults, 0, randomQuota()))
 
         val ev = if (mergeResults.added.isNotEmpty())
             RemoteFileEvent.Added(mergeResults.added)
