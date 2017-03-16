@@ -7,6 +7,7 @@ import io.slychat.messenger.core.files.encryptFileMetadata
 import io.slychat.messenger.core.files.encryptUserMetadata
 import io.slychat.messenger.core.files.getFilePathHash
 import io.slychat.messenger.core.http.api.upload.NewUploadRequest
+import io.slychat.messenger.core.http.api.upload.NewUploadResponse
 import io.slychat.messenger.core.http.api.upload.UploadClient
 import io.slychat.messenger.core.persistence.Upload
 
@@ -17,7 +18,7 @@ class CreateUploadOperation(
     private val keyVault: KeyVault,
     private val uploadClient: UploadClient
 ) {
-    fun run() {
+    fun run(): NewUploadResponse {
         val fileMetadata = file.fileMetadata ?: error("fileMetadata is null")
 
         val encryptedUserMetadata = encryptUserMetadata(keyVault, file.userMetadata)
@@ -44,10 +45,6 @@ class CreateUploadOperation(
             getFilePathHash(keyVault, file.userMetadata)
         )
 
-        val resp = uploadClient.newUpload(userCredentials, request)
-
-        //???
-        if (!resp.hadSufficientQuota)
-            throw InsufficientQuotaException()
+        return uploadClient.newUpload(userCredentials, request)
     }
 }

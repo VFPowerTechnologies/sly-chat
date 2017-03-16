@@ -1,8 +1,10 @@
 package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.core.http.api.upload.NewUploadResponse
 import io.slychat.messenger.core.persistence.Upload
 import io.slychat.messenger.core.persistence.UploadPart
+import io.slychat.messenger.core.randomQuota
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import rx.Observable
@@ -14,7 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.fail
 
 class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperations {
-    var createDeferred = deferred<Unit, Exception>()
+    var createDeferred = deferred<NewUploadResponse, Exception>()
     var completeDeferred = deferred<Unit, Exception>()
     var uploadSubjects = HashMap<Int, PublishSubject<Long>>()
     val cacheSubjects = HashMap<String, PublishSubject<Long>>()
@@ -30,9 +32,9 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
     private var completeArgs: Upload? = null
     private val unsubscriptions = HashSet<Pair<String, Int>>()
 
-    override fun create(upload: Upload, file: RemoteFile): Promise<Unit, Exception> {
+    override fun create(upload: Upload, file: RemoteFile): Promise<NewUploadResponse, Exception> {
         if (autoResolveCreate)
-            return Promise.of(Unit)
+            return Promise.of(NewUploadResponse(true, randomQuota()))
 
         createArgs = CreateArgs(upload, file)
         return createDeferred.promise

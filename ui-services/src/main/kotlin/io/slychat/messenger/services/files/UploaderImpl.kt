@@ -1,8 +1,10 @@
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -49,6 +51,11 @@ class UploaderImpl(
             if (value)
                 startNextUpload()
         }
+
+    private val quotaSubject = PublishSubject.create<Quota>()
+
+    override val quota: Observable<Quota>
+        get() = quotaSubject
 
     override val uploads: List<UploadStatus>
         get() = list.all.values.toList()
@@ -350,7 +357,12 @@ class UploaderImpl(
     private fun createUpload(status: UploadStatus) {
         val uploadId = status.upload.id
 
-        uploadOperations.create(status.upload, status.file) bind {
+        uploadOperations.create(status.upload, status.file) bindUi {
+            quotaSubject.onNext(it.quota)
+
+            if (!it.hadSufficientQuota)
+                throw InsufficientQuotaException()
+
             val nextState = if (status.upload.isEncrypted)
                 UploadState.CACHING
             else

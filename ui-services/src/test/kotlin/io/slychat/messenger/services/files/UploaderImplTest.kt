@@ -2,7 +2,9 @@ package io.slychat.messenger.services.files
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.crypto.generateUploadId
+import io.slychat.messenger.core.http.api.upload.NewUploadResponse
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.randomQuota
 import io.slychat.messenger.core.randomRemoteFile
 import io.slychat.messenger.core.randomUpload
 import io.slychat.messenger.core.randomUserMetadata
@@ -294,6 +296,40 @@ class UploaderImplTest {
     }
 
     @Test
+    fun `creation should emit quota info when not enough quota is available`() {
+        val uploader = newUploader()
+
+        val info = randomUploadInfo()
+
+        uploader.upload(info).get()
+
+        val quota = randomQuota()
+
+        val testSubscriber = uploader.quota.testSubscriber()
+
+        uploadOperations.createDeferred.resolve(NewUploadResponse(false, quota))
+
+        testSubscriber.assertReceivedOnNext(listOf(quota))
+    }
+
+    @Test
+    fun `creation should emit quota info when creation was successful`() {
+        val uploader = newUploader()
+
+        val info = randomUploadInfo()
+
+        uploader.upload(info).get()
+
+        val quota = randomQuota()
+
+        val testSubscriber = uploader.quota.testSubscriber()
+
+        uploadOperations.createDeferred.resolve(NewUploadResponse(true, quota))
+
+        testSubscriber.assertReceivedOnNext(listOf(quota))
+    }
+
+    @Test
     fun `it should move to created state once caching completes`() {
         val file = randomRemoteFile()
 
@@ -420,7 +456,7 @@ class UploaderImplTest {
 
         uploader.upload(info).get()
 
-        uploadOperations.createDeferred.reject(InsufficientQuotaException())
+        uploadOperations.createDeferred.reject(TestException())
 
         val status = assertNotNull(uploader.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
 
@@ -435,9 +471,9 @@ class UploaderImplTest {
 
         uploader.upload(info).get()
 
-        uploadOperations.createDeferred.reject(InsufficientQuotaException())
+        uploadOperations.createDeferred.reject(TestException())
 
-        verify(uploadPersistenceManager).setError(info.upload.id, UploadError.INSUFFICIENT_QUOTA)
+        verify(uploadPersistenceManager).setError(info.upload.id, UploadError.UNKNOWN)
     }
 
     @Test
@@ -448,7 +484,7 @@ class UploaderImplTest {
 
         uploader.upload(info).get()
 
-        uploadOperations.createDeferred.reject(InsufficientQuotaException())
+        uploadOperations.createDeferred.reject(TestException())
 
         uploadOperations.assertUploadPartNotCalled()
     }
@@ -461,25 +497,25 @@ class UploaderImplTest {
 
         uploader.upload(info).get()
 
-        val updated = info.upload.copy(error = UploadError.INSUFFICIENT_QUOTA)
+        val updated = info.upload.copy(error = UploadError.UNKNOWN)
         assertEventEmitted(uploader, TransferEvent.UploadStateChanged(updated, TransferState.ERROR)) {
-            uploadOperations.createDeferred.reject(InsufficientQuotaException())
+            uploadOperations.createDeferred.reject(TestException())
         }
     }
 
     @Test
-    fun `it should set upload error to INSUFFICIENT_QUOTA when creation fails with InsufficientQuotaException`() {
+    fun `it should set upload error to INSUFFICIENT_QUOTA when creation returns with insufficent quota`() {
         val uploader = newUploader()
 
         val info = randomUploadInfo()
 
         uploader.upload(info).get()
 
-        uploadOperations.createDeferred.reject(InsufficientQuotaException())
+        uploadOperations.createDeferred.resolve(NewUploadResponse(false, randomQuota()))
 
         val status = assertNotNull(uploader.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
 
-        assertEquals(status.upload.error, UploadError.INSUFFICIENT_QUOTA, "Invalid error")
+        assertEquals(UploadError.INSUFFICIENT_QUOTA, status.upload.error, "Invalid error")
     }
 
     @Test

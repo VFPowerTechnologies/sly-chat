@@ -1,5 +1,6 @@
 package io.slychat.messenger.services.files
 
+import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.persistence.UploadInfo
 import nl.komponents.kovenant.Promise
 import rx.Observable
@@ -10,6 +11,8 @@ interface Uploader {
     var isNetworkAvailable: Boolean
 
     val events: Observable<TransferEvent>
+
+    val quota: Observable<Quota>
 
     val uploads: List<UploadStatus>
 
