@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS files (
     -- only null when there's no file metadata
     mime_type TEXT,
 
+    -- this is used for simpler indexing (since last_update_version can have a ton of diff values)
     is_pending BOOLEAN NOT NULL
 );
 
