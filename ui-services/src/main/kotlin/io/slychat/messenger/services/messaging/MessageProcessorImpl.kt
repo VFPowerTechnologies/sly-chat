@@ -6,6 +6,7 @@ import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
+import io.slychat.messenger.services.files.StorageService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
@@ -17,6 +18,7 @@ class MessageProcessorImpl(
     private val selfId: UserId,
     private val contactsService: ContactsService,
     private val messageService: MessageService,
+    private val storageService: StorageService,
     private val messageCipherService: MessageCipherService,
     private val groupService: GroupService,
     private val relayClock: RelayClock,
@@ -104,7 +106,7 @@ class MessageProcessorImpl(
                 }
 
                 is SyncMessage.AddressBookSync -> {
-                    log.info("Received self sync message")
+                    log.info("Received address book sync message")
                     Promise.ofSuccess(contactsService.doAddressBookPull())
                 }
 
@@ -128,7 +130,10 @@ class MessageProcessorImpl(
                     messageService.deleteAllMessagesUntil(m.conversationId, m.lastMessageTimestamp)
                 }
 
-                is SyncMessage.FileListSync -> TODO()
+                is SyncMessage.FileListSync -> {
+                    log.info("Received file list sync message")
+                    Promise.ofSuccess(storageService.sync())
+                }
             }
         }
     }

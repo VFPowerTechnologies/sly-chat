@@ -9,6 +9,7 @@ import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
+import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenReject
 import io.slychat.messenger.testutils.thenResolve
@@ -33,30 +34,31 @@ class MessageProcessorImplTest {
         }
     }
 
-    val selfId = randomUserId()
+    private val selfId = randomUserId()
 
-    val contactsService: ContactsService = mock()
-    val messageService: MessageService = mock()
-    val messageCipherService: MessageCipherService = mock()
-    val groupService: GroupService = mock()
-    val relayClock: RelayClock = mock()
-    val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(true)
-    val uiEvents: PublishSubject<UIEvent> = PublishSubject.create()
+    private val contactsService: ContactsService = mock()
+    private val messageService: MessageService = mock()
+    private val messageCipherService: MessageCipherService = mock()
+    private val storageService: StorageService = mock()
+    private val groupService: GroupService = mock()
+    private val relayClock: RelayClock = mock()
+    private val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(true)
+    private val uiEvents: PublishSubject<UIEvent> = PublishSubject.create()
 
-    fun randomTextMessage(groupId: GroupId? = null): TextMessage =
+    private fun randomTextMessage(groupId: GroupId? = null): TextMessage =
         TextMessage(MessageId(randomMessageId()), currentTimestamp(), randomUUID(), groupId, randomInt(50, 100).toLong())
 
-    fun returnGroupInfo(groupInfo: GroupInfo?) {
+    private fun returnGroupInfo(groupInfo: GroupInfo?) {
         if (groupInfo != null)
             whenever(groupService.getInfo(groupInfo.id)).thenResolve(groupInfo)
         else
             whenever(groupService.getInfo(any())).thenResolve(null)
     }
 
-    fun wrap(m: TextMessage): SlyMessage = SlyMessage.Text(m)
-    fun wrap(m: GroupEventMessage): SlyMessage = SlyMessage.GroupEvent(m)
-    fun wrap(m: SyncMessage): SlyMessage = SlyMessage.Sync(m)
-    fun wrap(m: ControlMessage): SlyMessage = SlyMessage.Control(m)
+    private fun wrap(m: TextMessage): SlyMessage = SlyMessage.Text(m)
+    private fun wrap(m: GroupEventMessage): SlyMessage = SlyMessage.GroupEvent(m)
+    private fun wrap(m: SyncMessage): SlyMessage = SlyMessage.Sync(m)
+    private fun wrap(m: ControlMessage): SlyMessage = SlyMessage.Control(m)
 
     @Before
     fun before() {
@@ -84,6 +86,7 @@ class MessageProcessorImplTest {
             selfId,
             contactsService,
             messageService,
+            storageService,
             messageCipherService,
             groupService,
             relayClock,
@@ -867,5 +870,27 @@ class MessageProcessorImplTest {
         assertFailsWithSyncMessageFromOtherSecurityException {
             processor.processMessage(randomUserId(), wrap(m)).get()
         }
+    }
+
+    @Test
+    fun `it should drop FileListSync message where the sender is not yourself`() {
+        val processor = createProcessor()
+
+        val m = SyncMessage.FileListSync()
+
+        assertFailsWithSyncMessageFromOtherSecurityException {
+            processor.processMessage(randomUserId(), wrap(m)).get()
+        }
+    }
+
+    @Test
+    fun `it should trigger a file list sync when receiving a FileListSync message from yourself`() {
+        val processor = createProcessor()
+
+        val m = SyncMessage.FileListSync()
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        verify(storageService).sync()
     }
 }
