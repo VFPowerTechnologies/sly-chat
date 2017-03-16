@@ -3,6 +3,7 @@ package io.slychat.messenger.testutils
 
 import nl.komponents.kovenant.Kovenant
 import nl.komponents.kovenant.Promise
+import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Condition
 import org.joda.time.DateTimeUtils
 import org.mockito.invocation.InvocationOnMock
@@ -95,3 +96,9 @@ fun <T> Observable<T>.testSubscriber(): TestSubscriber<T> {
 
     return testSubscriber
 }
+
+inline fun <S : AbstractAssert<*, A>, A> S.desc(description: String, body: S.() -> Unit) {
+    describedAs(description)
+    this.body()
+}
+

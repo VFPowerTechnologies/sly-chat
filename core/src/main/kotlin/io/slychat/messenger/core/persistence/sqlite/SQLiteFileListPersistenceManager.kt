@@ -6,6 +6,7 @@ import io.slychat.messenger.core.crypto.ciphers.CipherId
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.files.UserMetadata
+import io.slychat.messenger.core.persistence.FileListMergeResults
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.core.persistence.FileListUpdate
 import io.slychat.messenger.core.persistence.InvalidFileException
@@ -247,21 +248,33 @@ WHERE
         }
     }
 
-    override fun mergeUpdates(updates: List<RemoteFile>, latestVersion: Long): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun mergeUpdates(updates: List<RemoteFile>, latestVersion: Long): Promise<FileListMergeResults, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
+            val added = ArrayList<RemoteFile>()
+            val deleted = ArrayList<RemoteFile>()
+            val updated = ArrayList<RemoteFile>()
+
             updates.forEach {
                 //kinda bad but w/e
                 if (isFilePresent(connection, it.id)) {
-                    if (it.isDeleted)
+                    if (it.isDeleted) {
                         deleteFile(connection, it.id)
-                    else
+                        deleted.add(it)
+                    }
+                    else {
                         updateFile(connection, it)
+                        updated.add(it)
+                    }
                 }
-                else
+                else {
                     fileUtils.insertFile(connection, it)
+                    added.add(it)
+                }
             }
 
             setVersion(connection, latestVersion)
+
+            FileListMergeResults(added, deleted, updated)
         }
     }
 

@@ -7,6 +7,7 @@ import io.slychat.messenger.core.persistence.FileListUpdate
 import io.slychat.messenger.core.persistence.InvalidFileException
 import io.slychat.messenger.core.randomRemoteFile
 import io.slychat.messenger.core.randomUserMetadata
+import io.slychat.messenger.testutils.desc
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -217,18 +218,48 @@ class SQLiteFileListPersistenceManagerTest {
     fun `mergeUpdates should add new files`() {
         val file = randomRemoteFile()
 
-        fileListPersistenceManager.mergeUpdates(listOf(file), 2).get()
+        val result = fileListPersistenceManager.mergeUpdates(listOf(file), 2).get()
 
         assertEquals(file, fileListPersistenceManager.getFile(file.id).get(), "File not added")
+
+        assertThat(result.added).desc("Should include the added file") { containsOnly(file) }
+
+        assertThat(result.deleted).desc("Should be empty") { isEmpty() }
+
+        assertThat(result.updated).desc("Should be empty") { isEmpty() }
     }
 
     @Test
     fun `mergeUpdates should remove deleted files`() {
         val file = insertFile()
+        val updated = file.copy(isDeleted = true)
 
-        fileListPersistenceManager.mergeUpdates(listOf(file.copy(isDeleted = true)), 2).get()
+        val result = fileListPersistenceManager.mergeUpdates(listOf(updated), 2).get()
 
         assertNull(fileListPersistenceManager.getFile(file.id).get(), "File not deleted from table")
+
+        assertThat(result.added).desc("Should be empty") { isEmpty() }
+
+        assertThat(result.deleted).desc("Should include the deleted file") { containsOnly(updated) }
+
+        assertThat(result.updated).desc("Should be empty") { isEmpty() }
+    }
+
+    @Test
+    fun `mergeUpdates should update existing files`() {
+        val file = insertFile()
+        val updated = file.copy(userMetadata = file.userMetadata.rename("test-file"))
+
+        val result = fileListPersistenceManager.mergeUpdates(listOf(updated), 2).get()
+
+        val fromDb = getFile(file.id)
+        assertEquals(updated, fromDb, "File not updated in db")
+
+        assertThat(result.added).desc("Should be empty") { isEmpty() }
+
+        assertThat(result.deleted).desc("Should be empty") { isEmpty() }
+
+        assertThat(result.updated).desc("Should contain the updated file") { containsOnly(updated) }
     }
 
     @Test
