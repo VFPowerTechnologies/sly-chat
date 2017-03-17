@@ -5,9 +5,13 @@ import io.slychat.messenger.core.persistence.Upload
 
 sealed class Transfer {
     abstract val isUpload: Boolean
+    abstract val id: String
 
     class U(val upload: Upload) : Transfer() {
         override val isUpload: Boolean = true
+
+        override val id: String
+            get() = upload.id
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -31,6 +35,9 @@ sealed class Transfer {
 
     class D(val download: Download) : Transfer() {
         override val isUpload: Boolean = false
+
+        override val id: String
+            get() = download.id
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

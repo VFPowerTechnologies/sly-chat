@@ -9,6 +9,7 @@ import io.slychat.messenger.services.config.UserConfigService
 import nl.komponents.kovenant.Promise
 import rx.Observable
 import rx.subscriptions.CompositeSubscription
+import java.util.*
 
 class TransferManagerImpl(
     private val userConfigService: UserConfigService,
@@ -18,11 +19,15 @@ class TransferManagerImpl(
 ) : TransferManager {
     override val events: Observable<TransferEvent> = Observable.merge(uploader.events, downloader.events)
 
-    override val uploads: List<UploadStatus>
-        get() = uploader.uploads
+    override val transfers: List<TransferStatus>
+        get() {
+            val statuses = ArrayList<TransferStatus>()
 
-    override val downloads: List<DownloadStatus>
-        get() = downloader.downloads
+            uploader.uploads.mapTo(statuses) { TransferStatus(Transfer.U(it.upload), it.file, it.state, UploadTransferProgress(it.progress, it.transferedBytes, it.totalBytes)) }
+            downloader.downloads.mapTo(statuses) { TransferStatus(Transfer.D(it.download), it.file, it.state, it.progress) }
+
+            return statuses
+        }
 
     override val quota: Observable<Quota>
         get() = uploader.quota

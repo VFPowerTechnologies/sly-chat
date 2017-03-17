@@ -86,8 +86,7 @@ class StorageServiceImplTest {
         whenever(syncJobFactory.create(any())).thenReturn(syncJob)
         whenever(transferManager.events).thenReturn(transferEvents)
         whenever(transferManager.quota).thenReturn(quotaEvents)
-        whenever(transferManager.downloads).thenReturn(emptyList())
-        whenever(transferManager.uploads).thenReturn(emptyList())
+        whenever(transferManager.transfers).thenReturn(emptyList())
         whenever(transferManager.removeDownloads(any())).thenResolveUnit()
         whenever(transferManager.removeUploads(any())).thenResolveUnit()
         whenever(transferManager.upload(any())).thenResolveUnit()
@@ -386,18 +385,18 @@ class StorageServiceImplTest {
     fun `it should remove any associated downloads when deleting a file`() {
         val service = newService(false)
 
-        val status = randomDownloadStatus(TransferState.COMPLETE)
+        val status = randomDownloadTransferStatus(TransferState.COMPLETE)
 
         val fileIds = listOf(
             generateFileId(),
-            status.download.fileId
+            status.file.id
         )
 
-        whenever(transferManager.downloads).thenReturn(listOf(status))
+        whenever(transferManager.transfers).thenReturn(listOf(status))
 
         service.deleteFiles(fileIds).get()
 
-        verify(transferManager).removeDownloads(listOf(status.download.id))
+        verify(transferManager).removeDownloads(listOf(status.id))
         verify(fileListPersistenceManager).deleteFiles(fileIds)
     }
 
@@ -405,18 +404,18 @@ class StorageServiceImplTest {
     fun `it should remove any associated uploads when deleting a file`() {
         val service = newService(false)
 
-        val status = randomUploadStatus(TransferState.COMPLETE)
+        val status = randomUploadTransferStatus(TransferState.COMPLETE)
 
         val fileIds = listOf(
             generateFileId(),
-            status.upload.fileId
+            status.file.id
         )
 
-        whenever(transferManager.uploads).thenReturn(listOf(status))
+        whenever(transferManager.transfers).thenReturn(listOf(status))
 
         service.deleteFiles(fileIds).get()
 
-        verify(transferManager).removeUploads(listOf(status.upload.id))
+        verify(transferManager).removeUploads(listOf(status.id))
         verify(fileListPersistenceManager).deleteFiles(fileIds)
     }
 }

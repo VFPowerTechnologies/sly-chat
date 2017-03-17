@@ -16,9 +16,7 @@ interface StorageService {
 
     val fileEvents: Observable<RemoteFileEvent>
 
-    val uploads: List<UploadStatus>
-
-    val downloads: List<DownloadStatus>
+    val transfers: List<TransferStatus>
 
     fun init()
 

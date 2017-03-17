@@ -21,6 +21,11 @@ fun randomDownloadStatus(state: TransferState): DownloadStatus {
     )
 }
 
+fun randomDownloadTransferStatus(state: TransferState): TransferStatus {
+    val status = randomDownloadStatus(state)
+    return TransferStatus(Transfer.D(status.download), status.file, status.state, status.progress)
+}
+
 fun randomUploadStatus(state: TransferState): UploadStatus {
     val file = randomRemoteFile()
     //XXX state doesn't actually matter here
@@ -40,3 +45,7 @@ fun randomUploadStatus(state: TransferState): UploadStatus {
     )
 }
 
+fun randomUploadTransferStatus(state: TransferState): TransferStatus {
+    val status = randomUploadStatus(state)
+    return TransferStatus(Transfer.U(status.upload), status.file, status.state, UploadTransferProgress(status.progress, status.transferedBytes, status.totalBytes))
+}

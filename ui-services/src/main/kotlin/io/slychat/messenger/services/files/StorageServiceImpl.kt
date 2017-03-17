@@ -69,11 +69,8 @@ class StorageServiceImpl(
 
     private var isNetworkAvailable = false
 
-    override val uploads: List<UploadStatus>
-        get() = transferManager.uploads
-
-    override val downloads: List<DownloadStatus>
-        get() = transferManager.downloads
+    override val transfers: List<TransferStatus>
+        get() = transferManager.transfers
 
     init {
         subscriptions += networkStatus.subscribe { onNetworkStatusChange(it) }
@@ -187,8 +184,20 @@ class StorageServiceImpl(
 
     override fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception> {
         val s = HashSet(fileIds)
-        val uploads = transferManager.uploads.filter { it.file.id in s }.map { it.upload.id }
-        val downloads = transferManager.downloads.filter { it.file.id in s }.map { it.download.id }
+        val uploads = ArrayList<String>()
+        val downloads = ArrayList<String>()
+
+        for (status in transferManager.transfers) {
+            if (status.file.id !in s)
+                continue
+
+            val l = when (status.transfer) {
+                is Transfer.D -> downloads
+                is Transfer.U -> uploads
+            }
+
+            l.add(status.id)
+        }
 
         return transferManager.removeUploads(uploads) bindUi {
             transferManager.removeDownloads(downloads)

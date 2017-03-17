@@ -6,13 +6,10 @@ import io.slychat.messenger.core.persistence.UploadInfo
 import nl.komponents.kovenant.Promise
 import rx.Observable
 
-
 interface TransferManager {
     val events: Observable<TransferEvent>
 
-    val uploads: List<UploadStatus>
-
-    val downloads: List<DownloadStatus>
+    val transfers: List<TransferStatus>
 
     val quota: Observable<Quota>
 
