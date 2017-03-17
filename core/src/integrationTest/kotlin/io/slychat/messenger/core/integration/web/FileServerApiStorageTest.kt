@@ -13,7 +13,10 @@ import org.junit.*
 import java.io.ByteArrayInputStream
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.test.*
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class FileServerApiStorageTest {
     companion object {
@@ -86,7 +89,7 @@ class FileServerApiStorageTest {
         )
 
         val newUploadResponse = client.newUpload(userCredentials, request)
-        assertTrue(newUploadResponse.hadSufficientQuota, "Insufficient quota")
+        assertNull(newUploadResponse.error, "Insufficient quota")
 
         client.uploadPart(
             userCredentials,

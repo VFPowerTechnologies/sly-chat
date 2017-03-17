@@ -275,3 +275,10 @@ fun randomQuota(): Quota {
 
     return Quota(used.toLong(), max.toLong())
 }
+
+fun randomPathHash(): String {
+    val random = Random()
+    val hash = ByteArray(16)
+    random.nextBytes(hash)
+    return hash.hexify()
+}

@@ -2,22 +2,18 @@ package io.slychat.messenger.core.integration.web
 
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
+import io.slychat.messenger.core.crypto.generateShareKey
 import io.slychat.messenger.core.crypto.generateUploadId
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.ApiException
-import io.slychat.messenger.core.http.api.upload.NewUploadRequest
-import io.slychat.messenger.core.http.api.upload.UploadClientImpl
-import io.slychat.messenger.core.http.api.upload.UploadInfo
-import io.slychat.messenger.core.http.api.upload.UploadPartInfo
+import io.slychat.messenger.core.http.api.storage.FileInfo
+import io.slychat.messenger.core.http.api.upload.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import java.util.*
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class WebApiUploadTest {
     companion object {
@@ -32,17 +28,18 @@ class WebApiUploadTest {
     private val password = userManagement.defaultPassword
     private val invalidUserCredentials = UserCredentials(SlyAddress(UserId(999999), 999), AuthToken(""))
 
-    private fun getDummyUploadRequest(partCount: Int = 1): NewUploadRequest {
+    private fun randomNewUploadRequest(partCount: Int = 1, partSize: Long = 10, pathHash: String = randomPathHash()): NewUploadRequest {
         return NewUploadRequest(
             generateUploadId(),
             generateFileId(),
             "sk",
-            10L * partCount,
-            10,
+            partSize * partCount,
+            partSize,
             0,
             partCount,
-            byteArrayOf(0x77), byteArrayOf(0x66),
-            "10"
+            byteArrayOf(0x77),
+            byteArrayOf(0x66),
+            pathHash
         )
     }
 
@@ -60,7 +57,7 @@ class WebApiUploadTest {
         val client = newClient()
 
         assertFailsWith(UnauthorizedException::class) {
-            client.newUpload(invalidUserCredentials, getDummyUploadRequest())
+            client.newUpload(invalidUserCredentials, randomNewUploadRequest())
         }
     }
 
@@ -70,13 +67,13 @@ class WebApiUploadTest {
 
         val client = newClient()
 
-        val request = getDummyUploadRequest()
+        val request = randomNewUploadRequest()
         val uploadId = request.uploadId
         val fileSize = request.fileSize
 
         val resp = client.newUpload(authUser.userCredentials, request)
 
-        assertTrue(resp.hadSufficientQuota, "Should have sufficient quota")
+        assertNull(resp.error, "Should have sufficient quota")
         assertEquals(fileSize, resp.quota.usedBytes, "Quota not updated")
 
         val uploadInfo = assertNotNull(client.getUpload(authUser.userCredentials, uploadId), "No upload returned from server")
@@ -86,6 +83,63 @@ class WebApiUploadTest {
         assertEquals(request.partCount, uploadInfo.parts.size, "Invalid part count")
         assertTrue(Arrays.equals(request.userMetadata, uploadInfo.userMetadata), "Invalid user metadata")
         assertTrue(Arrays.equals(request.fileMetadata, uploadInfo.fileMetadata), "Invalid file metadata")
+    }
+
+    @Test
+    fun `newUpload should fail if user has unsufficient quota`() {
+        val authUser = devClient.newAuthUser(userManagement)
+        val quota = devClient.getQuota(authUser.user.id)
+
+        val client = newClient()
+
+        val request = randomNewUploadRequest(partSize = quota.maxBytes + 1)
+
+        val resp = client.newUpload(authUser.userCredentials, request)
+        assertEquals(NewUploadError.INSUFFICIENT_QUOTA, resp.error, "Expected insufficient quota")
+    }
+
+    @Test
+    fun `newUpload should fail if the user has an existing upload with the same path`() {
+        val authUser = devClient.newAuthUser(userManagement)
+
+        val client = newClient()
+
+        val request = randomNewUploadRequest()
+
+        val resp1 = client.newUpload(authUser.userCredentials, request)
+        assertNull(resp1.error, "An error occured")
+
+        val request2 = randomNewUploadRequest(pathHash = request.pathHash)
+        val resp2 = client.newUpload(authUser.userCredentials, request2)
+        assertEquals(NewUploadError.DUPLICATE_FILE, resp2.error, "Should not allow duplicate paths")
+    }
+
+    @Test
+    fun `newUpload should fail if the user has an existing file with the same path`() {
+        val authUser = devClient.newAuthUser(userManagement)
+
+        val pathHash = randomPathHash()
+        devClient.addFile(
+            authUser.user.id,
+            FileInfo(
+                generateFileId(),
+                generateShareKey(),
+                false,
+                1,
+                1,
+                2,
+                byteArrayOf(0x66),
+                byteArrayOf(0x77),
+                10L
+            ),
+            pathHash
+        )
+
+        val client = newClient()
+        val request = randomNewUploadRequest(pathHash = pathHash)
+        val resp = client.newUpload(authUser.userCredentials, request)
+
+        assertEquals(NewUploadError.DUPLICATE_FILE, resp.error, "Should fail with duplicate file error")
     }
 
     @Test
@@ -104,9 +158,9 @@ class WebApiUploadTest {
 
         val client = newClient()
 
-        val request = getDummyUploadRequest()
+        val request = randomNewUploadRequest()
         val resp = client.newUpload(authUser.userCredentials, request)
-        assertTrue(resp.hadSufficientQuota, "Insufficient quota")
+        assertNull(resp.error, "Insufficient quota")
 
         devClient.markPartsAsComplete(user.user.id, request.uploadId)
 
@@ -125,15 +179,15 @@ class WebApiUploadTest {
 
         val client = newClient()
 
-        val request = getDummyUploadRequest(2)
+        val request = randomNewUploadRequest(2)
         val resp = client.newUpload(authUser.userCredentials, request)
-        assertTrue(resp.hadSufficientQuota, "Insufficient quota")
+        assertNull(resp.error, "Insufficient quota")
 
         val e = assertFailsWith(ApiException::class) {
             client.completeUpload(authUser.userCredentials, request.uploadId)
         }
 
-        assertEquals("IncompleteUpload", e.message, "Invalid error message")
+        assertEquals("INCOMPLETE_UPLOAD", e.message, "Invalid error message")
     }
 
     @Test
@@ -152,9 +206,9 @@ class WebApiUploadTest {
         val authUser = devClient.newAuthUser(userManagement)
         val client = newClient()
 
-        val request = getDummyUploadRequest(2)
+        val request = randomNewUploadRequest(2)
         val resp = client.newUpload(authUser.userCredentials, request)
-        assertTrue(resp.hadSufficientQuota, "Insufficient quota")
+        assertNull(resp.error, "Insufficient quota")
 
         val expected = UploadInfo(
             request.uploadId,

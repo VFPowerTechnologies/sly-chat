@@ -14,7 +14,7 @@ import org.junit.Test
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertTrue
+import kotlin.test.assertNull
 
 class FileServerApiUploadTest {
     companion object {
@@ -115,7 +115,7 @@ class FileServerApiUploadTest {
 
         val request = getSingleNewUploadRequest()
         val newUploadResponse = client.newUpload(userCredentials, request)
-        assertTrue(newUploadResponse.hadSufficientQuota, "Insufficient quota")
+        assertNull(newUploadResponse.error, "Insufficient quota")
 
         uploadPart(client, userCredentials, request.uploadId, 1, request.partSize)
     }
@@ -129,7 +129,7 @@ class FileServerApiUploadTest {
 
         val request = getMultiNewUploadRequest(2)
         val newUploadResponse = client.newUpload(userCredentials, request)
-        assertTrue(newUploadResponse.hadSufficientQuota, "Insufficient quota")
+        assertNull(newUploadResponse.error, "Insufficient quota")
 
         for (i in 1..2)
             uploadPart(client, userCredentials, request.uploadId, i, request.partSize)
@@ -159,7 +159,7 @@ class FileServerApiUploadTest {
         )
 
         val newUploadResponse = client.newUpload(userCredentials, request)
-        assertTrue(newUploadResponse.hadSufficientQuota, "Insufficient quota")
+        assertNull(newUploadResponse.error, "Insufficient quota")
 
         uploadPart(client, userCredentials, request.uploadId, 1, request.partSize)
         uploadPart(client, userCredentials, request.uploadId, 2, request.finalPartSize)

@@ -283,7 +283,9 @@ class DevClient(private val serverBaseUrl: String, private val httpClient: HttpC
         return getRequest("/dev/storage/$userId/$fileId", typeRef())
     }
 
-    fun addFile(userId : UserId, fileInfo: FileInfo) {
-        postRequestNoResponse(fileInfo, "/dev/storage/$userId")
+    private class InjectFile(val info: FileInfo, val pathHash: String)
+
+    fun addFile(userId : UserId, fileInfo: FileInfo, pathHash: String = randomPathHash()) {
+        postRequestNoResponse(InjectFile(fileInfo, pathHash), "/dev/storage/$userId")
     }
 }
